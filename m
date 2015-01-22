@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbbAVPAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 10:00:19 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:51024 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbbAVPAQ (ORCPT
+	id S1752774AbbAVPB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:01:27 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41874 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbbAVPBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 10:00:16 -0500
+	Thu, 22 Jan 2015 10:01:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+V-a8uzfcyhO0vA2Jxg8YJYrHtk_b0skhN4kGCwO81X9yF--w@mail.gmail.com>
-References: <cover.1421115389.git.shuahkh@osg.samsung.com>
-	<9642c73eb38234cd69059c4a64bfde5205d637c2.1421115389.git.shuahkh@osg.samsung.com>
-	<CA+V-a8uzfcyhO0vA2Jxg8YJYrHtk_b0skhN4kGCwO81X9yF--w@mail.gmail.com>
-Date: Thu, 22 Jan 2015 10:00:16 -0500
-Message-ID: <CAGoCfiw4Sehjk0_7KWo3tQZabn1w8nVM+8WTgY2sSkL0FSZWOQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] media: au0828 - convert to use videobuf2
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Cc: Shuah Khan <shuahkh@osg.samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        laurent pinchart <laurent.pinchart@ideasonboard.com>,
-        ttmesterr <ttmesterr@gmail.com>,
-        linux-media <linux-media@vger.kernel.org>,
+In-Reply-To: <20150122144522.GF3413@katana>
+References: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com>
+	<20150122144522.GF3413@katana>
+Date: Thu, 22 Jan 2015 18:01:24 +0300
+Message-ID: <CAMo8Bf+XJY_bY+OB2i_SZQmAavwERG39BR8FVj202V-E3UidPg@mail.gmail.com>
+Subject: Re: [PATCH] i2c-ocores: add common clock support
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>, linux-i2c@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> -       fh->type = type;
->> -       fh->dev = dev;
->> -       v4l2_fh_init(&fh->fh, vdev);
->> -       filp->private_data = fh;
->> +       dprintk(1,
->> +               "%s called std_set %d dev_state %d stream users %d users %d\n",
->> +               __func__, dev->std_set_in_tuner_core, dev->dev_state,
->> +               dev->streaming_users, dev->users);
+On Thu, Jan 22, 2015 at 5:45 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+>> @@ -320,9 +322,23 @@ static int ocores_i2c_of_probe(struct platform_device *pdev,
+>>       }
 >>
->> -       if (mutex_lock_interruptible(&dev->lock)) {
->> -               kfree(fh);
->> +       if (mutex_lock_interruptible(&dev->lock))
->>                 return -ERESTARTSYS;
+>>       if (of_property_read_u32(np, "clock-frequency", &val)) {
+>> -             dev_err(&pdev->dev,
+>> -                     "Missing required parameter 'clock-frequency'\n");
+>> -             return -ENODEV;
+>> +             struct clk *clk = devm_clk_get(&pdev->dev, NULL);
 >> +
->> +       ret = v4l2_fh_open(filp);
->> +       if (ret) {
->> +               au0828_isocdbg("%s: v4l2_fh_open() returned error %d\n",
->> +                               __func__, ret);
->> +               mutex_unlock(&dev->lock);
->> +               return ret;
->>         }
+>> +             if (!IS_ERR(clk)) {
+>> +                     int ret = clk_prepare_enable(clk);
 >> +
->>         if (dev->users == 0) {
+>> +                     if (ret) {
+>> +                             dev_err(&pdev->dev,
+>> +                                     "clk_prepare_enable failed: %d\n", ret);
+>> +                             return ret;
+>> +                     }
+>> +                     i2c->clk = clk;
+>> +                     val = clk_get_rate(clk);
+>> +             } else {
+>> +                     dev_err(&pdev->dev,
+>> +                             "Missing required parameter 'clock-frequency'\n");
+>> +                     return -ENODEV;
+>> +             }
 >
-> you can use v4l2_fh_is_singular_file() and get rid of users member ?
+> Either NAK or I don't understand the logic here :) If a dts does NOT
+> have the bus-speed set by 'clock-frequency', then we take the value of
+> the clock assigned to this platform_device?
+>
+> The usual thing to do when 'clock-frequency' is not set is to default to
+> 100kHz.
 
-That won't work because the underlying resources are shared between
-/dev/videoX and /dev/vbiX device nodes.  Hence if you were to move to
-v4l2_fh_is_singular_file(), the video device would get opened, the
-stream would get reset, the VBI device would get opened, and that
-would cause the analog stream to get enabled/reset *again*.
+The clock here is not the i2c bus clock, but the clock input of the
+controller. The function ocores_init initializes the prescaler register of
+the controller so that the bus clock equals 100kHz (internal clock
+runs at 500kHz):
 
-Devin
+static void ocores_init(struct ocores_i2c *i2c)
+{
+        int prescale;
+...
+        prescale = (i2c->clock_khz / (5*100)) - 1;
+        oc_setreg(i2c, OCI2C_PRELOW, prescale & 0xff);
+        oc_setreg(i2c, OCI2C_PREHIGH, prescale >> 8);
+...
+
+Then yes, when there's no 'clock-frequency' we take the value of the
+clock assigned to this platform_device, which in turn comes from the
+'clk' property.
 
 -- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Thanks.
+-- Max
