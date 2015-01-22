@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbbAVPHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 10:07:22 -0500
-Received: from sauhun.de ([89.238.76.85]:41575 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317AbbAVPHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 10:07:20 -0500
-Date: Thu, 22 Jan 2015 16:07:17 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>, linux-i2c@vger.kernel.org,
+	id S1752814AbbAVPIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:08:53 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60199 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbbAVPIv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 10:08:51 -0500
+Date: Fri, 23 Jan 2015 00:08:34 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-ocores: add common clock support
-Message-ID: <20150122150717.GJ3413@katana>
-References: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com>
- <20150122144522.GF3413@katana>
- <CAMo8Bf+XJY_bY+OB2i_SZQmAavwERG39BR8FVj202V-E3UidPg@mail.gmail.com>
+Subject: Re: [PATCH] perf ui/tui: Show fatal error message only if exists
+Message-ID: <20150122150834.GA16455@danjae>
+References: <1421736050-5283-1-git-send-email-namhyung@kernel.org>
+ <20150120124926.GB15315@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="P6YfpwaDcfcOCJkJ"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAMo8Bf+XJY_bY+OB2i_SZQmAavwERG39BR8FVj202V-E3UidPg@mail.gmail.com>
+In-Reply-To: <20150120124926.GB15315@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 20, 2015 at 01:49:26PM +0100, Jiri Olsa wrote:
+> On Tue, Jan 20, 2015 at 03:40:50PM +0900, Namhyung Kim wrote:
+> > When perf exits with some error it shows the error message with
+> > ui__error() or ui__warning() and then calls ui__exit() during
+> > exit_browser().
+> > 
+> > On TUI, it then shows a window titled "Fatal Error" to inform user a
+> > last message which might be related with this condition.  However it
+> > sometimes contains no message and just annoyes users.
+> > 
+> > The usual case for this is running perf top as normal user.  (And
+> > /proc/sys/kernel/perf_event_paranoid being 1).
+> 
+> cool, I couldn't recreate the 'no message' box but I recall seeing it
+> 
+> > 
+> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> > ---
+> >  tools/perf/ui/tui/helpline.c | 3 +++
+> >  tools/perf/ui/tui/setup.c    | 3 ++-
+> >  2 files changed, 5 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/perf/ui/tui/helpline.c b/tools/perf/ui/tui/helpline.c
+> > index 1c8b9afd5d6e..88f5143a5981 100644
+> > --- a/tools/perf/ui/tui/helpline.c
+> > +++ b/tools/perf/ui/tui/helpline.c
+> > @@ -9,6 +9,7 @@
+> >  #include "../libslang.h"
+> >  
+> >  char ui_helpline__last_msg[1024];
+> > +bool tui_helpline__set;
+> >  
+> >  static void tui_helpline__pop(void)
+> >  {
+> > @@ -35,6 +36,8 @@ static int tui_helpline__show(const char *format, va_list ap)
+> >  			sizeof(ui_helpline__last_msg) - backlog, format, ap);
+> >  	backlog += ret;
+> >  
+> > +	tui_helpline__set = true;
+> > +
+> >  	if (ui_helpline__last_msg[backlog - 1] == '\n') {
+> >  		ui_helpline__puts(ui_helpline__last_msg);
+> >  		SLsmg_refresh();
+> > diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+> > index 3c38f25b1695..b77e1d771363 100644
+> > --- a/tools/perf/ui/tui/setup.c
+> > +++ b/tools/perf/ui/tui/setup.c
+> > @@ -17,6 +17,7 @@
+> >  static volatile int ui__need_resize;
+> >  
+> >  extern struct perf_error_ops perf_tui_eops;
+> > +extern bool tui_helpline__set;
+> >  
+> >  extern void hist_browser__init_hpp(void);
+> >  
+> > @@ -159,7 +160,7 @@ int ui__init(void)
+> >  
+> >  void ui__exit(bool wait_for_ok)
+> >  {
+> > -	if (wait_for_ok)
+> > +	if (wait_for_ok && tui_helpline__set)
+> >  		ui__question_window("Fatal Error",
+> >  				    ui_helpline__last_msg,
+> >  				    "Press any key...", 0);
+> 
+> looks like we display ui_helpline__last_msg also in ui/browsers/annotate.c
 
---P6YfpwaDcfcOCJkJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, I also saw it.
 
+> 
+> do we want to have some common function that unsets tui_helpline__set
+> so we're sure we dont get the message twice?
 
-> The clock here is not the i2c bus clock, but the clock input of the
+I doubt that it's really needed..  The annotation code does not
+propagate an error so the wait_for_ok arg in ui__exit() will be always
+false.  In addition, I think it's better to use ui__error() or
+ui__warning() directly at the point when something bad happened and we
+need to inform user.
 
-Yes, what I would expect from a clk-property :)
-
-> controller. The function ocores_init initializes the prescaler register of
-> the controller so that the bus clock equals 100kHz (internal clock
-> runs at 500kHz):
-
-'clock-frequency' usually describes the I2C bus speed. So, for ocores,
-it describes speed of the clock for the controller? That would be
-ouch...
-
-
---P6YfpwaDcfcOCJkJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUwRIkAAoJEBQN5MwUoCm2Qs8P/2Hm3chw5OIqogevga/Hz/Ei
-mf3MYH8PNihgJfvqAwnfFENQWY37gwQTGuIV00s/h+3FJ4W3JISgSosipXQ9B0qy
-f/DQU1TZVkbDWVA6xDljBW32U6JRLbK4V9+bzsJNPhNChVoNLkbHMlZcWCitMO0C
-RqzFAUnhupvxYmFA1a5xJ7n8ttdLYnOj+qSdF++lCoHynqVHmsXOdIroNvpAjvLL
-qlf1Y0Hw9TM/LurooVL5iiVfPpogVjQ0Puup8I/X5vjrUukF9rKJQEfxNNjLpSzr
-K0ech15w7yauAwoFiFRv3dkYn6YTJGxeGURK2qvKkhGGzzMF9clsi4pwK+NXxNnM
-xMP8azVjeEyTbOL27TubB+0qAFyb+KQGq6D/yQlzkSQ0OBcAQztY8ggrC5K0ROM9
-FEVGNmv1DA/hw62EsX2TyKSpIT0v5Old1ekkjEyfGnlbK+pgUnk6qZDbluCp/zDB
-/YjwcGMD1kv6JYjeb2bqso9mH7qfSXbLllW3WcenKx6w24vPL6PjLYb5+pygZ4L6
-eKyhM1K9VWEFV9ddbjljFdcRV6X8v8LC1hnG90/24jyHMcH69Y+6zmFM/XX//dhX
-2ie5aFTy7C4tjh+Z6UR6/2RF+7TedISKfSM6owBcgMkOIPuCpUCejOCPgDxE77D4
-SE3mZI0Ndc8Um7mxx+E9
-=+qix
------END PGP SIGNATURE-----
-
---P6YfpwaDcfcOCJkJ--
+Thanks,
+Namhyung
