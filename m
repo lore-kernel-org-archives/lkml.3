@@ -1,35 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbbAVV7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:59:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:65400 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752135AbbAVV7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:59:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,451,1418112000"; 
-   d="scan'208";a="674407280"
-Message-ID: <54C171C1.1070000@intel.com>
-Date: Thu, 22 Jan 2015 13:55:13 -0800
-From: Tadeusz Struk <tadeusz.struk@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1754299AbbAVVzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:55:53 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:49161 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940AbbAVVzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 16:55:51 -0500
+Date: Thu, 22 Jan 2015 23:55:43 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, David Daney <ddaney.cavm@gmail.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Vinita Gupta <vgupta@caviumnetworks.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
+Message-ID: <20150122215543.GA5048@fuloong-minipc.musicnaut.iki.fi>
+References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com>
+ <20150119154357.GH21553@leverpostej>
+ <54BD580C.6030701@gmail.com>
+ <20150121165427.GA8722@leverpostej>
+ <54BFDF2B.80708@caviumnetworks.com>
 MIME-Version: 1.0
-To: Stephan Mueller <smueller@chronox.de>
-CC: Herbert Xu <herbert@gondor.apana.org.au>, linux-crypto@vger.kernel.org,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crypto: aesni: add setkey for driver-gcm-aes-aesni
-References: <2587101.YvN0IxRmOH@tachyon.chronox.de> <40625395.stBBYbAQtz@tachyon.chronox.de> <54C1403D.1010608@intel.com> <1876694.bQrN48MF7q@tauon>
-In-Reply-To: <1876694.bQrN48MF7q@tauon>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BFDF2B.80708@caviumnetworks.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 01:20 PM, Stephan Mueller wrote:
-> That would be correct. But if I understood Herbert correctly, he is 
-> creating a patch that disables these service ciphers for general usage.
+Hi,
 
-Yes, and this should also implicitly fix the problem with user space.
-Thanks,
-Tadeusz
+On Wed, Jan 21, 2015 at 09:17:31AM -0800, David Daney wrote:
+> On 01/21/2015 08:54 AM, Mark Rutland wrote:
+> >While the DTB may already exist, the string "cavium,octeon-7130-ahci"
+> >isn't in mainline, and as far as I can see has never been supported.
+> 
+> There seems to be a disconnect here.  The DTB comes from the hardware boot
+> environment.  The hardware is in some cases already deployed.  It is for all
+> practical purposes, impossible to change the DTB.
+
+It's possible to change/fix the DTB in platform code like currently
+done for the OCTEON in-tree DTBs. But that's ugly.
+
+I think there should be also a mechanism to override the DTB completely
+with a user supplied one like with kernel APPENDED_DTB on ARM.
+
+A.
