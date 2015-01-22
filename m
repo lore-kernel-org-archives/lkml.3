@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbbAVFHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:07:07 -0500
-Received: from ozlabs.org ([103.22.144.67]:59875 "EHLO ozlabs.org"
+	id S1753485AbbAVFHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 00:07:22 -0500
+Received: from ozlabs.org ([103.22.144.67]:54102 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbbAVFHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:07:03 -0500
-Date: Thu, 22 Jan 2015 16:06:57 +1100
+	id S1751013AbbAVFHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 00:07:06 -0500
+Date: Thu, 22 Jan 2015 16:07:04 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
+        Marc Zyngier <marc.zyngier@arm.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wei Huang <wei@redhat.com>, Mark Rutland <mark.rutland@arm.com>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Wei Huang <wei@redhat.com>
 Subject: linux-next: manual merge of the kvm-arm tree with the arm64 tree
-Message-ID: <20150122160657.5a2eb77e@canb.auug.org.au>
+Message-ID: <20150122160704.5ad5aeb9@canb.auug.org.au>
 X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ONXl23aLkknIcZW=bQQiPWf"; protocol="application/pgp-signature"
+ boundary="Sig_/g0g9WOLTgf6uAEXazqmdYru"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ONXl23aLkknIcZW=bQQiPWf
+--Sig_/g0g9WOLTgf6uAEXazqmdYru
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
 Hi all,
 
 Today's linux-next merge of the kvm-arm tree got a conflict in
-arch/arm64/kvm/handle_exit.c between commit c6d01a947a51 ("arm64: kvm:
-move to ESR_ELx macros") from the arm64 tree and commit 0d97f8848104
-("arm/arm64: KVM: add tracing support for arm64 exit handler") from the
-kvm-arm tree.
+arch/arm64/include/asm/kvm_arm.h between commit 6e53031ed840 ("arm64:
+kvm: remove ESR_EL2_* macros") from the arm64 tree and commit
+0d97f8848104 ("arm/arm64: KVM: add tracing support for arm64 exit
+handler") from the kvm-arm tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I fixed it up (see below, but this probably requires more work) and can
+carry the fix as necessary (no action is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm64/kvm/handle_exit.c
-index 29b184a8f3f8,6a7eb3ce7027..000000000000
---- a/arch/arm64/kvm/handle_exit.c
-+++ b/arch/arm64/kvm/handle_exit.c
-@@@ -63,10 -67,13 +69,13 @@@ static int handle_smc(struct kvm_vcpu *
-   */
-  static int kvm_handle_wfx(struct kvm_vcpu *vcpu, struct kvm_run *run)
-  {
-- 	if (kvm_vcpu_get_hsr(vcpu) & ESR_ELx_WFx_ISS_WFE)
- -	if (kvm_vcpu_get_hsr(vcpu) & ESR_EL2_EC_WFI_ISS_WFE) {
-++	if (kvm_vcpu_get_hsr(vcpu) & ESR_ELx_WFx_ISS_WFE) {
-+ 		trace_kvm_wfx_arm64(*vcpu_pc(vcpu), true);
-  		kvm_vcpu_on_spin(vcpu);
-- 	else
-+ 	} else {
-+ 		trace_kvm_wfx_arm64(*vcpu_pc(vcpu), false);
-  		kvm_vcpu_block(vcpu);
-+ 	}
+diff --cc arch/arm64/include/asm/kvm_arm.h
+index 94674eb7e7bb,3da2d3acec0b..000000000000
+--- a/arch/arm64/include/asm/kvm_arm.h
++++ b/arch/arm64/include/asm/kvm_arm.h
+@@@ -192,4 -217,46 +192,6 @@@
+  /* Hyp Prefetch Fault Address Register (HPFAR/HDFAR) */
+  #define HPFAR_MASK	(~UL(0xf))
  =20
-  	kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
- =20
+ -#define ESR_EL2_EC_UNKNOWN	(0x00)
+ -#define ESR_EL2_EC_WFI		(0x01)
+ -#define ESR_EL2_EC_CP15_32	(0x03)
+ -#define ESR_EL2_EC_CP15_64	(0x04)
+ -#define ESR_EL2_EC_CP14_MR	(0x05)
+ -#define ESR_EL2_EC_CP14_LS	(0x06)
+ -#define ESR_EL2_EC_FP_ASIMD	(0x07)
+ -#define ESR_EL2_EC_CP10_ID	(0x08)
+ -#define ESR_EL2_EC_CP14_64	(0x0C)
+ -#define ESR_EL2_EC_ILL_ISS	(0x0E)
+ -#define ESR_EL2_EC_SVC32	(0x11)
+ -#define ESR_EL2_EC_HVC32	(0x12)
+ -#define ESR_EL2_EC_SMC32	(0x13)
+ -#define ESR_EL2_EC_SVC64	(0x15)
+ -#define ESR_EL2_EC_HVC64	(0x16)
+ -#define ESR_EL2_EC_SMC64	(0x17)
+ -#define ESR_EL2_EC_SYS64	(0x18)
+ -#define ESR_EL2_EC_IABT		(0x20)
+ -#define ESR_EL2_EC_IABT_HYP	(0x21)
+ -#define ESR_EL2_EC_PC_ALIGN	(0x22)
+ -#define ESR_EL2_EC_DABT		(0x24)
+ -#define ESR_EL2_EC_DABT_HYP	(0x25)
+ -#define ESR_EL2_EC_SP_ALIGN	(0x26)
+ -#define ESR_EL2_EC_FP_EXC32	(0x28)
+ -#define ESR_EL2_EC_FP_EXC64	(0x2C)
+ -#define ESR_EL2_EC_SERROR	(0x2F)
+ -#define ESR_EL2_EC_BREAKPT	(0x30)
+ -#define ESR_EL2_EC_BREAKPT_HYP	(0x31)
+ -#define ESR_EL2_EC_SOFTSTP	(0x32)
+ -#define ESR_EL2_EC_SOFTSTP_HYP	(0x33)
+ -#define ESR_EL2_EC_WATCHPT	(0x34)
+ -#define ESR_EL2_EC_WATCHPT_HYP	(0x35)
+ -#define ESR_EL2_EC_BKPT32	(0x38)
+ -#define ESR_EL2_EC_VECTOR32	(0x3A)
+ -#define ESR_EL2_EC_BRK64	(0x3C)
+ -
+ -#define ESR_EL2_EC_xABT_xFSR_EXTABT	0x10
+ -
+ -#define ESR_EL2_EC_WFI_ISS_WFE	(1 << 0)
+ -
++ #define ESR_EL2_HVC_IMM_MASK	((1UL << 16) - 1)
++=20
+  #endif /* __ARM64_KVM_ARM_H__ */
 
---Sig_/ONXl23aLkknIcZW=bQQiPWf
+--Sig_/g0g9WOLTgf6uAEXazqmdYru
 Content-Type: application/pgp-signature
 Content-Description: OpenPGP digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUwIV1AAoJEMDTa8Ir7ZwVjYEP/RaEwKmveZcTNwqpzq/xsWWI
-J6koMCCT1HCfDjME5kvZgwuev0QTyp/xP0XDpCnyizdpH4p2nlSnUrZJpUVqiakK
-zrqSyP1sQqbp+wHw5l/9tjRZEY0DZWa6RNjeHY8hh/+XEREk94ZewrH2xiIW5kkR
-Zp56g2R4GOcwfu2kI6vRXhKhvN8IsctFqrNmrBAzubt4afiKZfoKvVYhY4QY7D+y
-ehK46eCg6dkMWXQb0NQiEynVr9gHVCLHhpq+8DK6Lo1eafpbfFx1gWlNl1qa11Hz
-vJf46gO7T+iDQhnuM4YIyu0+Bpv/yfowPmV5C8XWxYZRqZLUcRY8uzCcInvhWI7o
-w4/EL2bUm4/fCWb+Pw89soKSjuny41aAFvKKpqewA0VKLbID4iIeHGoKFfBLAn13
-N+jiaKUhTCQb0p8VrSGcF4rdyUIJDlNvPkM3KjDUKN6xUMm8NuGaddD607G5HcMG
-vND15mAmEkAMGCI/b22Se3EPIs2eZzZFDOkdFDc6OmOEo23MAbaSBw4MzUJTVoT5
-U+IaNbly1d45Lz2yk/KVP1jkmQLOjvy1+QnPFR1WXcimDVaJRChO3rzlUQ+zClbl
-6vt7Jjdk/MODuXQpjk8ogfgWC4vAiupc4kgJyGCWBmqWYJLMXP+7UxLoZb0HispQ
-NeELxEj75XAV9FUeyDe1
-=ebAR
+iQIcBAEBCAAGBQJUwIV4AAoJEMDTa8Ir7ZwVUTgQAIEcbqbKDUdgGkrfgUyjIl/4
+MM1aJbDBglSGkiUTUFI0GIa5voAC+JPDwWLj7mUCgB7VURRVSSD9dkackVIUgqvB
+2l0EOtK5003FPcQVpowvpfcF/F1WZmxnp+kBYSVnZnaEJW2EpCsnH0/stPFMUEmg
+blxwTnxdFXVYofeUAod62D+NL68PdL3SHpK7nCMnGLNTIX67dMbuATD8JpOxcGAD
+9tu1Bpq1nKAoWjHZ2RaI5V+Vd7A5ppDspHpKlwcJfwz48uMxp8nAwlcKAF/Wy0on
+8lUwxogH5YIowpha+XcuxWp5/UiXeeZZIpgBOY6l80xDoPs5xZ7ujgLD659rNsJ4
+HjHtD69QCF+yC5PifR/8JsSZmKkTlzftanSLE2AHHYNsqfo63rKrWbDdKhlrlnrS
+3AMueLwltj9Y0WBX7xqk2CRKTh6zPzfOBhnZNCG10kTrn5UIQJc2+x1ZMUU1HIgh
+Hu8u1TjfjbYJDXibxoe1iGYEPhCqdvGAHgPwDhKPZm77rFCeirwyYx8fjXDh7EJO
+XA3A2y0v3XHdaPH267HWpI4vgruB74YSqC9dGaWR4qcG1wtqTHxhGIWd+cngKCzo
+7s/Qdaf2tk/T+5u48QezxtXeNxYf9jF5LC62hMjhM0RrTmrxo21swHebUC4Z1sB6
+lj0u0IH5J32722Q59ZLy
+=Yxbq
 -----END PGP SIGNATURE-----
 
---Sig_/ONXl23aLkknIcZW=bQQiPWf--
+--Sig_/g0g9WOLTgf6uAEXazqmdYru--
