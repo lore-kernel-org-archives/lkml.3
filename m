@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbbAVM0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 07:26:48 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:45969 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbbAVM0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 07:26:45 -0500
-Date: Thu, 22 Jan 2015 07:26:40 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/5] tracing: Add new file system tracefs
-Message-ID: <20150122122640.GA25645@htj.dyndns.org>
-References: <20150121171953.823177070@goodmis.org>
- <20150121230007.GA10389@kroah.com>
- <20150122042330.GU29656@ZenIV.linux.org.uk>
+	id S1752290AbbAVM2g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 07:28:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33147 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916AbbAVM2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 07:28:32 -0500
+Message-ID: <54C0ECC7.1070308@redhat.com>
+Date: Thu, 22 Jan 2015 07:27:51 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122042330.GU29656@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: John Stultz <john.stultz@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 10/10] clocksource: Add some debug info about clocksources
+ being registered
+References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org> <1420850068-27828-11-git-send-email-john.stultz@linaro.org> <54B0881D.9090004@codeaurora.org> <CALAqxLXdTarm94oOKBoUWPUPQK4-B+EvwTxZkuV_2np3UA8bEQ@mail.gmail.com>
+In-Reply-To: <CALAqxLXdTarm94oOKBoUWPUPQK4-B+EvwTxZkuV_2np3UA8bEQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Al.
 
-On Thu, Jan 22, 2015 at 04:23:30AM +0000, Al Viro wrote:
-> I would recommend against that - kernfs is overburdened by their need to
-> accomodate cgroup weirdness.  IMO it's not a good model for anything, other
 
-That's not true.  The two big items where sysfs is complicated are the
-custom revocation implementation and namespace support, both of which
-come from its sysfs lineage.  The revocation implementation had an
-update to better support cgroup but the new interface is more generic
-than before and necessary if it wants to support self-removing files
-along with the said revocation support.
+On 01/21/2015 07:51 PM, John Stultz wrote:
+> On Fri, Jan 9, 2015 at 6:02 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> On 01/09/2015 04:34 PM, John Stultz wrote:
+>>> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+>>> index 9a0b951..c641aa7 100644
+>>> --- a/kernel/time/clocksource.c
+>>> +++ b/kernel/time/clocksource.c
+>>> @@ -770,6 +770,10 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+>>>       cs->max_idle_ns = clocks_calc_max_nsecs(cs->mult, cs->shift,
+>>>                                                cs->maxadj, cs->mask,
+>>>                                                &cs->max_cycles);
+>>> +
+>>> +     pr_info("clocksource %s: mask: 0x%llx max_cycles: 0x%llx, max_idle_ns: %lld ns\n",
+>>> +                     cs->name, cs->mask, cs->max_cycles, cs->max_idle_ns);
+>>
+>> Is this intentionally info level? Or was it supposed to be debug level
+>> per $subject?
+> 
+> Sorry for not getting back on this sooner. Since this is a
+> one-time-at-bootup message, I think enabling the pr_debug output is a
+> little too finicky for most folks to boot with. So I left it at
+> pr_info. If folks object, I can change it, but it just seems less
+> likely we'd get any useful data if it was so hidden by default.
+> 
 
-One complexity actually added for cgroup is in the mount path because
-cgroup needs to be able to create or match superblocks dynamically
-during mount time and that doesn't really jive well with how
-superblocks are managed in the vfs layer.  This part is ugly and
-intentially left that way.  This really should be cgroup specific (and
-we can't shed it at the moment) and shouldn't be used elsewhere.
-IIRC, you had some complaints about this and I wonder whether that's
-what shaped your opinion, but this is entirely isolated.  Just use
-kernfs_mount() and ignore the @new_fs_created param.
+John, I've found in the past that when a user has a problem with the kernel the
+first thing that support tells them to do is boot with "ignore_loglevel" so that
+support can take a look at the full boot log.  So while I understand your
+comment that this is a "one-time-at-bootup message" I wonder if this really
+should be debug.  It only will be useful in debug scenarios and doesn't really
+provide any true information to the user about their system.
 
-Overall, kernfs is basically the actual filesystem part of sysfs.
-None of the fundamentals changed while separating out kernfs out of
-sysfs.  You may not like kernfs but then wouldn't improving it a far
-better strategy over long haul?  I really don't think we need yet
-another pseudo vfs based filesystem in kernel and unless tracingfs is
-doing something crazy kernfs should be able to serve as a common
-foundation.
+... IMO.
 
-Thanks.
-
--- 
-tejun
+P.
