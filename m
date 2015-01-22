@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbbAVR1L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:27:11 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:39571 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645AbbAVRYz (ORCPT
+	id S1753386AbbAVR0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:26:38 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:47126 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716AbbAVRY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:24:55 -0500
+	Thu, 22 Jan 2015 12:24:56 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 2/7] serial: 8250: Move UART_BUG_QUOT workaround
-Date: Thu, 22 Jan 2015 12:24:26 -0500
-Message-Id: <1421947471-6396-3-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 3/7] serial: 8250: Refactor LCR computation
+Date: Thu, 22 Jan 2015 12:24:27 -0500
+Message-Id: <1421947471-6396-4-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1421947471-6396-1-git-send-email-peter@hurleysoftware.com>
 References: <1421947471-6396-1-git-send-email-peter@hurleysoftware.com>
@@ -21,59 +21,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The UART_BUG_QUOT workaround adjusts the divisor computed from the
-baud rate by serial8250_get_divisor(). Move the workaround into
-serial8250_get_divisor(), so that divisor-from-baud computation
-is encapsulated.
+Refactor the computation of the LCR register value from termios c_cflag
+into a new local function, serial8250_compute_lcr().
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/serial/8250/8250_core.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/tty/serial/8250/8250_core.c | 32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 3bfcfdb..fa40982 100644
+index fa40982..77afa5f 100644
 --- a/drivers/tty/serial/8250/8250_core.c
 +++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2390,8 +2390,9 @@ static void serial8250_shutdown(struct uart_port *port)
- 		serial8250_do_shutdown(port);
- }
- 
--static unsigned int serial8250_get_divisor(struct uart_port *port, unsigned int baud)
-+static unsigned int serial8250_get_divisor(struct uart_8250_port *up, unsigned int baud)
- {
-+	struct uart_port *port = &up->port;
- 	unsigned int quot;
- 
- 	/*
-@@ -2407,6 +2408,12 @@ static unsigned int serial8250_get_divisor(struct uart_port *port, unsigned int
- 	else
- 		quot = uart_get_divisor(port, baud);
- 
-+	/*
-+	 * Oxford Semi 952 rev B workaround
-+	 */
-+	if (up->bugs & UART_BUG_QUOT && (quot & 0xff) == 0)
-+		quot++;
-+
+@@ -2417,16 +2417,12 @@ static unsigned int serial8250_get_divisor(struct uart_8250_port *up, unsigned i
  	return quot;
  }
  
-@@ -2455,13 +2462,7 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
- 	baud = uart_get_baud_rate(port, termios, old,
- 				  port->uartclk / 16 / 0xffff,
- 				  port->uartclk / 16);
--	quot = serial8250_get_divisor(port, baud);
--
--	/*
--	 * Oxford Semi 952 rev B workaround
--	 */
--	if (up->bugs & UART_BUG_QUOT && (quot & 0xff) == 0)
--		quot++;
-+	quot = serial8250_get_divisor(up, baud);
+-void
+-serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+-		          struct ktermios *old)
++static unsigned char serial8250_compute_lcr(struct uart_8250_port *up,
++					    tcflag_t c_cflag)
+ {
+-	struct uart_8250_port *up = up_to_u8250p(port);
+ 	unsigned char cval;
+-	unsigned long flags;
+-	unsigned int baud, quot;
  
- 	if (up->capabilities & UART_CAP_FIFO && port->fifosize > 1) {
- 		/* NOTE: If fifo_bug is not set, a user can set RX_trigger. */
+-	switch (termios->c_cflag & CSIZE) {
++	switch (c_cflag & CSIZE) {
+ 	case CS5:
+ 		cval = UART_LCR_WLEN5;
+ 		break;
+@@ -2442,20 +2438,34 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+ 		break;
+ 	}
+ 
+-	if (termios->c_cflag & CSTOPB)
++	if (c_cflag & CSTOPB)
+ 		cval |= UART_LCR_STOP;
+-	if (termios->c_cflag & PARENB) {
++	if (c_cflag & PARENB) {
+ 		cval |= UART_LCR_PARITY;
+ 		if (up->bugs & UART_BUG_PARITY)
+ 			up->fifo_bug = true;
+ 	}
+-	if (!(termios->c_cflag & PARODD))
++	if (!(c_cflag & PARODD))
+ 		cval |= UART_LCR_EPAR;
+ #ifdef CMSPAR
+-	if (termios->c_cflag & CMSPAR)
++	if (c_cflag & CMSPAR)
+ 		cval |= UART_LCR_SPAR;
+ #endif
+ 
++	return cval;
++}
++
++void
++serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
++		          struct ktermios *old)
++{
++	struct uart_8250_port *up = up_to_u8250p(port);
++	unsigned char cval;
++	unsigned long flags;
++	unsigned int baud, quot;
++
++	cval = serial8250_compute_lcr(up, termios->c_cflag);
++
+ 	/*
+ 	 * Ask the core to calculate the divisor for us.
+ 	 */
 -- 
 2.2.2
 
