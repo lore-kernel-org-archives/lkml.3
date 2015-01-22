@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451AbbAVBBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:01:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:41738 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800AbbAVBBi (ORCPT
+	id S1753574AbbAVBCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:02:05 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:19379 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388AbbAVBBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:01:38 -0500
-Date: Wed, 21 Jan 2015 17:01:36 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v11 2/4] clk: Make clk API return per-user struct clk
- instances
-Message-ID: <20150122010136.GH27202@codeaurora.org>
-References: <1421847039-29544-1-git-send-email-tomeu.vizoso@collabora.com>
- <1421847039-29544-3-git-send-email-tomeu.vizoso@collabora.com>
+	Wed, 21 Jan 2015 20:01:49 -0500
+Message-ID: <54C04BF0.6020906@huawei.com>
+Date: Thu, 22 Jan 2015 09:01:36 +0800
+From: Li Bin <huawei.libin@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421847039-29544-3-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, Miroslav Benes <mbenes@suse.cz>
+CC: <live-patching@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lizefan@huawei.com>, <guohanjun@huawei.com>,
+        <zhangdianfang@huawei.com>, <xiexiuqi@huawei.com>
+Subject: Re: [PATCH 1/2] livepatch: Revert "livepatch: enforce patch stacking
+ semantics"
+References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-2-git-send-email-huawei.libin@huawei.com>
+In-Reply-To: <1421831262-27869-2-git-send-email-huawei.libin@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.181]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21, Tomeu Vizoso wrote:
-> @@ -2075,10 +2210,12 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
->  		}
->  	}
+On 2015/1/21 17:07, Li Bin wrote:
+> This reverts commit 83a90bb1345767f0cb96d242fd8b9db44b2b0e17.
+> 
+> The method that only allowing the topmost patch on the stack to be
+> enabled or disabled is unreasonable. Such as the following case:
+> 
+> 	- do live patch1
+> 	- disable patch1
+> 	- do live patch2 //error
+> 
+> Now, we will never be able to do new live patch unless disabing the
+> patch1 although there is no dependencies.
+> 
+
+Correct the log:
+... unless disabling the patch1 although ... -->
+... unless enabling the patch1 firstly although ...
+
+> Signed-off-by: Li Bin <huawei.libin@huawei.com>
+> ---
+>  kernel/livepatch/core.c |   10 ----------
+>  1 files changed, 0 insertions(+), 10 deletions(-)
+> 
+> diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+> index bc05d39..7861ed2 100644
+> --- a/kernel/livepatch/core.c
+> +++ b/kernel/livepatch/core.c
+> @@ -468,11 +468,6 @@ static int __klp_disable_patch(struct klp_patch *patch)
+>  	struct klp_object *obj;
+>  	int ret;
 >  
-> -	ret = __clk_init(dev, clk);
-> +	hw->clk = __clk_create_clk(hw, NULL, NULL);
-> +	ret = __clk_init(dev, hw->clk);
->  	if (!ret)
-> -		return clk;
-> +		return hw->clk;
+> -	/* enforce stacking: only the last enabled patch can be disabled */
+> -	if (!list_is_last(&patch->list, &klp_patches) &&
+> -	    list_next_entry(patch, list)->state == KLP_ENABLED)
+> -		return -EBUSY;
+> -
+>  	pr_notice("disabling patch '%s'\n", patch->mod->name);
 >  
-> +	kfree(hw->clk);
->  fail_parent_names_copy:
->  	while (--i >= 0)
->  		kfree(clk->parent_names[i]);
-
-Sigh, this patch is so huge I keep finding more things. Sorry. It
-looks like __clk_create_clk() can return an error pointer, which
-we then send directly to __clk_init. First off, we shouldn't
-kfree() that pointer if it's an error pointer. Second, we
-shouldn't crash in __clk_init() in such a situation so there
-needs to be some sort of check somewhere.
-
-BTW, please try and fixup checkpatch warnings.
-
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index da4bda8..fac3244 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -69,20 +70,22 @@ struct clk *of_clk_get(struct device_node *np, int index)
-[...]
-> -struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
-> +static struct clk *__of_clk_get_by_name(struct device_node *np, const char *name)
-
-It would be nice if this returned an already __clk_create_clk()ed
-pointer.
-
->  {
->  	struct clk *clk = ERR_PTR(-ENOENT);
+>  	for (obj = patch->objs; obj->funcs; obj++) {
+> @@ -529,11 +524,6 @@ static int __klp_enable_patch(struct klp_patch *patch)
+>  	if (WARN_ON(patch->state != KLP_DISABLED))
+>  		return -EINVAL;
 >  
-> @@ -119,7 +122,33 @@ struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
-[...]
-> +struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
-> +{
-> +	struct clk *clk = __of_clk_get_by_name(np, name);
-> +
-> +	if (!IS_ERR(clk))
-> +		clk = __clk_create_clk(__clk_get_hw(clk), np->full_name, name);
-
-Because we do it here where we know we're CONFIG_COMMON_CLK=y.
-
-> +
-> +	return clk;
-> +}
->  EXPORT_SYMBOL(of_clk_get_by_name);
-> +
-> +#else /* defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK) */
-> +
-> +static struct clk *__of_clk_get_by_name(struct device_node *np, const char *name)
-> +{
-> +	return ERR_PTR(-ENOENT);
-> +}
->  #endif
+> -	/* enforce stacking: only the first disabled patch can be enabled */
+> -	if (patch->list.prev != &klp_patches &&
+> -	    list_prev_entry(patch, list)->state == KLP_DISABLED)
+> -		return -EBUSY;
+> -
+>  	pr_notice_once("tainting kernel with TAINT_LIVEPATCH\n");
+>  	add_taint(TAINT_LIVEPATCH, LOCKDEP_STILL_OK);
 >  
->  /*
-> @@ -185,9 +229,13 @@ struct clk *clk_get(struct device *dev, const char *con_id)
->  	struct clk *clk;
->  
->  	if (dev) {
-> -		clk = of_clk_get_by_name(dev->of_node, con_id);
-> -		if (!IS_ERR(clk))
-> +		clk = __of_clk_get_by_name(dev->of_node, con_id);
-> +		if (!IS_ERR(clk)) {
-> +#if defined(CONFIG_COMMON_CLK)
-> +			clk = __clk_create_clk(__clk_get_hw(clk), dev_id, con_id);
-> +#endif
+> 
 
-And we do it here where we could remove the #ifdef.
 
->  			return clk;
-> +		}
->  		if (PTR_ERR(clk) == -EPROBE_DEFER)
->  			return clk;
->  	}
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
