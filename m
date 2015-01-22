@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325AbbAVAVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 19:21:12 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:39093 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035AbbAVAVA (ORCPT
+	id S1753441AbbAVAWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 19:22:22 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:36131 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703AbbAVAWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 19:21:00 -0500
-Message-ID: <f9cbb34c9228b2af7ed6c1c96a6aa61c.squirrel@www.codeaurora.org>
-In-Reply-To: <1702448.pOVnDx4KzI@wuerfel>
-References: <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
-    <2318041.V2OJAPu7gC@wuerfel>
-    <3ad19b16fe5c58612479f70c052d0045.squirrel@www.codeaurora.org>
-    <1702448.pOVnDx4KzI@wuerfel>
-Date: Thu, 22 Jan 2015 00:20:59 -0000
-Subject: Re: [PATCH] ethernet: atheros: Add nss-gmac driver
-From: wstephen@codeaurora.org
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: wstephen@codeaurora.org, jcliburn@gmail.com, grant.likely@linaro.org,
-        robh+dt@kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, devicetree@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22-4.el6
+	Wed, 21 Jan 2015 19:22:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+In-Reply-To: <alpine.DEB.2.10.1501211452580.2716@chino.kir.corp.google.com>
+References: <20150107172452.GA7922@node.dhcp.inet.fi>
+	<20150114152225.GB31484@google.com>
+	<20150114233630.GA14615@node.dhcp.inet.fi>
+	<alpine.DEB.2.10.1501211452580.2716@chino.kir.corp.google.com>
+Date: Thu, 22 Jan 2015 00:22:14 +0000
+X-Google-Sender-Auth: nCqIpEOwU2OLlx5AyTkbVIeD3E0
+Message-ID: <CA+yH71fNZSYVf1G+UUp3N6BhPhT0VJ4aGY=uPGbSD2raV55E3Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] task_mmu: Add user-space support for resetting
+ mm->hiwater_rss (peak RSS)
+From: Primiano Tucci <primiano@chromium.org>
+To: David Rientjes <rientjes@google.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Petr Cermak <petrcermak@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Right. For review purposes, I think it would be helpful to split this
-> huge patch into several steps then:
->
-> - add a base driver
-> - add the overlay interface
-> - add the nss driver
->
-> Ideally more of them.
+On Wed, Jan 21, 2015 at 10:58 PM, David Rientjes <rientjes@google.com> wrote:
+> I think the bigger concern would be that this, and any new line such as
+> resettable_hiwater_rss, invalidates itself entirely.  Any process that
+> checks the hwm will not know of other processes that reset it, so the
+> value itself has no significance anymore.
+>  It would just be the mark since the last clear at an unknown time.
 
-The nss-drv driver is open sourced but we are currently not planning to
-upstream to linux kernel yet because we are still actively adding new
-features
-https://www.codeaurora.org/cgit/quic/qsdk/oss/lklm/nss-drv
+How is that different from the current logic of clear_refs and the
+corresponding PG_Referenced bit?
 
-> Thanks for the description, this sounds very interesting indeed. I do
-> have more questions though: how do you get the rules into the NSS driver?
-> Does this get handled transparently by the openvswitch driver or
-> did you have to add new user interfaces for it?
->
-> 	Arnd
->
+> Userspace can monitor the rss of a
+> process by reading /proc/pid/stat, there's no need for the kernel to do
+> something that userspace can do.
 
-No, we are not using openvswitch. We have a connection manager monitoring
-conntrack events and creates rules then send it through the interface
-built in nss-drv.
-
-Thanks,
-Stephen
-
+I disagree here. The driving motivation of this patch is precisely the
+opposite. There are peak events that last for very short time (order:
+10-100 ms) and are practically invisible from user-space (even doing
+something awkward like polling in a tight loop). Concrete examples
+are: GPU memory transfers, image decoding, compression /
+decompression.
+These kinds of tasks, which use scratch buffers for few ms, can create
+significant (yet short lasting) memory pressure which is desirable to
+monitor.
