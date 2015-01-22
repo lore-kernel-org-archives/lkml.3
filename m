@@ -1,141 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbbAVBYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:24:34 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:51574 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbbAVBYY (ORCPT
+	id S1753035AbbAVB1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:27:46 -0500
+Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:33380 "EHLO
+	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751878AbbAVB1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:24:24 -0500
+	Wed, 21 Jan 2015 20:27:38 -0500
+Message-ID: <54C05207.6010306@nexus-software.ie>
+Date: Thu, 22 Jan 2015 01:27:35 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKzif=vp6gn5ZtrTx-JTN367qFphobnt9s=awbaafwoUw@mail.gmail.com>
-References: <CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
-	<CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
-	<20150116155923.GK12302@n2100.arm.linux.org.uk>
-	<CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
-	<20150116161752.GL12302@n2100.arm.linux.org.uk>
-	<CAGXu5j+XHFNyhaBndQr1Q2uthsFP9ZQGbaw5hofDmXyKXZ-H5g@mail.gmail.com>
-	<CAGXu5j+9p1T29NoHnCNywd0T=H2mzWhCou5nSRfXZktEOC7_=A@mail.gmail.com>
-	<20150119092002.GA32131@arm.com>
-	<CAGXu5jJ8vphdjbqy7OojE=V70vLPs2impJ6i561JafrLYXxvbw@mail.gmail.com>
-	<20150120224518.GL26493@n2100.arm.linux.org.uk>
-	<20150120230458.GM26493@n2100.arm.linux.org.uk>
-	<CAGXu5jKzif=vp6gn5ZtrTx-JTN367qFphobnt9s=awbaafwoUw@mail.gmail.com>
-Date: Thu, 22 Jan 2015 10:24:22 +0900
-Message-ID: <CACZ9PQXd_UpnDjgdvG884OpVb_oH_VtZB4Ka9K2Ex6JM4zecyQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of thread_info->syscall
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, dvhart@infradead.org,
+        boon.leong.ong@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
+References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie>	<1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie> <CAHp75VfNzXo=gkOhjkEGn+bSqk2kr+hOD_5PNxq4CsLjOqtG=w@mail.gmail.com>
+In-Reply-To: <CAHp75VfNzXo=gkOhjkEGn+bSqk2kr+hOD_5PNxq4CsLjOqtG=w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 8:32 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Tue, Jan 20, 2015 at 3:04 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Tue, Jan 20, 2015 at 10:45:19PM +0000, Russell King - ARM Linux wrote:
->>> Well, the whole question is this: is restarting a system call like
->>> usleep() really a separate system call, or is it a kernel implementation
->>> detail?
->>>
->>> If you wanted seccomp to see this, what would be the use case?  Why
->>> would seccomp want to block this syscall?  Does it make sense for
->>> seccomp to block this syscall when it doesn't block something like
->>> usleep() and then have usleep() fail just because the thread received
->>> a signal?
->>>
->>> I personally regard the whole restart system call thing as a purely
->>> kernel internal thing which should not be exposed to userland.  If
->>> we decide that it should be exposed to userland, then it becomes part
->>> of the user ABI, and it /could/ become difficult if we needed to
->>> change it in future - and I'd rather not get into the "oh shit, we
->>> can't change it because that would break app X" crap.
->>
->> Here's a scenario where it could become a problem:
->>
->> Let's say that we want to use seccomp to secure some code which issues
->> system calls.  We determine that the app uses system calls which don't
->> result in the restart system call being issued, so we decide to ask
->> seccomp to block the restart system call.  Some of these system calls
->> that the app was using are restartable system calls.
->>
->> When these system calls are restarted, what we see via ptrace etc is
->> that the system call simply gets re-issued as its own system call.
->>
->> In a future kernel version, we decide that we could really do with one
->> of those system calls using the restart block feature, so we arrange
->> for it to set up the restart block, and return -ERESTART_BLOCK.  That's
->> fine for most applications, but this app now breaks.
->>
->> The side effect of that breakage is that we have to revert that kernel
->> change - because we've broken userland, and that's simply not allowed.
->>
->> Now look at the alternative: we don't make the restart syscall visible.
->> This means that we hide that detail, and we actually reflect the
->> behaviour that we've had for the other system call restart mechanisms,
->> and we don't have to fear userspace breakage as a result of switching
->> from one restart mechanism to another.
->>
->> I am very much of the opinion that we should be trying to limit the
->> exposure of inappropriate kernel internal details to userland, because
->> userland has a habbit of becoming reliant on them, and when it does,
->> it makes kernel maintanence unnecessarily harder.
+On 21/01/15 20:57, Andy Shevchenko wrote:
 >
-> I totally agree with you. :) My question here is more about what we
-> should do with what we currently have since we have some unexpected
-> combinations.
+> Few nitpicks and comments below.
 >
-> There is already an __NR_restart_syscall syscall and it seems like
-> it's already part of the userspace ABI:
->  - it is possible to call it from userspace directly
->  - seccomp "sees" it
->  - ptrace doesn't see it
+>> +/*
+>> + * IMR agent access mask bits
+>> + * See section 12.7.4.7 from quark-x1000-datasheet.pdf for register
+>> + * definitions
 >
-> Native ARM64 hides the restart from both seccomp and ptrace, and this
-> seems like the right idea, except that restart_syscall is still
-> callable from userspace. I don't think there's a way to make that
-> vanish, which means we'll always have an exposed syscall. If anything
-> goes wrong with it (which we've been quite close to recently[1]),
-> there would be no way to have seccomp filter it.
->
-> So, at the least, I'd like arm64 to NOT hide restart_syscall from
-> seccomp, and at best I'd like both arm and arm64 to (somehow) entirely
-> remove restart_syscall from the userspace ABI so it wouldn't need to
-> be filtered, and wouldn't become a weird ABI hiccup as you've
-> described.
->
-> I fail to imagine a way to remove restart_syscall from userspace, so
-> I'm left with wanting parity of behavior between ARM and ARM64 (and
-> x86). What's the right way forward?
+> What about dots at the end of sentences?
 
-My sufferings are an opposite of what seccompt expects: currently I do
-not see any possible way (from userspace) to get syscall number which was
-restarted, because at some given time userspace checks the procfs
-syscall file and sees NR_restart there, without any chance to understand
-what exactly was restarted (I am talking about some kind of debugging
-tool which does dead-lock analysis of stuck tasks).
+Murphy's law says - no matter how many times you proof read for full 
+stop you'll miss at least one :)
 
-I totally agree with Russell not to provide kernel guts to userspace,
-but it is already done.  Too late.
+>> +#define pr_fmt(fmt) "imr: " fmt
+>
+> Maybe more usual
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-So probably there is a need to split syscall on two numbers:
-real and effective.  Real number we have right now on x86.
+Sure.
 
-And this should be done for both ptrace and procfs syscall file.
-(am I right that only for ARM we already have PTRACE_SET_SYSCALL?
- seems we can add also real/effective getter)
+>> +       ret = iosf_mbi_read(QRK_MBI_UNIT_MM, QRK_MBI_MM_READ,
+>> +                               reg++, &imr->rmask);
+>> +       if (ret)
+>> +               return ret;
+>> +
+>> +       return iosf_mbi_read(QRK_MBI_UNIT_MM, QRK_MBI_MM_READ,
+>> +                               reg, &imr->wmask);
+>
+> I would keep this in the same style like
+> ret =
+> if (ret)
+>   return ret;
+>
+> return 0;
+>
+> It might be easy to extend if needed, though it's a really minor change.
+
+No problem
+
+>> +
+>> +       ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
+>> +                               reg++, imr->rmask);
+>> +       if (ret)
+>> +               goto done;
+>> +
+>> +       ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
+>> +                               reg, imr->wmask);
+>
+> Wouldn't be reg++ here as well? Below you substitute full offset which
+> I think points just to next register.
+
+I don't think we want to increment below..
+
+>
+>> +       if (ret)
+>> +               goto done;
+>> +
+>> +       /* Lock bit must be set separately to addr_lo address bits */
+>> +       if (lock) {
+>> +               imr->addr_lo |= IMR_LOCK;
+>> +               ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
+>> +                                       reg - IMR_LOCK_OFF, imr->addr_lo);
+>> +       }
+
+..because we calculate an offset anyway. An additional increment would 
+just be unnecessary cycles.
+
+>
+> Could it fit one line less?
+
+Yes. Will change.
+
+>> +
+>> +#ifdef CONFIG_DEBUG_FS
+>> +/**
+>> + * imr_dbgfs_state_show
+>> + * Print state of IMR registers
+>> + *
+>> + * @s:         pointer to seq_file for output
+>> + * @unused:    unused parameter
+>> + * @return:    0 on success or error code passed from mbi_iosf on failure
+>> + */
+>> +static int imr_dbgfs_state_show(struct seq_file *s, void *unused)
+>
+> I didn't remembter if I told you, but please use s->private for the
+> imr_dev pointer.
+> Everywhere in debugfs calls and if possible in other functions as well.
+
+No missed s->private. Will incorporate for V3.
+
+>> +}
+>> +
+>> +/**
+>> + * imr_debugfs_unregister
+>> + * Unregister debugfs hooks
+>> + *
+>> + * @imr:       IMR structure representing address and access masks
+>> + * @return:
+>> + */
+>> +static void imr_debugfs_unregister(void)
+>> +{
+>> +       if (!imr_dev.file)
+>> +               return;
+>
+> Redundant check. I think I told you that already.
+
+I think you did. V3
+
+>> +static void __init imr_fixup_memmap(void)
+>> +{
+>> +       unsigned long base  = virt_to_phys(&_text);
+>> +       unsigned long size = virt_to_phys(&__end_rodata) - base;
+>
+> Shouldn't be phys_addr_t ?
+> Oh, It might be good for all address parameters in the introduced API.
+
+Well the reference MTRR code doesn't do phs_addr_t
+OTOH so what. I think phys_addr_t is more representative of the data 
+being passed, so will include @ V3.
+
+>> +               pr_info("protecting kernel .text - .rodata: %ldk (%p - %p)\n",
+>> +                       size / 1024, &_text, &__end_rodata);
+>
+> size >> 10
+
+Andy.
+
+It was size >> 10 for V1 and you called it out as a magic number :)
+
+IMO, size / 1024 requires less thought to understand when reading the code.
+
+>> +
+>> +#ifdef CONFIG_DEBUG_IMR_SELFTEST
+>> +       /* Run optional self test */
+>> +       imr_self_test(base, size);
+>> +#endif
+>
+> I think it makes sense to move this piece to the init.
+> I don't see what is exceptional in this function that test belongs here.
+
+Fair enough.
+
+>> +#ifdef CONFIG_DEBUG_FS
+>> +       ret = imr_debugfs_register();
+>> +       if (ret != 0)
+>> +               return ret;
+>
+> It's non-fatal error.
+> Thus,
+> if (ret)
+>   pr_warn("DebugFS wasn't initialized\n");
+>
+> Move it after we have imr_dev in place and supply it to debugfs as a
+> private pointer.
+
+Agree
+
+>> + * return:
+>> + */
+>> +static void __exit imr_exit(void)
+>> +{
+>> +#ifdef CONFIG_DEBUG_FS
+>
+> I suspect you may remove all those ifdefs and compiler should shrink
+> not used code since debugfs has the stubs.
+>
+>> +       imr_debugfs_unregister();
+>> +#endif
+>> +}
+
+Hrmm. I'll revist that @ V3.
+
+Thanks for the quick feedback.
 
 --
-Roman
+BOD
