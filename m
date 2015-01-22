@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbbAVMXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 07:23:41 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:47115 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbbAVMXg (ORCPT
+	id S1752166AbbAVMYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 07:24:24 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:33991 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029AbbAVMYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 07:23:36 -0500
-Message-ID: <54C0EBC5.7060606@linaro.org>
-Date: Thu, 22 Jan 2015 13:23:33 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 22 Jan 2015 07:24:21 -0500
 MIME-Version: 1.0
-To: Baruch Siach <baruch@tkos.co.il>, Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/2] clocksource: devicetree: document Conexant Digicolor
- timer binding
-References: <cover.1421821466.git.baruch@tkos.co.il> <6812ad4ac585e40ad7d8282eef1d64be8bc6eaa5.1421821466.git.baruch@tkos.co.il>
-In-Reply-To: <6812ad4ac585e40ad7d8282eef1d64be8bc6eaa5.1421821466.git.baruch@tkos.co.il>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABuKBeKGbxR8YQcVPJyZDpnVsNUsTxQQhsisW_F2L13zfgeyjw@mail.gmail.com>
+References: <1421054073-43468-1-git-send-email-eddie.huang@mediatek.com>
+	<1421054073-43468-3-git-send-email-eddie.huang@mediatek.com>
+	<CABuKBeKGbxR8YQcVPJyZDpnVsNUsTxQQhsisW_F2L13zfgeyjw@mail.gmail.com>
+Date: Thu, 22 Jan 2015 13:24:19 +0100
+Message-ID: <CABuKBeKJGx8mrjd+izR1zjxQNcWF+T2uUK=MbMbHYrXdRDTOyA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/4] irqchip: mtk-sysirq: Get irq number from register
+ resource size
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Eddie Huang <eddie.huang@mediatek.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Olof Johansson <olof@lixom.net>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        =?UTF-8?B?WUggQ2hlbiAo6Zmz5pix6LGqKQ==?= <yh.chen@mediatek.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 07:36 AM, Baruch Siach wrote:
-> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-
-Please add a changelog and a more verbose description: see for example 
-commit 2f2b7fb2 or 926b65e2. If there is a public documentation please 
-add a link to it or give a quick description of how the timer behaves.
-
-Also that will help to review the code in the timer.
-
-> ---
->   .../devicetree/bindings/timer/digicolor-timer.txt      | 18 ++++++++++++++++++
->   1 file changed, 18 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/timer/digicolor-timer.txt
+2015-01-13 14:12 GMT+01:00 Matthias Brugger <matthias.bgg@gmail.com>:
+> 2015-01-12 10:14 GMT+01:00 Eddie Huang <eddie.huang@mediatek.com>:
+>> From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+>>
+>> Originally mtk-sysirq hardcoded supported irq number to 224. This
+>> was fine since all SoCs before support the same number of irqs for
+>> intpol.
+>>
+>> However MT8173 intpol support 32 more irq pins, changes to get
+>> irq number from register resource size to suppor MT8173 properly.
+>>
+>> Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+>> Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
+>> ---
+>>  drivers/irqchip/irq-mtk-sysirq.c | 18 +++++++++++-------
+>>  1 file changed, 11 insertions(+), 7 deletions(-)
+>>
 >
-> diff --git a/Documentation/devicetree/bindings/timer/digicolor-timer.txt b/Documentation/devicetree/bindings/timer/digicolor-timer.txt
-> new file mode 100644
-> index 000000000000..d1b659bbc29f
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/timer/digicolor-timer.txt
-> @@ -0,0 +1,18 @@
-> +Conexant Digicolor SoCs Timer Controller
-> +
-> +Required properties:
-> +
-> +- compatible : should be "cnxt,cx92755-timer"
-> +- reg : Specifies base physical address and size of the "Agent Communication"
-> +  timer registers
-> +- interrupts : Contains 8 interrupts, one for each timer
-> +- clocks: phandle to the main clock
-> +
-> +Example:
-> +
-> +	timer@f0000fc0 {
-> +		compatible = "cnxt,cx92755-timer";
-> +		reg = <0xf0000fc0 0x40>;
-> +		interrupts = <19>, <31>, <34>, <35>, <52>, <53>, <54>, <55>;
-> +		clocks = <&main_clk>;
-> +	};
+> Jason, Thomas, will you take this patch through your branch?
+> I will take the rest of the series.
 >
+> Best regards,
+> Matthias
+>
+> --
+> motzblog.wordpress.com
 
+Hi Thomas, hi Jason,
+
+do you have any comments on this patch?
+
+Cheers,
+Matthias
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+motzblog.wordpress.com
