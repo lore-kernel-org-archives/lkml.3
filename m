@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750789AbbAVFJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:09:28 -0500
-Received: from ozlabs.org ([103.22.144.67]:60117 "EHLO ozlabs.org"
+	id S1752691AbbAVFMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 00:12:21 -0500
+Received: from mail.kernel.org ([198.145.29.136]:54923 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829AbbAVFJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:09:18 -0500
-Date: Thu, 22 Jan 2015 16:09:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Mario Smarduch <m.smarduch@samsung.com>
-Subject: linux-next: manual merge of the kvm-arm tree with the rcu tree
-Message-ID: <20150122160911.07d2ed62@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1750799AbbAVFMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 00:12:18 -0500
+Date: Thu, 22 Jan 2015 06:12:06 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, lee.jone@linaro.org,
+        broonie@kernel.org, dbaryshkov@gmail.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, cw00.choi@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com
+Subject: Re: [PATCH v4 0/2] power: rt5033: Add Richtek RT533 drivers
+Message-ID: <20150122051205.GC19172@earth.universe>
+References: <1421899601-19327-1-git-send-email-beomho.seo@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/tc.QuaDu7qAnBtk=k85YWqE"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="uQr8t48UFsdbeI+V"
+Content-Disposition: inline
+In-Reply-To: <1421899601-19327-1-git-send-email-beomho.seo@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/tc.QuaDu7qAnBtk=k85YWqE
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+--uQr8t48UFsdbeI+V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Today's linux-next merge of the kvm-arm tree got a conflict in
-arch/arm64/kvm/Kconfig between commit 83fe27ea5311 ("rcu: Make SRCU
-optional by using CONFIG_SRCU") from the rcu tree and commit
-7276030a082c ("KVM: arm/arm64: Enable Dirty Page logging for ARMv8")
-from the kvm-arm tree.
+Hi,
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+On Thu, Jan 22, 2015 at 01:06:38PM +0900, Beomho Seo wrote:
+> This patchset adds driver for Richtek rt5033 chip The chip contains
+> switching charge mode Li-Ion/Li-Polymer battery charger, fuelgauge.
+> Additionally, This includes document for device tree of RT5033 device.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks, applied.
 
-diff --cc arch/arm64/kvm/Kconfig
-index b334084d3675,3ce389b3c21c..000000000000
---- a/arch/arm64/kvm/Kconfig
-+++ b/arch/arm64/kvm/Kconfig
-@@@ -26,7 -27,7 +27,8 @@@ config KV
-  	select KVM_ARM_HOST
-  	select KVM_ARM_VGIC
-  	select KVM_ARM_TIMER
-+ 	select KVM_GENERIC_DIRTYLOG_READ_PROTECT
- +	select SRCU
-  	---help---
-  	  Support hosting virtualized guest machines.
- =20
+-- Sebastian
 
---Sig_/tc.QuaDu7qAnBtk=k85YWqE
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+--uQr8t48UFsdbeI+V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1
 
-iQIcBAEBCAAGBQJUwIX7AAoJEMDTa8Ir7ZwVfrsP/1/saatvyS7RobB/daFKawLd
-nSusvFhKY5T8ic+6kAfHXnkQ0dBxM2mxWQvsSBo6fdjDHaqVsXSOmv0bhBzaBDS1
-3fRuzDiMA1J5CwYv/zUADnFtLzS2R34ifHlbskK4y3Ccx564tYQTPkSmNoJuINIB
-MqiYHYCohJkqJIjYTvbEgJZ8mUS/vNCtBIOH98X4hwx0urfXGMRF0uI5YzfNjbwe
-53bDpZ8+MeBjc36f8iY6TFHKeBVCqvQYaiBEhRVpOj8Tcq8iPF2u7y/JKIxcJxKF
-WviYxxoqvUhuRNTusip5yvfH/ZcE64BpqKETAkbGHck16faA82KiEqYcrz03LHYz
-HGkOR84jj6iR5LMKIQ2Asg7AZ5JK+mw4DCfFhQnc1+RBIuWXBrSsLnL09CvG0UX8
-nUcm06J7VNin7gSdzHEA0iig6FH/E9Qt9kxAuf8YIEi4nbYb74KFg7YZUVlXRe7W
-cn2tdph+5hyWXm9otaqHSBBDtYZBqXJw8P1u0N893zR5GmxwoHdybiYtYeXiJg7e
-WBQoeYq/0t4hjXbz6MtkYIdl9T1nn5Zg2Rxt4zR8qyV4ajsNj/q7x7rFXVPQ47t4
-iOJ2h7VyNoMKWcUoPD6I+vlhgSnQzU5S7ZpSMSQ2XCSAZHl6eG/OLoeLtdH4NDen
-1xmbq4M7gBf0fGBz2ZH4
-=xXF+
+iQIcBAEBCgAGBQJUwIaiAAoJENju1/PIO/qa3bYQAJ9Ir4TKmRq6V+aicywjGOVi
+jaOxLf4edYqORMSujuRYyE/CJAC3dbOgAhvId8oDEO74RrqqWhDTIWpJySCPjbsl
+vWpuP0uPSXwIRfICLnUpigk4kmG6ZWQ2OwoCMCgq4BmRX1notPCxq3LK2wyrEA6g
+H0apy57x/G8z24BWUB5ym1ojM+zpRTMacN9Wfw3wq1HtAOQ/8pzH5n1pepKW5hvL
+IblAAFRDuGuBv89rXQ02x52MbqNdeqYOCF1jNSmyQoZzI8XQx6pBES1TpZGyKQHi
+dp5jtYA5Q4eE5tbyJKJRcrrsPZUz5ZCPeRJyfdYmyhdvTNZV6d3BZYPc7U100s9D
+NSev7hiLGdqH7pUhpB9+sgZ4Vsapo8WuLPjr2mVoutdh45Kv4QFYn1E7R+VLqKAb
+vTsceKgIVdezKuCcK82MDJgsMRAM2ZEzo/Q1+qh6FgJsIWdHR6D03sQfRxf6oY1g
+OLznqA42utioupn0y6QGs2RGV9WpQ09Ydm5P7qZGBL5n8xCWEXBPLD1vFBHk87xP
+D51j7mlD0p0mzet7vdPGfWB5Uac6grVG3DiC45o5UnKJwvRCurdrHXmb03yiEyF+
+mGArZ0kAjuXCQRnAVE0Q4bwez+845OcwRbjEiNHbuEMu6izxybxsQU1v9h0pEpz5
+ntC4TdPlr9l3Mgsg573Q
+=kqS0
 -----END PGP SIGNATURE-----
 
---Sig_/tc.QuaDu7qAnBtk=k85YWqE--
+--uQr8t48UFsdbeI+V--
