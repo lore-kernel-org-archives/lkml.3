@@ -1,87 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbbAVGBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 01:01:13 -0500
-Received: from know-smtprelay-omc-3.server.virginmedia.net ([80.0.253.67]:50403
-	"EHLO know-smtprelay-omc-3.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829AbbAVGBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 01:01:01 -0500
-X-Greylist: delayed 495 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 01:01:00 EST
-X-Originating-IP: [82.33.62.46]
-X-Spam: 0
-X-Authority: v=2.1 cv=N7qnFgNB c=1 sm=1 tr=0 a=43HWeVr0mW5rhQls5iFsjw==:117
- a=43HWeVr0mW5rhQls5iFsjw==:17 a=5IRWAbXhAAAA:8 a=M1kyBYkWWGkA:10
- a=kj9zAlcOel0A:10 a=YNv0rlydsVwA:10 a=aIdt2sKeyWLdsn2Bib4A:9 a=CjuIK1q_8ugA:10
-Date: Thu, 22 Jan 2015 05:52:42 +0000
-From: James Dingwall <james@dingwall.me.uk>
-To: linux-kernel@vger.kernel.org
-Subject: Linux 3.18.2 / xen 4.4.1 dom0 - microcode oops
-Message-ID: <20150122055242.GA11089@dingwall.me.uk>
+	id S1752678AbbAVFxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 00:53:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58604 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbbAVFxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 00:53:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAPAsAGyXo=AMCU-2TbrrY=MPorg+Nd+WYS5nCAcjELZs91r4AQ@mail.gmail.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
+	<54C042D2.4040809@oracle.com>
+	<CAPAsAGyXo=AMCU-2TbrrY=MPorg+Nd+WYS5nCAcjELZs91r4AQ@mail.gmail.com>
+Date: Thu, 22 Jan 2015 09:53:06 +0400
+Message-ID: <CAPAsAGyMyq_anQjErLa=L-0K3KmghMjoqzi0AdZOADTAECn1HA@mail.gmail.com>
+Subject: Re: [PATCH v9 00/17] Kernel address sanitizer - runtime memory debugger.
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: multipart/mixed; boundary=001a11c3d66c3ec2ac050d374977
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--001a11c3d66c3ec2ac050d374977
+Content-Type: text/plain; charset=UTF-8
 
-Since 3.18.2 I am getting the oops below during boot whilst running as a dom0 under xen 4.4.1 / 4.5.0.  Is this a known issue or worth bisecting to identify the exact commit which causes this?
+2015-01-22 8:34 GMT+03:00 Andrey Ryabinin <ryabinin.a.a@gmail.com>:
+> 2015-01-22 3:22 GMT+03:00 Sasha Levin <sasha.levin@oracle.com>:
+>> On 01/21/2015 11:51 AM, Andrey Ryabinin wrote:
+>>> Changes since v8:
+>>>       - Fixed unpoisoned redzones for not-allocated-yet object
+>>>           in newly allocated slab page. (from Dmitry C.)
+>>>
+>>>       - Some minor non-function cleanups in kasan internals.
+>>>
+>>>       - Added ack from Catalin
+>>>
+>>>       - Added stack instrumentation. With this we could detect
+>>>           out of bounds accesses in stack variables. (patch 12)
+>>>
+>>>       - Added globals instrumentation - catching out of bounds in
+>>>           global varibles. (patches 13-17)
+>>>
+>>>       - Shadow moved out from vmalloc into hole between vmemmap
+>>>           and %esp fixup stacks. For globals instrumentation
+>>>           we will need shadow backing modules addresses.
+>>>           So we need some sort of a shadow memory allocator
+>>>           (something like vmmemap_populate() function, except
+>>>           that it should be available after boot).
+>>>
+>>>           __vmalloc_node_range() suits that purpose, except that
+>>>           it can't be used for allocating for shadow in vmalloc
+>>>           area because shadow in vmalloc is already 'allocated'
+>>>           to protect us from other vmalloc users. So we need
+>>>           16TB of unused addresses. And we have big enough hole
+>>>           between vmemmap and %esp fixup stacks. So I moved shadow
+>>>           there.
+>>
+>> I'm not sure which new addition caused it, but I'm getting tons of
+>> false positives from platform drivers trying to access memory they
+>> don't "own" - because they expect to find hardware there.
+>>
+>
+> To be sure, that this is really false positives, could you try with
+> patches in attachment?
 
-Thanks,
-James
+Attaching properly formed patches
 
-[  173.735541] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[  173.735789] IP: [<ffffffff8134e7c2>] misc_deregister+0x50/0xa5
-[  173.735958] PGD 71480067 PUD 71bc6067 PMD 0 
-[  173.736077] Oops: 0002 [#1] SMP 
-[  173.736152] Modules linked in: it87 hwmon_vid autofs4 nfsd xen_pciback xen_gntalloc bridge stp llc ipv6 rbd ceph libceph openvswitch geneve vxlan ip6_udp_tunnel udp_tunnel tun tmem 
-xen_acpi_processor xen_gntdev xen_blkback xen_netback i915 fbcon bitblit softcursor font tileblit video drm_kms_helper snd_hda_codec_realtek snd_hda_codec_generic coretemp microcode(-) drm lpc_ich 
-i2c_i801 mfd_core snd_hda_intel firewire_ohci r8169 mii ata_generic evdev e1000e snd_hda_controller rtc_cmos i2c_algo_bit snd_hda_codec i2c_core cfbfillrect cfbimgblt cfbcopyarea backlight fb 
-snd_pcm processor fbdev snd_hwdep snd_timer button intel_agp intel_gtt snd parport_pc parport thermal_sys dm_zero dm_thin_pool dm_persistent_data dm_bio_prison xts lrw gf128mul glue_helper 
-ablk_helper cryptd aes_x86_64 iscsi_tcp libiscsi_tcp
-[  173.738197]  libiscsi scsi_transport_iscsi tg3 ptp pps_core libphy hwmon e1000 fuse btrfs ext4 jbd2 linear raid0 dm_raid raid1 raid10 dm_snapshot dm_bufio dm_crypt dm_mirror dm_region_hash 
-dm_log firewire_core hid_sunplus hid_samsung hid_pl hid_petalynx hid_gyration usbhid ohci_hcd uhci_hcd usb_storage ehci_pci ehci_hcd megaraid_sas 3w_xxxx qla1280 aic7xxx scsi_transport_spi sr_mod 
-cdrom sg ahci libahci sata_nv sata_sil pata_amd libata
-[  173.738197] CPU: 1 PID: 5381 Comm: rmmod Tainted: G        W      3.18.2 #118
-[  173.738197] Hardware name: Gigabyte Technology Co., Ltd. G33M-S2/G33M-S2, BIOS F7K 07/31/2009
-[  173.738197] task: ffff880073dca940 ti: ffff880071434000 task.ti: ffff880071434000
-[  173.738197] RIP: e030:[<ffffffff8134e7c2>]  [<ffffffff8134e7c2>] misc_deregister+0x50/0xa5
-[  173.738197] RSP: e02b:ffff880071437eb8  EFLAGS: 00010247
-[  173.738197] RAX: 0000000000000000 RBX: ffffffffa0511e20 RCX: 00000028739a828b
-[  173.738197] RDX: 0000000000000000 RSI: ffff880073dc0604 RDI: ffff880078866840
-[  173.738197] RBP: ffff880071437ec8 R08: 00000000bfff1433 R09: ffff88007f68a0b0
-[  173.738197] R10: 0000000000007ff0 R11: 0000000000000000 R12: 00000000ffffff87
-[  173.738197] R13: 0000000000000800 R14: 00000000019c11c0 R15: 00000000019c1010
-[  173.738197] FS:  00007f7ac2926700(0000) GS:ffff88007f680000(0000) knlGS:0000000000000000
-[  173.738197] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  173.738197] CR2: 0000000000000008 CR3: 0000000072886000 CR4: 0000000000002660
-[  173.738197] Stack:
-[  173.738197]  ffff88007f6113c0 0000000000000000 ffff880071437ee8 ffffffffa0511253
-[  173.738197]  0000000000000000 ffffffffa0511f30 ffff880071437f78 ffffffff81093fdf
-[  173.738197]  00000000c22d6d00 ffffffffa0511f30 ffff880000000800 ffff880071437efc
-[  173.738197] Call Trace:
-[  173.738197]  [<ffffffffa0511253>] microcode_exit+0x20/0xb1 [microcode]
-[  173.738197]  [<ffffffff81093fdf>] SyS_delete_module+0x118/0x1a6
-[  173.738197]  [<ffffffff8100af73>] ? do_notify_resume+0x6a/0x78
-[  173.738197]  [<ffffffff814caae9>] system_call_fastpath+0x12/0x17
-[  173.738197] Code: f1 07 64 81 e8 3a 70 cf ff b8 ea ff ff ff eb 6b 48 c7 c7 20 fa 71 81 e8 1a a4 17 00 48 8b 43 20 48 8b 53 18 48 8b 3d e6 73 57 00 <48> 89 42 08 48 89 10 48 b8 00 01 10 00 00 00 
-ad de 8b 33 48 89 
-[  173.738197] RIP  [<ffffffff8134e7c2>] misc_deregister+0x50/0xa5
-[  173.738197]  RSP <ffff880071437eb8>
-[  173.738197] CR2: 0000000000000008
-[  173.784081] ---[ end trace 0ab648576ba0af94 ]---
+--001a11c3d66c3ec2ac050d374977
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-backlight-da9052_bl-terminate-da9052_wled_ids-array-.patch"
+Content-Disposition: attachment; 
+	filename="0001-backlight-da9052_bl-terminate-da9052_wled_ids-array-.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i57ylfp93
 
+RnJvbSA4YWNhMjhkYzRkZjJlZDU5N2Y0ZmUwZDQ5NDY4MDIxZGI1ZjI5YzYxIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmRyZXkgUnlhYmluaW4gPGEucnlhYmluaW5Ac2Ftc3VuZy5j
+b20+CkRhdGU6IFRodSwgMjIgSmFuIDIwMTUgMTI6NDQ6NDIgKzAzMDAKU3ViamVjdDogW1BBVENI
+IDEvM10gYmFja2xpZ2h0OiBkYTkwNTJfYmw6IHRlcm1pbmF0ZSBkYTkwNTJfd2xlZF9pZHMgYXJy
+YXkKIHdpdGggZW1wdHkgZWxlbWVudAoKQXJyYXkgb2YgcGxhdGZvcm1fZGV2aWNlX2lkIGVsZW1l
+bnRzIHNob3VsZCBiZSB0ZXJtaW5hdGVkCndpdGggZW1wdHkgZWxlbWVudC4KClNpZ25lZC1vZmYt
+Ynk6IEFuZHJleSBSeWFiaW5pbiA8YS5yeWFiaW5pbkBzYW1zdW5nLmNvbT4KLS0tCiBkcml2ZXJz
+L3ZpZGVvL2JhY2tsaWdodC9kYTkwNTJfYmwuYyB8IDEgKwogMSBmaWxlIGNoYW5nZWQsIDEgaW5z
+ZXJ0aW9uKCspCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy92aWRlby9iYWNrbGlnaHQvZGE5MDUyX2Js
+LmMgYi9kcml2ZXJzL3ZpZGVvL2JhY2tsaWdodC9kYTkwNTJfYmwuYwppbmRleCBkNGJkNzRiZC4u
+YjE5NDNlNyAxMDA2NDQKLS0tIGEvZHJpdmVycy92aWRlby9iYWNrbGlnaHQvZGE5MDUyX2JsLmMK
+KysrIGIvZHJpdmVycy92aWRlby9iYWNrbGlnaHQvZGE5MDUyX2JsLmMKQEAgLTE2NSw2ICsxNjUs
+NyBAQCBzdGF0aWMgc3RydWN0IHBsYXRmb3JtX2RldmljZV9pZCBkYTkwNTJfd2xlZF9pZHNbXSA9
+IHsKIAkJLm5hbWUJCT0gImRhOTA1Mi13bGVkMyIsCiAJCS5kcml2ZXJfZGF0YQk9IERBOTA1Ml9U
+WVBFX1dMRUQzLAogCX0sCisJeyB9LAogfTsKIAogc3RhdGljIHN0cnVjdCBwbGF0Zm9ybV9kcml2
+ZXIgZGE5MDUyX3dsZWRfZHJpdmVyID0gewotLSAKMi4wLjQKCg==
+--001a11c3d66c3ec2ac050d374977
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0002-crypto-ccp-terminate-ccp_support-array-with-empty-el.patch"
+Content-Disposition: attachment; 
+	filename="0002-crypto-ccp-terminate-ccp_support-array-with-empty-el.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i57ylfpq4
 
-Previously in 3.18.1:
-[  176.855832] microcode: CPU0 sig=0x10676, pf=0x1, revision=0x60c
-[  176.855844] microcode: CPU0 update to revision 0x60f failed
-[  176.856107] microcode: CPU1 sig=0x10676, pf=0x1, revision=0x60c
-[  176.856115] microcode: CPU1 update to revision 0x60f failed
-[  176.861597] microcode: Microcode Update Driver: v2.00 removed.
+RnJvbSAyN2Y4Y2YwYWZmN2QxNmMwNjFkZGE5ZGQyMTk4ODdjYWUyMjE0NTg2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmRyZXkgUnlhYmluaW4gPGEucnlhYmluaW5Ac2Ftc3VuZy5j
+b20+CkRhdGU6IFRodSwgMjIgSmFuIDIwMTUgMTI6NDY6NDQgKzAzMDAKU3ViamVjdDogW1BBVENI
+IDIvM10gY3J5cHRvOiBjY3A6IHRlcm1pbmF0ZSBjY3Bfc3VwcG9ydCBhcnJheSB3aXRoIGVtcHR5
+CiBlbGVtZW50Cgp4ODZfbWF0Y2hfY3B1KCkgZXhwZWN0cyBhcnJheSBvZiB4ODZfY3B1X2lkcyB0
+ZXJtaW5hdGVkCndpdGggZW1wdHkgZWxlbWVudC4KClNpZ25lZC1vZmYtYnk6IEFuZHJleSBSeWFi
+aW5pbiA8YS5yeWFiaW5pbkBzYW1zdW5nLmNvbT4KLS0tCiBkcml2ZXJzL2NyeXB0by9jY3AvY2Nw
+LWRldi5jIHwgMSArCiAxIGZpbGUgY2hhbmdlZCwgMSBpbnNlcnRpb24oKykKCmRpZmYgLS1naXQg
+YS9kcml2ZXJzL2NyeXB0by9jY3AvY2NwLWRldi5jIGIvZHJpdmVycy9jcnlwdG8vY2NwL2NjcC1k
+ZXYuYwppbmRleCBjNmU2MTcxLi5jYTI5YzEyIDEwMDY0NAotLS0gYS9kcml2ZXJzL2NyeXB0by9j
+Y3AvY2NwLWRldi5jCisrKyBiL2RyaXZlcnMvY3J5cHRvL2NjcC9jY3AtZGV2LmMKQEAgLTU4Myw2
+ICs1ODMsNyBAQCBib29sIGNjcF9xdWV1ZXNfc3VzcGVuZGVkKHN0cnVjdCBjY3BfZGV2aWNlICpj
+Y3ApCiAjaWZkZWYgQ09ORklHX1g4Ngogc3RhdGljIGNvbnN0IHN0cnVjdCB4ODZfY3B1X2lkIGNj
+cF9zdXBwb3J0W10gPSB7CiAJeyBYODZfVkVORE9SX0FNRCwgMjIsIH0sCisJeyB9LAogfTsKICNl
+bmRpZgogCi0tIAoyLjAuNAoK
+--001a11c3d66c3ec2ac050d374977
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0003-rtc-s5m-terminate-s5m_rtc_id-array-with-empty-elemen.patch"
+Content-Disposition: attachment; 
+	filename="0003-rtc-s5m-terminate-s5m_rtc_id-array-with-empty-elemen.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i57ylfq05
 
-
-Same 3.18.2 kernel on bare metal (different system but identical hardware):
-[   46.002857] microcode: Microcode Update Driver: v2.00 removed.
+RnJvbSAzYTNiZDljZmQyMjNmMTRkMzEzNTJiOWE0NDIwOTQ3NmIzZjVlZjExIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmRyZXkgUnlhYmluaW4gPGEucnlhYmluaW5Ac2Ftc3VuZy5j
+b20+CkRhdGU6IFRodSwgMjIgSmFuIDIwMTUgMTI6NDg6MTUgKzAzMDAKU3ViamVjdDogW1BBVENI
+IDMvM10gcnRjOiBzNW06IHRlcm1pbmF0ZSBzNW1fcnRjX2lkIGFycmF5IHdpdGggZW1wdHkgZWxl
+bWVudAoKQXJyYXkgb2YgcGxhdGZvcm1fZGV2aWNlX2lkIGVsZW1lbnRzIHNob3VsZCBiZSB0ZXJt
+aW5hdGVkCndpdGggZW1wdHkgZWxlbWVudC4KClNpZ25lZC1vZmYtYnk6IEFuZHJleSBSeWFiaW5p
+biA8YS5yeWFiaW5pbkBzYW1zdW5nLmNvbT4KLS0tCiBkcml2ZXJzL3J0Yy9ydGMtczVtLmMgfCAx
+ICsKIDEgZmlsZSBjaGFuZ2VkLCAxIGluc2VydGlvbigrKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMv
+cnRjL3J0Yy1zNW0uYyBiL2RyaXZlcnMvcnRjL3J0Yy1zNW0uYwppbmRleCBiNWU3YzQ2Li44OWFj
+MWQ1IDEwMDY0NAotLS0gYS9kcml2ZXJzL3J0Yy9ydGMtczVtLmMKKysrIGIvZHJpdmVycy9ydGMv
+cnRjLXM1bS5jCkBAIC04MzIsNiArODMyLDcgQEAgc3RhdGljIFNJTVBMRV9ERVZfUE1fT1BTKHM1
+bV9ydGNfcG1fb3BzLCBzNW1fcnRjX3N1c3BlbmQsIHM1bV9ydGNfcmVzdW1lKTsKIHN0YXRpYyBj
+b25zdCBzdHJ1Y3QgcGxhdGZvcm1fZGV2aWNlX2lkIHM1bV9ydGNfaWRbXSA9IHsKIAl7ICJzNW0t
+cnRjIiwJCVM1TTg3NjdYIH0sCiAJeyAiczJtcHMxNC1ydGMiLAlTMk1QUzE0WCB9LAorCXsgfSwK
+IH07CiAKIHN0YXRpYyBzdHJ1Y3QgcGxhdGZvcm1fZHJpdmVyIHM1bV9ydGNfZHJpdmVyID0gewot
+LSAKMi4wLjQKCg==
+--001a11c3d66c3ec2ac050d374977--
