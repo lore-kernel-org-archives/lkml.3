@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbbAVLim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:38:42 -0500
-Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:48427 "EHLO
-	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750811AbbAVLik (ORCPT
+	id S1751854AbbAVLkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:40:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59320 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbbAVLkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:38:40 -0500
-Message-ID: <54C0E13B.2070400@nexus-software.ie>
-Date: Thu, 22 Jan 2015 11:38:35 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 22 Jan 2015 06:40:04 -0500
+Date: Thu, 22 Jan 2015 12:39:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@alien8.de>
+cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [patch 01/23] x86/apic: Avoid open coded x2apic detection
+In-Reply-To: <20150116095927.GA18880@pd.tnic>
+Message-ID: <alpine.DEB.2.11.1501221239040.5526@nanos>
+References: <20150115210458.625399149@linutronix.de> <20150115211702.285038186@linutronix.de> <20150116095927.GA18880@pd.tnic>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, dvhart@infradead.org,
-        andy.shevchenko@gmail.com, boon.leong.ong@intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
-References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie> <1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie> <alpine.DEB.2.11.1501221220530.5526@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501221220530.5526@nanos>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/01/15 11:24, Thomas Gleixner wrote:
-> On Wed, 21 Jan 2015, Bryan O'Donoghue wrote:
->>   arch/x86/Kconfig           |  25 ++
->>   arch/x86/Kconfig.debug     |  13 +
->>   arch/x86/include/asm/imr.h |  60 ++++
->>   arch/x86/kernel/Makefile   |   1 +
->>   arch/x86/kernel/imr.c      | 681 +++++++++++++++++++++++++++++++++++++++++++++
->
-> Can we please stop to dump random stuff into x86/kernel?
->
-> x86/platform ... would be a proper place for this.
->
-> Thanks,
->
-> 	tglx
->
+On Fri, 16 Jan 2015, Borislav Petkov wrote:
+> On Thu, Jan 15, 2015 at 09:22:09PM -0000, Thomas Gleixner wrote:
+> > enable_IR_x2apic() grew a open coded x2apic detection. Implement a
+> > proper helper function which shares the code with the already existing
+> > x2apic_enabled().
+> > 
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  arch/x86/include/asm/apic.h |   18 +++++++++---------
+> >  arch/x86/kernel/apic/apic.c |    5 +----
+> >  2 files changed, 10 insertions(+), 13 deletions(-)
+> > 
+> > Index: tip/arch/x86/include/asm/apic.h
+> > ===================================================================
+> > --- tip.orig/arch/x86/include/asm/apic.h
+> > +++ tip/arch/x86/include/asm/apic.h
+> > @@ -108,6 +108,14 @@ extern u64 native_apic_icr_read(void);
+> >  
+> >  extern int x2apic_mode;
+> >  
+> > +static inline bool apic_is_x2apic_enabled(void)
+> > +{
+> > +	u64 msr;
+> > +
+> > +	rdmsrl(MSR_IA32_APICBASE, msr);
+> 
+> Let's do
+> 
+> 	struct msr m;
+> 
+> 	if (msr_read(MSR_IA32_APICBASE, &m))
+> 		return false;
+> 
+> 	return m.l & X2APIC_ENABLE;
+> 
+> so that we do the safe MSR access too. Who knows where this code gets
+> executed in the future.
 
-Hi Thomas.
+Updated.
+ 
+> > +}
+> > +
+> >  #ifdef CONFIG_X86_X2APIC
+> >  /*
+> >   * Make previous memory operations globally visible before
+> > @@ -175,15 +183,7 @@ extern void check_x2apic(void);
+> >  extern void enable_x2apic(void);
+> >  static inline int x2apic_enabled(void)
+> >  {
+> > -	u64 msr;
+> > -
+> > -	if (!cpu_has_x2apic)
+> > -		return 0;
+> > -
+> > -	rdmsrl(MSR_IA32_APICBASE, msr);
+> > -	if (msr & X2APIC_ENABLE)
+> > -		return 1;
+> > -	return 0;
+> > +	return cpu_has_x2apic && apic_is_x2apic_enabled();
+> 
+> ... and then there's
+> 
+> #define x2apic_supported()      (cpu_has_x2apic)
+> 
+> which does the cpufeature test.
+> 
+> Can we agree on one interface only and simplify this a bit more?
 
-The IMR registers live in the north cluster of the SoC which is why I 
-thought arch/x86/kernel would be the best place for this code.
-
-That said, there's no technical reason we couldn't move this code to
-
-drivers/platform/x86/intel_qrk_imr.c
-
-Darren - would that be acceptable to you ?
-
-
+I think I do that later on, but will make sure.
