@@ -1,281 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbbAVPyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 10:54:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48748 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649AbbAVPyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 10:54:43 -0500
-Date: Thu, 22 Jan 2015 10:54:35 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-audit@redhat.com, sd@queasysnail.net,
-        linux-kernel@vger.kernel.org, linux@roeck-us.net,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v2 2/5] fs: create proper filename objects using
- getname_kernel()
-Message-ID: <20150122155435.GI18752@madcap2.tricolour.ca>
-References: <20150122045303.1347.98054.stgit@localhost>
- <20150122050003.1347.4833.stgit@localhost>
+	id S1753458AbbAVPzg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:55:36 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35182 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008AbbAVPzd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 10:55:33 -0500
+In-Reply-To: <1421883597.30744.3.camel@neuling.org>
+References: <20141203052204.9DA8F1400DD@ozlabs.org>	 <547EB253.5050307@linux.vnet.ibm.com> <548578A8.5020901@linux.vnet.ibm.com>
+	 <54947C64.4030206@linux.vnet.ibm.com> <54A50094.5070902@linux.vnet.ibm.com> <1421883597.30744.3.camel@neuling.org>
+Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
+X-KeepSent: C6CFC348:C619B89D-C1257DD5:0056279B;
+ type=4; name=$KeepSent
+To: Michael Neuling <mikey@neuling.org>
+Cc: akpm@linux-foundation.org, avagin@openvz.org, davej@redhat.com,
+        davem@davemloft.net, dhowells@redhat.com,
+        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
+        james.hogan@imgtec.com,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>, kirjanov@gmail.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Michael Ellerman <mpe@ellerman.id.au>, oleg@redhat.com,
+        palves@redhat.com, Paul.Clothier@imgtec.com, peterz@infradead.org,
+        sam.bobroff@au1.ibm.com, shuahkh@osg.samsung.com,
+        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
+X-Mailer: IBM Notes Release 9.0.1FP2 August  03, 2014
+Message-ID: <OFC6CFC348.C619B89D-ONC1257DD5.0056279B-C1257DD5.00577002@de.ibm.com>
+From: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
+Date: Thu, 22 Jan 2015 16:55:03 +0100
+X-MIMETrack: Serialize by Router on D06ML032/06/M/IBM(Release 9.0.1FP2|August  03, 2014) at
+ 22/01/2015 16:55:27
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122050003.1347.4833.stgit@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-type: text/plain; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012215-0021-0000-0000-000002A49DD5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/22, Paul Moore wrote:
-> There are several areas in the kernel that create temporary filename
-> objects using the following pattern:
-> 
-> 	int func(const char *name)
-> 	{
-> 		struct filename *file = { .name = name };
-> 		...
-> 		return 0;
-> 	}
-> 
-> ... which for the most part works okay, but it causes havoc within the
-> audit subsystem as the filename object does not persist beyond the
-> lifetime of the function.  This patch converts all of these temporary
-> filename objects into proper filename objects using getname_kernel()
-> and putname() which ensure that the filename object persists until the
-> audit subsystem is finished with it.
-> 
-> Also, a special thanks to Al Viro, Guenter Roeck, and Sabrina Dubroca
-> for helping resolve a difficult kernel panic on boot related to a
-> use-after-free problem in kern_path_create(); the thread can be seen
-> at the link below:
-> 
->  * https://lkml.org/lkml/2015/1/20/710
-> 
-> This patch includes code that was either based on, or directly written
-> by Al in the above thread.
-> 
-> CC: viro@zeniv.linux.org.uk
-> CC: linux@roeck-us.net
-> CC: sd@queasysnail.net
-> CC: linux-fsdevel@vger.kernel.org
-> Signed-off-by: Paul Moore <pmoore@redhat.com>
+Michael Neuling <mikey@neuling.org> wrote on 22.01.2015 00:39:57:
+> On Thu, 2015-01-01 at 13:38 +0530, Anshuman Khandual wrote:
+> > On 12/20/2014 12:58 AM, Edjunior Barbosa Machado wrote:
+> > > The patchset seems to change the "original" ptrace requests (i.e.
+> > > PTRACE_GETREGS/GETFPREGS/GETVRREGS...) to return the
+> > > "transactional" state, and adds new register sets to return
+> > > the "checkpointed" state.  Considering that whenever you get
+> > > a debugger interception inside a transactional block, the
+> > > transaction will abort, we're wondering if it wouldn't make
+> > > more sense to display the 'checkpointed' state as the normal
+> > > registers since this is where the execution will continue from.
+> >
+> > Debugger interception (trace interrupt) in between any transaction
+> > block will abort it ? I doubt that.
+>
+> The trace interrupt will not abort the transaction explicitly...
+>
+> > The tracee process will just stop, it's context gets saved in the
+> > kernel so that it can again start executing from the exact same
+> > point onward when it resumes.
+>
+> ... unfortunately, this save *will* doom the transaction.  To save, a
+> treclaim instruction is run which will always explicitly doom the
+> transaction.
+>
+> > If this happens when inside any transaction block, the transaction's
+running
+> > context and check pointed context will get saved. The execution
+> > will again start from the running context values instead of check
+> > pointed when the process resumes. Check pointed values will be loaded
+> > back into the context when the transaction finishes.
+>
+> Although since the transaction has been explicitly doomed, the hardware
+> will *always* abort at this point and start execution from the
+> checkpointed values.
+>
+> > Inside transaction both running and check pointed values can be
+> > probed independently.
+>
+> Yep, that's the idea, although setting the running values won't change
+> anything since the the translation is already doomed and will abort once
+> the cpu starts executing it.
 
-Noted change to use ERR_CAST() for consistency.
+So this looks to me like the overall effect on debugging transactional
+code should be the same on Power and z, even if some internal details
+are different (on z, the exception will automatically abort the
+transaction; on p, the exception itself will not abort, but *restarting*
+user space execution will).
 
-Reviewed-by: Richard Guy Briggs <rgb@redhat.com>
+>From a GDB perspective, it would therefore be preferable if the ptrace
+interface were to behave in a similar fashion on p as on z: that is,
+if an exception interrupting a transaction results in a ptrace intercept,
+at this point:
 
-> ---
->  fs/exec.c  |   11 +++++++-
->  fs/namei.c |   80 +++++++++++++++++++++++++++++++++++++++++++++++-------------
->  fs/open.c  |   11 +++++++-
->  3 files changed, 81 insertions(+), 21 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index a3d33fe..d067771 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -789,8 +789,15 @@ exit:
->  
->  struct file *open_exec(const char *name)
->  {
-> -	struct filename tmp = { .name = name };
-> -	return do_open_exec(&tmp);
-> +	struct file *file;
-> +	struct filename *tmp;
-> +
-> +	tmp = getname_kernel(name);
-> +	if (unlikely(IS_ERR(tmp)))
-> +		return (void *)tmp;
-> +	file = do_open_exec(tmp);
-> +	putname(tmp);
-> +	return file;
->  }
->  EXPORT_SYMBOL(open_exec);
->  
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 63eaaf6..f793fe4 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2001,31 +2001,50 @@ static int filename_lookup(int dfd, struct filename *name,
->  static int do_path_lookup(int dfd, const char *name,
->  				unsigned int flags, struct nameidata *nd)
->  {
-> -	struct filename filename = { .name = name };
-> +	int retval;
-> +	struct filename *filename;
->  
-> -	return filename_lookup(dfd, &filename, flags, nd);
-> +	filename = getname_kernel(name);
-> +	if (unlikely(IS_ERR(filename)))
-> +		return PTR_ERR(filename);
-> +	retval = filename_lookup(dfd, filename, flags, nd);
-> +	putname(filename);
-> +	return retval;
->  }
->  
->  /* does lookup, returns the object with parent locked */
->  struct dentry *kern_path_locked(const char *name, struct path *path)
->  {
-> +	struct filename *filename;
->  	struct nameidata nd;
->  	struct dentry *d;
-> -	int err = do_path_lookup(AT_FDCWD, name, LOOKUP_PARENT, &nd);
-> -	if (err)
-> -		return ERR_PTR(err);
-> +	int err;
-> +
-> +	filename = getname_kernel(name);
-> +	if (IS_ERR(filename))
-> +		return ERR_CAST(filename);
-> +
-> +	err = filename_lookup(AT_FDCWD, filename, LOOKUP_PARENT, &nd);
-> +	if (err) {
-> +		d = ERR_PTR(err);
-> +		goto out;
-> +	}
->  	if (nd.last_type != LAST_NORM) {
->  		path_put(&nd.path);
-> -		return ERR_PTR(-EINVAL);
-> +		d = ERR_PTR(-EINVAL);
-> +		goto out;
->  	}
->  	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
->  	d = __lookup_hash(&nd.last, nd.path.dentry, 0);
->  	if (IS_ERR(d)) {
->  		mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
->  		path_put(&nd.path);
-> -		return d;
-> +		goto out;
->  	}
->  	*path = nd.path;
-> +
-> +out:
-> +	putname(filename);
->  	return d;
->  }
->  
-> @@ -2368,8 +2387,15 @@ int
->  kern_path_mountpoint(int dfd, const char *name, struct path *path,
->  			unsigned int flags)
->  {
-> -	struct filename s = {.name = name};
-> -	return filename_mountpoint(dfd, &s, path, flags);
-> +	int retval;
-> +	struct filename *s;
-> +
-> +	s = getname_kernel(name);
-> +	if (unlikely(IS_ERR(s)))
-> +		return PTR_ERR(s);
-> +	retval = filename_mountpoint(dfd, s, path, flags);
-> +	putname(s);
-> +	return retval;
->  }
->  EXPORT_SYMBOL(kern_path_mountpoint);
->  
-> @@ -3259,7 +3285,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
->  {
->  	struct nameidata nd;
->  	struct file *file;
-> -	struct filename filename = { .name = name };
-> +	struct filename *filename;
->  	int flags = op->lookup_flags | LOOKUP_ROOT;
->  
->  	nd.root.mnt = mnt;
-> @@ -3268,16 +3294,22 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
->  	if (d_is_symlink(dentry) && op->intent & LOOKUP_OPEN)
->  		return ERR_PTR(-ELOOP);
->  
-> -	file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_RCU);
-> +	filename = getname_kernel(name);
-> +	if (unlikely(IS_ERR(filename)))
-> +		return ERR_CAST(filename);
-> +
-> +	file = path_openat(-1, filename, &nd, op, flags | LOOKUP_RCU);
->  	if (unlikely(file == ERR_PTR(-ECHILD)))
-> -		file = path_openat(-1, &filename, &nd, op, flags);
-> +		file = path_openat(-1, filename, &nd, op, flags);
->  	if (unlikely(file == ERR_PTR(-ESTALE)))
-> -		file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_REVAL);
-> +		file = path_openat(-1, filename, &nd, op, flags | LOOKUP_REVAL);
-> +	putname(filename);
->  	return file;
->  }
->  
-> -struct dentry *kern_path_create(int dfd, const char *pathname,
-> -				struct path *path, unsigned int lookup_flags)
-> +static struct dentry *filename_create(int dfd, struct filename *name,
-> +				      struct path *path,
-> +				      unsigned int lookup_flags)
->  {
->  	struct dentry *dentry = ERR_PTR(-EEXIST);
->  	struct nameidata nd;
-> @@ -3291,7 +3323,7 @@ struct dentry *kern_path_create(int dfd, const char *pathname,
->  	 */
->  	lookup_flags &= LOOKUP_REVAL;
->  
-> -	error = do_path_lookup(dfd, pathname, LOOKUP_PARENT|lookup_flags, &nd);
-> +	error = filename_lookup(dfd, name, LOOKUP_PARENT|lookup_flags, &nd);
->  	if (error)
->  		return ERR_PTR(error);
->  
-> @@ -3345,6 +3377,20 @@ out:
->  	path_put(&nd.path);
->  	return dentry;
->  }
-> +
-> +struct dentry *kern_path_create(int dfd, const char *pathname,
-> +				struct path *path, unsigned int lookup_flags)
-> +{
-> +	struct filename *filename;
-> +	struct dentry *res;
-> +
-> +	filename = getname_kernel(pathname);
-> +	if (IS_ERR(filename))
-> +		return ERR_CAST(filename);
-> +	res = filename_create(dfd, filename, path, lookup_flags);
-> +	putname(filename);
-> +	return res;
-> +}
->  EXPORT_SYMBOL(kern_path_create);
->  
->  void done_path_create(struct path *path, struct dentry *dentry)
-> @@ -3363,7 +3409,7 @@ struct dentry *user_path_create(int dfd, const char __user *pathname,
->  	struct dentry *res;
->  	if (IS_ERR(tmp))
->  		return ERR_CAST(tmp);
-> -	res = kern_path_create(dfd, tmp->name, path, lookup_flags);
-> +	res = filename_create(dfd, tmp, path, lookup_flags);
->  	putname(tmp);
->  	return res;
->  }
-> diff --git a/fs/open.c b/fs/open.c
-> index d6fd3ac..33839e1 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -940,8 +940,15 @@ struct file *file_open_name(struct filename *name, int flags, umode_t mode)
->   */
->  struct file *filp_open(const char *filename, int flags, umode_t mode)
->  {
-> -	struct filename name = {.name = filename};
-> -	return file_open_name(&name, flags, mode);
-> +	struct file *file;
-> +	struct filename *name;
-> +
-> +	name = getname_kernel(filename);
-> +	if (unlikely(IS_ERR(name)))
-> +		return ERR_CAST(name);
-> +	file = file_open_name(name, flags, mode);
-> +	putname(name);
-> +	return file;
->  }
->  EXPORT_SYMBOL(filp_open);
->  
-> 
+- the "normal" ptrace register set commands should access the
+  *checkpointed* registers (allowing both read and write access)
 
-- RGB
+  -- GDB will use this to display current position (already reflecting
+  the fact that the transaction will abort), and use it when changing
+  register values e.g. to effect an inferior function call
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+- a new ptrace register set should allow access (read-only) to the
+  *running* register values
+
+  -- GDB can use this to display the position inside the transaction
+  at the point it aborted, using new transaction-specific commands
+
+
+Bye,
+Ulrich
+
