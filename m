@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614AbbAVFBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:01:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42689 "EHLO mx1.redhat.com"
+	id S1753054AbbAVFA2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 00:00:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39097 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750799AbbAVFAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:00:15 -0500
-Subject: [PATCH v2 3/5] audit: enable filename recording via getname_kernel()
+	id S1750885AbbAVFAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 00:00:23 -0500
+Subject: [PATCH v2 4/5] audit: fix filename matching in __audit_inode() and
+ __audit_inode_child()
 From: Paul Moore <pmoore@redhat.com>
 To: linux-fsdevel@vger.kernel.org, linux-audit@redhat.com
 Cc: rgb@redhat.com, sd@queasysnail.net, linux-kernel@vger.kernel.org,
         linux@roeck-us.net, viro@zeniv.linux.org.uk
-Date: Thu, 22 Jan 2015 00:00:10 -0500
-Message-ID: <20150122050010.1347.81629.stgit@localhost>
+Date: Thu, 22 Jan 2015 00:00:16 -0500
+Message-ID: <20150122050016.1347.17253.stgit@localhost>
 In-Reply-To: <20150122045303.1347.98054.stgit@localhost>
 References: <20150122045303.1347.98054.stgit@localhost>
 User-Agent: StGit/0.17.1-dirty
@@ -23,81 +24,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable recording of filenames in getname_kernel() and remove the
-kludgy workaround in __audit_inode() now that we have proper filename
-logging for kernel users.
+In all likelihood there were some subtle, and perhaps not so subtle,
+bugs with filename matching in audit_inode() and audit_inode_child()
+for some time, however, recent changes to the audit filename code have
+definitely broken the filename matching code.  The breakage could
+result in duplicate filenames in the audit log and other odd audit
+record entries.  This patch fixes the filename matching code and
+restores some sanity to the filename audit records.
 
 CC: viro@zeniv.linux.org.uk
 CC: linux-fsdevel@vger.kernel.org
 Signed-off-by: Paul Moore <pmoore@redhat.com>
-Reviewed-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- fs/namei.c       |    1 +
- kernel/auditsc.c |   40 +++-------------------------------------
- 2 files changed, 4 insertions(+), 37 deletions(-)
+ kernel/auditsc.c |   34 +++++++++++++++++++++++++---------
+ 1 file changed, 25 insertions(+), 9 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index f793fe4..e18a2b5 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -242,6 +242,7 @@ getname_kernel(const char * filename)
- 	memcpy((char *)result->name, filename, len);
- 	result->uptr = NULL;
- 	result->aname = NULL;
-+	audit_getname(result);
- 
- 	return result;
- }
 diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 793e9e9..c967ffc 100644
+index c967ffc..c54b5f0 100644
 --- a/kernel/auditsc.c
 +++ b/kernel/auditsc.c
-@@ -1882,44 +1882,10 @@ out_alloc:
- 	n = audit_alloc_name(context, AUDIT_TYPE_UNKNOWN);
- 	if (!n)
- 		return;
--	/* unfortunately, while we may have a path name to record with the
--	 * inode, we can't always rely on the string lasting until the end of
--	 * the syscall so we need to create our own copy, it may fail due to
--	 * memory allocation issues, but we do our best */
--	if (name) {
--		/* we can't use getname_kernel() due to size limits */
--		size_t len = strlen(name->name) + 1;
--		struct filename *new = __getname();
--
--		if (unlikely(!new))
--			goto out;
-+	if (name)
-+		/* no need to set ->name_put as the original will cleanup */
-+		n->name = name;
+@@ -1846,6 +1846,7 @@ void __audit_inode(struct filename *name, const struct dentry *dentry,
+ 	/* The struct filename _must_ have a populated ->name */
+ 	BUG_ON(!name->name);
+ #endif
++
+ 	/*
+ 	 * If we have a pointer to an audit_names entry already, then we can
+ 	 * just use it directly if the type is correct.
+@@ -1863,7 +1864,17 @@ void __audit_inode(struct filename *name, const struct dentry *dentry,
+ 	}
  
--		if (len <= (PATH_MAX - sizeof(*new))) {
--			new->name = (char *)(new) + sizeof(*new);
--			new->separate = false;
--		} else if (len <= PATH_MAX) {
--			/* this looks odd, but is due to final_putname() */
--			struct filename *new2;
+ 	list_for_each_entry_reverse(n, &context->names_list, list) {
+-		if (!n->name || strcmp(n->name->name, name->name))
++		if (n->ino) {
++			/* valid inode number, use that for the comparison */
++			if (n->ino != inode->i_ino ||
++			    n->dev != inode->i_sb->s_dev)
++				continue;
++		} else if (n->name) {
++			/* inode number has not been set, check the name */
++			if (strcmp(n->name->name, name->name))
++				continue;
++		} else
++			/* no inode and no name (?!) ... this is odd ... */
+ 			continue;
+ 
+ 		/* match the correct record type */
+@@ -1931,11 +1942,16 @@ void __audit_inode_child(const struct inode *parent,
+ 
+ 	/* look for a parent entry first */
+ 	list_for_each_entry(n, &context->names_list, list) {
+-		if (!n->name || n->type != AUDIT_TYPE_PARENT)
++		if (!n->name ||
++		    (n->type != AUDIT_TYPE_PARENT &&
++		     n->type != AUDIT_TYPE_UNKNOWN))
+ 			continue;
+ 
+-		if (n->ino == parent->i_ino &&
+-		    !audit_compare_dname_path(dname, n->name->name, n->name_len)) {
++		if (n->ino == parent->i_ino && n->dev == parent->i_sb->s_dev &&
++		    !audit_compare_dname_path(dname,
++					      n->name->name, n->name_len)) {
++			if (n->type == AUDIT_TYPE_UNKNOWN)
++				n->type = AUDIT_TYPE_PARENT;
+ 			found_parent = n;
+ 			break;
+ 		}
+@@ -1944,11 +1960,8 @@ void __audit_inode_child(const struct inode *parent,
+ 	/* is there a matching child entry? */
+ 	list_for_each_entry(n, &context->names_list, list) {
+ 		/* can only match entries that have a name */
+-		if (!n->name || n->type != type)
+-			continue;
 -
--			new2 = kmalloc(sizeof(*new2), GFP_KERNEL);
--			if (unlikely(!new2)) {
--				__putname(new);
--				goto out;
--			}
--			new2->name = (char *)new;
--			new2->separate = true;
--			new = new2;
--		} else {
--			/* we should never get here, but let's be safe */
--			__putname(new);
--			goto out;
--		}
--		strlcpy((char *)new->name, name->name, len);
--		new->uptr = NULL;
--		new->aname = n;
--		n->name = new;
--		n->name_put = true;
--	}
- out:
- 	if (parent) {
- 		n->name_len = n->name ? parent_len(n->name->name) : AUDIT_NAME_FULL;
+-		/* if we found a parent, make sure this one is a child of it */
+-		if (found_parent && (n->name != found_parent->name))
++		if (!n->name ||
++		    (n->type != type && n->type != AUDIT_TYPE_UNKNOWN))
+ 			continue;
+ 
+ 		if (!strcmp(dname, n->name->name) ||
+@@ -1956,6 +1969,8 @@ void __audit_inode_child(const struct inode *parent,
+ 						found_parent ?
+ 						found_parent->name_len :
+ 						AUDIT_NAME_FULL)) {
++			if (n->type == AUDIT_TYPE_UNKNOWN)
++				n->type = type;
+ 			found_child = n;
+ 			break;
+ 		}
+@@ -1984,6 +1999,7 @@ void __audit_inode_child(const struct inode *parent,
+ 			found_child->name_put = false;
+ 		}
+ 	}
++
+ 	if (inode)
+ 		audit_copy_inode(found_child, dentry, inode);
+ 	else
 
