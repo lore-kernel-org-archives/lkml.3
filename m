@@ -1,85 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963AbbAVFhI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:37:08 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34044 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbbAVFhE (ORCPT
+	id S1754551AbbAVFmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 00:42:49 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:35493 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbbAVFmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:37:04 -0500
-Message-ID: <54C08C62.8010609@roeck-us.net>
-Date: Wed, 21 Jan 2015 21:36:34 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Thu, 22 Jan 2015 00:42:33 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <jolsa@redhat.com>, <rostedt@goodmis.org>
+CC: <jeremie.galarneau@efficios.com>, <bigeasy@linutronix.de>,
+        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH RFC 2/2] perf: convert: fix duplicate field names and avoid reserved keywords.
+Date: Thu, 22 Jan 2015 13:36:43 +0800
+Message-ID: <1421905003-24242-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1421904958-24106-1-git-send-email-wangnan0@huawei.com>
+References: <1421904958-24106-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
-To: Paul Moore <pmoore@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com
-CC: rgb@redhat.com, sd@queasysnail.net, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
-References: <20150122045303.1347.98054.stgit@localhost>
-In-Reply-To: <20150122045303.1347.98054.stgit@localhost>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54C08C7F.015D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 08:59 PM, Paul Moore wrote:
-> This patchset has some important changes from the previous revision,
-> namely a fix from Al Viro (included in 2/5) that resolves a boot panic
-> on some systems as well as some smaller, less noteworthy fixes found
-> in the linux-next announcement thread from January 20th (refcount bump
-> in __audit_reusename() and a inode type in __audit_inode()).
->
-> This patchset still needs some additional testing to verify that the
-> audit code still functions properly (the minor fixes mentioned above)
-> and there is an additional patch from Al that should be included as
-> well, but I wanted to post this and push the series to the audit next
-> branch quickly since a number of folks were affected by the boot panic.
->
-> ---
->
-> Paul Moore (5):
->        fs: rework getname_kernel to handle up to PATH_MAX sized filenames
->        fs: create proper filename objects using getname_kernel()
->        audit: enable filename recording via getname_kernel()
->        audit: fix filename matching in __audit_inode() and __audit_inode_child()
->        audit: replace getname()/putname() hacks with reference counters
->
-Hi Paul,
+(If Steven Rostedt accept the previous patch which introduce a priv
+ field to 'struct format_field', we can use a relative simple method
+ for name conversion. If not , perf must track name conversion by
+ itself.)
 
-What is the baseline for this patch set ? Obviously -next won't work,
-and it does not apply to mainline either.
+Some parameters of syscall tracepoints named as 'nr', 'event', etc.
+When dealing with them, perf convert to ctf meets some problem:
 
-Thanks,
-Guenter
+ 1. If a parameter with name 'nr', it will duplicate syscall's
+    common field 'nr'. One such syscall is io_submit().
+
+ 2. If a parameter with name 'event', it is denied to be inserted
+    because 'event' is a babeltrace keywork. One such syscall is
+    epoll_ctl.
+
+This patch appends '_dupl_X' suffix to avoid problem 1, prepend a '_'
+prefix to avoid problem 2.
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+---
+ tools/perf/util/data-convert-bt.c | 94 +++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 90 insertions(+), 4 deletions(-)
+
+diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
+index ddecce8..a94f3bd 100644
+--- a/tools/perf/util/data-convert-bt.c
++++ b/tools/perf/util/data-convert-bt.c
+@@ -184,6 +184,7 @@ static int add_tracepoint_field_value(struct ctf_writer *cw,
+ 	unsigned int len;
+ 	int ret;
+ 
++	name = fmtf->priv ? (const char *)fmtf->priv : fmtf->name;
+ 	offset = fmtf->offset;
+ 	len = fmtf->size;
+ 	if (flags & FIELD_IS_STRING)
+@@ -567,6 +568,91 @@ static int process_sample_event(struct perf_tool *tool,
+ 	return cs ? 0 : -1;
+ }
+ 
++/* If dup < 0, add a prefix. Else, add _dupl_X suffix. */
++static char *change_name(char *name, char *orig_name, int dup)
++{
++	char *new_name = NULL;
++	size_t len;
++
++	if (!name)
++		name = orig_name;
++
++	if (dup >= 10)
++		goto out;
++
++	if (dup < 0)
++		len = strlen(name) + sizeof("_");
++	else
++		len = strlen(orig_name) + sizeof("_dupl_X");
++
++	new_name = malloc(len);
++	if (!new_name)
++		goto out;
++
++	if (dup < 0)
++		snprintf(new_name, len, "_%s", name);
++	else
++		snprintf(new_name, len, "%s_dupl_%d", orig_name, dup);
++
++out:
++	if (name != orig_name)
++		free(name);
++	return new_name;
++}
++
++static void destroy_field_priv(struct format_field *field)
++{
++	if (!field->priv)
++		return;
++
++	if (field->priv != field->name)
++		free(field->priv);
++
++	field->priv = NULL;
++	field->destroy_priv = NULL;
++}
++
++static int event_class_add_field(struct bt_ctf_event_class *event_class,
++		struct bt_ctf_field_type *type,
++		struct format_field *field)
++{
++	struct bt_ctf_field_type *t = NULL;
++	char *name;
++	int dup = 1;
++	int ret;
++
++	if (field->priv)
++		return bt_ctf_event_class_add_field(event_class, type,
++				(char *)field->priv);
++
++	name = field->name;
++	while (t = bt_ctf_event_class_get_field_by_name(event_class, name)) {
++		bt_ctf_field_type_put(t);
++		name = change_name(name, field->name, dup++);
++		if (!name) {
++			pr_err("Failed to create dup name for '%s'\n", field->name);
++			return -1;
++		}
++	}
++
++	ret = bt_ctf_event_class_add_field(event_class, type, name);
++
++	/* if failed, we may hit a keywork. try again with a '_' prefix */
++	if (ret) {
++		name = change_name(name, field->name, -1);
++		if (!name) {
++			pr_err("Failed to alloc name for '_%s'\n", field->name);
++			return -1;
++		}
++		ret = bt_ctf_event_class_add_field(event_class, type, name);
++	}
++
++	field->priv = name;
++	field->destroy_priv = destroy_field_priv;
++
++	return ret;
++}
++
+ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+ 				       struct format_field *fields,
+ 				       struct bt_ctf_event_class *event_class)
+@@ -595,14 +681,14 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+ 		if (flags & FIELD_IS_ARRAY)
+ 			type = bt_ctf_field_type_array_create(type, field->arraylen);
+ 
+-		ret = bt_ctf_event_class_add_field(event_class, type,
+-				field->name);
++		ret = event_class_add_field(event_class, type, field);
+ 
+ 		if (flags & FIELD_IS_ARRAY)
+ 			bt_ctf_field_type_put(type);
+ 
+ 		if (ret) {
+-			pr_err("Failed to add field '%s\n", field->name);
++			pr_err("Failed to add field '%s': %d\n",
++					field->name, ret);
+ 			return -1;
+ 		}
+ 	}
+@@ -646,7 +732,7 @@ static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
+ 	do {								\
+ 		pr2("  field '%s'\n", n);				\
+ 		if (bt_ctf_event_class_add_field(cl, t, n)) {		\
+-			pr_err("Failed to add field '%s;\n", n);	\
++			pr_err("Failed to add field '%s';\n", n);	\
+ 			return -1;					\
+ 		}							\
+ 	} while (0)
+-- 
+1.8.4
 
