@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069AbbAVRyU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:54:20 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:52789 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655AbbAVRyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:54:17 -0500
-Date: Thu, 22 Jan 2015 18:54:12 +0100
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: Alexei Starovoitov <ast@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+	id S1753514AbbAVR4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:56:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53536 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752552AbbAVR4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 12:56:41 -0500
+Date: Thu, 22 Jan 2015 18:56:37 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        kvm list <kvm@vger.kernel.org>, X86 ML <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] bpf: Call rcu_read_unlock() before copy_to_user()
-Message-ID: <20150122185412.66a0a920@holzheu>
-In-Reply-To: <CAADnVQLnrAgk3vTppugqCtSsHL4XiZeQJrQi3cqhgLCCq1v8Pg@mail.gmail.com>
-References: <CAADnVQLnrAgk3vTppugqCtSsHL4XiZeQJrQi3cqhgLCCq1v8Pg@mail.gmail.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012217-0025-0000-0000-000003921981
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Jan Beulich <JBeulich@suse.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to
+	be preempted
+Message-ID: <20150122175637.GN17887@wotan.suse.de>
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com> <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com> <CALCETrXSQ0JCKY5k0S_xX-i4+1BBVY+_9dv2ouj23WXFi8hyfg@mail.gmail.com> <54C0F335.6030403@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C0F335.6030403@citrix.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015 09:27:21 -0800
-Alexei Starovoitov <alexei.starovoitov@gmail.com> wrote:
-
-> On Thu, Jan 22, 2015 at 7:57 AM, Michael Holzheu
-> <holzheu@linux.vnet.ibm.com> wrote:
-> > We must not hold locks when calling copy_to_user():
-> >
-> > BUG: sleeping function called from invalid context at mm/memory.c:3732
-> > in_atomic(): 0, irqs_disabled(): 0, pid: 671, name: test_maps
-> > 1 lock held by test_maps/671:
-> >  #0:  (rcu_read_lock){......}, at: [<0000000000264190>] map_lookup_elem+0xe8/0x260
-> > Preemption disabled at:[<00000000001be3b6>] vprintk_default+0x56/0x68
-> >
-> > CPU: 0 PID: 671 Comm: test_maps Not tainted 3.19.0-rc5-00117-g5eb11d6-dirty #424
-> >        000000001e447bb0 000000001e447c40 0000000000000002 0000000000000000
-> >        000000001e447ce0 000000001e447c58 000000001e447c58 0000000000115c8a
-> >        0000000000000000 0000000000c08246 0000000000c27e8a 000000000000000b
-> >        000000001e447ca0 000000001e447c40 0000000000000000 0000000000000000
-> >        0000000000000000 0000000000115c8a 000000001e447c40 000000001e447ca0
-> > Call Trace:
-> > ([<0000000000115b7e>] show_trace+0x12e/0x150)
-> >  [<0000000000115c40>] show_stack+0xa0/0x100
-> >  [<00000000009b163c>] dump_stack+0x74/0xc8
-> >  [<000000000017424a>] ___might_sleep+0x23a/0x248
-> >  [<00000000002b58e8>] might_fault+0x70/0xe8
-> >  [<0000000000264230>] map_lookup_elem+0x188/0x260
-> >  [<0000000000264716>] SyS_bpf+0x20e/0x840
-> >  [<00000000009bbe3a>] system_call+0xd6/0x24c
-> >  [<000003fffd15f566>] 0x3fffd15f566
-> > 1 lock held by test_maps/671:
-> >  #0:  (rcu_read_lock){......}, at: [<0000000000264190>] map_lookup_elem+0xe8/0x260
-> >
-> > So call rcu_read_unlock() before copy_to_user(). We can
-> > release the lock earlier because it is not needed for copy_to_user().
+On Thu, Jan 22, 2015 at 12:55:17PM +0000, David Vrabel wrote:
+> On 22/01/15 03:18, Andy Lutomirski wrote:
+> >> --- a/drivers/xen/events/events_base.c
+> >> +++ b/drivers/xen/events/events_base.c
+> >> @@ -32,6 +32,8 @@
+> >>  #include <linux/slab.h>
+> >>  #include <linux/irqnr.h>
+> >>  #include <linux/pci.h>
+> >> +#include <linux/sched.h>
+> >> +#include <linux/kprobes.h>
+> >>
+> >>  #ifdef CONFIG_X86
+> >>  #include <asm/desc.h>
+> >> @@ -1243,6 +1245,17 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
+> >>         set_irq_regs(old_regs);
+> >>  }
+> >>
+> >> +notrace void xen_end_upcall(struct pt_regs *regs)
+> >> +{
+> >> +       if (!xen_is_preemptible_hypercall(regs) ||
+> >> +           __this_cpu_read(xed_nesting_count))
+> >> +               return;
+> > 
+> > What's xed_nesting_count?
 > 
-> we cannot move the rcu unlock this way, since it protects the value.
-> So we need to copy the value while still under rcu.
+> It used to prevent nested upcalls when a hypercall called from an upcall
+> triggers another upcall.
+> 
+> There's no way a such a nested hypercall can be preemptible so the check
+> for xed_nesting_count an be removed from here.
 
-Ok, right. I assume you will provide the correct fix.
+Removed.
 
-> I'm puzzled how I missed this warning.
-> I guess you have CONFIG_PREEMPT_RCU=y ?
-
-Yes.
-
-Regards,
-Michael
-
+  Luis
