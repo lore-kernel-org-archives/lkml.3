@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbbAVRIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:08:11 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:49347 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794AbbAVRII (ORCPT
+	id S1753548AbbAVRJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:09:31 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50915 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531AbbAVRJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:08:08 -0500
-Date: Thu, 22 Jan 2015 17:08:04 +0000
-From: Matt Fleming <matt@codeblueprint.co.uk>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Vince Weaver <vince@deater.net>,
-        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        Kanaka Juvva <kanaka.d.juvva@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: Perf tests for hw events
-Message-ID: <20150122170804.GG12079@codeblueprint.co.uk>
-References: <20150122124014.GF12079@codeblueprint.co.uk>
- <20150122125658.GA2473@krava.brq.redhat.com>
+	Thu, 22 Jan 2015 12:09:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122125658.GA2473@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150122132200.4729d38b@xhacker>
+References: <1421882243-3631-1-git-send-email-dianders@chromium.org>
+	<20150122132200.4729d38b@xhacker>
+Date: Thu, 22 Jan 2015 09:09:28 -0800
+X-Google-Sender-Auth: amIVEYCX0iZ4rN8adA1W0VDEjhw
+Message-ID: <CAD=FV=UMmfNAEQVKCxTBapwO=pgno+cWUJNiMS7_uFK7NPevkw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] watchdog: dw_wdt: pat the watchdog before enabling it
+From: Doug Anderson <dianders@chromium.org>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Lunxue Dai <lunxue.dai@rock-chips.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan, at 01:56:59PM, Jiri Olsa wrote:
-> On Thu, Jan 22, 2015 at 12:40:14PM +0000, Matt Fleming wrote:
-> > Folks,
-> > 
-> > In the process of writing perf support for Intel's Cache QoS Monitoring
-> > feature [0] I've had to write my own userland tests to drive tools/perf
-> > and indirectly the kernel internals. I'm now getting requests for these
-> > tests from various people and it occurs to me that they should probably
-> > live in the kernel tree.
-> > 
-> > The tests I've got do a couple of things like setting up a perf_event
-> > cgroup and assigning enough tasks to trigger the RMID recycling code in
-> > the CQM driver, ensuring that we can run multiple events simultaneously
-> > (that the event scheduling/rotation code works), etc.
-> > 
-> > Does anything like this already exist for hw events? I couldn't find
-> > anything specific to hw events from snooping around in tools/perf/tests. 
-> 
-> that's the only place for this kind of stuff.. and AFAIK we use
-> just some basic HW events like cycles, or software events
- 
-OK cool. I just wanted confirmation that tools/perf/tests was the best
-place for these tests.
+Jisheng,
 
-> > We should only test those hw events that are present on a user's
-> > machine; there's no sense in emulating things.
-> 
-> agreed.. I remember we were discussing with Arnaldo the strengthening
-> of the test framework.. so it would detect what tests are runable
-> under current machine and priviledge
-> 
-> IIRC we already have some CPU detection support:
->   int __attribute__ ((weak)) get_cpuid(char *buffer, size_t sz);
+On Wed, Jan 21, 2015 at 9:22 PM, Jisheng Zhang <jszhang@marvell.com> wrote:
+> Dear Doug,
+>
+> On Wed, 21 Jan 2015 15:17:22 -0800
+> Doug Anderson <dianders@chromium.org> wrote:
+>
+>> On some dw_wdt implementations the "top" register may be initted to 0
+>> at bootup.  In such a case, each "pat" of the watchdog will reset the
+>> timer to 0xffff.  That's pretty short.
+>
+> + Guenter Roeck
+>
+> This should have been fixed by dfa07141e7a792("watchdog: dw_wdt: initialise
+> TOP_INIT in dw_wdt_set_top()")
 
-Aha, excellent. I hadn't noticed this. It should be possible to build
-something on top of this.
+I will admit that I'm testing on a tree that doesn't have your patch
+(I'm on a 3.14 kernel with lots of backports).  ...but I did try
+cherry-picking your patch before I wrote up mine and it didn't fix my
+problem.  I believe that the watchdog that's in Rockchip rk3288 must
+be a slightly different version of the IP block than you're working
+with.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Specifically I see the register WDT_TORR that has an offset of 0x4.
+That's the RANGE_REG in your code.  It shows bits 3:0 set the timeout
+period (0 = 0xffff and 15 = 0x7fffffff).  It shows bits 31:4 as
+"reserved".
+
+
+> In fact, my original fix is as similar as your patch
+>
+> http://www.spinics.net/lists/arm-kernel/msg363658.html
+
+Yup, except that I pat the watchdog before enabling it and you pat it
+after...  It probably doesn't matter as long as the two instructions
+are within 2.5ms of each other, but it seems nice to be safer.
+
+-Doug
