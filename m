@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbbAVQSz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:18:55 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:55466 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972AbbAVQSy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:18:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150122161446.101EBC40A80@trevor.secretlab.ca>
-References: <1421250356-16690-1-git-send-email-geert+renesas@glider.be> <20150122161446.101EBC40A80@trevor.secretlab.ca>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Thu, 22 Jan 2015 16:18:32 +0000
-X-Google-Sender-Auth: IyCSIz3u2wEPQm_DsvW_Mq2TGrg
-Message-ID: <CACxGe6sDFQQfiN0+d5HV7JPE-0bosqdaKqrS-7o-obCy1NP_qg@mail.gmail.com>
-Subject: Re: [PATCH] of: Add missing of_node_put() in of_find_node_by_path()
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Rob Herring <robh+dt@kernel.org>
-Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753028AbbAVQTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 11:19:48 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:57136 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008AbbAVQTr (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 22 Jan 2015 11:19:47 -0500
+Message-ID: <1421943573.4903.24.camel@stgolabs.net>
+Subject: Re: [PATCH] mm, vmacache: Add kconfig VMACACHE_SHIFT
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: WANG Chao <chaowang@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 22 Jan 2015 08:19:33 -0800
+In-Reply-To: <20150122075742.GA11335@dhcp-129-179.nay.redhat.com>
+References: <1421908189-18938-1-git-send-email-chaowang@redhat.com>
+	 <1421912761.4903.22.camel@stgolabs.net>
+	 <20150122075742.GA11335@dhcp-129-179.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 4:14 PM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Wed, 14 Jan 2015 16:45:56 +0100
-> , Geert Uytterhoeven <geert+renesas@glider.be>
->  wrote:
->> When traversing all nodes and moving to a new path component, the old
->> one must be released by calling of_node_put(). Else the refcounts of the
->> parent node(s) will not be decremented.
->>
->> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->> ---
-[...]
->> Feel free to (ab)use the code below and derive a unittest from it...
+On Thu, 2015-01-22 at 15:57 +0800, WANG Chao wrote:
+> Hi, Davidlohr
+> 
+> On 01/21/15 at 11:46pm, Davidlohr Bueso wrote:
+> > On Thu, 2015-01-22 at 14:29 +0800, WANG Chao wrote:
+> > > Add a new kconfig option VMACACHE_SHIFT (as a power of 2) to specify the
+> > > number of slots vma cache has for each thread. Range is chosen 0-4 (1-16
+> > > slots) to consider both overhead and performance penalty. Default is 2
+> > > (4 slots) as it originally is, which provides good enough balance.
+> > > 
+> > 
+> > Nack. I don't feel comfortable making scalability features of core code
+> > configurable.
+> 
+> Out of respect, is this a general rule not making scalability features
+> of core code configurable?
 
-BTW, can you do this please? They are pretty important for core
-changes now, and I'm stuck with doing them if the person supplying a
-patch does not (and I'm already too much of a bottleneck on the DT
-code).
+I doubt its a rule, just common sense. Users have no business
+configuring such low level details. The optimizations need to
+transparently work for everyone.
 
-g.
+Thanks,
+Davidlohr
+
