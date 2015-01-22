@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbbAVVIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:08:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47122 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754732AbbAVVIi convert rfc822-to-8bit (ORCPT
+	id S1755025AbbAVVKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:10:00 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:18827 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753313AbbAVVJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:08:38 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <axboe@fb.com>
-Cc: Huang Ying <ying.huang@intel.com>, Christoph Hellwig <hch@lst.de>,
-        LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
-Subject: Re: [LKP] [block] 34b48db66e0: +3291.6% iostat.sde.wrqm/s
-References: <1421889689.6126.45.camel@intel.com> <54C08CA6.8050101@fb.com>
-	<x49zj9a9073.fsf@segfault.boston.devel.redhat.com>
-	<54C1494D.5050507@fb.com>
-	<x49fvb28rrm.fsf@segfault.boston.devel.redhat.com>
-	<54C1647A.3090804@fb.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 22 Jan 2015 16:08:23 -0500
-In-Reply-To: <54C1647A.3090804@fb.com> (Jens Axboe's message of "Thu, 22 Jan
-	2015 13:58:34 -0700")
-Message-ID: <x497fwe8qwo.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 22 Jan 2015 16:09:58 -0500
+From: Shaohua Li <shli@fb.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <Kernel-team@fb.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>
+Subject: [RFC 1/2] perf: update shadow timestamp before add event
+Date: Thu, 22 Jan 2015 13:09:01 -0800
+Message-ID: <119aa7d433860f568136ab623fb4a510c28e9e6f.1421906750.git.shli@fb.com>
+X-Mailer: git-send-email 1.8.1
+X-FB-Internal: Safe
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-22_08:2015-01-22,2015-01-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=2.92412122293584e-09 kscore.compositescore=0
+ circleOfTrustscore=514.84 compositescore=0.98609165920913
+ urlsuspect_oldscore=0.98609165920913 suspectscore=1
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.98609165920913 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501220194
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <axboe@fb.com> writes:
+Update the shadow timestamp before start event. .add might use the
+timestamp.
 
-> On 01/22/2015 01:49 PM, Jeff Moyer wrote:
->> Jens Axboe <axboe@fb.com> writes:
->> 
->>>> Agreed on all above, but are the actual benchmark numbers included
->>>> somewhere in all this mess?  I'd like to see if the benchmark numbers
->>>> improved first, before digging into the guts of which functions are
->>>> called more or which stats changed.
->>>
->>> I deleted the original email, but the latter tables had drive throughput
->>> rates and it looked higher for the ones I checked on the newer kernel.
->>> Which the above math would indicate as well, multiplying reqs-per-sec
->>> and req-size.
->> 
->> Looking back at the original[1], I think I see the throughput numbers for
->> iozone.  The part that confused me was that each table mixes different
->> types of data.  I'd much prefer if different data were put in different
->> tables, along with column headers that stated what was being reported
->> and the units for the measurements.
->> 
->> Anyway, I find the increased service time troubling, especially this
->> one:
->> 
->> testbox/testcase/testparams: ivb44/fsmark/performance-1x-1t-1HDD-xfs-4M-60G-NoSync
->> 
->>        544 ?  0%   +1268.9%       7460 ?  0%  iostat.sda.w_await
->>        544 ?  0%   +1268.5%       7457 ?  0%  iostat.sda.await
->> 
->> I'll add this to my queue of things to look into.
->
-> From that same table:
->
->       1009 ±  0%   +1255.7%      13682 ±  0%  iostat.sda.avgrq-sz
->
-> the average request size has gone up equally. This is clearly a streamed
-> oriented benchmark, if the IOs get that big.
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Shaohua Li <shli@fb.com>
+---
+ kernel/events/core.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Hmm, ok, I'll buy that.  However, I am surprised that the relationship
-between i/o size and service time is 1:1 here...
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 882f835..4edde3e 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1769,6 +1769,10 @@ event_sched_in(struct perf_event *event,
+ 
+ 	perf_pmu_disable(event->pmu);
+ 
++	event->tstamp_running += tstamp - event->tstamp_stopped;
++
++	perf_set_shadow_time(event, ctx, tstamp);
++
+ 	if (event->pmu->add(event, PERF_EF_START)) {
+ 		event->state = PERF_EVENT_STATE_INACTIVE;
+ 		event->oncpu = -1;
+@@ -1776,10 +1780,6 @@ event_sched_in(struct perf_event *event,
+ 		goto out;
+ 	}
+ 
+-	event->tstamp_running += tstamp - event->tstamp_stopped;
+-
+-	perf_set_shadow_time(event, ctx, tstamp);
+-
+ 	if (!is_software_event(event))
+ 		cpuctx->active_oncpu++;
+ 	ctx->nr_active++;
+-- 
+1.8.1
 
-Thanks!
-Jeff
