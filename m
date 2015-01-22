@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbbAVUgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:36:00 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:61786 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbbAVUf6 (ORCPT
+	id S1754702AbbAVUga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:36:30 -0500
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:55921 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754674AbbAVUg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 15:35:58 -0500
+	Thu, 22 Jan 2015 15:36:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6sDFQQfiN0+d5HV7JPE-0bosqdaKqrS-7o-obCy1NP_qg@mail.gmail.com>
-References: <1421250356-16690-1-git-send-email-geert+renesas@glider.be>
-	<20150122161446.101EBC40A80@trevor.secretlab.ca>
-	<CACxGe6sDFQQfiN0+d5HV7JPE-0bosqdaKqrS-7o-obCy1NP_qg@mail.gmail.com>
-Date: Thu, 22 Jan 2015 21:35:56 +0100
-X-Google-Sender-Auth: 2Q8MX7GfLvI7CCToIMfLNd6kmNc
-Message-ID: <CAMuHMdU+sQCxaZsV0KthWkuPrFseqtQZb1j+Emn1CShXh4VdnQ@mail.gmail.com>
-Subject: Re: [PATCH] of: Add missing of_node_put() in of_find_node_by_path()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Rob Herring <robh+dt@kernel.org>,
-        Gaurav Minocha <gaurav.minocha.os@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20150122185711.GA14880@katana>
+References: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com>
+	<20150122144522.GF3413@katana>
+	<CAMo8Bf+XJY_bY+OB2i_SZQmAavwERG39BR8FVj202V-E3UidPg@mail.gmail.com>
+	<20150122150717.GJ3413@katana>
+	<87wq4e7jqy.fsf@dell.be.48ers.dk>
+	<20150122185711.GA14880@katana>
+Date: Thu, 22 Jan 2015 23:36:25 +0300
+Message-ID: <CAMo8BfJCPQWa-AGODDO5o2XZU3d-BbaxjSSG9SOoMzoXpYtr-A@mail.gmail.com>
+Subject: Re: [PATCH] i2c-ocores: add common clock support
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Peter Korsgaard <peter@korsgaard.com>, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On Thu, Jan 22, 2015 at 9:57 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> 2?) a new binding is present to specify the IP clock speed:
+>         - is this needed? is somebody using the driver without CCF?
+>         - if so, the new binding is parsed and evaluated
+>         - I couldn't find an existing binding to specify a clock speed.
+>           Please have a look, too. Otherwise we need to introduce sth
+>           like "opencores,ip-clock-khz" probably.
+>         - "clock-frequency" is describing the bus speed as usual
 
-On Thu, Jan 22, 2015 at 5:18 PM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Thu, Jan 22, 2015 at 4:14 PM, Grant Likely <grant.likely@linaro.org> wrote:
->> On Wed, 14 Jan 2015 16:45:56 +0100
->> , Geert Uytterhoeven <geert+renesas@glider.be>
->>  wrote:
->>> When traversing all nodes and moving to a new path component, the old
->>> one must be released by calling of_node_put(). Else the refcounts of the
->>> parent node(s) will not be decremented.
->>>
->>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->>> ---
-> [...]
->>> Feel free to (ab)use the code below and derive a unittest from it...
->
-> BTW, can you do this please? They are pretty important for core
-> changes now, and I'm stuck with doing them if the person supplying a
-> patch does not (and I'm already too much of a bottleneck on the DT
-> code).
+ePAPR document says that clock-frequency 'specifies the frequency
+of a clock in Hz', not identifying which clock. Outside i2c drivers
+subtree it is commonly used to specify input clock frequency of IP
+blocks, even for bus controllers, e.g. SPI.
 
-I'll see whether I can get to it...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Thanks.
+-- Max
