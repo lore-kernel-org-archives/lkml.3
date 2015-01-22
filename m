@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbbAVOyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:54:47 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:46190 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736AbbAVOyq (ORCPT
+	id S1753172AbbAVOzz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:55:55 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:58991 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbbAVOzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:54:46 -0500
-Date: Thu, 22 Jan 2015 14:54:40 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/1] i2c: i2c-st: Rename clock reference to something
- that exists
-Message-ID: <20150122145440.GD9129@x1>
-References: <1409234523-20240-1-git-send-email-lee.jones@linaro.org>
- <20150122121819.GC9129@x1>
- <20150122141427.GA3413@katana>
+	Thu, 22 Jan 2015 09:55:51 -0500
+Date: Thu, 22 Jan 2015 09:55:47 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 0/5] tracing: Add new file system tracefs
+Message-ID: <20150122145547.GB4507@htj.dyndns.org>
+References: <20150121171953.823177070@goodmis.org>
+ <20150121230007.GA10389@kroah.com>
+ <20150121204725.71933044@grimm.local.home>
+ <20150121220701.22231849@grimm.local.home>
+ <20150122031819.GA16561@kroah.com>
+ <20150121225109.6b27b555@grimm.local.home>
+ <20150122123212.GB25645@htj.dyndns.org>
+ <20150122093249.6f4041a8@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150122141427.GA3413@katana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150122093249.6f4041a8@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015, Wolfram Sang wrote:
+Hey, Steven.
 
-> On Thu, Jan 22, 2015 at 12:18:19PM +0000, Lee Jones wrote:
-> > Wolfram,
-> > 
-> > This patch has been on the list since forever.
-> 
-> For reasons :)
-> 
-> a) It was not CCed to the i2c list, so it doesn't show up in patchwork
-> which does the patch tracking for me.
-> 
-> b) I was always under the impression that Maxime is going to take it?
-> He said so.
-> 
-> > I have Acks from the driver author, so I'm going to take this through
-> > the MFD tree.  If you perk up later and decide to take it though the
-> > I2C tree instead, let me know and I'll remove it from MFD.
-> 
-> Well, I2C makes more sense than MFD, so I'll pick it up right now.
-> ST-tree would have also been fine.
+On Thu, Jan 22, 2015 at 09:32:49AM -0500, Steven Rostedt wrote:
+> The problem is that these do not return dentry. They return kernfs_node.
 
-Works for me.  Thanks dude.
+Yeap, that's what represents a file or directory in kernfs.
+
+> I see a kernfs_node_from_dentry() call but not the other way around.
+
+Because dentries / inodes may or may not exist for a given kernfs
+node.  kernfs_nodes are the backing information in a similar way to an
+actual filesystem.
+
+> Yes, the interface for tracefs is just these four functions, but then
+> the interaction of the kernfs versions use a completely different API.
+> 
+> Each of the created files expects to attach their own open, read,
+> write, and release functions. And yes, some even use the seq functions,
+> and they use it the vfs way. I do not intend on rewriting the users of
+> the debugfs file system. To use kernfs, it seems that I would need to
+> do that, and I don't have the time to make such a dramatic change to
+> the system. It will fall down on my TODO list and I probably wont get
+> to it for another decade.
+
+kernfs provides two sets of file operations.  One is seq_file based
+and the other is direct read/write.  In both cases, bouncing data
+between userland and kernel is handled by kernfs.  If you already have
+existing read write ops implemented doing custom buffer handling and
+direct userland memory access, it'll take some adaptation but for a
+lot of cases this would consolidate duplicate code paths.
+
+> I created tracefs with 700 lines of code and two files (inode.c and
+> tracefs.h), and for the users of tracefs, I just did
+> s/debugfs/tracefs/. If I can't make that substitution for the users,
+> that is a show stopper.
+> 
+> I don't see how I can use kernfs without it causing a lot of invasive
+> changes to the ftrace subsystem.
+
+Converting an existing vfs based pseudo fs implementation over to
+kernfs isn't trivial.  I mean, if that were trivial, why would kernfs
+even exist?  kernfs is a layer which abstracts a large part of pseudo
+filesystem which provides extra features like significantly lower
+memory footprint with large number of nodes and revocation support in
+a way that its users, for the most part, hopefully, only have to worry
+about the content to provide to userland.
+
+I frankly have no idea whether tracefs would be a good candidate for
+kernfs usage but if you're looking for a mechanical one-to-one
+conversion from vfs based implementation, that's not gonna work.
+
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
