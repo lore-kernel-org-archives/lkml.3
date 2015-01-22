@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbbAVLgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:36:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45470 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755AbbAVLga (ORCPT
+	id S1751639AbbAVLim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:38:42 -0500
+Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:48427 "EHLO
+	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750811AbbAVLik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:36:30 -0500
-Date: Thu, 22 Jan 2015 19:35:30 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Gabriel Laskar <gabriel@lse.epita.fr>
-Cc: Colin Cross <ccross@android.com>, John Stultz <john.stultz@linaro.org>,
-        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: ashmem - missing linux/types.h in header.
-Message-ID: <20150122113530.GA3638@kroah.com>
-References: <1421918692-5872-1-git-send-email-gabriel@lse.epita.fr>
+	Thu, 22 Jan 2015 06:38:40 -0500
+Message-ID: <54C0E13B.2070400@nexus-software.ie>
+Date: Thu, 22 Jan 2015 11:38:35 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421918692-5872-1-git-send-email-gabriel@lse.epita.fr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, dvhart@infradead.org,
+        andy.shevchenko@gmail.com, boon.leong.ong@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
+References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie> <1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie> <alpine.DEB.2.11.1501221220530.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501221220530.5526@nanos>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 10:24:49AM +0100, Gabriel Laskar wrote:
-> struct ashmem_pin uses __u32 types that are defined in linux/types.h.
-> 
-> Signed-off-by: Gabriel Laskar <gabriel@lse.epita.fr>
-> ---
->  drivers/staging/android/uapi/ashmem.h | 1 +
->  1 file changed, 1 insertion(+)
+On 22/01/15 11:24, Thomas Gleixner wrote:
+> On Wed, 21 Jan 2015, Bryan O'Donoghue wrote:
+>>   arch/x86/Kconfig           |  25 ++
+>>   arch/x86/Kconfig.debug     |  13 +
+>>   arch/x86/include/asm/imr.h |  60 ++++
+>>   arch/x86/kernel/Makefile   |   1 +
+>>   arch/x86/kernel/imr.c      | 681 +++++++++++++++++++++++++++++++++++++++++++++
+>
+> Can we please stop to dump random stuff into x86/kernel?
+>
+> x86/platform ... would be a proper place for this.
+>
+> Thanks,
+>
+> 	tglx
+>
 
-What is broken without this change?  Is something failing to build?
+Hi Thomas.
 
-thanks,
+The IMR registers live in the north cluster of the SoC which is why I 
+thought arch/x86/kernel would be the best place for this code.
 
-greg k-h
+That said, there's no technical reason we couldn't move this code to
+
+drivers/platform/x86/intel_qrk_imr.c
+
+Darren - would that be acceptable to you ?
+
+
