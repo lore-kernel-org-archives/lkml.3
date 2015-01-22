@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbbAVLbz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:31:55 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:50117 "EHLO smtp.infotech.no"
+	id S1751564AbbAVLdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:33:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42089 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915AbbAVLbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:31:53 -0500
-Message-ID: <54C0DF95.8000103@interlog.com>
-Date: Thu, 22 Jan 2015 12:31:33 +0100
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1750799AbbAVLdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 06:33:35 -0500
+Date: Thu, 22 Jan 2015 12:32:47 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 20/36] perf build: Add arch x86 objects building
+Message-ID: <20150122113247.GA1625@krava.brq.redhat.com>
+References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
+ <1421771973-6022-21-git-send-email-jolsa@kernel.org>
+ <54C0177C.3060703@gmail.com>
+ <20150121213157.GH6835@krava.brq.redhat.com>
+ <54C01E14.8020906@gmail.com>
 MIME-Version: 1.0
-To: Colin King <colin.king@canonical.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi_debug: test always evaluates to false, || should
- be used instead
-References: <1421925640-9894-1-git-send-email-colin.king@canonical.com>
-In-Reply-To: <1421925640-9894-1-git-send-email-colin.king@canonical.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C01E14.8020906@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15-01-22 12:20 PM, Colin King wrote:
-> From: Colin Ian King <colin.king@canonical.com>
->
-> cppcheck found the following issue:
-> (warning) Logical conjunction always evaluates to false:
->    alloc_len < 4 && alloc_len > 65535.
->
-> ..the test should be instead:
->
->    if (alloc_len < 4 || alloc_len > 65536)
->
-> This error was introduced by recent commit 38d5c8336e60bf6e53a1da9
-> ("scsi_debug: add Report supported opcodes+tmfs; Compare and write")
->
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
-> ---
->   drivers/scsi/scsi_debug.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-> index 7b8b51b..63a2e1f 100644
-> --- a/drivers/scsi/scsi_debug.c
-> +++ b/drivers/scsi/scsi_debug.c
-> @@ -1623,7 +1623,7 @@ resp_rsup_opcodes(struct scsi_cmnd *scp, struct sdebug_dev_info *devip)
->   	req_opcode = cmd[3];
->   	req_sa = get_unaligned_be16(cmd + 4);
->   	alloc_len = get_unaligned_be32(cmd + 6);
-> -	if (alloc_len < 4 && alloc_len > 0xffff) {
-> +	if (alloc_len < 4 || alloc_len > 0xffff) {
->   		mk_sense_invalid_fld(scp, SDEB_IN_CDB, 6, -1);
->   		return check_condition_result;
->   	}
->
+On Wed, Jan 21, 2015 at 02:45:56PM -0700, David Ahern wrote:
+> On 1/21/15 2:31 PM, Jiri Olsa wrote:
+> >the thing is that in arch/Build we now do:
+> >
+> >+libperf-y += $(ARCH)/
+> >
+> >which would make the build to fail on other architectures,
+> >because the build framework requires 'Build' file in
+> >nested directories.. and this patch adds it only for x86
+> 
+> ok. perhaps add that to the commit message.
 
-I have presented this fix twice already. Most recently in
-"[PATCH] [RESEND] scsi_debug: fix sanity check in resp_rsup_opcodes"
-20150102. So one more time, with feeling:
+right, will do
 
-Acked-by: Douglas Gilbert <dgilbert@interlog.com>
-
-
-
-
+thanks,
+jirka
