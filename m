@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805AbbAVWok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 17:44:40 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:48976 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060AbbAVWoh (ORCPT
+	id S1754169AbbAVWsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 17:48:52 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60318 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338AbbAVWst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 17:44:37 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] drivers/hwmon/adc128d818.c: Do proper sign extension
-Date: Thu, 22 Jan 2015 23:44:14 +0100
-Message-Id: <1421966655-16188-2-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421966655-16188-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1421966655-16188-1-git-send-email-linux@rasmusvillemoes.dk>
+	Thu, 22 Jan 2015 17:48:49 -0500
+Date: Thu, 22 Jan 2015 14:48:47 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Jonathan Corbet <corbet@lwn.net>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Tero Kristo <t-kristo@ti.com>, Manuel Lauss <manuel.lauss@gmail.com>,
+        Alex Elder <elder@linaro.org>, Matt Porter <mporter@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>,
+        Bintian Wang <bintian.wang@huawei.com>,
+        Chao Xie <chao.xie@marvell.com>, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH v12 4/6] clk: Add rate constraints to clocks
+Message-ID: <20150122224847.GQ27202@codeaurora.org>
+References: <1421943207-5180-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1421943207-5180-5-git-send-email-tomeu.vizoso@collabora.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421943207-5180-5-git-send-email-tomeu.vizoso@collabora.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-data->temp[index] has type s16. Because of C's promotion rules,
-(data->temp[index] << 7) >> 7 is exactly the same as
-data->temp[index]. The intention was to use bit 8 as a sign bit, so do
-that using the existing API.
+On 01/22, Tomeu Vizoso wrote:
+> Adds a way for clock consumers to set maximum and minimum rates. This
+> can be used for thermal drivers to set minimum rates, or by misc.
+> drivers to set maximum rates to assure a minimum performance level.
+> 
+> Changes the signature of the determine_rate callback by adding the
+> parameters min_rate and max_rate.
+> 
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> 
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- drivers/hwmon/adc128d818.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-diff --git a/drivers/hwmon/adc128d818.c b/drivers/hwmon/adc128d818.c
-index 0625e50d7a6e..ad2b47e40345 100644
---- a/drivers/hwmon/adc128d818.c
-+++ b/drivers/hwmon/adc128d818.c
-@@ -27,6 +27,7 @@
- #include <linux/err.h>
- #include <linux/regulator/consumer.h>
- #include <linux/mutex.h>
-+#include <linux/bitops.h>
- 
- /* Addresses to scan
-  * The chip also supports addresses 0x35..0x37. Don't scan those addresses
-@@ -189,7 +190,7 @@ static ssize_t adc128_show_temp(struct device *dev,
- 	if (IS_ERR(data))
- 		return PTR_ERR(data);
- 
--	temp = (data->temp[index] << 7) >> 7;	/* sign extend */
-+	temp = sign_extend32(data->temp[index], 8);
- 	return sprintf(buf, "%d\n", temp * 500);/* 0.5 degrees C resolution */
- }
- 
 -- 
-2.1.3
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
