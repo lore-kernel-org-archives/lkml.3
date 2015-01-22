@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbbAVRZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:25:09 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:46553 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbbAVRZA (ORCPT
+	id S1753595AbbAVRZN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:25:13 -0500
+Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:52280 "EHLO
+	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753294AbbAVRZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:25:00 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 7/7] serial: 8250: Prevent concurrent updates to shadow registers
-Date: Thu, 22 Jan 2015 12:24:31 -0500
-Message-Id: <1421947471-6396-8-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1421947471-6396-1-git-send-email-peter@hurleysoftware.com>
-References: <1421947471-6396-1-git-send-email-peter@hurleysoftware.com>
+	Thu, 22 Jan 2015 12:25:09 -0500
+Date: Thu, 22 Jan 2015 11:25:02 -0600
+From: Jeff Epler <jepler@unpythonic.net>
+To: Anshul Garg <aksgarg1989@gmail.com>
+Cc: akpm@linux-foundation.org, levex@linux.com, felipe.contreras@gmail.com,
+        linux-kernel@vger.kernel.org, anshul.g@samsung.com
+Subject: Re: [PATCH] lib/kstrtox.c clean kstrtoll function
+Message-ID: <20150122172501.GE40116@unpythonic.net>
+References: <aksgarg1989@gmai.com>
+ <1421934850-77446-1-git-send-email-aksgarg1989@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421934850-77446-1-git-send-email-aksgarg1989@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The port shadow registers, ->fcr and ->mcr, must be protected from
-concurrent updates. Relocate the shadow register updates in
-serial8250_do_set_termios() to the port lock critical section.
+On Thu, Jan 22, 2015 at 05:54:10AM -0800, Anshul Garg wrote:
+> -		if ((long long)(-tmp) >= 0)
+> -			return -ERANGE;
+> -		*res = -tmp;
+...
+> +	if ((long long)tmp < 0)
+> +		return -ERANGE;
+> +	*res = sign * tmp;
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/serial/8250/8250_core.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+I don't believe overflow handling is correct anymore with this patch.
+Did you try with the input as the most negative possible unsigned long?
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 8fd4b57..ed15341 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2526,6 +2526,15 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
- 				  port->uartclk / 16);
- 	quot = serial8250_get_divisor(up, baud, &frac);
- 
-+	/*
-+	 * Ok, we're now changing the port state.  Do it with
-+	 * interrupts disabled.
-+	 */
-+	serial8250_rpm_get(up);
-+	spin_lock_irqsave(&port->lock, flags);
-+
-+	up->lcr = cval;					/* Save computed LCR */
-+
- 	if (up->capabilities & UART_CAP_FIFO && port->fifosize > 1) {
- 		/* NOTE: If fifo_bug is not set, a user can set RX_trigger. */
- 		if ((baud < 2400 && !up->dma) || up->fifo_bug) {
-@@ -2549,15 +2558,6 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
- 	}
- 
- 	/*
--	 * Ok, we're now changing the port state.  Do it with
--	 * interrupts disabled.
--	 */
--	serial8250_rpm_get(up);
--	spin_lock_irqsave(&port->lock, flags);
--
--	up->lcr = cval;					/* Save computed LCR */
--
--	/*
- 	 * Update the per-port timeout.
- 	 */
- 	uart_update_timeout(port, termios->c_cflag, baud);
--- 
-2.2.2
-
+Jeff
