@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbbAVTo2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:44:28 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20761 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185AbbAVToZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:44:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,450,1418112000"; 
-   d="scan'208";a="655077539"
-From: "Dugger, Donald D" <donald.d.dugger@intel.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-CC: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] PCI: Add Wellsburg (X99) to Intel PCH root port ACS
- quirk
-Thread-Topic: [PATCH] PCI: Add Wellsburg (X99) to Intel PCH root port ACS
- quirk
-Thread-Index: AQHQNnEOxOUUpyxvgEq2jahlkIAfeZzMio4w
-Date: Thu, 22 Jan 2015 19:44:22 +0000
-Message-ID: <6AF484C0160C61439DE06F17668F3BCB5348FE8C@ORSMSX114.amr.corp.intel.com>
-References: <20150122181524.1586.14496.stgit@gimli.home>
-In-Reply-To: <20150122181524.1586.14496.stgit@gimli.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1754052AbbAVTrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 14:47:13 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:36069 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153AbbAVTrK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 14:47:10 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Joonyoung Shim <jy0922.shim@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linaro-kernel@lists.linaro.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene@kernel.org>,
+        "open list\:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "moderated list\:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: dts: exynos5422-odroidxu3: add on-board INA231 sensors
+References: <1421284089-421-1-git-send-email-khilman@kernel.org>
+	<54BF14FB.8050300@samsung.com>
+Date: Thu, 22 Jan 2015 11:47:06 -0800
+In-Reply-To: <54BF14FB.8050300@samsung.com> (Joonyoung Shim's message of "Wed,
+	21 Jan 2015 11:54:51 +0900")
+Message-ID: <7hy4ou61j9.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0MJiYKY029206
 
-Ack-by: Don Dugger <donald.d.dugger@intel.com>
+Joonyoung Shim <jy0922.shim@samsung.com> writes:
 
---
-Don Dugger
-"Censeo Toto nos in Kansa esse decisse." - D. Gale
-Ph: 303/443-3786
+> Hi Kevin,
+>
+> On 01/15/2015 10:08 AM, Kevin Hilman wrote:
+>> From: Kevin Hilman <khilman@linaro.org>
+>> 
+>> The odroid-xu3 has 4 INA231 current sensors on board which can be
+>> accessed from the Linux via the hwmon interface.
+>> 
+>> There is one sensor for each of these power rails:
+>> 
+>> - A15 cluster: VDD_ARM
+>> - A7 cluster: VDD_KFC
+>> - GPU: VDD_G3D
+>> - memory: VDD_MEM
+>> 
+>> In addition to adding the sensors, LDO26 from the PMIC needs to be
+>> enabled because it's powering these sensor.
+>> 
+>> Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> Cc: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+>> ---
+>> v2: use "ti,ina231" as compatible string.
+>> 
+>> Applies on top of "ARM: dts: Add dts file for odroid XU3 board" from Sjoerd Simons.
+>> 
+>>  arch/arm/boot/dts/exynos5422-odroidxu3.dts | 39 ++++++++++++++++++++++++++++++
+>>  1 file changed, 39 insertions(+)
+>> 
+>> diff --git a/arch/arm/boot/dts/exynos5422-odroidxu3.dts b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+>> index c29123c0734d..50353d023225 100644
+>> --- a/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+>> +++ b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+>> @@ -174,6 +174,13 @@
+>>  					regulator-always-on;
+>>  				};
+>>  
+>> +				ldo26_reg: LDO26 {
+>> +					regulator-name = "vdd_ldo26";
+>> +					regulator-min-microvolt = <3000000>;
+>> +					regulator-max-microvolt = <3000000>;
+>> +					regulator-always-on;
+>> +				};
+>> +
+>>  				buck1_reg: BUCK1 {
+>>  					regulator-name = "vdd_mif";
+>>  					regulator-min-microvolt = <800000>;
+>> @@ -257,6 +264,38 @@
+>>  		};
+>>  	};
+>>  
+>> +	i2c_0: i2c@12C60000 {
+>
+> It's ok but IMHO it can split using label reference, e.g. 
+>
+> &i2c_0 {
+> 	...
+> };
 
------Original Message-----
-From: Alex Williamson [mailto:alex.williamson@redhat.com] 
-Sent: Thursday, January 22, 2015 11:16 AM
-To: linux-pci@vger.kernel.org
-Cc: bhelgaas@google.com; Dugger, Donald D; linux-kernel@vger.kernel.org
-Subject: [PATCH] PCI: Add Wellsburg (X99) to Intel PCH root port ACS quirk
+Yes, you're right.  I'll spin a v3.
 
-Intel has confirmed that the Wellsburg chipset, while not reporting ACS, does provide the proper isolation through the RCBA/BSPR registers, so the same quirk works for this set of device IDs.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Don Dugger <donald.d.dugger@intel.com>
----
-
- drivers/pci/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index ed6f89b..2cdb789 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3630,6 +3630,9 @@ static const u16 pci_quirk_intel_pch_acs_ids[] = {
- 	0x9c98, 0x9c99, 0x9c9a, 0x9c9b,
- 	/* Patsburg (X79) PCH */
- 	0x1d10, 0x1d12, 0x1d14, 0x1d16, 0x1d18, 0x1d1a, 0x1d1c, 0x1d1e,
-+	/* Wellsburg (X99) PCH */
-+	0x8d10, 0x8d11, 0x8d12, 0x8d13, 0x8d14, 0x8d15, 0x8d16, 0x8d17,
-+	0x8d18, 0x8d19, 0x8d1a, 0x8d1b, 0x8d1c, 0x8d1d, 0x8d1e,
- };
- 
- static bool pci_quirk_intel_pch_acs_match(struct pci_dev *dev)
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Kevin
