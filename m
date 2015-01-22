@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144AbbAVQYU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:24:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37855 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753613AbbAVQYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:24:17 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-audit@redhat.com, sd@queasysnail.net,
-        linux-kernel@vger.kernel.org, linux@roeck-us.net,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v2 5/5] audit: replace getname()/putname() hacks with reference counters
-Date: Thu, 22 Jan 2015 11:24:10 -0500
-Message-ID: <1904775.fjUp0pyajn@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150122160942.GK18752@madcap2.tricolour.ca>
-References: <20150122045303.1347.98054.stgit@localhost> <20150122050023.1347.6866.stgit@localhost> <20150122160942.GK18752@madcap2.tricolour.ca>
+	id S1753078AbbAVQ0v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 11:26:51 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:33969 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbbAVQ0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 11:26:48 -0500
+Date: Thu, 22 Jan 2015 08:26:46 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: platform-driver-x86@vger.kernel.org,
+        Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: Re: [PATCH v2 2/3] asus-laptop: use DEVICE_ATTR_* macros
+Message-ID: <20150122162646.GA66191@vmdeb7>
+References: <20150121182803.GC7386@vmdeb7>
+ <1741852285.168343.1421871557328.JavaMail.root@mail>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1741852285.168343.1421871557328.JavaMail.root@mail>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 22, 2015 11:09:42 AM Richard Guy Briggs wrote:
-> On 15/01/22, Paul Moore wrote:
-> > In order to ensure that filenames are not released before the audit
-> > subsystem is done with the strings there are a number of hacks built
-> > into the fs and audit subsystems around getname() and putname().  To
-> > say these hacks are "ugly" would be kind.
-> > 
-> > This patch removes the filename hackery in favor of a more
-> > conventional reference count based approach.  The diffstat below tells
-> > most of the story; lots of audit/fs specific code is replaced with a
-> > traditional reference count based approach that is easily understood,
-> > even by those not familiar with the audit and/or fs subsystems.
-> > 
-> > CC: viro@zeniv.linux.org.uk
-> > CC: linux-fsdevel@vger.kernel.org
-> > Signed-off-by: Paul Moore <pmoore@redhat.com>
+On Wed, Jan 21, 2015 at 03:19:17PM -0500, Vivien Didelot wrote:
+> Hi Darren,
 > 
-> Noted change of bumping refcnt before passing back pointer to struct
-> filename.
+> > > Use DEVICE_ATTR_{RO,WO,RW} macros to simplify attributes
+> > > declarations.
+> >
+> > It does a lot more than that, including a lot of seemingly
+> > superfluous reformatting of function declarations and renaming.
 > 
-> Reviewed-by: Richard Guy Briggs <rgb@redhat.com>
+> What do you mean? DEVICE_ATTR_RW(foo) requires foo_show() and foo_store()
+> functions, not show_foo() and store_foo().
 
-Thanks for taking another look at the patch set.
+Ah yes, of course. Perhaps obvious in hindsight, but a bit more explanation in
+the commit message would have eliminated the confusion.
+
+Always provide enough information in your commit log to explain to someone else
+that hasn't been looking at the code as recently as you have to understand the
+problem, the solution, and which provides sufficient explanation for all changes
+included in the patch.
+
+Please resubmit with a more complete commit message.
 
 -- 
-paul moore
-security @ redhat
-
+Darren Hart
+Intel Open Source Technology Center
