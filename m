@@ -1,113 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbbAVLCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:02:51 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:42143 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751449AbbAVLCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:02:42 -0500
-Date: Thu, 22 Jan 2015 13:02:10 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Calvin Owens <calvinowens@fb.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+	id S1755115AbbAWNt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 08:49:27 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:58397 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbbAWNtY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 08:49:24 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Sergey Dyasly <s.dyasly@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        James Bottomley <JBottomley@parallels.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-team@fb.com,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [RFC][PATCH] procfs: Always expose /proc/<pid>/map_files/ and
- make it readable
-Message-ID: <20150122110210.GA31186@node.dhcp.inet.fi>
-References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
- <20150114152501.GB9820@node.dhcp.inet.fi>
- <20150114153323.GF2253@moon>
- <20150114204653.GA26698@mail.thefacebook.com>
- <20150114211613.GH2253@moon>
- <20150122024554.GB23762@mail.thefacebook.com>
+        Dmitry Safonov <d.safonov@partner.samsung.com>
+Subject: Re: [PATCH] ARM: use default ioremap alignment for SMP or LPAE
+Date: Thu, 22 Jan 2015 12:03 +0100
+Message-ID: <3060178.HEZJjJCl1e@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150122100441.GA19811@e104818-lin.cambridge.arm.com>
+References: <1421911075-8814-1-git-send-email-s.dyasly@samsung.com> <20150122100441.GA19811@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122024554.GB23762@mail.thefacebook.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:IwkuIH+LHHIDXQYyf+1VVMekmDYs5uNKACNwMhvKbcpITZ97WNQ
+ PjNlml8kBBr5jyql5pbeQpEce4+r7EwPYxhgQwVdgk492f9SY+U0MbO1gJahLPkuQrBRrUK
+ CPtEGhnnRDTJc5PCqykuPTPybNMgMOGGhYaclfgz2ZyVsvsGRzPqcHfLGyH1FdvohcLgfbv
+ uWeKH3O6fSiPLWRzqisWw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 06:45:54PM -0800, Calvin Owens wrote:
-> Currently, /proc/<pid>/map_files/ is restricted to CAP_SYS_ADMIN, and
-> is only exposed if CONFIG_CHECKPOINT_RESTORE is set. This interface
-> is very useful for enumerating the files mapped into a process when
-> the more verbose information in /proc/<pid>/maps is not needed.
+On Thursday 22 January 2015 10:04:41 Catalin Marinas wrote:
+> On Thu, Jan 22, 2015 at 07:17:55AM +0000, Sergey Dyasly wrote:
+> > 16MB alignment for ioremap mappings was added by commit a069c896d0d6 ("[ARM]
+> > 3705/1: add supersection support to ioremap()") in order to support supersection
+> > mappings. But __arm_ioremap_pfn_caller uses section and supersection mappings
+> > only in !SMP && !LPAE case. There is no need for such big alignment if either
+> > SMP or LPAE is enabled.
+> [...]
+> > diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+> > index 184def0..c3ef139 100644
+> > --- a/arch/arm/include/asm/memory.h
+> > +++ b/arch/arm/include/asm/memory.h
+> > @@ -78,10 +78,12 @@
+> >   */
+> >  #define XIP_VIRT_ADDR(physaddr)  (MODULES_VADDR + ((physaddr) & 0x000fffff))
+> >  
+> > +#if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
+> >  /*
+> >   * Allow 16MB-aligned ioremap pages
+> >   */
+> >  #define IOREMAP_MAX_ORDER    24
+> > +#endif
 > 
-> This patch moves the folder out from behind CHECKPOINT_RESTORE, and
-> removes the CAP_SYS_ADMIN restrictions. To avoid exposing files to
-> processes for whom they may not be visible, a follow_link() stub is
-> added to the inode_operations struct attached to the symlinks that
-> prevent them from being followed without CAP_SYS_ADMIN.
-> 
-> Signed-off-by: Calvin Owens <calvinowens@fb.com>
-> ---
->  fs/proc/base.c | 42 +++++++++++++++++++++++-------------------
->  1 file changed, 23 insertions(+), 19 deletions(-)
-> 
-> diff --git a/fs/proc/base.c b/fs/proc/base.c
-> index 3f3d7ae..7d48003 100644
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -1632,8 +1632,6 @@ end_instantiate:
->  	return dir_emit(ctx, name, len, 1, DT_UNKNOWN);
->  }
->  
-> -#ifdef CONFIG_CHECKPOINT_RESTORE
-> -
->  /*
->   * dname_to_vma_addr - maps a dentry name into two unsigned longs
->   * which represent vma start and end addresses.
-> @@ -1660,11 +1658,6 @@ static int map_files_d_revalidate(struct dentry *dentry, unsigned int flags)
->  	if (flags & LOOKUP_RCU)
->  		return -ECHILD;
->  
-> -	if (!capable(CAP_SYS_ADMIN)) {
-> -		status = -EPERM;
-> -		goto out_notask;
-> -	}
-> -
->  	inode = dentry->d_inode;
->  	task = get_proc_task(inode);
->  	if (!task)
-> @@ -1753,6 +1746,28 @@ struct map_files_info {
->  	unsigned char	name[4*sizeof(long)+2]; /* max: %lx-%lx\0 */
->  };
->  
-> +/*
-> + * Allowing any user to follow the symlinks in /proc/<pid>/map_files/ could
-> + * allow processes to access files that should not be visible to them, so
-> + * restrict follow_link() to CAP_SYS_ADMIN for these files.
-> + */
-> +static void *proc_map_files_follow_link(struct dentry *d, struct nameidata *n)
-> +{
-> +	if (!capable(CAP_SYS_ADMIN))
-> +		return ERR_PTR(-EPERM);
-> +
-> +	return proc_pid_follow_link(d, n);
-> +}
+> Actually, I think we could make this depend only on CONFIG_IO_36. That's
+> the only scenario where we get the supersections matter, and maybe make
+> CONFIG_IO_36 dependent on !SMP or !ARM_LPAE.
 
-I have thought a bit more about this and not sure it's reasonable to
-limit it to CAP_SYS_ADMIN. What scenario are we protecting from?
+Good point, I assumed this was just a performance optimization,
+but it is in fact required for dynamic high mappings on XSC3.
 
-Initially, I thought about something like this: privileged process opens a
-file, map part of it, closes the file and drop privileges with hope to
-limit further access to mapped window of the file. But I don't see what
-would stop the unprivileged process from accessing rest of the file using
-mremap(2). And if a process can do this, anybody who can ptrace(2) the
-process can do this.
+> My assumption is that we
+> don't support single zImage with CPU_XSC3 enabled (but I haven't
+> followed the latest developments here).
 
-Am I missing something?
+I have said in the past that I do not expect any of the xscale or
+strongarm based platforms to be used with a single zImage kernel.
+This has changed slightly given the work that Robert Jarzmik and
+others are doing on mach-pxa with DT conversion. I still don't
+think it's likely that they will move on to multiplatform, but I
+no longer think it's impossible.
 
--- 
- Kirill A. Shutemov
+Fortunately, PXA also does not have any high physical address mappings
+that I can see. The only platform we have that has these (see
+'git grep ioremap_pfn') is mach-iop13xx, and I am still seeing
+this in the 'never going to be multiplatform' category.
+
+Unrelated to this question however is whether we want to keep
+supersection mappings as a performance optimization to save TLBs.
+It seems useful to me, but not critical.
+
+	Arnd
