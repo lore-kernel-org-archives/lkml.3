@@ -1,67 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbbAVRnT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:43:19 -0500
-Received: from know-smtprelay-omc-3.server.virginmedia.net ([80.0.253.67]:58107
-	"EHLO know-smtprelay-omc-3.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752451AbbAVRnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:43:17 -0500
-X-Originating-IP: [82.33.62.46]
-X-Spam: 0
-X-Authority: v=2.1 cv=N7qnFgNB c=1 sm=1 tr=0 a=43HWeVr0mW5rhQls5iFsjw==:117
- a=43HWeVr0mW5rhQls5iFsjw==:17 a=5IRWAbXhAAAA:8 a=M1kyBYkWWGkA:10
- a=kj9zAlcOel0A:10 a=YNv0rlydsVwA:10 a=P8IAXAFlsoDwY6_0u5UA:9 a=CjuIK1q_8ugA:10
-Date: Thu, 22 Jan 2015 17:43:15 +0000
-From: James Dingwall <james@dingwall.me.uk>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.18.2 / xen 4.4.1 dom0 - microcode oops
-Message-ID: <20150122174315.GA32051@dingwall.me.uk>
-References: <20150122055242.GA11089@dingwall.me.uk>
- <20150122082003.GA3441@pd.tnic>
- <54C10DB6.2050708@oracle.com>
- <54C10ED0.1010302@oracle.com>
- <20150122153002.GA3554@pd.tnic>
+	id S1753258AbbAVRqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:46:39 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:58307 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451AbbAVRqh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 12:46:37 -0500
+Message-ID: <54C1377B.9070801@hurleysoftware.com>
+Date: Thu, 22 Jan 2015 12:46:35 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122153002.GA3554@pd.tnic>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joe Schultz <jschultz@xes-inc.com>,
+        Aaron Sierra <asierra@xes-inc.com>
+Subject: Re: [PATCH 5/7] serial: 8250: Refactor XR17V35X divisor calculation
+References: <1421947471-6396-1-git-send-email-peter@hurleysoftware.com> <1421947471-6396-6-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1421947471-6396-6-git-send-email-peter@hurleysoftware.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 04:30:02PM +0100, Borislav Petkov wrote:
-> On Thu, Jan 22, 2015 at 09:53:04AM -0500, Boris Ostrovsky wrote:
-> > Alternatively, we could return an error (-EINVAL?) from
-> > microcode_init() when either of these two conditions is true.
+On 01/22/2015 12:24 PM, Peter Hurley wrote:
+> Exar XR17V35X PCIe uarts support a 4-bit fractional divisor register.
+> Refactor the divisor calculation from the divisor programming.
 > 
-> Yeah, this should be the right fix.
+> Allow a fractional result from serial8250_get_divisor() and pass this
+> result to serial8250_dl_write().
 > 
-> James, does that fix your issue? (It should.)
+> Simplify the calculation for quot and quot_frac. This was verified
+> to be identical to the results of the original calculation with a test
+> jig.
 > 
-> ---
-> diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-> index 15c29096136b..36a83617eb21 100644
-> --- a/arch/x86/kernel/cpu/microcode/core.c
-> +++ b/arch/x86/kernel/cpu/microcode/core.c
-> @@ -552,7 +552,7 @@ static int __init microcode_init(void)
->  	int error;
->  
->  	if (paravirt_enabled() || dis_ucode_ldr)
-> -		return 0;
-> +		return -EINVAL;
->  
->  	if (c->x86_vendor == X86_VENDOR_INTEL)
->  		microcode_ops = init_intel_microcode();
+> NB: The results were also compared with the divisor value chart
+> on pg 33 of the Exar XR17V352 datasheet, rev 1.0.3, here:
+> http://www.exar.com/common/content/document.ashx?id=1585
+> which differs from the calculated values by 1 in the fractional result.
+> This is because the calculated values are still rounded in the
+> fractional result, whereas the table values are truncated. Note
+> that the data error rate % values in the datasheet are for
+> rounded fractional results, as the truncated fractional results
+> have more error.
 > 
-> -- 
+> Cc: Joe Schultz <jschultz@xes-inc.com>
+> Cc: Aaron Sierra <asierra@xes-inc.com>
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 
-This patch solves it for me on my dom0 with 3.18.3, now there is nothing printed at all from the microcode 
-driver which doesn't seem surprising given where the return is.  I'll check it on bare metal at the next 
-opportunity but from my understanding of what is happening there I don't see that it should have any impact at 
-all.
+FWIW, here's the test jig:
 
-Thanks,
-James
+--- /dev/null	2015-01-22 11:30:11.407707482 -0500
++++ divisor.c	2015-01-22 12:42:34.722403359 -0500
+@@ -0,0 +1,92 @@
++/*
++ * divisor.c - test jig for evaluating computation equivalence
++ *	       of divisors for XR17V35x UART
++ */
++
++#include <stdio.h>
++
++#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
++
++/* from include/linux/kernel.h */
++
++#define DIV_ROUND_CLOSEST(x, divisor)(			\
++{							\
++	typeof(x) __x = x;				\
++	typeof(divisor) __d = divisor;			\
++	(((typeof(x))-1) > 0 ||				\
++	 ((typeof(divisor))-1) > 0 || (__x) > 0) ?	\
++		(((__x) + ((__d) / 2)) / (__d)) :	\
++		(((__x) - ((__d) / 2)) / (__d));	\
++}							\
++)
++
++/* 125MHz clock on XR17V35x */
++unsigned int clk = 125000000;
++
++
++void calc_quot(unsigned int baud, unsigned int *quot, unsigned int *frac) {
++
++	unsigned int baud_x32 = (2 * clk) / baud;
++
++	*quot = baud_x32 / 32;
++	*frac = DIV_ROUND_CLOSEST(baud_x32 % 32, 2);
++}
++
++void calc_quot2(unsigned int baud, unsigned int *quot, unsigned int *frac) {
++
++	/* compute quotient as a 16.4 fixed point value */
++	unsigned int quot_16 = DIV_ROUND_CLOSEST(clk, baud);
++
++	*quot = quot_16 >> 4;
++	*frac = quot_16 & 0x0f;
++}
++
++
++int main() {
++	int i;
++	unsigned int bauds[] = {   2400,
++				   4800,
++				   9600,
++				  10000,
++				  19200,
++				  25000,
++				  28800,
++				  38400,
++				  50000,
++				  57600,
++				  75000,
++				 100000,
++				 115200,
++				 153600,
++				 200000,
++				 225000,
++				 230400,
++				 250000,
++				 300000,
++				 400000,
++				 460800,
++				 500000,
++				 576000,
++				 750000,
++				 921600,
++				1000000,
++				1152000,
++			       };
++
++	for (i = 0; i < ARRAY_SIZE(bauds); i++) {
++		unsigned int quot, frac;
++		unsigned int quot2, frac2;
++
++		calc_quot(bauds[i], &quot, &frac);
++		calc_quot2(bauds[i], &quot2, &frac2);
++
++		if (quot != quot2 || frac != frac2) {
++			printf("diff: %04x.%01x != %04x.%01x\n", quot, frac,
++			       quot2, frac2);
++		} else
++			printf("%10d  %02X %02X %01X\n", bauds[i],
++			       quot2 >> 8, quot2 & 0xff, frac2);
++	}
++
++	return 0;
++}
+
