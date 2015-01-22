@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbbAVKaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 05:30:03 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40812 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbbAVK3y (ORCPT
+	id S1752350AbbAVKbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 05:31:06 -0500
+Received: from regular1.263xmail.com ([211.150.99.130]:56588 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208AbbAVKaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 05:29:54 -0500
-Date: Thu, 22 Jan 2015 10:29:20 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>, Wei Huang <wei@redhat.com>
-Subject: Re: linux-next: manual merge of the kvm-arm tree with the arm64 tree
-Message-ID: <20150122102920.GA12911@leverpostej>
-References: <20150122160704.5ad5aeb9@canb.auug.org.au>
- <87r3unfb9x.fsf@approximate.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r3unfb9x.fsf@approximate.cambridge.arm.com>
-Thread-Topic: linux-next: manual merge of the kvm-arm tree with the arm64 tree
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 22 Jan 2015 05:30:55 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-ADDR-CHECKED: 0
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: airlied@linux.ie
+X-SENDER-IP: 192.69.251.64
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <4d9ff3ff20900b70eb998d546a9bb5b9>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Mark Yao <mark.yao@rock-chips.com>
+To: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Clark <robdclark@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Daniel Kurtz <djkurtz@chromium.org>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
+Cc: Mark Yao <mark.yao@rock-chips.com>
+Subject: [PATCH v2 0/2] drm/rockchip: Optimization vop dpms control
+Date: Thu, 22 Jan 2015 18:29:55 +0800
+Message-Id: <1421922597-18351-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 08:51:54AM +0000, Marc Zyngier wrote:
-> On Thu, Jan 22 2015 at  5:07:04 am GMT, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> Hi Stephen,
-> 
-> > Today's linux-next merge of the kvm-arm tree got a conflict in
-> > arch/arm64/include/asm/kvm_arm.h between commit 6e53031ed840 ("arm64:
-> > kvm: remove ESR_EL2_* macros") from the arm64 tree and commit
-> > 0d97f8848104 ("arm/arm64: KVM: add tracing support for arm64 exit
-> > handler") from the kvm-arm tree.
-> >
-> > I fixed it up (see below, but this probably requires more work) and can
-> > carry the fix as necessary (no action is required).
-> 
-> Thanks for dealing with this. I think the following patch should be
-> applied on top of your resolution, making the new macro part of the
-> asm/esr.h file.
-> 
-> Mark, Wei: does it match your expectations?
+drm dpms have many power modes, ON,OFF,SUSPEND,STANDBY, etc.
+but vop only have enable/disable mode, maybe case such bug:
+ --> DRM_DPMS_ON: power on vop
+ --> DRM_DPMS_SUSPEND: power off vop
+ --> DRM_DPMS_OFF: already power off at SUSPEND, crash
+so use a bool val is more suitable.
 
-The below patch looks fine to me.
+another problem at vop_crtc_dpms:
+  vop_enable()->drm_vblank_on, drm_vblank_on may call vop
+enable vblank. if it happen, vblank enable would failed,
+then cause irq status error. because is_enabled value is set
+after drm_vblank_on.
 
-I suspected we mighh see something like this, so I kept my
-arm64/common-esr-macros branch [1] stable. Catalin merged this into the
-arm64 for-next/core branch.
+Changes in v2:
+- fix mistake that set is_enabled wrong.
 
-I guess the easiest way to solve the conflict would be if the kvm-arm
-tree also merged that and fixed the fallout there?
+Mark Yao (2):
+  drm/rockchip: vop use is_enabled instead of dpms mode
+  drm/rockchip: vop: set vop enabled after enable iommu
 
-Thanks,
-Mark.
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c |    2 +-
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c   |   17 +++++------------
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h   |    3 +--
+ 3 files changed, 7 insertions(+), 15 deletions(-)
 
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/mark/linux.git arm64/common-esr-macros
+-- 
+1.7.9.5
 
-> 
-> Thanks,
-> 
-> 	M.
-> 
-> diff --git a/arch/arm64/include/asm/esr.h b/arch/arm64/include/asm/esr.h
-> index 6216709..92bbae3 100644
-> --- a/arch/arm64/include/asm/esr.h
-> +++ b/arch/arm64/include/asm/esr.h
-> @@ -96,6 +96,7 @@
->  #define ESR_ELx_COND_SHIFT	(20)
->  #define ESR_ELx_COND_MASK	(UL(0xF) << ESR_ELx_COND_SHIFT)
->  #define ESR_ELx_WFx_ISS_WFE	(UL(1) << 0)
-> +#define ESR_ELx_xVC_IMM_MASK	((1UL << 16) - 1)
->  
->  #ifndef __ASSEMBLY__
->  #include <asm/types.h>
-> diff --git a/arch/arm64/include/asm/kvm_arm.h b/arch/arm64/include/asm/kvm_arm.h
-> index 53fbc1e..94674eb 100644
-> --- a/arch/arm64/include/asm/kvm_arm.h
-> +++ b/arch/arm64/include/asm/kvm_arm.h
-> @@ -192,6 +192,4 @@
->  /* Hyp Prefetch Fault Address Register (HPFAR/HDFAR) */
->  #define HPFAR_MASK	(~UL(0xf))
->  
-> -#define ESR_EL2_HVC_IMM_MASK	((1UL << 16) - 1)
-> -
->  #endif /* __ARM64_KVM_ARM_H__ */
-> diff --git a/arch/arm64/include/asm/kvm_emulate.h b/arch/arm64/include/asm/kvm_emulate.h
-> index b861ff6..bbc17cd 100644
-> --- a/arch/arm64/include/asm/kvm_emulate.h
-> +++ b/arch/arm64/include/asm/kvm_emulate.h
-> @@ -133,7 +133,7 @@ static inline phys_addr_t kvm_vcpu_get_fault_ipa(const struct kvm_vcpu *vcpu)
->  
->  static inline u32 kvm_vcpu_hvc_get_imm(const struct kvm_vcpu *vcpu)
->  {
-> -	return kvm_vcpu_get_hsr(vcpu) & ESR_EL2_HVC_IMM_MASK;
-> +	return kvm_vcpu_get_hsr(vcpu) & ESR_ELx_xVC_IMM_MASK;
->  }
->  
->  static inline bool kvm_vcpu_dabt_isvalid(const struct kvm_vcpu *vcpu)
-> 
-> -- 
-> Jazz is not dead. It just smells funny.
-> 
+
