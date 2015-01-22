@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853AbbAVDuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 22:50:51 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:7715 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750898AbbAVDum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 22:50:42 -0500
-Date: Wed, 21 Jan 2015 22:51:09 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: tj@kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/5] tracing: Add new file system tracefs
-Message-ID: <20150121225109.6b27b555@grimm.local.home>
-In-Reply-To: <20150122031819.GA16561@kroah.com>
-References: <20150121171953.823177070@goodmis.org>
-	<20150121230007.GA10389@kroah.com>
-	<20150121204725.71933044@grimm.local.home>
-	<20150121220701.22231849@grimm.local.home>
-	<20150122031819.GA16561@kroah.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1754443AbbAVDvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 22:51:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35555 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100AbbAVDvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 22:51:41 -0500
+Date: Wed, 21 Jan 2015 21:51:26 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Li Bin <huawei.libin@huawei.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, live-patching@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com, guohanjun@huawei.com,
+        zhangdianfang@huawei.com, xiexiuqi@huawei.com
+Subject: Re: [PATCH 2/2] livepatch: disable/enable_patch manners for
+ interdependent patches
+Message-ID: <20150122035126.GB12927@treble.redhat.com>
+References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com>
+ <1421831262-27869-3-git-send-email-huawei.libin@huawei.com>
+ <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz>
+ <54C04775.1070908@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <54C04775.1070908@huawei.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015 11:18:19 +0800
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-
-
-> Tejun would know best, he wrote it :)
-
-Oh good, as Bugs Bunny would say "where's the doc?" (or was that
-"what's up doc"?)
-
+On Thu, Jan 22, 2015 at 08:42:29AM +0800, Li Bin wrote:
+> On 2015/1/21 22:08, Jiri Kosina wrote:
+> > On Wed, 21 Jan 2015, Li Bin wrote:
+> > By this you limit the definition of the patch inter-dependency to just 
+> > symbols. But that's not the only way how patches can depend on it other -- 
+> > the dependency can be semantical.
 > 
-> What specifically are you looking for?  I think there's at least two
-> filesystems using it already, are they not good enough examples?
-> 
+> Yes, I agree with you. But I think the other dependencies such as semantical
+> dependency should be judged by the user, like reverting a patch from git repository.
+> Right?
 
-Well, I see the two biggest users are sysfs and cgroups, where I never
-understood how sysfs actually works, and cgroups, the filesystem is
-very integrated with the usage of cgroups.
+But with live patching, there are two users: the patch creator (who
+creates the patch module) and the end user (who loads it on their
+system).
 
-There doesn't seem to be any abi where one can relate to the vfs
-system.
+We can assume the patch creator knows what he's doing, but the end user
+doesn't always know or care about low level details like patch
+dependencies.  The easiest and safest way to protect the end user is the
+current approach, which assumes that each patch depends on all
+previously applied patches.
 
-I'd like to keep the interface like debugfs had for tracefs, because
-all of tracing depends on it, and it would require a full rewrite to
-convert it to something that doesn't have the vfs type of paradigm, in
-which case, tracefs would not be done for another decade.
-
-That is, I need to create the following interface:
-
-  tracefs_create_file()
-  tracefs_create_dir()
-  tracefs_remove()
-  tracefs_remove_recursive()
-
-and that's all I need for the filesystem. There doesn't seem to be any
-documentation on kernfs about how to implement this.
-
-Yes, I can study the code, but I was hoping that there was some
-kernfs.txt that described how to create a new fs with it. It just saves
-time if there was a document than having to read the code and perhaps
-use it in a way it wasn't supposed to be used.
-
--- Steve
+-- 
+Josh
