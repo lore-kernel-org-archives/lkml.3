@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572AbbAVCcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:32:16 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:53867 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309AbbAVCcH (ORCPT
+	id S1754682AbbAVCdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:33:45 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58854 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343AbbAVCcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:32:07 -0500
+	Wed, 21 Jan 2015 21:32:08 -0500
 From: Xunlei Pang <pang.xunlei@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
@@ -14,9 +14,9 @@ Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
         John Stultz <john.stultz@linaro.org>,
         Arnd Bergmann <arnd.bergmann@linaro.org>,
         Xunlei Pang <pang.xunlei@linaro.org>
-Subject: [PATCH 2/5] drivers/rtc/rtc-dev.c: Update code to use y2038-safe time interfaces
-Date: Thu, 22 Jan 2015 02:31:52 +0000
-Message-Id: <1421893915-19309-2-git-send-email-pang.xunlei@linaro.org>
+Subject: [PATCH 3/5] rtc: Modify rtc_hctosys() to address y2038 issues
+Date: Thu, 22 Jan 2015 02:31:53 +0000
+Message-Id: <1421893915-19309-3-git-send-email-pang.xunlei@linaro.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1421893915-19309-1-git-send-email-pang.xunlei@linaro.org>
 References: <1421893915-19309-1-git-send-email-pang.xunlei@linaro.org>
@@ -24,50 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, rtc-dev.c uses y2038 problematic rtc_tm_to_time()
-and rtc_time_to_tm(). So replace them with their corresponding
-y2038-safe versions: rtc_tm_to_time64() and rtc_time64_to_tm().
+rtc_hctosys() has a number of y2038 issues.
+
+This patch resolves them by:
+- Replace rtc_tm_to_time() with y2038-safe rtc_tm_to_time64()
+- Replace do_settimeofday() with y2038-safe do_settimeofday64()
+
+After this patch, it should not have any remaining y2038 issues.
 
 Reviewed-by: John Stultz <john.stultz@linaro.org>
 Reviewed-by: Arnd Bergmann <arnd.bergmann@linaro.org>
 Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
 ---
- drivers/rtc/rtc-dev.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/rtc/hctosys.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/rtc/rtc-dev.c b/drivers/rtc/rtc-dev.c
-index d049393..799c34b 100644
---- a/drivers/rtc/rtc-dev.c
-+++ b/drivers/rtc/rtc-dev.c
-@@ -304,12 +304,12 @@ static long rtc_dev_ioctl(struct file *file,
- 		 * Not supported here.
- 		 */
- 		{
--			unsigned long now, then;
-+			time64_t now, then;
+diff --git a/drivers/rtc/hctosys.c b/drivers/rtc/hctosys.c
+index 4aa60d7..2153b52 100644
+--- a/drivers/rtc/hctosys.c
++++ b/drivers/rtc/hctosys.c
+@@ -26,7 +26,7 @@ static int __init rtc_hctosys(void)
+ {
+ 	int err = -ENODEV;
+ 	struct rtc_time tm;
+-	struct timespec tv = {
++	struct timespec64 tv64 = {
+ 		.tv_nsec = NSEC_PER_SEC >> 1,
+ 	};
+ 	struct rtc_device *rtc = rtc_class_open(CONFIG_RTC_HCTOSYS_DEVICE);
+@@ -52,16 +52,16 @@ static int __init rtc_hctosys(void)
+ 		goto err_invalid;
+ 	}
  
- 			err = rtc_read_time(rtc, &tm);
- 			if (err < 0)
- 				return err;
--			rtc_tm_to_time(&tm, &now);
-+			now = rtc_tm_to_time64(&tm);
+-	rtc_tm_to_time(&tm, &tv.tv_sec);
++	tv64.tv_sec = rtc_tm_to_time64(&tm);
  
- 			alarm.time.tm_mday = tm.tm_mday;
- 			alarm.time.tm_mon = tm.tm_mon;
-@@ -317,11 +317,11 @@ static long rtc_dev_ioctl(struct file *file,
- 			err  = rtc_valid_tm(&alarm.time);
- 			if (err < 0)
- 				return err;
--			rtc_tm_to_time(&alarm.time, &then);
-+			then = rtc_tm_to_time64(&alarm.time);
+-	err = do_settimeofday(&tv);
++	err = do_settimeofday64(&tv64);
  
- 			/* alarm may need to wrap into tomorrow */
- 			if (then < now) {
--				rtc_time_to_tm(now + 24 * 60 * 60, &tm);
-+				rtc_time64_to_tm(now + 24 * 60 * 60, &tm);
- 				alarm.time.tm_mday = tm.tm_mday;
- 				alarm.time.tm_mon = tm.tm_mon;
- 				alarm.time.tm_year = tm.tm_year;
+ 	dev_info(rtc->dev.parent,
+ 		"setting system clock to "
+-		"%d-%02d-%02d %02d:%02d:%02d UTC (%u)\n",
++		"%d-%02d-%02d %02d:%02d:%02d UTC (%lld)\n",
+ 		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+ 		tm.tm_hour, tm.tm_min, tm.tm_sec,
+-		(unsigned int) tv.tv_sec);
++		(long long) tv64.tv_sec);
+ 
+ err_invalid:
+ err_read:
 -- 
 1.9.1
 
