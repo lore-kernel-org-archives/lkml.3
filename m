@@ -1,181 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbbAVDZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 22:25:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22175 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768AbbAVDZC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 22:25:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,446,1418112000"; 
-   d="scan'208";a="673847573"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>
-CC: "Luck, Tony" <tony.luck@intel.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: RE: [RFC Patch 05/19] ACPI: Provide union for address_space64 and
- ext_address_space64
-Thread-Topic: [RFC Patch 05/19] ACPI: Provide union for address_space64 and
- ext_address_space64
-Thread-Index: AQHQKusel1jb3EibpEun4I6ftc/GqZzLbfVw//+UeQCAAIywcA==
-Date: Thu, 22 Jan 2015 03:24:52 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88026B9F36@SHSMSX101.ccr.corp.intel.com>
-References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com>
- <1420684386-5975-6-git-send-email-jiang.liu@linux.intel.com>
- <1AE640813FDE7649BE1B193DEA596E88026B9EFB@SHSMSX101.ccr.corp.intel.com>
- <54C06726.4090805@linux.intel.com>
-In-Reply-To: <54C06726.4090805@linux.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754137AbbAVD60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 22:58:26 -0500
+Received: from mail-by2on0124.outbound.protection.outlook.com ([207.46.100.124]:7328
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750796AbbAVD6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 22:58:16 -0500
+X-Greylist: delayed 1066 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jan 2015 22:58:15 EST
+Date: Thu, 22 Jan 2015 11:32:05 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] dma: imx-sdma: switch to dynamic context mode after
+ script loaded
+Message-ID: <20150122033204.GA6133@Robin-OptiPlex-780>
+References: <1421125757-10794-1-git-send-email-b38343@freescale.com>
+ <20150120071614.GI18220@pengutronix.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20150120071614.GI18220@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(51704005)(24454002)(199003)(243025005)(189002)(23726002)(19580405001)(97736003)(33656002)(105606002)(104016003)(77156002)(46406003)(83506001)(50986999)(97756001)(85426001)(19580395003)(87936001)(6806004)(110136001)(575784001)(2950100001)(92566002)(54356999)(76176999)(33716001)(68736005)(106466001)(47776003)(46102003)(64706001)(15975445007)(50466002)(77096005)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB326;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR03MB326;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB326;
+X-Forefront-PRVS: 0464DBBBC4
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB326;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Jan 2015 03:24:32.8052
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB326
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Gerry
-
-> From: Jiang Liu [mailto:jiang.liu@linux.intel.com]
-> Sent: Thursday, January 22, 2015 10:58 AM
+On Tue, Jan 20, 2015 at 08:16:14AM +0100, Sascha Hauer wrote:
+> On Tue, Jan 13, 2015 at 01:09:17PM +0800, Robin Gong wrote:
+> > Below comments got from Page4724 of Reference Manual of i.mx6q:
+> > http://cache.freescale.com/files/32bit/doc/ref_manual/IMX6DQRM.pdf
+> > 
+> > --"Static context mode should be used for the first channel called
+> > after reset to ensure that the all context RAM for that channel is
+> > initialized during the context SAVE phase when the channel is
+> > done or yields. Subsequent calls to the same channel or
+> > different channels may use any of the dynamic context modes.
+> > This will ensure that all context locations for the bootload
+> > channel are initialized, and prevent undefined values in context
+> > RAM from being loaded during the context restore if the
+> > channel is re-started later"
+> > 
+> > Unfortunately, the rule was broken by commit(5b28aa319bba96987316425a1131813d87cbab35)
+> > .This patch just take them back.
+> > 
+> > Signed-off-by: Robin Gong <b38343@freescale.com>
+> > ---
+> >  drivers/dma/imx-sdma.c | 7 ++++---
+> >  1 file changed, 4 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> > index d0df198..510e463 100644
+> > --- a/drivers/dma/imx-sdma.c
+> > +++ b/drivers/dma/imx-sdma.c
+> > @@ -1323,6 +1323,10 @@ static void sdma_load_firmware(const struct firmware *fw, void *context)
+> >  	sdma_load_script(sdma, ram_code,
+> >  			header->ram_code_size,
+> >  			addr->ram_code_start_addr);
+> > +
+> > +	/* Set bits of CONFIG register with given context switching mode */
+> > +	writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
+> > +
 > 
-> On 2015/1/22 10:32, Zheng, Lv wrote:
-> > Hi, Thomas and Jiang
-> >
-> >> From: Jiang Liu [mailto:jiang.liu@linux.intel.com]
-> >> Sent: Thursday, January 08, 2015 10:33 AM
-> >>
-> >> From: Thomas Gleixner <tglx@linutronix.de>
-> >>
-> >> address_space64 and ext_address_space64 share substracts just at
-> >> different offsets. To unify the parsing functions implement the two
-> >> structs as unions of their substructs, so we can extract the shared
-> >> data.
-> >>
-> >> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> >> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> >> ---
-> >>  include/acpi/acrestyp.h |   49 ++++++++++++++++++++++++++++++++++-------------
-> >>  1 file changed, 36 insertions(+), 13 deletions(-)
-> >>
-> >> diff --git a/include/acpi/acrestyp.h b/include/acpi/acrestyp.h
-> >> index eb760ca0b2e0..307d5b2605c8 100644
-> >> --- a/include/acpi/acrestyp.h
-> >> +++ b/include/acpi/acrestyp.h
-> >> @@ -326,23 +326,46 @@ struct acpi_resource_address32 {
-> >>  	struct acpi_resource_source resource_source;
-> >>  };
-> >>
-> >> -struct acpi_resource_address64 {
-> >> -	ACPI_RESOURCE_ADDRESS_COMMON u64 granularity;
-> >> -	u64 minimum;
-> >> -	u64 maximum;
-> >> -	u64 translation_offset;
-> >> +#define ACPI_RESOURCE_ADDRESS64_COMMON \
-> >> +	u64 granularity;	       \
-> >> +	u64 minimum;		       \
-> >> +	u64 maximum;		       \
-> >> +	u64 translation_offset;	       \
-> >>  	u64 address_length;
-> >> -	struct acpi_resource_source resource_source;
-> >> +
-> >> +struct acpi_resource_address64_common {
-> >> +ACPI_RESOURCE_ADDRESS64_COMMON};
-> >> +
-> >> +struct acpi_resource_address64 {
-> >> +	union {
-> >> +		struct {
-> >> +			ACPI_RESOURCE_ADDRESS_COMMON
-> >> +			ACPI_RESOURCE_ADDRESS64_COMMON
-> >> +			struct acpi_resource_source resource_source;
-> >> +		};
-> >
-> > This looks wrong to ACPICA upstream.
-> >
-> >> +		struct {
-> >> +			struct acpi_resource_address base;
-> >> +			struct acpi_resource_address64_common addr;
-> >> +			struct acpi_resource_source resource_source;
-> >> +		} common;
-> >> +	};
-> >>  };
-> >
-> > And this.
-> > Though anonymous structs/unions are now C11 standard, I still didn't see it used in the ACPICA upstream.
-> > It could be a problem if someone still compiles ACPICA using old compilers.
-> >
-> >>
-> >>  struct acpi_resource_extended_address64 {
-> >> -	ACPI_RESOURCE_ADDRESS_COMMON u8 revision_ID;
-> >> -	u64 granularity;
-> >> -	u64 minimum;
-> >> -	u64 maximum;
-> >> -	u64 translation_offset;
-> >> -	u64 address_length;
-> >> -	u64 type_specific;
-> >> +	union {
-> >> +		struct {
-> >> +			ACPI_RESOURCE_ADDRESS_COMMON
-> >> +			u8 revision_ID;
-> >> +			ACPI_RESOURCE_ADDRESS64_COMMON
-> >> +			u64 type_specific;
-> >> +		};
-> >
-> > Ditto.
-> >
-> >> +		struct {
-> >> +			struct acpi_resource_address base;
-> >> +			u8 revision_ID;
-> >> +			struct acpi_resource_address64_common addr;
-> >> +			u64 type_specific;
-> >> +		} common;
-> >> +	};
-> >
-> > Ditto.
-> >
-> > I think what you want is the ability to access common.addr and common.base from different resource address64 types.
-> > So we can achieve this directly in the ACPICA upstream without using the union.
-> >
-> > I tried this in the ACPICA upstream and the result is:
-> > https://github.com/zetalog/acpica/commit/0f4ed510
-> > Let me send its linuxized version after this email.
-> Hi Lv,
-> 	Thanks for your great support:)
-> 	What's the normal process to propagate this patch into
-> linux kernel? Or how long will it take? We have another hotplug
-> patch set which depends on this patch set, then depends on this
-> ACPICA core change.
-
-There won't be divergences if things are proceeded in this way:
-If we can reach an agreement on the linuxized version, then it can be merged directly by Rafael.
-And I'll zap it from the ACPICA release series.
-
-Thanks and best regards
--Lv
-
-> Regards!
-> Gerry
-> >
-> > Thanks and best regards
-> > -Lv
-> >
-> >>  };
-> >>
-> >>  struct acpi_resource_extended_irq {
-> >> --
-> >> 1.7.10.4
-> >
+> You move the CONFIG register initialization to a place which may never
+> be called. Look at the top of sdma_load_firmware:
+> 
+> 	if (!fw) {
+> 		dev_info(sdma->dev, "external firmware not found, using ROM firmware\n");
+> 		/* In this case we just use the ROM firmware. */
+> 		return;
+> 	}
+> 
+> Sascha
+>
+Yes. I'll move it into sdma_run_channel0.
+> -- 
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
