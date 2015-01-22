@@ -1,110 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbbAVAQP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 19:16:15 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:38976 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbbAVAQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 19:16:08 -0500
-Message-ID: <54C04145.1010906@codeaurora.org>
-Date: Wed, 21 Jan 2015 16:16:05 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org
-CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: Re: [PATCH v2] clk: Introduce clk_has_parent()
-References: <1421750935-4023-2-git-send-email-thierry.reding@gmail.com> <1421856780-32103-1-git-send-email-thierry.reding@gmail.com>
-In-Reply-To: <1421856780-32103-1-git-send-email-thierry.reding@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1753500AbbAVASW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 19:18:22 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:46832 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552AbbAVASO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 19:18:14 -0500
+From: Mans Rullgard <mans@mansr.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: fix sys_copyarea
+Date: Thu, 22 Jan 2015 00:17:55 +0000
+Message-Id: <1421885875-24145-1-git-send-email-mans@mansr.com>
+X-Mailer: git-send-email 2.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 08:13 AM, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
->
-> This new function is similar to clk_set_parent(), except that it doesn't
-> actually change the parent. It merely checks that the given parent clock
-> can be a parent for the given clock.
->
-> A situation where this is useful is to check that a particular setup is
-> valid before switching to it. One specific use-case for this is atomic
-> modesetting in the DRM framework where setting a mode is divided into a
-> check phase where a given configuration is validated before applying
-> changes to the hardware.
->
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
+The sys_copyarea() function performs the same operation as
+cfb_copyarea() but using normal memory access instead of I/O
+accessors.  Since the introduction of sys_copyarea(), there
+have been two fixes to cfb_copyarea():
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+- 00a9d699 ("framebuffer: fix cfb_copyarea")
+- 5b789da8 ("framebuffer: fix screen corruption when copying")
 
-This will slightly conflict with Tomeu's  patches for per-user clock
-constraints. It would be best if we can take this through the clk tree
-to fix up any conflicts
+This patch incorporates the fixes into sys_copyarea() as well.
 
-> Changes in v2:
-> - lookup parent name in parent names array and make function lockless
-> - rename function from clk_try_parent() to clk_has_parent()
-> - return boolean
->
->  drivers/clk/clk.c   | 30 ++++++++++++++++++++++++++++++
->  include/linux/clk.h | 17 +++++++++++++++++
->  2 files changed, 47 insertions(+)
->
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index af06b7377d37..470266297dea 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -1672,6 +1672,36 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
->  }
->  
->  /**
-> + * clk_has_parent - check if a clock is a possible parent for another
-> + * @clk: clock source
-> + * @parent: parent clock source
-> + *
-> + * This function can be used in drivers that need to check that a clock can be
-> + * the parent of another without actually changing the parent.
-> + *
-> + * Returns true if @parent is a possible parent for @clk, false otherwise.
-> + */
-> +bool clk_has_parent(struct clk *clk, struct clk *parent)
-> +{
-> +	unsigned int i;
-> +
-> +	/* NULL clocks should be nops, so return success if either is NULL. */
-> +	if (!clk || !parent)
-> +		return true;
-> +
-> +	/* Optimize for the case where the parent is already the parent. */
-> +	if (clk->parent == parent)
-> +		return true;
+Signed-off-by: Mans Rullgard <mans@mansr.com>
+---
+ drivers/video/fbdev/core/syscopyarea.c | 137 ++++++++++++++++-----------------
+ 1 file changed, 65 insertions(+), 72 deletions(-)
 
-I worry that we'll need to grab a lock here with Tomeu's patches, but
-maybe I'm wrong.
-
-> +
-> +	for (i = 0; i < clk->num_parents; i++)
-> +		if (strcmp(clk->parent_names[i], parent->name) == 0)
-> +			return true;
-> +
-> +	return false;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_has_parent);
-> +
-> +/**
-
-
+diff --git a/drivers/video/fbdev/core/syscopyarea.c b/drivers/video/fbdev/core/syscopyarea.c
+index 844a32f..67b4d6d 100644
+--- a/drivers/video/fbdev/core/syscopyarea.c
++++ b/drivers/video/fbdev/core/syscopyarea.c
+@@ -25,8 +25,8 @@
+      */
+ 
+ static void
+-bitcpy(struct fb_info *p, unsigned long *dst, int dst_idx,
+-		const unsigned long *src, int src_idx, int bits, unsigned n)
++bitcpy(struct fb_info *p, unsigned long *dst, unsigned dst_idx,
++	const unsigned long *src, unsigned src_idx, int bits, unsigned n)
+ {
+ 	unsigned long first, last;
+ 	int const shift = dst_idx-src_idx;
+@@ -86,15 +86,15 @@ bitcpy(struct fb_info *p, unsigned long *dst, int dst_idx,
+ 				first &= last;
+ 			if (shift > 0) {
+ 				/* Single source word */
+-				*dst = comp(*src >> right, *dst, first);
++				*dst = comp(*src << left, *dst, first);
+ 			} else if (src_idx+n <= bits) {
+ 				/* Single source word */
+-				*dst = comp(*src << left, *dst, first);
++				*dst = comp(*src >> right, *dst, first);
+ 			} else {
+ 				/* 2 source words */
+ 				d0 = *src++;
+ 				d1 = *src;
+-				*dst = comp(d0 << left | d1 >> right, *dst,
++				*dst = comp(d0 >> right | d1 << left, *dst,
+ 					    first);
+ 			}
+ 		} else {
+@@ -109,13 +109,14 @@ bitcpy(struct fb_info *p, unsigned long *dst, int dst_idx,
+ 			/* Leading bits */
+ 			if (shift > 0) {
+ 				/* Single source word */
+-				*dst = comp(d0 >> right, *dst, first);
++				*dst = comp(d0 << left, *dst, first);
+ 				dst++;
+ 				n -= bits - dst_idx;
+ 			} else {
+ 				/* 2 source words */
+ 				d1 = *src++;
+-				*dst = comp(d0 << left | *dst >> right, *dst, first);
++				*dst = comp(d0 >> right | d1 << left, *dst,
++					    first);
+ 				d0 = d1;
+ 				dst++;
+ 				n -= bits - dst_idx;
+@@ -126,36 +127,36 @@ bitcpy(struct fb_info *p, unsigned long *dst, int dst_idx,
+ 			n /= bits;
+ 			while (n >= 4) {
+ 				d1 = *src++;
+-				*dst++ = d0 << left | d1 >> right;
++				*dst++ = d0 >> right | d1 << left;
+ 				d0 = d1;
+ 				d1 = *src++;
+-				*dst++ = d0 << left | d1 >> right;
++				*dst++ = d0 >> right | d1 << left;
+ 				d0 = d1;
+ 				d1 = *src++;
+-				*dst++ = d0 << left | d1 >> right;
++				*dst++ = d0 >> right | d1 << left;
+ 				d0 = d1;
+ 				d1 = *src++;
+-				*dst++ = d0 << left | d1 >> right;
++				*dst++ = d0 >> right | d1 << left;
+ 				d0 = d1;
+ 				n -= 4;
+ 			}
+ 			while (n--) {
+ 				d1 = *src++;
+-				*dst++ = d0 << left | d1 >> right;
++				*dst++ = d0 >> right | d1 << left;
+ 				d0 = d1;
+ 			}
+ 
+ 			/* Trailing bits */
+-			if (last) {
+-				if (m <= right) {
++			if (m) {
++				if (m <= bits - right) {
+ 					/* Single source word */
+-					*dst = comp(d0 << left, *dst, last);
++					d0 >>= right;
+ 				} else {
+ 					/* 2 source words */
+  					d1 = *src;
+-					*dst = comp(d0 << left | d1 >> right,
+-						    *dst, last);
++					d0 = d0 >> right | d1 << left;
+ 				}
++				*dst = comp(d0, *dst, last);
+ 			}
+ 		}
+ 	}
+@@ -166,40 +167,35 @@ bitcpy(struct fb_info *p, unsigned long *dst, int dst_idx,
+      */
+ 
+ static void
+-bitcpy_rev(struct fb_info *p, unsigned long *dst, int dst_idx,
+-		const unsigned long *src, int src_idx, int bits, unsigned n)
++bitcpy_rev(struct fb_info *p, unsigned long *dst, unsigned dst_idx,
++	   const unsigned long *src, unsigned src_idx, unsigned bits,
++	   unsigned n)
+ {
+ 	unsigned long first, last;
+ 	int shift;
+ 
+-	dst += (n-1)/bits;
+-	src += (n-1)/bits;
+-	if ((n-1) % bits) {
+-		dst_idx += (n-1) % bits;
+-		dst += dst_idx >> (ffs(bits) - 1);
+-		dst_idx &= bits - 1;
+-		src_idx += (n-1) % bits;
+-		src += src_idx >> (ffs(bits) - 1);
+-		src_idx &= bits - 1;
+-	}
++	dst += (dst_idx + n - 1) / bits;
++	src += (src_idx + n - 1) / bits;
++	dst_idx = (dst_idx + n - 1) % bits;
++	src_idx = (src_idx + n - 1) % bits;
+ 
+ 	shift = dst_idx-src_idx;
+ 
+-	first = FB_SHIFT_LOW(p, ~0UL, bits - 1 - dst_idx);
+-	last = ~(FB_SHIFT_LOW(p, ~0UL, bits - 1 - ((dst_idx-n) % bits)));
++	first = ~FB_SHIFT_LOW(p, ~0UL, (dst_idx + 1) % bits);
++	last = FB_SHIFT_LOW(p, ~0UL, (bits + dst_idx + 1 - n) % bits);
+ 
+ 	if (!shift) {
+ 		/* Same alignment for source and dest */
+ 		if ((unsigned long)dst_idx+1 >= n) {
+ 			/* Single word */
+-			if (last)
+-				first &= last;
+-			*dst = comp(*src, *dst, first);
++			if (first)
++				last &= first;
++			*dst = comp(*src, *dst, last);
+ 		} else {
+ 			/* Multiple destination words */
+ 
+ 			/* Leading bits */
+-			if (first != ~0UL) {
++			if (first) {
+ 				*dst = comp(*src, *dst, first);
+ 				dst--;
+ 				src--;
+@@ -222,29 +218,29 @@ bitcpy_rev(struct fb_info *p, unsigned long *dst, int dst_idx,
+ 			while (n--)
+ 				*dst-- = *src--;
+ 			/* Trailing bits */
+-			if (last)
++			if (last != -1UL)
+ 				*dst = comp(*src, *dst, last);
+ 		}
+ 	} else {
+ 		/* Different alignment for source and dest */
+ 
+-		int const left = -shift & (bits-1);
+-		int const right = shift & (bits-1);
++		int const left = shift & (bits-1);
++		int const right = -shift & (bits-1);
+ 
+ 		if ((unsigned long)dst_idx+1 >= n) {
+ 			/* Single destination word */
+-			if (last)
+-				first &= last;
++			if (first)
++				last &= first;
+ 			if (shift < 0) {
+ 				/* Single source word */
+-				*dst = comp(*src << left, *dst, first);
++				*dst = comp(*src >> right, *dst, last);
+ 			} else if (1+(unsigned long)src_idx >= n) {
+ 				/* Single source word */
+-				*dst = comp(*src >> right, *dst, first);
++				*dst = comp(*src << left, *dst, last);
+ 			} else {
+ 				/* 2 source words */
+-				*dst = comp(*src >> right | *(src-1) << left,
+-					    *dst, first);
++				*dst = comp(*src << left | *(src-1) >> right,
++					    *dst, last);
+ 			}
+ 		} else {
+ 			/* Multiple destination words */
+@@ -261,14 +257,18 @@ bitcpy_rev(struct fb_info *p, unsigned long *dst, int dst_idx,
+ 			/* Leading bits */
+ 			if (shift < 0) {
+ 				/* Single source word */
+-				*dst = comp(d0 << left, *dst, first);
++				d1 = d0;
++				d0 >>= right;
+ 			} else {
+ 				/* 2 source words */
+ 				d1 = *src--;
+-				*dst = comp(d0 >> right | d1 << left, *dst,
+-					    first);
+-				d0 = d1;
++				d0 = d0 << left | d1 >> right;
+ 			}
++			if (!first)
++				*dst = d0;
++			else
++				*dst = comp(d0, *dst, first);
++			d0 = d1;
+ 			dst--;
+ 			n -= dst_idx+1;
+ 
+@@ -277,36 +277,36 @@ bitcpy_rev(struct fb_info *p, unsigned long *dst, int dst_idx,
+ 			n /= bits;
+ 			while (n >= 4) {
+ 				d1 = *src--;
+-				*dst-- = d0 >> right | d1 << left;
++				*dst-- = d0 << left | d1 >> right;
+ 				d0 = d1;
+ 				d1 = *src--;
+-				*dst-- = d0 >> right | d1 << left;
++				*dst-- = d0 << left | d1 >> right;
+ 				d0 = d1;
+ 				d1 = *src--;
+-				*dst-- = d0 >> right | d1 << left;
++				*dst-- = d0 << left | d1 >> right;
+ 				d0 = d1;
+ 				d1 = *src--;
+-				*dst-- = d0 >> right | d1 << left;
++				*dst-- = d0 << left | d1 >> right;
+ 				d0 = d1;
+ 				n -= 4;
+ 			}
+ 			while (n--) {
+ 				d1 = *src--;
+-				*dst-- = d0 >> right | d1 << left;
++				*dst-- = d0 << left | d1 >> right;
+ 				d0 = d1;
+ 			}
+ 
+ 			/* Trailing bits */
+-			if (last) {
+-				if (m <= left) {
++			if (m) {
++				if (m <= bits - left) {
+ 					/* Single source word */
+-					*dst = comp(d0 >> right, *dst, last);
++					d0 <<= left;
+ 				} else {
+ 					/* 2 source words */
+ 					d1 = *src;
+-					*dst = comp(d0 >> right | d1 << left,
+-						    *dst, last);
++					d0 = d0 << left | d1 >> right;
+ 				}
++				*dst = comp(d0, *dst, last);
+ 			}
+ 		}
+ 	}
+@@ -317,9 +317,9 @@ void sys_copyarea(struct fb_info *p, const struct fb_copyarea *area)
+ 	u32 dx = area->dx, dy = area->dy, sx = area->sx, sy = area->sy;
+ 	u32 height = area->height, width = area->width;
+ 	unsigned long const bits_per_line = p->fix.line_length*8u;
+-	unsigned long *dst = NULL, *src = NULL;
++	unsigned long *base = NULL;
+ 	int bits = BITS_PER_LONG, bytes = bits >> 3;
+-	int dst_idx = 0, src_idx = 0, rev_copy = 0;
++	unsigned dst_idx = 0, src_idx = 0, rev_copy = 0;
+ 
+ 	if (p->state != FBINFO_STATE_RUNNING)
+ 		return;
+@@ -334,8 +334,7 @@ void sys_copyarea(struct fb_info *p, const struct fb_copyarea *area)
+ 
+ 	/* split the base of the framebuffer into a long-aligned address and
+ 	   the index of the first bit */
+-	dst = src = (unsigned long *)((unsigned long)p->screen_base &
+-				      ~(bytes-1));
++	base = (unsigned long *)((unsigned long)p->screen_base & ~(bytes-1));
+ 	dst_idx = src_idx = 8*((unsigned long)p->screen_base & (bytes-1));
+ 	/* add offset of source and target area */
+ 	dst_idx += dy*bits_per_line + dx*p->var.bits_per_pixel;
+@@ -348,20 +347,14 @@ void sys_copyarea(struct fb_info *p, const struct fb_copyarea *area)
+ 		while (height--) {
+ 			dst_idx -= bits_per_line;
+ 			src_idx -= bits_per_line;
+-			dst += dst_idx >> (ffs(bits) - 1);
+-			dst_idx &= (bytes - 1);
+-			src += src_idx >> (ffs(bits) - 1);
+-			src_idx &= (bytes - 1);
+-			bitcpy_rev(p, dst, dst_idx, src, src_idx, bits,
++			bitcpy_rev(p, base + (dst_idx / bits), dst_idx % bits,
++				base + (src_idx / bits), src_idx % bits, bits,
+ 				width*p->var.bits_per_pixel);
+ 		}
+ 	} else {
+ 		while (height--) {
+-			dst += dst_idx >> (ffs(bits) - 1);
+-			dst_idx &= (bytes - 1);
+-			src += src_idx >> (ffs(bits) - 1);
+-			src_idx &= (bytes - 1);
+-			bitcpy(p, dst, dst_idx, src, src_idx, bits,
++			bitcpy(p, base + (dst_idx / bits), dst_idx % bits,
++				base + (src_idx / bits), src_idx % bits, bits,
+ 				width*p->var.bits_per_pixel);
+ 			dst_idx += bits_per_line;
+ 			src_idx += bits_per_line;
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+2.0.5
 
