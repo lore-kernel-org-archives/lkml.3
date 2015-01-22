@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711AbbAVLQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:16:07 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59176 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbbAVLP6 (ORCPT
+	id S1751793AbbAVLRT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:17:19 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35491 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727AbbAVLRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:15:58 -0500
-Date: Thu, 22 Jan 2015 12:15:36 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-cc: aik@ozlabs.ru, shreyas@linux.vnet.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>, michael@ellerman.id.au,
-        Anton Blanchard <anton@samba.org>, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH V3] tick/broadcast: Make movement of broadcast hrtimer
- robust against hotplug
-In-Reply-To: <54C09391.9080202@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1501221209260.5526@nanos>
-References: <20150120103559.8430.50933.stgit@preeti.in.ibm.com> <alpine.DEB.2.11.1501211243270.5526@nanos> <54C09391.9080202@linux.vnet.ibm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 22 Jan 2015 06:17:10 -0500
+Message-ID: <54C0DC2E.2030701@collabora.co.uk>
+Date: Thu, 22 Jan 2015 12:17:02 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Lee Jones <lee.jones@linaro.org>
+CC: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH RESEND v2 3/7] mfd: cros_ec: Add cros_ec_lpc driver for
+ x86 devices
+References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk> <1420205572-2640-4-git-send-email-javier.martinez@collabora.co.uk> <20150120081104.GT21886@x1> <54BE7B08.1010900@collabora.co.uk> <20150120163410.GC30656@x1> <54BE87C4.4040108@collabora.co.uk> <20150122084244.GP22024@x1> <54C0BE21.7020008@collabora.co.uk> <20150122094608.GA5769@x1> <54C0D29C.4010904@collabora.co.uk> <20150122105605.GB9129@x1>
+In-Reply-To: <20150122105605.GB9129@x1>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015, Preeti U Murthy wrote:
-> On 01/21/2015 05:16 PM, Thomas Gleixner wrote:
-> How about when the cpu that is going offline receives a timer interrupt
-> just before setting its state to CPU_DEAD ? That is still possible right
-> given that its clock devices may not have been shutdown and it is
-> capable of receiving interrupts for a short duration. Even with the
-> above patch, is the following scenario possible ?
-> 
->                 CPU0                                  CPU1
-> t0         Receives timer interrupt
-> 
-> t1         Sees that there are hrtimers
->            to be serviced (hrtimers are not yet migrated)
-> 
-> t2         calls hrtimer_interrupt()
-> 
-> t3         tick_program_event()                   CPU_DEAD notifiers
->                                                 CPU0's td->evtdev = NULL
-> 
-> t4         clockevent_program_event()
->            references NULL tick device pointer
-> 
-> So my concern is that since the CLOCK_EVT_NOTIFY_CPU_DEAD callback
-> handles shutting down of devices besides moving tick related duties.
-> it's functions may race with the hotplug cpu still handling tick events.
+Hello Lee,
 
-  __cpu_disable() is supposed to block interrupts on the dying cpu.
+On 01/22/2015 11:56 AM, Lee Jones wrote:
+>> >
+>> Yes, I completely understand your point, is that I didn't think that a ~300
+>> lines driver was that bad specially since the communication bits that reads
+>> and writes the register is not a complex logic IMHO.
+> 
+> This has nothing to do with LoC, it's the principle of the matter.
+>
 
-But I agree, we should make it more robust. So we want an explicit
-call for disabling the cpu local stuff and an explicit takeover of the
-broadcast duty. I'm anyway distangling the clockevents_notify() stuff,
-so it should be simple to do so.
+Ok, got it.
+ 
+>> >> > Are there any other Low Pin Count drivers in the kernel?
+>> >> >
+>> >> 
+>> >> I don't know tbh, I didn't even know what LPC was before I picked this patch
+>> >> to push it upstream. I searched in the Linux codebase for other LPC drivers
+>> >> but I didn't find anything, that doesn't mean that it doesn't exist though.
+>> > 
+>> > I agree.  Perhaps a suitable driver should live in drivers/misc until
+>> > there are enough of them to warrant its own subsystem.
+>> >
+>> 
+>> Yes, I can move the driver to drivers/misc if you think that is more suitable
+>> to be there.
+>> 
+>> I've taken another look and AFAICT there are two other mfd drivers that use an
+>> LPC bus, these are drivers/mfd/lpc_{i,s}ch.c for Intel's I/O Controller HUB and 
+>> System Controller Hub respectively.
+> 
+> These looked like PCI aggregates when I looked at them last?
+> 
 
-Thanks,
+Yes, it seems the LPC bus is behind a PCI bus on these chips. Or at least
+that's what I understood on a quick read to the Intel SCH datasheet [0].
 
-	tglx
+Now going back to the Cros EC LPC driver, you are right that this may not
+be suitable to drivers/mfd so I'll move it to drivers/misc instead.
 
+Thanks a lot for your feedback.
 
+Best regards,
+Javier
+
+[0]: http://www.intel.com/content/www/us/en/intelligent-systems/menlow/sch-datasheet.html
