@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbbAVDdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 22:33:21 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:50756 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbbAVDdK (ORCPT
+	id S1753517AbbAVDeY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 22:34:24 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:58553 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbbAVDeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 22:33:10 -0500
-Date: Thu, 22 Jan 2015 12:33:06 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Linux MM <linux-mm@kvack.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: Possible regression in next-20150120 due to "mm: account pmd
- page tables to the process"
-Message-ID: <20150122033306.GN31170@verge.net.au>
-References: <20150121023003.GF30598@verge.net.au>
- <20150121092956.4CF89A8@black.fi.intel.com>
- <CAMuHMdWyXaxobndjYDwYwqE=XJCBH_7C9TFBZYr7UpYk-rUa4A@mail.gmail.com>
+	Wed, 21 Jan 2015 22:34:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWyXaxobndjYDwYwqE=XJCBH_7C9TFBZYr7UpYk-rUa4A@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421896502-9943-1-git-send-email-mark.yao@rock-chips.com>
+References: <1421896502-9943-1-git-send-email-mark.yao@rock-chips.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 22 Jan 2015 11:33:56 +0800
+X-Google-Sender-Auth: TqaEXghrxWYoFYGwrT7FfOqgdhA
+Message-ID: <CAGS+omAG0GpxO+bSuS_fZQSpcXJzeXqGQn9hWUBOODXzJ82H5g@mail.gmail.com>
+Subject: Re: [PATCH] drm/rockchip: vop: fix vop vsync/hsync polarity
+To: Mark Yao <mark.yao@rock-chips.com>
+Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Clark <robdclark@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 10:37:20AM +0100, Geert Uytterhoeven wrote:
-> Hi Kirill, Simon,
-> 
-> On Wed, Jan 21, 2015 at 10:29 AM, Kirill A. Shutemov
-> <kirill.shutemov@linux.intel.com> wrote:
-> > Simon Horman wrote:
-> >> Hi,
-> >>
-> >> I have observed what appears to be a regression caused
-> >> by b316feb3c37ff19cd ("mm: account pmd page tables to the process").
-> >>
-> >> The problem that I am seeing is that when booting the kzm9g board, which is
-> >> based on the Renesas r8a73a4 ARM SoC, using its defconfig the following the
-> 
-> Renesas sh73a0 ARM SoC, FWIW...
-> 
-> >> tail boot log below is output repeatedly and the boot does not appear to
-> >> proceed any further.
-> >>
-> >> I have observed this problem using next-20150120 and observed
-> >> that it does not occur when the patch mentioned above is reverted.
-> >>
-> >> I have also observed what appears to be the same problem when
-> >> booting the following boards using their defconfigs. And perhaps
-> >> more to the point the problem appears to affect booting all
-> >> boards based on Renesas ARM SoCs for which there is working support
-> >> to boot them by initialising them using C (as opposed to device tree).
-> >>
-> >> * armadillo800eva, based on the r8a7740 SoC
-> >> * mackerel, based on the sh7372
-> >
-> > This should be fixed by this:
-> >
-> > http://marc.info/?l=linux-next&m=142176280218627&w=2
-> >
-> > Please, test.
-> 
-> Thanks!
-> 
-> Confirmed the issue, and confirmed the fix (on sh73a0/kzm9g-legacy).
-> 
-> Tested-by: Geert Uytterhoeven <geert+renesas@glider.be>
+On Thu, Jan 22, 2015 at 11:15 AM, Mark Yao <mark.yao@rock-chips.com> wrote:
+> Vop set wrong vsync/hsync polarity, it may cause some
+> display problem. known problem is that caused HDMI hdcp
+> authenticate failed, caused pixel offset with hdmi display.
+> the polarity description at RK3288 TRM doc:
+>   dsp_vsync_pol
+>     VSYNC polarity
+>       1'b0 : negative
+>       1'b1 : positive
+>       dsp_hsync_pol
+>     HSYNC polarity
+>       1'b0 : negative
+>       1'b1 : positive
+>
+> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
 
-Thanks, I have also tested the armadillo800eva and mackerel.
+Looks good!
 
-Tested-by: Simon Horman <horms+renesas@verge.net.au>
+Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+
+> ---
+>  drivers/gpu/drm/rockchip/rockchip_drm_vop.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+> index 9a5c571..2b145ba5 100644
+> --- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+> +++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+> @@ -874,8 +874,8 @@ static int vop_crtc_mode_set(struct drm_crtc *crtc,
+>         VOP_CTRL_SET(vop, out_mode, vop->connector_out_mode);
+>
+>         val = 0x8;
+> -       val |= (adjusted_mode->flags & DRM_MODE_FLAG_NHSYNC) ? 1 : 0;
+> -       val |= (adjusted_mode->flags & DRM_MODE_FLAG_NVSYNC) ? (1 << 1) : 0;
+> +       val |= (adjusted_mode->flags & DRM_MODE_FLAG_NHSYNC) ? 0 : 1;
+> +       val |= (adjusted_mode->flags & DRM_MODE_FLAG_NVSYNC) ? 0 : (1 << 1);
+>         VOP_CTRL_SET(vop, pin_pol, val);
+>
+>         VOP_CTRL_SET(vop, htotal_pw, (htotal << 16) | hsync_len);
+> --
+> 1.7.9.5
+>
+>
