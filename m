@@ -1,188 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643AbbAVVuj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:50:39 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48389 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754169AbbAVVuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:50:37 -0500
-Message-ID: <54C17087.7060003@ti.com>
-Date: Thu, 22 Jan 2015 15:49:59 -0600
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1754257AbbAVVty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:49:54 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:60528 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677AbbAVVtv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 16:49:51 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Niklas =?ISO-8859-1?Q?S=F6derlund?= <niso@kth.se>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        magnus.damm@gmail.com
+Subject: Re: [PATCH v2 3/4] ARM: shmobile: emev2: Add PFC information to emev2.dtsi
+Date: Thu, 22 Jan 2015 23:50:20 +0200
+Message-ID: <2620818.4JADgt3ejj@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1421583604-27256-4-git-send-email-niso@kth.se>
+References: <1421583604-27256-1-git-send-email-niso@kth.se> <1421583604-27256-4-git-send-email-niso@kth.se>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Felipe Balbi <balbi@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/3] of/device: manage resources similar to platform_device_add
-References: <1420651854-17768-1-git-send-email-s-anna@ti.com> <1420651854-17768-2-git-send-email-s-anna@ti.com> <CAL_Jsq+79cnCiww6g8ejki0yT59-N8eucHC3QGMbsXG4DksWuQ@mail.gmail.com> <54B58D5D.5070508@ti.com> <CAL_JsqLW9PRktHntLquohH3x_bPgJrrn2Y2_8RYA_HnKhpTDHg@mail.gmail.com> <54B5A499.7060106@ti.com>
-In-Reply-To: <54B5A499.7060106@ti.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Hi Niklas,
 
-On 01/13/2015 05:04 PM, Suman Anna wrote:
-> On 01/13/2015 04:00 PM, Rob Herring wrote:
->> On Tue, Jan 13, 2015 at 3:25 PM, Suman Anna <s-anna@ti.com> wrote:
->>> Hi Rob,
->>>
->>> On 01/13/2015 02:38 PM, Rob Herring wrote:
->>>> On Wed, Jan 7, 2015 at 11:30 AM, Suman Anna <s-anna@ti.com> wrote:
->>>>> Drivers can use of_platform_populate() to create platform devices
->>>>> for children of the device main node, and a complementary API
->>>>> of_platform_depopulate() is provided to delete these child platform
->>>>> devices. The of_platform_depopulate() leverages the platform API
->>>>> for performing the cleanup of these devices.
->>>>>
->>>>> The platform device resources are managed differently between
->>>>> of_device_add and platform_device_add, and this asymmetry causes
->>>>> a kernel oops in platform_device_del during removal of the resources.
->>>>> Manage the platform device resources similar to platform_device_add
->>>>> to fix this kernel oops.
->>>>
->>>> This is a known issue and has been attempted to be fixed before (I
->>>> believe there is a revert in mainline). The problem is there are known
->>>> devicetrees which have overlapping resources and they will break with
->>>> your change.
->>>
->>> Are you referring to 02bbde7849e6 (Revert "of: use
->>> platform_device_add")?
->>
->> I believe that's the one.
->>
->>> That one seems to be in registration path, and
->>> this crash is in the unregistration path. If so, to fix the crash,
->>> should we be skipping the release_resource() for now in
->>> platform_device_del for DT nodes, or replace platform_device_unregister
->>> with of_device_unregister in of_platform_device_destroy()?
->>
->> IIRC, the problem is inserting a resource twice on add from 2
->> different nodes, not the removal path. Perhaps we could make a
->> collision non-fatal for in the DT case.
-> 
-> We may be talking two different things here, I understand that this
-> patch would create an issue with inserting a resource twice in the
-> devicetrees with overlapping resources (just like the commit that was
-> reverted above), but the crash is on devices with resources whose
-> parent, child, sibling pointers have never been initialized (the
-> of_device_add path does not touch these at all), and get dereferenced in
-> platform_device_del()->release_resource(). See the following that has a
-> better explanation [1].
-> 
-> regards
-> Suman
-> 
-> [1]
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/274412.html
-> 
-> 
->> Grant may have some ideas on
->> what's needed here.
+Thank you for the patch.
 
-Ping, any suggestions here? Do we ought to replace
-platform_device_unregister() with of_device_unregister() similar to the
-approach taken in 02bbde7849e6 (Revert "of: use platform_device_add")?
-
-regards
-Suman
-
->>
->>> This is a common crash and we cannot use of_platform_depopulate() today
->>> in drivers to complement of_platform_populate().
->>
->> Yes, I know.
->>
->>> Also, the platform_data crash is independent of this, I could reproduce
->>> that one even with using of_device_unregister in a loop in driver remove.
->>
->> Missed this one. I'll reply to that patch.
->>
->> Rob
->>
->>>
->>> regards
->>> Suman
->>>
->>>>
->>>> Rob
->>>>
->>>>>
->>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
->>>>> ---
->>>>>  drivers/of/device.c | 38 +++++++++++++++++++++++++++++++++++++-
->>>>>  1 file changed, 37 insertions(+), 1 deletion(-)
->>>>>
->>>>> diff --git a/drivers/of/device.c b/drivers/of/device.c
->>>>> index 46d6c75c1404..fa27c1c71f29 100644
->>>>> --- a/drivers/of/device.c
->>>>> +++ b/drivers/of/device.c
->>>>> @@ -50,6 +50,8 @@ EXPORT_SYMBOL(of_dev_put);
->>>>>
->>>>>  int of_device_add(struct platform_device *ofdev)
->>>>>  {
->>>>> +       int i, ret;
->>>>> +
->>>>>         BUG_ON(ofdev->dev.of_node == NULL);
->>>>>
->>>>>         /* name and id have to be set so that the platform bus doesn't get
->>>>> @@ -63,7 +65,41 @@ int of_device_add(struct platform_device *ofdev)
->>>>>         if (!ofdev->dev.parent)
->>>>>                 set_dev_node(&ofdev->dev, of_node_to_nid(ofdev->dev.of_node));
->>>>>
->>>>> -       return device_add(&ofdev->dev);
->>>>> +       for (i = 0; i < ofdev->num_resources; i++) {
->>>>> +               struct resource *p, *r = &ofdev->resource[i];
->>>>> +
->>>>> +               if (!r->name)
->>>>> +                       r->name = dev_name(&ofdev->dev);
->>>>> +
->>>>> +               p = r->parent;
->>>>> +               if (!p) {
->>>>> +                       if (resource_type(r) == IORESOURCE_MEM)
->>>>> +                               p = &iomem_resource;
->>>>> +                       else if (resource_type(r) == IORESOURCE_IO)
->>>>> +                               p = &ioport_resource;
->>>>> +               }
->>>>> +
->>>>> +               if (p && insert_resource(p, r)) {
->>>>> +                       dev_err(&ofdev->dev, "failed to claim resource %d\n",
->>>>> +                               i);
->>>>> +                       ret = -EBUSY;
->>>>> +                       goto failed;
->>>>> +               }
->>>>> +       }
->>>>> +
->>>>> +       ret = device_add(&ofdev->dev);
->>>>> +       if (ret == 0)
->>>>> +               return ret;
->>>>> +
->>>>> +failed:
->>>>> +       while (--i >= 0) {
->>>>> +               struct resource *r = &ofdev->resource[i];
->>>>> +               unsigned long type = resource_type(r);
->>>>> +
->>>>> +               if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
->>>>> +                       release_resource(r);
->>>>> +       }
->>>>> +       return ret;
->>>>>  }
->>>>>
->>>>>  int of_device_register(struct platform_device *pdev)
->>>>> --
->>>>> 2.2.1
->>>>>
->>>
+On Sunday 18 January 2015 13:20:03 Niklas Söderlund wrote:
+> With this information all GPIOs can make use of the PFC functionality.
 > 
+> Signed-off-by: Niklas Söderlund <niso@kth.se>
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> ---
+>  arch/arm/boot/dts/emev2.dtsi | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/emev2.dtsi b/arch/arm/boot/dts/emev2.dtsi
+> index cc7bfe0..bb45694 100644
+> --- a/arch/arm/boot/dts/emev2.dtsi
+> +++ b/arch/arm/boot/dts/emev2.dtsi
+> @@ -169,12 +169,18 @@
+>  		clock-names = "sclk";
+>  	};
+> 
+> +	pfc: pfc@e0140200 {
+> +		compatible = "renesas,pfc-emev2";
+> +		reg = <0xe0140200 0x100>;
+> +	};
+> +
+>  	gpio0: gpio@e0050000 {
+>  		compatible = "renesas,em-gio";
+>  		reg = <0xe0050000 0x2c>, <0xe0050040 0x20>;
+>  		interrupts = <0 67 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 68 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 0 32>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <32>;
+>  		interrupt-controller;
+> @@ -186,6 +192,7 @@
+>  		interrupts = <0 69 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 70 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 32 32>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <32>;
+>  		interrupt-controller;
+> @@ -197,6 +204,7 @@
+>  		interrupts = <0 71 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 72 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 64 32>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <32>;
+>  		interrupt-controller;
+> @@ -208,6 +216,7 @@
+>  		interrupts = <0 73 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 74 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 96 32>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <32>;
+>  		interrupt-controller;
+> @@ -219,6 +228,7 @@
+>  		interrupts = <0 75 IRQ_TYPE_LEVEL_HIGH>,
+>  			     <0 76 IRQ_TYPE_LEVEL_HIGH>;
+>  		gpio-controller;
+> +		gpio-ranges = <&pfc 0 128 31>;
+>  		#gpio-cells = <2>;
+>  		ngpios = <31>;
+>  		interrupt-controller;
+
+-- 
+Regards,
+
+Laurent Pinchart
 
