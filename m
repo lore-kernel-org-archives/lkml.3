@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395AbbAVJPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 04:15:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43603 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727AbbAVJPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 04:15:07 -0500
-Date: Thu, 22 Jan 2015 10:15:04 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: Li Bin <huawei.libin@huawei.com>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>, live-patching@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com, guohanjun@huawei.com,
-        zhangdianfang@huawei.com, xiexiuqi@huawei.com
-Subject: Re: [PATCH 1/2] livepatch: Revert "livepatch: enforce patch stacking
- semantics"
-In-Reply-To: <54C04BF0.6020906@huawei.com>
-Message-ID: <alpine.LNX.2.00.1501221013580.24802@pobox.suse.cz>
-References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-2-git-send-email-huawei.libin@huawei.com> <54C04BF0.6020906@huawei.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751406AbbAVJTt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 04:19:49 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:59847 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750727AbbAVJTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 04:19:45 -0500
+Message-ID: <1421918381.13638.43.camel@x220>
+Subject: KVM: HAVE_KVM_ARCH_DIRTY_LOG_PROTECT?
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mario Smarduch <m.smarduch@samsung.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 22 Jan 2015 10:19:41 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Jan 2015 09:19:42.0038 (UTC) FILETIME=[8DDA9760:01D03624]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015, Li Bin wrote:
+Mario,
 
-> On 2015/1/21 17:07, Li Bin wrote:
-> > This reverts commit 83a90bb1345767f0cb96d242fd8b9db44b2b0e17.
-> > 
-> > The method that only allowing the topmost patch on the stack to be
-> > enabled or disabled is unreasonable. Such as the following case:
-> > 
-> > 	- do live patch1
-> > 	- disable patch1
-> > 	- do live patch2 //error
-> > 
-> > Now, we will never be able to do new live patch unless disabing the
-> > patch1 although there is no dependencies.
-> > 
-> 
-> Correct the log:
-> ... unless disabling the patch1 although ... -->
-> ... unless enabling the patch1 firstly although ...
+Your commit ba0513b5b8ff ("KVM: Add generic support for dirty page
+logging") is included in today's linux-next (ie, next-20150122). I
+noticed because a script I use to check linux-next spotted a problem
+with it.
 
-Yes, but in such situation you can unregister patch1 and proceed with new 
-live patch. No problem. As Jiri has already written. Or are we missing 
-something?
+That commit added a Kconfig symbol HAVE_KVM_ARCH_DIRTY_LOG_PROTECT. But
+nothing in linux-next uses that symbol. Why was it added?
 
-Regards,
---
-Miroslav Benes
-SUSE Labs
+Thanks,
+
+
+Paul Bolle
+
