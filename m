@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbbAVHS3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 02:18:29 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:32992 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbbAVHSW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 02:18:22 -0500
-Date: Thu, 22 Jan 2015 07:18:17 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        rogerable@realtek.com, wei_wang@realsil.com.cn
-Subject: Re: [PATCH v2 0/9] mfd: rtsx: add support for new rts524A and rts525A
-Message-ID: <20150122071817.GI22024@x1>
-References: <cover.1421909642.git.micky_ching@realsil.com.cn>
+	id S1752637AbbAVIeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 03:34:21 -0500
+Received: from mail-bl2on0129.outbound.protection.outlook.com ([65.55.169.129]:30381
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751902AbbAVIeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 03:34:10 -0500
+X-Greylist: delayed 12240 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 03:34:09 EST
+From: Robin Gong <b38343@freescale.com>
+To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>,
+        <s.hauer@pengutronix.de>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] dma: imx-sdma: switch to dynamic context mode after script loaded
+Date: Thu, 22 Jan 2015 15:23:40 +0800
+Message-ID: <1421911420-31821-1-git-send-email-b38343@freescale.com>
+X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(243025005)(189002)(199003)(77156002)(62966003)(33646002)(50986999)(97736003)(92566002)(105606002)(106466001)(77096005)(68736005)(104016003)(48376002)(229853001)(36756003)(50466002)(64706001)(15975445007)(50226001)(85426001)(2201001)(46102003)(575784001)(47776003)(19580395003)(19580405001)(6806004)(87936001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB327;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <cover.1421909642.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR03MB327;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB327;
+X-Forefront-PRVS: 0464DBBBC4
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB327;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Jan 2015 08:34:06.8625
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB327
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Have you reworked all of these patches?
+Below comments got from Page4724 of Reference Manual of i.mx6q:
+http://cache.freescale.com/files/32bit/doc/ref_manual/IMX6DQRM.pdf
 
-If not, why haven't my Acks been carried forward?
+--"Static context mode should be used for the first channel called
+after reset to ensure that the all context RAM for that channel is
+initialized during the context SAVE phase when the channel is
+done or yields. Subsequent calls to the same channel or
+different channels may use any of the dynamic context modes.
+This will ensure that all context locations for the bootload
+channel are initialized, and prevent undefined values in context
+RAM from being loaded during the context restore if the
+channel is re-started later"
 
-Please [RESEND] with the Acks applied.
+Unfortunately, the rule was broken by commit(5b28aa319bba96987316425a1131813d87cbab35)
+.This patch just take them back.
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> v2:
-> - remove debug info when access failed.
-> - using macro list for phy register init.
-> - rename function for multi chip prefix with rtsx_base_
-> - save pcie_cap offset when init chip, not calling pci_find_capacity()
->   every time.
-> - add pcr->ops: write_phy/read_phy for special chip.
-> 
-> This patchset including re-format some coding-style and add two new chip
-> rts524A and rts525A.
-> 
-> 
-> Micky Ching (9):
->   mfd: rtsx: replace TAB by SPC after #define
->   mfd: rtsx: place register address and values togather
->   mfd: rtsx: update PETXCFG address
->   mfd: rtsx: update driving settings
->   mfd: rtsx: update phy register
->   mfd: rtsx: remove LCTLR defination
->   mfd: rtsx: add support for rts524A
->   mfd: rtsx: add support for rts525A
->   mfd: rtsx: using pcr_dbg replace dev_dbg
-> 
->  drivers/mfd/Makefile         |    2 +-
->  drivers/mfd/rtl8411.c        |   11 +-
->  drivers/mfd/rts5209.c        |    4 +-
->  drivers/mfd/rts5227.c        |   12 +-
->  drivers/mfd/rts5229.c        |    4 +-
->  drivers/mfd/rts5249.c        |  368 +++++++++++---
->  drivers/mfd/rtsx_gops.c      |   37 --
->  drivers/mfd/rtsx_pcr.c       |  110 +++--
->  drivers/mfd/rtsx_pcr.h       |    8 +
->  include/linux/mfd/rtsx_pci.h | 1109 ++++++++++++++++++++++--------------------
->  10 files changed, 966 insertions(+), 699 deletions(-)
->  delete mode 100644 drivers/mfd/rtsx_gops.c
-> 
+Signed-off-by: Robin Gong <b38343@freescale.com>
+---
+ drivers/dma/imx-sdma.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index d0df198..a95b1d7 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -531,6 +531,10 @@ static int sdma_run_channel0(struct sdma_engine *sdma)
+ 		dev_err(sdma->dev, "Timeout waiting for CH0 ready\n");
+ 	}
+ 
++	/* Set bits of CONFIG register with dynamic context switching */
++	if (readl(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG) == 0)
++		writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
++
+ 	return ret ? 0 : -ETIMEDOUT;
+ }
+ 
+@@ -1401,9 +1405,6 @@ static int sdma_init(struct sdma_engine *sdma)
+ 
+ 	writel_relaxed(ccb_phys, sdma->regs + SDMA_H_C0PTR);
+ 
+-	/* Set bits of CONFIG register with given context switching mode */
+-	writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
+-
+ 	/* Initializes channel's priorities */
+ 	sdma_set_channel_priority(&sdma->channel[0], 7);
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
