@@ -1,184 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbbAVHdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 02:33:46 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:56163 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbbAVHdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 02:33:39 -0500
-Date: Thu, 22 Jan 2015 08:33:34 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Mark Yao <mark.yao@rock-chips.com>
-Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Clark <robdclark@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Daniel Kurtz <djkurtz@chromium.org>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
-Subject: Re: [PATCH 1/2] drm/rockchip: vop use is_enabled instead of dpms mode
-Message-ID: <20150122073334.GU10113@phenom.ffwll.local>
-Mail-Followup-To: Mark Yao <mark.yao@rock-chips.com>,
-	David Airlie <airlied@linux.ie>, Rob Clark <robdclark@gmail.com>,
-	Philipp Zabel <p.zabel@pengutronix.de>,
-	Daniel Kurtz <djkurtz@chromium.org>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	linux-rockchip@lists.infradead.org
-References: <1421910333-5576-1-git-send-email-mark.yao@rock-chips.com>
- <1421910333-5576-2-git-send-email-mark.yao@rock-chips.com>
+	id S1754616AbbAVHeB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 02:34:01 -0500
+Received: from ozlabs.org ([103.22.144.67]:51259 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754576AbbAVHdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 02:33:45 -0500
+Date: Thu, 22 Jan 2015 18:33:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Weiwei Wang <wangww631@huawei.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20150122183334.3c5077a9@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421910333-5576-2-git-send-email-mark.yao@rock-chips.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/U5xgNWVqYgnl1/93Jjljo8v"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 03:05:32PM +0800, Mark Yao wrote:
-> drm dpms have many power modes: ON,OFF,SUSPEND,STANDBY, etc.
-> but vop only have enable/disable mode, maybe case such bug:
->  --> DRM_DPMS_ON: power on vop
->  --> DRM_DPMS_SUSPEND: power off vop
->  --> DRM_DPMS_OFF: already power off at SUSPEND, crash
-> so use a bool val is more suitable.
-> 
-> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
+--Sig_/U5xgNWVqYgnl1/93Jjljo8v
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Long term I highly suggest you switch to atomic, since with atomic all the
-legacy dpms modes are remapped to a simple on/off. Also the new atomic
-helpers make sure that your backend isn't called multiple times, so you
-can ditch all your is_enabled tracking with that.
--Daniel
+Hi Andrew,
 
-> ---
->  drivers/gpu/drm/rockchip/rockchip_drm_vop.c |   34 ++++++++++++++-------------
->  1 file changed, 18 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
-> index 9a5c571..f278c09 100644
-> --- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
-> +++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
-> @@ -81,7 +81,7 @@ struct vop {
->  	struct drm_crtc crtc;
->  	struct device *dev;
->  	struct drm_device *drm_dev;
-> -	unsigned int dpms;
-> +	bool is_enabled;
->  
->  	int connector_type;
->  	int connector_out_mode;
-> @@ -387,6 +387,9 @@ static void vop_enable(struct drm_crtc *crtc)
->  	struct vop *vop = to_vop(crtc);
->  	int ret;
->  
-> +	if (vop->is_enabled)
-> +		return;
-> +
->  	ret = clk_enable(vop->hclk);
->  	if (ret < 0) {
->  		dev_err(vop->dev, "failed to enable hclk - %d\n", ret);
-> @@ -427,6 +430,8 @@ static void vop_enable(struct drm_crtc *crtc)
->  
->  	drm_vblank_on(vop->drm_dev, vop->pipe);
->  
-> +	vop->is_enabled = false;
-> +
->  	return;
->  
->  err_disable_aclk:
-> @@ -441,6 +446,9 @@ static void vop_disable(struct drm_crtc *crtc)
->  {
->  	struct vop *vop = to_vop(crtc);
->  
-> +	if (vop->is_enabled)
-> +		return;
-> +
->  	drm_vblank_off(crtc->dev, vop->pipe);
->  
->  	disable_irq(vop->irq);
-> @@ -463,6 +471,8 @@ static void vop_disable(struct drm_crtc *crtc)
->  
->  	clk_disable(vop->aclk);
->  	clk_disable(vop->hclk);
-> +
-> +	vop->is_enabled = false;
->  }
->  
->  /*
-> @@ -742,7 +752,7 @@ static int vop_crtc_enable_vblank(struct drm_crtc *crtc)
->  	struct vop *vop = to_vop(crtc);
->  	unsigned long flags;
->  
-> -	if (vop->dpms != DRM_MODE_DPMS_ON)
-> +	if (!vop->is_enabled)
->  		return -EPERM;
->  
->  	spin_lock_irqsave(&vop->irq_lock, flags);
-> @@ -759,8 +769,9 @@ static void vop_crtc_disable_vblank(struct drm_crtc *crtc)
->  	struct vop *vop = to_vop(crtc);
->  	unsigned long flags;
->  
-> -	if (vop->dpms != DRM_MODE_DPMS_ON)
-> +	if (!vop->is_enabled)
->  		return;
-> +
->  	spin_lock_irqsave(&vop->irq_lock, flags);
->  	vop_mask_write(vop, INTR_CTRL0, FS_INTR_MASK, FS_INTR_EN(0));
->  	spin_unlock_irqrestore(&vop->irq_lock, flags);
-> @@ -773,15 +784,8 @@ static const struct rockchip_crtc_funcs private_crtc_funcs = {
->  
->  static void vop_crtc_dpms(struct drm_crtc *crtc, int mode)
->  {
-> -	struct vop *vop = to_vop(crtc);
-> -
->  	DRM_DEBUG_KMS("crtc[%d] mode[%d]\n", crtc->base.id, mode);
->  
-> -	if (vop->dpms == mode) {
-> -		DRM_DEBUG_KMS("desired dpms mode is same as previous one.\n");
-> -		return;
-> -	}
-> -
->  	switch (mode) {
->  	case DRM_MODE_DPMS_ON:
->  		vop_enable(crtc);
-> @@ -795,8 +799,6 @@ static void vop_crtc_dpms(struct drm_crtc *crtc, int mode)
->  		DRM_DEBUG_KMS("unspecified mode %d\n", mode);
->  		break;
->  	}
-> -
-> -	vop->dpms = mode;
->  }
->  
->  static void vop_crtc_prepare(struct drm_crtc *crtc)
-> @@ -934,9 +936,9 @@ static int vop_crtc_page_flip(struct drm_crtc *crtc,
->  	struct drm_framebuffer *old_fb = crtc->primary->fb;
->  	int ret;
->  
-> -	/* when the page flip is requested, crtc's dpms should be on */
-> -	if (vop->dpms > DRM_MODE_DPMS_ON) {
-> -		DRM_DEBUG("failed page flip request at dpms[%d].\n", vop->dpms);
-> +	/* when the page flip is requested, crtc should be on */
-> +	if (!vop->is_enabled) {
-> +		DRM_DEBUG("page flip request rejected because crtc is off.\n");
->  		return 0;
->  	}
->  
-> @@ -1302,7 +1304,7 @@ static int vop_initial(struct vop *vop)
->  
->  	clk_disable(vop->hclk);
->  
-> -	vop->dpms = DRM_MODE_DPMS_OFF;
-> +	vop->is_enabled = false;
->  
->  	return 0;
->  
-> -- 
-> 1.7.9.5
-> 
-> 
+After merging the akpm-current tree, today's linux-next build (x86_64 allmo=
+dconfig)
+failed like this:
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+fs/ocfs2/aops.c: In function 'ocfs2_direct_IO_write':
+fs/ocfs2/aops.c:784:9: error: too few arguments to function 'blkdev_issue_z=
+eroout'
+   ret =3D blkdev_issue_zeroout(osb->sb->s_bdev,
+         ^
+In file included from fs/ocfs2/aops.c:31:0:
+include/linux/blkdev.h:1165:12: note: declared here
+ extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+            ^
+
+Caused by commit e95f8b5356c4 ("ocfs2: implement
+ocfs2_direct_IO_write") interacting with commit d93ba7a5a97c ("block:
+Add discard flag to blkdev_issue_zeroout() function") from the block
+tree.
+
+I have added this merge fix patch:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 22 Jan 2015 18:28:21 +1100
+Subject: [PATCH] ocfs2: implement ocfs2_direct_IO_write fix
+
+update for an API change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/ocfs2/aops.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 89f43dc7e440..af22615afd35 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -784,7 +784,7 @@ static ssize_t ocfs2_direct_IO_write(struct kiocb *iocb,
+ 		ret =3D blkdev_issue_zeroout(osb->sb->s_bdev,
+ 				p_cpos << (osb->s_clustersize_bits - 9),
+ 				zero_len >> 9,
+-				GFP_KERNEL);
++				GFP_KERNEL, false);
+ 		if (ret < 0)
+ 			mlog_errno(ret);
+ 	}
+--=20
+2.1.4
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/U5xgNWVqYgnl1/93Jjljo8v
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUwKfWAAoJEMDTa8Ir7ZwVCukP/ihNYOCM/8aK4WlmcZNru3Ln
+JLh9pHGwy6lrlIAtQwbg3J8nvMdm7YGoZGa18Ilhi/d2XNRu3FlBUgXNwB7jE+vm
+amyy0QUnMXAe3xoQxuj52tVUQUxpXkenpQ5S6FEIHa7crc/MMYkt++i2C15WDP4V
+BwPsUZ4FBOwhtSMMypJl3H4bL9AUgmU33aRr38A2obcUB7dbAVrN99o6FVGZTmHR
+8vx4bZjA/v6wYVDGhgvMC4ZYpKwbmEORsCjVa1aya1YBIq8yFHWv2PJ0PsUF2yzQ
+SeDiV6FjDvgGFlUQfofI6VJZGUUBPAGf8ipTS4y35uzysitaBtZiYGhFIKEwegA8
+6UTXVbfd+WpfnU98yauXxn51w+UUxXf0oeKHpcd6S+SzcWIcNOvndpzDQABiTd9T
+Ci1KuLdzYGaX+5CAPbV+TIpqCdhr6J336t/gVkmQVc/VHqSdpbQ5io5kq/U+B9O7
+JnshVNE6ROMGiB5BvqcXw2Pn2KLBWt5omWU7YSyYpXblod/ZWtYS6KmNvEoT08CJ
+Wcoi0uRXrvpxulIQbSQA/7GcOXlR/SQVyfQgMC4Oyke/o0n+nAgekRydP488aux9
+6Ns1LO3bN96TjhT2j3b6eex00ni+F8fvPlJvPh8EzN30LzSALn3TemTEw6BRpXay
+dk/gM+XbkDjDMADHlyDd
+=qow7
+-----END PGP SIGNATURE-----
+
+--Sig_/U5xgNWVqYgnl1/93Jjljo8v--
