@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbbAVJg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 04:36:29 -0500
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:62970 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307AbbAVJgV (ORCPT
+	id S1753423AbbAVJhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 04:37:36 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:50922 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbbAVJh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 04:36:21 -0500
+	Thu, 22 Jan 2015 04:37:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1501211510220.10817@pobox.suse.cz>
-References: <1420304509-13072-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<alpine.LNX.2.00.1501201407050.10817@pobox.suse.cz>
-	<CAMk6uBk8gPAsKKqZPC=9dxRkiXm7893SwK1fd6J4Bc+iVkG+uA@mail.gmail.com>
-	<alpine.LNX.2.00.1501211510220.10817@pobox.suse.cz>
-Date: Thu, 22 Jan 2015 17:36:20 +0800
-Message-ID: <CAMk6uBk+9egRDqyUWRR=1BM8Vu-qG7sj5NMsd9OR-7OrZ6LznA@mail.gmail.com>
-Subject: Re: [PATCH] blackfin: mach-common: ints-priority: Remove unused function
-From: Steven Miao <realmz6@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Christoph Lameter <cl@linux.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        bfin <adi-buildroot-devel@lists.sourceforge.net>,
-        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
-	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
-	<linux-kernel@vger.kernel.org>
+In-Reply-To: <1421852809-29733-1-git-send-email-a.ryabinin@samsung.com>
+References: <1421852809-29733-1-git-send-email-a.ryabinin@samsung.com>
+Date: Thu, 22 Jan 2015 10:37:25 +0100
+X-Google-Sender-Auth: s2RWs3yVErXvSPw9qujEk5kM5xY
+Message-ID: <CAJKOXPfuxD91=hEYoTQ2Vdes+cf-FXGUZRD2HUbeNzS3czKobA@mail.gmail.com>
+Subject: Re: [rtc-linux] [PATCH] rtc: s5m: terminate s5m_rtc_id array with
+ empty element
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 10:11 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Wed, 21 Jan 2015, Steven Miao wrote:
+2015-01-21 16:06 GMT+01:00 Andrey Ryabinin <a.ryabinin@samsung.com>:
+> Array of platform_device_id elements should be terminated
+> with empty element.
 >
->> > This doesn't seem to be present in linux-next as of today, so I am picking
->> > it up.
->> It seems it's still in today's linux-next?
->> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/arch/blackfin/mach-common/ints-priority.c#n432
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  drivers/rtc/rtc-s5m.c | 1 +
+>  1 file changed, 1 insertion(+)
+
+
+Right, good catch.
+
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+
+Maybe also cc stable for fixing 5bccae6ec458 ("rtc: s5m-rtc: add
+real-time clock driver for s5m8767")?
+
+Best regards,
+Krzysztof
+
 >
-> Your "today" probably differs from mine :) The commit that removes it has
-> appeared in linux-next ~6 hours ago.
+> diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
+> index b5e7c46..89ac1d5 100644
+> --- a/drivers/rtc/rtc-s5m.c
+> +++ b/drivers/rtc/rtc-s5m.c
+> @@ -832,6 +832,7 @@ static SIMPLE_DEV_PM_OPS(s5m_rtc_pm_ops, s5m_rtc_suspend, s5m_rtc_resume);
+>  static const struct platform_device_id s5m_rtc_id[] = {
+>         { "s5m-rtc",            S5M8767X },
+>         { "s2mps14-rtc",        S2MPS14X },
+> +       { },
+>  };
 >
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=4d2ffaa99c7a685dabab5c8c56b58286fd679bd5
-Yes, it is. There could be several hours delay from mine :)
+>  static struct platform_driver s5m_rtc_driver = {
+> --
+> 2.2.1
 >
 > --
-> Jiri Kosina
-> SUSE Labs
-
--steven
+> --
+> You received this message because you are subscribed to "rtc-linux".
+> Membership options at http://groups.google.com/group/rtc-linux .
+> Please read http://groups.google.com/group/rtc-linux/web/checklist
+> before submitting a driver.
+> ---
+> You received this message because you are subscribed to the Google Groups "rtc-linux" group.
+> To unsubscribe from this group and stop receiving emails from it, send an email to rtc-linux+unsubscribe@googlegroups.com.
+> For more options, visit https://groups.google.com/d/optout.
