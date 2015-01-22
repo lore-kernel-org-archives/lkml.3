@@ -1,41 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbbAVT4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:56:39 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:52601 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609AbbAVT4g (ORCPT
+	id S1753548AbbAVUCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:02:15 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:50826 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930AbbAVUCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:56:36 -0500
+	Thu, 22 Jan 2015 15:02:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <cover.1421954363.git.luto@amacapital.net>
-References: <cover.1421954363.git.luto@amacapital.net>
-Date: Fri, 23 Jan 2015 07:56:35 +1200
-X-Google-Sender-Auth: yrpDXB77Syj4pybzdSCFTQiQdTg
-Message-ID: <CA+55aFyQ9zfeNoboW_ypYoKCO55CM_9X0Qgi5NkU4AAqSmPuWQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] x86: TLS regression fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20150122193003.GR17887@wotan.suse.de>
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
+ <1421893039-426-2-git-send-email-mcgrof@do-not-panic.com> <CALCETrXp7qWLQYEAq7zKTMeMg7mfXo+mL-qPfPN6hfJGQGSoPw@mail.gmail.com>
+ <20150122193003.GR17887@wotan.suse.de>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 Jan 2015 12:01:50 -0800
+Message-ID: <CALCETrVuH=ZMTu1yHZ1n2-z-+szocgrkkdhDAuJEMi1-ts5mbA@mail.gmail.com>
+Subject: Re: [RFC v3 1/2] x86/xen: add xen_is_preemptible_hypercall()
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jan Beulich <JBeulich@suse.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 7:27 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+On Thu, Jan 22, 2015 at 11:30 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> On Wed, Jan 21, 2015 at 07:07:36PM -0800, Andy Lutomirski wrote:
+>> On Wed, Jan 21, 2015 at 6:17 PM, Luis R. Rodriguez
+>> <mcgrof@do-not-panic.com> wrote:
+>> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>> >
+>> > On kernels with voluntary or no preemption we can run
+>> > into situations where a hypercall issued through userspace
+>> > will linger around as it addresses sub-operatiosn in kernel
+>> > context (multicalls). Such operations can trigger soft lockup
+>> > detection.
+>> >
+>> > We want to address a way to let the kernel voluntarily preempt
+>> > such calls even on non preempt kernels, to address this we first
+>> > need to distinguish which hypercalls fall under this category.
+>> > This implements xen_is_preemptible_hypercall() which lets us do
+>> > just that by adding a secondary hypercall page, calls made via
+>> > the new page may be preempted.
+>> >
+>> > Andrew had originally submitted a version of this work [0].
+>> >
+>> > [0] http://lists.xen.org/archives/html/xen-devel/2014-02/msg01056.html
+>> >
+>> > Based on original work by: Andrew Cooper <andrew.cooper3@citrix.com>
+>> >
+>> > Cc: Andy Lutomirski <luto@amacapital.net>
+>> > Cc: Borislav Petkov <bp@suse.de>
+>> > Cc: David Vrabel <david.vrabel@citrix.com>
+>> > Cc: Thomas Gleixner <tglx@linutronix.de>
+>> > Cc: Ingo Molnar <mingo@redhat.com>
+>> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> > Cc: x86@kernel.org
+>> > Cc: Steven Rostedt <rostedt@goodmis.org>
+>> > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> > Cc: Jan Beulich <JBeulich@suse.com>
+>> > Cc: linux-kernel@vger.kernel.org
+>> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+>> > ---
+>> >  arch/x86/include/asm/xen/hypercall.h | 20 ++++++++++++++++++++
+>> >  arch/x86/xen/enlighten.c             |  7 +++++++
+>> >  arch/x86/xen/xen-head.S              | 18 +++++++++++++++++-
+>> >  3 files changed, 44 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+>> > index ca08a27..221008e 100644
+>> > --- a/arch/x86/include/asm/xen/hypercall.h
+>> > +++ b/arch/x86/include/asm/xen/hypercall.h
+>> > @@ -84,6 +84,22 @@
+>> >
+>> >  extern struct { char _entry[32]; } hypercall_page[];
+>> >
+>> > +#ifndef CONFIG_PREEMPT
+>> > +extern struct { char _entry[32]; } preemptible_hypercall_page[];
+>>
+>> A comment somewhere explaining why only non-preemptible kernels have
+>> preemptible hypercalls might be friendly to some future reader. :)
 >
-> Thoughts?
+> Good idea, since this section is arch specific, I'll instead add a blurb
+> explaining this on the upcall.
+>
+>> > +
+>> > +static inline bool xen_is_preemptible_hypercall(struct pt_regs *regs)
+>> > +{
+>> > +       return !user_mode_vm(regs) &&
+>> > +               regs->ip >= (unsigned long)preemptible_hypercall_page &&
+>> > +               regs->ip < (unsigned long)preemptible_hypercall_page + PAGE_SIZE;
+>> > +}
+>>
+>> This makes it seem like the page is indeed one page long, but I don't
+>> see what actually allocates a whole page for it.  What am I missing?
+>
+> arch/x86/xen/xen-head.S
+>
+> .pushsection .text
+>         .balign PAGE_SIZE
+> ENTRY(hypercall_page)
+>
+> #ifndef CONFIG_PREEMPT
+> ENTRY(preemptible_hypercall_page)
+>         .skip PAGE_SIZE
+> #endif /* CONFIG_PREEMPT */
+>
+> Does that suffice to be sure?
 
-Looks good to me.
+This looks like hypercall_page and preemptible_hypercall_page will
+both be page-aligned but will be the same page.  Should there be
+another .skip PAGE_SIZE in there?
 
-And since I curse at people who ignore regression reports because "it
-fixes a bug", I should take the time to say how much I liked seeing
-you explain to the people who reported this regression why it happened
-and what the thinking was. Now *that* is how things should work. "My
-bad, this was the background for why it seemed like a good idea".
+--Andy
 
-And I guess the second patch should also be marked for stable, since
-the thing that causes problems got backported too.
+>
+>  Luis
 
-                 Linus
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
