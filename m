@@ -1,123 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157AbbAVTA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:00:57 -0500
-Received: from mga14.intel.com ([192.55.52.115]:52182 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645AbbAVTAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:00:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="443843805"
-From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
-To: David Laight <David.Laight@ACULAB.COM>,
-        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hayato Momma <h-momma@ce.jp.nec.com>
-Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
-	mode control
-Thread-Topic: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
- promiscuous	mode control
-Thread-Index: AQHQNQsmhwpg0uFhykOk7liG8gdn8pzJslcQgACW3ID//3rhgIABNXsAgAAFKICAAAYCgP//+z4QgAFtoQCAAAET8A==
-Date: Thu, 22 Jan 2015 19:00:51 +0000
-Message-ID: <F6FB0E698C9B3143BDF729DF222866469129BFFD@ORSMSX110.amr.corp.intel.com>
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
-	<874mrlu18e.fsf@nemi.mork.no>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
- <063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129BC03@ORSMSX110.amr.corp.intel.com>
- <063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1754190AbbAVTBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 14:01:15 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57329 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645AbbAVTBM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 14:01:12 -0500
+Date: Thu, 22 Jan 2015 19:00:52 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Jyri Sarha <jsarha@ti.com>
+Message-ID: <20150122190052.GS21293@sirena.org.uk>
+References: <cover.1421868426.git.moinejf@free.fr>
+ <d0c66c2e2f200119f9990fa52a503b1a4af6238f.1421868426.git.moinejf@free.fr>
+ <54C0088F.9070609@metafoo.de>
+ <20150122090723.50ac0156@armhf>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="5Dr6Wqe9hdyl7LAI"
+Content-Disposition: inline
+In-Reply-To: <20150122090723.50ac0156@armhf>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH v2 3/3] ASoC: add generic dt-card support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0MJ11v6028928
-
-> -----Original Message-----
-> From: David Laight [mailto:David.Laight@ACULAB.COM]
-> Sent: Thursday, January 22, 2015 1:50 AM
-> To: Skidmore, Donald C; Hiroshi Shimamoto; BjÃ¸rn Mork
-> Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; Choi, Sy
-> Jong; linux-kernel@vger.kernel.org; Hayato Momma
-> Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
-> mode control
-> 
-> From: Skidmore, Donald C
-> > > > From: Hiroshi Shimamoto
-> > > > > My concern is what is the real issue that VF multicast
-> > > > > promiscuous mode
-> > > can cause.
-> > > > > I think there is the 4k entries to filter multicast address, and
-> > > > > the current ixgbe/ixgbevf can turn all bits on from VM. That is
-> > > > > almost same as
-> > > enabling multicast promiscuous mode.
-> > > > > I mean that we can receive all multicast addresses by an onerous
-> > > operation in untrusted VM.
-> > > > > I think we should clarify what is real security issue in this context.
-> > > >
-> > > > If you are worried about passing un-enabled multicasts to users
-> > > > then what about doing a software hash of received multicasts and
-> > > > checking against an actual list of multicasts enabled for that hash entry.
-> > > > Under normal conditions there is likely to be only a single address to
-> check.
-> > > >
-> > > > It may (or may not) be best to use the same hash as any hashing
-> > > > hardware filter uses.
-> > >
-> > > thanks for the comment. But I don't think that is the point.
-> > >
-> > > I guess, introducing VF multicast promiscuous mode seems to add new
-> > > privilege to peek every multicast packet in VM and that doesn't look
-> good.
-> > > On the other hand, I think that there has been the same privilege in
-> > > the current ixgbe/ixgbevf implementation already. Or I'm reading the
-> > > code wrongly.
-> > > I'd like to clarify what is the issue of allowing to receive all multicast
-> packets.
-> >
-> > Allowing a VM to give itself the privilege of seeing every multicast
-> > packet could be seen as a hole in VM isolation.
-> > Now if the host system allows this policy I don't see this as an issue
-> > as someone specifically allowed this to happen and then must not be
-> concerned.
-> > We could even log that it has occurred, which I believe your patch did do.
-> > The issue is also further muddied, as you mentioned above, since some
-> > of these multicast packets are leaking anyway (the HW currently uses a 12
-> bit mask).
-> > It's just that this change would greatly enlarge that hole from a
-> > fraction to all multicast packets.
-> 
-> Why does it have anything to do with VM isolation?
-> Isn't is just the same as if the VM were connected directly to the ethernet
-> cable?
-> 
-> 	David
-
-I do see your point. :)
-
-My hang up is more related to: without the nob to enable it (off by default) we are letting one VF dictate policy for all the other VFs and the PF.  If one VF needs to be in promiscuous multicast so is everyone else.  Their stacks now needs to deal with all the extra multicast packets.  As you point out this might not be a direct concern for isolation in that the VM could have 'chosen' to join any Multicast group and seen this traffic.  My concern over isolation is one VF has chosen that all the other VM now have to see this multicast traffic.
-
-This will effect performance as these packets will need to be replicated.  So once again my issue is a VF is making the policy decision that doing this is ok for the entire system.  That should be the PF's job.
-
-Does this give you a better idea where my concerns lay?
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--5Dr6Wqe9hdyl7LAI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Jan 22, 2015 at 09:07:23AM +0100, Jean-Francois Moine wrote:
+
+> I was also wondering about some of these properties, as widgets and
+> routing. They seem to be software information and Linux specific.
+> Must these properties appear in the DTs?
+
+What's Linux specific about them?  The widgets should all represent
+physical things that can be pointed at on the board and the routing
+reflects how the components are hooked up.
+
+--5Dr6Wqe9hdyl7LAI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUwUjjAAoJECTWi3JdVIfQWfcH/RdclJDHsnRFv1ttPnJaYvb4
+TpN8LmEhogNFYAOYAXaVBA5q/XGuM4pmsrPkQB7XiUnFPhJpx63OHirBp/fk8qPm
+oVIALgyQxKZC/XPT6MEe+LJojSTlG2FawswT7j2qEv019kTeZOVrhiAXWD2gmmrG
+feByG7OO0TQXg8YKnCcpvT3630u8mXti/E97cBnAvzw2azUm9xHLUa/mcO0yx/yZ
+Tr6XSoc/+624vqqrUNZqTs5l8+mGkU51haXoH/Ci27Tb45O2QWr8eovoX41RUEka
+ryDwT79mG4aYbtelsmMNIDfB46t5xv+u2nJ0wmdcDLoV0O52bXyRHIP9zVMg044=
+=37D/
+-----END PGP SIGNATURE-----
+
+--5Dr6Wqe9hdyl7LAI--
