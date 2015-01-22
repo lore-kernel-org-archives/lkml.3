@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbbAVKZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 05:25:07 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:47937 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbbAVKZA (ORCPT
+	id S1753385AbbAVKRi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 05:17:38 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:47691 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904AbbAVKRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 05:25:00 -0500
-X-Greylist: delayed 501 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 05:24:59 EST
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 22 Jan 2015 11:16:26 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] firewire: ohci:  Remove unused function
-Message-ID: <20150122111626.463882b2@kant>
-In-Reply-To: <1420232563-3464-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420232563-3464-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Jan 2015 05:17:30 -0500
+Date: Thu, 22 Jan 2015 11:17:20 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@gmail.com
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
+Subject: Re: perf: easily crash kernel with rapl event close
+Message-ID: <20150122101720.GA2896@worktop.programming.kicks-ass.net>
+References: <alpine.DEB.2.11.1501211348470.22707@vincent-weaver-1.umelst.maine.edu>
+ <CAMsRxfJVxUcTvpaUSvTY19Ha93J1R-=o97hO+bfgkL3zU7Nrpw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMsRxfJVxUcTvpaUSvTY19Ha93J1R-=o97hO+bfgkL3zU7Nrpw@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jan 02 Rickard Strandqvist wrote:
-> Remove the function ar_prev_buffer_index() that is not used anywhere.
+On Wed, Jan 21, 2015 at 09:13:11PM -0800, Stephane Eranian wrote:
+> Vince,
 > 
-> This was partially found by using a static code analysis program called cppcheck.
+> On Wed, Jan 21, 2015 at 10:55 AM, Vince Weaver <vincent.weaver@maine.edu> wrote:
+> > Hello
+> >
+> > on my haswell system, running 3.19-rc5, and with
+> >         echo "0" > /proc/sys/kernel/perf_event_paranoid
+> >
+> > I can easily crash my system with the attached test program that simply
+> > opens a RAPL event and then closes it.
+> >
+> > This bug was found by the perf_fuzzer.
+> >
+> > It looks like somehow rapl_pmu gets freed to NULL but the
+> > call in rapl_scale()
+> >         __this_cpu_read(rapl_pmu->hw_unit)
+> > still happens.
+> >
+> I don't see how this can happen.
 > 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> I get some crashes but not with your program on my laptop.
+> But I cannot catch the serial console from my laptop.
+> Will try with another machine tomorrow.
 
-Committed to linux1394.git, thanks.  (The function was used in an earlier
-version of patch "firewire: ohci: AR rewrite" which later became commit
-7a39d8b82165.  In a revision of the patch, the use but not the definition
-of this function was removed.)
-
-> ---
->  drivers/firewire/ohci.c |    5 -----
->  1 file changed, 5 deletions(-)
-> 
-> diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-> index a66a321..9662daa 100644
-> --- a/drivers/firewire/ohci.c
-> +++ b/drivers/firewire/ohci.c
-> @@ -719,11 +719,6 @@ static inline unsigned int ar_next_buffer_index(unsigned int index)
->  	return (index + 1) % AR_BUFFERS;
->  }
->  
-> -static inline unsigned int ar_prev_buffer_index(unsigned int index)
-> -{
-> -	return (index - 1 + AR_BUFFERS) % AR_BUFFERS;
-> -}
-> -
->  static inline unsigned int ar_first_buffer_index(struct ar_context *ctx)
->  {
->  	return ar_next_buffer_index(ctx->last_buffer_index);
-
--- 
-Stefan Richter
--=====-===== ---= =-==-
-http://arcgraph.de/sr/
+I saw it today as well on an ivb-ep. I disabled rapl for now since I'm
+chasing other things.
