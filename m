@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbbAVVKA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:10:00 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:18827 "EHLO
+	id S1754870AbbAVVJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:09:08 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:23167 "EHLO
 	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753313AbbAVVJ6 (ORCPT
+	by vger.kernel.org with ESMTP id S1753448AbbAVVJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:09:58 -0500
+	Thu, 22 Jan 2015 16:09:06 -0500
 From: Shaohua Li <shli@fb.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <Kernel-team@fb.com>, Peter Zijlstra <peterz@infradead.org>,
         Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>
-Subject: [RFC 1/2] perf: update shadow timestamp before add event
-Date: Thu, 22 Jan 2015 13:09:01 -0800
-Message-ID: <119aa7d433860f568136ab623fb4a510c28e9e6f.1421906750.git.shli@fb.com>
+Subject: [RFC 2/2] perf: update userspace page info for software event
+Date: Thu, 22 Jan 2015 13:09:02 -0800
+Message-ID: <e0f8f6f0a114c464e8e38cd73be31564bd5ea7da.1421906750.git.shli@fb.com>
 X-Mailer: git-send-email 1.8.1
+In-Reply-To: <119aa7d433860f568136ab623fb4a510c28e9e6f.1421906750.git.shli@fb.com>
+References: <119aa7d433860f568136ab623fb4a510c28e9e6f.1421906750.git.shli@fb.com>
 X-FB-Internal: Safe
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -36,43 +38,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the shadow timestamp before start event. .add might use the
-timestamp.
+For hardware event, the userspace page of the event gets updated in
+context switch, so if we read time in the page, we get updated info. For
+software event, this is missed currently. This patch makes the behavior
+consistency.
+
+With this patch, we can implement clock_gettime(THREAD_CPUTIME) with
+PERF_COUNT_SW_DUMMY in userspace as suggested by Andy and Peter. Code
+likes this:
+
+  if (pc->cap_user_time) {
+	do {
+		seq = pc->lock;
+		barrier();
+
+		running = pc->time_running;
+		cyc = rdtsc();
+		time_mult = pc->time_mult;
+		time_shift = pc->time_shift;
+		time_offset = pc->time_offset;
+
+		barrier();
+	} while (pc->lock != seq);
+
+	quot = (cyc >> time_shift);
+	rem = cyc & ((1 << time_shift) - 1);
+	delta = time_offset + quot * time_mult +
+		((rem * time_mult) >> time_shift);
+
+	running += delta;
+	return running;
+  }
+
+I tried in a busy system, the userspace page updating hasn't noticeable
+overhead.
 
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Andy Lutomirski <luto@amacapital.net>
 Cc: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Shaohua Li <shli@fb.com>
 ---
- kernel/events/core.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/events/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 882f835..4edde3e 100644
+index 4edde3e..4221240 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -1769,6 +1769,10 @@ event_sched_in(struct perf_event *event,
- 
- 	perf_pmu_disable(event->pmu);
- 
-+	event->tstamp_running += tstamp - event->tstamp_stopped;
-+
-+	perf_set_shadow_time(event, ctx, tstamp);
-+
- 	if (event->pmu->add(event, PERF_EF_START)) {
- 		event->state = PERF_EVENT_STATE_INACTIVE;
- 		event->oncpu = -1;
-@@ -1776,10 +1780,6 @@ event_sched_in(struct perf_event *event,
- 		goto out;
+@@ -5950,6 +5950,7 @@ static int perf_swevent_add(struct perf_event *event, int flags)
  	}
  
--	event->tstamp_running += tstamp - event->tstamp_stopped;
--
--	perf_set_shadow_time(event, ctx, tstamp);
--
- 	if (!is_software_event(event))
- 		cpuctx->active_oncpu++;
- 	ctx->nr_active++;
+ 	hlist_add_head_rcu(&event->hlist_entry, head);
++	perf_event_update_userpage(event);
+ 
+ 	return 0;
+ }
+@@ -6419,6 +6420,7 @@ static int cpu_clock_event_add(struct perf_event *event, int flags)
+ {
+ 	if (flags & PERF_EF_START)
+ 		cpu_clock_event_start(event, flags);
++	perf_event_update_userpage(event);
+ 
+ 	return 0;
+ }
+@@ -6493,6 +6495,7 @@ static int task_clock_event_add(struct perf_event *event, int flags)
+ {
+ 	if (flags & PERF_EF_START)
+ 		task_clock_event_start(event, flags);
++	perf_event_update_userpage(event);
+ 
+ 	return 0;
+ }
 -- 
 1.8.1
 
