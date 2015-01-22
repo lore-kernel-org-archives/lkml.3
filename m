@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441AbbAVSVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 13:21:51 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:56648 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169AbbAVSVs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 13:21:48 -0500
+	id S1753453AbbAVS1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 13:27:30 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28299 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752707AbbAVS12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 13:27:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,450,1418112000"; 
+   d="scan'208";a="666019626"
+Message-ID: <54C1403D.1010608@intel.com>
+Date: Thu, 22 Jan 2015 10:23:57 -0800
+From: Tadeusz Struk <tadeusz.struk@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <1421949760-5705-1-git-send-email-md.jamalmohiuddin@gmail.com>
-References: <1421949760-5705-1-git-send-email-md.jamalmohiuddin@gmail.com>
-Date: Thu, 22 Jan 2015 10:21:47 -0800
-Message-ID: <CA+mtBx8yeLG7UwqtknAsUTBtpocspraBcfj5W-2vTBA5pC8LEQ@mail.gmail.com>
-Subject: Re: [PATCH] include:linux:Optimizations to __skb_push
-From: Tom Herbert <therbert@google.com>
-To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-Cc: David Miller <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
-        viro@zeniv.linux.org.uk,
-        Alexander Duyck <alexander.h.duyck@redhat.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephan Mueller <smueller@chronox.de>
+CC: Herbert Xu <herbert@gondor.apana.org.au>, linux-crypto@vger.kernel.org,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] crypto: aesni: add setkey for driver-gcm-aes-aesni
+References: <2587101.YvN0IxRmOH@tachyon.chronox.de> <20150120031704.GB10475@gondor.apana.org.au> <40625395.stBBYbAQtz@tachyon.chronox.de>
+In-Reply-To: <40625395.stBBYbAQtz@tachyon.chronox.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 10:02 AM, Mohammad Jamal
-<md.jamalmohiuddin@gmail.com> wrote:
-> This patch optimizes __skb_push function
->
-> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-> ---
->  include/linux/skbuff.h |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index 85ab7d7..9acffb2 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -1671,9 +1671,8 @@ static inline unsigned char *__skb_put(struct sk_buff *skb, unsigned int len)
->  unsigned char *skb_push(struct sk_buff *skb, unsigned int len);
->  static inline unsigned char *__skb_push(struct sk_buff *skb, unsigned int len)
->  {
-> -       skb->data -= len;
->         skb->len  += len;
-> -       return skb->data;
-> +       return skb->data -= len;
->  }
->
-Hmm, this seems less readable to me. What is the effect of this patch?
-Does the compiler even produce different assembly?
-
-Thanks,
-Tom
-
->  unsigned char *skb_pull(struct sk_buff *skb, unsigned int len);
-> --
-> 1.7.9.5
->
+On 01/20/2015 05:25 PM, Stephan Mueller wrote:
+>> Rather than adding a bogus setkey function, please fix this mess
+>> properly by moving the top-level setkey function into the __driver
+>> one where it should be.  Compare with how we handle it in the
+>> ablk_helper which is pretty much the same thing.
+> 
+> Tadeusz, are you working on that update or shall I have a look?
+> 
+Hi,
+No, I thought that the agreement was that we don't want to allow user
+space to use these helpers directly, right? Am I missing something?
