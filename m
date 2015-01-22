@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717AbbAVTLF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:11:05 -0500
-Received: from smtprelay0103.hostedemail.com ([216.40.44.103]:53369 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753262AbbAVTLE (ORCPT
+	id S1753613AbbAVTOu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 14:14:50 -0500
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:13423 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbbAVTOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:11:04 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:4250:4321:5007:6261:9010:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: grade60_7d236d38e1d0e
-X-Filterd-Recvd-Size: 2330
-Message-ID: <1421953858.2702.5.camel@perches.com>
-Subject: Re: [PATCH] staging: dgnc: fix long lines in PCI device table
-From: Joe Perches <joe@perches.com>
-To: Krzysztof Adamski <k@japko.eu>
-Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+	Thu, 22 Jan 2015 14:14:46 -0500
+X-AuditID: cbfec37c-b7f496d000000b40-c6-54c14bd55ab4
+Message-id: <54C14BCF.1050902@samsung.com>
+Date: Thu, 22 Jan 2015 11:13:19 -0800
+From: Mario Smarduch <m.smarduch@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, kvm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
         linux-kernel@vger.kernel.org
-Date: Thu, 22 Jan 2015 11:10:58 -0800
-In-Reply-To: <20150122185524.GA18274@box2.japko.eu>
-References: <20150122185524.GA18274@box2.japko.eu>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: KVM: CONFIG_LOCK_DEP and CONFIG_LOCK_DETECTOR?
+References: <1421919245.13638.50.camel@x220>
+In-reply-to: <1421919245.13638.50.camel@x220>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.129.79]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+wr+5V74MhBs+fKVm8eP2P0eLLz+uM
+	FnOmFlp8PHWc3WLT42usFpd3zWGzuH2Z1+LvnX9sFvu3/WO1WHTrDLPFp+Y2ZgdujzXz1jB6
+	tDT3sHnsnHWX3WPTqk42jzvX9rB5nN+0htlj85J6j/f7rrJ5bNz+hMnj8ya5AK4oLpuU1JzM
+	stQifbsErozbL8MLrrJWLOj6zNLAuIuli5GTQ0LAROLHn6VQtpjEhXvr2boYuTiEBJYxSjxY
+	soodwullklg/czlUZgujxKKru8FaeAW0JC68nskOYrMIqEpsubSCGcRmE9CV2H9vI1hcVCBC
+	4s/pfawQ9YISPybfA+sVEVCWaN18D2wDs8AXJomFd58wdjFycAgLWEv83eYAUiMkoCMxZ+VW
+	sF5OoJkXem+AzWQWUJeYNG8RM4QtL7F5zVtmiHpViW03nzNCvKMkMe3wVfYJjMKzkKyehaR9
+	FpL2BYzMqxjFSouTC4qT0lMrjPWKE3OLS/PS9ZLzczcxQqKwZgfjva82hxgFOBiVeHi3lB4I
+	EWJNLCuuzD3EKMHBrCTCe8ToYIgQb0piZVVqUX58UWlOavEhRiYOTqkGxhYtZpn94V8/GExP
+	fyD6ZktLJpuX9V82lpczmmYvOX1atv54yNTHztGOivM4xDz69oWcNIw3m831zalvGdffT3b2
+	fRf27DrXdZLD88Pu3LM/v37UWLRq16d7iSuVusVEU3tPbpkcyH7ed8mbbypv/fVrOM5pLz5Z
+	bTF9SXq0dsqcsMzer5MS3yqxFGckGmoxFxUnAgBhuxe3oAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-22 at 19:55 +0100, Krzysztof Adamski wrote:
-> This patch fixes coding style of PCI device table declaration.
-[]
-> diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
-[]
-> @@ -98,11 +98,11 @@ static struct timer_list dgnc_poll_timer;
->  
+On 01/22/2015 01:34 AM, Paul Bolle wrote:
+> Mario,
 > 
->  static struct pci_device_id dgnc_pci_tbl[] = {
+> Your commit c64735554c0a ("KVM: arm: Add initial dirty page locking
+> support") is included in today's linux-next (ie, next-20150122). I
+> noticed because a script I use to check linux-next spotted a minor
+> problem with it.
+> 
+> This commit added a comment that mentions CONFIG_LOCK_DEP and
+> CONFIG_LOCK_DETECTOR. It seems CONFIG_LOCKDEP and CONFIG_LOCKUP_DETECTOR
+> should be used instead. Is a trivial patch to fix these typos queued
+> somewhere?
+> 
+> Thanks,
+> 
+> 
+> Paul Bolle
+> 
 
-const
+Hi Paul,
+  thanks for spotting that. No there is no trivial patch
+queued, didn't notice it until now. Can I submit a follow
+up trivial patch later?
 
-> -	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	0 },
-> -	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	1 },
-> -	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	2 },
-> -	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	3 },
-> -	{0,}						/* 0 terminated list. */
-> +	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_4_DID), .driver_data = 0},
-> +	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID), .driver_data = 1},
-> +	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_8_DID), .driver_data = 2},
-> +	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID), .driver_data = 3},
-> +	{0,}
-
-Maybe better to keep the alignment of .driver_data
-
-+	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_4_DID),     .driver_data = 0},
-+	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID), .driver_data = 1},
-+	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_8_DID),     .driver_data = 2},
-+	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID), .driver_data = 3},
-
-
+- Mario
