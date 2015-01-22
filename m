@@ -1,112 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbbAVPzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 10:55:36 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35182 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008AbbAVPzd (ORCPT
+	id S1753357AbbAVP4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:56:22 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:47273 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067AbbAVP4T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 10:55:33 -0500
-In-Reply-To: <1421883597.30744.3.camel@neuling.org>
-References: <20141203052204.9DA8F1400DD@ozlabs.org>	 <547EB253.5050307@linux.vnet.ibm.com> <548578A8.5020901@linux.vnet.ibm.com>
-	 <54947C64.4030206@linux.vnet.ibm.com> <54A50094.5070902@linux.vnet.ibm.com> <1421883597.30744.3.camel@neuling.org>
-Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
-X-KeepSent: C6CFC348:C619B89D-C1257DD5:0056279B;
- type=4; name=$KeepSent
-To: Michael Neuling <mikey@neuling.org>
-Cc: akpm@linux-foundation.org, avagin@openvz.org, davej@redhat.com,
-        davem@davemloft.net, dhowells@redhat.com,
-        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
-        james.hogan@imgtec.com,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>, kirjanov@gmail.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Michael Ellerman <mpe@ellerman.id.au>, oleg@redhat.com,
-        palves@redhat.com, Paul.Clothier@imgtec.com, peterz@infradead.org,
-        sam.bobroff@au1.ibm.com, shuahkh@osg.samsung.com,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-X-Mailer: IBM Notes Release 9.0.1FP2 August  03, 2014
-Message-ID: <OFC6CFC348.C619B89D-ONC1257DD5.0056279B-C1257DD5.00577002@de.ibm.com>
-From: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-Date: Thu, 22 Jan 2015 16:55:03 +0100
-X-MIMETrack: Serialize by Router on D06ML032/06/M/IBM(Release 9.0.1FP2|August  03, 2014) at
- 22/01/2015 16:55:27
+	Thu, 22 Jan 2015 10:56:19 -0500
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012215-0021-0000-0000-000002A49DD5
+In-Reply-To: <1421920228.7061.48.camel@haakon3.risingtidesystems.com>
+References: <CA+eFSM1iir5QYsUALigzwcCPiqDGaNKBVq22unydN+-uTxZD2Q@mail.gmail.com>
+	<1421920228.7061.48.camel@haakon3.risingtidesystems.com>
+Date: Thu, 22 Jan 2015 23:56:17 +0800
+Message-ID: <CA+eFSM3H2zO7+bQBd7jO2sjB-MWjGNfGTeqDZDY_8_ruzj_Q_Q@mail.gmail.com>
+Subject: Re: General protection fault in iscsi_rx_thread_pre_handler
+From: Gavin Guo <gavin.guo@canonical.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> wrote on 22.01.2015 00:39:57:
-> On Thu, 2015-01-01 at 13:38 +0530, Anshuman Khandual wrote:
-> > On 12/20/2014 12:58 AM, Edjunior Barbosa Machado wrote:
-> > > The patchset seems to change the "original" ptrace requests (i.e.
-> > > PTRACE_GETREGS/GETFPREGS/GETVRREGS...) to return the
-> > > "transactional" state, and adds new register sets to return
-> > > the "checkpointed" state.  Considering that whenever you get
-> > > a debugger interception inside a transactional block, the
-> > > transaction will abort, we're wondering if it wouldn't make
-> > > more sense to display the 'checkpointed' state as the normal
-> > > registers since this is where the execution will continue from.
-> >
-> > Debugger interception (trace interrupt) in between any transaction
-> > block will abort it ? I doubt that.
+Hi Nicolas,
+
+On Thu, Jan 22, 2015 at 5:50 PM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
+> Hi Gavin,
 >
-> The trace interrupt will not abort the transaction explicitly...
+> On Thu, 2015-01-22 at 06:38 +0800, Gavin Guo wrote:
+>> Hi all,
+>>
+>> The general protection fault screenshot is attached.
+>>
+>> Summary:
+>> The kernel is Ubuntu-3.13.0-39.66. I've done basic analysis and found
+>> the fault is in list_del of iscsi_del_ts_from_active_list. And it
+>> looks like deleting the iscsi_thread_set *ts two times. The point to
+>> delete including iscsi_get_ts_from_inactive_list, was also checked but
+>> still can't find the clue. Really appreciate if anyone can provide any
+>> idea on the bug.
+>>
+>> static void iscsi_del_ts_from_active_list(struct iscsi_thread_set *ts)
+>> {
+>> <...>
+>> list_del(&ts->ts_list);
+>> <...>
+>> }
+>> static inline void list_del(struct list_head *entry)
+>> {
+>> __list_del(entry->prev, entry->next);
+>> entry->next = LIST_POISON1;
+>> entry->prev = LIST_POISON2;
+>> }
+>>
+>>
+>> static inline void __list_del(struct list_head * prev, struct list_head * next)
+>> {
+>> next->prev = prev;
+>> prev->next = next;
+>> }
+>>
+>> According coredump is trace3.png. The %rdx is ts->ts_list->next
+>> (0xdead000000100100, LIST_POISON1), %rax is ts->ts_list->prev
+>> (0xdead000000200200, LIST_POISON2). When the “next->prev = prev;”
+>> executes, it’s the instruction:
+>>
+>> 48 89 42 08 mov %rax,0x8(%rdx)
+>>
+>> The %rdx is the value (0xdead000000100100, LIST_POISON1). So, general
+>> protection fault happened. List_del() is the one of the only three
+>> points to set LIST_POISON1/2. The other two are hlist_bl_del() and
+>> hlist_del(). The root cause has high possibility related to calling
+>> __list_del() twice for deleting the ts->ts_list.
+>>
+>> Detailed analysis:
+>>
+>> 00000000000057a0 <iscsi_del_ts_from_active_list>:
+>> __list_del():
+>> /build/buildd/linux-3.13.0/drivers/target/iscsi/iscsi_target_tq.c:50
+>> 57a0: e8 00 00 00 00 callq 57a5 <iscsi_del_ts_from_active_list+0
+>> x5>
+>> list_del():
+>> 57a5: 55 push %rbp
+>> 57a6: 48 89 e5 mov %rsp,%rbp
+>> 57a9: 53 push %rbx
+>> 57aa: 48 89 fb mov %rdi,%rbx <--iscsi_thread_set *ts
+>> /build/buildd/linux-3.13.0/include/linux/spinlock.h:293
+>> 57ad: 48 c7 c7 00 00 00 00 mov $0x0,%rdi
+>> 57b4: e8 00 00 00 00 callq 57b9 <iscsi_del_ts_from_active_list+0
+>> x19>
+>>
+>> __list_del(entry->prev, entry->next);
+>>
+>> /build/buildd/linux-3.13.0/include/linux/list.h:106
+>> 57b9: 48 8b 83 c8 00 00 00 mov 0xc8(%rbx),%rax <--ts->ts_list->prev
+>> 57c0: 48 8b 93 c0 00 00 00 mov 0xc0(%rbx),%rdx <--ts->ts_list->next
+>> iscsi_del_ts_from_active_list():
+>> /build/buildd/linux-3.13.0/include/linux/spinlock.h:333
+>> 57c7: 48 c7 c7 00 00 00 00 mov $0x0,%rdi
+>> /build/buildd/linux-3.13.0/include/linux/list.h:88
+>> 57ce: 48 89 42 08 mov %rax,0x8(%rdx) ts->ts_list->next->prev = ts->ts_list->prev
+>> spin_unlock():
+>> /build/buildd/linux-3.13.0/include/linux/list.h:89
+>> 57d2: 48 89 10 mov %rdx,(%rax) ts->ts_list->prev->next = ts->ts_list->next
+>>
+>> entry->next = LIST_POISON1;
+>>
+>> /build/buildd/linux-3.13.0/include/linux/list.h:107
+>> 57d5: 48 b8 00 01 10 00 00 movabs $0xdead000000100100,%rax
+>> 57dc: 00 ad de
+>> iscsi_del_ts_from_active_list():
+>> 57df: 48 89 83 c0 00 00 00 mov %rax,0xc0(%rbx)
+>>
+>> entry->prev = LIST_POISON2;
+>>
+>> iscsi_deallocate_thread_one():
+>> /build/buildd/linux-3.13.0/include/linux/list.h:108
+>> 57e6: 48 b8 00 02 20 00 00 movabs $0xdead000000200200,%rax
+>> 57ed: 00 ad de
+>> 57f0: 48 89 83 c8 00 00 00 mov %rax,0xc8(%rbx)
+>>
 >
-> > The tracee process will just stop, it's context gets saved in the
-> > kernel so that it can again start executing from the exact same
-> > point onward when it resumes.
+> Thanks for your detailed analysis.
 >
-> ... unfortunately, this save *will* doom the transaction.  To save, a
-> treclaim instruction is run which will always explicitly doom the
-> transaction.
+> A similar bug was reported off-list some months back by a person using
+> iser-target + RoCE export on v3.12.y code.  Just to confirm, your
+> environment is using traditional iscsi-target + TCP export, right..?
+
+I am sorry that I'm not an expert of the field and already google RoCE
+on the internet but still don't really know what RoCE is. However, I
+can provide the informations.  We used iscsiadm on the initiator side
+and lio_node and tcm_node commands to create the targets for
+connection. I think it should be normal  iscsi-target using TCP
+export.
+
 >
-> > If this happens when inside any transaction block, the transaction's
-running
-> > context and check pointed context will get saved. The execution
-> > will again start from the running context values instead of check
-> > pointed when the process resumes. Check pointed values will be loaded
-> > back into the context when the transaction finishes.
+> At the time, a different set of iser-target related changes ended up
+> avoiding this issue on his particular setup, so we thought it was likely
+> a race triggered by login failures specific to iser-target code.
 >
-> Although since the transaction has been explicitly doomed, the hardware
-> will *always* abort at this point and start execution from the
-> checkpointed values.
+> There was a untested patch (included inline below) to drop the legacy
+> active_ts_list usage all-together, but IIRC he was not able to reproduce
+> further so the patch didn't get picked up for mainline.
 >
-> > Inside transaction both running and check pointed values can be
-> > probed independently.
+> If your able to reliability reproduce, please try with the following
+> patch and let us know your progress.
+
+Thanks for your time reading the mail. I'll let you know the result.
+
 >
-> Yep, that's the idea, although setting the running values won't change
-> anything since the the translation is already doomed and will abort once
-> the cpu starts executing it.
-
-So this looks to me like the overall effect on debugging transactional
-code should be the same on Power and z, even if some internal details
-are different (on z, the exception will automatically abort the
-transaction; on p, the exception itself will not abort, but *restarting*
-user space execution will).
-
->From a GDB perspective, it would therefore be preferable if the ptrace
-interface were to behave in a similar fashion on p as on z: that is,
-if an exception interrupting a transaction results in a ptrace intercept,
-at this point:
-
-- the "normal" ptrace register set commands should access the
-  *checkpointed* registers (allowing both read and write access)
-
-  -- GDB will use this to display current position (already reflecting
-  the fact that the transaction will abort), and use it when changing
-  register values e.g. to effect an inferior function call
-
-- a new ptrace register set should allow access (read-only) to the
-  *running* register values
-
-  -- GDB can use this to display the position inside the transaction
-  at the point it aborted, using new transaction-specific commands
-
-
-Bye,
-Ulrich
-
+> Thank you,
+>
+> --nab
+>
+> From 33f211fcf0f4149b13de826dcbe204241f71b2e8 Mon Sep 17 00:00:00 2001
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> Date: Thu, 22 Jan 2015 00:56:53 -0800
+> Subject: [PATCH] iscsi-target: Drop problematic active_ts_list usage
+>
+> Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> ---
+>  drivers/target/iscsi/iscsi_target_tq.c | 28 +++++-----------------------
+>  1 file changed, 5 insertions(+), 23 deletions(-)
+>
+> diff --git a/drivers/target/iscsi/iscsi_target_tq.c b/drivers/target/iscsi/iscsi_target_tq.c
+> index 601e9cc..bb2890e 100644
+> --- a/drivers/target/iscsi/iscsi_target_tq.c
+> +++ b/drivers/target/iscsi/iscsi_target_tq.c
+> @@ -24,36 +24,22 @@
+>  #include "iscsi_target_tq.h"
+>  #include "iscsi_target.h"
+>
+> -static LIST_HEAD(active_ts_list);
+>  static LIST_HEAD(inactive_ts_list);
+> -static DEFINE_SPINLOCK(active_ts_lock);
+>  static DEFINE_SPINLOCK(inactive_ts_lock);
+>  static DEFINE_SPINLOCK(ts_bitmap_lock);
+>
+> -static void iscsi_add_ts_to_active_list(struct iscsi_thread_set *ts)
+> -{
+> -       spin_lock(&active_ts_lock);
+> -       list_add_tail(&ts->ts_list, &active_ts_list);
+> -       iscsit_global->active_ts++;
+> -       spin_unlock(&active_ts_lock);
+> -}
+> -
+>  static void iscsi_add_ts_to_inactive_list(struct iscsi_thread_set *ts)
+>  {
+> +       if (!list_empty(&ts->ts_list)) {
+> +               WARN_ON(1);
+> +               return;
+> +       }
+>         spin_lock(&inactive_ts_lock);
+>         list_add_tail(&ts->ts_list, &inactive_ts_list);
+>         iscsit_global->inactive_ts++;
+>         spin_unlock(&inactive_ts_lock);
+>  }
+>
+> -static void iscsi_del_ts_from_active_list(struct iscsi_thread_set *ts)
+> -{
+> -       spin_lock(&active_ts_lock);
+> -       list_del(&ts->ts_list);
+> -       iscsit_global->active_ts--;
+> -       spin_unlock(&active_ts_lock);
+> -}
+> -
+>  static struct iscsi_thread_set *iscsi_get_ts_from_inactive_list(void)
+>  {
+>         struct iscsi_thread_set *ts;
+> @@ -66,7 +52,7 @@ static struct iscsi_thread_set *iscsi_get_ts_from_inactive_list(void)
+>
+>         ts = list_first_entry(&inactive_ts_list, struct iscsi_thread_set, ts_list);
+>
+> -       list_del(&ts->ts_list);
+> +       list_del_init(&ts->ts_list);
+>         iscsit_global->inactive_ts--;
+>         spin_unlock(&inactive_ts_lock);
+>
+> @@ -204,8 +190,6 @@ static void iscsi_deallocate_extra_thread_sets(void)
+>
+>  void iscsi_activate_thread_set(struct iscsi_conn *conn, struct iscsi_thread_set *ts)
+>  {
+> -       iscsi_add_ts_to_active_list(ts);
+> -
+>         spin_lock_bh(&ts->ts_state_lock);
+>         conn->thread_set = ts;
+>         ts->conn = conn;
+> @@ -397,7 +381,6 @@ struct iscsi_conn *iscsi_rx_thread_pre_handler(struct iscsi_thread_set *ts)
+>
+>         if (ts->delay_inactive && (--ts->thread_count == 0)) {
+>                 spin_unlock_bh(&ts->ts_state_lock);
+> -               iscsi_del_ts_from_active_list(ts);
+>
+>                 if (!iscsit_global->in_shutdown)
+>                         iscsi_deallocate_extra_thread_sets();
+> @@ -452,7 +435,6 @@ struct iscsi_conn *iscsi_tx_thread_pre_handler(struct iscsi_thread_set *ts)
+>
+>         if (ts->delay_inactive && (--ts->thread_count == 0)) {
+>                 spin_unlock_bh(&ts->ts_state_lock);
+> -               iscsi_del_ts_from_active_list(ts);
+>
+>                 if (!iscsit_global->in_shutdown)
+>                         iscsi_deallocate_extra_thread_sets();
+> --
+> 1.9.1
+>
