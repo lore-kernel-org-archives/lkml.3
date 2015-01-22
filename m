@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206AbbAVMZU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 07:25:20 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:8464 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029AbbAVMZS (ORCPT
+	id S1752212AbbAVM0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 07:26:48 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:45969 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbbAVM0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 07:25:18 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-c7-54c0eb9a7bab
-Message-id: <54C0EC23.9070209@samsung.com>
-Date: Thu, 22 Jan 2015 13:25:07 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Inha Song <ideal.song@samsung.com>, alsa-devel@alsa-project.org
-Cc: mark.rutland@arm.com, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk, sbkim73@samsung.com,
-        linux-kernel@vger.kernel.org, broonie@kernel.org, lgirdwood@gmail.com,
-        tiwai@suse.de, robh+dt@kernel.org, kgene@kernel.org,
-        galak@codeaurora.org, grant.likely@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [alsa-devel] [PATCH v3 3/4] ARM: dts: set clock out parent to
- XUSBXTI
-References: <1421925482-15861-1-git-send-email-ideal.song@samsung.com>
- <1421925482-15861-4-git-send-email-ideal.song@samsung.com>
-In-reply-to: <1421925482-15861-4-git-send-email-ideal.song@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t/xa7qzXh8IMZhxRs/iysVDTBZTHz5h
-	s5h/5ByrRf+bhawWB/7sYLTY9fc+o8W5VysZLfofv2a2+Halg8li0+NrrBaXd81hs5hxfh+T
-	xe3LvBZLr19kspgwfS2LReveI+wWF1d8YbJ4ufkNk4OQx4bPTWwea+atYfRoae5h87jc18vk
-	sXPWXXaPlcu/sHlsWtXJ5nHn2h42j81L6j36tqxi9Nh8utrj8ya5AJ4oLpuU1JzMstQifbsE
-	rozFXRdYCk6xV1x+9oi9gXEmWxcjJ4eEgInE4ldzoWwxiQv31gPZXBxCAksZJfbMnMkK4Xxi
-	lHjXdBfI4eDgFdCSWL4qCaSBRUBVYumzz0wgNpuAoUTv0T5GEFtUIELi5N097CA2r4CgxI/J
-	91hAWkUEnCX+9WWBhJkFJjFL/J6aCRIWFgiReDlRD2JTM6PElRUXGUHinALuEl/mg5nMAnoS
-	9y9qQXTKS2xe85Z5AqPALCTzZyFUzUJStYCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZG
-	SCx+3cG49JjVIUYBDkYlHt6IDQdChFgTy4orcw8xSnAwK4nw8r8ECvGmJFZWpRblxxeV5qQW
-	H2Jk4uCUamAs4t64k23SnGWyb4Pf9hZqrFk6iW9zUHyj5cbyHQ0vdR9M85u4tNnUfbP3RBOP
-	vBlrC1bsZF3D96SF95gY158446L0TxomUkZPsmdtsos5fvLbbkvVwgdu28WmVEUHOO+cOlP+
-	1of8/Ad9Kl8a9Rev1bnIeO+wScSc2fxhb/YcqeSPuX1loWOPEktxRqKhFnNRcSIAQVs8oaMC	AAA=
+	Thu, 22 Jan 2015 07:26:45 -0500
+Date: Thu, 22 Jan 2015 07:26:40 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 0/5] tracing: Add new file system tracefs
+Message-ID: <20150122122640.GA25645@htj.dyndns.org>
+References: <20150121171953.823177070@goodmis.org>
+ <20150121230007.GA10389@kroah.com>
+ <20150122042330.GU29656@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150122042330.GU29656@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/01/15 12:18, Inha Song wrote:
-> This patch set clock out parent to XUSBXTI.
-> 
-> Signed-off-by: Inha Song <ideal.song@samsung.com>
-> ---
->  arch/arm/boot/dts/exynos4.dtsi | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-> index b8168f1..020bbaf 100644
-> --- a/arch/arm/boot/dts/exynos4.dtsi
-> +++ b/arch/arm/boot/dts/exynos4.dtsi
-> @@ -141,6 +141,8 @@
->  	pmu_system_controller: system-controller@10020000 {
->  		compatible = "samsung,exynos4210-pmu", "syscon";
->  		reg = <0x10020000 0x4000>;
-> +		assigned-clocks = <&pmu_system_controller 0>;
-> +		assigned-clock-parents =  <&clock CLK_XUSBXTI>;
->  	};
+Hello, Al.
 
-Looks good, except it needs to be done only for the Trats2 board, i.e.
-the PMU device node including these properties should be added to
-exynos4412-trats2.dts.  I think it's fine to make it a one patch including
-all dts changes.
+On Thu, Jan 22, 2015 at 04:23:30AM +0000, Al Viro wrote:
+> I would recommend against that - kernfs is overburdened by their need to
+> accomodate cgroup weirdness.  IMO it's not a good model for anything, other
 
+That's not true.  The two big items where sysfs is complicated are the
+custom revocation implementation and namespace support, both of which
+come from its sysfs lineage.  The revocation implementation had an
+update to better support cgroup but the new interface is more generic
+than before and necessary if it wants to support self-removing files
+along with the said revocation support.
+
+One complexity actually added for cgroup is in the mount path because
+cgroup needs to be able to create or match superblocks dynamically
+during mount time and that doesn't really jive well with how
+superblocks are managed in the vfs layer.  This part is ugly and
+intentially left that way.  This really should be cgroup specific (and
+we can't shed it at the moment) and shouldn't be used elsewhere.
+IIRC, you had some complaints about this and I wonder whether that's
+what shaped your opinion, but this is entirely isolated.  Just use
+kernfs_mount() and ignore the @new_fs_created param.
+
+Overall, kernfs is basically the actual filesystem part of sysfs.
+None of the fundamentals changed while separating out kernfs out of
+sysfs.  You may not like kernfs but then wouldn't improving it a far
+better strategy over long haul?  I really don't think we need yet
+another pseudo vfs based filesystem in kernel and unless tracingfs is
+doing something crazy kernfs should be able to serve as a common
+foundation.
+
+Thanks.
 
 -- 
-Regards,
-Sylwester
+tejun
