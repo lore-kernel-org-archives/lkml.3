@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbbAVLSs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:18:48 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:52737 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979AbbAVLSc (ORCPT
+	id S1750814AbbAVLS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:18:58 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:15666 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbbAVLS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:18:32 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-4e-54c0dc7ddd5b
+	Thu, 22 Jan 2015 06:18:27 -0500
+X-AuditID: cbfee68f-f791c6d000004834-5d-54c0dc7d9e62
 From: Inha Song <ideal.song@samsung.com>
 To: alsa-devel@alsa-project.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -18,40 +18,41 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ideal.song@samsung.com, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [alsa-devel] [PATCH v3 3/4] ARM: dts: set clock out parent to XUSBXTI
-Date: Thu, 22 Jan 2015 20:18:01 +0900
-Message-id: <1421925482-15861-4-git-send-email-ideal.song@samsung.com>
+Subject: [alsa-devel] [PATCH v3 4/4] ARM: dts: Add sound nodes for
+ exynos4412-trats2
+Date: Thu, 22 Jan 2015 20:18:02 +0900
+Message-id: <1421925482-15861-5-git-send-email-ideal.song@samsung.com>
 X-Mailer: git-send-email 2.0.0.390.gcb682f8
 In-reply-to: <1421925482-15861-1-git-send-email-ideal.song@samsung.com>
 References: <1421925482-15861-1-git-send-email-ideal.song@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsWyRsSkSLf2zoEQg2NT+C2uXDzEZDH14RM2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsWyRsSkULf2zoEQgxt/ZC2uXDzEZDH14RM2
 	i/lHzrFa9L9ZyGpx4M8ORotdf+8zWpx7tZLRov/xa2aLb1c6mCw2Pb7GanF51xw2ixnn9zFZ
 	3L7Ma7H0+kUmiwnT17JYdO7qZ7Vo3XuE3eLwm3ZWi4srvjBZvNz8hslBxGPD5yY2jzXz1jB6
 	tDT3sHlc7utl8tg56y67x8rlX9g8Nq3qZPO4c20Pm8fmJfUe+94uY/Po27KK0WPz6WqPz5vk
-	AnijuGxSUnMyy1KL9O0SuDLuv/nGUrCeteJY1y7mBsaDLF2MnBwSAiYSvbvPsEHYYhIX7q0H
-	srk4hASWMkrMWTqHEabo35wbLBCJRYwS73tmMUM4c5gkNs18ygxSxSagIfH982Ygm4NDREBe
-	4tD7PJAaZoErzBIfV8wCiwsL+ElsmZwGUs4ioCqxeMdSVpAwr4CbxOMtuRC7tCX2NcwEO4hT
-	wF3i5t2tYLYQUMnavkmMICMlBNZySOw4PIsRYo6AxLfJh1hA5kgIyEpsOsAMMUdS4uCKGywT
-	GIUXMDKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiM2NP/nk3cwXj/gPUhRgEORiUe3ozi
-	AyFCrIllxZW5hxhNgTZMZJYSTc4HpoW8knhDYzMjC1MTU2Mjc0szJXFeHemfwUIC6Yklqdmp
-	qQWpRfFFpTmpxYcYmTg4pRoYvctnLBBK3dEpq5KYe+ibR9Fcfr8Nl/g2LL1oPdHguumpCfry
-	1ddrkndt0hJ8KGn1y517ccTZ+HkbNTecXLd0mlJ9wN19Aqnr78v+KDi0iklrLa9uy11fzbcp
-	dQ2HEx9bPTmWPmHmxfal5ZtusbVyT55VtOM5b+bM85WTmZX3T4rf+1i7plp8thJLcUaioRZz
-	UXEiAG3zLu7TAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgG7tnQMhBgcPs1lcuXiIyWLqwyds
-	FvOPnGO16H+zkNXiwJ8djBa7/t5ntDj3aiWjRf/j18wW3650MFlsenyN1eLyrjlsFjPO72Oy
-	uH2Z12Lp9YtMFhOmr2Wx6NzVz2rRuvcIu8XhN+2sFhdXfGGyeLn5DZODiMeGz01sHmvmrWH0
-	aGnuYfO43NfL5LFz1l12j5XLv7B5bFrVyeZx59oeNo/NS+o99r1dxubRt2UVo8fm09UenzfJ
-	BfBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gB9
-	q6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMuP/mG0vBetaKY127mBsY
-	D7J0MXJySAiYSPybcwPKFpO4cG89WxcjF4eQwCJGifc9s5ghnDlMEptmPmUGqWIT0JD4/nkz
-	kM3BISIgL3HofR5IDbPAFWaJjytmgcWFBfwktkxOAylnEVCVWLxjKStImFfATeLxllyIXdoS
-	+xpmsoHYnALuEjfvbgWzhYBK1vZNYpzAyLuAkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4m
-	RnA6eCa9g3FVg8UhRgEORiUe3oziAyFCrIllxZW5hxglOJiVRHhNTwCFeFMSK6tSi/Lji0pz
-	UosPMZoCHTWRWUo0OR+YqvJK4g2NTcyMLI3MDS2MjM2VxHmV7NtChATSE0tSs1NTC1KLYPqY
-	ODilGhgX/egN2cZiatu0Yoag1MRkkTut7HfX3HENSQzInaIw9ZRF6dN7/dwu35YvD/7Tmbdp
-	3bw1YWc3nfpv6aoufWzvlPjFC6/PmVmwfUtM3/wF4myzjROZd3SJTDzloChx0XrP80enb7m4
-	/19245l1wPKynTb9sxImdUzWWv/104X+S6oXA2/v8eq7psRSnJFoqMVcVJwIABQdY7gdAwAA
+	AnijuGxSUnMyy1KL9O0SuDL2zvnIUvCep6J93xL2BsYFXF2MnBwSAiYSX47sZYOwxSQu3FsP
+	ZHNxCAksZZSYc2Q+YxcjB1hRx8ZciPgiRolJbd+YIZw5TBKbZj5lBulmE9CQ+P55MzNIg4iA
+	vMSh93kgNcwCV5glPq6YBVYjLBAmsaRpHROIzSKgKvHo1EFGEJtXwE1icUcHI8QV2hL7GmaC
+	XcQp4C5x8+5WMFsIqGZt3ySomrUcEmvvBkHMEZD4NvkQC8ShshKbDjBDlEhKHFxxg2UCo/AC
+	RoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIERe/rfs/4djHcPWB9iFOBgVOLhzSg+ECLE
+	mlhWXJl7iNEUaMNEZinR5HxgWsgriTc0NjOyMDUxNTYytzRTEuddKPUzWEggPbEkNTs1tSC1
+	KL6oNCe1+BAjEwenVAOj0f+H3xwmB+YeXXc1+k3Cr0S9Yoa4Nculnfy6lYwsr1vfmjP3su4F
+	45USlyNPlJ77/KXPYU/vrTM55mtX7Yr141p2+cvv19dFtvH9vFAXdLvrsJOx1RIlC/lfZ1t4
+	VVh8OngTjO5tX9L3ToB7++bz3pOrzuW8WR3ZuHLhkke8l++stdmgZJc5UYmlOCPRUIu5qDgR
+	AEd0zWvTAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgG7tnQMhBq19ohZXLh5ispj68Amb
+	xfwj51gt+t8sZLU48GcHo8Wuv/cZLc69Wslo0f/4NbPFtysdTBabHl9jtbi8aw6bxYzz+5gs
+	bl/mtVh6/SKTxYTpa1ksOnf1s1q07j3CbnH4TTurxcUVX5gsXm5+w+Qg4rHhcxObx5p5axg9
+	Wpp72Dwu9/UyeeycdZfdY+XyL2wem1Z1snncubaHzWPzknqPfW+XsXn0bVnF6LH5dLXH501y
+	AbxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUDf
+	KimUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz9s75yFLwnqeifd8S9gbG
+	BVxdjBwcEgImEh0bc7sYOYFMMYkL99azdTFycQgJLGKUmNT2jRnCmcMksWnmU2aQKjYBDYnv
+	nzczgzSLCMhLHHqfB1LDLHCFWeLjillgNcICYRJLmtYxgdgsAqoSj04dZASxeQXcJBZ3dDBC
+	bNOW2Ncwkw3E5hRwl7h5dyuYLQRUs7ZvEuMERt4FjAyrGEVTC5ILipPSc430ihNzi0vz0vWS
+	83M3MYITwjPpHYyrGiwOMQpwMCrx8GYUHwgRYk0sK67MPcQowcGsJMJregIoxJuSWFmVWpQf
+	X1Sak1p8iNEU6KqJzFKiyfnAZJVXEm9obGJmZGlkbmhhZGyuJM6rZN8WIiSQnliSmp2aWpBa
+	BNPHxMEp1cDY/ulY0Pn/l3QXTjQQSPFX8g9PfOPdY5EfHjVPnzl9vf+fgmMl2qnencHWE5oc
+	MrR/TLo92VW/wy/fYEUd/6Lioo7SIh2GT7VN9u6O5yRtC1kaj1VyrQxuStwi8/rMLJvOuqK4
+	fxefRXbWdfBGhvdd6/nfxmdxhemMQdhy/dipgrt8DbZ+U2Ipzkg01GIuKk4EAC2Ye1QeAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,26 +60,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set clock out parent to XUSBXTI.
+This patch add WM1811 audio codec, I2S interface and the sound
+machine nodes to enable audio on exynos4412-trats2 board.
 
 Signed-off-by: Inha Song <ideal.song@samsung.com>
 ---
- arch/arm/boot/dts/exynos4.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/boot/dts/exynos4412-trats2.dts | 37 +++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-index b8168f1..020bbaf 100644
---- a/arch/arm/boot/dts/exynos4.dtsi
-+++ b/arch/arm/boot/dts/exynos4.dtsi
-@@ -141,6 +141,8 @@
- 	pmu_system_controller: system-controller@10020000 {
- 		compatible = "samsung,exynos4210-pmu", "syscon";
- 		reg = <0x10020000 0x4000>;
-+		assigned-clocks = <&pmu_system_controller 0>;
-+		assigned-clock-parents =  <&clock CLK_XUSBXTI>;
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index 29231b4..ec1acaf 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -203,6 +203,25 @@
+ 		};
  	};
  
- 	dsi_0: dsi@11C80000 {
++	i2c@138A0000 {
++		samsung,i2c-sda-delay = <100>;
++		samsung,i2c-slave-addr = <0x10>;
++		samsung,i2c-max-bus-freq = <100000>;
++		pinctrl-0 = <&i2c4_bus>;
++		pinctrl-names = "default";
++		status = "okay";
++
++		wm1811: wm1811@1a {
++			compatible = "wlf,wm1811";
++			reg = <0x1a>;
++			clocks = <&pmu_system_controller 0>;
++			clock-names = "MCLK1";
++			DCVDD-supply = <&ldo3_reg>;
++			DBVDD1-supply = <&ldo3_reg>;
++			wlf,ldo1ena = <&gpj0 4 0>;
++		};
++	};
++
+ 	i2c@138D0000 {
+ 		samsung,i2c-sda-delay = <100>;
+ 		samsung,i2c-slave-addr = <0x10>;
+@@ -838,6 +857,24 @@
+ 		};
+ 	};
+ 
++	i2s0: i2s@03830000 {
++		pinctrl-0 = <&i2s0_bus>;
++		pinctrl-names = "default";
++		status = "okay";
++	};
++
++	sound {
++		compatible = "samsung,trats2-audio";
++		samsung,i2s-controller = <&i2s0>;
++		samsung,model = "Trats2";
++		samsung,audio-codec = <&wm1811>;
++		samsung,audio-routing =
++			"SPK", "SPKOUTLN",
++			"SPK", "SPKOUTLP",
++			"SPK", "SPKOUTRN",
++			"SPK", "SPKOUTRP";
++	};
++
+ 	exynos-usbphy@125B0000 {
+ 		status = "okay";
+ 	};
 -- 
 2.0.0.390.gcb682f8
 
