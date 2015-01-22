@@ -1,131 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbbAVT22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:28:28 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57950 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475AbbAVT2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:28:13 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: x86@kernel.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 2/2] x86, tls: Interpret an all-zero struct user_desc as "no segment"
-Date: Thu, 22 Jan 2015 11:27:59 -0800
-Message-Id: <0cb251abe1ff0958b8e468a9a9a905b80ae3a746.1421954363.git.luto@amacapital.net>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1421954363.git.luto@amacapital.net>
-References: <cover.1421954363.git.luto@amacapital.net>
-In-Reply-To: <cover.1421954363.git.luto@amacapital.net>
-References: <cover.1421954363.git.luto@amacapital.net>
+	id S1754442AbbAVTaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 14:30:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55264 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752855AbbAVTaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 14:30:07 -0500
+Date: Thu, 22 Jan 2015 20:30:03 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [RFC v3 1/2] x86/xen: add xen_is_preemptible_hypercall()
+Message-ID: <20150122193003.GR17887@wotan.suse.de>
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com> <1421893039-426-2-git-send-email-mcgrof@do-not-panic.com> <CALCETrXp7qWLQYEAq7zKTMeMg7mfXo+mL-qPfPN6hfJGQGSoPw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXp7qWLQYEAq7zKTMeMg7mfXo+mL-qPfPN6hfJGQGSoPw@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Witcher 2 did something like this to allocate a TLS segment index:
+On Wed, Jan 21, 2015 at 07:07:36PM -0800, Andy Lutomirski wrote:
+> On Wed, Jan 21, 2015 at 6:17 PM, Luis R. Rodriguez
+> <mcgrof@do-not-panic.com> wrote:
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> >
+> > On kernels with voluntary or no preemption we can run
+> > into situations where a hypercall issued through userspace
+> > will linger around as it addresses sub-operatiosn in kernel
+> > context (multicalls). Such operations can trigger soft lockup
+> > detection.
+> >
+> > We want to address a way to let the kernel voluntarily preempt
+> > such calls even on non preempt kernels, to address this we first
+> > need to distinguish which hypercalls fall under this category.
+> > This implements xen_is_preemptible_hypercall() which lets us do
+> > just that by adding a secondary hypercall page, calls made via
+> > the new page may be preempted.
+> >
+> > Andrew had originally submitted a version of this work [0].
+> >
+> > [0] http://lists.xen.org/archives/html/xen-devel/2014-02/msg01056.html
+> >
+> > Based on original work by: Andrew Cooper <andrew.cooper3@citrix.com>
+> >
+> > Cc: Andy Lutomirski <luto@amacapital.net>
+> > Cc: Borislav Petkov <bp@suse.de>
+> > Cc: David Vrabel <david.vrabel@citrix.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: x86@kernel.org
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> > Cc: Jan Beulich <JBeulich@suse.com>
+> > Cc: linux-kernel@vger.kernel.org
+> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> > ---
+> >  arch/x86/include/asm/xen/hypercall.h | 20 ++++++++++++++++++++
+> >  arch/x86/xen/enlighten.c             |  7 +++++++
+> >  arch/x86/xen/xen-head.S              | 18 +++++++++++++++++-
+> >  3 files changed, 44 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+> > index ca08a27..221008e 100644
+> > --- a/arch/x86/include/asm/xen/hypercall.h
+> > +++ b/arch/x86/include/asm/xen/hypercall.h
+> > @@ -84,6 +84,22 @@
+> >
+> >  extern struct { char _entry[32]; } hypercall_page[];
+> >
+> > +#ifndef CONFIG_PREEMPT
+> > +extern struct { char _entry[32]; } preemptible_hypercall_page[];
+> 
+> A comment somewhere explaining why only non-preemptible kernels have
+> preemptible hypercalls might be friendly to some future reader. :)
 
-        struct user_desc u_info;
-        bzero(&u_info, sizeof(u_info));
-        u_info.entry_number = (uint32_t)-1;
+Good idea, since this section is arch specific, I'll instead add a blurb
+explaining this on the upcall.
 
-        syscall(SYS_set_thread_area, &u_info);
+> > +
+> > +static inline bool xen_is_preemptible_hypercall(struct pt_regs *regs)
+> > +{
+> > +       return !user_mode_vm(regs) &&
+> > +               regs->ip >= (unsigned long)preemptible_hypercall_page &&
+> > +               regs->ip < (unsigned long)preemptible_hypercall_page + PAGE_SIZE;
+> > +}
+> 
+> This makes it seem like the page is indeed one page long, but I don't
+> see what actually allocates a whole page for it.  What am I missing?
 
-Strictly speaking, this code was never correct.  It should have set
-read_exec_only and seg_not_present to 1 to indicate that it wanted
-to find a free slot without putting anything there, or it should
-have put something sensible in the TLS slot if it wanted to allocate
-a TLS entry for real.  The actual effect of this code was to
-allocate a bogus segment that could be used to exploit espfix.
+arch/x86/xen/xen-head.S
 
-The set_thread_area hardening patches changed the behavior, causing
-set_thread_area to return -EINVAL and crashing the game.
+.pushsection .text                                                              
+        .balign PAGE_SIZE                                                       
+ENTRY(hypercall_page) 
 
-This changes set_thread_area to interpret this as a request to find
-a free slot and to leave it empty, which isn't *quite* what the game
-expects but should be close enough to keep it working.  In
-particular, using the code above to allocate two segments will
-allocate the same segment both times.
+#ifndef CONFIG_PREEMPT                                                          
+ENTRY(preemptible_hypercall_page)                                               
+        .skip PAGE_SIZE                                                         
+#endif /* CONFIG_PREEMPT */  
 
-According to FrostbittenKing on Github, this fixes The Witcher 2.
+Does that suffice to be sure?
 
-If this somehow still causes problems, we could instead allocate
-a limit==0 32-bit data segment, but that seems rather ugly to me.
-
-Fixes: 41bdc78544b8 x86/tls: Validate TLS entries to protect espfix
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/include/asm/desc.h | 13 +++++++++++++
- arch/x86/kernel/tls.c       | 25 +++++++++++++++++++++++--
- 2 files changed, 36 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
-index fc237fd0259a..a94b82e8f156 100644
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -262,6 +262,19 @@ static inline void native_load_tls(struct thread_struct *t, unsigned int cpu)
- 	 (info)->seg_not_present	== 1	&&	\
- 	 (info)->useable		== 0)
- 
-+/* Lots of programs expect an all-zero user_desc to mean "no segment at all". */
-+static inline bool LDT_zero(const struct user_desc *info)
-+{
-+	return (info->base_addr		== 0 &&
-+		info->limit		== 0 &&
-+		info->contents		== 0 &&
-+		info->read_exec_only	== 0 &&
-+		info->seg_32bit		== 0 &&
-+		info->limit_in_pages	== 0 &&
-+		info->seg_not_present	== 0 &&
-+		info->useable		== 0);
-+}
-+
- static inline void clear_LDT(void)
- {
- 	set_ldt(NULL, 0);
-diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
-index 4e942f31b1a7..7fc5e843f247 100644
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -29,7 +29,28 @@ static int get_free_idx(void)
- 
- static bool tls_desc_okay(const struct user_desc *info)
- {
--	if (LDT_empty(info))
-+	/*
-+	 * For historical reasons (i.e. no one ever documented how any
-+	 * of the segmentation APIs work), user programs can and do
-+	 * assume that a struct user_desc that's all zeros except for
-+	 * entry_number means "no segment at all".  This never actually
-+	 * worked.  In fact, up to Linux 3.19, a struct user_desc like
-+	 * this would create a 16-bit read-write segment with base and
-+	 * limit both equal to zero.
-+	 *
-+	 * That was close enough to "no segment at all" until we
-+	 * hardened this function to disallow 16-bit TLS segments.  Fix
-+	 * it up by interpreting these zeroed segments the way that they
-+	 * were almost certainly intended to be interpreted.
-+	 *
-+	 * The correct way to ask for "no segment at all" is to specify
-+	 * a user_desc that satisfies LDT_empty.  To keep everything
-+	 * working, we accept both.
-+	 *
-+	 * Note that there's a similar kludge in modify_ldt -- look at
-+	 * the distinction between modes 1 and 0x11.
-+	 */
-+	if (LDT_empty(info) || LDT_zero(info))
- 		return true;
- 
- 	/*
-@@ -71,7 +92,7 @@ static void set_tls_desc(struct task_struct *p, int idx,
- 	cpu = get_cpu();
- 
- 	while (n-- > 0) {
--		if (LDT_empty(info))
-+		if (LDT_empty(info) || LDT_zero(info))
- 			desc->a = desc->b = 0;
- 		else
- 			fill_ldt(desc, info);
--- 
-2.1.0
-
+ Luis
