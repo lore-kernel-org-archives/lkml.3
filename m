@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042AbbAVUza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:55:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56862 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780AbbAVUz1 (ORCPT
+	id S1755074AbbAVU6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:58:25 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:57448 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105AbbAVU6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 15:55:27 -0500
-Date: Thu, 22 Jan 2015 12:55:05 -0800
-From: tip-bot for Juergen Gross <tipbot@zytor.com>
-Message-ID: <tip-31bb7723706ba9660504a6c3903ea46198f98fd1@git.kernel.org>
-Cc: steven@uplinklabs.net, linux-kernel@vger.kernel.org, toshi.kani@hp.com,
-        jgross@suse.com, hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org
-Reply-To: steven@uplinklabs.net, toshi.kani@hp.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, jgross@suse.com,
-        hpa@zytor.com, mingo@kernel.org
-In-Reply-To: <1421926997-28615-1-git-send-email-jgross@suse.com>
-References: <1421926997-28615-1-git-send-email-jgross@suse.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, mm: Change cachemode exports to non-gpl
-Git-Commit-ID: 31bb7723706ba9660504a6c3903ea46198f98fd1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 22 Jan 2015 15:58:22 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150122153707.4625878b@gandalf.local.home>
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
+ <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com> <54C0E3F2.9050201@citrix.com>
+ <20150122085649.7dc79541@grimm.local.home> <20150122183913.GO17887@wotan.suse.de>
+ <20150122151657.287fe29b@gandalf.local.home> <CALCETrU+B_8C2-1+gEQ20wrL+0A6G0XTQ4wAnWuewKc=Pei5Qg@mail.gmail.com>
+ <20150122153707.4625878b@gandalf.local.home>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 Jan 2015 12:58:00 -0800
+Message-ID: <CALCETrUTekrhz=tXF=bAn1wuZBA+Kh+CgU+USwx--hNALvR5Mw@mail.gmail.com>
+Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to be preempted
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        kvm list <kvm@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  31bb7723706ba9660504a6c3903ea46198f98fd1
-Gitweb:     http://git.kernel.org/tip/31bb7723706ba9660504a6c3903ea46198f98fd1
-Author:     Juergen Gross <jgross@suse.com>
-AuthorDate: Thu, 22 Jan 2015 12:43:17 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 22 Jan 2015 21:50:14 +0100
+On Thu, Jan 22, 2015 at 12:37 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 22 Jan 2015 12:24:47 -0800
+> Andy Lutomirski <luto@amacapital.net> wrote:
+>
+>> > Also, please remove the "notrace", because function tracing goes an
+>> > extra step to not require RCU being visible. The only thing you get
+>> > with notrace is not being able to trace an otherwise traceable function.
+>> >
+>>
+>> Is this also true for kprobes?  And can kprobes nest inside function
+>> tracing hooks?
+>
+> No, kprobes are a bit more fragile than function tracing or tracepoints.
+>
+> And nothing should nest inside a function hook (except for interrupts,
+> they are fine).
+>
 
-x86, mm: Change cachemode exports to non-gpl
+But kprobes do nest inside interrupts, right?
 
-Commit 281d4078bec3 ("x86: Make page cache mode a real type")
-introduced the symbols __cachemode2pte_tbl and __pte2cachemode_tbl and
-exported them via EXPORT_SYMBOL_GPL.  The exports are part of a
-replacement of code which has been EXPORT_SYMBOL before these changes
-resulting in build breakage of out-of-tree non-gpl modules.
+>>
+>> The other issue, above and beyond RCU, is that we can't let kprobes
+>> run on the int3 stack.  If Xen upcalls can happen when interrupts are
+>> off, then we may need this protection to prevent that type of
+>> recursion.  (This will be much less scary in 3.20, because userspace
+>> int3 instructions will no longer execute on the int3 stack.)
+>
+> Does this execute between the start of the int3 interrupt handler and
+> the call of do_int3()?
 
-Change EXPORT_SYMBOL_GPL to EXPORT-SYMBOL for these two symbols.
+I doubt it.
 
-Fixes: 281d4078bec3 "x86: Make page cache mode a real type"
-Reported-and-tested-by: Steven Noonan <steven@uplinklabs.net>
-Signed-off-by: Juergen Gross <jgross@suse.com>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Link: http://lkml.kernel.org/r/1421926997-28615-1-git-send-email-jgross@suse.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/mm/init.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The thing I worry about is that, if do_int3 nests inside itself by any
+means (e.g. int3 sends a signal, scheduling for whatever reason
+(really shouldn't happen, but I haven't looked that hard)), then we're
+completely hosed -- the inner int3 will overwrite the outer int3's
+stack frame.  Since I have no idea what Xen upcalls do, I don't know
+whether they can fire inside do_int3.
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 08a7d31..079c3b6 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -43,7 +43,7 @@ uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM] = {
- 	[_PAGE_CACHE_MODE_WT]		= _PAGE_PCD,
- 	[_PAGE_CACHE_MODE_WP]		= _PAGE_PCD,
- };
--EXPORT_SYMBOL_GPL(__cachemode2pte_tbl);
-+EXPORT_SYMBOL(__cachemode2pte_tbl);
- uint8_t __pte2cachemode_tbl[8] = {
- 	[__pte2cm_idx(0)] = _PAGE_CACHE_MODE_WB,
- 	[__pte2cm_idx(_PAGE_PWT)] = _PAGE_CACHE_MODE_WC,
-@@ -54,7 +54,7 @@ uint8_t __pte2cachemode_tbl[8] = {
- 	[__pte2cm_idx(_PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC_MINUS,
- 	[__pte2cm_idx(_PAGE_PWT | _PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC,
- };
--EXPORT_SYMBOL_GPL(__pte2cachemode_tbl);
-+EXPORT_SYMBOL(__pte2cachemode_tbl);
- 
- static unsigned long __initdata pgt_buf_start;
- static unsigned long __initdata pgt_buf_end;
+--Andy
