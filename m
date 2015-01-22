@@ -1,92 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbbAVI7p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 03:59:45 -0500
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:47984 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbbAVI7g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 03:59:36 -0500
+	id S1752741AbbAVJBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 04:01:15 -0500
+Received: from hofr.at ([212.69.189.236]:42870 "EHLO mail.hofr.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751533AbbAVJBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 04:01:03 -0500
+Date: Thu, 22 Jan 2015 10:01:01 +0100
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: ???? <micky_ching@realsil.com.cn>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Keerthimai Janarthanan <keerthimaipb@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fabio Falzoi <fabio.falzoi84@gmail.com>,
+        Tina Johnson <tinajohnson.1234@gmail.com>,
+        Surya Seetharaman <surya.seetharaman9@gmail.com>
+Subject: Re: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
+Message-ID: <20150122090101.GB27741@opentech.at>
+References: <1421652347-8484-1-git-send-email-der.herr@hofr.at> <54C05500.8050809@realsil.com.cn>
 MIME-Version: 1.0
-In-Reply-To: <54C05207.6010306@nexus-software.ie>
-References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie>
-	<1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie>
-	<CAHp75VfNzXo=gkOhjkEGn+bSqk2kr+hOD_5PNxq4CsLjOqtG=w@mail.gmail.com>
-	<54C05207.6010306@nexus-software.ie>
-Date: Thu, 22 Jan 2015 10:59:36 +0200
-Message-ID: <CAHp75Vcd8axwSETRG8eq9Tu7Z0aPTDKfQr__gMsczt1PQ75sdg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, dvhart@infradead.org,
-        boon.leong.ong@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C05500.8050809@realsil.com.cn>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 3:27 AM, Bryan O'Donoghue
-<pure.logic@nexus-software.ie> wrote:
-> On 21/01/15 20:57, Andy Shevchenko wrote:
+On Thu, 22 Jan 2015, ???? wrote:
 
-[]
+> the title should be 5208.
 
->>> +       ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
->>> +                               reg++, imr->rmask);
->>> +       if (ret)
->>> +               goto done;
->>> +
->>> +       ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
->>> +                               reg, imr->wmask);
->>
->>
->> Wouldn't be reg++ here as well? Below you substitute full offset which
->> I think points just to next register.
->
->
-> I don't think we want to increment below..
->
->>
->>> +       if (ret)
->>> +               goto done;
->>> +
->>> +       /* Lock bit must be set separately to addr_lo address bits */
->>> +       if (lock) {
->>> +               imr->addr_lo |= IMR_LOCK;
->>> +               ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
->>> +                                       reg - IMR_LOCK_OFF,
->>> imr->addr_lo);
->>> +       }
->
->
-> ..because we calculate an offset anyway. An additional increment would just
-> be unnecessary cycles.
+sorry - that was a typo - should this be 
+resubmitted for traceability or is that not
+necessary ?
 
-Offset is a compile-time constant, right? And it should be 4.
-Otherwise its meaning somehow looks confusing. I looked again and
-would recommend to substitute it by NUM_REGS here and leave register
-increment. I don't think it's a really big deal to waste CPU cycles
-here since you use slower IOSF communication.
+> 
+> On 01/19/2015 03:25 PM, Nicholas Mc Guire wrote:
+> > This is only an API consolidation and should make things more readable
+> >
+> > Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> > ---
+> >
+> > Converting milliseconds to jiffies by val * HZ / 1000 is technically
+> > not wrong but msecs_to_jiffies(val) is the cleaner solution and handles
+> > corner cases correctly.
+> >
+> > This patch was only compile tested with x86_64_defconfig + CONFIG_STAGING=y,
+> > CONFIG_RTS5208=m
+> >
+> > Patch is against 3.19.0-rc4 -next-20150116
+> >
+> >   drivers/staging/rts5208/rtsx_transport.c |   12 ++++++------
+> >   1 file changed, 6 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/drivers/staging/rts5208/rtsx_transport.c b/drivers/staging/rts5208/rtsx_transport.c
+> > index 756a968..dab1995 100644
+> > --- a/drivers/staging/rts5208/rtsx_transport.c
+> > +++ b/drivers/staging/rts5208/rtsx_transport.c
+> > @@ -271,7 +271,7 @@ int rtsx_send_cmd(struct rtsx_chip *chip, u8 card, int timeout)
+> >   
+> >   	/* Wait for TRANS_OK_INT */
+> >   	timeleft = wait_for_completion_interruptible_timeout(
+> > -		&trans_done, timeout * HZ / 1000);
+> > +		&trans_done, msecs_to_jiffies(timeout));
+> >   	if (timeleft <= 0) {
+> >   		dev_dbg(rtsx_dev(chip), "chip->int_reg = 0x%x\n",
+> >   			chip->int_reg);
+> > @@ -431,7 +431,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+> >   	spin_unlock_irq(&rtsx->reg_lock);
+> >   
+> >   	timeleft = wait_for_completion_interruptible_timeout(
+> > -		&trans_done, timeout * HZ / 1000);
+> > +		&trans_done, msecs_to_jiffies(timeout));
+> >   	if (timeleft <= 0) {
+> >   		dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+> >   			__func__, __LINE__);
+> > @@ -455,7 +455,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+> >   		init_completion(&trans_done);
+> >   		spin_unlock_irq(&rtsx->reg_lock);
+> >   		timeleft = wait_for_completion_interruptible_timeout(
+> > -			&trans_done, timeout * HZ / 1000);
+> > +			&trans_done, msecs_to_jiffies(timeout));
+> >   		if (timeleft <= 0) {
+> >   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+> >   				__func__, __LINE__);
+> > @@ -575,7 +575,7 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
+> >   		spin_unlock_irq(&rtsx->reg_lock);
+> >   
+> >   		timeleft = wait_for_completion_interruptible_timeout(
+> > -			&trans_done, timeout * HZ / 1000);
+> > +			&trans_done, msecs_to_jiffies(timeout));
+> >   		if (timeleft <= 0) {
+> >   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+> >   				__func__, __LINE__);
+> > @@ -602,7 +602,7 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
+> >   		init_completion(&trans_done);
+> >   		spin_unlock_irq(&rtsx->reg_lock);
+> >   		timeleft = wait_for_completion_interruptible_timeout(
+> > -			&trans_done, timeout * HZ / 1000);
+> > +			&trans_done, msecs_to_jiffies(timeout));
+> >   		if (timeleft <= 0) {
+> >   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+> >   				__func__, __LINE__);
+> > @@ -688,7 +688,7 @@ static int rtsx_transfer_buf(struct rtsx_chip *chip, u8 card, void *buf,
+> >   
+> >   	/* Wait for TRANS_OK_INT */
+> >   	timeleft = wait_for_completion_interruptible_timeout(
+> > -		&trans_done, timeout * HZ / 1000);
+> > +		&trans_done, msecs_to_jiffies(timeout));
+> >   	if (timeleft <= 0) {
+> >   		dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+> >   			__func__, __LINE__);
 
->>> +               pr_info("protecting kernel .text - .rodata: %ldk (%p -
->>> %p)\n",
->>> +                       size / 1024, &_text, &__end_rodata);
->>
->>
->> size >> 10
->
->
-> Andy.
->
-> It was size >> 10 for V1 and you called it out as a magic number :)
->
-> IMO, size / 1024 requires less thought to understand when reading the code.
-
-Oh, my bad. Now a bit modified suggestion, to add KiB inside format
-string and leave  / 1024. Would it work for you?
-
--- 
-With Best Regards,
-Andy Shevchenko
+thx!
+hofrat
