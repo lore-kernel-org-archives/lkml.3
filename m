@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbbAVSTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 13:19:11 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:65462 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbbAVSTJ (ORCPT
+	id S1753441AbbAVSVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 13:21:51 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:56648 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169AbbAVSVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 13:19:09 -0500
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Thu, 22 Jan 2015 13:20:15 -0500 (EST)
-To: Stephane Eranian <eranian@gmail.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        cl@linux.com
-Subject: Re: perf: easily crash kernel with rapl event close
-In-Reply-To: <CAMsRxfLek-_4o+t2OV_31MyC=76z6u7wn4Nm-yKpa1NN9kjh7Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1501221317330.14136@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1501211348470.22707@vincent-weaver-1.umelst.maine.edu> <CAMsRxfJVxUcTvpaUSvTY19Ha93J1R-=o97hO+bfgkL3zU7Nrpw@mail.gmail.com> <20150122101720.GA2896@worktop.programming.kicks-ass.net> <CAMsRxfKnDVxc4awnGPQ+7s1BvsUHDQV5GwDRmV2J9BGKP2EMXg@mail.gmail.com>
- <CAMsRxfLek-_4o+t2OV_31MyC=76z6u7wn4Nm-yKpa1NN9kjh7Q@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 22 Jan 2015 13:21:48 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1421949760-5705-1-git-send-email-md.jamalmohiuddin@gmail.com>
+References: <1421949760-5705-1-git-send-email-md.jamalmohiuddin@gmail.com>
+Date: Thu, 22 Jan 2015 10:21:47 -0800
+Message-ID: <CA+mtBx8yeLG7UwqtknAsUTBtpocspraBcfj5W-2vTBA5pC8LEQ@mail.gmail.com>
+Subject: Re: [PATCH] include:linux:Optimizations to __skb_push
+From: Tom Herbert <therbert@google.com>
+To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <edumazet@google.com>,
+        viro@zeniv.linux.org.uk,
+        Alexander Duyck <alexander.h.duyck@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015, Stephane Eranian wrote:
-
-> Fix looks like this:
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> index 6e434f8..c4bb8b8 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-> @@ -142,7 +142,7 @@ static inline u64 rapl_scale(u64 v)
->          * or use ldexp(count, -32).
->          * Watts = Joules/Time delta
->          */
-> -       return v << (32 - __this_cpu_read(rapl_pmu->hw_unit));
-> +       return v << (32 - __this_cpu_read(rapl_pmu)->hw_unit);
+On Thu, Jan 22, 2015 at 10:02 AM, Mohammad Jamal
+<md.jamalmohiuddin@gmail.com> wrote:
+> This patch optimizes __skb_push function
+>
+> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+> ---
+>  include/linux/skbuff.h |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+> index 85ab7d7..9acffb2 100644
+> --- a/include/linux/skbuff.h
+> +++ b/include/linux/skbuff.h
+> @@ -1671,9 +1671,8 @@ static inline unsigned char *__skb_put(struct sk_buff *skb, unsigned int len)
+>  unsigned char *skb_push(struct sk_buff *skb, unsigned int len);
+>  static inline unsigned char *__skb_push(struct sk_buff *skb, unsigned int len)
+>  {
+> -       skb->data -= len;
+>         skb->len  += len;
+> -       return skb->data;
+> +       return skb->data -= len;
 >  }
-> 
-> 
-> Will post the patch shortly.
-> Thanks Vince for reporting this issue.
+>
+Hmm, this seems less readable to me. What is the effect of this patch?
+Does the compiler even produce different assembly?
 
-Well that's obviously a classic misplaced-parenthesis bug, but I patched 
-and re-ran my tests anyway to make sure this really fixed things.
-(It did).  So in case it is useful:
+Thanks,
+Tom
 
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-
-
+>  unsigned char *skb_pull(struct sk_buff *skb, unsigned int len);
+> --
+> 1.7.9.5
+>
