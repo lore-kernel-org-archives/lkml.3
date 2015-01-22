@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993AbbAVJyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 04:54:51 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:15134 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbbAVJyn (ORCPT
+	id S1752222AbbAVJzT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 04:55:19 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:16525 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbbAVJzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 04:54:43 -0500
-Message-ID: <54C0C8CF.8070804@huawei.com>
-Date: Thu, 22 Jan 2015 17:54:23 +0800
-From: Li Bin <huawei.libin@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 22 Jan 2015 04:55:12 -0500
+Date: Thu, 22 Jan 2015 12:54:53 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jeremiah Mahler <jmmahler@gmail.com>, Dudley Du <dudl@cypress.com>,
+        dmitry.torokhov@gmail.com, rydberg@euromail.se, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] input: cyapa: fix sparse warning issue of incorrect
+ type in assiggment
+Message-ID: <20150122095453.GL6507@mwanda>
+References: <1421909406-1240-1-git-send-email-dudl@cypress.com>
+ <20150122093129.GA7133@hudson.localdomain>
 MIME-Version: 1.0
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-CC: Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, <live-patching@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
-        <guohanjun@huawei.com>, <zhangdianfang@huawei.com>,
-        <xiexiuqi@huawei.com>
-Subject: Re: [PATCH 2/2] livepatch: disable/enable_patch manners for interdependent
- patches
-References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-3-git-send-email-huawei.libin@huawei.com> <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz> <54C04775.1070908@huawei.com> <20150122035126.GB12927@treble.redhat.com> <54C0B735.7070106@huawei.com>
-In-Reply-To: <54C0B735.7070106@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.181]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150122093129.GA7133@hudson.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/22 16:39, Li Bin wrote:
-> On 2015/1/22 11:51, Josh Poimboeuf wrote:
->> On Thu, Jan 22, 2015 at 08:42:29AM +0800, Li Bin wrote:
->>> On 2015/1/21 22:08, Jiri Kosina wrote:
->>>> On Wed, 21 Jan 2015, Li Bin wrote:
->>>> By this you limit the definition of the patch inter-dependency to just 
->>>> symbols. But that's not the only way how patches can depend on it other -- 
->>>> the dependency can be semantical.
->>>
->>> Yes, I agree with you. But I think the other dependencies such as semantical
->>> dependency should be judged by the user, like reverting a patch from git repository.
->>> Right?
->>
->> But with live patching, there are two users: the patch creator (who
->> creates the patch module) and the end user (who loads it on their
->> system).
->>
->> We can assume the patch creator knows what he's doing, but the end user
->> doesn't always know or care about low level details like patch
->> dependencies.  The easiest and safest way to protect the end user is the
->> current approach, which assumes that each patch depends on all
->> previously applied patches.
-> 
-> But then, the feature that disable patch dynamically is useless.
-> For example, if user find a bug be introduced by the last patch and disable
-> it directly, the new patch is no longer allowed from now unless enable the
-> old patch firstly but there is a risk window by this way.
-> 
+On Thu, Jan 22, 2015 at 01:31:29AM -0800, Jeremiah Mahler wrote:
+> I wasn't able to reproduce the sparse warning.  Was it for a specific
+> architecture?  Perhaps include a link to the email sent by the kbuild
+> test robot.
 
-Ok, in this case we can unregister the old patch firstly.
-But it seems that the feature that enable/disable patch dynamically indeed
-useless. (Its value is only for the last patch to enable or disable.)
+You need to add a "CF=-D__CHECK_ENDIAN__" to turn these on.
 
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe live-patching" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> .
-> 
+make C=2 CF=-D__CHECK_ENDIAN__
 
+http://lwn.net/Articles/205624/
+
+regards,
+dan carpenter
 
