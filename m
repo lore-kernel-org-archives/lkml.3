@@ -1,405 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbbAVQPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:15:33 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:56157 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684AbbAVQOb (ORCPT
+	id S1752772AbbAVPvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:51:47 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61161 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752349AbbAVPvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:14:31 -0500
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v12 6/6] clk: Add module for unit tests
-Date: Thu, 22 Jan 2015 17:13:16 +0100
-Message-Id: <1421943207-5180-7-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1421943207-5180-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1421943207-5180-1-git-send-email-tomeu.vizoso@collabora.com>
+	Thu, 22 Jan 2015 10:51:45 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
+Date: Thu, 22 Jan 2015 17:14:22 +0100
+Message-ID: <1564228.rcRekIyDUd@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAAVeFuJjMDfz7TZexkYnYrCGkAmRwubs32UhSPO-4qZWbMJjuQ@mail.gmail.com>
+References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com> <4078818.ecVtLF3hjd@vostro.rjw.lan> <CAAVeFuJjMDfz7TZexkYnYrCGkAmRwubs32UhSPO-4qZWbMJjuQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This module registers a clock hierarchy and performs several operations
-against them checking that the result is expected.
+On Thursday, January 22, 2015 11:57:55 AM Alexandre Courbot wrote:
+> On Wed, Jan 21, 2015 at 6:25 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Tuesday, January 20, 2015 01:16:06 PM Linus Walleij wrote:
+> >> On Mon, Jan 19, 2015 at 6:59 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> >>
+> >> > I am not really fond of this idea since it adds complexity to the
+> >> > (already too complex) GPIO lookup, and only solves to a local level
+> >> > (GPIO) what is a more global problem (bad ACPI tables that can affect
+> >> > any subsystem).
+> >> (...)
+> >> > it
+> >> > seems more to-the-point to find a way to fix/patch the ACPI tables at
+> >> > runtime, if that is possible at all, to provide a more general
+> >> > solution to this issue.
+> >>
+> >> This is my position as well, until proven that this cannot be done.
+> >
+> > Well, that goes against the current practice, mind you, which *is* to put
+> > workarounds for buggy ACPI tables into the kernel.  I'm not going to defend
+> > that, but it has been done for several years now.
+> >
+> > Also someone may say to that: "Why don't *you* demonstrate that it can be done
+> > in the first place?"  And what if it can be done, but is too complex to be
+> > practical or similar?
+> >
+> > My personal opinion is that having a way to apply a fix on top of broken ACPI
+> > tables (or an extension on top of correct ones for that matter) without touching
+> > the kernel would be very useful indeed, but making it secure may be somewhat
+> > challenging, because in principle there's no reason why the kernel should trust
+> > such "external" fixes.
+> >
+> >> In device tree the same mechanism is called "device tree overlays"
+> >> and I just have some vague feeling that such stuff is patched around in
+> >> some Intel platforms already, but maybe that involves replacing
+> >> the whole DSDT from userspace,
+> >
+> > From initramfs rather than from user space, but yes, it does.
+> >
+> >> surely the mechanism can be refined?
+> >
+> > Yes, it can (in principle).  In fact, we have a plan to refine it, but it is
+> > going to take some time.  Once we've done that, we'll see how painful it is to
+> > "patch" ACPI tables this way in practice.
+> >
+> > Also there is an ecosystem problem related to distributing such "patches".
+> > Today, distributions don't need to worry about patching buggy platform
+> > firmware, because they get workarounds in the kernel, but if we switch over
+> > to the model in which platform firmware "overlays" need to be provided in
+> > addition to it, then suddenly questions arise about who should be responsible
+> > for making them available, how to avoid duplication of efforts between
+> > distributions etc.
+> >
+> > All of that needs to be clarified before we start making hard statements like
+> > "No in-kernel workarounds for that!"
+> >
+> > And, of course, there's the question of what the kernel should do if the given
+> > firmware patch is not effective, so it doesn't really fix the problem it is
+> > supposed to fix or it fixes that problem only partially or, worse yet, it
+> > introuces more bugs than it fixes.  Should the kernel simply fail then (and
+> > in what way if so) or should it try to carry out some default "sanitization"
+> > of what the firmare (and patch) tells it and try to continue on the best
+> > effort basis?
+> 
+> If we decide to go ahead with the solution proposed by this patch for
+> practical reasons (which are good reasons indeed), I still have one
+> problem with its current form.
+> 
+> As the discussion highlighted, this is an ACPI problem, so I'd very
+> much like it to be confined to the ACPI GPIO code, to be enabled only
+> when ACPI is, and to use function names that start with acpi_gpio.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
----
- drivers/clk/Kconfig       |   1 +
- drivers/clk/Kconfig.debug |   6 +
- drivers/clk/Makefile      |   1 +
- drivers/clk/clk-test.c    | 326 ++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 334 insertions(+)
- create mode 100644 drivers/clk/Kconfig.debug
- create mode 100644 drivers/clk/clk-test.c
+I can agree with that.
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 3f44f29..03c500f 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -135,6 +135,7 @@ config COMMON_CLK_PXA
- 	  Sypport for the Marvell PXA SoC.
- 
- source "drivers/clk/qcom/Kconfig"
-+source "drivers/clk/Kconfig.debug"
- 
- endmenu
- 
-diff --git a/drivers/clk/Kconfig.debug b/drivers/clk/Kconfig.debug
-new file mode 100644
-index 0000000..840b790
---- /dev/null
-+++ b/drivers/clk/Kconfig.debug
-@@ -0,0 +1,6 @@
-+config COMMON_CLK_TEST
-+	tristate "Unit tests for the Common Clock Framework"
-+	default n
-+	---help---
-+	  This driver runs several tests on the Common Clock Framework.
-+
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index d5fba5b..4ee1475 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -68,3 +68,4 @@ obj-$(CONFIG_ARCH_U8500)		+= ux500/
- obj-$(CONFIG_COMMON_CLK_VERSATILE)	+= versatile/
- obj-$(CONFIG_X86)			+= x86/
- obj-$(CONFIG_ARCH_ZYNQ)			+= zynq/
-+obj-$(CONFIG_COMMON_CLK_TEST)		+= clk-test.o
-diff --git a/drivers/clk/clk-test.c b/drivers/clk/clk-test.c
-new file mode 100644
-index 0000000..e1032f2a
---- /dev/null
-+++ b/drivers/clk/clk-test.c
-@@ -0,0 +1,326 @@
-+/*
-+ * Copyright (C) 2015 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Unit tests for the Common Clock Framework
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/printk.h>
-+#include <linux/slab.h>
-+
-+/* Assumed to be sorted */
-+static const unsigned long allowed_rates[] = { 0, 100, 200, 300, 400, 500 };
-+
-+struct test_clk {
-+	struct clk_hw hw;
-+	unsigned long rate;
-+};
-+
-+static inline struct test_clk *to_test_clk(struct clk_hw *hw)
-+{
-+	return container_of(hw, struct test_clk, hw);
-+}
-+
-+static long test_clk_determine_rate(struct clk_hw *hw,
-+				    unsigned long rate,
-+				    unsigned long min_rate,
-+				    unsigned long max_rate,
-+				    unsigned long *best_parent_rate,
-+				    struct clk_hw **best_parent)
-+{
-+	struct clk *parent;
-+	unsigned long target_rate = 0;
-+	unsigned int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(allowed_rates); i++) {
-+
-+		if (allowed_rates[i] > max_rate) {
-+			if (i > 0)
-+				target_rate = allowed_rates[i - 1];
-+			else
-+				target_rate = 0;
-+			break;
-+		}
-+
-+		if (allowed_rates[i] < min_rate)
-+			continue;
-+
-+		if (allowed_rates[i] >= rate) {
-+			target_rate = allowed_rates[i];
-+			break;
-+		}
-+	}
-+
-+	parent = clk_get_parent(hw->clk);
-+	if (parent) {
-+		*best_parent = __clk_get_hw(parent);
-+		*best_parent_rate = __clk_determine_rate(__clk_get_hw(parent),
-+							 target_rate / 2,
-+							 min_rate,
-+							 max_rate);
-+	}
-+
-+	return target_rate;
-+}
-+
-+static unsigned long test_clk_recalc_rate(struct clk_hw *hw,
-+					  unsigned long parent_rate)
-+{
-+	struct test_clk *test_clk = to_test_clk(hw);
-+
-+	return test_clk->rate;
-+}
-+
-+static int test_clk_set_rate(struct clk_hw *hw, unsigned long rate,
-+			     unsigned long parent_rate)
-+{
-+	struct test_clk *test_clk = to_test_clk(hw);
-+
-+	test_clk->rate = rate;
-+
-+	return 0;
-+}
-+
-+static const struct clk_ops test_clk_ops = {
-+	.determine_rate = test_clk_determine_rate,
-+	.recalc_rate = test_clk_recalc_rate,
-+	.set_rate = test_clk_set_rate,
-+};
-+
-+static struct clk *init_test_clk(const char *name, const char *parent_name)
-+{
-+	struct test_clk *test_clk;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+	int err;
-+
-+	test_clk = kzalloc(sizeof(*test_clk), GFP_KERNEL);
-+	if (!test_clk)
-+		return ERR_PTR(-ENOMEM);
-+
-+	test_clk->rate = 0;
-+
-+	init.name = name;
-+	init.ops = &test_clk_ops;
-+
-+	if (parent_name) {
-+		init.parent_names = &parent_name;
-+		init.num_parents = 1;
-+		init.flags = CLK_SET_RATE_PARENT;
-+	} else {
-+		init.parent_names = NULL;
-+		init.num_parents = 0;
-+		init.flags = CLK_IS_ROOT;
-+	}
-+
-+	test_clk->hw.init = &init;
-+
-+	clk = clk_register(NULL, &test_clk->hw);
-+	if (IS_ERR(clk)) {
-+		printk("%s: error registering clk: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return clk;
-+	}
-+
-+	err = clk_register_clkdev(clk, name, NULL);
-+	if (err)
-+		printk("%s: error registering alias: %d\n", __func__, err);
-+
-+	return clk;
-+}
-+
-+static void test_ceiling(struct clk *clk)
-+{
-+	unsigned long rate;
-+	int ret;
-+
-+	ret = clk_set_max_rate(clk, 399);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	rate = clk_round_rate(clk, 400);
-+	if (rate != 300)
-+		printk("%s: unexpected rounded rate: %lu != 300\n", __func__, rate);
-+
-+	ret = clk_set_rate(clk, 400);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	rate = clk_get_rate(clk);
-+	if (rate != 300)
-+		printk("%s: unexpected rate: %lu != 300\n", __func__, rate);
-+
-+	ret = clk_set_max_rate(clk, ULONG_MAX);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+}
-+
-+static void test_floor(struct clk *clk)
-+{
-+	unsigned long rate;
-+	int ret;
-+
-+	ret = clk_set_min_rate(clk, 199);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+
-+	rate = clk_round_rate(clk, 90);
-+	if (rate != 200)
-+		printk("%s: unexpected rounded rate: %lu != 200\n", __func__, rate);
-+
-+	ret = clk_set_rate(clk, 90);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	rate = clk_get_rate(clk);
-+	if (rate != 200)
-+		printk("%s: unexpected rate: %lu != 200\n", __func__, rate);
-+
-+	ret = clk_set_min_rate(clk, 0);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+}
-+
-+static void test_unsatisfiable(struct clk *clk)
-+{
-+	struct clk *clk2 = clk_get_sys(NULL, "clk");
-+	unsigned long rate;
-+	int ret;
-+
-+	if (IS_ERR(clk2))
-+		printk("%s: error getting clk: %ld\n", __func__,
-+		       PTR_ERR(clk2));
-+
-+	ret = clk_set_min_rate(clk, 99);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+
-+	ret = clk_set_max_rate(clk, 199);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	ret = clk_set_min_rate(clk2, 399);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+
-+	ret = clk_set_max_rate(clk2, 499);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	ret = clk_set_rate(clk, 90);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	/*
-+	 * It's expected that the rate is the highest rate that is still
-+	 * below the smallest ceiling
-+	 */
-+	rate = clk_get_rate(clk);
-+	if (rate != 100)
-+		printk("%s: unexpected rate: %lu != 100\n", __func__, rate);
-+
-+	clk_put(clk2);
-+
-+	ret = clk_set_min_rate(clk, 0);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+
-+	ret = clk_set_max_rate(clk, ULONG_MAX);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+}
-+
-+static void test_constrained_parent(struct clk *clk, struct clk *parent)
-+{
-+	unsigned long rate;
-+	int ret;
-+
-+	ret = clk_set_max_rate(parent, 199);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	ret = clk_set_rate(clk, 200);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	rate = clk_get_rate(clk);
-+	if (rate != 200)
-+		printk("%s: unexpected rate: %lu != 200\n", __func__, rate);
-+
-+	rate = clk_get_rate(parent);
-+	if (rate != 100)
-+		printk("%s: unexpected parent rate: %lu != 100\n", __func__, rate);
-+
-+	ret = clk_set_max_rate(parent, ULONG_MAX);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+}
-+
-+static void test_constraint_with_parent(struct clk *clk, struct clk *parent)
-+{
-+	unsigned long rate;
-+	int ret;
-+
-+	ret = clk_set_min_rate(clk, 201);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	ret = clk_set_rate(clk, 300);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	rate = clk_get_rate(clk);
-+	if (rate != 300)
-+		printk("%s: unexpected rate: %lu != 300\n", __func__, rate);
-+
-+	rate = clk_get_rate(parent);
-+	if (rate != 300)
-+		printk("%s: unexpected parent rate: %lu != 300\n", __func__, rate);
-+
-+	ret = clk_set_max_rate(parent, ULONG_MAX);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+}
-+
-+static int __init clk_test_init(void)
-+{
-+	struct clk *parent, *clk;
-+
-+	printk("---------- Common Clock Framework test results ----------\n");
-+
-+	parent = init_test_clk("parent", NULL);
-+	if (IS_ERR(parent)) {
-+		printk("%s: error registering parent: %ld\n", __func__,
-+		       PTR_ERR(parent));
-+		return PTR_ERR(parent);
-+	}
-+
-+	clk = init_test_clk("clk", "parent");
-+	if (IS_ERR(clk)) {
-+		printk("%s: error registering clk: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return PTR_ERR(clk);
-+	}
-+
-+	test_ceiling(clk);
-+	test_floor(clk);
-+	test_unsatisfiable(clk);
-+	test_constrained_parent(clk, parent);
-+	test_constraint_with_parent(clk, parent);
-+
-+	printk("---------------------------------------------------------\n");
-+
-+	return 0;
-+}
-+
-+module_init(clk_test_init);
-+
-+MODULE_LICENSE("GPL");
+> The current implementation leverages platform lookup, making said lookup
+> less efficient in the process and bringing confusion about its
+> purpose. Although the two processes are indeed similar, they are
+> separate things: one is a legitimate way to map GPIOs, the other is a
+> fixup for broken firmware.
+> 
+> I suppose we all agree this is a hackish fix, so let's confine it as
+> much as we can.
+
+OK
+
+Heikki, any comments?
+
 -- 
-1.9.3
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
