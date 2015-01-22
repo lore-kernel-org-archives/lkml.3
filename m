@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbbAVSPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 13:15:30 -0500
-Received: from mga02.intel.com ([134.134.136.20]:50221 "EHLO mga02.intel.com"
+	id S1753878AbbAVSPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 13:15:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56624 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841AbbAVSP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 13:15:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,450,1418112000"; 
-   d="scan'208";a="516157925"
-Message-ID: <1421950431.2399.44.camel@schen9-desk2.jf.intel.com>
-Subject: Re: [PATCH v6 5/7] sched/fair: fix idle balance when remaining
- tasks are all non-CFS tasks
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Juri Lelli <juri.lelli@arm.com>, Kirill Tkhai <ktkhai@parallels.com>,
-        linux-kernel@vger.kernel.org, riel@redhat.com, jason.low2@hp.com,
-        fweisbec@gmail.com
-Date: Thu, 22 Jan 2015 10:13:51 -0800
-In-Reply-To: <20150122040532.GA5426@kernel>
-References: <1416962647-76792-1-git-send-email-wanpeng.li@linux.intel.com>
-	 <1416962647-76792-6-git-send-email-wanpeng.li@linux.intel.com>
-	 <20150119124528.GO25256@twins.programming.kicks-ass.net>
-	 <20150119231837.GB3687@kernel> <20150122040532.GA5426@kernel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1752676AbbAVSPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 13:15:45 -0500
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH] PCI: Add Wellsburg (X99) to Intel PCH root port ACS quirk
+To: linux-pci@vger.kernel.org
+Cc: bhelgaas@google.com, donald.d.dugger@intel.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 22 Jan 2015 11:15:43 -0700
+Message-ID: <20150122181524.1586.14496.stgit@gimli.home>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-22 at 12:05 +0800, Wanpeng Li wrote:
-> On Tue, Jan 20, 2015 at 07:18:37AM +0800, Wanpeng Li wrote:
-> >>>  		if (!rq->rd->overload)
-> >>>  			rq->rd->overload = true;
-> >>
-> >>Here 3882ec643997 ("nohz: Use IPI implicit full barrier against
-> >>rq->nr_running r/w") might be a clue.
-> >>
-> >>Also, this is wrong, it breaks NOHZ_FULL.
-> >
-> >Got it. If the modification in update_sg_lb_stats of my patch is still
-> >corrrect, if so I can send out a new version.
-> 
-> Ping,
-> 
+Intel has confirmed that the Wellsburg chipset, while not reporting
+ACS, does provide the proper isolation through the RCBA/BSPR
+registers, so the same quirk works for this set of device IDs.
 
-Hard to respond without seeing your new patch.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Don Dugger <donald.d.dugger@intel.com>
+---
 
-Tim
+ drivers/pci/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-> >
-> >Regards,
-> >Wanpeng Li 
-
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index ed6f89b..2cdb789 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3630,6 +3630,9 @@ static const u16 pci_quirk_intel_pch_acs_ids[] = {
+ 	0x9c98, 0x9c99, 0x9c9a, 0x9c9b,
+ 	/* Patsburg (X79) PCH */
+ 	0x1d10, 0x1d12, 0x1d14, 0x1d16, 0x1d18, 0x1d1a, 0x1d1c, 0x1d1e,
++	/* Wellsburg (X99) PCH */
++	0x8d10, 0x8d11, 0x8d12, 0x8d13, 0x8d14, 0x8d15, 0x8d16, 0x8d17,
++	0x8d18, 0x8d19, 0x8d1a, 0x8d1b, 0x8d1c, 0x8d1d, 0x8d1e,
+ };
+ 
+ static bool pci_quirk_intel_pch_acs_match(struct pci_dev *dev)
 
