@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333AbbAVCZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:25:09 -0500
-Received: from mail.kernel.org ([198.145.29.136]:48848 "EHLO mail.kernel.org"
+	id S1754484AbbAVC0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:26:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37931 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752362AbbAVCZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:25:04 -0500
-Date: Thu, 22 Jan 2015 03:24:54 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dbaryshkov@gmail.com, dwmw2@infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH] Add devicetree binding documentation for the
- LTC2941/LTC2943 driver
-Message-ID: <20150122022453.GQ13715@earth.universe>
-References: <20141027163842.GB20765@earth.universe>
- <1414480084-3604-1-git-send-email-mike.looijmans@topic.nl>
+	id S1753327AbbAVC0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 21:26:13 -0500
+Date: Thu, 22 Jan 2015 10:25:44 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Pavel Machek <pavel@ucw.cz>, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Xishi Qiu <qiuxishi@huawei.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, e820: clean up around sanitize_e820_map()
+Message-ID: <20150122022544.GA8670@dhcp-129-179.nay.redhat.com>
+References: <1420601859-18439-1-git-send-email-chaowang@redhat.com>
+ <alpine.DEB.2.10.1501211450330.2716@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="aNvCJ41Feu8IgPyB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414480084-3604-1-git-send-email-mike.looijmans@topic.nl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.10.1501211450330.2716@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, David
 
---aNvCJ41Feu8IgPyB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 01/21/15 at 02:51pm, David Rientjes wrote:
+> On Wed, 7 Jan 2015, WANG Chao wrote:
+> 
+> > The argument 3 of sanitize_e820_map() will only update upon a successful
+> > sanitization. Some of the callers may not be aware of this in the past.
+> > Now clean up these callers.
+> > 
+> > Signed-off-by: WANG Chao <chaowang@redhat.com>
+> 
+> Nice, but it's incomplete: it should also cleanup 
+> default_machine_specific_memory_setup().
 
-Hi,
+default_machine_specific_memory_setup() is special. Because
+boot_params.e820_entries is 8bit unsigned, and sanitize_e820_map() which
+takes 32bit unsigned, will step on other member of boot_params next to
+e820_entries.
 
-On Tue, Oct 28, 2014 at 08:08:04AM +0100, Mike Looijmans wrote:
-> This adds the devicetree binding documentation for the LTC2941 and LTC2943
-> driver. These are I2C connected battery gas gauge ICs.
-
-Thanks, applied.
-
--- Sebastian
-
---aNvCJ41Feu8IgPyB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUwF91AAoJENju1/PIO/qaqgEQAKYJbEKtdraEn5Jn3kY4hx0+
-99iNkLZo3rgDgkQ/Ume2RbGDzRFPXjJ4nl1oMbD2L1RtuRD6RzSCMqIlrjcNr916
-U0+LxKI6UZV8bSy7pb708mxMG1AA80xEmOjXchnXy8pFo1OaUZBN3Dmqcirz/RSG
-FXEho3o5U2Kuvebt9XV3nuUGcVaQ3g6zj6a9mkIHcRg3lgHak1DYvptz8fKOl6tq
-9ogd5zBhXIwfKMnV+hdBjebHnHIqaUm2bTtkoOeGmw40YSsnpNLIek1QETP28qap
-7LXHAq0PwWfP+vBiil15izH0nFVPhOk8cN3TbXdyin8qkADY6cEZAyjmj6OFqvSz
-dSBAz9aEAkv6atX2KE+3B3lJu/waAvyKKN0S9LUtK9yAnvBQwb6ao1aBZZcOPkRI
-+43OHDLYC+M5Rjvtw9JKNE2M8Gj3YwFb+VRRu75So+lkh+0bWGTamoYZxpsj7xV+
-BuFpFWkXN9C+kkKDqJS+hF5693emrqZP3pZjp2uBuxxs11u0rEHJXoEHOGGtZQAX
-bU+jdi9Nib5G4kRBAoJ0HADGksInqA542HfIqVXD1by2ogUW0l2Wc1hI88o0oQFV
-KNzjZtyRiQj7IfVh+vysBZNZH2HFjCZKTaXG1XLZwSwWzEDFhCZUfEmPfWkg7b+b
-aXKmcPJ2a+u/BV+SB0/C
-=ukVK
------END PGP SIGNATURE-----
-
---aNvCJ41Feu8IgPyB--
+Thanks
+WANG Chao
