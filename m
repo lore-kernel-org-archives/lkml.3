@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbbAVOtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:49:43 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:61134 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753784AbbAVOti (ORCPT
+	id S1752727AbbAVOxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:53:32 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:47329 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584AbbAVOxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:49:38 -0500
-Message-ID: <1421938175.13638.58.camel@x220>
-Subject: Re: KVM: HAVE_KVM_ARCH_DIRTY_LOG_PROTECT?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Mario Smarduch <m.smarduch@samsung.com>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Gleb Natapov <gleb@kernel.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 Jan 2015 15:49:35 +0100
-In-Reply-To: <54C101B9.1050804@redhat.com>
-References: <1421918381.13638.43.camel@x220> <54C101B9.1050804@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	Thu, 22 Jan 2015 09:53:30 -0500
+Message-ID: <54C10ED0.1010302@oracle.com>
+Date: Thu, 22 Jan 2015 09:53:04 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, James Dingwall <james@dingwall.me.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.18.2 / xen 4.4.1 dom0 - microcode oops
+References: <20150122055242.GA11089@dingwall.me.uk> <20150122082003.GA3441@pd.tnic> <54C10DB6.2050708@oracle.com>
+In-Reply-To: <54C10DB6.2050708@oracle.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Jan 2015 14:49:36.0769 (UTC) FILETIME=[A46ED710:01D03652]
-X-RcptDomain: vger.kernel.org
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-22 at 14:57 +0100, Paolo Bonzini wrote:
-> On 22/01/2015 10:19, Paul Bolle wrote:
-> > Your commit ba0513b5b8ff ("KVM: Add generic support for dirty page
-> > logging") is included in today's linux-next (ie, next-20150122). I
-> > noticed because a script I use to check linux-next spotted a problem
-> > with it.
-> > 
-> > That commit added a Kconfig symbol HAVE_KVM_ARCH_DIRTY_LOG_PROTECT. But
-> > nothing in linux-next uses that symbol. Why was it added?
-> 
-> Ah, there are two Kconfig symbols added by mistake.
-> 
-> +config HAVE_KVM_ARCH_DIRTY_LOG_PROTECT
-> + bool
+On 01/22/2015 09:48 AM, Boris Ostrovsky wrote:
+> On 01/22/2015 03:20 AM, Borislav Petkov wrote:
+>> Hmm,
+>>
+>> and I thought we fixed all that fun. It seems not :-\
+>>
+>> Boris, this paravirt_enabled() thing doesn't seem to work or why are we
+>> even calling microcode_exit()?
+>
+> Looks like something is unloading microcode driver (init scripts 
+> perhaps) and so we are trying to unregister device that we never 
+> registered (because we had early return from microcode_init() when we 
+> loaded it).
+>
+> I actually suspect the same bug would be triggered if dis_ucode_ldr is 
+> true on baremetal.
+>
+> So we need something like:
+>
+> --- a/arch/x86/kernel/cpu/microcode/core.c
+> +++ b/arch/x86/kernel/cpu/microcode/core.c
+> @@ -625,6 +625,9 @@ static void __exit microcode_exit(void)
+>  {
+>         struct cpuinfo_x86 *c = &cpu_data(0);
+>
+> +       if (paravirt_enabled() || dis_ucode_ldr)
+> +               return 0;
+
+Plain 'return', of course.
+
+Alternatively, we could return an error (-EINVAL?) from microcode_init() 
+when either of these two conditions is true.
+
+-boris
+
 > +
-> +config KVM_GENERIC_DIRTYLOG_READ_PROTECT
-> + bool
-
-This one is actually used (so my 800 line perl monster didn't bark):
-    $ git grep -n KVM_GENERIC_DIRTYLOG_READ_PROTECT next-20150122
-    next-20150122:arch/arm/kvm/Kconfig:27:  select KVM_GENERIC_DIRTYLOG_READ_PROTECT
-    next-20150122:arch/arm64/kvm/Kconfig:30:        select KVM_GENERIC_DIRTYLOG_READ_PROTECT
-    next-20150122:arch/x86/kvm/Kconfig:42:  select KVM_GENERIC_DIRTYLOG_READ_PROTECT
-    next-20150122:virt/kvm/Kconfig:47:config KVM_GENERIC_DIRTYLOG_READ_PROTECT
-    next-20150122:virt/kvm/kvm_main.c:998:#ifdef CONFIG_KVM_GENERIC_DIRTYLOG_READ_PROTECT
-
-> Christoffer, can you fix that in kvm-arm and also the other mistake that
-> Paul reported?
-
-Thanks,
-
-
-Paul  Bolle
+>         microcode_dev_exit();
+>
+>         unregister_hotcpu_notifier(&mc_cpu_notifier);
+>
+>
 
