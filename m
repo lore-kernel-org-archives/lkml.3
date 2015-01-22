@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbbAVRZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:25:00 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:56961 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621AbbAVRYy (ORCPT
+	id S1753348AbbAVR1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:27:11 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:39571 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645AbbAVRYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:24:54 -0500
+	Thu, 22 Jan 2015 12:24:55 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 1/7] serial: core: Simplify console suspend logic in uart_suspend_port()
-Date: Thu, 22 Jan 2015 12:24:25 -0500
-Message-Id: <1421947471-6396-2-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 2/7] serial: 8250: Move UART_BUG_QUOT workaround
+Date: Thu, 22 Jan 2015 12:24:26 -0500
+Message-Id: <1421947471-6396-3-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1421947471-6396-1-git-send-email-peter@hurleysoftware.com>
 References: <1421947471-6396-1-git-send-email-peter@hurleysoftware.com>
@@ -21,90 +21,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the uart port being suspended is a console and consoles are
-not suspending (kernel command line contains no_console_suspend),
-then no action is performed for that port, and the function can
-return early.
-
-If the function has not returned early, then one of the conditions
-is not true, so the expression
-   (console_suspend_enabled || !uart_console(uport))
-must be true and can be eliminated.
-
-Similarly, the expression
-   (console_suspend_enabled && uart_console(uport))
-simplifies to just uart_console(uport).
+The UART_BUG_QUOT workaround adjusts the divisor computed from the
+baud rate by serial8250_get_divisor(). Move the workaround into
+serial8250_get_divisor(), so that divisor-from-baud computation
+is encapsulated.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/serial/serial_core.c | 35 +++++++++++++++++------------------
- 1 file changed, 17 insertions(+), 18 deletions(-)
+ drivers/tty/serial/8250/8250_core.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 57ca61b..37dc808 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2008,23 +2008,24 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
- 	}
- 	put_device(tty_dev);
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 3bfcfdb..fa40982 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2390,8 +2390,9 @@ static void serial8250_shutdown(struct uart_port *port)
+ 		serial8250_do_shutdown(port);
+ }
  
--	if (console_suspend_enabled || !uart_console(uport))
--		uport->suspended = 1;
-+	/* Nothing to do if the console is not suspending */
-+	if (!console_suspend_enabled && uart_console(uport))
-+		goto unlock;
-+
-+	uport->suspended = 1;
- 
- 	if (port->flags & ASYNC_INITIALIZED) {
- 		const struct uart_ops *ops = uport->ops;
- 		int tries;
- 
--		if (console_suspend_enabled || !uart_console(uport)) {
--			set_bit(ASYNCB_SUSPENDED, &port->flags);
--			clear_bit(ASYNCB_INITIALIZED, &port->flags);
--
--			spin_lock_irq(&uport->lock);
--			ops->stop_tx(uport);
--			ops->set_mctrl(uport, 0);
--			ops->stop_rx(uport);
--			spin_unlock_irq(&uport->lock);
--		}
-+		set_bit(ASYNCB_SUSPENDED, &port->flags);
-+		clear_bit(ASYNCB_INITIALIZED, &port->flags);
-+
-+		spin_lock_irq(&uport->lock);
-+		ops->stop_tx(uport);
-+		ops->set_mctrl(uport, 0);
-+		ops->stop_rx(uport);
-+		spin_unlock_irq(&uport->lock);
- 
- 		/*
- 		 * Wait for the transmitter to empty.
-@@ -2036,19 +2037,17 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
- 				drv->dev_name,
- 				drv->tty_driver->name_base + uport->line);
- 
--		if (console_suspend_enabled || !uart_console(uport))
--			ops->shutdown(uport);
-+		ops->shutdown(uport);
- 	}
+-static unsigned int serial8250_get_divisor(struct uart_port *port, unsigned int baud)
++static unsigned int serial8250_get_divisor(struct uart_8250_port *up, unsigned int baud)
+ {
++	struct uart_port *port = &up->port;
+ 	unsigned int quot;
  
  	/*
- 	 * Disable the console device before suspending.
- 	 */
--	if (console_suspend_enabled && uart_console(uport))
-+	if (uart_console(uport))
- 		console_stop(uport->cons);
+@@ -2407,6 +2408,12 @@ static unsigned int serial8250_get_divisor(struct uart_port *port, unsigned int
+ 	else
+ 		quot = uart_get_divisor(port, baud);
  
--	if (console_suspend_enabled || !uart_console(uport))
--		uart_change_pm(state, UART_PM_STATE_OFF);
++	/*
++	 * Oxford Semi 952 rev B workaround
++	 */
++	if (up->bugs & UART_BUG_QUOT && (quot & 0xff) == 0)
++		quot++;
++
+ 	return quot;
+ }
+ 
+@@ -2455,13 +2462,7 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	baud = uart_get_baud_rate(port, termios, old,
+ 				  port->uartclk / 16 / 0xffff,
+ 				  port->uartclk / 16);
+-	quot = serial8250_get_divisor(port, baud);
 -
-+	uart_change_pm(state, UART_PM_STATE_OFF);
-+unlock:
- 	mutex_unlock(&port->mutex);
+-	/*
+-	 * Oxford Semi 952 rev B workaround
+-	 */
+-	if (up->bugs & UART_BUG_QUOT && (quot & 0xff) == 0)
+-		quot++;
++	quot = serial8250_get_divisor(up, baud);
  
- 	return 0;
+ 	if (up->capabilities & UART_CAP_FIFO && port->fifosize > 1) {
+ 		/* NOTE: If fifo_bug is not set, a user can set RX_trigger. */
 -- 
 2.2.2
 
