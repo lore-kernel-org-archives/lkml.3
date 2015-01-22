@@ -1,114 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052AbbAVDmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 22:42:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:51460 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbbAVDmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 22:42:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,446,1418112000"; 
-   d="scan'208";a="673853538"
-Message-ID: <54C07190.3090403@linux.intel.com>
-Date: Thu, 22 Jan 2015 11:42:08 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1754179AbbAVDpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 22:45:38 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:46887 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbbAVDpa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 22:45:30 -0500
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, x86@kernel.org,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] x86: pmc_atom: save struct device pointer in pmc
-References: <1421790603-30097-1-git-send-email-andriy.shevchenko@linux.intel.com> <1421790603-30097-2-git-send-email-andriy.shevchenko@linux.intel.com>
-In-Reply-To: <1421790603-30097-2-git-send-email-andriy.shevchenko@linux.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54B4FF30.2030607@samsung.com>
+References: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
+ <54B4FF30.2030607@samsung.com>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Thu, 22 Jan 2015 09:15:08 +0530
+Message-ID: <CAO_48GHXaNE4m5TErg0=nkDZrvi65mp8u4h7ao011OL4mhSDUw@mail.gmail.com>
+Subject: Re: [PATCH RESEND] dma-mapping: tidy up dma_parms default handling
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Robin Murphy <robin.murphy@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        joro@8bytes.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/21 5:50, Andy Shevchenko wrote:
-> The change allows to use dev_printk() type of macros in the module functions.
+Hi Robin,
 
-The patch itself looks good to me, but not sure why do we need this
-change, will we use dev_prink in the subsequent patches?
+On 13 January 2015 at 16:49, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+> Hello,
+>
+> On 2015-01-09 17:56, Robin Murphy wrote:
+>>
+>> Many DMA controllers and other devices set max_segment_size to
+>> indicate their scatter-gather capability, but have no interest in
+>> segment_boundary_mask. However, the existence of a dma_parms structure
+>> precludes the use of any default value, leaving them as zeros (assuming
+>> a properly kzalloc'ed structure). If a well-behaved IOMMU (or SWIOTLB)
+>> then tries to respect this by ensuring a mapped segment does not cross
+>> a zero-byte boundary, hilarity ensues.
+>>
+>> Since zero is a nonsensical value for either parameter, treat it as an
+>> indicator for "default", as might be expected. In the process, clean up
+>> a bit by replacing the bare constants with slightly more meaningful
+>> macros and removing the superfluous "else" statements.
+>>
+>> Signed-off-by: Robin Murphy <robin.murphy@arm.com>
+>
+>
+> Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Thanks,
--Aubrey
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  arch/x86/kernel/pmc_atom.c | 15 +++++++++------
->  1 file changed, 9 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-> index d66a4fe..d338222 100644
-> --- a/arch/x86/kernel/pmc_atom.c
-> +++ b/arch/x86/kernel/pmc_atom.c
-> @@ -26,6 +26,7 @@
->  #include <asm/pmc_atom.h>
->  
->  struct pmc_dev {
-> +	struct device *dev;
->  	u32 base_addr;
->  	void __iomem *regmap;
->  #ifdef CONFIG_DEBUG_FS
-> @@ -250,7 +251,7 @@ static void pmc_dbgfs_unregister(struct pmc_dev *pmc)
->  	debugfs_remove_recursive(pmc->dbgfs_dir);
->  }
->  
-> -static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
-> +static int pmc_dbgfs_register(struct pmc_dev *pmc)
->  {
->  	struct dentry *dir, *f;
->  
-> @@ -263,21 +264,21 @@ static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
->  	f = debugfs_create_file("dev_state", S_IFREG | S_IRUGO,
->  				dir, pmc, &pmc_dev_state_ops);
->  	if (!f) {
-> -		dev_err(&pdev->dev, "dev_state register failed\n");
-> +		dev_err(pmc->dev, "dev_state register failed\n");
->  		goto err;
->  	}
->  
->  	f = debugfs_create_file("pss_state", S_IFREG | S_IRUGO,
->  				dir, pmc, &pmc_pss_state_ops);
->  	if (!f) {
-> -		dev_err(&pdev->dev, "pss_state register failed\n");
-> +		dev_err(pmc->dev, "pss_state register failed\n");
->  		goto err;
->  	}
->  
->  	f = debugfs_create_file("sleep_state", S_IFREG | S_IRUGO,
->  				dir, pmc, &pmc_sleep_tmr_ops);
->  	if (!f) {
-> -		dev_err(&pdev->dev, "sleep_state register failed\n");
-> +		dev_err(pmc->dev, "sleep_state register failed\n");
->  		goto err;
->  	}
->  
-> @@ -287,7 +288,7 @@ err:
->  	return -ENODEV;
->  }
->  #else
-> -static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
-> +static int pmc_dbgfs_register(struct pmc_dev *pmc)
->  {
->  	return 0;
->  }
-> @@ -315,10 +316,12 @@ static int pmc_setup_dev(struct pci_dev *pdev)
->  		return -ENOMEM;
->  	}
->  
-> +	pmc->dev = &pdev->dev;
-> +
->  	/* PMC hardware registers setup */
->  	pmc_hw_reg_setup(pmc);
->  
-> -	ret = pmc_dbgfs_register(pmc, pdev);
-> +	ret = pmc_dbgfs_register(pmc);
->  	if (ret) {
->  		iounmap(pmc->regmap);
->  	}
-> 
+Please feel free to add my
+Reviewed-by: Sumit Semwal <sumit.semwal@linaro.org>
+>
+>> ---
+>>
+>> Hi, various maintainers from Git logs ;)
+>>
+>> This one's a bit tricky to find a home for - I think technically it's
+>> probably an IOMMU patch, but then the long-underlying problem doesn't
+>> seem to have blown up anything until arm64, and my motivation is to
+>> make bits of Juno work, which seems to nudge it towards arm64/arm-soc
+>> territory. Could anyone suggest which tree is most appropriate?
+>>
+>> Thanks,
+>> Robin.
+>>
+>>
+>>   include/linux/dma-mapping.h | 17 ++++++++++-------
+>>   1 file changed, 10 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+>> index c3007cb..99ba736 100644
+>> --- a/include/linux/dma-mapping.h
+>> +++ b/include/linux/dma-mapping.h
+>> @@ -141,7 +141,9 @@ static inline void arch_teardown_dma_ops(struct device
+>> *dev) { }
+>>     static inline unsigned int dma_get_max_seg_size(struct device *dev)
+>>   {
+>> -       return dev->dma_parms ? dev->dma_parms->max_segment_size : 65536;
+>> +       if (dev->dma_parms && dev->dma_parms->max_segment_size)
+>> +               return dev->dma_parms->max_segment_size;
+>> +       return SZ_64K;
+>>   }
+>>     static inline unsigned int dma_set_max_seg_size(struct device *dev,
+>> @@ -150,14 +152,15 @@ static inline unsigned int
+>> dma_set_max_seg_size(struct device *dev,
+>>         if (dev->dma_parms) {
+>>                 dev->dma_parms->max_segment_size = size;
+>>                 return 0;
+>> -       } else
+>> -               return -EIO;
+>> +       }
+>> +       return -EIO;
+>>   }
+>>     static inline unsigned long dma_get_seg_boundary(struct device *dev)
+>>   {
+>> -       return dev->dma_parms ?
+>> -               dev->dma_parms->segment_boundary_mask : 0xffffffff;
+>> +       if (dev->dma_parms && dev->dma_parms->segment_boundary_mask)
+>> +               return dev->dma_parms->segment_boundary_mask;
+>> +       return DMA_BIT_MASK(32);
+>>   }
+>>     static inline int dma_set_seg_boundary(struct device *dev, unsigned
+>> long mask)
+>> @@ -165,8 +168,8 @@ static inline int dma_set_seg_boundary(struct device
+>> *dev, unsigned long mask)
+>>         if (dev->dma_parms) {
+>>                 dev->dma_parms->segment_boundary_mask = mask;
+>>                 return 0;
+>> -       } else
+>> -               return -EIO;
+>> +       }
+>> +       return -EIO;
+>>   }
+>>     #ifndef dma_max_pfn
+>
+>
+> Best regards
+> --
+> Marek Szyprowski, PhD
+> Samsung R&D Institute Poland
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+-- 
+Thanks and regards,
+
+Sumit Semwal
+Kernel Team Lead - Linaro Mobile Group
+Linaro.org │ Open source software for ARM SoCs
