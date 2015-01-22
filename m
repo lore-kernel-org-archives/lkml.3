@@ -1,206 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893AbbAVKKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 05:10:05 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:49052 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbbAVKJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 05:09:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAGfiMvA_K+r=p_G+PJ0SJdTqwZw3NBDtNO0=+we8x6-a6+ugPg@mail.gmail.com>
-References: <CAGfiMvCLgdaACWuUJAWecaLP9cSZRLFzzWgNGoiZTidT9m60cg@mail.gmail.com>
- <20141220051008.GE5474@home.goodmis.org> <CAGfiMvB8tH30MGKz2XQ6ugZjrBxRmYUSiBb-_bOwzGr8mFCbiA@mail.gmail.com>
- <CAGfiMvBOTm2EH5R1W8AwWWxTROX8hO=YH78fJm=Ljo4H7btkKA@mail.gmail.com>
- <5497D750.2040104@hitachi.com> <CAGfiMvAALjFU+5FdmXa1VTQM6ZeEAZG5F1VDO60BRx4EK9zMZQ@mail.gmail.com>
- <CAGfiMvCQrcwsdDxM5XJtX=BZOF+LbpRJJgLCYEGTRNKkUioK9g@mail.gmail.com> <CAGfiMvA_K+r=p_G+PJ0SJdTqwZw3NBDtNO0=+we8x6-a6+ugPg@mail.gmail.com>
-From: Divya Vyas <edivya.vyas@gmail.com>
-Date: Thu, 22 Jan 2015 15:39:23 +0530
-Message-ID: <CAGfiMvBgwd6A59-4jgcf0qm+bMEz3h-_WOdCJpum3guF8Oe_Eg@mail.gmail.com>
-Subject: Re: Merge ftrace data of host and guest
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752796AbbAVKH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 05:07:57 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13678 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751660AbbAVKHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 05:07:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,448,1418112000"; 
+   d="scan'208";a="665754481"
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: jic23@kernel.org
+Cc: ktsai@capellamicro.com, daniel.baluta@intel.com, knaack.h@gmx.de,
+        lars@metafoo.de, pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] iio: light: Add support for Capella CM3323 color/light sensor
+Date: Thu, 22 Jan 2015 12:10:12 +0200
+Message-Id: <1421921412-7710-1-git-send-email-daniel.baluta@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Minimal implementation providing raw light intensity and illuminance
+readings. For illuminance user can compute lux values using raw readings
+and scale.
 
-I am working on merge of ftrace data of guest and host .
+This driver also supports CM3323E sensor chip.
 
-tsc_guest = tsc_host +offset
+Cc: Kevin Tsai <ktsai@capellamicro.com>
+Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+---
+ drivers/iio/light/Kconfig  |  10 ++
+ drivers/iio/light/Makefile |   1 +
+ drivers/iio/light/cm3323.c | 345 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 356 insertions(+)
+ create mode 100644 drivers/iio/light/cm3323.c
 
-I got offset from /sys/kernel/debug/tracing/instances/tsc_offset/trace
- 18446739224709377060
+diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
+index 5bea821..aeaf1c7 100644
+--- a/drivers/iio/light/Kconfig
++++ b/drivers/iio/light/Kconfig
+@@ -48,6 +48,16 @@ config CM32181
+ 	 To compile this driver as a module, choose M here:
+ 	 the module will be called cm32181.
+ 
++config CM3323
++	depends on I2C
++	tristate "Capella CM3323 color/ambient light sensor"
++	help
++	 Say Y here if you want to build a driver for Capela CM3323
++	 color sensor. This driver also supports CM3323E sensor.
++
++	 To compile this driver as a module, choose M here: the module will
++	 be called cm3323.
++
+ config CM36651
+ 	depends on I2C
+ 	tristate "CM36651 driver"
+diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
+index 47877a3..0815b38 100644
+--- a/drivers/iio/light/Makefile
++++ b/drivers/iio/light/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
+ obj-$(CONFIG_AL3320A)		+= al3320a.o
+ obj-$(CONFIG_APDS9300)		+= apds9300.o
+ obj-$(CONFIG_CM32181)		+= cm32181.o
++obj-$(CONFIG_CM3323)		+= cm3323.o
+ obj-$(CONFIG_CM36651)		+= cm36651.o
+ obj-$(CONFIG_GP2AP020A00F)	+= gp2ap020a00f.o
+ obj-$(CONFIG_HID_SENSOR_ALS)	+= hid-sensor-als.o
+diff --git a/drivers/iio/light/cm3323.c b/drivers/iio/light/cm3323.c
+new file mode 100644
+index 0000000..5e9b32d
+--- /dev/null
++++ b/drivers/iio/light/cm3323.c
+@@ -0,0 +1,345 @@
++/*
++ * CM3323/CM3323E - Capella Color/Ambient Light Sensor
++ *
++ * Copyright (c) 2015, Intel Corporation.
++ *
++ * This file is subject to the terms and conditions of version 2 of
++ * the GNU General Public License.  See the file COPYING in the main
++ * directory of this archive for more details.
++ *
++ * IIO driver for CM3323/CM3323E (7-bit I2C slave address 0x10)
++ *
++ * TODO: calibscale to correct the lens factor
++ */
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/i2c.h>
++#include <linux/mutex.h>
++
++#include <linux/iio/iio.h>
++#include <linux/iio/sysfs.h>
++
++#define CM3323_DRV_NAME "cm3323"
++
++#define CM3323_CMD_CONF		0x00
++#define CM3323_CMD_RED_DATA	0x08
++#define CM3323_CMD_GREEN_DATA	0x09
++#define CM3323_CMD_BLUE_DATA	0x0A
++#define CM3323_CMD_CLEAR_DATA	0x0B
++
++#define CM3323_CONF_SD_BIT	BIT(0) /* sensor disable */
++#define CM3323_CONF_AF_BIT	BIT(1) /* auto/manual force mode */
++#define CM3323_CONF_IT_MASK	(BIT(4) | BIT(5) | BIT(6))
++#define CM3323_CONF_IT_SHIFT	4
++
++#define CM3323_INT_TIME_AVAILABLE "0.04 0.08 0.16 0.32 0.64 1.28"
++#define CM3323_SCALE_AVAILABLE "0.18 0.09 0.045 0.0225 0.01125 0.005625"
++
++static const struct {
++	int val;
++	int val2;
++} cm3323_int_time[] = {
++	{0, 40000},  /* 40 ms */
++	{0, 80000},  /* 80 ms */
++	{0, 160000}, /* 160 ms */
++	{0, 320000}, /* 320 ms */
++	{0, 640000}, /* 640 ms */
++	{1, 280000}, /* 1280 ms */
++};
++
++/* scale depends on integration time */
++static int cm3323_uscale[] = {
++	180000, /* 40 ms */
++	 90000, /* 80 ms */
++	 45000, /* 160 ms */
++	 22500, /* 320 ms */
++	 11250, /* 640 ms */
++	 5625,  /* 1280 ms */
++};
++
++struct cm3323_data {
++	struct i2c_client *client;
++	u16 reg_conf;
++	struct mutex mutex;
++};
++
++#define CM3323_COLOR_CHANNEL(_color, _addr) {\
++	.type = IIO_INTENSITY, \
++	.modified = 1, \
++	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW), \
++	.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_INT_TIME), \
++	.channel2 = IIO_MOD_LIGHT_##_color, \
++	.address = _addr, \
++}
++
++/*
++ * CM3323's GREEN channel is used for reading illuminance
++ */
++#define CM3323_LIGHT_CHANNEL(_addr) {\
++	.type = IIO_LIGHT, \
++	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) | \
++			      BIT(IIO_CHAN_INFO_SCALE), \
++	.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_INT_TIME), \
++	.address = _addr, \
++}
++
++static const struct iio_chan_spec cm3323_channels[] = {
++	CM3323_COLOR_CHANNEL(RED, CM3323_CMD_RED_DATA),
++	CM3323_COLOR_CHANNEL(GREEN, CM3323_CMD_GREEN_DATA),
++	CM3323_COLOR_CHANNEL(BLUE, CM3323_CMD_BLUE_DATA),
++	CM3323_COLOR_CHANNEL(CLEAR, CM3323_CMD_CLEAR_DATA),
++	CM3323_LIGHT_CHANNEL(CM3323_CMD_GREEN_DATA),
++};
++
++static IIO_CONST_ATTR(in_illuminance_scale_available, CM3323_SCALE_AVAILABLE);
++static IIO_CONST_ATTR_INT_TIME_AVAIL(CM3323_INT_TIME_AVAILABLE);
++
++static struct attribute *cm3323_attributes[] = {
++	&iio_const_attr_integration_time_available.dev_attr.attr,
++	&iio_const_attr_in_illuminance_scale_available.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group cm3323_attribute_group = {
++	.attrs = cm3323_attributes,
++};
++
++static int cm3323_init(struct iio_dev *indio_dev)
++{
++	int ret;
++	struct cm3323_data *data = iio_priv(indio_dev);
++
++	ret = i2c_smbus_read_word_data(data->client, CM3323_CMD_CONF);
++	if (ret < 0) {
++		dev_err(&data->client->dev, "Error reading reg_conf\n");
++		return ret;
++	}
++
++	/* enable sensor and set auto force mode */
++	ret &= ~(CM3323_CONF_SD_BIT | CM3323_CONF_AF_BIT);
++
++	ret = i2c_smbus_write_word_data(data->client, CM3323_CMD_CONF, ret);
++	if (ret < 0) {
++		dev_err(&data->client->dev, "Error writing reg_conf\n");
++		return ret;
++	}
++
++	data->reg_conf = ret;
++
++	return 0;
++}
++
++static int cm3323_set_it_bits(struct cm3323_data *data, int val, int val2)
++{
++	int i, ret;
++	u16 reg_conf;
++
++	for (i = 0; i < ARRAY_SIZE(cm3323_int_time); i++) {
++		if (val == cm3323_int_time[i].val &&
++			val2 == cm3323_int_time[i].val2) {
++			reg_conf = data->reg_conf;
++			reg_conf |= i << CM3323_CONF_IT_SHIFT;
++
++			ret = i2c_smbus_write_word_data(data->client,
++				 CM3323_CMD_CONF, reg_conf);
++			if (ret < 0)
++				return ret;
++
++			data->reg_conf = reg_conf;
++			return 0;
++		}
++	}
++	return -EINVAL;
++}
++
++static int cm3323_set_scale(struct cm3323_data *data, int val, int val2)
++{
++	int i, ret;
++	u16 reg_conf;
++
++	if (val != 0)
++		return 0;
++
++	for (i = 0; i < ARRAY_SIZE(cm3323_uscale); i++) {
++		if (val2 == cm3323_uscale[i]) {
++			reg_conf = data->reg_conf;
++			reg_conf |= i << CM3323_CONF_IT_SHIFT;
++
++			ret = i2c_smbus_write_word_data(data->client,
++				 CM3323_CMD_CONF, reg_conf);
++			if (ret < 0)
++				return ret;
++
++			data->reg_conf = reg_conf;
++			return 0;
++		}
++	}
++	return -EINVAL;
++}
++
++static int cm3323_get_it_bits(struct cm3323_data *data)
++{
++	int bits;
++
++	bits = (data->reg_conf & CM3323_CONF_IT_MASK) >>
++		CM3323_CONF_IT_SHIFT;
++
++	if (bits >= ARRAY_SIZE(cm3323_int_time))
++		return -EINVAL;
++	return bits;
++}
++
++static int cm3323_read_raw(struct iio_dev *indio_dev,
++			    struct iio_chan_spec const *chan, int *val,
++			    int *val2, long mask)
++{
++	int i, ret;
++	struct cm3323_data *data = iio_priv(indio_dev);
++
++	switch (mask) {
++	case IIO_CHAN_INFO_RAW:
++		mutex_lock(&data->mutex);
++		ret = i2c_smbus_read_word_data(data->client, chan->address);
++		if (ret < 0) {
++			mutex_unlock(&data->mutex);
++			return ret;
++		}
++		*val = ret;
++		mutex_unlock(&data->mutex);
++
++		return IIO_VAL_INT;
++	case IIO_CHAN_INFO_INT_TIME:
++		mutex_lock(&data->mutex);
++		i = cm3323_get_it_bits(data);
++		if (i < 0) {
++			mutex_unlock(&data->mutex);
++			return -EINVAL;
++		}
++
++		*val = cm3323_int_time[i].val;
++		*val2 = cm3323_int_time[i].val2;
++		mutex_unlock(&data->mutex);
++
++		return IIO_VAL_INT_PLUS_MICRO;
++	case IIO_CHAN_INFO_SCALE:
++		if (chan->type != IIO_LIGHT)
++			return -EINVAL;
++
++		mutex_lock(&data->mutex);
++		i = cm3323_get_it_bits(data);
++		if (i < 0) {
++			mutex_unlock(&data->mutex);
++			return -EINVAL;
++		}
++		*val = 0;
++		*val2 = cm3323_uscale[i];
++		mutex_unlock(&data->mutex);
++
++		return IIO_VAL_INT_PLUS_MICRO;
++	}
++	return -EINVAL;
++}
++
++static int cm3323_write_raw(struct iio_dev *indio_dev,
++			    struct iio_chan_spec const *chan, int val,
++			    int val2, long mask)
++{
++	struct cm3323_data *data = iio_priv(indio_dev);
++	int ret;
++
++	switch (mask) {
++	case IIO_CHAN_INFO_INT_TIME:
++		mutex_lock(&data->mutex);
++		ret = cm3323_set_it_bits(data, val, val2);
++		mutex_unlock(&data->mutex);
++
++		return ret;
++	case IIO_CHAN_INFO_SCALE:
++		if (chan->type != IIO_LIGHT)
++			return -EINVAL;
++		mutex_lock(&data->mutex);
++		ret = cm3323_set_scale(data, val, val2);
++		mutex_unlock(&data->mutex);
++		return ret;
++	default:
++		return -EINVAL;
++	}
++}
++
++static const struct iio_info cm3323_info = {
++	.driver_module	= THIS_MODULE,
++	.read_raw	= cm3323_read_raw,
++	.write_raw	= cm3323_write_raw,
++	.attrs		= &cm3323_attribute_group,
++};
++
++static int cm3323_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct cm3323_data *data;
++	struct iio_dev *indio_dev;
++	int ret;
++
++	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
++	if (!indio_dev)
++		return -ENOMEM;
++
++	data = iio_priv(indio_dev);
++	i2c_set_clientdata(client, indio_dev);
++	data->client = client;
++
++	mutex_init(&data->mutex);
++
++	indio_dev->dev.parent = &client->dev;
++	indio_dev->info = &cm3323_info;
++	indio_dev->name = CM3323_DRV_NAME;
++	indio_dev->channels = cm3323_channels;
++	indio_dev->num_channels = ARRAY_SIZE(cm3323_channels);
++	indio_dev->modes = INDIO_DIRECT_MODE;
++
++	ret = cm3323_init(indio_dev);
++	if (ret < 0) {
++		dev_err(&client->dev, "cm3323 chip init failed\n");
++		return ret;
++	}
++	return devm_iio_device_register(&client->dev, indio_dev);
++}
++
++static int cm3323_remove(struct i2c_client *client)
++{
++	struct iio_dev *indio_dev = i2c_get_clientdata(client);
++	struct cm3323_data *data  = iio_priv(indio_dev);
++	int ret;
++
++	mutex_lock(&data->mutex);
++	/* disable sensor */
++	ret = i2c_smbus_write_word_data(client, CM3323_CMD_CONF,
++					CM3323_CONF_SD_BIT);
++	if (ret < 0)
++		dev_err(&client->dev, "Error writing reg_conf\n");
++
++	mutex_unlock(&data->mutex);
++	return ret;
++}
++
++static const struct i2c_device_id cm3323_id[] = {
++	{"cm3323", 0},
++	{"cm3323e", 0},
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, cm3323_id);
++
++static struct i2c_driver cm3323_driver = {
++	.driver = {
++		.name = CM3323_DRV_NAME,
++	},
++	.probe		= cm3323_probe,
++	.remove		= cm3323_remove,
++	.id_table	= cm3323_id,
++};
++
++module_i2c_driver(cm3323_driver);
++
++MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
++MODULE_DESCRIPTION("Capella CM3323 Color/Ambient Light Sensor driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.9.1
 
-Where as my guest and host data is in below format :
-
- sshd-2332  [000]  4813.363939: net_dev_queue:        dev=eth0
-skbaddr=0xffff88003b78f6e8 len=134
- sshd-2332  [000]  4813.363951: net_dev_xmit:         dev=eth0
-skbaddr=0xffff88003b78f6e8 len=134 rc=0
- sshd-2332  [000]  4813.364010: netif_receive_skb:    dev=eth0
-skbaddr=0xffff880015cbbc00 len=52
- sshd-2332  [000]  4813.364042: net_dev_queue:        dev=eth0
-skbaddr=0xffff88002c086ce8 len=102
- sshd-2332  [000]  4813.364053: net_dev_xmit:         dev=eth0
-skbaddr=0xffff88002c086ce8 len=102 rc=0
- trace-cmd-2496  [000]  4813.364098: netif_receive_skb:    dev=eth0
-skbaddr=0xffff880015cbbc00 len=52
- <idle>-0     [000]  4814.384570: netif_receive_skb:    dev=eth0
-skbaddr=0xffff88003a490a00 len=38
- <idle>-0     [000]  4816.384541: netif_receive_skb:    dev=eth0
-skbaddr=0xffff88003a490900 len=38
- <idle>-0     [000]  4818.384681: netif_receive_skb:    dev=eth0
-skbaddr=0xffff88003a490900 len=38
-
-How can I add the timestamp and offset .Do I need to add directly the numbers ?
-
-
-
-On Tue, Jan 13, 2015 at 11:03 AM, Divya Vyas <edivya.vyas@gmail.com> wrote:
-> Hi,
->
-> Is there any feature in ftrace like synchronizing the timestamp
->
-> http://help.eclipse.org/luna/index.jsp?topic=%2Forg.eclipse.linuxtools.lttng.help%2Fdoc%2FTrace-synchronization.html
->
->
->
-> On Wed, Jan 7, 2015 at 2:57 PM, Divya Vyas <edivya.vyas@gmail.com> wrote:
->> Hi Masami,
->>
->> Any updates on the merge feature?
->>
->>
->>
->> On Mon, Dec 22, 2014 at 4:36 PM, Divya Vyas <edivya.vyas@gmail.com> wrote:
->>> Hi Masami,
->>>
->>> Thanks for the patches .
->>>
->>> Are you working on this merging feature also
->>> https://lkml.org/lkml/2013/12/16/688 ? the d option ?
->>>
->>> trace-cmd report -i will not give expected output if the time is not
->>> synchronized . From kernel side we can get TSC offset  using
->>> tracepoint when guest boots . I think this tracepoint was added from
->>> 3.11  but from user side I got only the trace-merge script which takes
->>> offset and trace and host data .  But the format of trace data this
->>> script accepts is little different .
->>>
->>> My end goal is to to merge the traces in chronological order and see
->>> them in kernelshark .
->>>
->>>
->>> Thanks,
->>> Divya
->>>
->>>
->>>
->>>
->>>
->>> On Mon, Dec 22, 2014 at 2:03 PM, Masami Hiramatsu
->>> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>> Hi,
->>>>
->>>> I'm working on trace-cmd virt-server feature. This is just a basic feature
->>>> to allow trace-cmd using virtio-trace (no time synchronizing).
->>>> I'll send the updated version of the series soon.
->>>>
->>>> (2014/12/22 16:07), Divya Vyas wrote:
->>>>> Hi ,
->>>>>
->>>>> One more thing I want to add that Yoshihiro YUNOMAE's  trace-merge
->>>>> script does this time synchronization. We have to calculate guest
->>>>> offset and then subtract with host time .
->>>>
->>>> Right, to complete this work we need trace-merge like merging feature.
->>>> I assume that we can do that by passing the offset of the timestamp
->>>> information with guest trace data (that is the simplest implementation).
->>>>
->>>> However, currently trace-merge depends on x86 TSC, but some intel
->>>> processors TSC is not stable. That is current barrier of trace-merge.
->>>>
->>>> Thank you,
->>>>
->>>>
->>>>>
->>>>> But it is not applying on current trace-cmd report output format and
->>>>> not giving desired output .
->>>>>
->>>>> Thanks,
->>>>> Divya Vyas
->>>>>
->>>>> On Mon, Dec 22, 2014 at 12:34 PM, Divya Vyas <edivya.vyas@gmail.com> wrote:
->>>>>> Hi Steven,
->>>>>>
->>>>>> I am sorry but I am very new to trace-cmd , that's why I didn't knew
->>>>>> what you are working on it.
->>>>>>
->>>>>> I will explain you whole scenario , Actually I have multiple guests
->>>>>> and a host and I want to see all traces on a single file  with
->>>>>> trace-cmd report command and may be kernelshark also .
->>>>>>
->>>>>> trace-cmd report -i guest.dat -i host.dat command is giving me all
->>>>>> traces is single file but the timestamp is different for guest . So
->>>>>> the challenge for me is to sync the timestamp of guest and host .  Can
->>>>>> you advise me something in this ? How can I sync gettimeofday clocks
->>>>>> of guest and host ?
->>>>>>
->>>>>> and kernelshark doesnt take trace-cmd report input , I think it takes
->>>>>> guest.dat and host.dat .
->>>>>> Is there any other viewer available for ftrace ?
->>>>>>
->>>>>>
->>>>>>
->>>>>>
->>>>>>
->>>>>>
->>>>>> On Sat, Dec 20, 2014 at 10:40 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->>>>>>> On Fri, Dec 19, 2014 at 05:52:52PM +0530, Divya Vyas wrote:
->>>>>>>> Hi,
->>>>>>>
->>>>>>> Hi, it would be  helpful if you Cc'd me. I would have responded quicker. Luckily,
->>>>>>> someone noticed this email and told me about it.
->>>>>>>
->>>>>>>>
->>>>>>>> I think it is not desired output . Ths script is written for diffrent
->>>>>>>> format .ftrace format is ( trace-cmd report command generates) :
->>>>>>>
->>>>>>> I'm actually working on trace-cmd this week and hopefully I'll be able to release
->>>>>>> 2.5 by x-mas.
->>>>>>>
->>>>>>> I believe that Masami is going to start continuing work on the virt guest
->>>>>>> tracer for trace-cmd.
->>>>>>>
->>>>>>> Also, for now, for a crud way of merging, if both the gettimeofday clocks
->>>>>>> of the host and guest are synced, you could do:
->>>>>>>
->>>>>>> guest> trace-cmd record -o guest.dat --date  ...
->>>>>>>
->>>>>>> host> trace-cmd record -o host.dat --date ...
->>>>>>>
->>>>>>> and then run:
->>>>>>>
->>>>>>> trace-cmd report -i guest.dat -i host.dat
->>>>>>>
->>>>>>> and trace-cmd will merge the two. The --date will add a way to sync the trace
->>>>>>> timestamps to a wall clock and that will be used to try to interleave the
->>>>>>> events of both the data files.
->>>>>>>
->>>>>>> -- Steve
->>>>>>>
->>>>>
->>>>
->>>>
->>>> --
->>>> Masami HIRAMATSU
->>>> Software Platform Research Dept. Linux Technology Research Center
->>>> Hitachi, Ltd., Yokohama Research Laboratory
->>>> E-mail: masami.hiramatsu.pt@hitachi.com
->>>>
->>>>
