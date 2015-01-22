@@ -1,160 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650AbbAVRIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:08:14 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:54181 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbbAVRIL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753368AbbAVRIL (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 22 Jan 2015 12:08:11 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] sched: Fix missing preemption opportunity
-Date: Thu, 22 Jan 2015 18:08:04 +0100
-Message-Id: <1421946484-9298-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 2.1.4
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:49347 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbbAVRII (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 12:08:08 -0500
+Date: Thu, 22 Jan 2015 17:08:04 +0000
+From: Matt Fleming <matt@codeblueprint.co.uk>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Vince Weaver <vince@deater.net>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: Perf tests for hw events
+Message-ID: <20150122170804.GG12079@codeblueprint.co.uk>
+References: <20150122124014.GF12079@codeblueprint.co.uk>
+ <20150122125658.GA2473@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150122125658.GA2473@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
-
-Please pull the sched/urgent branch that can be found at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	sched/urgent
-
-HEAD: 4ccbe99852951957419bc616f888e297a478e50b
-
-It's part of the preempt/schedule cleanups series suggested by Linus. I'm reworking
-these but this one commit is an exception because it's a bugfix. So I'm sending it
-now. I believe it's not a regression so it's perhaps too late for -rc5. I let you
-judge. The commit is based on -rc5 so it can be merged on sched/core otherwise.
-
-Thanks,
-	Frederic
----
-
-Frederic Weisbecker (1):
-      sched: Fix missing preemption check in cond_resched()
-
-
- kernel/sched/core.c | 40 +++++++++++++++++++---------------------
- 1 file changed, 19 insertions(+), 21 deletions(-)
-
----
-commit 4ccbe99852951957419bc616f888e297a478e50b
-Author: Frederic Weisbecker <fweisbec@gmail.com>
-Date:   Sun Dec 14 22:04:47 2014 +0100
-
-    sched: Fix missing preemption check in cond_resched()
-    
-    If an interrupt fires in cond_resched(), between the call to __schedule()
-    and the PREEMPT_ACTIVE count decrementation, and that interrupt sets
-    TIF_NEED_RESCHED, the call to preempt_schedule_irq() will be ignored
-    due to the PREEMPT_ACTIVE count. This kind of scenario, with irq preemption
-    being delayed because it's interrupting a preempt-disabled area, is
-    usually fixed up after preemption is re-enabled back with an explicit
-    call to preempt_schedule().
-    
-    This is what preempt_enable() does but a raw preempt count decrement as
-    performed by __preempt_count_sub(PREEMPT_ACTIVE) doesn't handle delayed
-    preemption check. Therefore when such a race happens, the rescheduling
-    is going to be delayed until the next scheduler or preemption entrypoint.
-    This can be a problem for scheduler latency sensitive workloads.
-    
-    Lets fix that by consolidating cond_resched() with preempt_schedule()
-    internals.
-    
-    Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-    Reported-by: Ingo Molnar <mingo@kernel.org>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Original-patch-by: Ingo Molnar <mingo@kernel.org>
-    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c0accc0..c7ed25d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2877,6 +2877,21 @@ void __sched schedule_preempt_disabled(void)
- 	preempt_disable();
- }
+On Thu, 22 Jan, at 01:56:59PM, Jiri Olsa wrote:
+> On Thu, Jan 22, 2015 at 12:40:14PM +0000, Matt Fleming wrote:
+> > Folks,
+> > 
+> > In the process of writing perf support for Intel's Cache QoS Monitoring
+> > feature [0] I've had to write my own userland tests to drive tools/perf
+> > and indirectly the kernel internals. I'm now getting requests for these
+> > tests from various people and it occurs to me that they should probably
+> > live in the kernel tree.
+> > 
+> > The tests I've got do a couple of things like setting up a perf_event
+> > cgroup and assigning enough tasks to trigger the RMID recycling code in
+> > the CQM driver, ensuring that we can run multiple events simultaneously
+> > (that the event scheduling/rotation code works), etc.
+> > 
+> > Does anything like this already exist for hw events? I couldn't find
+> > anything specific to hw events from snooping around in tools/perf/tests. 
+> 
+> that's the only place for this kind of stuff.. and AFAIK we use
+> just some basic HW events like cycles, or software events
  
-+static void preempt_schedule_common(void)
-+{
-+	do {
-+		__preempt_count_add(PREEMPT_ACTIVE);
-+		__schedule();
-+		__preempt_count_sub(PREEMPT_ACTIVE);
-+
-+		/*
-+		 * Check again in case we missed a preemption opportunity
-+		 * between schedule and now.
-+		 */
-+		barrier();
-+	} while (need_resched());
-+}
-+
- #ifdef CONFIG_PREEMPT
- /*
-  * this is the entry point to schedule() from in-kernel preemption
-@@ -2892,17 +2907,7 @@ asmlinkage __visible void __sched notrace preempt_schedule(void)
- 	if (likely(!preemptible()))
- 		return;
- 
--	do {
--		__preempt_count_add(PREEMPT_ACTIVE);
--		__schedule();
--		__preempt_count_sub(PREEMPT_ACTIVE);
--
--		/*
--		 * Check again in case we missed a preemption opportunity
--		 * between schedule and now.
--		 */
--		barrier();
--	} while (need_resched());
-+	preempt_schedule_common();
- }
- NOKPROBE_SYMBOL(preempt_schedule);
- EXPORT_SYMBOL(preempt_schedule);
-@@ -4202,17 +4207,10 @@ SYSCALL_DEFINE0(sched_yield)
- 	return 0;
- }
- 
--static void __cond_resched(void)
--{
--	__preempt_count_add(PREEMPT_ACTIVE);
--	__schedule();
--	__preempt_count_sub(PREEMPT_ACTIVE);
--}
--
- int __sched _cond_resched(void)
- {
- 	if (should_resched()) {
--		__cond_resched();
-+		preempt_schedule_common();
- 		return 1;
- 	}
- 	return 0;
-@@ -4237,7 +4235,7 @@ int __cond_resched_lock(spinlock_t *lock)
- 	if (spin_needbreak(lock) || resched) {
- 		spin_unlock(lock);
- 		if (resched)
--			__cond_resched();
-+			preempt_schedule_common();
- 		else
- 			cpu_relax();
- 		ret = 1;
-@@ -4253,7 +4251,7 @@ int __sched __cond_resched_softirq(void)
- 
- 	if (should_resched()) {
- 		local_bh_enable();
--		__cond_resched();
-+		preempt_schedule_common();
- 		local_bh_disable();
- 		return 1;
- 	}
+OK cool. I just wanted confirmation that tools/perf/tests was the best
+place for these tests.
+
+> > We should only test those hw events that are present on a user's
+> > machine; there's no sense in emulating things.
+> 
+> agreed.. I remember we were discussing with Arnaldo the strengthening
+> of the test framework.. so it would detect what tests are runable
+> under current machine and priviledge
+> 
+> IIRC we already have some CPU detection support:
+>   int __attribute__ ((weak)) get_cpuid(char *buffer, size_t sz);
+
+Aha, excellent. I hadn't noticed this. It should be possible to build
+something on top of this.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
