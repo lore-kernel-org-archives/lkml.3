@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbbAVOSa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:18:30 -0500
-Received: from sauhun.de ([89.238.76.85]:41414 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494AbbAVOS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:18:28 -0500
-Date: Thu, 22 Jan 2015 15:18:24 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/1] i2c: i2c-st: Rename clock reference to something
- that exists
-Message-ID: <20150122141824.GB3413@katana>
-References: <1409234523-20240-1-git-send-email-lee.jones@linaro.org>
+	id S1752639AbbAVOUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:20:21 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:62697 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbbAVOUS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 09:20:18 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
-Content-Disposition: inline
-In-Reply-To: <1409234523-20240-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54BFDF2B.80708@caviumnetworks.com>
+References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com>
+ <20150119154357.GH21553@leverpostej> <54BD580C.6030701@gmail.com>
+ <20150121165427.GA8722@leverpostej> <54BFDF2B.80708@caviumnetworks.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Thu, 22 Jan 2015 08:19:55 -0600
+Message-ID: <CAL_Jsq+Vtp=G6PJZvgksfLSXHBkoTC4TxLymP0ONk9MjaMtMPQ@mail.gmail.com>
+Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, David Daney <ddaney.cavm@gmail.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Vinita Gupta <vgupta@caviumnetworks.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 21, 2015 at 11:17 AM, David Daney <ddaney@caviumnetworks.com> wrote:
+> On 01/21/2015 08:54 AM, Mark Rutland wrote:
+>>
+>> On Mon, Jan 19, 2015 at 07:16:28PM +0000, David Daney wrote:
+>
+> [...]
+>>>>>
+>>>>> @@ -67,6 +76,7 @@ static const struct of_device_id ahci_of_match[] = {
+>>>>>         { .compatible = "ibm,476gtr-ahci", },
+>>>>>         { .compatible = "snps,dwc-ahci", },
+>>>>>         { .compatible = "hisilicon,hisi-ahci", },
+>>>>> +       { .compatible = "cavium,octeon-7130-ahci", },
+>>>>>         {},
+>>>>
+>>>>
+>>>> I was under the impression that the strings other than "generic-ahci"
+>>>> were only for compatibility with existing DTBs. Why do we need to add
+>>>> new platform-specific strings here?
+>>>
+>>>
+>>> Because it is an "existing DTB", The device tree doesn't contain the
+>>> compatible property of "generic-ahci", only "cavium,octeon-7130-ahci".
+>>
+>>
+>> While the DTB may already exist, the string "cavium,octeon-7130-ahci"
+>> isn't in mainline, and as far as I can see has never been supported.
+>
+>
+> There seems to be a disconnect here.  The DTB comes from the hardware boot
+> environment.  The hardware is in some cases already deployed.  It is for all
+> practical purposes, impossible to change the DTB.
+>
+> The idea that the kernel source code controls the content of the device tree
+> doesn't apply here.
 
---+g7M9IMkV8truYOl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I have to agree that adding the compatible string here is okay.
+Allowing/using generic names is the exception, not the rule. We're
+usually pushing the other way. People often complain about having to
+add a compatible string when they don't need it (yet).
 
-On Thu, Aug 28, 2014 at 03:02:03PM +0100, Lee Jones wrote:
-> CLK_S_ICN_REG_0 hasn't existed for a while now.  This was renamed
-> over a few commits, then finally removed in commit 5aa02b9 (ARM:
-> STi: DT: STiH415: Remove unused CLK_S_ICN_REG_0 fixed clock).
->=20
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+However, the argument that the privately developed DTB has to be
+accepted as is is complete crap. Maybe you have done a good job and
+have all straightforward bindings, so having them accepted won't be a
+big deal. We should be reasonable and not bikeshed things which are
+already in use and only affect a single device. Many of the bindings
+in vendor trees I have seen are a complete mess, but I expect better
+from you.
 
-Applied to for-current, thanks!
-
-
---+g7M9IMkV8truYOl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUwQawAAoJEBQN5MwUoCm2LRAP/1zdpPL5GWPtOz7mlPLlpHYl
-yKJob9HwHrwSHKyHjVbBDr2SlzEzt6gWCvCp5aPhZ//6AW69XhHqzQ0OBFDbdHCh
-ALlqWhP8YN3pfGUBDhlvSXT4+37REiuxbeXOd4HxKu+48Xiu/KN8RaMQxtGav9OE
-XdmPv5sdsZj2PwnfAQ7SaTBAdmhzVjpW0zMHoMV69PM83uuIwTdlxRLIFL4iSuUe
-/Kzrf+F/SAn2QHuHAhZhUQRbbTmpZO1OVoOofOt/YXO8LMFCWXZ7OInI5s613Pi+
-E+U68AUjwF8OLqcW/+cptiNeiFJAvgl3bN53kcQ1SNagcCLzkvJMWG8Ngs0e0eMr
-r9YX+EN0///2KuRdRRLeO9qQ7Kp25jtp6z++4z3t728M26eyWjdUXlwA490RlACD
-XtKGCjRIEi70M6rIjatBPJ1YhMPXqdJtJWyAXcB5oVzSoxT6DZNeSUpRioO4P+pr
-TAbmfUMfp35hcUP6kQn2j465yQkjLEY3YAl0Ji/8z4PseEqbwzcj9/C57BUx49sP
-kgyH/tV88NwwxJHKpG3JvvR9ARP5rWGk8NoDhofCv2k896ssBNBF3CqZpOnWDTrf
-LOzJi0+CtVDU8k/IZ2nQz7um55faSX6VxLON8dbqYYwRL1GXkRfJodzGa9gb6vlU
-7bjeY5D5BkaZk+VtLnfK
-=5Eg7
------END PGP SIGNATURE-----
-
---+g7M9IMkV8truYOl--
+Rob
