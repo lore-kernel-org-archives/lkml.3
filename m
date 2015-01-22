@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162AbbAVFZU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:25:20 -0500
-Received: from smtp.mei.co.jp ([133.183.100.20]:47717 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894AbbAVFZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:25:16 -0500
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Heiko Stuebner <heiko@sntech.de>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: decompressor: remove unused cache flush code
-Date: Thu, 22 Jan 2015 14:22:58 +0900
-Message-Id: <1421904178-30882-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752140AbbAVFb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 00:31:56 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33218 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbbAVFbr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 00:31:47 -0500
+Message-ID: <54C08B3E.60302@roeck-us.net>
+Date: Wed, 21 Jan 2015 21:31:42 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Jisheng Zhang <jszhang@marvell.com>, Doug Anderson <dianders@chromium.org>
+CC: Wim Van Sebroeck <wim@iguana.be>, Heiko Stuebner <heiko@sntech.de>,
+        Lunxue Dai <lunxue.dai@rock-chips.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] watchdog: dw_wdt: pat the watchdog before enabling
+ it
+References: <1421882243-3631-1-git-send-email-dianders@chromium.org> <20150122132200.4729d38b@xhacker>
+In-Reply-To: <20150122132200.4729d38b@xhacker>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54C08B42.0103,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As ARM ARM says, the bit 19-16 of ID_MMFR1 is always 0b0000 because
-ARMv7 requires a hierarchical cache implementation.
-The line "mcr    p15, 0, r10, c7, c14, 0" is not reachable.
+On 01/21/2015 09:22 PM, Jisheng Zhang wrote:
+> Dear Doug,
+>
+> On Wed, 21 Jan 2015 15:17:22 -0800
+> Doug Anderson <dianders@chromium.org> wrote:
+>
+>> On some dw_wdt implementations the "top" register may be initted to 0
+>> at bootup.  In such a case, each "pat" of the watchdog will reset the
+>> timer to 0xffff.  That's pretty short.
+>
+> + Guenter Roeck
+>
+> This should have been fixed by dfa07141e7a792("watchdog: dw_wdt: initialise
+> TOP_INIT in dw_wdt_set_top()")
+>
+Ah, yes. Doug, can you check if your patch is still needed ?
 
-Moreover, the v7_flush_dcache_all in arch/arm/mm/cache-v7.S does not
-check the ID_MMFR1.
-
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
----
-
- arch/arm/boot/compressed/head.S | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
-
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index 9dff614..32f0d79 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -1085,15 +1085,9 @@ __armv6_mmu_cache_flush:
- __armv7_mmu_cache_flush:
- 		tst	r4, #1
- 		bne	iflush
--		mrc	p15, 0, r10, c0, c1, 5	@ read ID_MMFR1
--		tst	r10, #0xf << 16		@ hierarchical cache (ARMv7)
-+		stmfd	sp!, {r0-r7, r9-r11}
- 		mov	r10, #0
--		beq	hierarchical
--		mcr	p15, 0, r10, c7, c14, 0	@ clean+invalidate D
--		b	iflush
--hierarchical:
- 		mcr	p15, 0, r10, c7, c10, 5	@ DMB
--		stmfd	sp!, {r0-r7, r9-r11}
- 		mrc	p15, 1, r0, c0, c0, 1	@ read clidr
- 		ands	r3, r0, #0x7000000	@ extract loc from clidr
- 		mov	r3, r3, lsr #23		@ left align loc bit field
--- 
-1.9.1
+Thanks,
+Guenter
 
