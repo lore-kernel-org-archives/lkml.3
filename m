@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965AbbAVWLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 17:11:10 -0500
-Received: from smtp1.ore.mailhop.org ([54.68.34.165]:51915 "EHLO
-	smtp1.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135AbbAVWLI (ORCPT
+	id S1754280AbbAVVl1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:41:27 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:57041 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087AbbAVVlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 17:11:08 -0500
-X-Greylist: delayed 1782 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 17:11:08 EST
-X-Mail-Handler: DuoCircle Outbound SMTP
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
-X-MHO-User: U2FsdGVkX18HGi8A14WNwCZaomd94vwS
-Date: Thu, 22 Jan 2015 13:40:53 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Marek Belisko <marek@goldelico.com>
-Cc: bcousson@baylibre.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, hns@goldelico.com, neilb@suse.de,
-        NeilBrown <neil@brown.name>
-Subject: Re: [PATCH 12/13] ARM: dts: omap3-gta04: uart4 is not connected, so
- mark it "disabled"
-Message-ID: <20150122214052.GY7718@atomide.com>
-References: <1421959099-28319-1-git-send-email-marek@goldelico.com>
- <1421959099-28319-13-git-send-email-marek@goldelico.com>
+	Thu, 22 Jan 2015 16:41:23 -0500
+Date: Thu, 22 Jan 2015 13:41:22 -0800
+From: Ken Westfield <kwestfie@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Rajendra Nayak <rnayak@codeaurora.org>, devicetree@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v3 0/8] qcom audio clock control drivers
+Message-ID: <20150122214121.GA23451@kwestfie-linux.qualcomm.com>
+Mail-Followup-To: Ken Westfield <kwestfie@codeaurora.org>,
+	Stephen Boyd <sboyd@codeaurora.org>,
+	Mike Turquette <mturquette@linaro.org>,
+	linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org,
+	Josh Cartwright <joshc@codeaurora.org>,
+	Rajendra Nayak <rnayak@codeaurora.org>, devicetree@vger.kernel.org,
+	Kumar Gala <galak@codeaurora.org>
+References: <1421719535-28398-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421959099-28319-13-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421719535-28398-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marek Belisko <marek@goldelico.com> [150122 12:42]:
-> From: NeilBrown <neil@brown.name>
-> 
-> Signed-off-by: NeilBrown <neil@brown.name>
-> ---
->  arch/arm/boot/dts/omap3-gta04.dtsi | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/omap3-gta04.dtsi b/arch/arm/boot/dts/omap3-gta04.dtsi
-> index 228e79b..8d2b0a1 100644
-> --- a/arch/arm/boot/dts/omap3-gta04.dtsi
-> +++ b/arch/arm/boot/dts/omap3-gta04.dtsi
-> @@ -357,6 +357,10 @@
->  	pinctrl-0 = <&uart3_pins>;
->  };
->  
-> +&uart4 {
-> +	status = "disabled";
-> +};
-> +
+On Mon, Jan 19, 2015 at 06:05:27PM -0800, Stephen Boyd wrote:
+> This patchset adds support for the low power audio subsystem (LPASS)
+> clock controller hardware. I split out the #define patch for IPQ so that
+> it can go through the clock tree and the arm-soc tree in parallel
+> if desired.
 
-This you probably want to avoid from PM point of view. Depending on
-bootloader state of uart4, Linux may or may not be able to hit any
-deeper power states.
+Verified all supported bit clock frequencies for audio playback work on
+the ipq806x SOC with max98357a codec.
 
-Marking something with status = "disabled" in dts causes the device
-entry not even to be created. That means hwmod won't be able to reset
-and idle this device during boot.
+Tested-by: Kenneth Westfield <kwestfie@codeaurora.org>
 
-The uart4 device is there for sure even if not muxed and in incomplete
-state. You may want to also check other places where you're using
-status = "disabled" for the same reasons.
-
-Regards,
-
-Tony
+-- 
+Kenneth Westfield
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, 
+a Linux Foundation Collaborative Project
