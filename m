@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750956AbbAVAvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 19:51:09 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:58238 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbbAVAvC (ORCPT
+	id S1753347AbbAVAxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 19:53:15 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:34594 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759AbbAVAxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 19:51:02 -0500
+	Wed, 21 Jan 2015 19:53:08 -0500
+Message-ID: <54C04A1B.8040408@gmail.com>
+Date: Wed, 21 Jan 2015 17:53:47 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <54B0881D.9090004@codeaurora.org>
-References: <1420850068-27828-1-git-send-email-john.stultz@linaro.org>
-	<1420850068-27828-11-git-send-email-john.stultz@linaro.org>
-	<54B0881D.9090004@codeaurora.org>
-Date: Wed, 21 Jan 2015 16:51:00 -0800
-Message-ID: <CALAqxLXdTarm94oOKBoUWPUPQK4-B+EvwTxZkuV_2np3UA8bEQ@mail.gmail.com>
-Subject: Re: [PATCH 10/10] clocksource: Add some debug info about clocksources
- being registered
-From: John Stultz <john.stultz@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Victor Kamensky <victor.kamensky@linaro.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Avi Kivity <avi@cloudius-systems.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Blanchard <anton@samba.org>, Will Deacon <will.deacon@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jiri Olsa <jolsa@kernel.org>, Waiman Long <Waiman.Long@hp.com>
+Subject: Re: [PATCH 2/2] perf symbols: debuglink should take symfs option
+ into account
+References: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>	<1421168344-5363-2-git-send-email-victor.kamensky@linaro.org>	<CAA3XUr1BnS=8RTVyxtVOm4Ahb2DQXUuJJQC1w2SvT5fycjRcEQ@mail.gmail.com>	<54C0216F.3080404@gmail.com> <CAA3XUr0uXykCTVuw-sYmkhsFZ-cimeuJkXTXNdJyhJh7976xEQ@mail.gmail.com>
+In-Reply-To: <CAA3XUr0uXykCTVuw-sYmkhsFZ-cimeuJkXTXNdJyhJh7976xEQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 9, 2015 at 6:02 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 01/09/2015 04:34 PM, John Stultz wrote:
->> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
->> index 9a0b951..c641aa7 100644
->> --- a/kernel/time/clocksource.c
->> +++ b/kernel/time/clocksource.c
->> @@ -770,6 +770,10 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
->>       cs->max_idle_ns = clocks_calc_max_nsecs(cs->mult, cs->shift,
->>                                                cs->maxadj, cs->mask,
->>                                                &cs->max_cycles);
->> +
->> +     pr_info("clocksource %s: mask: 0x%llx max_cycles: 0x%llx, max_idle_ns: %lld ns\n",
->> +                     cs->name, cs->mask, cs->max_cycles, cs->max_idle_ns);
+On 1/21/15 5:34 PM, Victor Kamensky wrote:
+> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+> index 45be944..ca8d8d5 100644
+> --- a/tools/perf/util/dso.c
+> +++ b/tools/perf/util/dso.c
+> @@ -45,13 +45,13 @@ int dso__read_binary_type_filename(const struct dso *dso,
+>       case DSO_BINARY_TYPE__DEBUGLINK: {
+>           char *debuglink;
 >
-> Is this intentionally info level? Or was it supposed to be debug level
-> per $subject?
+> -        strncpy(filename, dso->long_name, size);
+> -        debuglink = filename + dso->long_name_len;
+> +        len = __symbol__join_symfs(filename, size, dso->long_name);
+> +        debuglink = filename + len;
+>           while (debuglink != filename && *debuglink != '/')
+>               debuglink--;
+>           if (*debuglink == '/')
+>               debuglink++;
+> -        ret = filename__read_debuglink(dso->long_name, debuglink,
+> +        ret = filename__read_debuglink(filename, debuglink,
+>                              size - (debuglink - filename));
+>           }
+>           break;
+>
 
-Sorry for not getting back on this sooner. Since this is a
-one-time-at-bootup message, I think enabling the pr_debug output is a
-little too finicky for most folks to boot with. So I left it at
-pr_info. If folks object, I can change it, but it just seems less
-likely we'd get any useful data if it was so hidden by default.
+I do not see any reason this will not work. Essentially after 
+filename__read_debuglink filename contains symfs + dso path + debuglink 
+read from .gnu_debuglink section which is what is wanted.
 
-thanks
--john
+Thanks for the example. I used it with both a symfs and non-symfs 
+example and both times this change worked properly -- the correct 
+hang.debug file is read.
+
+Arnaldo?
+
+David
