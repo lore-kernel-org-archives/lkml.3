@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799AbbAVAoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 19:44:07 -0500
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:40120 "HELO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752848AbbAVAnE (ORCPT
+	id S1753884AbbAVAoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 19:44:17 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:55891 "HELO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753082AbbAVAnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 19:43:04 -0500
+	Wed, 21 Jan 2015 19:43:06 -0500
 From: Joe Stringer <joestringer@nicira.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, dev@openvswitch.org, pshelar@nicira.com
-Subject: [PATCH net-next v14 3/5] openvswitch: Use sw_flow_key_range for key ranges.
-Date: Wed, 21 Jan 2015 16:42:50 -0800
-Message-Id: <1421887372-56414-4-git-send-email-joestringer@nicira.com>
+Subject: [PATCH net-next v14 4/5] genetlink: Add genlmsg_parse() helper function.
+Date: Wed, 21 Jan 2015 16:42:51 -0800
+Message-Id: <1421887372-56414-5-git-send-email-joestringer@nicira.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1421887372-56414-1-git-send-email-joestringer@nicira.com>
 References: <1421887372-56414-1-git-send-email-joestringer@nicira.com>
@@ -20,74 +20,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These minor tidyups make a future patch a little tidier.
+The first user will be the next patch.
 
 Signed-off-by: Joe Stringer <joestringer@nicira.com>
 ---
- net/openvswitch/flow_table.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+ include/net/genetlink.h |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/net/openvswitch/flow_table.c b/net/openvswitch/flow_table.c
-index 81b977d..9a3f41f 100644
---- a/net/openvswitch/flow_table.c
-+++ b/net/openvswitch/flow_table.c
-@@ -357,9 +357,11 @@ int ovs_flow_tbl_flush(struct flow_table *flow_table)
- 	return 0;
+diff --git a/include/net/genetlink.h b/include/net/genetlink.h
+index f24aa83..d5a9a8b 100644
+--- a/include/net/genetlink.h
++++ b/include/net/genetlink.h
+@@ -206,6 +206,23 @@ static inline struct nlmsghdr *genlmsg_nlhdr(void *user_hdr,
  }
  
--static u32 flow_hash(const struct sw_flow_key *key, int key_start,
--		     int key_end)
-+static u32 flow_hash(const struct sw_flow_key *key,
-+		     const struct sw_flow_key_range *range)
- {
-+	int key_start = range->start;
-+	int key_end = range->end;
- 	const u32 *hash_key = (const u32 *)((const u8 *)key + key_start);
- 	int hash_u32s = (key_end - key_start) >> 2;
- 
-@@ -395,9 +397,9 @@ static bool cmp_key(const struct sw_flow_key *key1,
- 
- static bool flow_cmp_masked_key(const struct sw_flow *flow,
- 				const struct sw_flow_key *key,
--				int key_start, int key_end)
-+				const struct sw_flow_key_range *range)
- {
--	return cmp_key(&flow->key, key, key_start, key_end);
-+	return cmp_key(&flow->key, key, range->start, range->end);
- }
- 
- bool ovs_flow_cmp_unmasked_key(const struct sw_flow *flow,
-@@ -416,18 +418,15 @@ static struct sw_flow *masked_flow_lookup(struct table_instance *ti,
- {
- 	struct sw_flow *flow;
- 	struct hlist_head *head;
--	int key_start = mask->range.start;
--	int key_end = mask->range.end;
- 	u32 hash;
- 	struct sw_flow_key masked_key;
- 
- 	ovs_flow_mask_key(&masked_key, unmasked, mask);
--	hash = flow_hash(&masked_key, key_start, key_end);
-+	hash = flow_hash(&masked_key, &mask->range);
- 	head = find_bucket(ti, hash);
- 	hlist_for_each_entry_rcu(flow, head, hash_node[ti->node_ver]) {
- 		if (flow->mask == mask && flow->hash == hash &&
--		    flow_cmp_masked_key(flow, &masked_key,
--					  key_start, key_end))
-+		    flow_cmp_masked_key(flow, &masked_key, &mask->range))
- 			return flow;
- 	}
- 	return NULL;
-@@ -590,8 +589,7 @@ static void flow_key_insert(struct flow_table *table, struct sw_flow *flow)
- 	struct table_instance *new_ti = NULL;
- 	struct table_instance *ti;
- 
--	flow->hash = flow_hash(&flow->key, flow->mask->range.start,
--			flow->mask->range.end);
-+	flow->hash = flow_hash(&flow->key, &flow->mask->range);
- 	ti = ovsl_dereference(table->ti);
- 	table_instance_insert(ti, flow);
- 	table->count++;
+ /**
++ * genlmsg_parse - parse attributes of a genetlink message
++ * @nlh: netlink message header
++ * @family: genetlink message family
++ * @tb: destination array with maxtype+1 elements
++ * @maxtype: maximum attribute type to be expected
++ * @policy: validation policy
++ * */
++static inline int genlmsg_parse(const struct nlmsghdr *nlh,
++				const struct genl_family *family,
++				struct nlattr *tb[], int maxtype,
++				const struct nla_policy *policy)
++{
++	return nlmsg_parse(nlh, family->hdrsize + GENL_HDRLEN, tb, maxtype,
++			   policy);
++}
++
++/**
+  * genl_dump_check_consistent - check if sequence is consistent and advertise if not
+  * @cb: netlink callback structure that stores the sequence number
+  * @user_hdr: user header as returned from genlmsg_put()
 -- 
 1.7.10.4
 
