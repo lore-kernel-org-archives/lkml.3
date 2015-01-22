@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbbAVNdE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 08:33:04 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50577 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbbAVNdC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 08:33:02 -0500
-Date: Thu, 22 Jan 2015 14:27:27 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Mark yao <mark.yao@rock-chips.com>
-Cc: David Airlie <airlied@linux.ie>, Rob Clark <robdclark@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Daniel Kurtz <djkurtz@chromium.org>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
-Subject: Re: [PATCH 1/2] drm/rockchip: vop use is_enabled instead of dpms mode
-Message-ID: <20150122132727.GV10113@phenom.ffwll.local>
-Mail-Followup-To: Mark yao <mark.yao@rock-chips.com>,
-	David Airlie <airlied@linux.ie>, Rob Clark <robdclark@gmail.com>,
-	Philipp Zabel <p.zabel@pengutronix.de>,
-	Daniel Kurtz <djkurtz@chromium.org>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	linux-rockchip@lists.infradead.org
-References: <1421910333-5576-1-git-send-email-mark.yao@rock-chips.com>
- <1421910333-5576-2-git-send-email-mark.yao@rock-chips.com>
- <20150122073334.GU10113@phenom.ffwll.local>
- <54C0BB29.3050104@rock-chips.com>
+	id S1751846AbbAVN2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 08:28:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43840 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832AbbAVN16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 08:27:58 -0500
+Date: Thu, 22 Jan 2015 14:27:35 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: rostedt@goodmis.org, jeremie.galarneau@efficios.com, bigeasy@linutronix.de,
+        lizefan@huawei.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/2] perf: convert: fix duplicate field names and
+ avoid reserved keywords.
+Message-ID: <20150122132734.GB2473@krava.brq.redhat.com>
+References: <1421904958-24106-1-git-send-email-wangnan0@huawei.com>
+ <1421905003-24242-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <54C0BB29.3050104@rock-chips.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
+In-Reply-To: <1421905003-24242-1-git-send-email-wangnan0@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 04:56:09PM +0800, Mark yao wrote:
-> On 2015年01月22日 15:33, Daniel Vetter wrote:
-> >On Thu, Jan 22, 2015 at 03:05:32PM +0800, Mark Yao wrote:
-> >>drm dpms have many power modes: ON,OFF,SUSPEND,STANDBY, etc.
-> >>but vop only have enable/disable mode, maybe case such bug:
-> >>  --> DRM_DPMS_ON: power on vop
-> >>  --> DRM_DPMS_SUSPEND: power off vop
-> >>  --> DRM_DPMS_OFF: already power off at SUSPEND, crash
-> >>so use a bool val is more suitable.
-> >>
-> >>Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
-> >Long term I highly suggest you switch to atomic, since with atomic all the
-> >legacy dpms modes are remapped to a simple on/off. Also the new atomic
-> >helpers make sure that your backend isn't called multiple times, so you
-> >can ditch all your is_enabled tracking with that.
-> >-Daniel
-> Hi Daniel
-> is there some documents teach me how to switch to atomic easily?
-> I found many other drivers which use atomic also remap dpms modes to simple
-> on/off at its driver,
-> and I don't know where atomic helper do the remapped, can you give me some
-> suggestions?
+On Thu, Jan 22, 2015 at 01:36:43PM +0800, Wang Nan wrote:
+> (If Steven Rostedt accept the previous patch which introduce a priv
+>  field to 'struct format_field', we can use a relative simple method
+>  for name conversion. If not , perf must track name conversion by
+>  itself.)
+> 
+> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
+> When dealing with them, perf convert to ctf meets some problem:
+> 
+>  1. If a parameter with name 'nr', it will duplicate syscall's
+>     common field 'nr'. One such syscall is io_submit().
+> 
+>  2. If a parameter with name 'event', it is denied to be inserted
+>     because 'event' is a babeltrace keywork. One such syscall is
+>     epoll_ctl.
+> 
+> This patch appends '_dupl_X' suffix to avoid problem 1, prepend a '_'
+> prefix to avoid problem 2.
 
-The dpms remapping patches are still in-flight. But for the general atomic
-conversion please look at
+I've got compilation error:
 
-http://blog.ffwll.ch/2014/11/atomic-modeset-support-for-kms-drivers.html
+util/data-convert-bt.c: In function ‘event_class_add_field’:
+util/data-convert-bt.c:629:2: error: suggest parentheses around assignment used as truth value [-Werror=parentheses]
+  while (t = bt_ctf_event_class_get_field_by_name(event_class, name)) {
 
-If you want to look at an actual driver there's msm already merged, tegra
-(conversion just posted) and exynos (iirc not yet published all, but
-Gustavo should have a branch for you to look at somewhere).
+what's your gcc version? mine's caught that..
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+[jolsa@krava perf]$ gcc --version
+gcc (GCC) 4.8.3 20140911 (Red Hat 4.8.3-7)
+
+SNIP
+
+>  
+> +/* If dup < 0, add a prefix. Else, add _dupl_X suffix. */
+> +static char *change_name(char *name, char *orig_name, int dup)
+> +{
+> +	char *new_name = NULL;
+> +	size_t len;
+> +
+> +	if (!name)
+> +		name = orig_name;
+> +
+> +	if (dup >= 10)
+> +		goto out;
+> +
+> +	if (dup < 0)
+> +		len = strlen(name) + sizeof("_");
+> +	else
+> +		len = strlen(orig_name) + sizeof("_dupl_X");
+
+if we allow for _dupl_10, should we use 'sizeof("_dupl_x")' ^^^ in here?
+
+> +
+> +	new_name = malloc(len);
+> +	if (!new_name)
+> +		goto out;
+> +
+> +	if (dup < 0)
+> +		snprintf(new_name, len, "_%s", name);
+> +	else
+> +		snprintf(new_name, len, "%s_dupl_%d", orig_name, dup);
+> +
+> +out:
+> +	if (name != orig_name)
+> +		free(name);
+> +	return new_name;
+
+SNIP
+
+> +
+> +	name = field->name;
+> +	while (t = bt_ctf_event_class_get_field_by_name(event_class, name)) {
+> +		bt_ctf_field_type_put(t);
+> +		name = change_name(name, field->name, dup++);
+> +		if (!name) {
+> +			pr_err("Failed to create dup name for '%s'\n", field->name);
+> +			return -1;
+> +		}
+> +	}
+> +
+> +	ret = bt_ctf_event_class_add_field(event_class, type, name);
+> +
+> +	/* if failed, we may hit a keywork. try again with a '_' prefix */
+> +	if (ret) {
+> +		name = change_name(name, field->name, -1);
+> +		if (!name) {
+> +			pr_err("Failed to alloc name for '_%s'\n", field->name);
+> +			return -1;
+> +		}
+> +		ret = bt_ctf_event_class_add_field(event_class, type, name);
+
+so there's no other way on checking up with the blacklist right?
+
+thanks,
+jirka
