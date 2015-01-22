@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbbAVU6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:58:32 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:45503 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768AbbAVU6Y (ORCPT
+	id S1755203AbbAVU63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:58:29 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:40867 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753332AbbAVU6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 15:58:24 -0500
-X-IronPort-AV: E=Sophos;i="5.09,450,1418112000"; 
-   d="scan'208";a="55377369"
-Message-ID: <54C1646B.4080409@broadcom.com>
-Date: Thu, 22 Jan 2015 21:58:19 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Thu, 22 Jan 2015 15:58:23 -0500
+Message-ID: <54C1647A.3090804@fb.com>
+Date: Thu, 22 Jan 2015 13:58:34 -0700
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Kalle Valo <kvalo@codeaurora.org>,
-        "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
-        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
-        <hdegoede@redhat.com>, <wens@csie.org>,
-        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
-        <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
-References: <54BDCC06.8090107@linux.intel.com> <87twzincvz.fsf@kamboji.qca.qualcomm.com> <54C1012F.1020400@cogentembedded.com>
-In-Reply-To: <54C1012F.1020400@cogentembedded.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Huang Ying <ying.huang@intel.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [block] 34b48db66e0: +3291.6% iostat.sde.wrqm/s
+References: <1421889689.6126.45.camel@intel.com> <54C08CA6.8050101@fb.com>	<x49zj9a9073.fsf@segfault.boston.devel.redhat.com>	<54C1494D.5050507@fb.com> <x49fvb28rrm.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49fvb28rrm.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-22_07:2015-01-22,2015-01-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.925924926977281 urlsuspect_oldscore=0.925924926977281
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.925924926977281 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501220191
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/15 14:54, Sergei Shtylyov wrote:
-> Hello.
->
-> On 1/22/2015 4:49 PM, Kalle Valo wrote:
->
->>> >From 04d3fa673897ca4ccbea6c76836d0092dba2484a Mon Sep 17 00:00:00 2001
->>> From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
->>> Date: Tue, 20 Jan 2015 11:14:13 +0800
->>> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
->
->>> WiFi chip has 2 SDIO functions, and PM core will trigger
->>> twice suspend/resume operations for one WiFi chip to do
->>> the same things. This patch avoid this case.
->
->>> Acked-by: Arend van Spriel <arend@broadcom.com>
->>> Acked-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
->>> Acked-by: Kalle Valo <kvalo@codeaurora.org>
->>> Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
->
->> I don't remember giving Acked-by to this (or for matter to anything for
->> a long time). What about Sergei or Arend?
->
-> I haven't ACK'ed this patch either.
+On 01/22/2015 01:49 PM, Jeff Moyer wrote:
+> Jens Axboe <axboe@fb.com> writes:
+> 
+>>> Agreed on all above, but are the actual benchmark numbers included
+>>> somewhere in all this mess?  I'd like to see if the benchmark numbers
+>>> improved first, before digging into the guts of which functions are
+>>> called more or which stats changed.
+>>
+>> I deleted the original email, but the latter tables had drive throughput
+>> rates and it looked higher for the ones I checked on the newer kernel.
+>> Which the above math would indicate as well, multiplying reqs-per-sec
+>> and req-size.
+> 
+> Looking back at the original[1], I think I see the throughput numbers for
+> iozone.  The part that confused me was that each table mixes different
+> types of data.  I'd much prefer if different data were put in different
+> tables, along with column headers that stated what was being reported
+> and the units for the measurements.
+> 
+> Anyway, I find the increased service time troubling, especially this
+> one:
+> 
+> testbox/testcase/testparams: ivb44/fsmark/performance-1x-1t-1HDD-xfs-4M-60G-NoSync
+> 
+>        544 ?  0%   +1268.9%       7460 ?  0%  iostat.sda.w_await
+>        544 ?  0%   +1268.5%       7457 ?  0%  iostat.sda.await
+> 
+> I'll add this to my queue of things to look into.
 
-I did ACK the initial patch and felt it still valid for this 'V2' patch.
+>From that same table:
 
-Regards,
-Arend
+      1009 ±  0%   +1255.7%      13682 ±  0%  iostat.sda.avgrq-sz
+
+the average request size has gone up equally. This is clearly a streamed
+oriented benchmark, if the IOs get that big.
+
+
+-- 
+Jens Axboe
+
