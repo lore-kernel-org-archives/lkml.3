@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbbAVBxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:53:48 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:50789 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487AbbAVBxl (ORCPT
+	id S1753478AbbAVBww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:52:52 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:44073 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767AbbAVBwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:53:41 -0500
+	Wed, 21 Jan 2015 20:52:46 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 22 Jan 2015 10:53:44 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Mo rton <akpm@linux-foundation.org>,
+        BartlomiejZolnierkiewicz <b.zolnierkie@samsung.com>,
+        KyungminPark <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: Bisected BUG: using smp_processor_id() in preemptible
+Message-ID: <20150122015344.GC21444@js1304-P5Q-DELUXE>
+References: <1421746712.6847.5.camel@AMDC1943>
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMh1HE+hMP0VWr2vaHCp2itVjpQeiiFL6r9WeJUFes5tvw@mail.gmail.com>
-References: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org>
-	<1407202310-3359-9-git-send-email-sboyd@codeaurora.org>
-	<CAOesGMh1HE+hMP0VWr2vaHCp2itVjpQeiiFL6r9WeJUFes5tvw@mail.gmail.com>
-Date: Wed, 21 Jan 2015 17:53:40 -0800
-Message-ID: <CAJAp7OgtnTN3H+zSazK2Xeob6wxpf9Ws=tibAupzP1cF31G=Mw@mail.gmail.com>
-Subject: Re: [PATCH 8/8] msm: scm: Move the scm driver to drivers/soc/qcom
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lina Iyer <lina.iyer@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421746712.6847.5.camel@AMDC1943>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 5:13 PM, Olof Johansson <olof@lixom.net> wrote:
-[..]
-> On Mon, Aug 4, 2014 at 6:31 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> Architectural changes in the ARM Linux kernel tree mandate
->> the eventual removal of the mach-* directories. Move the
->> scm driver to drivers/soc/qcom and the scm header to
->> include/soc/qcom to support that removal.
->
-> The idea is not blindly move one dumping ground to a new place.
->
-> I see only two exported functions from scm.c:
->
-> scm_get_version: This is not used anywhere in the kernel and can just be removed
-> scm_call: This is used by scm-boot, and would be better to translate
-> over to firmware_ops in the first place.
->
+On Tue, Jan 20, 2015 at 10:38:32AM +0100, Krzysztof Kozlowski wrote:
+> Hi,
+> 
+> 
+> Since next-20150119 booting of Exynos4 based boards is nearly impossible
+> because of continuous BUG on messages. The system finally boots... but
+> console log is polluted with:
+> 
+> [    9.700828] BUG: using smp_processor_id() in preemptible [00000000] code: udevd/1656
+> [    9.708525] caller is kfree+0x8c/0x198
+> [    9.712229] CPU: 2 PID: 1656 Comm: udevd Tainted: G        W      3.19.0-rc4-00279-gd2dc80750ee0 #1630
+> [    9.721501] Hardware name: SAMSUNG EXYNOS (Flattened Device Tree)
+> [    9.727602] [<c0014980>] (unwind_backtrace) from [<c0011904>] (show_stack+0x10/0x14)
+> [    9.735324] [<c0011904>] (show_stack) from [<c0585bbc>] (dump_stack+0x70/0xbc)
+> [    9.742525] [<c0585bbc>] (dump_stack) from [<c01e79e0>] (check_preemption_disabled+0xf8/0x128)
+> [    9.751114] [<c01e79e0>] (check_preemption_disabled) from [<c00c501c>] (kfree+0x8c/0x198)
+> [    9.759265] [<c00c501c>] (kfree) from [<c0299b7c>] (uevent_show+0x38/0x104)
+> [    9.766210] [<c0299b7c>] (uevent_show) from [<c0299fb8>] (dev_attr_show+0x1c/0x48)
+> [    9.773763] [<c0299fb8>] (dev_attr_show) from [<c0122424>] (sysfs_kf_seq_show+0x8c/0x10c)
+> [    9.781920] [<c0122424>] (sysfs_kf_seq_show) from [<c0120f90>] (kernfs_seq_show+0x24/0x28)
+> [    9.790172] [<c0120f90>] (kernfs_seq_show) from [<c00e93b0>] (seq_read+0x1ac/0x480)
+> [    9.797806] [<c00e93b0>] (seq_read) from [<c00cacf4>] (__vfs_read+0x18/0x4c)
+> [    9.804833] [<c00cacf4>] (__vfs_read) from [<c00cada4>] (vfs_read+0x7c/0x100)
+> [    9.811950] [<c00cada4>] (vfs_read) from [<c00cae68>] (SyS_read+0x40/0x8c)
+> [    9.818810] [<c00cae68>] (SyS_read) from [<c000f160>] (ret_fast_syscall+0x0/0x30)
+> 
+> I bisected this to:
+> 
+> d2dc80750ee05ceb03c9b13b0531a782116d1ade
+> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Date:   Sat Jan 17 11:23:23 2015 +1100
+> mm/slub: optimize alloc/free fastpath by removing preemption on/off
+> 
+> Full dmesg and config attached.
+> 
+> Any ideas?
 
-Hi Olof,
+Hello,
 
-I started this a while ago, as it felt like the right thing to do <tm>.
+This issue will be fixed in next mmotm release.
+Following patch is next version of
+commit d2dc80750ee05ceb03c9b13b0531a782116d1ade.
 
-The problem with this approach is that e.g. firmware loading is
-partially handled through this interface. So implementing a remoteproc
-driver for wifi etc required me to add 6 new ops to the struct,
-loading the modem looks like it requires one more. HDMI requires one.
+https://lkml.org/lkml/2015/1/19/17
 
-Looking at the downstream branch there's a bunch more (20+), so we
-would explode the firmware_ops struct with Qualcomm "specific" ops.
-This is not necessarily a bad idea, but needs to be considered before
-we jump the gun.
-
-
-I haven't looked at the arm64 stuff in detail, but it looks to be
-shared between the two platforms, so either way it seems like the
-right approach to have this moved out to drivers/soc/qcom.
-
-Regards,
-Bjorn
+Thanks.
