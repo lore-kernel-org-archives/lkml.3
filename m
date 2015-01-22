@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbbAVVIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:08:16 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:46846 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754475AbbAVVIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:08:14 -0500
-Date: Thu, 22 Jan 2015 23:07:48 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Chris Caputo <ccaputo@alt.net>
-cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
-        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] IPVS: add wlib & wlip schedulers
-In-Reply-To: <Pine.LNX.4.64.1501202316450.8217@nacho.alt.net>
-Message-ID: <alpine.LFD.2.11.1501222250220.2572@ja.home.ssi.bg>
-References: <Pine.LNX.4.44.0501260832210.17893-100000@nacho.alt.net> <Pine.LNX.4.61.0502010007060.1148@penguin.linux-vs.org> <Pine.LNX.4.64.1501172217420.8217@nacho.alt.net> <alpine.LFD.2.11.1501192342190.2687@ja.home.ssi.bg>
- <Pine.LNX.4.64.1501202316450.8217@nacho.alt.net>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1754725AbbAVVIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:08:22 -0500
+Received: from www.linutronix.de ([62.245.132.108]:33511 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686AbbAVVIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 16:08:18 -0500
+Date: Thu, 22 Jan 2015 22:07:57 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Xunlei Pang <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [PATCH v2 3/3] time: clocksource: Add a comment to
+ CLOCK_SOURCE_SUSPEND_NONSTOP
+In-Reply-To: <1421928077-4698-3-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1501222202420.5526@nanos>
+References: <1421928077-4698-1-git-send-email-pang.xunlei@linaro.org> <1421928077-4698-3-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-	Hello,
-
-On Tue, 20 Jan 2015, Chris Caputo wrote:
-
-> On Tue, 20 Jan 2015, Julian Anastasov wrote:
-> > > +                      (u64)dr * (u64)lwgt < (u64)lr * (u64)dwgt ||
-> [...]
-> > > +  	                   (dr == lr && dwgt > lwgt)) {
-> > 
-> > 	Above check is redundant.
+On Thu, 22 Jan 2015, Xunlei Pang wrote:
+> When doing timekeeping_resume(), if the nonstop clocksource
+> wraps back, "cycle_delta" will miss the wrap time.
 > 
-> I accepted your feedback and applied it to the below, except for this 
-> item.  I believe if dr and lr are zero (no traffic), we still want to 
-> choose the higher weight, thus a separate comparison is needed.
+> It's hard to determine the right CLOCKSOURCE_MASK(xxx) or
+> something to add code for inspecting such behavior, and we
+> don't have many existent nonstop clocksources, so just add
+> a comment to indicate that if have this flag set, people
+> are aware that this nonstop clocksource won't wrap back
+> during system suspend/resume.
 
-	ok
+-ENOPARSE
 
-> +	spin_lock_bh(&svc->sched_lock);
-> +	p = (struct list_head *)svc->sched_data;
-> +	last = dest = list_entry(p, struct ip_vs_dest, n_list);
+What has the CLOCKSOURCE_MASK() to do with this and why is the fact
+relevant, that we only have a few suspend_nonstop clock sources?
+
 > +
-> +	do {
-> +		list_for_each_entry_continue_rcu(dest,
-> +						 &svc->destinations,
-> +						 n_list) {
-> +			dwgt = (u32)atomic_read(&dest->weight);
-> +			if (!(dest->flags & IP_VS_DEST_F_OVERLOAD) &&
-> +			    dwgt > 0) {
-> +                               spin_lock(&dest->stats.lock);
+> +/*
+> + * When setting this flag, you're also supposed to mean that it doesn't
+> + * wrap back during system suspend/resume. See timekeeping_resume().
 
-	May be there is a way to avoid this spin_lock
-by using u64_stats_fetch_begin and corresponding
-u64_stats_update_begin in estimation_timer(). We can
-even remove this ->lock, it will be replaced by ->syncp.
-The benefit is for 64-bit platforms where we avoid
-lock here in the scheduler. Otherwise, I don't see
-other implementation problems in this patch and I'll
-check it more carefully this weekend.
+-ENOPARSE
 
-Regards
+I guess what you want to say here is:
 
---
-Julian Anastasov <ja@ssi.bg>
+/*
+ * clocksource continues to run during suspend and is guaranteed not to
+ * wrap around during long suspend periods.
+ */
+
+> + */
+>  #define CLOCK_SOURCE_SUSPEND_NONSTOP		0x80
+
+Thanks,
+
+	tglx
