@@ -1,121 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbbAVBkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:40:47 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:41025 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbbAVBkj (ORCPT
+	id S1754034AbbAVBk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:40:58 -0500
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:37426 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753742AbbAVBko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:40:39 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0M1eDac013744, This message is accepted by code: ctloc85258
-From: =?gb2312?B?vrTI8Q==?= <micky_ching@realsil.com.cn>
-To: Nicholas Mc Guire <der.herr@hofr.at>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "Keerthimai Janarthanan" <keerthimaipb@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fabio Falzoi <fabio.falzoi84@gmail.com>,
-        "Tina Johnson" <tinajohnson.1234@gmail.com>,
-        Surya Seetharaman <surya.seetharaman9@gmail.com>
-Subject: Re: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
-Thread-Topic: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
-Thread-Index: AQHQM7pK0ZLyxQpn5keVKEAMtFX8lpzK2y0A
-Date: Thu, 22 Jan 2015 01:40:14 +0000
-Message-ID: <54C05500.8050809@realsil.com.cn>
-References: <1421652347-8484-1-git-send-email-der.herr@hofr.at>
-In-Reply-To: <1421652347-8484-1-git-send-email-der.herr@hofr.at>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.29.41.103]
-Content-Type: text/plain; charset="gb2312"
-Content-ID: <A38BDFBAB4F1B94FB8B85618143D0B03@realsil.com.cn>
+	Wed, 21 Jan 2015 20:40:44 -0500
 MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:157d:640c:f053:c77b:4aef]
+In-Reply-To: <1417084891-17990-4-git-send-email-peter.ujfalusi@ti.com>
+References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com>
+	<1417084891-17990-4-git-send-email-peter.ujfalusi@ti.com>
+Date: Wed, 21 Jan 2015 17:40:43 -0800
+Message-ID: <CAOesGMgdLB9WkOwCt__iRMnTYZ-tMNS==FL+b6s3CzHK4b0MYQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: edma: Split up header file to platform_data and
+ API file
+From: Olof Johansson <olof@lixom.net>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Sekhar Nori <nsekhar@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        linux-spi@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0M1epm6023874
 
-the title should be 5208.
+Hi,
 
-On 01/19/2015 03:25 PM, Nicholas Mc Guire wrote:
-> This is only an API consolidation and should make things more readable
->
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> ---
->
-> Converting milliseconds to jiffies by val * HZ / 1000 is technically
-> not wrong but msecs_to_jiffies(val) is the cleaner solution and handles
-> corner cases correctly.
->
-> This patch was only compile tested with x86_64_defconfig + CONFIG_STAGING=y,
-> CONFIG_RTS5208=m
->
-> Patch is against 3.19.0-rc4 -next-20150116
->
->   drivers/staging/rts5208/rtsx_transport.c |   12 ++++++------
->   1 file changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/staging/rts5208/rtsx_transport.c b/drivers/staging/rts5208/rtsx_transport.c
-> index 756a968..dab1995 100644
-> --- a/drivers/staging/rts5208/rtsx_transport.c
-> +++ b/drivers/staging/rts5208/rtsx_transport.c
-> @@ -271,7 +271,7 @@ int rtsx_send_cmd(struct rtsx_chip *chip, u8 card, int timeout)
->   
->   	/* Wait for TRANS_OK_INT */
->   	timeleft = wait_for_completion_interruptible_timeout(
-> -		&trans_done, timeout * HZ / 1000);
-> +		&trans_done, msecs_to_jiffies(timeout));
->   	if (timeleft <= 0) {
->   		dev_dbg(rtsx_dev(chip), "chip->int_reg = 0x%x\n",
->   			chip->int_reg);
-> @@ -431,7 +431,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
->   	spin_unlock_irq(&rtsx->reg_lock);
->   
->   	timeleft = wait_for_completion_interruptible_timeout(
-> -		&trans_done, timeout * HZ / 1000);
-> +		&trans_done, msecs_to_jiffies(timeout));
->   	if (timeleft <= 0) {
->   		dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
->   			__func__, __LINE__);
-> @@ -455,7 +455,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
->   		init_completion(&trans_done);
->   		spin_unlock_irq(&rtsx->reg_lock);
->   		timeleft = wait_for_completion_interruptible_timeout(
-> -			&trans_done, timeout * HZ / 1000);
-> +			&trans_done, msecs_to_jiffies(timeout));
->   		if (timeleft <= 0) {
->   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
->   				__func__, __LINE__);
-> @@ -575,7 +575,7 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
->   		spin_unlock_irq(&rtsx->reg_lock);
->   
->   		timeleft = wait_for_completion_interruptible_timeout(
-> -			&trans_done, timeout * HZ / 1000);
-> +			&trans_done, msecs_to_jiffies(timeout));
->   		if (timeleft <= 0) {
->   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
->   				__func__, __LINE__);
-> @@ -602,7 +602,7 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
->   		init_completion(&trans_done);
->   		spin_unlock_irq(&rtsx->reg_lock);
->   		timeleft = wait_for_completion_interruptible_timeout(
-> -			&trans_done, timeout * HZ / 1000);
-> +			&trans_done, msecs_to_jiffies(timeout));
->   		if (timeleft <= 0) {
->   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
->   				__func__, __LINE__);
-> @@ -688,7 +688,7 @@ static int rtsx_transfer_buf(struct rtsx_chip *chip, u8 card, void *buf,
->   
->   	/* Wait for TRANS_OK_INT */
->   	timeleft = wait_for_completion_interruptible_timeout(
-> -		&trans_done, timeout * HZ / 1000);
-> +		&trans_done, msecs_to_jiffies(timeout));
->   	if (timeleft <= 0) {
->   		dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
->   			__func__, __LINE__);
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Thu, Nov 27, 2014 at 2:41 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> include/linux/platform_data/ is not a correct place to keep the API
+> definitions for edma, it is meant to be only for the pdata for the device.
+> Clean up this by moving the API to include/linux/edma.h
+
+It's a nice net improvement, but it moves some things that should be
+in _neither_ location to a new place where it doesn't belong either --
+and the new location is even more global. See below.
+
+...
+
+> diff --git a/include/linux/edma.h b/include/linux/edma.h
+> new file mode 100644
+> index 000000000000..9df92198c117
+> --- /dev/null
+> +++ b/include/linux/edma.h
+> @@ -0,0 +1,153 @@
+> +/*
+> + * TI EDMA definitions
+> + *
+> + * Copyright (C) 2006-2013 Texas Instruments.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation version 2.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether express or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +/*
+> + * This EDMA3 programming framework exposes two basic kinds of resource:
+> + *
+> + *  Channel    Triggers transfers, usually from a hardware event but
+> + *             also manually or by "chaining" from DMA completions.
+> + *             Each channel is coupled to a Parameter RAM (PaRAM) slot.
+> + *
+> + *  Slot       Each PaRAM slot holds a DMA transfer descriptor (PaRAM
+> + *             "set"), source and destination addresses, a link to a
+> + *             next PaRAM slot (if any), options for the transfer, and
+> + *             instructions for updating those addresses.  There are
+> + *             more than twice as many slots as event channels.
+> + *
+> + * Each PaRAM set describes a sequence of transfers, either for one large
+> + * buffer or for several discontiguous smaller buffers.  An EDMA transfer
+> + * is driven only from a channel, which performs the transfers specified
+> + * in its PaRAM slot until there are no more transfers.  When that last
+> + * transfer completes, the "link" field may be used to reload the channel's
+> + * PaRAM slot with a new transfer descriptor.
+> + *
+> + * The EDMA Channel Controller (CC) maps requests from channels into physical
+> + * Transfer Controller (TC) requests when the channel triggers (by hardware
+> + * or software events, or by chaining).  The two physical DMA channels provided
+> + * by the TCs are thus shared by many logical channels.
+> + *
+> + * DaVinci hardware also has a "QDMA" mechanism which is not currently
+> + * supported through this interface.  (DSP firmware uses it though.)
+> + */
+> +
+> +#ifndef __LINUX_EDMA_H_
+> +#define __LINUX_EDMA_H_
+> +
+> +#include <linux/platform_data/edma.h>
+> +
+> +/* PaRAM slots are laid out like this */
+> +struct edmacc_param {
+> +       u32 opt;
+> +       u32 src;
+> +       u32 a_b_cnt;
+> +       u32 dst;
+> +       u32 src_dst_bidx;
+> +       u32 link_bcntrld;
+> +       u32 src_dst_cidx;
+> +       u32 ccnt;
+> +} __packed;
+> +
+> +/* fields in edmacc_param.opt */
+> +#define SAM            BIT(0)
+> +#define DAM            BIT(1)
+> +#define SYNCDIM                BIT(2)
+> +#define STATIC         BIT(3)
+> +#define EDMA_FWID      (0x07 << 8)
+> +#define TCCMODE                BIT(11)
+> +#define EDMA_TCC(t)    ((t) << 12)
+> +#define TCINTEN                BIT(20)
+> +#define ITCINTEN       BIT(21)
+> +#define TCCHEN         BIT(22)
+> +#define ITCCHEN                BIT(23)
+
+This seems like the kind of thing that should go with the edma driver
+instead of being globally exported to the kernel through a
+include/linux header file.
+
+
+-Olof
