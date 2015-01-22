@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbbAVO6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:58:10 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38116 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545AbbAVO6H (ORCPT
+	id S1752687AbbAVPAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:00:19 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:51024 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbbAVPAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:58:07 -0500
-Message-ID: <54C10FF4.5030503@ti.com>
-Date: Thu, 22 Jan 2015 16:57:56 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 22 Jan 2015 10:00:16 -0500
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
-        <george.cherian@ti.com>, <nsekhar@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] extcon: usb: Introduce USB GPIO extcon driver. Fix
- DRA7 USB.
-References: <1421689942-10201-1-git-send-email-rogerq@ti.com> <20150120190237.GG15169@saruman> <54C0FBDC.6040803@ti.com>
-In-Reply-To: <54C0FBDC.6040803@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+V-a8uzfcyhO0vA2Jxg8YJYrHtk_b0skhN4kGCwO81X9yF--w@mail.gmail.com>
+References: <cover.1421115389.git.shuahkh@osg.samsung.com>
+	<9642c73eb38234cd69059c4a64bfde5205d637c2.1421115389.git.shuahkh@osg.samsung.com>
+	<CA+V-a8uzfcyhO0vA2Jxg8YJYrHtk_b0skhN4kGCwO81X9yF--w@mail.gmail.com>
+Date: Thu, 22 Jan 2015 10:00:16 -0500
+Message-ID: <CAGoCfiw4Sehjk0_7KWo3tQZabn1w8nVM+8WTgY2sSkL0FSZWOQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] media: au0828 - convert to use videobuf2
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        laurent pinchart <laurent.pinchart@ideasonboard.com>,
+        ttmesterr <ttmesterr@gmail.com>,
+        linux-media <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 22/01/15 15:32, Roger Quadros wrote:
-> Felipe,
-> 
-> On 20/01/15 21:02, Felipe Balbi wrote:
->> On Mon, Jan 19, 2015 at 07:52:17PM +0200, Roger Quadros wrote:
->>> Hi,
->>>
->>> On DRA7 EVMs the USB ID pin is connected to a GPIO line. The USB drivers
->>> (dwc3 + dwc3-omap) depend on extcon framework to get the USB cable state
->>> (USB or USB-Host) to put the controller in the right mode.
->>>
->>> There were earlier attempts [1] to get this working by trying to patch up
->>> the existing GPIO extcon driver.
->>>
->>> This series attemts to take a different approach by introducing a new
->>> USB specific extcon driver to handle the USB ID GPIO pin and
->>> interpret a right USB cable state.
->>>
->>> The reasoning to introduce this new driver is:
->>> 1) The existing GPIO extcon driver doesn't understand USB cable states
->>> and it can't handle more than one cable per instance.
->>>    
->>> For the USB case we need to handle at least 2 cable states.
->>>     a) USB (attach/detach)
->>>     b) USB-Host (attach/detach)
->>> and could possible include more states like
->>>     c) Fast-charger (attach/detach)
->>>     d) Slow-charger (attach/detach)
->>>     
->>> 2) This USB specific driver can be easily updated in the future to
->>> handle VBUS events, or charger detect events, in case it happens
->>> to be available on GPIO for any platform.
->>>
->>> 3) The DT implementation is very easy. You just need one extcon node per USB
->>> instead of one extcon node per cable state as in case of [1].
->>>
->>> 4) The cable state string doesn't need to be encoded in the device tree
->>> as in case of [1].
->>>
->>> 5) With only ID event available, you can simulate a USB-peripheral attach
->>> when USB-Host is detacted instead of hacking the USB driver to do the same.
->>>
->>> Tested on DRA7-evm and DRA72-evm.
+>> -       fh->type = type;
+>> -       fh->dev = dev;
+>> -       v4l2_fh_init(&fh->fh, vdev);
+>> -       filp->private_data = fh;
+>> +       dprintk(1,
+>> +               "%s called std_set %d dev_state %d stream users %d users %d\n",
+>> +               __func__, dev->std_set_in_tuner_core, dev->dev_state,
+>> +               dev->streaming_users, dev->users);
 >>
->> while at that, you might want to patch X15 too.
->>
-> USB2 port is meant for peripheral use only. ID pin from USB port is not connected to GPIO.
-> 
+>> -       if (mutex_lock_interruptible(&dev->lock)) {
+>> -               kfree(fh);
+>> +       if (mutex_lock_interruptible(&dev->lock))
+>>                 return -ERESTARTSYS;
+>> +
+>> +       ret = v4l2_fh_open(filp);
+>> +       if (ret) {
+>> +               au0828_isocdbg("%s: v4l2_fh_open() returned error %d\n",
+>> +                               __func__, ret);
+>> +               mutex_unlock(&dev->lock);
+>> +               return ret;
+>>         }
+>> +
+>>         if (dev->users == 0) {
+>
+> you can use v4l2_fh_is_singular_file() and get rid of users member ?
 
-OK answering myself here :).
-Peripheral mode doesn't work on x15-bb as the USB driver (dwc3-omap)
-doesn't set the mailbox correctly even when dwc3 node is set as otg = "peripheral".
+That won't work because the underlying resources are shared between
+/dev/videoX and /dev/vbiX device nodes.  Hence if you were to move to
+v4l2_fh_is_singular_file(), the video device would get opened, the
+stream would get reset, the VBI device would get opened, and that
+would cause the analog stream to get enabled/reset *again*.
 
-Looks like we need to implement usb-gpio-extcon for x15 even though ID is hard coded.
+Devin
 
-cheers,
--roger
+-- 
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
