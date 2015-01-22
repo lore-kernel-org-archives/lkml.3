@@ -1,105 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616AbbAVHeB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 02:34:01 -0500
-Received: from ozlabs.org ([103.22.144.67]:51259 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754576AbbAVHdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 02:33:45 -0500
-Date: Thu, 22 Jan 2015 18:33:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Weiwei Wang <wangww631@huawei.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20150122183334.3c5077a9@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751686AbbAVHhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 02:37:18 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37654 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbbAVHhM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 02:37:12 -0500
+Date: Thu, 22 Jan 2015 08:37:08 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: Re: [PATCH v2] clk: Introduce clk_has_parent()
+Message-ID: <20150122073707.GA427@ulmo>
+References: <1421750935-4023-2-git-send-email-thierry.reding@gmail.com>
+ <1421856780-32103-1-git-send-email-thierry.reding@gmail.com>
+ <54C04145.1010906@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/U5xgNWVqYgnl1/93Jjljo8v"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
+Content-Disposition: inline
+In-Reply-To: <54C04145.1010906@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/U5xgNWVqYgnl1/93Jjljo8v
-Content-Type: text/plain; charset=US-ASCII
+
+--SLDf9lqlvOQaIe6s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+On Wed, Jan 21, 2015 at 04:16:05PM -0800, Stephen Boyd wrote:
+> On 01/21/2015 08:13 AM, Thierry Reding wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> >
+> > This new function is similar to clk_set_parent(), except that it doesn't
+> > actually change the parent. It merely checks that the given parent clock
+> > can be a parent for the given clock.
+> >
+> > A situation where this is useful is to check that a particular setup is
+> > valid before switching to it. One specific use-case for this is atomic
+> > modesetting in the DRM framework where setting a mode is divided into a
+> > check phase where a given configuration is validated before applying
+> > changes to the hardware.
+> >
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Cc: Mike Turquette <mturquette@linaro.org>
+> > Cc: Stephen Boyd <sboyd@codeaurora.org>
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+>=20
+> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+>=20
+> This will slightly conflict with Tomeu's  patches for per-user clock
+> constraints. It would be best if we can take this through the clk tree
+> to fix up any conflicts
 
-After merging the akpm-current tree, today's linux-next build (x86_64 allmo=
-dconfig)
-failed like this:
+I had hoped to take this through the drm tree to resolve the build-time.
+Another possibility would be for me to include the clk tree (or a subset
+thereof) in my pull-request. That way you can still fix things up in the
+clock tree if there are any conflicts with other work. We could make
+that work two ways: this patch gets applied to the clk tree and I pull
+it, or I provide a stable branch that I base my pull request on and that
+branch can be pulled into the clk tree.
 
-fs/ocfs2/aops.c: In function 'ocfs2_direct_IO_write':
-fs/ocfs2/aops.c:784:9: error: too few arguments to function 'blkdev_issue_z=
-eroout'
-   ret =3D blkdev_issue_zeroout(osb->sb->s_bdev,
-         ^
-In file included from fs/ocfs2/aops.c:31:0:
-include/linux/blkdev.h:1165:12: note: declared here
- extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
-            ^
+Yet another alternative would be to split out the clk_has_parent()
+change from the series and not use it for now. That way we're going to
+miss this check, but we do that anyway currently and it will only be
+temporary until v3.21.
 
-Caused by commit e95f8b5356c4 ("ocfs2: implement
-ocfs2_direct_IO_write") interacting with commit d93ba7a5a97c ("block:
-Add discard flag to blkdev_issue_zeroout() function") from the block
-tree.
+Perhaps given where we are in the release cycle the latter would make
+the most sense for now.
 
-I have added this merge fix patch:
+> > diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+[...]
+> > +	/* Optimize for the case where the parent is already the parent. */
+> > +	if (clk->parent =3D=3D parent)
+> > +		return true;
+>=20
+> I worry that we'll need to grab a lock here with Tomeu's patches, but
+> maybe I'm wrong.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 22 Jan 2015 18:28:21 +1100
-Subject: [PATCH] ocfs2: implement ocfs2_direct_IO_write fix
+Why would this need a lock? Worst case somebody concurrently changes the
+parent, in which case will not succeed and fallback to the lookup below.
 
-update for an API change
+It's been a while since I last looked at Tomeu's series, but I seem to
+remember that struct clk was going to be per-user, in which case I guess
+the code would have to be modified anyway since ->parent and
+->parent_names will likely become properties of the clock structure
+shared by all users (was it struct clk_core?).
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/ocfs2/aops.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thierry
 
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 89f43dc7e440..af22615afd35 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -784,7 +784,7 @@ static ssize_t ocfs2_direct_IO_write(struct kiocb *iocb,
- 		ret =3D blkdev_issue_zeroout(osb->sb->s_bdev,
- 				p_cpos << (osb->s_clustersize_bits - 9),
- 				zero_len >> 9,
--				GFP_KERNEL);
-+				GFP_KERNEL, false);
- 		if (ret < 0)
- 			mlog_errno(ret);
- 	}
---=20
-2.1.4
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/U5xgNWVqYgnl1/93Jjljo8v
+--SLDf9lqlvOQaIe6s
 Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUwKfWAAoJEMDTa8Ir7ZwVCukP/ihNYOCM/8aK4WlmcZNru3Ln
-JLh9pHGwy6lrlIAtQwbg3J8nvMdm7YGoZGa18Ilhi/d2XNRu3FlBUgXNwB7jE+vm
-amyy0QUnMXAe3xoQxuj52tVUQUxpXkenpQ5S6FEIHa7crc/MMYkt++i2C15WDP4V
-BwPsUZ4FBOwhtSMMypJl3H4bL9AUgmU33aRr38A2obcUB7dbAVrN99o6FVGZTmHR
-8vx4bZjA/v6wYVDGhgvMC4ZYpKwbmEORsCjVa1aya1YBIq8yFHWv2PJ0PsUF2yzQ
-SeDiV6FjDvgGFlUQfofI6VJZGUUBPAGf8ipTS4y35uzysitaBtZiYGhFIKEwegA8
-6UTXVbfd+WpfnU98yauXxn51w+UUxXf0oeKHpcd6S+SzcWIcNOvndpzDQABiTd9T
-Ci1KuLdzYGaX+5CAPbV+TIpqCdhr6J336t/gVkmQVc/VHqSdpbQ5io5kq/U+B9O7
-JnshVNE6ROMGiB5BvqcXw2Pn2KLBWt5omWU7YSyYpXblod/ZWtYS6KmNvEoT08CJ
-Wcoi0uRXrvpxulIQbSQA/7GcOXlR/SQVyfQgMC4Oyke/o0n+nAgekRydP488aux9
-6Ns1LO3bN96TjhT2j3b6eex00ni+F8fvPlJvPh8EzN30LzSALn3TemTEw6BRpXay
-dk/gM+XbkDjDMADHlyDd
-=qow7
+iQIcBAEBAgAGBQJUwKijAAoJEN0jrNd/PrOhr3QP/jUKgrMOcnyrKfGsHDJuLX3U
+aIeOwV8vjX8hUmH0VfNzcVnCTZ33fJeOO8YqHbioVKIQatDrRI6O1rKXZHh7axNR
+z+b+exTF6bDsY0JIDn76tkDxrToWwBPTCjxwJ2ZmkqTRFrhE/0/2513QDqIBOhuf
+Ko/EkzD/HaVcOOTg2XJCbDJm96n7thQQTinYfijHR152sdMKn42hLc4nmfbBmWz1
+3HtvjSaeJQrf+VGvfk+mc6PNAzThfSXWl11tsMd5ZS9/D8ejWV0LnYhd0cZaRgm/
+BhHiK+vxiZhsNe/b0F257jKP++P7aaJtwwiTIjzQSBtDoVLRxsHqBT3PF4tgChqW
+ATCs2lkykcpxgJzZKnxLEuRyqnMVPgj2Us6+mKb69Ilc8TtntSVAMbRQkpOzq9c7
+D2um5TWgWjDrhU7Cy9VabG+lo5GHZF37o38/l5TKjvqlM4QVxPuRhCDiznXtyrU3
+5qJtVO7ua5sdYyvZI+LYZOauVjfNxPdbGQpcLtitonAWCPLTx7xVstTtt2sUY+mS
+DM904b613NANSN/rEMJYgWrAaDIXT3XlsbMU9DY7u6FO5NrTc0J+YHbKMsAtheEZ
+r+5PUalPs4WMv882Dl81j5+BwUI0f5ErxfjepaiFseBj7ieBVhcqH1bbDSEh8fHG
+PHl8vg6vah4XYp4WMeBT
+=F3BC
 -----END PGP SIGNATURE-----
 
---Sig_/U5xgNWVqYgnl1/93Jjljo8v--
+--SLDf9lqlvOQaIe6s--
