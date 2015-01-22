@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433AbbAVVHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:07:44 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33214 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbbAVVHm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:07:42 -0500
-Date: Thu, 22 Jan 2015 13:07:31 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, david.vrabel@citrix.com,
-        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>
-Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to be
- preempted
-Message-ID: <20150122210731.GN9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
- <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
- <54C0E3F2.9050201@citrix.com>
- <20150122085649.7dc79541@grimm.local.home>
- <20150122183913.GO17887@wotan.suse.de>
- <20150122151657.287fe29b@gandalf.local.home>
+	id S1754667AbbAVVIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:08:16 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:46846 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754475AbbAVVIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 16:08:14 -0500
+Date: Thu, 22 Jan 2015 23:07:48 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: Chris Caputo <ccaputo@alt.net>
+cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
+        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] IPVS: add wlib & wlip schedulers
+In-Reply-To: <Pine.LNX.4.64.1501202316450.8217@nacho.alt.net>
+Message-ID: <alpine.LFD.2.11.1501222250220.2572@ja.home.ssi.bg>
+References: <Pine.LNX.4.44.0501260832210.17893-100000@nacho.alt.net> <Pine.LNX.4.61.0502010007060.1148@penguin.linux-vs.org> <Pine.LNX.4.64.1501172217420.8217@nacho.alt.net> <alpine.LFD.2.11.1501192342190.2687@ja.home.ssi.bg>
+ <Pine.LNX.4.64.1501202316450.8217@nacho.alt.net>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122151657.287fe29b@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012221-0033-0000-0000-0000036D47FA
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 03:16:57PM -0500, Steven Rostedt wrote:
-> 
-> [ Added Paul McKenney ]
-> 
-> On Thu, 22 Jan 2015 19:39:13 +0100
-> "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
-> 
-> > > Why not make this a tracepoint? Then you can enable it only when you
-> > > want to. As tracepoints are also hooks, you could add you own code that
-> > > hooks to it and does a printk as well. The advantage of doing it via a
-> > > tracepoint is that you can turn it on and off regardless of what the
-> > > loglevel is set at.
+
+	Hello,
+
+On Tue, 20 Jan 2015, Chris Caputo wrote:
+
+> On Tue, 20 Jan 2015, Julian Anastasov wrote:
+> > > +                      (u64)dr * (u64)lwgt < (u64)lr * (u64)dwgt ||
+> [...]
+> > > +  	                   (dr == lr && dwgt > lwgt)) {
 > > 
-> > This uses NOKPROBE_SYMBOL and notrace since based on Andy's advice
-> > we are not confident that tracing and kprobes are safe to use in what
-> > might be an extended RCU quiescent state (i.e. where we're outside
-> > irq_enter and irq_exit).
+> > 	Above check is redundant.
 > 
-> We have trace_*_rcuidle() for such cases.
-> 
-> That is, you create the tracepoint just the same, and instead of having
-> trace_foo(), if you are in a known area that is outside of rcu viewing,
-> you use trace_foo_rcuidle() and it will tell RCU "hey, there's something
-> here that may need RCU, so look at me!"
+> I accepted your feedback and applied it to the below, except for this 
+> item.  I believe if dr and lr are zero (no traffic), we still want to 
+> choose the higher weight, thus a separate comparison is needed.
 
-What Steve said!
+	ok
 
-Also, there is an rcu_is_watching() API member that can tell you
-whether or not RCU is paying attention at a given point.  Or test with
-CONFIG_PROVE_RCU, in which case lockdep will yell at you if you should
-have used the _rcuidle() form of the tracing hooks.  ;-)
+> +	spin_lock_bh(&svc->sched_lock);
+> +	p = (struct list_head *)svc->sched_data;
+> +	last = dest = list_entry(p, struct ip_vs_dest, n_list);
+> +
+> +	do {
+> +		list_for_each_entry_continue_rcu(dest,
+> +						 &svc->destinations,
+> +						 n_list) {
+> +			dwgt = (u32)atomic_read(&dest->weight);
+> +			if (!(dest->flags & IP_VS_DEST_F_OVERLOAD) &&
+> +			    dwgt > 0) {
+> +                               spin_lock(&dest->stats.lock);
 
-							Thanx, Paul
+	May be there is a way to avoid this spin_lock
+by using u64_stats_fetch_begin and corresponding
+u64_stats_update_begin in estimation_timer(). We can
+even remove this ->lock, it will be replaced by ->syncp.
+The benefit is for 64-bit platforms where we avoid
+lock here in the scheduler. Otherwise, I don't see
+other implementation problems in this patch and I'll
+check it more carefully this weekend.
 
-> Also, please remove the "notrace", because function tracing goes an
-> extra step to not require RCU being visible. The only thing you get
-> with notrace is not being able to trace an otherwise traceable function.
-> 
-> -- Steve
-> 
-> > 
-> > > That is, if there is any practical use for that message. Tracing just
-> > > sched_switch will give you the same info.
-> > 
-> > IMHO it may be more useful if we knew exactly what hypercalls were
-> > being preempted but perhaps all that can be left as a secondary
-> > exercise and for now I'll just nuke the print.
-> 
+Regards
 
+--
+Julian Anastasov <ja@ssi.bg>
