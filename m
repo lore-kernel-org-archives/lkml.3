@@ -1,121 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686AbbAVHhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 02:37:18 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:37654 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbbAVHhM (ORCPT
+	id S1752154AbbAVHkJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 02:40:09 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64934 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbbAVHkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 02:37:12 -0500
-Date: Thu, 22 Jan 2015 08:37:08 +0100
+	Thu, 22 Jan 2015 02:40:05 -0500
+Date: Thu, 22 Jan 2015 08:40:02 +0100
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: Re: [PATCH v2] clk: Introduce clk_has_parent()
-Message-ID: <20150122073707.GA427@ulmo>
-References: <1421750935-4023-2-git-send-email-thierry.reding@gmail.com>
- <1421856780-32103-1-git-send-email-thierry.reding@gmail.com>
- <54C04145.1010906@codeaurora.org>
+To: Dmitry Osipenko <digetx@gmail.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Bob Mottram <bob.mottram@codethink.co.uk>, linux-tegra@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c: tegra: Maintain CPU endianness
+Message-ID: <20150122074001.GB427@ulmo>
+References: <1421756555-20266-1-git-send-email-digetx@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
+	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
 Content-Disposition: inline
-In-Reply-To: <54C04145.1010906@codeaurora.org>
+In-Reply-To: <1421756555-20266-1-git-send-email-digetx@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---SLDf9lqlvOQaIe6s
+--IrhDeMKUP4DT/M7F
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jan 21, 2015 at 04:16:05PM -0800, Stephen Boyd wrote:
-> On 01/21/2015 08:13 AM, Thierry Reding wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> >
-> > This new function is similar to clk_set_parent(), except that it doesn't
-> > actually change the parent. It merely checks that the given parent clock
-> > can be a parent for the given clock.
-> >
-> > A situation where this is useful is to check that a particular setup is
-> > valid before switching to it. One specific use-case for this is atomic
-> > modesetting in the DRM framework where setting a mode is divided into a
-> > check phase where a given configuration is validated before applying
-> > changes to the hardware.
-> >
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Mike Turquette <mturquette@linaro.org>
-> > Cc: Stephen Boyd <sboyd@codeaurora.org>
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > ---
+On Tue, Jan 20, 2015 at 03:22:25PM +0300, Dmitry Osipenko wrote:
+> Support CPU BE mode by adding endianness conversion for memcpy interactio=
+ns.
 >=20
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+> Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+> ---
+>  drivers/i2c/busses/i2c-tegra.c | 3 +++
+>  1 file changed, 3 insertions(+)
 >=20
-> This will slightly conflict with Tomeu's  patches for per-user clock
-> constraints. It would be best if we can take this through the clk tree
-> to fix up any conflicts
+> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegr=
+a.c
+> index 28b87e6..e0d3ef1 100644
+> --- a/drivers/i2c/busses/i2c-tegra.c
+> +++ b/drivers/i2c/busses/i2c-tegra.c
+> @@ -286,6 +286,7 @@ static int tegra_i2c_empty_rx_fifo(struct tegra_i2c_d=
+ev *i2c_dev)
+>  	if (rx_fifo_avail > 0 && buf_remaining > 0) {
+>  		BUG_ON(buf_remaining > 3);
+>  		val =3D i2c_readl(i2c_dev, I2C_RX_FIFO);
+> +		val =3D cpu_to_le32(val);
 
-I had hoped to take this through the drm tree to resolve the build-time.
-Another possibility would be for me to include the clk tree (or a subset
-thereof) in my pull-request. That way you can still fix things up in the
-clock tree if there are any conflicts with other work. We could make
-that work two ways: this patch gets applied to the clk tree and I pull
-it, or I provide a stable branch that I base my pull request on and that
-branch can be pulled into the clk tree.
+Should this not technically be le32_to_cpu() since the data originates
+=66rom the I2C controller?
 
-Yet another alternative would be to split out the clk_has_parent()
-change from the series and not use it for now. That way we're going to
-miss this check, but we do that anyway currently and it will only be
-temporary until v3.21.
+>  		memcpy(buf, &val, buf_remaining);
+>  		buf_remaining =3D 0;
+>  		rx_fifo_avail--;
+> @@ -343,7 +344,9 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_de=
+v *i2c_dev)
+>  	 */
+>  	if (tx_fifo_avail > 0 && buf_remaining > 0) {
+>  		BUG_ON(buf_remaining > 3);
+> +		val =3D 0;
 
-Perhaps given where we are in the release cycle the latter would make
-the most sense for now.
-
-> > diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-[...]
-> > +	/* Optimize for the case where the parent is already the parent. */
-> > +	if (clk->parent =3D=3D parent)
-> > +		return true;
->=20
-> I worry that we'll need to grab a lock here with Tomeu's patches, but
-> maybe I'm wrong.
-
-Why would this need a lock? Worst case somebody concurrently changes the
-parent, in which case will not succeed and fallback to the lookup below.
-
-It's been a while since I last looked at Tomeu's series, but I seem to
-remember that struct clk was going to be per-user, in which case I guess
-the code would have to be modified anyway since ->parent and
-->parent_names will likely become properties of the clock structure
-shared by all users (was it struct clk_core?).
+Why does this have to be initialized to 0 now?
 
 Thierry
 
---SLDf9lqlvOQaIe6s
+--IrhDeMKUP4DT/M7F
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUwKijAAoJEN0jrNd/PrOhr3QP/jUKgrMOcnyrKfGsHDJuLX3U
-aIeOwV8vjX8hUmH0VfNzcVnCTZ33fJeOO8YqHbioVKIQatDrRI6O1rKXZHh7axNR
-z+b+exTF6bDsY0JIDn76tkDxrToWwBPTCjxwJ2ZmkqTRFrhE/0/2513QDqIBOhuf
-Ko/EkzD/HaVcOOTg2XJCbDJm96n7thQQTinYfijHR152sdMKn42hLc4nmfbBmWz1
-3HtvjSaeJQrf+VGvfk+mc6PNAzThfSXWl11tsMd5ZS9/D8ejWV0LnYhd0cZaRgm/
-BhHiK+vxiZhsNe/b0F257jKP++P7aaJtwwiTIjzQSBtDoVLRxsHqBT3PF4tgChqW
-ATCs2lkykcpxgJzZKnxLEuRyqnMVPgj2Us6+mKb69Ilc8TtntSVAMbRQkpOzq9c7
-D2um5TWgWjDrhU7Cy9VabG+lo5GHZF37o38/l5TKjvqlM4QVxPuRhCDiznXtyrU3
-5qJtVO7ua5sdYyvZI+LYZOauVjfNxPdbGQpcLtitonAWCPLTx7xVstTtt2sUY+mS
-DM904b613NANSN/rEMJYgWrAaDIXT3XlsbMU9DY7u6FO5NrTc0J+YHbKMsAtheEZ
-r+5PUalPs4WMv882Dl81j5+BwUI0f5ErxfjepaiFseBj7ieBVhcqH1bbDSEh8fHG
-PHl8vg6vah4XYp4WMeBT
-=F3BC
+iQIcBAEBAgAGBQJUwKlRAAoJEN0jrNd/PrOhSi8P/1Wrpun9jCZ6mpZOR6ygP4YZ
+REPC0O8KsInUmV5i904LvvSP+giJCCAp/WS54Q5bAGqdsN517IsTFkrp5OVM1+yS
+kIjOkXA94idZjflCJl8fLDLZUSqNBj92Kh2ijCx39e+l8P+Cu5dVoHit/iU9t4Bd
+8uBt1GWXwYSWU/lnTDaj1AcSJeuZ9mblRcNNoYegjPR095GQFbiMt0qWFLQRIbcO
+/fJDlLYsNvhex6We3HukaPFXZ5FxVNkkSwjJ2HqUVifnBA5OxuzYTTozPjmegFIh
+gF1Vz/dnyJHCJxj5lsnCCBqGxck5mxEKCOJTTpPOrj5kIeasgDVtTKlU+o7O2mKh
+1GRNNdGZBQ/7fLeb315v2Q+czS4JXA+zL5D+guWhlJxRK6DnUPtScsJ+7M866u4v
+xJ+6W/lO3msk6sfXVrNEtzzAghrcCmSBCxIPGNCG2aV22vQb0IechFVanzHow8oa
+go9u7BB+UUPnTTEccZLgODEKCynBQy8M9lkMI0tCDrJV6L1c4DWinAd0w4HGDsmO
+gj69l0aYAc+ELFFrtzyHT98iHM8vpX3JWbkTIcT0AXSqJPWwRXJm0CZ1CsXmXCM/
+i5u2x/RHETfMQM8AcO8N+Qrt6EXaEr4Qroeh9sN17M1ldI3yBKpLXcoGM+SrJIH4
+jOiV+zHnJlu0LvbhFf/e
+=4Htm
 -----END PGP SIGNATURE-----
 
---SLDf9lqlvOQaIe6s--
+--IrhDeMKUP4DT/M7F--
