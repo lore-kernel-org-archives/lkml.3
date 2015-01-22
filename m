@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbbAVW2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 17:28:22 -0500
-Received: from smtp1.ore.mailhop.org ([54.68.34.165]:54886 "EHLO
-	smtp1.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbbAVW2T (ORCPT
+	id S1753725AbbAVVkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:40:06 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51799 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbbAVVkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 17:28:19 -0500
-X-Mail-Handler: DuoCircle Outbound SMTP
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
-X-MHO-User: U2FsdGVkX19FoypSs7pM/1bUbqcGkFCN
-Date: Thu, 22 Jan 2015 13:37:48 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Marek Belisko <marek@goldelico.com>
-Cc: bcousson@baylibre.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, hns@goldelico.com, neilb@suse.de
-Subject: Re: [PATCH 06/13] ARM: dts: omap3-gta04: Enable power-off using
- twl4030
-Message-ID: <20150122213748.GX7718@atomide.com>
-References: <1421959099-28319-1-git-send-email-marek@goldelico.com>
- <1421959099-28319-7-git-send-email-marek@goldelico.com>
+	Thu, 22 Jan 2015 16:40:04 -0500
+Date: Thu, 22 Jan 2015 21:40:01 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Paul Moore <pmoore@redhat.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, rgb@redhat.com, sd@queasysnail.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
+Message-ID: <20150122214000.GX29656@ZenIV.linux.org.uk>
+References: <20150122045303.1347.98054.stgit@localhost>
+ <20150122075429.GV29656@ZenIV.linux.org.uk>
+ <4011794.crgx99Gu8a@sifl>
+ <25860171.h6aocaXFeh@sifl>
+ <20150122212902.GW29656@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421959099-28319-7-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150122212902.GW29656@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marek Belisko <marek@goldelico.com> [150122 12:42]:
-> From: "H. Nikolaus Schaller" <hns@goldelico.com>
+On Thu, Jan 22, 2015 at 09:29:03PM +0000, Al Viro wrote:
+> On Thu, Jan 22, 2015 at 04:25:13PM -0500, Paul Moore wrote:
 > 
-> Enabled poweroff through PMIC on GTA04.
+> > Your experimental branch looks good to me, thanks.
 > 
-> Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
-> ---
->  arch/arm/boot/dts/omap3-gta04.dtsi | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/omap3-gta04.dtsi b/arch/arm/boot/dts/omap3-gta04.dtsi
-> index 0265474..b56c85b 100644
-> --- a/arch/arm/boot/dts/omap3-gta04.dtsi
-> +++ b/arch/arm/boot/dts/omap3-gta04.dtsi
-> @@ -209,6 +209,11 @@
->  			codec {
->  			};
->  		};
-> +
-> +		twl_power: power {
-> +			compatible = "ti,twl4030-power";
-> +			ti,use_poweroff;
-> +		};
->  	};
->  };
->  
+> Pushed into for-next; I'm probably going to move that stuff into a never-rebased
+> branch, merged into for-next and safe to pull into your tree if you want to do
+> something on top of that set.
 
-No need to change this patch, but you may want to get things working
-with ti,twl4030-power-idle-osc-off for PM if you're running it on
-batteries :)
-
-Regards,
-
-Tony
+OK, vfs.git#getname is it; it's in never-to-be-rebased mode and it's merged
+into vfs.git#for-next (as of right now; HEAD is 9ee4c4).  If you need to do
+something on top of that stuff, pulling vfs.git#getname is safe.
