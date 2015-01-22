@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437AbbAVLVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:21:53 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:56885 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbbAVLVv (ORCPT
+	id S1752154AbbAVLY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:24:56 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59252 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbbAVLYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:21:51 -0500
-Message-ID: <54C0DD4F.7030807@linaro.org>
-Date: Thu, 22 Jan 2015 11:21:51 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 22 Jan 2015 06:24:51 -0500
+Date: Thu, 22 Jan 2015 12:24:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org, dvhart@infradead.org,
+        andy.shevchenko@gmail.com, boon.leong.ong@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark
+ X1000
+In-Reply-To: <1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie>
+Message-ID: <alpine.DEB.2.11.1501221220530.5526@nanos>
+References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie> <1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>
-Subject: Re: [PATCH 3.19-rc2 v14 0/7] arm: Implement arch_trigger_all_cpu_backtrace
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>	<1421144818-14036-1-git-send-email-daniel.thompson@linaro.org>	<54BE2D15.9080606@linaro.org>	<54BEC04D.1050402@codeaurora.org>	<54BF83C9.5060300@linaro.org> <20150121080612.6569ab81@gandalf.local.home> <54BFAE3F.7000300@linaro.org>
-In-Reply-To: <54BFAE3F.7000300@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/01/15 13:48, Daniel Thompson wrote:
-> On 21/01/15 13:06, Steven Rostedt wrote:
->> On Wed, 21 Jan 2015 10:47:37 +0000
->> Daniel Thompson <daniel.thompson@linaro.org> wrote:
->>
->>
->>>> With this patchset, is it possible to call sched_clock() from within NMI
->>>> context? I ask because the generic sched_clock() code is not NMI safe
->>
->> That's not good. Better not run function tracing, as that could trace
->> functions in NMI context (I depend on that it does), and it uses
->> sched_clock() as the default clock.
-> 
-> I think sched_clock is unsafe as in "may sometimes give the wrong value"
-> rather than "can lock up arbitrarily".  Thus the impact is unlikely to
-> be harmful enough to want to avoid tracing altogether.
+On Wed, 21 Jan 2015, Bryan O'Donoghue wrote:
+>  arch/x86/Kconfig           |  25 ++
+>  arch/x86/Kconfig.debug     |  13 +
+>  arch/x86/include/asm/imr.h |  60 ++++
+>  arch/x86/kernel/Makefile   |   1 +
+>  arch/x86/kernel/imr.c      | 681 +++++++++++++++++++++++++++++++++++++++++++++
 
-Just to update the record...
+Can we please stop to dump random stuff into x86/kernel?
 
-The above paragraph is wrong in every possible way. It is a livelock
-(and I'm working on it).
+x86/platform ... would be a proper place for this.
 
+Thanks,
 
-
-> It would require special care be taken when interpreting the timestamps
-> however. Also since update_sched_clock() is a notrace function its very
-> hard to figure out when timestamps are at risk.
-> 
-> Anyhow, the fix doesn't seem that hard. I can take a look.
-> 
-> 
-> Daniel.
-> 
-
+	tglx
