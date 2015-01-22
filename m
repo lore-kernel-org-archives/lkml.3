@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbbAVOp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:45:28 -0500
-Received: from sauhun.de ([89.238.76.85]:41492 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751704AbbAVOp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:45:27 -0500
-Date: Thu, 22 Jan 2015 15:45:22 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-ocores: add common clock support
-Message-ID: <20150122144522.GF3413@katana>
-References: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com>
+	id S1753368AbbAVOqY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:46:24 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40998 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbbAVOqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 09:46:21 -0500
+Message-ID: <54C10D31.1090203@arm.com>
+Date: Thu, 22 Jan 2015 14:46:09 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Il7n/DHsA0sMLmDu"
-Content-Disposition: inline
-In-Reply-To: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <Mark.Rutland@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v7 13/17] ARM64 / ACPI: Add GICv2 specific ACPI boot support
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-14-git-send-email-hanjun.guo@linaro.org> <54B8F2E3.80306@arm.com> <CACxGe6tBb8L8upS3zenZbrOc_c0E=MA=DqLjkSezEbregaAaaA@mail.gmail.com> <54B92245.6080306@arm.com> <54C0F133.8060901@linaro.org>
+In-Reply-To: <54C0F133.8060901@linaro.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hanjun,
 
---Il7n/DHsA0sMLmDu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 22/01/15 12:46, Hanjun Guo wrote:
+> Hi Marc,
+> 
+> We (Tomasz, Suravee and me) are working on supporting stacked domain on
+> ACPI, and rework GIC ACPI related patch, before we going further, we
+> need your guidance to see if we are going the right direction.
+> 
+>    - You said that we spread GIC related code every where, so how
+>      about put all the ACPI related GIC init code in one file under
+>      drivers/irqchip/ with name irq-gic-acpi.c?
 
-> @@ -320,9 +322,23 @@ static int ocores_i2c_of_probe(struct platform_devic=
-e *pdev,
->  	}
-> =20
->  	if (of_property_read_u32(np, "clock-frequency", &val)) {
-> -		dev_err(&pdev->dev,
-> -			"Missing required parameter 'clock-frequency'\n");
-> -		return -ENODEV;
-> +		struct clk *clk =3D devm_clk_get(&pdev->dev, NULL);
-> +
-> +		if (!IS_ERR(clk)) {
-> +			int ret =3D clk_prepare_enable(clk);
-> +
-> +			if (ret) {
-> +				dev_err(&pdev->dev,
-> +					"clk_prepare_enable failed: %d\n", ret);
-> +				return ret;
-> +			}
-> +			i2c->clk =3D clk;
-> +			val =3D clk_get_rate(clk);
-> +		} else {
-> +			dev_err(&pdev->dev,
-> +				"Missing required parameter 'clock-frequency'\n");
-> +			return -ENODEV;
-> +		}
+That would certainly be an improvement.
 
-Either NAK or I don't understand the logic here :) If a dts does NOT
-have the bus-speed set by 'clock-frequency', then we take the value of
-the clock assigned to this platform_device?
+>    - ACPI only support one GICD for now, so we assume that there
+>     only one gicv2/v3 core domain and every device not using MSI
+>      will refer to that irqdomain in default.
 
-The usual thing to do when 'clock-frequency' is not set is to default to
-100kHz.
+That's good enough, provided that nobody comes up with any form of
+chained interrupt controller (in whatever way that's implemented). ACPI
+doesn't seem to cater for that anyway.
 
+But default domains are only a quick optimization (it is only there to
+cope with code that didn't know about irq domains at all). What we need
+is a proper integration of the ACPI namespace in the irq domain code.
+Being able to lookup a domain by ACPI table, for example (just like
+irq_find_host returns the domain associated to a DT node).
 
---Il7n/DHsA0sMLmDu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+This would ensure that we can reuse most of the existing code (stacked
+domains, per-device MSI domains [WIP]) without too much effort.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Thanks,
 
-iQIcBAEBAgAGBQJUwQ0BAAoJEBQN5MwUoCm2KskP/0D6PCki5rw68rprNyaHhm05
-blVUkm0iQ9xh4ftchbsWSPyXI5sD+c5lgJ6gYuIk1kLw0+ELtI7rGe99K2Gh2Zaz
-6dy3m7Fa37HTs/t2oHBL0WlrDWEGxuKQqMAxiTpI3j+HVkPXN8BzYB1PJwWXpVh6
-9cHcJ7o6arD/OZMUiUPpHihTNfx/WPAGel1laMaZ5SBKs74MLB6EGF/jz/dlyoum
-iv4HCUQowrQiG8G+ASPpFtVPvqGHY0FH/1Wtzg9bYujfV4bYNH1xQGL7hBqaka8J
-p/LOeAJEI+U0Wj3sJQAjwJXM7+mrsDhNcR6CGFq4uauDTw3AoZBFdfiSNrr6LvT7
-3Ugr+b6ZRO8Nw8/O9KAbUGVkA2riW5l5ArzyyZBrRA/MaY31wdV5vEJHXogUlBr0
-GXpgY1EawyqVeKbcjUh9sE7Zmh51fmUdOriE2w5Xb1rxCAmwlgg8cWBJVqJZHWrq
-AAB65k4HfOXSjROS3NV5v05fdOd67FBjSNArxoTlNki3d0owsRHE7TkYMmaCTr7Q
-LKxWZJAlc/0UDGW6bIpaaGW5v+ipfueWuxeh5SxeQHL3NBhhLAuYYM9Xpklu0o83
-AMhi/vDYbLReShaG7qsU+XIPV5De5gL1svY7jvbCpFEskLpPW8wthOSvqQdRSWM+
-14Fgri5DeJjwz7K2an1m
-=LOwu
------END PGP SIGNATURE-----
-
---Il7n/DHsA0sMLmDu--
+	M.
+-- 
+Jazz is not dead. It just smells funny...
