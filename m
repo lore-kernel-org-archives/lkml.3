@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbbAVQ0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:26:51 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:33969 "EHLO
+	id S1752900AbbAVQ3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 11:29:09 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:34929 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbbAVQ0s (ORCPT
+	with ESMTP id S1752531AbbAVQ3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:26:48 -0500
-Date: Thu, 22 Jan 2015 08:26:46 -0800
+	Thu, 22 Jan 2015 11:29:07 -0500
+Date: Thu, 22 Jan 2015 08:28:57 -0800
 From: Darren Hart <dvhart@infradead.org>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: platform-driver-x86@vger.kernel.org,
-        Corentin Chary <corentin.chary@gmail.com>,
-        acpi4asus-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel@savoirfairelinux.com
-Subject: Re: [PATCH v2 2/3] asus-laptop: use DEVICE_ATTR_* macros
-Message-ID: <20150122162646.GA66191@vmdeb7>
-References: <20150121182803.GC7386@vmdeb7>
- <1741852285.168343.1421871557328.JavaMail.root@mail>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: Thomas Gleixner <tglx@linutronix.de>, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, andy.shevchenko@gmail.com, boon.leong.ong@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
+Message-ID: <20150122162857.GB66191@vmdeb7>
+References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie>
+ <1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie>
+ <alpine.DEB.2.11.1501221220530.5526@nanos>
+ <54C0E13B.2070400@nexus-software.ie>
+ <54C11118.801@nexus-software.ie>
+ <54C1140E.3070003@nexus-software.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1741852285.168343.1421871557328.JavaMail.root@mail>
+In-Reply-To: <54C1140E.3070003@nexus-software.ie>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 03:19:17PM -0500, Vivien Didelot wrote:
-> Hi Darren,
-> 
-> > > Use DEVICE_ATTR_{RO,WO,RW} macros to simplify attributes
-> > > declarations.
+On Thu, Jan 22, 2015 at 03:15:26PM +0000, Bryan O'Donoghue wrote:
+> On 22/01/15 15:02, Bryan O'Donoghue wrote:
 > >
-> > It does a lot more than that, including a lot of seemingly
-> > superfluous reformatting of function declarations and renaming.
+> >>drivers/platform/x86/intel_qrk_imr.c
+> >>
+> >>Darren - would that be acceptable to you ?
+> >
+> >Sorry guys typo - should read arch/x86/platform/imr.c
+> >
+> >:)
 > 
-> What do you mean? DEVICE_ATTR_RW(foo) requires foo_show() and foo_store()
-> functions, not show_foo() and store_foo().
+> Ah Thomas actually if I'm understanding you correctly here
+> 
+> The intention would be to add arch/x86/platform/intel-quark/imr.c and to add
 
-Ah yes, of course. Perhaps obvious in hindsight, but a bit more explanation in
-the commit message would have eliminated the confusion.
-
-Always provide enough information in your commit log to explain to someone else
-that hasn't been looking at the code as recently as you have to understand the
-problem, the solution, and which provides sufficient explanation for all changes
-included in the patch.
-
-Please resubmit with a more complete commit message.
+Right, that was my understanding.
 
 -- 
 Darren Hart
