@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbbAVHyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 02:54:39 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48828 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbbAVHyb (ORCPT
+	id S1752543AbbAVH4I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 02:56:08 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:47913 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbbAVHz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 02:54:31 -0500
-Date: Thu, 22 Jan 2015 07:54:29 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Paul Moore <pmoore@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, rgb@redhat.com, sd@queasysnail.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
-Message-ID: <20150122075429.GV29656@ZenIV.linux.org.uk>
-References: <20150122045303.1347.98054.stgit@localhost>
- <54C08C62.8010609@roeck-us.net>
+	Thu, 22 Jan 2015 02:55:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C08C62.8010609@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150122074001.GB427@ulmo>
+References: <1421756555-20266-1-git-send-email-digetx@gmail.com> <20150122074001.GB427@ulmo>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 22 Jan 2015 16:55:36 +0900
+Message-ID: <CAAVeFuJHST9VOWXe_cZNvLmfGdamuU4HSgdZC6EoQvrsGFt+Fg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] i2c: tegra: Maintain CPU endianness
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Dmitry Osipenko <digetx@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Bob Mottram <bob.mottram@codethink.co.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 09:36:34PM -0800, Guenter Roeck wrote:
-> On 01/21/2015 08:59 PM, Paul Moore wrote:
-> >This patchset has some important changes from the previous revision,
-> >namely a fix from Al Viro (included in 2/5) that resolves a boot panic
-> >on some systems as well as some smaller, less noteworthy fixes found
-> >in the linux-next announcement thread from January 20th (refcount bump
-> >in __audit_reusename() and a inode type in __audit_inode()).
-> >
-> >This patchset still needs some additional testing to verify that the
-> >audit code still functions properly (the minor fixes mentioned above)
-> >and there is an additional patch from Al that should be included as
-> >well, but I wanted to post this and push the series to the audit next
-> >branch quickly since a number of folks were affected by the boot panic.
-> >
-> >---
-> >
-> >Paul Moore (5):
-> >       fs: rework getname_kernel to handle up to PATH_MAX sized filenames
-> >       fs: create proper filename objects using getname_kernel()
-> >       audit: enable filename recording via getname_kernel()
-> >       audit: fix filename matching in __audit_inode() and __audit_inode_child()
-> >       audit: replace getname()/putname() hacks with reference counters
-> >
-> Hi Paul,
-> 
-> What is the baseline for this patch set ? Obviously -next won't work,
-> and it does not apply to mainline either.
+On Thu, Jan 22, 2015 at 4:40 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Tue, Jan 20, 2015 at 03:22:25PM +0300, Dmitry Osipenko wrote:
+>> Support CPU BE mode by adding endianness conversion for memcpy interactions.
+>>
+>> Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+>> ---
+>>  drivers/i2c/busses/i2c-tegra.c | 3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+>> index 28b87e6..e0d3ef1 100644
+>> --- a/drivers/i2c/busses/i2c-tegra.c
+>> +++ b/drivers/i2c/busses/i2c-tegra.c
+>> @@ -286,6 +286,7 @@ static int tegra_i2c_empty_rx_fifo(struct tegra_i2c_dev *i2c_dev)
+>>       if (rx_fifo_avail > 0 && buf_remaining > 0) {
+>>               BUG_ON(buf_remaining > 3);
+>>               val = i2c_readl(i2c_dev, I2C_RX_FIFO);
+>> +             val = cpu_to_le32(val);
+>
+> Should this not technically be le32_to_cpu() since the data originates
+> from the I2C controller?
+>
+>>               memcpy(buf, &val, buf_remaining);
+>>               buf_remaining = 0;
+>>               rx_fifo_avail--;
+>> @@ -343,7 +344,9 @@ static int tegra_i2c_fill_tx_fifo(struct tegra_i2c_dev *i2c_dev)
+>>        */
+>>       if (tx_fifo_avail > 0 && buf_remaining > 0) {
+>>               BUG_ON(buf_remaining > 3);
+>> +             val = 0;
+>
+> Why does this have to be initialized to 0 now?
 
-FWIW, I've ported that on top of vfs.git#for-next; result is in
-vfs.git#experimental.  Paul, are you OK with that one?
+I suspect this is because we are going to memcpy less than 4 bytes
+into it, but I cannot figure out how that memcpy if guaranteed to
+produce the expected result for both endiannesses.
