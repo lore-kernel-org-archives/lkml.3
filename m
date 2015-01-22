@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250AbbAVElz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 23:41:55 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:54428 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036AbbAVElr (ORCPT
+	id S1754409AbbAVEq7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 23:46:59 -0500
+Received: from smtprelay0070.hostedemail.com ([216.40.44.70]:35621 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751013AbbAVEqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 23:41:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <54B4FF8C.50805@samsung.com>
-References: <1418027967-12923-1-git-send-email-acourbot@nvidia.com>
- <54897C14.3040702@samsung.com> <CAAVeFuL-x1-vmaViYou6ViRR+ipCnz5WdwbmKC4Cu5ViD+pVNA@mail.gmail.com>
- <54B4FF8C.50805@samsung.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 22 Jan 2015 13:41:25 +0900
-Message-ID: <CAAVeFuKn6nE+KOSexGSK_=r5iv8bYBEheVU7=HyODGszEz+NAw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: DMA: Fix kzalloc flags in __iommu_alloc_buffer()
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thierry Reding <treding@nvidia.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 21 Jan 2015 23:46:51 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3622:3865:3867:4321:5007:6261:9010:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: prose21_146585c19c0a
+X-Filterd-Recvd-Size: 1590
+Message-ID: <1421902005.18480.3.camel@perches.com>
+Subject: Re: [PATCH] MAINTAINERS: update Qualcomm support entry
+From: Joe Perches <joe@perches.com>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Kumar Gala <galak@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org
+Date: Wed, 21 Jan 2015 20:46:45 -0800
+In-Reply-To: <1421901564-8854-1-git-send-email-agross@codeaurora.org>
+References: <1421901564-8854-1-git-send-email-agross@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 8:20 PM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> Hello,
->
-> On 2015-01-13 09:45, Alexandre Courbot wrote:
->>
->> Ping? This patch still seems to be needed as of today...
->
->
-> Arnd, could you take this patch together with your other pending
-> dma-mapping.h changes?
+On Wed, 2015-01-21 at 22:39 -0600, Andy Gross wrote:
+> Added myself as a co-maintainer.  Updated the files to include the Qualcomm SoC
+> directory.  Added linux-soc mailing list.
+[]
+> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> @@ -1284,9 +1284,12 @@ S:	Maintained
+>  ARM/QUALCOMM SUPPORT
+>  M:	Kumar Gala <galak@codeaurora.org>
+>  M:	David Brown <davidb@codeaurora.org>
+> +M:	Andy Gross <agross@codeaurora.org>
+>  L:	linux-arm-msm@vger.kernel.org
+> +L:	linux-soc@vger.kernel.org
+>  S:	Maintained
+>  F:	arch/arm/mach-qcom/
+> +F:	drivers/soc/qcom
 
-Arnd, gentle ping on this?
+Please add a terminating /
 
->
->
->> On Thu, Dec 11, 2014 at 8:12 PM, Marek Szyprowski
->> <m.szyprowski@samsung.com> wrote:
->>>
->>> On 2014-12-08 09:39, Alexandre Courbot wrote:
->>>>
->>>> There doesn't seem to be any valid reason to allocate the pages array
->>>> with the same flags as the buffer itself. Doing so can eventually lead
->>>> to the following safeguard in mm/slab.c to be hit:
->>>>
->>>> BUG_ON(flags & GFP_SLAB_BUG_MASK);
->>>>
->>>> This happens when buffers are allocated with __GFP_DMA32 or
->>>> __GFP_HIGHMEM.
->>>>
->>>> Fix this by allocating the pages array with GFP_KERNEL to follow what is
->>>> done elsewhere in this file. Using GFP_KERNEL in __iommu_alloc_buffer()
->>>> is safe because atomic allocations are handled by
->>>> __iommu_alloc_atomic().
->>>>
->>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
->>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>> Cc: Thierry Reding <treding@nvidia.com>
->>>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>>
->>> Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
->>>
->>>> ---
->>>>    arch/arm/mm/dma-mapping.c | 2 +-
->>>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
->>>> index e8907117861e..bc495354c802 100644
->>>> --- a/arch/arm/mm/dma-mapping.c
->>>> +++ b/arch/arm/mm/dma-mapping.c
->>>> @@ -1106,7 +1106,7 @@ static struct page **__iommu_alloc_buffer(struct
->>>> device *dev, size_t size,
->>>>          int i = 0;
->>>>          if (array_size <= PAGE_SIZE)
->>>> -               pages = kzalloc(array_size, gfp);
->>>> +               pages = kzalloc(array_size, GFP_KERNEL);
->>>>          else
->>>>                  pages = vzalloc(array_size);
->>>>          if (!pages)
->>>>
->
-> Best regards
-> --
-> Marek Szyprowski, PhD
-> Samsung R&D Institute Poland
->
+F:	drivers/soc/qcom/
+
+
