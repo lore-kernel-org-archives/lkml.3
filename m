@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012AbbAVVNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:13:23 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:47468 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673AbbAVVNV (ORCPT
+	id S1754721AbbAVVQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:16:26 -0500
+Received: from smtprelay0052.hostedemail.com ([216.40.44.52]:49831 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753039AbbAVVQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:13:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <54BF9294.3070902@redhat.com>
-References: <1421747878-30744-1-git-send-email-famz@redhat.com>
- <1421747878-30744-6-git-send-email-famz@redhat.com> <54BE4F1D.7090807@gmail.com>
- <20150121045903.GA2858@fam-t430.nay.redhat.com> <54BF5ACE.6030206@gmail.com>
- <20150121085827.GB23024@ad.nay.redhat.com> <54BF814F.7090703@redhat.com>
- <20150121111404.GA3804@ad.nay.redhat.com> <54BF9294.3070902@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 22 Jan 2015 13:12:59 -0800
-Message-ID: <CALCETrWwuJpFK+38mBxxTQCu7Oig22Nr+mAuO++Y+0CdAhfzkw@mail.gmail.com>
-Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Fam Zheng <famz@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+	Thu, 22 Jan 2015 16:16:22 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2693:2897:2904:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:5007:6120:6261:6742:7875:7903:8660:10004:10400:10848:10967:11232:11658:11914:12517:12519:12663:12740:13148:13230:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: burst28_37259ae485161
+X-Filterd-Recvd-Size: 4145
+Date: Thu, 22 Jan 2015 16:16:17 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        kvm list <kvm@vger.kernel.org>, X86 ML <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Content-Type: text/plain; charset=UTF-8
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to
+ be preempted
+Message-ID: <20150122161617.0ee2b092@gandalf.local.home>
+In-Reply-To: <CALCETrUTekrhz=tXF=bAn1wuZBA+Kh+CgU+USwx--hNALvR5Mw@mail.gmail.com>
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
+	<1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
+	<54C0E3F2.9050201@citrix.com>
+	<20150122085649.7dc79541@grimm.local.home>
+	<20150122183913.GO17887@wotan.suse.de>
+	<20150122151657.287fe29b@gandalf.local.home>
+	<CALCETrU+B_8C2-1+gEQ20wrL+0A6G0XTQ4wAnWuewKc=Pei5Qg@mail.gmail.com>
+	<20150122153707.4625878b@gandalf.local.home>
+	<CALCETrUTekrhz=tXF=bAn1wuZBA+Kh+CgU+USwx--hNALvR5Mw@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 3:50 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->
->
-> On 21/01/2015 12:14, Fam Zheng wrote:
->> > My take for simplicity will be leaving epoll_ctl as-is, and my take for
->> > performance will be epoll_pwait1. And I don't really like putting my time on
->> > epoll_ctl_batch, thinking it as a ambivalent compromise in between.
->>
->> > I agree with Michael actually.  The big change is going from O(n)
->> > epoll_ctl calls to O(1), and epoll_ctl_batch achieves that just fine.
->> > Changing 2 syscalls to 1 is the icing on the cake, but we're talking of
->> > a fraction of a microsecond.
->>
->> Maybe I'm missing something, but in common cases, the set of fds for epoll_wait
->> doesn't change that radically from one iteration to another, does it?
->
-> That depends on the application.
+On Thu, 22 Jan 2015 12:58:00 -0800
+Andy Lutomirski <luto@amacapital.net> wrote:
 
-In my application, the set of fds almost never changes, but the set of
-events I want changes all the time.  The main thing that changes is
-whether I care about EPOLLOUT.  If I'm ready to send something, then I
-want EPOLLOUT.  If I'm not ready, then I don't want EPOLLOUT.
+> On Thu, Jan 22, 2015 at 12:37 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Thu, 22 Jan 2015 12:24:47 -0800
+> > Andy Lutomirski <luto@amacapital.net> wrote:
+> >
+> >> > Also, please remove the "notrace", because function tracing goes an
+> >> > extra step to not require RCU being visible. The only thing you get
+> >> > with notrace is not being able to trace an otherwise traceable function.
+> >> >
+> >>
+> >> Is this also true for kprobes?  And can kprobes nest inside function
+> >> tracing hooks?
+> >
+> > No, kprobes are a bit more fragile than function tracing or tracepoints.
+> >
+> > And nothing should nest inside a function hook (except for interrupts,
+> > they are fine).
+> >
+> 
+> But kprobes do nest inside interrupts, right?
 
---Andy
+A kprobe being called while a function trace is happening is fine, but
+you should not have the kprobe set directly inside the function trace
+callback code. Because that means a kprobe could happen anywhere
+function tracing is happening (for instance, in NMI context).
+
+> 
+> >>
+> >> The other issue, above and beyond RCU, is that we can't let kprobes
+> >> run on the int3 stack.  If Xen upcalls can happen when interrupts are
+> >> off, then we may need this protection to prevent that type of
+> >> recursion.  (This will be much less scary in 3.20, because userspace
+> >> int3 instructions will no longer execute on the int3 stack.)
+> >
+> > Does this execute between the start of the int3 interrupt handler and
+> > the call of do_int3()?
+> 
+> I doubt it.
+> 
+> The thing I worry about is that, if do_int3 nests inside itself by any
+> means (e.g. int3 sends a signal, scheduling for whatever reason
+> (really shouldn't happen, but I haven't looked that hard)), then we're
+> completely hosed -- the inner int3 will overwrite the outer int3's
+> stack frame.  Since I have no idea what Xen upcalls do, I don't know
+> whether they can fire inside do_int3.
+
+I thought there's logic in the do_int3 handler (in the assembly code)
+that can handle nested int3s.
+
+I'm not sure what xen does though.
+
+-- Steve
