@@ -1,58 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328AbbAVWm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 17:42:58 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:59833 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbbAVWmz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 17:42:55 -0500
-Date: Thu, 22 Jan 2015 14:42:51 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v12 3/6] clk: Make clk API return per-user struct clk
- instances
-Message-ID: <20150122224250.GP27202@codeaurora.org>
-References: <1421943207-5180-1-git-send-email-tomeu.vizoso@collabora.com>
- <1421943207-5180-4-git-send-email-tomeu.vizoso@collabora.com>
+	id S1754718AbbAVWoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 17:44:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57911 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581AbbAVWoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 17:44:16 -0500
+Date: Thu, 22 Jan 2015 23:44:13 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Andrew Cooper <andrew.cooper3@citrix.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [RFC v3 1/2] x86/xen: add xen_is_preemptible_hypercall()
+Message-ID: <20150122224413.GU17887@wotan.suse.de>
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com> <1421893039-426-2-git-send-email-mcgrof@do-not-panic.com> <CALCETrXp7qWLQYEAq7zKTMeMg7mfXo+mL-qPfPN6hfJGQGSoPw@mail.gmail.com> <20150122193003.GR17887@wotan.suse.de> <CALCETrVuH=ZMTu1yHZ1n2-z-+szocgrkkdhDAuJEMi1-ts5mbA@mail.gmail.com> <20150122210925.GT17887@wotan.suse.de> <54C16F2C.4090506@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421943207-5180-4-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54C16F2C.4090506@citrix.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22, Tomeu Vizoso wrote:
-> Moves clock state to struct clk_core, but takes care to change as little API as
-> possible.
+On Thu, Jan 22, 2015 at 09:44:12PM +0000, Andrew Cooper wrote:
+> On 22/01/2015 21:09, Luis R. Rodriguez wrote:
+> > On Thu, Jan 22, 2015 at 12:01:50PM -0800, Andy Lutomirski wrote:
+> >> On Thu, Jan 22, 2015 at 11:30 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> >>> On Wed, Jan 21, 2015 at 07:07:36PM -0800, Andy Lutomirski wrote:
+> >>>> On Wed, Jan 21, 2015 at 6:17 PM, Luis R. Rodriguez
+> >>>> <mcgrof@do-not-panic.com> wrote:
+> >>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> >>>>>
+> >>>>> On kernels with voluntary or no preemption we can run
+> >>>>> into situations where a hypercall issued through userspace
+> >>>>> will linger around as it addresses sub-operatiosn in kernel
+> >>>>> context (multicalls). Such operations can trigger soft lockup
+> >>>>> detection.
+> >>>>>
+> >>>>> We want to address a way to let the kernel voluntarily preempt
+> >>>>> such calls even on non preempt kernels, to address this we first
+> >>>>> need to distinguish which hypercalls fall under this category.
+> >>>>> This implements xen_is_preemptible_hypercall() which lets us do
+> >>>>> just that by adding a secondary hypercall page, calls made via
+> >>>>> the new page may be preempted.
+> >>>>>
+> >>>>> Andrew had originally submitted a version of this work [0].
+> >>>>>
+> >>>>> [0] http://lists.xen.org/archives/html/xen-devel/2014-02/msg01056.html
+> >>>>>
+> >>>>> Based on original work by: Andrew Cooper <andrew.cooper3@citrix.com>
+> >>>>>
+> >>>>> Cc: Andy Lutomirski <luto@amacapital.net>
+> >>>>> Cc: Borislav Petkov <bp@suse.de>
+> >>>>> Cc: David Vrabel <david.vrabel@citrix.com>
+> >>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+> >>>>> Cc: Ingo Molnar <mingo@redhat.com>
+> >>>>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> >>>>> Cc: x86@kernel.org
+> >>>>> Cc: Steven Rostedt <rostedt@goodmis.org>
+> >>>>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >>>>> Cc: Jan Beulich <JBeulich@suse.com>
+> >>>>> Cc: linux-kernel@vger.kernel.org
+> >>>>> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> >>>>> ---
+> >>>>>  arch/x86/include/asm/xen/hypercall.h | 20 ++++++++++++++++++++
+> >>>>>  arch/x86/xen/enlighten.c             |  7 +++++++
+> >>>>>  arch/x86/xen/xen-head.S              | 18 +++++++++++++++++-
+> >>>>>  3 files changed, 44 insertions(+), 1 deletion(-)
+> >>>>>
+> >>>>> diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+> >>>>> index ca08a27..221008e 100644
+> >>>>> --- a/arch/x86/include/asm/xen/hypercall.h
+> >>>>> +++ b/arch/x86/include/asm/xen/hypercall.h
+> >>>>> @@ -84,6 +84,22 @@
+> >>>>>
+> >>>>>  extern struct { char _entry[32]; } hypercall_page[];
+> >>>>>
+> >>>>> +#ifndef CONFIG_PREEMPT
+> >>>>> +extern struct { char _entry[32]; } preemptible_hypercall_page[];
+> >>>> A comment somewhere explaining why only non-preemptible kernels have
+> >>>> preemptible hypercalls might be friendly to some future reader. :)
+> >>> Good idea, since this section is arch specific, I'll instead add a blurb
+> >>> explaining this on the upcall.
+> >>>
+> >>>>> +
+> >>>>> +static inline bool xen_is_preemptible_hypercall(struct pt_regs *regs)
+> >>>>> +{
+> >>>>> +       return !user_mode_vm(regs) &&
+> >>>>> +               regs->ip >= (unsigned long)preemptible_hypercall_page &&
+> >>>>> +               regs->ip < (unsigned long)preemptible_hypercall_page + PAGE_SIZE;
+> >>>>> +}
+> >>>> This makes it seem like the page is indeed one page long, but I don't
+> >>>> see what actually allocates a whole page for it.  What am I missing?
+> >>> arch/x86/xen/xen-head.S
+> >>>
+> >>> .pushsection .text
+> >>>         .balign PAGE_SIZE
+> >>> ENTRY(hypercall_page)
+> >>>
+> >>> #ifndef CONFIG_PREEMPT
+> >>> ENTRY(preemptible_hypercall_page)
+> >>>         .skip PAGE_SIZE
+> >>> #endif /* CONFIG_PREEMPT */
+> >>>
+> >>> Does that suffice to be sure?
+> >> This looks like hypercall_page and preemptible_hypercall_page will
+> >> both be page-aligned but will be the same page.  Should there be
+> >> another .skip PAGE_SIZE in there?
+> > I think the trick here was since hypercall_page is already aligned,
+> > and we are just allocation PAGE_SIZE we are essentially pegging
+> > preemptible_hypercall_page right after hypercall_page.
+> >
+> > Andrew, David, can you confirm?
 > 
-> struct clk_hw still has a pointer to a struct clk, which is the
-> implementation's per-user clk instance, for backwards compatibility.
-> 
-> The struct clk that clk_get_parent() returns isn't owned by the caller, but by
-> the clock implementation, so the former shouldn't call clk_put() on it.
-> 
-> Because some boards in mach-omap2 still register clocks statically, their clock
-> registration had to be updated to take into account that the clock information
-> is stored in struct clk_core now.
-> 
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> 
-> ---
+> Your version is different to my original one (observe the lack of
+> NEXT_HYPERCALL()s),
 
-My comment on v11 still stands about __clk_create_clk() in
-clkdev.c, but otherwise I don't see problems. You can have my
-reviewed-by anyway.
+I don't get what is missing they should be pretty identical. It had:
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+--- a/arch/x86/xen/xen-head.S
++++ b/arch/x86/xen/xen-head.S
+@@ -85,9 +85,18 @@ ENTRY(xen_pvh_early_cpu_init)
+ .pushsection .text
+        .balign PAGE_SIZE
+ ENTRY(hypercall_page)
++
++#ifdef CONFIG_PREEMPT
++#  define PREEMPT_HYPERCALL_ENTRY(x)
++#else
++#  define PREEMPT_HYPERCALL_ENTRY(x) \
++       .global xen_hypercall_##x ## _p ASM_NL \
++       .set preemptible_xen_hypercall_##x, xen_hypercall_##x + PAGE_SIZE ASM_NL
++#endif
+ #define NEXT_HYPERCALL(x) \
+        ENTRY(xen_hypercall_##x) \
+-       .skip 32
++       .skip 32 ASM_NL \
++       PREEMPT_HYPERCALL_ENTRY(x)
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+Is that what you mean?
+
+> and I would agree that it would appear as if in your
+> version, hypercall_page and preemptible_hypercall_page are symbols with
+> the same address.
+> 
+> nm should give you a quick confirmation one way or another.
+
+symtab:
+
+mcgrof@ergon ~/linux (git::hypercall-preemption-v3)$ grep hypercall_page /boot/System.map-3.19.0-rc4-00040-g9c6fb2a 
+ffffffff81001000 T hypercall_page
+ffffffff81002000 T preemptible_hypercall_page
+
+This is one page apart.
+
+ffffffff81ae7b50 R __ksymtab_hypercall_page
+ffffffff81aea610 R __ksymtab_preemptible_hypercall_page
+ffffffff81af86c0 r __kcrctab_hypercall_page
+ffffffff81af9c20 r __kcrctab_preemptible_hypercall_page
+ffffffff81afbaa8 r __kstrtab_preemptible_hypercall_page
+ffffffff81afbac3 r __kstrtab_hypercall_page
+
+  Luis
