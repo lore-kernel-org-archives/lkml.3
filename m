@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbbAVOzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:55:55 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:58991 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbbAVOzv (ORCPT
+	id S1752667AbbAVO6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:58:10 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38116 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545AbbAVO6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:55:51 -0500
-Date: Thu, 22 Jan 2015 09:55:47 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/5] tracing: Add new file system tracefs
-Message-ID: <20150122145547.GB4507@htj.dyndns.org>
-References: <20150121171953.823177070@goodmis.org>
- <20150121230007.GA10389@kroah.com>
- <20150121204725.71933044@grimm.local.home>
- <20150121220701.22231849@grimm.local.home>
- <20150122031819.GA16561@kroah.com>
- <20150121225109.6b27b555@grimm.local.home>
- <20150122123212.GB25645@htj.dyndns.org>
- <20150122093249.6f4041a8@gandalf.local.home>
+	Thu, 22 Jan 2015 09:58:07 -0500
+Message-ID: <54C10FF4.5030503@ti.com>
+Date: Thu, 22 Jan 2015 16:57:56 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122093249.6f4041a8@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <balbi@ti.com>
+CC: <tony@atomide.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
+        <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] extcon: usb: Introduce USB GPIO extcon driver. Fix
+ DRA7 USB.
+References: <1421689942-10201-1-git-send-email-rogerq@ti.com> <20150120190237.GG15169@saruman> <54C0FBDC.6040803@ti.com>
+In-Reply-To: <54C0FBDC.6040803@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Steven.
 
-On Thu, Jan 22, 2015 at 09:32:49AM -0500, Steven Rostedt wrote:
-> The problem is that these do not return dentry. They return kernfs_node.
-
-Yeap, that's what represents a file or directory in kernfs.
-
-> I see a kernfs_node_from_dentry() call but not the other way around.
-
-Because dentries / inodes may or may not exist for a given kernfs
-node.  kernfs_nodes are the backing information in a similar way to an
-actual filesystem.
-
-> Yes, the interface for tracefs is just these four functions, but then
-> the interaction of the kernfs versions use a completely different API.
+On 22/01/15 15:32, Roger Quadros wrote:
+> Felipe,
 > 
-> Each of the created files expects to attach their own open, read,
-> write, and release functions. And yes, some even use the seq functions,
-> and they use it the vfs way. I do not intend on rewriting the users of
-> the debugfs file system. To use kernfs, it seems that I would need to
-> do that, and I don't have the time to make such a dramatic change to
-> the system. It will fall down on my TODO list and I probably wont get
-> to it for another decade.
-
-kernfs provides two sets of file operations.  One is seq_file based
-and the other is direct read/write.  In both cases, bouncing data
-between userland and kernel is handled by kernfs.  If you already have
-existing read write ops implemented doing custom buffer handling and
-direct userland memory access, it'll take some adaptation but for a
-lot of cases this would consolidate duplicate code paths.
-
-> I created tracefs with 700 lines of code and two files (inode.c and
-> tracefs.h), and for the users of tracefs, I just did
-> s/debugfs/tracefs/. If I can't make that substitution for the users,
-> that is a show stopper.
+> On 20/01/15 21:02, Felipe Balbi wrote:
+>> On Mon, Jan 19, 2015 at 07:52:17PM +0200, Roger Quadros wrote:
+>>> Hi,
+>>>
+>>> On DRA7 EVMs the USB ID pin is connected to a GPIO line. The USB drivers
+>>> (dwc3 + dwc3-omap) depend on extcon framework to get the USB cable state
+>>> (USB or USB-Host) to put the controller in the right mode.
+>>>
+>>> There were earlier attempts [1] to get this working by trying to patch up
+>>> the existing GPIO extcon driver.
+>>>
+>>> This series attemts to take a different approach by introducing a new
+>>> USB specific extcon driver to handle the USB ID GPIO pin and
+>>> interpret a right USB cable state.
+>>>
+>>> The reasoning to introduce this new driver is:
+>>> 1) The existing GPIO extcon driver doesn't understand USB cable states
+>>> and it can't handle more than one cable per instance.
+>>>    
+>>> For the USB case we need to handle at least 2 cable states.
+>>>     a) USB (attach/detach)
+>>>     b) USB-Host (attach/detach)
+>>> and could possible include more states like
+>>>     c) Fast-charger (attach/detach)
+>>>     d) Slow-charger (attach/detach)
+>>>     
+>>> 2) This USB specific driver can be easily updated in the future to
+>>> handle VBUS events, or charger detect events, in case it happens
+>>> to be available on GPIO for any platform.
+>>>
+>>> 3) The DT implementation is very easy. You just need one extcon node per USB
+>>> instead of one extcon node per cable state as in case of [1].
+>>>
+>>> 4) The cable state string doesn't need to be encoded in the device tree
+>>> as in case of [1].
+>>>
+>>> 5) With only ID event available, you can simulate a USB-peripheral attach
+>>> when USB-Host is detacted instead of hacking the USB driver to do the same.
+>>>
+>>> Tested on DRA7-evm and DRA72-evm.
+>>
+>> while at that, you might want to patch X15 too.
+>>
+> USB2 port is meant for peripheral use only. ID pin from USB port is not connected to GPIO.
 > 
-> I don't see how I can use kernfs without it causing a lot of invasive
-> changes to the ftrace subsystem.
 
-Converting an existing vfs based pseudo fs implementation over to
-kernfs isn't trivial.  I mean, if that were trivial, why would kernfs
-even exist?  kernfs is a layer which abstracts a large part of pseudo
-filesystem which provides extra features like significantly lower
-memory footprint with large number of nodes and revocation support in
-a way that its users, for the most part, hopefully, only have to worry
-about the content to provide to userland.
+OK answering myself here :).
+Peripheral mode doesn't work on x15-bb as the USB driver (dwc3-omap)
+doesn't set the mailbox correctly even when dwc3 node is set as otg = "peripheral".
 
-I frankly have no idea whether tracefs would be a good candidate for
-kernfs usage but if you're looking for a mechanical one-to-one
-conversion from vfs based implementation, that's not gonna work.
+Looks like we need to implement usb-gpio-extcon for x15 even though ID is hard coded.
 
-Thanks.
-
--- 
-tejun
+cheers,
+-roger
