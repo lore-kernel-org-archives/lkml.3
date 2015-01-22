@@ -1,101 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbbAVFYW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:24:22 -0500
-Received: from mail-bl2on0104.outbound.protection.outlook.com ([65.55.169.104]:27940
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750796AbbAVFYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:24:13 -0500
-From: Robin Gong <b38343@freescale.com>
-To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>,
-        <s.hauer@pengutronix.de>
-CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] dma: imx-sdma: switch to dynamic context mode after script loaded
-Date: Thu, 22 Jan 2015 11:59:37 +0800
-Message-ID: <1421899177-30406-1-git-send-email-b38343@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(243025005)(189002)(575784001)(6806004)(229853001)(46102003)(104016003)(33646002)(2201001)(105606002)(19580395003)(19580405001)(106466001)(36756003)(77156002)(48376002)(64706001)(97736003)(47776003)(50466002)(15975445007)(68736005)(77096005)(87936001)(92566002)(50226001)(85426001)(50986999)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB329;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1754262AbbAVECN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 23:02:13 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:41926 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbbAVECH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 23:02:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR03MB329;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR03MB329;
-X-Forefront-PRVS: 0464DBBBC4
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB329;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Jan 2015 05:10:05.9950
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR03MB329
+In-Reply-To: <1421861370-19422-2-git-send-email-wxt@rock-chips.com>
+References: <1421861370-19422-1-git-send-email-wxt@rock-chips.com> <1421861370-19422-2-git-send-email-wxt@rock-chips.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 22 Jan 2015 12:01:46 +0800
+X-Google-Sender-Auth: UmjWR44vlH6rgFt8cX1gIhinTso
+Message-ID: <CAGS+omAi+F1_1-8wmDMf9oUq6GCjXu8N4kyeNmKRWv8m3eaCrA@mail.gmail.com>
+Subject: Re: [PATCH v3] thermal: rockchip: make temperature reporting much
+ more accurate
+To: Caesar Wang <wxt@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below comments got from Page4724 of Reference Manual of i.mx6q:
-http://cache.freescale.com/files/32bit/doc/ref_manual/IMX6DQRM.pdf
+On Thu, Jan 22, 2015 at 1:29 AM, Caesar Wang <wxt@rock-chips.com> wrote:
+> In general, the kernel should report temperature readings exactly as
+> reported by the hardware. The cpu / gpu thermal driver works in 5 degree
+> increments,but we ought to do more accurate. The temperature will do
+> linear interpolation between the entries in the table.
+>
+> Test= $md5sum /dev/zero &
+> $while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
+> sleep .5; done
+>
+> e.g. We can get the result as follows:
+>     /sys/class/thermal/thermal_zone1/temp:39994
+>     /sys/class/thermal/thermal_zone2/temp:39086
+>     /sys/class/thermal/thermal_zone1/temp:39994
+>     /sys/class/thermal/thermal_zone2/temp:39540
+>     /sys/class/thermal/thermal_zone1/temp:39540
+>     /sys/class/thermal/thermal_zone2/temp:39540
+>     /sys/class/thermal/thermal_zone1/temp:39540
+>     /sys/class/thermal/thermal_zone2/temp:39994
+>
+> Signed-off-by: Caesar Wang <wxt@rock-chips.com>
+> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+> ---
+>
+> Changes in v3:
+> Suggested-by Daniel Kurtz,
+> the check doesn't reject "code == 0xfff"
+> Fixed in rk_tsadcv2_code_to_temp(u32 code)
+>
+> Changes in v2:
+> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+>  drivers/thermal/rockchip_thermal.c | 32 ++++++++++++++++++++++----------
+>  1 file changed, 22 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
+> index 1bcddfc..ce18007 100644
+> --- a/drivers/thermal/rockchip_thermal.c
+> +++ b/drivers/thermal/rockchip_thermal.c
+> @@ -193,19 +193,22 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
+>
+>  static long rk_tsadcv2_code_to_temp(u32 code)
+>  {
+> -       int high, low, mid;
+> -
+> -       low = 0;
+> -       high = ARRAY_SIZE(v2_code_table) - 1;
+> -       mid = (high + low) / 2;
+> +       unsigned int low = 0;
+> +       unsigned int high = ARRAY_SIZE(v2_code_table) - 1;
+> +       unsigned int mid = (low + high) / 2;
+> +       unsigned int num;
+> +       unsigned long denom;
+>
+> +       /* No code available, return callback */
+>         if (code > v2_code_table[low].code || code < v2_code_table[high].code)
+> -               return 125000; /* No code available, return max temperature */
+> +               return rk_tsadcv2_code_to_temp(code);
 
---"Static context mode should be used for the first channel called
-after reset to ensure that the all context RAM for that channel is
-initialized during the context SAVE phase when the channel is
-done or yields. Subsequent calls to the same channel or
-different channels may use any of the dynamic context modes.
-This will ensure that all context locations for the bootload
-channel are initialized, and prevent undefined values in context
-RAM from being loaded during the context restore if the
-channel is re-started later"
+Isn't this an infinite recursion?
 
-Unfortunately, the rule was broken by commit(5b28aa319bba96987316425a1131813d87cbab35)
-.This patch just take them back.
-
-Signed-off-by: Robin Gong <b38343@freescale.com>
----
- drivers/dma/imx-sdma.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index d0df198..d84b7a8 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -330,6 +330,8 @@ struct sdma_engine {
- 	const struct sdma_driver_data	*drvdata;
- };
- 
-+static bool channel0_first;
-+
- static struct sdma_driver_data sdma_imx31 = {
- 	.chnenbl0 = SDMA_CHNENBL0_IMX31,
- 	.num_events = 32,
-@@ -531,6 +533,12 @@ static int sdma_run_channel0(struct sdma_engine *sdma)
- 		dev_err(sdma->dev, "Timeout waiting for CH0 ready\n");
- 	}
- 
-+	if (!channel0_first) {
-+		/* Set bits of CONFIG register with given context switching mode */
-+		writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
-+		channel0_first = true;
-+	}
-+
- 	return ret ? 0 : -ETIMEDOUT;
- }
- 
-@@ -1401,9 +1409,6 @@ static int sdma_init(struct sdma_engine *sdma)
- 
- 	writel_relaxed(ccb_phys, sdma->regs + SDMA_H_C0PTR);
- 
--	/* Set bits of CONFIG register with given context switching mode */
--	writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
--
- 	/* Initializes channel's priorities */
- 	sdma_set_channel_priority(&sdma->channel[0], 7);
- 
--- 
-1.9.1
-
+>
+>         while (low <= high) {
+> -               if (code >= v2_code_table[mid].code && code <
+> -                   v2_code_table[mid - 1].code)
+> -                       return v2_code_table[mid].temp;
+> +               if (code >= v2_code_table[mid].code &&
+> +                   code < v2_code_table[mid - 1].code)
+> +                       break;
+> +               else if (code == TSADCV2_DATA_MASK)
+> +                       break;
+>                 else if (code < v2_code_table[mid].code)
+>                         low = mid + 1;
+>                 else
+> @@ -213,7 +216,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
+>                 mid = (low + high) / 2;
+>         }
+>
+> -       return 125000;
+> +       /*
+> +        * The 5C granularity provided by the table is too much. Let's
+> +        * assume that the relationship between sensor readings and
+> +        * temperature between 2 table entries is linear and interpolate
+> +        * to produce less granular result.
+> +        */
+> +       num = v2_code_table[mid].temp - v2_code_table[mid - 1].temp;
+> +       num *= v2_code_table[mid - 1].code - code;
+> +       denom = v2_code_table[mid - 1].code - v2_code_table[mid].code;
+> +       return v2_code_table[mid - 1].temp + (num / denom);
+>  }
+>
+>  /**
+> --
+> 1.9.1
+>
+>
