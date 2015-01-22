@@ -1,179 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbbAVCSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:18:03 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:37882 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938AbbAVCRl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:17:41 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: david.vrabel@citrix.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, kvm@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: [RFC v3 2/2] x86/xen: allow privcmd hypercalls to be preempted
-Date: Wed, 21 Jan 2015 18:17:19 -0800
-Message-Id: <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1754283AbbAVCSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:18:33 -0500
+Received: from ozlabs.org ([103.22.144.67]:54714 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752687AbbAVCSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 21:18:24 -0500
+Date: Thu, 22 Jan 2015 13:18:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Goz <ben.goz@amd.com>, Oded Gabbay <oded.gabbay@amd.com>
+Subject: linux-next: manual merge of the drm tree with Linus'  tree
+Message-ID: <20150122131817.3d946133@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/WFlClFErdvOI1BmEABbrIf3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+--Sig_/WFlClFErdvOI1BmEABbrIf3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Xen has support for splitting heavy work work into a series
-of hypercalls, called multicalls, and preempting them through
-what Xen calls continuation [0]. Despite this though without
-CONFIG_PREEMPT preemption won't happen, without preemption
-a system can become pretty useless on heavy handed hypercalls.
-Such is the case for example when creating a > 50 GiB HVM guest,
-we can get softlockups [1] with:.
+Hi Dave,
 
-kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/amd/include/kgd_kfd_interface.h between commit
+b64b8afcca9d ("drm/amd: Fixing typos in kfd<->kgd interface") from
+Linus' tree and commit 85ea7d07e1ec ("drm/amd: Add SDMA functions to
+kfd-->kgd interface") from the drm tree.
 
-The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
-(default 120 seconds), on the Xen side in this particular case
-this happens when the following Xen hypervisor code is used:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-xc_domain_set_pod_target() -->
-  do_memory_op() -->
-    arch_memory_op() -->
-      p2m_pod_set_mem_target()
-	-- long delay (real or emulated) --
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-This happens on arch_memory_op() on the XENMEM_set_pod_target memory
-op even though arch_memory_op() can handle continuation via
-hypercall_create_continuation() for example.
+diff --cc drivers/gpu/drm/amd/include/kgd_kfd_interface.h
+index 96a512208fad,cd3878fe6f77..000000000000
+--- a/drivers/gpu/drm/amd/include/kgd_kfd_interface.h
++++ b/drivers/gpu/drm/amd/include/kgd_kfd_interface.h
+@@@ -183,7 -182,9 +182,9 @@@ struct kfd2kgd_calls=20
+  	int (*hqd_load)(struct kgd_dev *kgd, void *mqd, uint32_t pipe_id,
+  			uint32_t queue_id, uint32_t __user *wptr);
+ =20
++ 	int (*hqd_sdma_load)(struct kgd_dev *kgd, void *mqd);
++=20
+ -	bool (*hqd_is_occupies)(struct kgd_dev *kgd, uint64_t queue_address,
+ +	bool (*hqd_is_occupied)(struct kgd_dev *kgd, uint64_t queue_address,
+  				uint32_t pipe_id, uint32_t queue_id);
+ =20
+  	int (*hqd_destroy)(struct kgd_dev *kgd, uint32_t reset_type,
 
-Machines over 50 GiB of memory are on high demand and hard to come
-by so to help replicate this sort of issue long delays on select
-hypercalls have been emulated in order to be able to test this on
-smaller machines [2].
+--Sig_/WFlClFErdvOI1BmEABbrIf3
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-On one hand this issue can be considered as expected given that
-CONFIG_PREEMPT=n is used however we have forced voluntary preemption
-precedent practices in the kernel even for CONFIG_PREEMPT=n through
-the usage of cond_resched() sprinkled in many places. To address
-this issue with Xen hypercalls though we need to find a way to aid
-to the schedular in the middle of hypercalls. We are motivated to
-address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
-rather unresponsive for long periods of time; in the worst case, at least
-only currently by emulating long delays on select io disk bound
-hypercalls, this can lead to filesystem corruption if the delay happens
-for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-We can address this problem by trying to check if we should schedule
-on the xen timer in the middle of a hypercall on the return from the
-timer interrupt. We want to be careful to not always force voluntary
-preemption though so to do this we only selectively enable preemption
-on very specific xen hypercalls.
+iQIcBAEBCAAGBQJUwF3uAAoJEMDTa8Ir7ZwV+p0P/iUuoivHTeaFv2KTjbNiunit
+iJIIendZTp+zP12zBNEYaYVMEHbuJ9hDADICA1miFMunyx23SQOf5rUSgmqfOynY
++KKHXmxgekd87AvGrmqqU6svruZUZQLJ81Dh9Wl+7xWpfYxeBAknnanLmouFwcfM
+zk3McRlAZZwgFutidqAOv7/NpNQQ4hxh85MEQcj9MbGbj3TfCdmkEA3o83cz7SJg
+Ky8GMeGvC/il28ScNAy5DvH6fWaFtq0+W+IXnnpkQH0UJSEE3ieMpbj79tNJshJy
+zoWdkwW5nlF7jSK73w0n6z94uMDDLs3GRrCSMBBSJNYndKw+0DJz7oEQ0HIkg83b
+pvdtAXXWsOO7uqkUwrB728nOB6aO/IwMDK7bJ1BAkGMSV9+9MZHI0bmZaxat6x/B
+/A0FYaFbk0d7Mph5lphzuV07GXpwDfKe30EDgqtJJLanNDMj1xl4k3ci4Xal6pLR
+IhM7rcgheK0FJq2gAmwePHhA4iq6iLtZJiHr4ot7com0t/KizDpcQeovE0zUB0D4
+iH/96sqGok3ASkdcKWGAPMz1I1mDZCdLjuEOLKS01JhzUoJ6oCzK77P5q97POnr1
+UnJ+0RY5kVQZV7TEj3IoV2t8w4qReFIkcyVK4wT80FM4esZvmc8B0gB2mgcpZsGt
+B9LmQf70OwSsXR5EqsMU
+=V4gI
+-----END PGP SIGNATURE-----
 
-This enables hypercall preemption by selectively forcing checks for
-voluntary preempting only on ioctl initiated private hypercalls
-where we know some folks have run into reported issues [1].
-
-[0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
-[1] https://bugzilla.novell.com/show_bug.cgi?id=861093
-[2] http://ftp.suse.com/pub/people/mcgrof/xen/emulate-long-xen-hypercalls.patch
-
-Based on original work by: David Vrabel <david.vrabel@citrix.com>
-Suggested-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- arch/x86/kernel/entry_32.S       |  2 ++
- arch/x86/kernel/entry_64.S       |  2 ++
- drivers/xen/events/events_base.c | 13 +++++++++++++
- include/xen/events.h             |  1 +
- 4 files changed, 18 insertions(+)
-
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 000d419..b4b1f42 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -982,6 +982,8 @@ ENTRY(xen_hypervisor_callback)
- ENTRY(xen_do_upcall)
- 1:	mov %esp, %eax
- 	call xen_evtchn_do_upcall
-+	movl %esp,%eax
-+	call xen_end_upcall
- 	jmp  ret_from_intr
- 	CFI_ENDPROC
- ENDPROC(xen_hypervisor_callback)
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 9ebaf63..ee28733 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1198,6 +1198,8 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
- 	popq %rsp
- 	CFI_DEF_CFA_REGISTER rsp
- 	decl PER_CPU_VAR(irq_count)
-+	movq %rsp, %rdi  /* pass pt_regs as first argument */
-+	call xen_end_upcall
- 	jmp  error_exit
- 	CFI_ENDPROC
- END(xen_do_hypervisor_callback)
-diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index b4bca2d..23c526b 100644
---- a/drivers/xen/events/events_base.c
-+++ b/drivers/xen/events/events_base.c
-@@ -32,6 +32,8 @@
- #include <linux/slab.h>
- #include <linux/irqnr.h>
- #include <linux/pci.h>
-+#include <linux/sched.h>
-+#include <linux/kprobes.h>
- 
- #ifdef CONFIG_X86
- #include <asm/desc.h>
-@@ -1243,6 +1245,17 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
- 	set_irq_regs(old_regs);
- }
- 
-+notrace void xen_end_upcall(struct pt_regs *regs)
-+{
-+	if (!xen_is_preemptible_hypercall(regs) ||
-+	    __this_cpu_read(xed_nesting_count))
-+		return;
-+
-+	if (_cond_resched())
-+		printk(KERN_DEBUG "xen hypercall preempted\n");
-+}
-+NOKPROBE_SYMBOL(xen_end_upcall);
-+
- void xen_hvm_evtchn_do_upcall(void)
- {
- 	__xen_evtchn_do_upcall();
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 5321cd9..f08df87 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -95,6 +95,7 @@ void xen_hvm_callback_vector(void);
- extern int xen_have_vector_callback;
- int xen_set_callback_via(uint64_t via);
- void xen_evtchn_do_upcall(struct pt_regs *regs);
-+void xen_end_upcall(struct pt_regs *regs);
- void xen_hvm_evtchn_do_upcall(void);
- 
- /* Bind a pirq for a physical interrupt to an irq. */
--- 
-2.1.1
-
+--Sig_/WFlClFErdvOI1BmEABbrIf3--
