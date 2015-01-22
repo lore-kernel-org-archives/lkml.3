@@ -1,34 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454AbbAVWeR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 17:34:17 -0500
-Received: from mga14.intel.com ([192.55.52.115]:13297 "EHLO mga14.intel.com"
+	id S1754715AbbAVWfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 17:35:41 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56812 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753105AbbAVWeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 17:34:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,451,1418112000"; 
-   d="scan'208";a="655153850"
-Message-ID: <54C17A17.8060306@intel.com>
-Date: Thu, 22 Jan 2015 14:30:47 -0800
-From: Tadeusz Struk <tadeusz.struk@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1753501AbbAVWfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 17:35:39 -0500
+From: Stewart Smith <stewart@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Cc: Rob Herring <robh@kernel.org>, open list <linux-kernel@vger.kernel.org>,
+        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Joel Stanley <joel@jms.id.au>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        Neelesh Gupta <neelegup@linux.vnet.ibm.com>,
+        "open list\:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
+        Anton Blanchard <anton@samba.org>
+Subject: Re: [PATCH v2 2/2] powerpc/powernv: Skip registering log region when CONFIG_PRINTK=n
+In-Reply-To: <CAJhHMCDPCdeGSfGFoYcUHXQoemtmSTdsmLrS3_GOewrvNQm8kA@mail.gmail.com>
+References: <1421893570-6920-1-git-send-email-bobby.prani@gmail.com> <1421893570-6920-2-git-send-email-bobby.prani@gmail.com> <1421903958.4598.4.camel@ellerman.id.au> <CAJhHMCDPCdeGSfGFoYcUHXQoemtmSTdsmLrS3_GOewrvNQm8kA@mail.gmail.com>
+User-Agent: Notmuch/0.18+16~gec02089 (http://notmuchmail.org) Emacs/23.1.1 (x86_64-redhat-linux-gnu)
+Date: Fri, 23 Jan 2015 09:35:28 +1100
+Message-ID: <m3sif2zbnz.fsf@oc8180480414.ibm.com>
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.apana.org.au>
-CC: Stephan Mueller <smueller@chronox.de>, linux-crypto@vger.kernel.org,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crypto: aesni: add setkey for driver-gcm-aes-aesni
-References: <2587101.YvN0IxRmOH@tachyon.chronox.de> <20150120031704.GB10475@gondor.apana.org.au> <40625395.stBBYbAQtz@tachyon.chronox.de> <54C1403D.1010608@intel.com> <20150122222302.GA10895@gondor.apana.org.au>
-In-Reply-To: <20150122222302.GA10895@gondor.apana.org.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012222-0033-0000-0000-000001A554DF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 02:23 PM, Herbert Xu wrote:
-> Yes but we should also fix this so that it's a proper aead
-> algorithm.
-Ok, I'll do that.
-Thanks,
-Tadeusz
+Pranith Kumar <bobby.prani@gmail.com> writes:
+> On Thu, Jan 22, 2015 at 12:19 AM, Michael Ellerman <mpe@ellerman.id.au> wrote:
+>> On Wed, 2015-01-21 at 21:26 -0500, Pranith Kumar wrote:
+>>> When CONFIG_PRINTK=n, log_buf_addr_get() returns NULL and log_buf_len_get()
+>>> return 0. Check for these return values and skip registering the dump buffer.
+>>>
+>>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>>> CC: Michael Ellerman <mpe@ellerman.id.au>
+>>> ---
+>>>  arch/powerpc/platforms/powernv/opal.c | 6 ++++++
+>>>  1 file changed, 6 insertions(+)
+>>
+>> What changed since v1? I don't see anything?
+>>
+>
+> Nothing in this patch but there is a v2 of the first patch in this
+> series, so had to resend this patch with a v2.
+
+You also missed my Reviewed-by :)
+
