@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423AbbAVJk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 04:40:58 -0500
-Received: from mga09.intel.com ([134.134.136.24]:18856 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727AbbAVJky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 04:40:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,448,1418112000"; 
-   d="scan'208";a="665734203"
-Message-ID: <1421919649.31903.123.camel@linux.intel.com>
-Subject: Re: [PATCH v2 2/4] x86: pmc_atom: print index of device in loop
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: x86@kernel.org, "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Date: Thu, 22 Jan 2015 11:40:49 +0200
-In-Reply-To: <54C07247.20902@linux.intel.com>
-References: <1421790603-30097-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1421790603-30097-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <54C07247.20902@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
+	id S1751930AbbAVJma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 04:42:30 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:17641 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbbAVJmY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 04:42:24 -0500
+Message-ID: <54C0C5EC.9080507@huawei.com>
+Date: Thu, 22 Jan 2015 17:42:04 +0800
+From: Li Bin <huawei.libin@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Miroslav Benes <mbenes@suse.cz>
+CC: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, <live-patching@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <guohanjun@huawei.com>, <zhangdianfang@huawei.com>,
+        <xiexiuqi@huawei.com>
+Subject: Re: [PATCH 1/2] livepatch: Revert "livepatch: enforce patch stacking
+ semantics"
+References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-2-git-send-email-huawei.libin@huawei.com> <54C04BF0.6020906@huawei.com> <alpine.LNX.2.00.1501221013580.24802@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1501221013580.24802@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.181]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-22 at 11:45 +0800, Li, Aubrey wrote:
-> On 2015/1/21 5:50, Andy Shevchenko wrote:
-> > The register mapping may change from one platform to another. Thus, indices
-> > might be not the same on different platforms. The patch makes the code to print
-> > the device index dynamically at run time.
+On 2015/1/22 17:15, Miroslav Benes wrote:
+> On Thu, 22 Jan 2015, Li Bin wrote:
 > 
-> Will another platform use the same table but different bit position? In
-> my opinion, different platform should use different mapping table.
-
-Yes, indeed.
-
-The only improvement I could suggest now is to use indices for bit field
-name from one array of possible names.
-
-Or use macro to fill the item like 
-#define BIT_X(bitname) { .name = __stringify(bitname), .bit_mask = BIT_
-## bitname, }
-
-
-> > 
-> > The patch also changes the for loop to iterate over the map until a terminator
-> > is found.
+>> On 2015/1/21 17:07, Li Bin wrote:
+>>> This reverts commit 83a90bb1345767f0cb96d242fd8b9db44b2b0e17.
+>>>
+>>> The method that only allowing the topmost patch on the stack to be
+>>> enabled or disabled is unreasonable. Such as the following case:
+>>>
+>>> 	- do live patch1
+>>> 	- disable patch1
+>>> 	- do live patch2 //error
+>>>
+>>> Now, we will never be able to do new live patch unless disabing the
+>>> patch1 although there is no dependencies.
+>>>
+>>
+>> Correct the log:
+>> ... unless disabling the patch1 although ... -->
+>> ... unless enabling the patch1 firstly although ...
 > 
-> Why do we need to do this? did you see any hurt from the existing
-> implementation?
+> Yes, but in such situation you can unregister patch1 and proceed with new 
+> live patch. No problem. As Jiri has already written. Or are we missing 
+> something?
+> 
 
-Just a micro optimization plus it allows in consequent patches to avoid
-size members in the pmc_reg_map.
+Ok, that is before process with new live patch we must unregister the disabled
+patch1 previously. Is there need some message to avoid confusing the user?
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+Thanks,
+Li Bin
+
+> Regards,
+> --
+> Miroslav Benes
+> SUSE Labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe live-patching" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> .
+> 
+
 
