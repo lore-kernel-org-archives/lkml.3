@@ -1,159 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbbAVC54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:57:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:12189 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753965AbbAVC5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:57:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,446,1418112000"; 
-   d="scan'208";a="640753172"
-Message-ID: <54C06726.4090805@linux.intel.com>
-Date: Thu, 22 Jan 2015 10:57:42 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754234AbbAVC60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:58:26 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:32850 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026AbbAVC6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 21:58:16 -0500
 MIME-Version: 1.0
-To: "Zheng, Lv" <lv.zheng@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>
-CC: "Luck, Tony" <tony.luck@intel.com>, "x86@kernel.org" <x86@kernel.org>,
+In-Reply-To: <4078818.ecVtLF3hjd@vostro.rjw.lan>
+References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <CAAVeFuJUxad0dJ9vK1DaDJPDLM+rc5b77=PgcJT5+Bv1=iWGxg@mail.gmail.com>
+ <CACRpkdZzCX0O1wX=W5RbjLcqOF_R3HMTT1w59oFu=JfPauLNuw@mail.gmail.com> <4078818.ecVtLF3hjd@vostro.rjw.lan>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 22 Jan 2015 11:57:55 +0900
+Message-ID: <CAAVeFuJjMDfz7TZexkYnYrCGkAmRwubs32UhSPO-4qZWbMJjuQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>
-Subject: Re: [RFC Patch 05/19] ACPI: Provide union for address_space64 and
- ext_address_space64
-References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-6-git-send-email-jiang.liu@linux.intel.com> <1AE640813FDE7649BE1B193DEA596E88026B9EFB@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026B9EFB@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 21, 2015 at 6:25 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Tuesday, January 20, 2015 01:16:06 PM Linus Walleij wrote:
+>> On Mon, Jan 19, 2015 at 6:59 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>>
+>> > I am not really fond of this idea since it adds complexity to the
+>> > (already too complex) GPIO lookup, and only solves to a local level
+>> > (GPIO) what is a more global problem (bad ACPI tables that can affect
+>> > any subsystem).
+>> (...)
+>> > it
+>> > seems more to-the-point to find a way to fix/patch the ACPI tables at
+>> > runtime, if that is possible at all, to provide a more general
+>> > solution to this issue.
+>>
+>> This is my position as well, until proven that this cannot be done.
+>
+> Well, that goes against the current practice, mind you, which *is* to put
+> workarounds for buggy ACPI tables into the kernel.  I'm not going to defend
+> that, but it has been done for several years now.
+>
+> Also someone may say to that: "Why don't *you* demonstrate that it can be done
+> in the first place?"  And what if it can be done, but is too complex to be
+> practical or similar?
+>
+> My personal opinion is that having a way to apply a fix on top of broken ACPI
+> tables (or an extension on top of correct ones for that matter) without touching
+> the kernel would be very useful indeed, but making it secure may be somewhat
+> challenging, because in principle there's no reason why the kernel should trust
+> such "external" fixes.
+>
+>> In device tree the same mechanism is called "device tree overlays"
+>> and I just have some vague feeling that such stuff is patched around in
+>> some Intel platforms already, but maybe that involves replacing
+>> the whole DSDT from userspace,
+>
+> From initramfs rather than from user space, but yes, it does.
+>
+>> surely the mechanism can be refined?
+>
+> Yes, it can (in principle).  In fact, we have a plan to refine it, but it is
+> going to take some time.  Once we've done that, we'll see how painful it is to
+> "patch" ACPI tables this way in practice.
+>
+> Also there is an ecosystem problem related to distributing such "patches".
+> Today, distributions don't need to worry about patching buggy platform
+> firmware, because they get workarounds in the kernel, but if we switch over
+> to the model in which platform firmware "overlays" need to be provided in
+> addition to it, then suddenly questions arise about who should be responsible
+> for making them available, how to avoid duplication of efforts between
+> distributions etc.
+>
+> All of that needs to be clarified before we start making hard statements like
+> "No in-kernel workarounds for that!"
+>
+> And, of course, there's the question of what the kernel should do if the given
+> firmware patch is not effective, so it doesn't really fix the problem it is
+> supposed to fix or it fixes that problem only partially or, worse yet, it
+> introuces more bugs than it fixes.  Should the kernel simply fail then (and
+> in what way if so) or should it try to carry out some default "sanitization"
+> of what the firmare (and patch) tells it and try to continue on the best
+> effort basis?
 
+If we decide to go ahead with the solution proposed by this patch for
+practical reasons (which are good reasons indeed), I still have one
+problem with its current form.
 
-On 2015/1/22 10:32, Zheng, Lv wrote:
-> Hi, Thomas and Jiang
-> 
->> From: Jiang Liu [mailto:jiang.liu@linux.intel.com]
->> Sent: Thursday, January 08, 2015 10:33 AM
->>
->> From: Thomas Gleixner <tglx@linutronix.de>
->>
->> address_space64 and ext_address_space64 share substracts just at
->> different offsets. To unify the parsing functions implement the two
->> structs as unions of their substructs, so we can extract the shared
->> data.
->>
->> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->> ---
->>  include/acpi/acrestyp.h |   49 ++++++++++++++++++++++++++++++++++-------------
->>  1 file changed, 36 insertions(+), 13 deletions(-)
->>
->> diff --git a/include/acpi/acrestyp.h b/include/acpi/acrestyp.h
->> index eb760ca0b2e0..307d5b2605c8 100644
->> --- a/include/acpi/acrestyp.h
->> +++ b/include/acpi/acrestyp.h
->> @@ -326,23 +326,46 @@ struct acpi_resource_address32 {
->>  	struct acpi_resource_source resource_source;
->>  };
->>
->> -struct acpi_resource_address64 {
->> -	ACPI_RESOURCE_ADDRESS_COMMON u64 granularity;
->> -	u64 minimum;
->> -	u64 maximum;
->> -	u64 translation_offset;
->> +#define ACPI_RESOURCE_ADDRESS64_COMMON \
->> +	u64 granularity;	       \
->> +	u64 minimum;		       \
->> +	u64 maximum;		       \
->> +	u64 translation_offset;	       \
->>  	u64 address_length;
->> -	struct acpi_resource_source resource_source;
->> +
->> +struct acpi_resource_address64_common {
->> +ACPI_RESOURCE_ADDRESS64_COMMON};
->> +
->> +struct acpi_resource_address64 {
->> +	union {
->> +		struct {
->> +			ACPI_RESOURCE_ADDRESS_COMMON
->> +			ACPI_RESOURCE_ADDRESS64_COMMON
->> +			struct acpi_resource_source resource_source;
->> +		};
-> 
-> This looks wrong to ACPICA upstream.
-> 
->> +		struct {
->> +			struct acpi_resource_address base;
->> +			struct acpi_resource_address64_common addr;
->> +			struct acpi_resource_source resource_source;
->> +		} common;
->> +	};
->>  };
-> 
-> And this.
-> Though anonymous structs/unions are now C11 standard, I still didn't see it used in the ACPICA upstream.
-> It could be a problem if someone still compiles ACPICA using old compilers.
-> 
->>
->>  struct acpi_resource_extended_address64 {
->> -	ACPI_RESOURCE_ADDRESS_COMMON u8 revision_ID;
->> -	u64 granularity;
->> -	u64 minimum;
->> -	u64 maximum;
->> -	u64 translation_offset;
->> -	u64 address_length;
->> -	u64 type_specific;
->> +	union {
->> +		struct {
->> +			ACPI_RESOURCE_ADDRESS_COMMON
->> +			u8 revision_ID;
->> +			ACPI_RESOURCE_ADDRESS64_COMMON
->> +			u64 type_specific;
->> +		};
-> 
-> Ditto.
-> 
->> +		struct {
->> +			struct acpi_resource_address base;
->> +			u8 revision_ID;
->> +			struct acpi_resource_address64_common addr;
->> +			u64 type_specific;
->> +		} common;
->> +	};
-> 
-> Ditto.
-> 
-> I think what you want is the ability to access common.addr and common.base from different resource address64 types.
-> So we can achieve this directly in the ACPICA upstream without using the union.
-> 
-> I tried this in the ACPICA upstream and the result is:
-> https://github.com/zetalog/acpica/commit/0f4ed510
-> Let me send its linuxized version after this email.
-Hi Lv,
-	Thanks for your great support:)
-	What's the normal process to propagate this patch into
-linux kernel? Or how long will it take? We have another hotplug
-patch set which depends on this patch set, then depends on this
-ACPICA core change.
-Regards!
-Gerry
-> 
-> Thanks and best regards
-> -Lv
-> 
->>  };
->>
->>  struct acpi_resource_extended_irq {
->> --
->> 1.7.10.4
-> 
+As the discussion highlighted, this is an ACPI problem, so I'd very
+much like it to be confined to the ACPI GPIO code, to be enabled only
+when ACPI is, and to use function names that start with acpi_gpio. The
+current implementation leverages platform lookup, making said lookup
+less efficient in the process and bringing confusion about its
+purpose. Although the two processes are indeed similar, they are
+separate things: one is a legitimate way to map GPIOs, the other is a
+fixup for broken firmware.
+
+I suppose we all agree this is a hackish fix, so let's confine it as
+much as we can.
