@@ -1,117 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbbAVIZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 03:25:40 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:54799 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbbAVIZd (ORCPT
+	id S1752271AbbAVI3F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 03:29:05 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:42628 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbbAVI2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 03:25:33 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 22 Jan 2015 17:26:28 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        akpm@linux-foundation.org, lauraa@codeaurora.org
-Subject: Re: [PATCH 2/3] mm: cma: allocation trigger
-Message-ID: <20150122082628.GH21444@js1304-P5Q-DELUXE>
-References: <1421775513-4460-1-git-send-email-sasha.levin@oracle.com>
- <1421775513-4460-3-git-send-email-sasha.levin@oracle.com>
+	Thu, 22 Jan 2015 03:28:55 -0500
+Date: Thu, 22 Jan 2015 00:28:51 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Viet Nga Dao <vndao@altera.com>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        nga_chi86 <ngachi86@gmail.com>
+Subject: Re: [PATCH mtd] mtd:devices: Add Altera EPCQ Driver
+Message-ID: <20150122082851.GB3268@brian-ubuntu>
+References: <CAN1oZWxB5N=YMQcsJppZgp7TXodcR4tKZM+LNFXS7PSx3F-Yag@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421775513-4460-3-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <CAN1oZWxB5N=YMQcsJppZgp7TXodcR4tKZM+LNFXS7PSx3F-Yag@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 12:38:32PM -0500, Sasha Levin wrote:
-> Provides a userspace interface to trigger a CMA allocation.
-> 
-> Usage:
-> 
-> 	echo [pages] > alloc
-> 
-> This would provide testing/fuzzing access to the CMA allocation paths.
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  mm/cma_debug.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 58 insertions(+)
-> 
-> diff --git a/mm/cma_debug.c b/mm/cma_debug.c
-> index 3a25413..eda0a41 100644
-> --- a/mm/cma_debug.c
-> +++ b/mm/cma_debug.c
-> @@ -7,9 +7,22 @@
->  
->  #include <linux/debugfs.h>
->  #include <linux/cma.h>
-> +#include <linux/list.h>
-> +#include <linux/kernel.h>
-> +#include <linux/dma-contiguous.h>
-> +#include <linux/slab.h>
->  
->  #include "cma.h"
->  
-> +struct cma_mem {
-> +	struct hlist_node node;
-> +	struct page *p;
-> +	unsigned long n;
-> +};
-> +
-> +static HLIST_HEAD(cma_mem_head);
-> +static DEFINE_SPINLOCK(cma_mem_head_lock);
-> +
->  static struct dentry *cma_debugfs_root;
->  
->  static int cma_debugfs_get(void *data, u64 *val)
-> @@ -44,6 +57,48 @@ static void cma_debugfs_add_one(struct cma *cma, int idx)
->  	debugfs_create_u32_array("bitmap", S_IRUGO, tmp, (u32*)cma->bitmap, u32s);
->  }
->  
-> +static void cma_add_to_cma_mem_list(struct cma_mem *mem)
-> +{
-> +	spin_lock(&cma_mem_head_lock);
-> +	hlist_add_head(&mem->node, &cma_mem_head);
-> +	spin_unlock(&cma_mem_head_lock);
-> +}
-> +
-> +static int cma_alloc_mem(int count)
-> +{
-> +	struct cma_mem *mem;
-> +	struct page *p;
-> +
-> +	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
-> +	if (!mem) 
-> +		return -ENOMEM;
-> +
-> +	p = cma_alloc(dma_contiguous_default_area, count, CONFIG_CMA_ALIGNMENT);
-> +	if (!p) {
-> +		pr_info("CMA: Allocation failed.\n");
-> +		kfree(mem);
-> +		return -ENOMEM;
-> +	}
+Hi Viet,
 
-Hello,
+On Thu, Jan 15, 2015 at 05:27:10PM +0800, Viet Nga Dao wrote:
+> On Tue, Jan 13, 2015 at 11:33 AM, Brian Norris
+> <computersforpeace@gmail.com> wrote:
+> > On Thu, Dec 18, 2014 at 12:23:16AM -0800, vndao@altera.com wrote:
+> >> From: Viet Nga Dao <vndao@altera.com>
+> >>
+> >> Altera EPCQ Controller is a soft IP which enables access to Altera EPCQ and
+> >> EPCS flash chips. This patch adds driver for these devices.
+> >>
+> >> Signed-off-by: Viet Nga Dao <vndao@altera.com>
+> >
+> > This drivers seems awfully similar to (and so I infer it is likely
+> > copy-and-pasted from) m25p80.c / spi-nor.c. Do you think it can be
+> > rewritten as a SPI NOR driver, under drivers/mtd/spi-nor/ ? It looks
+> > like these flash share most (all?) the same basic opcodes.
+> >
+> For Altera EPCQ flashes, almost operations are performed underline
+> hardware.
 
-I'm glad to see this patchset. I had similar one privately. :)
-Without this kind of facility, testing CMA is really hard.
+Right, that's understandable. But that's what spi-nor.c was designed
+for: implementing hardware-specific functionality that is targeted
+directly at SPI flash. Did you take a look at the callbacks available in
+'struct spi_nor'?
 
-Anyway, dma_contiguous_default_area is defined only in CONFIG_DMA_CMA.
-So, it would cause build break.
+> Software only able to perform the following through
+> registers:
+>  -  read status register
+>  -  read id
+>  -  write status registers bit SR_BP0,SR_BP1, SR_BP2,SR_BP3, SR_TB
+> (http://www.altera.com.my/literature/hb/cfg/cfg_cf52012.pdf)
 
-And, I think that it is better for this tester to have an ability to
-allocate pages on specific CMA reserved region. It could be easily
-achieved by moving 'alloc' registration to cma_debugfs_add_one(). Is
-there any reason not to do that?
+OK.
 
-> +
-> +	pr_info("CMA: Allocated %d pages at %p\n", count, p);
+> For read/write data: all the operations like QUAD_READ/WRITE,
+> FAST_READ/WRITE are handled by hardware as well. From software point
+> of view, there is no difference between these 2 modes.
 
-I don't think this output is needed. If CONFIG_CMA_DEBUG is enabled,
-cma_alloc() print similar output.
+OK, so you don't have to hook up the dual/quad mode infrastructure. And
+you'd just implement dead-simple spi_nor.{read,write,erase}() callbacks.
 
-Thanks.
+> That is why if rewrite the drivers to follow spi-nor structure, it
+> will require extra decoding works for the only few used opcodes.
+
+I think you'd only have some very trivial work here.
+
+There would be some small work to reintroduce a properly-replaceable ID
+table, and callbacks like ->lock() and ->unlock(), but those should be
+implemented in spi-nor.c sooner or later anyway.
+
+Anyway, if you take another look at spi-nor.{c,h} and determine that
+it's too difficult, then I suppose I don't mind accepting your driver
+under its current design. Your hardware is pretty esoteric anyway, the
+driver is still pretty simple, and it'll never be supporting any common
+SPI NOR vendors (right?), so it's not too big of a maintenance problem,
+I expect. But I do want to make sure that we don't copy/paste to repeat
+the mistakes of old drivers. As I noted already, your driver inherited
+some of the quirks of the old m25p80.c code.
+
+So please, give drivers/mtd/spi-nor/ another look, and then we can
+resume this discussion.
+
+[Snip the rest; please don't forget to address these comments in your
+next patch revision. BTW, I recall you sent me some other replies to my
+code review comments in personal email. Please reply to the mailing list
+for all code review.]
+
+Brian
