@@ -1,99 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598AbbAVXrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 18:47:53 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:37453 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338AbbAVXrr (ORCPT
+	id S1754289AbbAVXtk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 18:49:40 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:56312 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911AbbAVXti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 18:47:47 -0500
+	Thu, 22 Jan 2015 18:49:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150122210344.GE13072@google.com>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org> <20150122210344.GE13072@google.com>
-From: Rob Herring <robh@kernel.org>
-Date: Thu, 22 Jan 2015 17:47:25 -0600
-X-Google-Sender-Auth: jxZxkq1ovtRf1Oubiyb5n6VzBE0
-Message-ID: <CAL_Jsq+aw0y-1rrF=RMpYKMP4zGfmqzzG5BXYYoFABtKEUpX8Q@mail.gmail.com>
-Subject: Re: [PATCH 00/16] PCI generic configuration space accessors
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Howells <dhowells@redhat.com>, Greg Ungerer <gerg@uclinux.org>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Krzysztof Halasa <khalasa@piap.pl>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Simon Horman <horms@verge.net.au>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Will Deacon <will.deacon@arm.com>, cbe-oss-dev@lists.ozlabs.org,
-        linux-am33-list@redhat.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+In-Reply-To: <20150122144147.019eedc41f189eac44c3c4cd@freescale.com>
+References: <20150120140200.aa7ba0eb28d95e456972e178@freescale.com>
+	<20150120230150.GA14475@cloud>
+	<20150120160738.edfe64806cc8b943beb1dfa0@linux-foundation.org>
+	<CAC5umyieZn7ppXkKb45O=C=BF+iv6R_A1Dwfhro=cBJzFeovrA@mail.gmail.com>
+	<20150122014550.GA21444@js1304-P5Q-DELUXE>
+	<20150122144147.019eedc41f189eac44c3c4cd@freescale.com>
+Date: Fri, 23 Jan 2015 08:49:36 +0900
+Message-ID: <CAC5umyiF52cykH2_5TD0yzXb+842gywpe-+XZHEwmrDe0nYCPw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mm: fix undefined reference to `.kernel_map_pages' on
+ PPC builds
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Kim Phillips <kim.phillips@freescale.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>, josh@joshtriplett.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Jens Axboe <axboe@fb.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 3:03 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Jan 09, 2015 at 08:34:34PM -0600, Rob Herring wrote:
->> This series adds common accessor functions for PCI configuration space
->> accesses. This supports most PCI hosts with memory mapped configuration
->> space like ECAM or hosts with memory mapped address/data registers. ECAM
->> is not generically supported by this series, but could be added on top
->> of this. While some hosts have standard address decoding which could be
->> common as well, the various checks on bus numbers and device numbers are
->> quite varied. It is unclear how much of that is really necessary or
->> could be common.
+2015-01-23 5:41 GMT+09:00 Kim Phillips <kim.phillips@freescale.com>:
+> On Thu, 22 Jan 2015 10:45:51 +0900
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+>
+>> On Wed, Jan 21, 2015 at 09:57:59PM +0900, Akinobu Mita wrote:
+>> > 2015-01-21 9:07 GMT+09:00 Andrew Morton <akpm@linux-foundation.org>:
+>> > > On Tue, 20 Jan 2015 15:01:50 -0800 josh@joshtriplett.org wrote:
+>> > >
+>> > >> On Tue, Jan 20, 2015 at 02:02:00PM -0600, Kim Phillips wrote:
+>> > >> > It's possible to configure DEBUG_PAGEALLOC without PAGE_POISONING on
+>> > >> > ppc.  Fix building the generic kernel_map_pages() implementation in
+>> > >> > this case:
+>> > >> >
+>> > >> >   LD      init/built-in.o
+>> > >> > mm/built-in.o: In function `free_pages_prepare':
+>> > >> > mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
+>> > >> > mm/built-in.o: In function `prep_new_page':
+>> > >> > mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
+>> > >> > mm/built-in.o: In function `map_pages':
+>> > >> > mm/compaction.c:61: undefined reference to `.kernel_map_pages'
+>> > >> > make: *** [vmlinux] Error 1
+>> >
+>> > kernel_map_pages() is static inline function since commit 031bc5743f15
+>> > ("mm/debug-pagealloc: make debug-pagealloc boottime configurable").
+>> >
+>> > But there is old declaration in 'arch/powerpc/include/asm/cacheflush.h'.
+>> > Removing it or changing s/kernel_map_pages/__kernel_map_pages/ in this
+>> > header file or something can fix this problem?
+>> >
+>> > The architecture which has ARCH_SUPPORTS_DEBUG_PAGEALLOC
+>> > including PPC should not build mm/debug-pagealloc.o
 >>
->> The first 4 patches are preparatory cleanup. Patch 5 introduces the
->> common accessors. The remaining patches convert several PCI host
->> controllers. This is in no way a complete list of host controllers. The
->> conversion of more hosts should be possible. The Designware controller
->> in particular should be able to be converted, but its config space
->> accessors are a mess of override-able functions that I've not gotten my
->> head around.
-
-[...]
-
-> Really nice cleanups.  I added these with the acks so far to a pci/config
-> branch for v3.20.  I'll update it with more acks if they trickle in.
-
-Thanks.
-
-> You've structured it nicely so I can also just drop individual arch pieces
-> if necessary.  The pieces that haven't been acked yet (hint, hint):
+>> Yes, architecture with ARCH_SUPPORTS_DEBUG_PAGEALLOC should not build
+>> mm/debug-pagealloc.o. I attach the patch to remove old declaration.
+>> I hope it will fix Kim's problem.
+>>
+>> -------------->8------------------
+>> From 7cb9d1ed8a785df152cb8934e187031c8ebd1bb2 Mon Sep 17 00:00:00 2001
+>> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> Date: Thu, 22 Jan 2015 10:28:58 +0900
+>> Subject: [PATCH] mm/debug_pagealloc: fix build failure on ppc and some other
+>>  archs
+>>
+>> Kim Phillips reported following build failure.
+>>
+>>   LD      init/built-in.o
+>>   mm/built-in.o: In function `free_pages_prepare':
+>>   mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
+>>   mm/built-in.o: In function `prep_new_page':
+>>   mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
+>>   mm/built-in.o: In function `map_pages':
+>>   mm/compaction.c:61: undefined reference to `.kernel_map_pages'
+>>   make: *** [vmlinux] Error 1
+>>
+>> Reason for this problem is that commit 031bc5743f15
+>> ("mm/debug-pagealloc: make debug-pagealloc boottime configurable") forgot
+>> to remove old declaration of kernel_map_pages() in some architectures.
+>> This patch removes them to fix build failure.
+>>
+>> Reported-by: Kim Phillips <kim.phillips@freescale.com>
+>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> ---
 >
->     arch/arm/mach-cns3xxx/pcie.c
->     arch/arm/mach-sa1100/pci-nanoengine.c
-
-Some ARM sub-arch maintainers tend to not respond on things. These are
-platforms which aren't very active and aren't going to move to
-drivers/pci/host/ anytime soon. Maybe Arnd wants to ack them.
-
->     arch/mn10300/unit-asb2305/pci.c
->     arch/powerpc
+> Thanks. Now I get this:
 >
-> In addition, nobody has acked the frv and mips parts, but they're trivial
-> (they only add struct member names) that I can apply them without worrying.
+>   LD      init/built-in.o
+> mm/built-in.o: In function `kernel_map_pages':
+> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
+> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
+> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
+> Makefile:925: recipe for target 'vmlinux' failed
+> make: *** [vmlinux] Error 1
+>
+> but, AFAICT, that's not because this patch is invalid: it's because
+> __kernel_map_pages() isn't implemented in
+> arch/powerpc/mm/pgtable_64.c, i.e., for non-PPC_STD_MMU_64 PPC64
+> machines.
 
-You must pick-up the 4 clean-up ones or the build will break for those
-platforms. Or perhaps that will encourage some acks.
-
-I've also got some actual conversions for some MIPS platforms in my
-tree I haven't sent out yet. MIPS is fun with all the variety of
-endianness and h/w swapping capability or not.
-
-Rob
+Then, in order to use generic __kernel_map_pages() in mm/debug-pagealloc.c,
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC shouldn't be selected in
+arch/powerpc/Kconfig, when CONFIG_PPC_STD_MMU_64 isn't defined.
