@@ -1,101 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645AbbAVCdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:33:20 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:55866 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376AbbAVCcJ (ORCPT
+	id S1754665AbbAVCdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:33:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:45904 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754375AbbAVCdG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:32:09 -0500
-From: Xunlei Pang <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Xunlei Pang <pang.xunlei@linaro.org>
-Subject: [PATCH 5/5] rtc: Convert rtc_set_ntp_time() to use timespec64
-Date: Thu, 22 Jan 2015 02:31:55 +0000
-Message-Id: <1421893915-19309-5-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1421893915-19309-1-git-send-email-pang.xunlei@linaro.org>
-References: <1421893915-19309-1-git-send-email-pang.xunlei@linaro.org>
+	Wed, 21 Jan 2015 21:33:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,445,1418112000"; 
+   d="scan'208";a="654606070"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>
+CC: "Luck, Tony" <tony.luck@intel.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>
+Subject: RE: [RFC Patch 05/19] ACPI: Provide union for address_space64 and
+ ext_address_space64
+Thread-Topic: [RFC Patch 05/19] ACPI: Provide union for address_space64 and
+ ext_address_space64
+Thread-Index: AQHQKusel1jb3EibpEun4I6ftc/GqZzLbfVw
+Date: Thu, 22 Jan 2015 02:32:56 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026B9EFB@SHSMSX101.ccr.corp.intel.com>
+References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com>
+ <1420684386-5975-6-git-send-email-jiang.liu@linux.intel.com>
+In-Reply-To: <1420684386-5975-6-git-send-email-jiang.liu@linux.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtc_set_ntp_time() uses timespec which is y2038-unsafe,
-so modify to use timespec64 which is y2038-safe, then
-replace rtc_time_to_tm() with rtc_time64_to_tm().
+Hi, Thomas and Jiang
 
-Also adjust all its call sites(only NTP uses it) accordingly.
+> From: Jiang Liu [mailto:jiang.liu@linux.intel.com]
+> Sent: Thursday, January 08, 2015 10:33 AM
+> 
+> From: Thomas Gleixner <tglx@linutronix.de>
+> 
+> address_space64 and ext_address_space64 share substracts just at
+> different offsets. To unify the parsing functions implement the two
+> structs as unions of their substructs, so we can extract the shared
+> data.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  include/acpi/acrestyp.h |   49 ++++++++++++++++++++++++++++++++++-------------
+>  1 file changed, 36 insertions(+), 13 deletions(-)
+> 
+> diff --git a/include/acpi/acrestyp.h b/include/acpi/acrestyp.h
+> index eb760ca0b2e0..307d5b2605c8 100644
+> --- a/include/acpi/acrestyp.h
+> +++ b/include/acpi/acrestyp.h
+> @@ -326,23 +326,46 @@ struct acpi_resource_address32 {
+>  	struct acpi_resource_source resource_source;
+>  };
+> 
+> -struct acpi_resource_address64 {
+> -	ACPI_RESOURCE_ADDRESS_COMMON u64 granularity;
+> -	u64 minimum;
+> -	u64 maximum;
+> -	u64 translation_offset;
+> +#define ACPI_RESOURCE_ADDRESS64_COMMON \
+> +	u64 granularity;	       \
+> +	u64 minimum;		       \
+> +	u64 maximum;		       \
+> +	u64 translation_offset;	       \
+>  	u64 address_length;
+> -	struct acpi_resource_source resource_source;
+> +
+> +struct acpi_resource_address64_common {
+> +ACPI_RESOURCE_ADDRESS64_COMMON};
+> +
+> +struct acpi_resource_address64 {
+> +	union {
+> +		struct {
+> +			ACPI_RESOURCE_ADDRESS_COMMON
+> +			ACPI_RESOURCE_ADDRESS64_COMMON
+> +			struct acpi_resource_source resource_source;
+> +		};
 
-Reviewed-by: John Stultz <john.stultz@linaro.org>
-Reviewed-by: Arnd Bergmann <arnd.bergmann@linaro.org>
-Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
----
- drivers/rtc/systohc.c | 6 +++---
- include/linux/rtc.h   | 2 +-
- kernel/time/ntp.c     | 4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
+This looks wrong to ACPICA upstream.
 
-diff --git a/drivers/rtc/systohc.c b/drivers/rtc/systohc.c
-index e34a07b..22bbe2e 100644
---- a/drivers/rtc/systohc.c
-+++ b/drivers/rtc/systohc.c
-@@ -20,16 +20,16 @@
-  *
-  * If temporary failure is indicated the caller should try again 'soon'
-  */
--int rtc_set_ntp_time(struct timespec now)
-+int rtc_set_ntp_time(struct timespec64 now)
- {
- 	struct rtc_device *rtc;
- 	struct rtc_time tm;
- 	int err = -ENODEV;
- 
- 	if (now.tv_nsec < (NSEC_PER_SEC >> 1))
--		rtc_time_to_tm(now.tv_sec, &tm);
-+		rtc_time64_to_tm(now.tv_sec, &tm);
- 	else
--		rtc_time_to_tm(now.tv_sec + 1, &tm);
-+		rtc_time64_to_tm(now.tv_sec + 1, &tm);
- 
- 	rtc = rtc_class_open(CONFIG_RTC_HCTOSYS_DEVICE);
- 	if (rtc) {
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index 29093da..8dcf682 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -162,7 +162,7 @@ extern void devm_rtc_device_unregister(struct device *dev,
- extern int rtc_read_time(struct rtc_device *rtc, struct rtc_time *tm);
- extern int rtc_set_time(struct rtc_device *rtc, struct rtc_time *tm);
- extern int rtc_set_mmss(struct rtc_device *rtc, unsigned long secs);
--extern int rtc_set_ntp_time(struct timespec now);
-+extern int rtc_set_ntp_time(struct timespec64 now);
- int __rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm);
- extern int rtc_read_alarm(struct rtc_device *rtc,
- 			struct rtc_wkalrm *alrm);
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 87a346f..183dfe2 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -488,13 +488,13 @@ static void sync_cmos_clock(struct work_struct *work)
- 
- 	getnstimeofday64(&now);
- 	if (abs(now.tv_nsec - (NSEC_PER_SEC / 2)) <= tick_nsec * 5) {
--		struct timespec adjust = timespec64_to_timespec(now);
-+		struct timespec64 adjust = now;
- 
- 		fail = -ENODEV;
- 		if (persistent_clock_is_local)
- 			adjust.tv_sec -= (sys_tz.tz_minuteswest * 60);
- #ifdef CONFIG_GENERIC_CMOS_UPDATE
--		fail = update_persistent_clock(adjust);
-+		fail = update_persistent_clock(timespec64_to_timespec(adjust));
- #endif
- #ifdef CONFIG_RTC_SYSTOHC
- 		if (fail == -ENODEV)
--- 
-1.9.1
+> +		struct {
+> +			struct acpi_resource_address base;
+> +			struct acpi_resource_address64_common addr;
+> +			struct acpi_resource_source resource_source;
+> +		} common;
+> +	};
+>  };
+
+And this.
+Though anonymous structs/unions are now C11 standard, I still didn't see it used in the ACPICA upstream.
+It could be a problem if someone still compiles ACPICA using old compilers.
+
+> 
+>  struct acpi_resource_extended_address64 {
+> -	ACPI_RESOURCE_ADDRESS_COMMON u8 revision_ID;
+> -	u64 granularity;
+> -	u64 minimum;
+> -	u64 maximum;
+> -	u64 translation_offset;
+> -	u64 address_length;
+> -	u64 type_specific;
+> +	union {
+> +		struct {
+> +			ACPI_RESOURCE_ADDRESS_COMMON
+> +			u8 revision_ID;
+> +			ACPI_RESOURCE_ADDRESS64_COMMON
+> +			u64 type_specific;
+> +		};
+
+Ditto.
+
+> +		struct {
+> +			struct acpi_resource_address base;
+> +			u8 revision_ID;
+> +			struct acpi_resource_address64_common addr;
+> +			u64 type_specific;
+> +		} common;
+> +	};
+
+Ditto.
+
+I think what you want is the ability to access common.addr and common.base from different resource address64 types.
+So we can achieve this directly in the ACPICA upstream without using the union.
+
+I tried this in the ACPICA upstream and the result is:
+https://github.com/zetalog/acpica/commit/0f4ed510
+Let me send its linuxized version after this email.
+
+Thanks and best regards
+-Lv
+
+>  };
+> 
+>  struct acpi_resource_extended_irq {
+> --
+> 1.7.10.4
 
