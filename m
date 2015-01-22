@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbbAVCRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:17:53 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:32917 "EHLO
+	id S1752894AbbAVCSD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:18:03 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:37882 "EHLO
 	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774AbbAVCRg (ORCPT
+	with ESMTP id S1753938AbbAVCRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:17:36 -0500
+	Wed, 21 Jan 2015 21:17:41 -0500
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: david.vrabel@citrix.com, konrad.wilk@oracle.com,
         boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, x86@kernel.org, kvm@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Jan Beulich <JBeulich@suse.com>
-Subject: [RFC v3 1/2] x86/xen: add xen_is_preemptible_hypercall()
-Date: Wed, 21 Jan 2015 18:17:18 -0800
-Message-Id: <1421893039-426-2-git-send-email-mcgrof@do-not-panic.com>
+Subject: [RFC v3 2/2] x86/xen: allow privcmd hypercalls to be preempted
+Date: Wed, 21 Jan 2015 18:17:19 -0800
+Message-Id: <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
@@ -29,25 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-On kernels with voluntary or no preemption we can run
-into situations where a hypercall issued through userspace
-will linger around as it addresses sub-operatiosn in kernel
-context (multicalls). Such operations can trigger soft lockup
-detection.
+Xen has support for splitting heavy work work into a series
+of hypercalls, called multicalls, and preempting them through
+what Xen calls continuation [0]. Despite this though without
+CONFIG_PREEMPT preemption won't happen, without preemption
+a system can become pretty useless on heavy handed hypercalls.
+Such is the case for example when creating a > 50 GiB HVM guest,
+we can get softlockups [1] with:.
 
-We want to address a way to let the kernel voluntarily preempt
-such calls even on non preempt kernels, to address this we first
-need to distinguish which hypercalls fall under this category.
-This implements xen_is_preemptible_hypercall() which lets us do
-just that by adding a secondary hypercall page, calls made via
-the new page may be preempted.
+kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
 
-Andrew had originally submitted a version of this work [0].
+The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
+(default 120 seconds), on the Xen side in this particular case
+this happens when the following Xen hypervisor code is used:
 
-[0] http://lists.xen.org/archives/html/xen-devel/2014-02/msg01056.html
+xc_domain_set_pod_target() -->
+  do_memory_op() -->
+    arch_memory_op() -->
+      p2m_pod_set_mem_target()
+	-- long delay (real or emulated) --
 
-Based on original work by: Andrew Cooper <andrew.cooper3@citrix.com>
+This happens on arch_memory_op() on the XENMEM_set_pod_target memory
+op even though arch_memory_op() can handle continuation via
+hypercall_create_continuation() for example.
 
+Machines over 50 GiB of memory are on high demand and hard to come
+by so to help replicate this sort of issue long delays on select
+hypercalls have been emulated in order to be able to test this on
+smaller machines [2].
+
+On one hand this issue can be considered as expected given that
+CONFIG_PREEMPT=n is used however we have forced voluntary preemption
+precedent practices in the kernel even for CONFIG_PREEMPT=n through
+the usage of cond_resched() sprinkled in many places. To address
+this issue with Xen hypercalls though we need to find a way to aid
+to the schedular in the middle of hypercalls. We are motivated to
+address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
+rather unresponsive for long periods of time; in the worst case, at least
+only currently by emulating long delays on select io disk bound
+hypercalls, this can lead to filesystem corruption if the delay happens
+for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
+
+We can address this problem by trying to check if we should schedule
+on the xen timer in the middle of a hypercall on the return from the
+timer interrupt. We want to be careful to not always force voluntary
+preemption though so to do this we only selectively enable preemption
+on very specific xen hypercalls.
+
+This enables hypercall preemption by selectively forcing checks for
+voluntary preempting only on ioctl initiated private hypercalls
+where we know some folks have run into reported issues [1].
+
+[0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
+[1] https://bugzilla.novell.com/show_bug.cgi?id=861093
+[2] http://ftp.suse.com/pub/people/mcgrof/xen/emulate-long-xen-hypercalls.patch
+
+Based on original work by: David Vrabel <david.vrabel@citrix.com>
+Suggested-by: Andy Lutomirski <luto@amacapital.net>
 Cc: Andy Lutomirski <luto@amacapital.net>
 Cc: Borislav Petkov <bp@suse.de>
 Cc: David Vrabel <david.vrabel@citrix.com>
@@ -61,113 +99,81 @@ Cc: Jan Beulich <JBeulich@suse.com>
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- arch/x86/include/asm/xen/hypercall.h | 20 ++++++++++++++++++++
- arch/x86/xen/enlighten.c             |  7 +++++++
- arch/x86/xen/xen-head.S              | 18 +++++++++++++++++-
- 3 files changed, 44 insertions(+), 1 deletion(-)
+ arch/x86/kernel/entry_32.S       |  2 ++
+ arch/x86/kernel/entry_64.S       |  2 ++
+ drivers/xen/events/events_base.c | 13 +++++++++++++
+ include/xen/events.h             |  1 +
+ 4 files changed, 18 insertions(+)
 
-diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
-index ca08a27..221008e 100644
---- a/arch/x86/include/asm/xen/hypercall.h
-+++ b/arch/x86/include/asm/xen/hypercall.h
-@@ -84,6 +84,22 @@
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 000d419..b4b1f42 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -982,6 +982,8 @@ ENTRY(xen_hypervisor_callback)
+ ENTRY(xen_do_upcall)
+ 1:	mov %esp, %eax
+ 	call xen_evtchn_do_upcall
++	movl %esp,%eax
++	call xen_end_upcall
+ 	jmp  ret_from_intr
+ 	CFI_ENDPROC
+ ENDPROC(xen_hypervisor_callback)
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 9ebaf63..ee28733 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1198,6 +1198,8 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
+ 	popq %rsp
+ 	CFI_DEF_CFA_REGISTER rsp
+ 	decl PER_CPU_VAR(irq_count)
++	movq %rsp, %rdi  /* pass pt_regs as first argument */
++	call xen_end_upcall
+ 	jmp  error_exit
+ 	CFI_ENDPROC
+ END(xen_do_hypervisor_callback)
+diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+index b4bca2d..23c526b 100644
+--- a/drivers/xen/events/events_base.c
++++ b/drivers/xen/events/events_base.c
+@@ -32,6 +32,8 @@
+ #include <linux/slab.h>
+ #include <linux/irqnr.h>
+ #include <linux/pci.h>
++#include <linux/sched.h>
++#include <linux/kprobes.h>
  
- extern struct { char _entry[32]; } hypercall_page[];
+ #ifdef CONFIG_X86
+ #include <asm/desc.h>
+@@ -1243,6 +1245,17 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
+ 	set_irq_regs(old_regs);
+ }
  
-+#ifndef CONFIG_PREEMPT
-+extern struct { char _entry[32]; } preemptible_hypercall_page[];
-+
-+static inline bool xen_is_preemptible_hypercall(struct pt_regs *regs)
++notrace void xen_end_upcall(struct pt_regs *regs)
 +{
-+	return !user_mode_vm(regs) &&
-+		regs->ip >= (unsigned long)preemptible_hypercall_page &&
-+		regs->ip < (unsigned long)preemptible_hypercall_page + PAGE_SIZE;
++	if (!xen_is_preemptible_hypercall(regs) ||
++	    __this_cpu_read(xed_nesting_count))
++		return;
++
++	if (_cond_resched())
++		printk(KERN_DEBUG "xen hypercall preempted\n");
 +}
-+#else
-+static inline bool xen_is_preemptible_hypercall(struct pt_regs *regs)
-+{
-+	return false;
-+}
-+#endif
++NOKPROBE_SYMBOL(xen_end_upcall);
 +
- #define __HYPERCALL		"call hypercall_page+%c[offset]"
- #define __HYPERCALL_ENTRY(x)						\
- 	[offset] "i" (__HYPERVISOR_##x * sizeof(hypercall_page[0]))
-@@ -215,7 +231,11 @@ privcmd_call(unsigned call,
+ void xen_hvm_evtchn_do_upcall(void)
+ {
+ 	__xen_evtchn_do_upcall();
+diff --git a/include/xen/events.h b/include/xen/events.h
+index 5321cd9..f08df87 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -95,6 +95,7 @@ void xen_hvm_callback_vector(void);
+ extern int xen_have_vector_callback;
+ int xen_set_callback_via(uint64_t via);
+ void xen_evtchn_do_upcall(struct pt_regs *regs);
++void xen_end_upcall(struct pt_regs *regs);
+ void xen_hvm_evtchn_do_upcall(void);
  
- 	asm volatile("call *%[call]"
- 		     : __HYPERCALL_5PARAM
-+#ifndef CONFIG_PREEMPT
-+		     : [call] "a" (&preemptible_hypercall_page[call])
-+#else
- 		     : [call] "a" (&hypercall_page[call])
-+#endif
- 		     : __HYPERCALL_CLOBBER5);
- 
- 	return (long)__res;
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 6bf3a13..9c01b48 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -84,6 +84,9 @@
- #include "multicalls.h"
- 
- EXPORT_SYMBOL_GPL(hypercall_page);
-+#ifndef CONFIG_PREEMPT
-+EXPORT_SYMBOL_GPL(preemptible_hypercall_page);
-+#endif
- 
- /*
-  * Pointer to the xen_vcpu_info structure or
-@@ -1531,6 +1534,10 @@ asmlinkage __visible void __init xen_start_kernel(void)
- #endif
- 	xen_setup_machphys_mapping();
- 
-+#ifndef CONFIG_PREEMPT
-+	copy_page(preemptible_hypercall_page, hypercall_page);
-+#endif
-+
- 	/* Install Xen paravirt ops */
- 	pv_info = xen_info;
- 	pv_init_ops = xen_init_ops;
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index 674b2225..6e6a9517 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -85,9 +85,18 @@ ENTRY(xen_pvh_early_cpu_init)
- .pushsection .text
- 	.balign PAGE_SIZE
- ENTRY(hypercall_page)
-+
-+#ifdef CONFIG_PREEMPT
-+#  define PREEMPT_HYPERCALL_ENTRY(x)
-+#else
-+#  define PREEMPT_HYPERCALL_ENTRY(x) \
-+       .global xen_hypercall_##x ## _p ASM_NL \
-+       .set preemptible_xen_hypercall_##x, xen_hypercall_##x + PAGE_SIZE ASM_NL
-+#endif
- #define NEXT_HYPERCALL(x) \
- 	ENTRY(xen_hypercall_##x) \
--	.skip 32
-+	.skip 32 ASM_NL \
-+	PREEMPT_HYPERCALL_ENTRY(x)
- 
- NEXT_HYPERCALL(set_trap_table)
- NEXT_HYPERCALL(mmu_update)
-@@ -138,6 +147,13 @@ NEXT_HYPERCALL(arch_4)
- NEXT_HYPERCALL(arch_5)
- NEXT_HYPERCALL(arch_6)
- 	.balign PAGE_SIZE
-+
-+#ifndef CONFIG_PREEMPT
-+ENTRY(preemptible_hypercall_page)
-+	.skip PAGE_SIZE
-+#endif /* CONFIG_PREEMPT */
-+
-+#undef NEXT_HYPERCALL
- .popsection
- 
- 	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS,       .asciz "linux")
+ /* Bind a pirq for a physical interrupt to an irq. */
 -- 
 2.1.1
 
