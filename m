@@ -1,195 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbbAVSHL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 13:07:11 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:57374 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609AbbAVSHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 13:07:06 -0500
+	id S1753688AbbAVSLc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 13:11:32 -0500
+Received: from box2.japko.eu ([91.121.152.53]:43052 "EHLO box2.japko.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752473AbbAVSL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 13:11:28 -0500
+Date: Thu, 22 Jan 2015 19:08:58 +0100
+From: Krzysztof Adamski <k@japko.eu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Noralf Tronnes <notro@tronnes.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: fbtft: fbtft-core mark functions static
+Message-ID: <20150122180857.GA11988@box2.japko.eu>
 MIME-Version: 1.0
-In-Reply-To: <CACZ9PQXd_UpnDjgdvG884OpVb_oH_VtZB4Ka9K2Ex6JM4zecyQ@mail.gmail.com>
-References: <CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
-	<CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
-	<20150116155923.GK12302@n2100.arm.linux.org.uk>
-	<CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
-	<20150116161752.GL12302@n2100.arm.linux.org.uk>
-	<CAGXu5j+XHFNyhaBndQr1Q2uthsFP9ZQGbaw5hofDmXyKXZ-H5g@mail.gmail.com>
-	<CAGXu5j+9p1T29NoHnCNywd0T=H2mzWhCou5nSRfXZktEOC7_=A@mail.gmail.com>
-	<20150119092002.GA32131@arm.com>
-	<CAGXu5jJ8vphdjbqy7OojE=V70vLPs2impJ6i561JafrLYXxvbw@mail.gmail.com>
-	<20150120224518.GL26493@n2100.arm.linux.org.uk>
-	<20150120230458.GM26493@n2100.arm.linux.org.uk>
-	<CAGXu5jKzif=vp6gn5ZtrTx-JTN367qFphobnt9s=awbaafwoUw@mail.gmail.com>
-	<CACZ9PQXd_UpnDjgdvG884OpVb_oH_VtZB4Ka9K2Ex6JM4zecyQ@mail.gmail.com>
-Date: Thu, 22 Jan 2015 10:07:05 -0800
-X-Google-Sender-Auth: hLbVWD9zdT6qeDv98sYQe-c-Aag
-Message-ID: <CAGXu5j+CQxZo7ku6nj31UMHySVFo8My0Jd-GthF=tibe_Y2x0w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of thread_info->syscall
-From: Kees Cook <keescook@chromium.org>
-To: Roman Peniaev <r.peniaev@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 5:24 PM, Roman Peniaev <r.peniaev@gmail.com> wrote:
-> On Thu, Jan 22, 2015 at 8:32 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Tue, Jan 20, 2015 at 3:04 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->>> On Tue, Jan 20, 2015 at 10:45:19PM +0000, Russell King - ARM Linux wrote:
->>>> Well, the whole question is this: is restarting a system call like
->>>> usleep() really a separate system call, or is it a kernel implementation
->>>> detail?
->>>>
->>>> If you wanted seccomp to see this, what would be the use case?  Why
->>>> would seccomp want to block this syscall?  Does it make sense for
->>>> seccomp to block this syscall when it doesn't block something like
->>>> usleep() and then have usleep() fail just because the thread received
->>>> a signal?
->>>>
->>>> I personally regard the whole restart system call thing as a purely
->>>> kernel internal thing which should not be exposed to userland.  If
->>>> we decide that it should be exposed to userland, then it becomes part
->>>> of the user ABI, and it /could/ become difficult if we needed to
->>>> change it in future - and I'd rather not get into the "oh shit, we
->>>> can't change it because that would break app X" crap.
->>>
->>> Here's a scenario where it could become a problem:
->>>
->>> Let's say that we want to use seccomp to secure some code which issues
->>> system calls.  We determine that the app uses system calls which don't
->>> result in the restart system call being issued, so we decide to ask
->>> seccomp to block the restart system call.  Some of these system calls
->>> that the app was using are restartable system calls.
->>>
->>> When these system calls are restarted, what we see via ptrace etc is
->>> that the system call simply gets re-issued as its own system call.
->>>
->>> In a future kernel version, we decide that we could really do with one
->>> of those system calls using the restart block feature, so we arrange
->>> for it to set up the restart block, and return -ERESTART_BLOCK.  That's
->>> fine for most applications, but this app now breaks.
->>>
->>> The side effect of that breakage is that we have to revert that kernel
->>> change - because we've broken userland, and that's simply not allowed.
->>>
->>> Now look at the alternative: we don't make the restart syscall visible.
->>> This means that we hide that detail, and we actually reflect the
->>> behaviour that we've had for the other system call restart mechanisms,
->>> and we don't have to fear userspace breakage as a result of switching
->>> from one restart mechanism to another.
->>>
->>> I am very much of the opinion that we should be trying to limit the
->>> exposure of inappropriate kernel internal details to userland, because
->>> userland has a habbit of becoming reliant on them, and when it does,
->>> it makes kernel maintanence unnecessarily harder.
->>
->> I totally agree with you. :) My question here is more about what we
->> should do with what we currently have since we have some unexpected
->> combinations.
->>
->> There is already an __NR_restart_syscall syscall and it seems like
->> it's already part of the userspace ABI:
->>  - it is possible to call it from userspace directly
->>  - seccomp "sees" it
->>  - ptrace doesn't see it
->>
->> Native ARM64 hides the restart from both seccomp and ptrace, and this
->> seems like the right idea, except that restart_syscall is still
->> callable from userspace. I don't think there's a way to make that
->> vanish, which means we'll always have an exposed syscall. If anything
->> goes wrong with it (which we've been quite close to recently[1]),
->> there would be no way to have seccomp filter it.
->>
->> So, at the least, I'd like arm64 to NOT hide restart_syscall from
->> seccomp, and at best I'd like both arm and arm64 to (somehow) entirely
->> remove restart_syscall from the userspace ABI so it wouldn't need to
->> be filtered, and wouldn't become a weird ABI hiccup as you've
->> described.
->>
->> I fail to imagine a way to remove restart_syscall from userspace, so
->> I'm left with wanting parity of behavior between ARM and ARM64 (and
->> x86). What's the right way forward?
->
-> My sufferings are an opposite of what seccompt expects: currently I do
-> not see any possible way (from userspace) to get syscall number which was
-> restarted, because at some given time userspace checks the procfs
-> syscall file and sees NR_restart there, without any chance to understand
-> what exactly was restarted (I am talking about some kind of debugging
-> tool which does dead-lock analysis of stuck tasks).
->
-> I totally agree with Russell not to provide kernel guts to userspace,
-> but it is already done.  Too late.
->
-> So probably there is a need to split syscall on two numbers:
-> real and effective.  Real number we have right now on x86.
->
-> And this should be done for both ptrace and procfs syscall file.
-> (am I right that only for ARM we already have PTRACE_SET_SYSCALL?
->  seems we can add also real/effective getter)
+This fixes sparse warnings like:
+     warning: symbol XXX was not declared. Should it be static?
 
-ARM's syscall "get" is via PTRACE_GETREGSET with NT_PRSTATUS, reading ARM_r7:
+by declaring all local functions static.
 
-int syscall_get(pid_t tracee) {
-        struct iovec iov;
-        struct pt_regs;
+Signed-off-by: Krzysztof Adamski <k@japko.eu>
+---
+ drivers/staging/fbtft/fbtft-core.c |   47 ++++++++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 21 deletions(-)
 
-        iov.iov_base = &regs;
-        iov.iov_len = sizeof(regs);
-        if (ptrace(PTRACE_GETREGSET, tracee, NT_PRSTATUS, &iov) < 0) {
-               perror("PTRACE_GETREGSET, NT_PRSTATUS");
-               return -1;
-        }
-        return regs.ARM_r7;
-}
-
-ARM's syscall "set" is via PTRACE_SET_SYSCALL:
-
-int syscall_set(int syscall, pid_t tracee) {
-        return ptrace(PTRACE_SET_SYSCALL, tracee, NULL, syscall);
-}
-
-Landing in 3.19, ARM64 has get/set via PTRACE_[GS]ETREGSET with
-NT_ARM_SYSTEM_CALL:
-
-int syscall_get(pid_t tracee) {
-        struct iovec iov;
-        int syscall;
-
-        iov.iov_base = &syscall;
-        iov.iov_len = sizeof(syscall);
-        if (ptrace(PTRACE_GETREGSET, tracee,
-                  NT_ARM_SYSTEM_CALL, &iov) < 0) {
-                perror("PTRACE_GETREGSET, NT_ARM_SYSTEM_CALL");
-                return -1;
-        }
-        return syscall;
-}
-
-int syscall_set(int syscall, pid_t tracee) {
-        iov.iov_base = &syscall;
-        iov.iov_len = sizeof(syscall);
-        return ptrace(PTRACE_SETREGSET, tracee,
-                  NT_ARM_SYSTEM_CALL, &iov);
-}
-
-Prior to 3.19, ARM64 could use PTRACE_[GS]ETREGSET, NT_STATUS on
-struct user_pt_regs and regs[8].
-
--Kees
-
+diff --git a/drivers/staging/fbtft/fbtft-core.c b/drivers/staging/fbtft/fbtft-core.c
+index 873e2c7..37dcf7e 100644
+--- a/drivers/staging/fbtft/fbtft-core.c
++++ b/drivers/staging/fbtft/fbtft-core.c
+@@ -79,7 +79,7 @@ void fbtft_dbg_hex(const struct device *dev, int groupsize,
+ }
+ EXPORT_SYMBOL(fbtft_dbg_hex);
+ 
+-unsigned long fbtft_request_gpios_match(struct fbtft_par *par,
++static unsigned long fbtft_request_gpios_match(struct fbtft_par *par,
+ 					const struct fbtft_gpio *gpio)
+ {
+ 	int ret;
+@@ -123,7 +123,7 @@ unsigned long fbtft_request_gpios_match(struct fbtft_par *par,
+ 	return FBTFT_GPIO_NO_MATCH;
+ }
+ 
+-int fbtft_request_gpios(struct fbtft_par *par)
++static int fbtft_request_gpios(struct fbtft_par *par)
+ {
+ 	struct fbtft_platform_data *pdata = par->pdata;
+ 	const struct fbtft_gpio *gpio;
+@@ -249,7 +249,7 @@ static int fbtft_request_gpios_dt(struct fbtft_par *par)
+ #endif
+ 
+ #ifdef CONFIG_FB_BACKLIGHT
+-int fbtft_backlight_update_status(struct backlight_device *bd)
++static int fbtft_backlight_update_status(struct backlight_device *bd)
+ {
+ 	struct fbtft_par *par = bl_get_data(bd);
+ 	bool polarity = !!(bd->props.state & BL_CORE_DRIVER1);
+@@ -266,7 +266,7 @@ int fbtft_backlight_update_status(struct backlight_device *bd)
+ 	return 0;
+ }
+ 
+-int fbtft_backlight_get_brightness(struct backlight_device *bd)
++static int fbtft_backlight_get_brightness(struct backlight_device *bd)
+ {
+ 	return bd->props.brightness;
+ }
+@@ -337,7 +337,8 @@ void fbtft_unregister_backlight(struct fbtft_par *par) { };
+ EXPORT_SYMBOL(fbtft_register_backlight);
+ EXPORT_SYMBOL(fbtft_unregister_backlight);
+ 
+-void fbtft_set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
++static void fbtft_set_addr_win(struct fbtft_par *par, int xs, int ys, int xe,
++			       int ye)
+ {
+ 	fbtft_par_dbg(DEBUG_SET_ADDR_WIN, par,
+ 		"%s(xs=%d, ys=%d, xe=%d, ye=%d)\n", __func__, xs, ys, xe, ye);
+@@ -355,7 +356,7 @@ void fbtft_set_addr_win(struct fbtft_par *par, int xs, int ys, int xe, int ye)
+ }
+ 
+ 
+-void fbtft_reset(struct fbtft_par *par)
++static void fbtft_reset(struct fbtft_par *par)
+ {
+ 	if (par->gpio.reset == -1)
+ 		return;
+@@ -367,7 +368,8 @@ void fbtft_reset(struct fbtft_par *par)
+ }
+ 
+ 
+-void fbtft_update_display(struct fbtft_par *par, unsigned start_line, unsigned end_line)
++static void fbtft_update_display(struct fbtft_par *par, unsigned start_line,
++				 unsigned end_line)
+ {
+ 	size_t offset, len;
+ 	struct timespec ts_start, ts_end, ts_fps, ts_duration;
+@@ -445,7 +447,7 @@ void fbtft_update_display(struct fbtft_par *par, unsigned start_line, unsigned e
+ }
+ 
+ 
+-void fbtft_mkdirty(struct fb_info *info, int y, int height)
++static void fbtft_mkdirty(struct fb_info *info, int y, int height)
+ {
+ 	struct fbtft_par *par = info->par;
+ 	struct fb_deferred_io *fbdefio = info->fbdefio;
+@@ -468,7 +470,7 @@ void fbtft_mkdirty(struct fb_info *info, int y, int height)
+ 	schedule_delayed_work(&info->deferred_work, fbdefio->delay);
+ }
+ 
+-void fbtft_deferred_io(struct fb_info *info, struct list_head *pagelist)
++static void fbtft_deferred_io(struct fb_info *info, struct list_head *pagelist)
+ {
+ 	struct fbtft_par *par = info->par;
+ 	unsigned dirty_lines_start, dirty_lines_end;
+@@ -507,7 +509,8 @@ void fbtft_deferred_io(struct fb_info *info, struct list_head *pagelist)
+ }
+ 
+ 
+-void fbtft_fb_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
++static void fbtft_fb_fillrect(struct fb_info *info,
++			      const struct fb_fillrect *rect)
+ {
+ 	struct fbtft_par *par = info->par;
+ 
+@@ -519,7 +522,8 @@ void fbtft_fb_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
+ 	par->fbtftops.mkdirty(info, rect->dy, rect->height);
+ }
+ 
+-void fbtft_fb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
++static void fbtft_fb_copyarea(struct fb_info *info,
++			      const struct fb_copyarea *area)
+ {
+ 	struct fbtft_par *par = info->par;
+ 
+@@ -531,7 +535,8 @@ void fbtft_fb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
+ 	par->fbtftops.mkdirty(info, area->dy, area->height);
+ }
+ 
+-void fbtft_fb_imageblit(struct fb_info *info, const struct fb_image *image)
++static void fbtft_fb_imageblit(struct fb_info *info,
++			       const struct fb_image *image)
+ {
+ 	struct fbtft_par *par = info->par;
+ 
+@@ -543,8 +548,8 @@ void fbtft_fb_imageblit(struct fb_info *info, const struct fb_image *image)
+ 	par->fbtftops.mkdirty(info, image->dy, image->height);
+ }
+ 
+-ssize_t fbtft_fb_write(struct fb_info *info,
+-			const char __user *buf, size_t count, loff_t *ppos)
++static ssize_t fbtft_fb_write(struct fb_info *info, const char __user *buf,
++			      size_t count, loff_t *ppos)
+ {
+ 	struct fbtft_par *par = info->par;
+ 	ssize_t res;
+@@ -561,16 +566,16 @@ ssize_t fbtft_fb_write(struct fb_info *info,
+ }
+ 
+ /* from pxafb.c */
+-unsigned int chan_to_field(unsigned chan, struct fb_bitfield *bf)
++static unsigned int chan_to_field(unsigned chan, struct fb_bitfield *bf)
+ {
+ 	chan &= 0xffff;
+ 	chan >>= 16 - bf->length;
+ 	return chan << bf->offset;
+ }
+ 
+-int fbtft_fb_setcolreg(unsigned regno,
+-			       unsigned red, unsigned green, unsigned blue,
+-			       unsigned transp, struct fb_info *info)
++static int fbtft_fb_setcolreg(unsigned regno, unsigned red, unsigned green,
++			      unsigned blue, unsigned transp,
++			      struct fb_info *info)
+ {
+ 	struct fbtft_par *par = info->par;
+ 	unsigned val;
+@@ -598,7 +603,7 @@ int fbtft_fb_setcolreg(unsigned regno,
+ 	return ret;
+ }
+ 
+-int fbtft_fb_blank(int blank, struct fb_info *info)
++static int fbtft_fb_blank(int blank, struct fb_info *info)
+ {
+ 	struct fbtft_par *par = info->par;
+ 	int ret = -EINVAL;
+@@ -623,7 +628,7 @@ int fbtft_fb_blank(int blank, struct fb_info *info)
+ 	return ret;
+ }
+ 
+-void fbtft_merge_fbtftops(struct fbtft_ops *dst, struct fbtft_ops *src)
++static void fbtft_merge_fbtftops(struct fbtft_ops *dst, struct fbtft_ops *src)
+ {
+ 	if (src->write)
+ 		dst->write = src->write;
+@@ -1265,7 +1270,7 @@ EXPORT_SYMBOL(fbtft_init_display);
+  *
+  * Return: 0 if successful, negative if error
+  */
+-int fbtft_verify_gpios(struct fbtft_par *par)
++static int fbtft_verify_gpios(struct fbtft_par *par)
+ {
+ 	struct fbtft_platform_data *pdata;
+ 	int i;
 -- 
-Kees Cook
-Chrome OS Security
+1.7.10.4
+
