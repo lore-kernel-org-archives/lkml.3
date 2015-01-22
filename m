@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbbAVP2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 10:28:20 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:46249 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbbAVP2S (ORCPT
+	id S1752738AbbAVQrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 11:47:43 -0500
+Received: from 18.mo1.mail-out.ovh.net ([46.105.35.72]:34179 "EHLO
+	18.mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972AbbAVQrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 10:28:18 -0500
-Date: Thu, 22 Jan 2015 15:27:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        Avi Kivity <avi@cloudius-systems.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Blanchard <anton@samba.org>, Dave Martin <Dave.Martin@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 1/3] perf symbols: Ignore mapping symbols on aarch64
-Message-ID: <20150122152715.GZ26493@n2100.arm.linux.org.uk>
-References: <1421902378-3634-1-git-send-email-victor.kamensky@linaro.org>
- <1421902378-3634-2-git-send-email-victor.kamensky@linaro.org>
+	Thu, 22 Jan 2015 11:47:42 -0500
+X-Greylist: delayed 3588 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 11:47:42 EST
+From: clement.perrochaud@effinnov.com
+To: linux-nfc@ml01.01.org
+Cc: =?UTF-8?q?Cl=C3=A9ment=20Perrochaud?= 
+	<clement.perrochaud@effinnov.com>,
+        sunil.jogi@nxp.com, jerome.pele@nxp.com,
+        Charles.Gorand-Effinnov@nxp.com, lauro.venancio@openbossa.org,
+        aloisio.almeida@openbossa.org, sameo@linux.intel.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        davem@davemloft.net, grant.likely@linaro.org,
+        clement.perrochaud@nxp.com, lefrique@marvell.com,
+        christophe.ricard@gmail.com, cuissard@marvell.com, bzhao@marvell.com,
+        hirent@marvell.com, akarwar@marvell.com,
+        linux-wireless@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 0/4] NFC: nxp-nci: Add support for NXP-NCI NFC controllers
+Date: Thu, 22 Jan 2015 16:27:36 +0100
+Message-Id: <1421940460-14049-1-git-send-email-clement.perrochaud@effinnov.com>
+X-Mailer: git-send-email 2.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421902378-3634-2-git-send-email-victor.kamensky@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 1653946963475884841
+X-Ovh-Remote: 109.190.171.176 (176-171-190-109.dsl.ovh.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejkedrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejkedrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 08:52:56PM -0800, Victor Kamensky wrote:
-> Aarch64 ELF files use mapping symbols with special names $x, $d
-> to identify regions of Aarch64 code (see Aarch64 ELF ABI - "ARM
-> IHI 0056B", section "4.5.4 Mapping symbols").
-> 
-> The patch filters out these symbols at load time, similar to
-> "696b97a perf symbols: Ignore mapping symbols on ARM" changes
-> done for ARM before V8.
+From: Clément Perrochaud <clement.perrochaud@effinnov.com>
 
-I thought I'd commented that this should probably use the same test that
-we already have established elsewhere in the kernel, namely in the
-kallsyms and module code:
+This patch brings support for the NXP-NCI NFC controllers family.
 
-/*
- * This ignores the intensely annoying "mapping symbols" found
- * in ARM ELF files: $a, $t and $d.
- */
-static inline int is_arm_mapping_symbol(const char *str)
-{ 
-        return str[0] == '$' && strchr("axtd", str[1])
-               && (str[2] == '\0' || str[2] == '.');
-}
+It has been successfully tested on the following SoC boards:
+ - BeagleBone
+ - BeagleBone Black
+ - Raspberry Pi B
+ - Raspberry Pi B+
 
-We really shouldn't be writing the same check for the same symbols in
-different ways.
+The submission is broken into four patches:
+ - The first one adds firmware download support to NCI ;
+ - The second one adds the NXP-NCI driver's core ;
+ - The third one adds I2C support to the driver ;
+ - The fourth one allows for module removal during download.
+
+It is based on 767dec21d7f5a9787401ff44568852cb3782de64 (Merge tag
+'nfc-next-3.19-1' of nfc-next into wireless-next) from the nfc-next master
+branch.
+
+Clément Perrochaud (4):
+  NFC: nci: Add FWDL support
+  NFC: nxp-nci: Add support for NXP NCI chips
+  NFC: nxp-nci_i2c: Add I2C support to NXP NCI driver
+  NFC: nxp-nci: Allow module removal during download
+
+ .../devicetree/bindings/net/nfc/nxp-nci.txt        |  35 ++
+ MAINTAINERS                                        |   9 +-
+ drivers/nfc/Kconfig                                |   2 +
+ drivers/nfc/Makefile                               |   1 +
+ drivers/nfc/nxp-nci/Kconfig                        |  24 ++
+ drivers/nfc/nxp-nci/Makefile                       |  11 +
+ drivers/nfc/nxp-nci/core.c                         | 186 ++++++++
+ drivers/nfc/nxp-nci/firmware.c                     | 324 ++++++++++++++
+ drivers/nfc/nxp-nci/i2c.c                          | 468 +++++++++++++++++++++
+ drivers/nfc/nxp-nci/nxp-nci.h                      |  91 ++++
+ include/linux/platform_data/nxp-nci.h              |  27 ++
+ include/net/nfc/nci_core.h                         |   1 +
+ net/nfc/nci/core.c                                 |  11 +
+ 13 files changed, 1189 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/net/nfc/nxp-nci.txt
+ create mode 100644 drivers/nfc/nxp-nci/Kconfig
+ create mode 100644 drivers/nfc/nxp-nci/Makefile
+ create mode 100644 drivers/nfc/nxp-nci/core.c
+ create mode 100644 drivers/nfc/nxp-nci/firmware.c
+ create mode 100644 drivers/nfc/nxp-nci/i2c.c
+ create mode 100644 drivers/nfc/nxp-nci/nxp-nci.h
+ create mode 100644 include/linux/platform_data/nxp-nci.h
 
 -- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Clément Perrochaud
+
+Eff'Innov Technologies
+Caen, Aix-En-Provence, Grenoble
+
+Eff'Innov Technologies
+Campus EffiScience
+2, Esplanade Anton Philips
+14460 Colombelles, FRANCE
+
+http://www.effinnov.com
+
