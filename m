@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbbAVDvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 22:51:38 -0500
-Received: from mail-yk0-f174.google.com ([209.85.160.174]:43019 "EHLO
-	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbbAVDve (ORCPT
+	id S1754522AbbAVDxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 22:53:11 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:33986 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbbAVDxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 22:51:34 -0500
+	Wed, 21 Jan 2015 22:53:07 -0500
+Message-ID: <54C0744B.9030202@gmail.com>
+Date: Wed, 21 Jan 2015 20:53:47 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <CA+V-a8ur2KV_s5zM9qbQZ+MLvocO9AE0KduWb3R-rUhA9912cw@mail.gmail.com>
-References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
-	<CA+V-a8ur2KV_s5zM9qbQZ+MLvocO9AE0KduWb3R-rUhA9912cw@mail.gmail.com>
-Date: Thu, 22 Jan 2015 11:51:33 +0800
-Message-ID: <CAHG8p1Dussin4G29Ghupu-SyUSGWMxFu-2b2QacHuk7dkvaQnw@mail.gmail.com>
-Subject: Re: [PATCH 00/15] media: blackfin: bfin_capture enhancements
-From: Scott Jiang <scott.jiang.linux@gmail.com>
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Victor Kamensky <victor.kamensky@linaro.org>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
+        Avi Kivity <avi@cloudius-systems.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Blanchard <anton@samba.org>, Will Deacon <will.deacon@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jiri Olsa <jolsa@kernel.org>, Waiman Long <Waiman.Long@hp.com>
+Subject: Re: [PATCH 2/2] perf symbols: debuglink should take symfs option
+ into account
+References: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>	<1421168344-5363-2-git-send-email-victor.kamensky@linaro.org>	<CAA3XUr1BnS=8RTVyxtVOm4Ahb2DQXUuJJQC1w2SvT5fycjRcEQ@mail.gmail.com>	<54C0216F.3080404@gmail.com>	<CAA3XUr0uXykCTVuw-sYmkhsFZ-cimeuJkXTXNdJyhJh7976xEQ@mail.gmail.com>	<54C04A1B.8040408@gmail.com> <CAA3XUr3RJ1RbYTOh2SczZdkGgrk6f=VfoDzu6SQXVu_XwC+FLg@mail.gmail.com>
+In-Reply-To: <CAA3XUr3RJ1RbYTOh2SczZdkGgrk6f=VfoDzu6SQXVu_XwC+FLg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lad,
+On 1/21/15 6:32 PM, Victor Kamensky wrote:
+> May I use 'Acked-by' (maybe 'Tested-by' as well) with
+> your name for the shorter (no filename_copy) as above
+> version of the patch for .gnu_debuglink issue fix.
 
->>
->> Although I was on holiday but couldn't resist myself from working,
->> since I was away from my hardware I had to choose a different one,
->> blackfin driver was lucky one. Since I don't have the blackfin
->> board I haven't tested them on the actual board, but just compile
->> tested, Can you please test it & ACK.
->>
->> Lad, Prabhakar (15):
->>   media: blackfin: bfin_capture: drop buf_init() callback
->>   media: blackfin: bfin_capture: release buffers in case
->>     start_streaming() call back fails
->>   media: blackfin: bfin_capture: set min_buffers_needed
->>   media: blackfin: bfin_capture: improve buf_prepare() callback
->>   media: blackfin: bfin_capture: improve queue_setup() callback
->>   media: blackfin: bfin_capture: use vb2_fop_mmap/poll
->>   media: blackfin: bfin_capture: use v4l2_fh_open and vb2_fop_release
->>   media: blackfin: bfin_capture: use vb2_ioctl_* helpers
->>   media: blackfin: bfin_capture: make sure all buffers are returned on
->>     stop_streaming() callback
->>   media: blackfin: bfin_capture: return -ENODATA for *std calls
->>   media: blackfin: bfin_capture: return -ENODATA for *dv_timings calls
->>   media: blackfin: bfin_capture: add support for vidioc_create_bufs
->>   media: blackfin: bfin_capture: add support for VB2_DMABUF
->>   media: blackfin: bfin_capture: add support for VIDIOC_EXPBUF
->>   media: blackfin: bfin_capture: set v4l2 buffer sequence
->>
->>  drivers/media/platform/blackfin/bfin_capture.c | 310 ++++++++-----------------
->>  1 file changed, 98 insertions(+), 212 deletions(-)
->>
-> If you are done with the review of all the patches,should I go ahead
-> and post a v2 fixing the two issues which you pointed out ?
->
-Yes, I have reviewed and tested other patches.
+You can add both to your second patch -- the short version.
 
-Thanks,
-Scott
+Acked-and-Tested-by: David Ahern <dsahern@gmail.com>
