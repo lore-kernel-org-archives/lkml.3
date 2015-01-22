@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbbAVOak (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:30:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:39147 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753774AbbAVOae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:30:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="443739848"
-Date: Thu, 22 Jan 2015 16:28:19 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de,
-        maxime.ripard@free-electrons.com, dianders@chromium.org,
-        u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
-        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
-        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, skuribay@pobox.com, Romain.Baeriswyl@abilis.com,
-        wenkai.du@intel.com, christian.ruppert@abilis.com,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V4 2/2] i2c-designware: Add Intel Baytrail PMIC I2C bus
- support
-Message-ID: <20150122142819.GG1850@lahna.fi.intel.com>
-References: <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
- <1421313137-1613-3-git-send-email-david.e.box@linux.intel.com>
+	id S1753294AbbAVO2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:28:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57934 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613AbbAVO2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 09:28:49 -0500
+Date: Thu, 22 Jan 2015 06:28:26 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-6d2d49d2cd0199ce298d111ee7fd405af3344a70@git.kernel.org>
+Cc: bp@alien8.de, hpa@zytor.com, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, joro@8bytes.org, mingo@kernel.org,
+        tony.luck@intel.com, tglx@linutronix.de
+Reply-To: bp@alien8.de, hpa@zytor.com, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, joro@8bytes.org, mingo@kernel.org,
+        tglx@linutronix.de, tony.luck@intel.com
+In-Reply-To: <20150115211703.209387598@linutronix.de>
+References: <20150115211703.209387598@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86/x2apic: Use state information for disable
+Git-Commit-ID: 6d2d49d2cd0199ce298d111ee7fd405af3344a70
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1421313137-1613-3-git-send-email-david.e.box@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 01:12:17AM -0800, David E. Box wrote:
-> This patch implements an I2C bus sharing mechanism between the host and platform
-> hardware on select Intel BayTrail SoC platforms using the X-Powers AXP288 PMIC.
-> 
-> On these platforms access to the PMIC must be shared with platform hardware. The
-> hardware unit assumes full control of the I2C bus and the host must request
-> access through a special semaphore. Hardware control of the bus also makes it
-> necessary to disable runtime pm to avoid interfering with hardware transactions.
-> 
-> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Commit-ID:  6d2d49d2cd0199ce298d111ee7fd405af3344a70
+Gitweb:     http://git.kernel.org/tip/6d2d49d2cd0199ce298d111ee7fd405af3344a70
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 15 Jan 2015 21:22:27 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 22 Jan 2015 15:10:55 +0100
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+x86/x2apic: Use state information for disable
 
-One comment, though:
+Use the state information to simplify the disable logic further.
 
-> ---
->  drivers/i2c/busses/Kconfig                   |  11 ++
->  drivers/i2c/busses/Makefile                  |   1 +
->  drivers/i2c/busses/i2c-designware-baytrail.c | 160 +++++++++++++++++++++++++++
->  drivers/i2c/busses/i2c-designware-core.h     |   6 +
->  drivers/i2c/busses/i2c-designware-platdrv.c  |  20 +++-
->  5 files changed, 193 insertions(+), 5 deletions(-)
->  create mode 100644 drivers/i2c/busses/i2c-designware-baytrail.c
-> 
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index 917c358..9a83c46 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -464,6 +464,17 @@ config I2C_DESIGNWARE_PCI
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called i2c-designware-pci.
->  
-> +config I2C_DESIGNWARE_BAYTRAIL
-> +	bool "Intel Baytrail I2C semaphore support"
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Borislav Petkov <bp@alien8.de>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Link: http://lkml.kernel.org/r/20150115211703.209387598@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/apic/apic.c | 26 ++++++++++----------------
+ 1 file changed, 10 insertions(+), 16 deletions(-)
 
-It would be nice if it was possible to compile this as a module.
-
-> +	depends on I2C_DESIGNWARE_PLATFORM
-> +	select IOSF_MBI
-> +	help
-> +	  This driver enables managed host access to the PMIC I2C bus on select
-> +	  Intel BayTrail platforms using the X-Powers AXP288 PMIC. It allows
-> +	  the host to request uninterrupted access to the PMIC's I2C bus from
-> +	  the platform firmware controlling it. You should say Y if running on
-> +	  a BayTrail system using the AXP288.
-> +
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 0ee96b9..0c554f5 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1547,26 +1547,20 @@ void x2apic_setup(void)
+ 
+ static __init void x2apic_disable(void)
+ {
+-	u64 msr;
+-
+-	if (!cpu_has_x2apic)
+-		return;
+-
+-	rdmsrl(MSR_IA32_APICBASE, msr);
+-	if (msr & X2APIC_ENABLE) {
+-		u32 x2apic_id = read_apic_id();
++	u32 x2apic_id;
+ 
+-		if (x2apic_id >= 255)
+-			panic("Cannot disable x2apic, id: %08x\n", x2apic_id);
++	if (x2apic_state != X2APIC_ON)
++		goto out;
+ 
+-		__x2apic_disable();
+-
+-		x2apic_mode = 0;
+-
+-		register_lapic_address(mp_lapic_addr);
+-	}
++	x2apic_id = read_apic_id();
++	if (x2apic_id >= 255)
++		panic("Cannot disable x2apic, id: %08x\n", x2apic_id);
+ 
++	__x2apic_disable();
++	register_lapic_address(mp_lapic_addr);
++out:
+ 	x2apic_state = X2APIC_DISABLED;
++	x2apic_mode = 0;
+ }
+ 
+ static __init void x2apic_enable(void)
