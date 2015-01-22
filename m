@@ -1,148 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbbAVAnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 19:43:06 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11395 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbbAVAm4 (ORCPT
+	id S1753409AbbAVAnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 19:43:12 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:51122 "HELO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752262AbbAVAnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 19:42:56 -0500
-Message-ID: <54C04775.1070908@huawei.com>
-Date: Thu, 22 Jan 2015 08:42:29 +0800
-From: Li Bin <huawei.libin@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, <live-patching@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
-        <guohanjun@huawei.com>, <zhangdianfang@huawei.com>,
-        <xiexiuqi@huawei.com>
-Subject: Re: [PATCH 2/2] livepatch: disable/enable_patch manners for interdependent
- patches
-References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-3-git-send-email-huawei.libin@huawei.com> <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.181]
-X-CFilter-Loop: Reflected
+	Wed, 21 Jan 2015 19:43:00 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, dev@openvswitch.org, pshelar@nicira.com
+Subject: [PATCH net-next v14 0/5] openvswitch: Introduce 128-bit unique flow identifiers.
+Date: Wed, 21 Jan 2015 16:42:47 -0800
+Message-Id: <1421887372-56414-1-git-send-email-joestringer@nicira.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/21 22:08, Jiri Kosina wrote:
-> On Wed, 21 Jan 2015, Li Bin wrote:
-> 
->> for disable_patch:
->> The patch is unallowed to be disabled if one patch after has
->> dependencies with it and has been enabled.
->>
->> for enable_patch:
->> The patch is unallowed to be enabled if one patch before has
->> dependencies with it and has been disabled.
->>
->> Signed-off-by: Li Bin <huawei.libin@huawei.com>
->> ---
->>  kernel/livepatch/core.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 60 insertions(+), 0 deletions(-)
->>
->> diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
->> index 7861ed2..a12a31c 100644
->> --- a/kernel/livepatch/core.c
->> +++ b/kernel/livepatch/core.c
->> @@ -114,6 +114,21 @@ static bool klp_is_patch_registered(struct klp_patch *patch)
->>  	return false;
->>  }
->>  
->> +static bool klp_func_in_patch(struct klp_func *kfunc, struct klp_patch *patch)
->> +{
->> +	struct klp_object *obj;
->> +	struct klp_func *func;
->> +
->> +	for (obj = patch->objs; obj->funcs; obj++) {
->> +		for (func = obj->funcs; func->old_name; func++) {
->> +			if (kfunc->old_addr == func->old_addr) {
->> +				return true;
->> +			}
->> +		}
->> +	}
->> +	return false;
->> +}
->> +
->>  static bool klp_initialized(void)
->>  {
->>  	return klp_root_kobj;
->> @@ -466,8 +481,31 @@ unregister:
->>  static int __klp_disable_patch(struct klp_patch *patch)
->>  {
->>  	struct klp_object *obj;
->> +	struct klp_patch *temp;
->> +	struct klp_func *func;
->>  	int ret;
->>  
->> +	/*
->> +	 * the patch is unallowed to be disabled if one patch
->> +	 * after has dependencies with it and has been enabled.
->> +	 */
->> +	for (temp = list_next_entry(patch, list);
->> +			&temp->list != &klp_patches;
->> +			temp = list_next_entry(temp, list)) {
->> +		if (temp->state != KLP_ENABLED)
->> +			continue;
->> +
->> +		for (obj = patch->objs; obj->funcs; obj++) {
->> +			for (func = obj->funcs; func->old_name; func++) {
->> +				if (klp_func_in_patch(func, temp)) {
->> +					pr_err("this patch depends on '%s', please disable it firstly\n",
->> +						   temp->mod->name);
->> +					return -EBUSY;
->> +				}
->> +			}
->> +		}
->> +	}
->> +
->>  	pr_notice("disabling patch '%s'\n", patch->mod->name);
->>  
->>  	for (obj = patch->objs; obj->funcs; obj++) {
->> @@ -519,11 +557,33 @@ EXPORT_SYMBOL_GPL(klp_disable_patch);
->>  static int __klp_enable_patch(struct klp_patch *patch)
->>  {
->>  	struct klp_object *obj;
->> +	struct klp_patch *temp;
->> +	struct klp_func *func;
->>  	int ret;
->>  
->>  	if (WARN_ON(patch->state != KLP_DISABLED))
->>  		return -EINVAL;
->>  
->> +	/*
->> +	 * the patch is unallowed to be enabled if one patch
->> +	 * before has dependencies with it and has been disabled.
->> +	 */
->> +	for (temp = list_first_entry(&klp_patches, struct klp_patch, list);
->> +			temp != patch; temp = list_next_entry(temp, list)) {
->> +		if (temp->state != KLP_DISABLED)
->> +			continue;
->> +
->> +		for (obj = patch->objs; obj->funcs; obj++) {
->> +			for (func = obj->funcs; func->old_name; func++) {
->> +				if (klp_func_in_patch(func, temp)) {
->> +					pr_err("this patch depends on '%s', please enable it firstly\n",
->> +						   temp->mod->name);
->> +					return -EBUSY;
-> 
-> By this you limit the definition of the patch inter-dependency to just 
-> symbols. But that's not the only way how patches can depend on it other -- 
-> the dependency can be semantical.
+This series extends the openvswitch datapath interface for flow commands to use
+128-bit unique identifiers as an alternative to the netlink-formatted flow key.
+This significantly reduces the cost of assembling messages between the kernel
+and userspace, in particular improving Open vSwitch revalidation performance by
+40% or more.
 
-Yes, I agree with you. But I think the other dependencies such as semantical
-dependency should be judged by the user, like reverting a patch from git repository.
-Right?
+v14:
+- Perform lookup using unmasked key in legacy case.
+- Fix minor checkpatch.pl style violations.
 
-Thanks,
-	Li Bin
+v13:
+- Embed sw_flow_id in sw_flow to save memory allocation in UFID case.
+- Malloc unmasked key for id in non-UFID case.
+- Fix bug where non-UFID case could double-serialize keys.
 
-> 
+v12:
+- Userspace patches fully merged into Open vSwitch master
+- New minor refactor patches (2,3,4)
+- Merge unmasked_key, ufid representation of flow identifier in sw_flow
+- Improve memory allocation sizes when serializing ufid
+- Handle corner case where a flow_new is requested with a flow that has an
+  identical ufid as an existing flow, but a different flow key
+- Limit UFID to between 1-16 octets inclusive.
+- Add various helper functions to improve readibility
 
+v11:
+- Pushed most of the prerequisite patches for this series to OVS master.
+- Split out openvswitch.h interface changes from datapath implementation
+- Datapath implementation to be reviewed on net-next, separately
+
+v10:
+- New patch allowing datapath to serialize masked keys
+- Simplify datapath interface by accepting UFID or flow_key, but not both
+- Flows set up with UFID must be queried/deleted using UFID
+- Reduce sw_flow memory usage for UFID
+- Don't periodically rehash UFID table in linux datapath
+- Remove kernel_only UFID in linux datapath
+
+v9:
+- No kernel changes
+
+v8:
+- Rename UID -> UFID
+- Fix null dereference in datapath when paired with older userspace
+- All patches are reviewed/acked except datapath changes.
+
+v7:
+- Remove OVS_DP_F_INDEX_BY_UID
+- Rework datapath UID serialization for variable length UIDs
+
+v6:
+- Reduce netlink conversions for all datapaths
+- Various bugfixes
+
+v5:
+- Various bugfixes
+- Improve logging
+
+v4:
+- Datapath memory leak fixes
+- Enable UID-based terse dumping and deleting by default
+- Various fixes
+
+RFCv3:
+- Add datapath implementation
+
+Joe Stringer (5):
+  openvswitch: Refactor ovs_nla_fill_match().
+  openvswitch: Refactor ovs_flow_tbl_insert().
+  openvswitch: Use sw_flow_key_range for key ranges.
+  genetlink: Add genlmsg_parse() helper function.
+  openvswitch: Add support for unique flow IDs.
+
+ Documentation/networking/openvswitch.txt |   13 ++
+ include/net/genetlink.h                  |   17 +++
+ include/uapi/linux/openvswitch.h         |   20 +++
+ net/openvswitch/datapath.c               |  226 ++++++++++++++++++++----------
+ net/openvswitch/flow.h                   |   28 +++-
+ net/openvswitch/flow_netlink.c           |  102 +++++++++++++-
+ net/openvswitch/flow_netlink.h           |   13 +-
+ net/openvswitch/flow_table.c             |  226 +++++++++++++++++++++++-------
+ net/openvswitch/flow_table.h             |    8 +-
+ 9 files changed, 519 insertions(+), 134 deletions(-)
+
+-- 
+1.7.10.4
 
