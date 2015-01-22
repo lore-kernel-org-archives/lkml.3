@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbbAVOUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:20:21 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:62697 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbbAVOUS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:20:18 -0500
+	id S1752655AbbAVOWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:22:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:27463 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953AbbAVOW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 09:22:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,449,1418112000"; 
+   d="scan'208";a="641033114"
+Date: Thu, 22 Jan 2015 14:22:25 +0000 (UTC)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.lm.intel.com
+To: Yan Liu <yan@purestorage.com>
+cc: Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>, linux-nvme@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] NVMe: Do not take nsid while a passthrough IO command
+ is being issued via a block device file descriptor
+In-Reply-To: <CADMsRTZjajAj682a5FH-AmpphoQ4vw5QxqnJiGEQ+Jg_f7TvoA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1501221409080.15481@localhost.lm.intel.com>
+References: <1421886503-25276-1-git-send-email-yan@purestorage.com> <alpine.LNX.2.00.1501220035170.15481@localhost.lm.intel.com> <CADMsRTZjajAj682a5FH-AmpphoQ4vw5QxqnJiGEQ+Jg_f7TvoA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <54BFDF2B.80708@caviumnetworks.com>
-References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com>
- <20150119154357.GH21553@leverpostej> <54BD580C.6030701@gmail.com>
- <20150121165427.GA8722@leverpostej> <54BFDF2B.80708@caviumnetworks.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 22 Jan 2015 08:19:55 -0600
-Message-ID: <CAL_Jsq+Vtp=G6PJZvgksfLSXHBkoTC4TxLymP0ONk9MjaMtMPQ@mail.gmail.com>
-Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, David Daney <ddaney.cavm@gmail.com>,
-        Aleksey Makarov <aleksey.makarov@auriga.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Vinita Gupta <vgupta@caviumnetworks.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2064116865-1421936546=:15481"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 11:17 AM, David Daney <ddaney@caviumnetworks.com> wrote:
-> On 01/21/2015 08:54 AM, Mark Rutland wrote:
->>
->> On Mon, Jan 19, 2015 at 07:16:28PM +0000, David Daney wrote:
->
-> [...]
->>>>>
->>>>> @@ -67,6 +76,7 @@ static const struct of_device_id ahci_of_match[] = {
->>>>>         { .compatible = "ibm,476gtr-ahci", },
->>>>>         { .compatible = "snps,dwc-ahci", },
->>>>>         { .compatible = "hisilicon,hisi-ahci", },
->>>>> +       { .compatible = "cavium,octeon-7130-ahci", },
->>>>>         {},
->>>>
->>>>
->>>> I was under the impression that the strings other than "generic-ahci"
->>>> were only for compatibility with existing DTBs. Why do we need to add
->>>> new platform-specific strings here?
->>>
->>>
->>> Because it is an "existing DTB", The device tree doesn't contain the
->>> compatible property of "generic-ahci", only "cavium,octeon-7130-ahci".
->>
->>
->> While the DTB may already exist, the string "cavium,octeon-7130-ahci"
->> isn't in mainline, and as far as I can see has never been supported.
->
->
-> There seems to be a disconnect here.  The DTB comes from the hardware boot
-> environment.  The hardware is in some cases already deployed.  It is for all
-> practical purposes, impossible to change the DTB.
->
-> The idea that the kernel source code controls the content of the device tree
-> doesn't apply here.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I have to agree that adding the compatible string here is okay.
-Allowing/using generic names is the exception, not the rule. We're
-usually pushing the other way. People often complain about having to
-add a compatible string when they don't need it (yet).
+--8323328-2064116865-1421936546=:15481
+Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-However, the argument that the privately developed DTB has to be
-accepted as is is complete crap. Maybe you have done a good job and
-have all straightforward bindings, so having them accepted won't be a
-big deal. We should be reasonable and not bikeshed things which are
-already in use and only affect a single device. Many of the bindings
-in vendor trees I have seen are a complete mess, but I expect better
-from you.
+On Wed, 21 Jan 2015, Yan Liu wrote:
+> For IO passthrough command, it uses an IO queue associated with the device. Actually, this patch does not modify that part.
+> This patch is not really focused on io queues; instead, it is more about namespace protection from other namespace's user ios. The patch here doesn't prevent a user submitting completely arbitrary commands on IO queues. One still can
+> do it through a char dev file descriptor. However, when a user explicitly chooses a namespace's file descriptor, it is unlikely that she/he tries to issue an io command to a different namespace. Maybe in that case someone should to
+> use a new admin command.
 
-Rob
+Oh, I just realized your patch is not for the blk-mq version of this
+driver. The mainline kernel uses blk-mq and is a little different in
+this path. My mistake, you're right the command works the same as before
+using the character device here. In that case, this seems very reasonable,
+but doesn't merge upstream.
+--8323328-2064116865-1421936546=:15481--
