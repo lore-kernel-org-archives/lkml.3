@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770AbbAVPpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 10:45:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50745 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396AbbAVPpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 10:45:06 -0500
-Message-ID: <54C11AFF.5040505@suse.cz>
-Date: Thu, 22 Jan 2015 16:45:03 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753332AbbAVPti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:49:38 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:41260 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbbAVPtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 10:49:35 -0500
+Date: Thu, 22 Jan 2015 07:49:30 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Keith Busch <keith.busch@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Yan Liu <yan@purestorage.com>,
+        Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org
+Subject: Re: [PATCH 1/1] NVMe: Do not take nsid while a passthrough IO
+ command is being issued via a block device file descriptor
+Message-ID: <20150122154930.GA28027@infradead.org>
+References: <1421886503-25276-1-git-send-email-yan@purestorage.com>
+ <alpine.LNX.2.00.1501220035170.15481@localhost.lm.intel.com>
+ <20150122084517.GA2093@infradead.org>
+ <alpine.LNX.2.00.1501221430040.15481@localhost.lm.intel.com>
 MIME-Version: 1.0
-To: WANG Chao <chaowang@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Davidlohr Bueso <dave@stgolabs.net>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm, vmacache: Add kconfig VMACACHE_SHIFT
-References: <1421908189-18938-1-git-send-email-chaowang@redhat.com>
-In-Reply-To: <1421908189-18938-1-git-send-email-chaowang@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1501221430040.15481@localhost.lm.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 07:29 AM, WANG Chao wrote:
-> Add a new kconfig option VMACACHE_SHIFT (as a power of 2) to specify the
-> number of slots vma cache has for each thread. Range is chosen 0-4 (1-16
-> slots) to consider both overhead and performance penalty. Default is 2
+On Thu, Jan 22, 2015 at 03:21:28PM +0000, Keith Busch wrote:
+> The case I considered was the "hidden" attribute in the NVMe LBA Range
+> Type feature. It only indicates the storage should be hidden from the OS
+> for general use, but the host may still use it for special purposes. In
+> truth, the driver doesn't handle the hidden attribute very well and it
+> doesn't seem like a well thought out feature in the spec anyway.
 
-One could say that overhead and performance penalty is the same thing. 
-Please elaborate?
+At least for Linux we should simply ignore that attribute.
 
-Also, got any performance numbers to share for workloads benefiting from 
-more/less than the default?
+> But if you really need to restrict namespace access, shouldn't that be
+> enforced on the target side with reservations or similar mechanism?
 
-> (4 slots) as it originally is, which provides good enough balance.
->
-> Signed-off-by: WANG Chao <chaowang@redhat.com>
-> ---
->   include/linux/sched.h | 2 +-
->   mm/Kconfig            | 7 +++++++
->   2 files changed, 8 insertions(+), 1 deletion(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 8db31ef..56fd96d 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -134,7 +134,7 @@ struct perf_event_context;
->   struct blk_plug;
->   struct filename;
->
-> -#define VMACACHE_BITS 2
-> +#define VMACACHE_BITS CONFIG_VMACACHE_SHIFT
->   #define VMACACHE_SIZE (1U << VMACACHE_BITS)
->   #define VMACACHE_MASK (VMACACHE_SIZE - 1)
->
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index 1d1ae6b..7b82a52 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -618,3 +618,10 @@ config MAX_STACK_SIZE_MB
->   	  changed to a smaller value in which case that is used.
->
->   	  A sane initial value is 80 MB.
-> +
-> +config VMACACHE_SHIFT
-> +	int "Number of slots in per-thread VMA cache (as a power of 2)"
-> +	range 0 4
-> +	default 2
-> +	help
-> +	  This is the number of slots VMA cache has for each thread.
-
-As a user, I wouldn't find this informative enough to make the decision.
-
-
+Think for example about containers where we give eah container access
+to a single nvme namespace, including container root access.  Here you
+don't really want container A to be able to submit I/O for another
+container.  A similar case exists for virtualization where we had
+problems with SCSI passthrough from guests.
