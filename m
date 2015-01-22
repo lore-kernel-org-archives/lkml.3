@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbbAVIBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 03:01:04 -0500
-Received: from mailrelay6.public.one.com ([91.198.169.200]:55777 "EHLO
-	mailrelay6.public.one.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbbAVIAz (ORCPT
+	id S1751617AbbAVIHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 03:07:37 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47452 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbbAVIH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 03:00:55 -0500
-X-HalOne-Cookie: 80efae67f694411ec2d71bdb7374534ad7440a3f
-X-HalOne-ID: c8010517-a20c-11e4-9705-b82a72d06996
-Message-ID: <54C0AE3A.6040905@bitmath.org>
-Date: Thu, 22 Jan 2015 09:00:58 +0100
-From: Henrik Rydberg <rydberg@bitmath.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Thu, 22 Jan 2015 03:07:28 -0500
+Date: Thu, 22 Jan 2015 09:06:47 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben.dooks@codethink.co.uk>
+Subject: Re: [PATCH] ARM: decompressor: remove unused cache flush code
+Message-ID: <20150122080647.GX22880@pengutronix.de>
+References: <1421904178-30882-1-git-send-email-yamada.m@jp.panasonic.com>
 MIME-Version: 1.0
-To: Peter Hutterer <peter.hutterer@who-t.net>
-CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Fixing touch point jumps in the kernel (was Re: [PATCH] MAINTAINERS:
- Update rydberg's addresses)
-References: <1418979967-2134-1-git-send-email-rydberg@bitmath.org> <CAN+gG=Gmgk+wKSnHkSAERoWt+1PqAojNSZt6jo=qmzPOqJs+3Q@mail.gmail.com> <54BED60C.3030303@bitmath.org> <20150121043520.GB17900@jelly.redhat.com> <54BFC4D3.6090607@bitmath.org> <CAN+gG=EUNk8AR4PR3qk8L05stx1jUEn9anA6xi+1Qjob00h_hg@mail.gmail.com> <54C00046.1000305@bitmath.org> <20150122042123.GC23132@jelly.redhat.com>
-In-Reply-To: <20150122042123.GC23132@jelly.redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421904178-30882-1-git-send-email-yamada.m@jp.panasonic.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Hello,
 
-> from the testing I've done, you cannot trigger this except by lifting a
-> finger and raising a finger. There is no per-use-case requirement, it's a
-> hardware deficiency that the hardware simply cannot detect this specific
-> case of finger change.
+On Thu, Jan 22, 2015 at 02:22:58PM +0900, Masahiro Yamada wrote:
+> As ARM ARM says, the bit 19-16 of ID_MMFR1 is always 0b0000 because
+> ARMv7 requires a hierarchical cache implementation.
+> The line "mcr    p15, 0, r10, c7, c14, 0" is not reachable.
+> 
+> Moreover, the v7_flush_dcache_all in arch/arm/mm/cache-v7.S does not
+> check the ID_MMFR1.
+> 
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+I stumbled about this some time ago, too. The thing is however that the
+__armv7_mmu_cache functions are selected if
+CPUID & 0x000f0000 == 0x000f0000, and that is (AFAIK at present only
+theoretically) not implying that we have an ARMv7 machine. Only that it
+uses the "CPUID Identification Scheme" which is required on ARMv7.
 
-This is a good selling point, but...
+Best regards
+Uwe
 
-> again, you cannot trigger this by moving. or at least if you do your
-> pointer would be in the bottom right corner anyway because you have to move
-> the finger so insanely fast that pointer control is clearly not in the
-> picture anymore.
-
-this is what puts me off again. It takes me back to the old arcade days, and
-watching kids hammer at the controls. What is insane for one person may not be
-insane for another.
-
-That said, I understand and agree that there exists an upper move velocity that
-makes sense for any particular touchpad.
-
-So I will accept two patches on this: one to set the speed limit in the MT
-layer, and one which uses that limit to solve a real problem, for the touchpad
-in question.
-
-Let's end this thread here and leave unrelated people in peace.
-
-Thanks,
-Henrik
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
