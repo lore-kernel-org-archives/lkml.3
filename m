@@ -1,88 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056AbbAVAop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 19:44:45 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11626 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730AbbAVAoe (ORCPT
+	id S1754123AbbAVApE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 19:45:04 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:41701 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227AbbAVAos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 19:44:34 -0500
-Message-ID: <54C047E3.70402@huawei.com>
-Date: Thu, 22 Jan 2015 08:44:19 +0800
-From: Li Bin <huawei.libin@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 21 Jan 2015 19:44:48 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Guenter Roeck <linux@roeck-us.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+CC: Sabrina Dubroca <sd@queasysnail.net>, Paul Moore <pmoore@redhat.com>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Jan 2015 19:44:44 -0500
+Message-ID: <14b0f192c78.2806.85c95baa4474aabc7814e68940a78392@paul-moore.com>
+In-Reply-To: <1421880265-26647-1-git-send-email-linux@roeck-us.net>
+References: <1421880265-26647-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0 AquaMail/1.5.1.13 (build: 21020013)
+Subject: Re: [PATCH RESEND] fs: namei: Use memcpy instead of strlcpy
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>
-CC: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        <live-patching@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>, <guohanjun@huawei.com>,
-        <zhangdianfang@huawei.com>, <xiexiuqi@huawei.com>
-Subject: Re: [PATCH 1/2] livepatch: Revert "livepatch: enforce patch stacking
- semantics"
-References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-2-git-send-email-huawei.libin@huawei.com> <alpine.LNX.2.00.1501211505180.10817@pobox.suse.cz> <20150121143620.GA2943@cerebellum.variantweb.net>
-In-Reply-To: <20150121143620.GA2943@cerebellum.variantweb.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.181]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/21 22:36, Seth Jennings wrote:
-> On Wed, Jan 21, 2015 at 03:06:38PM +0100, Jiri Kosina wrote:
->> On Wed, 21 Jan 2015, Li Bin wrote:
->>
->>> This reverts commit 83a90bb1345767f0cb96d242fd8b9db44b2b0e17.
->>>
->>> The method that only allowing the topmost patch on the stack to be
->>> enabled or disabled is unreasonable. Such as the following case:
->>>
->>> 	- do live patch1
->>> 	- disable patch1
->>> 	- do live patch2 //error
->>>
->>> Now, we will never be able to do new live patch unless disabing the
->>> patch1 although there is no dependencies.
->>
->> Unregistering disabled patch still works and removes it from the list no 
->> matter the position.
->>
->> So what exactly is the problem?
-> 
->>From a quick glance, it seems that what this set does is it only
-> enforces the stacking requirements if two patches patch the same
-> function.
-> 
+Good point.  Do you mind if I merge your patch into my existing patch 
+instead of including it separately?
 
-Yes, this patch is only concerning this case that 'multi patches patch
-the same function' and solve the problem that mentioned previously:
+--
+paul moore
+www.paul-moore.com
 
-foo_unpatched()
-	foo_patch1()
-		foo_patch2()
-			foo_patch3()
-		disable(foo_patch2)
-		disable(foo_patch3)
-	foo_patch1()
 
-foo_patch2 is not allowed to be disabled before disable foo_patch3.
 
-Thanks,
-	Li Bin
+On January 21, 2015 5:45:29 PM Guenter Roeck <linux@roeck-us.net> wrote:
 
-> I'm not sure if that is correct logically or correctly implemented by
-> these patches yet.
-> 
-> Seth
-> 
->>
->> -- 
->> Jiri Kosina
->> SUSE Labs
-> 
-> .
-> 
+> If the string length is known, there is no need to use strlcpy.
+> Use memcpy instead.
+>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> Nitpick, but still a bit faster. Applies on top of -next.
+>
+> Resending with correct cc:. Sorry for the noise.
+>
+>  fs/namei.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 323957f..2e09219 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -233,7 +233,7 @@ getname_kernel(const char * filename)
+>  		__putname(result);
+>  		return ERR_PTR(-ENAMETOOLONG);
+>  	}
+> -	strlcpy((char *)result->name, filename, len);
+> +	memcpy((char *)result->name, filename, len);
+>  	result->uptr = NULL;
+>  	result->aname = NULL;
+>  	result->refcnt = 1;
+> --
+> 2.1.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
