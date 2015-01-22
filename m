@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901AbbAVUjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:39:42 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:58868 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533AbbAVUje (ORCPT
+	id S1754056AbbAVUii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:38:38 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:51321 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715AbbAVUig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 15:39:34 -0500
-From: Marek Belisko <marek@goldelico.com>
-To: bcousson@baylibre.com, tony@atomide.com
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        hns@goldelico.com, neilb@suse.de, NeilBrown <neil@brown.name>
-Subject: [PATCH 13/13] ARM: dts: omap3-gta04: Disable keypad
-Date: Thu, 22 Jan 2015 21:38:19 +0100
-Message-Id: <1421959099-28319-14-git-send-email-marek@goldelico.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421959099-28319-1-git-send-email-marek@goldelico.com>
-References: <1421959099-28319-1-git-send-email-marek@goldelico.com>
+	Thu, 22 Jan 2015 15:38:36 -0500
+Date: Thu, 22 Jan 2015 21:38:34 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, vincent.weaver@maine.edu,
+        cl@linux.com, paulus@samba.org, acme@redhat.com
+Subject: [PATCH] perf/rapl: fix crash in rapl_scale()
+Message-ID: <20150122203834.GA10228@thinkpad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neil@brown.name>
 
-The twl4030 keypad is not wired up in the gta04, so mark it disabled
-to avoid pointless initialization.
+This patch fixes a systematic crash in rapl_scale()
+due to an invalid pointer.
 
-Signed-off-by: NeilBrown <neil@brown.name>
----
- arch/arm/boot/dts/omap3-gta04.dtsi | 4 ++++
- 1 file changed, 4 insertions(+)
+The bug was introduced by commit:
+commit 89cbc76768c2fa4ed95545bf961f3a14ddfeed21
+Author: Christoph Lameter <cl@linux.com>
+Date:   Sun Aug 17 12:30:40 2014 -0500
 
-diff --git a/arch/arm/boot/dts/omap3-gta04.dtsi b/arch/arm/boot/dts/omap3-gta04.dtsi
-index 8d2b0a1..b3ecf1f 100644
---- a/arch/arm/boot/dts/omap3-gta04.dtsi
-+++ b/arch/arm/boot/dts/omap3-gta04.dtsi
-@@ -342,6 +342,10 @@
- 	status = "disabled";
- };
+    x86: Replace __get_cpu_var uses
+
+
+The fix is simple. Just put the parenthesis where it needs
+to be, i.e., around rapl_pmu. To my surprise, the compiler
+was not complaining about passing an integer instead of a
+pointer.
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+--
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index 6e434f8..c4bb8b8 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -142,7 +142,7 @@ static inline u64 rapl_scale(u64 v)
+ 	 * or use ldexp(count, -32).
+ 	 * Watts = Joules/Time delta
+ 	 */
+-	return v << (32 - __this_cpu_read(rapl_pmu->hw_unit));
++	return v << (32 - __this_cpu_read(rapl_pmu)->hw_unit);
+ }
  
-+&twl_keypad {
-+	status = "disabled";
-+};
-+
- &uart1 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&uart1_pins>;
--- 
-1.9.1
-
+ static u64 rapl_event_update(struct perf_event *event)
