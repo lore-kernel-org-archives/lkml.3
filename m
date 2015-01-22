@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbbAVBFa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:05:30 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:37666 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075AbbAVBFZ (ORCPT
+	id S1753749AbbAVBEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:04:37 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:33902 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759AbbAVBE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:05:25 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Thu, 22 Jan 2015 10:03:16 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH tip 0/9] tracing: attach eBPF programs to
- tracepoints/syscalls/kprobe
-Message-ID: <20150122010316.GA15871@sejong>
-References: <CAMEtUuxhjef+9QaFccfSyA3DbVJ3H6qP=eu-uZCkku1rVWViSQ@mail.gmail.com>
+	Wed, 21 Jan 2015 20:04:29 -0500
+Date: Wed, 21 Jan 2015 17:04:29 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>, pramod.gurav@smartplayin.com
+Subject: Re: [GIT PULL] qcom DT changes for v3.20
+Message-ID: <20150122010429.GI29014@quad.lixom.net>
+References: <alpine.DEB.2.02.1501191224310.2973@galak-ubuntu.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMEtUuxhjef+9QaFccfSyA3DbVJ3H6qP=eu-uZCkku1rVWViSQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.02.1501191224310.2973@galak-ubuntu.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexei,
-
-On Fri, Jan 16, 2015 at 10:57:15AM -0800, Alexei Starovoitov wrote:
-> On Fri, Jan 16, 2015 at 7:02 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > One last thing. If the ebpf is used for anything but filtering, it
-> > should go into the trigger file. The filtering is only a way to say if
-> > the event should be recorded or not. But the trigger could do something
-> > else (a printk, a stacktrace, etc).
+On Mon, Jan 19, 2015 at 12:25:51PM -0600, Kumar Gala wrote:
+> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
 > 
-> it does way more than just filtering, but
-> invoking program as a trigger is too slow.
-> When program is called as soon as tracepoint fires,
-> it can fetch other fields, evaluate them, printk some of them,
-> optionally dump stack, aggregate into maps.
-> We can let it call triggers too, so that user program will
-> be able to enable/disable other events.
-> I'm not against invoking programs as a trigger, but I don't
-> see a use case for it. It's just too slow for production
-> analytics that needs to act on huge number of events
-> per second.
+>   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-dt-for-3.20
+> 
+> for you to fetch changes up to bb901bd6596e93fc2e0fc6da2f367a651bd8d16e:
+> 
+>   ARM: dts: qcom: Correct IPQ8064 tlmm interrupt (2015-01-19 12:11:41 -0600)
+> 
+> ----------------------------------------------------------------
+> Qualcomm ARM Based Device Tree Updates for v3.20
+> 
+> * Correct IPQ8064 tlmm interrupt
+> * Add Support for SD Card Detect for ifc6410 board
+> 
+> ----------------------------------------------------------------
+> Pramod Gurav (1):
+>       ARM: dts: qcom: Add Support for SD Card Detect for ifc6410 board
+> 
+> Stephen Boyd (1):
+>       ARM: dts: qcom: Correct IPQ8064 tlmm interrupt
 
-AFAIK a trigger can be fired before allocating a ring buffer if it
-doesn't use the event record (i.e. has filter) or ->post_trigger bit
-set (stacktrace).  Please see ftrace_trigger_soft_disabled().
-
-This also makes it keeping events in the soft-disabled state.
-
-Thanks,
-Namhyung
+Merged, thanks.
 
 
-> We must minimize the overhead between tracepoint
-> firing and program executing, so that programs can
-> be used on events like packet receive which will be
-> in millions per second. Every nsec counts.
-> For example:
-> - raw dd if=/dev/zero of=/dev/null
->   does 760 MB/s (on my debug kernel)
-> - echo 1 > events/syscalls/sys_enter_write/enable
->   drops it to 400 MB/s
-> - echo "echo "count == 123 " > events/syscalls/sys_enter_write/filter
->   drops it even further down to 388 MB/s
-> This slowdown is too high for this to be used on a live system.
-> - tracex4 that computes histogram of sys_write sizes
->   and stores log2(count) into a map does 580 MB/s
->   This is still not great, but this slowdown is now usable
->   and we can work further on minimizing the overhead.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-Olof
