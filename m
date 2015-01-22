@@ -1,49 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbbAVL53 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:57:29 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:34511 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402AbbAVL5R (ORCPT
+	id S1752726AbbAVL6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:58:18 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:36346 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751996AbbAVL6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:57:17 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, rtc-linux@googlegroups.com,
-        wim@iguana.be, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org, linux@roeck-us.net, david.paris@st.com
-Subject: [PATCH v2 9/9] MAINTAINERS: Add Watchdog and RTC files to STI's maintainer entry
-Date: Thu, 22 Jan 2015 11:56:07 +0000
-Message-Id: <1421927767-28889-10-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421927767-28889-1-git-send-email-lee.jones@linaro.org>
-References: <1421927767-28889-1-git-send-email-lee.jones@linaro.org>
+	Thu, 22 Jan 2015 06:58:12 -0500
+Message-ID: <54C0E5CA.80902@st.com>
+Date: Thu, 22 Jan 2015 12:58:02 +0100
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Beniamino Galvani <b.galvani@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Florian Fainelli <f.fainelli@gmail.com>, Dave Taht <dave.taht@gmail.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] net: stmmac: add BQL support
+References: <1421863647-20048-1-git-send-email-b.galvani@gmail.com>
+In-Reply-To: <1421863647-20048-1-git-send-email-b.galvani@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.66]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-22_04:2015-01-22,2015-01-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- MAINTAINERS | 2 ++
- 1 file changed, 2 insertions(+)
+On 1/21/2015 7:07 PM, Beniamino Galvani wrote:
+> Add support for Byte Queue Limits to the STMicro MAC driver.
+>
+> Tested on a Amlogic S802 quad Cortex-A9 board, where the use of BQL
+> decreases the latency of a high priority ping from ~12ms to ~1ms when
+> the 100Mbit link is saturated by 20 TCP streams.
+>
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ddb9ac8..7060aa6 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1439,10 +1439,12 @@ F:	drivers/phy/phy-stih407-usb.c
- F:	drivers/phy/phy-stih41x-usb.c
- F:	drivers/pinctrl/pinctrl-st.c
- F:	drivers/reset/sti/
-+F:	drivers/rtc/rtc-st-lpc.c
- F:	drivers/tty/serial/st-asc.c
- F:	drivers/usb/dwc3/dwc3-st.c
- F:	drivers/usb/host/ehci-st.c
- F:	drivers/usb/host/ohci-st.c
-+F:	drivers/watchdog/st_lpc_wdt.c
- F:	drivers/ata/ahci_st.c
- 
- ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
--- 
-1.9.1
+
+Ciao Beniamino
+
+thx for the patch, I also see some improvements on my side
+
+Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+
+> ---
+> Changes since v1:
+>   - don't access skb->len after the start of DMA transmission in
+>     stmmac_xmit(), to avoid potential use after free in case tx_lock is
+>     removed in the future
+>
+>   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 9 +++++++++
+>   1 file changed, 9 insertions(+)
+>
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> index 118a427..1d74313 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+> @@ -1097,6 +1097,7 @@ static int init_dma_desc_rings(struct net_device *dev, gfp_t flags)
+>
+>   	priv->dirty_tx = 0;
+>   	priv->cur_tx = 0;
+> +	netdev_reset_queue(priv->dev);
+>
+>   	stmmac_clear_descriptors(priv);
+>
+> @@ -1300,6 +1301,7 @@ static void stmmac_dma_operation_mode(struct stmmac_priv *priv)
+>   static void stmmac_tx_clean(struct stmmac_priv *priv)
+>   {
+>   	unsigned int txsize = priv->dma_tx_size;
+> +	unsigned int bytes_compl = 0, pkts_compl = 0;
+>
+>   	spin_lock(&priv->tx_lock);
+>
+> @@ -1356,6 +1358,8 @@ static void stmmac_tx_clean(struct stmmac_priv *priv)
+>   		priv->hw->mode->clean_desc3(priv, p);
+>
+>   		if (likely(skb != NULL)) {
+> +			pkts_compl++;
+> +			bytes_compl += skb->len;
+>   			dev_consume_skb_any(skb);
+>   			priv->tx_skbuff[entry] = NULL;
+>   		}
+> @@ -1364,6 +1368,9 @@ static void stmmac_tx_clean(struct stmmac_priv *priv)
+>
+>   		priv->dirty_tx++;
+>   	}
+> +
+> +	netdev_completed_queue(priv->dev, pkts_compl, bytes_compl);
+> +
+>   	if (unlikely(netif_queue_stopped(priv->dev) &&
+>   		     stmmac_tx_avail(priv) > STMMAC_TX_THRESH(priv))) {
+>   		netif_tx_lock(priv->dev);
+> @@ -1418,6 +1425,7 @@ static void stmmac_tx_err(struct stmmac_priv *priv)
+>   						     (i == txsize - 1));
+>   	priv->dirty_tx = 0;
+>   	priv->cur_tx = 0;
+> +	netdev_reset_queue(priv->dev);
+>   	priv->hw->dma->start_tx(priv->ioaddr);
+>
+>   	priv->dev->stats.tx_errors++;
+> @@ -2048,6 +2056,7 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
+>   	if (!priv->hwts_tx_en)
+>   		skb_tx_timestamp(skb);
+>
+> +	netdev_sent_queue(dev, skb->len);
+>   	priv->hw->dma->enable_dma_transmission(priv->ioaddr);
+>
+>   	spin_unlock(&priv->tx_lock);
+>
 
