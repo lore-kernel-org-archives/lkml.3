@@ -1,144 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595AbbAVKww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 05:52:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:17675 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750759AbbAVKwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 05:52:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,448,1418112000"; 
-   d="asc'?scan'208";a="640926179"
-Message-ID: <1421923966.2560.30.camel@jtkirshe-mobl>
-Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
-	mode control
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Skidmore, Donald C'" <donald.c.skidmore@intel.com>,
-        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        Hayato Momma <h-momma@ce.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 22 Jan 2015 02:52:46 -0800
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
-	 <874mrlu18e.fsf@nemi.mork.no>
-	 <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
-	 <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
-	 <7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
-	 <F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
-	 <7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
-	 <063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
-	 <7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
-	 <F6FB0E698C9B3143BDF729DF222866469129BC03@ORSMSX110.amr.corp.intel.com>
-	 <063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-IdTBaB5t0ET6dPIfMMBX"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751865AbbAVK4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 05:56:20 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:51820 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbbAVK4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 05:56:11 -0500
+Date: Thu, 22 Jan 2015 10:56:05 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+Subject: Re: [PATCH RESEND v2 3/7] mfd: cros_ec: Add cros_ec_lpc driver for
+ x86 devices
+Message-ID: <20150122105605.GB9129@x1>
+References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1420205572-2640-4-git-send-email-javier.martinez@collabora.co.uk>
+ <20150120081104.GT21886@x1>
+ <54BE7B08.1010900@collabora.co.uk>
+ <20150120163410.GC30656@x1>
+ <54BE87C4.4040108@collabora.co.uk>
+ <20150122084244.GP22024@x1>
+ <54C0BE21.7020008@collabora.co.uk>
+ <20150122094608.GA5769@x1>
+ <54C0D29C.4010904@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54C0D29C.4010904@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 22 Jan 2015, Javier Martinez Canillas wrote:
+> On 01/22/2015 10:46 AM, Lee Jones wrote:
+> >> 
+> >> But there doesn't seem to be a LPC subsystem in the kernel so we don't have a
+> >> nice abstraction layer in this case.
+> > 
+> > This is the crux of the problem.  However, I feel bad for MFD, as it
+> > is, once more, being used as an "well it doesn't fit anywhere else, so
+> > let's shoehorn it in there" type of dumping ground.
+> >
+> Yes, I completely understand your point, is that I didn't think that a ~300
+> lines driver was that bad specially since the communication bits that reads
+> and writes the register is not a complex logic IMHO.
 
---=-IdTBaB5t0ET6dPIfMMBX
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This has nothing to do with LoC, it's the principle of the matter.
 
-On Thu, 2015-01-22 at 09:50 +0000, David Laight wrote:
-> From: Skidmore, Donald C=20
-> > > > From: Hiroshi Shimamoto
-> > > > > My concern is what is the real issue that VF multicast
-> promiscuous mode
-> > > can cause.
-> > > > > I think there is the 4k entries to filter multicast address,
-> and the
-> > > > > current ixgbe/ixgbevf can turn all bits on from VM. That is
-> almost same as
-> > > enabling multicast promiscuous mode.
-> > > > > I mean that we can receive all multicast addresses by an
-> onerous
-> > > operation in untrusted VM.
-> > > > > I think we should clarify what is real security issue in this
-> context.
-> > > >
-> > > > If you are worried about passing un-enabled multicasts to users
-> then
-> > > > what about doing a software hash of received multicasts and
-> checking
-> > > > against an actual list of multicasts enabled for that hash
-> entry.
-> > > > Under normal conditions there is likely to be only a single
-> address to check.
-> > > >
-> > > > It may (or may not) be best to use the same hash as any hashing
-> > > > hardware filter uses.
-> > >
-> > > thanks for the comment. But I don't think that is the point.
-> > >
-> > > I guess, introducing VF multicast promiscuous mode seems to add
-> new
-> > > privilege to peek every multicast packet in VM and that doesn't
-> look good.
-> > > On the other hand, I think that there has been the same privilege
-> in the
-> > > current ixgbe/ixgbevf implementation already. Or I'm reading the
-> code
-> > > wrongly.
-> > > I'd like to clarify what is the issue of allowing to receive all
-> multicast packets.
-> >=20
-> > Allowing a VM to give itself the privilege of seeing every multicast
-> packet
-> > could be seen as a hole in VM isolation.
-> > Now if the host system allows this policy I don't see this as an
-> issue as
-> > someone specifically allowed this to happen and then must not be
-> concerned.
-> > We could even log that it has occurred, which I believe your patch
-> did do.
-> > The issue is also further muddied, as you mentioned above, since
-> some of
-> > these multicast packets are leaking anyway (the HW currently uses a
-> 12 bit mask).
-> > It's just that this change would greatly enlarge that hole from a
-> fraction to
-> > all multicast packets.
->=20
-> Why does it have anything to do with VM isolation?
-> Isn't is just the same as if the VM were connected directly to the
-> ethernet cable?
+> >> > Are there any other Low Pin Count drivers in the kernel?
+> >> >
+> >> 
+> >> I don't know tbh, I didn't even know what LPC was before I picked this patch
+> >> to push it upstream. I searched in the Linux codebase for other LPC drivers
+> >> but I didn't find anything, that doesn't mean that it doesn't exist though.
+> > 
+> > I agree.  Perhaps a suitable driver should live in drivers/misc until
+> > there are enough of them to warrant its own subsystem.
+> >
+> 
+> Yes, I can move the driver to drivers/misc if you think that is more suitable
+> to be there.
+> 
+> I've taken another look and AFAICT there are two other mfd drivers that use an
+> LPC bus, these are drivers/mfd/lpc_{i,s}ch.c for Intel's I/O Controller HUB and 
+> System Controller Hub respectively.
 
-So give an example of when the VF driver is connected directly to the
-ethernet cable and a PF driver (ixgbe) does not exist, at least that is
-what you are suggesting.
+These looked like PCI aggregates when I looked at them last?
 
---=-IdTBaB5t0ET6dPIfMMBX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUwNZ+AAoJEOVv75VaS+3OCt8P/2rvvVTRA0BOZOM8roh22K93
-qv5xQOTKEU8awcpp1akhpL1fCZ6maucb67euJI5lm1BOZ5JrZ3amR+CFE4ChOLYG
-/1+JIFG4rm3OXhI72gozoTOaOmz9OokKTU26gFaz6QAvkIresWEQwfXBM4nnuh3C
-TLx6lbzvlrOgaj9lvQWacCxUKmbtETyKvWaIyMk/LalM0E/REQLZcqVQX56OSDtA
-Bn4TMWPtdINoVT/P+0UsdtNhJ4yC+02rcEggjOhBTNTX/TF7vQt4OrYTajbkZQl/
-uIHZKRN+16js55BH0EyWJBqXk9UnLnXOATQa0wCfLN079xyyTjZ4j7MDgtxhGJwW
-7ZxEGzeh2rrkir6hQEaF5fJ3QvnEEV6yOZutfir4CBaJfT8BrDIWPedsN7jHFXUw
-15jgylZAa2R7H2dNeacccdYp8kz9Xf1T65aIYau3E5JHb5vDeFbMncqMcDaLfs9Q
-A7cvkAdGqPFVm56NPW2/HO2eVzY7jSmy9+f/syzEW10bI4hVlg/nnFBW0O2Fa0ah
-E2EwZdcabsMpcM/e1ZlV/0qrTVq7QJDvywm4hO6lTgvharQARy03YaQLLrqC7dPm
-h4T2l1xaXFxqHxyNaD6KPu0cSm90UkmSzolj28EPCVCWeatwTSyPdtOX4CaQo9ap
-QMIDvLN0Ph12sTBFaEC4
-=RxGs
------END PGP SIGNATURE-----
-
---=-IdTBaB5t0ET6dPIfMMBX--
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
