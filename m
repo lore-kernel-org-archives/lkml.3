@@ -1,77 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487AbbAVC3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:29:08 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4006 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061AbbAVC3B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:29:01 -0500
-Message-ID: <54C06059.2040207@huawei.com>
-Date: Thu, 22 Jan 2015 10:28:41 +0800
-From: "long.wanglong" <long.wanglong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1754518AbbAVC3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:29:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753706AbbAVC3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 21:29:02 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Guenter Roeck <linux@roeck-us.net>, Sabrina Dubroca <sd@queasysnail.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount root fs
+Date: Wed, 21 Jan 2015 21:28:51 -0500
+Message-ID: <1829267.G68Yz0UZrY@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150121212833.GS29656@ZenIV.linux.org.uk>
+References: <54BF1292.2080902@roeck-us.net> <54C01418.5060204@roeck-us.net> <20150121212833.GS29656@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: <phillip@squashfs.org.uk>, <rientjes@google.com>, <minchan@kernel.org>
-CC: <squashfs-devel@lists.sourceforge.net>, <peifeiyue@huawei.com>,
-        <long.wanglong@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC] Using squashfs, kernel will hung task with no free memory?
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.88.174]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi，
+On Wednesday, January 21, 2015 09:28:33 PM Al Viro wrote:
+> On Wed, Jan 21, 2015 at 01:03:20PM -0800, Guenter Roeck wrote:
+> > failing case:
+> > 
+> > path_lookupat: calling path_init 'usr' flags=40
+> > path_init: link_path_walk() returned 0
+> > path_lookupat: path_init 'usr' flags=40[50] returned 0
+> > walk_component: lookup_fast() returned 1
+> > walk_component: lookup_slow() returned 0
+> > walk_component: inode=  (null), negative=1
+> > do_path_lookup(usr, 0x10)
+> > path_lookupat: calling path_init 'usr' flags=50
+> > path_init: link_path_walk() returned 0
+> > path_lookupat: path_init 'usr' flags=50[50] returned 0
+> > mkdir[c74012a0,/kkk] => 0						<==== SIC!
+> 
+> Cute. 'k' being 0x6b, aka POISON_FREE...  OK, the next question is what's
+> been freed under us - I don't believe that it's dentry itself...
+> Oh, fuck.  OK, I see what happens.  Look at kern_path_create(); it does
+> LOOKUP_PARENT walk, leaving nd->last pointing to the last component of
+> the *COPY* of the name it's just created, walked and freed.
+> 
+> OK...  Fortunately, struct nameidata is completely opaque outside of
+> fs/namei.c, so we only need to care about a couple of codepaths.
+> 
+> Folks, could you check if the following on top of linux-next fixes the
+> problem?
 
-I have encountered kernel hung task when running stability and stress test.
+Thanks Al, and Guenter, and Sabrina for helping resolve this; it surely would 
+have taken me much longer alone.
 
-test scenarios:
-	1)the kernel hungtask settings are following:
-		hung_task_panic = 1
-		hung_task_timeout_secs = 120
-	2)the rootfs type is squashfs(read-only)
-	
-what the test does is to fork many child process and each process will alloc memory.
-when there is no free memory in the system, OOM killer is triggerred. and then the kernel triggers hung task(after about five  minutes) .
-the reason for hung task is that some process keep D states for 120 seconds.
+Al, do you mind if I fold your patch below into the existing patches?
+ 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 323957f..cda89c3 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2056,13 +2056,22 @@ static int do_path_lookup(int dfd, const char *name,
+> /* does lookup, returns the object with parent locked */
+>  struct dentry *kern_path_locked(const char *name, struct path *path)
+>  {
+> +	struct filename *filename = getname_kernel(name);
+>  	struct nameidata nd;
+>  	struct dentry *d;
+> -	int err = do_path_lookup(AT_FDCWD, name, LOOKUP_PARENT, &nd);
+> -	if (err)
+> +	int err;
+> +
+> +	if (IS_ERR(filename))
+> +		return ERR_CAST(filename);
+> +
+> +	err = filename_lookup(AT_FDCWD, filename, LOOKUP_PARENT, &nd);
+> +	if (err) {
+> +		putname(filename);
+>  		return ERR_PTR(err);
+> +	}
+>  	if (nd.last_type != LAST_NORM) {
+>  		path_put(&nd.path);
+> +		putname(filename);
+>  		return ERR_PTR(-EINVAL);
+>  	}
+>  	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+> @@ -2070,9 +2079,11 @@ struct dentry *kern_path_locked(const char *name,
+> struct path *path) if (IS_ERR(d)) {
+>  		mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+>  		path_put(&nd.path);
+> +		putname(filename);
+>  		return d;
+>  	}
+>  	*path = nd.path;
+> +	putname(filename);
+>  	return d;
+>  }
+> 
+> @@ -3314,7 +3325,7 @@ struct file *do_file_open_root(struct dentry *dentry,
+> struct vfsmount *mnt, return file;
+>  }
+> 
+> -struct dentry *kern_path_create(int dfd, const char *pathname,
+> +static struct dentry *filename_create(int dfd, struct filename *name,
+>  				struct path *path, unsigned int lookup_flags)
+>  {
+>  	struct dentry *dentry = ERR_PTR(-EEXIST);
+> @@ -3329,7 +3340,7 @@ struct dentry *kern_path_create(int dfd, const char
+> *pathname, */
+>  	lookup_flags &= LOOKUP_REVAL;
+> 
+> -	error = do_path_lookup(dfd, pathname, LOOKUP_PARENT|lookup_flags, &nd);
+> +	error = filename_lookup(dfd, name, LOOKUP_PARENT|lookup_flags, &nd);
+>  	if (error)
+>  		return ERR_PTR(error);
+> 
+> @@ -3383,6 +3394,19 @@ out:
+>  	path_put(&nd.path);
+>  	return dentry;
+>  }
+> +
+> +struct dentry *kern_path_create(int dfd, const char *pathname,
+> +				struct path *path, unsigned int lookup_flags)
+> +{
+> +	struct filename *filename = getname_kernel(pathname);
+> +	struct dentry *res = ERR_CAST(filename);
+> +
+> +	if (!IS_ERR(filename)) {
+> +		res = filename_create(dfd, filename, path, lookup_flags);
+> +		putname(filename);
+> +	}
+> +	return res;
+> +}
+>  EXPORT_SYMBOL(kern_path_create);
+> 
+>  void done_path_create(struct path *path, struct dentry *dentry)
+> @@ -3401,7 +3425,7 @@ struct dentry *user_path_create(int dfd, const char
+> __user *pathname, struct dentry *res;
+>  	if (IS_ERR(tmp))
+>  		return ERR_CAST(tmp);
+> -	res = kern_path_create(dfd, tmp->name, path, lookup_flags);
+> +	res = filename_create(dfd, tmp, path, lookup_flags);
+>  	putname(tmp);
+>  	return res;
+>  }
 
-if there is no free memory in the system, many process state is D, they enter into D state by kernel path  `squashfs_cache_get()--->wait_event()`.
-the backtrace is:
-
-[  313.950118] [<c02d2014>] (__schedule+0x448/0x5cc) from [<c014e510>] (squashfs_cache_get+0x120/0x3ec)
-[  314.059660] [<c014e510>] (squashfs_cache_get+0x120/0x3ec) from [<c014fd1c>] (squashfs_readpage+0x748/0xa2c)
-[  314.176497] [<c014fd1c>] (squashfs_readpage+0x748/0xa2c) from [<c00b7be0>] (__do_page_cache_readahead+0x1ac/0x200)
-[  314.300621] [<c00b7be0>] (__do_page_cache_readahead+0x1ac/0x200) from [<c00b7e98>] (ra_submit+0x24/0x28)
-[  314.414325] [<c00b7e98>] (ra_submit+0x24/0x28) from [<c00b043c>] (filemap_fault+0x16c/0x3f0)
-[  314.515521] [<c00b043c>] (filemap_fault+0x16c/0x3f0) from [<c00c94e0>] (__do_fault+0xc0/0x570)
-[  314.618802] [<c00c94e0>] (__do_fault+0xc0/0x570) from [<c00cbdc4>] (handle_pte_fault+0x47c/0x1048)
-[  314.726250] [<c00cbdc4>] (handle_pte_fault+0x47c/0x1048) from [<c00cd928>] (handle_mm_fault+0x164/0x218)
-[  314.839959] [<c00cd928>] (handle_mm_fault+0x164/0x218) from [<c02d4878>] (do_page_fault.part.7+0x108/0x360)
-[  314.956788] [<c02d4878>] (do_page_fault.part.7+0x108/0x360) from [<c02d4afc>] (do_page_fault+0x2c/0x70)
-[  315.069442] [<c02d4afc>] (do_page_fault+0x2c/0x70) from [<c00084cc>] (do_PrefetchAbort+0x2c/0x90)
-[  315.175850] [<c00084cc>] (do_PrefetchAbort+0x2c/0x90) from [<c02d3674>] (ret_from_exception+0x0/0x10)
-
-when a task is already exiting because of OOM killer,the next time OOM killer will kill the same task.
-so, if the first time of OOM killer select a task(A) that in D state (the task ingore exit signal beacuse of D state).
-then the next time of OOM killer will also kill task A. In this scenario, oom killer will not free memory.
-
-with no free memory, many process sleep in function squashfs_cache_get. about 2 minutes, the system hung task and panic.
-because of OOM feature and squashfs, on heavy system, This problem is easily reproduce.
-
-Is this a problem about squashfs or about the OOM killer. Can anyone give me some good ideas about this?
-
-Best Regards
-Wang Long
-
-
-
-
-
-
-
-
+-- 
+paul moore
+security @ redhat
 
