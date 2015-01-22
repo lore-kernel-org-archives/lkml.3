@@ -1,99 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475AbbAVBic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:38:32 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:39527 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbbAVBiT (ORCPT
+	id S1753893AbbAVBkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:40:47 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:41025 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635AbbAVBkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:38:19 -0500
-Message-ID: <54C0547B.7000407@huawei.com>
-Date: Thu, 22 Jan 2015 09:38:03 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 21 Jan 2015 20:40:39 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0M1eDac013744, This message is accepted by code: ctloc85258
+From: =?gb2312?B?vrTI8Q==?= <micky_ching@realsil.com.cn>
+To: Nicholas Mc Guire <der.herr@hofr.at>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "Keerthimai Janarthanan" <keerthimaipb@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fabio Falzoi <fabio.falzoi84@gmail.com>,
+        "Tina Johnson" <tinajohnson.1234@gmail.com>,
+        Surya Seetharaman <surya.seetharaman9@gmail.com>
+Subject: Re: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
+Thread-Topic: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
+Thread-Index: AQHQM7pK0ZLyxQpn5keVKEAMtFX8lpzK2y0A
+Date: Thu, 22 Jan 2015 01:40:14 +0000
+Message-ID: <54C05500.8050809@realsil.com.cn>
+References: <1421652347-8484-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <1421652347-8484-1-git-send-email-der.herr@hofr.at>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.29.41.103]
+Content-Type: text/plain; charset="gb2312"
+Content-ID: <A38BDFBAB4F1B94FB8B85618143D0B03@realsil.com.cn>
 MIME-Version: 1.0
-To: =?UTF-8?B?SsOpcsOpbWllIEdhbGFybmVhdQ==?= 
-	<jeremie.galarneau@efficios.com>,
-        Jiri Olsa <jolsa@redhat.com>
-CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Li Zefan <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] perf: convert: fix duplicate field names and avoid
- reserved keywords.
-References: <20150120130609.GC15315@krava.brq.redhat.com>	<1421810634-1373-1-git-send-email-wangnan0@huawei.com>	<20150121141101.GA6835@krava.brq.redhat.com> <CA+jJMxtaEF587MyW00YQ_7d7BYmW-QpcgQ8g1KByYWwzMg-_cw@mail.gmail.com>
-In-Reply-To: <CA+jJMxtaEF587MyW00YQ_7d7BYmW-QpcgQ8g1KByYWwzMg-_cw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.69.129]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0M1epm6023874
 
-On 2015/1/21 23:56, JÃ©rÃ©mie Galarneau wrote:
-> On Wed, Jan 21, 2015 at 9:11 AM, Jiri Olsa <jolsa@redhat.com> wrote:
->> On Wed, Jan 21, 2015 at 11:23:54AM +0800, Wang Nan wrote:
->>> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
->>> When dealing with them, perf convert to ctf meets some problem:
->>>
->>>  1. If a parameter with name 'nr', it will duplicate syscall's
->>>     common field 'nr'. One such syscall is io_submit().
->>>
->>>  2. If a parameter with name 'event', it is denied to be inserted
->>>     because 'event' is a babeltrace keywork. One such syscall is
->>>     epoll_ctl.
->>
->> hum, so this problem 2 is detectable only via bt_ctf_event_class_add_field function?
->>
->> how big is the blaklist?
->>
-> 
-> The blacklist is defined by the CTF specification here [1].
-> 
-> JÃ©rÃ©mie
-> 
-> [1] http://git.efficios.com/?p=ctf.git;a=blob;f=common-trace-format-specification.txt;h=abe4fb70fff7f17f6e8242f313fb74bff44cf89a;hb=HEAD#l1477
+the title should be 5208.
 
-Is there any possibility that the someone expand the list?
-
-> 
->> SNIP
->>
->>> +}
->>> +
->>>  static int add_tracepoint_fields_types(struct ctf_writer *cw,
->>>                                      struct format_field *fields,
->>>                                      struct bt_ctf_event_class *event_class)
->>> @@ -577,6 +609,9 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
->>>       for (field = fields; field; field = field->next) {
->>>               struct bt_ctf_field_type *type;
->>>               unsigned long flags = field->flags;
->>> +             struct bt_ctf_field_type *f = NULL;
->>> +             char *name;
->>> +             int dup = 1;
->>>
->>>               pr2("  field '%s'\n", field->name);
->>>
->>> @@ -595,14 +630,36 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
->>>               if (flags & FIELD_IS_ARRAY)
->>>                       type = bt_ctf_field_type_array_create(type, field->arraylen);
->>>
->>> -             ret = bt_ctf_event_class_add_field(event_class, type,
->>> -                             field->name);
->>> +             /* Check name duplication */
->>> +             name = field->name;
->>
->> could you please put this in separated function like 'get_field_name(..)'
->> so we dont polute this function even more
->>
->>                 name == get_field_name(...)
->>                 if (!name)
->>                         error path
->>
->>
->> thanks,
->> jirka
-> 
-> 
-> 
-
-
+On 01/19/2015 03:25 PM, Nicholas Mc Guire wrote:
+> This is only an API consolidation and should make things more readable
+>
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> ---
+>
+> Converting milliseconds to jiffies by val * HZ / 1000 is technically
+> not wrong but msecs_to_jiffies(val) is the cleaner solution and handles
+> corner cases correctly.
+>
+> This patch was only compile tested with x86_64_defconfig + CONFIG_STAGING=y,
+> CONFIG_RTS5208=m
+>
+> Patch is against 3.19.0-rc4 -next-20150116
+>
+>   drivers/staging/rts5208/rtsx_transport.c |   12 ++++++------
+>   1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/staging/rts5208/rtsx_transport.c b/drivers/staging/rts5208/rtsx_transport.c
+> index 756a968..dab1995 100644
+> --- a/drivers/staging/rts5208/rtsx_transport.c
+> +++ b/drivers/staging/rts5208/rtsx_transport.c
+> @@ -271,7 +271,7 @@ int rtsx_send_cmd(struct rtsx_chip *chip, u8 card, int timeout)
+>   
+>   	/* Wait for TRANS_OK_INT */
+>   	timeleft = wait_for_completion_interruptible_timeout(
+> -		&trans_done, timeout * HZ / 1000);
+> +		&trans_done, msecs_to_jiffies(timeout));
+>   	if (timeleft <= 0) {
+>   		dev_dbg(rtsx_dev(chip), "chip->int_reg = 0x%x\n",
+>   			chip->int_reg);
+> @@ -431,7 +431,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+>   	spin_unlock_irq(&rtsx->reg_lock);
+>   
+>   	timeleft = wait_for_completion_interruptible_timeout(
+> -		&trans_done, timeout * HZ / 1000);
+> +		&trans_done, msecs_to_jiffies(timeout));
+>   	if (timeleft <= 0) {
+>   		dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+>   			__func__, __LINE__);
+> @@ -455,7 +455,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
+>   		init_completion(&trans_done);
+>   		spin_unlock_irq(&rtsx->reg_lock);
+>   		timeleft = wait_for_completion_interruptible_timeout(
+> -			&trans_done, timeout * HZ / 1000);
+> +			&trans_done, msecs_to_jiffies(timeout));
+>   		if (timeleft <= 0) {
+>   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+>   				__func__, __LINE__);
+> @@ -575,7 +575,7 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
+>   		spin_unlock_irq(&rtsx->reg_lock);
+>   
+>   		timeleft = wait_for_completion_interruptible_timeout(
+> -			&trans_done, timeout * HZ / 1000);
+> +			&trans_done, msecs_to_jiffies(timeout));
+>   		if (timeleft <= 0) {
+>   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+>   				__func__, __LINE__);
+> @@ -602,7 +602,7 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
+>   		init_completion(&trans_done);
+>   		spin_unlock_irq(&rtsx->reg_lock);
+>   		timeleft = wait_for_completion_interruptible_timeout(
+> -			&trans_done, timeout * HZ / 1000);
+> +			&trans_done, msecs_to_jiffies(timeout));
+>   		if (timeleft <= 0) {
+>   			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+>   				__func__, __LINE__);
+> @@ -688,7 +688,7 @@ static int rtsx_transfer_buf(struct rtsx_chip *chip, u8 card, void *buf,
+>   
+>   	/* Wait for TRANS_OK_INT */
+>   	timeleft = wait_for_completion_interruptible_timeout(
+> -		&trans_done, timeout * HZ / 1000);
+> +		&trans_done, msecs_to_jiffies(timeout));
+>   	if (timeleft <= 0) {
+>   		dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
+>   			__func__, __LINE__);
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
