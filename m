@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753AbbAVKE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 05:04:59 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40786 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbbAVKEw (ORCPT
+	id S1752462AbbAVKHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 05:07:33 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:33586 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbbAVKH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 05:04:52 -0500
-Date: Thu, 22 Jan 2015 10:04:41 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Sergey Dyasly <s.dyasly@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        James Bottomley <JBottomley@parallels.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Safonov <d.safonov@partner.samsung.com>
-Subject: Re: [PATCH] ARM: use default ioremap alignment for SMP or LPAE
-Message-ID: <20150122100441.GA19811@e104818-lin.cambridge.arm.com>
-References: <1421911075-8814-1-git-send-email-s.dyasly@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421911075-8814-1-git-send-email-s.dyasly@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 22 Jan 2015 05:07:27 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, maxime.coquelin@st.com,
+        devicetree@vger.kernel.org
+Subject: [PATCH 1/2] ARM: sti: Provide DT nodes for SSC[0..4]
+Date: Thu, 22 Jan 2015 10:07:16 +0000
+Message-Id: <1421921237-8991-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 07:17:55AM +0000, Sergey Dyasly wrote:
-> 16MB alignment for ioremap mappings was added by commit a069c896d0d6 ("[ARM]
-> 3705/1: add supersection support to ioremap()") in order to support supersection
-> mappings. But __arm_ioremap_pfn_caller uses section and supersection mappings
-> only in !SMP && !LPAE case. There is no need for such big alignment if either
-> SMP or LPAE is enabled.
-[...]
-> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> index 184def0..c3ef139 100644
-> --- a/arch/arm/include/asm/memory.h
-> +++ b/arch/arm/include/asm/memory.h
-> @@ -78,10 +78,12 @@
->   */
->  #define XIP_VIRT_ADDR(physaddr)  (MODULES_VADDR + ((physaddr) & 0x000fffff))
->  
-> +#if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
->  /*
->   * Allow 16MB-aligned ioremap pages
->   */
->  #define IOREMAP_MAX_ORDER	24
-> +#endif
+The Synchronous Serial Controller is used to provide SPI.
 
-Actually, I think we could make this depend only on CONFIG_IO_36. That's
-the only scenario where we get the supersections matter, and maybe make
-CONFIG_IO_36 dependent on !SMP or !ARM_LPAE. My assumption is that we
-don't support single zImage with CPU_XSC3 enabled (but I haven't
-followed the latest developments here).
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/stih407-family.dtsi | 54 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
 
+diff --git a/arch/arm/boot/dts/stih407-family.dtsi b/arch/arm/boot/dts/stih407-family.dtsi
+index 3e31d32..d52347a 100644
+--- a/arch/arm/boot/dts/stih407-family.dtsi
++++ b/arch/arm/boot/dts/stih407-family.dtsi
+@@ -274,5 +274,59 @@
+ 
+ 			status = "disabled";
+ 		};
++
++		spi@9840000 {
++			compatible = "st,comms-ssc4-spi";
++			reg = <0x9840000 0x110>;
++			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++			pinctrl-0 = <&pinctrl_spi0_default>;
++			pinctrl-names = "default";
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			status = "disabled";
++		};
++
++		spi@9841000 {
++			compatible = "st,comms-ssc4-spi";
++			reg = <0x9841000 0x110>;
++			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++
++			status = "disabled";
++		};
++
++		spi@9842000 {
++			compatible = "st,comms-ssc4-spi";
++			reg = <0x9842000 0x110>;
++			interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++
++			status = "disabled";
++		};
++
++		spi@9843000 {
++			compatible = "st,comms-ssc4-spi";
++			reg = <0x9843000 0x110>;
++			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++
++			status = "disabled";
++		};
++
++		spi@9844000 {
++			compatible = "st,comms-ssc4-spi";
++			reg = <0x9844000 0x110>;
++			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
++			clock-names = "ssc";
++
++			status = "disabled";
++		};
+ 	};
+ };
 -- 
-Catalin
+1.9.1
+
