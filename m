@@ -1,80 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922AbbAVUly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:41:54 -0500
-Received: from sauhun.de ([89.238.76.85]:42459 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753429AbbAVUlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 15:41:52 -0500
-Date: Thu, 22 Jan 2015 21:41:47 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Peter Korsgaard <peter@korsgaard.com>, Peter Korsgaard <jacmet@sunsite.dk>,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-ocores: add common clock support
-Message-ID: <20150122204147.GA16770@katana>
-References: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com>
- <20150122144522.GF3413@katana>
- <CAMo8Bf+XJY_bY+OB2i_SZQmAavwERG39BR8FVj202V-E3UidPg@mail.gmail.com>
- <20150122150717.GJ3413@katana>
- <87wq4e7jqy.fsf@dell.be.48ers.dk>
- <20150122185711.GA14880@katana>
- <CAMo8BfJCPQWa-AGODDO5o2XZU3d-BbaxjSSG9SOoMzoXpYtr-A@mail.gmail.com>
+	id S1754405AbbAVUrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:47:14 -0500
+Received: from mail-bn1bbn0102.outbound.protection.outlook.com ([157.56.111.102]:61728
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753039AbbAVUrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 15:47:11 -0500
+Date: Thu, 22 Jan 2015 14:41:47 -0600
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, <josh@joshtriplett.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Jens Axboe <axboe@fb.com>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 2/2] mm: fix undefined reference to `.kernel_map_pages'
+ on PPC builds
+Message-ID: <20150122144147.019eedc41f189eac44c3c4cd@freescale.com>
+In-Reply-To: <20150122014550.GA21444@js1304-P5Q-DELUXE>
+References: <20150120140200.aa7ba0eb28d95e456972e178@freescale.com>
+	<20150120230150.GA14475@cloud>
+	<20150120160738.edfe64806cc8b943beb1dfa0@linux-foundation.org>
+	<CAC5umyieZn7ppXkKb45O=C=BF+iv6R_A1Dwfhro=cBJzFeovrA@mail.gmail.com>
+	<20150122014550.GA21444@js1304-P5Q-DELUXE>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
-Content-Disposition: inline
-In-Reply-To: <CAMo8BfJCPQWa-AGODDO5o2XZU3d-BbaxjSSG9SOoMzoXpYtr-A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=kim.phillips@freescale.com; lists.ozlabs.org; dkim=none
+ (message not signed) header.d=none;lists.ozlabs.org; dmarc=permerror
+ action=none header.from=freescale.com;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(377424004)(51704005)(24454002)(46102003)(6806004)(100306002)(19580405001)(106466001)(86362001)(50986999)(105606002)(76176999)(110136001)(50226001)(85426001)(62966003)(87936001)(77156002)(2950100001)(92566002)(33646002)(77096005)(104016003)(36756003)(47776003)(19580395003)(93886004)(23726002)(50466002)(46406003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB325;H:tx30smr01.am.freescale.net;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR03MB325;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB325;
+X-Forefront-PRVS: 0464DBBBC4
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB325;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Jan 2015 20:47:05.8057
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB325
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB277;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 22 Jan 2015 10:45:51 +0900
+Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 
---jRHKVT23PllUwdXP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Wed, Jan 21, 2015 at 09:57:59PM +0900, Akinobu Mita wrote:
+> > 2015-01-21 9:07 GMT+09:00 Andrew Morton <akpm@linux-foundation.org>:
+> > > On Tue, 20 Jan 2015 15:01:50 -0800 josh@joshtriplett.org wrote:
+> > >
+> > >> On Tue, Jan 20, 2015 at 02:02:00PM -0600, Kim Phillips wrote:
+> > >> > It's possible to configure DEBUG_PAGEALLOC without PAGE_POISONING on
+> > >> > ppc.  Fix building the generic kernel_map_pages() implementation in
+> > >> > this case:
+> > >> >
+> > >> >   LD      init/built-in.o
+> > >> > mm/built-in.o: In function `free_pages_prepare':
+> > >> > mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
+> > >> > mm/built-in.o: In function `prep_new_page':
+> > >> > mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
+> > >> > mm/built-in.o: In function `map_pages':
+> > >> > mm/compaction.c:61: undefined reference to `.kernel_map_pages'
+> > >> > make: *** [vmlinux] Error 1
+> > 
+> > kernel_map_pages() is static inline function since commit 031bc5743f15
+> > ("mm/debug-pagealloc: make debug-pagealloc boottime configurable").
+> > 
+> > But there is old declaration in 'arch/powerpc/include/asm/cacheflush.h'.
+> > Removing it or changing s/kernel_map_pages/__kernel_map_pages/ in this
+> > header file or something can fix this problem?
+> > 
+> > The architecture which has ARCH_SUPPORTS_DEBUG_PAGEALLOC
+> > including PPC should not build mm/debug-pagealloc.o
+> 
+> Yes, architecture with ARCH_SUPPORTS_DEBUG_PAGEALLOC should not build
+> mm/debug-pagealloc.o. I attach the patch to remove old declaration.
+> I hope it will fix Kim's problem.
+> 
+> -------------->8------------------
+> From 7cb9d1ed8a785df152cb8934e187031c8ebd1bb2 Mon Sep 17 00:00:00 2001
+> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Date: Thu, 22 Jan 2015 10:28:58 +0900
+> Subject: [PATCH] mm/debug_pagealloc: fix build failure on ppc and some other
+>  archs
+> 
+> Kim Phillips reported following build failure.
+> 
+>   LD      init/built-in.o
+>   mm/built-in.o: In function `free_pages_prepare':
+>   mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
+>   mm/built-in.o: In function `prep_new_page':
+>   mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
+>   mm/built-in.o: In function `map_pages':
+>   mm/compaction.c:61: undefined reference to `.kernel_map_pages'
+>   make: *** [vmlinux] Error 1
+> 
+> Reason for this problem is that commit 031bc5743f15
+> ("mm/debug-pagealloc: make debug-pagealloc boottime configurable") forgot
+> to remove old declaration of kernel_map_pages() in some architectures.
+> This patch removes them to fix build failure.
+> 
+> Reported-by: Kim Phillips <kim.phillips@freescale.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
 
-On Thu, Jan 22, 2015 at 11:36:25PM +0300, Max Filippov wrote:
-> On Thu, Jan 22, 2015 at 9:57 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> > 2?) a new binding is present to specify the IP clock speed:
-> >         - is this needed? is somebody using the driver without CCF?
-> >         - if so, the new binding is parsed and evaluated
-> >         - I couldn't find an existing binding to specify a clock speed.
-> >           Please have a look, too. Otherwise we need to introduce sth
-> >           like "opencores,ip-clock-khz" probably.
-> >         - "clock-frequency" is describing the bus speed as usual
->=20
-> ePAPR document says that clock-frequency 'specifies the frequency
-> of a clock in Hz', not identifying which clock. Outside i2c drivers
-> subtree it is commonly used to specify input clock frequency of IP
-> blocks, even for bus controllers, e.g. SPI.
+Thanks. Now I get this:
 
-I know; it was established in I2C this way before I took over.
-I don't think it is a good idea to change that.
+  LD      init/built-in.o
+mm/built-in.o: In function `kernel_map_pages':
+include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
+include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
+include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
+Makefile:925: recipe for target 'vmlinux' failed
+make: *** [vmlinux] Error 1
 
+but, AFAICT, that's not because this patch is invalid: it's because
+__kernel_map_pages() isn't implemented in
+arch/powerpc/mm/pgtable_64.c, i.e., for non-PPC_STD_MMU_64 PPC64
+machines.
 
---jRHKVT23PllUwdXP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUwWCKAAoJEBQN5MwUoCm2/agQAIyKeAeSIClpWpxMXtPJ10ky
-pF6WLHz1Knpvq/nYPDN5DvQLycwll4J5qDaXYtn+vMJJnw/E7wHIB6uI7y0NdEh+
-scyMKudbHWXBCm3Gzac5te7OMuJARDgOROyLzB+nLmq/hZmkRcSD+70LLNx/VZb7
-my0Cygv+a4k1F6UGqkhDJWc23BHCwo3vPvhp3QgEiRvKIEYBF5U1V1pKJbVRLdl3
-fMx6LAkTP/oSzQB41P8aGQmWyLtUu98bTITavNRHsKqr9nowQ3tzlzSjQSWds9dt
-xEtXi4IEC7gVOQsveYlfVY2ugwWnb/sWVoMBiwyzWJHmuycOLcPs/2us41cwUjpx
-jWy/bKtSetH20EAM6orJw7bIXQ4FItlefuDlbX1xh6OTRfXGzYRPOyCmPQVJlTYK
-MZ3nru5SvM0ex/TwW88IK3gZ8bQA6vksANnydY28fJiTvlN//OkcSZrH3qFz3qKw
-K9EwKct88W3+BCu/4VUAyuq1CjdBdm1V1eO1q64okS+aJq/fvzM5ueys8jPSYueD
-KyyPAdnYknDuhU8lI01DbIv1Ik6P1/+1K5YI1sqrugElmq2FapgRogufds7UKq00
-AkKihxiHbq9BYfHnch2bRuc6I7eopPuL9c7bDfzjhrK0uA+IEJjmeulTRfdf2r4/
-rlnWP5hp3OlLl+2x97bz
-=Cqjn
------END PGP SIGNATURE-----
-
---jRHKVT23PllUwdXP--
+Kim
