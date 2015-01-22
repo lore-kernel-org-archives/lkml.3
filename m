@@ -1,94 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbbAVEyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 23:54:47 -0500
-Received: from mail-by2on0117.outbound.protection.outlook.com ([207.46.100.117]:5248
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752230AbbAVEyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 23:54:40 -0500
-Date: Thu, 22 Jan 2015 12:55:35 +0800
-From: Zidan Wang <b50113@freescale.com>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-CC: Zidan Wang <zidan.wang@freescale.com>, <timur@tabi.org>,
-        <Xiubo.Lee@gmail.com>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel][PATCH 2/3] ASoC: fsl_sai: Add support for tdm slots
- operation
-Message-ID: <20150122045515.GA3467@b50113>
-References: <1421756480-7055-1-git-send-email-zidan.wang@freescale.com>
- <1421756480-7055-3-git-send-email-zidan.wang@freescale.com>
- <20150121180801.GA3361@Alpha>
+	id S1754261AbbAVE7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 23:59:00 -0500
+Received: from m50-135.163.com ([123.125.50.135]:50177 "EHLO m50-135.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768AbbAVE6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 23:58:52 -0500
+Message-ID: <54C08324.4050605@163.com>
+Date: Thu, 22 Jan 2015 12:57:08 +0800
+From: Caesar Wang <sasukewxt@163.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20150121180801.GA3361@Alpha>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=B50113@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(51704005)(24454002)(199003)(77096005)(64706001)(46102003)(104016003)(68736005)(77156002)(46406003)(76176999)(50986999)(87936001)(54356999)(47776003)(105606002)(92566002)(85426001)(83506001)(33716001)(2950100001)(575784001)(50466002)(97756001)(110136001)(86362001)(97736003)(6806004)(106466001)(33656002)(23726002)(1411001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1249;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BN3PR0301MB1249;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0301MB1249;
-X-Forefront-PRVS: 0464DBBBC4
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1249;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Jan 2015 04:54:35.5317
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1249
+To: Daniel Kurtz <djkurtz@chromium.org>,
+        Caesar Wang <caesar.wang@rock-chips.com>
+CC: Heiko Stuebner <heiko@sntech.de>, linux-pm@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Caesar Wang <wxt@rock-chips.com>
+Subject: Re: [PATCH v3] thermal: rockchip: make temperature reporting much
+ more accurate
+References: <1421861370-19422-1-git-send-email-wxt@rock-chips.com> <1421861370-19422-2-git-send-email-wxt@rock-chips.com> <CAGS+omAi+F1_1-8wmDMf9oUq6GCjXu8N4kyeNmKRWv8m3eaCrA@mail.gmail.com> <54C07AD7.9020102@rock-chips.com> <CAGS+omDdbUBn5swOZ23K3MpjzV3UMk3xABLWxj1SFE+s=FcHQA@mail.gmail.com>
+In-Reply-To: <CAGS+omDdbUBn5swOZ23K3MpjzV3UMk3xABLWxj1SFE+s=FcHQA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-CM-TRANSID: D9GowAD3xuckg8BUruJEAA--.681S3
+X-Coremail-Antispam: 1Uf129KBjvJXoWxCFWktFyUZr18XrW3WrW3ZFb_yoWrKr18pF
+	4rGa4jkrWDXF1jyw1Iva95trsYyrsrtayDXr1Fk3WFv3sIqrZxKFyUJryY9FZ3tw1UKF43
+	tr1jkrW3CFyUZFJanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+	9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07jwtxDUUUUU=
+X-Originating-IP: [221.224.159.162]
+X-CM-SenderInfo: 5vdv3yhhz03qqrwthudrp/xtbBEQqJlVD+abtD1gAAsu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 10:08:03AM -0800, Nicolin Chen wrote:
-> On Tue, Jan 20, 2015 at 08:21:19PM +0800, Zidan Wang wrote:
-> > @@ -369,10 +380,25 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
-> >  	u32 word_width = snd_pcm_format_width(params_format(params));
-> >  	u32 val_cr4 = 0, val_cr5 = 0;
-> >  	int ret;
-> > +	u32 bclk;
-> > +
-> > +	if (channels == 1)
-> > +		channels = 2;
-> > +
-> > +	if (!sai->slots || sai->slots % channels)
-> > +		sai->slots = channels;
-> > +
-> > +	sai->slots = sai->slots / channels;
-> > +
-> > +	if (sai->slot_width < word_width || sai->is_dsp_mode)
-> > +		sai->slot_width = word_width;
-> 
-> Could you pls explain a bit what's this overriding for?
-> Or it might be better to put into a comment.
+
+在 2015年01月22日 12:25, Daniel Kurtz 写道:
+> On Thu, Jan 22, 2015 at 12:21 PM, Caesar Wang
+> <caesar.wang@rock-chips.com> wrote:
+>> 在 2015年01月22日 12:01, Daniel Kurtz 写道:
+>>
+>>> On Thu, Jan 22, 2015 at 1:29 AM, Caesar Wang <wxt@rock-chips.com> wrote:
+>>>> In general, the kernel should report temperature readings exactly as
+>>>> reported by the hardware. The cpu / gpu thermal driver works in 5 degree
+>>>> increments,but we ought to do more accurate. The temperature will do
+>>>> linear interpolation between the entries in the table.
+>>>>
+>>>> Test= $md5sum /dev/zero &
+>>>> $while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
+>>>> sleep .5; done
+>>>>
+>>>> e.g. We can get the result as follows:
+>>>>       /sys/class/thermal/thermal_zone1/temp:39994
+>>>>       /sys/class/thermal/thermal_zone2/temp:39086
+>>>>       /sys/class/thermal/thermal_zone1/temp:39994
+>>>>       /sys/class/thermal/thermal_zone2/temp:39540
+>>>>       /sys/class/thermal/thermal_zone1/temp:39540
+>>>>       /sys/class/thermal/thermal_zone2/temp:39540
+>>>>       /sys/class/thermal/thermal_zone1/temp:39540
+>>>>       /sys/class/thermal/thermal_zone2/temp:39994
+>>>>
+>>>> Signed-off-by: Caesar Wang <wxt@rock-chips.com>
+>>>> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>>>
+>>>> ---
+>>>>
+>>>> Changes in v3:
+>>>> Suggested-by Daniel Kurtz,
+>>>> the check doesn't reject "code == 0xfff"
+>>>> Fixed in rk_tsadcv2_code_to_temp(u32 code)
+>>>>
+>>>> Changes in v2:
+>>>> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>>>
+>>>>    drivers/thermal/rockchip_thermal.c | 32
+>>>> ++++++++++++++++++++++----------
+>>>>    1 file changed, 22 insertions(+), 10 deletions(-)
+>>>>
+>>>> diff --git a/drivers/thermal/rockchip_thermal.c
+>>>> b/drivers/thermal/rockchip_thermal.c
+>>>> index 1bcddfc..ce18007 100644
+>>>> --- a/drivers/thermal/rockchip_thermal.c
+>>>> +++ b/drivers/thermal/rockchip_thermal.c
+>>>> @@ -193,19 +193,22 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
+>>>>
+>>>>    static long rk_tsadcv2_code_to_temp(u32 code)
+>>>>    {
+>>>> -       int high, low, mid;
+>>>> -
+>>>> -       low = 0;
+>>>> -       high = ARRAY_SIZE(v2_code_table) - 1;
+>>>> -       mid = (high + low) / 2;
+>>>> +       unsigned int low = 0;
+>>>> +       unsigned int high = ARRAY_SIZE(v2_code_table) - 1;
+>>>> +       unsigned int mid = (low + high) / 2;
+>>>> +       unsigned int num;
+>>>> +       unsigned long denom;
+>>>>
+>>>> +       /* No code available, return callback */
+>>>>           if (code > v2_code_table[low].code || code <
+>>>> v2_code_table[high].code)
+>>>> -               return 125000; /* No code available, return max
+>>>> temperature */
+>>>> +               return rk_tsadcv2_code_to_temp(code);
+>>> Isn't this an infinite recursion?
+>>
+>> No, I think we can try check if it  is happened.
+>> Maybe we can return a warning/error for it.
+> I mean, if the 'if' condition is true, then this will just call the
+> same function again with the same code, and again, and again...
+> Just return an error code here, -ENOENT maybe?
+> I am not sure what error code is appropriate.
+
+Maybe "return -EAGAIN"
 >
-In machine driver, we should use snd_soc_dai_set_tdm_slot to set slots
-and slot width. In my opinion, slots in machine driver means the slot
-number of all channels. But in sai driver, the slots means the slot number
-of one channel. So snd_soc_calc_bclk use fs*sample_size*channels*tdm_slots
-to caculate bclk.
+>>>>           while (low <= high) {
+>>>> -               if (code >= v2_code_table[mid].code && code <
+>>>> -                   v2_code_table[mid - 1].code)
+>>>> -                       return v2_code_table[mid].temp;
+>>>> +               if (code >= v2_code_table[mid].code &&
+>>>> +                   code < v2_code_table[mid - 1].code)
+>>>> +                       break;
+>>>> +               else if (code == TSADCV2_DATA_MASK)
+>>>> +                       break;
+>>>>                   else if (code < v2_code_table[mid].code)
+>>>>                           low = mid + 1;
+>>>>                   else
+>>>> @@ -213,7 +216,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
+>>>>                   mid = (low + high) / 2;
+>>>>           }
+>>>>
+>>>> -       return 125000;
+>>>> +       /*
+>>>> +        * The 5C granularity provided by the table is too much. Let's
+>>>> +        * assume that the relationship between sensor readings and
+>>>> +        * temperature between 2 table entries is linear and interpolate
+>>>> +        * to produce less granular result.
+>>>> +        */
+>>>> +       num = v2_code_table[mid].temp - v2_code_table[mid - 1].temp;
+>>>> +       num *= v2_code_table[mid - 1].code - code;
+>>>> +       denom = v2_code_table[mid - 1].code - v2_code_table[mid].code;
+>>>> +       return v2_code_table[mid - 1].temp + (num / denom);
+>>>>    }
+>>>>
+>>>>    /**
+>>>> --
+>>>> 1.9.1
+>>>>
+>>>>
+>>>
+>> --
+>> Best regards
+>> Caesar Wang (王晓腾)
+>> 福州瑞芯微电子有限公司
+>> Fuzhou Rockchip Electronics Co.Ltd
+>> 福建省福州市铜盘路软件大道89号软件园A区18号楼(350003)
+>> Addr:No.18 Building, A District, No.89, software Boulevard Fuzhou,
+>> Fujian,PRC
+>> Email:wxt@rock-chips.com
+>> Tel:+86-591-83991906/07->8221
+>>
+>>
+> _______________________________________________
+> Linux-rockchip mailing list
+> Linux-rockchip@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-rockchip
 
-So i use "sai->slots = sai->slots / channels" to calculate slots per channel. 
-If we missing set slots, use channel number to set slots and get one slot per 
-channel. If we missing set slot width, set default slot width to word width. 
 
-If slot width is 32 and wrod width is 16, for 2 channels and one slot
-per channel, it will be 64 bit clock for one frame.
-
-val_cr5 |= FSL_SAI_CR5_WNW(sai->slot_width).
-val_cr5 |= FSL_SAI_CR5_W0W(sai->slot_width);
-
-So sai word length is 32, it will trans 32 bit data per channel. But dma only
-trans 16 bit data to fifo, the continues 16 bit will be 0. So for 16 bit data 
-formate, it will just one channel has data. When it is dsp mode, let slot
-width equal to word width can fix the issue.
-
-
-> Nicolin
