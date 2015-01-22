@@ -1,115 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792AbbAVROK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:14:10 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:55311 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753423AbbAVROH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:14:07 -0500
-Date: Thu, 22 Jan 2015 19:13:38 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Guenter Roeck <linux@roeck-us.net>, davem@davemloft.net
-Cc: Mel Gorman <mgorman@suse.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Moore <pmoore@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: linux-next: Tree for Jan 20 -- sparc32: fix broken set_pte()
-Message-ID: <20150122171338.GA1039@node.dhcp.inet.fi>
-References: <20150120185308.53f4af4e@canb.auug.org.au>
- <20150120202642.GA6178@roeck-us.net>
- <20150120225443.GA19629@node.dhcp.inet.fi>
- <54BF1785.7040300@roeck-us.net>
- <20150121104325.GA22449@node.dhcp.inet.fi>
- <54C06B19.8060305@roeck-us.net>
+	id S1753249AbbAVRNv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:13:51 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40551 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922AbbAVRNs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 12:13:48 -0500
+Message-ID: <54C12FC9.4060400@roeck-us.net>
+Date: Thu, 22 Jan 2015 09:13:45 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C06B19.8060305@roeck-us.net>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Paul Moore <pmoore@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, rgb@redhat.com, sd@queasysnail.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
+References: <20150122045303.1347.98054.stgit@localhost> <54C08C62.8010609@roeck-us.net> <20150122075429.GV29656@ZenIV.linux.org.uk>
+In-Reply-To: <20150122075429.GV29656@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.54C12FCB.0394,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 11
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 07:14:33PM -0800, Guenter Roeck wrote:
-> On 01/21/2015 02:43 AM, Kirill A. Shutemov wrote:
-> 
-> >>BUG: Bad page state in process init.sh  pfn:00000
-> >>page:f05e7460 count:0 mapcount:-1 mapping:  (null) index:0x0
-> >>flags: 0x400(reserved)
-> >>page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
-> >>bad because of flags:
-> >>flags: 0x400(reserved)
-> >>CPU: 0 PID: 1 Comm: init.sh Not tainted 3.19.0-rc5-next-20150120 #1
-> >>[f0076010 : bad_page+0xdc/0xfc ] [f00760c0 : free_pages_prepare+0x90/0x1f8 ] [f00775cc : free_hot_cold_page+0x20/0x160 ] [f00919e8 : do_wp_page+0x680/0x6ac ] [f00939f4 : handle_mm_fault+0xc94/0xd08 ] [f0015900 : do_sparc_fault+0xfc/0x3ec ] [f000af90 : srmmu_fault+0x58/0x68 ] [f00e74f4 : load_elf_binary+0x9a8/0xe94 ] [f00b0cac : search_binary_handler+0x68/0x12c ] [f00e67d0 : load_script+0x214/0x224 ] [f00b0cac : search_binary_handler+0x68/0x12c ] [f00b11a4 : do_execveat_common+0x434/0x584 ] [f00b1310 : do_execve+0x1c/0x2c ] [f02b50b0 : kernel_init+0x70/0xf0 ] [f000b200 : ret_from_kernel_thread+0xc/0x38 ] [00000000 :   (null) ]
-> >>Disabling lock debugging due to kernel taint
-> >>: applet not found
-> >>Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000100
-> >
-> >It doesn't make much sense to me. It tries to free page with pfn==0 on
-> >handling wp-fault. How it got mapped in the first place?
-> >
-> If I comment out the added call to vm_normal_page(), the code works fine.
-> If the call to vm_local_page() is there but everything else from your patch
-> is commented out, the crash occurs. Also, any log message added to the new
-> code patch (inside the if statements) is not getting printed, meaning the
-> new code (besides the call to vm_local_page) is not reached.
-> 
-> I guess that means that something in the call to vm_normal_page() appears
-> to go wrong. No idea what that might be, though.
+On 01/21/2015 11:54 PM, Al Viro wrote:
+> On Wed, Jan 21, 2015 at 09:36:34PM -0800, Guenter Roeck wrote:
+>> On 01/21/2015 08:59 PM, Paul Moore wrote:
+>>> This patchset has some important changes from the previous revision,
+>>> namely a fix from Al Viro (included in 2/5) that resolves a boot panic
+>>> on some systems as well as some smaller, less noteworthy fixes found
+>>> in the linux-next announcement thread from January 20th (refcount bump
+>>> in __audit_reusename() and a inode type in __audit_inode()).
+>>>
+>>> This patchset still needs some additional testing to verify that the
+>>> audit code still functions properly (the minor fixes mentioned above)
+>>> and there is an additional patch from Al that should be included as
+>>> well, but I wanted to post this and push the series to the audit next
+>>> branch quickly since a number of folks were affected by the boot panic.
+>>>
+>>> ---
+>>>
+>>> Paul Moore (5):
+>>>        fs: rework getname_kernel to handle up to PATH_MAX sized filenames
+>>>        fs: create proper filename objects using getname_kernel()
+>>>        audit: enable filename recording via getname_kernel()
+>>>        audit: fix filename matching in __audit_inode() and __audit_inode_child()
+>>>        audit: replace getname()/putname() hacks with reference counters
+>>>
+>> Hi Paul,
+>>
+>> What is the baseline for this patch set ? Obviously -next won't work,
+>> and it does not apply to mainline either.
+>
+> FWIW, I've ported that on top of vfs.git#for-next; result is in
+> vfs.git#experimental.  Paul, are you OK with that one?
+>
+I also tested that one. Works as expected.
 
-vm_normal_page() is never called in this case, since prot_numa is always
-zero.
+Thanks,
+Guenter
 
-I tracked the bug down. It's a sparc bug. The commit only triggers it,
-because affect how GCC optimize the code around faulty point.
-
-Please, test.
-
->From 5b9232753217412116a4cdc2897be0db818371ca Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Thu, 22 Jan 2015 18:42:13 +0200
-Subject: [PATCH] sparc32: fix broken set_pte()
-
-32-bit sparc uses swap instruction to implement set_pte(). It called
-using GCC inline assembler. But it misses the "memory" clobber to
-indicate that pte value will be updated in memory.
-
-As result GCC doesn't know that it cannot postpone pte pointer
-dereference which occurs before set_pte() to post-set_pte() time.
-
-It leads to real-world bugs -- [1]. In this situation we have code:
-
-	ptent = ptep_modify_prot_start(mm, addr, pte);
-	ptent = pte_modify(ptent, newprot);
-	...
-	ptep_modify_prot_commit(mm, addr, pte, ptent);
-
-ptep_modify_prot_start() in sparc case is just 'pte' dereference plus
-pte_clear(). pte_clear() calls broken set_pte(). GCC thinks it's valid
-to dereference 'pte' again on pte_modify() and gets cleared pte.
-ptep_modify_prot_commit() puts 'pteent' with pfn==0 back to page table,
-which eventually leads to the crash.
-
-[1] http://lkml.kernel.org/r/54C06B19.8060305@roeck-us.net
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reported-by: Guenter Roeck <linux@roeck-us.net>
----
- arch/sparc/include/asm/pgtable_32.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/sparc/include/asm/pgtable_32.h b/arch/sparc/include/asm/pgtable_32.h
-index b2f7dc46a7d1..9912eb0b499a 100644
---- a/arch/sparc/include/asm/pgtable_32.h
-+++ b/arch/sparc/include/asm/pgtable_32.h
-@@ -102,7 +102,8 @@ extern unsigned long empty_zero_page;
-  */
- static inline unsigned long srmmu_swap(unsigned long *addr, unsigned long value)
- {
--	__asm__ __volatile__("swap [%2], %0" : "=&r" (value) : "0" (value), "r" (addr));
-+	__asm__ __volatile__("swap [%2], %0" :
-+			"=&r" (value) : "0" (value), "r" (addr) : "memory");
- 	return value;
- }
- 
--- 
- Kirill A. Shutemov
