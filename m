@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbbAVXeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 18:34:14 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:39059 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581AbbAVXeM (ORCPT
+	id S1754197AbbAVXk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 18:40:26 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33932 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597AbbAVXkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 18:34:12 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        Michael Hennerich <Michael.Hennerich@analog.com>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] iio: imu: adis16400: Fix sign extension
-Date: Fri, 23 Jan 2015 00:34:02 +0100
-Message-Id: <1421969642-18167-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.1.3
+	Thu, 22 Jan 2015 18:40:23 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, Tero Kristo <t-kristo@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+Subject: [PATCH] clk: ti: Drop use of clk-private.h
+Date: Thu, 22 Jan 2015 15:40:20 -0800
+Message-Id: <1421970020-11125-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.3.0.rc0.46.gbe498cc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The intention is obviously to sign-extend a 12 bit quantity. But
-because of C's promotion rules, the assignment is equivalent to "val16
-&= 0xfff;". Use the proper API for this.
+These modules don't need to include clk-private.h. Replace the
+include with clk.h because these modules are clock consumers and
+also include clk-provider.h in clk/ti.h because struct
+clk_hw_omap has a struct clk_hw embedded in it.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Tero Kristo <t-kristo@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/iio/imu/adis16400_core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/clk/ti/clk-44xx.c | 2 +-
+ drivers/clk/ti/clk-54xx.c | 2 +-
+ drivers/clk/ti/clk-7xx.c  | 2 +-
+ include/linux/clk/ti.h    | 1 +
+ 4 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iio/imu/adis16400_core.c b/drivers/iio/imu/adis16400_core.c
-index b70873de04ea..fa795dcd5f75 100644
---- a/drivers/iio/imu/adis16400_core.c
-+++ b/drivers/iio/imu/adis16400_core.c
-@@ -26,6 +26,7 @@
- #include <linux/list.h>
- #include <linux/module.h>
- #include <linux/debugfs.h>
-+#include <linux/bitops.h>
+diff --git a/drivers/clk/ti/clk-44xx.c b/drivers/clk/ti/clk-44xx.c
+index 02517a8206bd..4f4c87751db5 100644
+--- a/drivers/clk/ti/clk-44xx.c
++++ b/drivers/clk/ti/clk-44xx.c
+@@ -12,7 +12,7 @@
  
- #include <linux/iio/iio.h>
- #include <linux/iio/sysfs.h>
-@@ -414,7 +415,7 @@ static int adis16400_read_raw(struct iio_dev *indio_dev,
- 		mutex_unlock(&indio_dev->mlock);
- 		if (ret)
- 			return ret;
--		val16 = ((val16 & 0xFFF) << 4) >> 4;
-+		val16 = sign_extend32(val16, 11);
- 		*val = val16;
- 		return IIO_VAL_INT;
- 	case IIO_CHAN_INFO_OFFSET:
+ #include <linux/kernel.h>
+ #include <linux/list.h>
+-#include <linux/clk-private.h>
++#include <linux/clk.h>
+ #include <linux/clkdev.h>
+ #include <linux/clk/ti.h>
+ 
+diff --git a/drivers/clk/ti/clk-54xx.c b/drivers/clk/ti/clk-54xx.c
+index 5e183993e3ec..14160b223548 100644
+--- a/drivers/clk/ti/clk-54xx.c
++++ b/drivers/clk/ti/clk-54xx.c
+@@ -12,7 +12,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/list.h>
+-#include <linux/clk-private.h>
++#include <linux/clk.h>
+ #include <linux/clkdev.h>
+ #include <linux/io.h>
+ #include <linux/clk/ti.h>
+diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+index 62ac8f6e480c..ee32f4deebf4 100644
+--- a/drivers/clk/ti/clk-7xx.c
++++ b/drivers/clk/ti/clk-7xx.c
+@@ -12,7 +12,7 @@
+ 
+ #include <linux/kernel.h>
+ #include <linux/list.h>
+-#include <linux/clk-private.h>
++#include <linux/clk.h>
+ #include <linux/clkdev.h>
+ #include <linux/clk/ti.h>
+ 
+diff --git a/include/linux/clk/ti.h b/include/linux/clk/ti.h
+index cfb9e554de6f..34042b56b0d0 100644
+--- a/include/linux/clk/ti.h
++++ b/include/linux/clk/ti.h
+@@ -15,6 +15,7 @@
+ #ifndef __LINUX_CLK_TI_H__
+ #define __LINUX_CLK_TI_H__
+ 
++#include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+ 
+ /**
 -- 
-2.1.3
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
