@@ -1,106 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbbAVIUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 03:20:13 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39421 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608AbbAVIUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 03:20:08 -0500
-Date: Thu, 22 Jan 2015 09:20:03 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: James Dingwall <james@dingwall.me.uk>
-Cc: linux-kernel@vger.kernel.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: Linux 3.18.2 / xen 4.4.1 dom0 - microcode oops
-Message-ID: <20150122082003.GA3441@pd.tnic>
-References: <20150122055242.GA11089@dingwall.me.uk>
+	id S1752027AbbAVIZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 03:25:40 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54799 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbbAVIZd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 03:25:33 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 22 Jan 2015 17:26:28 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        akpm@linux-foundation.org, lauraa@codeaurora.org
+Subject: Re: [PATCH 2/3] mm: cma: allocation trigger
+Message-ID: <20150122082628.GH21444@js1304-P5Q-DELUXE>
+References: <1421775513-4460-1-git-send-email-sasha.levin@oracle.com>
+ <1421775513-4460-3-git-send-email-sasha.levin@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150122055242.GA11089@dingwall.me.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421775513-4460-3-git-send-email-sasha.levin@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm,
+On Tue, Jan 20, 2015 at 12:38:32PM -0500, Sasha Levin wrote:
+> Provides a userspace interface to trigger a CMA allocation.
+> 
+> Usage:
+> 
+> 	echo [pages] > alloc
+> 
+> This would provide testing/fuzzing access to the CMA allocation paths.
+> 
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  mm/cma_debug.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 58 insertions(+)
+> 
+> diff --git a/mm/cma_debug.c b/mm/cma_debug.c
+> index 3a25413..eda0a41 100644
+> --- a/mm/cma_debug.c
+> +++ b/mm/cma_debug.c
+> @@ -7,9 +7,22 @@
+>  
+>  #include <linux/debugfs.h>
+>  #include <linux/cma.h>
+> +#include <linux/list.h>
+> +#include <linux/kernel.h>
+> +#include <linux/dma-contiguous.h>
+> +#include <linux/slab.h>
+>  
+>  #include "cma.h"
+>  
+> +struct cma_mem {
+> +	struct hlist_node node;
+> +	struct page *p;
+> +	unsigned long n;
+> +};
+> +
+> +static HLIST_HEAD(cma_mem_head);
+> +static DEFINE_SPINLOCK(cma_mem_head_lock);
+> +
+>  static struct dentry *cma_debugfs_root;
+>  
+>  static int cma_debugfs_get(void *data, u64 *val)
+> @@ -44,6 +57,48 @@ static void cma_debugfs_add_one(struct cma *cma, int idx)
+>  	debugfs_create_u32_array("bitmap", S_IRUGO, tmp, (u32*)cma->bitmap, u32s);
+>  }
+>  
+> +static void cma_add_to_cma_mem_list(struct cma_mem *mem)
+> +{
+> +	spin_lock(&cma_mem_head_lock);
+> +	hlist_add_head(&mem->node, &cma_mem_head);
+> +	spin_unlock(&cma_mem_head_lock);
+> +}
+> +
+> +static int cma_alloc_mem(int count)
+> +{
+> +	struct cma_mem *mem;
+> +	struct page *p;
+> +
+> +	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
+> +	if (!mem) 
+> +		return -ENOMEM;
+> +
+> +	p = cma_alloc(dma_contiguous_default_area, count, CONFIG_CMA_ALIGNMENT);
+> +	if (!p) {
+> +		pr_info("CMA: Allocation failed.\n");
+> +		kfree(mem);
+> +		return -ENOMEM;
+> +	}
 
-and I thought we fixed all that fun. It seems not :-\
+Hello,
 
-Boris, this paravirt_enabled() thing doesn't seem to work or why are we
-even calling microcode_exit()?
+I'm glad to see this patchset. I had similar one privately. :)
+Without this kind of facility, testing CMA is really hard.
 
-Leaving in the rest.
+Anyway, dma_contiguous_default_area is defined only in CONFIG_DMA_CMA.
+So, it would cause build break.
 
-On Thu, Jan 22, 2015 at 05:52:42AM +0000, James Dingwall wrote:
-> Hi,
-> 
-> Since 3.18.2 I am getting the oops below during boot whilst running as a dom0 under xen 4.4.1 / 4.5.0.  Is this a known issue or worth bisecting to identify the exact commit which causes this?
-> 
-> Thanks,
-> James
-> 
-> [  173.735541] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-> [  173.735789] IP: [<ffffffff8134e7c2>] misc_deregister+0x50/0xa5
-> [  173.735958] PGD 71480067 PUD 71bc6067 PMD 0 
-> [  173.736077] Oops: 0002 [#1] SMP 
-> [  173.736152] Modules linked in: it87 hwmon_vid autofs4 nfsd xen_pciback xen_gntalloc bridge stp llc ipv6 rbd ceph libceph openvswitch geneve vxlan ip6_udp_tunnel udp_tunnel tun tmem 
-> xen_acpi_processor xen_gntdev xen_blkback xen_netback i915 fbcon bitblit softcursor font tileblit video drm_kms_helper snd_hda_codec_realtek snd_hda_codec_generic coretemp microcode(-) drm lpc_ich 
-> i2c_i801 mfd_core snd_hda_intel firewire_ohci r8169 mii ata_generic evdev e1000e snd_hda_controller rtc_cmos i2c_algo_bit snd_hda_codec i2c_core cfbfillrect cfbimgblt cfbcopyarea backlight fb 
-> snd_pcm processor fbdev snd_hwdep snd_timer button intel_agp intel_gtt snd parport_pc parport thermal_sys dm_zero dm_thin_pool dm_persistent_data dm_bio_prison xts lrw gf128mul glue_helper 
-> ablk_helper cryptd aes_x86_64 iscsi_tcp libiscsi_tcp
-> [  173.738197]  libiscsi scsi_transport_iscsi tg3 ptp pps_core libphy hwmon e1000 fuse btrfs ext4 jbd2 linear raid0 dm_raid raid1 raid10 dm_snapshot dm_bufio dm_crypt dm_mirror dm_region_hash 
-> dm_log firewire_core hid_sunplus hid_samsung hid_pl hid_petalynx hid_gyration usbhid ohci_hcd uhci_hcd usb_storage ehci_pci ehci_hcd megaraid_sas 3w_xxxx qla1280 aic7xxx scsi_transport_spi sr_mod 
-> cdrom sg ahci libahci sata_nv sata_sil pata_amd libata
-> [  173.738197] CPU: 1 PID: 5381 Comm: rmmod Tainted: G        W      3.18.2 #118
-> [  173.738197] Hardware name: Gigabyte Technology Co., Ltd. G33M-S2/G33M-S2, BIOS F7K 07/31/2009
-> [  173.738197] task: ffff880073dca940 ti: ffff880071434000 task.ti: ffff880071434000
-> [  173.738197] RIP: e030:[<ffffffff8134e7c2>]  [<ffffffff8134e7c2>] misc_deregister+0x50/0xa5
-> [  173.738197] RSP: e02b:ffff880071437eb8  EFLAGS: 00010247
-> [  173.738197] RAX: 0000000000000000 RBX: ffffffffa0511e20 RCX: 00000028739a828b
-> [  173.738197] RDX: 0000000000000000 RSI: ffff880073dc0604 RDI: ffff880078866840
-> [  173.738197] RBP: ffff880071437ec8 R08: 00000000bfff1433 R09: ffff88007f68a0b0
-> [  173.738197] R10: 0000000000007ff0 R11: 0000000000000000 R12: 00000000ffffff87
-> [  173.738197] R13: 0000000000000800 R14: 00000000019c11c0 R15: 00000000019c1010
-> [  173.738197] FS:  00007f7ac2926700(0000) GS:ffff88007f680000(0000) knlGS:0000000000000000
-> [  173.738197] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  173.738197] CR2: 0000000000000008 CR3: 0000000072886000 CR4: 0000000000002660
-> [  173.738197] Stack:
-> [  173.738197]  ffff88007f6113c0 0000000000000000 ffff880071437ee8 ffffffffa0511253
-> [  173.738197]  0000000000000000 ffffffffa0511f30 ffff880071437f78 ffffffff81093fdf
-> [  173.738197]  00000000c22d6d00 ffffffffa0511f30 ffff880000000800 ffff880071437efc
-> [  173.738197] Call Trace:
-> [  173.738197]  [<ffffffffa0511253>] microcode_exit+0x20/0xb1 [microcode]
-> [  173.738197]  [<ffffffff81093fdf>] SyS_delete_module+0x118/0x1a6
-> [  173.738197]  [<ffffffff8100af73>] ? do_notify_resume+0x6a/0x78
-> [  173.738197]  [<ffffffff814caae9>] system_call_fastpath+0x12/0x17
-> [  173.738197] Code: f1 07 64 81 e8 3a 70 cf ff b8 ea ff ff ff eb 6b 48 c7 c7 20 fa 71 81 e8 1a a4 17 00 48 8b 43 20 48 8b 53 18 48 8b 3d e6 73 57 00 <48> 89 42 08 48 89 10 48 b8 00 01 10 00 00 00 
-> ad de 8b 33 48 89 
-> [  173.738197] RIP  [<ffffffff8134e7c2>] misc_deregister+0x50/0xa5
-> [  173.738197]  RSP <ffff880071437eb8>
-> [  173.738197] CR2: 0000000000000008
-> [  173.784081] ---[ end trace 0ab648576ba0af94 ]---
-> 
-> 
-> Previously in 3.18.1:
-> [  176.855832] microcode: CPU0 sig=0x10676, pf=0x1, revision=0x60c
-> [  176.855844] microcode: CPU0 update to revision 0x60f failed
-> [  176.856107] microcode: CPU1 sig=0x10676, pf=0x1, revision=0x60c
-> [  176.856115] microcode: CPU1 update to revision 0x60f failed
-> [  176.861597] microcode: Microcode Update Driver: v2.00 removed.
-> 
-> 
-> Same 3.18.2 kernel on bare metal (different system but identical hardware):
-> [   46.002857] microcode: Microcode Update Driver: v2.00 removed.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+And, I think that it is better for this tester to have an ability to
+allocate pages on specific CMA reserved region. It could be easily
+achieved by moving 'alloc' registration to cma_debugfs_add_one(). Is
+there any reason not to do that?
 
--- 
-Regards/Gruss,
-    Boris.
+> +
+> +	pr_info("CMA: Allocated %d pages at %p\n", count, p);
 
-ECO tip #101: Trim your mails when you reply.
---
+I don't think this output is needed. If CONFIG_CMA_DEBUG is enabled,
+cma_alloc() print similar output.
+
+Thanks.
