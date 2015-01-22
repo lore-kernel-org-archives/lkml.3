@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbbAVJNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 04:13:43 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42617 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbbAVJNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 04:13:37 -0500
-Date: Thu, 22 Jan 2015 10:13:30 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Robin Gong <b38343@freescale.com>
-Cc: dan.j.williams@intel.com, vinod.koul@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] dma: imx-sdma: switch to dynamic context mode after
- script loaded
-Message-ID: <20150122091330.GT12209@pengutronix.de>
-References: <1421911420-31821-1-git-send-email-b38343@freescale.com>
+	id S1751395AbbAVJPL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 04:15:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43603 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750727AbbAVJPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 04:15:07 -0500
+Date: Thu, 22 Jan 2015 10:15:04 +0100 (CET)
+From: Miroslav Benes <mbenes@suse.cz>
+To: Li Bin <huawei.libin@huawei.com>
+cc: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, live-patching@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com, guohanjun@huawei.com,
+        zhangdianfang@huawei.com, xiexiuqi@huawei.com
+Subject: Re: [PATCH 1/2] livepatch: Revert "livepatch: enforce patch stacking
+ semantics"
+In-Reply-To: <54C04BF0.6020906@huawei.com>
+Message-ID: <alpine.LNX.2.00.1501221013580.24802@pobox.suse.cz>
+References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-2-git-send-email-huawei.libin@huawei.com> <54C04BF0.6020906@huawei.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421911420-31821-1-git-send-email-b38343@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:13:04 up 98 days, 20:26, 131 users,  load average: 0.00, 0.04,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 03:23:40PM +0800, Robin Gong wrote:
-> Below comments got from Page4724 of Reference Manual of i.mx6q:
-> http://cache.freescale.com/files/32bit/doc/ref_manual/IMX6DQRM.pdf
-> 
-> --"Static context mode should be used for the first channel called
-> after reset to ensure that the all context RAM for that channel is
-> initialized during the context SAVE phase when the channel is
-> done or yields. Subsequent calls to the same channel or
-> different channels may use any of the dynamic context modes.
-> This will ensure that all context locations for the bootload
-> channel are initialized, and prevent undefined values in context
-> RAM from being loaded during the context restore if the
-> channel is re-started later"
-> 
-> Unfortunately, the rule was broken by commit(5b28aa319bba96987316425a1131813d87cbab35)
-> .This patch just take them back.
-> 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
+On Thu, 22 Jan 2015, Li Bin wrote:
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+> On 2015/1/21 17:07, Li Bin wrote:
+> > This reverts commit 83a90bb1345767f0cb96d242fd8b9db44b2b0e17.
+> > 
+> > The method that only allowing the topmost patch on the stack to be
+> > enabled or disabled is unreasonable. Such as the following case:
+> > 
+> > 	- do live patch1
+> > 	- disable patch1
+> > 	- do live patch2 //error
+> > 
+> > Now, we will never be able to do new live patch unless disabing the
+> > patch1 although there is no dependencies.
+> > 
+> 
+> Correct the log:
+> ... unless disabling the patch1 although ... -->
+> ... unless enabling the patch1 firstly although ...
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Yes, but in such situation you can unregister patch1 and proceed with new 
+live patch. No problem. As Jiri has already written. Or are we missing 
+something?
+
+Regards,
+--
+Miroslav Benes
+SUSE Labs
