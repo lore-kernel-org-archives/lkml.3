@@ -1,166 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbbAVFxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:53:10 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:58604 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbbAVFxH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:53:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPAsAGyXo=AMCU-2TbrrY=MPorg+Nd+WYS5nCAcjELZs91r4AQ@mail.gmail.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-	<1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
-	<54C042D2.4040809@oracle.com>
-	<CAPAsAGyXo=AMCU-2TbrrY=MPorg+Nd+WYS5nCAcjELZs91r4AQ@mail.gmail.com>
-Date: Thu, 22 Jan 2015 09:53:06 +0400
-Message-ID: <CAPAsAGyMyq_anQjErLa=L-0K3KmghMjoqzi0AdZOADTAECn1HA@mail.gmail.com>
-Subject: Re: [PATCH v9 00/17] Kernel address sanitizer - runtime memory debugger.
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: multipart/mixed; boundary=001a11c3d66c3ec2ac050d374977
+	id S1752761AbbAVGBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 01:01:43 -0500
+Received: from mail.softplc.com ([205.238.213.17]:45362 "EHLO mail.softplc.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750829AbbAVGBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 01:01:36 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 01:01:36 EST
+Message-ID: <54C09112.4010306@softplc.com>
+Date: Wed, 21 Jan 2015 23:56:34 -0600
+From: Dick Hollenbeck <dick@softplc.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="=_softplc-vm-10115-1421906195-0001-2"
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] 8250_core.c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c3d66c3ec2ac050d374977
-Content-Type: text/plain; charset=UTF-8
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-2015-01-22 8:34 GMT+03:00 Andrey Ryabinin <ryabinin.a.a@gmail.com>:
-> 2015-01-22 3:22 GMT+03:00 Sasha Levin <sasha.levin@oracle.com>:
->> On 01/21/2015 11:51 AM, Andrey Ryabinin wrote:
->>> Changes since v8:
->>>       - Fixed unpoisoned redzones for not-allocated-yet object
->>>           in newly allocated slab page. (from Dmitry C.)
->>>
->>>       - Some minor non-function cleanups in kasan internals.
->>>
->>>       - Added ack from Catalin
->>>
->>>       - Added stack instrumentation. With this we could detect
->>>           out of bounds accesses in stack variables. (patch 12)
->>>
->>>       - Added globals instrumentation - catching out of bounds in
->>>           global varibles. (patches 13-17)
->>>
->>>       - Shadow moved out from vmalloc into hole between vmemmap
->>>           and %esp fixup stacks. For globals instrumentation
->>>           we will need shadow backing modules addresses.
->>>           So we need some sort of a shadow memory allocator
->>>           (something like vmmemap_populate() function, except
->>>           that it should be available after boot).
->>>
->>>           __vmalloc_node_range() suits that purpose, except that
->>>           it can't be used for allocating for shadow in vmalloc
->>>           area because shadow in vmalloc is already 'allocated'
->>>           to protect us from other vmalloc users. So we need
->>>           16TB of unused addresses. And we have big enough hole
->>>           between vmemmap and %esp fixup stacks. So I moved shadow
->>>           there.
->>
->> I'm not sure which new addition caused it, but I'm getting tons of
->> false positives from platform drivers trying to access memory they
->> don't "own" - because they expect to find hardware there.
->>
->
-> To be sure, that this is really false positives, could you try with
-> patches in attachment?
+--=_softplc-vm-10115-1421906195-0001-2
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 
-Attaching properly formed patches
+This was generated from 3.14 kernel, but since its so small it will likely apply to newer
+kernels without issue.
 
---001a11c3d66c3ec2ac050d374977
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-backlight-da9052_bl-terminate-da9052_wled_ids-array-.patch"
-Content-Disposition: attachment; 
-	filename="0001-backlight-da9052_bl-terminate-da9052_wled_ids-array-.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i57ylfp93
 
-RnJvbSA4YWNhMjhkYzRkZjJlZDU5N2Y0ZmUwZDQ5NDY4MDIxZGI1ZjI5YzYxIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmRyZXkgUnlhYmluaW4gPGEucnlhYmluaW5Ac2Ftc3VuZy5j
-b20+CkRhdGU6IFRodSwgMjIgSmFuIDIwMTUgMTI6NDQ6NDIgKzAzMDAKU3ViamVjdDogW1BBVENI
-IDEvM10gYmFja2xpZ2h0OiBkYTkwNTJfYmw6IHRlcm1pbmF0ZSBkYTkwNTJfd2xlZF9pZHMgYXJy
-YXkKIHdpdGggZW1wdHkgZWxlbWVudAoKQXJyYXkgb2YgcGxhdGZvcm1fZGV2aWNlX2lkIGVsZW1l
-bnRzIHNob3VsZCBiZSB0ZXJtaW5hdGVkCndpdGggZW1wdHkgZWxlbWVudC4KClNpZ25lZC1vZmYt
-Ynk6IEFuZHJleSBSeWFiaW5pbiA8YS5yeWFiaW5pbkBzYW1zdW5nLmNvbT4KLS0tCiBkcml2ZXJz
-L3ZpZGVvL2JhY2tsaWdodC9kYTkwNTJfYmwuYyB8IDEgKwogMSBmaWxlIGNoYW5nZWQsIDEgaW5z
-ZXJ0aW9uKCspCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy92aWRlby9iYWNrbGlnaHQvZGE5MDUyX2Js
-LmMgYi9kcml2ZXJzL3ZpZGVvL2JhY2tsaWdodC9kYTkwNTJfYmwuYwppbmRleCBkNGJkNzRiZC4u
-YjE5NDNlNyAxMDA2NDQKLS0tIGEvZHJpdmVycy92aWRlby9iYWNrbGlnaHQvZGE5MDUyX2JsLmMK
-KysrIGIvZHJpdmVycy92aWRlby9iYWNrbGlnaHQvZGE5MDUyX2JsLmMKQEAgLTE2NSw2ICsxNjUs
-NyBAQCBzdGF0aWMgc3RydWN0IHBsYXRmb3JtX2RldmljZV9pZCBkYTkwNTJfd2xlZF9pZHNbXSA9
-IHsKIAkJLm5hbWUJCT0gImRhOTA1Mi13bGVkMyIsCiAJCS5kcml2ZXJfZGF0YQk9IERBOTA1Ml9U
-WVBFX1dMRUQzLAogCX0sCisJeyB9LAogfTsKIAogc3RhdGljIHN0cnVjdCBwbGF0Zm9ybV9kcml2
-ZXIgZGE5MDUyX3dsZWRfZHJpdmVyID0gewotLSAKMi4wLjQKCg==
---001a11c3d66c3ec2ac050d374977
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0002-crypto-ccp-terminate-ccp_support-array-with-empty-el.patch"
-Content-Disposition: attachment; 
-	filename="0002-crypto-ccp-terminate-ccp_support-array-with-empty-el.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i57ylfpq4
+--=_softplc-vm-10115-1421906195-0001-2
+Content-Type: text/x-patch; name="8250_core.patch"; charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="8250_core.patch"
 
-RnJvbSAyN2Y4Y2YwYWZmN2QxNmMwNjFkZGE5ZGQyMTk4ODdjYWUyMjE0NTg2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmRyZXkgUnlhYmluaW4gPGEucnlhYmluaW5Ac2Ftc3VuZy5j
-b20+CkRhdGU6IFRodSwgMjIgSmFuIDIwMTUgMTI6NDY6NDQgKzAzMDAKU3ViamVjdDogW1BBVENI
-IDIvM10gY3J5cHRvOiBjY3A6IHRlcm1pbmF0ZSBjY3Bfc3VwcG9ydCBhcnJheSB3aXRoIGVtcHR5
-CiBlbGVtZW50Cgp4ODZfbWF0Y2hfY3B1KCkgZXhwZWN0cyBhcnJheSBvZiB4ODZfY3B1X2lkcyB0
-ZXJtaW5hdGVkCndpdGggZW1wdHkgZWxlbWVudC4KClNpZ25lZC1vZmYtYnk6IEFuZHJleSBSeWFi
-aW5pbiA8YS5yeWFiaW5pbkBzYW1zdW5nLmNvbT4KLS0tCiBkcml2ZXJzL2NyeXB0by9jY3AvY2Nw
-LWRldi5jIHwgMSArCiAxIGZpbGUgY2hhbmdlZCwgMSBpbnNlcnRpb24oKykKCmRpZmYgLS1naXQg
-YS9kcml2ZXJzL2NyeXB0by9jY3AvY2NwLWRldi5jIGIvZHJpdmVycy9jcnlwdG8vY2NwL2NjcC1k
-ZXYuYwppbmRleCBjNmU2MTcxLi5jYTI5YzEyIDEwMDY0NAotLS0gYS9kcml2ZXJzL2NyeXB0by9j
-Y3AvY2NwLWRldi5jCisrKyBiL2RyaXZlcnMvY3J5cHRvL2NjcC9jY3AtZGV2LmMKQEAgLTU4Myw2
-ICs1ODMsNyBAQCBib29sIGNjcF9xdWV1ZXNfc3VzcGVuZGVkKHN0cnVjdCBjY3BfZGV2aWNlICpj
-Y3ApCiAjaWZkZWYgQ09ORklHX1g4Ngogc3RhdGljIGNvbnN0IHN0cnVjdCB4ODZfY3B1X2lkIGNj
-cF9zdXBwb3J0W10gPSB7CiAJeyBYODZfVkVORE9SX0FNRCwgMjIsIH0sCisJeyB9LAogfTsKICNl
-bmRpZgogCi0tIAoyLjAuNAoK
---001a11c3d66c3ec2ac050d374977
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0003-rtc-s5m-terminate-s5m_rtc_id-array-with-empty-elemen.patch"
-Content-Disposition: attachment; 
-	filename="0003-rtc-s5m-terminate-s5m_rtc_id-array-with-empty-elemen.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i57ylfq05
+A lesser travelled code path specifically crafted for "tx interrupt buggy"
+UARTs seems to be testing the wrong bit for whether or not to prime the
+transmit pump.  The result is that the tx interrupt never occurs on one chip
+I am using that falls into the UART_BUG_TXEN category as I understand it.
 
-RnJvbSAzYTNiZDljZmQyMjNmMTRkMzEzNTJiOWE0NDIwOTQ3NmIzZjVlZjExIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmRyZXkgUnlhYmluaW4gPGEucnlhYmluaW5Ac2Ftc3VuZy5j
-b20+CkRhdGU6IFRodSwgMjIgSmFuIDIwMTUgMTI6NDg6MTUgKzAzMDAKU3ViamVjdDogW1BBVENI
-IDMvM10gcnRjOiBzNW06IHRlcm1pbmF0ZSBzNW1fcnRjX2lkIGFycmF5IHdpdGggZW1wdHkgZWxl
-bWVudAoKQXJyYXkgb2YgcGxhdGZvcm1fZGV2aWNlX2lkIGVsZW1lbnRzIHNob3VsZCBiZSB0ZXJt
-aW5hdGVkCndpdGggZW1wdHkgZWxlbWVudC4KClNpZ25lZC1vZmYtYnk6IEFuZHJleSBSeWFiaW5p
-biA8YS5yeWFiaW5pbkBzYW1zdW5nLmNvbT4KLS0tCiBkcml2ZXJzL3J0Yy9ydGMtczVtLmMgfCAx
-ICsKIDEgZmlsZSBjaGFuZ2VkLCAxIGluc2VydGlvbigrKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMv
-cnRjL3J0Yy1zNW0uYyBiL2RyaXZlcnMvcnRjL3J0Yy1zNW0uYwppbmRleCBiNWU3YzQ2Li44OWFj
-MWQ1IDEwMDY0NAotLS0gYS9kcml2ZXJzL3J0Yy9ydGMtczVtLmMKKysrIGIvZHJpdmVycy9ydGMv
-cnRjLXM1bS5jCkBAIC04MzIsNiArODMyLDcgQEAgc3RhdGljIFNJTVBMRV9ERVZfUE1fT1BTKHM1
-bV9ydGNfcG1fb3BzLCBzNW1fcnRjX3N1c3BlbmQsIHM1bV9ydGNfcmVzdW1lKTsKIHN0YXRpYyBj
-b25zdCBzdHJ1Y3QgcGxhdGZvcm1fZGV2aWNlX2lkIHM1bV9ydGNfaWRbXSA9IHsKIAl7ICJzNW0t
-cnRjIiwJCVM1TTg3NjdYIH0sCiAJeyAiczJtcHMxNC1ydGMiLAlTMk1QUzE0WCB9LAorCXsgfSwK
-IH07CiAKIHN0YXRpYyBzdHJ1Y3QgcGxhdGZvcm1fZHJpdmVyIHM1bV9ydGNfZHJpdmVyID0gewot
-LSAKMi4wLjQKCg==
---001a11c3d66c3ec2ac050d374977--
+The 16550 data sheet even names the interrupt "THRE" and not transmit
+shift register empty.  The interrupt is fired when the holding register, or its
+logical equivalent, the fifo, goes empty;  not when the shift register goes
+empty.  This is a code bug in code hoping to fix a bug in hardware.
+
+The reason this is so late coming to the surface is that lately the 8250
+interrupt handler polls for all kinds of special status beyond the intention
+of the hardware's purpose specific interrupt. Therefore so long as you
+were in the interrupt handler (even if for purposes of servicing a recv
+interrupt, you could recover from the broken transmit chain.  But if you are
+only transmitting, not receiving, then this bug can manifest itself.
+
+This is the fix.  It is harmless because so long as the fifo is empty, it
+should be legal to re-fill it fully anyways.
+
+Signed-off-by: Dick Hollenbeck <dick@softplc.com>
+
+=== modified file 'drivers/tty/serial/8250/8250_core.c'
+--- old/drivers/tty/serial/8250/8250_core.c	2014-07-14 18:39:13 +0000
++++ new/drivers/tty/serial/8250/8250_core.c	2015-01-22 05:28:33 +0000
+@@ -1302,11 +1302,15 @@ static void serial8250_start_tx(struct u
+		up->ier |= UART_IER_THRI;
+		serial_port_out(port, UART_IER, up->ier);
+
++		/*
++		 * If setting UART_IER_THRI does not cause an
++		 * immediate tx interrupt
++		 */
+		if (up->bugs & UART_BUG_TXEN) {
+			unsigned char lsr;
+			lsr = serial_in(up, UART_LSR);
+			up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
+-			if (lsr & UART_LSR_TEMT)
++			if (lsr & UART_LSR_THRE)
+				serial8250_tx_chars(up);
+		}
+	}
+
+
+--=_softplc-vm-10115-1421906195-0001-2--
