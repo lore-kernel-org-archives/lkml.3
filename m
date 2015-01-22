@@ -1,37 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbbAVV3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:29:11 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51757 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599AbbAVV3H (ORCPT
+	id S1754534AbbAVVdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:33:17 -0500
+Received: from mailout.micron.com ([137.201.242.129]:18301 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147AbbAVVdO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:29:07 -0500
-Date: Thu, 22 Jan 2015 21:29:03 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, rgb@redhat.com, sd@queasysnail.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
-Message-ID: <20150122212902.GW29656@ZenIV.linux.org.uk>
-References: <20150122045303.1347.98054.stgit@localhost>
- <20150122075429.GV29656@ZenIV.linux.org.uk>
- <4011794.crgx99Gu8a@sifl>
- <25860171.h6aocaXFeh@sifl>
+	Thu, 22 Jan 2015 16:33:14 -0500
+From: "Andy Falanga (afalanga)" <afalanga@micron.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: block layer copying user io vectors
+Thread-Topic: block layer copying user io vectors
+Thread-Index: AdA2iwNUx2WCsO7EQqKFFQcSlbhWiw==
+Date: Thu, 22 Jan 2015 21:33:08 +0000
+Message-ID: <60F6FAE47D1BCE4380CC06D18F49789B952F7ED3@NTXBOIMBX02.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.201.88.182]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-21274.002
+x-tm-as-result: No--42.050900-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <25860171.h6aocaXFeh@sifl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 04:25:13PM -0500, Paul Moore wrote:
+Please CC me directly.
 
-> Your experimental branch looks good to me, thanks.
+I am working in kernel 2.6.32 (CentOS 6).  To increase the upper limit
+of sg from 4mb to at least 128mb in a single SCSI command.  At first I
+thought this issue was in sg, but have tracked the issue to the block
+layer.
 
-Pushed into for-next; I'm probably going to move that stuff into a never-rebased
-branch, merged into for-next and safe to pull into your tree if you want to do
-something on top of that set.
+Thinking I could solve this issue by using scatter/gather lists, I
+increased the size from 32k to 4mb of each vector.  This did work
+until I tried to send 8mb.  When I do so, I get errno EINVAL.  After
+some tracing, I tracked the problem into bio_copy_user_iov().
+
+This function does something that seems rather strange.  On line 859,
+a for loop determines the number of pages needed for the copying of the
+user data to kernel space.  Then the memory is allocated (line
+886 bio_kmalloc()).  Then, strangely, on line 895, there is this
+conditional:
+
+if (map_data) {
+    nr_pages = 1 << map_data->page_order;
+    i = map_data->offset / PAGE_SIZE;
+}
+
+This effectively ignores the number of pages counted earlier (in this
+case which applies to me), and then apparently disregards whatever
+memory may have been allocated earlier.  Thinking that this was the
+root I tried to correct this by commenting that simple branch from
+bio_copy_user_iov, but still had the same result.  Can someone
+help me understand what is happening in the block layer?
+
+Thanks
