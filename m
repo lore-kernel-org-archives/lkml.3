@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbbAVNuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 08:50:04 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:55465 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbbAVNuB (ORCPT
+	id S1752637AbbAVNzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 08:55:06 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:48711 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202AbbAVNzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 08:50:01 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: "Fu\, Zhonghui" <zhonghui.fu@linux.intel.com>
-Cc: brudley@broadcom.com, Arend van Spriel <arend@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, meuleman@broadcom.com,
-        linville@tuxdriver.com, pieterpg@broadcom.com, hdegoede@redhat.com,
-        wens@csie.org, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
-References: <54BDCC06.8090107@linux.intel.com>
-Date: Thu, 22 Jan 2015 15:49:52 +0200
-In-Reply-To: <54BDCC06.8090107@linux.intel.com> (Zhonghui Fu's message of
-	"Tue, 20 Jan 2015 11:31:18 +0800")
-Message-ID: <87twzincvz.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 22 Jan 2015 08:55:00 -0500
+From: Anshul Garg <aksgarg1989@gmail.com>
+X-Google-Original-From: Anshul Garg
+To: akpm@linux-foundation.org, levex@linux.com, felipe.contreras@gmail.com,
+        linux-kernel@vger.kernel.org
+Cc: aksgarg1989@gmail.com, anshul.g@samsung.com
+Subject: [PATCH] lib/kstrtox.c clean kstrtoll function
+Date: Thu, 22 Jan 2015 05:54:10 -0800
+Message-Id: <1421934850-77446-1-git-send-email-aksgarg1989@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <aksgarg1989@gmai.com>
+References: <aksgarg1989@gmai.com>
+X-Antivirus: avast! (VPS 150122-1, 01/22/2015), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Fu, Zhonghui" <zhonghui.fu@linux.intel.com> writes:
+From: Anshul Garg <aksgarg1989@gmail.com>
 
->>From 04d3fa673897ca4ccbea6c76836d0092dba2484a Mon Sep 17 00:00:00 2001
-> From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> Date: Tue, 20 Jan 2015 11:14:13 +0800
-> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
->
-> WiFi chip has 2 SDIO functions, and PM core will trigger
-> twice suspend/resume operations for one WiFi chip to do
-> the same things. This patch avoid this case.
->
-> Acked-by: Arend van Spriel <arend@broadcom.com>
-> Acked-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-> Acked-by: Kalle Valo <kvalo@codeaurora.org>
-> Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
+Instead of having same code for negative and postive
+integer, use sign variable for integer parsing.
 
-I don't remember giving Acked-by to this (or for matter to anything for
-a long time). What about Sergei or Arend?
+Signed-off-by: Anshul Garg <aksgarg1989@gmail.com>
+---
+ lib/kstrtox.c |   24 ++++++++++--------------
+ 1 file changed, 10 insertions(+), 14 deletions(-)
 
-Please do not add Acked-by, Signed-off-by or any other tags unless
-explicitly specified by the person in question. I'm dropping this,
-please resend with real Acked-by lines.
-
+diff --git a/lib/kstrtox.c b/lib/kstrtox.c
+index ec8da78..744cbb0 100644
+--- a/lib/kstrtox.c
++++ b/lib/kstrtox.c
+@@ -146,23 +146,19 @@ EXPORT_SYMBOL(kstrtoull);
+ int kstrtoll(const char *s, unsigned int base, long long *res)
+ {
+ 	unsigned long long tmp;
+-	int rv;
++	int rv, sign = 1;
+ 
+ 	if (s[0] == '-') {
+-		rv = _kstrtoull(s + 1, base, &tmp);
+-		if (rv < 0)
+-			return rv;
+-		if ((long long)(-tmp) >= 0)
+-			return -ERANGE;
+-		*res = -tmp;
+-	} else {
+-		rv = kstrtoull(s, base, &tmp);
+-		if (rv < 0)
+-			return rv;
+-		if ((long long)tmp < 0)
+-			return -ERANGE;
+-		*res = tmp;
++		sign = -1;
++		s++;
+ 	}
++
++	rv = kstrtoull(s, base, &tmp);
++	if (rv < 0)
++		return rv;
++	if ((long long)tmp < 0)
++		return -ERANGE;
++	*res = sign * tmp;
+ 	return 0;
+ }
+ EXPORT_SYMBOL(kstrtoll);
 -- 
-Kalle Valo
+1.7.9.5
+
+
+---
+This email has been checked for viruses by Avast antivirus software.
+http://www.avast.com
+
