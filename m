@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbbAVNCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 08:02:32 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:63660 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbbAVNCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 08:02:31 -0500
-Message-ID: <54C0F4E4.5080505@hurleysoftware.com>
-Date: Thu, 22 Jan 2015 08:02:28 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1752260AbbAVNGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 08:06:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751494AbbAVNG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 08:06:28 -0500
+Date: Thu, 22 Jan 2015 07:05:19 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Li Bin <huawei.libin@huawei.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, live-patching@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com, guohanjun@huawei.com,
+        zhangdianfang@huawei.com, xiexiuqi@huawei.com
+Subject: Re: [PATCH 2/2] livepatch: disable/enable_patch manners for
+ interdependent patches
+Message-ID: <20150122130519.GA17376@treble.redhat.com>
+References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com>
+ <1421831262-27869-3-git-send-email-huawei.libin@huawei.com>
+ <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz>
+ <54C04775.1070908@huawei.com>
+ <20150122035126.GB12927@treble.redhat.com>
+ <54C0B735.7070106@huawei.com>
+ <54C0C8CF.8070804@huawei.com>
 MIME-Version: 1.0
-To: Dick Hollenbeck <dick@softplc.com>
-CC: linux-kernel@vger.kernel.org,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Frans Klaver <fransklaver@gmail.com>
-Subject: Re: [PATCH 1/1] 8250_core.c
-References: <54C09112.4010306@softplc.com>
-In-Reply-To: <54C09112.4010306@softplc.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <54C0C8CF.8070804@huawei.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc linux-serial, Greg, Frans ]
-
-Hi Dick,
-
-On 01/22/2015 12:56 AM, Dick Hollenbeck wrote:
-> This was generated from 3.14 kernel, but since its so small it will likely apply to newer
-> kernels without issue.
-
-Thanks for finding this.
-
-In addition to Frans' comments, I've expanded the patch inline for further
-comment (which is why attached patches are of limited value).
-
-> A lesser travelled code path specifically crafted for "tx interrupt buggy"
-> UARTs seems to be testing the wrong bit for whether or not to prime the
-> transmit pump.  The result is that the tx interrupt never occurs on one chip
-> I am using that falls into the UART_BUG_TXEN category as I understand it.
-
-What UART is this?
-
-> The 16550 data sheet even names the interrupt "THRE" and not transmit
-> shift register empty.  The interrupt is fired when the holding register, or its
-> logical equivalent, the fifo, goes empty;  not when the shift register goes
-> empty.
-
-Please include a description of why this test is broken. For example,
-
-"So, if the fifo is already empty but the shifter is still transmitting,
-no further THRE interrupt will occur, and tx will stall."
-
-The remainder of the commit message can be dropped (except Signed-off-by).
-
->  This is a code bug in code hoping to fix a bug in hardware.
+On Thu, Jan 22, 2015 at 05:54:23PM +0800, Li Bin wrote:
+> On 2015/1/22 16:39, Li Bin wrote:
+> > On 2015/1/22 11:51, Josh Poimboeuf wrote:
+> >> On Thu, Jan 22, 2015 at 08:42:29AM +0800, Li Bin wrote:
+> >>> On 2015/1/21 22:08, Jiri Kosina wrote:
+> >>>> On Wed, 21 Jan 2015, Li Bin wrote:
+> >>>> By this you limit the definition of the patch inter-dependency to just 
+> >>>> symbols. But that's not the only way how patches can depend on it other -- 
+> >>>> the dependency can be semantical.
+> >>>
+> >>> Yes, I agree with you. But I think the other dependencies such as semantical
+> >>> dependency should be judged by the user, like reverting a patch from git repository.
+> >>> Right?
+> >>
+> >> But with live patching, there are two users: the patch creator (who
+> >> creates the patch module) and the end user (who loads it on their
+> >> system).
+> >>
+> >> We can assume the patch creator knows what he's doing, but the end user
+> >> doesn't always know or care about low level details like patch
+> >> dependencies.  The easiest and safest way to protect the end user is the
+> >> current approach, which assumes that each patch depends on all
+> >> previously applied patches.
+> > 
+> > But then, the feature that disable patch dynamically is useless.
+> > For example, if user find a bug be introduced by the last patch and disable
+> > it directly, the new patch is no longer allowed from now unless enable the
+> > old patch firstly but there is a risk window by this way.
+> > 
 > 
-> The reason this is so late coming to the surface is that lately the 8250
-> interrupt handler polls for all kinds of special status beyond the intention
-> of the hardware's purpose specific interrupt. Therefore so long as you
-> were in the interrupt handler (even if for purposes of servicing a recv
-> interrupt, you could recover from the broken transmit chain.  But if you are
-> only transmitting, not receiving, then this bug can manifest itself.
-> 
-> This is the fix.  It is harmless because so long as the fifo is empty, it
-> should be legal to re-fill it fully anyways.
-> 
-> Signed-off-by: Dick Hollenbeck <dick@softplc.com>
-> 
-> === modified file 'drivers/tty/serial/8250/8250_core.c'
-> --- old/drivers/tty/serial/8250/8250_core.c	2014-07-14 18:39:13 +0000
-> +++ new/drivers/tty/serial/8250/8250_core.c	2015-01-22 05:28:33 +0000
-> @@ -1302,11 +1302,15 @@ static void serial8250_start_tx(struct u
-> 		up->ier |= UART_IER_THRI;
-> 		serial_port_out(port, UART_IER, up->ier);
-> 
-> +		/*
-> +		 * If setting UART_IER_THRI does not cause an
-> +		 * immediate tx interrupt
-> +		 */
+> Ok, in this case we can unregister the old patch firstly.
+> But it seems that the feature that enable/disable patch dynamically indeed
+> useless. (Its value is only for the last patch to enable or disable.)
 
-Please make this comment one line? Eg.,
+I wouldn't say it's useless... It's just a patch stack.  If there's a
+bug at the bottom of the stack, you can either:
 
-		/* Prime tx pump for buggy UARTs */
+1) push a new patch which does the opposite of the original patch
+   (similar to how "git revert" adds a new commit);
 
-> 		if (up->bugs & UART_BUG_TXEN) {
-> 			unsigned char lsr;
-> 			lsr = serial_in(up, UART_LSR);
-> 			up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
-> -			if (lsr & UART_LSR_TEMT)
-> +			if (lsr & UART_LSR_THRE)
-> 				serial8250_tx_chars(up);
-> 		}
-> 	}
+2) or pop everything off the stack and create a new stack to your
+   liking.
 
-Regards,
-Peter Hurley
- 
+It doesn't actually prevent you from doing what you want, it just makes
+it less convenient (and more safe IMO).
 
+I suppose an alternative would be to allow the patch creator to specify
+patch dependencies (in addition to something like your patch to catch
+the obvious dependencies).  But dependencies are tricky and I'm not
+really convinced that would be worth the added risk and code complexity.
+
+-- 
+Josh
