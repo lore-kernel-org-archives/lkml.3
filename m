@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbbAVMSa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 07:18:30 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:45187 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865AbbAVMSY (ORCPT
+	id S1751680AbbAVMXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 07:23:41 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:47115 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbbAVMXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 07:18:24 -0500
-Date: Thu, 22 Jan 2015 12:18:19 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: kernel@stlinux.com, wsa@the-dreams.de, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/1] i2c: i2c-st: Rename clock reference to something
- that exists
-Message-ID: <20150122121819.GC9129@x1>
-References: <1409234523-20240-1-git-send-email-lee.jones@linaro.org>
+	Thu, 22 Jan 2015 07:23:36 -0500
+Message-ID: <54C0EBC5.7060606@linaro.org>
+Date: Thu, 22 Jan 2015 13:23:33 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Baruch Siach <baruch@tkos.co.il>, Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/2] clocksource: devicetree: document Conexant Digicolor
+ timer binding
+References: <cover.1421821466.git.baruch@tkos.co.il> <6812ad4ac585e40ad7d8282eef1d64be8bc6eaa5.1421821466.git.baruch@tkos.co.il>
+In-Reply-To: <6812ad4ac585e40ad7d8282eef1d64be8bc6eaa5.1421821466.git.baruch@tkos.co.il>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409234523-20240-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfram,
+On 01/21/2015 07:36 AM, Baruch Siach wrote:
+> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
 
-This patch has been on the list since forever.
+Please add a changelog and a more verbose description: see for example 
+commit 2f2b7fb2 or 926b65e2. If there is a public documentation please 
+add a link to it or give a quick description of how the timer behaves.
 
-I have Acks from the driver author, so I'm going to take this through
-the MFD tree.  If you perk up later and decide to take it though the
-I2C tree instead, let me know and I'll remove it from MFD.
+Also that will help to review the code in the timer.
 
-> CLK_S_ICN_REG_0 hasn't existed for a while now.  This was renamed
-> over a few commits, then finally removed in commit 5aa02b9 (ARM:
-> STi: DT: STiH415: Remove unused CLK_S_ICN_REG_0 fixed clock).
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  Documentation/devicetree/bindings/i2c/i2c-st.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/i2c/i2c-st.txt b/Documentation/devicetree/bindings/i2c/i2c-st.txt
-> index 437e0db..4c26fda 100644
-> --- a/Documentation/devicetree/bindings/i2c/i2c-st.txt
-> +++ b/Documentation/devicetree/bindings/i2c/i2c-st.txt
-> @@ -31,7 +31,7 @@ i2c0: i2c@fed40000 {
->  	compatible	= "st,comms-ssc4-i2c";
->  	reg		= <0xfed40000 0x110>;
->  	interrupts	=  <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>;
-> -	clocks		= <&CLK_S_ICN_REG_0>;
-> +	clocks		= <&clk_s_a0_ls CLK_ICN_REG>;
->  	clock-names	= "ssc";
->  	clock-frequency = <400000>;
->  	pinctrl-names	= "default";
+>   .../devicetree/bindings/timer/digicolor-timer.txt      | 18 ++++++++++++++++++
+>   1 file changed, 18 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/timer/digicolor-timer.txt
+>
+> diff --git a/Documentation/devicetree/bindings/timer/digicolor-timer.txt b/Documentation/devicetree/bindings/timer/digicolor-timer.txt
+> new file mode 100644
+> index 000000000000..d1b659bbc29f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/timer/digicolor-timer.txt
+> @@ -0,0 +1,18 @@
+> +Conexant Digicolor SoCs Timer Controller
+> +
+> +Required properties:
+> +
+> +- compatible : should be "cnxt,cx92755-timer"
+> +- reg : Specifies base physical address and size of the "Agent Communication"
+> +  timer registers
+> +- interrupts : Contains 8 interrupts, one for each timer
+> +- clocks: phandle to the main clock
+> +
+> +Example:
+> +
+> +	timer@f0000fc0 {
+> +		compatible = "cnxt,cx92755-timer";
+> +		reg = <0xf0000fc0 0x40>;
+> +		interrupts = <19>, <31>, <34>, <35>, <52>, <53>, <54>, <55>;
+> +		clocks = <&main_clk>;
+> +	};
+>
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
