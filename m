@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbbAVS1a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 13:27:30 -0500
-Received: from mga01.intel.com ([192.55.52.88]:28299 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752707AbbAVS12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 13:27:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,450,1418112000"; 
-   d="scan'208";a="666019626"
-Message-ID: <54C1403D.1010608@intel.com>
-Date: Thu, 22 Jan 2015 10:23:57 -0800
-From: Tadeusz Struk <tadeusz.struk@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1753277AbbAVSYt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 13:24:49 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:36450 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331AbbAVSYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 13:24:46 -0500
 MIME-Version: 1.0
-To: Stephan Mueller <smueller@chronox.de>
-CC: Herbert Xu <herbert@gondor.apana.org.au>, linux-crypto@vger.kernel.org,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crypto: aesni: add setkey for driver-gcm-aes-aesni
-References: <2587101.YvN0IxRmOH@tachyon.chronox.de> <20150120031704.GB10475@gondor.apana.org.au> <40625395.stBBYbAQtz@tachyon.chronox.de>
-In-Reply-To: <40625395.stBBYbAQtz@tachyon.chronox.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+mtBx8yeLG7UwqtknAsUTBtpocspraBcfj5W-2vTBA5pC8LEQ@mail.gmail.com>
+References: <1421949760-5705-1-git-send-email-md.jamalmohiuddin@gmail.com>
+	<CA+mtBx8yeLG7UwqtknAsUTBtpocspraBcfj5W-2vTBA5pC8LEQ@mail.gmail.com>
+Date: Thu, 22 Jan 2015 10:24:45 -0800
+Message-ID: <CANn89i+anRV98Y_EQGvMiPvc-JUu9KxmP2SY7kYXvjVw3Dj-KQ@mail.gmail.com>
+Subject: Re: [PATCH] include:linux:Optimizations to __skb_push
+From: Eric Dumazet <edumazet@google.com>
+To: Tom Herbert <therbert@google.com>
+Cc: Mohammad Jamal <md.jamalmohiuddin@gmail.com>,
+        David Miller <davem@davemloft.net>, viro@zeniv.linux.org.uk,
+        Alexander Duyck <alexander.h.duyck@redhat.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 05:25 PM, Stephan Mueller wrote:
->> Rather than adding a bogus setkey function, please fix this mess
->> properly by moving the top-level setkey function into the __driver
->> one where it should be.  Compare with how we handle it in the
->> ablk_helper which is pretty much the same thing.
-> 
-> Tadeusz, are you working on that update or shall I have a look?
-> 
-Hi,
-No, I thought that the agreement was that we don't want to allow user
-space to use these helpers directly, right? Am I missing something?
+On Thu, Jan 22, 2015 at 10:21 AM, Tom Herbert <therbert@google.com> wrote:
+
+> Hmm, this seems less readable to me. What is the effect of this patch?
+> Does the compiler even produce different assembly?
+
+No change at all in generated assembly, this looks not worth it.
+
+BTW, most __skb_push() callers ignore return value.
