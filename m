@@ -1,79 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778AbbAVOlV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:41:21 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:20623 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbbAVOlQ (ORCPT
+	id S1752915AbbAVOmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:42:39 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35785 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979AbbAVOmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:41:16 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-7f-54c10b78d6ed
-From: Marcin Lis <m.lis@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Rafal Krypa <r.krypa@samsung.com>,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Marcin Lis <marcin.lis.dev@gmail.com>,
-        Marcin Lis <m.lis@samsung.com>
-Subject: [PATCH 1/1] Smack: Assign smack_known_web as default smk_in label for
- kernel thread's socket
-Date: Thu, 22 Jan 2015 15:40:33 +0100
-Message-id: <1421937633-2041-1-git-send-email-m.lis@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t/xa7oV3AdDDG69l7O4t+0Xm0Xf4yCL
-	y7vmsFl86HnEZnH34FsWi7ffvjJbvJ20gtni/IVz7A4cHjtn3WX3uLY70uPj01ssHn1bVjF6
-	HN2/iM3j8ya5ALYoLpuU1JzMstQifbsErozjD36yFCzkrmja/5q1gbGHs4uRg0NCwETi5cLC
-	LkZOIFNM4sK99WxdjFwcQgJLGSXub/rGBJIQEuhjkjg2vQzEZhNQkfj8rYcVpEhE4AyjRN/J
-	RYwgCWaBTInnqyexgdjCAukSLxrWsIDYLAKqEk9/NrKC2LwCDhLXn31lg1isIDFnks0ERu4F
-	jAyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUJC5ssOxsXHrA4xCnAwKvHwBqw8ECLEmlhW
-	XJl7iFGCg1lJhJf/JVCINyWxsiq1KD++qDQntfgQIxMHp1QDYxzv/Z6mvhUrDCYZXxfmk5L/
-	yXlTNjJmNmdD05kMDue0fYGCuU6yFRciRMUOr7pWyKM3tXjBY3UW0fgvWizSKTsKD+re3xu9
-	ibVrmatrBKvFvc1p2+XX9NxRbszRisis3sszKWnWGRe5+puWJh3OmUIT5bYrTzeZmlNacdDK
-	aHb6po4vL54rsRRnJBpqMRcVJwIAtVj80PcBAAA=
+	Thu, 22 Jan 2015 09:42:37 -0500
+Message-ID: <54C10C54.6070500@collabora.com>
+Date: Thu, 22 Jan 2015 15:42:28 +0100
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Jonathan Corbet <corbet@lwn.net>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        =?windows-1252?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Tero Kristo <t-kristo@ti.com>, Manuel Lauss <manuel.lauss@gmail.com>,
+        Alex Elder <elder@linaro.org>, Matt Porter <mporter@linaro.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Bintian Wang <bintian.wang@huawei.com>,
+        Chao Xie <chao.xie@marvell.com>, linux-doc@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH v11 3/4] clk: Add rate constraints to clocks
+References: <1421847039-29544-1-git-send-email-tomeu.vizoso@collabora.com> <1421847039-29544-4-git-send-email-tomeu.vizoso@collabora.com> <20150122014635.GI27202@codeaurora.org>
+In-Reply-To: <20150122014635.GI27202@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change fixes the bug associated with sockets owned by kernel threads. These
-sockets, created usually by network devices' drivers tasks, received smk_in
-label from the task that created them - the "floor" label in the most cases. The
-result was that they were not able to receive data packets because of missing
-smack rules. The main reason of the access deny is that the socket smk_in label
-is placed as the object during smk check, kernel thread's capabilities are
-omitted.
+On 01/22/2015 02:46 AM, Stephen Boyd wrote:
+> On 01/21, Tomeu Vizoso wrote:
+>> Adds a way for clock consumers to set maximum and minimum rates. This
+>> can be used for thermal drivers to set minimum rates, or by misc.
+>> drivers to set maximum rates to assure a minimum performance level.
+>>
+>> Changes the signature of the determine_rate callback by adding the
+>> parameters min_rate and max_rate.
+>>
+>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>>
+>> ---
+>> v11:	* Recalculate the rate before putting the reference to clk_core
+>> 	* Don't recalculate the rate when freeing the per-user clock
+>> 	in the initialization error paths
+>> 	* Move __clk_create_clk to be next to __clk_free_clk for more
+>> 	comfortable reading
+> 
+> Can we do this in the previous patch where we introduce the
+> function?
 
-Signed-off-by: Marcin Lis <m.lis@samsung.com>
----
- security/smack/smack_lsm.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+Ok.
 
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index a688f7b..535a06a 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -2452,7 +2452,20 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
- static int smack_socket_post_create(struct socket *sock, int family,
- 				    int type, int protocol, int kern)
- {
--	if (family != PF_INET || sock->sk == NULL)
-+	struct socket_smack *ssp;
-+
-+	if (sock->sk == NULL)
-+		return 0;
-+
-+	/*
-+	 * Sockets created by kernel threads receive web label.
-+	 */
-+	if (unlikely(current->flags & PF_KTHREAD)) {
-+		ssp = sock->sk->sk_security;
-+		ssp->smk_in = &smack_known_web;
-+	}
-+
-+	if (family != PF_INET)
- 		return 0;
- 	/*
- 	 * Set the outbound netlbl.
--- 
-1.7.9.5
+>> @@ -2143,9 +2314,16 @@ struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
+>>  	else
+>>  		clk->owner = NULL;
+>>  
+>> +	INIT_HLIST_HEAD(&clk->clks);
+>> +
+>> +	hw->clk = __clk_create_clk(hw, NULL, NULL);
+>> +
+>>  	ret = __clk_init(dev, hw->clk);
+>> -	if (ret)
+>> +	if (ret) {
+>> +		__clk_free_clk(hw->clk);
+>> +		hw->clk = NULL;
+>>  		return ERR_PTR(ret);
+>> +	}
+>>  
+>>  	return hw->clk;
+>>  }
+>> @@ -2210,12 +2388,16 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
+>>  		}
+>>  	}
+>>  
+>> +	INIT_HLIST_HEAD(&clk->clks);
+>> +
+>>  	hw->clk = __clk_create_clk(hw, NULL, NULL);
+>>  	ret = __clk_init(dev, hw->clk);
+>>  	if (!ret)
+>>  		return hw->clk;
+>>  
+>> -	kfree(hw->clk);
+>> +	__clk_free_clk(hw->clk);
+>> +	hw->clk = NULL;
+> 
+> Shouldn't we be assigning to NULL in the previous patch (same
+> comment for __clk_register)?
 
+Agreed, though I have gone ahead and removed __clk_register completely
+because AFAICS it has never been used.
+
+>>  fail_parent_names_copy:
+>>  	while (--i >= 0)
+>>  		kfree(clk->parent_names[i]);
+>> @@ -2420,7 +2602,14 @@ void __clk_put(struct clk *clk)
+>>  	if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
+>>  		return;
+>>  
+>> +	clk_prepare_lock();
+>> +	hlist_del(&clk->child_node);
+>> +	clk_prepare_unlock();
+>> +
+>> +	clk_core_set_rate(clk->core, clk->core->req_rate);
+>> +
+>>  	clk_core_put(clk->core);
+>> +
+> 
+> Sad that we take the lock 3 times during __clk_put(). We should
+> be able to do it only once if we have a lockless
+> clk_core_set_rate() function and put the contents of
+> clk_core_put() into this function. Actually we need to do that to
+> be thread safe with clk->core->req_rate changing. We can call the
+> same function in clk_set_rate_range() too so that we don't have
+> to deal with recursive locking there.
+
+Sweet, done.
+
+>>  	kfree(clk);
+>>  }
+>>  
+> 
+
+Thanks,
+
+Tomeu
