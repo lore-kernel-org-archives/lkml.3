@@ -1,118 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289AbbAVXtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 18:49:40 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:56312 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911AbbAVXti (ORCPT
+	id S1754725AbbAVXu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 18:50:29 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:50871 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668AbbAVXu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 18:49:38 -0500
+	Thu, 22 Jan 2015 18:50:27 -0500
+Date: Thu, 22 Jan 2015 15:50:20 -0800
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Zidan Wang <b50113@freescale.com>
+Cc: Zidan Wang <zidan.wang@freescale.com>, timur@tabi.org, Xiubo.Lee@gmail.com,
+        lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel][PATCH 2/3] ASoC: fsl_sai: Add support for tdm slots
+ operation
+Message-ID: <20150122235019.GA3204@Asurada-GSX>
+References: <1421756480-7055-1-git-send-email-zidan.wang@freescale.com>
+ <1421756480-7055-3-git-send-email-zidan.wang@freescale.com>
+ <20150121180801.GA3361@Alpha>
+ <20150122045515.GA3467@b50113>
+ <20150122054409.GA7748@Asurada>
+ <20150122062004.GA7046@b50113>
 MIME-Version: 1.0
-In-Reply-To: <20150122144147.019eedc41f189eac44c3c4cd@freescale.com>
-References: <20150120140200.aa7ba0eb28d95e456972e178@freescale.com>
-	<20150120230150.GA14475@cloud>
-	<20150120160738.edfe64806cc8b943beb1dfa0@linux-foundation.org>
-	<CAC5umyieZn7ppXkKb45O=C=BF+iv6R_A1Dwfhro=cBJzFeovrA@mail.gmail.com>
-	<20150122014550.GA21444@js1304-P5Q-DELUXE>
-	<20150122144147.019eedc41f189eac44c3c4cd@freescale.com>
-Date: Fri, 23 Jan 2015 08:49:36 +0900
-Message-ID: <CAC5umyiF52cykH2_5TD0yzXb+842gywpe-+XZHEwmrDe0nYCPw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: fix undefined reference to `.kernel_map_pages' on
- PPC builds
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>, josh@joshtriplett.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Jens Axboe <axboe@fb.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150122062004.GA7046@b50113>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-23 5:41 GMT+09:00 Kim Phillips <kim.phillips@freescale.com>:
-> On Thu, 22 Jan 2015 10:45:51 +0900
-> Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->
->> On Wed, Jan 21, 2015 at 09:57:59PM +0900, Akinobu Mita wrote:
->> > 2015-01-21 9:07 GMT+09:00 Andrew Morton <akpm@linux-foundation.org>:
->> > > On Tue, 20 Jan 2015 15:01:50 -0800 josh@joshtriplett.org wrote:
->> > >
->> > >> On Tue, Jan 20, 2015 at 02:02:00PM -0600, Kim Phillips wrote:
->> > >> > It's possible to configure DEBUG_PAGEALLOC without PAGE_POISONING on
->> > >> > ppc.  Fix building the generic kernel_map_pages() implementation in
->> > >> > this case:
->> > >> >
->> > >> >   LD      init/built-in.o
->> > >> > mm/built-in.o: In function `free_pages_prepare':
->> > >> > mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
->> > >> > mm/built-in.o: In function `prep_new_page':
->> > >> > mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
->> > >> > mm/built-in.o: In function `map_pages':
->> > >> > mm/compaction.c:61: undefined reference to `.kernel_map_pages'
->> > >> > make: *** [vmlinux] Error 1
->> >
->> > kernel_map_pages() is static inline function since commit 031bc5743f15
->> > ("mm/debug-pagealloc: make debug-pagealloc boottime configurable").
->> >
->> > But there is old declaration in 'arch/powerpc/include/asm/cacheflush.h'.
->> > Removing it or changing s/kernel_map_pages/__kernel_map_pages/ in this
->> > header file or something can fix this problem?
->> >
->> > The architecture which has ARCH_SUPPORTS_DEBUG_PAGEALLOC
->> > including PPC should not build mm/debug-pagealloc.o
->>
->> Yes, architecture with ARCH_SUPPORTS_DEBUG_PAGEALLOC should not build
->> mm/debug-pagealloc.o. I attach the patch to remove old declaration.
->> I hope it will fix Kim's problem.
->>
->> -------------->8------------------
->> From 7cb9d1ed8a785df152cb8934e187031c8ebd1bb2 Mon Sep 17 00:00:00 2001
->> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> Date: Thu, 22 Jan 2015 10:28:58 +0900
->> Subject: [PATCH] mm/debug_pagealloc: fix build failure on ppc and some other
->>  archs
->>
->> Kim Phillips reported following build failure.
->>
->>   LD      init/built-in.o
->>   mm/built-in.o: In function `free_pages_prepare':
->>   mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
->>   mm/built-in.o: In function `prep_new_page':
->>   mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
->>   mm/built-in.o: In function `map_pages':
->>   mm/compaction.c:61: undefined reference to `.kernel_map_pages'
->>   make: *** [vmlinux] Error 1
->>
->> Reason for this problem is that commit 031bc5743f15
->> ("mm/debug-pagealloc: make debug-pagealloc boottime configurable") forgot
->> to remove old declaration of kernel_map_pages() in some architectures.
->> This patch removes them to fix build failure.
->>
->> Reported-by: Kim Phillips <kim.phillips@freescale.com>
->> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->> ---
->
-> Thanks. Now I get this:
->
->   LD      init/built-in.o
-> mm/built-in.o: In function `kernel_map_pages':
-> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
-> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
-> include/linux/mm.h:2076: undefined reference to `.__kernel_map_pages'
-> Makefile:925: recipe for target 'vmlinux' failed
-> make: *** [vmlinux] Error 1
->
-> but, AFAICT, that's not because this patch is invalid: it's because
-> __kernel_map_pages() isn't implemented in
-> arch/powerpc/mm/pgtable_64.c, i.e., for non-PPC_STD_MMU_64 PPC64
-> machines.
+On Thu, Jan 22, 2015 at 02:20:06PM +0800, Zidan Wang wrote:
+> > > > > @@ -369,10 +380,25 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
+> > > > >  	u32 word_width = snd_pcm_format_width(params_format(params));
+> > > > >  	u32 val_cr4 = 0, val_cr5 = 0;
+> > > > >  	int ret;
+> > > > > +	u32 bclk;
+> > > > > +
+> > > > > +	if (channels == 1)
+> > > > > +		channels = 2;
+> > > > > +
+> > > > > +	if (!sai->slots || sai->slots % channels)
+> > > > > +		sai->slots = channels;
+> > > > > +
+> > > > > +	sai->slots = sai->slots / channels;
+> > > > > +
+> > > > > +	if (sai->slot_width < word_width || sai->is_dsp_mode)
+> > > > > +		sai->slot_width = word_width;
+> > > > 
+> > > > Could you pls explain a bit what's this overriding for?
+> > > > Or it might be better to put into a comment.
+> > > >
+> > > In machine driver, we should use snd_soc_dai_set_tdm_slot to set slots
+> > > and slot width. In my opinion, slots in machine driver means the slot
+> > > number of all channels. But in sai driver, the slots means the slot number
+> > > of one channel. So snd_soc_calc_bclk use fs*sample_size*channels*tdm_slots
+> > > to caculate bclk.
+> > 
+> > Could you pls use the standard way as you described for slot number
+> > in machine driver instead of defining some other meanings? That one
+> > is really confusing, not to mention a code without any comment.
+> > 
+> > You can add some extra local variables with extinguished names and
+> > calculate the slot number and channels you want without changing
+> > the original sai->slots and channels in the hw_params(). As you said,
+> > you only need that new slot number and channels for snd_soc_calc_bclk
+> > call. So you may also put this code right before the call -- a normal
+> > routine doesn't need to recalculate the special slots and channels,
+> > right?
 
-Then, in order to use generic __kernel_map_pages() in mm/debug-pagealloc.c,
-CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC shouldn't be selected in
-arch/powerpc/Kconfig, when CONFIG_PPC_STD_MMU_64 isn't defined.
+> Actually i don't kown which meaning is the standard way. Because i found
+> in wm8993 and wm8904 codec driver, they also use slots/channels to set 
+> tdm_slots in set_tdm_slot function.
+
+The slots via machine driver should be total slot number per frame.
+For I2S, we're passing 2 for slots parameter in our machine drivers.
+
+So why not just following that pattern. You code for calculating slot
+per channel is used to calculate bclk. But keeping slot per frame will
+also allow you to do that, meanwhile you can drop some code to do the
+extra calculation so as to keep it neat.
+
+I suggest you to take a look at fsl_esai.c and to follow that way:
+Override slots and slot_width if specified from machine driver.
+
+And another problem of your patch is the configurations for FRSZ and
+xMR fields. For monaural case, the channels == 1, the current code
+passes it directly to set them while your code overrides it to 2.
+
+I'm not sure if you've tested the monaural case and confirmed it works.
+But, apparently, the configurations look pretty different.
+
+Nicolin
