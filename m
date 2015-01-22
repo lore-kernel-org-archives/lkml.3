@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbbAVObA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 09:31:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58024 "EHLO
+	id S1753991AbbAVObT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 09:31:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58033 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738AbbAVOaz (ORCPT
+	with ESMTP id S1750754AbbAVObP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 09:30:55 -0500
-Date: Thu, 22 Jan 2015 06:30:29 -0800
+	Thu, 22 Jan 2015 09:31:15 -0500
+Date: Thu, 22 Jan 2015 06:30:51 -0800
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-e714a91f92ca59f7e71e7332b8ec2aa2944f629e@git.kernel.org>
-Cc: jiang.liu@linux.intel.com, hpa@zytor.com, joro@8bytes.org,
-        mingo@kernel.org, bp@alien8.de, tglx@linutronix.de,
-        tony.luck@intel.com, linux-kernel@vger.kernel.org
-Reply-To: bp@alien8.de, mingo@kernel.org, jiang.liu@linux.intel.com,
-        hpa@zytor.com, joro@8bytes.org, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, tglx@linutronix.de
-In-Reply-To: <20150115211703.731329006@linutronix.de>
-References: <20150115211703.731329006@linutronix.de>
+Message-ID: <tip-30b8b0066cafef274fc92462578ee346211ce7cb@git.kernel.org>
+Cc: hpa@zytor.com, jiang.liu@linux.intel.com, bp@alien8.de, joro@8bytes.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, tony.luck@intel.com,
+        mingo@kernel.org
+Reply-To: linux-kernel@vger.kernel.org, tglx@linutronix.de, joro@8bytes.org,
+        hpa@zytor.com, bp@alien8.de, jiang.liu@linux.intel.com,
+        mingo@kernel.org, tony.luck@intel.com
+In-Reply-To: <20150115211703.827943883@linutronix.de>
+References: <20150115211703.827943883@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/apic: Move apic_init_uniprocessor code
-Git-Commit-ID: e714a91f92ca59f7e71e7332b8ec2aa2944f629e
+Subject: [tip:x86/apic] init: Get rid of x86isms
+Git-Commit-ID: 30b8b0066cafef274fc92462578ee346211ce7cb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,171 +33,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e714a91f92ca59f7e71e7332b8ec2aa2944f629e
-Gitweb:     http://git.kernel.org/tip/e714a91f92ca59f7e71e7332b8ec2aa2944f629e
+Commit-ID:  30b8b0066cafef274fc92462578ee346211ce7cb
+Gitweb:     http://git.kernel.org/tip/30b8b0066cafef274fc92462578ee346211ce7cb
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 15 Jan 2015 21:22:37 +0000
+AuthorDate: Thu, 15 Jan 2015 21:22:39 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 22 Jan 2015 15:10:56 +0100
 
-x86/apic: Move apic_init_uniprocessor code
+init: Get rid of x86isms
 
-Move the code to a different place so we can make other functions
-inline. Preparatory patch for further cleanups. No change.
+The UP local API support can be set up from an early initcall. No need
+for horrible hackery in the init code.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Borislav Petkov <bp@alien8.de>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Tony Luck <tony.luck@intel.com>
-Link: http://lkml.kernel.org/r/20150115211703.731329006@linutronix.de
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/20150115211703.827943883@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/apic/apic.c | 125 ++++++++++++++++++++++----------------------
- 1 file changed, 62 insertions(+), 63 deletions(-)
+ arch/x86/Kconfig            |  4 ++++
+ arch/x86/kernel/apic/apic.c |  7 +++++++
+ include/linux/smp.h         |  7 +++++++
+ init/main.c                 | 13 -------------
+ 4 files changed, 18 insertions(+), 13 deletions(-)
 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ba397bd..ffcc3ca 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -855,6 +855,10 @@ config SCHED_MC
+ 
+ source "kernel/Kconfig.preempt"
+ 
++config UP_LATE_INIT
++       def_bool y
++       depends on X86_UP_APIC
++
+ config X86_UP_APIC
+ 	bool "Local APIC support on uniprocessors"
+ 	depends on X86_32 && !SMP && !X86_32_NON_STANDARD && !PCI_MSI
 diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 3b4bdd5..c681e9b 100644
+index c681e9b..19f1bc7 100644
 --- a/arch/x86/kernel/apic/apic.c
 +++ b/arch/x86/kernel/apic/apic.c
-@@ -1852,71 +1852,8 @@ void __init register_lapic_address(unsigned long address)
- 	}
+@@ -2267,6 +2267,13 @@ int __init APIC_init_uniprocessor(void)
+ 	return 0;
  }
  
--/*
-- * This initializes the IO-APIC and APIC hardware if this is
-- * a UP kernel.
-- */
- int apic_version[MAX_LOCAL_APIC];
- 
--int __init APIC_init_uniprocessor(void)
--{
--	if (disable_apic) {
--		pr_info("Apic disabled\n");
--		return -1;
--	}
--#ifdef CONFIG_X86_64
--	if (!cpu_has_apic) {
--		disable_apic = 1;
--		pr_info("Apic disabled by BIOS\n");
--		return -1;
--	}
--#else
--	if (!smp_found_config && !cpu_has_apic)
--		return -1;
--
--	/*
--	 * Complain if the BIOS pretends there is one.
--	 */
--	if (!cpu_has_apic &&
--	    APIC_INTEGRATED(apic_version[boot_cpu_physical_apicid])) {
--		pr_err("BIOS bug, local APIC 0x%x not detected!...\n",
--			boot_cpu_physical_apicid);
--		return -1;
--	}
--#endif
--
--	default_setup_apic_routing();
--
--	verify_local_APIC();
--	connect_bsp_APIC();
--
--#ifdef CONFIG_X86_64
--	apic_write(APIC_ID, SET_APIC_ID(boot_cpu_physical_apicid));
--#else
--	/*
--	 * Hack: In case of kdump, after a crash, kernel might be booting
--	 * on a cpu with non-zero lapic id. But boot_cpu_physical_apicid
--	 * might be zero if read from MP tables. Get it from LAPIC.
--	 */
--# ifdef CONFIG_CRASH_DUMP
--	boot_cpu_physical_apicid = read_apic_id();
--# endif
--#endif
--	physid_set_mask_of_physid(boot_cpu_physical_apicid, &phys_cpu_present_map);
--	setup_local_APIC();
--
--	/* Enable IO-APICs before enabling error vector */
--	enable_IO_APIC();
--
--	bsp_end_local_APIC_setup();
--
--	if (smp_found_config)
--		setup_IO_APIC();
--
--	x86_init.timers.setup_percpu_clockev();
--	return 0;
--}
--
- /*
-  * Local APIC interrupts
-  */
-@@ -2269,6 +2206,68 @@ void __init apic_set_eoi_write(void (*eoi_write)(u32 reg, u32 v))
- }
- 
- /*
-+ * This initializes the IO-APIC and APIC hardware if this is
-+ * a UP kernel.
-+ */
-+int __init APIC_init_uniprocessor(void)
++#ifdef CONFIG_UP_LATE_INIT
++void __init up_late_init(void)
 +{
-+	if (disable_apic) {
-+		pr_info("Apic disabled\n");
-+		return -1;
-+	}
-+#ifdef CONFIG_X86_64
-+	if (!cpu_has_apic) {
-+		disable_apic = 1;
-+		pr_info("Apic disabled by BIOS\n");
-+		return -1;
-+	}
-+#else
-+	if (!smp_found_config && !cpu_has_apic)
-+		return -1;
-+
-+	/*
-+	 * Complain if the BIOS pretends there is one.
-+	 */
-+	if (!cpu_has_apic &&
-+	    APIC_INTEGRATED(apic_version[boot_cpu_physical_apicid])) {
-+		pr_err("BIOS bug, local APIC 0x%x not detected!...\n",
-+			boot_cpu_physical_apicid);
-+		return -1;
-+	}
-+#endif
-+
-+	default_setup_apic_routing();
-+
-+	verify_local_APIC();
-+	connect_bsp_APIC();
-+
-+#ifdef CONFIG_X86_64
-+	apic_write(APIC_ID, SET_APIC_ID(boot_cpu_physical_apicid));
-+#else
-+	/*
-+	 * Hack: In case of kdump, after a crash, kernel might be booting
-+	 * on a cpu with non-zero lapic id. But boot_cpu_physical_apicid
-+	 * might be zero if read from MP tables. Get it from LAPIC.
-+	 */
-+# ifdef CONFIG_CRASH_DUMP
-+	boot_cpu_physical_apicid = read_apic_id();
-+# endif
-+#endif
-+	physid_set_mask_of_physid(boot_cpu_physical_apicid, &phys_cpu_present_map);
-+	setup_local_APIC();
-+
-+	if (smp_found_config)
-+		enable_IO_APIC();
-+
-+	bsp_end_local_APIC_setup();
-+
-+	setup_IO_APIC();
-+
-+	x86_init.timers.setup_percpu_clockev();
-+	return 0;
++	APIC_init_uniprocessor();
 +}
++#endif
 +
-+/*
+ /*
   * Power management
   */
- #ifdef CONFIG_PM
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 93dff5f..be91db2 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -151,6 +151,13 @@ smp_call_function_any(const struct cpumask *mask, smp_call_func_t func,
+ static inline void kick_all_cpus_sync(void) {  }
+ static inline void wake_up_all_idle_cpus(void) {  }
+ 
++#ifdef CONFIG_UP_LATE_INIT
++extern void __init up_late_init(void);
++static inline void smp_init(void) { up_late_init(); }
++#else
++static inline void smp_init(void) { }
++#endif
++
+ #endif /* !SMP */
+ 
+ /*
+diff --git a/init/main.c b/init/main.c
+index 61b99376..179ada1 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -87,10 +87,6 @@
+ #include <asm/sections.h>
+ #include <asm/cacheflush.h>
+ 
+-#ifdef CONFIG_X86_LOCAL_APIC
+-#include <asm/smp.h>
+-#endif
+-
+ static int kernel_init(void *);
+ 
+ extern void init_IRQ(void);
+@@ -351,15 +347,6 @@ __setup("rdinit=", rdinit_setup);
+ 
+ #ifndef CONFIG_SMP
+ static const unsigned int setup_max_cpus = NR_CPUS;
+-#ifdef CONFIG_X86_LOCAL_APIC
+-static void __init smp_init(void)
+-{
+-	APIC_init_uniprocessor();
+-}
+-#else
+-#define smp_init()	do { } while (0)
+-#endif
+-
+ static inline void setup_nr_cpu_ids(void) { }
+ static inline void smp_prepare_cpus(unsigned int maxcpus) { }
+ #endif
