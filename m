@@ -1,159 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbbAVUsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:48:45 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:54810 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463AbbAVUsd (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 22 Jan 2015 15:48:33 -0500
-Message-ID: <1421959704.4903.29.camel@stgolabs.net>
-Subject: Re: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused
- by semop()
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Stephen Smalley <stephen.smalley@gmail.com>
-Cc: Ethan Zhao <ethan.kernel@gmail.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Ethan Zhao <ethan.zhao@oracle.com>,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>,
-        selinux <selinux@tycho.nsa.gov>, linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, ethan.kernel@gmail.conm
-Date: Thu, 22 Jan 2015 12:48:24 -0800
-In-Reply-To: <CAB9W1A3kabX9qMm56k=FJ1jcL8ou4APqt8teT38oFCiu=g1wNg@mail.gmail.com>
-References: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com>
-	 <54BE61F0.202@tycho.nsa.gov>
-	 <CABawtvPrhVWV3bC-=wygqfHJzctvrmd1WxDD1ciuLE7F7-_yaQ@mail.gmail.com>
-	 <54BF3971.2090003@colorfullife.com>
-	 <CABawtvO3PdKhmeH_H1v_tQxmgOBQrnLGNayTE1=EbcxJbtwAzQ@mail.gmail.com>
-	 <CAB9W1A3kabX9qMm56k=FJ1jcL8ou4APqt8teT38oFCiu=g1wNg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755120AbbAVUxN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:53:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48882 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755104AbbAVUxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 15:53:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,450,1418112000"; 
+   d="scan'208";a="674374534"
+Date: Thu, 22 Jan 2015 12:48:51 -0800
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de,
+        maxime.ripard@free-electrons.com, dianders@chromium.org,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
+        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
+        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, skuribay@pobox.com, Romain.Baeriswyl@abilis.com,
+        wenkai.du@intel.com, christian.ruppert@abilis.com,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V4 2/2] i2c-designware: Add Intel Baytrail PMIC I2C bus
+ support
+Message-ID: <20150122204851.GA11246@pathfinder>
+References: <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+ <1421313137-1613-3-git-send-email-david.e.box@linux.intel.com>
+ <20150122142819.GG1850@lahna.fi.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150122142819.GG1850@lahna.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-22 at 14:05 -0500, Stephen Smalley wrote:
-> On Wed, Jan 21, 2015 at 9:44 PM, Ethan Zhao <ethan.kernel@gmail.com> wrote:
-> > On Wed, Jan 21, 2015 at 1:30 PM, Manfred Spraul
-> > <manfred@colorfullife.com> wrote:
-> >> On 01/21/2015 04:53 AM, Ethan Zhao wrote:
-> >>>
-> >>> On Tue, Jan 20, 2015 at 10:10 PM, Stephen Smalley <sds@tycho.nsa.gov>
-> >>> wrote:
-> >>>>
-> >>>> On 01/20/2015 04:18 AM, Ethan Zhao wrote:
-> >>>>>
-> >>>>>       sys_semget()
-> >>>>>       ->newary()
-> >>>>>           ->security_sem_alloc()
-> >>>>>             ->sem_alloc_security()
-> >>>>>                   selinux_sem_alloc_security()
-> >>>>>                   ->ipc_alloc_security() {
-> >>>>>                     ->rc = avc_has_perm()
-> >>>>>                                if (rc) {
-> >>>>>
-> >>>>> ipc_free_security(&sma->sem_perm);
-> >>>>>                                        return rc;
-> >>>>
-> >>>> We free the security structure here to avoid a memory leak on a
-> >>>> failed/denied semaphore set creation.  In this situation, we return an
-> >>>> error to the caller (ultimately to newary), it does an
-> >>>> ipc_rcu_putref(sma, ipc_rcu_free), and it returns an error to the
-> >>>> caller.  Thus, it never calls ipc_addid() and the semaphore set is not
-> >>>> created.  So how then can you call semtimedop() on it?
-> >>>
-> >>> Seems it wouldn't happen after commit
-> >>> e8577d1f0329d4842e8302e289fb2c22156abef4 ?
-> >>
-> >> That was my first guess when I read the bug report - but it can't be the
-> >> fix, because security_sem_alloc() is before the ipc_addid(), with or without
-> >> the patch.
-> >>
-> >> thread A:
-> >>             thread B:
-> >>
-> >> semtimedop()
-> >> -> sem_obtain_object_check()
-> >>             semctl(IPC_RMID)
-> >>             -> freeary()
-> >>             -> ipc_rcu_putref()
-> >>             -> call_rcu()
-> >> -> somehow a grace period
-> >>             -> sem_rcu_free()
-> >>             -> security_sem_free()
-> >>
-> >> Perhaps: modify ipc_free_security() to hexdump perm and a few more bytes if
-> >> the pointer is NULL?
-> >
-> > I tried to ask for vmcore and do more analysis, basically, the race condition
-> > still exists and open a hole to be DoS.
+Hi Mika,
+
+On Thu, Jan 22, 2015 at 04:28:19PM +0200, Mika Westerberg wrote:
+> On Thu, Jan 15, 2015 at 01:12:17AM -0800, David E. Box wrote:
+> > This patch implements an I2C bus sharing mechanism between the host and platform
+> > hardware on select Intel BayTrail SoC platforms using the X-Powers AXP288 PMIC.
+> > 
+> > On these platforms access to the PMIC must be shared with platform hardware. The
+> > hardware unit assumes full control of the I2C bus and the host must request
+> > access through a special semaphore. Hardware control of the bus also makes it
+> > necessary to disable runtime pm to avoid interfering with hardware transactions.
+> > 
+> > Signed-off-by: David E. Box <david.e.box@linux.intel.com>
 > 
-> You said the patch was tested with 3.19-rc5.  But did you reproduce
-> the bug on that kernel version before the patch?  If not, what kernel
-> version were you running when you triggered the bug?
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> One comment, though:
+> 
+> > ---
+> >  drivers/i2c/busses/Kconfig                   |  11 ++
+> >  drivers/i2c/busses/Makefile                  |   1 +
+> >  drivers/i2c/busses/i2c-designware-baytrail.c | 160 +++++++++++++++++++++++++++
+> >  drivers/i2c/busses/i2c-designware-core.h     |   6 +
+> >  drivers/i2c/busses/i2c-designware-platdrv.c  |  20 +++-
+> >  5 files changed, 193 insertions(+), 5 deletions(-)
+> >  create mode 100644 drivers/i2c/busses/i2c-designware-baytrail.c
+> > 
+> > diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> > index 917c358..9a83c46 100644
+> > --- a/drivers/i2c/busses/Kconfig
+> > +++ b/drivers/i2c/busses/Kconfig
+> > @@ -464,6 +464,17 @@ config I2C_DESIGNWARE_PCI
+> >  	  This driver can also be built as a module.  If so, the module
+> >  	  will be called i2c-designware-pci.
+> >  
+> > +config I2C_DESIGNWARE_BAYTRAIL
+> > +	bool "Intel Baytrail I2C semaphore support"
+> 
+> It would be nice if it was possible to compile this as a module.
 
-Also, is this a vanilla kernel? Or from a distro?
+In the makefile the driver is now part of the composite object for
+I2C_DESIGNWARE_PLATFORM. So if selected it will compile as the platform driver
+is compiled. This makes the most sense since the linking doesn't work right if
+both drivers aren't built the same. This is really an extension to the platform
+driver anyway and not standalone code.
 
-Essentially, did the kernel with the reproducible bug have:
-
-commit 53dad6d3a8e5ac1af8bacc6ac2134ae1a8b085f1
-Author: Davidlohr Bueso <davidlohr@hp.com>
-Date:   Mon Sep 23 17:04:45 2013 -0700
-
-    ipc: fix race with LSMs
-    
-    Currently, IPC mechanisms do security and auditing related checks under
-    RCU.  However, since security modules can free the security structure,
-    for example, through selinux_[sem,msg_queue,shm]_free_security(), we can
-    race if the structure is freed before other tasks are done with it,
-    creating a use-after-free condition.  Manfred illustrates this nicely,
-    for instance with shared mem and selinux:
-    
-     -> do_shmat calls rcu_read_lock()
-     -> do_shmat calls shm_object_check().
-         Checks that the object is still valid - but doesn't acquire any locks.
-         Then it returns.
-     -> do_shmat calls security_shm_shmat (e.g. selinux_shm_shmat)
-     -> selinux_shm_shmat calls ipc_has_perm()
-     -> ipc_has_perm accesses ipc_perms->security
-    
-    shm_close()
-     -> shm_close acquires rw_mutex & shm_lock
-     -> shm_close calls shm_destroy
-     -> shm_destroy calls security_shm_free (e.g. selinux_shm_free_security)
-     -> selinux_shm_free_security calls ipc_free_security(&shp->shm_perm)
-     -> ipc_free_security calls kfree(ipc_perms->security)
-    
-    This patch delays the freeing of the security structures after all RCU
-    readers are done.  Furthermore it aligns the security life cycle with
-    that of the rest of IPC - freeing them based on the reference counter.
-    For situations where we need not free security, the current behavior is
-    kept.  Linus states:
-    
-     "... the old behavior was suspect for another reason too: having the
-      security blob go away from under a user sounds like it could cause
-      various other problems anyway, so I think the old code was at least
-      _prone_ to bugs even if it didn't have catastrophic behavior."
-    
-    I have tested this patch with IPC testcases from LTP on both my
-    quad-core laptop and on a 64 core NUMA server.  In both cases selinux is
-    enabled, and tests pass for both voluntary and forced preemption models.
-    While the mentioned races are theoretical (at least no one as reported
-    them), I wanted to make sure that this new logic doesn't break anything
-    we weren't aware of.
-
-
-Additionally, Manfred's concerns about the grace period are quite valid,
-and it obviously assumes that the ->security nil dereference issue still
-exists to some extent. Changes in RCU are something to consider as well.
-This is all pretty iffy though, lets make sure we are looking at the
-right kernel first.
-
-Thanks,
-Davidlohr
-
+Dave
