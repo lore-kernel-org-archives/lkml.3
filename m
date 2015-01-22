@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205AbbAVRka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:40:30 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45382 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752349AbbAVRk0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:40:26 -0500
-Date: Thu, 22 Jan 2015 18:40:00 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>,
-        <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Marc Zyngier <marc.zyngier@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tony Luck <tony.luck@intel.com>,
-        <linux-ia64@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>, <linux-alpha@vger.kernel.org>,
-        <linux-m68k@vger.kernel.org>, Liviu Dudau <liviu@dudau.co.uk>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Gregory =?UTF-8?B?Q2zDqW1lbnQ=?= 
-	<gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Nadav Haklai <nadavh@marvell.com>
-Subject: Re: [PATCH v2 23/30] PCI/mvebu: Use pci_common_init_dev() to
- simplify code
-Message-ID: <20150122184000.63ba06bb@free-electrons.com>
-In-Reply-To: <1421800225-26230-24-git-send-email-wangyijing@huawei.com>
-References: <1421800225-26230-1-git-send-email-wangyijing@huawei.com>
-	<1421800225-26230-24-git-send-email-wangyijing@huawei.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1752992AbbAVRnT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:43:19 -0500
+Received: from know-smtprelay-omc-3.server.virginmedia.net ([80.0.253.67]:58107
+	"EHLO know-smtprelay-omc-3.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752451AbbAVRnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 12:43:17 -0500
+X-Originating-IP: [82.33.62.46]
+X-Spam: 0
+X-Authority: v=2.1 cv=N7qnFgNB c=1 sm=1 tr=0 a=43HWeVr0mW5rhQls5iFsjw==:117
+ a=43HWeVr0mW5rhQls5iFsjw==:17 a=5IRWAbXhAAAA:8 a=M1kyBYkWWGkA:10
+ a=kj9zAlcOel0A:10 a=YNv0rlydsVwA:10 a=P8IAXAFlsoDwY6_0u5UA:9 a=CjuIK1q_8ugA:10
+Date: Thu, 22 Jan 2015 17:43:15 +0000
+From: James Dingwall <james@dingwall.me.uk>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.18.2 / xen 4.4.1 dom0 - microcode oops
+Message-ID: <20150122174315.GA32051@dingwall.me.uk>
+References: <20150122055242.GA11089@dingwall.me.uk>
+ <20150122082003.GA3441@pd.tnic>
+ <54C10DB6.2050708@oracle.com>
+ <54C10ED0.1010302@oracle.com>
+ <20150122153002.GA3554@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150122153002.GA3554@pd.tnic>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Yijing Wang,
-
-On Wed, 21 Jan 2015 08:30:18 +0800, Yijing Wang wrote:
-> Mvebu_pcie_scan_bus() is not necessary, we could use
-> pci_common_init_dev() instead of pci_common_init(),
-> and pass the device pointer as the parent. Then
-> pci_scan_root_bus() will be called to scan the pci busses.
+On Thu, Jan 22, 2015 at 04:30:02PM +0100, Borislav Petkov wrote:
+> On Thu, Jan 22, 2015 at 09:53:04AM -0500, Boris Ostrovsky wrote:
+> > Alternatively, we could return an error (-EINVAL?) from
+> > microcode_init() when either of these two conditions is true.
 > 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> CC: Jason Cooper <jason@lakedaemon.net>
+> Yeah, this should be the right fix.
+> 
+> James, does that fix your issue? (It should.)
+> 
+> ---
+> diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
+> index 15c29096136b..36a83617eb21 100644
+> --- a/arch/x86/kernel/cpu/microcode/core.c
+> +++ b/arch/x86/kernel/cpu/microcode/core.c
+> @@ -552,7 +552,7 @@ static int __init microcode_init(void)
+>  	int error;
+>  
+>  	if (paravirt_enabled() || dis_ucode_ldr)
+> -		return 0;
+> +		return -EINVAL;
+>  
+>  	if (c->x86_vendor == X86_VENDOR_INTEL)
+>  		microcode_ops = init_intel_microcode();
+> 
+> -- 
 
-While I'm fine with the change to pci_common_init_dev(), I am not so
-sure about the removal of mvebu_pcie_scan_bus(). I vaguely remember
-that we intentionally did not use the default function for a specific
-reason. Of course, this was a long time ago, and I don't remember the
-reason. I would have to take a bit of time to 1/ review the archives of
-the discussion surrounding the pcie-mvebu driver, and 2/ test your
-patch to validate it works fine on HW.
+This patch solves it for me on my dom0 with 3.18.3, now there is nothing printed at all from the microcode 
+driver which doesn't seem surprising given where the return is.  I'll check it on bare metal at the next 
+opportunity but from my understanding of what is happening there I don't see that it should have any impact at 
+all.
 
-Thanks!
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thanks,
+James
