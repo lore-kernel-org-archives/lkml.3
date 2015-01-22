@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbbAVNdP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 08:33:15 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40553 "EHLO bear.ext.ti.com"
+	id S1752061AbbAVNfQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 08:35:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45070 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437AbbAVNdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 08:33:10 -0500
-Message-ID: <54C0FBDC.6040803@ti.com>
-Date: Thu, 22 Jan 2015 15:32:12 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751170AbbAVNfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 08:35:13 -0500
+Date: Thu, 22 Jan 2015 14:34:55 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
+Subject: Re: perf: behavior of poll() changed in 3.18
+Message-ID: <20150122133455.GC2473@krava.brq.redhat.com>
+References: <alpine.DEB.2.11.1501201155380.18043@vincent-weaver-1.umelst.maine.edu>
+ <20150120181316.GA12860@krava.brq.redhat.com>
+ <alpine.DEB.2.11.1501210058090.21805@vincent-weaver-1.umelst.maine.edu>
+ <20150121162108.GD6835@krava.brq.redhat.com>
+ <alpine.DEB.2.11.1501220026210.12767@vincent-weaver-1.umelst.maine.edu>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
-        <george.cherian@ti.com>, <nsekhar@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] extcon: usb: Introduce USB GPIO extcon driver. Fix
- DRA7 USB.
-References: <1421689942-10201-1-git-send-email-rogerq@ti.com> <20150120190237.GG15169@saruman>
-In-Reply-To: <20150120190237.GG15169@saruman>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1501220026210.12767@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
-
-On 20/01/15 21:02, Felipe Balbi wrote:
-> On Mon, Jan 19, 2015 at 07:52:17PM +0200, Roger Quadros wrote:
->> Hi,
->>
->> On DRA7 EVMs the USB ID pin is connected to a GPIO line. The USB drivers
->> (dwc3 + dwc3-omap) depend on extcon framework to get the USB cable state
->> (USB or USB-Host) to put the controller in the right mode.
->>
->> There were earlier attempts [1] to get this working by trying to patch up
->> the existing GPIO extcon driver.
->>
->> This series attemts to take a different approach by introducing a new
->> USB specific extcon driver to handle the USB ID GPIO pin and
->> interpret a right USB cable state.
->>
->> The reasoning to introduce this new driver is:
->> 1) The existing GPIO extcon driver doesn't understand USB cable states
->> and it can't handle more than one cable per instance.
->>    
->> For the USB case we need to handle at least 2 cable states.
->>     a) USB (attach/detach)
->>     b) USB-Host (attach/detach)
->> and could possible include more states like
->>     c) Fast-charger (attach/detach)
->>     d) Slow-charger (attach/detach)
->>     
->> 2) This USB specific driver can be easily updated in the future to
->> handle VBUS events, or charger detect events, in case it happens
->> to be available on GPIO for any platform.
->>
->> 3) The DT implementation is very easy. You just need one extcon node per USB
->> instead of one extcon node per cable state as in case of [1].
->>
->> 4) The cable state string doesn't need to be encoded in the device tree
->> as in case of [1].
->>
->> 5) With only ID event available, you can simulate a USB-peripheral attach
->> when USB-Host is detacted instead of hacking the USB driver to do the same.
->>
->> Tested on DRA7-evm and DRA72-evm.
+On Thu, Jan 22, 2015 at 01:53:35AM -0500, Vince Weaver wrote:
+> On Wed, 21 Jan 2015, Jiri Olsa wrote:
+> > 
+> > However if we revert this code, we'll loose nice (and standard) way
+> > to check if the event is still valid.. not sure how to handle this.
 > 
-> while at that, you might want to patch X15 too.
+> there's likely no need to revert as my code wasn't really released and 
+> I've already fixed it to work with the new interface.
 > 
-USB2 port is meant for peripheral use only. ID pin from USB port is not connected to GPIO.
+> I was mostly asking just so I could update the manpage to explain the new 
+> behavior, as tools that expect to be backwards compatible will have to 
+> handle both ways of detecting a process dieing.
+> 
+> > > Part of why my code doesn't just exit on POLLHUP is because you can
+> > > get that result for reasons other than a process exit (for example,
+> > > if you are using ioctl(PERF_EVENT_IOC_REFRESH)
+> > 
+> > Nope, this is related to POOL_HUP (notice the '_') which you'll get
+> > accompanied with SIGIO if you setup this.
+> 
+> So what happens if you are using a signal handler to monitor a child and 
+> the child exits?
 
-cheers,
--roger
+AFAICS wrt to SIGIO, we notify only with POLL_IN if there's new data
+and POLL_HUP if we reached the event_limit - the one you set with
+PERF_EVENT_IOC_REFRESH ioctl
+
+> 
+> It's a shame the poll and signal handler interfaces are subtly different, 
+> though I guess some of that is probably due to historical reasons.
+
+I've actually never used the SIGIO interface in perf other than
+when I was checking your gi repo with test code ;-)
+
+so I'm not sure what the correct behaviour should be when monitored
+process dies.. I'd say we should send SIGIO with POLL_HUP, but that
+clashes with that 'event_limit' thing.. I'll check on that
+
+thanks,
+jirka
