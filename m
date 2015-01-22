@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbbAVR4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:56:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53536 "EHLO mx2.suse.de"
+	id S1753801AbbAVSLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 13:11:55 -0500
+Received: from mx2.uti.ro ([91.220.13.110]:56391 "EHLO mx2.uti.ro"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552AbbAVR4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:56:41 -0500
-Date: Thu, 22 Jan 2015 18:56:37 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        kvm list <kvm@vger.kernel.org>, X86 ML <x86@kernel.org>,
+	id S1751680AbbAVSLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 13:11:53 -0500
+X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 13:11:52 EST
+From: Nicolae Rosia <nicolae.rosia@certsign.ro>
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Jan Beulich <JBeulich@suse.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to
-	be preempted
-Message-ID: <20150122175637.GN17887@wotan.suse.de>
-References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com> <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com> <CALCETrXSQ0JCKY5k0S_xX-i4+1BBVY+_9dv2ouj23WXFi8hyfg@mail.gmail.com> <54C0F335.6030403@citrix.com>
+        "f.fainelli@gmail.com" <f.fainelli@gmail.com>
+Subject: [PATCH] net: phy: fix phy device autoneg wrong value
+Thread-Topic: [PATCH] net: phy: fix phy device autoneg wrong value
+Thread-Index: AQHQNmzHlIhHis5SlkqDW9BJxBx83w==
+Date: Thu, 22 Jan 2015 17:56:44 +0000
+Message-ID: <1421948980.717.6.camel@uti.ro>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.101.85]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <46B504E64B3D0145B8B7EF3904974B2E@uti.ro>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C0F335.6030403@citrix.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+X-CFilter-Loop: Reflected
+X-FEAS-SYSTEM-WL: 10.65.2.20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0MIC0rn028735
 
-On Thu, Jan 22, 2015 at 12:55:17PM +0000, David Vrabel wrote:
-> On 22/01/15 03:18, Andy Lutomirski wrote:
-> >> --- a/drivers/xen/events/events_base.c
-> >> +++ b/drivers/xen/events/events_base.c
-> >> @@ -32,6 +32,8 @@
-> >>  #include <linux/slab.h>
-> >>  #include <linux/irqnr.h>
-> >>  #include <linux/pci.h>
-> >> +#include <linux/sched.h>
-> >> +#include <linux/kprobes.h>
-> >>
-> >>  #ifdef CONFIG_X86
-> >>  #include <asm/desc.h>
-> >> @@ -1243,6 +1245,17 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
-> >>         set_irq_regs(old_regs);
-> >>  }
-> >>
-> >> +notrace void xen_end_upcall(struct pt_regs *regs)
-> >> +{
-> >> +       if (!xen_is_preemptible_hypercall(regs) ||
-> >> +           __this_cpu_read(xed_nesting_count))
-> >> +               return;
-> > 
-> > What's xed_nesting_count?
-> 
-> It used to prevent nested upcalls when a hypercall called from an upcall
-> triggers another upcall.
-> 
-> There's no way a such a nested hypercall can be preemptible so the check
-> for xed_nesting_count an be removed from here.
+In phy_device_create, autoneg is set to AUTONEG_ENABLE.
+When using the generic phy driver (phy_device.c),
+genphy_config_init reads BMSR and finds out if autonegotiation
+is possible and sets the phy device features accordingly.
+phy_sanitize_settings is supposed to set the right value of
+autoneg, but it is never called if autonegotiation is enabled,
+which is always the case.
 
-Removed.
+Signed-off-by: Nicolae Rosia <nicolae.rosia@certsign.ro>
+---
+ drivers/net/phy/phy.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-  Luis
+diff --git a/drivers/net/phy/phy.c b/drivers/net/phy/phy.c
+index 767cd11..9c35136 100644
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -249,9 +249,6 @@ static void phy_sanitize_settings(struct phy_device
+*phydev)
+ 	unsigned int idx;
+ 
+ 	/* Sanitize settings based on PHY capabilities */
+-	if ((features & SUPPORTED_Autoneg) == 0)
+-		phydev->autoneg = AUTONEG_DISABLE;
+-
+ 	idx = phy_find_valid(phy_find_setting(phydev->speed, phydev->duplex),
+ 			features);
+ 
+@@ -436,6 +433,9 @@ int phy_start_aneg(struct phy_device *phydev)
+ 
+ 	mutex_lock(&phydev->lock);
+ 
++	if ((phydev->supported & SUPPORTED_Autoneg) == 0)
++		phydev->autoneg = AUTONEG_DISABLE;
++
+ 	if (AUTONEG_DISABLE == phydev->autoneg)
+ 		phy_sanitize_settings(phydev);
+ 
+-- 
+2.1.0
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
