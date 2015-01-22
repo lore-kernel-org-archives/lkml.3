@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561AbbAVHOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 02:14:33 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:51835 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811AbbAVHO0 (ORCPT
+	id S1751810AbbAVHQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 02:16:45 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:50915 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbbAVHQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 02:14:26 -0500
-Message-ID: <54C0A357.4070701@gmail.com>
-Date: Thu, 22 Jan 2015 15:14:31 +0800
-From: Chung-Lin Tang <chunglin.tang@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Thu, 22 Jan 2015 02:16:38 -0500
+Date: Thu, 22 Jan 2015 10:16:35 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Calvin Owens <calvinowens@fb.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        linux-kernel@vger.kernel.org, kernel-team@fb.com,
+        Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [RFC][PATCH] procfs: Always expose /proc/<pid>/map_files/ and
+ make it readable
+Message-ID: <20150122071635.GM3676@moon>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+ <20150114152501.GB9820@node.dhcp.inet.fi>
+ <20150114153323.GF2253@moon>
+ <20150114204653.GA26698@mail.thefacebook.com>
+ <20150114211613.GH2253@moon>
+ <20150122024554.GB23762@mail.thefacebook.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Ley Foon Tan <lftan@altera.com>, Tobias Klauser <tklauser@distanz.ch>,
-        cltang@codesourcery.com
-Subject: [PATCH] nios2: __kuser_sigtramp placement fix
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150122024554.GB23762@mail.thefacebook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address of __kuser_sigtramp is wrong by one word, due to padding
-__kuser_cmpxchg to fully 64 bytes. The version word at the start of the
-page displaces __kuser_sigtramp to 0x1044, instead of the intended 0x1040.
+On Wed, Jan 21, 2015 at 06:45:54PM -0800, Calvin Owens wrote:
+> Currently, /proc/<pid>/map_files/ is restricted to CAP_SYS_ADMIN, and
+> is only exposed if CONFIG_CHECKPOINT_RESTORE is set. This interface
+> is very useful for enumerating the files mapped into a process when
+> the more verbose information in /proc/<pid>/maps is not needed.
+> 
+> This patch moves the folder out from behind CHECKPOINT_RESTORE, and
+> removes the CAP_SYS_ADMIN restrictions. To avoid exposing files to
+> processes for whom they may not be visible, a follow_link() stub is
+> added to the inode_operations struct attached to the symlinks that
+> prevent them from being followed without CAP_SYS_ADMIN.
+> 
+> Signed-off-by: Calvin Owens <calvinowens@fb.com>
 
-Fixed by counting the 64-byte frame from the start of the page instead
-of __kuser_cmpxchg. This shortens the __kuser_cmpxchg frame to 60-bytes,
-but that's likely enough.
-
-The zero-byte padding parts of the kuser_pad macro has been removed, due
-to the .if command refusing to behave properly when there are other
-.word directives in between. Probably a binutils gas bug.
-
-Thanks,
-Chung-Lin
-
-Cc: Ley Foon Tan <lftan@altera.com>
-Cc: Tobias Klauser <tklauser@distanz.ch>
-Signed-off-by: Chung-Lin Tang <cltang@codesourcery.com>
-
-diff --git a/arch/nios2/kernel/entry.S b/arch/nios2/kernel/entry.S
-index 0bdfd13..3224839 100644
---- a/arch/nios2/kernel/entry.S
-+++ b/arch/nios2/kernel/entry.S
-@@ -492,14 +492,7 @@ ENTRY(ret_from_kernel_thread)
-
-  /* Filling pads with undefined instructions. */
- .macro	kuser_pad sym size
--	.if	((. - \sym) & 3)
--	.rept	(4 - (. - \sym) & 3)
--	.byte	0
--	.endr
--	.endif
--	.rept	((\size - (. - \sym)) / 4)
--	.word	0xdeadbeef
--	.endr
-+	.fill	((\size - (. - \sym)) / 4), 4, 0xdeadbeef
- .endm
-
- 	.align	6
-@@ -526,7 +519,10 @@ cmpxchg_stw:
- cmpxchg_ret:
- 	ret
-
--	kuser_pad __kuser_cmpxchg, 64
-+	/* The first 64-byte frame contains the version word, so note
-+	   that the first padding entry is based from the start of the kuser
-+	   page, instead of __kuser_cmpxchg.  */
-+	kuser_pad __kuser_helper_start, 64
-
- 	.globl	__kuser_sigtramp
- __kuser_sigtramp:
+Looks good to me, thanks.
