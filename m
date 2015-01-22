@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbbAVTSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:18:36 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41215 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768AbbAVTSe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:18:34 -0500
-Message-ID: <54C14D01.2010506@arm.com>
-Date: Thu, 22 Jan 2015 19:18:25 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1754614AbbAVTWA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 14:22:00 -0500
+Received: from box2.japko.eu ([91.121.152.53]:38536 "EHLO box2.japko.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754046AbbAVTV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 14:21:56 -0500
+Date: Thu, 22 Jan 2015 20:19:26 +0100
+From: Krzysztof Adamski <k@japko.eu>
+To: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: dgnc: fix long lines in PCI device table
+Message-ID: <20150122191926.GA23922@box2.japko.eu>
 MIME-Version: 1.0
-To: Mario Smarduch <m.smarduch@samsung.com>, Paul Bolle <pebolle@tiscali.nl>
-CC: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: KVM: CONFIG_LOCK_DEP and CONFIG_LOCK_DETECTOR?
-References: <1421919245.13638.50.camel@x220> <54C14BCF.1050902@samsung.com>
-In-Reply-To: <54C14BCF.1050902@samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/01/15 19:13, Mario Smarduch wrote:
-> On 01/22/2015 01:34 AM, Paul Bolle wrote:
->> Mario,
->>
->> Your commit c64735554c0a ("KVM: arm: Add initial dirty page locking
->> support") is included in today's linux-next (ie, next-20150122). I
->> noticed because a script I use to check linux-next spotted a minor
->> problem with it.
->>
->> This commit added a comment that mentions CONFIG_LOCK_DEP and
->> CONFIG_LOCK_DETECTOR. It seems CONFIG_LOCKDEP and CONFIG_LOCKUP_DETECTOR
->> should be used instead. Is a trivial patch to fix these typos queued
->> somewhere?
->>
->> Thanks,
->>
->>
->> Paul Bolle
->>
-> 
-> Hi Paul,
->   thanks for spotting that. No there is no trivial patch
-> queued, didn't notice it until now. Can I submit a follow
-> up trivial patch later?
+This patch fixes coding style of PCI device table declaration.
 
-Yeah, that can definitely wait. I think we have slightly bigger fish to
-fry for now... ;-)
+Signed-off-by: Krzysztof Adamski <k@japko.eu>
+---
+ drivers/staging/dgnc/dgnc_driver.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-If someone sends us a patch once -rc1 is out, we'll queue it.
-
-Thanks,
-
-	M.
+diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
+index f610ae1..f177d3a 100644
+--- a/drivers/staging/dgnc/dgnc_driver.c
++++ b/drivers/staging/dgnc/dgnc_driver.c
+@@ -97,12 +97,12 @@ static uint		dgnc_poll_stop;				/* Used to tell poller to stop */
+ static struct timer_list dgnc_poll_timer;
+ 
+ 
+-static struct pci_device_id dgnc_pci_tbl[] = {
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	0 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	1 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	2 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	3 },
+-	{0,}						/* 0 terminated list. */
++static const struct pci_device_id dgnc_pci_tbl[] = {
++	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_4_DID),     .driver_data = 0},
++	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID), .driver_data = 1},
++	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_8_DID),     .driver_data = 2},
++	{PCI_DEVICE(DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID), .driver_data = 3},
++	{0,}
+ };
+ MODULE_DEVICE_TABLE(pci, dgnc_pci_tbl);
+ 
 -- 
-Jazz is not dead. It just smells funny...
+1.7.10.4
+
