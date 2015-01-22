@@ -1,139 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034AbbAVBk6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:40:58 -0500
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:37426 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742AbbAVBko (ORCPT
+	id S1753005AbbAVBpB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:45:01 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:36803 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531AbbAVBoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:40:44 -0500
+	Wed, 21 Jan 2015 20:44:54 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 22 Jan 2015 10:45:51 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, josh@joshtriplett.org,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Jens Axboe <axboe@fb.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 2/2] mm: fix undefined reference to `.kernel_map_pages'
+ on PPC builds
+Message-ID: <20150122014550.GA21444@js1304-P5Q-DELUXE>
+References: <20150120140200.aa7ba0eb28d95e456972e178@freescale.com>
+ <20150120230150.GA14475@cloud>
+ <20150120160738.edfe64806cc8b943beb1dfa0@linux-foundation.org>
+ <CAC5umyieZn7ppXkKb45O=C=BF+iv6R_A1Dwfhro=cBJzFeovrA@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:640c:f053:c77b:4aef]
-In-Reply-To: <1417084891-17990-4-git-send-email-peter.ujfalusi@ti.com>
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com>
-	<1417084891-17990-4-git-send-email-peter.ujfalusi@ti.com>
-Date: Wed, 21 Jan 2015 17:40:43 -0800
-Message-ID: <CAOesGMgdLB9WkOwCt__iRMnTYZ-tMNS==FL+b6s3CzHK4b0MYQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ARM: edma: Split up header file to platform_data and
- API file
-From: Olof Johansson <olof@lixom.net>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sekhar Nori <nsekhar@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        linux-spi@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAC5umyieZn7ppXkKb45O=C=BF+iv6R_A1Dwfhro=cBJzFeovrA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jan 21, 2015 at 09:57:59PM +0900, Akinobu Mita wrote:
+> 2015-01-21 9:07 GMT+09:00 Andrew Morton <akpm@linux-foundation.org>:
+> > On Tue, 20 Jan 2015 15:01:50 -0800 josh@joshtriplett.org wrote:
+> >
+> >> On Tue, Jan 20, 2015 at 02:02:00PM -0600, Kim Phillips wrote:
+> >> > It's possible to configure DEBUG_PAGEALLOC without PAGE_POISONING on
+> >> > ppc.  Fix building the generic kernel_map_pages() implementation in
+> >> > this case:
+> >> >
+> >> >   LD      init/built-in.o
+> >> > mm/built-in.o: In function `free_pages_prepare':
+> >> > mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
+> >> > mm/built-in.o: In function `prep_new_page':
+> >> > mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
+> >> > mm/built-in.o: In function `map_pages':
+> >> > mm/compaction.c:61: undefined reference to `.kernel_map_pages'
+> >> > make: *** [vmlinux] Error 1
+> 
+> kernel_map_pages() is static inline function since commit 031bc5743f15
+> ("mm/debug-pagealloc: make debug-pagealloc boottime configurable").
+> 
+> But there is old declaration in 'arch/powerpc/include/asm/cacheflush.h'.
+> Removing it or changing s/kernel_map_pages/__kernel_map_pages/ in this
+> header file or something can fix this problem?
+> 
+> The architecture which has ARCH_SUPPORTS_DEBUG_PAGEALLOC
+> including PPC should not build mm/debug-pagealloc.o
 
-On Thu, Nov 27, 2014 at 2:41 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> include/linux/platform_data/ is not a correct place to keep the API
-> definitions for edma, it is meant to be only for the pdata for the device.
-> Clean up this by moving the API to include/linux/edma.h
+Yes, architecture with ARCH_SUPPORTS_DEBUG_PAGEALLOC should not build
+mm/debug-pagealloc.o. I attach the patch to remove old declaration.
+I hope it will fix Kim's problem.
 
-It's a nice net improvement, but it moves some things that should be
-in _neither_ location to a new place where it doesn't belong either --
-and the new location is even more global. See below.
+-------------->8------------------
+>From 7cb9d1ed8a785df152cb8934e187031c8ebd1bb2 Mon Sep 17 00:00:00 2001
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Date: Thu, 22 Jan 2015 10:28:58 +0900
+Subject: [PATCH] mm/debug_pagealloc: fix build failure on ppc and some other
+ archs
 
-...
+Kim Phillips reported following build failure.
 
-> diff --git a/include/linux/edma.h b/include/linux/edma.h
-> new file mode 100644
-> index 000000000000..9df92198c117
-> --- /dev/null
-> +++ b/include/linux/edma.h
-> @@ -0,0 +1,153 @@
-> +/*
-> + * TI EDMA definitions
-> + *
-> + * Copyright (C) 2006-2013 Texas Instruments.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation version 2.
-> + *
-> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-> + * kind, whether express or implied; without even the implied warranty
-> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +/*
-> + * This EDMA3 programming framework exposes two basic kinds of resource:
-> + *
-> + *  Channel    Triggers transfers, usually from a hardware event but
-> + *             also manually or by "chaining" from DMA completions.
-> + *             Each channel is coupled to a Parameter RAM (PaRAM) slot.
-> + *
-> + *  Slot       Each PaRAM slot holds a DMA transfer descriptor (PaRAM
-> + *             "set"), source and destination addresses, a link to a
-> + *             next PaRAM slot (if any), options for the transfer, and
-> + *             instructions for updating those addresses.  There are
-> + *             more than twice as many slots as event channels.
-> + *
-> + * Each PaRAM set describes a sequence of transfers, either for one large
-> + * buffer or for several discontiguous smaller buffers.  An EDMA transfer
-> + * is driven only from a channel, which performs the transfers specified
-> + * in its PaRAM slot until there are no more transfers.  When that last
-> + * transfer completes, the "link" field may be used to reload the channel's
-> + * PaRAM slot with a new transfer descriptor.
-> + *
-> + * The EDMA Channel Controller (CC) maps requests from channels into physical
-> + * Transfer Controller (TC) requests when the channel triggers (by hardware
-> + * or software events, or by chaining).  The two physical DMA channels provided
-> + * by the TCs are thus shared by many logical channels.
-> + *
-> + * DaVinci hardware also has a "QDMA" mechanism which is not currently
-> + * supported through this interface.  (DSP firmware uses it though.)
-> + */
-> +
-> +#ifndef __LINUX_EDMA_H_
-> +#define __LINUX_EDMA_H_
-> +
-> +#include <linux/platform_data/edma.h>
-> +
-> +/* PaRAM slots are laid out like this */
-> +struct edmacc_param {
-> +       u32 opt;
-> +       u32 src;
-> +       u32 a_b_cnt;
-> +       u32 dst;
-> +       u32 src_dst_bidx;
-> +       u32 link_bcntrld;
-> +       u32 src_dst_cidx;
-> +       u32 ccnt;
-> +} __packed;
-> +
-> +/* fields in edmacc_param.opt */
-> +#define SAM            BIT(0)
-> +#define DAM            BIT(1)
-> +#define SYNCDIM                BIT(2)
-> +#define STATIC         BIT(3)
-> +#define EDMA_FWID      (0x07 << 8)
-> +#define TCCMODE                BIT(11)
-> +#define EDMA_TCC(t)    ((t) << 12)
-> +#define TCINTEN                BIT(20)
-> +#define ITCINTEN       BIT(21)
-> +#define TCCHEN         BIT(22)
-> +#define ITCCHEN                BIT(23)
+  LD      init/built-in.o
+  mm/built-in.o: In function `free_pages_prepare':
+  mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
+  mm/built-in.o: In function `prep_new_page':
+  mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
+  mm/built-in.o: In function `map_pages':
+  mm/compaction.c:61: undefined reference to `.kernel_map_pages'
+  make: *** [vmlinux] Error 1
 
-This seems like the kind of thing that should go with the edma driver
-instead of being globally exported to the kernel through a
-include/linux header file.
+Reason for this problem is that commit 031bc5743f15
+("mm/debug-pagealloc: make debug-pagealloc boottime configurable") forgot
+to remove old declaration of kernel_map_pages() in some architectures.
+This patch removes them to fix build failure.
 
+Reported-by: Kim Phillips <kim.phillips@freescale.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ arch/mn10300/include/asm/cacheflush.h  |    7 -------
+ arch/powerpc/include/asm/cacheflush.h  |    7 -------
+ arch/s390/include/asm/cacheflush.h     |    4 ----
+ arch/sparc/include/asm/cacheflush_64.h |    5 -----
+ 4 files changed, 23 deletions(-)
 
--Olof
+diff --git a/arch/mn10300/include/asm/cacheflush.h b/arch/mn10300/include/asm/cacheflush.h
+index faed902..6d6df83 100644
+--- a/arch/mn10300/include/asm/cacheflush.h
++++ b/arch/mn10300/include/asm/cacheflush.h
+@@ -159,13 +159,6 @@ extern void flush_icache_range(unsigned long start, unsigned long end);
+ #define copy_from_user_page(vma, page, vaddr, dst, src, len) \
+ 	memcpy(dst, src, len)
+ 
+-/*
+- * Internal debugging function
+- */
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-extern void kernel_map_pages(struct page *page, int numpages, int enable);
+-#endif
+-
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* _ASM_CACHEFLUSH_H */
+diff --git a/arch/powerpc/include/asm/cacheflush.h b/arch/powerpc/include/asm/cacheflush.h
+index 5b93122..30b35ff 100644
+--- a/arch/powerpc/include/asm/cacheflush.h
++++ b/arch/powerpc/include/asm/cacheflush.h
+@@ -60,13 +60,6 @@ extern void flush_dcache_phys_range(unsigned long start, unsigned long stop);
+ #define copy_from_user_page(vma, page, vaddr, dst, src, len) \
+ 	memcpy(dst, src, len)
+ 
+-
+-
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-/* internal debugging function */
+-void kernel_map_pages(struct page *page, int numpages, int enable);
+-#endif
+-
+ #endif /* __KERNEL__ */
+ 
+ #endif /* _ASM_POWERPC_CACHEFLUSH_H */
+diff --git a/arch/s390/include/asm/cacheflush.h b/arch/s390/include/asm/cacheflush.h
+index 3e20383..58fae7d 100644
+--- a/arch/s390/include/asm/cacheflush.h
++++ b/arch/s390/include/asm/cacheflush.h
+@@ -4,10 +4,6 @@
+ /* Caches aren't brain-dead on the s390. */
+ #include <asm-generic/cacheflush.h>
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-void kernel_map_pages(struct page *page, int numpages, int enable);
+-#endif
+-
+ int set_memory_ro(unsigned long addr, int numpages);
+ int set_memory_rw(unsigned long addr, int numpages);
+ int set_memory_nx(unsigned long addr, int numpages);
+diff --git a/arch/sparc/include/asm/cacheflush_64.h b/arch/sparc/include/asm/cacheflush_64.h
+index 3896537..68513c4 100644
+--- a/arch/sparc/include/asm/cacheflush_64.h
++++ b/arch/sparc/include/asm/cacheflush_64.h
+@@ -74,11 +74,6 @@ void flush_ptrace_access(struct vm_area_struct *, struct page *,
+ #define flush_cache_vmap(start, end)		do { } while (0)
+ #define flush_cache_vunmap(start, end)		do { } while (0)
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-/* internal debugging function */
+-void kernel_map_pages(struct page *page, int numpages, int enable);
+-#endif
+-
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* _SPARC64_CACHEFLUSH_H */
+-- 
+1.7.9.5
+
