@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624AbbAVH2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 02:28:55 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39913 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946AbbAVH2s (ORCPT
+	id S1751970AbbAVHa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 02:30:59 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:52297 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbbAVHaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 02:28:48 -0500
-Date: Thu, 22 Jan 2015 08:28:39 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Robin Gong <b38343@freescale.com>
-Cc: dan.j.williams@intel.com, vinod.koul@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dma: imx-sdma: switch to dynamic context mode after
- script loaded
-Message-ID: <20150122072839.GO12209@pengutronix.de>
-References: <1421899177-30406-1-git-send-email-b38343@freescale.com>
+	Thu, 22 Jan 2015 02:30:55 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0M7Ue61001344, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [RESEND PATCH v2 0/9] mfd: rtsx: add support for new rts524A and rts525A
+Date: Thu, 22 Jan 2015 15:30:32 +0800
+Message-ID: <cover.1421911636.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421899177-30406-1-git-send-email-b38343@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:23:20 up 98 days, 18:37, 123 users,  load average: 0.01, 0.03,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 11:59:37AM +0800, Robin Gong wrote:
-> Below comments got from Page4724 of Reference Manual of i.mx6q:
-> http://cache.freescale.com/files/32bit/doc/ref_manual/IMX6DQRM.pdf
-> 
-> --"Static context mode should be used for the first channel called
-> after reset to ensure that the all context RAM for that channel is
-> initialized during the context SAVE phase when the channel is
-> done or yields. Subsequent calls to the same channel or
-> different channels may use any of the dynamic context modes.
-> This will ensure that all context locations for the bootload
-> channel are initialized, and prevent undefined values in context
-> RAM from being loaded during the context restore if the
-> channel is re-started later"
-> 
-> Unfortunately, the rule was broken by commit(5b28aa319bba96987316425a1131813d87cbab35)
-> .This patch just take them back.
-> 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
-> ---
->  drivers/dma/imx-sdma.c | 11 ++++++++---
->  1 file changed, 8 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index d0df198..d84b7a8 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -330,6 +330,8 @@ struct sdma_engine {
->  	const struct sdma_driver_data	*drvdata;
->  };
->  
-> +static bool channel0_first;
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Nah, don't break the multi instance capability of drivers without a
-reason. Don't use global static variables in driver context.
+resend:
+- add lee jones ack for some patch.
+v2:
+- remove debug info when access failed.
+- using macro list for phy register init.
+- rename function for multi chip prefix with rtsx_base_
+- save pcie_cap offset when init chip, not calling pci_find_capacity()
+  every time.
+- add pcr->ops: write_phy/read_phy for special chip.
 
-> +
->  static struct sdma_driver_data sdma_imx31 = {
->  	.chnenbl0 = SDMA_CHNENBL0_IMX31,
->  	.num_events = 32,
-> @@ -531,6 +533,12 @@ static int sdma_run_channel0(struct sdma_engine *sdma)
->  		dev_err(sdma->dev, "Timeout waiting for CH0 ready\n");
->  	}
->  
-> +	if (!channel0_first) {
-> +		/* Set bits of CONFIG register with given context switching mode */
-> +		writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
-> +		channel0_first = true;
-> +	}
+This patchset including re-format some coding-style and add two new chip
+rts524A and rts525A.
 
-You don't need a variable. How about:
 
-	if (readl(sdma->regs + SDMA_H_CONFIG) == 0)
-		writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
+Micky Ching (9):
+  mfd: rtsx: replace TAB by SPC after #define
+  mfd: rtsx: place register address and values togather
+  mfd: rtsx: update PETXCFG address
+  mfd: rtsx: update driving settings
+  mfd: rtsx: update phy register
+  mfd: rtsx: remove LCTLR defination
+  mfd: rtsx: add support for rts524A
+  mfd: rtsx: add support for rts525A
+  mfd: rtsx: using pcr_dbg replace dev_dbg
 
-Sascha
+ drivers/mfd/Makefile         |    2 +-
+ drivers/mfd/rtl8411.c        |   11 +-
+ drivers/mfd/rts5209.c        |    4 +-
+ drivers/mfd/rts5227.c        |   12 +-
+ drivers/mfd/rts5229.c        |    4 +-
+ drivers/mfd/rts5249.c        |  368 +++++++++++---
+ drivers/mfd/rtsx_gops.c      |   37 --
+ drivers/mfd/rtsx_pcr.c       |  109 +++--
+ drivers/mfd/rtsx_pcr.h       |    8 +
+ include/linux/mfd/rtsx_pci.h | 1109 ++++++++++++++++++++++--------------------
+ 10 files changed, 965 insertions(+), 699 deletions(-)
+ delete mode 100644 drivers/mfd/rtsx_gops.c
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.9.1
+
