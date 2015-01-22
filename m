@@ -1,69 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbbAVC5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:57:40 -0500
-Received: from ozlabs.org ([103.22.144.67]:34344 "EHLO ozlabs.org"
+	id S1754127AbbAVC54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:57:56 -0500
+Received: from mga01.intel.com ([192.55.52.88]:12189 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026AbbAVC5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:57:31 -0500
-Date: Thu, 22 Jan 2015 13:57:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Goz <ben.goz@amd.com>, Oded Gabbay <oded.gabbay@amd.com>
-Subject: Re: linux-next: manual merge of the drm tree with Linus' tree
-Message-ID: <20150122135725.407801c8@canb.auug.org.au>
-In-Reply-To: <alpine.DEB.2.00.1501220230380.12580@skynet.skynet.ie>
-References: <20150122132249.28ffba12@canb.auug.org.au>
-	<alpine.DEB.2.00.1501220230380.12580@skynet.skynet.ie>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753965AbbAVC5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 21:57:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,446,1418112000"; 
+   d="scan'208";a="640753172"
+Message-ID: <54C06726.4090805@linux.intel.com>
+Date: Thu, 22 Jan 2015 10:57:42 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/lrCvyfv8kAFDrF3A38enIu0"; protocol="application/pgp-signature"
+To: "Zheng, Lv" <lv.zheng@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>
+CC: "Luck, Tony" <tony.luck@intel.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>
+Subject: Re: [RFC Patch 05/19] ACPI: Provide union for address_space64 and
+ ext_address_space64
+References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-6-git-send-email-jiang.liu@linux.intel.com> <1AE640813FDE7649BE1B193DEA596E88026B9EFB@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026B9EFB@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/lrCvyfv8kAFDrF3A38enIu0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
 
-On Thu, 22 Jan 2015 02:31:06 +0000 (GMT) Dave Airlie <airlied@linux.ie> wro=
-te:
->
-> btw I pushed a drm-next with all these fixed in it a little while ago
->=20
-> we must be racing!
-
-Yeah, I tend to collect all the trees first thing in the morning
-(around 9 - 10 am my time) and then spend the day merging them.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/lrCvyfv8kAFDrF3A38enIu0
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUwGcZAAoJEMDTa8Ir7ZwV830P/ihT+xVgenBebhw7hhi8IRdN
-Qiyv+m+aVS2mJU7GJBfzqLtQuy5VMXRL7hsExjjVJELkUDPt4RMi64r6OnLluY+0
-zaoZ8gkD6Ons2T76/EIWCqNZSKtHdgzui8uBN8hixI73+llNZ4+qrorBeCjPrpx1
-TOp5kGOhAAaJ6BhHYK/oCeTnMjx5nMdloOAPQb7ACrGy9SD4fgCze7k952TbFQA7
-JUpz+RpQzrTU2OVLSOXN0GUjkMvn9SgyXUETGK2VHy54XT1Vv047Mny+NbMkKltg
-8nwGRWD+xFNct3Ex+Wm40lfsSidC9ycgPK6Mra5n8c6MfVYpjwChHXGgNMYSJW5g
-RTNzcLSCLRhuSetn5fBukM/eH1wKRMlniPES+h0g7ggmdA4KE2dCqWOcmogdZROO
-PIirk3sw7jJgG1VbscZbLPsX6O3gBB0qnRnCR9ZrydAV+yB7ZhebRSTNB7FRMBPm
-G+MZEVcCzMO1hm76lxo5tNrNoYafjFzZ4DcnJWSJeqBd0a5s5fRS8wv5YVkD/6rE
-kvZsAie2CdrvqzhaPIfzq081zFsEMbQGSdOzwpXvUOzA0seYwevbfX7XK/Ncd3k/
-7n+15EnTf75a4lLp2HpiJlwacdDkGILsd4ABw3SqBvreQitG0G5w7gADt1lg2Go1
-n6HQSvzGFP2HaTnPvOZP
-=DOyL
------END PGP SIGNATURE-----
-
---Sig_/lrCvyfv8kAFDrF3A38enIu0--
+On 2015/1/22 10:32, Zheng, Lv wrote:
+> Hi, Thomas and Jiang
+> 
+>> From: Jiang Liu [mailto:jiang.liu@linux.intel.com]
+>> Sent: Thursday, January 08, 2015 10:33 AM
+>>
+>> From: Thomas Gleixner <tglx@linutronix.de>
+>>
+>> address_space64 and ext_address_space64 share substracts just at
+>> different offsets. To unify the parsing functions implement the two
+>> structs as unions of their substructs, so we can extract the shared
+>> data.
+>>
+>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> ---
+>>  include/acpi/acrestyp.h |   49 ++++++++++++++++++++++++++++++++++-------------
+>>  1 file changed, 36 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/include/acpi/acrestyp.h b/include/acpi/acrestyp.h
+>> index eb760ca0b2e0..307d5b2605c8 100644
+>> --- a/include/acpi/acrestyp.h
+>> +++ b/include/acpi/acrestyp.h
+>> @@ -326,23 +326,46 @@ struct acpi_resource_address32 {
+>>  	struct acpi_resource_source resource_source;
+>>  };
+>>
+>> -struct acpi_resource_address64 {
+>> -	ACPI_RESOURCE_ADDRESS_COMMON u64 granularity;
+>> -	u64 minimum;
+>> -	u64 maximum;
+>> -	u64 translation_offset;
+>> +#define ACPI_RESOURCE_ADDRESS64_COMMON \
+>> +	u64 granularity;	       \
+>> +	u64 minimum;		       \
+>> +	u64 maximum;		       \
+>> +	u64 translation_offset;	       \
+>>  	u64 address_length;
+>> -	struct acpi_resource_source resource_source;
+>> +
+>> +struct acpi_resource_address64_common {
+>> +ACPI_RESOURCE_ADDRESS64_COMMON};
+>> +
+>> +struct acpi_resource_address64 {
+>> +	union {
+>> +		struct {
+>> +			ACPI_RESOURCE_ADDRESS_COMMON
+>> +			ACPI_RESOURCE_ADDRESS64_COMMON
+>> +			struct acpi_resource_source resource_source;
+>> +		};
+> 
+> This looks wrong to ACPICA upstream.
+> 
+>> +		struct {
+>> +			struct acpi_resource_address base;
+>> +			struct acpi_resource_address64_common addr;
+>> +			struct acpi_resource_source resource_source;
+>> +		} common;
+>> +	};
+>>  };
+> 
+> And this.
+> Though anonymous structs/unions are now C11 standard, I still didn't see it used in the ACPICA upstream.
+> It could be a problem if someone still compiles ACPICA using old compilers.
+> 
+>>
+>>  struct acpi_resource_extended_address64 {
+>> -	ACPI_RESOURCE_ADDRESS_COMMON u8 revision_ID;
+>> -	u64 granularity;
+>> -	u64 minimum;
+>> -	u64 maximum;
+>> -	u64 translation_offset;
+>> -	u64 address_length;
+>> -	u64 type_specific;
+>> +	union {
+>> +		struct {
+>> +			ACPI_RESOURCE_ADDRESS_COMMON
+>> +			u8 revision_ID;
+>> +			ACPI_RESOURCE_ADDRESS64_COMMON
+>> +			u64 type_specific;
+>> +		};
+> 
+> Ditto.
+> 
+>> +		struct {
+>> +			struct acpi_resource_address base;
+>> +			u8 revision_ID;
+>> +			struct acpi_resource_address64_common addr;
+>> +			u64 type_specific;
+>> +		} common;
+>> +	};
+> 
+> Ditto.
+> 
+> I think what you want is the ability to access common.addr and common.base from different resource address64 types.
+> So we can achieve this directly in the ACPICA upstream without using the union.
+> 
+> I tried this in the ACPICA upstream and the result is:
+> https://github.com/zetalog/acpica/commit/0f4ed510
+> Let me send its linuxized version after this email.
+Hi Lv,
+	Thanks for your great support:)
+	What's the normal process to propagate this patch into
+linux kernel? Or how long will it take? We have another hotplug
+patch set which depends on this patch set, then depends on this
+ACPICA core change.
+Regards!
+Gerry
+> 
+> Thanks and best regards
+> -Lv
+> 
+>>  };
+>>
+>>  struct acpi_resource_extended_irq {
+>> --
+>> 1.7.10.4
+> 
