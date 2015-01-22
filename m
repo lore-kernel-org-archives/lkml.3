@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717AbbAVQ57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:57:59 -0500
-Received: from 12.mo1.mail-out.ovh.net ([87.98.162.229]:44403 "EHLO
-	12.mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbbAVQ54 (ORCPT
+	id S1753501AbbAVP6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:58:04 -0500
+Received: from 19.mo1.mail-out.ovh.net ([178.32.97.206]:50716 "EHLO
+	19.mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbbAVP6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:57:56 -0500
+	Thu, 22 Jan 2015 10:58:00 -0500
+X-Greylist: delayed 1449 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 10:58:00 EST
 From: clement.perrochaud@effinnov.com
 To: linux-nfc@ml01.01.org
 Cc: =?UTF-8?q?Cl=C3=A9ment=20Perrochaud?= <clement.perrochaud@nxp.com>,
@@ -22,16 +23,16 @@ Cc: =?UTF-8?q?Cl=C3=A9ment=20Perrochaud?= <clement.perrochaud@nxp.com>,
         linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
         =?UTF-8?q?Cl=C3=A9ment=20Perrochaud?= 
 	<clement.perrochaud@effinnov.com>
-Subject: [PATCH 3/4] NFC: nxp-nci_i2c: Add I2C support to NXP NCI driver
-Date: Thu, 22 Jan 2015 16:27:39 +0100
-Message-Id: <1421940460-14049-4-git-send-email-clement.perrochaud@effinnov.com>
+Subject: [PATCH 4/4] NFC: nxp-nci: Allow module removal during download
+Date: Thu, 22 Jan 2015 16:27:40 +0100
+Message-Id: <1421940460-14049-5-git-send-email-clement.perrochaud@effinnov.com>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1421940460-14049-1-git-send-email-clement.perrochaud@effinnov.com>
 References: <1421940460-14049-1-git-send-email-clement.perrochaud@effinnov.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 1805099025969507116
+X-Ovh-Tracer-Id: 1854357146893871917
 X-Ovh-Remote: 109.190.171.176 (176-171-190-109.dsl.ovh.fr)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -49,563 +50,63 @@ From: Clément Perrochaud <clement.perrochaud@nxp.com>
 Signed-off-by: Clément Perrochaud <clement.perrochaud@nxp.com>
 Signed-off-by: Clément Perrochaud <clement.perrochaud@effinnov.com>
 ---
- .../devicetree/bindings/net/nfc/nxp-nci.txt        |  35 ++
- drivers/nfc/nxp-nci/Kconfig                        |  12 +
- drivers/nfc/nxp-nci/Makefile                       |   2 +
- drivers/nfc/nxp-nci/i2c.c                          | 468 +++++++++++++++++++++
- 4 files changed, 517 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/nfc/nxp-nci.txt
- create mode 100644 drivers/nfc/nxp-nci/i2c.c
+ drivers/nfc/nxp-nci/core.c     | 7 +++----
+ drivers/nfc/nxp-nci/firmware.c | 9 ++++++---
+ 2 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/net/nfc/nxp-nci.txt b/Documentation/devicetree/bindings/net/nfc/nxp-nci.txt
-new file mode 100644
-index 0000000..5b6cd9b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/nfc/nxp-nci.txt
-@@ -0,0 +1,35 @@
-+* NXP Semiconductors NXP NCI NFC Controllers
-+
-+Required properties:
-+- compatible: Should be "nxp,nxp-nci-i2c".
-+- clock-frequency: I²C work frequency.
-+- reg: address on the bus
-+- interrupt-parent: phandle for the interrupt gpio controller
-+- interrupts: GPIO interrupt to which the chip is connected
-+- enable-gpios: Output GPIO pin used for enabling/disabling the chip
-+- firmware-gpios: Output GPIO pin used to enter firmware download mode
-+
-+Optional SoC Specific Properties:
-+- pinctrl-names: Contains only one value - "default".
-+- pintctrl-0: Specifies the pin control groups used for this controller.
-+
-+Example (for ARM-based BeagleBone with NPC100 NFC controller on I2C2):
-+
-+&i2c2 {
-+
-+	status = "okay";
-+
-+	npc100: npc100@29 {
-+
-+		compatible = "nxp,nxp-nci-i2c";
-+
-+		reg = <0x29>;
-+		clock-frequency = <100000>;
-+
-+		interrupt-parent = <&gpio1>;
-+		interrupts = <29 GPIO_ACTIVE_HIGH>;
-+
-+		enable-gpios = <&gpio0 30 GPIO_ACTIVE_HIGH>;
-+		firmware-gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>;
-+	};
-+};
-diff --git a/drivers/nfc/nxp-nci/Kconfig b/drivers/nfc/nxp-nci/Kconfig
-index 5107edd..ac54016 100644
---- a/drivers/nfc/nxp-nci/Kconfig
-+++ b/drivers/nfc/nxp-nci/Kconfig
-@@ -10,3 +10,15 @@ config NFC_NXP_NCI
- 	  To compile this driver as a module, choose m here. The module will
- 	  be called nxp_nci.
- 	  Say N if unsure.
-+
-+config NFC_NXP_NCI_I2C
-+	tristate "NXP-NCI I2C support"
-+	depends on NFC_NXP_NCI && I2C
-+	---help---
-+	  This module adds support for an I2C interface to the NXP NCI
-+	  chips.
-+	  Select this if your platform is using the I2C bus.
-+
-+	  To compile this driver as a module, choose m here. The module will
-+	  be called nxp_nci_i2c.
-+	  Say Y if unsure.
-diff --git a/drivers/nfc/nxp-nci/Makefile b/drivers/nfc/nxp-nci/Makefile
-index 8f1e328..c008be3 100644
---- a/drivers/nfc/nxp-nci/Makefile
-+++ b/drivers/nfc/nxp-nci/Makefile
-@@ -3,7 +3,9 @@
- #
+diff --git a/drivers/nfc/nxp-nci/core.c b/drivers/nfc/nxp-nci/core.c
+index d3643ef..c15606d 100644
+--- a/drivers/nfc/nxp-nci/core.c
++++ b/drivers/nfc/nxp-nci/core.c
+@@ -165,12 +165,11 @@ void nxp_nci_remove(struct nci_dev *ndev)
+ {
+ 	struct nxp_nci_info *info = nci_get_drvdata(ndev);
  
- nxp-nci-objs = core.o firmware.o
-+nxp-nci_i2c-objs = i2c.o
+-	mutex_lock(&info->info_lock);
+-
+-	cancel_work_sync(&info->fw_info.work);
+-
+ 	if (info->mode == NXP_NCI_MODE_FW)
+ 		nxp_nci_fw_work_complete(info, -ESHUTDOWN);
++	cancel_work_sync(&info->fw_info.work);
++
++	mutex_lock(&info->info_lock);
  
- obj-$(CONFIG_NFC_NXP_NCI) += nxp-nci.o
-+obj-$(CONFIG_NFC_NXP_NCI_I2C) += nxp-nci_i2c.o
+ 	if (info->phy_ops->disable)
+ 		info->phy_ops->disable(info->phy_id);
+diff --git a/drivers/nfc/nxp-nci/firmware.c b/drivers/nfc/nxp-nci/firmware.c
+index 1814e9f..de136e1 100644
+--- a/drivers/nfc/nxp-nci/firmware.c
++++ b/drivers/nfc/nxp-nci/firmware.c
+@@ -166,7 +166,8 @@ static int nxp_nci_fw_send(struct nxp_nci_info *info)
  
- ccflags-$(CONFIG_NFC_DEBUG) := -DDEBUG
-diff --git a/drivers/nfc/nxp-nci/i2c.c b/drivers/nfc/nxp-nci/i2c.c
-new file mode 100644
-index 0000000..4d6293b
---- /dev/null
-+++ b/drivers/nfc/nxp-nci/i2c.c
-@@ -0,0 +1,468 @@
-+/*
-+ * I2C link layer for the NXP NCI driver
-+ *
-+ * Copyright (C) 2014  NXP Semiconductors  All rights reserved.
-+ *
-+ * Authors: Clément Perrochaud <clement.perrochaud@nxp.com>
-+ *
-+ * Derived from PN544 device driver:
-+ * Copyright (C) 2012  Intel Corporation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/delay.h>
-+#include <linux/i2c.h>
-+#include <linux/interrupt.h>
-+#include <linux/miscdevice.h>
-+#include <linux/module.h>
-+#include <linux/nfc.h>
-+#include <linux/of_gpio.h>
-+#include <linux/of_irq.h>
-+#include <linux/platform_data/nxp-nci.h>
-+#include <linux/unaligned/access_ok.h>
-+
-+#include <net/nfc/nfc.h>
-+
-+#include "nxp-nci.h"
-+
-+#define NXP_NCI_I2C_DRIVER_NAME	"nxp-nci_i2c"
-+
-+#define NXP_NCI_I2C_MAX_PAYLOAD	32
-+
-+struct nxp_nci_i2c_phy {
-+	struct i2c_client *i2c_dev;
-+	struct nci_dev *ndev;
-+
-+	unsigned int gpio_en;
-+	unsigned int gpio_fw;
-+
-+	int hard_fault; /*
-+			 * < 0 if hardware error occurred (e.g. i2c err)
-+			 * and prevents normal operation.
-+			 */
-+};
-+
-+static void nxp_nci_i2c_enable_mode(struct nxp_nci_i2c_phy *phy,
-+				    enum nxp_nci_mode mode)
-+{
-+	gpio_set_value(phy->gpio_fw, (mode == NXP_NCI_MODE_FW) ? 1 : 0);
-+	gpio_set_value(phy->gpio_en, (mode != NXP_NCI_MODE_COLD) ? 1 : 0);
-+	usleep_range(10000, 15000);
-+}
-+
-+int nxp_nci_i2c_enable(void *phy_id)
-+{
-+	nxp_nci_i2c_enable_mode((struct nxp_nci_i2c_phy *) phy_id,
-+				NXP_NCI_MODE_NCI);
-+	return 0;
-+}
-+
-+int nxp_nci_i2c_fw_enable(void *phy_id)
-+{
-+	nxp_nci_i2c_enable_mode((struct nxp_nci_i2c_phy *) phy_id,
-+				NXP_NCI_MODE_FW);
-+	return 0;
-+}
-+
-+int nxp_nci_i2c_disable(void *phy_id)
-+{
-+	struct nxp_nci_i2c_phy *phy = phy_id;
-+
-+	nxp_nci_i2c_enable_mode(phy, NXP_NCI_MODE_COLD);
-+	phy->hard_fault = 0;
-+
-+	return 0;
-+}
-+
-+static int nxp_nci_i2c_write(void *phy_id, struct sk_buff *skb)
-+{
-+	int r;
-+	struct nxp_nci_i2c_phy *phy = phy_id;
-+	struct i2c_client *client = phy->i2c_dev;
-+
-+	if (phy->hard_fault != 0)
-+		return phy->hard_fault;
-+
-+	r = i2c_master_send(client, skb->data, skb->len);
-+	if (r == -EREMOTEIO) {
-+		/* Retry, chip was in standby */
-+		usleep_range(110000, 120000);
-+		r = i2c_master_send(client, skb->data, skb->len);
-+	}
-+
-+	if (r < 0) {
-+		nfc_err(&client->dev, "Error %d on I2C send\n", r);
-+	} else if (r != skb->len) {
-+		nfc_err(&client->dev,
-+			"Invalid length sent: %u (expected %u)\n",
-+			r, skb->len);
-+		r = -EREMOTEIO;
-+	} else {
-+		/* Success but return 0 and not number of bytes */
-+		r = 0;
-+	}
-+
-+	return r;
-+}
-+
-+static struct nxp_nci_phy_ops i2c_phy_ops = {
-+	.enable = nxp_nci_i2c_enable,
-+	.fw_enable = nxp_nci_i2c_fw_enable,
-+	.disable = nxp_nci_i2c_disable,
-+	.write = nxp_nci_i2c_write,
-+};
-+
-+static int nxp_nci_i2c_fw_read(struct nxp_nci_i2c_phy *phy,
-+			       struct sk_buff **skb)
-+{
-+	struct i2c_client *client = phy->i2c_dev;
-+	u16 header;
-+	size_t frame_len;
-+	int r;
-+
-+	r = i2c_master_recv(client, (u8 *) &header, NXP_NCI_FW_HDR_LEN);
-+	if (r < 0) {
-+		goto fw_read_exit;
-+	} else if (r != NXP_NCI_FW_HDR_LEN) {
-+		nfc_err(&client->dev, "Incorrect header length: %u\n", r);
-+		r = -EBADMSG;
-+		goto fw_read_exit;
-+	}
-+
-+	frame_len = (get_unaligned_be16(&header) & NXP_NCI_FW_FRAME_LEN_MASK) +
-+		    NXP_NCI_FW_CRC_LEN;
-+
-+	*skb = alloc_skb(NXP_NCI_FW_HDR_LEN + frame_len, GFP_KERNEL);
-+	if (*skb == NULL) {
-+		r = -ENOMEM;
-+		goto fw_read_exit;
-+	}
-+
-+	memcpy(skb_put(*skb, NXP_NCI_FW_HDR_LEN), &header, NXP_NCI_FW_HDR_LEN);
-+
-+	r = i2c_master_recv(client, skb_put(*skb, frame_len), frame_len);
-+	if (r != frame_len) {
-+		nfc_err(&client->dev,
-+			"Invalid frame length: %u (expected %u)\n",
-+			r, frame_len);
-+		r = -EBADMSG;
-+		goto fw_read_exit_free_skb;
-+	}
-+
-+	r = 0;
-+	goto fw_read_exit;
-+
-+fw_read_exit_free_skb:
-+	kfree_skb(*skb);
-+fw_read_exit:
-+	return r;
-+}
-+
-+static int nxp_nci_i2c_nci_read(struct nxp_nci_i2c_phy *phy,
-+				struct sk_buff **skb)
-+{
-+	struct nci_ctrl_hdr header; /* May actually be a data header */
-+	struct i2c_client *client = phy->i2c_dev;
-+	int r;
-+
-+	r = i2c_master_recv(client, (u8 *) &header, NCI_CTRL_HDR_SIZE);
-+	if (r < 0) {
-+		goto nci_read_exit;
-+	} else if (r != NCI_CTRL_HDR_SIZE) {
-+		nfc_err(&client->dev, "Incorrect header length: %u\n", r);
-+		r = -EBADMSG;
-+		goto nci_read_exit;
-+	}
-+
-+	*skb = alloc_skb(NCI_CTRL_HDR_SIZE + header.plen, GFP_KERNEL);
-+	if (*skb == NULL) {
-+		r = -ENOMEM;
-+		goto nci_read_exit;
-+	}
-+
-+	memcpy(skb_put(*skb, NCI_CTRL_HDR_SIZE), (void *) &header,
-+	       NCI_CTRL_HDR_SIZE);
-+
-+	r = i2c_master_recv(client, skb_put(*skb, header.plen), header.plen);
-+	if (r != header.plen) {
-+		nfc_err(&client->dev,
-+			"Invalid frame payload length: %u (expected %u)\n",
-+			r, header.plen);
-+		r = -EBADMSG;
-+		goto nci_read_exit_free_skb;
-+	}
-+
-+	r = 0;
-+	goto nci_read_exit;
-+
-+nci_read_exit_free_skb:
-+	kfree_skb(*skb);
-+nci_read_exit:
-+	return r;
-+}
-+
-+static irqreturn_t nxp_nci_i2c_irq_thread_fn(int irq, void *phy_id)
-+{
-+	struct nxp_nci_i2c_phy *phy = phy_id;
-+	struct i2c_client *client;
-+	struct nxp_nci_info *info;
-+
-+	struct sk_buff *skb = NULL;
-+	int r = 0;
-+
-+	if (!phy || !phy->ndev)
-+		goto exit_irq_none;
-+
-+	client = phy->i2c_dev;
-+
-+	if (!client || irq != client->irq)
-+		goto exit_irq_none;
-+
-+	if (phy->hard_fault != 0)
-+		goto exit_irq_handled;
-+
-+	info = nci_get_drvdata(phy->ndev);
-+
-+	switch (info->mode) {
-+	case NXP_NCI_MODE_NCI:
-+		r = nxp_nci_i2c_nci_read(phy, &skb);
-+		break;
-+	case NXP_NCI_MODE_FW:
-+		r = nxp_nci_i2c_fw_read(phy, &skb);
-+		break;
-+	case NXP_NCI_MODE_COLD:
-+		r = -EREMOTEIO;
-+		break;
-+	}
-+
-+	if (r == -EREMOTEIO) {
-+		phy->hard_fault = r;
-+		skb = NULL;
-+	} else if (r < 0) {
-+		nfc_err(&client->dev, "Read failed with error %d\n", r);
-+		goto exit_irq_handled;
-+	}
-+
-+	switch (info->mode) {
-+	case NXP_NCI_MODE_NCI:
-+		nci_recv_frame(phy->ndev, skb);
-+		break;
-+	case NXP_NCI_MODE_FW:
-+		nxp_nci_fw_recv_frame(phy->ndev, skb);
-+		break;
-+	case NXP_NCI_MODE_COLD:
-+		break;
-+	}
-+
-+exit_irq_handled:
-+	return IRQ_HANDLED;
-+exit_irq_none:
-+	WARN_ON_ONCE(1);
-+	return IRQ_NONE;
-+}
-+
-+#ifdef CONFIG_OF
-+
-+static int nxp_nci_i2c_parse_devtree(struct i2c_client *client)
-+{
-+	struct nxp_nci_i2c_phy *phy = i2c_get_clientdata(client);
-+	struct device_node *pp;
-+	int r;
-+
-+	pp = client->dev.of_node;
-+	if (!pp)
-+		return -ENODEV;
-+
-+	r = of_get_named_gpio(pp, "enable-gpios", 0);
-+	if (r == -EPROBE_DEFER)
-+		r = of_get_named_gpio(pp, "enable-gpios", 0);
-+	if (r < 0) {
-+		nfc_err(&client->dev, "Failed to get EN gpio, error: %d\n", r);
-+		return r;
-+	}
-+	phy->gpio_en = r;
-+
-+	r = of_get_named_gpio(pp, "firmware-gpios", 0);
-+	if (r == -EPROBE_DEFER)
-+		r = of_get_named_gpio(pp, "firmware-gpios", 0);
-+	if (r < 0) {
-+		nfc_err(&client->dev, "Failed to get FW gpio, error: %d\n", r);
-+		return r;
-+	}
-+	phy->gpio_fw = r;
-+
-+	r = irq_of_parse_and_map(pp, 0);
-+	if (r < 0) {
-+		nfc_err(&client->dev, "Unable to get irq, error: %d\n", r);
-+		return r;
-+	}
-+	client->irq = r;
-+
-+	return 0;
-+}
-+
-+#else
-+
-+static int nxp_nci_i2c_parse_devtree(struct i2c_client *client)
-+{
-+	return -ENODEV;
-+}
-+
-+#endif
-+
-+static int nxp_nci_i2c_request_gpios(struct nxp_nci_i2c_phy *phy)
-+{
-+	int r;
-+
-+	r = gpio_request(phy->gpio_en, "nxp_nci_en");
-+	if (r < 0)
-+		goto err_out;
-+
-+	r = gpio_direction_output(phy->gpio_en, 0);
-+	if (r < 0)
-+		goto err_gpio_en;
-+
-+	r = gpio_request(phy->gpio_fw, "nxp_nci_fw");
-+	if (r < 0)
-+		goto err_gpio_en;
-+
-+	r = gpio_direction_output(phy->gpio_fw, 0);
-+	if (r < 0)
-+		goto err_gpio_fw;
-+
-+	goto err_out;
-+
-+err_gpio_fw:
-+	gpio_free(phy->gpio_fw);
-+err_gpio_en:
-+	gpio_free(phy->gpio_en);
-+err_out:
-+	return r;
-+}
-+
-+static void nxp_nci_i2c_free_gpios(struct nxp_nci_i2c_phy *phy)
-+{
-+	gpio_free(phy->gpio_fw);
-+	gpio_free(phy->gpio_en);
-+}
-+
-+static int nxp_nci_i2c_probe(struct i2c_client *client,
-+			    const struct i2c_device_id *id)
-+{
-+	struct nxp_nci_i2c_phy *phy;
-+	struct nxp_nci_nfc_platform_data *pdata;
-+	int r;
-+
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+		nfc_err(&client->dev, "Need I2C_FUNC_I2C\n");
-+		r = -ENODEV;
-+		goto probe_exit;
-+	}
-+
-+	phy = devm_kzalloc(&client->dev, sizeof(struct nxp_nci_i2c_phy),
-+			   GFP_KERNEL);
-+	if (!phy) {
-+		r = -ENOMEM;
-+		goto probe_exit;
-+	}
-+
-+	phy->i2c_dev = client;
-+	i2c_set_clientdata(client, phy);
-+
-+	pdata = client->dev.platform_data;
-+
-+	if (!pdata && client->dev.of_node) {
-+		r = nxp_nci_i2c_parse_devtree(client);
-+		if (r < 0) {
-+			nfc_err(&client->dev, "Failed to get DT data\n");
-+			goto probe_exit;
-+		}
-+	} else if (pdata) {
-+		phy->gpio_en = pdata->gpio_en;
-+		phy->gpio_fw = pdata->gpio_fw;
-+		client->irq = pdata->irq;
-+	} else {
-+		nfc_err(&client->dev, "No platform data\n");
-+		r = -EINVAL;
-+		goto probe_exit;
-+	}
-+
-+	r = nxp_nci_i2c_request_gpios(phy);
-+	if (r < 0)
-+		goto probe_exit;
-+
-+	r = nxp_nci_probe(phy, &client->dev, &i2c_phy_ops,
-+			  NXP_NCI_I2C_MAX_PAYLOAD, &phy->ndev);
-+	if (r < 0)
-+		goto probe_exit_free_gpio;
-+
-+	r = request_threaded_irq(client->irq, NULL,
-+				 nxp_nci_i2c_irq_thread_fn,
-+				 IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-+				 NXP_NCI_I2C_DRIVER_NAME, phy);
-+	if (r < 0) {
-+		nfc_err(&client->dev, "Unable to register IRQ handler\n");
-+		goto probe_exit_free_gpio;
-+	}
-+
-+	goto probe_exit;
-+
-+probe_exit_free_gpio:
-+	nxp_nci_i2c_free_gpios(phy);
-+probe_exit:
-+	return r;
-+}
-+
-+static int nxp_nci_i2c_remove(struct i2c_client *client)
-+{
-+	struct nxp_nci_i2c_phy *phy = i2c_get_clientdata(client);
-+
-+	nxp_nci_remove(phy->ndev);
-+
-+	nxp_nci_i2c_free_gpios(phy);
-+	free_irq(client->irq, phy);
-+
-+	return 0;
-+}
-+
-+static struct i2c_device_id nxp_nci_i2c_id_table[] = {
-+	{"nxp-nci_i2c", 0},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(i2c, nxp_nci_i2c_id_table);
-+
-+static const struct of_device_id of_nxp_nci_i2c_match[] = {
-+	{ .compatible = "nxp,nxp-nci-i2c", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, of_nxp_nci_i2c_match);
-+
-+static struct i2c_driver nxp_nci_i2c_driver = {
-+	.driver = {
-+		   .name = NXP_NCI_I2C_DRIVER_NAME,
-+		   .owner  = THIS_MODULE,
-+		   .of_match_table = of_match_ptr(of_nxp_nci_i2c_match),
-+		  },
-+	.probe = nxp_nci_i2c_probe,
-+	.id_table = nxp_nci_i2c_id_table,
-+	.remove = nxp_nci_i2c_remove,
-+};
-+
-+module_i2c_driver(nxp_nci_i2c_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("I2C driver for NXP NCI NFC controllers");
-+MODULE_AUTHOR("Clément Perrochaud <clement.perrochaud@nxp.com>");
+ 	if (*fw_info->data == NXP_NCI_FW_CMD_RESET) {
+ 		fw_info->cmd_result = 0;
+-		schedule_work(&fw_info->work);
++		if (fw_info->fw)
++			schedule_work(&fw_info->work);
+ 	} else {
+ 		completion_rc = wait_for_completion_interruptible_timeout(
+ 			&fw_info->cmd_completion, NXP_NCI_FW_ANSWER_TIMEOUT);
+@@ -244,7 +245,8 @@ int nxp_nci_fw_download(struct nci_dev *ndev, const char *firmware_name)
+ 	fw_info->frame_size = 0;
+ 	fw_info->cmd_result = 0;
+ 
+-	schedule_work(&fw_info->work);
++	if (fw_info->fw)
++		schedule_work(&fw_info->work);
+ 
+ fw_download_exit:
+ 	mutex_unlock(&info->info_lock);
+@@ -316,6 +318,7 @@ void nxp_nci_fw_recv_frame(struct nci_dev *ndev, struct sk_buff *skb)
+ 		fw_info->cmd_result = -EIO;
+ 	}
+ 
+-	schedule_work(&fw_info->work);
++	if (fw_info->fw)
++		schedule_work(&fw_info->work);
+ }
+ EXPORT_SYMBOL(nxp_nci_fw_recv_frame);
 -- 
 Clément Perrochaud
 
