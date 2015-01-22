@@ -1,100 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbbAVTcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:32:10 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33844 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847AbbAVTcH (ORCPT
+	id S1753424AbbAVTcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 14:32:36 -0500
+Received: from canardo.mork.no ([148.122.252.1]:43427 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751930AbbAVTcd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:32:07 -0500
-Message-ID: <54C15021.4060907@roeck-us.net>
-Date: Thu, 22 Jan 2015 11:31:45 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Thu, 22 Jan 2015 14:32:33 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: "Skidmore\, Donald C" <donald.c.skidmore@intel.com>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        "e1000-devel\@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Choi\, Sy Jong" <sy.jong.choi@intel.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hayato Momma <h-momma@ce.jp.nec.com>
+Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
+Organization: m
+References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
+	<874mrlu18e.fsf@nemi.mork.no>
+	<7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
+	<F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
+	<7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
+	<F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
+	<7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
+	<063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
+	<7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
+	<F6FB0E698C9B3143BDF729DF222866469129BC03@ORSMSX110.amr.corp.intel.com>
+	<063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>
+	<F6FB0E698C9B3143BDF729DF222866469129BFFD@ORSMSX110.amr.corp.intel.com>
+Date: Thu, 22 Jan 2015 20:31:52 +0100
+In-Reply-To: <F6FB0E698C9B3143BDF729DF222866469129BFFD@ORSMSX110.amr.corp.intel.com>
+	(Donald C. Skidmore's message of "Thu, 22 Jan 2015 19:00:51 +0000")
+Message-ID: <87bnlqpq6v.fsf@nemi.mork.no>
+User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, rtc-linux@googlegroups.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
-        david.paris@st.com
-Subject: Re: [PATCH v2 6/9] watchdog: st_wdt: Add new driver for ST's LPC
- Watchdog
-References: <1421927767-28889-1-git-send-email-lee.jones@linaro.org> <1421927767-28889-7-git-send-email-lee.jones@linaro.org> <54C12F10.4090901@roeck-us.net> <20150122172100.GF9129@x1>
-In-Reply-To: <20150122172100.GF9129@x1>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54C15036.0121,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 8
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.9 (canardo.mork.no [IPv6:2001:4641::1]); Thu, 22 Jan 2015 20:31:53 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 09:21 AM, Lee Jones wrote:
-> On Thu, 22 Jan 2015, Guenter Roeck wrote:
->
->> On 01/22/2015 03:56 AM, Lee Jones wrote:
->>> Signed-off-by: David Paris <david.paris@st.com>
->>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>> ---
->>>   drivers/watchdog/Kconfig      |  13 ++
->>>   drivers/watchdog/Makefile     |   1 +
->>>   drivers/watchdog/st_lpc_wdt.c | 335 ++++++++++++++++++++++++++++++++++++++++++
->>>   3 files changed, 349 insertions(+)
->>>   create mode 100644 drivers/watchdog/st_lpc_wdt.c
->
-> [...]
->
->>> +struct st_wdog_syscfg {
->>> +	struct regmap *regmap;
->>
->> Hi David & Lee,
->>
->> Why did you add the regmap pointer to this structure and not to st_wdog ?
->> It is not a configuration value, after all, and it is always dereferenced
->> through wt_wdog->syscfg. So all it does is to make the code more complicated.
->>
->> Am I missing something ?
->
-> I guess it was just to group it all together, as it will all be used
-> at the same time:
->
-> 	regmap_update_bits(st_wdog->syscfg->regmap,
-> 			   st_wdog->syscfg->reset_type_reg,
-> 			   st_wdog->syscfg->reset_type_mask,
-> 			   st_wdog->warm_reset);
->
-> It really doesn't matter to me either way.
->
-Having it in syscfg means it is stored in the static configuration data instead
-of the allocated data, which is at least conceptually wrong. So I think it should
-be in st_wdog.
+"Skidmore, Donald C" <donald.c.skidmore@intel.com> writes:
 
-Thanks,
-Guenter
+> My hang up is more related to: without the nob to enable it (off by
+> default) we are letting one VF dictate policy for all the other VFs
+> and the PF.  If one VF needs to be in promiscuous multicast so is
+> everyone else.  Their stacks now needs to deal with all the extra
+> multicast packets.  As you point out this might not be a direct
+> concern for isolation in that the VM could have 'chosen' to join any
+> Multicast group and seen this traffic.  My concern over isolation is
+> one VF has chosen that all the other VM now have to see this multicast
+> traffic.
 
+Apologies if this question is stupid, but I just have to ask about stuff
+I don't understand...
+
+Looking at the proposed implementation, the promiscous multicast flag
+seems to be a per-VF flag:
+
++int ixgbe_ndo_set_vf_mc_promisc(struct net_device *netdev, int vf, bool setting)
++{
++	struct ixgbe_adapter *adapter = netdev_priv(netdev);
++	struct ixgbe_hw *hw = &adapter->hw;
++	u32 vmolr;
++
++	if (vf >= adapter->num_vfs)
++		return -EINVAL;
++
++	adapter->vfinfo[vf].mc_promisc_enabled = setting;
++
++	vmolr = IXGBE_READ_REG(hw, IXGBE_VMOLR(vf));
++	if (setting) {
++		e_info(drv, "VF %u: enabling multicast promiscuous\n", vf);
++		vmolr |= IXGBE_VMOLR_MPE;
++	} else {
++		e_info(drv, "VF %u: disabling multicast promiscuous\n", vf);
++		vmolr &= ~IXGBE_VMOLR_MPE;
++	}
++
++	IXGBE_WRITE_REG(hw, IXGBE_VMOLR(vf), vmolr);
++
++	return 0;
++}
++
+
+I haven't read the data sheet, but I took a quick look at the excellent
+high level driver docs:
+http://www.intel.com/content/dam/doc/design-guide/82599-sr-iov-driver-companion-guide.pdf
+
+It mentions "Multicast Promiscuous Enable" in its "Thoughts for
+Customization" section:
+
+ 7.1 Multicast Promiscuous Enable
+
+ The controller has provisions to allow each VF to be put into Multicast
+ Promiscuous mode.  The Intel reference driver does not configure this
+ option .
+
+ The capability can be enabled/disabled by manipulating the MPE field
+ (bit 28) of the PF VF L2 Control Register (PFVML2FLT – 0x0F000)
+
+and showing a section from the data sheet describing the
+"PF VM L2 Control Register - PFVML2FLT[n]  (0x0F000 + 4 * n, n=0...63; RW)"
+
+To me it looks like enabling Promiscuos Multicast for a VF won't affect
+any other VF at all.  Is this really not the case?
+
+
+
+Bjørn
