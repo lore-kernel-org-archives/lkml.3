@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793AbbAVUNE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:13:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:32880 "EHLO
+	id S1754086AbbAVUNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:13:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:32890 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770AbbAVUNB (ORCPT
+	with ESMTP id S1753977AbbAVUNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 15:13:01 -0500
-Date: Thu, 22 Jan 2015 12:12:39 -0800
+	Thu, 22 Jan 2015 15:13:18 -0500
+Date: Thu, 22 Jan 2015 12:13:05 -0800
 From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-814564a0a1d2faee11ff9de43245d78cb79c85ac@git.kernel.org>
-Cc: mingo@kernel.org, dave.hansen@linux.intel.com, dave@sr71.net,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, tglx@linutronix.de,
-        luto@amacapital.net
-Reply-To: tglx@linutronix.de, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, dave@sr71.net,
-        mingo@kernel.org, dave.hansen@linux.intel.com
-In-Reply-To: <20150108223020.9E9AA511@viggo.jf.intel.com>
-References: <20150108223020.9E9AA511@viggo.jf.intel.com>
+Message-ID: <tip-c922228efeeefa32e57f875764bfa6ca8053a68a@git.kernel.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        dave.hansen@linux.intel.com, hpa@zytor.com, dave@sr71.net,
+        tglx@linutronix.de
+Reply-To: dave.hansen@linux.intel.com, hpa@zytor.com, tglx@linutronix.de,
+        dave@sr71.net, mingo@kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20150108223021.AEEAB987@viggo.jf.intel.com>
+References: <20150108223021.AEEAB987@viggo.jf.intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/urgent] x86, mpx:
-  Explicitly disable 32-bit MPX support on 64-bit kernels
-Git-Commit-ID: 814564a0a1d2faee11ff9de43245d78cb79c85ac
+  Fix potential performance issue on unmaps
+Git-Commit-ID: c922228efeeefa32e57f875764bfa6ca8053a68a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,56 +33,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  814564a0a1d2faee11ff9de43245d78cb79c85ac
-Gitweb:     http://git.kernel.org/tip/814564a0a1d2faee11ff9de43245d78cb79c85ac
+Commit-ID:  c922228efeeefa32e57f875764bfa6ca8053a68a
+Gitweb:     http://git.kernel.org/tip/c922228efeeefa32e57f875764bfa6ca8053a68a
 Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Thu, 8 Jan 2015 14:30:20 -0800
+AuthorDate: Thu, 8 Jan 2015 14:30:21 -0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 22 Jan 2015 21:11:06 +0100
 
-x86, mpx: Explicitly disable 32-bit MPX support on 64-bit kernels
+x86, mpx: Fix potential performance issue on unmaps
 
-We had originally planned on submitting MPX support in one patch
-set.  We eventually broke it up in to two pieces for easier
-review.  One of the features that didn't make the first round
-was supporting 32-bit binaries on 64-bit kernels.
+The 3.19 merge window saw some TLB modifications merged which caused a
+performance regression. They were fixed in commit 045bbb9fa.
 
-Once we split the set up, we never added code to restrict 32-bit
-binaries from _using_ MPX on 64-bit kernels.
+Once that fix was applied, I also noticed that there was a small
+but intermittent regression still present.  It was not present
+consistently enough to bisect reliably, but I'm fairly confident
+that it came from (my own) MPX patches.  The source was reading
+a relatively unused field in the mm_struct via arch_unmap.
 
-The 32-bit bounds tables are a different format than the 64-bit
-ones.  Without this patch, the kernel will try to read a 32-bit
-binary's tables as if they were the 64-bit version.  They will
-likely be noticed as being invalid rather quickly and the app
-will get killed, but that's kinda mean.
+I also noted that this code was in the main instruction flow of
+do_munmap() and probably had more icache impact than we want.
 
-This patch adds an explicit check, and will make a 64-bit kernel
-essentially behave as if it has no MPX support when called from
-a 32-bit binary.
+This patch does two things:
+1. Adds a static (via Kconfig) and dynamic (via cpuid) check
+   for MPX with cpu_feature_enabled().  This keeps us from
+   reading that cacheline in the mm and trades it for a check
+   of the global CPUID variables at least on CPUs without MPX.
+2. Adds an unlikely() to ensure that the MPX call ends up out
+   of the main instruction flow in do_munmap().  I've added
+   a detailed comment about why this was done and why we want
+   it even on systems where MPX is present.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: luto@amacapital.net
 Cc: Dave Hansen <dave@sr71.net>
-Link: http://lkml.kernel.org/r/20150108223020.9E9AA511@viggo.jf.intel.com
+Link: http://lkml.kernel.org/r/20150108223021.AEEAB987@viggo.jf.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/mm/mpx.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/include/asm/mmu_context.h | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
-index 67ebf57..c439ec4 100644
---- a/arch/x86/mm/mpx.c
-+++ b/arch/x86/mm/mpx.c
-@@ -349,6 +349,12 @@ static __user void *task_get_bounds_dir(struct task_struct *tsk)
- 		return MPX_INVALID_BOUNDS_DIR;
- 
- 	/*
-+	 * 32-bit binaries on 64-bit kernels are currently
-+	 * unsupported.
-+	 */
-+	if (IS_ENABLED(CONFIG_X86_64) && test_thread_flag(TIF_IA32))
-+		return MPX_INVALID_BOUNDS_DIR;
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index 40269a2..4b75d59 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -130,7 +130,25 @@ static inline void arch_bprm_mm_init(struct mm_struct *mm,
+ static inline void arch_unmap(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			      unsigned long start, unsigned long end)
+ {
+-	mpx_notify_unmap(mm, vma, start, end);
 +	/*
- 	 * The bounds directory pointer is stored in a register
- 	 * only accessible if we first do an xsave.
- 	 */
++	 * mpx_notify_unmap() goes and reads a rarely-hot
++	 * cacheline in the mm_struct.  That can be expensive
++	 * enough to be seen in profiles.
++	 *
++	 * The mpx_notify_unmap() call and its contents have been
++	 * observed to affect munmap() performance on hardware
++	 * where MPX is not present.
++	 *
++	 * The unlikely() optimizes for the fast case: no MPX
++	 * in the CPU, or no MPX use in the process.  Even if
++	 * we get this wrong (in the unlikely event that MPX
++	 * is widely enabled on some system) the overhead of
++	 * MPX itself (reading bounds tables) is expected to
++	 * overwhelm the overhead of getting this unlikely()
++	 * consistently wrong.
++	 */
++	if (unlikely(cpu_feature_enabled(X86_FEATURE_MPX)))
++		mpx_notify_unmap(mm, vma, start, end);
+ }
+ 
+ #endif /* _ASM_X86_MMU_CONTEXT_H */
