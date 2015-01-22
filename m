@@ -1,78 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbbAVFb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:31:56 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33218 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbbAVFbr (ORCPT
+	id S1752477AbbAVFfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 00:35:08 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58641 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbbAVFe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:31:47 -0500
-Message-ID: <54C08B3E.60302@roeck-us.net>
-Date: Wed, 21 Jan 2015 21:31:42 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Thu, 22 Jan 2015 00:34:57 -0500
 MIME-Version: 1.0
-To: Jisheng Zhang <jszhang@marvell.com>, Doug Anderson <dianders@chromium.org>
-CC: Wim Van Sebroeck <wim@iguana.be>, Heiko Stuebner <heiko@sntech.de>,
-        Lunxue Dai <lunxue.dai@rock-chips.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] watchdog: dw_wdt: pat the watchdog before enabling
- it
-References: <1421882243-3631-1-git-send-email-dianders@chromium.org> <20150122132200.4729d38b@xhacker>
-In-Reply-To: <20150122132200.4729d38b@xhacker>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54C08B42.0103,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <54C042D2.4040809@oracle.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
+	<54C042D2.4040809@oracle.com>
+Date: Thu, 22 Jan 2015 09:34:57 +0400
+Message-ID: <CAPAsAGyXo=AMCU-2TbrrY=MPorg+Nd+WYS5nCAcjELZs91r4AQ@mail.gmail.com>
+Subject: Re: [PATCH v9 00/17] Kernel address sanitizer - runtime memory debugger.
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: multipart/mixed; boundary=001a1137e5f050554f050d370839
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 09:22 PM, Jisheng Zhang wrote:
-> Dear Doug,
->
-> On Wed, 21 Jan 2015 15:17:22 -0800
-> Doug Anderson <dianders@chromium.org> wrote:
->
->> On some dw_wdt implementations the "top" register may be initted to 0
->> at bootup.  In such a case, each "pat" of the watchdog will reset the
->> timer to 0xffff.  That's pretty short.
->
-> + Guenter Roeck
->
-> This should have been fixed by dfa07141e7a792("watchdog: dw_wdt: initialise
-> TOP_INIT in dw_wdt_set_top()")
->
-Ah, yes. Doug, can you check if your patch is still needed ?
+--001a1137e5f050554f050d370839
+Content-Type: text/plain; charset=UTF-8
 
-Thanks,
-Guenter
+2015-01-22 3:22 GMT+03:00 Sasha Levin <sasha.levin@oracle.com>:
+> On 01/21/2015 11:51 AM, Andrey Ryabinin wrote:
+>> Changes since v8:
+>>       - Fixed unpoisoned redzones for not-allocated-yet object
+>>           in newly allocated slab page. (from Dmitry C.)
+>>
+>>       - Some minor non-function cleanups in kasan internals.
+>>
+>>       - Added ack from Catalin
+>>
+>>       - Added stack instrumentation. With this we could detect
+>>           out of bounds accesses in stack variables. (patch 12)
+>>
+>>       - Added globals instrumentation - catching out of bounds in
+>>           global varibles. (patches 13-17)
+>>
+>>       - Shadow moved out from vmalloc into hole between vmemmap
+>>           and %esp fixup stacks. For globals instrumentation
+>>           we will need shadow backing modules addresses.
+>>           So we need some sort of a shadow memory allocator
+>>           (something like vmmemap_populate() function, except
+>>           that it should be available after boot).
+>>
+>>           __vmalloc_node_range() suits that purpose, except that
+>>           it can't be used for allocating for shadow in vmalloc
+>>           area because shadow in vmalloc is already 'allocated'
+>>           to protect us from other vmalloc users. So we need
+>>           16TB of unused addresses. And we have big enough hole
+>>           between vmemmap and %esp fixup stacks. So I moved shadow
+>>           there.
+>
+> I'm not sure which new addition caused it, but I'm getting tons of
+> false positives from platform drivers trying to access memory they
+> don't "own" - because they expect to find hardware there.
+>
 
+To be sure, that this is really false positives, could you try with
+patches in attachment?
+That should fix some bugs in several platform drivers.
+
+> I suspect we'd need to mark that memory region somehow to prevent
+> accesses to it from triggering warnings?
+>
+>
+> Thanks,
+> Sasha
+>
+
+--001a1137e5f050554f050d370839
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="backlight-da9052_bl-terminate-da9052_wled_ids-array-with-empty-element.patch"
+Content-Disposition: attachment; 
+	filename="backlight-da9052_bl-terminate-da9052_wled_ids-array-with-empty-element.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i57xbukf0
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdmlkZW8vYmFja2xpZ2h0L2RhOTA1Ml9ibC5jIGIvZHJpdmVy
+cy92aWRlby9iYWNrbGlnaHQvZGE5MDUyX2JsLmMKaW5kZXggZDRiZDc0YmQuLmIxOTQzZTcgMTAw
+NjQ0Ci0tLSBhL2RyaXZlcnMvdmlkZW8vYmFja2xpZ2h0L2RhOTA1Ml9ibC5jCisrKyBiL2RyaXZl
+cnMvdmlkZW8vYmFja2xpZ2h0L2RhOTA1Ml9ibC5jCkBAIC0xNjUsNiArMTY1LDcgQEAgc3RhdGlj
+IHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2VfaWQgZGE5MDUyX3dsZWRfaWRzW10gPSB7CiAJCS5uYW1l
+CQk9ICJkYTkwNTItd2xlZDMiLAogCQkuZHJpdmVyX2RhdGEJPSBEQTkwNTJfVFlQRV9XTEVEMywK
+IAl9LAorCXsgfSwKIH07CiAKIHN0YXRpYyBzdHJ1Y3QgcGxhdGZvcm1fZHJpdmVyIGRhOTA1Ml93
+bGVkX2RyaXZlciA9IHsK
+--001a1137e5f050554f050d370839
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="crypto-ccp-terminate-ccp_support-array-with-empty-element.patch"
+Content-Disposition: attachment; 
+	filename="crypto-ccp-terminate-ccp_support-array-with-empty-element.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i57xbum41
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3J5cHRvL2NjcC9jY3AtZGV2LmMgYi9kcml2ZXJzL2NyeXB0
+by9jY3AvY2NwLWRldi5jCmluZGV4IGM2ZTYxNzEuLmNhMjljMTIgMTAwNjQ0Ci0tLSBhL2RyaXZl
+cnMvY3J5cHRvL2NjcC9jY3AtZGV2LmMKKysrIGIvZHJpdmVycy9jcnlwdG8vY2NwL2NjcC1kZXYu
+YwpAQCAtNTgzLDYgKzU4Myw3IEBAIGJvb2wgY2NwX3F1ZXVlc19zdXNwZW5kZWQoc3RydWN0IGNj
+cF9kZXZpY2UgKmNjcCkKICNpZmRlZiBDT05GSUdfWDg2CiBzdGF0aWMgY29uc3Qgc3RydWN0IHg4
+Nl9jcHVfaWQgY2NwX3N1cHBvcnRbXSA9IHsKIAl7IFg4Nl9WRU5ET1JfQU1ELCAyMiwgfSwKKwl7
+IH0sCiB9OwogI2VuZGlmCiAK
+--001a1137e5f050554f050d370839
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="rtc-s5m-terminate-s5m_rtc_id-array-with-empty-element.patch"
+Content-Disposition: attachment; 
+	filename="rtc-s5m-terminate-s5m_rtc_id-array-with-empty-element.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i57xbump2
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvcnRjL3J0Yy1zNW0uYyBiL2RyaXZlcnMvcnRjL3J0Yy1zNW0u
+YwppbmRleCBiNWU3YzQ2Li44OWFjMWQ1IDEwMDY0NAotLS0gYS9kcml2ZXJzL3J0Yy9ydGMtczVt
+LmMKKysrIGIvZHJpdmVycy9ydGMvcnRjLXM1bS5jCkBAIC04MzIsNiArODMyLDcgQEAgc3RhdGlj
+IFNJTVBMRV9ERVZfUE1fT1BTKHM1bV9ydGNfcG1fb3BzLCBzNW1fcnRjX3N1c3BlbmQsIHM1bV9y
+dGNfcmVzdW1lKTsKIHN0YXRpYyBjb25zdCBzdHJ1Y3QgcGxhdGZvcm1fZGV2aWNlX2lkIHM1bV9y
+dGNfaWRbXSA9IHsKIAl7ICJzNW0tcnRjIiwJCVM1TTg3NjdYIH0sCiAJeyAiczJtcHMxNC1ydGMi
+LAlTMk1QUzE0WCB9LAorCXsgfSwKIH07CiAKIHN0YXRpYyBzdHJ1Y3QgcGxhdGZvcm1fZHJpdmVy
+IHM1bV9ydGNfZHJpdmVyID0gewo=
+--001a1137e5f050554f050d370839--
