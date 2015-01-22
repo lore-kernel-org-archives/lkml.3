@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbbAVBrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:47:09 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:5423 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753746AbbAVBq6 (ORCPT
+	id S1754072AbbAVBtg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:49:36 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:45958 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531AbbAVBt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:46:58 -0500
-Date: Wed, 21 Jan 2015 20:47:25 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/5] tracing: Add new file system tracefs
-Message-ID: <20150121204725.71933044@grimm.local.home>
-In-Reply-To: <20150121230007.GA10389@kroah.com>
-References: <20150121171953.823177070@goodmis.org>
-	<20150121230007.GA10389@kroah.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 21 Jan 2015 20:49:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Wed, 21 Jan 2015 17:49:08 -0800
+Message-ID: <CAMEtUux8v2LDtLcgpT9hCvJgnrCwT2fkzsSvAPFSuEUx+itxyQ@mail.gmail.com>
+Subject: Re: [PATCH tip 0/9] tracing: attach eBPF programs to tracepoints/syscalls/kprobe
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015 07:00:07 +0800
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+On Wed, Jan 21, 2015 at 5:03 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+>
+> AFAIK a trigger can be fired before allocating a ring buffer if it
+> doesn't use the event record (i.e. has filter) or ->post_trigger bit
+> set (stacktrace).  Please see ftrace_trigger_soft_disabled().
 
-> Any chance you can use kernfs as your "basis" for this filesystem
-> instead of having to roll all of your own functions?  I'm slowly
-> working on moving debugfs to it, and it should save a lot of code
-> there, as well as fixing some "problems" we have in debugfs file
-> lifetimes when things are removed from the system.
+yes, but such trigger has no arguments, so I would have to hack
+ftrace_trigger_soft_disabled() to pass 'ctx' further down
+and through all pointer dereferences and list walking.
+Also there is no return value, so I have to add it as well
+similar to post-triggers.
+that's quite a bit of overhead that I would like to avoid.
 
-Someone else told me about doing this too. I'll take a look at it.
+Actually now I'm thinking to move condition
+if (ftrace_file->flags & TRACE_EVENT_FL_BPF)
+before ftrace_trigger_soft_disabled() check.
+So programs always run first and if they return non-zero
+then all standard processing will follow.
+May be return value from the program can influence triggers.
+That will nicely replace bpf_dump_stack()...the program
+will return ETT_STACKTRACE constant to trigger dump.
 
-> 
-> And given the number of mistakes in this submission, I'll wait for a
-> v2 before really reading the code :)
+> This also makes it keeping events in the soft-disabled state.
 
-Well, if I switch to using kernfs, I expect we should ignore this
-version as well, as I would think it would make this series obsolete.
-
-Also, if that's the case, I guess I could keep all the "tracefs" code
-in kernel/tracing and not place it in the fs/ directory? Kind of like
-what cgroups does.
-
--- Steve
+I was never able to figure out the use case for soft-disabled state.
+Probably historical before static_key was done.
