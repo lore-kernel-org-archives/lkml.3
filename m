@@ -1,257 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876AbbAVUta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:49:30 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:45517 "EHLO comal.ext.ti.com"
+	id S1754998AbbAVUt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:49:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53110 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752442AbbAVUt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 15:49:28 -0500
-Date: Thu, 22 Jan 2015 14:49:25 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Baolu Lu <baolu.lu@linux.intel.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] phy: ulpi: add driver for TI TUSB1210
-Message-ID: <20150122204925.GF22288@saruman.tx.rr.com>
-Reply-To: <balbi@ti.com>
-References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1421745502-169447-4-git-send-email-heikki.krogerus@linux.intel.com>
- <20150120154539.GB8988@saruman>
- <20150121091749.GB22716@kuha.fi.intel.com>
+	id S1753003AbbAVUt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 15:49:57 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@fb.com>
+Cc: Huang Ying <ying.huang@intel.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [block] 34b48db66e0: +3291.6% iostat.sde.wrqm/s
+References: <1421889689.6126.45.camel@intel.com> <54C08CA6.8050101@fb.com>
+	<x49zj9a9073.fsf@segfault.boston.devel.redhat.com>
+	<54C1494D.5050507@fb.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 22 Jan 2015 15:49:49 -0500
+In-Reply-To: <54C1494D.5050507@fb.com> (Jens Axboe's message of "Thu, 22 Jan
+	2015 12:02:37 -0700")
+Message-ID: <x49fvb28rrm.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yZnyZsPjQYjG7xG7"
-Content-Disposition: inline
-In-Reply-To: <20150121091749.GB22716@kuha.fi.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---yZnyZsPjQYjG7xG7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Jens Axboe <axboe@fb.com> writes:
 
-Hi,
+>> Agreed on all above, but are the actual benchmark numbers included
+>> somewhere in all this mess?  I'd like to see if the benchmark numbers
+>> improved first, before digging into the guts of which functions are
+>> called more or which stats changed.
+>
+> I deleted the original email, but the latter tables had drive throughput
+> rates and it looked higher for the ones I checked on the newer kernel.
+> Which the above math would indicate as well, multiplying reqs-per-sec
+> and req-size.
 
-On Wed, Jan 21, 2015 at 11:17:49AM +0200, Heikki Krogerus wrote:
-> > > TUSB1210 ULPI PHY has vendor specific register for eye
-> > > diagram tuning. On some platforms the system firmware has
-> > > set optimized value to it. In order to not loose the
-> > > optimized value, the driver stores it during probe and
-> > > restores it every time the PHY is powered back on.
-> > >=20
-> > > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > > ---
-> > >  drivers/phy/ulpi/Kconfig    |  11 ++++
-> > >  drivers/phy/ulpi/Makefile   |   2 +
-> > >  drivers/phy/ulpi/tusb1210.c | 131 ++++++++++++++++++++++++++++++++++=
-++++++++++
-> > >  3 files changed, 144 insertions(+)
-> > >  create mode 100644 drivers/phy/ulpi/tusb1210.c
-> > >=20
-> > > diff --git a/drivers/phy/ulpi/Kconfig b/drivers/phy/ulpi/Kconfig
-> > > index 8007df2..7cd6f82 100644
-> > > --- a/drivers/phy/ulpi/Kconfig
-> > > +++ b/drivers/phy/ulpi/Kconfig
-> > > @@ -7,3 +7,14 @@ config ULPI_PHY
-> > >  	  Say yes if you have ULPI PHY attached to your USB controller.
-> > > =20
-> > >  	  If unsure, say N.
-> > > +
-> > > +if ULPI_PHY
-> > > +
-> > > +config ULPI_TUSB1210
-> > > +	tristate "TI TUSB1210 USB PHY module"
-> > > +	depends on POWER_SUPPLY
-> > > +	select USB_PHY
-> > > +	help
-> > > +	  Support for TI TUSB1210 USB ULPI PHY.
-> > > +
-> > > +endif
-> > > diff --git a/drivers/phy/ulpi/Makefile b/drivers/phy/ulpi/Makefile
-> > > index 59e61cb..7ee6679 100644
-> > > --- a/drivers/phy/ulpi/Makefile
-> > > +++ b/drivers/phy/ulpi/Makefile
-> > > @@ -1,2 +1,4 @@
-> > >  ulpiphy-y			:=3D ulpi.o
-> > >  obj-$(CONFIG_ULPI_PHY)		+=3D ulpiphy.o
-> > > +
-> > > +obj-$(CONFIG_ULPI_TUSB1210)	+=3D tusb1210.o
-> > > diff --git a/drivers/phy/ulpi/tusb1210.c b/drivers/phy/ulpi/tusb1210.c
-> > > new file mode 100644
-> > > index 0000000..ac77f98
-> > > --- /dev/null
-> > > +++ b/drivers/phy/ulpi/tusb1210.c
-> >=20
-> > do you really need this extra ulpi directory ?
-> >=20
-> > I wonder if phy-tusb1210.c as a name would be enough.
->=20
-> IMO grouping the ULPI PHY drivers and other ULPI bus code into
-> separate folder from the start is the right thing to do.
+Looking back at the original[1], I think I see the throughput numbers for
+iozone.  The part that confused me was that each table mixes different
+types of data.  I'd much prefer if different data were put in different
+tables, along with column headers that stated what was being reported
+and the units for the measurements.
 
-because... :-)
+Anyway, I find the increased service time troubling, especially this
+one:
 
-> > > @@ -0,0 +1,131 @@
-> > > +/**
-> > > + * tusb1210.c - TUSB1210 USB ULPI PHY driver
-> > > + *
-> > > + * Copyright (C) 2015 Intel Corporation
-> > > + *
-> > > + * Author: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > > + *
-> > > + * This program is free software; you can redistribute it and/or mod=
-ify
-> > > + * it under the terms of the GNU General Public License version 2 as
-> > > + * published by the Free Software Foundation.
-> > > + */
-> > > +#include <linux/module.h>
-> > > +#include <linux/phy/ulpi/driver.h>
-> > > +#include <linux/phy/ulpi/regs.h>
-> > > +#include <linux/gpio/consumer.h>
-> > > +
-> > > +#include "ulpi_phy.h"
-> > > +
-> > > +struct tusb1210 {
-> > > +	struct ulpi *ulpi;
-> > > +	struct phy *phy;
-> > > +	struct gpio_desc *gpio_reset;
-> > > +	struct gpio_desc *gpio_cs;
-> > > +	u8 ctx[1];
-> > > +};
-> > > +
-> > > +static int tusb1210_power_on(struct phy *phy)
-> > > +{
-> > > +	struct tusb1210 *tusb =3D phy_get_drvdata(phy);
-> > > +
-> > > +	gpiod_set_value_cansleep(tusb->gpio_reset, 1);
-> > > +	gpiod_set_value_cansleep(tusb->gpio_cs, 1);
-> > > +
-> > > +	/* Restore eye optimisation value */
-> > > +	ulpi_write(tusb->ulpi, ULPI_EXT_VENDOR_SPECIFIC, tusb->ctx[0]);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static int tusb1210_power_off(struct phy *phy)
-> > > +{
-> > > +	struct tusb1210 *tusb =3D phy_get_drvdata(phy);
-> > > +
-> > > +	gpiod_set_value_cansleep(tusb->gpio_reset, 0);
-> > > +	gpiod_set_value_cansleep(tusb->gpio_cs, 0);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static struct phy_ops phy_ops =3D {
-> > > +	.power_on =3D tusb1210_power_on,
-> > > +	.power_off =3D tusb1210_power_off,
-> > > +	.init =3D tusb1210_power_on,
-> > > +	.exit =3D tusb1210_power_off,
-> > > +	.owner =3D THIS_MODULE,
-> > > +};
-> > > +
-> > > +static int tusb1210_probe(struct ulpi *ulpi)
-> > > +{
-> > > +	struct gpio_desc *gpio;
-> > > +	struct tusb1210 *tusb;
-> > > +	int ret;
-> > > +
-> > > +	tusb =3D devm_kzalloc(&ulpi->dev, sizeof(*tusb), GFP_KERNEL);
-> > > +	if (!tusb)
-> > > +		return -ENOMEM;
-> > > +
-> > > +	gpio =3D devm_gpiod_get(&ulpi->dev, "reset");
-> > > +	if (!IS_ERR(gpio)) {
-> > > +		ret =3D gpiod_direction_output(gpio, 0);
-> > > +		if (ret)
-> > > +			return ret;
-> > > +		tusb->gpio_reset =3D gpio;
-> > > +	}
-> > > +
-> > > +	gpio =3D devm_gpiod_get(&ulpi->dev, "cs");
-> > > +	if (!IS_ERR(gpio)) {
-> > > +		ret =3D gpiod_direction_output(gpio, 0);
-> > > +		if (ret)
-> > > +			return ret;
-> > > +		tusb->gpio_cs =3D gpio;
-> > > +	}
-> > > +
-> > > +	/* Store initial eye diagram optimisation value */
-> > > +	ret =3D ulpi_read(ulpi, ULPI_EXT_VENDOR_SPECIFIC);
-> >=20
-> > do they *all* use this register for eye diagram optimization or is this
-> > something that Intel decided to do ?
-> >=20
-> > (sorry, don't know much about tusb1210 other than it sucks like hell :-)
->=20
-> All I know that somebody needs to save the value. The ones using this
-> PHY who don't need to save it can most likely live without the driver.
+testbox/testcase/testparams: ivb44/fsmark/performance-1x-1t-1HDD-xfs-4M-60G-NoSync
 
-right, but what I mean is: is it mandatory that Eye diagram
-configuration be stored in *this* register? Or is it more like a scratch
-register which Intel just happens to be using for Eye diagram data ?
+       544 ?  0%   +1268.9%       7460 ?  0%  iostat.sda.w_await
+       544 ?  0%   +1268.5%       7457 ?  0%  iostat.sda.await
 
-> > > +	if (ret < 0)
-> > > +		return ret;
-> > > +
-> > > +	tusb->ctx[0] =3D ret;
-> > > +
-> > > +	tusb->phy =3D ulpi_phy_create(ulpi, &phy_ops);
-> > > +	if (IS_ERR(tusb->phy))
-> > > +		return PTR_ERR(tusb->phy);
-> > > +
-> > > +	tusb->ulpi =3D ulpi;
-> > > +
-> > > +	phy_set_drvdata(tusb->phy, tusb);
-> > > +	dev_set_drvdata(&ulpi->dev, tusb);
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static void tusb1210_remove(struct ulpi *ulpi)
-> > > +{
-> > > +	struct tusb1210 *tusb =3D dev_get_drvdata(&ulpi->dev);
-> >=20
-> > completely unrelated to $subject, but we might want to have a
-> > ulpi_{set,get}_drvdata() at some point.
->=20
-> Makes sense.
->=20
-> > In fact, we might decide to add an entire ULPI bus, eventually, though
-> > I'm still considering if there's any benefit to that.
->=20
-> I don't think I understand this comment? ULPI bus is what I'm
-> introducing in this set (the first patch in it)?
+I'll add this to my queue of things to look into.
 
-I mean introducing a real struct bus ulpi_bus_type :-) With match,
-probe, remove, etc.
+Cheers,
+Jeff
 
---=20
-balbi
-
---yZnyZsPjQYjG7xG7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUwWJVAAoJEIaOsuA1yqREPk4P/j01i5C7E/X/zdftbbdC9LnW
-n5CekTRdTh6uOjfVdHVHdxALyvLqC/OG+Z8uEiWwPpA0I5DJ6oaCAsyM6gLIoAJN
-svl5+bqU07QHYTvtKBprL3z+HheBa4v5YDnC0lUDb/n0e2HtNaDemVks6ccFUJml
-SMV6qNvS3Ug5X80z9ei15lYhUMgYVg3QH3UPQ/xR+JXPCjeySA8QHNEiHEnFILnd
-07kcmsAYqPeqHdFo6VXXGpV6bCl+W++oI+qcHwgz/oqATX4XHJNfDHNN5D4HnsTk
-TP5vgU42J6TnnL30vxFOj9IGdGU1RHaCTLIFlvPbHP7PVaLFymyhUEXWXo+/g74J
-pclzEsNHy6KRSCtDxqvuQN+YGLhyetnW+tgrnATALKoAiQV/Xv9OjNJEzslJJsIM
-8IpbR4c07NpUm2SnH2jTASJDkjUWwAaXZbjwXJ+ASTdhUq0isYoanI/27vCIYLD9
-R7ZT5cOHP/heqkQXMtPyyWQngGs5HCRlUEvTxEr+Rlz7IlxKiYpkMhntJht/Xy0v
-MTtDK00y+KPi9umr4RMvtJoDtWlIn4Q8N4uG7lggZCiHNgUmouTREiJmHe55GOvM
-SVyeXJ/YY18IPo8jBn1T8DlLzX29uWQgLfRDbKCMyRbiVk/SvaYEUYD9+KptWDWb
-b19oFSj+2r2qkmqarAAB
-=7ldj
------END PGP SIGNATURE-----
-
---yZnyZsPjQYjG7xG7--
+[1] https://lkml.org/lkml/2015/1/21/846
