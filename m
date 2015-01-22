@@ -1,94 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbbAVVoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:44:13 -0500
-Received: from ozlabs.org ([103.22.144.67]:59838 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715AbbAVVoK convert rfc822-to-8bit (ORCPT
+	id S1754771AbbAVVok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:44:40 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:46382 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715AbbAVVoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:44:10 -0500
-Message-ID: <1421963049.30744.23.camel@neuling.org>
-Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
-From: Michael Neuling <mikey@neuling.org>
-To: Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-Cc: akpm@linux-foundation.org, avagin@openvz.org, davej@redhat.com,
-        davem@davemloft.net, dhowells@redhat.com,
-        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
-        james.hogan@imgtec.com,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>, kirjanov@gmail.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Michael Ellerman <mpe@ellerman.id.au>, oleg@redhat.com,
-        palves@redhat.com, Paul.Clothier@imgtec.com, peterz@infradead.org,
-        sam.bobroff@au1.ibm.com, shuahkh@osg.samsung.com,
-        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
-Date: Fri, 23 Jan 2015 08:44:09 +1100
-In-Reply-To: <OFC6CFC348.C619B89D-ONC1257DD5.0056279B-C1257DD5.00577002@de.ibm.com>
-References: <20141203052204.9DA8F1400DD@ozlabs.org>
-		 <547EB253.5050307@linux.vnet.ibm.com>
-	 <548578A8.5020901@linux.vnet.ibm.com> <54947C64.4030206@linux.vnet.ibm.com>
-	 <54A50094.5070902@linux.vnet.ibm.com>
-	 <1421883597.30744.3.camel@neuling.org>
-	 <OFC6CFC348.C619B89D-ONC1257DD5.0056279B-C1257DD5.00577002@de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 22 Jan 2015 16:44:37 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <54C16F2C.4090506@citrix.com>
+Date: Thu, 22 Jan 2015 21:44:12 +0000
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Vrabel <david.vrabel@citrix.com>
+CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [RFC v3 1/2] x86/xen: add xen_is_preemptible_hypercall()
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com> <1421893039-426-2-git-send-email-mcgrof@do-not-panic.com> <CALCETrXp7qWLQYEAq7zKTMeMg7mfXo+mL-qPfPN6hfJGQGSoPw@mail.gmail.com> <20150122193003.GR17887@wotan.suse.de> <CALCETrVuH=ZMTu1yHZ1n2-z-+szocgrkkdhDAuJEMi1-ts5mbA@mail.gmail.com> <20150122210925.GT17887@wotan.suse.de>
+In-Reply-To: <20150122210925.GT17887@wotan.suse.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Inside transaction both running and check pointed values can be
-> > > probed independently.
-> >
-> > Yep, that's the idea, although setting the running values won't change
-> > anything since the the translation is already doomed and will abort once
-> > the cpu starts executing it.
-> 
-> So this looks to me like the overall effect on debugging transactional
-> code should be the same on Power and z, even if some internal details
-> are different (on z, the exception will automatically abort the
-> transaction; on p, the exception itself will not abort, but *restarting*
-> user space execution will).
+On 22/01/2015 21:09, Luis R. Rodriguez wrote:
+> On Thu, Jan 22, 2015 at 12:01:50PM -0800, Andy Lutomirski wrote:
+>> On Thu, Jan 22, 2015 at 11:30 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+>>> On Wed, Jan 21, 2015 at 07:07:36PM -0800, Andy Lutomirski wrote:
+>>>> On Wed, Jan 21, 2015 at 6:17 PM, Luis R. Rodriguez
+>>>> <mcgrof@do-not-panic.com> wrote:
+>>>>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>>>>
+>>>>> On kernels with voluntary or no preemption we can run
+>>>>> into situations where a hypercall issued through userspace
+>>>>> will linger around as it addresses sub-operatiosn in kernel
+>>>>> context (multicalls). Such operations can trigger soft lockup
+>>>>> detection.
+>>>>>
+>>>>> We want to address a way to let the kernel voluntarily preempt
+>>>>> such calls even on non preempt kernels, to address this we first
+>>>>> need to distinguish which hypercalls fall under this category.
+>>>>> This implements xen_is_preemptible_hypercall() which lets us do
+>>>>> just that by adding a secondary hypercall page, calls made via
+>>>>> the new page may be preempted.
+>>>>>
+>>>>> Andrew had originally submitted a version of this work [0].
+>>>>>
+>>>>> [0] http://lists.xen.org/archives/html/xen-devel/2014-02/msg01056.html
+>>>>>
+>>>>> Based on original work by: Andrew Cooper <andrew.cooper3@citrix.com>
+>>>>>
+>>>>> Cc: Andy Lutomirski <luto@amacapital.net>
+>>>>> Cc: Borislav Petkov <bp@suse.de>
+>>>>> Cc: David Vrabel <david.vrabel@citrix.com>
+>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>>>> Cc: Ingo Molnar <mingo@redhat.com>
+>>>>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>>>>> Cc: x86@kernel.org
+>>>>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>>>>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>>>> Cc: Jan Beulich <JBeulich@suse.com>
+>>>>> Cc: linux-kernel@vger.kernel.org
+>>>>> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+>>>>> ---
+>>>>>  arch/x86/include/asm/xen/hypercall.h | 20 ++++++++++++++++++++
+>>>>>  arch/x86/xen/enlighten.c             |  7 +++++++
+>>>>>  arch/x86/xen/xen-head.S              | 18 +++++++++++++++++-
+>>>>>  3 files changed, 44 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+>>>>> index ca08a27..221008e 100644
+>>>>> --- a/arch/x86/include/asm/xen/hypercall.h
+>>>>> +++ b/arch/x86/include/asm/xen/hypercall.h
+>>>>> @@ -84,6 +84,22 @@
+>>>>>
+>>>>>  extern struct { char _entry[32]; } hypercall_page[];
+>>>>>
+>>>>> +#ifndef CONFIG_PREEMPT
+>>>>> +extern struct { char _entry[32]; } preemptible_hypercall_page[];
+>>>> A comment somewhere explaining why only non-preemptible kernels have
+>>>> preemptible hypercalls might be friendly to some future reader. :)
+>>> Good idea, since this section is arch specific, I'll instead add a blurb
+>>> explaining this on the upcall.
+>>>
+>>>>> +
+>>>>> +static inline bool xen_is_preemptible_hypercall(struct pt_regs *regs)
+>>>>> +{
+>>>>> +       return !user_mode_vm(regs) &&
+>>>>> +               regs->ip >= (unsigned long)preemptible_hypercall_page &&
+>>>>> +               regs->ip < (unsigned long)preemptible_hypercall_page + PAGE_SIZE;
+>>>>> +}
+>>>> This makes it seem like the page is indeed one page long, but I don't
+>>>> see what actually allocates a whole page for it.  What am I missing?
+>>> arch/x86/xen/xen-head.S
+>>>
+>>> .pushsection .text
+>>>         .balign PAGE_SIZE
+>>> ENTRY(hypercall_page)
+>>>
+>>> #ifndef CONFIG_PREEMPT
+>>> ENTRY(preemptible_hypercall_page)
+>>>         .skip PAGE_SIZE
+>>> #endif /* CONFIG_PREEMPT */
+>>>
+>>> Does that suffice to be sure?
+>> This looks like hypercall_page and preemptible_hypercall_page will
+>> both be page-aligned but will be the same page.  Should there be
+>> another .skip PAGE_SIZE in there?
+> I think the trick here was since hypercall_page is already aligned,
+> and we are just allocation PAGE_SIZE we are essentially pegging
+> preemptible_hypercall_page right after hypercall_page.
+>
+> Andrew, David, can you confirm?
 
-Yep
+Your version is different to my original one (observe the lack of
+NEXT_HYPERCALL()s), and I would agree that it would appear as if in your
+version, hypercall_page and preemptible_hypercall_page are symbols with
+the same address.
 
-> From a GDB perspective, it would therefore be preferable if the ptrace
-> interface were to behave in a similar fashion on p as on z: that is,
-> if an exception interrupting a transaction results in a ptrace intercept,
-> at this point:
+nm should give you a quick confirmation one way or another.
 
-Agreed.
-
-> - the "normal" ptrace register set commands should access the
->   *checkpointed* registers (allowing both read and write access)
-
-OK, this is a change from what we've been proposing with Anshuman's
-patch set but I'm happy to change it to make it consistent with other
-architectures.  It's relatively arbitrary which goes where, so I'm happy
-to change.
-
->   -- GDB will use this to display current position (already reflecting
->   the fact that the transaction will abort), and use it when changing
->   register values e.g. to effect an inferior function call
-
-"Current position" depends on your perspective.  Is it the last executed
-instruction or the next executed instruction?  If it's the last executed
-instruction, then it's the running values.  If it's the next, then it's
-the check pointed.  
-
-Anyway, I'm happy to make it the check pointed values for the sake of
-ptrace/gdb.
-
-> - a new ptrace register set should allow access (read-only) to the
->   *running* register values
-
-This is because changing them won't ever result in a side effect?  
-
->   -- GDB can use this to display the position inside the transaction
->   at the point it aborted, using new transaction-specific commands
-
-Yep.
-
-Mikey
-
-PS in the subject s/specifc/specific/
+~Andrew
