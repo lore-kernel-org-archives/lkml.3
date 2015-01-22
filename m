@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbbAVQ7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:59:21 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:38538 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbbAVQ7T (ORCPT
+	id S1753239AbbAVRBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:01:45 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:53661 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972AbbAVRBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:59:19 -0500
-Message-ID: <54C12C4A.5080108@roeck-us.net>
-Date: Thu, 22 Jan 2015 08:58:50 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Paul Moore <pmoore@redhat.com>
-CC: linux-fsdevel@vger.kernel.org, linux-audit@redhat.com, rgb@redhat.com,
-        sd@queasysnail.net, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
-References: <20150122045303.1347.98054.stgit@localhost> <54C08C62.8010609@roeck-us.net> <3252765.lrITUkIS9l@sifl>
-In-Reply-To: <3252765.lrITUkIS9l@sifl>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54C12C66.02A6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 9
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 22 Jan 2015 12:01:41 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] perf/tests: Fix typo in sample-parsing.c
+Date: Thu, 22 Jan 2015 18:01:23 +0100
+Message-Id: <1421946083-29863-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 08:22 AM, Paul Moore wrote:
-> On Wednesday, January 21, 2015 09:36:34 PM Guenter Roeck wrote:
->> On 01/21/2015 08:59 PM, Paul Moore wrote:
->>> This patchset has some important changes from the previous revision,
->>> namely a fix from Al Viro (included in 2/5) that resolves a boot panic
->>> on some systems as well as some smaller, less noteworthy fixes found
->>> in the linux-next announcement thread from January 20th (refcount bump
->>> in __audit_reusename() and a inode type in __audit_inode()).
->>>
->>> This patchset still needs some additional testing to verify that the
->>> audit code still functions properly (the minor fixes mentioned above)
->>> and there is an additional patch from Al that should be included as
->>> well, but I wanted to post this and push the series to the audit next
->>> branch quickly since a number of folks were affected by the boot panic.
->>>
->>> ---
->>>
->>> Paul Moore (5):
->>>         fs: rework getname_kernel to handle up to PATH_MAX sized filenames
->>>         fs: create proper filename objects using getname_kernel()
->>>         audit: enable filename recording via getname_kernel()
->>>         audit: fix filename matching in __audit_inode() and
->>>         __audit_inode_child()
->>>         audit: replace getname()/putname() hacks with reference counters
->>
->> Hi Paul,
->>
->> What is the baseline for this patch set ? Obviously -next won't work,
->> and it does not apply to mainline either.
->
-> This patchset currently lives, along with one other unrelated patch, in the
-> audit next branch:
->
->   * git://git.infradead.org/users/pcmoore/audit
->
-> I'm currently testing these in combination with the patch Al posted last
-> night.  Assuming all goes well I'll drop them from the audit next branch and
-> toss all six patches (these plus Al's) into another branch in case Al wants to
-> pull them for the VFS tree.
->
-The version in the audit next tree works with my qemu microblaze test,
-so feel free to add
+I'm pretty sure this wasn't supposed to be dead code.
 
-Tested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ tools/perf/tests/sample-parsing.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Guenter
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+index 4908c648a597..30c02181e78b 100644
+--- a/tools/perf/tests/sample-parsing.c
++++ b/tools/perf/tests/sample-parsing.c
+@@ -110,7 +110,7 @@ static bool samples_same(const struct perf_sample *s1,
+ 
+ 	if (type & PERF_SAMPLE_STACK_USER) {
+ 		COMP(user_stack.size);
+-		if (memcmp(s1->user_stack.data, s1->user_stack.data,
++		if (memcmp(s1->user_stack.data, s2->user_stack.data,
+ 			   s1->user_stack.size)) {
+ 			pr_debug("Samples differ at 'user_stack'\n");
+ 			return false;
+-- 
+2.1.3
 
