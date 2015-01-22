@@ -1,115 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424AbbAVTcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:32:36 -0500
-Received: from canardo.mork.no ([148.122.252.1]:43427 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930AbbAVTcd convert rfc822-to-8bit (ORCPT
+	id S1753965AbbAVTeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 14:34:24 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48213 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837AbbAVTeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:32:33 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: "Skidmore\, Donald C" <donald.c.skidmore@intel.com>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        "e1000-devel\@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi\, Sy Jong" <sy.jong.choi@intel.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hayato Momma <h-momma@ce.jp.nec.com>
-Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
-Organization: m
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
-	<874mrlu18e.fsf@nemi.mork.no>
-	<7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
-	<F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
-	<7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
-	<F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
-	<7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
-	<063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
-	<7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
-	<F6FB0E698C9B3143BDF729DF222866469129BC03@ORSMSX110.amr.corp.intel.com>
-	<063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>
-	<F6FB0E698C9B3143BDF729DF222866469129BFFD@ORSMSX110.amr.corp.intel.com>
-Date: Thu, 22 Jan 2015 20:31:52 +0100
-In-Reply-To: <F6FB0E698C9B3143BDF729DF222866469129BFFD@ORSMSX110.amr.corp.intel.com>
-	(Donald C. Skidmore's message of "Thu, 22 Jan 2015 19:00:51 +0000")
-Message-ID: <87bnlqpq6v.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.9 (canardo.mork.no [IPv6:2001:4641::1]); Thu, 22 Jan 2015 20:31:53 +0100 (CET)
+	Thu, 22 Jan 2015 14:34:21 -0500
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] clk: ux500: Drop use of clk-private.h
+Date: Thu, 22 Jan 2015 11:34:19 -0800
+Message-Id: <1421955259-8875-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.3.0.rc0.46.gbe498cc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Skidmore, Donald C" <donald.c.skidmore@intel.com> writes:
+These drivers don't need to include clk-private.h. Remove the
+include.
 
-> My hang up is more related to: without the nob to enable it (off by
-> default) we are letting one VF dictate policy for all the other VFs
-> and the PF.  If one VF needs to be in promiscuous multicast so is
-> everyone else.  Their stacks now needs to deal with all the extra
-> multicast packets.  As you point out this might not be a direct
-> concern for isolation in that the VM could have 'chosen' to join any
-> Multicast group and seen this traffic.  My concern over isolation is
-> one VF has chosen that all the other VM now have to see this multicast
-> traffic.
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clk/ux500/clk-prcc.c  | 1 -
+ drivers/clk/ux500/clk-prcmu.c | 1 -
+ 2 files changed, 2 deletions(-)
 
-Apologies if this question is stupid, but I just have to ask about stuff
-I don't understand...
+diff --git a/drivers/clk/ux500/clk-prcc.c b/drivers/clk/ux500/clk-prcc.c
+index bd4769a84485..0e950769ed03 100644
+--- a/drivers/clk/ux500/clk-prcc.c
++++ b/drivers/clk/ux500/clk-prcc.c
+@@ -8,7 +8,6 @@
+  */
+ 
+ #include <linux/clk-provider.h>
+-#include <linux/clk-private.h>
+ #include <linux/slab.h>
+ #include <linux/io.h>
+ #include <linux/err.h>
+diff --git a/drivers/clk/ux500/clk-prcmu.c b/drivers/clk/ux500/clk-prcmu.c
+index e2d63bc47436..bf63c96acb1a 100644
+--- a/drivers/clk/ux500/clk-prcmu.c
++++ b/drivers/clk/ux500/clk-prcmu.c
+@@ -8,7 +8,6 @@
+  */
+ 
+ #include <linux/clk-provider.h>
+-#include <linux/clk-private.h>
+ #include <linux/mfd/dbx500-prcmu.h>
+ #include <linux/slab.h>
+ #include <linux/io.h>
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
-Looking at the proposed implementation, the promiscous multicast flag
-seems to be a per-VF flag:
-
-+int ixgbe_ndo_set_vf_mc_promisc(struct net_device *netdev, int vf, bool setting)
-+{
-+	struct ixgbe_adapter *adapter = netdev_priv(netdev);
-+	struct ixgbe_hw *hw = &adapter->hw;
-+	u32 vmolr;
-+
-+	if (vf >= adapter->num_vfs)
-+		return -EINVAL;
-+
-+	adapter->vfinfo[vf].mc_promisc_enabled = setting;
-+
-+	vmolr = IXGBE_READ_REG(hw, IXGBE_VMOLR(vf));
-+	if (setting) {
-+		e_info(drv, "VF %u: enabling multicast promiscuous\n", vf);
-+		vmolr |= IXGBE_VMOLR_MPE;
-+	} else {
-+		e_info(drv, "VF %u: disabling multicast promiscuous\n", vf);
-+		vmolr &= ~IXGBE_VMOLR_MPE;
-+	}
-+
-+	IXGBE_WRITE_REG(hw, IXGBE_VMOLR(vf), vmolr);
-+
-+	return 0;
-+}
-+
-
-I haven't read the data sheet, but I took a quick look at the excellent
-high level driver docs:
-http://www.intel.com/content/dam/doc/design-guide/82599-sr-iov-driver-companion-guide.pdf
-
-It mentions "Multicast Promiscuous Enable" in its "Thoughts for
-Customization" section:
-
- 7.1 Multicast Promiscuous Enable
-
- The controller has provisions to allow each VF to be put into Multicast
- Promiscuous mode.  The Intel reference driver does not configure this
- option .
-
- The capability can be enabled/disabled by manipulating the MPE field
- (bit 28) of the PF VF L2 Control Register (PFVML2FLT – 0x0F000)
-
-and showing a section from the data sheet describing the
-"PF VM L2 Control Register - PFVML2FLT[n]  (0x0F000 + 4 * n, n=0...63; RW)"
-
-To me it looks like enabling Promiscuos Multicast for a VF won't affect
-any other VF at all.  Is this really not the case?
-
-
-
-Bjørn
