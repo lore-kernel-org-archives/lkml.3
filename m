@@ -1,141 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbbAVCoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 21:44:25 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:39230 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbbAVCoQ (ORCPT
+	id S1753703AbbAVCol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 21:44:41 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:59085 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159AbbAVCoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 21:44:16 -0500
+	Wed, 21 Jan 2015 21:44:32 -0500
+Date: Thu, 22 Jan 2015 11:44:27 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Magnus Damm <magnus.damm@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-sh@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 0/4] drivers: bus: Add Simple Power-Managed Bus
+Message-ID: <20150122024425.GD31170@verge.net.au>
+References: <1420809155-4015-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-In-Reply-To: <54BF3971.2090003@colorfullife.com>
-References: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com>
-	<54BE61F0.202@tycho.nsa.gov>
-	<CABawtvPrhVWV3bC-=wygqfHJzctvrmd1WxDD1ciuLE7F7-_yaQ@mail.gmail.com>
-	<54BF3971.2090003@colorfullife.com>
-Date: Thu, 22 Jan 2015 10:44:15 +0800
-Message-ID: <CABawtvO3PdKhmeH_H1v_tQxmgOBQrnLGNayTE1=EbcxJbtwAzQ@mail.gmail.com>
-Subject: Re: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused by semop()
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>, Ethan Zhao <ethan.zhao@oracle.com>,
-        james.l.morris@oracle.com, serge@hallyn.com,
-        Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>,
-        selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, ethan.kernel@gmail.conm
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420809155-4015-1-git-send-email-geert+renesas@glider.be>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 1:30 PM, Manfred Spraul
-<manfred@colorfullife.com> wrote:
-> On 01/21/2015 04:53 AM, Ethan Zhao wrote:
->>
->> On Tue, Jan 20, 2015 at 10:10 PM, Stephen Smalley <sds@tycho.nsa.gov>
->> wrote:
->>>
->>> On 01/20/2015 04:18 AM, Ethan Zhao wrote:
->>>>
->>>>       sys_semget()
->>>>       ->newary()
->>>>           ->security_sem_alloc()
->>>>             ->sem_alloc_security()
->>>>                   selinux_sem_alloc_security()
->>>>                   ->ipc_alloc_security() {
->>>>                     ->rc = avc_has_perm()
->>>>                                if (rc) {
->>>>
->>>> ipc_free_security(&sma->sem_perm);
->>>>                                        return rc;
->>>
->>> We free the security structure here to avoid a memory leak on a
->>> failed/denied semaphore set creation.  In this situation, we return an
->>> error to the caller (ultimately to newary), it does an
->>> ipc_rcu_putref(sma, ipc_rcu_free), and it returns an error to the
->>> caller.  Thus, it never calls ipc_addid() and the semaphore set is not
->>> created.  So how then can you call semtimedop() on it?
->>
->> Seems it wouldn't happen after commit
->> e8577d1f0329d4842e8302e289fb2c22156abef4 ?
->
-> That was my first guess when I read the bug report - but it can't be the
-> fix, because security_sem_alloc() is before the ipc_addid(), with or without
-> the patch.
->
-> thread A:
->             thread B:
->
-> semtimedop()
-> -> sem_obtain_object_check()
->             semctl(IPC_RMID)
->             -> freeary()
->             -> ipc_rcu_putref()
->             -> call_rcu()
-> -> somehow a grace period
->             -> sem_rcu_free()
->             -> security_sem_free()
->
-> Perhaps: modify ipc_free_security() to hexdump perm and a few more bytes if
-> the pointer is NULL?
+On Fri, Jan 09, 2015 at 02:12:31PM +0100, Geert Uytterhoeven wrote:
+> 	Hi Simon, Magnus,
+> 
+> The Renesas Bus State Controller (BSC) provides an external bus for
+> connecting multiple external devices to an SoC, driving several chip
+> select lines, for e.g. NOR FLASH, Ethernet and USB.
+> On the kzm9g and ape6evm development boards, an smsc9220 Ethernet
+> controller is connnected to the BSC of an SH-Mobile AG5 (sh73a0) resp.
+> R-Mobile APE6 (r8a73a4) SoC.
 
-I tried to ask for vmcore and do more analysis, basically, the race condition
-still exists and open a hole to be DoS.
+For the record: Olof has asked for review comments for these patches
+so I have dropped them from next pending that activity.
 
-Thanks,
-Ethan
-
->
+> The BSC is a fairly simple memory-mapped bus, hence a "simple-bus"
+> compatibility seems suitable.  However, the BSC is special in two
+> ways:
+>   1. It is part of a PM domain (A4S),
+>   2. It has a gateable functional clock (ZB).
+> Before a device connected to the BSC can be accessed, the PM domain
+> containing the BSC must be powered on, and the functional clock
+> driving the BSC must be enabled.
+> 
+> Both special properties can be described in DT in a standardized way
+> ("power-domains = <&pd_a4s>" and "clocks = <&zb_clk>", cfr. the
+> example in the DT binding documentation).  Externally connected
+> devices are described as children of the BSC node.
+> 
+> Unfortunately this doesn't mean everything will work out-of-the-box.
+> There are two problems:
+>   1. Without a device driver bound to the bus device, this device is
+>      not attached to the PM domain. And although a child device is
+>      present and active, the PM domain may be powered down, as it's
+>      considered unused by the PM domain core.
+>   2. Without a device driver calling pm_runtime_enable(), its
+>      functional clock is not enabled. Once runtime PM is enabled, the
+>      R-Mobile PM domain platform driver manages the functional clock
+>      using runtime PM.
+> 
+> As none of the above is really bus hardware-specific (PM domains and
+> functional clocks in clock domains are handled from genpd and platform
+> code), this series adds a Simple Power-Managed Bus driver for
+> transparent busses, which just enables runtime PM for the bus device.
+> Due to the child-parent relationship of devices connected to the bus,
+> as long as the device drivers for the child devices are runtime PM
+> enabled, the bus's PM domain will be powered, and the bus's clock will
+> be enabled automatically when needed, for both runtime PM and s2ram.
+> 
+> Currently this driver supports the Renesas Bus State Controller only,
+> but support for other SoCs and other bus controllers can easily be
+> added later by adding more compatible values.
+> Note that this driver cannot just bind against "simple-bus", as that
+> may prevent a device-specific driver from taking precedence.
+> 
+> This was tested on sh73a0/kzm9g-multiplatform (by me), and on
+> r8a73a4/ape6evm-multiplatform (by Ulrich Hecht). Without this,
+> Ethernet doesn't work, as the ZB clock is disabled by
+> clk_disable_unused().
+> 
+> As drivers/bus doesn't have a maintainer, and this driver is needed to
+> move two shmobile platforms away from legacy to multiplatform, I think
+> this can go in through Simon's shmobile tree.  There are no conflicts
+> with today's linux-next.
+> 
+> Changes compared to v2:
+>   - Document required properties inherited from "simple-bus",
+>   - Document required "reg" property for "renesas,bsc",
+>   - Move "ranges" before "reg" in the example,
+>   - Add Tested-by,
+>   - Split-off sh73a0/kzm9g and r8a73a4/ape6evm DTS updates.
+> 
+> Changes compared to v1 (more detailed change logs in the individual
+> patches):
+>   - Added sorting of drivers/bus Kconfig and Makefile entries,
+>   - Added DT binding documentation,
+>   - Rename from "Renesas Bus State Controller Driver" (renesas-bsc) to
+>     "Simple Power-Managed Bus Driver" (simple-pm-bus),
+>   - Postponed adding power-domains properties to the dtsi,
+>   - Added updates for r8a73a4/ape6evm.
+> 
+> Thanks for applying!
+> 
+> Geert Uytterhoeven (4):
+>   drivers: bus: Sort Kconfig entries alphabetically
+>   drivers: bus: Sort Makefile entries alphabetically
+>   drivers: bus: Add Simple Power-Managed Bus DT Bindings
+>   drivers: bus: Add Simple Power-Managed Bus Driver
+> 
+>  .../devicetree/bindings/bus/simple-pm-bus.txt      | 52 +++++++++++++++++++++
+>  drivers/bus/Kconfig                                | 53 ++++++++++++++--------
+>  drivers/bus/Makefile                               | 15 +++---
+>  drivers/bus/simple-pm-bus.c                        | 51 +++++++++++++++++++++
+>  4 files changed, 144 insertions(+), 27 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+>  create mode 100644 drivers/bus/simple-pm-bus.c
+> 
+> -- 
+> 1.9.1
+> 
+> Gr{oetje,eeting}s,
+> 
+> 						Geert
+> 
 > --
->     Manfred
->
->
->> Thanks,
->> Ethan
->>>>
->>>>       So ipc_perms->security was NULL, then semtimedop() was called as
->>>>       following:
->>>>
->>>>          sys_semtimedop() / semop()
->>>>          ->selinux_sem_semop()
->>>>           ->ipc_has_perm()
->>>>             ->avc_has_perm(sid, isec->sid, isec->sclass, perms, &ad);
->>>>                                            ^- NULL pointer dereference
->>>> happens
->>>>
->>>> The test kernel was running on VMware.
->>>> This patch use to fix this serious security issue could be triggered by
->>>> user space.
->>>> This patch was tested with v3.19-rc5.
->>>>
->>>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
->>>> ---
->>>>   security/selinux/hooks.c | 2 ++
->>>>   1 file changed, 2 insertions(+)
->>>>
->>>> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
->>>> index 6da7532..bbe76f5 100644
->>>> --- a/security/selinux/hooks.c
->>>> +++ b/security/selinux/hooks.c
->>>> @@ -5129,6 +5129,8 @@ static int ipc_has_perm(struct kern_ipc_perm
->>>> *ipc_perms,
->>>>        u32 sid = current_sid();
->>>>
->>>>        isec = ipc_perms->security;
->>>> +     if (!isec)
->>>> +             return -EACCES;
->>>>
->>>>        ad.type = LSM_AUDIT_DATA_IPC;
->>>>        ad.u.ipc_id = ipc_perms->key;
->>>>
->>> That is not the correct fix; it just hides a bug.  If we reach
->>> ipc_has_perm() with a NULL isec, it is a bug in the ipc code.
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>> in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+> 							    -- Linus Torvalds
+> 
