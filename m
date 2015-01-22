@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437AbbAVQwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:52:54 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:32859 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339AbbAVQwu (ORCPT
+	id S1753542AbbAVQx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 11:53:26 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:35884 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353AbbAVQxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:52:50 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v2 2/2] serial: 8250_pnp: Enable PNP_CONSOLE for console ports
-Date: Thu, 22 Jan 2015 11:50:25 -0500
-Message-Id: <1421945425-5326-3-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1421945425-5326-1-git-send-email-peter@hurleysoftware.com>
-References: <1421945425-5326-1-git-send-email-peter@hurleysoftware.com>
+	Thu, 22 Jan 2015 11:53:22 -0500
+Message-ID: <54C12AF9.40200@mentor.com>
+Date: Thu, 22 Jan 2015 10:53:13 -0600
+From: Nathan Lynch <Nathan_Lynch@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Michal Simek <michal.simek@xilinx.com>
+CC: <linux-kernel@vger.kernel.org>, <monstr@monstr.eu>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>, <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        =?windows-1252?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Subject: Re: [PATCH 2/2] remoteproc: microblaze: Add support for microblaze
+ on Zynq
+References: <a458462d2dc6901440bded015608f7a9df9e7942.1421662385.git.michal.simek@xilinx.com> <10276362c737fc9da863f1a07737fd91f7340242.1421662385.git.michal.simek@xilinx.com>
+In-Reply-To: <10276362c737fc9da863f1a07737fd91f7340242.1421662385.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the kernel command line parameter, no_console_suspend, is used,
-the console should continue to output console messages during and
-after system suspend. For a serial console, the serial core ensures
-that the device is not shutdown when no_console_suspend is specified.
-However, the default operation of the pnp bus will disable and suspend
-the device and no further output occurs.
+On 01/19/2015 04:30 AM, Michal Simek wrote:
+> diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
+> index 5e343bab9458..3955f42e9e9c 100644
+> --- a/drivers/remoteproc/Kconfig
+> +++ b/drivers/remoteproc/Kconfig
+> @@ -64,4 +64,15 @@ config DA8XX_REMOTEPROC
+>  	  It's safe to say n here if you're not interested in multimedia
+>  	  offloading.
+> 
+> +config MB_REMOTEPROC
+> +	tristate "Support Microblaze remoteproc"
+> +	depends on ARCH_ZYNQ && !DEBUG_SG
+> +	select GPIO_XILINX
+> +	select REMOTEPROC
+> +	select RPMSG
+> +	default m
+> +	help
+> +	  Say y here to support Xilinx Microblaze remote processors
+> +	  on the Xilinx Zynq.
+> +
+>  endmenu
 
-When registering the 8250 port, if the serial device is a console
-set the PNP_CONSOLE capability, which prevents device power-off
-if consoles are not suspending.
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/serial/8250/8250_pnp.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/8250/8250_pnp.c b/drivers/tty/serial/8250/8250_pnp.c
-index 682a2fb..50a09cd 100644
---- a/drivers/tty/serial/8250/8250_pnp.c
-+++ b/drivers/tty/serial/8250/8250_pnp.c
-@@ -426,7 +426,7 @@ static int serial_pnp_guess_board(struct pnp_dev *dev)
- static int
- serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- {
--	struct uart_8250_port uart;
-+	struct uart_8250_port uart, *port;
- 	int ret, line, flags = dev_id->driver_data;
- 
- 	if (flags & UNKNOWN_DEV) {
-@@ -471,6 +471,10 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- 	if (line < 0 || (flags & CIR_PORT))
- 		return -ENODEV;
- 
-+	port = serial8250_get_port(line);
-+	if (uart_console(&port->port))
-+		dev->capabilities |= PNP_CONSOLE;
-+
- 	pnp_set_drvdata(dev, (void *)((long)line + 1));
- 	return 0;
- }
-@@ -478,6 +482,8 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- static void serial_pnp_remove(struct pnp_dev *dev)
- {
- 	long line = (long)pnp_get_drvdata(dev);
-+
-+	dev->capabilities &= ~PNP_CONSOLE;
- 	if (line)
- 		serial8250_unregister_port(line - 1);
- }
--- 
-2.2.2
+The dependency on !DEBUG_SG seems unusual, and worth a comment if it's
+truly needed.  And the module should be disabled by default, no?
 
