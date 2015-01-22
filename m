@@ -1,171 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464AbbAVDTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 22:19:12 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:48379 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbbAVDTI (ORCPT
+	id S1751018AbbAVDWH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 22:22:07 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:45212 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbbAVDV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 22:19:08 -0500
+	Wed, 21 Jan 2015 22:21:57 -0500
+Message-ID: <54C06CBE.7080607@huawei.com>
+Date: Thu, 22 Jan 2015 11:21:34 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
-References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com> <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 21 Jan 2015 19:18:46 -0800
-Message-ID: <CALCETrXSQ0JCKY5k0S_xX-i4+1BBVY+_9dv2ouj23WXFi8hyfg@mail.gmail.com>
-Subject: Re: [RFC v3 2/2] x86/xen: allow privcmd hypercalls to be preempted
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jan Beulich <JBeulich@suse.com>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?SsOpcsOpbWllIEdhbGFybmVhdQ==?= 
+	<jeremie.galarneau@efficios.com>
+CC: Jiri Olsa <jolsa@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Li Zefan <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH 1/2] perf: convert: fix duplicate field names and avoid
+ reserved keywords.
+References: <20150120130609.GC15315@krava.brq.redhat.com>	<1421810634-1373-1-git-send-email-wangnan0@huawei.com>	<20150121141101.GA6835@krava.brq.redhat.com>	<CA+jJMxtaEF587MyW00YQ_7d7BYmW-QpcgQ8g1KByYWwzMg-_cw@mail.gmail.com>	<54C0547B.7000407@huawei.com> <CA+jJMxu-QPVQTW0rSwUQH0dCy=mZo+0LimnPMVhOoJ9-ybc-9A@mail.gmail.com>
+In-Reply-To: <CA+jJMxu-QPVQTW0rSwUQH0dCy=mZo+0LimnPMVhOoJ9-ybc-9A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.111.69.129]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020201.54C06CD4.005B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 8c0be398d45634712c36fef7ad4ab05b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 6:17 PM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->
-> Xen has support for splitting heavy work work into a series
-> of hypercalls, called multicalls, and preempting them through
-> what Xen calls continuation [0]. Despite this though without
-> CONFIG_PREEMPT preemption won't happen, without preemption
-> a system can become pretty useless on heavy handed hypercalls.
-> Such is the case for example when creating a > 50 GiB HVM guest,
-> we can get softlockups [1] with:.
->
-> kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
->
-> The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
-> (default 120 seconds), on the Xen side in this particular case
-> this happens when the following Xen hypervisor code is used:
->
-> xc_domain_set_pod_target() -->
->   do_memory_op() -->
->     arch_memory_op() -->
->       p2m_pod_set_mem_target()
->         -- long delay (real or emulated) --
->
-> This happens on arch_memory_op() on the XENMEM_set_pod_target memory
-> op even though arch_memory_op() can handle continuation via
-> hypercall_create_continuation() for example.
->
-> Machines over 50 GiB of memory are on high demand and hard to come
-> by so to help replicate this sort of issue long delays on select
-> hypercalls have been emulated in order to be able to test this on
-> smaller machines [2].
->
-> On one hand this issue can be considered as expected given that
-> CONFIG_PREEMPT=n is used however we have forced voluntary preemption
-> precedent practices in the kernel even for CONFIG_PREEMPT=n through
-> the usage of cond_resched() sprinkled in many places. To address
-> this issue with Xen hypercalls though we need to find a way to aid
-> to the schedular in the middle of hypercalls. We are motivated to
-> address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
-> rather unresponsive for long periods of time; in the worst case, at least
-> only currently by emulating long delays on select io disk bound
-> hypercalls, this can lead to filesystem corruption if the delay happens
-> for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
->
-> We can address this problem by trying to check if we should schedule
-> on the xen timer in the middle of a hypercall on the return from the
-> timer interrupt. We want to be careful to not always force voluntary
-> preemption though so to do this we only selectively enable preemption
-> on very specific xen hypercalls.
->
-> This enables hypercall preemption by selectively forcing checks for
-> voluntary preempting only on ioctl initiated private hypercalls
-> where we know some folks have run into reported issues [1].
->
-> [0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
-> [1] https://bugzilla.novell.com/show_bug.cgi?id=861093
-> [2] http://ftp.suse.com/pub/people/mcgrof/xen/emulate-long-xen-hypercalls.patch
->
-> Based on original work by: David Vrabel <david.vrabel@citrix.com>
-> Suggested-by: Andy Lutomirski <luto@amacapital.net>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: David Vrabel <david.vrabel@citrix.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Jan Beulich <JBeulich@suse.com>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> ---
->  arch/x86/kernel/entry_32.S       |  2 ++
->  arch/x86/kernel/entry_64.S       |  2 ++
->  drivers/xen/events/events_base.c | 13 +++++++++++++
->  include/xen/events.h             |  1 +
->  4 files changed, 18 insertions(+)
->
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 000d419..b4b1f42 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -982,6 +982,8 @@ ENTRY(xen_hypervisor_callback)
->  ENTRY(xen_do_upcall)
->  1:     mov %esp, %eax
->         call xen_evtchn_do_upcall
-> +       movl %esp,%eax
-> +       call xen_end_upcall
->         jmp  ret_from_intr
->         CFI_ENDPROC
->  ENDPROC(xen_hypervisor_callback)
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 9ebaf63..ee28733 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -1198,6 +1198,8 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
->         popq %rsp
->         CFI_DEF_CFA_REGISTER rsp
->         decl PER_CPU_VAR(irq_count)
-> +       movq %rsp, %rdi  /* pass pt_regs as first argument */
-> +       call xen_end_upcall
->         jmp  error_exit
->         CFI_ENDPROC
->  END(xen_do_hypervisor_callback)
-> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-> index b4bca2d..23c526b 100644
-> --- a/drivers/xen/events/events_base.c
-> +++ b/drivers/xen/events/events_base.c
-> @@ -32,6 +32,8 @@
->  #include <linux/slab.h>
->  #include <linux/irqnr.h>
->  #include <linux/pci.h>
-> +#include <linux/sched.h>
-> +#include <linux/kprobes.h>
->
->  #ifdef CONFIG_X86
->  #include <asm/desc.h>
-> @@ -1243,6 +1245,17 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
->         set_irq_regs(old_regs);
->  }
->
-> +notrace void xen_end_upcall(struct pt_regs *regs)
-> +{
-> +       if (!xen_is_preemptible_hypercall(regs) ||
-> +           __this_cpu_read(xed_nesting_count))
-> +               return;
+On 2015/1/22 11:14, Jérémie Galarneau wrote:
+> On Wed, Jan 21, 2015 at 8:38 PM, Wang Nan <wangnan0@huawei.com> wrote:
+>> On 2015/1/21 23:56, Jérémie Galarneau wrote:
+>>> On Wed, Jan 21, 2015 at 9:11 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+>>>> On Wed, Jan 21, 2015 at 11:23:54AM +0800, Wang Nan wrote:
+>>>>> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
+>>>>> When dealing with them, perf convert to ctf meets some problem:
+>>>>>
+>>>>>  1. If a parameter with name 'nr', it will duplicate syscall's
+>>>>>     common field 'nr'. One such syscall is io_submit().
+>>>>>
+>>>>>  2. If a parameter with name 'event', it is denied to be inserted
+>>>>>     because 'event' is a babeltrace keywork. One such syscall is
+>>>>>     epoll_ctl.
+>>>>
+>>>> hum, so this problem 2 is detectable only via bt_ctf_event_class_add_field function?
+>>>>
+>>>> how big is the blaklist?
+>>>>
+>>>
+>>> The blacklist is defined by the CTF specification here [1].
+>>>
+>>> Jérémie
+>>>
+>>> [1] http://git.efficios.com/?p=ctf.git;a=blob;f=common-trace-format-specification.txt;h=abe4fb70fff7f17f6e8242f313fb74bff44cf89a;hb=HEAD#l1477
+>>
+>> Is there any possibility that the someone expand the list?
+>>
+> 
+> Good question. There is discussion around a v1.9 version of the CTF
+> spec going on at the moment (which should not affect the Babeltrace
+> API).
+> 
 
-What's xed_nesting_count?
+Since the blacklist is expanding, do you think babeltrace API should provide a mean to
+notify users the reason about the failure, such as returning meanful error code instead
+of -1, or exporting validate_identifier() to users?
 
-> +
-> +       if (_cond_resched())
-> +               printk(KERN_DEBUG "xen hypercall preempted\n");
+> As far as I know, adding "__attribute__" has been discussed. CC'ing
+> Mathieu Desnoyer who may have other extensions in mind.
+> 
+> Jérémie
+> 
+>>>
+>>>> SNIP
+>>>>
+>>>>> +}
+>>>>> +
+>>>>>  static int add_tracepoint_fields_types(struct ctf_writer *cw,
+>>>>>                                      struct format_field *fields,
+>>>>>                                      struct bt_ctf_event_class *event_class)
+>>>>> @@ -577,6 +609,9 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+>>>>>       for (field = fields; field; field = field->next) {
+>>>>>               struct bt_ctf_field_type *type;
+>>>>>               unsigned long flags = field->flags;
+>>>>> +             struct bt_ctf_field_type *f = NULL;
+>>>>> +             char *name;
+>>>>> +             int dup = 1;
+>>>>>
+>>>>>               pr2("  field '%s'\n", field->name);
+>>>>>
+>>>>> @@ -595,14 +630,36 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+>>>>>               if (flags & FIELD_IS_ARRAY)
+>>>>>                       type = bt_ctf_field_type_array_create(type, field->arraylen);
+>>>>>
+>>>>> -             ret = bt_ctf_event_class_add_field(event_class, type,
+>>>>> -                             field->name);
+>>>>> +             /* Check name duplication */
+>>>>> +             name = field->name;
+>>>>
+>>>> could you please put this in separated function like 'get_field_name(..)'
+>>>> so we dont polute this function even more
+>>>>
+>>>>                 name == get_field_name(...)
+>>>>                 if (!name)
+>>>>                         error path
+>>>>
+>>>>
+>>>> thanks,
+>>>> jirka
+>>>
+>>>
+>>>
+>>
+>>
+> 
+> 
+> 
 
-Did you mean to leave this in?  If so, should it be pr_debug?
 
---Andy
