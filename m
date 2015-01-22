@@ -1,50 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbbAVPc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 10:32:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061AbbAVPcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 10:32:52 -0500
-Message-ID: <54C11815.8070501@redhat.com>
-Date: Thu, 22 Jan 2015 16:32:37 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Mario Smarduch <m.smarduch@samsung.com>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Gleb Natapov <gleb@kernel.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: KVM: HAVE_KVM_ARCH_DIRTY_LOG_PROTECT?
-References: <1421918381.13638.43.camel@x220> <54C101B9.1050804@redhat.com> <1421938175.13638.58.camel@x220>
-In-Reply-To: <1421938175.13638.58.camel@x220>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1752784AbbAVPgD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 10:36:03 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:25385 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbbAVPf7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 10:35:59 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=windows-1252
+X-AuditID: cbfec7f5-b7fc86d0000066b7-39-54c1184a285e
+Content-transfer-encoding: 8BIT
+Message-id: <54C118D9.9040007@partner.samsung.com>
+Date: Thu, 22 Jan 2015 18:35:53 +0300
+From: Stefan Strogin <s.strogin@partner.samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Pintu Kumar <pintu.k@samsung.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
+        Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Subject: Re: [PATCH 2/3] mm: cma: introduce /proc/cmainfo
+References: <cover.1419602920.git.s.strogin@partner.samsung.com>
+ <264ce8ad192124f2afec9a71a2fc28779d453ba7.1419602920.git.s.strogin@partner.samsung.com>
+ <20141230043814.GB4588@js1304-P5Q-DELUXE>
+In-reply-to: <20141230043814.GB4588@js1304-P5Q-DELUXE>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t/xK7peEgdDDBqfc1vMWb+GzeLx63ks
+	Fp9WPmWzWNndzGaxvXMGu0XnxCXsFpd3zWGzuLfmP6vF2iN32S0WHG9htVj29T27Rd/3w+wW
+	k2dLWXw7OYfZ4tqOfiaLqTN+sFuc3HCW1WJDM5eDkMflvl4mj52z7rJ7zO6YyeqxaVUnm8em
+	T5PYPbreXmHyODHjN4vHg0ObWTzW/XnF5HHw3R4mj74tqxg9Pm+S8+ja+Is1gDeKyyYlNSez
+	LLVI3y6BK6Pz2C7GguvmFYfv3GNqYFym08XIySEhYCLxafJNZghbTOLCvfVsXYxcHEICSxkl
+	jv3eyQSS4BUQlPgx+R5LFyMHB7OAvMSRS9kQpp7E/YtaEOUfGSUae5+xQpQbSUw9fIIFxGYR
+	UJX4e3YiO4jNBrTr2IXpjCC2qECExPxjr8H2ighoSKxetZkZZBCzwAcWiYXLm8CahQUsJc7v
+	2gx10DFGiV/v74ElOAXMJDpb/rFOYBSYheS+WQj3zUK4bwEj8ypG0dTS5ILipPRcI73ixNzi
+	0rx0veT83E2MkOj8uoNx6TGrQ4wCHIxKPLwRGw6ECLEmlhVX5h5ilOBgVhLhLRQ+GCLEm5JY
+	WZValB9fVJqTWnyIkYmDU6qB0XJy3xLBne9f6zM8/i9+eeOmnc5hX1Zw3BXUVo2Zlf9l/VsL
+	Wa+dN/w239r3VmKaQG/5pQMt/0rC170u/9W9ceLqqoJQ531n50SHpdmc0v+8dBV32bK0H9O0
+	Fi3fvMCtYLV30rGKx7+ez5+u8KZna8hTlzz/tz+eiCnVn1x7hbkiYQljz+TmytdKLMUZiYZa
+	zEXFiQBESCcerAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Joonsoo,
+
+On 30/12/14 07:38, Joonsoo Kim wrote:
+> On Fri, Dec 26, 2014 at 05:39:03PM +0300, Stefan I. Strogin wrote:
+>> /proc/cmainfo contains a list of currently allocated CMA buffers for every
+>> CMA area when CONFIG_CMA_DEBUG is enabled.
+> Hello,
+>
+> I think that providing these information looks useful, but, we need better
+> implementation. As Laura said, it is better to use debugfs. And,
+> instead of re-implementing the wheel, how about using tracepoint
+> to print these information? See below comments.
+
+Excuse me for a long delay. I've tried to give a detailed answer here:
+https://lkml.org/lkml/2015/1/21/362
+Do you mean by «the re-implemented wheel» seq_print_stack_trace()? If so
+then it was thought to show an owner of each allocated buffer. I used a
+similar way as in page_owner: saving stack_trace for each allocation. Do
+you think we can use tracepoints instead?
 
 
-On 22/01/2015 15:49, Paul Bolle wrote:
->> > Ah, there are two Kconfig symbols added by mistake.
->> > 
->> > +config HAVE_KVM_ARCH_DIRTY_LOG_PROTECT
->> > + bool
->> > +
->> > +config KVM_GENERIC_DIRTYLOG_READ_PROTECT
->> > + bool
-> This one is actually used (so my 800 line perl monster didn't bark):
->     $ git grep -n KVM_GENERIC_DIRTYLOG_READ_PROTECT next-20150122
->     next-20150122:arch/arm/kvm/Kconfig:27:  select KVM_GENERIC_DIRTYLOG_READ_PROTECT
->     next-20150122:arch/arm64/kvm/Kconfig:30:        select KVM_GENERIC_DIRTYLOG_READ_PROTECT
->     next-20150122:arch/x86/kvm/Kconfig:42:  select KVM_GENERIC_DIRTYLOG_READ_PROTECT
->     next-20150122:virt/kvm/Kconfig:47:config KVM_GENERIC_DIRTYLOG_READ_PROTECT
->     next-20150122:virt/kvm/kvm_main.c:998:#ifdef CONFIG_KVM_GENERIC_DIRTYLOG_READ_PROTECT
-> 
+>
+>> Format is:
+>>
+>> <base_phys_addr> - <end_phys_addr> (<size> kB), allocated by <PID>\
+>> 		(<command name>), latency <allocation latency> us
+>>  <stack backtrace when the buffer had been allocated>
+>>
+>> Signed-off-by: Stefan I. Strogin <s.strogin@partner.samsung.com>
+>> ---
+>>  mm/cma.c | 202 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 202 insertions(+)
+>>
+>> diff --git a/mm/cma.c b/mm/cma.c
+>> index a85ae28..ffaea26 100644
+>> --- a/mm/cma.c
+>> +++ b/mm/cma.c
+>> @@ -34,6 +34,10 @@
+>>  #include <linux/cma.h>
+>>  #include <linux/highmem.h>
+>>  #include <linux/io.h>
+>> +#include <linux/list.h>
+>> +#include <linux/proc_fs.h>
+>> +#include <linux/uaccess.h>
+>> +#include <linux/time.h>
+>>  
+>>  struct cma {
+>>  	unsigned long	base_pfn;
+>> @@ -41,8 +45,25 @@ struct cma {
+>>  	unsigned long	*bitmap;
+>>  	unsigned int order_per_bit; /* Order of pages represented by one bit */
+>>  	struct mutex	lock;
+>> +#ifdef CONFIG_CMA_DEBUG
+>> +	struct list_head buffers_list;
+>> +	struct mutex	list_lock;
+>> +#endif
+>>  };
+>>  
+>> +#ifdef CONFIG_CMA_DEBUG
+>> +struct cma_buffer {
+>> +	unsigned long pfn;
+>> +	unsigned long count;
+>> +	pid_t pid;
+>> +	char comm[TASK_COMM_LEN];
+>> +	unsigned int latency;
+>> +	unsigned long trace_entries[16];
+>> +	unsigned int nr_entries;
+>> +	struct list_head list;
+>> +};
+>> +#endif
+>> +
+>>  static struct cma cma_areas[MAX_CMA_AREAS];
+>>  static unsigned cma_area_count;
+>>  static DEFINE_MUTEX(cma_mutex);
+>> @@ -132,6 +153,10 @@ static int __init cma_activate_area(struct cma *cma)
+>>  	} while (--i);
+>>  
+>>  	mutex_init(&cma->lock);
+>> +#ifdef CONFIG_CMA_DEBUG
+>> +	INIT_LIST_HEAD(&cma->buffers_list);
+>> +	mutex_init(&cma->list_lock);
+>> +#endif
+>>  	return 0;
+>>  
+>>  err:
+>> @@ -347,6 +372,86 @@ err:
+>>  	return ret;
+>>  }
+>>  
+>> +#ifdef CONFIG_CMA_DEBUG
+>> +/**
+>> + * cma_buffer_list_add() - add a new entry to a list of allocated buffers
+>> + * @cma:     Contiguous memory region for which the allocation is performed.
+>> + * @pfn:     Base PFN of the allocated buffer.
+>> + * @count:   Number of allocated pages.
+>> + * @latency: Nanoseconds spent to allocate the buffer.
+>> + *
+>> + * This function adds a new entry to the list of allocated contiguous memory
+>> + * buffers in a CMA area. It uses the CMA area specificated by the device
+>> + * if available or the default global one otherwise.
+>> + */
+>> +static int cma_buffer_list_add(struct cma *cma, unsigned long pfn,
+>> +			       int count, s64 latency)
+>> +{
+>> +	struct cma_buffer *cmabuf;
+>> +	struct stack_trace trace;
+>> +
+>> +	cmabuf = kmalloc(sizeof(struct cma_buffer), GFP_KERNEL);
+>> +	if (!cmabuf)
+>> +		return -ENOMEM;
+>> +
+>> +	trace.nr_entries = 0;
+>> +	trace.max_entries = ARRAY_SIZE(cmabuf->trace_entries);
+>> +	trace.entries = &cmabuf->trace_entries[0];
+>> +	trace.skip = 2;
+>> +	save_stack_trace(&trace);
+>> +
+>> +	cmabuf->pfn = pfn;
+>> +	cmabuf->count = count;
+>> +	cmabuf->pid = task_pid_nr(current);
+>> +	cmabuf->nr_entries = trace.nr_entries;
+>> +	get_task_comm(cmabuf->comm, current);
+>> +	cmabuf->latency = (unsigned int) div_s64(latency, NSEC_PER_USEC);
+>> +
+>> +	mutex_lock(&cma->list_lock);
+>> +	list_add_tail(&cmabuf->list, &cma->buffers_list);
+>> +	mutex_unlock(&cma->list_lock);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/**
+>> + * cma_buffer_list_del() - delete an entry from a list of allocated buffers
+>> + * @cma:   Contiguous memory region for which the allocation was performed.
+>> + * @pfn:   Base PFN of the released buffer.
+>> + *
+>> + * This function deletes a list entry added by cma_buffer_list_add().
+>> + */
+>> +static void cma_buffer_list_del(struct cma *cma, unsigned long pfn)
+>> +{
+>> +	struct cma_buffer *cmabuf;
+>> +
+>> +	mutex_lock(&cma->list_lock);
+>> +
+>> +	list_for_each_entry(cmabuf, &cma->buffers_list, list)
+>> +		if (cmabuf->pfn == pfn) {
+>> +			list_del(&cmabuf->list);
+>> +			kfree(cmabuf);
+>> +			goto out;
+>> +		}
+>> +
+> Is there more elegant way to find buffer? This linear search overhead
+> would change system behaviour if there are lots of buffers.
+>
+>> +	pr_err("%s(pfn %lu): couldn't find buffers list entry\n",
+>> +	       __func__, pfn);
+>> +
+>> +out:
+>> +	mutex_unlock(&cma->list_lock);
+>> +}
+>> +#else
+>> +static int cma_buffer_list_add(struct cma *cma, unsigned long pfn,
+>> +			       int count, s64 latency)
+>> +{
+>> +	return 0;
+>> +}
+>> +
+>> +static void cma_buffer_list_del(struct cma *cma, unsigned long pfn)
+>> +{
+>> +}
+>> +#endif /* CONFIG_CMA_DEBUG */
+>> +
+>>  /**
+>>   * cma_alloc() - allocate pages from contiguous area
+>>   * @cma:   Contiguous memory region for which the allocation is performed.
+>> @@ -361,11 +466,15 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
+>>  	unsigned long mask, offset, pfn, start = 0;
+>>  	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
+>>  	struct page *page = NULL;
+>> +	struct timespec ts1, ts2;
+>> +	s64 latency;
+>>  	int ret;
+>>  
+>>  	if (!cma || !cma->count)
+>>  		return NULL;
+>>  
+>> +	getnstimeofday(&ts1);
+>> +
+>>  	pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
+>>  		 count, align);
+>>  
+>> @@ -413,6 +522,19 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
+>>  		start = bitmap_no + mask + 1;
+>>  	}
+>>  
+>> +	getnstimeofday(&ts2);
+>> +	latency = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
+>> +
+>> +	if (page) {
+>> +		ret = cma_buffer_list_add(cma, pfn, count, latency);
+>> +		if (ret) {
+>> +			pr_warn("%s(): cma_buffer_list_add() returned %d\n",
+>> +				__func__, ret);
+>> +			cma_release(cma, page, count);
+>> +			page = NULL;
+>> +		}
+> So, we would fail to allocate CMA memory if we can't allocate buffer
+> for debugging. I don't think it makes sense. With tracepoint,
+> we don't need to allocate buffer in runtime.
+>
+> Thanks.
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-Yes, the mistake is adding two symbols instead of one. :)
-
-Paolo
