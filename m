@@ -1,62 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbbAVBFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:05:10 -0500
-Received: from ozlabs.org ([103.22.144.67]:59789 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753270AbbAVBFA convert rfc822-to-8bit (ORCPT
+	id S1753309AbbAVAnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 19:43:06 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11395 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbbAVAm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:05:00 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Andrey Tsyvarev <tsyvarev@ispras.ru>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] kernel/module.c: Free lock-classes if parse_args failed
-In-Reply-To: <54BF8439.2000905@ispras.ru>
-References: <1421216708-1975-1-git-send-email-tsyvarev@ispras.ru> <87iog2arfk.fsf@rustcorp.com.au> <54BE082A.20207@ispras.ru> <87d268c3mi.fsf@rustcorp.com.au> <54BF8439.2000905@ispras.ru>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 22 Jan 2015 11:10:30 +1030
-Message-ID: <87bnlrwsu9.fsf@rustcorp.com.au>
+	Wed, 21 Jan 2015 19:42:56 -0500
+Message-ID: <54C04775.1070908@huawei.com>
+Date: Thu, 22 Jan 2015 08:42:29 +0800
+From: Li Bin <huawei.libin@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, <live-patching@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <guohanjun@huawei.com>, <zhangdianfang@huawei.com>,
+        <xiexiuqi@huawei.com>
+Subject: Re: [PATCH 2/2] livepatch: disable/enable_patch manners for interdependent
+ patches
+References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-3-git-send-email-huawei.libin@huawei.com> <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.181]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrey Tsyvarev <tsyvarev@ispras.ru> writes:
-> 21.01.2015 4:40, Rusty Russell пишет:
->> Andrey Tsyvarev <tsyvarev@ispras.ru> writes:
->>> 20.01.2015 9:37, Rusty Russell пишет:
->>>> Andrey Tsyvarev <tsyvarev@ispras.ru> writes:
->>>>> parse_args call module parameters' .set handlers, which may use locks defined in the module.
->>>>> So, these classes should be freed in case parse_args returns error(e.g. due to incorrect parameter passed).
->>>> Thanks, this seems right.  Applied.
->>>>
->>>> But this makes me ask: where is lockdep_free_key_range() called on the
->>>> module init code?  It doesn't seem to be at all...
->>> As I understand, locks are not allowed to be defined in the module init
->>> section. So, no needs to call lockdep_free_key_range() for it.
->>> This has a sense: objects from that section are allowed to be used only
->>> by module->init() function. But a single function call doesn't require
->>> any synchronization wrt itself.
->> I don't know that we have any __initdata locks; it would be really
->> weird.
+On 2015/1/21 22:08, Jiri Kosina wrote:
+> On Wed, 21 Jan 2015, Li Bin wrote:
+> 
+>> for disable_patch:
+>> The patch is unallowed to be disabled if one patch after has
+>> dependencies with it and has been enabled.
 >>
->> But change 'static DEFINE_MUTEX(mutex_param);' to 'static __initdata
->> DEFINE_MUTEX(mutex_param);' to test.
-> Compiler warns about sections mismatch, but the test works.
->
-> According to lockdep_free_key_range() code, lock class is cleared not 
-> only according to
-> its key(which is equal to lock address in the case of static lock) but 
-> also according to its name.
+>> for enable_patch:
+>> The patch is unallowed to be enabled if one patch before has
+>> dependencies with it and has been disabled.
+>>
+>> Signed-off-by: Li Bin <huawei.libin@huawei.com>
+>> ---
+>>  kernel/livepatch/core.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 60 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+>> index 7861ed2..a12a31c 100644
+>> --- a/kernel/livepatch/core.c
+>> +++ b/kernel/livepatch/core.c
+>> @@ -114,6 +114,21 @@ static bool klp_is_patch_registered(struct klp_patch *patch)
+>>  	return false;
+>>  }
+>>  
+>> +static bool klp_func_in_patch(struct klp_func *kfunc, struct klp_patch *patch)
+>> +{
+>> +	struct klp_object *obj;
+>> +	struct klp_func *func;
+>> +
+>> +	for (obj = patch->objs; obj->funcs; obj++) {
+>> +		for (func = obj->funcs; func->old_name; func++) {
+>> +			if (kfunc->old_addr == func->old_addr) {
+>> +				return true;
+>> +			}
+>> +		}
+>> +	}
+>> +	return false;
+>> +}
+>> +
+>>  static bool klp_initialized(void)
+>>  {
+>>  	return klp_root_kobj;
+>> @@ -466,8 +481,31 @@ unregister:
+>>  static int __klp_disable_patch(struct klp_patch *patch)
+>>  {
+>>  	struct klp_object *obj;
+>> +	struct klp_patch *temp;
+>> +	struct klp_func *func;
+>>  	int ret;
+>>  
+>> +	/*
+>> +	 * the patch is unallowed to be disabled if one patch
+>> +	 * after has dependencies with it and has been enabled.
+>> +	 */
+>> +	for (temp = list_next_entry(patch, list);
+>> +			&temp->list != &klp_patches;
+>> +			temp = list_next_entry(temp, list)) {
+>> +		if (temp->state != KLP_ENABLED)
+>> +			continue;
+>> +
+>> +		for (obj = patch->objs; obj->funcs; obj++) {
+>> +			for (func = obj->funcs; func->old_name; func++) {
+>> +				if (klp_func_in_patch(func, temp)) {
+>> +					pr_err("this patch depends on '%s', please disable it firstly\n",
+>> +						   temp->mod->name);
+>> +					return -EBUSY;
+>> +				}
+>> +			}
+>> +		}
+>> +	}
+>> +
+>>  	pr_notice("disabling patch '%s'\n", patch->mod->name);
+>>  
+>>  	for (obj = patch->objs; obj->funcs; obj++) {
+>> @@ -519,11 +557,33 @@ EXPORT_SYMBOL_GPL(klp_disable_patch);
+>>  static int __klp_enable_patch(struct klp_patch *patch)
+>>  {
+>>  	struct klp_object *obj;
+>> +	struct klp_patch *temp;
+>> +	struct klp_func *func;
+>>  	int ret;
+>>  
+>>  	if (WARN_ON(patch->state != KLP_DISABLED))
+>>  		return -EINVAL;
+>>  
+>> +	/*
+>> +	 * the patch is unallowed to be enabled if one patch
+>> +	 * before has dependencies with it and has been disabled.
+>> +	 */
+>> +	for (temp = list_first_entry(&klp_patches, struct klp_patch, list);
+>> +			temp != patch; temp = list_next_entry(temp, list)) {
+>> +		if (temp->state != KLP_DISABLED)
+>> +			continue;
+>> +
+>> +		for (obj = patch->objs; obj->funcs; obj++) {
+>> +			for (func = obj->funcs; func->old_name; func++) {
+>> +				if (klp_func_in_patch(func, temp)) {
+>> +					pr_err("this patch depends on '%s', please enable it firstly\n",
+>> +						   temp->mod->name);
+>> +					return -EBUSY;
+> 
+> By this you limit the definition of the patch inter-dependency to just 
+> symbols. But that's not the only way how patches can depend on it other -- 
+> the dependency can be semantical.
 
-What happens if you later register another lock at that address, since
-the memory is freed?
+Yes, I agree with you. But I think the other dependencies such as semantical
+dependency should be judged by the user, like reverting a patch from git repository.
+Right?
 
-A quick grep revealed no __initdata locks in the kernel, so I don't
-think we care anyway.
+Thanks,
+	Li Bin
 
-Cheers,
-Rusty.
+> 
+
+
