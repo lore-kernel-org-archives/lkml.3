@@ -1,112 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbbAVL6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:58:18 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:36346 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751996AbbAVL6M (ORCPT
+	id S1752061AbbAVMC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 07:02:28 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:61934 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbbAVMCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:58:12 -0500
-Message-ID: <54C0E5CA.80902@st.com>
-Date: Thu, 22 Jan 2015 12:58:02 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Beniamino Galvani <b.galvani@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Florian Fainelli <f.fainelli@gmail.com>, Dave Taht <dave.taht@gmail.com>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] net: stmmac: add BQL support
-References: <1421863647-20048-1-git-send-email-b.galvani@gmail.com>
-In-Reply-To: <1421863647-20048-1-git-send-email-b.galvani@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.52.138.66]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-22_04:2015-01-22,2015-01-22,1970-01-01 signatures=0
+	Thu, 22 Jan 2015 07:02:25 -0500
+From: Xunlei Pang <pang.xunlei@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Xunlei Pang <pang.xunlei@linaro.org>
+Subject: [PATCH v2 1/3] time: Don't bother to run rtc_resume() for the nonstop clocksource
+Date: Thu, 22 Jan 2015 12:01:15 +0000
+Message-Id: <1421928077-4698-1-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/21/2015 7:07 PM, Beniamino Galvani wrote:
-> Add support for Byte Queue Limits to the STMicro MAC driver.
->
-> Tested on a Amlogic S802 quad Cortex-A9 board, where the use of BQL
-> decreases the latency of a high priority ping from ~12ms to ~1ms when
-> the 100Mbit link is saturated by 20 TCP streams.
->
-> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+If a system does not provide a persistent_clock(), the time
+will be updated on resume by rtc_resume(). With the addition
+of the non-stop clocksources for suspend timing, those systems
+set the time on resume in timekeeping_resume(), but may not
+provide a valid persistent_clock().
 
+This results in the rtc_resume() logic thinking no one has set
+the time and it then will over-write the suspend time again,
+which is not necessary and only increases clock error.
 
-Ciao Beniamino
+So, fix this for rtc_resume().
 
-thx for the patch, I also see some improvements on my side
+Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
+---
+v1->v2:
+Modify according to Thomas' feedback.
 
-Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+ drivers/rtc/class.c         |  2 +-
+ include/linux/timekeeping.h |  7 +++++++
+ kernel/time/timekeeping.c   | 16 +++++-----------
+ 3 files changed, 13 insertions(+), 12 deletions(-)
 
-> ---
-> Changes since v1:
->   - don't access skb->len after the start of DMA transmission in
->     stmmac_xmit(), to avoid potential use after free in case tx_lock is
->     removed in the future
->
->   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 9 +++++++++
->   1 file changed, 9 insertions(+)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> index 118a427..1d74313 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> @@ -1097,6 +1097,7 @@ static int init_dma_desc_rings(struct net_device *dev, gfp_t flags)
->
->   	priv->dirty_tx = 0;
->   	priv->cur_tx = 0;
-> +	netdev_reset_queue(priv->dev);
->
->   	stmmac_clear_descriptors(priv);
->
-> @@ -1300,6 +1301,7 @@ static void stmmac_dma_operation_mode(struct stmmac_priv *priv)
->   static void stmmac_tx_clean(struct stmmac_priv *priv)
->   {
->   	unsigned int txsize = priv->dma_tx_size;
-> +	unsigned int bytes_compl = 0, pkts_compl = 0;
->
->   	spin_lock(&priv->tx_lock);
->
-> @@ -1356,6 +1358,8 @@ static void stmmac_tx_clean(struct stmmac_priv *priv)
->   		priv->hw->mode->clean_desc3(priv, p);
->
->   		if (likely(skb != NULL)) {
-> +			pkts_compl++;
-> +			bytes_compl += skb->len;
->   			dev_consume_skb_any(skb);
->   			priv->tx_skbuff[entry] = NULL;
->   		}
-> @@ -1364,6 +1368,9 @@ static void stmmac_tx_clean(struct stmmac_priv *priv)
->
->   		priv->dirty_tx++;
->   	}
-> +
-> +	netdev_completed_queue(priv->dev, pkts_compl, bytes_compl);
-> +
->   	if (unlikely(netif_queue_stopped(priv->dev) &&
->   		     stmmac_tx_avail(priv) > STMMAC_TX_THRESH(priv))) {
->   		netif_tx_lock(priv->dev);
-> @@ -1418,6 +1425,7 @@ static void stmmac_tx_err(struct stmmac_priv *priv)
->   						     (i == txsize - 1));
->   	priv->dirty_tx = 0;
->   	priv->cur_tx = 0;
-> +	netdev_reset_queue(priv->dev);
->   	priv->hw->dma->start_tx(priv->ioaddr);
->
->   	priv->dev->stats.tx_errors++;
-> @@ -2048,6 +2056,7 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
->   	if (!priv->hwts_tx_en)
->   		skb_tx_timestamp(skb);
->
-> +	netdev_sent_queue(dev, skb->len);
->   	priv->hw->dma->enable_dma_transmission(priv->ioaddr);
->
->   	spin_unlock(&priv->tx_lock);
->
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 472a5ad..6100af5 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -102,7 +102,7 @@ static int rtc_resume(struct device *dev)
+ 	struct timespec64	sleep_time;
+ 	int err;
+ 
+-	if (has_persistent_clock())
++	if (timekeeping_sleeptime_injected())
+ 		return 0;
+ 
+ 	rtc_hctosys_ret = -ENODEV;
+diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
+index 9b63d13..2b87c64 100644
+--- a/include/linux/timekeeping.h
++++ b/include/linux/timekeeping.h
+@@ -238,6 +238,13 @@ extern void getnstime_raw_and_real(struct timespec *ts_raw,
+  */
+ extern bool persistent_clock_exist;
+ extern int persistent_clock_is_local;
++extern bool timekeeping_sleeptime_inject;
++
++/* Used by rtc_resume() */
++static inline bool timekeeping_sleeptime_injected(void)
++{
++	return timekeeping_sleeptime_inject;
++}
+ 
+ static inline bool has_persistent_clock(void)
+ {
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 6a93185..732ccd0 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -65,6 +65,7 @@ int __read_mostly timekeeping_suspended;
+ 
+ /* Flag for if there is a persistent clock on this platform */
+ bool __read_mostly persistent_clock_exist = false;
++bool timekeeping_sleeptime_inject;
+ 
+ static inline void tk_normalize_xtime(struct timekeeper *tk)
+ {
+@@ -1140,13 +1141,6 @@ void timekeeping_inject_sleeptime64(struct timespec64 *delta)
+ 	struct timekeeper *tk = &tk_core.timekeeper;
+ 	unsigned long flags;
+ 
+-	/*
+-	 * Make sure we don't set the clock twice, as timekeeping_resume()
+-	 * already did it
+-	 */
+-	if (has_persistent_clock())
+-		return;
+-
+ 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+ 	write_seqcount_begin(&tk_core.seq);
+ 
+@@ -1178,8 +1172,8 @@ static void timekeeping_resume(void)
+ 	struct timespec64 ts_new, ts_delta;
+ 	struct timespec tmp;
+ 	cycle_t cycle_now, cycle_delta;
+-	bool suspendtime_found = false;
+ 
++	timekeeping_sleeptime_inject = false;
+ 	read_persistent_clock(&tmp);
+ 	ts_new = timespec_to_timespec64(tmp);
+ 
+@@ -1226,13 +1220,13 @@ static void timekeeping_resume(void)
+ 		nsec += ((u64) cycle_delta * mult) >> shift;
+ 
+ 		ts_delta = ns_to_timespec64(nsec);
+-		suspendtime_found = true;
++		timekeeping_sleeptime_inject = true;
+ 	} else if (timespec64_compare(&ts_new, &timekeeping_suspend_time) > 0) {
+ 		ts_delta = timespec64_sub(ts_new, timekeeping_suspend_time);
+-		suspendtime_found = true;
++		timekeeping_sleeptime_inject = true;
+ 	}
+ 
+-	if (suspendtime_found)
++	if (timekeeping_sleeptime_inject)
+ 		__timekeeping_inject_sleeptime(tk, &ts_delta);
+ 
+ 	/* Re-base the last cycle value */
+-- 
+1.9.1
 
