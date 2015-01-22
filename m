@@ -1,232 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbbAVDpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 22:45:21 -0500
-Received: from mga14.intel.com ([192.55.52.115]:48593 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbbAVDpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 22:45:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,446,1418112000"; 
-   d="scan'208";a="673854586"
-Message-ID: <54C07247.20902@linux.intel.com>
-Date: Thu, 22 Jan 2015 11:45:11 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1754315AbbAVDqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 22:46:31 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:50232 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbbAVDqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 22:46:22 -0500
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, x86@kernel.org,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] x86: pmc_atom: print index of device in loop
-References: <1421790603-30097-1-git-send-email-andriy.shevchenko@linux.intel.com> <1421790603-30097-3-git-send-email-andriy.shevchenko@linux.intel.com>
-In-Reply-To: <1421790603-30097-3-git-send-email-andriy.shevchenko@linux.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54BFF679.6010705@arm.com>
+References: <1421813807-9178-1-git-send-email-sumit.semwal@linaro.org>
+ <1421813807-9178-2-git-send-email-sumit.semwal@linaro.org> <54BFF679.6010705@arm.com>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Thu, 22 Jan 2015 09:16:01 +0530
+Message-ID: <CAO_48GHLJKLxDxuPWbcTKP6T1Vdt0RLbYYncRihepL5H7KET=A@mail.gmail.com>
+Subject: Re: [RFCv2 1/2] device: add dma_params->max_segment_count
+To: Robin Murphy <robin.murphy@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "t.stanislaws@samsung.com" <t.stanislaws@samsung.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "robdclark@gmail.com" <robdclark@gmail.com>,
+        "daniel@ffwll.ch" <daniel@ffwll.ch>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/21 5:50, Andy Shevchenko wrote:
-> The register mapping may change from one platform to another. Thus, indices
-> might be not the same on different platforms. The patch makes the code to print
-> the device index dynamically at run time.
+Hi Robin!
 
-Will another platform use the same table but different bit position? In
-my opinion, different platform should use different mapping table.
+On 22 January 2015 at 00:26, Robin Murphy <robin.murphy@arm.com> wrote:
+> Hi Sumit,
+>
+>
+> On 21/01/15 04:16, Sumit Semwal wrote:
+>>
+>> From: Rob Clark <robdclark@gmail.com>
+>>
+>> For devices which have constraints about maximum number of segments in
+>> an sglist.  For example, a device which could only deal with contiguous
+>> buffers would set max_segment_count to 1.
+>>
+>> The initial motivation is for devices sharing buffers via dma-buf,
+>> to allow the buffer exporter to know the constraints of other
+>> devices which have attached to the buffer.  The dma_mask and fields
+>> in 'struct device_dma_parameters' tell the exporter everything else
+>> that is needed, except whether the importer has constraints about
+>> maximum number of segments.
+>>
+>> Signed-off-by: Rob Clark <robdclark@gmail.com>
+>>   [sumits: Minor updates wrt comments on the first version]
+>> Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
+>> ---
+>>   include/linux/device.h      |  1 +
+>>   include/linux/dma-mapping.h | 19 +++++++++++++++++++
+>>   2 files changed, 20 insertions(+)
+>>
+>> diff --git a/include/linux/device.h b/include/linux/device.h
+>> index fb50673..a32f9b6 100644
+>> --- a/include/linux/device.h
+>> +++ b/include/linux/device.h
+>> @@ -647,6 +647,7 @@ struct device_dma_parameters {
+>>          * sg limitations.
+>>          */
+>>         unsigned int max_segment_size;
+>> +       unsigned int max_segment_count;    /* INT_MAX for unlimited */
+>>         unsigned long segment_boundary_mask;
+>>   };
+>>
+>> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+>> index c3007cb..38e2835 100644
+>> --- a/include/linux/dma-mapping.h
+>> +++ b/include/linux/dma-mapping.h
+>> @@ -154,6 +154,25 @@ static inline unsigned int
+>> dma_set_max_seg_size(struct device *dev,
+>>                 return -EIO;
+>>   }
+>>
+>> +#define DMA_SEGMENTS_MAX_SEG_COUNT ((unsigned int) INT_MAX)
+>> +
+>> +static inline unsigned int dma_get_max_seg_count(struct device *dev)
+>> +{
+>> +       return dev->dma_parms ?
+>> +                       dev->dma_parms->max_segment_count :
+>> +                       DMA_SEGMENTS_MAX_SEG_COUNT;
+>> +}
+>
+>
+> I know this copies the style of the existing code, but unfortunately it also
+> copies the subtle brokenness. Plenty of drivers seem to set up a dma_parms
+> struct just for max_segment_size, thus chances are you'll come across a
+> max_segment_count of 0 sooner or later. How badly is that going to break
+> things? I posted a fix recently[1] having hit this problem with
+> segment_boundary_mask in IOMMU code.
+>
+Thanks very much for reviewing this code; and apologies for missing
+your patch that you mentioned here; sure, I will update my patch
+accordingly as well.
+>> +
+>> +static inline int dma_set_max_seg_count(struct device *dev,
+>> +                                               unsigned int count)
+>> +{
+>> +       if (dev->dma_parms) {
+>> +               dev->dma_parms->max_segment_count = count;
+>> +               return 0;
+>> +       } else
+>
+>
+> This "else" is just as unnecessary as the other two I've taken out ;)
+>
+>
+> Robin.
+>
+> [1]:http://article.gmane.org/gmane.linux.kernel.iommu/8175/
+>
+>
+>> +               return -EIO;
+>> +}
+>> +
+>>   static inline unsigned long dma_get_seg_boundary(struct device *dev)
+>>   {
+>>         return dev->dma_parms ?
+>>
+>
+>
 
-> 
-> The patch also changes the for loop to iterate over the map until a terminator
-> is found.
-
-Why do we need to do this? did you see any hurt from the existing
-implementation?
-
-Thanks,
--Aubrey
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  arch/x86/kernel/pmc_atom.c | 129 ++++++++++++++++++++++-----------------------
->  1 file changed, 64 insertions(+), 65 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-> index d338222..0bcfc9e 100644
-> --- a/arch/x86/kernel/pmc_atom.c
-> +++ b/arch/x86/kernel/pmc_atom.c
-> @@ -43,63 +43,65 @@ struct pmc_bit_map {
->  };
->  
->  static const struct pmc_bit_map dev_map[] = {
-> -	{"0  - LPSS1_F0_DMA",		BIT_LPSS1_F0_DMA},
-> -	{"1  - LPSS1_F1_PWM1",		BIT_LPSS1_F1_PWM1},
-> -	{"2  - LPSS1_F2_PWM2",		BIT_LPSS1_F2_PWM2},
-> -	{"3  - LPSS1_F3_HSUART1",	BIT_LPSS1_F3_HSUART1},
-> -	{"4  - LPSS1_F4_HSUART2",	BIT_LPSS1_F4_HSUART2},
-> -	{"5  - LPSS1_F5_SPI",		BIT_LPSS1_F5_SPI},
-> -	{"6  - LPSS1_F6_Reserved",	BIT_LPSS1_F6_XXX},
-> -	{"7  - LPSS1_F7_Reserved",	BIT_LPSS1_F7_XXX},
-> -	{"8  - SCC_EMMC",		BIT_SCC_EMMC},
-> -	{"9  - SCC_SDIO",		BIT_SCC_SDIO},
-> -	{"10 - SCC_SDCARD",		BIT_SCC_SDCARD},
-> -	{"11 - SCC_MIPI",		BIT_SCC_MIPI},
-> -	{"12 - HDA",			BIT_HDA},
-> -	{"13 - LPE",			BIT_LPE},
-> -	{"14 - OTG",			BIT_OTG},
-> -	{"15 - USH",			BIT_USH},
-> -	{"16 - GBE",			BIT_GBE},
-> -	{"17 - SATA",			BIT_SATA},
-> -	{"18 - USB_EHCI",		BIT_USB_EHCI},
-> -	{"19 - SEC",			BIT_SEC},
-> -	{"20 - PCIE_PORT0",		BIT_PCIE_PORT0},
-> -	{"21 - PCIE_PORT1",		BIT_PCIE_PORT1},
-> -	{"22 - PCIE_PORT2",		BIT_PCIE_PORT2},
-> -	{"23 - PCIE_PORT3",		BIT_PCIE_PORT3},
-> -	{"24 - LPSS2_F0_DMA",		BIT_LPSS2_F0_DMA},
-> -	{"25 - LPSS2_F1_I2C1",		BIT_LPSS2_F1_I2C1},
-> -	{"26 - LPSS2_F2_I2C2",		BIT_LPSS2_F2_I2C2},
-> -	{"27 - LPSS2_F3_I2C3",		BIT_LPSS2_F3_I2C3},
-> -	{"28 - LPSS2_F3_I2C4",		BIT_LPSS2_F4_I2C4},
-> -	{"29 - LPSS2_F5_I2C5",		BIT_LPSS2_F5_I2C5},
-> -	{"30 - LPSS2_F6_I2C6",		BIT_LPSS2_F6_I2C6},
-> -	{"31 - LPSS2_F7_I2C7",		BIT_LPSS2_F7_I2C7},
-> -	{"32 - SMB",			BIT_SMB},
-> -	{"33 - OTG_SS_PHY",		BIT_OTG_SS_PHY},
-> -	{"34 - USH_SS_PHY",		BIT_USH_SS_PHY},
-> -	{"35 - DFX",			BIT_DFX},
-> +	{"LPSS1_F0_DMA",	BIT_LPSS1_F0_DMA},
-> +	{"LPSS1_F1_PWM1",	BIT_LPSS1_F1_PWM1},
-> +	{"LPSS1_F2_PWM2",	BIT_LPSS1_F2_PWM2},
-> +	{"LPSS1_F3_HSUART1",	BIT_LPSS1_F3_HSUART1},
-> +	{"LPSS1_F4_HSUART2",	BIT_LPSS1_F4_HSUART2},
-> +	{"LPSS1_F5_SPI",	BIT_LPSS1_F5_SPI},
-> +	{"LPSS1_F6_Reserved",	BIT_LPSS1_F6_XXX},
-> +	{"LPSS1_F7_Reserved",	BIT_LPSS1_F7_XXX},
-> +	{"SCC_EMMC",		BIT_SCC_EMMC},
-> +	{"SCC_SDIO",		BIT_SCC_SDIO},
-> +	{"SCC_SDCARD",		BIT_SCC_SDCARD},
-> +	{"SCC_MIPI",		BIT_SCC_MIPI},
-> +	{"HDA",			BIT_HDA},
-> +	{"LPE",			BIT_LPE},
-> +	{"OTG",			BIT_OTG},
-> +	{"USH",			BIT_USH},
-> +	{"GBE",			BIT_GBE},
-> +	{"SATA",		BIT_SATA},
-> +	{"USB_EHCI",		BIT_USB_EHCI},
-> +	{"SEC",			BIT_SEC},
-> +	{"PCIE_PORT0",		BIT_PCIE_PORT0},
-> +	{"PCIE_PORT1",		BIT_PCIE_PORT1},
-> +	{"PCIE_PORT2",		BIT_PCIE_PORT2},
-> +	{"PCIE_PORT3",		BIT_PCIE_PORT3},
-> +	{"LPSS2_F0_DMA",	BIT_LPSS2_F0_DMA},
-> +	{"LPSS2_F1_I2C1",	BIT_LPSS2_F1_I2C1},
-> +	{"LPSS2_F2_I2C2",	BIT_LPSS2_F2_I2C2},
-> +	{"LPSS2_F3_I2C3",	BIT_LPSS2_F3_I2C3},
-> +	{"LPSS2_F3_I2C4",	BIT_LPSS2_F4_I2C4},
-> +	{"LPSS2_F5_I2C5",	BIT_LPSS2_F5_I2C5},
-> +	{"LPSS2_F6_I2C6",	BIT_LPSS2_F6_I2C6},
-> +	{"LPSS2_F7_I2C7",	BIT_LPSS2_F7_I2C7},
-> +	{"SMB",			BIT_SMB},
-> +	{"OTG_SS_PHY",		BIT_OTG_SS_PHY},
-> +	{"USH_SS_PHY",		BIT_USH_SS_PHY},
-> +	{"DFX",			BIT_DFX},
-> +	{},
->  };
->  
->  static const struct pmc_bit_map pss_map[] = {
-> -	{"0  - GBE",			PMC_PSS_BIT_GBE},
-> -	{"1  - SATA",			PMC_PSS_BIT_SATA},
-> -	{"2  - HDA",			PMC_PSS_BIT_HDA},
-> -	{"3  - SEC",			PMC_PSS_BIT_SEC},
-> -	{"4  - PCIE",			PMC_PSS_BIT_PCIE},
-> -	{"5  - LPSS",			PMC_PSS_BIT_LPSS},
-> -	{"6  - LPE",			PMC_PSS_BIT_LPE},
-> -	{"7  - DFX",			PMC_PSS_BIT_DFX},
-> -	{"8  - USH_CTRL",		PMC_PSS_BIT_USH_CTRL},
-> -	{"9  - USH_SUS",		PMC_PSS_BIT_USH_SUS},
-> -	{"10 - USH_VCCS",		PMC_PSS_BIT_USH_VCCS},
-> -	{"11 - USH_VCCA",		PMC_PSS_BIT_USH_VCCA},
-> -	{"12 - OTG_CTRL",		PMC_PSS_BIT_OTG_CTRL},
-> -	{"13 - OTG_VCCS",		PMC_PSS_BIT_OTG_VCCS},
-> -	{"14 - OTG_VCCA_CLK",		PMC_PSS_BIT_OTG_VCCA_CLK},
-> -	{"15 - OTG_VCCA",		PMC_PSS_BIT_OTG_VCCA},
-> -	{"16 - USB",			PMC_PSS_BIT_USB},
-> -	{"17 - USB_SUS",		PMC_PSS_BIT_USB_SUS},
-> +	{"GBE",			PMC_PSS_BIT_GBE},
-> +	{"SATA",		PMC_PSS_BIT_SATA},
-> +	{"HDA",			PMC_PSS_BIT_HDA},
-> +	{"SEC",			PMC_PSS_BIT_SEC},
-> +	{"PCIE",		PMC_PSS_BIT_PCIE},
-> +	{"LPSS",		PMC_PSS_BIT_LPSS},
-> +	{"LPE",			PMC_PSS_BIT_LPE},
-> +	{"DFX",			PMC_PSS_BIT_DFX},
-> +	{"USH_CTRL",		PMC_PSS_BIT_USH_CTRL},
-> +	{"USH_SUS",		PMC_PSS_BIT_USH_SUS},
-> +	{"USH_VCCS",		PMC_PSS_BIT_USH_VCCS},
-> +	{"USH_VCCA",		PMC_PSS_BIT_USH_VCCA},
-> +	{"OTG_CTRL",		PMC_PSS_BIT_OTG_CTRL},
-> +	{"OTG_VCCS",		PMC_PSS_BIT_OTG_VCCS},
-> +	{"OTG_VCCA_CLK",	PMC_PSS_BIT_OTG_VCCA_CLK},
-> +	{"OTG_VCCA",		PMC_PSS_BIT_OTG_VCCA},
-> +	{"USB",			PMC_PSS_BIT_USB},
-> +	{"USB_SUS",		PMC_PSS_BIT_USB_SUS},
-> +	{},
->  };
->  
->  static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
-> @@ -148,16 +150,14 @@ static int pmc_dev_state_show(struct seq_file *s, void *unused)
->  	struct pmc_dev *pmc = s->private;
->  	u32 func_dis, func_dis_2, func_dis_index;
->  	u32 d3_sts_0, d3_sts_1, d3_sts_index;
-> -	int dev_num, dev_index, reg_index;
-> +	int dev_index, reg_index;
->  
->  	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
->  	func_dis_2 = pmc_reg_read(pmc, PMC_FUNC_DIS_2);
->  	d3_sts_0 = pmc_reg_read(pmc, PMC_D3_STS_0);
->  	d3_sts_1 = pmc_reg_read(pmc, PMC_D3_STS_1);
->  
-> -	dev_num = ARRAY_SIZE(dev_map);
-> -
-> -	for (dev_index = 0; dev_index < dev_num; dev_index++) {
-> +	for (dev_index = 0; dev_map[dev_index].name; dev_index++) {
->  		reg_index = dev_index / PMC_REG_BIT_WIDTH;
->  		if (reg_index) {
->  			func_dis_index = func_dis_2;
-> @@ -167,8 +167,8 @@ static int pmc_dev_state_show(struct seq_file *s, void *unused)
->  			d3_sts_index = d3_sts_0;
->  		}
->  
-> -		seq_printf(s, "Dev: %-32s\tState: %s [%s]\n",
-> -			dev_map[dev_index].name,
-> +		seq_printf(s, "Dev: %-2d - %-32s\tState: %s [%s]\n",
-> +			dev_index, dev_map[dev_index].name,
->  			dev_map[dev_index].bit_mask & func_dis_index ?
->  			"Disabled" : "Enabled ",
->  			dev_map[dev_index].bit_mask & d3_sts_index ?
-> @@ -195,9 +195,9 @@ static int pmc_pss_state_show(struct seq_file *s, void *unused)
->  	u32 pss = pmc_reg_read(pmc, PMC_PSS);
->  	int pss_index;
->  
-> -	for (pss_index = 0; pss_index < ARRAY_SIZE(pss_map); pss_index++) {
-> -		seq_printf(s, "Island: %-32s\tState: %s\n",
-> -			pss_map[pss_index].name,
-> +	for (pss_index = 0; pss_map[pss_index].name; pss_index++) {
-> +		seq_printf(s, "Island: %-2d - %-32s\tState: %s\n",
-> +			pss_index, pss_map[pss_index].name,
->  			pss_map[pss_index].bit_mask & pss ? "Off" : "On");
->  	}
->  	return 0;
-> @@ -322,9 +322,8 @@ static int pmc_setup_dev(struct pci_dev *pdev)
->  	pmc_hw_reg_setup(pmc);
->  
->  	ret = pmc_dbgfs_register(pmc);
-> -	if (ret) {
-> +	if (ret)
->  		iounmap(pmc->regmap);
-> -	}
->  
->  	return ret;
->  }
-> 
-
+BR,
+Sumit.
