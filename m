@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbbAVPzp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 10:55:45 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:64074 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752008AbbAVPzi (ORCPT
+	id S1752869AbbAVQSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 11:18:55 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:55466 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972AbbAVQSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 10:55:38 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Quentin Lambert <lambert.quentin@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>, Shaohua Li <shaohua.li@intel.com>,
-        linux-acpi@vger.kernel.org, devel@acpica.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] int to bool conversion
-Date: Thu, 22 Jan 2015 17:18:15 +0100
-Message-ID: <1659960.ohcxabvmYi@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150122084941.GA14651@sloth>
-References: <20150122084941.GA14651@sloth>
+	Thu, 22 Jan 2015 11:18:54 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20150122161446.101EBC40A80@trevor.secretlab.ca>
+References: <1421250356-16690-1-git-send-email-geert+renesas@glider.be> <20150122161446.101EBC40A80@trevor.secretlab.ca>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Thu, 22 Jan 2015 16:18:32 +0000
+X-Google-Sender-Auth: IyCSIz3u2wEPQm_DsvW_Mq2TGrg
+Message-ID: <CACxGe6sDFQQfiN0+d5HV7JPE-0bosqdaKqrS-7o-obCy1NP_qg@mail.gmail.com>
+Subject: Re: [PATCH] of: Add missing of_node_put() in of_find_node_by_path()
+To: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Rob Herring <robh+dt@kernel.org>
+Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 22, 2015 09:49:41 AM Quentin Lambert wrote:
-> These patches convert local variables from int to bool when relevant.
+On Thu, Jan 22, 2015 at 4:14 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Wed, 14 Jan 2015 16:45:56 +0100
+> , Geert Uytterhoeven <geert+renesas@glider.be>
+>  wrote:
+>> When traversing all nodes and moving to a new path component, the old
+>> one must be released by calling of_node_put(). Else the refcounts of the
+>> parent node(s) will not be decremented.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>> ---
+[...]
+>> Feel free to (ab)use the code below and derive a unittest from it...
 
-And what exactly is the need for that?  Does that fix any functional problems?
+BTW, can you do this please? They are pretty important for core
+changes now, and I'm stuck with doing them if the person supplying a
+patch does not (and I'm already too much of a bottleneck on the DT
+code).
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+g.
