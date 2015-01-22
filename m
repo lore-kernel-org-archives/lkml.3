@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501AbbAVHce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 02:32:34 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:52327 "EHLO
+	id S1751036AbbAVHbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 02:31:51 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:52329 "EHLO
 	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbbAVHbE (ORCPT
+	with ESMTP id S1752081AbbAVHbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 02:31:04 -0500
+	Thu, 22 Jan 2015 02:31:05 -0500
 Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0M7UoAI001400, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0M7UqKG001410, This message is accepted by code: ctloc85258
 From: <micky_ching@realsil.com.cn>
 To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
         <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [RESEND PATCH v2 5/9] mfd: rtsx: update phy register
-Date: Thu, 22 Jan 2015 15:30:37 +0800
-Message-ID: <b071b30b7457b83abe172c348262345faa332ff7.1421911636.git.micky_ching@realsil.com.cn>
+Subject: [RESEND PATCH v2 6/9] mfd: rtsx: remove LCTLR defination
+Date: Thu, 22 Jan 2015 15:30:38 +0800
+Message-ID: <bdf55ad1a8126b9bbbc968f2cde472b303e94215.1421911636.git.micky_ching@realsil.com.cn>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1421911636.git.micky_ching@realsil.com.cn>
 References: <cover.1421911636.git.micky_ching@realsil.com.cn>
@@ -29,257 +29,214 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Micky Ching <micky_ching@realsil.com.cn>
 
-update phy register value and using direct value instead of macros.
-It is much easier to debug using constant value than a lot of macros.
-We usually need compare the value directly to check the configure.
+To enable/disable ASPM we should find LINK CONTROL register
+in PCI config space. All old chip use 0x80 address, but new
+chip may use another address, so we using pci_find_capability()
+to get LINK CONTROL address.
+
+rtsx_gops.c was removed, we consider to put some common operations
+to this file, but the actual thing is, only a group of chips
+are in common ops1, and another group of chips in common ops2,
+it is hard to decide put which ops into generic ops file.
 
 Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
- drivers/mfd/rts5249.c        |  55 ++++++++++++----------
- include/linux/mfd/rtsx_pci.h | 109 ++++++++++++++++++++++---------------------
- 2 files changed, 85 insertions(+), 79 deletions(-)
+ drivers/mfd/Makefile         |  2 +-
+ drivers/mfd/rts5227.c        |  2 +-
+ drivers/mfd/rts5249.c        |  3 +--
+ drivers/mfd/rtsx_gops.c      | 37 -------------------------------------
+ drivers/mfd/rtsx_pcr.c       | 22 +++++++++++++++++-----
+ include/linux/mfd/rtsx_pci.h | 10 +---------
+ 6 files changed, 21 insertions(+), 55 deletions(-)
+ delete mode 100644 drivers/mfd/rtsx_gops.c
 
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 53467e2..2cd7e74 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -13,7 +13,7 @@ obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
+ obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
+ obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
+ 
+-rtsx_pci-objs			:= rtsx_pcr.o rtsx_gops.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
++rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
+ obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
+ obj-$(CONFIG_MFD_RTSX_USB)	+= rtsx_usb.o
+ 
+diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+index 1f387d4..0c02831 100644
+--- a/drivers/mfd/rts5227.c
++++ b/drivers/mfd/rts5227.c
+@@ -130,7 +130,7 @@ static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
+ {
+ 	int err;
+ 
+-	err = rtsx_gops_pm_reset(pcr);
++	err = rtsx_pci_write_register(pcr, PM_CTRL3, D3_DELINK_MODE_EN, 0x00);
+ 	if (err < 0)
+ 		return err;
+ 
 diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 2fe2854..d8072f6 100644
+index d8072f6..3977946 100644
 --- a/drivers/mfd/rts5249.c
 +++ b/drivers/mfd/rts5249.c
-@@ -132,57 +132,62 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
- 	if (err < 0)
- 		return err;
+@@ -119,7 +119,6 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
+ 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0xB0, 0xB0);
+ 	else
+ 		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0xB0, 0x80);
+-	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
  
--	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
--			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
--			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
--			PHY_REG_REV_RX_PWST | PHY_REG_REV_CLKREQ_DLY_TIMER_1_0 |
--			PHY_REG_REV_STOP_CLKRD | PHY_REG_REV_STOP_CLKWR);
-+	err = rtsx_pci_write_phy_register(pcr, PHY_REV,
-+		PHY_REV_RESV | PHY_REV_RXIDLE_LATCHED |
-+		PHY_REV_P1_EN | PHY_REV_RXIDLE_EN |
-+		PHY_REV_CLKREQ_TX_EN | PHY_REV_RX_PWST |
-+		PHY_REV_CLKREQ_DT_1_0 | PHY_REV_STOP_CLKRD |
-+		PHY_REV_STOP_CLKWR);
- 	if (err < 0)
- 		return err;
- 
- 	msleep(1);
- 
- 	err = rtsx_pci_write_phy_register(pcr, PHY_BPCR,
--			PHY_BPCR_IBRXSEL | PHY_BPCR_IBTXSEL |
--			PHY_BPCR_IB_FILTER | PHY_BPCR_CMIRROR_EN);
-+		PHY_BPCR_IBRXSEL | PHY_BPCR_IBTXSEL |
-+		PHY_BPCR_IB_FILTER | PHY_BPCR_CMIRROR_EN);
- 	if (err < 0)
- 		return err;
-+
- 	err = rtsx_pci_write_phy_register(pcr, PHY_PCR,
--			PHY_PCR_FORCE_CODE | PHY_PCR_OOBS_CALI_50 |
--			PHY_PCR_OOBS_VCM_08 | PHY_PCR_OOBS_SEN_90 |
--			PHY_PCR_RSSI_EN);
-+		PHY_PCR_FORCE_CODE | PHY_PCR_OOBS_CALI_50 |
-+		PHY_PCR_OOBS_VCM_08 | PHY_PCR_OOBS_SEN_90 |
-+		PHY_PCR_RSSI_EN | PHY_PCR_RX10K);
- 	if (err < 0)
- 		return err;
-+
- 	err = rtsx_pci_write_phy_register(pcr, PHY_RCR2,
--			PHY_RCR2_EMPHASE_EN | PHY_RCR2_NADJR |
--			PHY_RCR2_CDR_CP_10 | PHY_RCR2_CDR_SR_2 |
--			PHY_RCR2_FREQSEL_12 | PHY_RCR2_CPADJEN |
--			PHY_RCR2_CDR_SC_8 | PHY_RCR2_CALIB_LATE);
-+		PHY_RCR2_EMPHASE_EN | PHY_RCR2_NADJR |
-+		PHY_RCR2_CDR_SR_2 | PHY_RCR2_FREQSEL_12 |
-+		PHY_RCR2_CDR_SC_12P | PHY_RCR2_CALIB_LATE);
- 	if (err < 0)
- 		return err;
-+
- 	err = rtsx_pci_write_phy_register(pcr, PHY_FLD4,
--			PHY_FLD4_FLDEN_SEL | PHY_FLD4_REQ_REF |
--			PHY_FLD4_RXAMP_OFF | PHY_FLD4_REQ_ADDA |
--			PHY_FLD4_BER_COUNT | PHY_FLD4_BER_TIMER |
--			PHY_FLD4_BER_CHK_EN);
-+		PHY_FLD4_FLDEN_SEL | PHY_FLD4_REQ_REF |
-+		PHY_FLD4_RXAMP_OFF | PHY_FLD4_REQ_ADDA |
-+		PHY_FLD4_BER_COUNT | PHY_FLD4_BER_TIMER |
-+		PHY_FLD4_BER_CHK_EN);
- 	if (err < 0)
- 		return err;
--	err = rtsx_pci_write_phy_register(pcr, PHY_RDR, PHY_RDR_RXDSEL_1_9);
-+	err = rtsx_pci_write_phy_register(pcr, PHY_RDR,
-+		PHY_RDR_RXDSEL_1_9 | PHY_SSC_AUTO_PWD);
- 	if (err < 0)
- 		return err;
- 	err = rtsx_pci_write_phy_register(pcr, PHY_RCR1,
--			PHY_RCR1_ADP_TIME | PHY_RCR1_VCO_COARSE);
-+		PHY_RCR1_ADP_TIME_4 | PHY_RCR1_VCO_COARSE);
- 	if (err < 0)
- 		return err;
- 	err = rtsx_pci_write_phy_register(pcr, PHY_FLD3,
--			PHY_FLD3_TIMER_4 | PHY_FLD3_TIMER_6 |
--			PHY_FLD3_RXDELINK);
-+		PHY_FLD3_TIMER_4 | PHY_FLD3_TIMER_6 |
-+		PHY_FLD3_RXDELINK);
- 	if (err < 0)
- 		return err;
-+
- 	return rtsx_pci_write_phy_register(pcr, PHY_TUNE,
--			PHY_TUNE_TUNEREF_1_0 | PHY_TUNE_VBGSEL_1252 |
--			PHY_TUNE_SDBUS_33 | PHY_TUNE_TUNED18 |
--			PHY_TUNE_TUNED12);
-+		PHY_TUNE_TUNEREF_1_0 | PHY_TUNE_VBGSEL_1252 |
-+		PHY_TUNE_SDBUS_33 | PHY_TUNE_TUNED18 |
-+		PHY_TUNE_TUNED12 | PHY_TUNE_TUNEA12);
+ 	return rtsx_pci_send_cmd(pcr, 100);
  }
+@@ -128,7 +127,7 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+ {
+ 	int err;
  
- static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
+-	err = rtsx_gops_pm_reset(pcr);
++	err = rtsx_pci_write_register(pcr, PM_CTRL3, D3_DELINK_MODE_EN, 0x00);
+ 	if (err < 0)
+ 		return err;
+ 
+diff --git a/drivers/mfd/rtsx_gops.c b/drivers/mfd/rtsx_gops.c
+deleted file mode 100644
+index b1a98c6..0000000
+--- a/drivers/mfd/rtsx_gops.c
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/* Driver for Realtek PCI-Express card reader
+- *
+- * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of the GNU General Public License as published by the
+- * Free Software Foundation; either version 2, or (at your option) any
+- * later version.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License along
+- * with this program; if not, see <http://www.gnu.org/licenses/>.
+- *
+- * Author:
+- *   Micky Ching <micky_ching@realsil.com.cn>
+- */
+-
+-#include <linux/mfd/rtsx_pci.h>
+-#include "rtsx_pcr.h"
+-
+-int rtsx_gops_pm_reset(struct rtsx_pcr *pcr)
+-{
+-	int err;
+-
+-	/* init aspm */
+-	rtsx_pci_write_register(pcr, ASPM_FORCE_CTL, 0xFF, 0x00);
+-	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, ~LCTLR_ASPM_CTL_MASK, 0x00);
+-	if (err < 0)
+-		return err;
+-
+-	/* reset PM_CTRL3 before send buffer cmd */
+-	return rtsx_pci_write_register(pcr, PM_CTRL3, D3_DELINK_MODE_EN, 0x00);
+-}
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 30f7ca8..81b9c2c 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -63,6 +63,18 @@ static const struct pci_device_id rtsx_pci_ids[] = {
+ 
+ MODULE_DEVICE_TABLE(pci, rtsx_pci_ids);
+ 
++static inline void rtsx_pci_enable_aspm(struct rtsx_pcr *pcr)
++{
++	rtsx_pci_update_cfg_byte(pcr, pcr->pcie_cap + PCI_EXP_LNKCTL,
++		0xFC, pcr->aspm_en);
++}
++
++static inline void rtsx_pci_disable_aspm(struct rtsx_pcr *pcr)
++{
++	rtsx_pci_update_cfg_byte(pcr, pcr->pcie_cap + PCI_EXP_LNKCTL,
++		0xFC, 0);
++}
++
+ void rtsx_pci_start_run(struct rtsx_pcr *pcr)
+ {
+ 	/* If pci device removed, don't queue idle work any more */
+@@ -75,7 +87,7 @@ void rtsx_pci_start_run(struct rtsx_pcr *pcr)
+ 			pcr->ops->enable_auto_blink(pcr);
+ 
+ 		if (pcr->aspm_en)
+-			rtsx_pci_write_config_byte(pcr, LCTLR, 0);
++			rtsx_pci_disable_aspm(pcr);
+ 	}
+ 
+ 	mod_delayed_work(system_wq, &pcr->idle_work, msecs_to_jiffies(200));
+@@ -942,7 +954,7 @@ static void rtsx_pci_idle_work(struct work_struct *work)
+ 		pcr->ops->turn_off_led(pcr);
+ 
+ 	if (pcr->aspm_en)
+-		rtsx_pci_write_config_byte(pcr, LCTLR, pcr->aspm_en);
++		rtsx_pci_enable_aspm(pcr);
+ 
+ 	mutex_unlock(&pcr->pcr_mutex);
+ }
+@@ -968,6 +980,7 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+ {
+ 	int err;
+ 
++	pcr->pcie_cap = pci_find_capability(pcr->pci, PCI_CAP_ID_EXP);
+ 	rtsx_pci_writel(pcr, RTSX_HCBAR, pcr->host_cmds_addr);
+ 
+ 	rtsx_pci_enable_bus_int(pcr);
+@@ -980,6 +993,7 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+ 	/* Wait SSC power stable */
+ 	udelay(200);
+ 
++	rtsx_pci_disable_aspm(pcr);
+ 	if (pcr->ops->optimize_phy) {
+ 		err = pcr->ops->optimize_phy(pcr);
+ 		if (err < 0)
+@@ -1028,10 +1042,8 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+ 	if (err < 0)
+ 		return err;
+ 
+-	rtsx_pci_write_config_byte(pcr, LCTLR, 0);
+-
+ 	/* Enable clk_request_n to enable clock power management */
+-	rtsx_pci_write_config_byte(pcr, 0x81, 1);
++	rtsx_pci_write_config_byte(pcr, pcr->pcie_cap + PCI_EXP_LNKCTL + 1, 1);
+ 	/* Enter L1 when host tx idle */
+ 	rtsx_pci_write_config_byte(pcr, 0x70F, 0x5B);
+ 
 diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index 87cff60..0103210 100644
+index 0103210..33cc63c 100644
 --- a/include/linux/mfd/rtsx_pci.h
 +++ b/include/linux/mfd/rtsx_pci.h
-@@ -630,16 +630,47 @@
+@@ -716,15 +716,6 @@
  
- /* Phy register */
- #define PHY_PCR				0x00
-+#define   PHY_PCR_FORCE_CODE		0xB000
-+#define   PHY_PCR_OOBS_CALI_50		0x0800
-+#define   PHY_PCR_OOBS_VCM_08		0x0200
-+#define   PHY_PCR_OOBS_SEN_90		0x0040
-+#define   PHY_PCR_RSSI_EN		0x0002
-+#define   PHY_PCR_RX10K			0x0001
-+
- #define PHY_RCR0			0x01
- #define PHY_RCR1			0x02
-+#define   PHY_RCR1_ADP_TIME_4		0x0400
-+#define   PHY_RCR1_VCO_COARSE		0x001F
-+
- #define PHY_RCR2			0x03
-+#define   PHY_RCR2_EMPHASE_EN		0x8000
-+#define   PHY_RCR2_NADJR		0x4000
-+#define   PHY_RCR2_CDR_SR_2		0x0100
-+#define   PHY_RCR2_FREQSEL_12		0x0040
-+#define   PHY_RCR2_CDR_SC_12P		0x0010
-+#define   PHY_RCR2_CALIB_LATE		0x0002
-+
- #define PHY_RTCR			0x04
- #define PHY_RDR				0x05
-+#define   PHY_RDR_RXDSEL_1_9		0x4000
-+#define   PHY_SSC_AUTO_PWD		0x0600
- #define PHY_TCR0			0x06
- #define PHY_TCR1			0x07
- #define PHY_TUNE			0x08
-+#define   PHY_TUNE_TUNEREF_1_0		0x4000
-+#define   PHY_TUNE_VBGSEL_1252		0x0C00
-+#define   PHY_TUNE_SDBUS_33		0x0200
-+#define   PHY_TUNE_TUNED18		0x01C0
-+#define   PHY_TUNE_TUNED12		0X0020
-+#define   PHY_TUNE_TUNEA12		0x0004
-+
- #define PHY_IMR				0x09
- #define PHY_BPCR			0x0A
-+#define   PHY_BPCR_IBRXSEL		0x0400
-+#define   PHY_BPCR_IBTXSEL		0x0100
-+#define   PHY_BPCR_IB_FILTER		0x0080
-+#define   PHY_BPCR_CMIRROR_EN		0x0040
-+
- #define PHY_BIST			0x0B
- #define PHY_RAW_L			0x0C
- #define PHY_RAW_H			0x0D
-@@ -654,12 +685,35 @@
- #define PHY_BPNR			0x16
- #define PHY_BRNR2			0x17
- #define PHY_BENR			0x18
--#define PHY_REG_REV			0x19
-+#define PHY_REV				0x19
-+#define   PHY_REV_RESV			0xE000
-+#define   PHY_REV_RXIDLE_LATCHED	0x1000
-+#define   PHY_REV_P1_EN			0x0800
-+#define   PHY_REV_RXIDLE_EN		0x0400
-+#define   PHY_REV_CLKREQ_TX_EN		0x0200
-+#define   PHY_REV_CLKREQ_RX_EN		0x0100
-+#define   PHY_REV_CLKREQ_DT_1_0		0x0040
-+#define   PHY_REV_STOP_CLKRD		0x0020
-+#define   PHY_REV_RX_PWST		0x0008
-+#define   PHY_REV_STOP_CLKWR		0x0004
-+
- #define PHY_FLD0			0x1A
- #define PHY_FLD1			0x1B
- #define PHY_FLD2			0x1C
- #define PHY_FLD3			0x1D
-+#define   PHY_FLD3_TIMER_4		0x0800
-+#define   PHY_FLD3_TIMER_6		0x0020
-+#define   PHY_FLD3_RXDELINK		0x0004
-+
- #define PHY_FLD4			0x1E
-+#define   PHY_FLD4_FLDEN_SEL		0x4000
-+#define   PHY_FLD4_REQ_REF		0x2000
-+#define   PHY_FLD4_RXAMP_OFF		0x1000
-+#define   PHY_FLD4_REQ_ADDA		0x0800
-+#define   PHY_FLD4_BER_COUNT		0x00E0
-+#define   PHY_FLD4_BER_TIMER		0x000A
-+#define   PHY_FLD4_BER_CHK_EN		0x0001
-+
  #define PHY_DUM_REG			0x1F
  
- #define LCTLR				0x80
-@@ -675,59 +729,6 @@
+-#define LCTLR				0x80
+-#define   LCTLR_EXT_SYNC		0x80
+-#define   LCTLR_COMMON_CLOCK_CFG	0x40
+-#define   LCTLR_RETRAIN_LINK		0x20
+-#define   LCTLR_LINK_DISABLE		0x10
+-#define   LCTLR_RCB			0x08
+-#define   LCTLR_RESERVED		0x04
+-#define   LCTLR_ASPM_CTL_MASK		0x03
+-
+ #define PCR_SETTING_REG1		0x724
  #define PCR_SETTING_REG2		0x814
  #define PCR_SETTING_REG3		0x747
+@@ -759,6 +750,7 @@ enum PDEV_STAT  {PDEV_STAT_IDLE, PDEV_STAT_RUN};
+ struct rtsx_pcr {
+ 	struct pci_dev			*pci;
+ 	unsigned int			id;
++	int				pcie_cap;
  
--/* Phy bits */
--#define PHY_PCR_FORCE_CODE			0xB000
--#define PHY_PCR_OOBS_CALI_50			0x0800
--#define PHY_PCR_OOBS_VCM_08			0x0200
--#define PHY_PCR_OOBS_SEN_90			0x0040
--#define PHY_PCR_RSSI_EN				0x0002
--
--#define PHY_RCR1_ADP_TIME			0x0100
--#define PHY_RCR1_VCO_COARSE			0x001F
--
--#define PHY_RCR2_EMPHASE_EN			0x8000
--#define PHY_RCR2_NADJR				0x4000
--#define PHY_RCR2_CDR_CP_10			0x0400
--#define PHY_RCR2_CDR_SR_2			0x0100
--#define PHY_RCR2_FREQSEL_12			0x0040
--#define PHY_RCR2_CPADJEN			0x0020
--#define PHY_RCR2_CDR_SC_8			0x0008
--#define PHY_RCR2_CALIB_LATE			0x0002
--
--#define PHY_RDR_RXDSEL_1_9			0x4000
--
--#define PHY_TUNE_TUNEREF_1_0			0x4000
--#define PHY_TUNE_VBGSEL_1252			0x0C00
--#define PHY_TUNE_SDBUS_33			0x0200
--#define PHY_TUNE_TUNED18			0x01C0
--#define PHY_TUNE_TUNED12			0X0020
--
--#define PHY_BPCR_IBRXSEL			0x0400
--#define PHY_BPCR_IBTXSEL			0x0100
--#define PHY_BPCR_IB_FILTER			0x0080
--#define PHY_BPCR_CMIRROR_EN			0x0040
--
--#define PHY_REG_REV_RESV			0xE000
--#define PHY_REG_REV_RXIDLE_LATCHED		0x1000
--#define PHY_REG_REV_P1_EN			0x0800
--#define PHY_REG_REV_RXIDLE_EN			0x0400
--#define PHY_REG_REV_CLKREQ_DLY_TIMER_1_0	0x0040
--#define PHY_REG_REV_STOP_CLKRD			0x0020
--#define PHY_REG_REV_RX_PWST			0x0008
--#define PHY_REG_REV_STOP_CLKWR			0x0004
--
--#define PHY_FLD3_TIMER_4			0x7800
--#define PHY_FLD3_TIMER_6			0x00E0
--#define PHY_FLD3_RXDELINK			0x0004
--
--#define PHY_FLD4_FLDEN_SEL			0x4000
--#define PHY_FLD4_REQ_REF			0x2000
--#define PHY_FLD4_RXAMP_OFF			0x1000
--#define PHY_FLD4_REQ_ADDA			0x0800
--#define PHY_FLD4_BER_COUNT			0x00E0
--#define PHY_FLD4_BER_TIMER			0x000A
--#define PHY_FLD4_BER_CHK_EN			0x0001
--
- #define rtsx_pci_init_cmd(pcr)		((pcr)->ci = 0)
- 
- struct rtsx_pcr;
+ 	/* pci resources */
+ 	unsigned long			addr;
 -- 
 1.9.1
 
