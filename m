@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbbAVS6F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 13:58:05 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:60094 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475AbbAVS54 (ORCPT
+	id S1754022AbbAVS7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 13:59:23 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:45837 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321AbbAVS7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 13:57:56 -0500
-Date: Thu, 22 Jan 2015 16:57:50 -0200
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/36] drm/plane: Add optional ->atomic_disable() callback
-Message-ID: <20150122185750.GJ2001@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Thierry Reding <thierry.reding@gmail.com>,
-	dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
- <1421750935-4023-4-git-send-email-thierry.reding@gmail.com>
+	Thu, 22 Jan 2015 13:59:20 -0500
+Date: Thu, 22 Jan 2015 10:59:14 -0800
+From: Jack Pham <jackp@codeaurora.org>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Felipe Balbi <balbi@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Kumar Gala <galak@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-usb@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: Re: [Patch v9 3/3] phy: Add Qualcomm DWC3 HS/SS PHY driver
+Message-ID: <20150122185914.GA4114@usblab-sd-06.qualcomm.com>
+References: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
+ <1410550088-8754-4-git-send-email-agross@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421750935-4023-4-git-send-email-thierry.reding@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410550088-8754-4-git-send-email-agross@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-20 Thierry Reding <thierry.reding@gmail.com>:
+Hi Andy,
 
-> From: Thierry Reding <treding@nvidia.com>
+On Fri, Sep 12, 2014 at 02:28:08PM -0500, Andy Gross wrote:
+> This patch adds a new driver for the Qualcomm USB 3.0 PHY that exists on some
+> Qualcomm platforms.  This driver uses the generic PHY framework and will
+> interact with the DWC3 controller.
 > 
-> In order to prevent drivers from having to perform the same checks over
-> and over again, add an optional ->atomic_disable callback which the core
-> calls under the right circumstances.
-> 
-> v2: pass old state and detect edges to avoid calling ->atomic_disable on
-> already disabled planes, remove redundant comment (Daniel Vetter)
-> 
-> v3: rename helper to drm_atomic_plane_disabling() to clarify that it is
-> checking for transitions, move helper to drm_atomic_helper.h, clarify
-> check for !old_state and its relation to transitional helpers
-> 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
 > ---
->  drivers/gpu/drm/drm_atomic_helper.c |  9 ++++++++-
->  drivers/gpu/drm/drm_plane_helper.c  | 10 +++++++++-
->  include/drm/drm_atomic_helper.h     | 37 +++++++++++++++++++++++++++++++++++++
->  include/drm/drm_plane_helper.h      |  3 +++
->  4 files changed, 57 insertions(+), 2 deletions(-)
+>  drivers/phy/Kconfig         |   11 +
+>  drivers/phy/Makefile        |    1 +
+>  drivers/phy/phy-qcom-dwc3.c |  483 +++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 495 insertions(+)
+>  create mode 100644 drivers/phy/phy-qcom-dwc3.c
 
-Reviewed-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+What happened to this patch? Looks like [1/3] & [2/3] made it in during
+the 3.18 merge, but did this one not get picked up by Kishon?
 
-	Gustavo
+Thanks,
+Jack
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
