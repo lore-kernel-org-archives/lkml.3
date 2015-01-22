@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741AbbAVIkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 03:40:47 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:31283 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436AbbAVIkj (ORCPT
+	id S1752601AbbAVIju (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 03:39:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49518 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbbAVIjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 03:40:39 -0500
-Message-ID: <54C0B735.7070106@huawei.com>
-Date: Thu, 22 Jan 2015 16:39:17 +0800
-From: Li Bin <huawei.libin@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-CC: Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, <live-patching@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
-        <guohanjun@huawei.com>, <zhangdianfang@huawei.com>,
-        <xiexiuqi@huawei.com>
-Subject: Re: [PATCH 2/2] livepatch: disable/enable_patch manners for interdependent
- patches
-References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-3-git-send-email-huawei.libin@huawei.com> <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz> <54C04775.1070908@huawei.com> <20150122035126.GB12927@treble.redhat.com>
-In-Reply-To: <20150122035126.GB12927@treble.redhat.com>
+	Thu, 22 Jan 2015 03:39:45 -0500
+Message-ID: <1421915978.3084.8.camel@pengutronix.de>
+Subject: Re: [PATCH v2] gpu: ipu-v3: wait_for_completion_timeout does not
+ return negative status
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Emil Renner Berthing <kernel@esmil.dk>,
+        Antoine Schweitzer-Chaput <antoine@schweitzer-chaput.fr>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 22 Jan 2015 09:39:38 +0100
+In-Reply-To: <1421667491-8935-1-git-send-email-der.herr@hofr.at>
+References: <1421667491-8935-1-git-send-email-der.herr@hofr.at>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.181]
-X-CFilter-Loop: Reflected
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/22 11:51, Josh Poimboeuf wrote:
-> On Thu, Jan 22, 2015 at 08:42:29AM +0800, Li Bin wrote:
->> On 2015/1/21 22:08, Jiri Kosina wrote:
->>> On Wed, 21 Jan 2015, Li Bin wrote:
->>> By this you limit the definition of the patch inter-dependency to just 
->>> symbols. But that's not the only way how patches can depend on it other -- 
->>> the dependency can be semantical.
->>
->> Yes, I agree with you. But I think the other dependencies such as semantical
->> dependency should be judged by the user, like reverting a patch from git repository.
->> Right?
+Am Montag, den 19.01.2015, 12:38 +0100 schrieb Nicholas Mc Guire:
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> ---
 > 
-> But with live patching, there are two users: the patch creator (who
-> creates the patch module) and the end user (who loads it on their
-> system).
+> This fixes up the return value handling and the return type
+>
+> Patch is against 3.19.0-rc3 -next-20150109                                    
+>                                                                                
+> This patch was compiletested with imx_v6_v7_defconfig +                       
+> CONFIG_RESET_CONTROLLER=y, CONFIG_IMX_IPUV3_CORE=m                            
 > 
-> We can assume the patch creator knows what he's doing, but the end user
-> doesn't always know or care about low level details like patch
-> dependencies.  The easiest and safest way to protect the end user is the
-> current approach, which assumes that each patch depends on all
-> previously applied patches.
+> Incorrect return type reported by Philipp Zabel <p.zabel@pengutronix.de>
 
-But then, the feature that disable patch dynamically is useless.
-For example, if user find a bug be introduced by the last patch and disable
-it directly, the new patch is no longer allowed from now unless enable the
-old patch firstly but there is a risk window by this way.
+Thank you, I have queued this patch.
 
-> 
+regards
+Philipp
 
 
