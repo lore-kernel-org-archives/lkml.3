@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630AbbAVR1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 12:27:48 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:64591 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796AbbAVR1o (ORCPT
+	id S1753141AbbAVRdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 12:33:07 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:48760 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbbAVRdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 12:27:44 -0500
+	Thu, 22 Jan 2015 12:33:04 -0500
 MIME-Version: 1.0
 From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Date: Thu, 22 Jan 2015 09:27:21 -0800
-Message-ID: <CAADnVQLnrAgk3vTppugqCtSsHL4XiZeQJrQi3cqhgLCCq1v8Pg@mail.gmail.com>
-Subject: Re: [PATCH] bpf: Call rcu_read_unlock() before copy_to_user()
+Date: Thu, 22 Jan 2015 09:32:43 -0800
+Message-ID: <CAADnVQ+3exrhp8bS50HEnMrYdg4i3+K7c6ewNZHRkBqtW-uwOA@mail.gmail.com>
+Subject: Re: [PATCH] samples/bpf: Fix test_maps/bpf_get_next_key() test
 To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 Cc: Alexei Starovoitov <ast@kernel.org>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
@@ -22,40 +22,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 7:57 AM, Michael Holzheu
+On Thu, Jan 22, 2015 at 8:01 AM, Michael Holzheu
 <holzheu@linux.vnet.ibm.com> wrote:
-> We must not hold locks when calling copy_to_user():
+> Looks like the "test_maps" test case expects to get the keys in
+> the wrong order when iterating over the elements:
 >
-> BUG: sleeping function called from invalid context at mm/memory.c:3732
-> in_atomic(): 0, irqs_disabled(): 0, pid: 671, name: test_maps
-> 1 lock held by test_maps/671:
->  #0:  (rcu_read_lock){......}, at: [<0000000000264190>] map_lookup_elem+0xe8/0x260
-> Preemption disabled at:[<00000000001be3b6>] vprintk_default+0x56/0x68
+> test_maps: samples/bpf/test_maps.c:79: test_hashmap_sanity: Assertion
+> `bpf_get_next_key(map_fd, &key, &next_key) == 0 && next_key == 2' failed.
+> Aborted
 >
-> CPU: 0 PID: 671 Comm: test_maps Not tainted 3.19.0-rc5-00117-g5eb11d6-dirty #424
->        000000001e447bb0 000000001e447c40 0000000000000002 0000000000000000
->        000000001e447ce0 000000001e447c58 000000001e447c58 0000000000115c8a
->        0000000000000000 0000000000c08246 0000000000c27e8a 000000000000000b
->        000000001e447ca0 000000001e447c40 0000000000000000 0000000000000000
->        0000000000000000 0000000000115c8a 000000001e447c40 000000001e447ca0
-> Call Trace:
-> ([<0000000000115b7e>] show_trace+0x12e/0x150)
->  [<0000000000115c40>] show_stack+0xa0/0x100
->  [<00000000009b163c>] dump_stack+0x74/0xc8
->  [<000000000017424a>] ___might_sleep+0x23a/0x248
->  [<00000000002b58e8>] might_fault+0x70/0xe8
->  [<0000000000264230>] map_lookup_elem+0x188/0x260
->  [<0000000000264716>] SyS_bpf+0x20e/0x840
->  [<00000000009bbe3a>] system_call+0xd6/0x24c
->  [<000003fffd15f566>] 0x3fffd15f566
-> 1 lock held by test_maps/671:
->  #0:  (rcu_read_lock){......}, at: [<0000000000264190>] map_lookup_elem+0xe8/0x260
->
-> So call rcu_read_unlock() before copy_to_user(). We can
-> release the lock earlier because it is not needed for copy_to_user().
+> Fix this and test for the correct order.
 
-we cannot move the rcu unlock this way, since it protects the value.
-So we need to copy the value while still under rcu.
-I'm puzzled how I missed this warning.
-I guess you have CONFIG_PREEMPT_RCU=y ?
-and if (in_atomic()) return; as part of might_fault() hid it.
+that will break this test on x86...
+we need to understand first why the order of two elements
+came out different on s390...
+Could it be that jhash() produced different hash for the same
+values on x86 vs s390 ?
+The better fix for the test is probably not to assume AB or BA
+order, but accept both.
