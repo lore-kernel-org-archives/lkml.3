@@ -1,205 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbbAVB1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 20:27:46 -0500
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:33380 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751878AbbAVB1i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 20:27:38 -0500
-Message-ID: <54C05207.6010306@nexus-software.ie>
-Date: Thu, 22 Jan 2015 01:27:35 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, dvhart@infradead.org,
-        boon.leong.ong@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
-References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie>	<1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie> <CAHp75VfNzXo=gkOhjkEGn+bSqk2kr+hOD_5PNxq4CsLjOqtG=w@mail.gmail.com>
-In-Reply-To: <CAHp75VfNzXo=gkOhjkEGn+bSqk2kr+hOD_5PNxq4CsLjOqtG=w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+	id S1751502AbbAVB3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 20:29:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35182 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752500AbbAVB3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 20:29:03 -0500
+Message-ID: <1421890125.2673.32.camel@pluto.fritz.box>
+Subject: Re: [RFC PATCH 0/5] Second attempt at contained helper execution
+From: Ian Kent <ikent@redhat.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <onestero@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Benjamin Coddington <bcodding@redhat.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Jeff Layton <jeff.layton@primarydata.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Thu, 22 Jan 2015 09:28:45 +0800
+In-Reply-To: <20150121143819.GA28392@fieldses.org>
+References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
+	 <20150114215525.GB7071@fieldses.org> <20150114221011.GC7071@fieldses.org>
+	 <1421281572.2688.4.camel@pluto.fritz.box>
+	 <20150115162741.GA14902@fieldses.org>
+	 <1421370073.2630.4.camel@pluto.fritz.box>
+	 <20150116152527.GD17315@fieldses.org>
+	 <1421823925.2789.3.camel@pluto.fritz.box>
+	 <20150121143819.GA28392@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/01/15 20:57, Andy Shevchenko wrote:
->
-> Few nitpicks and comments below.
->
->> +/*
->> + * IMR agent access mask bits
->> + * See section 12.7.4.7 from quark-x1000-datasheet.pdf for register
->> + * definitions
->
-> What about dots at the end of sentences?
+On Wed, 2015-01-21 at 09:38 -0500, J. Bruce Fields wrote:
+> On Wed, Jan 21, 2015 at 03:05:25PM +0800, Ian Kent wrote:
+> > On Fri, 2015-01-16 at 10:25 -0500, J. Bruce Fields wrote:
+> > > On Fri, Jan 16, 2015 at 09:01:13AM +0800, Ian Kent wrote:
+> > > > On Thu, 2015-01-15 at 11:27 -0500, J. Bruce Fields wrote:
+> > > > > On Thu, Jan 15, 2015 at 08:26:12AM +0800, Ian Kent wrote:
+> > > > > > On Wed, 2015-01-14 at 17:10 -0500, J. Bruce Fields wrote:
+> > > > > > > > On Wed, Jan 14, 2015 at 05:32:22PM +0800, Ian Kent wrote:
+> > > > > > > > > There are other difficulties to tackle as well, such as how to decide
+> > > > > > > > > if contained helper execution is needed. For example, if a mount has
+> > > > > > > > > been propagated to a container or bound into the container tree (such
+> > > > > > > > > as with the --volume option of "docker run") the root init namespace
+> > > > > > > > > may need to be used and not the container namespace.
+> > > > > > > 
+> > > > > > > I think you have to go through each of the existing upcall examples and
+> > > > > > > decide what's needed for each.
+> > > > > > > 
+> > > > > > > At least for the nfsv4 idmapper I would've thought the namespace the
+> > > > > > > mount was done in would be the right choice, hence my previous question.
+> > > > > > 
+> > > > > > Probably but you don't necessarily know what namespace the mount was
+> > > > > > done in. It may have been propagated from another namespace or (although
+> > > > > > I don't think it works yet) bound from another container using the
+> > > > > > volumes-from docker option.
+> > > > > 
+> > > > > Name-id mappings should be associated with the superblock, I guess--so
+> > > > > don't you store a pointer to the right thing there?
+> > > > 
+> > > > Quite possibly but my original point was, without an acceptable
+> > > > mechanism to execute the helper we can't know what might need to be done
+> > > > to use it.
+> > > 
+> > > At least for me it would be easier to review if it came with at least
+> > > one example user.
+> > 
+> > Haven't seen any negative responses but perhaps people are still away
+> > over Xmas.
+> > 
+> > In the mean time it's probably a good idea to add some use cases to the
+> > series in case the approach is OK.
+> > 
+> > I'll have a look at the nfsd code and see if I can spot the places.
+> 
+> On the nfsd side it's just the one call_usermodehelper in
+> fs/nfsd/nfs4recover.c.  The tricky part is figuring out where the
+> namespace information should come from.
 
-Murphy's law says - no matter how many times you proof read for full 
-stop you'll miss at least one :)
+I had a look at the nfsd code but haven't looked at the nfsdcltrack to
+see what it does and if it expects anything that wouldn't be available.
+There's also the assumption that the external application is present
+within the container filesystem at the same location.
 
->> +#define pr_fmt(fmt) "imr: " fmt
->
-> Maybe more usual
-> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+The whole idea of the current approach is that the namespace information
+comes from the init process of the container it's executing in.
 
-Sure.
+I believe that if nfsd is running in a container it should be able to
+function entirely within the container, except for the callback issue.
 
->> +       ret = iosf_mbi_read(QRK_MBI_UNIT_MM, QRK_MBI_MM_READ,
->> +                               reg++, &imr->rmask);
->> +       if (ret)
->> +               return ret;
->> +
->> +       return iosf_mbi_read(QRK_MBI_UNIT_MM, QRK_MBI_MM_READ,
->> +                               reg, &imr->wmask);
->
-> I would keep this in the same style like
-> ret =
-> if (ret)
->   return ret;
->
-> return 0;
->
-> It might be easy to extend if needed, though it's a really minor change.
+I see there's a check in the callback init function to see if the net
+namespace in use is the root net namespace. It looks like that check
+would be enough to determine that container execution is needed.
 
-No problem
+Assuming that the various locations all contain the same struct net,
+such as is stored in (struct nfs4_client) clp, then it's probably enough
+to change nfsd4_umh_cltrack_upcall() to also take net as a parameter. 
 
->> +
->> +       ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
->> +                               reg++, imr->rmask);
->> +       if (ret)
->> +               goto done;
->> +
->> +       ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
->> +                               reg, imr->wmask);
->
-> Wouldn't be reg++ here as well? Below you substitute full offset which
-> I think points just to next register.
+Then the same check (which would be removed) used in the init function
+could be used to determine if the UMH_USE_NS flag needs to be passed to
+call_usermodehelper().
 
-I don't think we want to increment below..
+Passing the UMH_USE_NS flag to call_usermodehelper() will cause the
+helper to be executed within the init namespace (including the net
+namespace) of the container.
 
->
->> +       if (ret)
->> +               goto done;
->> +
->> +       /* Lock bit must be set separately to addr_lo address bits */
->> +       if (lock) {
->> +               imr->addr_lo |= IMR_LOCK;
->> +               ret = iosf_mbi_write(QRK_MBI_UNIT_MM, QRK_MBI_MM_WRITE,
->> +                                       reg - IMR_LOCK_OFF, imr->addr_lo);
->> +       }
+If that is what's needed then it might be sensible to change
+nfsd4_umh_cltrack_upcall() to take a structure containing parameters to
+keep it clean.
 
-..because we calculate an offset anyway. An additional increment would 
-just be unnecessary cycles.
+I could create patches to demonstrate the procedure but we probably
+should keep that discussion separate from this one for the moment.
 
->
-> Could it fit one line less?
+Ian
 
-Yes. Will change.
-
->> +
->> +#ifdef CONFIG_DEBUG_FS
->> +/**
->> + * imr_dbgfs_state_show
->> + * Print state of IMR registers
->> + *
->> + * @s:         pointer to seq_file for output
->> + * @unused:    unused parameter
->> + * @return:    0 on success or error code passed from mbi_iosf on failure
->> + */
->> +static int imr_dbgfs_state_show(struct seq_file *s, void *unused)
->
-> I didn't remembter if I told you, but please use s->private for the
-> imr_dev pointer.
-> Everywhere in debugfs calls and if possible in other functions as well.
-
-No missed s->private. Will incorporate for V3.
-
->> +}
->> +
->> +/**
->> + * imr_debugfs_unregister
->> + * Unregister debugfs hooks
->> + *
->> + * @imr:       IMR structure representing address and access masks
->> + * @return:
->> + */
->> +static void imr_debugfs_unregister(void)
->> +{
->> +       if (!imr_dev.file)
->> +               return;
->
-> Redundant check. I think I told you that already.
-
-I think you did. V3
-
->> +static void __init imr_fixup_memmap(void)
->> +{
->> +       unsigned long base  = virt_to_phys(&_text);
->> +       unsigned long size = virt_to_phys(&__end_rodata) - base;
->
-> Shouldn't be phys_addr_t ?
-> Oh, It might be good for all address parameters in the introduced API.
-
-Well the reference MTRR code doesn't do phs_addr_t
-OTOH so what. I think phys_addr_t is more representative of the data 
-being passed, so will include @ V3.
-
->> +               pr_info("protecting kernel .text - .rodata: %ldk (%p - %p)\n",
->> +                       size / 1024, &_text, &__end_rodata);
->
-> size >> 10
-
-Andy.
-
-It was size >> 10 for V1 and you called it out as a magic number :)
-
-IMO, size / 1024 requires less thought to understand when reading the code.
-
->> +
->> +#ifdef CONFIG_DEBUG_IMR_SELFTEST
->> +       /* Run optional self test */
->> +       imr_self_test(base, size);
->> +#endif
->
-> I think it makes sense to move this piece to the init.
-> I don't see what is exceptional in this function that test belongs here.
-
-Fair enough.
-
->> +#ifdef CONFIG_DEBUG_FS
->> +       ret = imr_debugfs_register();
->> +       if (ret != 0)
->> +               return ret;
->
-> It's non-fatal error.
-> Thus,
-> if (ret)
->   pr_warn("DebugFS wasn't initialized\n");
->
-> Move it after we have imr_dev in place and supply it to debugfs as a
-> private pointer.
-
-Agree
-
->> + * return:
->> + */
->> +static void __exit imr_exit(void)
->> +{
->> +#ifdef CONFIG_DEBUG_FS
->
-> I suspect you may remove all those ifdefs and compiler should shrink
-> not used code since debugfs has the stubs.
->
->> +       imr_debugfs_unregister();
->> +#endif
->> +}
-
-Hrmm. I'll revist that @ V3.
-
-Thanks for the quick feedback.
-
---
-BOD
