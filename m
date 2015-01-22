@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbbAVLRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:17:19 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35491 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbbAVLRK (ORCPT
+	id S1751906AbbAVLS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:18:27 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:25164 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662AbbAVLSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:17:10 -0500
-Message-ID: <54C0DC2E.2030701@collabora.co.uk>
-Date: Thu, 22 Jan 2015 12:17:02 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
-        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH RESEND v2 3/7] mfd: cros_ec: Add cros_ec_lpc driver for
- x86 devices
-References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk> <1420205572-2640-4-git-send-email-javier.martinez@collabora.co.uk> <20150120081104.GT21886@x1> <54BE7B08.1010900@collabora.co.uk> <20150120163410.GC30656@x1> <54BE87C4.4040108@collabora.co.uk> <20150122084244.GP22024@x1> <54C0BE21.7020008@collabora.co.uk> <20150122094608.GA5769@x1> <54C0D29C.4010904@collabora.co.uk> <20150122105605.GB9129@x1>
-In-Reply-To: <20150122105605.GB9129@x1>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Jan 2015 06:18:23 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-3b-54c0dc7cf783
+From: Inha Song <ideal.song@samsung.com>
+To: alsa-devel@alsa-project.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        s.nawrocki@samsung.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk, kgene@kernel.org,
+        sbkim73@samsung.com, lgirdwood@gmail.com, broonie@kernel.org,
+        perex@perex.cz, tiwai@suse.de, grant.likely@linaro.org,
+        ideal.song@samsung.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: [alsa-devel] [PATCH v3 0/4] Sound support for Exynos4412 Trats2 board
+Date: Thu, 22 Jan 2015 20:17:58 +0900
+Message-id: <1421925482-15861-1-git-send-email-ideal.song@samsung.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsWyRsSkWLfmzoEQg8mLFS2uXDzEZDH14RM2
+	i/lHzrFa9L9ZyGpx4M8ORotdf+8zWpx7tZLRov/xa2aLb1c6mCw2Pb7GanF51xw2ixnn9zFZ
+	3L7Ma7H0+kUmiwnT17JYdO7qZ7Vo3XuE3eLwm3ZWi4srvjBZvNz8hslBxGPD5yY2jzXz1jB6
+	tDT3sHlc7utl8tg56y67x8rlX9g8Nq3qZPO4c20Pm8fmJfUe+94uY/Po27KK0WPz6WqPz5vk
+	AnijuGxSUnMyy1KL9O0SuDLWtR9jLrjAXbHs7XfWBsY3HF2MnBwSAiYSh68uYoewxSQu3FvP
+	1sXIxSEksJRRYuOxZnaYoq9/l7FAJBYxSjRuPcUGkhASmMMksaI5FcRmE9CQ+P55M3MXIweH
+	iIC8xKH3eSD1zAJXmCU+rpjFDFIjLOAnsejEb1YQm0VAVWLD8n2MIDavgJvExv6VbBDLtCX2
+	NcyEsudySBz+JQJRLyDxbfIhFpD5EgKyEpsOMEOUSEocXHGDZQKj4AJGhlWMoqkFyQXFSelF
+	RnrFibnFpXnpesn5uZsYgRF4+t+zvh2MNw9YH2IU4GBU4uHNKD4QIsSaWFZcmXuI0RRow0Rm
+	KdHkfGCc55XEGxqbGVmYmpgaG5lbmimJ8yZI/QwWEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnV
+	wCjYHh7tVSs4/dNm14cZf44wspUFcIvWLo1f0eGn+urqv7/ME5a4bp644IhVk/YV4Q+vXos9
+	rV594OPqhB/fxdqL7/TV1oR2ijza+m3xswP+ecujlZX+NuR59DxinHFW4+6yU2bOsy0vC2ls
+	m83Bs67+MpvfH+7P7cuiFkRf99L90N73Q1ptQ4ASS3FGoqEWc1FxIgC5TAg8uwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd2aOwdCDJouiVtcuXiIyWLqwyds
+	FvOPnGO16H+zkNXiwJ8djBa7/t5ntDj3aiWjRf/j18wW3650MFlsenyN1eLyrjlsFjPO72Oy
+	uH2Z12Lp9YtMFhOmr2Wx6NzVz2rRuvcIu8XhN+2sFhdXfGGyeLn5DZODiMeGz01sHmvmrWH0
+	aGnuYfO43NfL5LFz1l12j5XLv7B5bFrVyeZx59oeNo/NS+o99r1dxubRt2UVo8fm09UenzfJ
+	BfBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gB9
+	q6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMWNd+jLngAnfFsrffWRsY
+	33B0MXJySAiYSHz9u4wFwhaTuHBvPVsXIxeHkMAiRonGrafYQBJCAnOYJFY0p4LYbAIaEt8/
+	b2buYuTgEBGQlzj0Pg+knlngCrPExxWzmEFqhAX8JBad+M0KYrMIqEpsWL6PEcTmFXCT2Ni/
+	kg1imbbEvoaZbBMYuRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7wZ9I7GFc1WBxi
+	FOBgVOLhzSg+ECLEmlhWXJl7iFGCg1lJhNf0BFCINyWxsiq1KD++qDQntfgQoynQ9onMUqLJ
+	+cDkk1cSb2hsYmZkaWRuaGFkbK4kzqtk3xYiJJCeWJKanZpakFoE08fEwSnVwLh2LatZRv6i
+	Aw/WPuB+p94yw+XraqalN1rENj98srQxdE6XU79W7MlF8Z9NWlYW7o6ad53v/Znndm3JzWs2
+	6DSs33qzMqEtKL+puXlqtMiBjpvTvGq0Jyt7h54TX/v92bq2RZP6rQ782nBys+I+yeDzCR1m
+	AUzbQ8zYMyZ9U4qcL3WfycT241YlluKMREMt5qLiRAB3TDoPBgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lee,
+This patch-set adds basic sound support for the Trats2 boards.
+It just support primary I2s and external speaker playback.
 
-On 01/22/2015 11:56 AM, Lee Jones wrote:
->> >
->> Yes, I completely understand your point, is that I didn't think that a ~300
->> lines driver was that bad specially since the communication bits that reads
->> and writes the register is not a complex logic IMHO.
-> 
-> This has nothing to do with LoC, it's the principle of the matter.
->
+Changes in v3:
+  - Set clock out parent to XUSBXTI in pmu_system_controller DT node.
 
-Ok, got it.
- 
->> >> > Are there any other Low Pin Count drivers in the kernel?
->> >> >
->> >> 
->> >> I don't know tbh, I didn't even know what LPC was before I picked this patch
->> >> to push it upstream. I searched in the Linux codebase for other LPC drivers
->> >> but I didn't find anything, that doesn't mean that it doesn't exist though.
->> > 
->> > I agree.  Perhaps a suitable driver should live in drivers/misc until
->> > there are enough of them to warrant its own subsystem.
->> >
->> 
->> Yes, I can move the driver to drivers/misc if you think that is more suitable
->> to be there.
->> 
->> I've taken another look and AFAICT there are two other mfd drivers that use an
->> LPC bus, these are drivers/mfd/lpc_{i,s}ch.c for Intel's I/O Controller HUB and 
->> System Controller Hub respectively.
-> 
-> These looked like PCI aggregates when I looked at them last?
-> 
+Changes in v2:
+  - Remove unnecessary lines in Trats2 machine driver
+  - move clock enable/disable to .startup / .shutdown
+  - Fix code style issues
+  - Remove mclk DT property in Trats2 sound and add MCLK1 property in WM1811 node.
+    (MCLK1 is optional property in WM8994 node - refer: Document/devicetree/bindings/sound/wm8994.txt)
+  - Use mclk that defined in WM1811 DT node.
+  - Add "samsung,audio-codec" property to required properties.
 
-Yes, it seems the LPC bus is behind a PCI bus on these chips. Or at least
-that's what I understood on a quick read to the Intel SCH datasheet [0].
+Inha Song (4):
+  ASoC: samsung: Add machine driver for Trats2
+  ASoC: samsung: Document Trats2 audio subsystem bindings
+  ARM: dts: set clock out parent to XUSBXTI
+  ARM: dts: Add sound nodes for exynos4412-trats2
 
-Now going back to the Cros EC LPC driver, you are right that this may not
-be suitable to drivers/mfd so I'll move it to drivers/misc instead.
+ .../bindings/sound/samsung,trats2-wm1811.txt       |  25 +++
+ arch/arm/boot/dts/exynos4.dtsi                     |   2 +
+ arch/arm/boot/dts/exynos4412-trats2.dts            |  37 ++++
+ sound/soc/samsung/Kconfig                          |   8 +
+ sound/soc/samsung/Makefile                         |   2 +
+ sound/soc/samsung/trats2_wm1811.c                  | 218 +++++++++++++++++++++
+ 6 files changed, 292 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/samsung,trats2-wm1811.txt
+ create mode 100644 sound/soc/samsung/trats2_wm1811.c
 
-Thanks a lot for your feedback.
+-- 
+2.0.0.390.gcb682f8
 
-Best regards,
-Javier
-
-[0]: http://www.intel.com/content/www/us/en/intelligent-systems/menlow/sch-datasheet.html
