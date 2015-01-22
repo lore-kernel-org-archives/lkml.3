@@ -1,122 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411AbbAVVEA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:04:00 -0500
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:41292 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbbAVVD4 (ORCPT
+	id S1754433AbbAVVHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:07:44 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33214 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbbAVVHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:03:56 -0500
-Date: Thu, 22 Jan 2015 15:03:44 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rob Herring <robh@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-pci@vger.kernel.org, Alexandre Courbot <gnurou@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Howells <dhowells@redhat.com>, Greg Ungerer <gerg@uclinux.org>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Krzysztof Halasa <khalasa@piap.pl>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Paul Mackerras <paulus@samba.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Simon Horman <horms@verge.net.au>,
-        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Will Deacon <will.deacon@arm.com>, cbe-oss-dev@lists.ozlabs.org,
-        linux-am33-list@redhat.com, linux-arm-kernel@lists.infradead.org,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 00/16] PCI generic configuration space accessors
-Message-ID: <20150122210344.GE13072@google.com>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org>
+	Thu, 22 Jan 2015 16:07:42 -0500
+Date: Thu, 22 Jan 2015 13:07:31 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, david.vrabel@citrix.com,
+        konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>
+Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to be
+ preempted
+Message-ID: <20150122210731.GN9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
+ <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
+ <54C0E3F2.9050201@citrix.com>
+ <20150122085649.7dc79541@grimm.local.home>
+ <20150122183913.GO17887@wotan.suse.de>
+ <20150122151657.287fe29b@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420857290-8373-1-git-send-email-robh@kernel.org>
+In-Reply-To: <20150122151657.287fe29b@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012221-0033-0000-0000-0000036D47FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 08:34:34PM -0600, Rob Herring wrote:
-> This series adds common accessor functions for PCI configuration space
-> accesses. This supports most PCI hosts with memory mapped configuration
-> space like ECAM or hosts with memory mapped address/data registers. ECAM
-> is not generically supported by this series, but could be added on top
-> of this. While some hosts have standard address decoding which could be 
-> common as well, the various checks on bus numbers and device numbers are 
-> quite varied. It is unclear how much of that is really necessary or 
-> could be common. 
+On Thu, Jan 22, 2015 at 03:16:57PM -0500, Steven Rostedt wrote:
 > 
-> The first 4 patches are preparatory cleanup. Patch 5 introduces the
-> common accessors. The remaining patches convert several PCI host
-> controllers. This is in no way a complete list of host controllers. The
-> conversion of more hosts should be possible. The Designware controller
-> in particular should be able to be converted, but its config space
-> accessors are a mess of override-able functions that I've not gotten my
-> head around.
+> [ Added Paul McKenney ]
 > 
-> This series is available here [1].
+> On Thu, 22 Jan 2015 19:39:13 +0100
+> "Luis R. Rodriguez" <mcgrof@suse.com> wrote:
 > 
-> Rob
+> > > Why not make this a tracepoint? Then you can enable it only when you
+> > > want to. As tracepoints are also hooks, you could add you own code that
+> > > hooks to it and does a printk as well. The advantage of doing it via a
+> > > tracepoint is that you can turn it on and off regardless of what the
+> > > loglevel is set at.
+> > 
+> > This uses NOKPROBE_SYMBOL and notrace since based on Andy's advice
+> > we are not confident that tracing and kprobes are safe to use in what
+> > might be an extended RCU quiescent state (i.e. where we're outside
+> > irq_enter and irq_exit).
 > 
-> [1] git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git pci-config-access
+> We have trace_*_rcuidle() for such cases.
 > 
-> Rob Herring (16):
->   frv: add struct pci_ops member names to initialization
->   mips: add struct pci_ops member names to initialization
->   mn10300: add struct pci_ops member names to initialization
->   powerpc: add struct pci_ops member names to initialization
->   pci: introduce common pci config space accessors
->   ARM: cns3xxx: convert PCI to use generic config accesses
->   ARM: integrator: convert PCI to use generic config accesses
->   ARM: sa1100: convert PCI to use generic config accesses
->   ARM: ks8695: convert PCI to use generic config accesses
->   powerpc: fsl_pci: convert PCI to use generic config accesses
->   powerpc: powermac: convert PCI to use generic config accesses
->   pci/host: generic: convert to use generic config accesses
->   pci/host: rcar-gen2: convert to use generic config accesses
->   pci/host: tegra: convert to use generic config accesses
->   pci/host: xgene: convert to use generic config accesses
->   pci/host: xilinx: convert to use generic config accesses
-> 
->  arch/arm/mach-cns3xxx/pcie.c                   |  52 ++----
->  arch/arm/mach-integrator/pci_v3.c              |  61 +-------
->  arch/arm/mach-ks8695/pci.c                     |  77 +--------
->  arch/arm/mach-sa1100/pci-nanoengine.c          |  94 +----------
->  arch/frv/mb93090-mb00/pci-vdk.c                |   4 +-
->  arch/mips/pci/pci-bcm1480.c                    |   4 +-
->  arch/mips/pci/pci-octeon.c                     |   4 +-
->  arch/mips/pci/pcie-octeon.c                    |  12 +-
->  arch/mn10300/unit-asb2305/pci.c                |   4 +-
->  arch/powerpc/platforms/cell/celleb_scc_pciex.c |   4 +-
->  arch/powerpc/platforms/powermac/pci.c          | 209 +++++--------------------
->  arch/powerpc/sysdev/fsl_pci.c                  |  46 +-----
->  drivers/pci/access.c                           |  87 ++++++++++
->  drivers/pci/host/pci-host-generic.c            |  51 +-----
->  drivers/pci/host/pci-rcar-gen2.c               |  51 +-----
->  drivers/pci/host/pci-tegra.c                   |  55 +------
->  drivers/pci/host/pci-xgene.c                   | 150 ++----------------
->  drivers/pci/host/pcie-xilinx.c                 |  88 ++---------
->  include/linux/pci.h                            |  11 ++
->  19 files changed, 212 insertions(+), 852 deletions(-)
+> That is, you create the tracepoint just the same, and instead of having
+> trace_foo(), if you are in a known area that is outside of rcu viewing,
+> you use trace_foo_rcuidle() and it will tell RCU "hey, there's something
+> here that may need RCU, so look at me!"
 
-Really nice cleanups.  I added these with the acks so far to a pci/config
-branch for v3.20.  I'll update it with more acks if they trickle in.
+What Steve said!
 
-You've structured it nicely so I can also just drop individual arch pieces
-if necessary.  The pieces that haven't been acked yet (hint, hint):
+Also, there is an rcu_is_watching() API member that can tell you
+whether or not RCU is paying attention at a given point.  Or test with
+CONFIG_PROVE_RCU, in which case lockdep will yell at you if you should
+have used the _rcuidle() form of the tracing hooks.  ;-)
 
-    arch/arm/mach-cns3xxx/pcie.c
-    arch/arm/mach-sa1100/pci-nanoengine.c
-    arch/mn10300/unit-asb2305/pci.c
-    arch/powerpc
+							Thanx, Paul
 
-In addition, nobody has acked the frv and mips parts, but they're trivial
-(they only add struct member names) that I can apply them without worrying.
+> Also, please remove the "notrace", because function tracing goes an
+> extra step to not require RCU being visible. The only thing you get
+> with notrace is not being able to trace an otherwise traceable function.
+> 
+> -- Steve
+> 
+> > 
+> > > That is, if there is any practical use for that message. Tracing just
+> > > sched_switch will give you the same info.
+> > 
+> > IMHO it may be more useful if we knew exactly what hypercalls were
+> > being preempted but perhaps all that can be left as a secondary
+> > exercise and for now I'll just nuke the print.
+> 
 
-Bjorn
