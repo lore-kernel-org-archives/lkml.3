@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645AbbAVVWU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:22:20 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:50177 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbbAVVWS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:22:18 -0500
+	id S1754053AbbAVVZY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:25:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753038AbbAVVZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 16:25:21 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, rgb@redhat.com, sd@queasysnail.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
+Date: Thu, 22 Jan 2015 16:25:13 -0500
+Message-ID: <25860171.h6aocaXFeh@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <4011794.crgx99Gu8a@sifl>
+References: <20150122045303.1347.98054.stgit@localhost> <20150122075429.GV29656@ZenIV.linux.org.uk> <4011794.crgx99Gu8a@sifl>
 MIME-Version: 1.0
-In-Reply-To: <20150122161617.0ee2b092@gandalf.local.home>
-References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
- <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com> <54C0E3F2.9050201@citrix.com>
- <20150122085649.7dc79541@grimm.local.home> <20150122183913.GO17887@wotan.suse.de>
- <20150122151657.287fe29b@gandalf.local.home> <CALCETrU+B_8C2-1+gEQ20wrL+0A6G0XTQ4wAnWuewKc=Pei5Qg@mail.gmail.com>
- <20150122153707.4625878b@gandalf.local.home> <CALCETrUTekrhz=tXF=bAn1wuZBA+Kh+CgU+USwx--hNALvR5Mw@mail.gmail.com>
- <20150122161617.0ee2b092@gandalf.local.home>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 22 Jan 2015 13:21:56 -0800
-Message-ID: <CALCETrVyo10HOyngC4b7T-JZ=yY2_a+rzC60s3jPRNpUgHkKvQ@mail.gmail.com>
-Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to be preempted
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        kvm list <kvm@vger.kernel.org>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 1:16 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 22 Jan 2015 12:58:00 -0800
-> Andy Lutomirski <luto@amacapital.net> wrote:
->
->> On Thu, Jan 22, 2015 at 12:37 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > On Thu, 22 Jan 2015 12:24:47 -0800
->> > Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> >>
->> >> The other issue, above and beyond RCU, is that we can't let kprobes
->> >> run on the int3 stack.  If Xen upcalls can happen when interrupts are
->> >> off, then we may need this protection to prevent that type of
->> >> recursion.  (This will be much less scary in 3.20, because userspace
->> >> int3 instructions will no longer execute on the int3 stack.)
->> >
->> > Does this execute between the start of the int3 interrupt handler and
->> > the call of do_int3()?
->>
->> I doubt it.
->>
->> The thing I worry about is that, if do_int3 nests inside itself by any
->> means (e.g. int3 sends a signal, scheduling for whatever reason
->> (really shouldn't happen, but I haven't looked that hard)), then we're
->> completely hosed -- the inner int3 will overwrite the outer int3's
->> stack frame.  Since I have no idea what Xen upcalls do, I don't know
->> whether they can fire inside do_int3.
->
-> I thought there's logic in the do_int3 handler (in the assembly code)
-> that can handle nested int3s.
+On Thursday, January 22, 2015 11:23:44 AM Paul Moore wrote:
+> On Thursday, January 22, 2015 07:54:29 AM Al Viro wrote:
+> > On Wed, Jan 21, 2015 at 09:36:34PM -0800, Guenter Roeck wrote:
+> > > On 01/21/2015 08:59 PM, Paul Moore wrote:
+> > > >This patchset has some important changes from the previous revision,
+> > > >namely a fix from Al Viro (included in 2/5) that resolves a boot panic
+> > > >on some systems as well as some smaller, less noteworthy fixes found
+> > > >in the linux-next announcement thread from January 20th (refcount bump
+> > > >in __audit_reusename() and a inode type in __audit_inode()).
+> > > >
+> > > >This patchset still needs some additional testing to verify that the
+> > > >audit code still functions properly (the minor fixes mentioned above)
+> > > >and there is an additional patch from Al that should be included as
+> > > >well, but I wanted to post this and push the series to the audit next
+> > > >branch quickly since a number of folks were affected by the boot panic.
+> > > >
+> > > >---
+> > > >
+> > > >Paul Moore (5):
+> > > >       fs: rework getname_kernel to handle up to PATH_MAX sized
+> > > >       filenames
+> > > >       fs: create proper filename objects using getname_kernel()
+> > > >       audit: enable filename recording via getname_kernel()
+> > > >       audit: fix filename matching in __audit_inode() and
+> > > >       __audit_inode_child()
+> > > >       audit: replace getname()/putname() hacks with reference counters
+> > > 
+> > > Hi Paul,
+> > > 
+> > > What is the baseline for this patch set ? Obviously -next won't work,
+> > > and it does not apply to mainline either.
+> > 
+> > FWIW, I've ported that on top of vfs.git#for-next; result is in
+> > vfs.git#experimental.  Paul, are you OK with that one?
+> 
+> Okay, hang on let me test that ...
 
-Nope :(
+Your experimental branch looks good to me, thanks.
 
-In 3.20, there's likely to be logic that can handle a single level of
-nesting as long as the outer one came from user space.
+-- 
+paul moore
+security @ redhat
 
---Andy
