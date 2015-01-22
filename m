@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbbAVVuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:50:13 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:60533 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290AbbAVVuJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:50:09 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Niklas =?ISO-8859-1?Q?S=F6derlund?= <niso@kth.se>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
-        magnus.damm@gmail.com
-Subject: Re: [PATCH v2 1/4] sh-pfc: add macro to define pinmux without function
-Date: Thu, 22 Jan 2015 23:50:41 +0200
-Message-ID: <1580306.72ms5WNCEt@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1421583604-27256-2-git-send-email-niso@kth.se>
-References: <1421583604-27256-1-git-send-email-niso@kth.se> <1421583604-27256-2-git-send-email-niso@kth.se>
+	id S1754665AbbAVVxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:53:15 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48469 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753289AbbAVVxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 16:53:12 -0500
+Message-ID: <54C17130.5060002@ti.com>
+Date: Thu, 22 Jan 2015 15:52:48 -0600
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Dave Gerlach <d-gerlach@ti.com>, Robert Tivy <rtivy@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/2] couple of generic remoteproc enhancements
+References: <1420838519-15669-1-git-send-email-s-anna@ti.com>
+In-Reply-To: <1420838519-15669-1-git-send-email-s-anna@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Niklas,
+Hi Ohad,
 
-Thank you for the patch.
-
-On Sunday 18 January 2015 13:20:01 Niklas Söderlund wrote:
-> Used to define pinmux configurations where the pinmux function have no
-> representation in the configuration registers but instead solely depends
-> on a group selection.
+On 01/09/2015 03:21 PM, Suman Anna wrote:
+> Hi Ohad,
 > 
-> Signed-off-by: Niklas Söderlund <niso@kth.se>
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-> ---
->  drivers/pinctrl/sh-pfc/sh_pfc.h | 2 ++
->  1 file changed, 2 insertions(+)
+> The following is an updated patchset addressing the previous pending comments
+> from v1 & v2, and are rebased onto the latest 3.19-rc3 (are rc independent
+> actually). 
 > 
-> diff --git a/drivers/pinctrl/sh-pfc/sh_pfc.h
-> b/drivers/pinctrl/sh-pfc/sh_pfc.h index 5b72831..c837286 100644
-> --- a/drivers/pinctrl/sh-pfc/sh_pfc.h
-> +++ b/drivers/pinctrl/sh-pfc/sh_pfc.h
-> @@ -167,6 +167,8 @@ struct sh_pfc_soc_info {
->  	PINMUX_DATA(fn##_MARK, FN_##fn, FN_##ipsr)
->  #define PINMUX_IPSR_NOGM(ispr, fn, ms)					\
->  	PINMUX_DATA(fn##_MARK, FN_##fn, FN_##ms)
-> +#define PINMUX_IPSR_NOFN(ipsr, fn, ms)					\
-> +	PINMUX_DATA(fn##_MARK, FN_##ipsr, FN_##ms)
->  #define PINMUX_IPSR_MSEL(ipsr, fn, ms)					\
->  	PINMUX_DATA(fn##_MARK, FN_##fn, FN_##ipsr, FN_##ms)
->  #define PINMUX_IPSR_MODSEL_DATA(ipsr, fn, ms)				\
+> The patches are mainly developed to support the WkupM3 remote processor driver
+> on TI AM335x/AM437x SoCs, and I have verified the loading using the latest
+> version of Dave's WkupM3 remoteproc work [1]
+> 
+> The only change in v3 is on the second patch, it mainly leverages the
+> memcpy_toio and memset_io functions for copying/loading code into the
+> internal memory sections. An additional argument has to be added to the
+> rproc_da_to_va function to make this distinction.
 
--- 
-Regards,
+Any comments on this series, or can I assume that this will make it to
+v3.20?
 
-Laurent Pinchart
+regards
+Suman
+
+> 
+> [1] http://marc.info/?l=linux-omap&m=142022842323885&w=2
+> 
+> v2:
+> http://marc.info/?l=linux-omap&m=141089879412807&w=2
+> - Add explicit setting of the .has_iommu field in each of the existing
+>   remoteproc platform drivers
+> - Update patch description to add the usecase details for the change
+>   summary
+> - Fixed a minor checkpatch warning.
+> 
+> v1:
+> http://marc.info/?l=linux-omap&m=140483657604924&w=2
+> 
+> Suman Anna (2):
+>   remoteproc: use a flag to detect the presence of IOMMU
+>   remoteproc: add support to handle internal memories
+> 
+>  drivers/remoteproc/da8xx_remoteproc.c      |   1 +
+>  drivers/remoteproc/omap_remoteproc.c       |   5 ++
+>  drivers/remoteproc/remoteproc_core.c       | 104 ++++++++++++++++++++++++-----
+>  drivers/remoteproc/remoteproc_elf_loader.c |  23 +++++--
+>  drivers/remoteproc/remoteproc_internal.h   |   6 +-
+>  drivers/remoteproc/ste_modem_rproc.c       |   1 +
+>  include/linux/remoteproc.h                 |  45 ++++++++++++-
+>  7 files changed, 161 insertions(+), 24 deletions(-)
+> 
 
