@@ -1,90 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876AbbAVGkB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 01:40:01 -0500
-Received: from mga03.intel.com ([134.134.136.65]:35818 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979AbbAVGjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 01:39:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,447,1418112000"; 
-   d="scan'208";a="665651364"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Purdila, Octavian" <octavian.purdila@intel.com>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Box, David E" <david.e.box@intel.com>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>
-Subject: RE: About 2 ACPICA table patches
-Thread-Topic: About 2 ACPICA table patches
-Thread-Index: AdAxInxpvXNapHmAS86BpsqdPFELKAAtaNmAAQ152nA=
-Date: Thu, 22 Jan 2015 06:39:19 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88026B9F96@SHSMSX101.ccr.corp.intel.com>
-References: <1AE640813FDE7649BE1B193DEA596E88026B7CAD@SHSMSX101.ccr.corp.intel.com>
- <CAE1zotJapkp83cSWndWuw5brR-rCZyAyr4a1rJCO3xRucq1-Og@mail.gmail.com>
-In-Reply-To: <CAE1zotJapkp83cSWndWuw5brR-rCZyAyr4a1rJCO3xRucq1-Og@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752648AbbAVGv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 01:51:27 -0500
+Received: from smtp1.cypress.com ([157.95.67.100]:52679 "EHLO
+	smtp1.cypress.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbbAVGvA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 01:51:00 -0500
+From: Dudley Du <dudl@cypress.com>
+To: dmitry.torokhov@gmail.com, jmmahler@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudl@cypress.com>, bleung@google.com, dan.carpenter@oracle.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] input: cyapa: fix sparse warning issue of incorrect type in assiggment
+Date: Thu, 22 Jan 2015 14:50:05 +0800
+Message-Id: <1421909406-1240-1-git-send-email-dudl@cypress.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0M6e66i025174
 
-Hi, Octavian
+Fixes the sparse warning issue of the incorrect type in assignment which
+found by the kbuild test robot.
 
-> From: Octavian Purdila [mailto:octavian.purdila@intel.com]
-> Sent: Saturday, January 17, 2015 2:03 PM
-> 
-> On Fri, Jan 16, 2015 at 11:44 AM, Zheng, Lv <lv.zheng@intel.com> wrote:
-> > Hi, Octavian
-> >
-> 
-> Hi Lv,
-> 
-> > I noticed there are 2 patches you've sent to the community.
-> > But unfortunately I didn't find them in my mailbox.
-> > Let me comment you here.
-> >
-> > https://patchwork.kernel.org/patch/5501621/
-> > This patch seem to be correct.
-> > But Rafael should merge it directly via Linux because acpi_unload_table_id() is not in the ACPICA upstream.
-> 
-> OK, thanks for letting me know. Rafel, does the patch look ok to you?
-> 
-> > We expect the OSPMs to use acpi_unload_parent_table() instead.
-> > I have a divergences reduction series to achieve the transition.
-> > But they are pending for review for almost half a year.
-> > If you have an environment to test.
-> > Could you help to test this again?
-> > I can prepare the patchset for you.
-> >
-> 
-> Sure, if you can point me to the patch-set I can test it on my setup.
+Signed-off-by: Dudley Du <dudl@cypress.com>
+---
+ drivers/input/mouse/cyapa_gen5.c | 80 ++++++++++++++++++++--------------------
+ 1 file changed, 41 insertions(+), 39 deletions(-)
 
-I didn't have environment to test, so let me send it as RFC with some pci-hotplug/ia64 guys Cced...
+diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
+index ced2a2c..69d9059 100644
+--- a/drivers/input/mouse/cyapa_gen5.c
++++ b/drivers/input/mouse/cyapa_gen5.c
+@@ -319,7 +319,7 @@ struct gen5_bl_initiate_cmd_data {
+ 
+ struct gen5_bl_metadata_row_params {
+ 	__le16 size;
+-	__le16 maximun_size;
++	__le16 maximum_size;
+ 	__le32 app_start;
+ 	__le16 app_len;
+ 	__le16 app_crc;
+@@ -1192,67 +1192,69 @@ static int cyapa_gen5_bl_enter(struct cyapa *cyapa)
+ static int cyapa_gen5_check_fw(struct cyapa *cyapa, const struct firmware *fw)
+ {
+ 	struct device *dev = &cyapa->client->dev;
+-	struct gen5_bl_metadata_row_params metadata;
+-	struct cyapa_tsg_bin_image *image;
+-	int flash_records_count;
+-	u16 app_crc = 0;
+-	u16 app_integrity_crc = 0;
+-	u16 row_num;
+-	u8 *data;
++	const struct cyapa_tsg_bin_image *image = (const void *)fw->data;
++	const struct cyapa_tsg_bin_image_data_record *app_integrity;
++	const struct gen5_bl_metadata_row_params *metadata;
++	size_t flash_records_count;
++	u32 fw_app_start, fw_upgrade_start;
++	u16 fw_app_len, fw_upgrade_len;
++	u16 app_crc;
++	u16 app_integrity_crc;
+ 	int record_index;
+ 	int i;
+ 
+-	image = (struct cyapa_tsg_bin_image *)fw->data;
+ 	flash_records_count = (fw->size -
+ 			sizeof(struct cyapa_tsg_bin_image_head)) /
+ 			sizeof(struct cyapa_tsg_bin_image_data_record);
+ 
+-	/* APP_INTEGRITY row is always the last row block,
+-	 * and the row id must be 0x01ff */
+-	row_num = get_unaligned_be16(
+-			&image->records[flash_records_count - 1].row_number);
+-	if (image->records[flash_records_count - 1].flash_array_id != 0x00 &&
+-			row_num != 0x01ff) {
++	/*
++	 * APP_INTEGRITY row is always the last row block,
++	 * and the row id must be 0x01ff.
++	 */
++	app_integrity = &image->records[flash_records_count - 1];
++
++	if (app_integrity->flash_array_id != 0x00 ||
++	    get_unaligned_be16(&app_integrity->row_number) != 0x01ff) {
+ 		dev_err(dev, "%s: invalid app_integrity data.\n", __func__);
+ 		return -EINVAL;
+ 	}
+-	data = image->records[flash_records_count - 1].record_data;
+-
+-	metadata.app_start = get_unaligned_le32(&data[4]);
+-	metadata.app_len = get_unaligned_le16(&data[8]);
+-	metadata.app_crc = get_unaligned_le16(&data[10]);
+-	metadata.upgrade_start = get_unaligned_le32(&data[16]);
+-	metadata.upgrade_len  = get_unaligned_le16(&data[20]);
+-	metadata.metadata_crc = get_unaligned_le16(&data[60]);
+-
+-	if ((metadata.app_start + metadata.app_len +
+-		metadata.upgrade_start + metadata.upgrade_len) %
+-			CYAPA_TSG_FW_ROW_SIZE) {
+-		dev_err(dev, "%s: invalid image alignment.\n", __func__);
+-		return -EINVAL;
+-	}
++
++	metadata = (const void *)app_integrity->record_data;
+ 
+ 	/* Verify app_integrity crc */
+-	app_integrity_crc = crc_itu_t(0xffff, data,
+-			CYAPA_TSG_APP_INTEGRITY_SIZE);
+-	if (app_integrity_crc != metadata.metadata_crc) {
++	app_integrity_crc = crc_itu_t(0xffff, app_integrity->record_data,
++				      CYAPA_TSG_APP_INTEGRITY_SIZE);
++	if (app_integrity_crc != get_unaligned_le16(&metadata->metadata_crc)) {
+ 		dev_err(dev, "%s: invalid app_integrity crc.\n", __func__);
+ 		return -EINVAL;
+ 	}
+ 
++	fw_app_start = get_unaligned_le32(&metadata->app_start);
++	fw_app_len = get_unaligned_le16(&metadata->app_len);
++	fw_upgrade_start = get_unaligned_le32(&metadata->upgrade_start);
++	fw_upgrade_len = get_unaligned_le16(&metadata->upgrade_len);
++
++	if (fw_app_start % CYAPA_TSG_FW_ROW_SIZE ||
++	    fw_app_len % CYAPA_TSG_FW_ROW_SIZE ||
++	    fw_upgrade_start % CYAPA_TSG_FW_ROW_SIZE ||
++	    fw_upgrade_len % CYAPA_TSG_FW_ROW_SIZE) {
++		dev_err(dev, "%s: invalid image alignment.\n", __func__);
++		return -EINVAL;
++	}
++
+ 	/*
+ 	 * Verify application image CRC
+ 	 */
+-	record_index = metadata.app_start / CYAPA_TSG_FW_ROW_SIZE -
++	record_index = fw_app_start / CYAPA_TSG_FW_ROW_SIZE -
+ 				CYAPA_TSG_IMG_START_ROW_NUM;
+-	data = (u8 *)&image->records[record_index].record_data;
+-	app_crc = crc_itu_t(0xffff, data, CYAPA_TSG_FW_ROW_SIZE);
+-	for (i = 1; i < (metadata.app_len / CYAPA_TSG_FW_ROW_SIZE); i++) {
+-		data = (u8 *)&image->records[++record_index].record_data;
++	app_crc = 0xffffU;
++	for (i = 0; i < fw_app_len / CYAPA_TSG_FW_ROW_SIZE; i++) {
++		const u8 *data = image->records[record_index + i].record_data;
++
+ 		app_crc = crc_itu_t(app_crc, data, CYAPA_TSG_FW_ROW_SIZE);
+ 	}
+ 
+-	if (app_crc != metadata.app_crc) {
++	if (app_crc != get_unaligned_le16(&metadata->app_crc)) {
+ 		dev_err(dev, "%s: invalid firmware app crc check.\n", __func__);
+ 		return -EINVAL;
+ 	}
+-- 
+1.9.1
 
-Thanks
--Lv
-
-
-> 
-> > https://patchwork.kernel.org/patch/5501561/
-> > This patch is correct, I've put it in the 201501 ACPICA release materials for review:
-> > https://patchwork.kernel.org/patch/5501621/
-> > The patch can be found at:
-> > https://github.com/zetalog/acpica/commit/281ff873
-> > So if it is merged, you'll see it in the upstream after 201501 ACPICA release cycle.
-> > And hence Linux trees doesn't need to merge this patch directly.
-> >
-> 
-> Thanks,
-> Tavi
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
