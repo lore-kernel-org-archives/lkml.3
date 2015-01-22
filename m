@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbbAVVUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 16:20:40 -0500
-Received: from mail.eperm.de ([89.247.134.16]:60108 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523AbbAVVUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 16:20:38 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Tadeusz Struk <tadeusz.struk@intel.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, linux-crypto@vger.kernel.org,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crypto: aesni: add setkey for driver-gcm-aes-aesni
-Date: Thu, 22 Jan 2015 22:20:30 +0100
-Message-ID: <1876694.bQrN48MF7q@tauon>
-User-Agent: KMail/4.14.3 (Linux/3.17.8-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <54C1403D.1010608@intel.com>
-References: <2587101.YvN0IxRmOH@tachyon.chronox.de> <40625395.stBBYbAQtz@tachyon.chronox.de> <54C1403D.1010608@intel.com>
+	id S1754645AbbAVVWU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 16:22:20 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:50177 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbbAVVWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 16:22:18 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20150122161617.0ee2b092@gandalf.local.home>
+References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com>
+ <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com> <54C0E3F2.9050201@citrix.com>
+ <20150122085649.7dc79541@grimm.local.home> <20150122183913.GO17887@wotan.suse.de>
+ <20150122151657.287fe29b@gandalf.local.home> <CALCETrU+B_8C2-1+gEQ20wrL+0A6G0XTQ4wAnWuewKc=Pei5Qg@mail.gmail.com>
+ <20150122153707.4625878b@gandalf.local.home> <CALCETrUTekrhz=tXF=bAn1wuZBA+Kh+CgU+USwx--hNALvR5Mw@mail.gmail.com>
+ <20150122161617.0ee2b092@gandalf.local.home>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 Jan 2015 13:21:56 -0800
+Message-ID: <CALCETrVyo10HOyngC4b7T-JZ=yY2_a+rzC60s3jPRNpUgHkKvQ@mail.gmail.com>
+Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to be preempted
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Andrew Cooper <andrew.cooper3@citrix.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        kvm list <kvm@vger.kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 22. Januar 2015, 10:23:57 schrieb Tadeusz Struk:
-
-Hi Tadeusz,
-
->On 01/20/2015 05:25 PM, Stephan Mueller wrote:
->>> Rather than adding a bogus setkey function, please fix this mess
->>> properly by moving the top-level setkey function into the __driver
->>> one where it should be.  Compare with how we handle it in the
->>> ablk_helper which is pretty much the same thing.
->> 
->> Tadeusz, are you working on that update or shall I have a look?
+On Thu, Jan 22, 2015 at 1:16 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 22 Jan 2015 12:58:00 -0800
+> Andy Lutomirski <luto@amacapital.net> wrote:
 >
->Hi,
->No, I thought that the agreement was that we don't want to allow user
->space to use these helpers directly, right? Am I missing something?
+>> On Thu, Jan 22, 2015 at 12:37 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> > On Thu, 22 Jan 2015 12:24:47 -0800
+>> > Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> >>
+>> >> The other issue, above and beyond RCU, is that we can't let kprobes
+>> >> run on the int3 stack.  If Xen upcalls can happen when interrupts are
+>> >> off, then we may need this protection to prevent that type of
+>> >> recursion.  (This will be much less scary in 3.20, because userspace
+>> >> int3 instructions will no longer execute on the int3 stack.)
+>> >
+>> > Does this execute between the start of the int3 interrupt handler and
+>> > the call of do_int3()?
+>>
+>> I doubt it.
+>>
+>> The thing I worry about is that, if do_int3 nests inside itself by any
+>> means (e.g. int3 sends a signal, scheduling for whatever reason
+>> (really shouldn't happen, but I haven't looked that hard)), then we're
+>> completely hosed -- the inner int3 will overwrite the outer int3's
+>> stack frame.  Since I have no idea what Xen upcalls do, I don't know
+>> whether they can fire inside do_int3.
+>
+> I thought there's logic in the do_int3 handler (in the assembly code)
+> that can handle nested int3s.
 
+Nope :(
 
-That would be correct. But if I understood Herbert correctly, he is 
-creating a patch that disables these service ciphers for general usage.
+In 3.20, there's likely to be logic that can handle a single level of
+nesting as long as the outer one came from user space.
 
-Ciao
-Stephan
+--Andy
