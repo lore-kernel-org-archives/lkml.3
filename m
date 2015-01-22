@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715AbbAVLuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:50:17 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:61774 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbbAVLuP (ORCPT
+	id S1751584AbbAVL4g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:56:36 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:34329 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbbAVL4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:50:15 -0500
-X-IronPort-AV: E=Sophos;i="5.09,448,1418083200"; 
-   d="scan'208";a="220482828"
-Message-ID: <54C0E3F2.9050201@citrix.com>
-Date: Thu, 22 Jan 2015 11:50:10 +0000
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, <david.vrabel@citrix.com>,
-        <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
-        <xen-devel@lists.xenproject.org>
-CC: <kvm@vger.kernel.org>, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@redhat.com>,
-        Jan Beulich <JBeulich@suse.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@suse.de>
-Subject: Re: [Xen-devel] [RFC v3 2/2] x86/xen: allow privcmd hypercalls to
- be preempted
-References: <1421893039-426-1-git-send-email-mcgrof@do-not-panic.com> <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
-In-Reply-To: <1421893039-426-3-git-send-email-mcgrof@do-not-panic.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+	Thu, 22 Jan 2015 06:56:34 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, rtc-linux@googlegroups.com,
+        wim@iguana.be, linux-watchdog@vger.kernel.org,
+        devicetree@vger.kernel.org, linux@roeck-us.net, david.paris@st.com
+Subject: [PATCH v2 0/9] mfd: watchdog: rtc: New driver for ST's LPC IP
+Date: Thu, 22 Jan 2015 11:55:58 +0000
+Message-Id: <1421927767-28889-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/01/15 02:17, Luis R. Rodriguez wrote:
-> --- a/drivers/xen/events/events_base.c
-> +++ b/drivers/xen/events/events_base.c
-> @@ -32,6 +32,8 @@
->  #include <linux/slab.h>
->  #include <linux/irqnr.h>
->  #include <linux/pci.h>
-> +#include <linux/sched.h>
-> +#include <linux/kprobes.h>
->  
->  #ifdef CONFIG_X86
->  #include <asm/desc.h>
-> @@ -1243,6 +1245,17 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
->  	set_irq_regs(old_regs);
->  }
->  
-> +notrace void xen_end_upcall(struct pt_regs *regs)
-> +{
-> +	if (!xen_is_preemptible_hypercall(regs) ||
-> +	    __this_cpu_read(xed_nesting_count))
-> +		return;
-> +
-> +	if (_cond_resched())
-> +		printk(KERN_DEBUG "xen hypercall preempted\n");
+ST's Low Power Controller (LPC) controls two devices; watchdog and RTC.
+Only one of the devices can be used at any one time, which is enforced
+by the correlating MFD driver.
 
-I wouldn't even put this at debug level.  On a large server with plenty
-of domains being created/migrated/destroyed, it is quite likely that a
-toolstack task might get preempted in this way.
+This driver set provides everything you need to choose one (and only
+one) of the LPC devices to run per I/P block, of which there are two
+on the enabled STiH407 h/w.
 
-I don't believe the message is of any practical use.
+Version 2:
+ - Only calculate keepalive once in probe()
+ - Check for a 0 clk_rate
+ - Set limits using predefined attributes from watchdog_device
+ - CONFIG_PM => CONFIG_SLEEP
+ - Call st_wdog_setup() on resume
+ - Remove MFD driver -- instead rely on driver probing mechanism
+   which continues attempting to bind to different drivers until
+   one does not return -ENODEV
 
-~Andrew
+Lee Jones (9):
+  mfd: dt-bindings: Provide human readable defines for LPC mode choosing
+  ARM: multi_v7_defconfig: Enable support for ST's LPC Watchdog
+  ARM: multi_v7_defconfig: Enable support for ST's LPC RTC
+  ARM: STi: DT: STiH407: Add Device Tree node for the LPC
+  watchdog: bindings: Provide ST bindings for ST's LPC Watchdog device
+  watchdog: st_wdt: Add new driver for ST's LPC Watchdog
+  rtc: bindings: Provide ST bindings for ST's LPC RTC device
+  rtc: st: add new driver for ST's LPC RTC
+  MAINTAINERS: Add Watchdog and RTC files to STI's maintainer entry
+
+ .../devicetree/bindings/rtc/rtc-st-lpc.txt         |  25 ++
+ .../devicetree/bindings/watchdog/st_lpc_wdt.txt    |  38 +++
+ MAINTAINERS                                        |   2 +
+ arch/arm/boot/dts/stih407-family.dtsi              |  20 ++
+ arch/arm/configs/multi_v7_defconfig                |   2 +
+ drivers/rtc/Kconfig                                |  12 +
+ drivers/rtc/Makefile                               |   1 +
+ drivers/rtc/rtc-st-lpc.c                           | 354 +++++++++++++++++++++
+ drivers/watchdog/Kconfig                           |  13 +
+ drivers/watchdog/Makefile                          |   1 +
+ drivers/watchdog/st_lpc_wdt.c                      | 335 +++++++++++++++++++
+ include/dt-bindings/mfd/st-lpc.h                   |  15 +
+ 12 files changed, 818 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/rtc/rtc-st-lpc.txt
+ create mode 100644 Documentation/devicetree/bindings/watchdog/st_lpc_wdt.txt
+ create mode 100644 drivers/rtc/rtc-st-lpc.c
+ create mode 100644 drivers/watchdog/st_lpc_wdt.c
+ create mode 100644 include/dt-bindings/mfd/st-lpc.h
+
+-- 
+1.9.1
+
