@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbbAVAnX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 19:43:23 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:40290 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357AbbAVAnM (ORCPT
+	id S1754056AbbAVAop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 19:44:45 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11626 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbbAVAoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 19:43:12 -0500
-Date: Wed, 21 Jan 2015 16:43:05 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at
- kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
-Message-ID: <20150122004305.GJ9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <54BBC084.2030604@oracle.com>
- <20150118232255.GD9719@linux.vnet.ibm.com>
- <54BE76B9.7070907@oracle.com>
- <20150121025754.GV9719@linux.vnet.ibm.com>
- <54BFC979.8040107@oracle.com>
+	Wed, 21 Jan 2015 19:44:34 -0500
+Message-ID: <54C047E3.70402@huawei.com>
+Date: Thu, 22 Jan 2015 08:44:19 +0800
+From: Li Bin <huawei.libin@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BFC979.8040107@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012200-0005-0000-0000-00000837E8AF
+To: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>
+CC: Josh Poimboeuf <jpoimboe@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
+        <live-patching@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lizefan@huawei.com>, <guohanjun@huawei.com>,
+        <zhangdianfang@huawei.com>, <xiexiuqi@huawei.com>
+Subject: Re: [PATCH 1/2] livepatch: Revert "livepatch: enforce patch stacking
+ semantics"
+References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-2-git-send-email-huawei.libin@huawei.com> <alpine.LNX.2.00.1501211505180.10817@pobox.suse.cz> <20150121143620.GA2943@cerebellum.variantweb.net>
+In-Reply-To: <20150121143620.GA2943@cerebellum.variantweb.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.181]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 10:44:57AM -0500, Sasha Levin wrote:
-> On 01/20/2015 09:57 PM, Paul E. McKenney wrote:
-> >>> So RCU believes that an RCU read-side critical section that ended within
-> >>> > > an interrupt handler (in this case, an hrtimer) somehow got preempted.
-> >>> > > Which is not supposed to happen.
-> >>> > > 
-> >>> > > Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
-> >>> > > and retry?
-> >> > 
-> >> > I did have CONFIG_PROVE_RCU, and didn't see anything else besides what I pasted here.
-> > OK, fair enough.  I do have a stack of RCU CPU stall-warning changes on
-> > their way in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> > 
-> > These handle the problems that Dave Jones, yourself, and a few others
-> > located this past December.  Could you please give them a spin?
+On 2015/1/21 22:36, Seth Jennings wrote:
+> On Wed, Jan 21, 2015 at 03:06:38PM +0100, Jiri Kosina wrote:
+>> On Wed, 21 Jan 2015, Li Bin wrote:
+>>
+>>> This reverts commit 83a90bb1345767f0cb96d242fd8b9db44b2b0e17.
+>>>
+>>> The method that only allowing the topmost patch on the stack to be
+>>> enabled or disabled is unreasonable. Such as the following case:
+>>>
+>>> 	- do live patch1
+>>> 	- disable patch1
+>>> 	- do live patch2 //error
+>>>
+>>> Now, we will never be able to do new live patch unless disabing the
+>>> patch1 although there is no dependencies.
+>>
+>> Unregistering disabled patch still works and removes it from the list no 
+>> matter the position.
+>>
+>> So what exactly is the problem?
 > 
-> They seem to be a part of -next already, so this testing already includes them.
+>>From a quick glance, it seems that what this set does is it only
+> enforces the stacking requirements if two patches patch the same
+> function.
 > 
-> I seem to be getting them about once a day, anything I can add to debug it?
 
-Could you please try reproducing with the following patch?
+Yes, this patch is only concerning this case that 'multi patches patch
+the same function' and solve the problem that mentioned previously:
 
-							Thanx, Paul
+foo_unpatched()
+	foo_patch1()
+		foo_patch2()
+			foo_patch3()
+		disable(foo_patch2)
+		disable(foo_patch3)
+	foo_patch1()
 
-------------------------------------------------------------------------
+foo_patch2 is not allowed to be disabled before disable foo_patch3.
 
-rcu: Improve diagnostics for blocked critical sections in irq
+Thanks,
+	Li Bin
 
-If an RCU read-side critical section occurs within an interrupt handler
-or a softirq handler, it cannot have been preempted.  Therefore, there is
-a check in rcu_read_unlock_special() checking for this error.  However,
-when this check triggers, it lacks diagnostic information.  This commit
-therefore moves rcu_read_unlock()'s lockdep annotation to follow the
-call to __rcu_read_unlock() and changes rcu_read_unlock_special()'s
-WARN_ON_ONCE() to an lockdep_rcu_suspicious() in order to locate where
-the offending RCU read-side critical section began.  In addition, the
-value of the ->rcu_read_unlock_special field is printed.
+> I'm not sure if that is correct logically or correctly implemented by
+> these patches yet.
+> 
+> Seth
+> 
+>>
+>> -- 
+>> Jiri Kosina
+>> SUSE Labs
+> 
+> .
+> 
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 3e6afed51051..70b896e16f19 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -942,9 +942,9 @@ static inline void rcu_read_unlock(void)
- {
- 	rcu_lockdep_assert(rcu_is_watching(),
- 			   "rcu_read_unlock() used illegally while idle");
--	rcu_lock_release(&rcu_lock_map);
- 	__release(RCU);
- 	__rcu_read_unlock();
-+	rcu_lock_release(&rcu_lock_map); /* Keep acq info for rls diags. */
- }
- 
- /**
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index bb947ef1a2a4..8d2b497b52e9 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -334,7 +334,13 @@ void rcu_read_unlock_special(struct task_struct *t)
- 	}
- 
- 	/* Hardware IRQ handlers cannot block, complain if they get here. */
--	if (WARN_ON_ONCE(in_irq() || in_serving_softirq())) {
-+	if (in_irq() || in_serving_softirq()) {
-+		lockdep_rcu_suspicious(__FILE__, __LINE__,
-+				       "rcu_read_unlock() from irq or softirq with blocking in critical section!!!\n");
-+		pr_alert("->rcu_read_unlock_special: %#x (b: %d, nq: %d)\n",
-+			 t->rcu_read_unlock_special.s,
-+			 t->rcu_read_unlock_special.b.blocked,
-+			 t->rcu_read_unlock_special.b.need_qs);
- 		local_irq_restore(flags);
- 		return;
- 	}
 
