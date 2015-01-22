@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061AbbAVNfQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 08:35:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45070 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170AbbAVNfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 08:35:13 -0500
-Date: Thu, 22 Jan 2015 14:34:55 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
-Subject: Re: perf: behavior of poll() changed in 3.18
-Message-ID: <20150122133455.GC2473@krava.brq.redhat.com>
-References: <alpine.DEB.2.11.1501201155380.18043@vincent-weaver-1.umelst.maine.edu>
- <20150120181316.GA12860@krava.brq.redhat.com>
- <alpine.DEB.2.11.1501210058090.21805@vincent-weaver-1.umelst.maine.edu>
- <20150121162108.GD6835@krava.brq.redhat.com>
- <alpine.DEB.2.11.1501220026210.12767@vincent-weaver-1.umelst.maine.edu>
+	id S1752180AbbAVNpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 08:45:39 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:39936 "EHLO
+	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751906AbbAVNpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 08:45:36 -0500
+From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+To: <gregkh@linuxfoundation.org>, <robh+dt@kernel.org>
+CC: <mark.rutland@arm.com>, <arnd@arndb.de>, <gnomes@lxorguk.ukuu.org.uk>,
+        <peter@hurleysoftware.com>, <shawn.guo@linaro.org>,
+        <pawel.moll@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <jslaby@suse.cz>, <grant.likely@linaro.org>,
+        <heiko@sntech.de>, <jason@lakedaemon.net>, <florian.vaussard@epfl.ch>,
+        <andrew@lunn.ch>, <hytszk@gmail.com>, <antonynpavlov@gmail.com>,
+        <orsonzhai@gmail.com>, <geng.ren@spreadtrum.com>,
+        <zhizhou.zhang@spreadtrum.com>, <lanqing.liu@spreadtrum.com>,
+        <zhang.lyra@gmail.com>, <wei.qiao@spreadtrum.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>, <linux-api@vger.kernel.org>
+Subject: [PATCH v6 0/2] Add Spreadtrum SoC bindings and serial driver support
+Date: Thu, 22 Jan 2015 21:35:04 +0800
+Message-ID: <1421933706-4277-1-git-send-email-chunyan.zhang@spreadtrum.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <sprd-serial-v6>
+References: <sprd-serial-v6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501220026210.12767@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.0.67.142]
+X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
+ SHMBX01.spreadtrum.com (10.0.1.203)
+X-MAIL: SHSQR01.spreadtrum.com t0MDZWC1071226
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 01:53:35AM -0500, Vince Weaver wrote:
-> On Wed, 21 Jan 2015, Jiri Olsa wrote:
-> > 
-> > However if we revert this code, we'll loose nice (and standard) way
-> > to check if the event is still valid.. not sure how to handle this.
-> 
-> there's likely no need to revert as my code wasn't really released and 
-> I've already fixed it to work with the new interface.
-> 
-> I was mostly asking just so I could update the manpage to explain the new 
-> behavior, as tools that expect to be backwards compatible will have to 
-> handle both ways of detecting a process dieing.
-> 
-> > > Part of why my code doesn't just exit on POLLHUP is because you can
-> > > get that result for reasons other than a process exit (for example,
-> > > if you are using ioctl(PERF_EVENT_IOC_REFRESH)
-> > 
-> > Nope, this is related to POOL_HUP (notice the '_') which you'll get
-> > accompanied with SIGIO if you setup this.
-> 
-> So what happens if you are using a signal handler to monitor a child and 
-> the child exits?
+This patch-set split the last version, and addressed the review comments from
+last version on serial driver code.
 
-AFAICS wrt to SIGIO, we notify only with POLL_IN if there's new data
-and POLL_HUP if we reached the event_limit - the one you set with
-PERF_EVENT_IOC_REFRESH ioctl
+Changes from v5:
+	- Used Spreadtrum instead of SPRD in menus
+	- Changed TTY name to 'ttyS'
+	- Moved uart_register_driver() to probe()
+	- Added spinlock as needed
+	- Removed register states saving and restoring in suspend() and resume()
 
-> 
-> It's a shame the poll and signal handler interfaces are subtly different, 
-> though I guess some of that is probably due to historical reasons.
+Chunyan Zhang (2):
+  Documentation: DT: Add bindings for Spreadtrum SoC Platform
+  tty/serial: Add Spreadtrum sc9836-uart driver support
 
-I've actually never used the SIGIO interface in perf other than
-when I was checking your gi repo with test code ;-)
+ Documentation/devicetree/bindings/arm/sprd.txt     |   11 +
+ .../devicetree/bindings/serial/sprd-uart.txt       |    7 +
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ drivers/tty/serial/Kconfig                         |   18 +
+ drivers/tty/serial/Makefile                        |    1 +
+ drivers/tty/serial/sprd_serial.c                   |  801 ++++++++++++++++++++
+ include/uapi/linux/serial_core.h                   |    3 +
+ 7 files changed, 842 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+ create mode 100644 Documentation/devicetree/bindings/serial/sprd-uart.txt
+ create mode 100644 drivers/tty/serial/sprd_serial.c
 
-so I'm not sure what the correct behaviour should be when monitored
-process dies.. I'd say we should send SIGIO with POLL_HUP, but that
-clashes with that 'event_limit' thing.. I'll check on that
+-- 
+1.7.9.5
 
-thanks,
-jirka
