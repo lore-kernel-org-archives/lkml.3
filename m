@@ -1,61 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbbAVLMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 06:12:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45490 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086AbbAVLLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 06:11:55 -0500
-Message-ID: <54C0DAF7.5040406@suse.com>
-Date: Thu, 22 Jan 2015 12:11:51 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751487AbbAVLPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 06:15:52 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35484 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbbAVLPo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 06:15:44 -0500
+Message-ID: <54C0DBD6.2000502@collabora.com>
+Date: Thu, 22 Jan 2015 12:15:34 +0100
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Steven Noonan <steven@uplinklabs.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux-X86 <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        stefan.bader@canonical.com,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        ville.syrjala@linux.intel.com, David Vrabel <david.vrabel@citrix.com>,
-        Jan Beulich <jbeulich@suse.com>, toshi.kani@hp.com,
-        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, bhelgaas@google.com
-Subject: Re: [PATCH V6 01/18] x86: Make page cache mode a real type
-References: <1415019724-4317-1-git-send-email-jgross@suse.com> <1415019724-4317-2-git-send-email-jgross@suse.com> <CAKbGBLhzOPXqWuDwEoqnvC05c1cFgXrJMHFmeCjwUYcff==F3A@mail.gmail.com> <54C0CDD8.2010205@suse.com> <alpine.DEB.2.11.1501221202300.5526@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501221202300.5526@nanos>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v11 2/4] clk: Make clk API return per-user struct clk
+ instances
+References: <1421847039-29544-1-git-send-email-tomeu.vizoso@collabora.com> <1421847039-29544-3-git-send-email-tomeu.vizoso@collabora.com> <20150122010136.GH27202@codeaurora.org>
+In-Reply-To: <20150122010136.GH27202@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 12:06 PM, Thomas Gleixner wrote:
-> On Thu, 22 Jan 2015, Juergen Gross wrote:
->> On 01/22/2015 08:11 AM, Steven Noonan wrote:
->>> I notice these two symbols are exported GPL-only. This breaks builds
->>> of several out-of-tree non-GPL modules such as the NVIDIA driver, and
->>> VMware modules, etc. What is the appropriate code path for proprietary
->>> modules to use when setting page cache mode flags? Alternatively, is
->>> it possible for these EXPORT_SYMBOL_GPLs to be changed to
->>> EXPORT_SYMBOL?
->>
->> I don't mind you sending a patch to change this. I won't object such a
->> patch. OTOH this is more kind of a political question and I don't want
->> to spend my time on arguing.
->
-> It's rather simple. If the new cache stuff replaces code which was
-> available under EXPORT_SYMBOL, we either need a compat export or make
-> the new exports non GPL.
->
-> Not that I like it, but that has been the policy so far. We only break
-> out of tree stuff if the export is broken or security relevant, like
-> we did with the init_mm export a few years ago.
+On 01/22/2015 02:01 AM, Stephen Boyd wrote:
+> On 01/21, Tomeu Vizoso wrote:
+>> @@ -2075,10 +2210,12 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
+>>  		}
+>>  	}
+>>  
+>> -	ret = __clk_init(dev, clk);
+>> +	hw->clk = __clk_create_clk(hw, NULL, NULL);
+>> +	ret = __clk_init(dev, hw->clk);
+>>  	if (!ret)
+>> -		return clk;
+>> +		return hw->clk;
+>>  
+>> +	kfree(hw->clk);
+>>  fail_parent_names_copy:
+>>  	while (--i >= 0)
+>>  		kfree(clk->parent_names[i]);
+> 
+> Sigh, this patch is so huge I keep finding more things. Sorry. It
+> looks like __clk_create_clk() can return an error pointer, which
+> we then send directly to __clk_init. First off, we shouldn't
+> kfree() that pointer if it's an error pointer. Second, we
+> shouldn't crash in __clk_init() in such a situation so there
+> needs to be some sort of check somewhere.
 
-Okay, in this case I'll write patch.
+Oops, done. I have reused the fail_parent_names_copy label as the
+less-bad possibility. Probably the error labels should be named after
+the target code and not after what the source code does, as per the
+latest CodingStyle additions.
 
-Thanks for clarifying this.
+> BTW, please try and fixup checkpatch warnings.
 
+What were you thinking of specifically? I'm running it with
+--max-line-length=106 and the other warnings are in clk-test.c that I
+still have to polish when I get some time.
 
-Juergen
+>> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+>> index da4bda8..fac3244 100644
+>> --- a/drivers/clk/clkdev.c
+>> +++ b/drivers/clk/clkdev.c
+>> @@ -69,20 +70,22 @@ struct clk *of_clk_get(struct device_node *np, int index)
+> [...]
+>> -struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
+>> +static struct clk *__of_clk_get_by_name(struct device_node *np, const char *name)
+> 
+> It would be nice if this returned an already __clk_create_clk()ed
+> pointer.
+> 
+>>  {
+>>  	struct clk *clk = ERR_PTR(-ENOENT);
+>>  
+>> @@ -119,7 +122,33 @@ struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
+> [...]
+>> +struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
+>> +{
+>> +	struct clk *clk = __of_clk_get_by_name(np, name);
+>> +
+>> +	if (!IS_ERR(clk))
+>> +		clk = __clk_create_clk(__clk_get_hw(clk), np->full_name, name);
+> 
+> Because we do it here where we know we're CONFIG_COMMON_CLK=y.
+> 
+>> +
+>> +	return clk;
+>> +}
+>>  EXPORT_SYMBOL(of_clk_get_by_name);
+>> +
+>> +#else /* defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK) */
+>> +
+>> +static struct clk *__of_clk_get_by_name(struct device_node *np, const char *name)
+>> +{
+>> +	return ERR_PTR(-ENOENT);
+>> +}
+>>  #endif
+>>  
+>>  /*
+>> @@ -185,9 +229,13 @@ struct clk *clk_get(struct device *dev, const char *con_id)
+>>  	struct clk *clk;
+>>  
+>>  	if (dev) {
+>> -		clk = of_clk_get_by_name(dev->of_node, con_id);
+>> -		if (!IS_ERR(clk))
+>> +		clk = __of_clk_get_by_name(dev->of_node, con_id);
+>> +		if (!IS_ERR(clk)) {
+>> +#if defined(CONFIG_COMMON_CLK)
+>> +			clk = __clk_create_clk(__clk_get_hw(clk), dev_id, con_id);
+>> +#endif
+> 
+> And we do it here where we could remove the #ifdef.
+
+Yeah, I tried to reduce the ifdefing back then and this is the simplest
+I could come up with. The reason for clk_get() to call
+__clk_create_clk() directly is that it has more relevant information
+with which to tag the per-user clk.
+
+of_clk_get_by_name() has the name of the node but not the dev_id, which
+in my testing looked as much less useful when debugging who did what to
+a clock.
+
+Thanks,
+
+Tomeu
+
+>>  			return clk;
+>> +		}
+>>  		if (PTR_ERR(clk) == -EPROBE_DEFER)
+>>  			return clk;
+>>  	}
+> 
 
