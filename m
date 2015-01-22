@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335AbbAVFZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 00:25:36 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:49422 "EHLO
-	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753569AbbAVFZZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 00:25:25 -0500
-Date: Thu, 22 Jan 2015 13:22:00 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Doug Anderson <dianders@chromium.org>, <linux@roeck-us.net>
-CC: Wim Van Sebroeck <wim@iguana.be>, Heiko Stuebner <heiko@sntech.de>,
-        Lunxue Dai <lunxue.dai@rock-chips.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] watchdog: dw_wdt: pat the watchdog before enabling
- it
-Message-ID: <20150122132200.4729d38b@xhacker>
-In-Reply-To: <1421882243-3631-1-git-send-email-dianders@chromium.org>
-References: <1421882243-3631-1-git-send-email-dianders@chromium.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-22_02:2015-01-22,2015-01-22,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1501220061
+	id S1753162AbbAVFZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 00:25:20 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:47717 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894AbbAVFZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 00:25:16 -0500
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Heiko Stuebner <heiko@sntech.de>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: decompressor: remove unused cache flush code
+Date: Thu, 22 Jan 2015 14:22:58 +0900
+Message-Id: <1421904178-30882-1-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Doug,
+As ARM ARM says, the bit 19-16 of ID_MMFR1 is always 0b0000 because
+ARMv7 requires a hierarchical cache implementation.
+The line "mcr    p15, 0, r10, c7, c14, 0" is not reachable.
 
-On Wed, 21 Jan 2015 15:17:22 -0800
-Doug Anderson <dianders@chromium.org> wrote:
+Moreover, the v7_flush_dcache_all in arch/arm/mm/cache-v7.S does not
+check the ID_MMFR1.
 
-> On some dw_wdt implementations the "top" register may be initted to 0
-> at bootup.  In such a case, each "pat" of the watchdog will reset the
-> timer to 0xffff.  That's pretty short.
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+---
 
-+ Guenter Roeck
+ arch/arm/boot/compressed/head.S | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-This should have been fixed by dfa07141e7a792("watchdog: dw_wdt: initialise
-TOP_INIT in dw_wdt_set_top()")
-
-In fact, my original fix is as similar as your patch
-
-http://www.spinics.net/lists/arm-kernel/msg363658.html
-
-Then Guenter Roeck suggest one elegant solution which is the base of
-commit dfa07141e7a792.
-
-http://www.spinics.net/lists/arm-kernel/msg363908.html
-
-> 
-> The input clock of the wdt can be any of a wide range of values.  On
-> an rk3288 system, I've seen the wdt clock be 24.75 MHz.  That means
-> each tick is ~40ns and we'll count to 0xffff in ~2.6ms.
-> 
-> Because of the above two facts, it's a really good idea to pat the
-> watchdog after initting the "top" register properly and before
-> enabling the watchdog.  If you don't then there's no way we'll get the
-> next heartbeat in time.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/watchdog/dw_wdt.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-> index b34a2e4..fc92bea 100644
-> --- a/drivers/watchdog/dw_wdt.c
-> +++ b/drivers/watchdog/dw_wdt.c
-> @@ -170,6 +170,7 @@ static int dw_wdt_open(struct inode *inode, struct file
-> *filp)
->  		 * the maximum and then start it.
->  		 */
->  		dw_wdt_set_top(DW_WDT_MAX_TOP);
-> +		dw_wdt_keepalive();
->  		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
->  		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
->  	}
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index 9dff614..32f0d79 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -1085,15 +1085,9 @@ __armv6_mmu_cache_flush:
+ __armv7_mmu_cache_flush:
+ 		tst	r4, #1
+ 		bne	iflush
+-		mrc	p15, 0, r10, c0, c1, 5	@ read ID_MMFR1
+-		tst	r10, #0xf << 16		@ hierarchical cache (ARMv7)
++		stmfd	sp!, {r0-r7, r9-r11}
+ 		mov	r10, #0
+-		beq	hierarchical
+-		mcr	p15, 0, r10, c7, c14, 0	@ clean+invalidate D
+-		b	iflush
+-hierarchical:
+ 		mcr	p15, 0, r10, c7, c10, 5	@ DMB
+-		stmfd	sp!, {r0-r7, r9-r11}
+ 		mrc	p15, 1, r0, c0, c0, 1	@ read clidr
+ 		ands	r3, r0, #0x7000000	@ extract loc from clidr
+ 		mov	r3, r3, lsr #23		@ left align loc bit field
+-- 
+1.9.1
 
