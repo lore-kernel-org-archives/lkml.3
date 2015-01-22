@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853AbbAVQ6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:58:41 -0500
-Received: from mga14.intel.com ([192.55.52.115]:22014 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752811AbbAVQ6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:58:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,450,1418112000"; 
-   d="scan'208";a="516116306"
-Date: Thu, 22 Jan 2015 16:58:02 +0000 (UTC)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.lm.intel.com
-To: Christoph Hellwig <hch@infradead.org>
-cc: Keith Busch <keith.busch@intel.com>, Yan Liu <yan@purestorage.com>,
-        Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org
-Subject: Re: [PATCH 1/1] NVMe: Do not take nsid while a passthrough IO command
- is being issued via a block device file descriptor
-In-Reply-To: <20150122154930.GA28027@infradead.org>
-Message-ID: <alpine.LNX.2.00.1501221651410.15481@localhost.lm.intel.com>
-References: <1421886503-25276-1-git-send-email-yan@purestorage.com> <alpine.LNX.2.00.1501220035170.15481@localhost.lm.intel.com> <20150122084517.GA2093@infradead.org> <alpine.LNX.2.00.1501221430040.15481@localhost.lm.intel.com>
- <20150122154930.GA28027@infradead.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753898AbbAVQ7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 11:59:21 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:38538 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922AbbAVQ7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 11:59:19 -0500
+Message-ID: <54C12C4A.5080108@roeck-us.net>
+Date: Thu, 22 Jan 2015 08:58:50 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Paul Moore <pmoore@redhat.com>
+CC: linux-fsdevel@vger.kernel.org, linux-audit@redhat.com, rgb@redhat.com,
+        sd@queasysnail.net, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
+References: <20150122045303.1347.98054.stgit@localhost> <54C08C62.8010609@roeck-us.net> <3252765.lrITUkIS9l@sifl>
+In-Reply-To: <3252765.lrITUkIS9l@sifl>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54C12C66.02A6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 9
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015, Christoph Hellwig wrote:
-> On Thu, Jan 22, 2015 at 03:21:28PM +0000, Keith Busch wrote:
->> But if you really need to restrict namespace access, shouldn't that be
->> enforced on the target side with reservations or similar mechanism?
+On 01/22/2015 08:22 AM, Paul Moore wrote:
+> On Wednesday, January 21, 2015 09:36:34 PM Guenter Roeck wrote:
+>> On 01/21/2015 08:59 PM, Paul Moore wrote:
+>>> This patchset has some important changes from the previous revision,
+>>> namely a fix from Al Viro (included in 2/5) that resolves a boot panic
+>>> on some systems as well as some smaller, less noteworthy fixes found
+>>> in the linux-next announcement thread from January 20th (refcount bump
+>>> in __audit_reusename() and a inode type in __audit_inode()).
+>>>
+>>> This patchset still needs some additional testing to verify that the
+>>> audit code still functions properly (the minor fixes mentioned above)
+>>> and there is an additional patch from Al that should be included as
+>>> well, but I wanted to post this and push the series to the audit next
+>>> branch quickly since a number of folks were affected by the boot panic.
+>>>
+>>> ---
+>>>
+>>> Paul Moore (5):
+>>>         fs: rework getname_kernel to handle up to PATH_MAX sized filenames
+>>>         fs: create proper filename objects using getname_kernel()
+>>>         audit: enable filename recording via getname_kernel()
+>>>         audit: fix filename matching in __audit_inode() and
+>>>         __audit_inode_child()
+>>>         audit: replace getname()/putname() hacks with reference counters
+>>
+>> Hi Paul,
+>>
+>> What is the baseline for this patch set ? Obviously -next won't work,
+>> and it does not apply to mainline either.
 >
-> Think for example about containers where we give eah container access
-> to a single nvme namespace, including container root access.  Here you
-> don't really want container A to be able to submit I/O for another
-> container.  A similar case exists for virtualization where we had
-> problems with SCSI passthrough from guests.
+> This patchset currently lives, along with one other unrelated patch, in the
+> audit next branch:
+>
+>   * git://git.infradead.org/users/pcmoore/audit
+>
+> I'm currently testing these in combination with the patch Al posted last
+> night.  Assuming all goes well I'll drop them from the audit next branch and
+> toss all six patches (these plus Al's) into another branch in case Al wants to
+> pull them for the VFS tree.
+>
+The version in the audit next tree works with my qemu microblaze test,
+so feel free to add
 
+Tested-by: Guenter Roeck <linux@roeck-us.net>
 
-Okay, that's a great point.
+Guenter
 
-Yan, we should apply this if you can submit a patch for the linux-block
-tree.
