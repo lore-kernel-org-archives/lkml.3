@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbbAVQaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 11:30:14 -0500
-Received: from mout.web.de ([212.227.15.3]:60392 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299AbbAVQaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 11:30:12 -0500
-Message-ID: <54C1254A.4090106@users.sourceforge.net>
-Date: Thu, 22 Jan 2015 17:28:58 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1752950AbbAVQdY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 11:33:24 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:39357 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901AbbAVQdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 11:33:19 -0500
+Date: Thu, 22 Jan 2015 08:33:13 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Olliver Schinagl <o.schinagl@ultimaker.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Olliver Schinagl <oliver@schinagl.nl>,
+        Robin Gong <b38343@freescale.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Grant Likely <grant.likely@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, Alexander Shiyan <shc_work@mail.ru>,
+        Wolfram Sang <wsa@the-dreams.de>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-leds@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] leds: no longer use unnamed gpios
+Message-ID: <20150122163313.GD18153@dtor-ws>
+References: <1421876028-22799-1-git-send-email-o.schinagl@ultimaker.com>
+ <1421876028-22799-5-git-send-email-o.schinagl@ultimaker.com>
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] MTD: Deletion of checks before the function call "iounmap"
-References: <530CF8FF.8080600@users.sourceforge.net>	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>	<530DD06F.4090703@users.sourceforge.net>	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	<5317A59D.4@users.sourceforge.net>	<54BBE87C.9020705@users.sourceforge.net>	<20150119175835.GH9759@ld-irv-0074>	<54BD4AB6.70708@users.sourceforge.net>	<20150119183057.GI9759@ld-irv-0074>	<54BD55F6.6090609@users.sourceforge.net>	<20150119203143.GL9759@ld-irv-0074>	<54BD7E7D.9060107@users.sourceforge.net> <CAN8TOE9_cHJ+kbWGkaqHujLSWLLAAgXyumG5s9tWYoyrFk-=uQ@mail.gmail.com>
-In-Reply-To: <CAN8TOE9_cHJ+kbWGkaqHujLSWLLAAgXyumG5s9tWYoyrFk-=uQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:+e4e6WhbV7u5zHC+IO3caEw/JXhjJV7N8a2OH0G+AjgFZV6bZDn
- VX8+JPP0VZ36dhQ1gQJT0+mUJd2Q73uzgbEooxOe2edMunez7nr/iC+Nr8RyYMlb0yKcndu
- /nxKo4tAx6XtReO6oWXRrbtBzmav9XtJQvbPw09cLk+85ROZVA4spRO3Cs4jIO0xSvwuEKU
- Y4/0Gb/voMZQrnKkJ+E3Q==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421876028-22799-5-git-send-email-o.schinagl@ultimaker.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The only evidence I see is a long thread of similar patches from
-> the last several months, of varying (though not increasing) quality.
+Hi Olliver,
 
-I find it acceptable that some of my update suggestions do not fit
-to your quality expectations at the moment.
+On Wed, Jan 21, 2015 at 10:33:48PM +0100, Olliver Schinagl wrote:
+> diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
+> index 097d721..eadb472 100644
+> --- a/drivers/input/keyboard/gpio_keys_polled.c
+> +++ b/drivers/input/keyboard/gpio_keys_polled.c
+> @@ -125,15 +125,19 @@ static struct gpio_keys_platform_data *gpio_keys_polled_get_devtree_pdata(struct
+>  	device_for_each_child_node(dev, child) {
+>  		struct gpio_desc *desc;
+>  
+> -		desc = devm_get_gpiod_from_child(dev, NULL, child);
+> +		desc = devm_get_gpiod_from_child(dev, "gpio_keys_polled",
+> +						 child);
+>  		if (IS_ERR(desc)) {
+> -			error = PTR_ERR(desc);
+> -			if (error != -EPROBE_DEFER)
+> -				dev_err(dev,
+> -					"Failed to get gpio flags, error: %d\n",
+> -					error);
+> -			fwnode_handle_put(child);
+> -			return ERR_PTR(error);
+> +			desc = devm_get_gpiod_from_child(dev, NULL, child);
+> +			if (IS_ERR(desc)) {
+> +				error = PTR_ERR(desc);
+> +				if (error != -EPROBE_DEFER)
+> +					dev_err(dev,
+> +						"Failed to get gpio flags, error: %d\n",
+> +						error);
+> +				fwnode_handle_put(child);
+> +				return ERR_PTR(error);
+> +			}
+>  		}
+>  
 
+I do not think this is correct. If devm_get_gpiod_from_child(dev,
+"gpio_keys_polled", child) retruns -EPROBE_DEFER we'll try
+devm_get_gpiod_from_child(dev, NULL, child). If that returns some other
+error we'll fail probing entire driver.
 
-> Prior objections to your approach were met with a distinct lack
-> of self-awareness on your part.
+Did I mention how *I HATE* the -EPROBE_DEFER (the error that is not an
+error)?
 
-I guess that a bit more clarification of this view will help
-to resolve some open issues, won't it?
+Thanks.
 
-
-> I don't really see many challenges here to tackle, except for the
-> social issue of dealing with patch bots like you.
-
-I hope that you will like other automatic source code analysis results.
-
-
-> Your automated patches are generally not solving real problems,
-
-I try to clean-up Linux source files a bit. Problem solving
-with a higher value might follow ...
-
-
-> but they are at times introducing bugs.
-
-There are the usual different opinions and disagreements
-which might be still waiting for a constructive solution.
-
-Regards,
-Markus
+-- 
+Dmitry
