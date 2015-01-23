@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbbAWTD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 14:03:56 -0500
-Received: from mail.kernel.org ([198.145.29.136]:51026 "EHLO mail.kernel.org"
+	id S1755857AbbAWTEg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 14:04:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36000 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752364AbbAWTDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 14:03:53 -0500
-Date: Fri, 23 Jan 2015 11:03:49 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 2/2] f2fs: do checkpoint when umount flag is
- not set
-Message-ID: <20150123190349.GB22493@jaegeuk-mac02.mot.com>
-References: <1421971730-17024-1-git-send-email-jaegeuk@kernel.org>
- <1421971730-17024-2-git-send-email-jaegeuk@kernel.org>
- <000501d036f8$f5e99660$e1bcc320$@samsung.com>
+	id S1753402AbbAWTEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 14:04:34 -0500
+Message-ID: <54C29B2B.4070800@redhat.com>
+Date: Fri, 23 Jan 2015 14:04:11 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000501d036f8$f5e99660$e1bcc320$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-mm@kvack.org
+CC: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
+        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
+        hughd@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
+        linux-kernel@vger.kernel.org, aarcange@redhat.com
+Subject: Re: [PATCH] mm: incorporate read-only pages into transparent huge
+ pages
+References: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
+In-Reply-To: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 06:39:25PM +0800, Chao Yu wrote:
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Friday, January 23, 2015 8:09 AM
-> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> > linux-f2fs-devel@lists.sourceforge.net
-> > Cc: Jaegeuk Kim
-> > Subject: [f2fs-dev] [PATCH 2/2] f2fs: do checkpoint when umount flag is not set
-> > 
-> > If the previous checkpoint was done without CP_UMOUNT flag, it needs to do
-> > checkpoint with CP_UMOUNT for the next fast boot.
-> > 
-> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> 
-> Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-> 
-> > ---
-> >  fs/f2fs/checkpoint.c | 3 ++-
-> >  fs/f2fs/super.c      | 3 ++-
-> >  2 files changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> > index 9f5317c..231d8c9 100644
-> > --- a/fs/f2fs/checkpoint.c
-> > +++ b/fs/f2fs/checkpoint.c
-> > @@ -1043,7 +1043,8 @@ void write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
-> > 
-> >  	mutex_lock(&sbi->cp_mutex);
-> > 
-> > -	if (!sbi->s_dirty && cpc->reason != CP_DISCARD)
-> > +	if (!sbi->s_dirty &&
-> > +			cpc->reason != CP_DISCARD && cpc->reason != CP_UMOUNT)
-> >  		goto out;
-> >  	if (unlikely(f2fs_cp_error(sbi)))
-> >  		goto out;
-> > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> > index 84f95cd..6ef1458 100644
-> > --- a/fs/f2fs/super.c
-> > +++ b/fs/f2fs/super.c
-> > @@ -448,7 +448,8 @@ static void f2fs_put_super(struct super_block *sb)
-> >  	stop_gc_thread(sbi);
-> > 
-> >  	/* We don't need to do checkpoint when it's clean */
-> 
-> Better to update the annotation above.
+On 01/23/2015 02:47 AM, Ebru Akagunduz wrote:
 
-Added some comments. :)
+> @@ -2169,7 +2169,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>  		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
+>  
+>  		/* cannot use mapcount: can't collapse if there's a gup pin */
+> -		if (page_count(page) != 1)
+> +		if (page_count(page) != 1 + !!PageSwapCache(page))
+>  			goto out;
+>  		/*
+>  		 * We can do it before isolate_lru_page because the
+> @@ -2179,6 +2179,17 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>  		 */
+>  		if (!trylock_page(page))
+>  			goto out;
+> +		if (!pte_write(pteval)) {
+> +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
+> +					unlock_page(page);
+> +					goto out;
+> +			}
+> +			/*
+> +			 * Page is not in the swap cache, and page count is
+> +			 * one (see above). It can be collapsed into a THP.
+> +			 */
+> +		}
 
-Thanks,
+Andrea pointed out a bug between the above two parts of
+the patch.
 
-> 
-> Thanks,
-> Yu
-> 
-> > -	if (sbi->s_dirty) {
-> > +	if (sbi->s_dirty ||
-> > +			!is_set_ckpt_flags(F2FS_CKPT(sbi), CP_UMOUNT_FLAG)) {
-> >  		struct cp_control cpc = {
-> >  			.reason = CP_UMOUNT,
-> >  		};
-> > --
-> > 2.1.1
-> > 
+In-between where we check page_count(page), and where we
+check whether the page got added to the swap cache, the
+page count may change, causing us to get into a race
+condition with get_user_pages_fast, the pageout code, etc.
+
+It is necessary to check the page count again right after
+the trylock_page(page) above, to make sure it was not changed
+while the page was not yet locked.
+
+That second check should have a comment explaining that
+the first "page_count(page) != 1 + !!PageSwapCache(page)"
+check could be unsafe due to the page not yet locked,
+so the check needs to be repeated. Maybe something along
+the lines of:
+
+     /* Re-check the page count with the page locked */
