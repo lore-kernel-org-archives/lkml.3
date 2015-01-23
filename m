@@ -1,241 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228AbbAWQPt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:15:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53662 "EHLO mx1.redhat.com"
+	id S1756274AbbAWQQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:16:59 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56240 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755358AbbAWQPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:15:44 -0500
-Message-ID: <54C2739C.10509@redhat.com>
-Date: Fri, 23 Jan 2015 11:15:24 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756013AbbAWQQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 11:16:55 -0500
+Date: Fri, 23 Jan 2015 10:16:51 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Baolu Lu <baolu.lu@linux.intel.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] phy: ulpi: add driver for TI TUSB1210
+Message-ID: <20150123161651.GD8585@saruman.tx.rr.com>
+Reply-To: <balbi@ti.com>
+References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1421745502-169447-4-git-send-email-heikki.krogerus@linux.intel.com>
+ <20150120154539.GB8988@saruman>
+ <20150121091749.GB22716@kuha.fi.intel.com>
+ <20150121113958.GC22716@kuha.fi.intel.com>
+ <20150122205124.GG22288@saruman.tx.rr.com>
+ <20150123082348.GC30522@kuha.fi.intel.com>
 MIME-Version: 1.0
-To: Vlastimil Babka <vbabka@suse.cz>,
-        Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-mm@kvack.org
-CC: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
-        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
-        hughd@google.com, hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        aarcange@redhat.com
-Subject: Re: [PATCH] mm: incorporate read-only pages into transparent huge
- pages
-References: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com> <54C2730A.8040601@suse.cz>
-In-Reply-To: <54C2730A.8040601@suse.cz>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eheScQNz3K90DVRs"
+Content-Disposition: inline
+In-Reply-To: <20150123082348.GC30522@kuha.fi.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 11:12 AM, Vlastimil Babka wrote:
-> On 01/23/2015 08:47 AM, Ebru Akagunduz wrote:
->> This patch aims to improve THP collapse rates, by allowing
->> THP collapse in the presence of read-only ptes, like those
->> left in place by do_swap_page after a read fault.
-> 
-> An other examples? What about zero pages?
+--eheScQNz3K90DVRs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't think this patch handles the zero page, due to
-the reference count being higher than 1.
+On Fri, Jan 23, 2015 at 10:23:48AM +0200, Heikki Krogerus wrote:
+> On Thu, Jan 22, 2015 at 02:51:24PM -0600, Felipe Balbi wrote:
+> > On Wed, Jan 21, 2015 at 01:39:58PM +0200, Heikki Krogerus wrote:
+> > > Hi,
+> > >=20
+> > > On Wed, Jan 21, 2015 at 11:17:49AM +0200, Heikki Krogerus wrote:
+> > > > On Tue, Jan 20, 2015 at 09:45:39AM -0600, Felipe Balbi wrote:
+> > > > > > diff --git a/drivers/phy/ulpi/tusb1210.c b/drivers/phy/ulpi/tus=
+b1210.c
+> > > > > > new file mode 100644
+> > > > > > index 0000000..ac77f98
+> > > > > > --- /dev/null
+> > > > > > +++ b/drivers/phy/ulpi/tusb1210.c
+> > > > >=20
+> > > > > do you really need this extra ulpi directory ?
+> > > > >=20
+> > > > > I wonder if phy-tusb1210.c as a name would be enough.
+> > > >=20
+> > > > IMO grouping the ULPI PHY drivers and other ULPI bus code into
+> > > > separate folder from the start is the right thing to do.
+> > >=20
+> > > A correction to this comment. I probable don't need this folder. Like
+> > > you said, phy-tusb1210.c should be enough..
+> > >=20
+> > > <snip>
+> > >=20
+> > > > > In fact, we might decide to add an entire ULPI bus, eventually, t=
+hough
+> > > > > I'm still considering if there's any benefit to that.
+> > > >=20
+> > > > I don't think I understand this comment? ULPI bus is what I'm
+> > > > introducing in this set (the first patch in it)?
+> > >=20
+> > > ..I talked with Alex about this :). So I think the bus belongs under
+> > > drivers/usb/core/ instead of driver/phy/. It's not really tied to the
+> > > Generic PHY framework in any way, but ULPI is of course USB specific.
+> >=20
+> > right, maybe drivers/usb/ulpi or maybe drivers/ulpi, and have
+> > phy-tusb1201 register under that ulpi_bus_type instead of
+> > platform_bus_type, but still use drivers/phy to register itself a phy
+> > provider ;-)
+>=20
+> So just for the record: This driver does not register under
+> platform_bus_type bus but instead already under ulpi_bus_type.
 
-Handling the zero page could be a good next case to handle
-in Ebru's OPW project to improve the THP collapse rate.
+hah! :-)
 
->> Currently THP can collapse 4kB pages into a THP when
->> there are up to khugepaged_max_ptes_none pte_none ptes
->> in a 2MB range. This patch applies the same limit for
->> read-only ptes.
->>
->> The patch was tested with a test program that allocates
->> 800MB of memory, writes to it, and then sleeps. I force
->> the system to swap out all but 190MB of the program by
->> touching other memory. Afterwards, the test program does
->> a mix of reads and writes to its memory, and the memory
->> gets swapped back in.
->>
->> Without the patch, only the memory that did not get
->> swapped out remained in THPs, which corresponds to 24% of
->> the memory of the program. The percentage did not increase
->> over time.
->>
->> With this patch, after 5 minutes of waiting khugepaged had
->> collapsed 55% of the program's memory back into THPs.
->>
->> Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
->> Reviewed-by: Rik van Riel <riel@redhat.com>
-> 
-> Sounds like a good idea.
-> Acked-by: Vlastimil Babka <vbabka@suse.cz>
-> nits below:
-> 
->> ---
->> I've written down test results:
->>
->> With the patch:
->> After swapped out:
->> cat /proc/pid/smaps:
->> Anonymous:      100352 kB
->> AnonHugePages:  98304 kB
->> Swap:           699652 kB
->> Fraction:       97,95
->>
->> cat /proc/meminfo:
->> AnonPages:      1763732 kB
->> AnonHugePages:  1716224 kB
->> Fraction:       97,30
->>
->> After swapped in:
->> In a few seconds:
->> cat /proc/pid/smaps
->> Anonymous:      800004 kB
->> AnonHugePages:  235520 kB
->> Swap:           0 kB
->> Fraction:       29,43
->>
->> cat /proc/meminfo:
->> AnonPages:      2464336 kB
->> AnonHugePages:  1853440 kB
->> Fraction:       75,21
->>
->> In five minutes:
->> cat /proc/pid/smaps:
->> Anonymous:      800004 kB
->> AnonHugePages:  440320 kB
->> Swap:           0 kB
->> Fraction:       55,0
->>
->> cat /proc/meminfo:
->> AnonPages:      2464340
->> AnonHugePages:  2058240
->> Fraction:       83,52
->>
->> Without the patch:
->> After swapped out:
->> cat /proc/pid/smaps:
->> Anonymous:      190660 kB
->> AnonHugePages:  190464 kB
->> Swap:           609344 kB
->> Fraction:       99,89
->>
->> cat /proc/meminfo:
->> AnonPages:      1740456 kB
->> AnonHugePages:  1667072 kB
->> Fraction:       95,78
->>
->> After swapped in:
->> cat /proc/pid/smaps:
->> Anonymous:      800004 kB
->> AnonHugePages:  190464 kB
->> Swap:           0 kB
->> Fraction:       23,80
->>
->> cat /proc/meminfo:
->> AnonPages:      2350032 kB
->> AnonHugePages:  1667072 kB
->> Fraction:       70,93
->>
->> I waited 10 minutes the fractions
->> did not change without the patch.
->>
->>   mm/huge_memory.c | 25 ++++++++++++++++++++-----
->>   1 file changed, 20 insertions(+), 5 deletions(-)
->>
->> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
->> index 817a875..af750d9 100644
->> --- a/mm/huge_memory.c
->> +++ b/mm/huge_memory.c
->> @@ -2158,7 +2158,7 @@ static int __collapse_huge_page_isolate(struct
->> vm_area_struct *vma,
->>               else
->>                   goto out;
->>           }
->> -        if (!pte_present(pteval) || !pte_write(pteval))
->> +        if (!pte_present(pteval))
->>               goto out;
->>           page = vm_normal_page(vma, address, pteval);
->>           if (unlikely(!page))
->> @@ -2169,7 +2169,7 @@ static int __collapse_huge_page_isolate(struct
->> vm_area_struct *vma,
->>           VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
->>
->>           /* cannot use mapcount: can't collapse if there's a gup pin */
->> -        if (page_count(page) != 1)
->> +        if (page_count(page) != 1 + !!PageSwapCache(page))
-> 
-> Took me a while to grok this !!PageSwapCache(page) part. Perhaps expand
-> the comment?
-> 
->>               goto out;
->>           /*
->>            * We can do it before isolate_lru_page because the
->> @@ -2179,6 +2179,17 @@ static int __collapse_huge_page_isolate(struct
->> vm_area_struct *vma,
->>            */
->>           if (!trylock_page(page))
->>               goto out;
->> +        if (!pte_write(pteval)) {
->> +            if (PageSwapCache(page) && !reuse_swap_page(page)) {
->> +                    unlock_page(page);
->> +                    goto out;
-> 
-> Too much indent on the 2 lines above.
-> 
->> +            }
->> +            /*
->> +             * Page is not in the swap cache, and page count is
->> +             * one (see above). It can be collapsed into a THP.
->> +             */
-> 
-> Such comment sounds like a good place for:
-> 
->             VM_BUG_ON(page_count(page) != 1));
-> 
->> +        }
->> +
->>           /*
->>            * Isolate the page to avoid collapsing an hugepage
->>            * currently in use by the VM.
->> @@ -2550,7 +2561,7 @@ static int khugepaged_scan_pmd(struct mm_struct
->> *mm,
->>   {
->>       pmd_t *pmd;
->>       pte_t *pte, *_pte;
->> -    int ret = 0, referenced = 0, none = 0;
->> +    int ret = 0, referenced = 0, none = 0, ro = 0;
->>       struct page *page;
->>       unsigned long _address;
->>       spinlock_t *ptl;
->> @@ -2573,8 +2584,12 @@ static int khugepaged_scan_pmd(struct mm_struct
->> *mm,
->>               else
->>                   goto out_unmap;
->>           }
->> -        if (!pte_present(pteval) || !pte_write(pteval))
->> +        if (!pte_present(pteval))
->>               goto out_unmap;
->> +        if (!pte_write(pteval)) {
->> +            if (++ro > khugepaged_max_ptes_none)
->> +                goto out_unmap;
->> +        }
->>           page = vm_normal_page(vma, _address, pteval);
->>           if (unlikely(!page))
->>               goto out_unmap;
->> @@ -2592,7 +2607,7 @@ static int khugepaged_scan_pmd(struct mm_struct
->> *mm,
->>           if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
->>               goto out_unmap;
->>           /* cannot use mapcount: can't collapse if there's a gup pin */
->> -        if (page_count(page) != 1)
->> +        if (page_count(page) != 1 + !!PageSwapCache(page))
-> 
-> Same as above. Even more so, as there's no other page swap cache
-> handling code in this function.
-> 
-> Thanks.
-> 
->>               goto out_unmap;
->>           if (pte_young(pteval) || PageReferenced(page) ||
->>               mmu_notifier_test_young(vma->vm_mm, address))
->>
-> 
+> I'll prepare new version out of these today and try to figure out
+> proper place for the code (maybe drivers/usb/ulpi?).
 
+drivers/phy is fine, it is a phy driver anyway... I just should've read
+it to see there was a ulpi_bus_type :-)
+
+--=20
+balbi
+
+--eheScQNz3K90DVRs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUwnPzAAoJEIaOsuA1yqREMSwP/jlVrhowTbpa8Jj7QTZHDHUi
+6hovmP7BG3g0Iq+Cx210n3CqQ+vmYrGZsf5/8sPG6nuf5vizKuYWN6HU6SbVqINT
+y748ilmG/lHGjv9YPDE31pKKxhHyOAh8Qdbi2CCtGvPZEucxLnI2Qi+Uv3SkHq95
+4QwjcOaf2yYUzCu3e2Legs1NvxCCfkjISIJrT+DkAkIkMXFS1z9xQ1uKD4OeSsbS
+JVBfhblYUXOAP82m3RVN6de5TYFz+LLXIDEkj+t1e28usDhandz1LC26Z37dfnJf
+Lxg6fsIEbg0dXZaWgPFDguKC7KVvA+YO6iRTxz+lb7ijh/5r3Ao71T4zf3dTNix8
++RiWFLG6QKn6cfJDrGOEGbjAtJbpuJTCFs5LvLH76qnw8UbQmcZ0j6orPTKsptuk
+HrueR/WVuZd5SLMVjI4F4ornbvKyWYj/8F8J07EAsggX5gWHUi1D2qmUX1W/NbEd
+5Dlm+DAC6SR64TnI3/tu2J5J5KbpwGrYKIzIWM8CYy5y+DvqqhLlB7nr2oLrng8d
+Y5XkG2hhNf2nBFnWK5yJ2okMoW3yHbVACdRIPWxS+yWR1wt+V8Nupnq+SYlgcpT5
+gQPPEhG8fWqCsK5XKFmJRf5n/+ukPC9YJ8l3mb8/vBpEQQ70a3h/yBoPLk5ciIz/
+38iEdqAQVI6oxDY8e1d8
+=7oFu
+-----END PGP SIGNATURE-----
+
+--eheScQNz3K90DVRs--
