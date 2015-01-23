@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbbAWNAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 08:00:42 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:59296 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755259AbbAWNAk (ORCPT
+	id S1755241AbbAWNAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 08:00:36 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46860 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755158AbbAWNAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 08:00:40 -0500
-Message-Id: <20150123125834.090683288@infradead.org>
+	Fri, 23 Jan 2015 08:00:32 -0500
+Message-Id: <20150123125834.150481799@infradead.org>
 User-Agent: quilt/0.61-1
-Date: Fri, 23 Jan 2015 13:52:00 +0100
+Date: Fri, 23 Jan 2015 13:52:01 +0100
 From: Peter Zijlstra <peterz@infradead.org>
 To: mingo@kernel.org, linux-kernel@vger.kernel.org
 Cc: vincent.weaver@maine.edu, eranian@gmail.com, jolsa@redhat.com,
         mark.rutland@arm.com, torvalds@linux-foundation.org,
         tglx@linutronix.de, peterz@infradead.org
-Subject: [RFC][PATCH 1/3] perf: Tighten (and fix) the grouping condition
+Subject: [RFC][PATCH 2/3] perf: Add a bit of paranoia
 References: <20150123125159.696530128@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=peterz-perf-fix-grouping.patch
+Content-Disposition: inline; filename=peterz-perf-ctx-paranioa.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fix from 9fc81d87420d ("perf: Fix events installation during
-moving group") was incomplete in that it failed to recognise that
-creating a group with events for different CPUs is semantically
-broken -- they cannot be co-scheduled.
+Add a few WARNs to catch things that should never happen.
 
-Furthermore, it leads to real breakage where, when we create an event
-for CPU Y and then migrate it to form a group on CPU X, the code gets
-confused where the counter is programmed -- triggered by the fuzzer.
-
-Fix this by tightening the rules for creating groups. Only allow
-grouping of counters that can be co-scheduled in the same context.
-This means for the same task and/or the same cpu.
-
-Fixes: 9fc81d87420d ("perf: Fix events installation during moving group")
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
 ---
- include/linux/perf_event.h |    6 ------
- kernel/events/core.c       |   15 +++++++++++++--
- 2 files changed, 13 insertions(+), 8 deletions(-)
+ kernel/events/core.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -450,11 +450,6 @@ struct perf_event {
- #endif /* CONFIG_PERF_EVENTS */
- };
- 
--enum perf_event_context_type {
--	task_context,
--	cpu_context,
--};
--
- /**
-  * struct perf_event_context - event context structure
-  *
-@@ -462,7 +457,6 @@ enum perf_event_context_type {
-  */
- struct perf_event_context {
- 	struct pmu			*pmu;
--	enum perf_event_context_type	type;
- 	/*
- 	 * Protect the states of the events in the list,
- 	 * nr_active, and the list:
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -6846,7 +6846,6 @@ int perf_pmu_register(struct pmu *pmu, c
- 		__perf_event_init_context(&cpuctx->ctx);
- 		lockdep_set_class(&cpuctx->ctx.mutex, &cpuctx_mutex);
- 		lockdep_set_class(&cpuctx->ctx.lock, &cpuctx_lock);
--		cpuctx->ctx.type = cpu_context;
- 		cpuctx->ctx.pmu = pmu;
+@@ -1275,6 +1275,8 @@ static void perf_group_attach(struct per
+ 	if (group_leader == event)
+ 		return;
  
- 		__perf_cpu_hrtimer_init(cpuctx, cpu);
-@@ -7493,7 +7492,19 @@ SYSCALL_DEFINE5(perf_event_open,
- 		 * task or CPU context:
- 		 */
- 		if (move_group) {
--			if (group_leader->ctx->type != ctx->type)
-+			/*
-+			 * Make sure we're both on the same task, or both
-+			 * per-cpu events.
-+			 */
-+			if (group_leader->ctx->task != ctx->task)
-+				goto err_context;
++	WARN_ON_ONCE(group_leader->ctx != event->ctx);
 +
-+			/*
-+			 * Make sure we're both events for the same CPU;
-+			 * grouping events for different CPUs is broken; since
-+			 * you can never concurrently schedule them anyhow.
-+			 */
-+			if (group_leader->cpu != event->cpu)
- 				goto err_context;
- 		} else {
- 			if (group_leader->ctx != ctx)
+ 	if (group_leader->group_flags & PERF_GROUP_SOFTWARE &&
+ 			!is_software_event(event))
+ 		group_leader->group_flags &= ~PERF_GROUP_SOFTWARE;
+@@ -1296,6 +1298,10 @@ static void
+ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ {
+ 	struct perf_cpu_context *cpuctx;
++
++	WARN_ON_ONCE(event->ctx != ctx);
++	lockdep_assert_held(&ctx->lock);
++
+ 	/*
+ 	 * We can have double detach due to exit/hot-unplug + close.
+ 	 */
+@@ -1380,6 +1386,8 @@ static void perf_group_detach(struct per
+ 
+ 		/* Inherit group flags from the previous leader */
+ 		sibling->group_flags = event->group_flags;
++
++		WARN_ON_ONCE(sibling->ctx != event->ctx);
+ 	}
+ 
+ out:
+@@ -1442,6 +1450,10 @@ event_sched_out(struct perf_event *event
+ {
+ 	u64 tstamp = perf_event_time(event);
+ 	u64 delta;
++
++	WARN_ON_ONCE(event->ctx != ctx);
++	lockdep_assert_held(&ctx->lock);
++
+ 	/*
+ 	 * An event which could not be activated because of
+ 	 * filter mismatch still needs to have its timings
+@@ -7822,14 +7834,19 @@ static void perf_free_event(struct perf_
+ 
+ 	put_event(parent);
+ 
++	raw_spin_lock_irq(&ctx->lock);
+ 	perf_group_detach(event);
+ 	list_del_event(event, ctx);
++	raw_spin_unlock_irq(&ctx->lock);
+ 	free_event(event);
+ }
+ 
+ /*
+- * free an unexposed, unused context as created by inheritance by
++ * Free an unexposed, unused context as created by inheritance by
+  * perf_event_init_task below, used by fork() in case of fail.
++ *
++ * Not all locks are strictly required, but take them anyway to be nice and
++ * help out with the lockdep assertions.
+  */
+ void perf_event_free_task(struct task_struct *task)
+ {
 
 
