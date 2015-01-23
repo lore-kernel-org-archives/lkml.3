@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074AbbAWOYQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:24:16 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:50741 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627AbbAWOYN (ORCPT
+	id S1755677AbbAWO0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:26:01 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:38819 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482AbbAWOYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:24:13 -0500
+	Fri, 23 Jan 2015 09:24:15 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -24,9 +24,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         Daniel Drake <drake@endlessm.com>,
         Dmitry Pervushin <dpervushin@gmail.com>,
         Tim Sander <tim@krieglstein.org>
-Subject: [PATCH 3.19-rc2 v15 4/8] sched_clock: Avoid deadlock during read from NMI
-Date: Fri, 23 Jan 2015 14:22:28 +0000
-Message-Id: <1422022952-31552-5-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH 3.19-rc2 v15 5/8] printk: Simple implementation for NMI backtracing
+Date: Fri, 23 Jan 2015 14:22:29 +0000
+Message-Id: <1422022952-31552-6-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1422022952-31552-1-git-send-email-daniel.thompson@linaro.org>
 References: <1422022952-31552-1-git-send-email-daniel.thompson@linaro.org>
@@ -34,294 +34,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently it is possible for an NMI (or FIQ on ARM) to come in and
-read sched_clock() whilst update_sched_clock() has locked the seqcount
-for writing. This results in the NMI handler locking up when it calls
-raw_read_seqcount_begin().
+Currently there is a quite a pile of code sitting in
+arch/x86/kernel/apic/hw_nmi.c to support safe all-cpu backtracing from NMI.
+The code is inaccessible to backtrace implementations for other
+architectures, which is a shame because they would probably like to be
+safe too.
 
-This patch fixes that problem by providing banked clock data in a
-similar manner to Thomas Gleixner's 4396e058c52e("timekeeping: Provide
-fast and NMI safe access to CLOCK_MONOTONIC").
+Copy this code into printk. We'll port the x86 NMI backtrace to it in a
+later patch.
 
-Changing the mode of operation of the seqcount away from the traditional
-LSB-means-interrupted-write to a banked approach also revealed a good deal
-of "fake" write locking within sched_clock_register(). This is likely
-to be a latent issue because sched_clock_register() is typically called
-before we enable interrupts. Nevertheless the issue has been eliminated
-by increasing the scope of the read locking performed by sched_clock().
+Incidentally, technically I think it might be safe to call
+prepare_nmi_printk() from NMI, providing care were taken to honour the
+return code. complete_nmi_printk() cannot be called from NMI but could
+be scheduled using irq_work_queue(). However honouring the return code
+means sometimes it is impossible to get the message out so I'd say using
+this code in such a way should probably attract sympathy and/or derision
+rather than admiration.
 
-Suggested-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: John Stultz <john.stultz@linaro.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/time/sched_clock.c | 157 +++++++++++++++++++++++++++++-----------------
- 1 file changed, 100 insertions(+), 57 deletions(-)
+ arch/Kconfig           |   3 ++
+ include/linux/printk.h |  22 +++++++++
+ kernel/printk/printk.c | 122 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 147 insertions(+)
 
-diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-index 01d2d15aa662..a2ea66944bc1 100644
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -18,28 +18,28 @@
- #include <linux/seqlock.h>
- #include <linux/bitops.h>
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 05d7a8a458d5..50c9412a77d0 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -309,6 +309,9 @@ config ARCH_WANT_OLD_COMPAT_IPC
+ 	select ARCH_WANT_COMPAT_IPC_PARSE_VERSION
+ 	bool
  
--struct clock_data {
--	ktime_t wrap_kt;
-+struct clock_data_banked {
- 	u64 epoch_ns;
- 	u64 epoch_cyc;
--	seqcount_t seq;
--	unsigned long rate;
-+	u64 (*read_sched_clock)(void);
-+	u64 sched_clock_mask;
- 	u32 mult;
- 	u32 shift;
- 	bool suspended;
- };
++config ARCH_WANT_NMI_PRINTK
++	bool
++
+ config HAVE_ARCH_SECCOMP_FILTER
+ 	bool
+ 	help
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index c8f170324e64..188fdc2c1efd 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -219,6 +219,28 @@ static inline void show_regs_print_info(const char *log_lvl)
+ }
+ #endif
  
-+struct clock_data {
-+	ktime_t wrap_kt;
-+	seqcount_t seq;
-+	unsigned long rate;
-+	struct clock_data_banked bank[2];
++#ifdef CONFIG_ARCH_WANT_NMI_PRINTK
++extern __printf(1, 0) int nmi_vprintk(const char *fmt, va_list args);
++
++struct cpumask;
++extern int prepare_nmi_printk(struct cpumask *cpus);
++extern void complete_nmi_printk(struct cpumask *cpus);
++
++/*
++ * Replace printk to write into the NMI seq.
++ *
++ * To avoid include hell this is a macro rather than an inline function
++ * (printk_func is not declared in this header file).
++ */
++#define this_cpu_begin_nmi_printk() ({ \
++	printk_func_t __orig = this_cpu_read(printk_func); \
++	this_cpu_write(printk_func, nmi_vprintk); \
++	__orig; \
++})
++#define this_cpu_end_nmi_printk(fn) this_cpu_write(printk_func, fn)
++
++#endif
++
+ extern asmlinkage void dump_stack(void) __cold;
+ 
+ #ifndef pr_fmt
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 02d6b6d28796..774119e27e0b 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1805,6 +1805,127 @@ asmlinkage int printk_emit(int facility, int level,
+ }
+ EXPORT_SYMBOL(printk_emit);
+ 
++#ifdef CONFIG_ARCH_WANT_NMI_PRINTK
++
++#define NMI_BUF_SIZE		4096
++
++struct nmi_seq_buf {
++	unsigned char		buffer[NMI_BUF_SIZE];
++	struct seq_buf		seq;
 +};
 +
- static struct hrtimer sched_clock_timer;
- static int irqtime = -1;
- 
- core_param(irqtime, irqtime, int, 0400);
- 
--static struct clock_data cd = {
--	.mult	= NSEC_PER_SEC / HZ,
--};
--
--static u64 __read_mostly sched_clock_mask;
--
- static u64 notrace jiffy_sched_clock_read(void)
- {
- 	/*
-@@ -49,7 +49,14 @@ static u64 notrace jiffy_sched_clock_read(void)
- 	return (u64)(jiffies - INITIAL_JIFFIES);
- }
- 
--static u64 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
-+static struct clock_data cd = {
-+	.bank = {
-+		[0] = {
-+			.mult	= NSEC_PER_SEC / HZ,
-+			.read_sched_clock = jiffy_sched_clock_read,
-+		},
-+	},
-+};
- 
- static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
- {
-@@ -58,50 +65,82 @@ static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
- 
- unsigned long long notrace sched_clock(void)
- {
--	u64 epoch_ns;
--	u64 epoch_cyc;
- 	u64 cyc;
- 	unsigned long seq;
--
--	if (cd.suspended)
--		return cd.epoch_ns;
-+	struct clock_data_banked *b;
-+	u64 res;
- 
- 	do {
--		seq = raw_read_seqcount_begin(&cd.seq);
--		epoch_cyc = cd.epoch_cyc;
--		epoch_ns = cd.epoch_ns;
-+		seq = raw_read_seqcount(&cd.seq);
-+		b = cd.bank + (seq & 1);
-+		if (b->suspended) {
-+			res = b->epoch_ns;
-+		} else {
-+			cyc = b->read_sched_clock();
-+			cyc = (cyc - b->epoch_cyc) & b->sched_clock_mask;
-+			res = b->epoch_ns + cyc_to_ns(cyc, b->mult, b->shift);
++/* Safe printing in NMI context */
++static DEFINE_PER_CPU(struct nmi_seq_buf, nmi_print_seq);
++
++/* "in progress" flag of NMI printing */
++static unsigned long nmi_print_flag;
++
++/*
++ * It is not safe to call printk() directly from NMI handlers.
++ * It may be fine if the NMI detected a lock up and we have no choice
++ * but to do so, but doing a NMI on all other CPUs to get a back trace
++ * can be done with a sysrq-l. We don't want that to lock up, which
++ * can happen if the NMI interrupts a printk in progress.
++ *
++ * Instead, we redirect the vprintk() to this nmi_vprintk() that writes
++ * the content into a per cpu seq_buf buffer. Then when the NMIs are
++ * all done, we can safely dump the contents of the seq_buf to a printk()
++ * from a non NMI context.
++ *
++ * This is not a generic printk() implementation and must be used with
++ * great care. In particular there is a static limit on the quantity of
++ * data that may be emitted during NMI, only one client can be active at
++ * one time (arbitrated by the return value of begin_nmi_printk() and
++ * it is required that something at task or interrupt context be scheduled
++ * to issue the output.
++ */
++int nmi_vprintk(const char *fmt, va_list args)
++{
++	struct nmi_seq_buf *s = this_cpu_ptr(&nmi_print_seq);
++	unsigned int len = seq_buf_used(&s->seq);
++
++	seq_buf_vprintf(&s->seq, fmt, args);
++	return seq_buf_used(&s->seq) - len;
++}
++EXPORT_SYMBOL_GPL(nmi_vprintk);
++
++/*
++ * Check for concurrent usage and set up per_cpu seq_buf buffers that the NMIs
++ * running on the other CPUs will write to. Provides the mask of CPUs it is
++ * safe to write from (i.e. a copy of the online mask).
++ */
++int prepare_nmi_printk(struct cpumask *cpus)
++{
++	struct nmi_seq_buf *s;
++	int cpu;
++
++	if (test_and_set_bit(0, &nmi_print_flag)) {
++		/*
++		 * If something is already using the NMI print facility we
++		 * can't allow a second one...
++		 */
++		return -EBUSY;
++	}
++
++	cpumask_copy(cpus, cpu_online_mask);
++
++	for_each_cpu(cpu, cpus) {
++		s = &per_cpu(nmi_print_seq, cpu);
++		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(prepare_nmi_printk);
++
++static void print_seq_line(struct nmi_seq_buf *s, int start, int end)
++{
++	const char *buf = s->buffer + start;
++
++	printk("%.*s", (end - start) + 1, buf);
++}
++
++void complete_nmi_printk(struct cpumask *cpus)
++{
++	struct nmi_seq_buf *s;
++	int len;
++	int cpu;
++	int i;
++
++	/*
++	 * Now that all the NMIs have triggered, we can dump out their
++	 * back traces safely to the console.
++	 */
++	for_each_cpu(cpu, cpus) {
++		int last_i = 0;
++
++		s = &per_cpu(nmi_print_seq, cpu);
++
++		len = seq_buf_used(&s->seq);
++		if (!len)
++			continue;
++
++		/* Print line by line. */
++		for (i = 0; i < len; i++) {
++			if (s->buffer[i] == '\n') {
++				print_seq_line(s, last_i, i);
++				last_i = i + 1;
++			}
 +		}
- 	} while (read_seqcount_retry(&cd.seq, seq));
- 
--	cyc = read_sched_clock();
--	cyc = (cyc - epoch_cyc) & sched_clock_mask;
--	return epoch_ns + cyc_to_ns(cyc, cd.mult, cd.shift);
-+	return res;
++		/* Check if there was a partial line. */
++		if (last_i < len) {
++			print_seq_line(s, last_i, len - 1);
++			pr_cont("\n");
++		}
++	}
++
++	clear_bit(0, &nmi_print_flag);
++	smp_mb__after_atomic();
 +}
++EXPORT_SYMBOL_GPL(complete_nmi_printk);
 +
-+/*
-+ * Start updating the banked clock data.
-+ *
-+ * sched_clock will never observe mis-matched data even if called from
-+ * an NMI. We do this by maintaining an odd/even copy of the data and
-+ * steering sched_clock to one or the other using a sequence counter.
-+ * In order to preserve the data cache profile of sched_clock as much
-+ * as possible the system reverts back to the even copy when the update
-+ * completes; the odd copy is used *only* during an update.
-+ *
-+ * The caller is responsible for avoiding simultaneous updates.
-+ */
-+static struct clock_data_banked *update_bank_begin(void)
-+{
-+	/* update the backup (odd) bank and steer readers towards it */
-+	memcpy(cd.bank + 1, cd.bank, sizeof(struct clock_data_banked));
-+	raw_write_seqcount_latch(&cd.seq);
++#endif /* CONFIG_ARCH_WANT_NMI_PRINTK */
 +
-+	return cd.bank;
-+}
-+
-+/*
-+ * Finalize update of banked clock data.
-+ *
-+ * This is just a trivial switch back to the primary (even) copy.
-+ */
-+static void update_bank_end(void)
-+{
-+	raw_write_seqcount_latch(&cd.seq);
- }
- 
- /*
-  * Atomically update the sched_clock epoch.
+ int vprintk_default(const char *fmt, va_list args)
+ {
+ 	int r;
+@@ -1829,6 +1950,7 @@ EXPORT_SYMBOL_GPL(vprintk_default);
   */
--static void notrace update_sched_clock(void)
-+static void notrace update_sched_clock(bool suspended)
- {
--	unsigned long flags;
-+	struct clock_data_banked *b;
- 	u64 cyc;
- 	u64 ns;
+ DEFINE_PER_CPU(printk_func_t, printk_func) = vprintk_default;
  
--	cyc = read_sched_clock();
--	ns = cd.epoch_ns +
--		cyc_to_ns((cyc - cd.epoch_cyc) & sched_clock_mask,
--			  cd.mult, cd.shift);
--
--	raw_local_irq_save(flags);
--	raw_write_seqcount_begin(&cd.seq);
--	cd.epoch_ns = ns;
--	cd.epoch_cyc = cyc;
--	raw_write_seqcount_end(&cd.seq);
--	raw_local_irq_restore(flags);
-+	b = update_bank_begin();
 +
-+	cyc = b->read_sched_clock();
-+	ns = b->epoch_ns + cyc_to_ns((cyc - b->epoch_cyc) & b->sched_clock_mask,
-+				     b->mult, b->shift);
-+
-+	b->epoch_ns = ns;
-+	b->epoch_cyc = cyc;
-+	b->suspended = suspended;
-+
-+	update_bank_end();
- }
- 
- static enum hrtimer_restart sched_clock_poll(struct hrtimer *hrt)
- {
--	update_sched_clock();
-+	update_sched_clock(false);
- 	hrtimer_forward_now(hrt, cd.wrap_kt);
- 	return HRTIMER_RESTART;
- }
-@@ -111,9 +150,9 @@ void __init sched_clock_register(u64 (*read)(void), int bits,
- {
- 	u64 res, wrap, new_mask, new_epoch, cyc, ns;
- 	u32 new_mult, new_shift;
--	ktime_t new_wrap_kt;
- 	unsigned long r;
- 	char r_unit;
-+	struct clock_data_banked *b;
- 
- 	if (cd.rate > rate)
- 		return;
-@@ -122,29 +161,30 @@ void __init sched_clock_register(u64 (*read)(void), int bits,
- 
- 	/* calculate the mult/shift to convert counter ticks to ns. */
- 	clocks_calc_mult_shift(&new_mult, &new_shift, rate, NSEC_PER_SEC, 3600);
-+	cd.rate = rate;
- 
- 	new_mask = CLOCKSOURCE_MASK(bits);
- 
- 	/* calculate how many ns until we wrap */
- 	wrap = clocks_calc_max_nsecs(new_mult, new_shift, 0, new_mask);
--	new_wrap_kt = ns_to_ktime(wrap - (wrap >> 3));
-+	cd.wrap_kt = ns_to_ktime(wrap - (wrap >> 3));
-+
-+	b = update_bank_begin();
- 
- 	/* update epoch for new counter and update epoch_ns from old counter*/
- 	new_epoch = read();
--	cyc = read_sched_clock();
--	ns = cd.epoch_ns + cyc_to_ns((cyc - cd.epoch_cyc) & sched_clock_mask,
--			  cd.mult, cd.shift);
-+	cyc = b->read_sched_clock();
-+	ns = b->epoch_ns + cyc_to_ns((cyc - b->epoch_cyc) & b->sched_clock_mask,
-+				     b->mult, b->shift);
- 
--	raw_write_seqcount_begin(&cd.seq);
--	read_sched_clock = read;
--	sched_clock_mask = new_mask;
--	cd.rate = rate;
--	cd.wrap_kt = new_wrap_kt;
--	cd.mult = new_mult;
--	cd.shift = new_shift;
--	cd.epoch_cyc = new_epoch;
--	cd.epoch_ns = ns;
--	raw_write_seqcount_end(&cd.seq);
-+	b->read_sched_clock = read;
-+	b->sched_clock_mask = new_mask;
-+	b->mult = new_mult;
-+	b->shift = new_shift;
-+	b->epoch_cyc = new_epoch;
-+	b->epoch_ns = ns;
-+
-+	update_bank_end();
- 
- 	r = rate;
- 	if (r >= 4000000) {
-@@ -175,10 +215,10 @@ void __init sched_clock_postinit(void)
- 	 * If no sched_clock function has been provided at that point,
- 	 * make it the final one one.
- 	 */
--	if (read_sched_clock == jiffy_sched_clock_read)
-+	if (cd.bank[0].read_sched_clock == jiffy_sched_clock_read)
- 		sched_clock_register(jiffy_sched_clock_read, BITS_PER_LONG, HZ);
- 
--	update_sched_clock();
-+	update_sched_clock(false);
- 
- 	/*
- 	 * Start the timer to keep sched_clock() properly updated and
-@@ -191,17 +231,20 @@ void __init sched_clock_postinit(void)
- 
- static int sched_clock_suspend(void)
- {
--	update_sched_clock();
-+	update_sched_clock(true);
- 	hrtimer_cancel(&sched_clock_timer);
--	cd.suspended = true;
- 	return 0;
- }
- 
- static void sched_clock_resume(void)
- {
--	cd.epoch_cyc = read_sched_clock();
-+	struct clock_data_banked *b;
-+
-+	b = update_bank_begin();
-+	b->epoch_cyc = b->read_sched_clock();
- 	hrtimer_start(&sched_clock_timer, cd.wrap_kt, HRTIMER_MODE_REL);
--	cd.suspended = false;
-+	b->suspended = false;
-+	update_bank_end();
- }
- 
- static struct syscore_ops sched_clock_ops = {
+ /**
+  * printk - print a kernel message
+  * @fmt: format string
 -- 
 1.9.3
 
