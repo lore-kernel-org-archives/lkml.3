@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105AbbAWIYT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:24:19 -0500
-Received: from mail-bn1bon0085.outbound.protection.outlook.com ([157.56.111.85]:21776
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753667AbbAWIYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:24:17 -0500
-Date: Fri, 23 Jan 2015 09:23:39 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1753992AbbAWIXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:23:54 -0500
+Received: from mga01.intel.com ([192.55.52.88]:43148 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753884AbbAWIXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 03:23:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,453,1418112000"; 
+   d="scan'208";a="666341287"
+Date: Fri, 23 Jan 2015 10:23:48 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] phy: ulpi: add driver for TI TUSB1210
+Message-ID: <20150123082348.GC30522@kuha.fi.intel.com>
+References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1421745502-169447-4-git-send-email-heikki.krogerus@linux.intel.com>
+ <20150120154539.GB8988@saruman>
+ <20150121091749.GB22716@kuha.fi.intel.com>
+ <20150121113958.GC22716@kuha.fi.intel.com>
+ <20150122205124.GG22288@saruman.tx.rr.com>
 MIME-Version: 1.0
-To: Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: <linux-kernel@vger.kernel.org>, <monstr@monstr.eu>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>, <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        =?windows-1252?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH 2/2] remoteproc: microblaze: Add support for microblaze
- on Zynq
-References: <a458462d2dc6901440bded015608f7a9df9e7942.1421662385.git.michal.simek@xilinx.com>
- <10276362c737fc9da863f1a07737fd91f7340242.1421662385.git.michal.simek@xilinx.com>
- <54C12AF9.40200@mentor.com>
-In-Reply-To: <54C12AF9.40200@mentor.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21276.002
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <9958fd0fb61347558d33ca92dcc02a88@BN1BFFO11FD005.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; mentor.com; dkim=none (message not
- signed) header.d=none;
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(479174004)(51704005)(24454002)(164054003)(377454003)(64126003)(62966003)(108616004)(92566002)(2950100001)(33646002)(104016003)(77156002)(77096005)(6806004)(92726002)(83506001)(46102003)(54356999)(50986999)(76176999)(86362001)(47776003)(74316001)(50466002)(87936001)(65806001)(23746002)(65956001)(106466001)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB005;H:xir-pvapsmtpgw01;FPR:;SPF:None;MLV:sfv;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB005;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1BFFO11HUB005;
-X-Forefront-PRVS: 0465429B7F
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB005;
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Jan 2015 08:24:05.1063
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1BFFO11HUB005
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150122205124.GG22288@saruman.tx.rr.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 05:53 PM, Nathan Lynch wrote:
-> On 01/19/2015 04:30 AM, Michal Simek wrote:
->> diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
->> index 5e343bab9458..3955f42e9e9c 100644
->> --- a/drivers/remoteproc/Kconfig
->> +++ b/drivers/remoteproc/Kconfig
->> @@ -64,4 +64,15 @@ config DA8XX_REMOTEPROC
->>  	  It's safe to say n here if you're not interested in multimedia
->>  	  offloading.
->>
->> +config MB_REMOTEPROC
->> +	tristate "Support Microblaze remoteproc"
->> +	depends on ARCH_ZYNQ && !DEBUG_SG
->> +	select GPIO_XILINX
->> +	select REMOTEPROC
->> +	select RPMSG
->> +	default m
->> +	help
->> +	  Say y here to support Xilinx Microblaze remote processors
->> +	  on the Xilinx Zynq.
->> +
->>  endmenu
+On Thu, Jan 22, 2015 at 02:51:24PM -0600, Felipe Balbi wrote:
+> On Wed, Jan 21, 2015 at 01:39:58PM +0200, Heikki Krogerus wrote:
+> > Hi,
+> > 
+> > On Wed, Jan 21, 2015 at 11:17:49AM +0200, Heikki Krogerus wrote:
+> > > On Tue, Jan 20, 2015 at 09:45:39AM -0600, Felipe Balbi wrote:
+> > > > > diff --git a/drivers/phy/ulpi/tusb1210.c b/drivers/phy/ulpi/tusb1210.c
+> > > > > new file mode 100644
+> > > > > index 0000000..ac77f98
+> > > > > --- /dev/null
+> > > > > +++ b/drivers/phy/ulpi/tusb1210.c
+> > > > 
+> > > > do you really need this extra ulpi directory ?
+> > > > 
+> > > > I wonder if phy-tusb1210.c as a name would be enough.
+> > > 
+> > > IMO grouping the ULPI PHY drivers and other ULPI bus code into
+> > > separate folder from the start is the right thing to do.
+> > 
+> > A correction to this comment. I probable don't need this folder. Like
+> > you said, phy-tusb1210.c should be enough..
+> > 
+> > <snip>
+> > 
+> > > > In fact, we might decide to add an entire ULPI bus, eventually, though
+> > > > I'm still considering if there's any benefit to that.
+> > > 
+> > > I don't think I understand this comment? ULPI bus is what I'm
+> > > introducing in this set (the first patch in it)?
+> > 
+> > ..I talked with Alex about this :). So I think the bus belongs under
+> > drivers/usb/core/ instead of driver/phy/. It's not really tied to the
+> > Generic PHY framework in any way, but ULPI is of course USB specific.
 > 
-> The dependency on !DEBUG_SG seems unusual, and worth a comment if it's
-> truly needed.  And the module should be disabled by default, no?
+> right, maybe drivers/usb/ulpi or maybe drivers/ulpi, and have
+> phy-tusb1201 register under that ulpi_bus_type instead of
+> platform_bus_type, but still use drivers/phy to register itself a phy
+> provider ;-)
 
-Right - I will remove this dependency. It is not needed now.
+So just for the record: This driver does not register under
+platform_bus_type bus but instead already under ulpi_bus_type.
 
-Using is like a module is good usecase because you can reload SW on remote cpu.
-
-Thanks,
-Michal
+I'll prepare new version out of these today and try to figure out
+proper place for the code (maybe drivers/usb/ulpi?).
 
 
+Cheers,
+
+-- 
+heikki
