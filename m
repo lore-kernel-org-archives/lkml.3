@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586AbbAWEDJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 23:03:09 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31157 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073AbbAWEDH (ORCPT
+	id S1755031AbbAWEEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 23:04:07 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:59121 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425AbbAWEEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 23:03:07 -0500
-Message-ID: <54C1C7D2.906@oracle.com>
-Date: Thu, 22 Jan 2015 23:02:26 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 22 Jan 2015 23:04:05 -0500
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337
- rcu_read_unlock_special+0x369/0x550()
-References: <54BBC084.2030604@oracle.com> <20150118232255.GD9719@linux.vnet.ibm.com> <54BE76B9.7070907@oracle.com> <20150121025754.GV9719@linux.vnet.ibm.com> <54BFC979.8040107@oracle.com> <20150122004305.GJ9719@linux.vnet.ibm.com> <54C1BFFD.9060707@oracle.com> <20150123035158.GP9719@linux.vnet.ibm.com>
-In-Reply-To: <20150123035158.GP9719@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <m3sif2zbnz.fsf@oc8180480414.ibm.com>
+References: <1421893570-6920-1-git-send-email-bobby.prani@gmail.com>
+ <1421893570-6920-2-git-send-email-bobby.prani@gmail.com> <1421903958.4598.4.camel@ellerman.id.au>
+ <CAJhHMCDPCdeGSfGFoYcUHXQoemtmSTdsmLrS3_GOewrvNQm8kA@mail.gmail.com> <m3sif2zbnz.fsf@oc8180480414.ibm.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 22 Jan 2015 23:03:34 -0500
+Message-ID: <CAJhHMCB+5Qkyfpkvrgi5+DVyc2O3HJ1VVmBXEs_ETw1rst0OZA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] powerpc/powernv: Skip registering log region when CONFIG_PRINTK=n
+To: Stewart Smith <stewart@linux.vnet.ibm.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>, Rob Herring <robh@kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Joel Stanley <joel@jms.id.au>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        Neelesh Gupta <neelegup@linux.vnet.ibm.com>,
+        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
+        Anton Blanchard <anton@samba.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 10:51 PM, Paul E. McKenney wrote:
-> On Thu, Jan 22, 2015 at 10:29:01PM -0500, Sasha Levin wrote:
->> > On 01/21/2015 07:43 PM, Paul E. McKenney wrote:
->>> > > On Wed, Jan 21, 2015 at 10:44:57AM -0500, Sasha Levin wrote:
->>>> > >> On 01/20/2015 09:57 PM, Paul E. McKenney wrote:
->>>>>>> > >>>>> So RCU believes that an RCU read-side critical section that ended within
->>>>>>>>> > >>>>>>> an interrupt handler (in this case, an hrtimer) somehow got preempted.
->>>>>>>>> > >>>>>>> Which is not supposed to happen.
->>>>>>>>> > >>>>>>>
->>>>>>>>> > >>>>>>> Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
->>>>>>>>> > >>>>>>> and retry?
->>>>>>> > >>>>>
->>>>>>> > >>>>> I did have CONFIG_PROVE_RCU, and didn't see anything else besides what I pasted here.
->>>>> > >>> OK, fair enough.  I do have a stack of RCU CPU stall-warning changes on
->>>>> > >>> their way in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
->>>>> > >>>
->>>>> > >>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
->>>>> > >>>
->>>>> > >>> These handle the problems that Dave Jones, yourself, and a few others
->>>>> > >>> located this past December.  Could you please give them a spin?
->>>> > >>
->>>> > >> They seem to be a part of -next already, so this testing already includes them.
->>>> > >>
->>>> > >> I seem to be getting them about once a day, anything I can add to debug it?
->>> > > 
->>> > > Could you please try reproducing with the following patch?
->> > 
->> > Yes, and I've got mixed results. It reproduced, and all I got was:
->> > 
->> > [  717.645572] ===============================
->> > [  717.645572] [ INFO: suspicious RCU usage. ]
->> > [  717.645572] 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1809 Tainted: G        W
->> > [  717.645572] -------------------------------
->> > [  717.645572] kernel/rcu/tree_plugin.h:337 rcu_read_unlock() from irq or softirq with blocking in critical section!!!
->> > [  717.645572] !
->> > [  717.645572]
->> > [  717.645572] other info that might help us debug this:
->> > [  717.645572]
->> > [  717.645572]
->> > [  717.645572] rcu_scheduler_active = 1, debug_locks = 1
->> > [  717.645572] 3 locks held by trinity-c29/16497:
->> > [  717.645572]  #0:  (&sb->s_type->i_mutex_key){+.+.+.}, at: [<ffffffff81bec373>] lookup_slow+0xd3/0x420
->> > [  717.645572]  #1:
->> > [hang]
->> > 
->> > So the rest of the locks/stack trace didn't get printed, nor the pr_alert() which
->> > should follow that.
->> > 
->> > I've removed the lockdep call and will re-run it.
-> Thank you!  You are keeping the pr_alert(), correct?
+On Thu, Jan 22, 2015 at 5:35 PM, Stewart Smith
+<stewart@linux.vnet.ibm.com> wrote:
+> Pranith Kumar <bobby.prani@gmail.com> writes:
+>> On Thu, Jan 22, 2015 at 12:19 AM, Michael Ellerman <mpe@ellerman.id.au> wrote:
+>>> On Wed, 2015-01-21 at 21:26 -0500, Pranith Kumar wrote:
+>>>> When CONFIG_PRINTK=n, log_buf_addr_get() returns NULL and log_buf_len_get()
+>>>> return 0. Check for these return values and skip registering the dump buffer.
+>>>>
+>>>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>>>> CC: Michael Ellerman <mpe@ellerman.id.au>
+>>>> ---
+>>>>  arch/powerpc/platforms/powernv/opal.c | 6 ++++++
+>>>>  1 file changed, 6 insertions(+)
+>>>
+>>> What changed since v1? I don't see anything?
+>>>
+>>
+>> Nothing in this patch but there is a v2 of the first patch in this
+>> series, so had to resend this patch with a v2.
+>
+> You also missed my Reviewed-by :)
+>
 
-Yup, just the lockdep call goes away.
+Sincere apologies for the oversight. Maintainers, could you please add
+this Reviewed-by tag when picking this up?
 
+Reviewed-by: Stewart Smith <stewart@linux.vnet.ibm.com>
 
-Thanks,
-Sasha
+Thanks!
+
+-- 
+Pranith
