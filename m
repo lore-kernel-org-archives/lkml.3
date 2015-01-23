@@ -1,123 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbbAWPCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:02:48 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41898 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085AbbAWPCp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:02:45 -0500
-Date: Fri, 23 Jan 2015 15:02:12 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vincent.weaver@maine.edu" <vincent.weaver@maine.edu>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "jolsa@redhat.com" <jolsa@redhat.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: Re: [RFC][PATCH 1/3] perf: Tighten (and fix) the grouping condition
-Message-ID: <20150123150211.GA6091@leverpostej>
-References: <20150123125159.696530128@infradead.org>
- <20150123125834.090683288@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123125834.090683288@infradead.org>
-Thread-Topic: [RFC][PATCH 1/3] perf: Tighten (and fix) the grouping condition
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755568AbbAWPKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:10:09 -0500
+Received: from plane.gmane.org ([80.91.229.3]:47560 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbbAWPKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 10:10:06 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "U.Mutlu" <for-gmane@mutluit.com>
+Subject: Re: x86/MCE: drop bogus const modifier from AMD's bank4_names()
+Date: Fri, 23 Jan 2015 16:04:46 +0100
+Organization: mutluit.com
+Message-ID: <m9tnue$fiu$1@ger.gmane.org>
+References: <54C21511020000780005890E@mail.emea.novell.com> <20150123095838.GA22635@pd.tnic> <54C22B040200007800058A07@mail.emea.novell.com> <20150123101623.GB22635@pd.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: ip4d16f302.dynamic.kabel-deutschland.de
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:27.0) Gecko/20100101 Firefox/27.0 SeaMonkey/2.24
+In-Reply-To: <20150123101623.GB22635@pd.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 12:52:00PM +0000, Peter Zijlstra wrote:
-> The fix from 9fc81d87420d ("perf: Fix events installation during
-> moving group") was incomplete in that it failed to recognise that
-> creating a group with events for different CPUs is semantically
-> broken -- they cannot be co-scheduled.
-> 
-> Furthermore, it leads to real breakage where, when we create an event
-> for CPU Y and then migrate it to form a group on CPU X, the code gets
-> confused where the counter is programmed -- triggered by the fuzzer.
-> 
-> Fix this by tightening the rules for creating groups. Only allow
-> grouping of counters that can be co-scheduled in the same context.
-> This means for the same task and/or the same cpu.
+Jan Beulich wrote, On 01/23/2015 09:32 AM:
+>
+> -static const char * const bank4_names(struct threshold_block *b)
+> +static const char *bank4_names(const struct threshold_block *b)
 
-It seems this would still allow you to group CPU-affine software and
-uncore events, which also doesn't make sense: the software events will
-count on a single CPU while the uncore events aren't really CPU-affine.
+There is a big difference in the return type, cf. below.
+Of course, if possible, the more const the better.
 
-Which isn't anything against this patch, but probably something we
-should tighten up too.
+Borislav Petkov wrote, On 01/23/2015 11:16 AM:
+> On Fri, Jan 23, 2015 at 10:05:40AM +0000, Jan Beulich wrote:
+>> It's been a long while ago that I noticed and fixed the warning, so
+>> I don't recall the details. What I do know is that I didn't force any
+>> extra flags, and that a similar issue elsewhere in the tree (fixed
+>> in 3.19-rc5) triggered the same warning in at least one of my builds
+>> (again without any extra warning options) in -rc4.
+>
+> Older compiler maybe. Not that it is worth wasting too much time on it
+> though...
 
-> 
-> Fixes: 9fc81d87420d ("perf: Fix events installation during moving group")
-> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-> ---
->  include/linux/perf_event.h |    6 ------
->  kernel/events/core.c       |   15 +++++++++++++--
->  2 files changed, 13 insertions(+), 8 deletions(-)
-> 
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -450,11 +450,6 @@ struct perf_event {
->  #endif /* CONFIG_PERF_EVENTS */
->  };
->  
-> -enum perf_event_context_type {
-> -	task_context,
-> -	cpu_context,
-> -};
-> -
->  /**
->   * struct perf_event_context - event context structure
->   *
-> @@ -462,7 +457,6 @@ enum perf_event_context_type {
->   */
->  struct perf_event_context {
->  	struct pmu			*pmu;
-> -	enum perf_event_context_type	type;
->  	/*
->  	 * Protect the states of the events in the list,
->  	 * nr_active, and the list:
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -6846,7 +6846,6 @@ int perf_pmu_register(struct pmu *pmu, c
->  		__perf_event_init_context(&cpuctx->ctx);
->  		lockdep_set_class(&cpuctx->ctx.mutex, &cpuctx_mutex);
->  		lockdep_set_class(&cpuctx->ctx.lock, &cpuctx_lock);
-> -		cpuctx->ctx.type = cpu_context;
->  		cpuctx->ctx.pmu = pmu;
->  
->  		__perf_cpu_hrtimer_init(cpuctx, cpu);
-> @@ -7493,7 +7492,19 @@ SYSCALL_DEFINE5(perf_event_open,
->  		 * task or CPU context:
->  		 */
->  		if (move_group) {
-> -			if (group_leader->ctx->type != ctx->type)
-> +			/*
-> +			 * Make sure we're both on the same task, or both
-> +			 * per-cpu events.
-> +			 */
-> +			if (group_leader->ctx->task != ctx->task)
-> +				goto err_context;
-> +
+int main()
+  {
+    char mem1[] = "foo";
+    char mem2[] = "bar";
 
-Up to this point, this looks very similar to what I tried previously
-[1], where we eventually figured out [2] that this raced with the
-context switch optimisation. I never got around to fixing that race.
+    const char* const p1 = mem1;   // both ptr and content are const
+    const char*       p2 = mem2;   // content is const, but not the ptr
 
-I'll try and get my head around that again. I'm not sure if that's still
-a problem, and from a quick look at this series it's not clear that it
-would be fixed if it is a problem.
+// ++p1;         // not possible b/c p1 is const
+    ++p2;         // possible b/c p2 is not const
 
-Thanks,
-Mark.
+// *p1 = 'X';    // not possible b/c content of p1 is const
+// *p2 = 'A';    // not possible b/c content of p2 is const
 
-[1] https://lkml.org/lkml/2014/2/10/937
-[2] https://lkml.org/lkml/2014/2/27/834
+    return 0;
+  }
+
+
+cu
+Uenal
+
