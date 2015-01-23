@@ -1,62 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbbAWHqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 02:46:19 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55484 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbbAWHqP (ORCPT
+	id S1753537AbbAWHta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 02:49:30 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:44955 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168AbbAWHt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 02:46:15 -0500
-From: Thierry Reding <thierry.reding@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ipv6: Provide definitions for GNU libc 2.8 and later
-Date: Fri, 23 Jan 2015 08:46:12 +0100
-Message-Id: <1421999172-27138-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Fri, 23 Jan 2015 02:49:28 -0500
+From: Ebru Akagunduz <ebru.akagunduz@gmail.com>
+To: linux-mm@kvack.org
+Cc: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
+        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
+        hughd@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
+        linux-kernel@vger.kernel.org, riel@redhat.com, aarcange@redhat.com,
+        Ebru Akagunduz <ebru.akagunduz@gmail.com>
+Subject: [PATCH] mm: incorporate read-only pages into transparent huge pages
+Date: Fri, 23 Jan 2015 09:47:36 +0200
+Message-Id: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+This patch aims to improve THP collapse rates, by allowing
+THP collapse in the presence of read-only ptes, like those
+left in place by do_swap_page after a read fault.
 
-Starting with GNU libc 2.8 and later, the definitions of the in6_pktinfo
-and ip6_mtuinfo structures is guarded by __USE_GNU. Make sure to provide
-the structures in the linux/ipv6.h when building against GNU libc 2.8 or
-later and __USE_GNU is undefined to avoid breaking build issues.
+Currently THP can collapse 4kB pages into a THP when
+there are up to khugepaged_max_ptes_none pte_none ptes
+in a 2MB range. This patch applies the same limit for
+read-only ptes.
 
-One example where such failure to build can be observed is dhcpcd 6.6.7.
+The patch was tested with a test program that allocates
+800MB of memory, writes to it, and then sleeps. I force
+the system to swap out all but 190MB of the program by
+touching other memory. Afterwards, the test program does
+a mix of reads and writes to its memory, and the memory
+gets swapped back in.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Without the patch, only the memory that did not get
+swapped out remained in THPs, which corresponds to 24% of
+the memory of the program. The percentage did not increase
+over time.
+
+With this patch, after 5 minutes of waiting khugepaged had
+collapsed 55% of the program's memory back into THPs.
+
+Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
-This is based on next-20150122.
+I've written down test results:
 
- include/uapi/linux/libc-compat.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+With the patch:
+After swapped out:
+cat /proc/pid/smaps:
+Anonymous:      100352 kB
+AnonHugePages:  98304 kB
+Swap:           699652 kB
+Fraction:       97,95
 
-diff --git a/include/uapi/linux/libc-compat.h b/include/uapi/linux/libc-compat.h
-index fa673e9cc040..40bd54df06e3 100644
---- a/include/uapi/linux/libc-compat.h
-+++ b/include/uapi/linux/libc-compat.h
-@@ -70,8 +70,17 @@
- #define __UAPI_DEF_IPV6_MREQ		0
- #define __UAPI_DEF_IPPROTO_V6		0
- #define __UAPI_DEF_IPV6_OPTIONS		0
-+/*
-+ * The GNU C library 2.8 and later define the in6_pktinfo and ip6_mtuinfo
-+ * structures only for __USE_GNU.
-+ */
-+#if __GLIBC_PREREQ(2, 8) && !defined(__USE_GNU)
-+#define __UAPI_DEF_IN6_PKTINFO		1
-+#define __UAPI_DEF_IP6_MTUINFO		1
-+#else
- #define __UAPI_DEF_IN6_PKTINFO		0
- #define __UAPI_DEF_IP6_MTUINFO		0
-+#endif
+cat /proc/meminfo:
+AnonPages:      1763732 kB
+AnonHugePages:  1716224 kB
+Fraction:       97,30
+
+After swapped in:
+In a few seconds:
+cat /proc/pid/smaps
+Anonymous:      800004 kB
+AnonHugePages:  235520 kB
+Swap:           0 kB
+Fraction:       29,43
+
+cat /proc/meminfo:
+AnonPages:      2464336 kB
+AnonHugePages:  1853440 kB
+Fraction:       75,21
+
+In five minutes:
+cat /proc/pid/smaps:
+Anonymous:      800004 kB
+AnonHugePages:  440320 kB
+Swap:           0 kB
+Fraction:       55,0
+
+cat /proc/meminfo:
+AnonPages:      2464340
+AnonHugePages:  2058240
+Fraction:       83,52
+
+Without the patch:
+After swapped out:
+cat /proc/pid/smaps:
+Anonymous:      190660 kB
+AnonHugePages:  190464 kB
+Swap:           609344 kB
+Fraction:       99,89
+
+cat /proc/meminfo:
+AnonPages:      1740456 kB
+AnonHugePages:  1667072 kB
+Fraction:       95,78
+
+After swapped in:
+cat /proc/pid/smaps:
+Anonymous:      800004 kB
+AnonHugePages:  190464 kB
+Swap:           0 kB
+Fraction:       23,80
+
+cat /proc/meminfo:
+AnonPages:      2350032 kB
+AnonHugePages:  1667072 kB
+Fraction:       70,93
+
+I waited 10 minutes the fractions
+did not change without the patch.
+
+ mm/huge_memory.c | 25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 817a875..af750d9 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2158,7 +2158,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+ 			else
+ 				goto out;
+ 		}
+-		if (!pte_present(pteval) || !pte_write(pteval))
++		if (!pte_present(pteval))
+ 			goto out;
+ 		page = vm_normal_page(vma, address, pteval);
+ 		if (unlikely(!page))
+@@ -2169,7 +2169,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+ 		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
  
- #else
- 
+ 		/* cannot use mapcount: can't collapse if there's a gup pin */
+-		if (page_count(page) != 1)
++		if (page_count(page) != 1 + !!PageSwapCache(page))
+ 			goto out;
+ 		/*
+ 		 * We can do it before isolate_lru_page because the
+@@ -2179,6 +2179,17 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+ 		 */
+ 		if (!trylock_page(page))
+ 			goto out;
++		if (!pte_write(pteval)) {
++			if (PageSwapCache(page) && !reuse_swap_page(page)) {
++					unlock_page(page);
++					goto out;
++			}
++			/*
++			 * Page is not in the swap cache, and page count is
++			 * one (see above). It can be collapsed into a THP.
++			 */
++		}
++
+ 		/*
+ 		 * Isolate the page to avoid collapsing an hugepage
+ 		 * currently in use by the VM.
+@@ -2550,7 +2561,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+ {
+ 	pmd_t *pmd;
+ 	pte_t *pte, *_pte;
+-	int ret = 0, referenced = 0, none = 0;
++	int ret = 0, referenced = 0, none = 0, ro = 0;
+ 	struct page *page;
+ 	unsigned long _address;
+ 	spinlock_t *ptl;
+@@ -2573,8 +2584,12 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+ 			else
+ 				goto out_unmap;
+ 		}
+-		if (!pte_present(pteval) || !pte_write(pteval))
++		if (!pte_present(pteval))
+ 			goto out_unmap;
++		if (!pte_write(pteval)) {
++			if (++ro > khugepaged_max_ptes_none)
++				goto out_unmap;
++		}
+ 		page = vm_normal_page(vma, _address, pteval);
+ 		if (unlikely(!page))
+ 			goto out_unmap;
+@@ -2592,7 +2607,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+ 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+ 			goto out_unmap;
+ 		/* cannot use mapcount: can't collapse if there's a gup pin */
+-		if (page_count(page) != 1)
++		if (page_count(page) != 1 + !!PageSwapCache(page))
+ 			goto out_unmap;
+ 		if (pte_young(pteval) || PageReferenced(page) ||
+ 		    mmu_notifier_test_young(vma->vm_mm, address))
 -- 
-2.1.3
+1.9.1
 
