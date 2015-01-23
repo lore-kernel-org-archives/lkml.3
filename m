@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbbAWKs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 05:48:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36331 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbbAWKsy (ORCPT
+	id S1754564AbbAWKuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 05:50:52 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43180 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938AbbAWKut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 05:48:54 -0500
-Date: Fri, 23 Jan 2015 02:48:39 -0800
-From: tip-bot for Chunyan Zhang <tipbot@zytor.com>
-Message-ID: <tip-41fbf3b39d5eca01527338b4d0ee15ee1ae1023c@git.kernel.org>
-Cc: arnd@linaro.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        zhang.chunyan@linaro.org, mingo@kernel.org, tglx@linutronix.de
-Reply-To: arnd@linaro.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        zhang.chunyan@linaro.org, tglx@linutronix.de, mingo@kernel.org
-In-Reply-To: <1418793095-18780-1-git-send-email-zhang.chunyan@linaro.org>
-References: <1418793095-18780-1-git-send-email-zhang.chunyan@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] ktime.h: Introduce ktime_ms_delta
-Git-Commit-ID: 41fbf3b39d5eca01527338b4d0ee15ee1ae1023c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 23 Jan 2015 05:50:49 -0500
+Message-ID: <1422010236.3017.12.camel@pengutronix.de>
+Subject: Re: [PATCH v2 0/7] imx-drm: ipuv3-crtc: Implement mode_fixup
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Liu Ying <Ying.Liu@freescale.com>
+Cc: Steve Longerbeam <slongerbeam@gmail.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        David Airlie <airlied@linux.ie>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
+        Jiada Wang <jiada_wang@mentor.com>,
+        Steve Longerbeam <steve_longerbeam@mentor.com>
+Date: Fri, 23 Jan 2015 11:50:36 +0100
+In-Reply-To: <20150123025643.GA11412@victor>
+References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
+	 <1420655248.3191.73.camel@pengutronix.de> <20150123025643.GA11412@victor>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  41fbf3b39d5eca01527338b4d0ee15ee1ae1023c
-Gitweb:     http://git.kernel.org/tip/41fbf3b39d5eca01527338b4d0ee15ee1ae1023c
-Author:     Chunyan Zhang <zhang.chunyan@linaro.org>
-AuthorDate: Wed, 17 Dec 2014 13:11:35 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 23 Jan 2015 11:47:15 +0100
+Hi Liu,
 
-ktime.h: Introduce ktime_ms_delta
+Am Freitag, den 23.01.2015, 10:56 +0800 schrieb Liu Ying:
+> Hi,
+> 
+> It looks that the below commit makes my Hannstar XGA LVDS panel stop working
+> on the i.MX6DL SabreSD board.  Any idea?
+> 
+> commit eb10d6355532def3a74aaabd115e2373cca70b9d
+> Author: Steve Longerbeam <slongerbeam@gmail.com>
+> Date:   Thu Dec 18 18:00:24 2014 -0800
+> 
+> imx-drm: encoder prepare/mode_set must use adjusted mode
+> 
+> The encoder ->prepare() and ->mode_set() methods need to use the
+> hw adjusted mode, not the original mode.
+> 
+> Signed-off-by: Steve Longerbeam <steve_longerbeam@mentor.com>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> 
+> Regards,
+> Liu Ying
 
-This patch adds a reusable time difference function which returns the
-difference in millisecond, as often used in some driver code, e.g.
-mtd/test, media/rc, etc.
+What are this panel timings? The adjustment should increase the vertical
+back porch by up to two lines (so it is at least two lines), reducing
+the front porch or vsync length by the same amount. Does this panel use
+the HSYNC/VSYNC signals embedded in the LVDS stream?
 
-Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
-Acked-by: Arnd Bergmann <arnd@linaro.org>
-Cc: zhang.lyra@gmail.com
-Cc: davem@davemloft.net
-Cc: john.stultz@linaro.org
-Cc: dborkman@redhat.com
-Link: http://lkml.kernel.org/r/1418793095-18780-1-git-send-email-zhang.chunyan@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/ktime.h | 5 +++++
- 1 file changed, 5 insertions(+)
+regards
+Philipp
 
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index c9d645a..891ea92 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -186,6 +186,11 @@ static inline s64 ktime_us_delta(const ktime_t later, const ktime_t earlier)
-        return ktime_to_us(ktime_sub(later, earlier));
- }
- 
-+static inline s64 ktime_ms_delta(const ktime_t later, const ktime_t earlier)
-+{
-+	return ktime_to_ms(ktime_sub(later, earlier));
-+}
-+
- static inline ktime_t ktime_add_us(const ktime_t kt, const u64 usec)
- {
- 	return ktime_add_ns(kt, usec * NSEC_PER_USEC);
