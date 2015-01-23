@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087AbbAWMev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 07:34:51 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:46149 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912AbbAWMet (ORCPT
+	id S1755344AbbAWMey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 07:34:54 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:54354 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856AbbAWMet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Jan 2015 07:34:49 -0500
-Message-ID: <54C23FE2.9030303@ahsoftware.de>
-Date: Fri, 23 Jan 2015 13:34:42 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-CC: linux-kbuild@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] modsign: provide option to automatically delete the key
- after modules were installed
-References: <1421976009-9819-1-git-send-email-holler@ahsoftware.de> <54C21361.1080500@suse.cz> <54C216D8.8040004@ahsoftware.de> <54C21F35.1040206@ahsoftware.de> <54C22891.6070506@suse.cz> <54C233FB.3080309@ahsoftware.de> <54C2367C.4000909@ahsoftware.de>
-In-Reply-To: <54C2367C.4000909@ahsoftware.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-68-54c23f5500b4
+Content-transfer-encoding: 8BIT
+Message-id: <54C23FE5.9030403@samsung.com>
+Date: Fri, 23 Jan 2015 13:34:45 +0100
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+To: =?UTF-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <mina86@mina86.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Krzysztof Opasiak <k.opasiak@samsung.com>, balbi@ti.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: ffs: add eventfd notification about ffs events
+References: <1422005298-31321-1-git-send-email-r.baldyga@samsung.com>
+ <CA+pa1O0nZJ6G1NpPF+qHvchnfSuCvi-f0KMROkOkVq6pNkMX3Q@mail.gmail.com>
+In-reply-to: <CA+pa1O0nZJ6G1NpPF+qHvchnfSuCvi-f0KMROkOkVq6pNkMX3Q@mail.gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t/xy7qh9odCDCZeULc4eL/eonnxejaL
+	2xOnsVlc3jWHzWLRslZmiwXHW1gd2Dz2z13D7rHuzysmj74tqxg9jt/YzuTxeZNcAGsUl01K
+	ak5mWWqRvl0CV8bMz7EFr3krLs3jaWDcwNnFyMkhIWAicWnaKiYIW0ziwr31bF2MXBxCAksZ
+	JVqXzGcDSfAKCEr8mHyPpYuRg4NZQF7iyKVsCFNdYsqUXIjyj4wSzycchirXkrh+bQ4bSA2L
+	gKrEpdn1IGE2AR2JLd8nMILYogIREh9WfQUrERGwkXjbJQgSZhZYySgx6bY2iC0sECDxrGsZ
+	O8T4HkaJFTcmsoIkOAWCJXrOfGCcwCgwC8lxsxCOm4Vw3AJG5lWMoqmlyQXFSem5hnrFibnF
+	pXnpesn5uZsYIcH8ZQfj4mNWhxgFOBiVeHh3PD0YIsSaWFZcmXuIUYKDWUmE11rzUIgQb0pi
+	ZVVqUX58UWlOavEhRiYOTqkGRv/MZnXT6/2hE66e2OdSPfN8RFc0W9sX4zDdJSLL4oqZtu6J
+	m28uOtWQ9UmlsMqU+APz0pP3fmb73ZBVuPlyiME7pksWpxQPffy4t3A6S63gNiOhRc0zlnRN
+	rbza1Xm8/voOhSndly5//ewYd7KvR/ivkYH7VL2AM19Phoncj9ti/tBI3P/oXiWW4oxEQy3m
+	ouJEAFWVnnNEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.01.2015 um 12:54 schrieb Alexander Holler:
-> Am 23.01.2015 um 12:43 schrieb Alexander Holler:
->> Am 23.01.2015 um 11:55 schrieb Michal Marek:
->
->>> The .x509 file contains a certificate signed by the private key, but not
->>> the private key. With some scripting, it can be used to verify the
->>> module signatures.
+On 01/23/2015 01:21 PM, Michał Nazarewicz wrote:
+> 23 sty 2015 10:28 "Robert Baldyga" <r.baldyga@samsung.com
+> <mailto:r.baldyga@samsung.com>> napisał(a):
+>> Add eventfd which notifies userspace about ep0 events and AIO completion
+>> events. It simplifies using of FunctionFS with event loop, because now
+>> we need to poll on single file (instead of polling on ep0 and eventfd's
+>> supplied to AIO layer).
 >>
+>> FunctionFS eventfd is not triggered if another eventfd is supplied to
+>> AIO layer (in AIO request). It can be useful, for example, when we want
+>> to handle AIO transations for chosen endpoint in separate thread.
 >>
->> Assuming that doesn't change (hopefully), I'll send v2 in a few minutes
->> (it just compiles in order to test it). Thanks for assuring me that
->> .x509 does not and will not contain the private key.
->
-> I'm happy I did that. Just deleting the private key currently doesn't
-> work. A subsequent make fails:
->
-> -----------------------------
-> (...)
->    INSTALL arch/x86/crypto/aesni-intel.ko
-> Can't read private key
-> (...)
-> -----------------------------
->
-> Maybe that's the reason I've always deleted both files, can't remember.
->
-> I will see if I find the time and passion to change the Makefile in
-> order to fix that. So you might either use my existing patch or wait if
-> I will send a new one.
+>> Signed-off-by: Robert Baldyga
+> 
+> I don't know much about eventfd interface bit from ffs point of view:
+> 
+> Acked-by: Michal Nazarewicz <mina86@mina86.com <mailto:mina86@mina86.com>>
+> 
+>> @@ -2180,6 +2191,20 @@ static int __ffs_data_got_descs(struct ffs_data
+> *ffs,
+>>                 goto error;
+>>         }
+>>
+>> +       if (flags & FUNCTIONFS_EVENTFD) {
+>> +               if (len < 4)
+>> +                       goto error;
+>> +               ffs->ffs_eventfd =
+>> +                       eventfd_ctx_fdget((int)get_unaligned_le32(data));
+>> +               if (IS_ERR(ffs->ffs_eventfd)) {
+>> +                       ffs->ffs_eventfd = NULL;
+>> +                       ret = PTR_ERR(ffs->ffs_eventfd);
+> 
+> Need to swap those lines.
+> 
+>> +                       goto error;
+>> +               }
+>> +               data += 4;
+>> +               len  -= 4;
+>> +       }
+>> +
+>>         /* Read fs_count, hs_count and ss_count (if present) */
+>>         for (i = 0; i < 3; ++i) {
+>>                 if (!(flags & (1 << i))) {
+> 
 
-Having had a look at the Makefile, I don't think I will change that. The 
-reasons are:
+Good catch, thanks!
 
-1. I have no idea about how distro maintainers do handle their private 
-and public keys used to sign modules.
-
-2. There might be legitimate reasons to build the kernel using only the 
-public key and not regenerating it because the private key doesn't exist.
-
-3. I don't see any real reason not to delete the public key too if this 
-new option is enabled. For me it's enough if the kernel is able to 
-verify the modules with the embedded public key. For other usage 
-scenarios one just should not use the new option.
-
-4. With some scripting it should be possible to extract the public key 
-out of an existing binary kernel. So there is no real need to change the 
-already complicated build process which might make it even more complicated.
-
-That means I'm still happy with the patch. So feel free to ignore or 
-apply it.
-
-Regards,
-
-Alexander Holler
+Best regards,
+Robert Baldyga
