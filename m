@@ -1,73 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176AbbAWIqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:46:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849AbbAWIqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:46:04 -0500
-Date: Fri, 23 Jan 2015 09:45:51 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: jeremie.galarneau@efficios.com, rostedt@goodmis.org, bigeasy@linutronix.de,
-        lizefan@huawei.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2] perf: convert: fix duplicate field names and
- avoid reserved keywords.
-Message-ID: <20150123084551.GB2709@krava.brq.redhat.com>
-References: <1421904958-24106-1-git-send-email-wangnan0@huawei.com>
- <1421905003-24242-1-git-send-email-wangnan0@huawei.com>
- <20150122132734.GB2473@krava.brq.redhat.com>
- <54C1AAA1.4000300@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54C1AAA1.4000300@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754337AbbAWIsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:48:13 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:51974 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751759AbbAWIsJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 03:48:09 -0500
+Message-ID: <1422002886.30730.8.camel@x220>
+Subject: Re: [PATCH v7 5/5] scsi: ufs-qcom-ice: add Inline Crypto Engine
+ (ICE) support for UFS
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Yaniv Gardi <ygardi@codeaurora.org>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Dov Levenglick <dovl@codeaurora.org>,
+        James.Bottomley@HansenPartnership.com, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
+        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
+        noag@codeaurora.org, draviv@codeaurora.org,
+        Yaniv Gardi <ygardi@qti.qualcomm.com>,
+        Vinayak Holikatti <vinholikatti@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Date: Fri, 23 Jan 2015 09:48:06 +0100
+In-Reply-To: <1421332359-31785-6-git-send-email-ygardi@codeaurora.org>
+References: <1421332359-31785-1-git-send-email-ygardi@codeaurora.org>
+	 <1421332359-31785-6-git-send-email-ygardi@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Jan 2015 08:48:06.0362 (UTC) FILETIME=[4E5B23A0:01D036E9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 09:57:53AM +0800, Wang Nan wrote:
-> On 2015/1/22 21:27, Jiri Olsa wrote:
-> > On Thu, Jan 22, 2015 at 01:36:43PM +0800, Wang Nan wrote:
-> >> (If Steven Rostedt accept the previous patch which introduce a priv
-> >>  field to 'struct format_field', we can use a relative simple method
-> >>  for name conversion. If not , perf must track name conversion by
-> >>  itself.)
-> >>
-> >> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
-> >> When dealing with them, perf convert to ctf meets some problem:
-> >>
-> >>  1. If a parameter with name 'nr', it will duplicate syscall's
-> >>     common field 'nr'. One such syscall is io_submit().
-> >>
-> >>  2. If a parameter with name 'event', it is denied to be inserted
-> >>     because 'event' is a babeltrace keywork. One such syscall is
-> >>     epoll_ctl.
-> >>
-> >> This patch appends '_dupl_X' suffix to avoid problem 1, prepend a '_'
-> >> prefix to avoid problem 2.
-> > 
-> > I've got compilation error:
-> > 
-> > util/data-convert-bt.c: In function ‘event_class_add_field’:
-> > util/data-convert-bt.c:629:2: error: suggest parentheses around assignment used as truth value [-Werror=parentheses]
-> >   while (t = bt_ctf_event_class_get_field_by_name(event_class, name)) {
-> > 
-> > what's your gcc version? mine's caught that..
-> > 
-> 
-> I also curious why you got so many Werror problems I'm not ever seen,
-> until I found a '-w' in my gcc options, which is introduced by your commit
-> 
-> 47810c1d429bc690e1f5e9467697538921962171: perf data: Disable Werror convert object.
-> 
-> I'll revert that commit in my tree.
+Yaniv,
 
-that one was to workaround the regression in babeltrace,
-I'm now using sane babeltrace HEAD as advertized by Jeremie:
+On Thu, 2015-01-15 at 16:32 +0200, Yaniv Gardi wrote:
+> From: Yaniv Gardi <ygardi@qti.qualcomm.com>
+> 
+> In-order to enhance storage encryption performance,
+> an Inline Cryptographic Engine is introduced to UFS.
+> This patch adds in-line encryption capabilities to the UFS
+> driver.
+> 
+> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
 
-"In the meantime, testing against Babeltrace master 3baf0856 should be alright."
+This patch became commit 8805ccd069b7 ("ufs-qcom-ice: add Inline Crypto
+Engine (ICE) support for UFS") in today's linux-next (ie,
+next-20150123). I noticed because a script I use to check linux-next
+spotted a problem with it.
 
-jirka
+> ---
+>  drivers/scsi/ufs/Kconfig        |  12 +
+>  drivers/scsi/ufs/Makefile       |   1 +
+>  drivers/scsi/ufs/ufs-qcom-ice.c | 520 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/scsi/ufs/ufs-qcom-ice.h | 113 +++++++++
+>  drivers/scsi/ufs/ufs-qcom.c     |  56 ++++-
+>  drivers/scsi/ufs/ufs-qcom.h     |  25 ++
+>  6 files changed, 726 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/scsi/ufs/ufs-qcom-ice.c
+>  create mode 100644 drivers/scsi/ufs/ufs-qcom-ice.h
+> 
+> diff --git a/drivers/scsi/ufs/Kconfig b/drivers/scsi/ufs/Kconfig
+> index 8a1f4b3..ecf34ed 100644
+> --- a/drivers/scsi/ufs/Kconfig
+> +++ b/drivers/scsi/ufs/Kconfig
+> @@ -83,3 +83,15 @@ config SCSI_UFS_QCOM
+>  
+>  	  Select this if you have UFS controller on QCOM chipset.
+>  	  If unsure, say N.
+> +
+> +config SCSI_UFS_QCOM_ICE
+> +	bool "QCOM specific hooks to Inline Crypto Engine for UFS driver"
+> +	depends on SCSI_UFS_QCOM && CRYPTO_DEV_QCOM_ICE
+
+There's currently no Kconfig symbol CRYPTO_DEV_QCOM_ICE in linux-next.
+So SCSI_UFS_QCOM_ICE can not be set and these "in-line encryption
+capabilities" can not be enabled.
+
+> +	help
+> +	  This selects the QCOM specific additions to support Inline Crypto
+> +	  Engine (ICE).
+> +	  ICE accelerates the crypto operations and maintains the high UFS
+> +	  performance.
+> +
+> +	  Select this if you have ICE supported for UFS on QCOM chipset.
+> +	  If unsure, say N.
+> diff --git a/drivers/scsi/ufs/Makefile b/drivers/scsi/ufs/Makefile
+> index 8303bcc..31adca5 100644
+> --- a/drivers/scsi/ufs/Makefile
+> +++ b/drivers/scsi/ufs/Makefile
+> @@ -1,5 +1,6 @@
+>  # UFSHCD makefile
+>  obj-$(CONFIG_SCSI_UFS_QCOM) += ufs-qcom.o
+> +obj-$(CONFIG_SCSI_UFS_QCOM_ICE) += ufs-qcom-ice.o
+>  obj-$(CONFIG_SCSI_UFSHCD) += ufshcd.o
+>  obj-$(CONFIG_SCSI_UFSHCD_PCI) += ufshcd-pci.o
+>  obj-$(CONFIG_SCSI_UFSHCD_PLATFORM) += ufshcd-pltfrm.o
+> diff --git a/drivers/scsi/ufs/ufs-qcom-ice.c b/drivers/scsi/ufs/ufs-qcom-ice.c
+> new file mode 100644
+> index 0000000..9202b73
+> --- /dev/null
+> +++ b/drivers/scsi/ufs/ufs-qcom-ice.c
+> @@ -0,0 +1,520 @@
+> +/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/of.h>
+> +#include <linux/async.h>
+> +#include <linux/blkdev.h>
+> +#include <crypto/ice.h>
+
+This header is not included in linux-next so manually building
+ufs-qcom-ice.o isn't possible either.
+
+I assume a series to add CRYPTO_DEV_QCOM_ICE and crypto/ice.h (and
+whatever else is needed to build this) is queued somewhere. Is that
+correct?
+
+
+Paul Bolle
+
