@@ -1,37 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbbAWW5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 17:57:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41566 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbbAWW5f (ORCPT
+	id S1752788AbbAWW6x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 17:58:53 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:55808 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227AbbAWW6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 17:57:35 -0500
-Date: Fri, 23 Jan 2015 14:57:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, penberg@kernel.org,
-        iamjoonsoo@lge.com, Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [RFC 0/3] Slab allocator array operations
-Message-Id: <20150123145734.aa3c6c6e7432bc3534f2c4cc@linux-foundation.org>
-In-Reply-To: <20150123213727.142554068@linux.com>
-References: <20150123213727.142554068@linux.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Jan 2015 17:58:51 -0500
+Date: Fri, 23 Jan 2015 14:58:51 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>, Lina Iyer <lina.iyer@linaro.org>,
+        skannan@codeaurora.org, Olav Haugan <ohaugan@codeaurora.org>,
+        markivx@codeaurora.org, agross@codeaurora.org
+Subject: Re: [GIT PULL] qcom SoC changes for v3.20-2
+Message-ID: <20150123225851.GU20896@quad.lixom.net>
+References: <alpine.DEB.2.02.1501231035340.27036@galak-ubuntu.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1501231035340.27036@galak-ubuntu.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jan 2015 15:37:27 -0600 Christoph Lameter <cl@linux.com> wrote:
+On Fri, Jan 23, 2015 at 10:37:37AM -0600, Kumar Gala wrote:
+> Updated from the tags/qcom-soc-for-3.20, dropped the movement of scm
+> code into drivers/soc/qcom, added a few other minor scm bug fixes,
+> and Andy Gross as co-maintainer.
+> 
+> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+> 
+>   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.20-2
+> 
+> for you to fetch changes up to f5d3af9d21f9790ac078276e6c103871c12a3daa:
+> 
+>   MAINTAINERS: Add co-maintainer for ARM/Qualcomm Support (2015-01-23 10:29:21 -0600)
 
-> Attached a series of 3 patches to implement functionality to allocate
-> arrays of pointers to slab objects. This can be used by the slab
-> allocators to offer more optimized allocation and free paths.
+Merged, thanks.
 
-What's the driver for this?  The networking people, I think?  If so,
-some discussion about that would be useful: who is involved, why they
-have this need, who are the people we need to bug to get it tested,
-whether this implementation is found adequate, etc.
 
+-Olof
