@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086AbbAWSbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:31:00 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:55239 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780AbbAWSa6 (ORCPT
+	id S1756135AbbAWSee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:34:34 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:36260 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183AbbAWSec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:30:58 -0500
-Message-ID: <54C2935F.2000105@gmail.com>
-Date: Fri, 23 Jan 2015 13:30:55 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 23 Jan 2015 13:34:32 -0500
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>
-CC: Sun Paul <paulrbk@gmail.com>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tuexen@fh-muenster.de
-Subject: Re: Fwd: Question on SCTP ABORT chunk is generated when the association_max_retrans
- is reached
-References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com> <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com> <54C23581.9060809@redhat.com> <54C27137.5010405@gmail.com> <54C2807E.8080607@redhat.com>
-In-Reply-To: <54C2807E.8080607@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20150123180455.GA3192@pd.tnic>
+References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <54C17139.1040706@oracle.com> <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
+ <20150123180455.GA3192@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 23 Jan 2015 10:34:10 -0800
+Message-ID: <CALCETrXA+OKGfxV9M=1AxvBSBPAt_+VmjDH0A+Rq4Ss+tKmTBw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
+To: Borislav Petkov <bp@alien8.de>
+Cc: Sasha Levin <sasha.levin@oracle.com>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 12:10 PM, Daniel Borkmann wrote:
-> On 01/23/2015 05:05 PM, Vlad Yasevich wrote:
->> On 01/23/2015 06:50 AM, Daniel Borkmann wrote:
->>> On 01/23/2015 11:25 AM, Sun Paul wrote:
->>> ...
->>>> I would like to check the behave in LKSCTP.
->>>>
->>>> we are running DIAMETER message over SCTP, and we have set the
->>>> parameter "net.sctp.association_max_retrans = 4" in the LinuxOS.
->>>>
->>>> We noticed that when remote peer have retry to send the same request
->>>> for 4 times, the LKSCTP will initiate an ABORT chunk with reason
->>>> "association exceeded its max_retrans count".
->>>>
->>>> We would like to know whether this is the correct behavior? is there
->>>> any other option that we can alter in order to avoid the ABORT chunk
->>>> being sent?
->>>
->>> I don't recall the RFC saying to send an ABORT, but let me double
->>> check in the mean time.
+On Fri, Jan 23, 2015 at 10:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Jan 23, 2015 at 09:58:01AM -0800, Andy Lutomirski wrote:
+>> > [  543.999079] Call Trace:
+>> > [  543.999079] dump_stack (lib/dump_stack.c:52)
+>> > [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
+>> > [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
+>> > [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
+>> > [  543.999079] notify_die (kernel/notifier.c:538)
+>> > [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
+>> > [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+>> > [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
+>> > [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
+>> > [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
+>> > [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
+>> > [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
 >>
->> The RFC is silent on the matter.  The abort got added in 3.8 so
->> it's been there for a while.
-> 
-> I see, commit de4594a51c90 ("sctp: send abort chunk when max_retrans
-> exceeded") added the behaviour.
-> 
->>> Hmm, untested, but could you try something like that?
->>>
->>> diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
->>> index fef2acd..5ce198d 100644
->>> --- a/net/sctp/sm_sideeffect.c
->>> +++ b/net/sctp/sm_sideeffect.c
->>> @@ -584,7 +584,8 @@ static void sctp_cmd_assoc_failed(sctp_cmd_seq_t *commands,
->>>           sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP,
->>>                   SCTP_ULPEVENT(event));
->>>
->>> -    if (asoc->overall_error_count >= asoc->max_retrans) {
->>> +    if (asoc->overall_error_count >= asoc->max_retrans &&
->>> +        error != SCTP_ERROR_NO_ERROR) {
->>>           abort = sctp_make_violation_max_retrans(asoc, chunk);
->>>           if (abort)
->>>               sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
->>
->> This would pretty much stop all ABORTs due to excessive rtx.  Might
->> as well take the code out :).
->>
->> I was a bit concerned about this ABORT when it went in.
-> 
-> So effectively, if I understand the argument from the commit, the
-> assumption is that the ABORT would never reach the peer anyway, but
-> is a way for tcpdump users to see on the wire that rtx limit has
-> been exceeded and since there's not mentioned anything in the RFC
-> about this, it doesn't break it. Hm.
-> 
+>> I don't know how to read this stack trace.  Are we in do_int3,
+>> do_debug, or both?  I didn't change do_debug at all.
+>
+> It looks like we're in do_debug. do_int3 is only on the stack but not
+> part of the current frame if I can trust the '?' ...
+>
 
-Additionally I seem to recall BSD sending this type of ABORT for pretty
-much the same reason.
+It's possible that an int3 happened and I did something wrong on
+return that caused a subsequent do_debug to screw up, but I don't see
+how my patch would have caused that.
 
--vlad
+Were there any earlier log messages?
 
-> Sun Paul, what exactly broke in your scenario? Can you be more explicit?
-> 
-> Thanks,
-> Daniel
-
+--Andy
