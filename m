@@ -1,146 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbbAWRig (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:38:36 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:48985 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503AbbAWRie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:38:34 -0500
-Date: Fri, 23 Jan 2015 12:38:28 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Christoph Lameter <cl@linux.com>, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        mhocko@suse.cz
-Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
- remove unnecessary soft limit tree node test'
-Message-ID: <20150123173828.GC12036@phnom.home.cmpxchg.org>
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
- <20150123050802.GB22751@roeck-us.net>
- <20150123141817.GA22926@phnom.home.cmpxchg.org>
- <alpine.DEB.2.11.1501230908560.15325@gentwo.org>
- <20150123160204.GA32592@phnom.home.cmpxchg.org>
- <54C27E07.6000908@roeck-us.net>
- <20150123173659.GB12036@phnom.home.cmpxchg.org>
+	id S1756005AbbAWRkD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 12:40:03 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:52362 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbbAWRj7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 12:39:59 -0500
+Date: Fri, 23 Jan 2015 09:39:53 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Duson Lin <dusonlin@emc.com.tw>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        phoenix@emc.com.tw
+Subject: Re: [PATCH] Input: elan_i2c - Compare signature metadata before
+ update fw
+Message-ID: <20150123173953.GA19140@dtor-ws>
+References: <1422016530-24071-1-git-send-email-dusonlin@emc.com.tw>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20150123173659.GB12036@phnom.home.cmpxchg.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1422016530-24071-1-git-send-email-dusonlin@emc.com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 12:36:59PM -0500, Johannes Weiner wrote:
-> ("mm: memcontrol: consolidate swap controller code") gave me no issues
-> when rebasing, but ("mm: memcontrol: consolidate memory controller
-> initialization") needs updating.
+On Fri, Jan 23, 2015 at 08:35:30PM +0800, Duson Lin wrote:
+> To match different firmware file format, we replace original firmware file size
+> checking with the signature metadata comparison when update firmware, If failed,
+> the update will be aborted.
+> 
+> Signed-off-by: Duson Lin <dusonlin@emc.com.tw>
 
-And this as the refreshed version of ("mm: memcontrol: consolidate
-memory controller initialization"):
+Applied, thank you.
 
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: memcontrol: consolidate memory controller initialization
+> ---
+>  drivers/input/mouse/elan_i2c.h       |    6 +++---
+>  drivers/input/mouse/elan_i2c_core.c  |   23 +++++++++++++----------
+>  drivers/input/mouse/elan_i2c_i2c.c   |    1 -
+>  drivers/input/mouse/elan_i2c_smbus.c |    1 -
+>  4 files changed, 16 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/elan_i2c.h b/drivers/input/mouse/elan_i2c.h
+> index 2e83862..e100c1b 100644
+> --- a/drivers/input/mouse/elan_i2c.h
+> +++ b/drivers/input/mouse/elan_i2c.h
+> @@ -4,7 +4,6 @@
+>   * Copyright (c) 2013 ELAN Microelectronics Corp.
+>   *
+>   * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
+> - * Version: 1.5.5
+>   *
+>   * Based on cyapa driver:
+>   * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
+> @@ -33,8 +32,9 @@
+>  #define ETP_FW_IAP_PAGE_ERR	(1 << 5)
+>  #define ETP_FW_IAP_INTF_ERR	(1 << 4)
+>  #define ETP_FW_PAGE_SIZE	64
+> -#define ETP_FW_PAGE_COUNT	768
+> -#define ETP_FW_SIZE		(ETP_FW_PAGE_SIZE * ETP_FW_PAGE_COUNT)
+> +#define ETP_FW_VAILDPAGE_COUNT	768
+> +#define ETP_FW_SIGNATURE_SIZE	6
+> +#define ETP_FW_SIGNATURE_ADDRESS	0xBFFA
+>  
+>  struct i2c_client;
+>  struct completion;
+> diff --git a/drivers/input/mouse/elan_i2c_core.c b/drivers/input/mouse/elan_i2c_core.c
+> index 0cb2be4..16f9584 100644
+> --- a/drivers/input/mouse/elan_i2c_core.c
+> +++ b/drivers/input/mouse/elan_i2c_core.c
+> @@ -4,7 +4,7 @@
+>   * Copyright (c) 2013 ELAN Microelectronics Corp.
+>   *
+>   * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
+> - * Version: 1.5.5
+> + * Version: 1.5.6
+>   *
+>   * Based on cyapa driver:
+>   * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
+> @@ -40,7 +40,7 @@
+>  #include "elan_i2c.h"
+>  
+>  #define DRIVER_NAME		"elan_i2c"
+> -#define ELAN_DRIVER_VERSION	"1.5.5"
+> +#define ELAN_DRIVER_VERSION	"1.5.6"
+>  #define ETP_PRESSURE_OFFSET	25
+>  #define ETP_MAX_PRESSURE	255
+>  #define ETP_FWIDTH_REDUCE	90
+> @@ -312,7 +312,7 @@ static int __elan_update_firmware(struct elan_tp_data *data,
+>  	iap_start_addr = get_unaligned_le16(&fw->data[ETP_IAP_START_ADDR * 2]);
+>  
+>  	boot_page_count = (iap_start_addr * 2) / ETP_FW_PAGE_SIZE;
+> -	for (i = boot_page_count; i < ETP_FW_PAGE_COUNT; i++) {
+> +	for (i = boot_page_count; i < ETP_FW_VAILDPAGE_COUNT; i++) {
+>  		u16 checksum = 0;
+>  		const u8 *page = &fw->data[i * ETP_FW_PAGE_SIZE];
+>  
+> @@ -434,10 +434,11 @@ static ssize_t elan_sysfs_update_fw(struct device *dev,
+>  				    struct device_attribute *attr,
+>  				    const char *buf, size_t count)
+>  {
+> -	struct i2c_client *client = to_i2c_client(dev);
+> -	struct elan_tp_data *data = i2c_get_clientdata(client);
+> +	struct elan_tp_data *data = dev_get_drvdata(dev);
+>  	const struct firmware *fw;
+>  	int error;
+> +	const u8 *fw_signature;
+> +	static const u8 signature[] = {0xAA, 0x55, 0xCC, 0x33, 0xFF, 0xFF};
+>  
+>  	error = request_firmware(&fw, ETP_FW_NAME, dev);
+>  	if (error) {
+> @@ -446,10 +447,12 @@ static ssize_t elan_sysfs_update_fw(struct device *dev,
+>  		return error;
+>  	}
+>  
+> -	/* Firmware must be exactly PAGE_NUM * PAGE_SIZE bytes */
+> -	if (fw->size != ETP_FW_SIZE) {
+> -		dev_err(dev, "invalid firmware size = %zu, expected %d.\n",
+> -			fw->size, ETP_FW_SIZE);
+> +	/* Firmware file must match signature data */
+> +	fw_signature = &fw->data[ETP_FW_SIGNATURE_ADDRESS];
+> +	if (memcmp(fw_signature, signature, sizeof(signature)) != 0) {
+> +		dev_err(dev, "signature mismatch (expected %*ph, got %*ph)\n",
+> +			     (int)sizeof(signature), signature,
+> +			     (int)sizeof(signature), fw_signature);
+>  		error = -EBADF;
+>  		goto out_release_fw;
+>  	}
+> @@ -464,7 +467,7 @@ static ssize_t elan_sysfs_update_fw(struct device *dev,
+>  
+>  out_release_fw:
+>  	release_firmware(fw);
+> -	return error ?: count;
+> +	return error?: count;
 
-The initialization code for the per-cpu charge stock and the soft
-limit tree is compact enough to inline it into mem_cgroup_init().
+But dropped this chunk as it seems unintentional.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
- mm/memcontrol.c | 60 ++++++++++++++++++++++++---------------------------------
- 1 file changed, 25 insertions(+), 35 deletions(-)
+>  }
+>  
+>  static ssize_t calibrate_store(struct device *dev,
+> diff --git a/drivers/input/mouse/elan_i2c_i2c.c b/drivers/input/mouse/elan_i2c_i2c.c
+> index 97d4937..029941f 100644
+> --- a/drivers/input/mouse/elan_i2c_i2c.c
+> +++ b/drivers/input/mouse/elan_i2c_i2c.c
+> @@ -4,7 +4,6 @@
+>   * Copyright (c) 2013 ELAN Microelectronics Corp.
+>   *
+>   * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
+> - * Version: 1.5.5
+>   *
+>   * Based on cyapa driver:
+>   * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
+> diff --git a/drivers/input/mouse/elan_i2c_smbus.c b/drivers/input/mouse/elan_i2c_smbus.c
+> index 359bf85..5cd4a05 100644
+> --- a/drivers/input/mouse/elan_i2c_smbus.c
+> +++ b/drivers/input/mouse/elan_i2c_smbus.c
+> @@ -4,7 +4,6 @@
+>   * Copyright (c) 2013 ELAN Microelectronics Corp.
+>   *
+>   * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
+> - * Version: 1.5.5
+>   *
+>   * Based on cyapa driver:
+>   * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
+> -- 
+> 1.7.10.4
+> 
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 88c67303d141..2ad11e5c95c3 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2150,17 +2150,6 @@ static void drain_local_stock(struct work_struct *dummy)
- 	clear_bit(FLUSHING_CACHED_CHARGE, &stock->flags);
- }
- 
--static void __init memcg_stock_init(void)
--{
--	int cpu;
--
--	for_each_possible_cpu(cpu) {
--		struct memcg_stock_pcp *stock =
--					&per_cpu(memcg_stock, cpu);
--		INIT_WORK(&stock->work, drain_local_stock);
--	}
--}
--
- /*
-  * Cache charges(val) to local per_cpu area.
-  * This will be consumed by consume_stock() function, later.
-@@ -4535,28 +4524,6 @@ struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg)
- }
- EXPORT_SYMBOL(parent_mem_cgroup);
- 
--static void __init mem_cgroup_soft_limit_tree_init(void)
--{
--	int node;
--
--	for_each_node(node) {
--		struct mem_cgroup_tree_per_node *rtpn;
--		int zone;
--
--		rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL,
--				    node_online(node) ? node : NUMA_NO_NODE);
--
--		for (zone = 0; zone < MAX_NR_ZONES; zone++) {
--			struct mem_cgroup_tree_per_zone *rtpz;
--
--			rtpz = &rtpn->rb_tree_per_zone[zone];
--			rtpz->rb_root = RB_ROOT;
--			spin_lock_init(&rtpz->lock);
--		}
--		soft_limit_tree.rb_tree_per_node[node] = rtpn;
--	}
--}
--
- static struct cgroup_subsys_state * __ref
- mem_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
- {
-@@ -5934,10 +5901,33 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
-  */
- static int __init mem_cgroup_init(void)
- {
-+	int cpu, node;
-+
- 	hotcpu_notifier(memcg_cpu_hotplug_callback, 0);
-+
-+	for_each_possible_cpu(cpu)
-+		INIT_WORK(&per_cpu_ptr(&memcg_stock, cpu)->work,
-+			  drain_local_stock);
-+
-+	for_each_node(node) {
-+		struct mem_cgroup_tree_per_node *rtpn;
-+		int zone;
-+
-+		rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL,
-+				    node_online(node) ? node : NUMA_NO_NODE);
-+
-+		for (zone = 0; zone < MAX_NR_ZONES; zone++) {
-+			struct mem_cgroup_tree_per_zone *rtpz;
-+
-+			rtpz = &rtpn->rb_tree_per_zone[zone];
-+			rtpz->rb_root = RB_ROOT;
-+			spin_lock_init(&rtpz->lock);
-+		}
-+		soft_limit_tree.rb_tree_per_node[node] = rtpn;
-+	}
-+
- 	enable_swap_cgroup();
--	mem_cgroup_soft_limit_tree_init();
--	memcg_stock_init();
-+
- 	return 0;
- }
- subsys_initcall(mem_cgroup_init);
+Thanks.
+
 -- 
-2.2.2
+Dmitry
