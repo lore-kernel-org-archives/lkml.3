@@ -1,349 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973AbbAWLWu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:22:50 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:36098 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbbAWLWs (ORCPT
+	id S1755209AbbAWL0w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:26:52 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:32651 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810AbbAWL0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:22:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150123111723.GE23493@leverpostej>
-References: <1422008491-16452-1-git-send-email-chunyan.zhang@spreadtrum.com>
-	<1422008491-16452-2-git-send-email-chunyan.zhang@spreadtrum.com>
-	<20150123103636.GA23493@leverpostej>
-	<CAAfSe-vQL8gXzNui1wD9_=vp6yGHrEUGQgJOtdNxvt2=AH1Xsg@mail.gmail.com>
-	<20150123111723.GE23493@leverpostej>
-Date: Fri, 23 Jan 2015 19:22:46 +0800
-Message-ID: <CAAfSe-vUBtE5H_j+hY9wEV1fja8FYU4kw5fTU4Ht4tH4VL1Ung@mail.gmail.com>
-Subject: Re: [PATCH v6 1/2] arm64: dts: Add support for Spreadtrum SC9836 SoC
- in dts and Makefile
-From: Lyra Zhang <zhang.lyra@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "Joel.Schopp@amd.com" <Joel.Schopp@amd.com>,
-        "Thomas.Lendacky@amd.com" <Thomas.Lendacky@amd.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 23 Jan 2015 06:26:49 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfee68f-f791c6d000004834-dd-54c22ff6677d
+Content-transfer-encoding: 8BIT
+Message-id: <54C22FF6.5060606@samsung.com>
+Date: Fri, 23 Jan 2015 20:26:46 +0900
+From: Beomho Seo <beomho.seo@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Jaewon Kim <jaewon02.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-pm@vger.kernel.org,
+        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 1/6] mfd: max77843: Add max77843 MFD driver core driver
+References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
+ <1421989367-32721-2-git-send-email-jaewon02.kim@samsung.com>
+ <CAJKOXPfRYhJNUAE=W3zPWvyza9k_YA=hu4KjLRuLh7kie3guQA@mail.gmail.com>
+ <54C1ED09.1080607@samsung.com> <1421997364.27149.5.camel@AMDC1943>
+ <54C22C3B.8040403@samsung.com> <1422011884.18205.4.camel@AMDC1943>
+In-reply-to: <1422011884.18205.4.camel@AMDC1943>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsWyRsSkRPe7/qEQg2kPGC2mPnzCZnH9y3NW
+	i/lHzrFa9L9ZyGpx7tVKRotJ9yewWOxoOMJq8fqFocX9r0cZLS7vmsNm8bn3CKPF0usXmSwm
+	TF/LYtG69wi7xendJQ78HmvmrWH0uNzXy+SxcvkXNo9NqzrZPO5c28Pm0bdlFaPH501yAexR
+	XDYpqTmZZalF+nYJXBmN8y+xFxxyqGhYuJOtgbHNqIuRk0NCwETiz+c2ZghbTOLCvfVsXYxc
+	HEICSxklbv+ayA5T9H3rNmaIxCJGiX2bWhhBErwCghI/Jt9j6WLk4GAWkJc4cikbwlSXmDIl
+	F6L8NaPEzAO/WSHKtSQuLGkFW8YioCrR8WgPC4jNJqAp8X7KFTBbVCBCYv6x12A1IgKGEgd3
+	b2cCGcQs8IlZYveb1cwgC4QFvCWWN/lBLLjBJPF0awNYM6eAgcTh28vADpUQmMohsXX7UlaI
+	bQIS3yYfAjtUQkBWYtMBqI8lJQ6uuMEygVFsFpJ3ZiG8MwvhnQWMzKsYRVMLkguKk9KLjPWK
+	E3OLS/PS9ZLzczcxAmP69L9n/TsY7x6wPsQowMGoxMPbsOVgiBBrYllxZe4hRlOgGyYyS4km
+	5wMTR15JvKGxmZGFqYmpsZG5pZmSOO9CqZ/BQgLpiSWp2ampBalF8UWlOanFhxiZODilGhh7
+	3v94Kjs5x5CRZWKy1JEDIXklFvu1GxXYfa6kWN9z5SgRCFN4blTyI+/PzJvFBm+vPLM5W2B2
+	32jq1n97OmX3Cl5hD2U//LP0bfPyk8eW31I1NPqQZv6bebeGvob55/3TtCe9qJjRF8Ak8Yu/
+	/jDHClOXdpuJa+5c1lN80iH+7/Eu2f+Z3+YosRRnJBpqMRcVJwIAunrUeOQCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAd1v+odCDLpPmVhMffiEzeL6l+es
+	FvOPnGO16H+zkNXi3KuVjBaT7k9gsdjRcITV4vULQ4v7X48yWlzeNYfN4nPvEUaLpdcvMllM
+	mL6WxaJ17xF2i9O7Sxz4PdbMW8Pocbmvl8lj5fIvbB6bVnWyedy5tofNo2/LKkaPz5vkAtij
+	GhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4DuVlIo
+	S8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmNM6/xF5wyKGiYeFOtgbGNqMu
+	Rk4OCQETie9btzFD2GISF+6tZ+ti5OIQEljEKLFvUwsjSIJXQFDix+R7LF2MHBzMAvISRy5l
+	Q5jqElOm5EKUv2aUmHngNytEuZbEhSWtYDNZBFQlOh7tYQGx2QQ0Jd5PuQJmiwpESMw/9hqs
+	RkTAUOLg7u1MIIOYBT4xS+x+s5oZZIGwgLfE8iY/iAU3mCSebm0Aa+YUMJA4fHsZ8wRGgVlI
+	zpuFcN4shPMWMDKvYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAhOGM+kdzCuarA4xCjAwajE
+	w9uw5WCIEGtiWXFl7iFGCQ5mJRFea81DIUK8KYmVValF+fFFpTmpxYcYTYGem8gsJZqcD0xm
+	eSXxhsYmZkaWRuaGFkbG5krivEr2bSFCAumJJanZqakFqUUwfUwcnFINjOHsjJ9YBMNunAja
+	aHz8eMytX+pSCbdkRAoEPpkpizT4Hy48E5ZuFL/Vab+N95P3AqsemOSKcn71St56bsbL75FL
+	vTlCN28NzOq5OCvy8PVX5uIbYpT7Dj93PDcrZscxcZaEYsFVOcELTuQtMHu/8FedHFffwsOT
+	2DSlW2fYm+mscPnb5MIfqcRSnJFoqMVcVJwIAAgT27wuAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 7:17 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Fri, Jan 23, 2015 at 11:13:29AM +0000, Lyra Zhang wrote:
->> On Fri, Jan 23, 2015 at 6:36 PM, Mark Rutland <mark.rutland@arm.com> wrote:
->> > On Fri, Jan 23, 2015 at 10:21:30AM +0000, Chunyan Zhang wrote:
->> >> From: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
->> >>
->> >> Adds the device tree support for Spreadtrum SC9836 SoC which is based on
->> >> Sharkl64 platform.
->> >>
->> >> Sharkl64 platform contains the common nodes of Spreadtrum's arm64-based SoCs.
->> >>
->> >> Signed-off-by: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
->> >> Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
->> >> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
->> >> ---
->> >>  arch/arm64/boot/dts/Makefile                  |    1 +
->> >>  arch/arm64/boot/dts/sprd/Makefile             |    5 ++
->> >>  arch/arm64/boot/dts/sprd/sc9836-openphone.dts |   49 ++++++++++++++++
->> >>  arch/arm64/boot/dts/sprd/sc9836.dtsi          |   74 +++++++++++++++++++++++++
->> >>  arch/arm64/boot/dts/sprd/sharkl64.dtsi        |   65 ++++++++++++++++++++++
->> >>  5 files changed, 194 insertions(+)
->> >>  create mode 100644 arch/arm64/boot/dts/sprd/Makefile
->> >>  create mode 100644 arch/arm64/boot/dts/sprd/sc9836-openphone.dts
->> >>  create mode 100644 arch/arm64/boot/dts/sprd/sc9836.dtsi
->> >>  create mode 100644 arch/arm64/boot/dts/sprd/sharkl64.dtsi
->> >>
->> >> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
->> >> index 3b8d427..806a717 100644
->> >> --- a/arch/arm64/boot/dts/Makefile
->> >> +++ b/arch/arm64/boot/dts/Makefile
->> >> @@ -2,6 +2,7 @@ dts-dirs += amd
->> >>  dts-dirs += apm
->> >>  dts-dirs += arm
->> >>  dts-dirs += cavium
->> >> +dts-dirs += sprd
->> >>
->> >>  always               := $(dtb-y)
->> >>  subdir-y     := $(dts-dirs)
->> >> diff --git a/arch/arm64/boot/dts/sprd/Makefile b/arch/arm64/boot/dts/sprd/Makefile
->> >> new file mode 100644
->> >> index 0000000..b658c5e
->> >> --- /dev/null
->> >> +++ b/arch/arm64/boot/dts/sprd/Makefile
->> >> @@ -0,0 +1,5 @@
->> >> +dtb-$(CONFIG_ARCH_SPRD) += sc9836-openphone.dtb
->> >> +
->> >> +always               := $(dtb-y)
->> >> +subdir-y     := $(dts-dirs)
->> >> +clean-files  := *.dtb
->> >> diff --git a/arch/arm64/boot/dts/sprd/sc9836-openphone.dts b/arch/arm64/boot/dts/sprd/sc9836-openphone.dts
->> >> new file mode 100644
->> >> index 0000000..b8a69b2
->> >> --- /dev/null
->> >> +++ b/arch/arm64/boot/dts/sprd/sc9836-openphone.dts
->> >> @@ -0,0 +1,49 @@
->> >> +/*
->> >> + * Spreadtrum SC9836 openphone board DTS file
->> >> + *
->> >> + * Copyright (C) 2014, Spreadtrum Communications Inc.
->> >> + *
->> >> + * This file is licensed under a dual GPLv2 or X11 license.
->> >> + */
->> >> +
->> >> +/dts-v1/;
->> >> +
->> >> +#include "sc9836.dtsi"
->> >> +
->> >> +/ {
->> >> +     model = "Spreadtrum SC9836 Openphone Board";
->> >> +
->> >> +     compatible = "sprd,sc9836-openphone", "sprd,sc9836";
->> >> +
->> >> +     aliases {
->> >> +             serial0 = &uart0;
->> >> +             serial1 = &uart1;
->> >> +             serial2 = &uart2;
->> >> +             serial3 = &uart3;
->> >> +     };
->> >> +
->> >> +     memory@80000000 {
->> >> +             device_type = "memory";
->> >> +             reg = <0 0x80000000 0 0x20000000>;
->> >> +     };
->> >> +
->> >> +     chosen {
->> >> +             stdout-path = &uart0;
->> >> +     };
->> >
->> > It would be good to use an explicit configuration here. e.g. have:
->> >
->> >         chosen {
->> >                 stdout-path = "serial0:115200n8";
->> >         };
->> >
->> > Where '115200n8' is replaced by whatever the bootloader leaves the UART
->> > configured as on this board.
->> >
->> > That means you won't need a 'console=' to get nice consistent serial
->> > output at boot, and won't be relying on implicit defaults all over the
->> > place.
->> >
+On 01/23/2015 08:18 PM, Krzysztof Kozlowski wrote:
+> On pią, 2015-01-23 at 20:10 +0900, Beomho Seo wrote:
+>> On 01/23/2015 04:16 PM, Krzysztof Kozlowski wrote:
+>>> On pią, 2015-01-23 at 15:41 +0900, Beomho Seo wrote:
+>>>> On 01/23/2015 03:32 PM, Krzysztof Kozlowski wrote:
+>>>>> 2015-01-23 6:02 GMT+01:00 Jaewon Kim <jaewon02.kim@samsung.com>:
+>>>>>> This patch adds MAX77843 core/irq driver to support PMIC,
+>>>>>> MUIC(Micro USB Interface Controller), Charger, Fuel Gauge,
+>>>>>> LED and Haptic device.
+>>>>>>
+>>>>>> Cc: Lee Jones <lee.jones@linaro.org>
+>>>>>> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+>>>>>> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+>>>>>> ---
+>>>>>>  drivers/mfd/Kconfig                  |   14 ++
+>>>>>>  drivers/mfd/Makefile                 |    1 +
+>>>>>>  drivers/mfd/max77843.c               |  241 ++++++++++++++++++++
+>>>>>>  include/linux/mfd/max77843-private.h |  410 ++++++++++++++++++++++++++++++++++
+>>>>>>  4 files changed, 666 insertions(+)
+>>>>>>  create mode 100644 drivers/mfd/max77843.c
+>>>>>>  create mode 100644 include/linux/mfd/max77843-private.h
+>>>>>>
+>>>>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>>>>>> index 2e6b731..0c67c79 100644
+>>>>>> --- a/drivers/mfd/Kconfig
+>>>>>> +++ b/drivers/mfd/Kconfig
+>>>>>> @@ -442,6 +442,20 @@ config MFD_MAX77693
+>>>>>>           additional drivers must be enabled in order to use the functionality
+>>>>>>           of the device.
+>>>>>>
+>>>>>> +config MFD_MAX77843
+>>>>>> +       bool "Maxim Semiconductor MAX77843 PMIC Support"
+>>>>>> +       depends on I2C=y
+>>>>>> +       select MFD_CORE
+>>>>>> +       select REGMAP_I2C
+>>>>>> +       select REGMAP_IRQ
+>>>>>> +       help
+>>>>>> +         Say yes here to add support for Maxim Semiconductor MAX77843.
+>>>>>> +         This is companion Power Management IC with LEDs, Haptic, Charger,
+>>>>>> +         Fuel Gauge, MUIC(Micro USB Interface Controller) controls on chip.
+>>>>>> +         This driver provides common support for accessing the device;
+>>>>>> +         additional drivers must be enabled in order to use the functionality
+>>>>>> +         of the device.
+>>>>>> +
+>>>>>>  config MFD_MAX8907
+>>>>>>         tristate "Maxim Semiconductor MAX8907 PMIC Support"
+>>>>>>         select MFD_CORE
+>>>>>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>>>>>> index 53467e2..fe4f75c 100644
+>>>>>> --- a/drivers/mfd/Makefile
+>>>>>> +++ b/drivers/mfd/Makefile
+>>>>>> @@ -117,6 +117,7 @@ obj-$(CONFIG_MFD_DA9063)    += da9063.o
+>>>>>>  obj-$(CONFIG_MFD_MAX14577)     += max14577.o
+>>>>>>  obj-$(CONFIG_MFD_MAX77686)     += max77686.o
+>>>>>>  obj-$(CONFIG_MFD_MAX77693)     += max77693.o
+>>>>>> +obj-$(CONFIG_MFD_MAX77843)     += max77843.o
+>>>>>>  obj-$(CONFIG_MFD_MAX8907)      += max8907.o
+>>>>>>  max8925-objs                   := max8925-core.o max8925-i2c.o
+>>>>>>  obj-$(CONFIG_MFD_MAX8925)      += max8925.o
+>>>>>> diff --git a/drivers/mfd/max77843.c b/drivers/mfd/max77843.c
+>>>>>> new file mode 100644
+>>>>>> index 0000000..d7f8b76
+>>>>>> --- /dev/null
+>>>>>> +++ b/drivers/mfd/max77843.c
+>>>>>> @@ -0,0 +1,241 @@
+>>>>>> +/*
+>>>>>> + * max77843.c - MFD core driver for the Maxim MAX77843
+>>>>>> + *
+>>>>>> + * Copyright (C) 2014 Samsung Electrnoics
+>>>>>> + * Author: Jaewon Kim <jaewon02.kim@samsung.com>
+>>>>>> + *
+>>>>>> + * This program is free software; you can redistribute it and/or modify
+>>>>>> + * it under the terms of the GNU General Public License as published by
+>>>>>> + * the Free Software Foundation; either version 2 of the License, or
+>>>>>> + * (at your option) any later version.
+>>>>>> + */
+>>>>>> +
+>>>>>> +#include <linux/err.h>
+>>>>>> +#include <linux/i2c.h>
+>>>>>> +#include <linux/init.h>
+>>>>>> +#include <linux/interrupt.h>
+>>>>>> +#include <linux/module.h>
+>>>>>> +#include <linux/mfd/core.h>
+>>>>>> +#include <linux/mfd/max77843-private.h>
+>>>>>> +#include <linux/of_device.h>
+>>>>>> +#include <linux/platform_device.h>
+>>>>>> +
+>>>>>> +static const struct mfd_cell max77843_devs[] = {
+>>>>>> +       {
+>>>>>> +               .name = "max77843-muic",
+>>>>>> +               .of_compatible = "maxim,max77843-muic",
+>>>>>> +       }, {
+>>>>>> +               .name = "max77843-regulator",
+>>>>>> +               .of_compatible = "maxim,max77843-regulator",
+>>>>>> +       }, {
+>>>>>> +               .name = "max77843-charger",
+>>>>>> +               .of_compatible = "maxim,max77843-charger"
+>>>>>> +       }, {
+>>>>>> +               .name = "max77843-fuelgauge",
+>>>>>> +               .of_compatible = "maxim,max77843-fuelgauge",
+>>>>>> +       },
+>>>>>> +};
+>>>>>> +
+>>>>>> +static const struct regmap_config max77843_charger_regmap_config = {
+>>>>>> +       .reg_bits       = 8,
+>>>>>> +       .val_bits       = 8,
+>>>>>> +       .max_register   = MAX77843_CHG_REG_END,
+>>>>>> +};
+>>>>>> +
+>>>>>> +static const struct regmap_config max77843_regmap_config = {
+>>>>>> +       .reg_bits       = 8,
+>>>>>> +       .val_bits       = 8,
+>>>>>> +       .max_register   = MAX77843_SYS_REG_END,
+>>>>>> +};
+>>>>>> +
+>>>>>> +static const struct regmap_irq max77843_irqs[] = {
+>>>>>> +       /* TOPSYS interrupts */
+>>>>>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSUVLO_INT, },
+>>>>>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSOVLO_INT, },
+>>>>>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TSHDN_INT, },
+>>>>>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TM_INT, },
+>>>>>> +};
+>>>>>> +
+>>>>>> +static const struct regmap_irq_chip max77843_irq_chip = {
+>>>>>> +       .name           = "max77843",
+>>>>>> +       .status_base    = MAX77843_SYS_REG_SYSINTSRC,
+>>>>>> +       .mask_base      = MAX77843_SYS_REG_SYSINTMASK,
+>>>>>> +       .mask_invert    = false,
+>>>>>> +       .num_regs       = 1,
+>>>>>> +       .irqs           = max77843_irqs,
+>>>>>> +       .num_irqs       = ARRAY_SIZE(max77843_irqs),
+>>>>>> +};
+>>>>>> +
+>>>>>> +static int max77843_chg_init(struct max77843 *max77843)
+>>>>>> +{
+>>>>>
+>>>>> Could this function be moved to the charger driver? This way the
+>>>>> driver will manage its own resources instead of depending on parent
+>>>>> MFD driver.
+>>>>>
+>>>>
+>>>> Charger regulator and Charger share same resources.
+>>>> So I include this function core driver.
+>>>
+>>> OK, I see... Could you describe it in comments somewhere? For example in
+>>> comment above the function. Currently this looks like only as regmap for
+>>> charger.
+>>>
 >>
->> ok, I've changed and tested pass.
->>
->> >> +};
->> >> +
->> >> +&uart0 {
->> >> +     status = "okay";
->> >> +};
->> >> +
->> >> +&uart1 {
->> >> +     status = "okay";
->> >> +};
->> >> +
->> >> +&uart2 {
->> >> +     status = "okay";
->> >> +};
->> >> +
->> >> +&uart3 {
->> >> +     status = "okay";
->> >> +};
->> >> diff --git a/arch/arm64/boot/dts/sprd/sc9836.dtsi b/arch/arm64/boot/dts/sprd/sc9836.dtsi
->> >> new file mode 100644
->> >> index 0000000..c646123
->> >> --- /dev/null
->> >> +++ b/arch/arm64/boot/dts/sprd/sc9836.dtsi
->> >> @@ -0,0 +1,74 @@
->> >> +/*
->> >> + * Spreadtrum SC9836 SoC DTS file
->> >> + *
->> >> + * Copyright (C) 2014, Spreadtrum Communications Inc.
->> >> + *
->> >> + * This file is licensed under a dual GPLv2 or X11 license.
->> >> + */
->> >> +
->> >> +#include "sharkl64.dtsi"
->> >> +#include <dt-bindings/interrupt-controller/arm-gic.h>
->> >> +
->> >> +/ {
->> >> +     compatible = "sprd,sc9836";
->> >> +
->> >> +     cpus {
->> >> +             #address-cells = <2>;
->> >> +             #size-cells = <0>;
->> >> +
->> >> +             cpu@0 {
->> >> +                     device_type = "cpu";
->> >> +                     compatible = "arm,cortex-a53", "arm,armv8";
->> >> +                     reg = <0x0 0x0>;
->> >> +                     enable-method = "psci";
->> >> +             };
->> >> +
->> >> +             cpu@1 {
->> >> +                     device_type = "cpu";
->> >> +                     compatible = "arm,cortex-a53", "arm,armv8";
->> >> +                     reg = <0x0 0x1>;
->> >> +                     enable-method = "psci";
->> >> +             };
->> >> +
->> >> +             cpu@2 {
->> >> +                     device_type = "cpu";
->> >> +                     compatible = "arm,cortex-a53", "arm,armv8";
->> >> +                     reg = <0x0 0x2>;
->> >> +                     enable-method = "psci";
->> >> +             };
->> >> +
->> >> +             cpu@3 {
->> >> +                     device_type = "cpu";
->> >> +                     compatible = "arm,cortex-a53", "arm,armv8";
->> >> +                     reg = <0x0 0x3>;
->> >> +                     enable-method = "psci";
->> >> +             };
->> >> +     };
->> >> +
->> >> +     gic: interrupt-controller@12001000 {
->> >> +             compatible = "arm,gic-400";
->> >> +             reg = <0 0x12001000 0 0x1000>,
->> >> +                   <0 0x12002000 0 0x2000>,
->> >> +                   <0 0x12004000 0 0x2000>,
->> >> +                   <0 0x12006000 0 0x2000>;
->> >> +             #interrupt-cells = <3>;
->> >> +             interrupt-controller;
->> >> +             interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
->> >> +     };
->> >> +
->> >> +     psci {
->> >> +             compatible      = "arm,psci";
->> >> +             method          = "smc";
->> >> +             cpu_on          = <0xc4000003>;
->> >> +             cpu_off         = <0x84000002>;
->> >> +             cpu_suspend     = <0xc4000001>;
->> >> +     };
->> >
->> > Given that there are no suspend states in this dts, the cpu_suspend
->> > property here could be omitted for now (though I guess it doesn't matter
->> > either way).
->> >
->> >> +
->> >> +     timer {
->> >> +             compatible = "arm,armv8-timer";
->> >> +             interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
->> >> +                          <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
->> >> +                          <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
->> >> +                          <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
->> >> +     };
->> >> +};
->> >> diff --git a/arch/arm64/boot/dts/sprd/sharkl64.dtsi b/arch/arm64/boot/dts/sprd/sharkl64.dtsi
->> >> new file mode 100644
->> >> index 0000000..6b4bdc5
->> >> --- /dev/null
->> >> +++ b/arch/arm64/boot/dts/sprd/sharkl64.dtsi
->> >> @@ -0,0 +1,65 @@
->> >> +/*
->> >> + * Spreadtrum Sharkl64 platform DTS file
->> >> + *
->> >> + * Copyright (C) 2014, Spreadtrum Communications Inc.
->> >> + *
->> >> + * This file is licensed under a dual GPLv2 or X11 license.
->> >> + */
->> >> +
->> >> +/ {
->> >> +     interrupt-parent = <&gic>;
->> >> +     #address-cells = <2>;
->> >> +     #size-cells = <2>;
->> >> +
->> >> +     soc {
->> >> +             compatible = "simple-bus";
->> >> +             #address-cells = <2>;
->> >> +             #size-cells = <2>;
->> >> +             ranges;
->> >> +
->> >> +             ap-apb {
->> >> +                     compatible = "simple-bus";
->> >> +                     #address-cells = <2>;
->> >> +                     #size-cells = <2>;
->> >> +                     ranges;
->> >> +
->> >> +                     uart0: serial@70000000 {
->> >> +                             compatible = "sprd,sc9836-uart";
->> >> +                             reg = <0 0x70000000 0 0x100>;
->> >> +                             interrupts = <0 2 0xf04>;
->> >> +                             clocks = <&clk26mhz>;
->> >> +                             status = "disabled";
->> >> +                     };
->> >> +
->> >> +                     uart1: serial@70100000 {
->> >> +                             compatible = "sprd,sc9836-uart";
->> >> +                             reg = <0 0x70100000 0 0x100>;
->> >> +                             interrupts = <0 3 0xf04>;
->> >> +                             clocks = <&clk26mhz>;
->> >> +                             status = "disabled";
->> >> +                     };
->> >> +
->> >> +                     uart2: serial@70200000 {
->> >> +                             compatible = "sprd,sc9836-uart";
->> >> +                             reg = <0 0x70200000 0 0x100>;
->> >> +                             interrupts = <0 2 0xf04>;
->> >> +                             clocks = <&clk26mhz>;
->> >> +                             status = "disabled";
->> >> +                     };
->> >> +
->> >> +                     uart3: serial@70300000 {
->> >> +                             compatible = "sprd,sc9836-uart";
->> >> +                             reg = <0 0x70300000 0 0x100>;
->> >> +                             interrupts = <0 3 0xf04>;
->> >> +                             clocks = <&clk26mhz>;
->> >> +                             status = "disabled";
->> >> +                     };
->> >> +             };
->> >> +     };
->> >> +
->> >> +     clk26mhz: clk26mhz {
->> >> +             compatible = "fixed-clock";
->> >> +             #clock-cells = <0>;
->> >> +             clock-frequency = <26000000>;
->> >> +     };
->> >> +};
->> >
->> > Other than my comments above, this looks fine to me. I assume the UART
->> > binding and driver are already queued somewhere else?
->> >
->>
->> Since the last version patch series must be split for applying.
->> I'll send the UART bindings with UART driver soon.
->>
->> For this case, can I still add your Acked-by and send these two patch
->> to Greg right now?
->
-> If the UART patches aren't queued yet then I'd like to take a look at
-> their next posting first.
+>> Charger regulator and Charger use same regmap.
+> 
+> OK, just put it in a comment around that function.
 >
 
-ok, they have been ready, I'll send them right now.
+OK, I add comment above max77843_chg_init function.
 
-> Surely these 2 patches (with parts under arch/arm64) should go via
-> arm-soc?
->
+>>
+>>> Unfortunately current solution imposes problem with releasing resources.
+>>> Who is the owner of i2c dummy device?
+>>>
+>>
+>> Core driver owner of i2c dummy device.
+> 
+> OK, good idea. So the core driver should be the only place to unregister
+> it. So needed changes are:
+> 1. Remove the i2c_unregister_device() call from
+> max77843_charger_probe().
+> 2. Add i2c_unregister_device(max77843->i2c_chg) in max77843_remove().
+> 
+> The MFD core driver will handle it.
+> 
 
-yes, should be 'arm@kernel.org', right?
+It will be fixed comply with your advice.
 
-> Thanks,
-> Mark.
+>>
+>>> 1. The charger driver will unregister it if max77843_charger_probe()
+>>> fails. What will happen with regulator driver in such case?
+>>>
+>>
+>> Charger is enabled/disabled by Charger regulator.
+>> Currently, If charger probe fails, charger regulator failed to read regmap and occur panic(It have to fix.)
+>>
+>>
+>>> 2. Who will release this i2c dummy device in normal unbind? Currently it
+>>> leaks.
+>>>
+>>
+>> I think core driver release i2c dummy device in normal unbind.
+>> We need to more discussion about this problem.
+>> If you have any idea, I hope tell me. Again, Thank you for your advice.
+> 
+> I think handling the ownership in core driver could solve this.
+> 
+> Best regards,
+> Krzysztof
+> 
+
+OK. I will fix it.
+
+Thanks,
+Beomho
+
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
