@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043AbbAWLU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:20:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57943 "EHLO mx1.redhat.com"
+	id S1755257AbbAWLUh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:20:37 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:52220 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753AbbAWLUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:20:24 -0500
-Message-ID: <54C22E68.1080601@redhat.com>
-Date: Fri, 23 Jan 2015 12:20:08 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755094AbbAWLU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 06:20:29 -0500
+Date: Fri, 23 Jan 2015 12:20:24 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>, Andy Lutomirski <luto@amacapital.net>,
+        David Drysdale <drysdale@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        xen-devel@lists.xenproject.org
+Subject: Re: [Resend Patch v4 12/16] smp, x86: Kill SMP single function call
+ interrupt
+Message-ID: <20150123112024.GD22635@pd.tnic>
+References: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com>
+ <1421991416-20297-13-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-To: Stathis Voukelatos <stathisv70@gmail.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Stathis Voukelatos <stathis.voukelatos@linn.co.uk>,
-        abrestic@chromium.org
-Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
-References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
-In-Reply-To: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1421991416-20297-13-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 11:07 AM, Stathis Voukelatos wrote:
-> This patch adds support the Ethernet Packet Sniffer H/W module
-> developed by Linn Products Ltd and found in the IMG Pistachio SoC.
-> The module allows Ethernet packets to be parsed, matched against
-> a user-defined pattern and timestamped. It sits between a 100M
-> Ethernet MAC and PHY and is completely passive with respect to
-> Ethernet frames.
->
-> Matched packet bytes and timestamp values are returned through a
-> FIFO. Timestamps are provided to the module through an externally
-> generated Gray-encoded counter.
->
-> The command pattern for packet matching is stored in module RAM
-> and consists of a sequence of 16-bit entries. Each entry includes
-> an 8-bit command code and and 8-bit data value. Valid command
-> codes are:
-> 0 - Don't care
-> 1 - Match: packet data must match command string byte
-> 2 - Copy: packet data will be copied to FIFO
-> 3 - Match/Stamp: if packet data matches string byte, a timestamp
->                   is copied into the FIFO
-> 4 - Copy/Done: packet data will be copied into the FIFO.
->                 This command terminates the command string.
->
-> The driver consists of two modules:
-> - Core: it provides an API to user space using the Generic Netlink
->          framework. Specific backend implementations, like the
->          Ethernet Packet Sniffer, register one or more channels
->          with the Core. For each channel a Genl family is created.
->          User space can access a channel by sending Genl messages
->          to the Genl family associated with the channel. Packet
->          matching events are multicast.
->
-> - Ethernet Packet Sniffer backend: provides the driver for the
->          Linn Ethernet Packet Sniffer H/W modules.
->
-> The split between a core and backend modules allows software-only
-> implementations to be added for platforms where no H/W support
-> is available.
->
-> Based on 3.19-rc5
->
-> Signed-off-by: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
+On Fri, Jan 23, 2015 at 01:36:51PM +0800, Jiang Liu wrote:
+> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+> similar to smp_call_function_single()" has unified the way to handle
+> single and multiple cross-CPU function calls. Now only one interrupt
+> is needed for architecture specific code to support generic SMP function
+> call interfaces, so kill the redundant single function call interrupt.
+> 
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-Please have a look at packet sockets, they offer already all the
-functionality (if not more) your driver interface to the user space
-resembles, are transparent to the underlying hardware, and easily
-can cope with 100Mbit.
+Acked-by: Borislav Petkov <bp@suse.de>
 
-If I understand this correctly, you are effectively introducing a
-parallel API *next* to packet sockets to user space that we have to
-maintain forever ...
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks !
+ECO tip #101: Trim your mails when you reply.
+--
