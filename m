@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450AbbAWFDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 00:03:19 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:11832 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbbAWFDF (ORCPT
+	id S1753572AbbAWFD7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 00:03:59 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:51937 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281AbbAWFDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 00:03:05 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-b7-54c1d6067b3c
-From: Jaewon Kim <jaewon02.kim@samsung.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Beomho Seo <beomho.seo@samsung.com>,
-        Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH 6/6] Documentation: Add device tree bindings document for
- max77843
-Date: Fri, 23 Jan 2015 14:02:47 +0900
-Message-id: <1421989367-32721-7-git-send-email-jaewon02.kim@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
-References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSoMt27WCIwaNXChanP21jt5j68Amb
-	xfUvz1kt5h85x2rR/2Yhq8W5VysZLSbdn8BisaPhCKvF/a9HGS0u75rDZvG59wijxdLrF5ks
-	Jkxfy2LRuvcIu8Xp3SUO/B5r5q1h9Ljc18vksXL5FzaPTas62TzuXNvD5tG3ZRWjx+dNcgHs
-	UVw2Kak5mWWpRfp2CVwZj463shecka34MnM5SwPjZIkuRk4OCQETicsNXxghbDGJC/fWs3Ux
-	cnEICSxllFh47QE7TNGCx9fYIRLTGSXmTWpngXDamCQ6PiwEq2IT0Jb4vn4xK4gtIhAh8fzj
-	SmaQImaBg8wSHRdPgxUJC4RIzL09jQ3EZhFQlfi77QZYnFfAQ+LT8yNAUzmA1ilIzJlkAxLm
-	FPCUeLfnBVi5EFDJ6gknwRZLCDxil/h3cj8LxBwBiW+TD0H1ykpsOsAMcbWkxMEVN1gmMAov
-	YGRYxSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iREYS6f/PZuwg/HeAetDjAIcjEo8vA1bDoYI
-	sSaWFVfmHmI0BdowkVlKNDkfGLF5JfGGxmZGFqYmpsZG5pZmSuK8r6V+BgsJpCeWpGanphak
-	FsUXleakFh9iZOLglGpgFPxwt+WgW0uo3Cw/sf9Tz0tNadqRqXf5ysvC/wrvAla6SmRedFzW
-	E6yjErxPfEKQ0SbLmdvVbnx5lZtZ0bTvQs8K1qwJP6fmZl024Ll+7c/Kl6c0hUx+9lSl3c5d
-	yalzQ9L9c6JLX2/XVGMpjXrlFSWPddeFehkyxhaJTFn5pOogC1/tO4sWJZbijERDLeai4kQA
-	IjTn9aACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t9jQV22awdDDH7dE7c4/Wkbu8XUh0/Y
-	LK5/ec5qMf/IOVaL/jcLWS3OvVrJaDHp/gQWix0NR1gt7n89ymhxedccNovPvUcYLZZev8hk
-	MWH6WhaL1r1H2C1O7y5x4PdYM28No8flvl4mj5XLv7B5bFrVyeZx59oeNo++LasYPT5vkgtg
-	j2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOlxJ
-	oSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmPHoeCt7wRnZii8zl7M0ME6W
-	6GLk5JAQMJFY8PgaO4QtJnHh3nq2LkYuDiGB6YwS8ya1s0A4bUwSHR8WglWxCWhLfF+/mBXE
-	FhGIkHj+cSUzSBGzwEFmiY6Lp8GKhAVCJObensYGYrMIqEr83XYDLM4r4CHx6fkRoKkcQOsU
-	JOZMsgEJcwp4Srzb8wKsXAioZPWEkywTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/d
-	xAiO1GfSOxhXNVgcYhTgYFTi4W3YcjBEiDWxrLgy9xCjBAezkgjvkwNAId6UxMqq1KL8+KLS
-	nNTiQ4ymQEdNZJYSTc4HJpG8knhDYxMzI0sjc0MLI2NzJXFeJfu2ECGB9MSS1OzU1ILUIpg+
-	Jg5OqQZGQatHWRfzw89udU8/nSEwq8/dwMucNS3xvfyO+Mz/W54uK5jM+EXpAPeTpNcnKnj4
-	rKLv7fWYwfH569bX/5qc/qrOru2v+Bnw97rEy5c1DGtiOQy4vcNWzzJmdlJZ/zO7dGbw1yWf
-	1e+IP3acf6ra+7OYx7q7b/fbPOt8zrC5sDXn5t6lWRbySizFGYmGWsxFxYkAcGs5lOoCAAA=
+	Fri, 23 Jan 2015 00:03:47 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-34-54c1d6302b55
+From: Inha Song <ideal.song@samsung.com>
+To: alsa-devel@alsa-project.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        s.nawrocki@samsung.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk, kgene@kernel.org,
+        sbkim73@samsung.com, lgirdwood@gmail.com, broonie@kernel.org,
+        perex@perex.cz, tiwai@suse.de, grant.likely@linaro.org,
+        ideal.song@samsung.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: [alsa-devel] [PATCH v4 0/3] Sound support for Exynos4412 Trats2 board
+Date: Fri, 23 Jan 2015 14:03:27 +0900
+Message-id: <1421989410-12490-1-git-send-email-ideal.song@samsung.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsWyRsSkWNfg2sEQg60XLCyuXDzEZDH14RM2
+	i/lHzrFa9L9ZyGpx4M8ORotdf+8zWpx7tZLRov/xa2aLb1c6mCw2Pb7GanF51xw2ixnn9zFZ
+	3L7Ma7H0+kUmiwnT17JYdO7qZ7Vo3XuE3eLwm3ZWi4srvjBZvNz8hslBxGPD5yY2jzXz1jB6
+	tDT3sHlc7utl8tg56y67x8rlX9g8Nq3qZPO4c20Pm8fmJfUe+94uY/Po27KK0WPz6WqPz5vk
+	AnijuGxSUnMyy1KL9O0SuDIOnz/CWHCbp6L/RiNTA+NLzi5GTg4JAROJth3rmSBsMYkL99az
+	dTFycQgJLGWU6H7yjA2m6G73VhaIxHRGicnf/rNCOHOYJCbOWA1WxSagIfH982bmLkYODhEB
+	eYlD7/NAapgFrjBLfFwxixmkRljAT+Jk5xqwdSwCqhJ7V1wE6+UVcJP48qOHEWKbtsS+hplg
+	Z0gIzOSQ2DyznxmiQUDi2+RDLCALJARkJTYdYIaol5Q4uOIGywRGwQWMDKsYRVMLkguKk9KL
+	TPSKE3OLS/PS9ZLzczcxAqPw9L9nE3Yw3jtgfYhRgINRiYe3YcvBECHWxLLiytxDjKZAGyYy
+	S4km5wNjPa8k3tDYzMjC1MTU2Mjc0kxJnPe11M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxS
+	DYztu589mBXjsupr6KKSY9ts5PLTvz1t9V53x/bdokXf2HY7pF37G+bMetllQpz9fFX90JX7
+	niY+bjauX9i9eO/PTxkTHNyZTi1v9qoSqFmh6xrpu+34xr/a87Yf6LrMd/HhjZN7wx7WlR1L
+	5/WLqNwmy93XU2PxmIErfNoJwc05vf0FcXWGJsuUWIozEg21mIuKEwFo3RGcvQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jQV2DawdDDN506ltcuXiIyWLqwyds
+	FvOPnGO16H+zkNXiwJ8djBa7/t5ntDj3aiWjRf/j18wW3650MFlsenyN1eLyrjlsFjPO72Oy
+	uH2Z12Lp9YtMFhOmr2Wx6NzVz2rRuvcIu8XhN+2sFhdXfGGyeLn5DZODiMeGz01sHmvmrWH0
+	aGnuYfO43NfL5LFz1l12j5XLv7B5bFrVyeZx59oeNo/NS+o99r1dxubRt2UVo8fm09UenzfJ
+	BfBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gB9
+	q6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMOHz+CGPBbZ6K/huNTA2M
+	Lzm7GDk5JARMJO52b2WBsMUkLtxbz9bFyMUhJDCdUWLyt/+sEM4cJomJM1azgVSxCWhIfP+8
+	mbmLkYNDREBe4tD7PJAaZoErzBIfV8xiBqkRFvCTONm5hgnEZhFQldi74iJYL6+Am8SXHz2M
+	ENu0JfY1zGSbwMi9gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwjD+T2sG4ssHiEKMA
+	B6MSD2/DloMhQqyJZcWVuYcYJTiYlUR4nxwACvGmJFZWpRblxxeV5qQWH2I0Bdo+kVlKNDkf
+	mH7ySuINjU3MjCyNzA0tjIzNlcR5lezbQoQE0hNLUrNTUwtSi2D6mDg4pRoYQ+/e/mr6X+ep
+	08fCZ6nWk7uLuH81Rfv4ux6aV2CcZRTC+KS/+Lxb5CH132UnBeNumTlde/w77/aWt2zlXUse
+	Cuz7/0I5TS9MzCJoXv6mm8JGK2K/fnA2fr0o7oynbebBmPrebKs36cVON20PuZqJtyQVXc28
+	sMas7sCDb/Lb+DUz33w0Tp+gxFKckWioxVxUnAgAuXUGnwcDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,118 +56,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add document describing device tree bindings for max77843 MFD.
-Drivers: MFD core, regulator, extcon, charger and fuelgauge.
+This patch-set adds basic sound support for the Trats2 boards.
+It just support primary I2s and external speaker playback.
 
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Mark Brown <broonie@kernel.org>
-Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
----
- Documentation/devicetree/bindings/mfd/max77843.txt |   87 ++++++++++++++++++++
- 1 file changed, 87 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/max77843.txt
+Changes in v4:
+  - Move to clock out parent settings in exynos4412-trats2.dts
+  - Remove unnecessary lines in Trats2 machine driver.
+  - Change name of dai stream to more cleary.
+  - Add MFD_WM8994 to select in machine driver kconfig.
 
-diff --git a/Documentation/devicetree/bindings/mfd/max77843.txt b/Documentation/devicetree/bindings/mfd/max77843.txt
-new file mode 100644
-index 0000000..6895604
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/max77843.txt
-@@ -0,0 +1,87 @@
-+Maxim MAX77843 multi-function device
-+
-+MAX77843 is a Multi-Function Device with the following submodules:
-+- PMIC	  : 2 SAFEOUT LDOs for USB device
-+- CHARGER : Li+ battery charger with Fuel Gauge
-+- MUIC	  : Micro USB Interface Circuit
-+- HAPTIC  : motor control driver for haptics
-+- LED	  : 4 channel RGBW LED
-+
-+It is interfaced to host controller using I2C.
-+
-+Required properties:
-+- compatible : Must be "maxim,max77843".
-+- reg : I2C slave address of PMIC block.
-+- interrupts : I2C line for main SoCs.
-+- interrupt-parent : The parent of interrupt controller.
-+
-+Optional properties:
-+- regulators : The regulators of max77843 have to be instantiated under subnode
-+	named "regulators" using the following format.
-+
-+	[*]refer : Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+	regulators {
-+		SAFEOUT {
-+			regulator-name = "SAFEOUT";
-+		};
-+	}
-+
-+	List of valid regulator names:
-+	- SAFEOUT1, SAFEOUT2, CHARGER.
-+
-+- max77843-muic : This properties used by extcon consumers.
-+	Required properties:
-+		- compatible : Must be "maxim,max77842-muic".
-+
-+- max77843-charger : There battery charger of MAX77843 have to be instantiated
-+	under sub-node named "max77843-charger" using the following format.
-+	Required properties:
-+		- compatible : Must be "maxim,max77842-charger".
-+		- maxim,fast-charge-uamp : Fast charge current levels are
-+			100 mA to 3150 mA programmed by I2C per 100 mA.
-+		- maxim,top-off-uamp : Top off current threshold levels are
-+			125 mA to 650 mA programmed by I2C per 75 mA.
-+		- maxim,input-uamp-limit : Input current limit levels are
-+			100 mA to 3533 mA programmed by I2C per 33 mA.
-+- max77843-fuelgauge : There fuelgauge of MAX77843 have to be instantiated
-+	under sub-node named "max77843-fuelgauge" using the following format.
-+	Required properties:
-+		- compatible : Must be "maxim,max77842-fuelgauge".
-+
-+Example:
-+	max77843@66 {
-+		compatible = "samsung,max77843";
-+		reg = <0x66>;
-+		interrupt-parent = <&gpa1>;
-+		interrupts = <5 2>;
-+
-+		regulators {
-+			SAFEOUT1 {
-+				regulator-name = "SAFEOUT1";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <4950000>;
-+			};
-+			SAFEOUT2 {
-+				regulator-name = "SAFEOUT2";
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <4950000>;
-+			};
-+		};
-+
-+		max77843-muic {
-+			compatible = "maxim,max77843-muic";
-+		};
-+
-+		max77843-charger {
-+			compatible = "maxim,max77843-charger";
-+			maxim,fast-charge-uamp = <450000>;
-+			maxim,top-off-uamp = <125000>;
-+			maxim,input-uamp-limit = <500000>;
-+		};
-+
-+		max77843-fuelgauge {
-+			compatible = "maxim,max77843-fuelgauge";
-+		};
-+
-+	};
+Changes in v3:
+  - Set clock out parent to XUSBXTI in pmu_system_controller DT node.
+
+Changes in v2:
+  - Remove unnecessary lines in Trats2 machine driver.
+  - move clock enable/disable to .startup / .shutdown.
+  - Fix code style issues.
+  - Remove mclk DT property in Trats2 sound and add MCLK1 property in WM1811 node.
+    (MCLK1 is optional property in WM8994 node - refer: Document/devicetree/bindings/sound/wm8994.txt)
+  - Use mclk that defined in WM1811 DT node.
+  - Add "samsung,audio-codec" property to required properties.
+
+Inha Song (3):
+  ASoC: samsung: Add machine driver for Trats2
+  ASoC: samsung: Document Trats2 audio subsystem bindings
+  ARM: dts: Add sound nodes for exynos4412-trats2
+
+ .../bindings/sound/samsung,trats2-wm1811.txt       |  25 +++
+ arch/arm/boot/dts/exynos4412-trats2.dts            |  42 ++++
+ sound/soc/samsung/Kconfig                          |   9 +
+ sound/soc/samsung/Makefile                         |   2 +
+ sound/soc/samsung/trats2_wm1811.c                  | 211 +++++++++++++++++++++
+ 5 files changed, 289 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/samsung,trats2-wm1811.txt
+ create mode 100644 sound/soc/samsung/trats2_wm1811.c
+
 -- 
-1.7.9.5
+2.0.0.390.gcb682f8
 
