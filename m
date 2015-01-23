@@ -1,177 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbbAWHS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 02:18:27 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:62821 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbbAWHSZ (ORCPT
+	id S1753406AbbAWHSq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 02:18:46 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:35810 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264AbbAWHSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 02:18:25 -0500
-Message-ID: <54C1F5BF.30105@gmail.com>
-Date: Thu, 22 Jan 2015 23:18:23 -0800
-From: Alexander Duyck <alexander.duyck@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 23 Jan 2015 02:18:42 -0500
 MIME-Version: 1.0
-To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Hayato Momma <h-momma@ce.jp.nec.com>
-Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
- mode control
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>	<874mrlu18e.fsf@nemi.mork.no>	<7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>	<F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>	<7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>	<F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>	<7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>	<063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>	<7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>	<F6FB0E698C9B3143BDF729DF222866469129BC03@ORSMSX110.amr.corp.intel.com>	<063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>	<F6FB0E698C9B3143BDF729DF222866469129BFFD@ORSMSX110.amr.corp.intel.com>	<87bnlqpq6v.fsf@nemi.mork.no>	<F6FB0E698C9B3143BDF729DF222866469129C09C@ORSMSX110.amr.corp.intel.com> <7F861DC0615E0C47A872E6F3C5FCDDBD05E0B6B1@BPXM14GP.gisp.nec.co.jp>
-In-Reply-To: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0B6B1@BPXM14GP.gisp.nec.co.jp>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421989367-32721-6-git-send-email-jaewon02.kim@samsung.com>
+References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
+	<1421989367-32721-6-git-send-email-jaewon02.kim@samsung.com>
+Date: Fri, 23 Jan 2015 08:18:41 +0100
+Message-ID: <CAJKOXPdWTE6CQC57oV5vsz4TNK4H8==ehpd=3OOMYnJRW+ifWw@mail.gmail.com>
+Subject: Re: [PATCH 5/6] regulator: max77843: Add max77843 regulator driver
+From: =?UTF-8?Q?Krzysztof_Koz=C5=82owski?= <k.kozlowski.k@gmail.com>
+To: Jaewon Kim <jaewon02.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Beomho Seo <beomho.seo@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 04:32 PM, Hiroshi Shimamoto wrote:
->> Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
->>> "Skidmore, Donald C" <donald.c.skidmore@intel.com> writes:
->>>
->>>> My hang up is more related to: without the nob to enable it (off by
->>>> default) we are letting one VF dictate policy for all the other VFs
->>>> and the PF.  If one VF needs to be in promiscuous multicast so is
->>>> everyone else.  Their stacks now needs to deal with all the extra
->>>> multicast packets.  As you point out this might not be a direct
->>>> concern for isolation in that the VM could have 'chosen' to join any
->>>> Multicast group and seen this traffic.  My concern over isolation is
->>>> one VF has chosen that all the other VM now have to see this multicast
->>>> traffic.
->>> Apologies if this question is stupid, but I just have to ask about stuff I don't
->>> understand...
->>>
->>> Looking at the proposed implementation, the promiscous multicast flag
->>> seems to be a per-VF flag:
->>>
->>> +int ixgbe_ndo_set_vf_mc_promisc(struct net_device *netdev, int vf, bool
->>> +setting) {
->>> +	struct ixgbe_adapter *adapter = netdev_priv(netdev);
->>> +	struct ixgbe_hw *hw = &adapter->hw;
->>> +	u32 vmolr;
->>> +
->>> +	if (vf >= adapter->num_vfs)
->>> +		return -EINVAL;
->>> +
->>> +	adapter->vfinfo[vf].mc_promisc_enabled = setting;
->>> +
->>> +	vmolr = IXGBE_READ_REG(hw, IXGBE_VMOLR(vf));
->>> +	if (setting) {
->>> +		e_info(drv, "VF %u: enabling multicast promiscuous\n", vf);
->>> +		vmolr |= IXGBE_VMOLR_MPE;
->>> +	} else {
->>> +		e_info(drv, "VF %u: disabling multicast promiscuous\n", vf);
->>> +		vmolr &= ~IXGBE_VMOLR_MPE;
->>> +	}
->>> +
->>> +	IXGBE_WRITE_REG(hw, IXGBE_VMOLR(vf), vmolr);
->>> +
->>> +	return 0;
->>> +}
->>> +
->>>
->>> I haven't read the data sheet, but I took a quick look at the excellent high
->>> level driver docs:
->>> http://www.intel.com/content/dam/doc/design-guide/82599-sr-iov-driver-
->>> companion-guide.pdf
->>>
->>> It mentions "Multicast Promiscuous Enable" in its "Thoughts for
->>> Customization" section:
->>>
->>>  7.1 Multicast Promiscuous Enable
->>>
->>>  The controller has provisions to allow each VF to be put into Multicast
->>> Promiscuous mode.  The Intel reference driver does not configure this
->>> option .
->>>
->>>  The capability can be enabled/disabled by manipulating the MPE field  (bit
->>> 28) of the PF VF L2 Control Register (PFVML2FLT – 0x0F000)
->>>
->>> and showing a section from the data sheet describing the "PF VM L2 Control
->>> Register - PFVML2FLT[n]  (0x0F000 + 4 * n, n=0...63; RW)"
->>>
->>> To me it looks like enabling Promiscuos Multicast for a VF won't affect any
->>> other VF at all.  Is this really not the case?
->>>
->>>
->>>
->>> Bjørn
->> Clearly not a dumb question at all and I'm glad you mentioned that. :)  I was going off the assumption, been awhile since
->> I read the patch, that the patch was using FCTRL.MPE or MANC.MCST_PASS_L2 which would turn multicast promiscuous on for
->> everyone.  Since the patch is using PFVML2FLT.MPE this lessens my concern over effect on the entire system.
-> I believe the patches for this VF multicast promiscuous mode is per VF.
+2015-01-23 6:02 GMT+01:00 Jaewon Kim <jaewon02.kim@samsung.com>:
+> This patch adds new regulator driver to support max77843
+> MFD(Multi Function Device) chip`s regulators.
+> The Max77843 has two voltage regulators for USB safeout.
 >
->> That said I still would prefer having a way to override this behavior on the PF, although I admit my argument is weaker.
->> I'm still concerned about a VF changing the behavior of the PF without any way to prevent it.  This might be one part
->> philosophical (PF sets policy not the VF) but this still could have a noticeable effect on the overall system.  If any
->> other VFs (or the PF) are receiving MC packets these will have to be replicated which will be a performance hit.  When
->> we use the MC hash this is limited vs. when anyone is in MC promiscuous every MC packet used by another pool would be
->> replicated.  I could imagine in some environments (i.e. public clouds) where you don't trust what is running in your VM
->> you might what to block this from happening.
-> I understand your request and I'm thinking to submit the patches
->   1) Add new mbox API between ixgbe/ixgbevf to turn MC promiscuous on,
->      and enables it when ixgbevf needs over 30 MC addresses.
->   2) Add a policy knob to prevent enabling it from the PF.
+> Cc: Mark Brown <broonie@kernel.org>
+> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+> ---
+>  drivers/regulator/Kconfig    |    8 ++
+>  drivers/regulator/Makefile   |    1 +
+>  drivers/regulator/max77843.c |  259 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 268 insertions(+)
+>  create mode 100644 drivers/regulator/max77843.c
 >
-> Does it seem okay?
-
-I would advise that if such a knob is added it should be set to disabled
-by default.  The main problem with supporting that many multicast
-addresses per VF is that you run the risk for flooding the PCIe
-interface on the network adapter if too many adapters were to go into
-such a mode.
-
-> BTW, I'm bit worried about to use ndo interface for 2) because adding a
-> new hook makes core code complicated.
-> Is it really reasonable to do it with ndo?
-> I haven't find any other suitable method to do it, right now. And using
-> ndo VF hook looks standard way to control VF functionality.
-> Then, I think it's the best way to implement this policy in ndo hook.
-
-The ndo is probably the only way to go on this.  It is how past controls
-for the VF network functionality have been implemented.
-
->> In some ways it is almost the mirror image of the issue you brought up:
->>
->> Adding a new hook for this seems over-complicated to me.  And it still
->> doesn't solve the real problems that
->>  a) the user has to know about this limit, and
->>  b) manually configure the feature
->>
->> My reverse argument might be that if this happens automatically.  It might take the VM provider a long time to realize
->> performance has taken a hit because some VM asked to join 31 multicast groups and entered MC promiscuous.  Then only to
->> find that they have no way to block such behavior.
->>
->> Maybe I wouldn't as concerned if the patch author could provide some performance results to show this won't have as a
->> negative effect as I'm afraid it might?
-> Hm, what kind of test case would you like to have?
-> The user A who has 30 MC addresses vs the user B who has 31 MC addresses, which
-> means that MC promiscuous mode, and coming MC packets the user doesn't expect?
+> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> index c3a60b5..c1f9c33 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -414,6 +414,14 @@ config REGULATOR_MAX77802
+>           Exynos5420/Exynos5800 SoCs to control various voltages.
+>           It includes support for control of voltage and ramp speed.
 >
-> thanks,
-> Hiroshi
+> +config REGULATOR_MAX77843
+> +       tristate "Maxim 77843 regulator"
+> +       depends on MFD_MAX77843
+> +       help
+> +         This driver controls a Maxim 77843 regulator.
+> +         The regulator include two 'SAFEOUT' for USB(Universal Serial Bus)
+> +         This is suitable for Exynos5433 SoC chips.
+> +
+>  config REGULATOR_MC13XXX_CORE
+>         tristate
+>
+> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+> index 1f28ebf..12408d6 100644
+> --- a/drivers/regulator/Makefile
+> +++ b/drivers/regulator/Makefile
+> @@ -55,6 +55,7 @@ obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
+>  obj-$(CONFIG_REGULATOR_MAX77686) += max77686.o
+>  obj-$(CONFIG_REGULATOR_MAX77693) += max77693.o
+>  obj-$(CONFIG_REGULATOR_MAX77802) += max77802.o
+> +obj-$(CONFIG_REGULATOR_MAX77843) += max77843.o
+>  obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+>  obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+>  obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
+> diff --git a/drivers/regulator/max77843.c b/drivers/regulator/max77843.c
+> new file mode 100644
+> index 0000000..86afc7a
+> --- /dev/null
+> +++ b/drivers/regulator/max77843.c
+> @@ -0,0 +1,259 @@
+> +/*
+> + * max77843.c - Regulator driver for the Maxim MAX77843
+> + *
+> + * Copyright (C) 2014 Samsung Electrnoics
+> + * Author: Jaewon Kim <jaewon02.kim@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regulator/driver.h>
+> +#include <linux/regulator/machine.h>
+> +#include <linux/mfd/max77843-private.h>
+> +#include <linux/regulator/of_regulator.h>
+> +
+> +#define MAX77843_SUPPORTED_VOLTAGE_NUM 4
+> +
+> +enum max77843_regulator_type {
+> +       MAX77843_SAFEOUT1 = 0,
+> +       MAX77843_SAFEOUT2,
+> +       MAX77843_CHARGER,
+> +
+> +       MAX77843_NUM,
+> +};
+> +
+> +static const unsigned int max77843_regulator_table[] = {
+> +       4850000,
+> +       4900000,
+> +       4950000,
+> +       3300000,
+> +};
+> +
+> +static int max77843_reg_is_enabled(struct regulator_dev *rdev)
+> +{
+> +       struct regmap *regmap = rdev->regmap;
+> +       int ret;
+> +       unsigned int reg;
+> +
+> +       ret = regmap_read(regmap, rdev->desc->enable_reg, &reg);
+> +       if (ret) {
+> +               dev_err(&rdev->dev, "Fialed to read charger register\n");
+> +               return ret;
+> +       }
+> +
+> +       return (reg & rdev->desc->enable_mask) == rdev->desc->enable_mask;
+> +}
+> +
+> +static int max77843_reg_get_current_limit(struct regulator_dev *rdev)
+> +{
+> +       struct regmap *regmap = rdev->regmap;
+> +       unsigned int chg_min_uA = rdev->constraints->min_uA;
+> +       unsigned int chg_max_uA = rdev->constraints->max_uA;
+> +       unsigned int val;
+> +       int ret;
+> +       unsigned int reg, sel;
+> +
+> +       ret = regmap_read(regmap, MAX77843_CHG_REG_CHG_CNFG_02, &reg);
+> +       if (ret) {
+> +               dev_err(&rdev->dev, "Failed to read charger register\n");
+> +               return ret;
+> +       }
+> +
+> +       sel = reg & MAX77843_CHG_FAST_CHG_CURRENT_MASK;
+> +
+> +       if (sel < 0x03)
+> +               sel = 0;
+> +       else
+> +               sel -= 2;
+> +
+> +       val = chg_min_uA + MAX77843_CHG_FAST_CHG_CURRENT_STEP * sel;
+> +       if (val > chg_max_uA)
+> +               return -EINVAL;
+> +
+> +       return val;
+> +}
+> +
+> +static int max77843_reg_set_current_limit(struct regulator_dev *rdev,
+> +               int min_uA, int max_uA)
+> +{
+> +       struct regmap *regmap = rdev->regmap;
+> +       unsigned int chg_min_uA = rdev->constraints->min_uA;
+> +       int sel = 0;
+> +
+> +       while (chg_min_uA + MAX77843_CHG_FAST_CHG_CURRENT_STEP * sel < min_uA)
+> +               sel++;
+> +
+> +       if (chg_min_uA + MAX77843_CHG_FAST_CHG_CURRENT_STEP * sel > max_uA)
+> +               return -EINVAL;
+> +
+> +       sel += 2;
+> +
+> +       return regmap_write(regmap, MAX77843_CHG_REG_CHG_CNFG_02, sel);
+> +}
+> +
+> +static struct regulator_ops max77843_charger_ops = {
+> +       .is_enabled             = max77843_reg_is_enabled,
+> +       .enable                 = regulator_enable_regmap,
+> +       .disable                = regulator_disable_regmap,
+> +       .get_current_limit      = max77843_reg_get_current_limit,
+> +       .set_current_limit      = max77843_reg_set_current_limit,
+> +};
+> +
+> +static struct regulator_ops max77843_regulator_ops = {
+> +       .is_enabled             = regulator_is_enabled_regmap,
+> +       .enable                 = regulator_enable_regmap,
+> +       .disable                = regulator_disable_regmap,
+> +       .list_voltage           = regulator_list_voltage_table,
+> +       .get_voltage_sel        = regulator_get_voltage_sel_regmap,
+> +       .set_voltage_sel        = regulator_set_voltage_sel_regmap,
+> +};
+> +
+> +static const struct regulator_desc max77843_supported_regulators[] = {
+> +       [MAX77843_SAFEOUT1] = {
+> +               .name           = "SAFEOUT1",
+> +               .id             = MAX77843_SAFEOUT1,
+> +               .ops            = &max77843_regulator_ops,
+> +               .type           = REGULATOR_VOLTAGE,
+> +               .owner          = THIS_MODULE,
+> +               .n_voltages     = MAX77843_SUPPORTED_VOLTAGE_NUM,
+> +               .volt_table     = max77843_regulator_table,
+> +               .enable_reg     = MAX77843_SYS_REG_SAFEOUTCTRL,
+> +               .enable_mask    = MAX77843_REG_SAFEOUTCTRL_ENSAFEOUT1,
+> +               .vsel_reg       = MAX77843_SYS_REG_SAFEOUTCTRL,
+> +               .vsel_mask      = MAX77843_REG_SAFEOUTCTRL_SAFEOUT1_MASK,
+> +       },
+> +       [MAX77843_SAFEOUT2] = {
+> +               .name           = "SAFEOUT2",
+> +               .id             = MAX77843_SAFEOUT2,
+> +               .ops            = &max77843_regulator_ops,
+> +               .type           = REGULATOR_VOLTAGE,
+> +               .owner          = THIS_MODULE,
+> +               .n_voltages     = MAX77843_SUPPORTED_VOLTAGE_NUM,
+> +               .volt_table     = max77843_regulator_table,
+> +               .enable_reg     = MAX77843_SYS_REG_SAFEOUTCTRL,
+> +               .enable_mask    = MAX77843_REG_SAFEOUTCTRL_ENSAFEOUT2,
+> +               .vsel_reg       = MAX77843_SYS_REG_SAFEOUTCTRL,
+> +               .vsel_mask      = MAX77843_REG_SAFEOUTCTRL_SAFEOUT2_MASK,
+> +       },
+> +       [MAX77843_CHARGER] = {
+> +               .name           = "CHARGER",
+> +               .id             = MAX77843_CHARGER,
+> +               .ops            = &max77843_charger_ops,
+> +               .type           = REGULATOR_CURRENT,
+> +               .owner          = THIS_MODULE,
+> +               .enable_reg     = MAX77843_CHG_REG_CHG_CNFG_00,
+> +               .enable_mask    = MAX77843_CHG_MASK,
+> +       },
+> +};
+> +
+> +static struct of_regulator_match max77843_regulator_matches[] = {
+> +       { .name = "SAFEOUT1", },
+> +       { .name = "SAFEOUT2", },
+> +       { .name = "CHARGER", },
+> +};
+> +
+> +static struct regmap *max77843_get_regmap(struct max77843 *max77843, int reg_id)
+> +{
+> +       switch (reg_id) {
+> +       case MAX77843_SAFEOUT1:
+> +       case MAX77843_SAFEOUT2:
+> +               return max77843->regmap;
+> +       case MAX77843_CHARGER:
+> +               return max77843->regmap_chg;
+> +       default:
+> +               return max77843->regmap;
+> +       }
+> +}
+> +
+> +static int max77843_regulator_dt_parse(struct platform_device *pdev)
+> +{
+> +       struct device_node *np;
+> +       int ret;
+> +
+> +       np = of_get_child_by_name(pdev->dev.parent->of_node, "regulators");
+> +       if (!np) {
+> +               dev_err(&pdev->dev,
+> +                       "Cannot get child OF node for regulators\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       ret = of_regulator_match(&pdev->dev, np, max77843_regulator_matches,
+> +                       ARRAY_SIZE(max77843_regulator_matches));
+> +       if (ret < 0) {
+> +               dev_err(&pdev->dev, "Cannot parsing regulator init data\n");
+> +               return ret;
+> +       }
+> +
+> +       of_node_put(np);
+> +
+> +       return 0;
 
-The question I would have is how many of these interfaces do you expect
-to have supporting the expanded multicast mode?  As it currently stands
-multicast traffic has the potential to flood the adapter, greatly reduce
-the overall throughput, and add extra workload to the PF and all VFs. 
-For example if several VFs enable this feature, and then someone on the
-network sends a stream of multicast traffic what happens to the CPU load
-for the host system?
+Use simplified DT parsing method (of_match and regulators_node from
+regulators_desc). This function could be removed then.
 
-Also how many addresses beyond 30 is it you require?  An alternative to
-adding multicast promiscuous might be to consider extending the mailbox
-API to support sending more than 30 addresses via something such as a
-multi-part multicast configuration message.  The fm10k driver already
-has logic similar to this as it adds addresses 1 at a time though a
-separate Switch interface API between the PF and the Switch.  You might
-be able to reuse some of that code to reach beyond the 30 address limit.
-
-- Alex
+Best regards,
+Krzysztof
