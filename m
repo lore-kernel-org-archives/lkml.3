@@ -1,146 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbbAWMQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 07:16:05 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:12177 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907AbbAWMQC convert rfc822-to-8bit (ORCPT
+	id S1754362AbbAWM1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 07:27:52 -0500
+Received: from domu-toccata.ens-lyon.fr ([140.77.166.138]:39418 "EHLO
+	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856AbbAWM1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 07:16:02 -0500
-Date: Fri, 23 Jan 2015 13:15:54 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Jyri Sarha <jsarha@ti.com>
-Subject: Re: [alsa-devel] [PATCH v2 3/3] ASoC: add generic dt-card support
-Message-ID: <20150123131554.623003f9@armhf>
-In-Reply-To: <54C14EB3.8080305@metafoo.de>
-References: <cover.1421868426.git.moinejf@free.fr>
-	<d0c66c2e2f200119f9990fa52a503b1a4af6238f.1421868426.git.moinejf@free.fr>
-	<54C0088F.9070609@metafoo.de>
-	<20150122090723.50ac0156@armhf>
-	<54C14EB3.8080305@metafoo.de>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
+	Fri, 23 Jan 2015 07:27:46 -0500
+Date: Fri, 23 Jan 2015 13:27:42 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Pavel Machek <pavel@ucw.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
+        jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: [PATCHv6 1/2] INPUT: Introduce generic trigger/LED pairs between
+ keyboard modifiers and input LEDs
+Message-ID: <20150123122742.GA18514@type.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Pavel Machek <pavel@ucw.cz>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
+	jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015 20:25:39 +0100
-Lars-Peter Clausen <lars@metafoo.de> wrote:
+This permits to change which modifier triggers which keyboard LEDs, by adding
+modifier triggers, and a series of LEDs for the VT.
 
-> On 01/22/2015 09:07 AM, Jean-Francois Moine wrote:
-> > On Wed, 21 Jan 2015 21:14:07 +0100
-> > Lars-Peter Clausen <lars@metafoo.de> wrote:
-> >
-> >> [...]
-> >>> +	card->dai_link->dai_fmt =
-> >>> +		snd_soc_of_parse_daifmt(of_cpu, "dt-audio-card,",
-> >>> +					NULL, NULL) &
-> >>> +			~SND_SOC_DAIFMT_MASTER_MASK;
-> >>
-> >>
-> >> This one does not seem to be in the bindings documentation.
-> >
-> > Sorry, I forgot to remove it from the patch.
-> 
-> Ah, too bad this was the part I was most interested in. I think that using 
+This permits to fix #7063 from userland by using a modifier to implement proper
+CapsLock behavior and have the keyboard caps lock led show that modifier state.
 
-This code was a remainder of simple-card.
+[ebroder@mokafive.com: Rebased to 3.2-rc1 or so, cleaned up some includes, and fixed some constants]
+[akpm@linux-foundation.org: remove unneeded `extern', fix comment layout]
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Signed-off-by: Evan Broder <evan@ebroder.net>
+Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
+Signed-off-by: John Crispin <blogic@openwrt.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+Nothing changed in this version compared to v5.
 
-Setting the audio format in the CPU side of the link is of no interest
-when this format is the same for all CODECs. In this case, the audio
-controller may set itself this format when it creates its DAIs, and,
-then, the audio format is an audio controller property.
-
-On the other hand, when the format depends on the remote endpoints, it
-should appear in the graph in the CODEC ports.
-
-> the generic of graph framework as a unified way for expressing non-control 
-> links is a good idea, whether it be for audio, video or something else.
-
-We discussed about the graph of ports last year
-http://mailman.alsa-project.org/pipermail/alsa-devel/2014-January/070634.html
-but some pieces of software were lacking, as the multi-codec links.
-
-> But I think there are some open questions that need to be address when 
-> coming up with a specification for audio so we do not have to write yet 
-> another incompatible DT spec in 3 months time.
-
-The DT should describe the hardware, and the simple-card mixes hardware
-and software.
-For example, the kirkwood controller may create 2 CPU DAIs. With the
-simple-card, the DT contains a number to reference these DAIs (for
-example, implicitly, <audio1 0> references the I2S output). So, what if
-the controller creates only one DAI, or, what if the FreeBSD/OpenBSD/..
-driver does not set the same references to these DAIs?
-The graph of port fixes this problem.
-
-More: a simple audio card may easily be created from a graph of ports
-as the simple-card does, but by the audio-controller (sorry, I also
-forgot the kirkwood patch for this in my previous patch request).
-In case of complex cards, the links and properties of this graph may
-also be used by board specific card devices.
-
-> One issue is how to deal with multi-point-to-multi-point links. I2S/TDM is a 
-> bus and can have more than one reader/writer.
-> 
-> The second issue is how to describe the clock and frame master 
-> relationships. Multiple different buses can share the same clock and frame 
-> generator. E.g. typically the capture and playback stream are linked in this 
-> way.
-
-The ports and endpoints may contain properties to describe these
-configurations. Complex cases should be handled by specific card
-builders.
-
-> How are we going to handle bus specific properties. Properties which are 
-> neither a property of either of the endpoints on the link, but of the link 
-> itself.
-
-This is already the case for the bus types of the kirkwood controller,
-I2S or S/PDIF. Such properties may appear in either local or remote
-port, or in both.
-
-> > BTW, the graph of port should also contain pieces of the audio specific
-> > hardware information as the ones found in the simple-card (clock,
-> > GPIO, ...). This information could be written as generic device node
-> > properties. i.e without any prefix.
-> >
-> > I was also wondering about some of these properties, as widgets and
-> > routing. They seem to be software information and Linux specific.
-> > Must these properties appear in the DTs?
-> 
-> Well last time I checked the speaker on my board was hardware not software 
-> and wasn't Linux specific either ;) Those widgets and routing represent the 
-> (typically analog) audio fabric on the board and are part of the hardware 
-> description. This is not even ASoC or devicetree specific, e.g. HDA uses a 
-> similar concept where the BIOS provides a description of which pins of the 
-> audio CODEC is connected to which speaker, microphone, etc. And especially 
-> on embedded boards the audio fabric can become quite complex.
-
-OK. I looked if the widgets and routes could also be described in a
-graph, but, it complexifies the syntax. So, this information could have
-the same syntax as in the simple-card.
-
-On the other hand, where would this information appear in the graph?
-As I understood, on card creation, the widgets and routes, which appear
-at the card level, redefine the CPU and CODEC DAI definitions.
-
-With a DT graph, each CPU/CODEC would know exactly the widgets and
-routes it has to define.
-
-> Your example is a relative simple one where you do not have any additional 
-> audio fabric on the board itself.
-
-Right, and that's why I'd be glad to have quickly something in the
-kernel. More properties could be added later as there would be requests.
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -13,6 +13,9 @@ config VT
+ 	bool "Virtual terminal" if EXPERT
+ 	depends on !S390 && !UML
+ 	select INPUT
++	select NEW_LEDS
++	select LEDS_CLASS
++	select LEDS_TRIGGERS
+ 	default y
+ 	---help---
+ 	  If you say Y here, you will get support for terminal devices with
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -33,6 +33,7 @@
+ #include <linux/string.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
++#include <linux/leds.h>
+ 
+ #include <linux/kbd_kern.h>
+ #include <linux/kbd_diacr.h>
+@@ -130,6 +131,7 @@ static char rep;					/* flag telling cha
+ static int shift_state = 0;
+ 
+ static unsigned char ledstate = 0xff;			/* undefined */
++static unsigned char lockstate = 0xff;			/* undefined */
+ static unsigned char ledioctl;
+ 
+ /*
+@@ -962,6 +964,146 @@ static void k_brl(struct vc_data *vc, un
+ }
+ 
+ /*
++ * Keyboard LEDs are propagated by default like the following example:
++ *
++ * VT keyboard LED state or modifier state, calls kbd_bh()
++ * -> kbd-xxx VT trigger
++ * -> vt::xxx VT LED
++ * -> input EV_DEV events (in vt_led_cb)
++ *
++ * KDSETLED directly triggers vt::xxx LEDs.
++ *
++ * Userland can however choose the trigger for the vt::numl LED, or
++ * independently choose the trigger for any inputx::numl LED.
++ */
++
++/* We route VT keyboard "leds" through triggers */
++static void kbd_ledstate_trigger_activate(struct led_classdev *cdev);
++
++static struct led_trigger ledtrig_ledstate[] = {
++#define DEFINE_LEDSTATE_TRIGGER(kbd_led, nam) \
++	[kbd_led] = { \
++		.name = nam, \
++		.activate = kbd_ledstate_trigger_activate, \
++	}
++	DEFINE_LEDSTATE_TRIGGER(VC_SCROLLOCK, "kbd-scrollock"),
++	DEFINE_LEDSTATE_TRIGGER(VC_NUMLOCK,   "kbd-numlock"),
++	DEFINE_LEDSTATE_TRIGGER(VC_CAPSLOCK,  "kbd-capslock"),
++	DEFINE_LEDSTATE_TRIGGER(VC_KANALOCK,  "kbd-kanalock"),
++#undef DEFINE_LEDSTATE_TRIGGER
++};
++
++static int input_leds[] = {
++	[VC_SCROLLOCK] = LED_SCROLLL,
++	[VC_NUMLOCK] = LED_NUML,
++	[VC_CAPSLOCK] = LED_CAPSL,
++	[VC_KANALOCK] = LED_KANA,
++};
++
++/* Called on trigger connection, to set initial state */
++static void kbd_ledstate_trigger_activate(struct led_classdev *cdev)
++{
++	struct led_trigger *trigger = cdev->trigger;
++	int led = trigger - ledtrig_ledstate;
++
++	tasklet_disable(&keyboard_tasklet);
++	led_trigger_event(trigger, ledstate & (1 << led) ? LED_FULL : LED_OFF);
++	tasklet_enable(&keyboard_tasklet);
++}
++
++/* We route VT keyboard lockstates through triggers */
++static void kbd_lockstate_trigger_activate(struct led_classdev *cdev);
++
++static struct led_trigger ledtrig_lockstate[] = {
++#define DEFINE_LOCKSTATE_TRIGGER(kbd_led, nam) \
++	[kbd_led] = { \
++		.name = nam, \
++		.activate = kbd_lockstate_trigger_activate, \
++	}
++	DEFINE_LOCKSTATE_TRIGGER(VC_SHIFTLOCK,  "kbd-shiftlock"),
++	DEFINE_LOCKSTATE_TRIGGER(VC_ALTGRLOCK,  "kbd-altgrlock"),
++	DEFINE_LOCKSTATE_TRIGGER(VC_CTRLLOCK,   "kbd-ctrllock"),
++	DEFINE_LOCKSTATE_TRIGGER(VC_ALTLOCK,    "kbd-altlock"),
++	DEFINE_LOCKSTATE_TRIGGER(VC_SHIFTLLOCK, "kbd-shiftllock"),
++	DEFINE_LOCKSTATE_TRIGGER(VC_SHIFTRLOCK, "kbd-shiftrlock"),
++	DEFINE_LOCKSTATE_TRIGGER(VC_CTRLLLOCK,  "kbd-ctrlllock"),
++	DEFINE_LOCKSTATE_TRIGGER(VC_CTRLRLOCK,  "kbd-ctrlrlock"),
++#undef DEFINE_LOCKSTATE_TRIGGER
++};
++
++/* Called on trigger connection, to set initial state */
++static void kbd_lockstate_trigger_activate(struct led_classdev *cdev)
++{
++	struct led_trigger *trigger = cdev->trigger;
++	int led = trigger - ledtrig_lockstate;
++
++	tasklet_disable(&keyboard_tasklet);
++	led_trigger_event(trigger, lockstate & (1 << led) ? LED_FULL : LED_OFF);
++	tasklet_enable(&keyboard_tasklet);
++}
++
++/* Handler for VT LEDs, scheduling injecting input events in a worker */
++static void vt_led_set(struct led_classdev *cdev,
++			  enum led_brightness brightness);
++static struct led_classdev vt_leds[LED_CNT] = {
++#define DEFINE_INPUT_LED(vt_led, nam, deftrig) \
++	[vt_led] = { \
++		.name = "vt::"nam, \
++		.max_brightness = 1, \
++		.brightness_set = vt_led_set, \
++		.default_trigger = deftrig, \
++	}
++/* Default triggers for the VT LEDs just correspond to the legacy
++ * usage. */
++	DEFINE_INPUT_LED(LED_NUML, "numl", "kbd-numlock"),
++	DEFINE_INPUT_LED(LED_CAPSL, "capsl", "kbd-capslock"),
++	DEFINE_INPUT_LED(LED_SCROLLL, "scrolll", "kbd-scrollock"),
++	DEFINE_INPUT_LED(LED_COMPOSE, "compose", NULL),
++	DEFINE_INPUT_LED(LED_KANA, "kana", "kbd-kanalock"),
++	DEFINE_INPUT_LED(LED_SLEEP, "sleep", NULL),
++	DEFINE_INPUT_LED(LED_SUSPEND, "suspend", NULL),
++	DEFINE_INPUT_LED(LED_MUTE, "mute", NULL),
++	DEFINE_INPUT_LED(LED_MISC, "misc", NULL),
++	DEFINE_INPUT_LED(LED_MAIL, "mail", NULL),
++	DEFINE_INPUT_LED(LED_CHARGING, "charging", NULL),
++};
++
++static struct work_struct vt_led_work[LED_CNT];
++static char vt_led_state[LED_CNT];
++
++/* Emit input events to actually update one LED */
++static int kbd_update_leds_helper(struct input_handle *handle, void *data)
++{
++	int led = *(int *)data;
++
++	if (test_bit(EV_LED, handle->dev->evbit)) {
++		input_inject_event(handle, EV_LED, led, vt_led_state[led]);
++		input_inject_event(handle, EV_SYN, SYN_REPORT, 0);
++	}
++
++	return 0;
++}
++
++/* Emit input events to actually update one LED on all keyboards */
++static void vt_led_cb(struct work_struct *work)
++{
++	int led = work - vt_led_work;
++
++	input_handler_for_each_handle(&kbd_handler, &led,
++				      kbd_update_leds_helper);
++}
++
++/* VT LED state change, scheduling triggering input events for it */
++static void vt_led_set(struct led_classdev *cdev,
++			  enum led_brightness brightness)
++{
++	int led = cdev - vt_leds;
++
++	vt_led_state[led] = !!brightness;
++	schedule_work(&vt_led_work[led]);
++}
++
++/*
+  * The leds display either (i) the status of NumLock, CapsLock, ScrollLock,
+  * or (ii) whatever pattern of lights people want to show using KDSETLED,
+  * or (iii) specified bits of specified words in kernel memory.
+@@ -995,20 +1137,6 @@ static inline unsigned char getleds(void
+ 	return kb->ledflagstate;
+ }
+ 
+-static int kbd_update_leds_helper(struct input_handle *handle, void *data)
+-{
+-	unsigned char leds = *(unsigned char *)data;
+-
+-	if (test_bit(EV_LED, handle->dev->evbit)) {
+-		input_inject_event(handle, EV_LED, LED_SCROLLL, !!(leds & 0x01));
+-		input_inject_event(handle, EV_LED, LED_NUML,    !!(leds & 0x02));
+-		input_inject_event(handle, EV_LED, LED_CAPSL,   !!(leds & 0x04));
+-		input_inject_event(handle, EV_SYN, SYN_REPORT, 0);
+-	}
+-
+-	return 0;
+-}
+-
+ /**
+  *	vt_get_leds	-	helper for braille console
+  *	@console: console to read
+@@ -1085,26 +1213,39 @@ void vt_kbd_con_stop(int console)
+ }
+ 
+ /*
+- * This is the tasklet that updates LED state on all keyboards
+- * attached to the box. The reason we use tasklet is that we
+- * need to handle the scenario when keyboard handler is not
+- * registered yet but we already getting updates from the VT to
+- * update led state.
++ * This is the tasklet that updates LED state of all LED triggers, which will
++ * thus update the VT LED status, and eventually submit input events.
++ * The reason we use tasklet is that we need to handle the scenario when
++ * keyboard handler is not registered yet but we already getting updates
++ * from the VT to update led state.
+  */
+ static void kbd_bh(unsigned long dummy)
+ {
+ 	unsigned char leds;
+ 	unsigned long flags;
+-	
++	int i;
++
+ 	spin_lock_irqsave(&led_lock, flags);
+ 	leds = getleds();
+ 	spin_unlock_irqrestore(&led_lock, flags);
+ 
+ 	if (leds != ledstate) {
+-		input_handler_for_each_handle(&kbd_handler, &leds,
+-					      kbd_update_leds_helper);
++		for (i = 0; i < ARRAY_SIZE(ledtrig_ledstate); i++)
++			if ((leds ^ ledstate) & (1 << i))
++				led_trigger_event(&ledtrig_ledstate[i],
++						leds & (1 << i)
++						? LED_FULL : LED_OFF);
+ 		ledstate = leds;
+ 	}
++
++	if (kbd->lockstate != lockstate) {
++		for (i = 0; i < ARRAY_SIZE(ledtrig_lockstate); i++)
++			if ((kbd->lockstate ^ lockstate) & (1 << i))
++				led_trigger_event(&ledtrig_lockstate[i],
++						kbd->lockstate & (1 << i)
++						? LED_FULL : LED_OFF);
++		lockstate = kbd->lockstate;
++	}
+ }
+ 
+ DECLARE_TASKLET_DISABLED(keyboard_tasklet, kbd_bh, 0);
+@@ -1448,10 +1589,13 @@ static void kbd_disconnect(struct input_
+  */
+ static void kbd_start(struct input_handle *handle)
+ {
++	int i;
++
+ 	tasklet_disable(&keyboard_tasklet);
+ 
+ 	if (ledstate != 0xff)
+-		kbd_update_leds_helper(handle, &ledstate);
++		for (i = 0; i < ARRAY_SIZE(ledtrig_ledstate); i++)
++			kbd_update_leds_helper(handle, &input_leds[i]);
+ 
+ 	tasklet_enable(&keyboard_tasklet);
+ }
+@@ -1501,6 +1645,26 @@ int __init kbd_init(void)
+ 	if (error)
+ 		return error;
+ 
++	for (i = 0; i < ARRAY_SIZE(ledtrig_ledstate); i++) {
++		error = led_trigger_register(&ledtrig_ledstate[i]);
++		if (error)
++			pr_err("error %d while registering trigger %s\n",
++					error, ledtrig_ledstate[i].name);
++	}
++
++	for (i = 0; i < ARRAY_SIZE(ledtrig_lockstate); i++) {
++		error = led_trigger_register(&ledtrig_lockstate[i]);
++		if (error)
++			pr_err("error %d while registering trigger %s\n",
++					error, ledtrig_lockstate[i].name);
++	}
++
++	for (i = 0; i < LED_CNT; i++)
++		if (vt_leds[i].name) {
++			led_classdev_register(NULL, &vt_leds[i]);
++			INIT_WORK(&vt_led_work[i], vt_led_cb);
++		}
++
+ 	tasklet_enable(&keyboard_tasklet);
+ 	tasklet_schedule(&keyboard_tasklet);
+ 
+--- a/Documentation/leds/leds-class.txt
++++ b/Documentation/leds/leds-class.txt
+@@ -2,9 +2,6 @@
+ LED handling under Linux
+ ========================
+ 
+-If you're reading this and thinking about keyboard leds, these are
+-handled by the input subsystem and the led class is *not* needed.
+-
+ In its simplest form, the LED class just allows control of LEDs from
+ userspace. LEDs appear in /sys/class/leds/. The maximum brightness of the
+ LED is defined in max_brightness file. The brightness file will set the brightness
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -11,9 +11,6 @@ menuconfig NEW_LEDS
+ 	  Say Y to enable Linux LED support.  This allows control of supported
+ 	  LEDs from both userspace and optionally, by kernel events (triggers).
+ 
+-	  This is not related to standard keyboard LEDs which are controlled
+-	  via the input system.
+-
+ if NEW_LEDS
+ 
+ config LEDS_CLASS
