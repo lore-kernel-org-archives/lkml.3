@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359AbbAWBTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 20:19:41 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:35857 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbbAWBTi (ORCPT
+	id S1753834AbbAWBUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 20:20:54 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:55083 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477AbbAWBUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 20:19:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAOesGMh1HE+hMP0VWr2vaHCp2itVjpQeiiFL6r9WeJUFes5tvw@mail.gmail.com>
-References: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org>
-	<1407202310-3359-9-git-send-email-sboyd@codeaurora.org>
-	<CAOesGMh1HE+hMP0VWr2vaHCp2itVjpQeiiFL6r9WeJUFes5tvw@mail.gmail.com>
-Date: Thu, 22 Jan 2015 20:19:37 -0500
-Message-ID: <CAF6AEGs3058dj7f06qvngOaBPiuJn4QrYFKQD-RQV4ydZ1h2sw@mail.gmail.com>
-Subject: Re: [PATCH 8/8] msm: scm: Move the scm driver to drivers/soc/qcom
-From: Rob Clark <robdclark@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lina Iyer <lina.iyer@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 22 Jan 2015 20:20:52 -0500
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Holler <holler@ahsoftware.de>
+Subject: [PATCH] modsign: provide option to automatically delete the key after modules were installed
+Date: Fri, 23 Jan 2015 02:20:09 +0100
+Message-Id: <1421976009-9819-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 2.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 8:13 PM, Olof Johansson <olof@lixom.net> wrote:
-> I just saw this in the pull request from Kumar, so this is a bit late
-> w.r.t. to the patch, but so was his merging of the code. :)
->
->
->
-> On Mon, Aug 4, 2014 at 6:31 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> Architectural changes in the ARM Linux kernel tree mandate
->> the eventual removal of the mach-* directories. Move the
->> scm driver to drivers/soc/qcom and the scm header to
->> include/soc/qcom to support that removal.
->
-> The idea is not blindly move one dumping ground to a new place.
->
-> I see only two exported functions from scm.c:
->
-> scm_get_version: This is not used anywhere in the kernel and can just be removed
-> scm_call: This is used by scm-boot, and would be better to translate
-> over to firmware_ops in the first place.
->
->
-> So, can you please rework this with the above in mind instead of just
-> moving the files over? Thanks!
->
+I usually throw away (delete) the key used to sign modules after having
+called make -jN (b)zImage modules && make -jN modules_install. Because I've
+got bored to always have to type rm signing_key.* afterwards, I've build
+this patch some time ago.
+As I'm not eager anymore to publish kernel patches, it rested in my private
+chest of patches until I've seen the keynote of Linux.conf.au 2015. It made
+me aware that this patch might have a chance to become included. ;)
 
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+---
+ Makefile     |  7 +++++++
+ init/Kconfig | 12 ++++++++++++
+ 2 files changed, 19 insertions(+)
 
-jfyi, we have some pending drm/msm patches blocked on this move
+diff --git a/Makefile b/Makefile
+index fb93350..95e07ca 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1129,6 +1129,13 @@ _modinst_:
+ 	@cp -f $(objtree)/modules.order $(MODLIB)/
+ 	@cp -f $(objtree)/modules.builtin $(MODLIB)/
+ 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modinst
++ifeq ($(CONFIG_MODULE_SIG_THROW_AWAY), y)
++	@echo "###"
++	@echo "### Deleting key used to sign modules."
++	@echo "###"
++	@rm ./signing_key.priv
++	@rm ./signing_key.x509
++endif
+ 
+ # This depmod is only for convenience to give the initial
+ # boot a modules.dep even before / is mounted read-write.  However the
+diff --git a/init/Kconfig b/init/Kconfig
+index 9afb971..f29304e 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1884,6 +1884,18 @@ config MODULE_SIG_ALL
+ 	  Sign all modules during make modules_install. Without this option,
+ 	  modules must be signed manually, using the scripts/sign-file tool.
+ 
++config MODULE_SIG_THROW_AWAY
++	bool "Automatically delete the key after modules were installed"
++	default n
++	depends on MODULE_SIG_ALL
++	help
++	  Delete the key used to sign modules after modules were installed.
++	  Be aware of the consequences. The downside is that you  won't be
++	  able to build any module for a (maybe running) kernel, but will
++	  have to rebuild the kernel and all modules in order to add or modify
++	  a module. The upside is that you don't have to secure the key in
++	  order to keep a running kernel safe from unwanted modules.
++
+ comment "Do not forget to sign required modules with scripts/sign-file"
+ 	depends on MODULE_SIG_FORCE && !MODULE_SIG_ALL
+ 
+-- 
+2.0.5
 
-(not trying to comment one way or another on whether all or some
-should be moved..  just pointing out there would be more in-tree users
-of it if it was moved)
-
-BR,
--R
-
->
-> -Olof
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
