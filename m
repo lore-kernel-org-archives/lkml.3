@@ -1,87 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058AbbAWRkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:40:37 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:59092 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914AbbAWRkb (ORCPT
+	id S1756089AbbAWRkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 12:40:47 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:51424 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755914AbbAWRkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:40:31 -0500
-Date: Fri, 23 Jan 2015 17:40:13 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jean-Francois Moine <moinejf@free.fr>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Jyri Sarha <jsarha@ti.com>
-Message-ID: <20150123174013.GV21293@sirena.org.uk>
-References: <cover.1421868426.git.moinejf@free.fr>
- <d0c66c2e2f200119f9990fa52a503b1a4af6238f.1421868426.git.moinejf@free.fr>
- <54C0088F.9070609@metafoo.de>
- <20150122090723.50ac0156@armhf>
- <54C14EB3.8080305@metafoo.de>
- <20150123131554.623003f9@armhf>
- <54C252F4.9000504@metafoo.de>
+	Fri, 23 Jan 2015 12:40:41 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="R9dSeJxMIUBTi9Do"
-Content-Disposition: inline
-In-Reply-To: <54C252F4.9000504@metafoo.de>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v2 3/3] ASoC: add generic dt-card support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20150123162126.GD9557@e104818-lin.cambridge.arm.com>
+References: <1418110007-13270-1-git-send-email-zhichang.yuan@linaro.org>
+	<20150123162126.GD9557@e104818-lin.cambridge.arm.com>
+Date: Fri, 23 Jan 2015 17:40:40 +0000
+Message-ID: <CAKv+Gu8OQB+eziL6X85-v-+9KKPsK6Z=h2+1oDrM9imnSU8drg@mail.gmail.com>
+Subject: Re: [PATCHv2] arm64:mm: free the useless initial page table
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "zhichang.yuan@linaro.org" <zhichang.yuan@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "liguozhu@huawei.com" <liguozhu@huawei.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        Laura Abbott <lauraa@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 23 January 2015 at 16:21, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Tue, Dec 09, 2014 at 07:26:47AM +0000, zhichang.yuan@linaro.org wrote:
+>> From: "zhichang.yuan" <zhichang.yuan@linaro.org>
+>>
+>> For 64K page system, after mapping a PMD section, the corresponding initial
+>> page table is not needed any more. That page can be freed.
+>>
+>> Changes since v1:
+>>
+>> * make consistent code between alloc_init_pmd and alloc_init_pud;
+>> * flush the TLB before the unused page table is freed;
+>>
+>> Signed-off-by: Zhichang Yuan <zhichang.yuan@linaro.org>
+>
+> I thought about queuing this patch but I realised that
+> alloc_init_pmd/pud may be called in a late context where memblock_free()
+> would no longer make sense. Cc'ing Laura and Ard for any ideas here but
+> I think we may just end up with a few old page table pages sitting
+> around (not many though). In general we don't go from smaller to larger
+> mappings (that's what this patch targets) but given the API, I'm not
+> sure we have any guarantee.
+>
+> One solution would be to check for alloc == early_alloc or something
+> similar. Cc'ing Laura and Ard as they added the create_mapping_late()
+> code.
+>
 
---R9dSeJxMIUBTi9Do
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The UEFI page tables are only built up once, based on a series of
+disjoint memory regions, so that will never hit either of the
+memblock_free() branches.
+And AFAICT, the DEBUG_RODATA code does the splitting early, which
+causes the create_mapping_late() code to only change permissions, not
+change the granularity of any regions.
 
-On Fri, Jan 23, 2015 at 02:56:04PM +0100, Lars-Peter Clausen wrote:
-> On 01/23/2015 01:15 PM, Jean-Francois Moine wrote:
+Perhaps it's sufficient to add a comment and a BUG_ON(alloc !=
+early_alloc) to the memblock_free() branches?
 
-> >>Your example is a relative simple one where you do not have any additio=
-nal
-> >>audio fabric on the board itself.
+-- 
+Ard.
 
-> >Right, and that's why I'd be glad to have quickly something in the
-> >kernel. More properties could be added later as there would be requests.
 
-> I'd agree if this was some kind of kernel internal stuff, but this is
-> creating ABI and we have to maintain it forever. Rushing this in without
-> proper discussion and consideration of the more complex use-cases is in my
-> opinion not a good idea.
-
-Just to repeat myself again: *please* try to provide more explanation
-for your commits, the concerns Lars is raising above are among the
-things that I'd have expected to be covered in a high quality changelog. =
-=20
-There is no explanation at all in the changelog regarding the goal here,
-just statements that this is a graph based card without an actual card
-node.
-
---R9dSeJxMIUBTi9Do
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUwod8AAoJECTWi3JdVIfQ1MMH+gMkwDNLlNqCI+AGUfu7VHU4
-grl3CdjfAwThmj7dLL5ciTzfspxh/fB8+xxSexmeC522wF1QmNtSrnr5h+tSETYY
-bTIuu39riAuuwmN7jdowIipaQdo3gp21xnbBxPLO1PnZUxj5CKt0gj46xNkTAkFH
-sjOtF8JBJN1hdIQh6LYHqz7nnweWZDMR667TTw/45VmozrILzOPENrWLQo7/0B+y
-SvvlNLsCJMUcnYeJP9+psXZnYul8bn5bWtSDhlo12BffsLVu43lztQxfkiokfSHs
-PW76D+XNw+FMC+XPObMY532DaBNvFISQL53bKQghHgA1JMpbuh5MozX7RSkWNL4=
-=8/iP
------END PGP SIGNATURE-----
-
---R9dSeJxMIUBTi9Do--
+>> ---
+>>  arch/arm64/include/asm/pgtable.h |    3 +++
+>>  arch/arm64/mm/mmu.c              |   15 ++++++++++++---
+>>  2 files changed, 15 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+>> index 41a43bf..8a135b6 100644
+>> --- a/arch/arm64/include/asm/pgtable.h
+>> +++ b/arch/arm64/include/asm/pgtable.h
+>> @@ -337,9 +337,12 @@ extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
+>>
+>>  #ifdef CONFIG_ARM64_64K_PAGES
+>>  #define pud_sect(pud)                (0)
+>> +#define pud_table(pud)               (1)
+>>  #else
+>>  #define pud_sect(pud)                ((pud_val(pud) & PUD_TYPE_MASK) == \
+>>                                PUD_TYPE_SECT)
+>> +#define pud_table(pud)               ((pud_val(pud) & PUD_TYPE_MASK) == \
+>> +                                     PUD_TYPE_TABLE)
+>>  #endif
+>>
+>>  static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
+>> diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+>> index f4f8b50..515f75b 100644
+>> --- a/arch/arm64/mm/mmu.c
+>> +++ b/arch/arm64/mm/mmu.c
+>> @@ -191,8 +191,14 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+>>                        * Check for previous table entries created during
+>>                        * boot (__create_page_tables) and flush them.
+>>                        */
+>> -                     if (!pmd_none(old_pmd))
+>> +                     if (!pmd_none(old_pmd)) {
+>>                               flush_tlb_all();
+>> +                             if (pmd_table(old_pmd)) {
+>> +                                     phys_addr_t table = __pa(pte_offset_map(&old_pmd, 0));
+>> +
+>> +                                     memblock_free(table, PAGE_SIZE);
+>> +                             }
+>> +                     }
+>>               } else {
+>>                       alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys),
+>>                                      prot_pte);
+>> @@ -234,9 +240,12 @@ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+>>                        * Look up the old pmd table and free it.
+>>                        */
+>>                       if (!pud_none(old_pud)) {
+>> -                             phys_addr_t table = __pa(pmd_offset(&old_pud, 0));
+>> -                             memblock_free(table, PAGE_SIZE);
+>>                               flush_tlb_all();
+>> +                             if (pud_table(old_pud)) {
+>> +                                     phys_addr_t table = __pa(pmd_offset(&old_pud, 0));
+>> +
+>> +                                     memblock_free(table, PAGE_SIZE);
+>> +                             }
+>>                       }
+>>               } else {
+>>                       alloc_init_pmd(pud, addr, next, phys, map_io);
+>> --
+>> 1.7.9.5
