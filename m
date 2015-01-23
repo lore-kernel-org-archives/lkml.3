@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206AbbAWJZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:25:14 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45821 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748AbbAWJZL (ORCPT
+	id S1754625AbbAWJbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:31:06 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:53070 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191AbbAWJbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:25:11 -0500
-Date: Fri, 23 Jan 2015 10:25:08 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] sched, timer: Use atomics for thread_group_cputimer
- stats
-Message-ID: <20150123092508.GJ2896@worktop.programming.kicks-ass.net>
-References: <1421983913.4432.22.camel@j-VirtualBox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421983913.4432.22.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Fri, 23 Jan 2015 04:31:03 -0500
+From: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+To: varkabhadram@gmail.com, alex.aring@gmail.com, linux-wpan@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+Subject: [PATCH] net: ieee802154: cc2520: Fix coding style issues
+Date: Fri, 23 Jan 2015 14:56:20 +0530
+Message-Id: <1422005180-13230-1-git-send-email-md.jamalmohiuddin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 07:31:53PM -0800, Jason Low wrote:
-> +static void update_gt_cputime(struct thread_group_cputimer *a, struct task_cputime *b)
->  {
-> +	if (b->utime > atomic64_read(&a->utime))
-> +		atomic64_set(&a->utime, b->utime);
->  
-> +	if (b->stime > atomic64_read(&a->stime))
-> +		atomic64_set(&a->stime, b->stime);
->  
-> +	if (b->sum_exec_runtime > atomic64_read(&a->sum_exec_runtime))
-> +		atomic64_set(&a->sum_exec_runtime, b->sum_exec_runtime);
->  }
+This patch solves the coding style issues such as space after ,
+and removes the blank lines
 
-See something like this is not safe against concurrent adds.
+Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+---
+ drivers/net/ieee802154/cc2520.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ieee802154/cc2520.c b/drivers/net/ieee802154/cc2520.c
+index f9df9fa..dd129be 100644
+--- a/drivers/net/ieee802154/cc2520.c
++++ b/drivers/net/ieee802154/cc2520.c
+@@ -513,7 +513,6 @@ err_tx:
+ 	return rc;
+ }
+ 
+-
+ static int cc2520_rx(struct cc2520_private *priv)
+ {
+ 	u8 len = 0, lqi = 0, bytes = 1;
+@@ -551,14 +550,14 @@ cc2520_ed(struct ieee802154_hw *hw, u8 *level)
+ 	u8 rssi;
+ 	int ret;
+ 
+-	ret = cc2520_read_register(priv , CC2520_RSSISTAT, &status);
++	ret = cc2520_read_register(priv, CC2520_RSSISTAT, &status);
+ 	if (ret)
+ 		return ret;
+ 
+ 	if (status != RSSI_VALID)
+ 		return -EINVAL;
+ 
+-	ret = cc2520_read_register(priv , CC2520_RSSI, &rssi);
++	ret = cc2520_read_register(priv, CC2520_RSSI, &rssi);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -947,7 +946,6 @@ static int cc2520_probe(struct spi_device *spi)
+ 	if (ret)
+ 		goto err_hw_init;
+ 
+-
+ 	gpio_set_value(pdata->vreg, HIGH);
+ 	usleep_range(100, 150);
+ 
+-- 
+1.7.9.5
+
