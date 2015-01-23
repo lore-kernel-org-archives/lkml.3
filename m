@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548AbbAWPIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:08:39 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:51640 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbbAWPIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:08:37 -0500
-Message-ID: <54C263CC.1060904@roeck-us.net>
-Date: Fri, 23 Jan 2015 07:07:56 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1755350AbbAWPMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:12:15 -0500
+Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:16716
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752593AbbAWPML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 10:12:11 -0500
+X-WSS-ID: 0NIMY7R-08-4S9-02
+X-M-MSG: 
+Message-ID: <54C264B1.5090508@amd.com>
+Date: Fri, 23 Jan 2015 09:11:45 -0600
+From: Tom Lendacky <thomas.lendacky@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
- page tables to the process'
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050445.GA22751@roeck-us.net> <20150123111304.GA5975@node.dhcp.inet.fi>
-In-Reply-To: <20150123111304.GA5975@node.dhcp.inet.fi>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, <linux-kernel@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "open list:AMD CRYPTOGRAPHIC..." <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH] crypto: ccp: terminate ccp_support array with empty element
+References: <1421852791-29679-1-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1421852791-29679-1-git-send-email-a.ryabinin@samsung.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.54C263F4.03C6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 7
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Thomas.Lendacky@amd.com; davemloft.net; dkim=none (message not
+ signed) header.d=none;davemloft.net; dmarc=permerror action=none
+ header.from=amd.com;
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(479174004)(51704005)(377454003)(24454002)(65956001)(105586002)(33656002)(50466002)(77096005)(107886001)(65806001)(87936001)(47776003)(83506001)(80316001)(19580405001)(19580395003)(106466001)(76176999)(54356999)(65816999)(50986999)(86362001)(59896002)(62966003)(46102003)(2950100001)(77156002)(23746002)(92566002)(101416001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR02MB194;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB194;
+X-Forefront-PRVS: 0465429B7F
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Jan 2015 15:11:54.2139
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 03:13 AM, Kirill A. Shutemov wrote:
-> On Thu, Jan 22, 2015 at 09:04:45PM -0800, Guenter Roeck wrote:
->> On Thu, Jan 22, 2015 at 03:05:17PM -0800, akpm@linux-foundation.org wrote:
->>> The mm-of-the-moment snapshot 2015-01-22-15-04 has been uploaded to
->>>
->>>     http://www.ozlabs.org/~akpm/mmotm/
->>>
->> qemu:sh fails to shut down.
->>
->> bisect log:
->>
->> # bad: [03586ad04b2170ee816e6936981cc7cd2aeba129] pci: test for unexpectedly disabled bridges
->> # good: [ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc] Linux 3.19-rc5
->> git bisect start 'HEAD' 'v3.19-rc5'
->> # bad: [d113ba21d15c7d3615fd88490d1197615bb39fc0] mm: remove lock validation check for MADV_FREE
->> git bisect bad d113ba21d15c7d3615fd88490d1197615bb39fc0
->> # good: [17351d1625a5030fa16f1346b77064c03b51f107] mm:add KPF_ZERO_PAGE flag for /proc/kpageflags
->> git bisect good 17351d1625a5030fa16f1346b77064c03b51f107
->> # good: [ad18ad1fce6f241a9cbd4adfd6b16c9283181e39] memcg: add BUILD_BUG_ON() for string tables
->> git bisect good ad18ad1fce6f241a9cbd4adfd6b16c9283181e39
->> # bad: [aa7e7cbfa43b74f6faef04ff730b5098544a4f77] mm/compaction: enhance tracepoint output for compaction begin/end
->> git bisect bad aa7e7cbfa43b74f6faef04ff730b5098544a4f77
->> # good: [a40d0d2cf21e2714e9a6c842085148c938bf36ab] mm: memcontrol: remove unnecessary soft limit tree node test
->> git bisect good a40d0d2cf21e2714e9a6c842085148c938bf36ab
->> # good: [4ec4aa2e07c1d6eee61f6cace29401c6febcb6c5] mm: make FIRST_USER_ADDRESS unsigned long on all archs
->> git bisect good 4ec4aa2e07c1d6eee61f6cace29401c6febcb6c5
->> # bad: [22310c209483224a64436a6e815a86feda681659] mm: account pmd page tables to the process
->> git bisect bad 22310c209483224a64436a6e815a86feda681659
->> # good: [19a41261b1dcd8d12372d9c57c2035144608a599] arm: define __PAGETABLE_PMD_FOLDED for !LPAE
->> git bisect good 19a41261b1dcd8d12372d9c57c2035144608a599
->> # first bad commit: [22310c209483224a64436a6e815a86feda681659] mm: account pmd page tables to the process
->>
->> ---
->>
->> qemu:microblaze generates warnings to the console.
->>
->> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
->>
->> with various call stacks. See
->> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
->> for details.
+On 01/21/2015 09:06 AM, Andrey Ryabinin wrote:
+> x86_match_cpu() expects array of x86_cpu_ids terminated
+> with empty element.
 >
-> Could you try patch below? Completely untested.
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+
+Acked-by: Tom Lendacky <thomas.lendacky@amd.com>
+
+> ---
+>   drivers/crypto/ccp/ccp-dev.c | 1 +
+>   1 file changed, 1 insertion(+)
 >
->>From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Date: Fri, 23 Jan 2015 13:08:26 +0200
-> Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
+> diff --git a/drivers/crypto/ccp/ccp-dev.c b/drivers/crypto/ccp/ccp-dev.c
+> index c6e6171..ca29c12 100644
+> --- a/drivers/crypto/ccp/ccp-dev.c
+> +++ b/drivers/crypto/ccp/ccp-dev.c
+> @@ -583,6 +583,7 @@ bool ccp_queues_suspended(struct ccp_device *ccp)
+>   #ifdef CONFIG_X86
+>   static const struct x86_cpu_id ccp_support[] = {
+>   	{ X86_VENDOR_AMD, 22, },
+> +	{ },
+>   };
+>   #endif
 >
-> Microblaze uses custom implementation of PMD folding, but doesn't define
-> __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
 >
-> Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
-> It also fixes problems with recently-introduced pmd accounting.
->
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Reported-by: Guenter Roeck <linux@roeck-us.net>
-
-Tested working.
-
-Tested-by: Guenter Roeck <linux@roeck-us.net>
-
-Any idea how to fix the sh problem ?
-
-Thanks,
-Guenter
-
