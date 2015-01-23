@@ -1,107 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092AbbAWR60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:58:26 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:61783 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844AbbAWR6X (ORCPT
+	id S1756133AbbAWSAU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:00:20 -0500
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:63282 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530AbbAWSAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:58:23 -0500
+	Fri, 23 Jan 2015 13:00:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <54C17139.1040706@oracle.com>
-References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
- <54C17139.1040706@oracle.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 23 Jan 2015 09:58:01 -0800
-Message-ID: <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+In-Reply-To: <CALAqxLVGquBDT-rgLhPi068Y3BYXLUNJu-okPb4sh4+vTfqFBw@mail.gmail.com>
+References: <1421928077-4698-1-git-send-email-pang.xunlei@linaro.org>
+	<CALAqxLVGquBDT-rgLhPi068Y3BYXLUNJu-okPb4sh4+vTfqFBw@mail.gmail.com>
+Date: Sat, 24 Jan 2015 02:00:17 +0800
+Message-ID: <CADcy93XFB0q3NayE2cxgHwGC4bLaHehyEe8TE_t4curssF8jMw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] time: Don't bother to run rtc_resume() for the
+ nonstop clocksource
+From: Xunlei Pang <pang.xunlei@linaro.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 1:52 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> On 11/21/2014 04:26 PM, Andy Lutomirski wrote:
->> We currently pretend that IST context is like standard exception
->> context, but this is incorrect.  IST entries from userspace are like
->> standard exceptions except that they use per-cpu stacks, so they are
->> atomic.  IST entries from kernel space are like NMIs from RCU's
->> perspective -- they are not quiescent states even if they
->> interrupted the kernel during a quiescent state.
+On 23 January 2015 at 02:30, John Stultz <john.stultz@linaro.org> wrote:
+> On Thu, Jan 22, 2015 at 4:01 AM, Xunlei Pang <pang.xunlei@linaro.org> wrote:
+>> If a system does not provide a persistent_clock(), the time
+>> will be updated on resume by rtc_resume(). With the addition
+>> of the non-stop clocksources for suspend timing, those systems
+>> set the time on resume in timekeeping_resume(), but may not
+>> provide a valid persistent_clock().
 >>
->> Add and use ist_enter and ist_exit to track IST context.  Even
->> though x86_32 has no IST stacks, we track these interrupts the same
->> way.
+>> This results in the rtc_resume() logic thinking no one has set
+>> the time and it then will over-write the suspend time again,
+>> which is not necessary and only increases clock error.
 >>
->> This fixes two issues:
+>> So, fix this for rtc_resume().
 >>
->>  - Scheduling from an IST interrupt handler will now warn.  It would
->>    previously appear to work as long as we got lucky and nothing
->>    overwrote the stack frame.  (I don't know of any bugs in this
->>    that would trigger the warning, but it's good to be on the safe
->>    side.)
+>> Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
+>> ---
+>> v1->v2:
+>> Modify according to Thomas' feedback.
 >>
->>  - RCU handling in IST context was dangerous.  As far as I know,
->>    only machine checks were likely to trigger this, but it's good to
->>    be on the safe side.
+>>  drivers/rtc/class.c         |  2 +-
+>>  include/linux/timekeeping.h |  7 +++++++
+>>  kernel/time/timekeeping.c   | 16 +++++-----------
+>>  3 files changed, 13 insertions(+), 12 deletions(-)
 >>
->> Note that the machine check handlers appears to have been missing
->> any context tracking at all before this patch.
+>> diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+>> index 472a5ad..6100af5 100644
+>> --- a/drivers/rtc/class.c
+>> +++ b/drivers/rtc/class.c
+>> @@ -102,7 +102,7 @@ static int rtc_resume(struct device *dev)
+>>         struct timespec64       sleep_time;
+>>         int err;
+>>
+>> -       if (has_persistent_clock())
+>> +       if (timekeeping_sleeptime_injected())
+>>                 return 0;
+>>
+>>         rtc_hctosys_ret = -ENODEV;
+>> diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
+>> index 9b63d13..2b87c64 100644
+>> --- a/include/linux/timekeeping.h
+>> +++ b/include/linux/timekeeping.h
+>> @@ -238,6 +238,13 @@ extern void getnstime_raw_and_real(struct timespec *ts_raw,
+>>   */
+>>  extern bool persistent_clock_exist;
+>>  extern int persistent_clock_is_local;
+>> +extern bool timekeeping_sleeptime_inject;
+>> +
+>> +/* Used by rtc_resume() */
+>> +static inline bool timekeeping_sleeptime_injected(void)
+>> +{
+>> +       return timekeeping_sleeptime_inject;
+>> +}
+>>
 >
-> Hi Andy, Paul,
->
-> I *suspect* that the following is a result of this commit:
->
-> [  543.999079] ===============================
-> [  543.999079] [ INFO: suspicious RCU usage. ]
-> [  543.999079] 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1809 Not tainted
-> [  543.999079] -------------------------------
-> [  543.999079] include/linux/rcupdate.h:892 rcu_read_lock() used illegally while idle!
-> [  543.999079]
-> [  543.999079] other info that might help us debug this:
-> [  543.999079]
-> [  543.999079]
-> [  543.999079] RCU used illegally from idle CPU!
-> [  543.999079] rcu_scheduler_active = 1, debug_locks = 1
-> [  543.999079] RCU used illegally from extended quiescent state!
-> [  543.999079] 1 lock held by trinity-main/15058:
-> [  543.999079] #0: (rcu_read_lock){......}, at: atomic_notifier_call_chain (kernel/notifier.c:192)
-> [  543.999079]
-> [  543.999079] stack backtrace:
-> [  543.999079] CPU: 16 PID: 15058 Comm: trinity-main Not tainted 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1809
-> [  543.999079]  0000000000000000 0000000000000000 0000000000000001 ffff8801af907d88
-> [  543.999079]  ffffffff92e9e917 0000000000000011 ffff8801afcf8000 ffff8801af907db8
-> [  543.999079]  ffffffff815f5613 ffffffff9654d4a0 0000000000000003 ffff8801af907e28
-> [  543.999079] Call Trace:
-> [  543.999079] dump_stack (lib/dump_stack.c:52)
-> [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
-> [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
-> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
-> [  543.999079] notify_die (kernel/notifier.c:538)
-> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
-> [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
-> [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
-> [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
-> [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
-> [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
-> [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
+> Again, there's no reason to make this a static inline, nor the
+> sleeptime_inject variable global.
+> Just make it a function in timekeeping and provide definition so it
+> can be used by the rtc resume.
 
-I don't know how to read this stack trace.  Are we in do_int3,
-do_debug, or both?  I didn't change do_debug at all.
 
-I think that nesting exception_enter inside rcu_nmi_enter should be
-okay (and it had better be, even in old kernels, because I think perf
-does that).
+Hi John,
 
-So you have any idea what you (or trinity) did to trigger this?
+Thanks for your comments, I've refined it, is this one ok?
 
---Andy
+---
+ drivers/rtc/class.c         |  2 +-
+ include/linux/timekeeping.h |  1 +
+ kernel/time/timekeeping.c   | 32 ++++++++++++++++++++------------
+ 3 files changed, 22 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 472a5ad..6100af5 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -102,7 +102,7 @@ static int rtc_resume(struct device *dev)
+  struct timespec64 sleep_time;
+  int err;
+
+- if (has_persistent_clock())
++ if (timekeeping_sleeptime_injected())
+  return 0;
+
+  rtc_hctosys_ret = -ENODEV;
+diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
+index 9b63d13..17a460d 100644
+--- a/include/linux/timekeeping.h
++++ b/include/linux/timekeeping.h
+@@ -225,6 +225,7 @@ static inline void timekeeping_clocktai(struct timespec *ts)
+ /*
+  * RTC specific
+  */
++extern bool timekeeping_sleeptime_injected(void);
+ extern void timekeeping_inject_sleeptime64(struct timespec64 *delta);
+
+ /*
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 6a93185..b02133e 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1125,12 +1125,26 @@ static void
+__timekeeping_inject_sleeptime(struct timekeeper *tk,
+  tk_debug_account_sleep_time(delta);
+ }
+
++static bool sleeptime_inject;
++
++#if defined(CONFIG_RTC_CLASS) && \
++ defined(CONFIG_PM_SLEEP) && \
++ defined(CONFIG_RTC_HCTOSYS_DEVICE)
++/**
++ * Used by rtc_resume().
++ */
++bool timekeeping_sleeptime_injected(void)
++{
++ return sleeptime_inject;
++}
++
+ /**
+  * timekeeping_inject_sleeptime64 - Adds suspend interval to
+timeekeeping values
+  * @delta: pointer to a timespec64 delta value
+  *
+  * This hook is for architectures that cannot support read_persistent_clock
+- * because their RTC/persistent clock is only accessible when irqs are enabled.
++ * because their RTC/persistent clock is only accessible when irqs are enabled,
++ * and also don't have an effective nonstop clocksource.
+  *
+  * This function should only be called by rtc_resume(), and allows
+  * a suspend offset to be injected into the timekeeping values.
+@@ -1140,13 +1154,6 @@ void timekeeping_inject_sleeptime64(struct
+timespec64 *delta)
+  struct timekeeper *tk = &tk_core.timekeeper;
+  unsigned long flags;
+
+- /*
+- * Make sure we don't set the clock twice, as timekeeping_resume()
+- * already did it
+- */
+- if (has_persistent_clock())
+- return;
+-
+  raw_spin_lock_irqsave(&timekeeper_lock, flags);
+  write_seqcount_begin(&tk_core.seq);
+
+@@ -1162,6 +1169,7 @@ void timekeeping_inject_sleeptime64(struct
+timespec64 *delta)
+  /* signal hrtimers about time change */
+  clock_was_set();
+ }
++#endif
+
+ /**
+  * timekeeping_resume - Resumes the generic timekeeping subsystem.
+@@ -1178,8 +1186,8 @@ static void timekeeping_resume(void)
+  struct timespec64 ts_new, ts_delta;
+  struct timespec tmp;
+  cycle_t cycle_now, cycle_delta;
+- bool suspendtime_found = false;
+
++ sleeptime_inject = false;
+  read_persistent_clock(&tmp);
+  ts_new = timespec_to_timespec64(tmp);
+
+@@ -1226,13 +1234,13 @@ static void timekeeping_resume(void)
+  nsec += ((u64) cycle_delta * mult) >> shift;
+
+  ts_delta = ns_to_timespec64(nsec);
+- suspendtime_found = true;
++ sleeptime_inject = true;
+  } else if (timespec64_compare(&ts_new, &timekeeping_suspend_time) > 0) {
+  ts_delta = timespec64_sub(ts_new, timekeeping_suspend_time);
+- suspendtime_found = true;
++ sleeptime_inject = true;
+  }
+
+- if (suspendtime_found)
++ if (sleeptime_inject)
+  __timekeeping_inject_sleeptime(tk, &ts_delta);
+
+  /* Re-base the last cycle value */
+-- 
+1.9.1
