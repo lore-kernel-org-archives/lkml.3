@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbbAWLmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:42:37 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37557 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836AbbAWLmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:42:35 -0500
-Date: Fri, 23 Jan 2015 12:42:29 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: linux-kernel@vger.kernel.org, corbet@lwn.net, akpm@linux-foundation.org,
-        mingo@kernel.org, riel@redhat.com
-Subject: Re: [PATCH] Doc: Add default behavior of panic parameter in
- kernel.txt
-Message-ID: <20150123114229.GE22635@pd.tnic>
-References: <1422001207-13097-1-git-send-email-standby24x7@gmail.com>
+	id S1754114AbbAWLoF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:44:05 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45295 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbbAWLoD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 06:44:03 -0500
+Message-ID: <54C233FB.3080309@ahsoftware.de>
+Date: Fri, 23 Jan 2015 12:43:55 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1422001207-13097-1-git-send-email-standby24x7@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] modsign: provide option to automatically delete the key
+ after modules were installed
+References: <1421976009-9819-1-git-send-email-holler@ahsoftware.de> <54C21361.1080500@suse.cz> <54C216D8.8040004@ahsoftware.de> <54C21F35.1040206@ahsoftware.de> <54C22891.6070506@suse.cz>
+In-Reply-To: <54C22891.6070506@suse.cz>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 05:20:07PM +0900, Masanari Iida wrote:
-> This patch adds default behavior of panic parameter in kernel.txt
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  Documentation/sysctl/kernel.txt | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> index 75511ef..3cae2bd 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -527,6 +527,8 @@ panic:
->  The value in this file represents the number of seconds the kernel
->  waits before rebooting on a panic. When you use the software watchdog,
->  the recommended setting is 60.
-> +A value of 0 will disable rebooting on a panic.
-> +The default is 0.
+Am 23.01.2015 um 11:55 schrieb Michal Marek:
+> On 2015-01-23 11:15, Alexander Holler wrote:
+>> Am 23.01.2015 um 10:39 schrieb Alexander Holler:
+>>> Am 23.01.2015 um 10:24 schrieb Michal Marek:
+>>>
+>>>>> +	@rm ./signing_key.priv
+>>>>> +	@rm ./signing_key.x509
+>>>>
+>>>> Why do you need to delete the certificate?
+>>>
+>>> No special reason.
+>>>
+>>> I'm just not sure (and too lazy to look it up) if it might contain the
+>>> private key too (like it's possible in pem files), so I've deleted it too.
+>>
+>> Or in other words, while .priv leads me to the educated guess that it
+>> contains the private key, .x509 doesn't give me an obvious indication
+>> what it contains.
+>>
+>> If someone assures me that .x509 doesn't contain the private key
+>> necessary to sign the modules, I'll send a v2 of the patch.
+>
+> The .x509 file contains a certificate signed by the private key, but not
+> the private key. With some scripting, it can be used to verify the
+> module signatures.
 
-Just copy the Kconfig text for uniformity (well, almost - it might need
-adjusting to fit the tone/nomenclature of that file):
 
-          A value of 0, then we wait forever. A timeout value n > 0 will
-          wait n seconds before rebooting, while a timeout value n < 0
-          will reboot immediately.
+Assuming that doesn't change (hopefully), I'll send v2 in a few minutes 
+(it just compiles in order to test it). Thanks for assuring me that 
+.x509 does not and will not contain the private key.
 
--- 
-Regards/Gruss,
-    Boris.
+Regards,
 
-ECO tip #101: Trim your mails when you reply.
---
+Alexander Holler
