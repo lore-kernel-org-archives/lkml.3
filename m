@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223AbbAWSHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:07:36 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:59026 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756008AbbAWSHf (ORCPT
+	id S1756239AbbAWSJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:09:54 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:17017 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097AbbAWSJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:07:35 -0500
-Message-ID: <1422036451.2436.10.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH] sched, timer: Use atomics for thread_group_cputimer
- stats
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org,
-        jason.low2@hp.com
-Date: Fri, 23 Jan 2015 10:07:31 -0800
-In-Reply-To: <20150123093341.GK2896@worktop.programming.kicks-ass.net>
-References: <1421983913.4432.22.camel@j-VirtualBox>
-	 <20150123093341.GK2896@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 23 Jan 2015 13:09:52 -0500
+X-IronPort-AV: E=Sophos;i="5.09,455,1418112000"; 
+   d="scan'208";a="55310031"
+Message-ID: <54C28E6B.8090408@broadcom.com>
+Date: Fri, 23 Jan 2015 19:09:47 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Kalle Valo <kvalo@codeaurora.org>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
+        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
+        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
+        <hdegoede@redhat.com>, <wens@csie.org>,
+        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
+        <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+References: <54BDCC06.8090107@linux.intel.com>	<87twzincvz.fsf@kamboji.qca.qualcomm.com>	<54C1012F.1020400@cogentembedded.com> <54C1646B.4080409@broadcom.com> <87y4otldln.fsf@kamboji.qca.qualcomm.com>
+In-Reply-To: <87y4otldln.fsf@kamboji.qca.qualcomm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 10:33 +0100, Peter Zijlstra wrote:
-> > +		.running = ATOMIC_INIT(0),                              \
-> > +	atomic_t running;
-> > +		atomic_set(&sig->cputimer.running, 1);
-> > @@ -174,7 +174,7 @@ static inline bool cputimer_running(struct task_struct *tsk)
-> > +	if (!atomic_read(&cputimer->running))
-> > +	if (!atomic_read(&cputimer->running)) {
-> > +		atomic_set(&cputimer->running, 1);
-> > +	if (atomic_read(&tsk->signal->cputimer.running))
-> > +	atomic_set(&cputimer->running, 0);
-> > +	if (atomic_read(&sig->cputimer.running)) {
-> > +	if (atomic_read(&tsk->signal->cputimer.running))
-> 
-> That doesn't really need an atomic_t.
+On 01/23/15 16:29, Kalle Valo wrote:
+> Arend van Spriel<arend@broadcom.com>  writes:
+>
+>> On 01/22/15 14:54, Sergei Shtylyov wrote:
+>>> Hello.
+>>>
+>>> On 1/22/2015 4:49 PM, Kalle Valo wrote:
+>>>
+>>>>> > From 04d3fa673897ca4ccbea6c76836d0092dba2484a Mon Sep 17 00:00:00 2001
+>>>>> From: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+>>>>> Date: Tue, 20 Jan 2015 11:14:13 +0800
+>>>>> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+>>>
+>>>>> WiFi chip has 2 SDIO functions, and PM core will trigger
+>>>>> twice suspend/resume operations for one WiFi chip to do
+>>>>> the same things. This patch avoid this case.
+>>>
+>>>>> Acked-by: Arend van Spriel<arend@broadcom.com>
+>>>>> Acked-by: Sergei Shtylyov<sergei.shtylyov@cogentembedded.com>
+>>>>> Acked-by: Kalle Valo<kvalo@codeaurora.org>
+>>>>> Signed-off-by: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+>>>
+>>>> I don't remember giving Acked-by to this (or for matter to anything for
+>>>> a long time). What about Sergei or Arend?
+>>>
+>>> I haven't ACK'ed this patch either.
+>>
+>> I did ACK the initial patch and felt it still valid for this 'V2' patch.
+>
+> Ok, thanks. So the patch is good, Zhonghui just needs to remove the two
+> acked-by lines.
 
-Yeah, I was wondering about that, and made it atomic since we had:
+Indeed.
 
-    raw_spin_lock_irqsave(&cputimer->lock, flags);
-    cputimer->running = 0;
-    raw_spin_unlock_irqrestore(&cputimer->lock, flags);
-
-in stop_process_timers().
-
+Regards,
+Arend
