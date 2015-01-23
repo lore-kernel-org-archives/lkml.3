@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328AbbAWQ1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:27:55 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:56535 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944AbbAWQ1w convert rfc822-to-8bit (ORCPT
+	id S1755786AbbAWQci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:32:38 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:39773 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752301AbbAWQch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:27:52 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] MAINTAINERS: update Qualcomm support entry
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20150122214644.GB8057@qualcomm.com>
-Date: Fri, 23 Jan 2015 10:27:48 -0600
-Cc: Joe Perches <joe@perches.com>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8D1CBBAD-4C1D-474A-81F6-FDD882154BE0@codeaurora.org>
-References: <1421901564-8854-1-git-send-email-agross@codeaurora.org> <1421902005.18480.3.camel@perches.com> <20150122214644.GB8057@qualcomm.com>
-To: Andy Gross <agross@codeaurora.org>
-X-Mailer: Apple Mail (2.1878.6)
+	Fri, 23 Jan 2015 11:32:37 -0500
+Date: Fri, 23 Jan 2015 16:32:31 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, jason@lakedaemon.net, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 2/8] irqchip: Supply new driver for STi based
+ devices
+Message-ID: <20150123163231.GB11745@x1>
+References: <1421920133-7914-1-git-send-email-lee.jones@linaro.org>
+ <1421920133-7914-3-git-send-email-lee.jones@linaro.org>
+ <alpine.DEB.2.11.1501231702280.5526@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.11.1501231702280.5526@nanos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jan 22, 2015, at 3:46 PM, Andy Gross <agross@codeaurora.org> wrote:
-
-> On Wed, Jan 21, 2015 at 08:46:45PM -0800, Joe Perches wrote:
->>> +L:	linux-soc@vger.kernel.org
->>> S:	Maintained
->>> F:	arch/arm/mach-qcom/
->>> +F:	drivers/soc/qcom
->> 
->> Please add a terminating /
->> 
->> F:	drivers/soc/qcom/
+On Fri, 23 Jan 2015, Thomas Gleixner wrote:
+> On Thu, 22 Jan 2015, Lee Jones wrote:
 > 
-> Noted, will fix.
+> > This driver is used to enable System Configuration Register controlled
+> > External, CTI (Core Sight), PMU (Performance Management), and PL310 L2
+> > Cache IRQs prior to use.
+> 
+> I'm wondering how this is related to irq_chip, 
 
-I’ll fix this up when I apply the patch.
+It doesn't really.  At least, it doesn't make use of the framework.  
+It was the most relevant subsystem.
 
-- k
+> but well, I don't mind it being parked here.
+
+Thanks Thomas.  I was hoping for that response.
+
+> Though I really cannot say anything about this DT translation
+> machinery for a single sysconfig register, other than it looks
+> completely overengineered to me.
+
+I understnad where you're coming from, but don't all drivers just
+'twiddle some register bits'?
+
+> The only technical comment I have is: shouldn't all the stuff except
+> the resume function be marked __init or is any of this required post
+> init?
+
+It's not common to mark functions invoked at and affter *_probe() as
+__init.  At least, not as far as I'm aware.
 
 -- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
