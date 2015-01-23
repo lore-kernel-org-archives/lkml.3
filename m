@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600AbbAWWds (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 17:33:48 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:48424 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877AbbAWWdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 17:33:42 -0500
+	id S1752915AbbAWWe3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 17:34:29 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53175 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563AbbAWWdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 17:33:46 -0500
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, <devicetree@vger.kernel.org>,
@@ -16,9 +17,9 @@ CC: Murali Karicheri <m-karicheri2@ti.com>, Joerg Roedel <joro@8bytes.org>,
         Will Deacon <will.deacon@arm.com>,
         Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: [PATCH v4 3/6] of: fix size when dma-range is not used
-Date: Fri, 23 Jan 2015 17:32:36 -0500
-Message-ID: <1422052359-12384-4-git-send-email-m-karicheri2@ti.com>
+Subject: [PATCH v4 4/6] of/pci: add of_pci_dma_configure() update dma configuration
+Date: Fri, 23 Jan 2015 17:32:37 -0500
+Message-ID: <1422052359-12384-5-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
 References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
@@ -28,11 +29,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the dma-range size when the DT attribute is missing. i.e  set size to
-dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. To detect
-overflow when mask is set to max of u64, add a check, log error and return.
-Some platform use mask format for size in DTS. So add a work around to
-catch this and fix.
+Add of_pci_dma_configure() to allow updating the dma configuration
+of the pci device using the configuration from DT of the parent of
+the root bridge device.
 
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Grant Likely <grant.likely@linaro.org>
@@ -45,39 +44,97 @@ Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
 Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 ---
- drivers/of/device.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
+ include/linux/of_pci.h |   12 ++++++++++++
+ 2 files changed, 51 insertions(+)
 
-diff --git a/drivers/of/device.c b/drivers/of/device.c
-index 2de320d..0a5ff54 100644
---- a/drivers/of/device.c
-+++ b/drivers/of/device.c
-@@ -105,12 +105,24 @@ void of_dma_configure(struct device *dev, struct device_node *np)
- 	ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
- 	if (ret < 0) {
- 		dma_addr = offset = 0;
--		size = dev->coherent_dma_mask;
-+		size = dev->coherent_dma_mask + 1;
- 	} else {
- 		offset = PFN_DOWN(paddr - dma_addr);
-+		/*
-+		 * Add a work around to treat the size as mask + 1 in case
-+		 * it is defined in DT as a mask.
-+		 */
-+		if (size & 1)
-+			size = size + 1;
- 		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
- 	}
+diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+index 88471d3..34878c9 100644
+--- a/drivers/of/of_pci.c
++++ b/drivers/of/of_pci.c
+@@ -2,6 +2,7 @@
+ #include <linux/export.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/of_device.h>
+ #include <linux/of_pci.h>
+ #include <linux/slab.h>
  
-+	/* if size is 0, we have an overflow of u64 */
-+	if (!size) {
-+		dev_err(dev, "invalid size\n");
-+		return;
-+	}
+@@ -229,6 +230,44 @@ parse_failed:
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
 +
- 	dev->dma_pfn_offset = offset;
++/**
++ * of_get_pci_root_bridge_parent - get the OF node of the root bridge's parent
++ * @dev: ptr to pci_dev struct of the pci device
++ *
++ * This function will traverse the bus up to the root bus starting with
++ * the child and return the OF node ptr to root bridge device's parent device.
++ */
++struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
++{
++	struct pci_bus *bus = dev->bus;
++	struct device *bridge;
++
++	while (!pci_is_root_bus(bus))
++		bus = bus->parent;
++	bridge = bus->bridge;
++
++	return bridge->parent->of_node;
++}
++EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
++
++/**
++ * of_pci_dma_configure - Setup DMA configuration
++ * @dev: ptr to pci_dev struct of the pci device
++ *
++ * Function to update PCI devices's DMA configuration using the same
++ * info from the OF node of root host bridge's parent.
++ */
++void of_pci_dma_configure(struct pci_dev *pci_dev)
++{
++	struct device *dev = &pci_dev->dev;
++	struct device_node *parent_np;
++
++	parent_np = of_get_pci_root_bridge_parent(pci_dev);
++	of_dma_configure(dev, parent_np);
++}
++EXPORT_SYMBOL_GPL(of_pci_dma_configure);
++
+ #endif /* CONFIG_OF_ADDRESS */
  
- 	coherent = of_dma_is_coherent(np);
+ #ifdef CONFIG_PCI_MSI
+diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
+index ce0e5ab..0465a2a 100644
+--- a/include/linux/of_pci.h
++++ b/include/linux/of_pci.h
+@@ -16,6 +16,8 @@ int of_pci_get_devfn(struct device_node *np);
+ int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
+ int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
+ int of_get_pci_domain_nr(struct device_node *node);
++struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev);
++void of_pci_dma_configure(struct pci_dev *pci_dev);
+ #else
+ static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
+ {
+@@ -50,6 +52,16 @@ of_get_pci_domain_nr(struct device_node *node)
+ {
+ 	return -1;
+ }
++
++static inline struct device_node
++*of_get_pci_root_bridge_parent(struct pci_dev *dev)
++{
++	return NULL;
++}
++
++static inline void of_pci_dma_configure(struct pci_dev *pci_dev)
++{
++}
+ #endif
+ 
+ #if defined(CONFIG_OF_ADDRESS)
 -- 
 1.7.9.5
 
