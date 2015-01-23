@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350AbbAWPMP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:12:15 -0500
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:16716
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752593AbbAWPML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:12:11 -0500
-X-WSS-ID: 0NIMY7R-08-4S9-02
-X-M-MSG: 
-Message-ID: <54C264B1.5090508@amd.com>
-Date: Fri, 23 Jan 2015 09:11:45 -0600
-From: Tom Lendacky <thomas.lendacky@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>, <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "open list:AMD CRYPTOGRAPHIC..." <linux-crypto@vger.kernel.org>
-Subject: Re: [PATCH] crypto: ccp: terminate ccp_support array with empty element
-References: <1421852791-29679-1-git-send-email-a.ryabinin@samsung.com>
-In-Reply-To: <1421852791-29679-1-git-send-email-a.ryabinin@samsung.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Thomas.Lendacky@amd.com; davemloft.net; dkim=none (message not
- signed) header.d=none;davemloft.net; dmarc=permerror action=none
- header.from=amd.com;
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(479174004)(51704005)(377454003)(24454002)(65956001)(105586002)(33656002)(50466002)(77096005)(107886001)(65806001)(87936001)(47776003)(83506001)(80316001)(19580405001)(19580395003)(106466001)(76176999)(54356999)(65816999)(50986999)(86362001)(59896002)(62966003)(46102003)(2950100001)(77156002)(23746002)(92566002)(101416001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR02MB194;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB194;
-X-Forefront-PRVS: 0465429B7F
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Jan 2015 15:11:54.2139
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB194
+	id S1755552AbbAWPNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:13:07 -0500
+Received: from mga14.intel.com ([192.55.52.115]:30550 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894AbbAWPNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 10:13:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,454,1418112000"; 
+   d="scan'208";a="666508847"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/8] usb: ulpi bus
+Date: Fri, 23 Jan 2015 17:12:50 +0200
+Message-Id: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 09:06 AM, Andrey Ryabinin wrote:
-> x86_match_cpu() expects array of x86_cpu_ids terminated
-> with empty element.
->
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 
-Acked-by: Tom Lendacky <thomas.lendacky@amd.com>
+Heikki Krogerus (8):
+  usb: add bus type for USB ULPI
+  usb: dwc3: USB2 PHY register access bits
+  usb: dwc3: store driver data earlier
+  usb: dwc3: cache hwparams earlier
+  usb: dwc3: ULPI or UTMI+ select
+  usb: dwc3: add ULPI interface support
+  phy: helpers for USB ULPI PHY registering
+  phy: add driver for TI TUSB1210 ULPI PHY
 
-> ---
->   drivers/crypto/ccp/ccp-dev.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/crypto/ccp/ccp-dev.c b/drivers/crypto/ccp/ccp-dev.c
-> index c6e6171..ca29c12 100644
-> --- a/drivers/crypto/ccp/ccp-dev.c
-> +++ b/drivers/crypto/ccp/ccp-dev.c
-> @@ -583,6 +583,7 @@ bool ccp_queues_suspended(struct ccp_device *ccp)
->   #ifdef CONFIG_X86
->   static const struct x86_cpu_id ccp_support[] = {
->   	{ X86_VENDOR_AMD, 22, },
-> +	{ },
->   };
->   #endif
->
->
+ MAINTAINERS                       |   7 ++
+ drivers/phy/Kconfig               |   6 +
+ drivers/phy/Makefile              |   1 +
+ drivers/phy/phy-tusb1210.c        | 133 ++++++++++++++++++++
+ drivers/phy/ulpi_phy.h            |  31 +++++
+ drivers/usb/common/Makefile       |   3 +-
+ drivers/usb/common/ulpi.c         | 253 ++++++++++++++++++++++++++++++++++++++
+ drivers/usb/core/Kconfig          |   8 ++
+ drivers/usb/dwc3/Kconfig          |   7 ++
+ drivers/usb/dwc3/Makefile         |   4 +
+ drivers/usb/dwc3/core.c           |  12 +-
+ drivers/usb/dwc3/core.h           |  22 ++++
+ drivers/usb/dwc3/ulpi.c           | 112 +++++++++++++++++
+ include/linux/mod_devicetable.h   |   6 +
+ include/linux/ulpi/driver.h       |  62 ++++++++++
+ include/linux/ulpi/interface.h    |  23 ++++
+ include/linux/ulpi/regs.h         | 130 ++++++++++++++++++++
+ include/linux/usb/ulpi.h          | 134 +-------------------
+ scripts/mod/devicetable-offsets.c |   4 +
+ scripts/mod/file2alias.c          |  13 ++
+ 20 files changed, 835 insertions(+), 136 deletions(-)
+ create mode 100644 drivers/phy/phy-tusb1210.c
+ create mode 100644 drivers/phy/ulpi_phy.h
+ create mode 100644 drivers/usb/common/ulpi.c
+ create mode 100644 drivers/usb/dwc3/ulpi.c
+ create mode 100644 include/linux/ulpi/driver.h
+ create mode 100644 include/linux/ulpi/interface.h
+ create mode 100644 include/linux/ulpi/regs.h
+
+-- 
+2.1.4
+
