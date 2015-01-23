@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791AbbAWBIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 20:08:36 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:47484 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514AbbAWBIc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 20:08:32 -0500
-Message-ID: <54C19EFE.8020606@huawei.com>
-Date: Fri, 23 Jan 2015 09:08:14 +0800
-From: Li Bin <huawei.libin@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1754577AbbAWBKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 20:10:21 -0500
+Received: from ozlabs.org ([103.22.144.67]:34346 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752323AbbAWBKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 20:10:18 -0500
+Date: Fri, 23 Jan 2015 12:10:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Moore <pmoore@redhat.com>
+Subject: linux-next: manual merge of the vfs tree with Linus' tree
+Message-ID: <20150123121009.2ed32a2b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-CC: Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>, <live-patching@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
-        <guohanjun@huawei.com>, <zhangdianfang@huawei.com>,
-        <xiexiuqi@huawei.com>
-Subject: Re: [PATCH 2/2] livepatch: disable/enable_patch manners for interdependent
- patches
-References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-3-git-send-email-huawei.libin@huawei.com> <alpine.LNX.2.00.1501211506420.10817@pobox.suse.cz> <54C04775.1070908@huawei.com> <20150122035126.GB12927@treble.redhat.com> <54C0B735.7070106@huawei.com> <54C0C8CF.8070804@huawei.com> <20150122130519.GA17376@treble.redhat.com>
-In-Reply-To: <20150122130519.GA17376@treble.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.181]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/V9dPqSKYD_MXF_wWwEtUxKB"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/22 21:05, Josh Poimboeuf wrote:
-> On Thu, Jan 22, 2015 at 05:54:23PM +0800, Li Bin wrote:
->> On 2015/1/22 16:39, Li Bin wrote:
->>> On 2015/1/22 11:51, Josh Poimboeuf wrote:
->>>> On Thu, Jan 22, 2015 at 08:42:29AM +0800, Li Bin wrote:
->>>>> On 2015/1/21 22:08, Jiri Kosina wrote:
->>>>>> On Wed, 21 Jan 2015, Li Bin wrote:
->>>>>> By this you limit the definition of the patch inter-dependency to just 
->>>>>> symbols. But that's not the only way how patches can depend on it other -- 
->>>>>> the dependency can be semantical.
->>>>>
->>>>> Yes, I agree with you. But I think the other dependencies such as semantical
->>>>> dependency should be judged by the user, like reverting a patch from git repository.
->>>>> Right?
->>>>
->>>> But with live patching, there are two users: the patch creator (who
->>>> creates the patch module) and the end user (who loads it on their
->>>> system).
->>>>
->>>> We can assume the patch creator knows what he's doing, but the end user
->>>> doesn't always know or care about low level details like patch
->>>> dependencies.  The easiest and safest way to protect the end user is the
->>>> current approach, which assumes that each patch depends on all
->>>> previously applied patches.
->>>
->>> But then, the feature that disable patch dynamically is useless.
->>> For example, if user find a bug be introduced by the last patch and disable
->>> it directly, the new patch is no longer allowed from now unless enable the
->>> old patch firstly but there is a risk window by this way.
->>>
->>
->> Ok, in this case we can unregister the old patch firstly.
->> But it seems that the feature that enable/disable patch dynamically indeed
->> useless. (Its value is only for the last patch to enable or disable.)
-> 
-> I wouldn't say it's useless... It's just a patch stack.  If there's a
-> bug at the bottom of the stack, you can either:
-> 
-> 1) push a new patch which does the opposite of the original patch
->    (similar to how "git revert" adds a new commit);
-> 
-> 2) or pop everything off the stack and create a new stack to your
->    liking.
-> 
-> It doesn't actually prevent you from doing what you want, it just makes
-> it less convenient (and more safe IMO).
-> 
+--Sig_/V9dPqSKYD_MXF_wWwEtUxKB
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I am not arguing the value of the patch stack manner, but the sysfs attribute
-'enabled'.
+Hi Al,
 
-> I suppose an alternative would be to allow the patch creator to specify
-> patch dependencies (in addition to something like your patch to catch
-> the obvious dependencies).  But dependencies are tricky and I'm not
-> really convinced that would be worth the added risk and code complexity.
+Today's linux-next merge of the vfs tree got a conflict in
+kernel/auditsc.c between commit fcf22d8267ad ("audit: create private
+file name copies when auditing inodes") from Linus' tree and various
+commits from the vfs tree.
 
-Yes, since we can not assume that end users know the low level details, but they
-have permission to unregister the stacktop patch, and this action will affect the
-subsequent patch without providing dependencies information.
+I fixed it up (I used the vfs tree version as advised by Al) and can
+carry the fix as necessary (no action is required).
 
-> 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/V9dPqSKYD_MXF_wWwEtUxKB
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUwZ94AAoJEMDTa8Ir7ZwVzgMP/jj6IwySbZZCiPotgrEcRRvh
+8LlimPOMH+S81lsoa9QmcIW52DOyIeQFKsyqNvpRSRc6pvrLqWq8I8iYECWw2mue
+D4EXLjZh4I83HaYVuNQtHu2eQkusBCd4q0VXM4Tv0Qc+DjT+BOkm4fC2SAYQ2o9N
+oPH6rXtQ9wTYdrJZoy4ovGAWNYS6Vajti47hVy1ECu+/VmN2vH39rbExo9oXYNCj
+6I+ifJgASDbX2xXsP8b7sgC58UA8XEGimHuFljI1rXFqd45EO89O9KPVfuImRPb/
+r7GoUNpdE+ko55wVpkYlJkp07k8IkMcPQXuA0hTnRFeCXvb1Zppsw2R0ZO+wCMKz
+nOV3ilv4Ihn9EUMx48A0J8J0P5/kFL9fylu5QL1U19ZAjK/WHZzpzLX0/i/zKQI0
+fTEmFJ+GSsUEJlxH5zXV3JzKJxghf/B77aS3kR7fuMYJC2jieqK+dwGMaRvAKCTe
+nV8mecFZhNMErhreYZhqXlm+vRmjF+Sur03qkiXJ1ArNUuDw3IlHSMzp8nMKxiNd
+lYU+FxMBGueNe5PkCTubdEkE+A0wzykzKs8WKai0Am2MDWnRB+xiyhp/qaxgCXHt
+P/bwUCqW/88+F4MXZJHyKtiUoMhf7OI7bXm7D6NiD+ob1q/A4v73qs1NNRXJvphv
+ZRLTDw94CLgEI+P1/CLG
+=8Zri
+-----END PGP SIGNATURE-----
+
+--Sig_/V9dPqSKYD_MXF_wWwEtUxKB--
