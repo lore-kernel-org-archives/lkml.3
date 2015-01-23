@@ -1,49 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080AbbAWQLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:11:22 -0500
-Received: from www.linutronix.de ([62.245.132.108]:37481 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673AbbAWQLR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:11:17 -0500
-Date: Fri, 23 Jan 2015 17:10:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, jason@lakedaemon.net, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 2/8] irqchip: Supply new driver for STi based
- devices
-In-Reply-To: <1421920133-7914-3-git-send-email-lee.jones@linaro.org>
-Message-ID: <alpine.DEB.2.11.1501231702280.5526@nanos>
-References: <1421920133-7914-1-git-send-email-lee.jones@linaro.org> <1421920133-7914-3-git-send-email-lee.jones@linaro.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1756147AbbAWQNF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:13:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37945 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755847AbbAWQNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 11:13:00 -0500
+Message-ID: <54C2730A.8040601@suse.cz>
+Date: Fri, 23 Jan 2015 17:12:58 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-mm@kvack.org
+CC: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
+        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
+        hughd@google.com, hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, aarcange@redhat.com
+Subject: Re: [PATCH] mm: incorporate read-only pages into transparent huge
+ pages
+References: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
+In-Reply-To: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015, Lee Jones wrote:
+On 01/23/2015 08:47 AM, Ebru Akagunduz wrote:
+> This patch aims to improve THP collapse rates, by allowing
+> THP collapse in the presence of read-only ptes, like those
+> left in place by do_swap_page after a read fault.
 
-> This driver is used to enable System Configuration Register controlled
-> External, CTI (Core Sight), PMU (Performance Management), and PL310 L2
-> Cache IRQs prior to use.
+An other examples? What about zero pages?
 
-I'm wondering how this is related to irq_chip, but well, I don't mind
-it being parked here.
+> Currently THP can collapse 4kB pages into a THP when
+> there are up to khugepaged_max_ptes_none pte_none ptes
+> in a 2MB range. This patch applies the same limit for
+> read-only ptes.
+>
+> The patch was tested with a test program that allocates
+> 800MB of memory, writes to it, and then sleeps. I force
+> the system to swap out all but 190MB of the program by
+> touching other memory. Afterwards, the test program does
+> a mix of reads and writes to its memory, and the memory
+> gets swapped back in.
+>
+> Without the patch, only the memory that did not get
+> swapped out remained in THPs, which corresponds to 24% of
+> the memory of the program. The percentage did not increase
+> over time.
+>
+> With this patch, after 5 minutes of waiting khugepaged had
+> collapsed 55% of the program's memory back into THPs.
+>
+> Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Though I really cannot say anything about this DT translation
-machinery for a single sysconfig register, other than it looks
-completely overengineered to me.
+Sounds like a good idea.
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+nits below:
 
-The only technical comment I have is: shouldn't all the stuff except
-the resume function be marked __init or is any of this required post
-init?
+> ---
+> I've written down test results:
+>
+> With the patch:
+> After swapped out:
+> cat /proc/pid/smaps:
+> Anonymous:      100352 kB
+> AnonHugePages:  98304 kB
+> Swap:           699652 kB
+> Fraction:       97,95
+>
+> cat /proc/meminfo:
+> AnonPages:      1763732 kB
+> AnonHugePages:  1716224 kB
+> Fraction:       97,30
+>
+> After swapped in:
+> In a few seconds:
+> cat /proc/pid/smaps
+> Anonymous:      800004 kB
+> AnonHugePages:  235520 kB
+> Swap:           0 kB
+> Fraction:       29,43
+>
+> cat /proc/meminfo:
+> AnonPages:      2464336 kB
+> AnonHugePages:  1853440 kB
+> Fraction:       75,21
+>
+> In five minutes:
+> cat /proc/pid/smaps:
+> Anonymous:      800004 kB
+> AnonHugePages:  440320 kB
+> Swap:           0 kB
+> Fraction:       55,0
+>
+> cat /proc/meminfo:
+> AnonPages:      2464340
+> AnonHugePages:  2058240
+> Fraction:       83,52
+>
+> Without the patch:
+> After swapped out:
+> cat /proc/pid/smaps:
+> Anonymous:      190660 kB
+> AnonHugePages:  190464 kB
+> Swap:           609344 kB
+> Fraction:       99,89
+>
+> cat /proc/meminfo:
+> AnonPages:      1740456 kB
+> AnonHugePages:  1667072 kB
+> Fraction:       95,78
+>
+> After swapped in:
+> cat /proc/pid/smaps:
+> Anonymous:      800004 kB
+> AnonHugePages:  190464 kB
+> Swap:           0 kB
+> Fraction:       23,80
+>
+> cat /proc/meminfo:
+> AnonPages:      2350032 kB
+> AnonHugePages:  1667072 kB
+> Fraction:       70,93
+>
+> I waited 10 minutes the fractions
+> did not change without the patch.
+>
+>   mm/huge_memory.c | 25 ++++++++++++++++++++-----
+>   1 file changed, 20 insertions(+), 5 deletions(-)
+>
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 817a875..af750d9 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -2158,7 +2158,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>   			else
+>   				goto out;
+>   		}
+> -		if (!pte_present(pteval) || !pte_write(pteval))
+> +		if (!pte_present(pteval))
+>   			goto out;
+>   		page = vm_normal_page(vma, address, pteval);
+>   		if (unlikely(!page))
+> @@ -2169,7 +2169,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>   		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
+>
+>   		/* cannot use mapcount: can't collapse if there's a gup pin */
+> -		if (page_count(page) != 1)
+> +		if (page_count(page) != 1 + !!PageSwapCache(page))
 
-Thanks,
+Took me a while to grok this !!PageSwapCache(page) part. Perhaps expand 
+the comment?
 
-	tglx
+>   			goto out;
+>   		/*
+>   		 * We can do it before isolate_lru_page because the
+> @@ -2179,6 +2179,17 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>   		 */
+>   		if (!trylock_page(page))
+>   			goto out;
+> +		if (!pte_write(pteval)) {
+> +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
+> +					unlock_page(page);
+> +					goto out;
+
+Too much indent on the 2 lines above.
+
+> +			}
+> +			/*
+> +			 * Page is not in the swap cache, and page count is
+> +			 * one (see above). It can be collapsed into a THP.
+> +			 */
+
+Such comment sounds like a good place for:
+
+			VM_BUG_ON(page_count(page) != 1));
+
+> +		}
+> +
+>   		/*
+>   		 * Isolate the page to avoid collapsing an hugepage
+>   		 * currently in use by the VM.
+> @@ -2550,7 +2561,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+>   {
+>   	pmd_t *pmd;
+>   	pte_t *pte, *_pte;
+> -	int ret = 0, referenced = 0, none = 0;
+> +	int ret = 0, referenced = 0, none = 0, ro = 0;
+>   	struct page *page;
+>   	unsigned long _address;
+>   	spinlock_t *ptl;
+> @@ -2573,8 +2584,12 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+>   			else
+>   				goto out_unmap;
+>   		}
+> -		if (!pte_present(pteval) || !pte_write(pteval))
+> +		if (!pte_present(pteval))
+>   			goto out_unmap;
+> +		if (!pte_write(pteval)) {
+> +			if (++ro > khugepaged_max_ptes_none)
+> +				goto out_unmap;
+> +		}
+>   		page = vm_normal_page(vma, _address, pteval);
+>   		if (unlikely(!page))
+>   			goto out_unmap;
+> @@ -2592,7 +2607,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
+>   		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
+>   			goto out_unmap;
+>   		/* cannot use mapcount: can't collapse if there's a gup pin */
+> -		if (page_count(page) != 1)
+> +		if (page_count(page) != 1 + !!PageSwapCache(page))
+
+Same as above. Even more so, as there's no other page swap cache 
+handling code in this function.
+
+Thanks.
+
+>   			goto out_unmap;
+>   		if (pte_young(pteval) || PageReferenced(page) ||
+>   		    mmu_notifier_test_young(vma->vm_mm, address))
+>
+
