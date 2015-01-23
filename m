@@ -1,103 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457AbbAWTHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 14:07:46 -0500
-Received: from mail-n.franken.de ([193.175.24.27]:35984 "EHLO
-	mail-n.franken.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbbAWTHl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 14:07:41 -0500
-X-Greylist: delayed 1830 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jan 2015 14:07:40 EST
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: Question on SCTP ABORT chunk is generated when the association_max_retrans is reached
-From: Michael Tuexen <tuexen@fh-muenster.de>
-In-Reply-To: <54C2935F.2000105@gmail.com>
-Date: Fri, 23 Jan 2015 19:36:38 +0100
-Cc: Daniel Borkmann <dborkman@redhat.com>, Sun Paul <paulrbk@gmail.com>,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <628C9A19-FFC7-4D98-9FBB-D59F45BF6915@fh-muenster.de>
-References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com> <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com> <54C23581.9060809@redhat.com> <54C27137.5010405@gmail.com> <54C2807E.8080607@redhat.com> <54C2935F.2000105@gmail.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+	id S1756361AbbAWShf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:37:35 -0500
+Received: from mga14.intel.com ([192.55.52.115]:15182 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752139AbbAWShd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 13:37:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,455,1418112000"; 
+   d="scan'208";a="666611107"
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+To: josh@joshtriplett.org
+Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [PATCH 00/10] tinification: Make memory-access char devices optional
+Date: Fri, 23 Jan 2015 12:37:06 -0600
+Message-Id: <cover.1422035184.git.tom.zanussi@linux.intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset adds a top-level config option, CONFIG_DEVMEM_BASE, and
+a series of dependent options below it which allow various devices
+such as /dev/mem, /dev/null, /dev/zero, /dev/random, etc. to be
+disabled.  This allows embedded systems systems that don't need any or
+all of those devices to save the kernel memory associated with those
+devices.
 
-> On 23 Jan 2015, at 19:30, Vlad Yasevich <vyasevich@gmail.com> wrote:
-> 
-> On 01/23/2015 12:10 PM, Daniel Borkmann wrote:
->> On 01/23/2015 05:05 PM, Vlad Yasevich wrote:
->>> On 01/23/2015 06:50 AM, Daniel Borkmann wrote:
->>>> On 01/23/2015 11:25 AM, Sun Paul wrote:
->>>> ...
->>>>> I would like to check the behave in LKSCTP.
->>>>> 
->>>>> we are running DIAMETER message over SCTP, and we have set the
->>>>> parameter "net.sctp.association_max_retrans = 4" in the LinuxOS.
->>>>> 
->>>>> We noticed that when remote peer have retry to send the same request
->>>>> for 4 times, the LKSCTP will initiate an ABORT chunk with reason
->>>>> "association exceeded its max_retrans count".
->>>>> 
->>>>> We would like to know whether this is the correct behavior? is there
->>>>> any other option that we can alter in order to avoid the ABORT chunk
->>>>> being sent?
->>>> 
->>>> I don't recall the RFC saying to send an ABORT, but let me double
->>>> check in the mean time.
->>> 
->>> The RFC is silent on the matter.  The abort got added in 3.8 so
->>> it's been there for a while.
->> 
->> I see, commit de4594a51c90 ("sctp: send abort chunk when max_retrans
->> exceeded") added the behaviour.
->> 
->>>> Hmm, untested, but could you try something like that?
->>>> 
->>>> diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
->>>> index fef2acd..5ce198d 100644
->>>> --- a/net/sctp/sm_sideeffect.c
->>>> +++ b/net/sctp/sm_sideeffect.c
->>>> @@ -584,7 +584,8 @@ static void sctp_cmd_assoc_failed(sctp_cmd_seq_t *commands,
->>>>          sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP,
->>>>                  SCTP_ULPEVENT(event));
->>>> 
->>>> -    if (asoc->overall_error_count >= asoc->max_retrans) {
->>>> +    if (asoc->overall_error_count >= asoc->max_retrans &&
->>>> +        error != SCTP_ERROR_NO_ERROR) {
->>>>          abort = sctp_make_violation_max_retrans(asoc, chunk);
->>>>          if (abort)
->>>>              sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
->>> 
->>> This would pretty much stop all ABORTs due to excessive rtx.  Might
->>> as well take the code out :).
->>> 
->>> I was a bit concerned about this ABORT when it went in.
->> 
->> So effectively, if I understand the argument from the commit, the
->> assumption is that the ABORT would never reach the peer anyway, but
->> is a way for tcpdump users to see on the wire that rtx limit has
->> been exceeded and since there's not mentioned anything in the RFC
->> about this, it doesn't break it. Hm.
->> 
-> 
-> Additionally I seem to recall BSD sending this type of ABORT for pretty
-> much the same reason.
-Yepp.
+It also adds a related option to disable the getrandom(2) syscall,
+CONFIG_GETRANDOM_SYSCALL, which allows code shared between it and
+/dev/*random to be compiled out as well.
 
-Best regards
-Michael
-> 
-> -vlad
-> 
->> Sun Paul, what exactly broke in your scenario? Can you be more explicit?
->> 
->> Thanks,
->> Daniel
-> 
-> 
+Disabling of CONFIG_DEVMEM_BASE and its dependent options is only
+available if CONFIG_EMBEDDED is enabled; normal systems will still
+have everything enabled as usual.
+
+bloat-o-meter shows a total 6k savings for a tinyconfig kernel with
+all options disabled, and about 10k savings for the same thing but
+using defconfig.
+
+bloat-o-meter (based on tinyconfig):
+
+add/remove: 0/55 grow/shrink: 1/3 up/down: 332/-6563 (-6231)
+function                                     old     new   delta
+extract_entropy                              114     446    +332
+__print_once                                  13      12      -1
+write_null                                     3       -      -3
+read_null                                      3       -      -3
+mix_pool_bytes                                17      14      -3
+aio_read_null                                  3       -      -3
+pipe_to_null                                   4       -      -4
+mem_class                                      4       -      -4
+write_full                                     6       -      -6
+devkmsg_release                               15       -     -15
+random_fasync                                 16       -     -16
+mmap_zero                                     16       -     -16
+aio_write_null                                18       -     -18
+open_port                                     19       -     -19
+random_read                                   20       -     -20
+splice_write_null                             24       -     -24
+null_lseek                                    25       -     -25
+mmap_mem_ops                                  32       -     -32
+mem_devnode                                   35       -     -35
+mmap_kmem                                     37       -     -37
+random_write                                  42       -     -42
+xfer_secondary_pool                           60       -     -60
+write_pool                                    82       -     -82
+random_poll                                   83       -     -83
+read_iter_zero                                95       -     -95
+urandom_read                                  96       -     -96
+memory_open                                   96       -     -96
+devkmsg_poll                                  97       -     -97
+read_port                                     98       -     -98
+mmap_mem                                     103       -    -103
+devkmsg_open                                 112       -    -112
+write_port                                   116       -    -116
+zero_fops                                    120       -    -120
+urandom_fops                                 120       -    -120
+random_fops                                  120       -    -120
+port_fops                                    120       -    -120
+null_fops                                    120       -    -120
+memory_fops                                  120       -    -120
+mem_fops                                     120       -    -120
+kmsg_fops                                    120       -    -120
+kmem_fops                                    120       -    -120
+full_fops                                    120       -    -120
+memory_lseek                                 122       -    -122
+devkmsg_llseek                               144       -    -144
+chr_dev_init                                 162       3    -159
+read_mem                                     162       -    -162
+extract_buf                                  164       -    -164
+_random_read.part                            173       -    -173
+account                                      181       -    -181
+write_mem                                    184       -    -184
+devlist                                      192       -    -192
+extract_entropy_user                         197       -    -197
+devkmsg_write                                209       -    -209
+sys_getrandom                                211       -    -211
+zero_bdi                                     244       -    -244
+read_kmem                                    290       -    -290
+random_ioctl                                 319       -    -319
+write_kmem                                   349       -    -349
+devkmsg_read                                 699       -    -699
+
+
+The following changes since commit 5eb11d6b3f55eb4d28c51ea7f641c0e5e255a70f:
+
+  Merge tag 'sound-3.19-rc6' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2015-01-21 20:37:25 +1200)
+
+are available in the git repository at:
+
+  git://git.yoctoproject.org/linux-yocto-contrib.git tzanussi/devmem-tinification-v1
+  http://git.yoctoproject.org/cgit/cgit.cgi/linux-yocto-contrib/log/?h=tzanussi/devmem-tinification-v1
+
+Tom Zanussi (10):
+  drivers/char: Support compiling out memory-access char devices
+  drivers/char: Support compiling out /dev/mem
+  drivers/char: Support compiling out /dev/port
+  drivers/char: Support compiling out /dev/null
+  drivers/char: Support compiling out /dev/zero
+  drivers/char: Support compiling out /dev/full
+  drivers/char: Support compiling out /dev/random
+  drivers/char: Support compiling out /dev/urandom
+  drivers/char: Support compiling out /dev/kmsg
+  drivers/char: Support compiling out the getrandom(2) syscall
+
+ arch/x86/Kconfig.debug |   1 +
+ drivers/char/Kconfig   | 109 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/char/mem.c     |  83 +++++++++++++++++++++++++++----------
+ drivers/char/random.c  |  24 ++++++++---
+ kernel/printk/printk.c |   2 +
+ kernel/sys_ni.c        |   1 +
+ 6 files changed, 192 insertions(+), 28 deletions(-)
+
+-- 
+1.9.3
 
