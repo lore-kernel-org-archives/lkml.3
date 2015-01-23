@@ -1,125 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbbAWWas (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 17:30:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823AbbAWWaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 17:30:46 -0500
-Message-ID: <1422052241.4048.14.camel@redhat.com>
-Subject: Re: [PATCH] PCI: quirks: DMA alias quirk for Adaptec 3405
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, aacraid@adaptec.com,
-        linux-kernel@vger.kernel.org
-Date: Fri, 23 Jan 2015 15:30:41 -0700
-In-Reply-To: <20150123215058.GM29776@google.com>
-References: <20150113182605.15479.9020.stgit@gimli.home>
-	 <20150123215058.GM29776@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753101AbbAWWeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 17:34:31 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53174 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560AbbAWWdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 17:33:46 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <iommu@lists.linux-foundation.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>, Joerg Roedel <joro@8bytes.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: [PATCH v4 0/6] PCI: get DMA configuration from parent device
+Date: Fri, 23 Jan 2015 17:32:33 -0500
+Message-ID: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 15:50 -0600, Bjorn Helgaas wrote:
-> On Tue, Jan 13, 2015 at 11:26:50AM -0700, Alex Williamson wrote:
-> > As noted in the added comment, this device is actually an Intel 80333
-> > I/O processor where the exposed device at 0e.0 is actually the address
-> > translation unit of the I/O processor and a hidden, private device at
-> > 01.0 masters the DMA for the device.  In order to enable the IOMMU, we
-> > therefore need to create a fixed alias between the exposed and hidden
-> > devfn.
-> > 
-> > Scenarios like this are potentially likely for any device incorporating
-> > this I/O processor, so this little bit of abstraction with the fixed
-> > alias table should make future additions trivial.
-> 
-> This sounds like the result of some serious debugging :)  Do you have a
-> pointer to a bugzilla or some email discussion?  I'd like to make the fix
-> discoverable starting with a failure symptom.
+PCI devices on Keystone doesn't have correct dma_pfn_offset set. This patch
+add capability to set the dma configuration such as dma-mask, dma_pfn_offset,
+and dma ops etc using the information from DT. The prior RFCs and discussions
+are available at [1] and [2] below.
 
-Sorry, this one comes from a private bugzilla.  The symptom is simply a
-slew of IOMMU faults when trying to boot the system with the IOMMU
-enabled.  For example, with the Adaptec 3405 showing up at 02:0e.0 on an
-Intel system, the log is filled with:
+[2] : https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg790244.html
+[1] : http://www.gossamer-threads.com/lists/linux/kernel/2024591
 
-dmar: DRHD: handling fault status reg 3
-dmar: DMAR:[DMA Write] Request device [02:01.0] fault addr ffbff000 
-DMAR:[fault reason 02] Present bit in context entry is clear
-dmar: DRHD: handling fault status reg 3
-dmar: DMAR:[DMA Write] Request device [02:01.0] fault addr ffbfe000 
-DMAR:[fault reason 02] Present bit in context entry is clear
+Change history:
+	v4 - moved size adjustments in of_iommu_configure() to a separate patch
+	   - consistent node name comment from Rob
+	   - patch 6 added for dma_mask adjustment and iommu mapping size
+	     limiting.
+	v3 - addressed comments to re-use of_dma_configure() for PCI
+	   - To help re-use, change of_iommu_configure() function argument
+		- Move of_dma_configure to of/device.c
+		- Limit the of_iommu_configure to non pci devices
+	v2 - update size to coherent_dma_mask + 1 if dma-range info is missing
+	   - also check the np for null.
+	v1 - updates based on the comments against initial RFC.
+	   - Added a helper function to get the OF node of the parent
+	   - Added an API in of_pci.c to update DMA configuration of the pci
+	     device.
 
-As expected, the device is non-functional.  In the log I have there are
-only DMA write faults and the addresses are all ffbxxxxx, which falls
-into a reserved memory area on the system and owned by a PNP0c02 device
-according to iomem.  With the change here the device, of course, works
-without any issues with VT-d enabled.  Thanks,
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-Alex
+Murali Karicheri (6): 
+  of: iommu: add ptr to OF node arg to of_iommu_configure()
+  of: move of_dma_configure() to device.c to help re-use
+  of: fix size when dma-range is not used
+  of/pci: add of_pci_dma_configure() update dma configuration
+  PCI: update dma configuration from DT
+  arm: dma-mapping: updates to limit dma_mask and iommu mapping size
 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-> > ---
-> > 
-> >  drivers/pci/quirks.c |   37 +++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 37 insertions(+)
-> > 
-> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> > index ed6f89b..19bdb17 100644
-> > --- a/drivers/pci/quirks.c
-> > +++ b/drivers/pci/quirks.c
-> > @@ -3528,6 +3528,43 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
-> >  			 quirk_dma_func1_alias);
-> >  
-> >  /*
-> > + * Some devices DMA with the wrong devfn, not just the wrong function.
-> > + * quirk_fixed_dma_alias() uses this table to create fixed aliass, where
-> > + * the alias is "fixed" and independent of the device devfn.
-> > + *
-> > + * For example, the Adaptec 3405 is a PCIe card making use of an Intel 80333
-> > + * I/O processor.  To software, this appears as a straightforward PCIe-to-PCI/X
-> > + * bridge with a single device on the subordinate bus.  In reality, the exposed
-> > + * device at 0e.0 is the Address Translation Unit (ATU) of the controller that
-> > + * provides a bridge to the internal bus of the I/O processor.  The controller
-> > + * supports private devices, which can be hidden from PCI config space.  In the
-> > + * case of the Adaptec 3405, a private device at 01.0 appears to be the DMA
-> > + * engine, which therefore needs to become a DMA alias for the device.
-> > + */
-> > +static const struct pci_device_id fixed_dma_alias_tbl[] = {
-> > +	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_ADAPTEC2, 0x0285,
-> > +			 PCI_VENDOR_ID_ADAPTEC2, 0x02bb), /* Adaptec 3405 */
-> > +	  .driver_data = PCI_DEVFN(1, 0) },
-> > +	{ 0 }
-> > +};
-> > +
-> > +static void quirk_fixed_dma_alias(struct pci_dev *dev)
-> > +{
-> > +	const struct pci_device_id *id;
-> > +
-> > +	id = pci_match_id(fixed_dma_alias_tbl, dev);
-> > +	if (id) {
-> > +		dev->dma_alias_devfn = id->driver_data;
-> > +		dev->dev_flags |= PCI_DEV_FLAGS_DMA_ALIAS_DEVFN;
-> > +		dev_info(&dev->dev, "Enabling fixed DMA alias to %02x.%d\n",
-> > +			 PCI_SLOT(dev->dma_alias_devfn),
-> > +			 PCI_FUNC(dev->dma_alias_devfn));
-> > +	}
-> > +}
-> > +
-> > +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ADAPTEC2, 0x0285, quirk_fixed_dma_alias);
-> > +
-> > +/*
-> >   * A few PCIe-to-PCI bridges fail to expose a PCIe capability, resulting in
-> >   * using the wrong DMA alias for the device.  Some of these devices can be
-> >   * used as either forward or reverse bridges, so we need to test whether the
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ arch/arm/mm/dma-mapping.c |   10 +++++++
+ drivers/iommu/of_iommu.c  |   10 +++++--
+ drivers/of/device.c       |   71 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/of/of_pci.c       |   39 +++++++++++++++++++++++++
+ drivers/of/platform.c     |   58 ++----------------------------------
+ drivers/pci/probe.c       |    2 ++
+ include/linux/of_device.h |    2 ++
+ include/linux/of_iommu.h  |    6 ++--
+ include/linux/of_pci.h    |   12 ++++++++
+ 9 files changed, 150 insertions(+), 60 deletions(-)
 
-
+-- 
+1.7.9.5
 
