@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbbAWE3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 23:29:36 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:64619 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930AbbAWE3e (ORCPT
+	id S1752458AbbAWEuR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 23:50:17 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:33445 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbbAWEuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 23:29:34 -0500
-Message-ID: <1421987370.5280.21.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched-rt: Reduce excessive task push rate by not
- pushing tasks with equal priority as the current task
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>, Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Suruchi Kadu <suruchi.a.kadu@intel.com>,
-        Doug Nelson <doug.nelson@intel.com>, linux-kernel@vger.kernel.org
-Date: Fri, 23 Jan 2015 05:29:30 +0100
-In-Reply-To: <1421952836.2399.58.camel@schen9-desk2.jf.intel.com>
-References: <1421952836.2399.58.camel@schen9-desk2.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Thu, 22 Jan 2015 23:50:14 -0500
+Message-ID: <54C1D301.2050509@gmail.com>
+Date: Thu, 22 Jan 2015 23:50:09 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: minyard@acm.org, Nicholas Krause <xerofoify@gmail.com>
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] char:ipmi: Free ipmi_recv_msg messages from the
+ linked list,recv_msgs for the function,ipmi_release in the file,ipmi_devintf.c
+References: <1421723653-19633-1-git-send-email-xerofoify@gmail.com> <54C0F59B.8090709@acm.org>
+In-Reply-To: <54C0F59B.8090709@acm.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-22 at 10:53 -0800, Tim Chen wrote: 
-> Commit 3be209a8 tries to migrate task of equal priority as the running
-> one to other cpus to balance load and eliminate any idle cpus.  However,
-> for system that is fully busy and running workload of a few priorities,
-> we found this change to cause tasks getting pushed around without
-> improving cpu utilization. On a fully loaded system running a well known
-> OLTP benchmark, it causes 70% more run queue locking in the push task
-> path without improving cpu utilization and make throughput degrade by
-> 1.5%. We observe much higher rq lock contention due to excessive lockings
-> of target run queues on task wakeup.
+On 01/22/2015 08:05 AM, Corey Minyard wrote:
+> Patch is queued for 3.20.  Thanks.
 
-Pushing tasks of equal priority is about getting rt tasks to a CPU they
-can utilize NOW.  Trying to improve throughput and whatnot is all well
-and good, but sacrificing the most sacred rt cow on the planet to
-improve some benchmark number is a very bad idea :)
+That patch is horribly broken.
 
--Mike
+
+Thanks,
+Sasha
+
+> -corey
+> 
+> On 01/19/2015 09:14 PM, Nicholas Krause wrote:
+>> This adds a loop through the elements in the linked list, recv_msgs using
+>> list_for_entry_safe in order to free messages in this list.  In addition
+>> we are using the safe version of this marco in order to prevent use after
+>> bugs related to deleting the element we are on currently by holding a
+>> pointer to the next element after the current one we are on and freeing
+>> with the function, ipmi_free_recv_msg internally in this loop.
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  drivers/char/ipmi/ipmi_devintf.c | 7 ++++---
+>>  1 file changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
+>> index ec318bf..d2af38a 100644
+>> --- a/drivers/char/ipmi/ipmi_devintf.c
+>> +++ b/drivers/char/ipmi/ipmi_devintf.c
+>> @@ -157,14 +157,15 @@ static int ipmi_release(struct inode *inode, struct file *file)
+>>  {
+>>  	struct ipmi_file_private *priv = file->private_data;
+>>  	int                      rv;
+>> +	struct  ipmi_recv_msg *msg, *next;
+>>  
+>>  	rv = ipmi_destroy_user(priv->user);
+>>  	if (rv)
+>>  		return rv;
+>>  
+>> -	/* FIXME - free the messages in the list. */
+>> -	kfree(priv);
+>> -
+>> +	list_for_each_entry_safe(msg, next, &priv->recv_msgs, link) {
+>> +		ipmi_free_recv_msg(msg);
+>> +	}
+>>  	return 0;
+>>  }
+>>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
