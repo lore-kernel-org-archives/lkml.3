@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564AbbAWOXF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:23:05 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:43696 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498AbbAWOWz (ORCPT
+	id S1755531AbbAWOXC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:23:02 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:34345 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282AbbAWOW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:22:55 -0500
+	Fri, 23 Jan 2015 09:22:57 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -24,9 +24,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         Daniel Drake <drake@endlessm.com>,
         Dmitry Pervushin <dpervushin@gmail.com>,
         Tim Sander <tim@krieglstein.org>
-Subject: [PATCH 3.19-rc2 v15 1/8] irqchip: gic: Optimize locking in gic_raise_softirq
-Date: Fri, 23 Jan 2015 14:22:25 +0000
-Message-Id: <1422022952-31552-2-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH 3.19-rc2 v15 2/8] irqchip: gic: Make gic_raise_softirq FIQ-safe
+Date: Fri, 23 Jan 2015 14:22:26 +0000
+Message-Id: <1422022952-31552-3-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1422022952-31552-1-git-send-email-daniel.thompson@linaro.org>
 References: <1422022952-31552-1-git-send-email-daniel.thompson@linaro.org>
@@ -34,23 +34,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently gic_raise_softirq() is locked using upon irq_controller_lock.
-This lock is primarily used to make register read-modify-write sequences
-atomic but gic_raise_softirq() uses it instead to ensure that the
-big.LITTLE migration logic can figure out when it is safe to migrate
-interrupts between physical cores.
+It is currently possible for FIQ handlers to re-enter gic_raise_softirq()
+and lock up.
 
-This is sub-optimal in closely related ways:
+    	gic_raise_softirq()
+	   lock(x);
+-~-> FIQ
+        handle_fiq()
+	   gic_raise_softirq()
+	      lock(x);		<-- Lockup
 
-1. No locking at all is required on systems where the b.L switcher is
-   not configured.
+arch/arm/ uses IPIs to implement arch_irq_work_raise(), thus this issue
+renders it difficult for FIQ handlers to safely defer work to less
+restrictive calling contexts.
 
-2. Finer grain locking can be used on systems where the b.L switcher is
-   present.
+This patch fixes the problem by converting the cpu_map_migration_lock
+into a rwlock making it safe to re-enter the function.
 
-This patch resolves both of the above by introducing a separate finer
-grain lock and providing conditionally compiled inlines to lock/unlock
-it.
+Note that having made it safe to re-enter gic_raise_softirq() we no
+longer need to mask interrupts during gic_raise_softirq() because the
+b.L migration is always performed from task context.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
@@ -58,75 +61,97 @@ Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-gic.c | 36 +++++++++++++++++++++++++++++++++---
- 1 file changed, 33 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-gic.c | 38 +++++++++++++++++++++++++-------------
+ 1 file changed, 25 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index d617ee5a3d8a..a9ed64dcc84b 100644
+index a9ed64dcc84b..c172176499f6 100644
 --- a/drivers/irqchip/irq-gic.c
 +++ b/drivers/irqchip/irq-gic.c
-@@ -73,6 +73,27 @@ struct gic_chip_data {
- static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+@@ -75,22 +75,25 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+ /*
+  * This lock is used by the big.LITTLE migration code to ensure no IPIs
+  * can be pended on the old core after the map has been updated.
++ *
++ * This lock may be locked for reading from both IRQ and FIQ handlers
++ * and therefore must not be locked for writing when these are enabled.
+  */
+ #ifdef CONFIG_BL_SWITCHER
+-static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
++static DEFINE_RWLOCK(cpu_map_migration_lock);
+ 
+-static inline void bl_migration_lock(unsigned long *flags)
++static inline void bl_migration_lock(void)
+ {
+-	raw_spin_lock_irqsave(&cpu_map_migration_lock, *flags);
++	read_lock(&cpu_map_migration_lock);
+ }
+ 
+-static inline void bl_migration_unlock(unsigned long flags)
++static inline void bl_migration_unlock(void)
+ {
+-	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
++	read_unlock(&cpu_map_migration_lock);
+ }
+ #else
+-static inline void bl_migration_lock(unsigned long *flags) {}
+-static inline void bl_migration_unlock(unsigned long flags) {}
++static inline void bl_migration_lock(void) {}
++static inline void bl_migration_unlock(void) {}
+ #endif
  
  /*
-+ * This lock is used by the big.LITTLE migration code to ensure no IPIs
-+ * can be pended on the old core after the map has been updated.
-+ */
-+#ifdef CONFIG_BL_SWITCHER
-+static DEFINE_RAW_SPINLOCK(cpu_map_migration_lock);
-+
-+static inline void bl_migration_lock(unsigned long *flags)
-+{
-+	raw_spin_lock_irqsave(&cpu_map_migration_lock, *flags);
-+}
-+
-+static inline void bl_migration_unlock(unsigned long flags)
-+{
-+	raw_spin_unlock_irqrestore(&cpu_map_migration_lock, flags);
-+}
-+#else
-+static inline void bl_migration_lock(unsigned long *flags) {}
-+static inline void bl_migration_unlock(unsigned long flags) {}
-+#endif
-+
-+/*
-  * The GIC mapping of CPU interfaces does not necessarily match
-  * the logical CPU numbering.  Let's use a mapping as returned
-  * by the GIC itself.
-@@ -624,7 +645,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	int cpu;
- 	unsigned long flags, map = 0;
+@@ -640,12 +643,20 @@ static void __init gic_pm_init(struct gic_chip_data *gic)
+ #endif
  
--	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-+	bl_migration_lock(&flags);
+ #ifdef CONFIG_SMP
++/*
++ * Raise the specified IPI on all cpus set in mask.
++ *
++ * This function is safe to call from all calling contexts, including
++ * FIQ handlers. It relies on bl_migration_lock() being multiply acquirable
++ * to avoid deadlocks when the function is re-entered at different
++ * exception levels.
++ */
+ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ {
+ 	int cpu;
+-	unsigned long flags, map = 0;
++	unsigned long map = 0;
+ 
+-	bl_migration_lock(&flags);
++	bl_migration_lock();
  
  	/* Convert our logical CPU mask into a physical one. */
  	for_each_cpu(cpu, mask)
-@@ -639,7 +660,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+@@ -660,7 +671,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
  	/* this always happens on GIC0 */
  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
  
--	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-+	bl_migration_unlock(flags);
+-	bl_migration_unlock(flags);
++	bl_migration_unlock();
  }
  #endif
  
-@@ -710,8 +731,17 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 
- 	raw_spin_lock(&irq_controller_lock);
- 
--	/* Update the target interface for this logical CPU */
-+	/*
-+	 * Update the target interface for this logical CPU
-+	 *
-+	 * From the point we release the cpu_map_migration_lock any new
-+	 * SGIs will be pended on the new cpu which makes the set of SGIs
-+	 * pending on the old cpu static. That means we can defer the
-+	 * migration until after we have released the irq_controller_lock.
-+	 */
-+	raw_spin_lock(&cpu_map_migration_lock);
+@@ -708,7 +719,8 @@ int gic_get_cpu_id(unsigned int cpu)
+  * Migrate all peripheral interrupts with a target matching the current CPU
+  * to the interface corresponding to @new_cpu_id.  The CPU interface mapping
+  * is also updated.  Targets to other CPU interfaces are unchanged.
+- * This must be called with IRQs locally disabled.
++ * This must be called from a task context and with IRQ and FIQ locally
++ * disabled.
+  */
+ void gic_migrate_target(unsigned int new_cpu_id)
+ {
+@@ -739,9 +751,9 @@ void gic_migrate_target(unsigned int new_cpu_id)
+ 	 * pending on the old cpu static. That means we can defer the
+ 	 * migration until after we have released the irq_controller_lock.
+ 	 */
+-	raw_spin_lock(&cpu_map_migration_lock);
++	write_lock(&cpu_map_migration_lock);
  	gic_cpu_map[cpu] = 1 << new_cpu_id;
-+	raw_spin_unlock(&cpu_map_migration_lock);
+-	raw_spin_unlock(&cpu_map_migration_lock);
++	write_unlock(&cpu_map_migration_lock);
  
  	/*
  	 * Find all the peripheral interrupts targetting the current
