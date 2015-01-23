@@ -1,65 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbbAWWT0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 17:19:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43192 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbbAWWTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 17:19:23 -0500
-Message-ID: <54C2C8C5.7020300@oracle.com>
-Date: Fri, 23 Jan 2015 17:18:45 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751959AbbAWW2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 17:28:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44017 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913AbbAWW2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 17:28:48 -0500
+Date: Sat, 24 Jan 2015 09:28:42 +1100
+From: NeilBrown <neilb@suse.de>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Marek Belisko <marek@goldelico.com>, bcousson@baylibre.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        hns@goldelico.com, NeilBrown <neil@brown.name>
+Subject: Re: [PATCH 12/13] ARM: dts: omap3-gta04: uart4 is not connected, so
+ mark it "disabled"
+Message-ID: <20150124092842.2441d3c6@notabene.brown>
+In-Reply-To: <20150122214052.GY7718@atomide.com>
+References: <1421959099-28319-1-git-send-email-marek@goldelico.com>
+	<1421959099-28319-13-git-send-email-marek@goldelico.com>
+	<20150122214052.GY7718@atomide.com>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "David S. Miller" <davem@davemloft.net>,
-        James Morris <james.l.morris@oracle.com>, yoshfuji@linux-ipv6.org,
-        Patrick McHardy <kaber@trash.net>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: net: raw socket accessing invalid memory
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/Pu=LAE=9iVL8lHYgcpTy=YI"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+--Sig_/Pu=LAE=9iVL8lHYgcpTy=YI
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel and the KASan patchset, I've stumbled on the following spew:
+On Thu, 22 Jan 2015 13:40:53 -0800 Tony Lindgren <tony@atomide.com> wrote:
 
-[ 2560.693067] BUG: AddressSanitizer: out of bounds on stack in memcpy_fromiovec+0x24d/0x260 at addr ffff880200697dd0
-[ 2560.693067] Read of size 8 by task trinity-c9/25362
-[ 2560.693067] page:ffffea000801a5c0 count:0 mapcount:0 mapping:          (null) index:0x0
-[ 2560.693067] flags: 0x1afffff80000000()
-[ 2560.693067] page dumped because: kasan: bad access detected
-[ 2560.693067] CPU: 9 PID: 25362 Comm: trinity-c9 Not tainted 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1810
-[ 2560.693067]  0000000000000000 0000000000000000 ffff880200697790 ffff8802006976d8
-[ 2560.693067]  ffffffff92e9e8b7 1ffffd40010034bf ffffea000801a5c0 ffff880200697778
-[ 2560.693067]  ffffffff81b4a7b2 ffffed00629442ba dffffc0000000000 ffffed00629442b8
-[ 2560.693067] Call Trace:
-[ 2560.693067] dump_stack (lib/dump_stack.c:52)
-[ 2560.693067] kasan_report_error (mm/kasan/report.c:136 mm/kasan/report.c:194)
-[ 2560.693067] __asan_report_load8_noabort (mm/kasan/report.c:236)
-[ 2560.693067] memcpy_fromiovec (lib/iovec.c:14)
-[ 2560.693067] raw_sendmsg (net/ipv4/raw.c:444 net/ipv4/raw.c:606)
-[ 2560.693067] inet_sendmsg (net/ipv4/af_inet.c:734)
-[ 2560.693067] ? inet_sendmsg (include/net/sock.h:875 net/ipv4/af_inet.c:726)
-[ 2560.693067] do_sock_sendmsg (net/socket.c:645 (discriminator 4))
-[ 2560.771124] SYSC_sendto (net/socket.c:1782)
-[ 2560.794593] SyS_sendto (net/socket.c:1748)
-[ 2560.794593] tracesys_phase2 (arch/x86/kernel/entry_64.S:530)
-[ 2560.794593] Memory state around the buggy address:
-[ 2560.794593]  ffff880200697c80: 00 f4 f4 f3 f3 f3 f3 00 00 00 00 00 00 00 00 00
-[ 2560.794593]  ffff880200697d00: 00 00 00 f1 f1 f1 f1 04 f4 f4 f4 f2 f2 f2 f2 04
-[ 2560.794593] >ffff880200697d80: f4 f4 f4 f2 f2 f2 f2 00 00 f4 f4 f2 f2 f2 f2 00
-[ 2560.794593]                                                  ^
-[ 2560.794593]  ffff880200697e00: 00 00 00 00 00 00 00 00 00 f4 f4 f2 f2 f2 f2 00
-[ 2560.794593]  ffff880200697e80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f3
+> * Marek Belisko <marek@goldelico.com> [150122 12:42]:
+> > From: NeilBrown <neil@brown.name>
+> >=20
+> > Signed-off-by: NeilBrown <neil@brown.name>
+> > ---
+> >  arch/arm/boot/dts/omap3-gta04.dtsi | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> >=20
+> > diff --git a/arch/arm/boot/dts/omap3-gta04.dtsi b/arch/arm/boot/dts/oma=
+p3-gta04.dtsi
+> > index 228e79b..8d2b0a1 100644
+> > --- a/arch/arm/boot/dts/omap3-gta04.dtsi
+> > +++ b/arch/arm/boot/dts/omap3-gta04.dtsi
+> > @@ -357,6 +357,10 @@
+> >  	pinctrl-0 =3D <&uart3_pins>;
+> >  };
+> > =20
+> > +&uart4 {
+> > +	status =3D "disabled";
+> > +};
+> > +
+>=20
+> This you probably want to avoid from PM point of view. Depending on
+> bootloader state of uart4, Linux may or may not be able to hit any
+> deeper power states.
+>=20
+> Marking something with status =3D "disabled" in dts causes the device
+> entry not even to be created. That means hwmod won't be able to reset
+> and idle this device during boot.
+>=20
+> The uart4 device is there for sure even if not muxed and in incomplete
+> state. You may want to also check other places where you're using
+> status =3D "disabled" for the same reasons.
 
+That's ... unfortunate.  Would that apply to the MCBSPs too?  They are
+disabled by default so you would need to explicitly enable them all for
+sensible behaviour....
+
+Hopefully there is some way to mark as device as "this is not used, make su=
+re
+it is turned off and stays off" ???
+
+Thanks for the heads-up.  I'll have a look and see exactly what is happenin=
+g.
+
+BTW, on the topic of OMAP UARTs and power saving...
+ I note that there are now two drivers for the OMAP3 UART - omap-serial and
+ 8250_omap.
+ I also note that your commit:
+
+commit a2fc36613ac1af2e92cbed7af80bc72d8114dd50
+    ARM: OMAP3: Use manual idle for UARTs because of DMA errata
+
+ is incompatible with omap-serial.  In particular, if I enable runtime
+ suspend of the serial port by setting the autosuspend_timeout, then incomi=
+ng
+ characters will no longer wake the port (if I revert your patch incoming
+ chars do wake the port).
+ This could (I think) be fixed by enabling the RX/CTS interrupt.  However if
+ omap-serial is being deprecated, then there probably isn't any point.
+
+ So: what is the longer term expectation for these drivers?  Should we be
+ switching over to 8250?
 
 Thanks,
-Sasha
+NeilBrown
+
+--Sig_/Pu=LAE=9iVL8lHYgcpTy=YI
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVMLLGjnsnt1WYoG5AQI0GRAApeJgaD++vxc6PfBuABjkcpC6vfETHAAK
+Mp53TskeQzfvKbjGQA+hUBZDBde9wvuhyH7FsFZJv02njrqhhgD/NOWFmhFeCcqS
+M7HU/5TXui2Xs5216+GvpDuW1gbXzqrg8AcgMjcAlgEsa3DKCd1TfcgE4PognVZU
+Sscy0YY97dSFDYk3n0kcJ6BnY6zzXPmaVMEZgx+B+hdBmO9S7RKuS8jxsnCKSQdE
+QgKcXq7aQJOgtxz9z6I5zOj6thos2i1P+dGSS1QizHQ6bXs4QbI4+8lUPu3hxp1j
+aiUezyyQeH03XtSekCqVRo//YvQ89XZK/r0/b6YUN97O9tfY4ODuvJhCFUWLN7Fs
+Edi1nJp4iujyczyx290Rjb4483eQBbgJ1hAnjQZjyHEPyk9LdnO734rEvVPDWLm1
+jKdKuj+Jsf86AwVkrTHep8gogS8BpjpKhZLMbKoFNaASEN1YSBlM5BehLsJRcsuB
+DspFibuERnRgVMcBn0PxAnKFuTIeKSaZjxDVuqiZXTWYoAbIQ0WFbuhsyGXczDJT
+uwX9Nv5+UIxAubZDrdOkH2eIWy335lWNfV3k5FzzIqbm8xoHMEfzDUf+99qFOWlM
+z1QtUC58bSxnsW7lyMHrZKRfxcZfpD3QSmXtwr67MCpxmCwe2bm5Jc9YM7qHAs4M
+9weUEsQjVfE=
+=mF4f
+-----END PGP SIGNATURE-----
+
+--Sig_/Pu=LAE=9iVL8lHYgcpTy=YI--
