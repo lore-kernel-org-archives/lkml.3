@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114AbbAWLoF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:44:05 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:45295 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbbAWLoD (ORCPT
+	id S1754938AbbAWLr2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:47:28 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39839 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497AbbAWLrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:44:03 -0500
-Message-ID: <54C233FB.3080309@ahsoftware.de>
-Date: Fri, 23 Jan 2015 12:43:55 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Fri, 23 Jan 2015 06:47:15 -0500
+Date: Fri, 23 Jan 2015 20:44:28 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net
+Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com,
+        dcb314@hotmail.com
+Subject: [PATCH] staging: dgap: fix "if" statement that always evaluates to
+ true
+Message-ID: <20150123114428.GA5450@devel.8.8.4.4>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-CC: linux-kbuild@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] modsign: provide option to automatically delete the key
- after modules were installed
-References: <1421976009-9819-1-git-send-email-holler@ahsoftware.de> <54C21361.1080500@suse.cz> <54C216D8.8040004@ahsoftware.de> <54C21F35.1040206@ahsoftware.de> <54C22891.6070506@suse.cz>
-In-Reply-To: <54C22891.6070506@suse.cz>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.01.2015 um 11:55 schrieb Michal Marek:
-> On 2015-01-23 11:15, Alexander Holler wrote:
->> Am 23.01.2015 um 10:39 schrieb Alexander Holler:
->>> Am 23.01.2015 um 10:24 schrieb Michal Marek:
->>>
->>>>> +	@rm ./signing_key.priv
->>>>> +	@rm ./signing_key.x509
->>>>
->>>> Why do you need to delete the certificate?
->>>
->>> No special reason.
->>>
->>> I'm just not sure (and too lazy to look it up) if it might contain the
->>> private key too (like it's possible in pem files), so I've deleted it too.
->>
->> Or in other words, while .priv leads me to the educated guess that it
->> contains the private key, .x509 doesn't give me an obvious indication
->> what it contains.
->>
->> If someone assures me that .x509 doesn't contain the private key
->> necessary to sign the modules, I'll send a v2 of the patch.
->
-> The .x509 file contains a certificate signed by the private key, but not
-> the private key. With some scripting, it can be used to verify the
-> module signatures.
+cppcheck warning:
+(warnning) Logical disjunction always evaluates to true
 
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/dgap/dgap.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Assuming that doesn't change (hopefully), I'll send v2 in a few minutes 
-(it just compiles in order to test it). Thanks for assuring me that 
-.x509 does not and will not contain the private key.
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 518ab56..7184747 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -978,8 +978,8 @@ static int dgap_parsefile(char **in)
+ 				brd->u.board.conc1++;
+ 
+ 			conc_type = dgap_gettok(in);
+-			if (conc_type == 0 || conc_type != CX ||
+-			    conc_type != EPC) {
++			if (conc_type == 0 || (conc_type != CX &&
++			    conc_type != EPC)) {
+ 				pr_err("failed to set a type of concentratros");
+ 				return -1;
+ 			}
+@@ -1019,8 +1019,8 @@ static int dgap_parsefile(char **in)
+ 				brd->u.board.module1++;
+ 
+ 			module_type = dgap_gettok(in);
+-			if (module_type == 0 || module_type != PORTS ||
+-			    module_type != MODEM) {
++			if (module_type == 0 || (module_type != PORTS &&
++			    module_type != MODEM)) {
+ 				pr_err("failed to set a type of module");
+ 				return -1;
+ 			}
+-- 
+1.7.1
 
-Regards,
-
-Alexander Holler
