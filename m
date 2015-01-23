@@ -1,191 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413AbbAWNNQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 08:13:16 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:65244 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348AbbAWNM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 08:12:59 -0500
-Message-ID: <54C248D7.6040901@hurleysoftware.com>
-Date: Fri, 23 Jan 2015 08:12:55 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Lyra Zhang <zhang.lyra@gmail.com>
-CC: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, "jslaby@suse.cz" <jslaby@suse.cz>,
-        Grant Likely <grant.likely@linaro.org>,
-        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>, Hayato Suzuki <hytszk@gmail.com>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        Orson Zhai <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        =?UTF-8?B?IldlaSBRaWFvICjkuZTkvJ8pIg==?= <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v6 2/2] tty/serial: Add Spreadtrum sc9836-uart driver
- support
-References: <1421933706-4277-1-git-send-email-chunyan.zhang@spreadtrum.com>	<1421933706-4277-3-git-send-email-chunyan.zhang@spreadtrum.com>	<54C1C69B.6010100@hurleysoftware.com> <CAAfSe-s2Y_JSiR+HX4OOF_62q3JYN5k81JZuNe9CP9=shBpZzA@mail.gmail.com>
-In-Reply-To: <CAAfSe-s2Y_JSiR+HX4OOF_62q3JYN5k81JZuNe9CP9=shBpZzA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1755428AbbAWNPX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 08:15:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48114 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752764AbbAWNPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 08:15:20 -0500
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH v3 0/3] page stealing tweaks
+Date: Fri, 23 Jan 2015 14:15:03 +0100
+Message-Id: <1422018906-8880-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 02:23 AM, Lyra Zhang wrote:
-> Hi, Peter
-> 
-> Many thanks to you for reviewing so carefully and giving us so many
-> suggestions and so clear explanations.
+Changes since v2:
+o No functional changes
+o Rebased to 3.19-rc5 (but there were no real context changes)
+o Tested with 3.19-rc4 and my last compaction series [1], which is however
+  not meant as a prerequisity. It just stabilizes the benchmark results,
+  especially for non-restart iterations 2+, and makes evaluation easier.
+  I consider these patches ready as they are for current tree.
 
-:)
+When studying page stealing, I noticed some weird looking decisions in
+try_to_steal_freepages(). The first I assume is a bug (Patch 1), the following
+two patches were driven by evaluation.
 
-> I'll address all of your comments and send an updated patch soon.
-> 
-> On Fri, Jan 23, 2015 at 11:57 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
+Testing was done with stress-highalloc of mmtests, using the
+mm_page_alloc_extfrag tracepoint and postprocessing to get counts of how often
+page stealing occurs for individual migratetypes, and what migratetypes are
+used for fallbacks. Arguably, the worst case of page stealing is when
+UNMOVABLE allocation steals from MOVABLE pageblock. RECLAIMABLE allocation
+stealing from MOVABLE allocation is also not ideal, so the goal is to minimize
+these two cases.
 
-[...]
+The evaluation of v2 wasn't always clear win and Joonsoo questioned the
+results. Here I used different baseline which includes RFC compaction
+improvements from [1]. I found that the compaction improvements reduce
+variability of stress-highalloc, so there's less noise in the data.
 
->>> +static void sprd_set_termios(struct uart_port *port,
->>> +                                 struct ktermios *termios,
->>> +                                 struct ktermios *old)
->>> +{
->>> +     unsigned int baud, quot;
->>> +     unsigned int lcr, fc;
->>> +     unsigned long flags;
->>> +
->>> +     /* ask the core to calculate the divisor for us */
->>> +     baud = uart_get_baud_rate(port, termios, old, 1200, 3000000);
->>                                                       ^^^^   ^^^^^^
->>                                            mabye derive these from uartclk?
-> 
-> I'm afraid I can't understand very clearly, Could you explain more
-> details please?
-
-Is the fixed clock divider == 8 and the uartclk == 26000000 ?
-If so,
-	baud = uartclk / 8 = 3250000
-
-I see now this is clamping baud inside the maximum, so this is fine.
-Please disregard my comment.
-
-[...]
+First, let's look at stress-highalloc configured to do sync compaction, and
+how these patches reduce page stealing events during the test. First column is
+after fresh reboot, other two are reiterations of test without reboot. That
+was all accumulater over 5 re-iterations (so the benchmark was run 5x3 times
+with 5 fresh restarts).
 
 
->>> +static int sprd_probe(struct platform_device *pdev)
->>> +{
->>> +     struct resource *res;
->>> +     struct uart_port *up;
->>> +     struct clk *clk;
->>> +     int irq;
->>> +     int index;
->>> +     int ret;
->>> +
->>> +     for (index = 0; index < ARRAY_SIZE(sprd_port); index++)
->>> +             if (sprd_port[index] == NULL)
->>> +                     break;
->>> +
->>> +     if (index == ARRAY_SIZE(sprd_port))
->>> +             return -EBUSY;
->>> +
->>> +     index = sprd_probe_dt_alias(index, &pdev->dev);
->>> +
->>> +     sprd_port[index] = devm_kzalloc(&pdev->dev,
->>> +             sizeof(*sprd_port[index]), GFP_KERNEL);
->>> +     if (!sprd_port[index])
->>> +             return -ENOMEM;
->>> +
->>> +     up = &sprd_port[index]->port;
->>> +     up->dev = &pdev->dev;
->>> +     up->line = index;
->>> +     up->type = PORT_SPRD;
->>> +     up->iotype = SERIAL_IO_PORT;
->>> +     up->uartclk = SPRD_DEF_RATE;
->>> +     up->fifosize = SPRD_FIFO_SIZE;
->>> +     up->ops = &serial_sprd_ops;
->>> +     up->flags = ASYNC_BOOT_AUTOCONF;
->>                     ^^^^^^^^^
->>                     UPF_BOOT_AUTOCONF
->>
->> sparse will catch errors like this. See Documentation/sparse.txt
-> 
-> you mean we should use UPF_BOOT_AUTOCONF, right?
+Baseline:
 
-Yes. Only UPF_* flag definitions should be used with the uart_port.flags
-field.
-
-My comment regarding the sparse tool and documentation is because the
-flags field and UPF_* definitions use a type mechanism to generate
-warnings using the sparse tool if regular integer values are used
-with the flags field.
-
-The type mechanism was specifically introduced to catch using ASYNC_*
-definitions with the uart_port.flags field.
-
-[...]
-
->>> +static int sprd_suspend(struct device *dev)
->>> +{
->>> +     int id = to_platform_device(dev)->id;
->>> +     struct uart_port *port = &sprd_port[id]->port;
->>
->> I'm a little confused regarding the port indexing;
->> is platform_device->id == line ?  Where did that happen?
->>
-> 
-> Oh, I'll change to assign platform_device->id with port->line in probe()
-
-I apologize; I should have made my comment clearer.
-
-The ->id should not be assigned.
-
-Replace
-
-	int id = to_platform_device(dev)->id;
-	struct uart_port *port = &sprd_port[id]->port;
-
-	uart_suspend_port(&sprd_uart_driver, port);
-
-with
-
-	struct sprd_uart_port *sup = dev_get_drvdata(dev);
-
-	uart_suspend_port(&sprd_uart_driver, &sup->port);
+                                                   3.19-rc4        3.19-rc4        3.19-rc4
+                                                  5-nothp-1       5-nothp-2       5-nothp-3
+Page alloc extfrag event                               10264225     8702233    10244125
+Extfrag fragmenting                                    10263271     8701552    10243473
+Extfrag fragmenting for unmovable                         13595       17616       15960
+Extfrag fragmenting unmovable placed with movable          7989       12193        8447
+Extfrag fragmenting for reclaimable                         658        1840        1817
+Extfrag fragmenting reclaimable placed with movable         558        1677        1679
+Extfrag fragmenting for movable                        10249018     8682096    10225696
 
 
-I know it's not obvious but platform_get/set_drvdata() is really
-dev_get/set_drvdata() using the embedded struct device dev.
+With Patch 1:
+                                                   3.19-rc4        3.19-rc4        3.19-rc4
+                                                  6-nothp-1       6-nothp-2       6-nothp-3
+Page alloc extfrag event                               11834954     9877523     9774860
+Extfrag fragmenting                                    11833993     9876880     9774245
+Extfrag fragmenting for unmovable                          7342       16129       11712
+Extfrag fragmenting unmovable placed with movable          4191       10547        6270
+Extfrag fragmenting for reclaimable                         373        1130         923
+Extfrag fragmenting reclaimable placed with movable         302         906         738
+Extfrag fragmenting for movable                        11826278     9859621     9761610
 
-> 
->>
->>> +
->>> +     uart_suspend_port(&sprd_uart_driver, port);
->>> +
->>> +     return 0;
->>> +}
->>> +
->>> +static int sprd_resume(struct device *dev)
->>> +{
->>> +     int id = to_platform_device(dev)->id;
->>> +     struct uart_port *port = &sprd_port[id]->port;
->>> +
->>> +     uart_resume_port(&sprd_uart_driver, port);
+With Patch 2:
+                                                   3.19-rc4        3.19-rc4        3.19-rc4
+                                                  7-nothp-1       7-nothp-2       7-nothp-3
+Page alloc extfrag event                                4725990     3668793     3807436
+Extfrag fragmenting                                     4725104     3668252     3806898
+Extfrag fragmenting for unmovable                          6678        7974        7281
+Extfrag fragmenting unmovable placed with movable          2051        3829        4017
+Extfrag fragmenting for reclaimable                         429        1208        1278
+Extfrag fragmenting reclaimable placed with movable         369         976        1034
+Extfrag fragmenting for movable                         4717997     3659070     3798339
 
-same here
 
->>> +     return 0;
+With Patch 3:
+                                                   3.19-rc4        3.19-rc4        3.19-rc4
+                                                  8-nothp-1       8-nothp-2       8-nothp-3
+Page alloc extfrag event                                5016183     4700142     3850633
+Extfrag fragmenting                                     5015325     4699613     3850072
+Extfrag fragmenting for unmovable                          1312        3154        3088
+Extfrag fragmenting unmovable placed with movable          1115        2777        2714
+Extfrag fragmenting for reclaimable                         437        1193        1097
+Extfrag fragmenting reclaimable placed with movable         330         969         879
+Extfrag fragmenting for movable                         5013576     4695266     3845887
+
+In v2 we've seen apparent regression with Patch 1 for unmovable events, this
+is now gone, suggesting it was indeed noise. Here, each patch improves the
+situation for unmovable events. Reclaimable is improved by patch 1 and then
+either the same modulo noise, or perhaps sligtly worse - a small price for
+unmovable improvements, IMHO. The number of movable allocations falling back
+to other migratetypes is most noisy, but it's reduced to half at Patch 2
+nevertheless. These are least critical as compaction can move them around.
+
+If we look at success rates, the patches don't affect them, that didn't change.
+
+Baseline:
+                             3.19-rc4              3.19-rc4              3.19-rc4
+                            5-nothp-1             5-nothp-2             5-nothp-3
+Success 1 Min         49.00 (  0.00%)       42.00 ( 14.29%)       41.00 ( 16.33%)
+Success 1 Mean        51.00 (  0.00%)       45.00 ( 11.76%)       42.60 ( 16.47%)
+Success 1 Max         55.00 (  0.00%)       51.00 (  7.27%)       46.00 ( 16.36%)
+Success 2 Min         53.00 (  0.00%)       47.00 ( 11.32%)       44.00 ( 16.98%)
+Success 2 Mean        59.60 (  0.00%)       50.80 ( 14.77%)       48.20 ( 19.13%)
+Success 2 Max         64.00 (  0.00%)       56.00 ( 12.50%)       52.00 ( 18.75%)
+Success 3 Min         84.00 (  0.00%)       82.00 (  2.38%)       78.00 (  7.14%)
+Success 3 Mean        85.60 (  0.00%)       82.80 (  3.27%)       79.40 (  7.24%)
+Success 3 Max         86.00 (  0.00%)       83.00 (  3.49%)       80.00 (  6.98%)
+
+Patch 1:
+                             3.19-rc4              3.19-rc4              3.19-rc4
+                            6-nothp-1             6-nothp-2             6-nothp-3
+Success 1 Min         49.00 (  0.00%)       44.00 ( 10.20%)       44.00 ( 10.20%)
+Success 1 Mean        51.80 (  0.00%)       46.00 ( 11.20%)       45.80 ( 11.58%)
+Success 1 Max         54.00 (  0.00%)       49.00 (  9.26%)       49.00 (  9.26%)
+Success 2 Min         58.00 (  0.00%)       49.00 ( 15.52%)       48.00 ( 17.24%)
+Success 2 Mean        60.40 (  0.00%)       51.80 ( 14.24%)       50.80 ( 15.89%)
+Success 2 Max         63.00 (  0.00%)       54.00 ( 14.29%)       55.00 ( 12.70%)
+Success 3 Min         84.00 (  0.00%)       81.00 (  3.57%)       79.00 (  5.95%)
+Success 3 Mean        85.00 (  0.00%)       81.60 (  4.00%)       79.80 (  6.12%)
+Success 3 Max         86.00 (  0.00%)       82.00 (  4.65%)       82.00 (  4.65%)
+
+Patch 2:
+
+                             3.19-rc4              3.19-rc4              3.19-rc4
+                            7-nothp-1             7-nothp-2             7-nothp-3
+Success 1 Min         50.00 (  0.00%)       44.00 ( 12.00%)       39.00 ( 22.00%)
+Success 1 Mean        52.80 (  0.00%)       45.60 ( 13.64%)       42.40 ( 19.70%)
+Success 1 Max         55.00 (  0.00%)       46.00 ( 16.36%)       47.00 ( 14.55%)
+Success 2 Min         52.00 (  0.00%)       48.00 (  7.69%)       45.00 ( 13.46%)
+Success 2 Mean        53.40 (  0.00%)       49.80 (  6.74%)       48.80 (  8.61%)
+Success 2 Max         57.00 (  0.00%)       52.00 (  8.77%)       52.00 (  8.77%)
+Success 3 Min         84.00 (  0.00%)       81.00 (  3.57%)       79.00 (  5.95%)
+Success 3 Mean        85.00 (  0.00%)       82.40 (  3.06%)       79.60 (  6.35%)
+Success 3 Max         86.00 (  0.00%)       83.00 (  3.49%)       80.00 (  6.98%)
+
+Patch 3:
+                             3.19-rc4              3.19-rc4              3.19-rc4
+                            8-nothp-1             8-nothp-2             8-nothp-3
+Success 1 Min         46.00 (  0.00%)       44.00 (  4.35%)       42.00 (  8.70%)
+Success 1 Mean        50.20 (  0.00%)       45.60 (  9.16%)       44.00 ( 12.35%)
+Success 1 Max         52.00 (  0.00%)       47.00 (  9.62%)       47.00 (  9.62%)
+Success 2 Min         53.00 (  0.00%)       49.00 (  7.55%)       48.00 (  9.43%)
+Success 2 Mean        55.80 (  0.00%)       50.60 (  9.32%)       49.00 ( 12.19%)
+Success 2 Max         59.00 (  0.00%)       52.00 ( 11.86%)       51.00 ( 13.56%)
+Success 3 Min         84.00 (  0.00%)       80.00 (  4.76%)       79.00 (  5.95%)
+Success 3 Mean        85.40 (  0.00%)       81.60 (  4.45%)       80.40 (  5.85%)
+Success 3 Max         87.00 (  0.00%)       83.00 (  4.60%)       82.00 (  5.75%)
+
+While there's no improvement here, I consider reduced fragmentation events to
+be worth on its own. Patch 2 also seems to reduce scanning for free pages, and
+migrations in compaction, suggesting it has somewhat less work to do:
+
+Patch 1:
+
+Compaction stalls                 4153        3959        3978
+Compaction success                1523        1441        1446
+Compaction failures               2630        2517        2531
+Page migrate success           4600827     4943120     5104348
+Page migrate failure             19763       16656       17806
+Compaction pages isolated      9597640    10305617    10653541
+Compaction migrate scanned    77828948    86533283    87137064
+Compaction free scanned      517758295   521312840   521462251
+Compaction cost                   5503        5932        6110
+
+Patch 2:
+
+Compaction stalls                 3800        3450        3518
+Compaction success                1421        1316        1317
+Compaction failures               2379        2134        2201
+Page migrate success           4160421     4502708     4752148
+Page migrate failure             19705       14340       14911
+Compaction pages isolated      8731983     9382374     9910043
+Compaction migrate scanned    98362797    96349194    98609686
+Compaction free scanned      496512560   469502017   480442545
+Compaction cost                   5173        5526        5811
+
+As with v2, /proc/pagetypeinfo appears unaffected with respect to numbers of
+unmovable and reclaimable pageblocks.
+
+Configuring the benchmark to allocate like THP page fault (i.e. no sync
+compaction) gives much noisier results for iterations 2 and 3 after reboot.
+This is not so surprising given how [1] offers lower improvements in this
+scenario due to less restarts after deferred compaction which would change
+compaction pivot.
+
+Baseline:
+                                                   3.19-rc4        3.19-rc4        3.19-rc4
+                                                    5-thp-1         5-thp-2         5-thp-3
+Page alloc extfrag event                                8148965     6227815     6646741
+Extfrag fragmenting                                     8147872     6227130     6646117
+Extfrag fragmenting for unmovable                         10324       12942       15975
+Extfrag fragmenting unmovable placed with movable          5972        8495       10907
+Extfrag fragmenting for reclaimable                         601        1707        2210
+Extfrag fragmenting reclaimable placed with movable         520        1570        2000
+Extfrag fragmenting for movable                         8136947     6212481     6627932
+
+Patch 1:
+                                                   3.19-rc4        3.19-rc4        3.19-rc4
+                                                    6-thp-1         6-thp-2         6-thp-3
+Page alloc extfrag event                                8345457     7574471     7020419
+Extfrag fragmenting                                     8343546     7573777     7019718
+Extfrag fragmenting for unmovable                         10256       18535       30716
+Extfrag fragmenting unmovable placed with movable          6893       11726       22181
+Extfrag fragmenting for reclaimable                         465        1208        1023
+Extfrag fragmenting reclaimable placed with movable         353         996         843
+Extfrag fragmenting for movable                         8332825     7554034     6987979
+
+Patch 2:
+                                                   3.19-rc4        3.19-rc4        3.19-rc4
+                                                    7-thp-1         7-thp-2         7-thp-3
+Page alloc extfrag event                                3512847     3020756     2891625
+Extfrag fragmenting                                     3511940     3020185     2891059
+Extfrag fragmenting for unmovable                          9017        6892        6191
+Extfrag fragmenting unmovable placed with movable          1524        3053        2435
+Extfrag fragmenting for reclaimable                         445        1081        1160
+Extfrag fragmenting reclaimable placed with movable         375         918         986
+Extfrag fragmenting for movable                         3502478     3012212     2883708
+
+Patch 3:
+                                                   3.19-rc4        3.19-rc4        3.19-rc4
+                                                    8-thp-1         8-thp-2         8-thp-3
+Page alloc extfrag event                                3181699     3082881     2674164
+Extfrag fragmenting                                     3180812     3082303     2673611
+Extfrag fragmenting for unmovable                          1201        4031        4040
+Extfrag fragmenting unmovable placed with movable           974        3611        3645
+Extfrag fragmenting for reclaimable                         478        1165        1294
+Extfrag fragmenting reclaimable placed with movable         387         985        1030
+Extfrag fragmenting for movable                         3179133     3077107     2668277
+
+The improvements for first iteration are clear, the rest is much noisier and
+can appear like regression for Patch 1. Anyway, patch 2 rectifies it.
+
+Allocation success rates are again unaffected so there's no point in making
+this e-mail any longer.
+
+[1] http://marc.info/?l=linux-mm&m=142166196321125&w=2
+
+Vlastimil Babka (3):
+  mm: when stealing freepages, also take pages created by splitting
+    buddy page
+  mm: always steal split buddies in fallback allocations
+  mm: more aggressive page stealing for UNMOVABLE allocations
+
+ include/trace/events/kmem.h |  7 ++--
+ mm/page_alloc.c             | 78 ++++++++++++++++++++++++---------------------
+ 2 files changed, 45 insertions(+), 40 deletions(-)
+
+-- 
+2.1.2
 
