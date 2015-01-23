@@ -1,149 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108AbbAWTRg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 14:17:36 -0500
-Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:47318 "EHLO
-	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756464AbbAWTRY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 14:17:24 -0500
-Date: Fri, 23 Jan 2015 20:17:19 +0100
-From: Sylvain Rochet <sylvain.rochet@finsecur.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
-        peda@axentia.se, linux-arm-kernel@lists.infradead.org
-Message-ID: <20150123191719.GA29601@gradator.net>
-References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
- <1421741825-18226-9-git-send-email-wenyou.yang@atmel.com>
+	id S1756415AbbAWTSw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 14:18:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57613 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752264AbbAWTSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 14:18:48 -0500
+Date: Fri, 23 Jan 2015 20:18:16 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Ebru Akagunduz <ebru.akagunduz@gmail.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, kirill@shutemov.name,
+        mhocko@suse.cz, mgorman@suse.de, rientjes@google.com,
+        sasha.levin@oracle.com, hughd@google.com, hannes@cmpxchg.org,
+        vbabka@suse.cz, linux-kernel@vger.kernel.org, riel@redhat.com
+Subject: Re: [PATCH] mm: incorporate read-only pages into transparent huge
+ pages
+Message-ID: <20150123191816.GN11755@redhat.com>
+References: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421741825-18226-9-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 172.16.8.13
-X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
-Subject: Re: [PATCH 08/12] pm: at91: rename file name: pm_slowclock.S
- -->pm_suspend.S
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wenyou,
+Hello everyone,
 
-On Tue, Jan 20, 2015 at 04:17:01PM +0800, Wenyou Yang wrote:
+On Fri, Jan 23, 2015 at 09:47:36AM +0200, Ebru Akagunduz wrote:
+> This patch aims to improve THP collapse rates, by allowing
+> THP collapse in the presence of read-only ptes, like those
+> left in place by do_swap_page after a read fault.
 > 
-> diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
-> new file mode 100644
-> index 0000000..420e730
-> --- /dev/null
+> Currently THP can collapse 4kB pages into a THP when
+> there are up to khugepaged_max_ptes_none pte_none ptes
+> in a 2MB range. This patch applies the same limit for
+> read-only ptes.
+> 
+> The patch was tested with a test program that allocates
+> 800MB of memory, writes to it, and then sleeps. I force
+> the system to swap out all but 190MB of the program by
+> touching other memory. Afterwards, the test program does
+> a mix of reads and writes to its memory, and the memory
+> gets swapped back in.
+> 
+> Without the patch, only the memory that did not get
+> swapped out remained in THPs, which corresponds to 24% of
+> the memory of the program. The percentage did not increase
+> over time.
+> 
+> With this patch, after 5 minutes of waiting khugepaged had
+> collapsed 55% of the program's memory back into THPs.
 
+This is a nice improvement, thanks!
 
-> +	/* Turn off the main oscillator */
-> +	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
-> +	bic	tmp1, tmp1, #AT91_PMC_MOSCEN
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 817a875..af750d9 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -2158,7 +2158,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>  			else
+>  				goto out;
+>  		}
+> -		if (!pte_present(pteval) || !pte_write(pteval))
+> +		if (!pte_present(pteval))
+>  			goto out;
+>  		page = vm_normal_page(vma, address, pteval);
+>  		if (unlikely(!page))
+> @@ -2169,7 +2169,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>  		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
+>  
+>  		/* cannot use mapcount: can't collapse if there's a gup pin */
+> -		if (page_count(page) != 1)
+> +		if (page_count(page) != 1 + !!PageSwapCache(page))
+>  			goto out;
+>  		/*
+>  		 * We can do it before isolate_lru_page because the
+> @@ -2179,6 +2179,17 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>  		 */
+>  		if (!trylock_page(page))
+>  			goto out;
 
-at91sam9x5 and probably others need a key here:
-	orr     tmp1, tmp1, #AT91_PMC_KEY
+No gup pin can be taken from under us because we hold the mmap_sem for
+writing, PT lock and stopped any gup-fast with pmdp_clear_flush.
 
-> +	str	tmp1, [pmc, #AT91_CKGR_MOR]
+Problem is PageSwapCache if read before taking the page lock is
+unstable/racy and so page_count could return 2 because there's a real
+gup-pin, but then the page is added to swapcache by another CPU and we
+pass the check because !!PageSwapCache becomes 1 (despite page_count
+also become 3, but we happened to read that just a bit earlier).
 
+Not sure if we should keep a fast path check before trylock_page that
+can reduce the cacheline bouncing on the trylock operation. We already
+had a fast path check in the scanning loop before invoking
+collapse_huge_page. We may just move the check after trylock page
+after adding a comment about the need of the pagelock for
+pageswapcache to be stable.
 
+The PageSwapCache (and matching page count increase) cannot appear or
+disappear from under us if we hold the page lock.
 
-> +	/* Wait for interrupt */
-> +	mcr	p15, 0, tmp1, c7, c0, 4
+> +		if (!pte_write(pteval)) {
+> +			if (++ro > khugepaged_max_ptes_none)
+> +				goto out_unmap;
+> +		}
 
-The linux-3.10-at91 branch uses a different approach which seem 
-necessary for newer board, you probably forget to merge the following:
+It's true this is maxed out at 511, so there must be at least one
+writable and not none pte (as results of the two "ro" and "none"
+counters checks).
 
-/*
- * Put the processor to enter into Standby mode, wait for interrupt to wakeup
- */
-	.macro _do_wfi
+However this is applied only to the "mmap_sem hold for reading"
+"fast-path" scanning loop to identify candidate THP to collapse.
 
-#if defined(CONFIG_CPU_V7)
-	dsb
+After this check, we release the mmap_sem (hidden in up_read) and then
+we take it for writing. After the mmap_sem is released all vma state
+can change from under us.
 
-	/* Disable the processor clock */
-	mov	tmp1, #AT91_PMC_PCK
-	str	tmp1, [pmc, #AT91_PMC_SCDR]
+So this check alone doesn't guarantee we won't collapse THP inside
+VM_READ vmas I'm afraid.
 
-	wfi		@ Wait For Interrupt
-#else
-	mcr	p15, 0, tmp1, c7, c0, 4
-#endif
+We've got two ++none checks too, for the same reason, or we'd
+potentially allocate THP by mistake after a concurrent MADV_DONTNEED
+(which would be even less problematic as it'd just allocate a THP by
+mistake and no other side effect).
 
-	.endm
+critical check:
 
-	.text
+static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+					unsigned long address,
+					pte_t *pte)
+		if (pte_none(pteval)) {
+			if (++none <= khugepaged_max_ptes_none)
+				continue;
+			else
+				goto out;
+		}
 
-ENTRY(at91_slow_clock)
-(...)
-	/* Wait for interrupt */
-	_do_wfi
-(...)
+fast path optimistic check:
 
+static int khugepaged_scan_pmd(struct mm_struct *mm,
+		pte_t pteval = *_pte;
+		if (pte_none(pteval)) {
+			if (++none <= khugepaged_max_ptes_none)
+				continue;
+			else
+				goto out_unmap;
 
+We need 2 of them for ++ro too I think.
 
+The +!!PageSwapCache addition to the khugepaged_scan_pmd is instead
+fine as it's just optimistic and if we end up in collapse_huge_page
+because the race hits is no problem (it's incredibly low probability
+event). Only in __collapse_huge_page_isolate we need fully accuracy.
 
-> +	/* Turn on the main oscillator */
-> +	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
-> +	orr	tmp1, tmp1, #AT91_PMC_MOSCEN
+Aside from these two points which shouldn't be problematic to adjust,
+the rest looks fine!
 
-at91sam9x5 and probably others need a key here:
-        orr     tmp1, tmp1, #AT91_PMC_KEY
-
-> +	str	tmp1, [pmc, #AT91_CKGR_MOR]
-
-
-
-What about the following parts which are also in linux-3.10-at91 branch 
-but not in this rework, are they necessary ?
-
-sdr_sr_done:
-	/* Disable MPDDRC Clock*/
-	cmp	ddrcid, #0
-	beq	2f
-	bic	tmp2, ddrcid, #0xe0 /* fetch lowest 5 bits */
-	mov	tmp1, #0x01
-	mov	tmp1, tmp1, lsl tmp2
-
-	tst	ddrcid, #0x20	/* > 32 ? */
-	beq	1f
-	str	tmp1, [pmc, #AT91_PMC_PCDR1]
-	b	2f
-1:
-	str	tmp1, [pmc, #AT91_PMC_PCDR]
-2:
-
-	/* Disable DDR Clock */
-	mov 	tmp1, #AT91_PMC_SYS_DDR
-	str	tmp1, [pmc, #AT91_PMC_SCDR]
-
-
-
-
-	/* Enable MPDDRC Clock*/
-	cmp	ddrcid, #0
-	beq	4f
-	bic	tmp2, ddrcid, #0xe0 /* fetch lowest 5 bits */
-	mov	tmp1, #0x01
-	mov	tmp1, tmp1, lsl tmp2
-
-	tst	ddrcid, #0x20	/* > 32 ? */
-	beq	3f
-	str	tmp1, [pmc, #AT91_PMC_PCER1]
-	b	4f
-3:
-	str	tmp1, [pmc, #AT91_PMC_PCER]
-4:
-
-	/* Enable DDR clock */
-	mov 	tmp1, #AT91_PMC_SYS_DDR
-	str	tmp1, [pmc, #AT91_PMC_SCER]
-
-
-
-Sylvain
+Andrea
