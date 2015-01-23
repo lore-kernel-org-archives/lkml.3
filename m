@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216AbbAWSsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:48:55 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:55889 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890AbbAWSsv (ORCPT
+	id S932235AbbAWSt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:49:27 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:15410 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752848AbbAWStY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:48:51 -0500
+	Fri, 23 Jan 2015 13:49:24 -0500
+Date: Fri, 23 Jan 2015 13:49:18 -0500
+From: Chris Mason <clm@fb.com>
+To: <torvalds@linux-foundation.org>, linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs fixes
+Message-ID: <20150123184911.GA17437@ret.masoncoding.com>
+Mail-Followup-To: Chris Mason <clm@fb.com>, torvalds@linux-foundation.org,
+	linux-btrfs <linux-btrfs@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <0000014b17cfda93-ba54b0fb-23f4-4005-95c1-6ae695a48369-000000@email.amazonses.com>
-References: <0000014b17cfda93-ba54b0fb-23f4-4005-95c1-6ae695a48369-000000@email.amazonses.com>
-Date: Fri, 23 Jan 2015 13:48:50 -0500
-Message-ID: <CAN+gG=FC1gOCY1FQhHa16NALuyx2z5w7088k87O3eFM5518_Ug@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Fix initialisation for the Microsoft Sidewinder Force
- Feedback Pro 2 joystick
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jim Keir <jimkeir@oracledbadirect.com>
-Cc: linux-input <linux-input@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-23_06:2015-01-23,2015-01-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=29.4129509548051
+ compositescore=0.939076664828693 urlsuspect_oldscore=0.939076664828693
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.939076664828693 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501230171
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are missing here (before the first '---' the commit message which
-should state why you want to have this patch merged.
+Hi Linus,
 
-To rephrase and continue what you wrote in your very first submission
-of this series, this could be (including your Signed-of-by):
+We have a few fixes in my for-linus branch:
 
-The FF2 driver (usbhid/hid-pidff.c) sends commands to the stick
-during ff_init. However, this is called inside a block where
-driver_input_lock is locked, so the results of these initial commands
-are discarded. This behavior is the "killer", without this nothing else works.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-ff_init issues commands using "hid_hw_request". This eventually goes to
-hid_input_report, which returns -EBUSY because driver_input_lock is
-locked. The change is to delay the ff_init call in hid-core.c until
-after this lock has been released.
+Qu Wenruo's batch fix a regression between some our merge window pull
+and the inode_cache feature.  The rest are smaller bugs.
 
-Calling hid_device_io_start() releases the lock so the device can be configured.
-We also need to call hid_device_io_stop() on exit for the lock to
-remain locked while ending the init of the drivers.
+Qu Wenruo (2) commits (+11/-1):
+    btrfs: Don't call btrfs_start_transaction() on frozen fs to avoid deadlock. (+10/-0)
+    btrfs: Fix the bug that fs_info->pending_changes is never cleared. (+1/-1)
 
-Signed-off-by: Jim Keir <jimkeir@oracledbadirect.com>
+Satoru Takeuchi (1) commits (+1/-1):
+    btrfs: fix state->private cast on 32 bit machines
 
----
+David Sterba (1) commits (+2/-2):
+    btrfs: sync ioctl, handle errors after transaction start
 
-With the changes above (or if you fix my typos), the patch is
-Reviewed-by: Benjamin.tissoires <benjamin.tissoires@redhat.com>
+Filipe Manana (1) commits (+2/-1):
+    Btrfs: fix race deleting block group from space_info->ro_bgs list
 
-Jiri, could you amend the commit with the above so that Jim won't be
-desperate by submitting a patch?
+Tsutomu Itoh (1) commits (+1/-1):
+    Btrfs: fix incorrect freeing in scrub_stripe
 
-Cheers,
-Benjamin
+Total: (6) commits (+17/-6)
 
-
-On Fri, Jan 23, 2015 at 12:21 PM, Jim Keir <jimkeir@oracledbadirect.com> wrote:
-> ---
-> Hi,
->
-> Changes from previous patches:
-> - All changes removed from higher-level files
-> - Calls to hid_device_io_start/stop added here
->
-> Signed-off-by: Jim Keir <jimkeir@oracledbadirect.com>
->
->  drivers/hid/usbhid/hid-pidff.c | 6 ++++++
->  1 file changed, 6 insertions(+)
->
-> diff --git a/drivers/hid/usbhid/hid-pidff.c b/drivers/hid/usbhid/hid-pidff.c
-> index 10b6167..0b531c6 100644
-> --- a/drivers/hid/usbhid/hid-pidff.c
-> +++ b/drivers/hid/usbhid/hid-pidff.c
-> @@ -1252,6 +1252,8 @@ int hid_pidff_init(struct hid_device *hid)
->
->         pidff->hid = hid;
->
-> +       hid_device_io_start(hid);
-> +
->         pidff_find_reports(hid, HID_OUTPUT_REPORT, pidff);
->         pidff_find_reports(hid, HID_FEATURE_REPORT, pidff);
->
-> @@ -1315,9 +1317,13 @@ int hid_pidff_init(struct hid_device *hid)
->
->         hid_info(dev, "Force feedback for USB HID PID devices by Anssi Hannula <anssi.hannula@gmail.com>\n");
->
-> +       hid_device_io_stop(hid);
-> +
->         return 0;
->
->   fail:
-> +       hid_device_io_stop(hid);
-> +
->         kfree(pidff);
->         return error;
->  }
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ fs/btrfs/ctree.h       |  1 +
+ fs/btrfs/extent-tree.c |  2 +-
+ fs/btrfs/extent_io.c   |  2 +-
+ fs/btrfs/scrub.c       |  2 +-
+ fs/btrfs/super.c       | 14 ++++++++++++--
+ fs/btrfs/transaction.c |  2 +-
+ 6 files changed, 17 insertions(+), 6 deletions(-)
