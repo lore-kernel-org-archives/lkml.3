@@ -1,240 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237AbbAWLSM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:18:12 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:44201 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152AbbAWLSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:18:09 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7fc86d0000066b7-59-54c22d5d28b4
-Content-transfer-encoding: 8BIT
-Message-id: <1422011884.18205.4.camel@AMDC1943>
-Subject: Re: [PATCH 1/6] mfd: max77843: Add max77843 MFD driver core driver
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: Jaewon Kim <jaewon02.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pm@vger.kernel.org,
-        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>
-Date: Fri, 23 Jan 2015 12:18:04 +0100
-In-reply-to: <54C22C3B.8040403@samsung.com>
-References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
- <1421989367-32721-2-git-send-email-jaewon02.kim@samsung.com>
- <CAJKOXPfRYhJNUAE=W3zPWvyza9k_YA=hu4KjLRuLh7kie3guQA@mail.gmail.com>
- <54C1ED09.1080607@samsung.com> <1421997364.27149.5.camel@AMDC1943>
- <54C22C3B.8040403@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t/xq7qxuodCDPZskrM4/Wkbu8XUh0/Y
-	LK5/ec5qMf/IOVaL/jcLWS3OvVrJaDHp/gQWix0NR1gt7n89ymhxedccNovPvUcYLZZev8hk
-	MWH6WhaL1r1H2C1O7y5x4PdYM28No8flvl4mj5XLv7B5bFrVyeZx59oeNo++LasYPT5vkgtg
-	j+KySUnNySxLLdK3S+DKmHe5n6Xgr01Fx+r8BsZWvS5GTg4JAROJxVM2M0PYYhIX7q1nA7GF
-	BJYySszaKwxi8woISvyYfI+li5GDg1lAXuLIpWyQMLOAusSkeYuAWrmAyj8zSpxpOcIOUsMr
-	oC/xsNUSxBQW8JZY3uQHUs4mYCyxefkSsOkiQK0773SCtTILfGKW2P1mNdgJLAKqEkdWXWQC
-	6eUU0Ja4s9AWYvwWJomWzQcYQeISAsoSjf1uExgFZiE5bhbCcbOQHLeAkXkVo2hqaXJBcVJ6
-	rpFecWJucWleul5yfu4mRkj0fN3BuPSY1SFGAQ5GJR7eA28OhgixJpYVV+YeYpTgYFYS4bXW
-	PBQixJuSWFmVWpQfX1Sak1p8iJGJg1OqgfHIHYX5QaJz9y36+m+B5cSkNRfl36yZEuMgzH9H
-	6U2ofL3G5SfzZKcvee3fezp/Tre9nqGVcvBpXevUPYc/zX3xwiaf50O6lrIdk4292lVGA0VO
-	02ijrK2Ki8vPHfvqpnN9rcvy2qqeqYFb1gY+cHV3P8i0sGG12byUm7fb7E9XcCw2tCnu36XE
-	UpyRaKjFXFScCAC5VunsfAIAAA==
+	id S1755043AbbAWLU1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:20:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751753AbbAWLUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 06:20:24 -0500
+Message-ID: <54C22E68.1080601@redhat.com>
+Date: Fri, 23 Jan 2015 12:20:08 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Stathis Voukelatos <stathisv70@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Stathis Voukelatos <stathis.voukelatos@linn.co.uk>,
+        abrestic@chromium.org
+Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
+References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
+In-Reply-To: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2015-01-23 at 20:10 +0900, Beomho Seo wrote:
-> On 01/23/2015 04:16 PM, Krzysztof Kozlowski wrote:
-> > On pią, 2015-01-23 at 15:41 +0900, Beomho Seo wrote:
-> >> On 01/23/2015 03:32 PM, Krzysztof Kozlowski wrote:
-> >>> 2015-01-23 6:02 GMT+01:00 Jaewon Kim <jaewon02.kim@samsung.com>:
-> >>>> This patch adds MAX77843 core/irq driver to support PMIC,
-> >>>> MUIC(Micro USB Interface Controller), Charger, Fuel Gauge,
-> >>>> LED and Haptic device.
-> >>>>
-> >>>> Cc: Lee Jones <lee.jones@linaro.org>
-> >>>> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-> >>>> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-> >>>> ---
-> >>>>  drivers/mfd/Kconfig                  |   14 ++
-> >>>>  drivers/mfd/Makefile                 |    1 +
-> >>>>  drivers/mfd/max77843.c               |  241 ++++++++++++++++++++
-> >>>>  include/linux/mfd/max77843-private.h |  410 ++++++++++++++++++++++++++++++++++
-> >>>>  4 files changed, 666 insertions(+)
-> >>>>  create mode 100644 drivers/mfd/max77843.c
-> >>>>  create mode 100644 include/linux/mfd/max77843-private.h
-> >>>>
-> >>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> >>>> index 2e6b731..0c67c79 100644
-> >>>> --- a/drivers/mfd/Kconfig
-> >>>> +++ b/drivers/mfd/Kconfig
-> >>>> @@ -442,6 +442,20 @@ config MFD_MAX77693
-> >>>>           additional drivers must be enabled in order to use the functionality
-> >>>>           of the device.
-> >>>>
-> >>>> +config MFD_MAX77843
-> >>>> +       bool "Maxim Semiconductor MAX77843 PMIC Support"
-> >>>> +       depends on I2C=y
-> >>>> +       select MFD_CORE
-> >>>> +       select REGMAP_I2C
-> >>>> +       select REGMAP_IRQ
-> >>>> +       help
-> >>>> +         Say yes here to add support for Maxim Semiconductor MAX77843.
-> >>>> +         This is companion Power Management IC with LEDs, Haptic, Charger,
-> >>>> +         Fuel Gauge, MUIC(Micro USB Interface Controller) controls on chip.
-> >>>> +         This driver provides common support for accessing the device;
-> >>>> +         additional drivers must be enabled in order to use the functionality
-> >>>> +         of the device.
-> >>>> +
-> >>>>  config MFD_MAX8907
-> >>>>         tristate "Maxim Semiconductor MAX8907 PMIC Support"
-> >>>>         select MFD_CORE
-> >>>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> >>>> index 53467e2..fe4f75c 100644
-> >>>> --- a/drivers/mfd/Makefile
-> >>>> +++ b/drivers/mfd/Makefile
-> >>>> @@ -117,6 +117,7 @@ obj-$(CONFIG_MFD_DA9063)    += da9063.o
-> >>>>  obj-$(CONFIG_MFD_MAX14577)     += max14577.o
-> >>>>  obj-$(CONFIG_MFD_MAX77686)     += max77686.o
-> >>>>  obj-$(CONFIG_MFD_MAX77693)     += max77693.o
-> >>>> +obj-$(CONFIG_MFD_MAX77843)     += max77843.o
-> >>>>  obj-$(CONFIG_MFD_MAX8907)      += max8907.o
-> >>>>  max8925-objs                   := max8925-core.o max8925-i2c.o
-> >>>>  obj-$(CONFIG_MFD_MAX8925)      += max8925.o
-> >>>> diff --git a/drivers/mfd/max77843.c b/drivers/mfd/max77843.c
-> >>>> new file mode 100644
-> >>>> index 0000000..d7f8b76
-> >>>> --- /dev/null
-> >>>> +++ b/drivers/mfd/max77843.c
-> >>>> @@ -0,0 +1,241 @@
-> >>>> +/*
-> >>>> + * max77843.c - MFD core driver for the Maxim MAX77843
-> >>>> + *
-> >>>> + * Copyright (C) 2014 Samsung Electrnoics
-> >>>> + * Author: Jaewon Kim <jaewon02.kim@samsung.com>
-> >>>> + *
-> >>>> + * This program is free software; you can redistribute it and/or modify
-> >>>> + * it under the terms of the GNU General Public License as published by
-> >>>> + * the Free Software Foundation; either version 2 of the License, or
-> >>>> + * (at your option) any later version.
-> >>>> + */
-> >>>> +
-> >>>> +#include <linux/err.h>
-> >>>> +#include <linux/i2c.h>
-> >>>> +#include <linux/init.h>
-> >>>> +#include <linux/interrupt.h>
-> >>>> +#include <linux/module.h>
-> >>>> +#include <linux/mfd/core.h>
-> >>>> +#include <linux/mfd/max77843-private.h>
-> >>>> +#include <linux/of_device.h>
-> >>>> +#include <linux/platform_device.h>
-> >>>> +
-> >>>> +static const struct mfd_cell max77843_devs[] = {
-> >>>> +       {
-> >>>> +               .name = "max77843-muic",
-> >>>> +               .of_compatible = "maxim,max77843-muic",
-> >>>> +       }, {
-> >>>> +               .name = "max77843-regulator",
-> >>>> +               .of_compatible = "maxim,max77843-regulator",
-> >>>> +       }, {
-> >>>> +               .name = "max77843-charger",
-> >>>> +               .of_compatible = "maxim,max77843-charger"
-> >>>> +       }, {
-> >>>> +               .name = "max77843-fuelgauge",
-> >>>> +               .of_compatible = "maxim,max77843-fuelgauge",
-> >>>> +       },
-> >>>> +};
-> >>>> +
-> >>>> +static const struct regmap_config max77843_charger_regmap_config = {
-> >>>> +       .reg_bits       = 8,
-> >>>> +       .val_bits       = 8,
-> >>>> +       .max_register   = MAX77843_CHG_REG_END,
-> >>>> +};
-> >>>> +
-> >>>> +static const struct regmap_config max77843_regmap_config = {
-> >>>> +       .reg_bits       = 8,
-> >>>> +       .val_bits       = 8,
-> >>>> +       .max_register   = MAX77843_SYS_REG_END,
-> >>>> +};
-> >>>> +
-> >>>> +static const struct regmap_irq max77843_irqs[] = {
-> >>>> +       /* TOPSYS interrupts */
-> >>>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSUVLO_INT, },
-> >>>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSOVLO_INT, },
-> >>>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TSHDN_INT, },
-> >>>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TM_INT, },
-> >>>> +};
-> >>>> +
-> >>>> +static const struct regmap_irq_chip max77843_irq_chip = {
-> >>>> +       .name           = "max77843",
-> >>>> +       .status_base    = MAX77843_SYS_REG_SYSINTSRC,
-> >>>> +       .mask_base      = MAX77843_SYS_REG_SYSINTMASK,
-> >>>> +       .mask_invert    = false,
-> >>>> +       .num_regs       = 1,
-> >>>> +       .irqs           = max77843_irqs,
-> >>>> +       .num_irqs       = ARRAY_SIZE(max77843_irqs),
-> >>>> +};
-> >>>> +
-> >>>> +static int max77843_chg_init(struct max77843 *max77843)
-> >>>> +{
-> >>>
-> >>> Could this function be moved to the charger driver? This way the
-> >>> driver will manage its own resources instead of depending on parent
-> >>> MFD driver.
-> >>>
-> >>
-> >> Charger regulator and Charger share same resources.
-> >> So I include this function core driver.
-> > 
-> > OK, I see... Could you describe it in comments somewhere? For example in
-> > comment above the function. Currently this looks like only as regmap for
-> > charger.
-> > 
-> 
-> Charger regulator and Charger use same regmap.
+On 01/23/2015 11:07 AM, Stathis Voukelatos wrote:
+> This patch adds support the Ethernet Packet Sniffer H/W module
+> developed by Linn Products Ltd and found in the IMG Pistachio SoC.
+> The module allows Ethernet packets to be parsed, matched against
+> a user-defined pattern and timestamped. It sits between a 100M
+> Ethernet MAC and PHY and is completely passive with respect to
+> Ethernet frames.
+>
+> Matched packet bytes and timestamp values are returned through a
+> FIFO. Timestamps are provided to the module through an externally
+> generated Gray-encoded counter.
+>
+> The command pattern for packet matching is stored in module RAM
+> and consists of a sequence of 16-bit entries. Each entry includes
+> an 8-bit command code and and 8-bit data value. Valid command
+> codes are:
+> 0 - Don't care
+> 1 - Match: packet data must match command string byte
+> 2 - Copy: packet data will be copied to FIFO
+> 3 - Match/Stamp: if packet data matches string byte, a timestamp
+>                   is copied into the FIFO
+> 4 - Copy/Done: packet data will be copied into the FIFO.
+>                 This command terminates the command string.
+>
+> The driver consists of two modules:
+> - Core: it provides an API to user space using the Generic Netlink
+>          framework. Specific backend implementations, like the
+>          Ethernet Packet Sniffer, register one or more channels
+>          with the Core. For each channel a Genl family is created.
+>          User space can access a channel by sending Genl messages
+>          to the Genl family associated with the channel. Packet
+>          matching events are multicast.
+>
+> - Ethernet Packet Sniffer backend: provides the driver for the
+>          Linn Ethernet Packet Sniffer H/W modules.
+>
+> The split between a core and backend modules allows software-only
+> implementations to be added for platforms where no H/W support
+> is available.
+>
+> Based on 3.19-rc5
+>
+> Signed-off-by: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
 
-OK, just put it in a comment around that function.
+Please have a look at packet sockets, they offer already all the
+functionality (if not more) your driver interface to the user space
+resembles, are transparent to the underlying hardware, and easily
+can cope with 100Mbit.
 
-> 
-> > Unfortunately current solution imposes problem with releasing resources.
-> > Who is the owner of i2c dummy device?
-> > 
-> 
-> Core driver owner of i2c dummy device.
+If I understand this correctly, you are effectively introducing a
+parallel API *next* to packet sockets to user space that we have to
+maintain forever ...
 
-OK, good idea. So the core driver should be the only place to unregister
-it. So needed changes are:
-1. Remove the i2c_unregister_device() call from
-max77843_charger_probe().
-2. Add i2c_unregister_device(max77843->i2c_chg) in max77843_remove().
-
-The MFD core driver will handle it.
-
-> 
-> > 1. The charger driver will unregister it if max77843_charger_probe()
-> > fails. What will happen with regulator driver in such case?
-> > 
-> 
-> Charger is enabled/disabled by Charger regulator.
-> Currently, If charger probe fails, charger regulator failed to read regmap and occur panic(It have to fix.)
-> 
-> 
-> > 2. Who will release this i2c dummy device in normal unbind? Currently it
-> > leaks.
-> > 
-> 
-> I think core driver release i2c dummy device in normal unbind.
-> We need to more discussion about this problem.
-> If you have any idea, I hope tell me. Again, Thank you for your advice.
-
-I think handling the ownership in core driver could solve this.
-
-Best regards,
-Krzysztof
-
-
-
+Thanks !
