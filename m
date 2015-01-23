@@ -1,124 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565AbbAWUxA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 15:53:00 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:48660 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575AbbAWUw6 (ORCPT
+	id S1756604AbbAWUyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 15:54:13 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:65082 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbbAWUyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 15:52:58 -0500
-Message-ID: <54C2B4A7.3060503@codeaurora.org>
-Date: Fri, 23 Jan 2015 13:52:55 -0700
-From: Gilad Avidov <gavidov@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Fri, 23 Jan 2015 15:54:11 -0500
 MIME-Version: 1.0
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-CC: sdharia@codeaurora.org, mlocke@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, iivanov@mm-sol.com, galak@codeaurora.org,
-        agross@codeaurora.org
-Subject: Re: [PATCH] spmi: pmic_arb: add support for hw version 2
-References: <1421716210-14805-1-git-send-email-gavidov@codeaurora.org> <54C27ED9.9080403@mm-sol.com>
-In-Reply-To: <54C27ED9.9080403@mm-sol.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: cw00.choi@samsung.com
+In-Reply-To: <54C287A0.50407@samsung.com>
+References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
+	<1421821618-8627-2-git-send-email-cw00.choi@samsung.com>
+	<54C287A0.50407@samsung.com>
+Date: Sat, 24 Jan 2015 05:54:04 +0900
+Message-ID: <CAGTfZH0nXzDgFoMF4eSW71Sey44aY9gYRzX+uWP39ut2jY_Pfg@mail.gmail.com>
+Subject: Re: [PATCH v3 01/12] clk: samsung: exynos5433: Add clocks using
+ common clock framework
+From: Chanwoo Choi <cwchoi00@gmail.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene@kernel.org>,
+        "pankaj.dubey@samsung.com" <pankaj.dubey@samsung.com>,
+        "inki.dae@samsung.com" <inki.dae@samsung.com>,
+        "chanho61.park@samsung.com" <chanho61.park@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/23/2015 10:03 AM, Stanimir Varbanov wrote:
-> Hi Gilad,
+Hi Sylwester,
+
+On Sat, Jan 24, 2015 at 2:40 AM, Sylwester Nawrocki
+<s.nawrocki@samsung.com> wrote:
+> On 21/01/15 07:26, Chanwoo Choi wrote:
+>> +/* list of all parent clock list */
 >
-> On 01/20/2015 03:10 AM, Gilad Avidov wrote:
->> Qualcomm PMIC Arbiter version-2 changes from version-1 are:
->>
->> - Some diffrent register offsets.
->> - New channel register space, one per PMIC peripheral (ppid).
->>    All tx tarffic uses these channels.
->> - New observer register space. All rx trafic uses this space.
->> - Diffrent command format for spmi command registers.
->>
->> Signed-off-by: Gilad Avidov <gavidov@codeaurora.org>
->> Acked-by: Sagar Dharia <sdharia@codeaurora.org>
->> ---
->>   .../bindings/spmi/qcom,spmi-pmic-arb.txt           |  11 +-
->>   drivers/spmi/spmi-pmic-arb.c                       | 295 ++++++++++++++++++---
->>   2 files changed, 263 insertions(+), 43 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt b/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
->> index 715d099..827bd21 100644
->> --- a/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
->> +++ b/Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
->> @@ -1,11 +1,11 @@
->>   Qualcomm SPMI Controller (PMIC Arbiter)
->>   
->> -The SPMI PMIC Arbiter is found on the Snapdragon 800 Series.  It is an SPMI
->> +The SPMI PMIC Arbiter is found on Snapdragon chipsets.  It is an SPMI
->>   controller with wrapping arbitration logic to allow for multiple on-chip
->>   devices to control a single SPMI master.
->>   
->> -The PMIC Arbiter can also act as an interrupt controller, providing interrupts
->> -to slave devices.
->> +The PMIC Arbiter is also an interrupt controller, interrupting the Snapdragon
->> +on dtection of a sequence initiated by a request-capable-slave to the master.
->>   
-> <snip>
+>> +PNAME(mout_bus_pll_user_p)   = { "fin_pll", "sclk_bus_pll", };
+> ...
+>> +
+>> +static struct samsung_mux_clock top_mux_clks[] __initdata = {
 >
->>   
->> -/* Non-data command */
->> -static int pmic_arb_cmd(struct spmi_controller *ctrl, u8 opc, u8 sid)
->> +static int
->> +pmic_arb_non_data_cmd_v1(struct spmi_controller *ctrl, u8 opc, u8 sid)
->>   {
->>   	struct spmi_pmic_arb_dev *pmic_arb = spmi_controller_get_drvdata(ctrl);
->>   	unsigned long flags;
->>   	u32 cmd;
->>   	int rc;
->> -
->> -	/* Check for valid non-data command */
->> -	if (opc < SPMI_CMD_RESET || opc > SPMI_CMD_WAKEUP)
->> -		return -EINVAL;
->> +	u32 offset = pmic_arb->ver->offset(pmic_arb, sid, 0);
->>   
->>   	cmd = ((opc | 0x40) << 27) | ((sid & 0xf) << 20);
->>   
->>   	raw_spin_lock_irqsave(&pmic_arb->lock, flags);
->> -	pmic_arb_base_write(pmic_arb, PMIC_ARB_CMD(pmic_arb->channel), cmd);
->> -	rc = pmic_arb_wait_for_done(ctrl);
->> +	pmic_arb_base_write(pmic_arb, offset + PMIC_ARB_CMD, cmd);
->> +	rc = pmic_arb_wait_for_done(ctrl, pmic_arb->wr_base, sid, 0);
->>   	raw_spin_unlock_irqrestore(&pmic_arb->lock, flags);
->>   
->>   	return rc;
->>   }
->>   
->> +/* Unsupported by HW */
->> +static int
->> +pmic_arb_non_data_cmd_v2(struct spmi_controller *ctrl, u8 opc, u8 sid)
->> +{
->> +	return -EOPNOTSUPP;
->> +}
+>> +     MUX(CLK_MOUT_BUS_PLL_USER, "mout_bus_pll_user", mout_bus_pll_user_p,
+>> +                     MUX_SEL_TOP1, 0, 1),
+> ...
+>> +};
+>> +
+>> +static struct samsung_div_clock top_div_clks[] __initdata = {
+> ...
+>> +     /* DIV_TOP3 */
+>> +     DIV(CLK_DIV_ACLK_IMEM_SSSX_266, "div_aclk_imem_sssx_266",
+>> +                     "mout_bus_pll_user", DIV_TOP3, 24, 3),
+>
+> Shouldn't "fin_pll" be renamed to "oscclk" ? In the documentation
+> the root clock (from XXTI input pin) seems to be referred as OSCCLK.
+> And I can't see "fin_pll" clock registered anywhere. Shouldn't there
+> be a "fixed-rate-clock" as a parent of at least CMU_TOP? e.g.
 
-Hi Stanimir,
+Right,
+I added "fin_pll" fixed clock in DT as following:
+When I registered "fin_pll" fixed clock, I could use "fin_pll" clock
+for exynos5433 cmu without adding additional dt node.
 
-> Does pmic arbiter v2 supports SPMI_CMD_WAKEUP and SPMI_CMD_SHUTDOWN
-> commands? If so how we send those commands to the arbiter when the
-pmic-arbiter v2 does not support non-data commands including the two 
-that you have mentioned above.
-> .non_data_cmd operation returns EOPNOTSUPP. If we returning EOPNOTSUPP
-> the spmi bus .probe method will not call spmi driver .probe. See spmi.c
-> spmi_drv_probe().
-Very keen observation!
+fin_pll: xxti {
+        compatible = "fixed-clock";
+        clock-output-names = "fin_pll";
+        #clock-cells = <0>;
+};
 
-The slaves that I'm working on do not need nor support the wakeup command.
-I'll add a patch to add a new device tree boolean property to the 
-framework, maybe "skip-wakeup", for similar slaves.
-Then change spmi_drv_probe() to skip the wakeup if the property is there.
-> <snip>
-Thanks,
-Gilad
+I'll add the example of "fin_pll" dt node to documentation for exynos5433 cmu.
 
--- 
-Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, a Linux Foundation Collaborative Project
+>
+> xxti: xxti {
+>         compatible = "fixed-clock";
+>         #clock-cells = <0>;
+>         clock-output-names = "oscclk";
+>         clock-frequency = <24000000>;
+> };
+>
+> &cmu_top {
+>         clocks = <&xxti>;
+> };
+>
 
+Regards,
+Chanwoo Choi
