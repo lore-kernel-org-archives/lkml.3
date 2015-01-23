@@ -1,157 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914AbbAWUpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 15:45:46 -0500
-Received: from mail.efficios.com ([78.47.125.74]:59992 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025AbbAWUpo convert rfc822-to-8bit (ORCPT
+	id S1756373AbbAWUtf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 15:49:35 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:38539 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbbAWUtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 15:45:44 -0500
-Date: Fri, 23 Jan 2015 20:45:46 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: =?utf-8?B?SsOpcsOpbWll?= Galarneau 
-	<jeremie.galarneau@efficios.com>
-Cc: Wang Nan <wangnan0@huawei.com>, Jiri Olsa <jolsa@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org
-Message-ID: <1074266107.40857.1422045946295.JavaMail.zimbra@efficios.com>
-In-Reply-To: <CA+jJMxu-QPVQTW0rSwUQH0dCy=mZo+0LimnPMVhOoJ9-ybc-9A@mail.gmail.com>
-References: <20150120130609.GC15315@krava.brq.redhat.com> <1421810634-1373-1-git-send-email-wangnan0@huawei.com> <20150121141101.GA6835@krava.brq.redhat.com> <CA+jJMxtaEF587MyW00YQ_7d7BYmW-QpcgQ8g1KByYWwzMg-_cw@mail.gmail.com> <54C0547B.7000407@huawei.com> <CA+jJMxu-QPVQTW0rSwUQH0dCy=mZo+0LimnPMVhOoJ9-ybc-9A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf: convert: fix duplicate field names and avoid
- reserved keywords.
+	Fri, 23 Jan 2015 15:49:33 -0500
+Message-ID: <54C2B396.9090106@oracle.com>
+Date: Fri, 23 Jan 2015 15:48:22 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>
+CC: X86 ML <x86@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
+ context
+References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net> <54C17139.1040706@oracle.com> <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com> <20150123180455.GA3192@pd.tnic> <CALCETrXA+OKGfxV9M=1AxvBSBPAt_+VmjDH0A+Rq4Ss+tKmTBw@mail.gmail.com>
+In-Reply-To: <CALCETrXA+OKGfxV9M=1AxvBSBPAt_+VmjDH0A+Rq4Ss+tKmTBw@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [173.246.22.116]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF35 (Linux)/8.0.7_GA_6021)
-Thread-Topic: perf: convert: fix duplicate field names and avoid reserved keywords.
-Thread-Index: coiQeLP5ZsFK8rrUXWduzcGmRVB2Yw==
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Jérémie Galarneau" <jeremie.galarneau@efficios.com>
-> To: "Wang Nan" <wangnan0@huawei.com>
-> Cc: "Jiri Olsa" <jolsa@redhat.com>, "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>, "Li Zefan"
-> <lizefan@huawei.com>, linux-kernel@vger.kernel.org, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Sent: Wednesday, January 21, 2015 10:14:16 PM
-> Subject: Re: [PATCH 1/2] perf: convert: fix duplicate field names and avoid reserved keywords.
+On 01/23/2015 01:34 PM, Andy Lutomirski wrote:
+> On Fri, Jan 23, 2015 at 10:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+>> On Fri, Jan 23, 2015 at 09:58:01AM -0800, Andy Lutomirski wrote:
+>>>> [  543.999079] Call Trace:
+>>>> [  543.999079] dump_stack (lib/dump_stack.c:52)
+>>>> [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
+>>>> [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
+>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
+>>>> [  543.999079] notify_die (kernel/notifier.c:538)
+>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
+>>>> [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+>>>> [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
+>>>> [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
+>>>> [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
+>>>> [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
+>>>> [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
+>>>
+>>> I don't know how to read this stack trace.  Are we in do_int3,
+>>> do_debug, or both?  I didn't change do_debug at all.
+>>
+>> It looks like we're in do_debug. do_int3 is only on the stack but not
+>> part of the current frame if I can trust the '?' ...
+>>
 > 
-> On Wed, Jan 21, 2015 at 8:38 PM, Wang Nan <wangnan0@huawei.com> wrote:
-> > On 2015/1/21 23:56, Jérémie Galarneau wrote:
-> >> On Wed, Jan 21, 2015 at 9:11 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> >>> On Wed, Jan 21, 2015 at 11:23:54AM +0800, Wang Nan wrote:
-> >>>> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
-> >>>> When dealing with them, perf convert to ctf meets some problem:
-> >>>>
-> >>>>  1. If a parameter with name 'nr', it will duplicate syscall's
-> >>>>     common field 'nr'. One such syscall is io_submit().
-> >>>>
-> >>>>  2. If a parameter with name 'event', it is denied to be inserted
-> >>>>     because 'event' is a babeltrace keywork. One such syscall is
-> >>>>     epoll_ctl.
-> >>>
-> >>> hum, so this problem 2 is detectable only via
-> >>> bt_ctf_event_class_add_field function?
-> >>>
-> >>> how big is the blaklist?
-> >>>
-> >>
-> >> The blacklist is defined by the CTF specification here [1].
-> >>
-> >> Jérémie
-> >>
-> >> [1]
-> >> http://git.efficios.com/?p=ctf.git;a=blob;f=common-trace-format-specification.txt;h=abe4fb70fff7f17f6e8242f313fb74bff44cf89a;hb=HEAD#l1477
-> >
-> > Is there any possibility that the someone expand the list?
-> >
+> It's possible that an int3 happened and I did something wrong on
+> return that caused a subsequent do_debug to screw up, but I don't see
+> how my patch would have caused that.
 > 
-> Good question. There is discussion around a v1.9 version of the CTF
-> spec going on at the moment (which should not affect the Babeltrace
-> API).
-> 
-> As far as I know, adding "__attribute__" has been discussed. CC'ing
-> Mathieu Desnoyers who may have other extensions in mind.
+> Were there any earlier log messages?
 
-I've had in mind adding an optional $ prefix to identifiers so they
-don't clash with reserved keywords. This would have to go into a
-CTF 1.9 though.
+Nope, nothing odd before or after.
 
-Meanwhile, validating that there are no identifier clash in babeltrace
-seems like a good idea. Alternatively, prefixing all identifiers with
-an underscore eliminates those clashes, and Babeltrace even strip those
-underscore before printing, but since underscore is a character that
-is allowed within keywords, this can bring interesting clash when
-a keyword actually begins with an underscore, so I would like to
-replace those by $.
-
-Thoughts ?
 
 Thanks,
+Sasha
 
-Mathieu
-
-> 
-> Jérémie
-> 
-> >>
-> >>> SNIP
-> >>>
-> >>>> +}
-> >>>> +
-> >>>>  static int add_tracepoint_fields_types(struct ctf_writer *cw,
-> >>>>                                      struct format_field *fields,
-> >>>>                                      struct bt_ctf_event_class
-> >>>>                                      *event_class)
-> >>>> @@ -577,6 +609,9 @@ static int add_tracepoint_fields_types(struct
-> >>>> ctf_writer *cw,
-> >>>>       for (field = fields; field; field = field->next) {
-> >>>>               struct bt_ctf_field_type *type;
-> >>>>               unsigned long flags = field->flags;
-> >>>> +             struct bt_ctf_field_type *f = NULL;
-> >>>> +             char *name;
-> >>>> +             int dup = 1;
-> >>>>
-> >>>>               pr2("  field '%s'\n", field->name);
-> >>>>
-> >>>> @@ -595,14 +630,36 @@ static int add_tracepoint_fields_types(struct
-> >>>> ctf_writer *cw,
-> >>>>               if (flags & FIELD_IS_ARRAY)
-> >>>>                       type = bt_ctf_field_type_array_create(type,
-> >>>>                       field->arraylen);
-> >>>>
-> >>>> -             ret = bt_ctf_event_class_add_field(event_class, type,
-> >>>> -                             field->name);
-> >>>> +             /* Check name duplication */
-> >>>> +             name = field->name;
-> >>>
-> >>> could you please put this in separated function like 'get_field_name(..)'
-> >>> so we dont polute this function even more
-> >>>
-> >>>                 name == get_field_name(...)
-> >>>                 if (!name)
-> >>>                         error path
-> >>>
-> >>>
-> >>> thanks,
-> >>> jirka
-> >>
-> >>
-> >>
-> >
-> >
-> 
-> 
-> 
-> --
-> Jérémie Galarneau
-> EfficiOS Inc.
-> http://www.efficios.com
-> 
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
