@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131AbbAWP7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:59:32 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:35719 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455AbbAWP7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:59:25 -0500
+	id S1752674AbbAWQCS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:02:18 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:48951 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751537AbbAWQCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 11:02:15 -0500
+Date: Fri, 23 Jan 2015 11:02:04 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        mhocko@suse.cz
+Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
+ remove unnecessary soft limit tree node test'
+Message-ID: <20150123160204.GA32592@phnom.home.cmpxchg.org>
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
+ <20150123050802.GB22751@roeck-us.net>
+ <20150123141817.GA22926@phnom.home.cmpxchg.org>
+ <alpine.DEB.2.11.1501230908560.15325@gentwo.org>
 MIME-Version: 1.0
-X-Originating-IP: [95.23.97.229]
-In-Reply-To: <1422028075.15395.92.camel@collabora.co.uk>
-References: <1422023038-11842-1-git-send-email-jh80.chung@samsung.com>
-	<CABxcv=mJhHTBKes38+6kHi5o3RmBHHN6sVqBUDRc-YyNvkdESQ@mail.gmail.com>
-	<1422028075.15395.92.camel@collabora.co.uk>
-Date: Fri, 23 Jan 2015 16:59:24 +0100
-Message-ID: <CABxcv=kARp8xLYCqf8dfdKd9ehs1u=qTEjkn1iujhN77ZjPdTA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: Add sd0_rst pinctrl node to exynos5420
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene@kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1501230908560.15325@gentwo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sjoerd,
+On Fri, Jan 23, 2015 at 09:17:44AM -0600, Christoph Lameter wrote:
+> On Fri, 23 Jan 2015, Johannes Weiner wrote:
+> 
+> > Is the assumption of this patch wrong?  Does the specified node have
+> > to be online for the fallback to work?
+> 
+> Nodes that are offline have no control structures allocated and thus
+> allocations will likely segfault when the address of the controls
+> structure for the node is accessed.
+> 
+> If we wanted to prevent that then every allocation would have to add a
+> check to see if the nodes are online which would impact performance.
 
-On Fri, Jan 23, 2015 at 4:47 PM, Sjoerd Simons
-<sjoerd.simons@collabora.co.uk> wrote:
->>
->> If this pin is used by the Odroid XU3 board, shouldn't be defined in
->> the exynos5422-odroidxu3.dts instead?
->
-> It's not just used by the XU3 though, it's also hooked up on the peach
-> pi chromebook for example and i would expect it to be hooked up on most
-> board with an eMMC
->
-> This change is consistent with most of the special purpose GPIO pins
-> defined in that file, so i don't see the problem with including it in
-> that pinctrl file
+Okay, that makes sense, thank you.
 
-In that case I completely agree that it should be defined in the .dtsi
-but that is not what the commit message said though :-)
-
-Best regards,
-Javier
+Andrew, can you please drop this patch?
