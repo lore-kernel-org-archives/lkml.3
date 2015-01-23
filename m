@@ -1,664 +1,509 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798AbbAWH2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 02:28:25 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:55336 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337AbbAWH2X (ORCPT
+	id S1752857AbbAWHe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 02:34:59 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:52609 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017AbbAWHe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 02:28:23 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-X-AuditID: cbfee68d-f79296d000004278-95-54c1f8147617
-Content-transfer-encoding: 8BIT
-Message-id: <54C1F814.10400@samsung.com>
-Date: Fri, 23 Jan 2015 16:28:20 +0900
-From: Beomho Seo <beomho.seo@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.4.0
-To: =?UTF-8?B?S3J6eXN6dG9mIEtvesWCb3dza2k=?= <k.kozlowski.k@gmail.com>,
-        Jaewon Kim <jaewon02.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-pm@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH 3/6] power: max77843_charger: Add Max77843 charger device
- driver
-References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
- <1421989367-32721-4-git-send-email-jaewon02.kim@samsung.com>
- <CAJKOXPcLjJ3LPWC3e9KqXFA90zr14WAGGmSsdxEiJ1-ctnzefQ@mail.gmail.com>
-In-reply-to: <CAJKOXPcLjJ3LPWC3e9KqXFA90zr14WAGGmSsdxEiJ1-ctnzefQ@mail.gmail.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsWyRsSkUFf0x8EQg55JTBZTHz5hs7j+5Tmr
-	xfwj51gt+t8sZLU492olo8Wk+xNYLHY0HGG1eP7vB7vF/a9HGS0u75rDZvG59wijxdLrF5ks
-	Jkxfy2LRuvcIu8Xp3SUO/B5r5q1h9Ljc18vksXPWXXaPlcu/sHlsWtXJ5nHn2h42j74tqxg9
-	Pm+SC+CI4rJJSc3JLEst0rdL4Mq4ff4YU8HdZYwVP3sXsTUw3ijqYuTkkBAwkTh34Tw7hC0m
-	ceHeerYuRi4OIYGljBKrZi5mhCk6decsE0RiEaPE0R3PmUASvAKCEj8m32PpYuTgYBaQlzhy
-	KRvCVJeYMiUXovw1UHnjbEaIcg2JhzP3gy1jEVCVuLxoPdgYNgFNifdTrrCA2KICERLzj71m
-	BrFFBPIlfr6eAXYQs8BpZonVf86BNQsLhEl82LWJBWLDOUaJxoaJYBs4BYIlzi/qBUtICMzl
-	kDhyYRUjxDoBiW+TD4FdKiEgK7HpADPEZ5ISB1fcYJnAKDYLyT+zEP6ZhfDPAkbmVYyiqQXJ
-	BcVJ6UWGesWJucWleel6yfm5mxiBMX7637PeHYy3D1gfYhTgYFTi4W3YcjBEiDWxrLgy9xCj
-	KdANE5mlRJPzgYkkryTe0NjMyMLUxNTYyNzSTEmcV1HqZ7CQQHpiSWp2ampBalF8UWlOavEh
-	RiYOTqkGxr79ricOVRscyli4eHX95co1nO8ri7lZza1m72TtT1zYq3Vxovf04J/H5S4vNfq3
-	z5Xd+Chju4ofU1yYsbR1WO72O5/CCjdvS1u5yoGhI+nDxRxhq8MZZcGTlzZP4t2zrf5BWEK2
-	dsyvmBeNnPvU1NfzRjAybbn6ZX3E/02hO7eE7rxw8s7nJiWW4oxEQy3mouJEAMn88ZfsAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t9jAV2RHwdDDM5fNLKY+vAJm8X1L89Z
-	LeYfOcdq0f9mIavFuVcrGS0m3Z/AYrGj4QirxfN/P9gt7n89ymhxedccNovPvUcYLZZev8hk
-	MWH6WhaL1r1H2C1O7y5x4PdYM28No8flvl4mj52z7rJ7rFz+hc1j06pONo871/awefRtWcXo
-	8XmTXABHVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5b
-	Zg7Q9UoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjNvnjzEV3F3GWPGz
-	dxFbA+ONoi5GTg4JAROJU3fOMkHYYhIX7q1n62Lk4hASWMQocXTHc7AEr4CgxI/J91i6GDk4
-	mAXkJY5cyoYw1SWmTMmFKH8NVN44mxGiXEPi4cz97CA2i4CqxOVF68HGsAloSryfcoUFxBYV
-	iJCYf+w1M4gtIpAv8fP1DLC9zAKnmSVW/zkH1iwsECbxYdcmFogN5xglGhsmgm3gFAiWOL+o
-	l2UCo8AsJPfNQrhvFsJ9CxiZVzGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEJ5BnUjsYVzZY
-	HGIU4GBU4uFt2HIwRIg1say4MvcQowQHs5IIb9wXoBBvSmJlVWpRfnxRaU5q8SFGU6DvJjJL
-	iSbnA5NbXkm8obGJmZGlkbmhhZGxuZI4r5J9W4iQQHpiSWp2ampBahFMHxMHp1QDY5qm4u0p
-	uw+7G2TEntr+bsHGYFHRSdKTOrx6q1N79IJOzmfTiZqzLK3CJmGG7aZWXunY7bJNeq8bLU8/
-	qP1Sx8i9ySBIt6bz5YJNXuEsn2f+sbiUEqP59mOPzlvhzQ+aDjuah9tyyTdOnn3w+AzV9XPq
-	a9d9sv62+0Hhp0ghs0OHg7Xr+g0eK7EUZyQaajEXFScCAFCm/aQ2AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 23 Jan 2015 02:34:56 -0500
+From: Sumit Semwal <sumit.semwal@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, rmk+kernel@arm.linux.org.uk,
+        airlied@linux.ie, kgene@kernel.org, daniel.vetter@intel.com,
+        thierry.reding@gmail.com, pawel@osciak.com, m.szyprowski@samsung.com,
+        mchehab@osg.samsung.com, gregkh@linuxfoundation.org
+Cc: linaro-kernel@lists.linaro.org, robdclark@gmail.com, daniel@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        inki.dae@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [RFC] dma-buf: cleanup dma_buf_export() to make it easily extensible
+Date: Fri, 23 Jan 2015 13:04:12 +0530
+Message-Id: <1421998452-18752-1-git-send-email-sumit.semwal@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for review.
+At present, dma_buf_export() takes a series of parameters, which
+makes it difficult to add any new parameters for exporters, if required.
 
-On 01/23/2015 04:04 PM, Krzysztof Kozłowski wrote:
-> 2015-01-23 6:02 GMT+01:00 Jaewon Kim <jaewon02.kim@samsung.com>:
->> From: Beomho Seo <beomho.seo@samsung.com>
->>
->> This patch adds device driver of max77843 charger. This driver provide
->> initialize each charging mode(e.g. fast charge, top-off mode and constant
->> charging mode so on.). Additionally, control charging paramters to use
->> i2c interface.
->>
->> Cc: Sebastian Reichel <sre@kernel.org>
->> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
->> ---
->>  drivers/power/Kconfig            |    7 +
->>  drivers/power/Makefile           |    1 +
->>  drivers/power/max77843_charger.c |  506 ++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 514 insertions(+)
->>  create mode 100644 drivers/power/max77843_charger.c
->>
->> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
->> index 0108c2a..a054a28 100644
->> --- a/drivers/power/Kconfig
->> +++ b/drivers/power/Kconfig
->> @@ -332,6 +332,13 @@ config CHARGER_MAX14577
->>           Say Y to enable support for the battery charger control sysfs and
->>           platform data of MAX14577/77836 MUICs.
->>
->> +config CHARGER_MAX77843
->> +       tristate "Maxim MAX77843 battery charger driver"
->> +       depends on MFD_MAX77843
->> +       help
->> +         Say Y to enable support for the battery charger control sysfs and
->> +         platform data of MAX77843
->> +
->>  config CHARGER_MAX8997
->>         tristate "Maxim MAX8997/MAX8966 PMIC battery charger driver"
->>         depends on MFD_MAX8997 && REGULATOR_MAX8997
->> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
->> index dfa8942..212c6a2 100644
->> --- a/drivers/power/Makefile
->> +++ b/drivers/power/Makefile
->> @@ -50,6 +50,7 @@ obj-$(CONFIG_CHARGER_LP8788)  += lp8788-charger.o
->>  obj-$(CONFIG_CHARGER_GPIO)     += gpio-charger.o
->>  obj-$(CONFIG_CHARGER_MANAGER)  += charger-manager.o
->>  obj-$(CONFIG_CHARGER_MAX14577) += max14577_charger.o
->> +obj-$(CONFIG_CHARGER_MAX77843) += max77843_charger.o
->>  obj-$(CONFIG_CHARGER_MAX8997)  += max8997_charger.o
->>  obj-$(CONFIG_CHARGER_MAX8998)  += max8998_charger.o
->>  obj-$(CONFIG_CHARGER_BQ2415X)  += bq2415x_charger.o
->> diff --git a/drivers/power/max77843_charger.c b/drivers/power/max77843_charger.c
->> new file mode 100644
->> index 0000000..317b2cc
->> --- /dev/null
->> +++ b/drivers/power/max77843_charger.c
->> @@ -0,0 +1,506 @@
->> +/*
->> + * Charger driver for Maxim MAX77843
->> + *
->> + * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
->> + * Author: Beomho Seo <beomho.seo@samsung.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published bythe Free Software Foundation.
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/power_supply.h>
->> +#include <linux/mfd/max77843-private.h>
->> +
->> +struct max77843_charger_info {
->> +       u32 fast_charge_uamp;
->> +       u32 top_off_uamp;
->> +       u32 input_uamp_limit;
->> +};
->> +
->> +struct max77843_charger {
->> +       struct device           *dev;
->> +       struct max77843         *max77843;
->> +       struct i2c_client       *client;
->> +       struct regmap           *regmap;
->> +       struct power_supply     psy;
->> +
->> +       struct max77843_charger_info    *info;
->> +};
-> 
-> Why creating two separate structures?
-> 
+Make it simpler by moving all these parameters into a struct, and pass
+the struct * as parameter to dma_buf_export().
 
-max77843_charger_info structure just have property of charger.
-If you want to merge one structure, I will revise above structure.
+While at it, unite dma_buf_export_named() with dma_buf_export(), and
+change all callers accordingly.
 
->> +
->> +static int max77843_charger_get_max_current(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       int ret, val = 0;
->> +       unsigned int reg_data;
->> +
->> +       ret = regmap_read(regmap, MAX77843_CHG_REG_CHG_CNFG_09, &reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to read charger register\n");
->> +               return ret;
->> +       }
->> +
->> +       if (reg_data <= 0x03) {
->> +               val = MAX77843_CHG_INPUT_CURRENT_LIMIT_MIN;
->> +       } else if (reg_data >= 0x78) {
->> +               val = MAX77843_CHG_INPUT_CURRENT_LIMIT_MAX;
->> +       } else {
->> +               val = reg_data / 3;
->> +               if (reg_data % 3 == 0)
->> +                       val *= 100000;
->> +               else if (reg_data % 3 == 1)
->> +                       val = val * 100000 + 33000;
->> +               else
->> +                       val = val * 100000 + 67000;
->> +       }
->> +
->> +       return val;
->> +}
->> +
->> +static int max77843_charger_get_now_current(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       int ret, val = 0;
->> +       unsigned int reg_data;
->> +
->> +       ret = regmap_read(regmap, MAX77843_CHG_REG_CHG_CNFG_02, &reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to read charger register\n");
-> 
-> This error log shows up in many places. Please print also error code.
-> 
-> Additionally I think it could be useful to print also details about
-> register which failed. Currently user would not know which register
-> access failed. Consider adding short description like "Failed to read
-> current charger register: %d...". However I do not insist on this so
-> it is up to you.
-> 
+Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
+---
+ drivers/dma-buf/dma-buf.c                      | 47 +++++++++++++-------------
+ drivers/gpu/drm/armada/armada_gem.c            | 12 +++++--
+ drivers/gpu/drm/drm_prime.c                    | 14 +++++---
+ drivers/gpu/drm/exynos/exynos_drm_dmabuf.c     | 13 +++++--
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c         | 12 +++++--
+ drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c      | 11 +++++-
+ drivers/gpu/drm/tegra/gem.c                    | 12 +++++--
+ drivers/gpu/drm/ttm/ttm_object.c               | 11 ++++--
+ drivers/gpu/drm/udl/udl_dmabuf.c               | 10 +++++-
+ drivers/media/v4l2-core/videobuf2-dma-contig.c | 10 +++++-
+ drivers/media/v4l2-core/videobuf2-dma-sg.c     | 10 +++++-
+ drivers/media/v4l2-core/videobuf2-vmalloc.c    | 10 +++++-
+ drivers/staging/android/ion/ion.c              | 11 ++++--
+ include/linux/dma-buf.h                        | 28 +++++++++++----
+ 14 files changed, 160 insertions(+), 51 deletions(-)
 
-OK. I will fix error log.
+diff --git a/drivers/dma-buf/dma-buf.c b/drivers/dma-buf/dma-buf.c
+index 5be225c2ba98..6d3df3dd9310 100644
+--- a/drivers/dma-buf/dma-buf.c
++++ b/drivers/dma-buf/dma-buf.c
+@@ -265,7 +265,7 @@ static inline int is_dma_buf_file(struct file *file)
+ }
+ 
+ /**
+- * dma_buf_export_named - Creates a new dma_buf, and associates an anon file
++ * dma_buf_export - Creates a new dma_buf, and associates an anon file
+  * with this buffer, so it can be exported.
+  * Also connect the allocator specific data and ops to the buffer.
+  * Additionally, provide a name string for exporter; useful in debugging.
+@@ -277,31 +277,32 @@ static inline int is_dma_buf_file(struct file *file)
+  * @exp_name:	[in]	name of the exporting module - useful for debugging.
+  * @resv:	[in]	reservation-object, NULL to allocate default one.
+  *
++ * All the above info comes from struct dma_buf_export_info.
++ *
+  * Returns, on success, a newly created dma_buf object, which wraps the
+  * supplied private data and operations for dma_buf_ops. On either missing
+  * ops, or error in allocating struct dma_buf, will return negative error.
+  *
+  */
+-struct dma_buf *dma_buf_export_named(void *priv, const struct dma_buf_ops *ops,
+-				size_t size, int flags, const char *exp_name,
+-				struct reservation_object *resv)
++struct dma_buf *dma_buf_export(struct dma_buf_export_info *exp_info)
+ {
+ 	struct dma_buf *dmabuf;
+ 	struct file *file;
+ 	size_t alloc_size = sizeof(struct dma_buf);
+-	if (!resv)
++	if (!exp_info->resv)
+ 		alloc_size += sizeof(struct reservation_object);
+ 	else
+ 		/* prevent &dma_buf[1] == dma_buf->resv */
+ 		alloc_size += 1;
+ 
+-	if (WARN_ON(!priv || !ops
+-			  || !ops->map_dma_buf
+-			  || !ops->unmap_dma_buf
+-			  || !ops->release
+-			  || !ops->kmap_atomic
+-			  || !ops->kmap
+-			  || !ops->mmap)) {
++	if (WARN_ON(!exp_info->priv
++			  || !exp_info->ops
++			  || !exp_info->ops->map_dma_buf
++			  || !exp_info->ops->unmap_dma_buf
++			  || !exp_info->ops->release
++			  || !exp_info->ops->kmap_atomic
++			  || !exp_info->ops->kmap
++			  || !exp_info->ops->mmap)) {
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
+@@ -309,21 +310,22 @@ struct dma_buf *dma_buf_export_named(void *priv, const struct dma_buf_ops *ops,
+ 	if (dmabuf == NULL)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	dmabuf->priv = priv;
+-	dmabuf->ops = ops;
+-	dmabuf->size = size;
+-	dmabuf->exp_name = exp_name;
++	dmabuf->priv = exp_info->priv;
++	dmabuf->ops = exp_info->ops;
++	dmabuf->size = exp_info->size;
++	dmabuf->exp_name = exp_info->exp_name;
+ 	init_waitqueue_head(&dmabuf->poll);
+ 	dmabuf->cb_excl.poll = dmabuf->cb_shared.poll = &dmabuf->poll;
+ 	dmabuf->cb_excl.active = dmabuf->cb_shared.active = 0;
+ 
+-	if (!resv) {
+-		resv = (struct reservation_object *)&dmabuf[1];
+-		reservation_object_init(resv);
++	if (!exp_info->resv) {
++		exp_info->resv = (struct reservation_object *)&dmabuf[1];
++		reservation_object_init(exp_info->resv);
+ 	}
+-	dmabuf->resv = resv;
++	dmabuf->resv = exp_info->resv;
+ 
+-	file = anon_inode_getfile("dmabuf", &dma_buf_fops, dmabuf, flags);
++	file = anon_inode_getfile("dmabuf", &dma_buf_fops, dmabuf,
++					exp_info->flags);
+ 	if (IS_ERR(file)) {
+ 		kfree(dmabuf);
+ 		return ERR_CAST(file);
+@@ -341,8 +343,7 @@ struct dma_buf *dma_buf_export_named(void *priv, const struct dma_buf_ops *ops,
+ 
+ 	return dmabuf;
+ }
+-EXPORT_SYMBOL_GPL(dma_buf_export_named);
+-
++EXPORT_SYMBOL_GPL(dma_buf_export);
+ 
+ /**
+  * dma_buf_fd - returns a file descriptor for the given dma_buf
+diff --git a/drivers/gpu/drm/armada/armada_gem.c b/drivers/gpu/drm/armada/armada_gem.c
+index ef5feeecec84..5d109c3dd326 100644
+--- a/drivers/gpu/drm/armada/armada_gem.c
++++ b/drivers/gpu/drm/armada/armada_gem.c
+@@ -538,8 +538,16 @@ struct dma_buf *
+ armada_gem_prime_export(struct drm_device *dev, struct drm_gem_object *obj,
+ 	int flags)
+ {
+-	return dma_buf_export(obj, &armada_gem_prime_dmabuf_ops, obj->size,
+-			      O_RDWR, NULL);
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &armada_gem_prime_dmabuf_ops,
++		.size = obj->size,
++		.flags = O_RDWR,
++		.resv = NULL,
++		.priv = obj,
++	};
++
++	return dma_buf_export(&exp_info);
+ }
+ 
+ struct drm_gem_object *
+diff --git a/drivers/gpu/drm/drm_prime.c b/drivers/gpu/drm/drm_prime.c
+index 7482b06cd08f..20ae77455c04 100644
+--- a/drivers/gpu/drm/drm_prime.c
++++ b/drivers/gpu/drm/drm_prime.c
+@@ -339,13 +339,19 @@ static const struct dma_buf_ops drm_gem_prime_dmabuf_ops =  {
+ struct dma_buf *drm_gem_prime_export(struct drm_device *dev,
+ 				     struct drm_gem_object *obj, int flags)
+ {
+-	struct reservation_object *robj = NULL;
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &drm_gem_prime_dmabuf_ops,
++		.size = obj->size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = obj,
++	};
+ 
+ 	if (dev->driver->gem_prime_res_obj)
+-		robj = dev->driver->gem_prime_res_obj(obj);
++		exp_info.resv = dev->driver->gem_prime_res_obj(obj);
+ 
+-	return dma_buf_export(obj, &drm_gem_prime_dmabuf_ops, obj->size,
+-			      flags, robj);
++	return dma_buf_export(&exp_info);
+ }
+ EXPORT_SYMBOL(drm_gem_prime_export);
+ 
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
+index 60192ed544f0..abc65a02dffa 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dmabuf.c
+@@ -185,9 +185,16 @@ struct dma_buf *exynos_dmabuf_prime_export(struct drm_device *drm_dev,
+ 				struct drm_gem_object *obj, int flags)
+ {
+ 	struct exynos_drm_gem_obj *exynos_gem_obj = to_exynos_gem_obj(obj);
+-
+-	return dma_buf_export(obj, &exynos_dmabuf_ops,
+-				exynos_gem_obj->base.size, flags, NULL);
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &exynos_dmabuf_ops,
++		.size = exynos_gem_obj->base.size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = obj,
++	};
++
++	return dma_buf_export(&exp_info);
+ }
+ 
+ struct drm_gem_object *exynos_dmabuf_prime_import(struct drm_device *drm_dev,
+diff --git a/drivers/gpu/drm/i915/i915_gem_dmabuf.c b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
+index 82a1f4b57778..15fa1523aefc 100644
+--- a/drivers/gpu/drm/i915/i915_gem_dmabuf.c
++++ b/drivers/gpu/drm/i915/i915_gem_dmabuf.c
+@@ -229,6 +229,15 @@ static const struct dma_buf_ops i915_dmabuf_ops =  {
+ struct dma_buf *i915_gem_prime_export(struct drm_device *dev,
+ 				      struct drm_gem_object *gem_obj, int flags)
+ {
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &i915_dmabuf_ops,
++		.size = gem_obj->size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = gem_obj,
++	};
++
+ 	struct drm_i915_gem_object *obj = to_intel_bo(gem_obj);
+ 
+ 	if (obj->ops->dmabuf_export) {
+@@ -237,8 +246,7 @@ struct dma_buf *i915_gem_prime_export(struct drm_device *dev,
+ 			return ERR_PTR(ret);
+ 	}
+ 
+-	return dma_buf_export(gem_obj, &i915_dmabuf_ops, gem_obj->size, flags,
+-			      NULL);
++	return dma_buf_export(&exp_info);
+ }
+ 
+ static int i915_gem_object_get_pages_dmabuf(struct drm_i915_gem_object *obj)
+diff --git a/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c b/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c
+index a2dbfb1737b4..534718416f5e 100644
+--- a/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c
++++ b/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c
+@@ -171,7 +171,16 @@ static struct dma_buf_ops omap_dmabuf_ops = {
+ struct dma_buf *omap_gem_prime_export(struct drm_device *dev,
+ 		struct drm_gem_object *obj, int flags)
+ {
+-	return dma_buf_export(obj, &omap_dmabuf_ops, obj->size, flags, NULL);
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &omap_dmabuf_ops,
++		.size = obj->size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = obj,
++	};
++
++	return dma_buf_export(&exp_info);
+ }
+ 
+ struct drm_gem_object *omap_gem_prime_import(struct drm_device *dev,
+diff --git a/drivers/gpu/drm/tegra/gem.c b/drivers/gpu/drm/tegra/gem.c
+index 8777b7f75791..79a0fbc32ad4 100644
+--- a/drivers/gpu/drm/tegra/gem.c
++++ b/drivers/gpu/drm/tegra/gem.c
+@@ -658,8 +658,16 @@ struct dma_buf *tegra_gem_prime_export(struct drm_device *drm,
+ 				       struct drm_gem_object *gem,
+ 				       int flags)
+ {
+-	return dma_buf_export(gem, &tegra_gem_prime_dmabuf_ops, gem->size,
+-			      flags, NULL);
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &tegra_gem_prime_dmabuf_ops,
++		.size = gem->size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = gem,
++	};
++
++	return dma_buf_export(&exp_info);
+ }
+ 
+ struct drm_gem_object *tegra_gem_prime_import(struct drm_device *drm,
+diff --git a/drivers/gpu/drm/ttm/ttm_object.c b/drivers/gpu/drm/ttm/ttm_object.c
+index 12c87110db3a..2274f1637b89 100644
+--- a/drivers/gpu/drm/ttm/ttm_object.c
++++ b/drivers/gpu/drm/ttm/ttm_object.c
+@@ -683,6 +683,14 @@ int ttm_prime_handle_to_fd(struct ttm_object_file *tfile,
+ 
+ 	dma_buf = prime->dma_buf;
+ 	if (!dma_buf || !get_dma_buf_unless_doomed(dma_buf)) {
++		struct dma_buf_export_info exp_info = {
++			.exp_name = KBUILD_MODNAME,
++			.ops = &tdev->ops,
++			.size = prime->size,
++			.flags = flags,
++			.resv = NULL,
++			.priv = prime,
++		};
+ 
+ 		/*
+ 		 * Need to create a new dma_buf, with memory accounting.
+@@ -694,8 +702,7 @@ int ttm_prime_handle_to_fd(struct ttm_object_file *tfile,
+ 			goto out_unref;
+ 		}
+ 
+-		dma_buf = dma_buf_export(prime, &tdev->ops,
+-					 prime->size, flags, NULL);
++		dma_buf = dma_buf_export(&exp_info);
+ 		if (IS_ERR(dma_buf)) {
+ 			ret = PTR_ERR(dma_buf);
+ 			ttm_mem_global_free(tdev->mem_glob,
+diff --git a/drivers/gpu/drm/udl/udl_dmabuf.c b/drivers/gpu/drm/udl/udl_dmabuf.c
+index ac8a66b4dfc2..0e200009bae7 100644
+--- a/drivers/gpu/drm/udl/udl_dmabuf.c
++++ b/drivers/gpu/drm/udl/udl_dmabuf.c
+@@ -202,7 +202,15 @@ static struct dma_buf_ops udl_dmabuf_ops = {
+ struct dma_buf *udl_gem_prime_export(struct drm_device *dev,
+ 				     struct drm_gem_object *obj, int flags)
+ {
+-	return dma_buf_export(obj, &udl_dmabuf_ops, obj->size, flags, NULL);
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &udl_dmabuf_ops,
++		.size = obj->size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = obj,
++	};
++	return dma_buf_export(&exp_info);
+ }
+ 
+ static int udl_prime_create(struct drm_device *dev,
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+index b481d20c8372..2b3c494e18c9 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+@@ -402,6 +402,14 @@ static struct dma_buf *vb2_dc_get_dmabuf(void *buf_priv, unsigned long flags)
+ {
+ 	struct vb2_dc_buf *buf = buf_priv;
+ 	struct dma_buf *dbuf;
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &vb2_dc_dmabuf_ops,
++		.size = buf->size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = buf,
++	};
+ 
+ 	if (!buf->sgt_base)
+ 		buf->sgt_base = vb2_dc_get_base_sgt(buf);
+@@ -409,7 +417,7 @@ static struct dma_buf *vb2_dc_get_dmabuf(void *buf_priv, unsigned long flags)
+ 	if (WARN_ON(!buf->sgt_base))
+ 		return NULL;
+ 
+-	dbuf = dma_buf_export(buf, &vb2_dc_dmabuf_ops, buf->size, flags, NULL);
++	dbuf = dma_buf_export(&exp_info);
+ 	if (IS_ERR(dbuf))
+ 		return NULL;
+ 
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+index b1838abb6d00..5a9835655146 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+@@ -583,11 +583,19 @@ static struct dma_buf *vb2_dma_sg_get_dmabuf(void *buf_priv, unsigned long flags
+ {
+ 	struct vb2_dma_sg_buf *buf = buf_priv;
+ 	struct dma_buf *dbuf;
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &vb2_dma_sg_dmabuf_ops,
++		.size = buf->size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = buf,
++	};
+ 
+ 	if (WARN_ON(!buf->dma_sgt))
+ 		return NULL;
+ 
+-	dbuf = dma_buf_export(buf, &vb2_dma_sg_dmabuf_ops, buf->size, flags, NULL);
++	dbuf = dma_buf_export(&exp_info);
+ 	if (IS_ERR(dbuf))
+ 		return NULL;
+ 
+diff --git a/drivers/media/v4l2-core/videobuf2-vmalloc.c b/drivers/media/v4l2-core/videobuf2-vmalloc.c
+index fba944e50227..fb61090f43c6 100644
+--- a/drivers/media/v4l2-core/videobuf2-vmalloc.c
++++ b/drivers/media/v4l2-core/videobuf2-vmalloc.c
+@@ -367,11 +367,19 @@ static struct dma_buf *vb2_vmalloc_get_dmabuf(void *buf_priv, unsigned long flag
+ {
+ 	struct vb2_vmalloc_buf *buf = buf_priv;
+ 	struct dma_buf *dbuf;
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &vb2_vmalloc_dmabuf_ops,
++		.size = buf->size,
++		.flags = flags,
++		.resv = NULL,
++		.priv = buf,
++	};
+ 
+ 	if (WARN_ON(!buf->vaddr))
+ 		return NULL;
+ 
+-	dbuf = dma_buf_export(buf, &vb2_vmalloc_dmabuf_ops, buf->size, flags, NULL);
++	dbuf = dma_buf_export(&exp_info);
+ 	if (IS_ERR(dbuf))
+ 		return NULL;
+ 
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 296d347660fc..8eff2607f370 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -1106,6 +1106,14 @@ struct dma_buf *ion_share_dma_buf(struct ion_client *client,
+ 	struct ion_buffer *buffer;
+ 	struct dma_buf *dmabuf;
+ 	bool valid_handle;
++	struct dma_buf_export_info exp_info = {
++		.exp_name = KBUILD_MODNAME,
++		.ops = &dma_buf_ops,
++		.size = buffer->size,
++		.flags = O_RDWR,
++		.resv = NULL,
++		.priv = buffer,
++	};
+ 
+ 	mutex_lock(&client->lock);
+ 	valid_handle = ion_handle_validate(client, handle);
+@@ -1118,8 +1126,7 @@ struct dma_buf *ion_share_dma_buf(struct ion_client *client,
+ 	ion_buffer_get(buffer);
+ 	mutex_unlock(&client->lock);
+ 
+-	dmabuf = dma_buf_export(buffer, &dma_buf_ops, buffer->size, O_RDWR,
+-				NULL);
++	dmabuf = dma_buf_export(&exp_info);
+ 	if (IS_ERR(dmabuf)) {
+ 		ion_buffer_put(buffer);
+ 		return dmabuf;
+diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+index 694e1fe1c4b4..c5f3c9510368 100644
+--- a/include/linux/dma-buf.h
++++ b/include/linux/dma-buf.h
+@@ -163,6 +163,27 @@ struct dma_buf_attachment {
+ };
+ 
+ /**
++ * struct dma_buf_export_info - holds information needed to export a dma_buf
++ * @exp_name:	name of the exporting module - useful for debugging.
++ * @ops:	Attach allocator-defined dma buf ops to the new buffer
++ * @size:	Size of the buffer
++ * @flags:	mode flags for the file
++ * @resv:	reservation-object, NULL to allocate default one
++ * @priv:	Attach private data of allocator to this buffer
++ *
++ * This structure holds the information required to export the buffer. Used
++ * with dma_buf_export() only.
++ */
++struct dma_buf_export_info {
++	const char *exp_name;
++	const struct dma_buf_ops *ops;
++	size_t size;
++	int flags;
++	struct reservation_object *resv;
++	void *priv;
++};
++
++/**
+  * get_dma_buf - convenience wrapper for get_file.
+  * @dmabuf:	[in]	pointer to dma_buf
+  *
+@@ -181,12 +202,7 @@ struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+ void dma_buf_detach(struct dma_buf *dmabuf,
+ 				struct dma_buf_attachment *dmabuf_attach);
+ 
+-struct dma_buf *dma_buf_export_named(void *priv, const struct dma_buf_ops *ops,
+-			       size_t size, int flags, const char *,
+-			       struct reservation_object *);
+-
+-#define dma_buf_export(priv, ops, size, flags, resv)	\
+-	dma_buf_export_named(priv, ops, size, flags, KBUILD_MODNAME, resv)
++struct dma_buf *dma_buf_export(struct dma_buf_export_info *exp_info);
+ 
+ int dma_buf_fd(struct dma_buf *dmabuf, int flags);
+ struct dma_buf *dma_buf_get(int fd);
+-- 
+1.9.1
 
->> +               return ret;
->> +       }
->> +
->> +       reg_data &= MAX77843_CHG_FAST_CHG_CURRENT_MASK;
->> +
->> +       if (reg_data <= 0x02)
->> +               val = MAX77843_CHG_FAST_CHG_CURRENT_MIN;
->> +       else if (reg_data >= 0x3f)
->> +               val = MAX77843_CHG_FAST_CHG_CURRENT_MAX;
->> +       else
->> +               val = reg_data * MAX77843_CHG_FAST_CHG_CURRENT_STEP;
->> +
->> +       return val;
->> +}
->> +
->> +static int max77843_charger_get_online(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       int ret, val = 0;
->> +       unsigned int reg_data;
->> +
->> +       ret = regmap_read(regmap, MAX77843_CHG_REG_CHG_INT_OK, &reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to read charger register\n");
->> +               return ret;
->> +       }
->> +
->> +       if (reg_data & MAX77843_CHG_CHGIN_OK)
->> +               val = true;
->> +       else
->> +               val = false;
->> +
->> +       return val;
->> +}
->> +
->> +static int max77843_charger_get_present(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       int ret, val = 0;
->> +       unsigned int reg_data;
->> +
->> +       ret = regmap_read(regmap, MAX77843_CHG_REG_CHG_DTLS_00, &reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to read charger register\n");
->> +               return ret;
->> +       }
->> +
->> +       if (reg_data & MAX77843_CHG_BAT_DTLS)
->> +               val = false;
->> +       else
->> +               val = true;
->> +
->> +       return val;
->> +}
->> +
->> +static int max77843_charger_get_health(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       int ret, val = POWER_SUPPLY_HEALTH_UNKNOWN;
->> +       unsigned int reg_data;
->> +
->> +       ret = regmap_read(regmap, MAX77843_CHG_REG_CHG_DTLS_01, &reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to read charger register\n");
->> +               return ret;
->> +       }
->> +
->> +       reg_data &= MAX77843_CHG_BAT_DTLS_MASK;
->> +
->> +       switch (reg_data) {
->> +       case MAX77843_CHG_NO_BAT:
->> +               val = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
->> +               break;
->> +       case MAX77843_CHG_LOW_VOLT_BAT:
->> +       case MAX77843_CHG_OK_BAT:
->> +       case MAX77843_CHG_OK_LOW_VOLT_BAT:
->> +               val = POWER_SUPPLY_HEALTH_GOOD;
->> +               break;
->> +       case MAX77843_CHG_LONG_BAT_TIME:
->> +               val = POWER_SUPPLY_HEALTH_DEAD;
->> +               break;
->> +       case MAX77843_CHG_OVER_VOLT_BAT:
->> +       case MAX77843_CHG_OVER_CURRENT_BAT:
->> +               val = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
->> +               break;
->> +       default:
->> +               val = POWER_SUPPLY_HEALTH_UNKNOWN;
->> +               break;
->> +       }
->> +
->> +       return val;
->> +}
->> +
->> +static int max77843_charger_get_status(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       int ret, val = 0;
->> +       unsigned int reg_data;
->> +
->> +       ret = regmap_read(regmap, MAX77843_CHG_REG_CHG_DTLS_01, &reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to read charger register\n");
->> +               return ret;
->> +       }
->> +
->> +       reg_data &= MAX77843_CHG_DTLS_MASK;
->> +
->> +       switch (reg_data) {
->> +       case MAX77843_CHG_PQ_MODE:
->> +       case MAX77843_CHG_CC_MODE:
->> +       case MAX77843_CHG_CV_MODE:
->> +               val = POWER_SUPPLY_STATUS_CHARGING;
->> +               break;
->> +       case MAX77843_CHG_TO_MODE:
->> +       case MAX77843_CHG_DO_MODE:
->> +               val = POWER_SUPPLY_STATUS_FULL;
->> +               break;
->> +       case MAX77843_CHG_HT_MODE:
->> +       case MAX77843_CHG_TF_MODE:
->> +       case MAX77843_CHG_TS_MODE:
->> +               val = POWER_SUPPLY_STATUS_NOT_CHARGING;
->> +               break;
->> +       case MAX77843_CHG_OFF_MODE:
->> +               val = POWER_SUPPLY_STATUS_DISCHARGING;
->> +               break;
->> +       default:
->> +               val = POWER_SUPPLY_STATUS_UNKNOWN;
->> +               break;
->> +       }
->> +
->> +       return val;
->> +}
->> +
->> +static const char *model_name = "MAX77843";
->> +static const char *manufacturer = "Maxim Integrated";
->> +
->> +static int max77843_charger_get_property(struct power_supply *psy,
->> +               enum power_supply_property psp,
->> +               union power_supply_propval *val)
->> +{
->> +       struct max77843_charger *charger = container_of(psy,
->> +                               struct max77843_charger, psy);
->> +
->> +       switch (psp) {
->> +       case POWER_SUPPLY_PROP_STATUS:
->> +               val->intval = max77843_charger_get_status(charger);
->> +               break;
->> +       case POWER_SUPPLY_PROP_HEALTH:
->> +               val->intval = max77843_charger_get_health(charger);
->> +               break;
->> +       case POWER_SUPPLY_PROP_PRESENT:
->> +               val->intval = max77843_charger_get_present(charger);
->> +               break;
->> +       case POWER_SUPPLY_PROP_ONLINE:
->> +               val->intval = max77843_charger_get_online(charger);
->> +               break;
->> +       case POWER_SUPPLY_PROP_CURRENT_NOW:
->> +               val->intval = max77843_charger_get_now_current(charger);
->> +               break;
->> +       case POWER_SUPPLY_PROP_CURRENT_MAX:
->> +               val->intval = max77843_charger_get_max_current(charger);
->> +               break;
->> +       case POWER_SUPPLY_PROP_MODEL_NAME:
->> +               val->strval =  model_name;
->> +               break;
->> +       case POWER_SUPPLY_PROP_MANUFACTURER:
->> +               val->strval = manufacturer;
->> +               break;
->> +       default:
->> +               return -EINVAL;
->> +       }
->> +
->> +       return 0;
->> +}
->> +
->> +static enum power_supply_property max77843_charger_props[] = {
->> +       POWER_SUPPLY_PROP_STATUS,
->> +       POWER_SUPPLY_PROP_HEALTH,
->> +       POWER_SUPPLY_PROP_PRESENT,
->> +       POWER_SUPPLY_PROP_ONLINE,
->> +       POWER_SUPPLY_PROP_CURRENT_NOW,
->> +       POWER_SUPPLY_PROP_CURRENT_MAX,
->> +       POWER_SUPPLY_PROP_MODEL_NAME,
->> +       POWER_SUPPLY_PROP_MANUFACTURER,
->> +};
->> +
->> +static int max77843_charger_init_current_limit(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       struct max77843_charger_info *info = charger->info;
->> +       unsigned int input_uamp_limit = info->input_uamp_limit;
->> +       int ret;
->> +       unsigned int reg_data, val;
->> +
->> +       ret = regmap_update_bits(regmap, MAX77843_CHG_REG_CHG_CNFG_02,
->> +                       MAX77843_CHG_OTG_ILIMIT_MASK,
->> +                       MAX77843_CHG_OTG_ILIMIT_900);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to write configure register\n");
-> 
-> Same as in case of "read" operation failures - please print also error code.
-> 
-
-OK.
-
->> +               return ret;
->> +       }
->> +
->> +       if (input_uamp_limit == MAX77843_CHG_INPUT_CURRENT_LIMIT_MIN) {
->> +               reg_data = 0x03;
->> +       } else if (input_uamp_limit == MAX77843_CHG_INPUT_CURRENT_LIMIT_MAX) {
->> +               reg_data = 0x78;
->> +       } else {
->> +               if (input_uamp_limit < MAX77843_CHG_INPUT_CURRENT_LIMIT_REF)
->> +                       val = 0x03;
->> +               else
->> +                       val = 0x02;
->> +
->> +               input_uamp_limit -= MAX77843_CHG_INPUT_CURRENT_LIMIT_MIN;
->> +               input_uamp_limit /= MAX77843_CHG_INPUT_CURRENT_LIMIT_STEP;
->> +               reg_data = val + input_uamp_limit;
->> +       }
->> +
->> +       ret = regmap_write(regmap, MAX77843_CHG_REG_CHG_CNFG_09, reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to write configure register\n");
->> +               return ret;
->> +       }
->> +
->> +       return 0;
-> 
-> Could you merge it into:
-> 
->        ret = regmap_write(regmap, MAX77843_CHG_REG_CHG_CNFG_09, reg_data);
->        if (ret)
->               dev_err(charger->dev, "Failed to write configure register\n");
->        return ret;
-> 
-> 
-
-I will merge it into.
-
->> +
->> +static int max77843_charger_init_top_off(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       struct max77843_charger_info *info = charger->info;
->> +       unsigned int top_off_uamp = info->top_off_uamp;
->> +       int ret;
->> +       unsigned int reg_data;
->> +
->> +       if (top_off_uamp == MAX77843_CHG_TOP_OFF_CURRENT_MIN) {
->> +               reg_data = 0x00;
->> +       } else if (top_off_uamp == MAX77843_CHG_TOP_OFF_CURRENT_MAX) {
->> +               reg_data = 0x07;
->> +       } else {
->> +               top_off_uamp -= MAX77843_CHG_TOP_OFF_CURRENT_MIN;
->> +               top_off_uamp /= MAX77843_CHG_TOP_OFF_CURRENT_STEP;
->> +               reg_data = top_off_uamp;
->> +       }
->> +
->> +       ret = regmap_update_bits(regmap, MAX77843_CHG_REG_CHG_CNFG_03,
->> +                       MAX77843_CHG_TOP_OFF_CURRENT_MASK, reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to write configure register\n");
->> +               return ret;
->> +       }
->> +
->> +       return 0;
-> 
-> Ditto
-> 
-
-Ditto
-
->> +}
->> +
->> +static int max77843_charger_init_fast_charge(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       struct max77843_charger_info *info = charger->info;
->> +       unsigned int fast_charge_uamp = info->fast_charge_uamp;
->> +       int ret;
->> +       unsigned int reg_data;
->> +
->> +       if (fast_charge_uamp < info->input_uamp_limit) {
->> +               reg_data = 0x09;
->> +       } else if (fast_charge_uamp == MAX77843_CHG_FAST_CHG_CURRENT_MIN) {
->> +               reg_data = 0x02;
->> +       } else if (fast_charge_uamp == MAX77843_CHG_FAST_CHG_CURRENT_MAX) {
->> +               reg_data = 0x3f;
->> +       } else {
->> +               fast_charge_uamp -= MAX77843_CHG_FAST_CHG_CURRENT_MIN;
->> +               fast_charge_uamp /= MAX77843_CHG_FAST_CHG_CURRENT_STEP;
->> +               reg_data = 0x02 + fast_charge_uamp;
->> +       }
->> +
->> +       ret = regmap_update_bits(regmap, MAX77843_CHG_REG_CHG_CNFG_02,
->> +                       MAX77843_CHG_FAST_CHG_CURRENT_MASK, reg_data);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to write configure register\n");
->> +               return ret;
->> +       }
->> +
->> +       return 0;
-> 
-> Ditto
-> 
->> +}
->> +
->> +static int max77843_charger_init(struct max77843_charger *charger)
->> +{
->> +       struct regmap *regmap = charger->regmap;
->> +       int ret;
->> +
->> +       ret = regmap_write(regmap, MAX77843_CHG_REG_CHG_CNFG_06,
->> +                       MAX77843_CHG_WRITE_CAP_UNBLOCK);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to write configure register\n");
->> +               return ret;
->> +       }
->> +
->> +       ret = regmap_write(regmap, MAX77843_CHG_REG_CHG_CNFG_01,
->> +                       MAX77843_CHG_RESTART_THRESHOLD_DISABLE);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to write configure register\n");
->> +               return ret;
->> +       }
->> +
->> +       ret = max77843_charger_init_fast_charge(charger);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to set fast charge mode.\n");
->> +               return ret;
->> +       }
->> +
->> +       ret = max77843_charger_init_top_off(charger);
->> +       if (ret) {
->> +               dev_err(charger->dev, "Failed to set top off charge mode.\n");
->> +               return ret;
->> +       }
->> +
->> +       ret = max77843_charger_init_current_limit(charger);
->> +
-> 
-> Why this return value is ignored?
-> 
-
-I will fix it.
-
->> +       return 0;
->> +}
->> +
->> +static struct max77843_charger_info *max77843_charger_dt_init(
->> +               struct platform_device *pdev)
->> +{
->> +       struct max77843_charger_info *info;
->> +       struct device_node *np = pdev->dev.of_node;
->> +       int ret;
->> +
->> +       if (!np) {
->> +               dev_err(&pdev->dev, "No charger OF node\n");
->> +               return ERR_PTR(-EINVAL);
->> +       }
->> +
->> +       info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
->> +       if (!info)
->> +               return ERR_PTR(-ENOMEM);
->> +
->> +       ret = of_property_read_u32(np, "maxim,fast-charge-uamp",
->> +                       &info->fast_charge_uamp);
->> +       if (ret) {
->> +               dev_err(&pdev->dev, "Cannot parse fast charge current.\n");
->> +               return ERR_PTR(ret);
->> +       }
->> +
->> +       ret = of_property_read_u32(np, "maxim,top-off-uamp",
->> +                       &info->top_off_uamp);
->> +       if (ret) {
->> +               dev_err(&pdev->dev,
->> +                       "Cannot parse primary charger termination voltage.\n");
->> +               return ERR_PTR(ret);
->> +       }
->> +
->> +       ret = of_property_read_u32(np, "maxim,input-uamp-limit",
->> +                       &info->input_uamp_limit);
->> +       if (ret) {
->> +               dev_err(&pdev->dev, "Cannot parse input current limit value\n");
->> +               return ERR_PTR(ret);
->> +       }
->> +
->> +       return info;
->> +}
->> +
->> +static int max77843_charger_probe(struct platform_device *pdev)
->> +{
->> +       struct max77843 *max77843 = dev_get_drvdata(pdev->dev.parent);
->> +       struct max77843_charger *charger;
->> +       int ret;
->> +
->> +       charger = devm_kzalloc(&pdev->dev, sizeof(*charger), GFP_KERNEL);
->> +       if (!charger)
->> +               return -ENOMEM;
->> +
->> +       platform_set_drvdata(pdev, charger);
->> +       charger->dev = &pdev->dev;
->> +       charger->max77843 = max77843;
->> +       charger->client = max77843->i2c_chg;
->> +       charger->regmap = max77843->regmap_chg;
->> +
->> +       charger->info = max77843_charger_dt_init(pdev);
->> +       if (IS_ERR_OR_NULL(charger->info)) {
->> +               ret = PTR_ERR(charger->info);
->> +               goto err_i2c;
->> +       }
->> +
->> +       charger->psy.name       = "max77843-charger";
->> +       charger->psy.type       = POWER_SUPPLY_TYPE_MAINS;
->> +       charger->psy.get_property       = max77843_charger_get_property;
->> +       charger->psy.properties         = max77843_charger_props;
->> +       charger->psy.num_properties     = ARRAY_SIZE(max77843_charger_props);
->> +
->> +       ret = max77843_charger_init(charger);
->> +       if (ret)
->> +               goto err_i2c;
->> +
->> +       ret = power_supply_register(&pdev->dev, &charger->psy);
->> +       if (ret) {
->> +               dev_err(&pdev->dev, "Failed  to register power supply\n");
->> +               goto err_i2c;
->> +       }
->> +
->> +       return 0;
->> +
->> +err_i2c:
->> +       i2c_unregister_device(charger->client);
-> 
-> This seems complicated. The MFD registers the i2c dummy for charger...
-> and sometimes charger driver unregisters it and sometimes not. The
-> ownership should be in one place: probably in charger driver... but I
-> asked about this in another thread so lets discuss it there.
-> 
-
-OK. I will revise after discuss it.
-
-> Best regards,
-> Krzysztof
-> 
-
-Thanks,
-Beomho Seo
