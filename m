@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbbAWD2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 22:28:01 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14928 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911AbbAWD15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 22:27:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,453,1418112000"; 
-   d="asc'?scan'208";a="655258638"
-Message-ID: <1421983672.2560.41.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] ethernet: fm10k: Actually drop 4 bits
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 22 Jan 2015 19:27:52 -0800
-In-Reply-To: <1421967198-16667-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1421967198-16667-1-git-send-email-linux@rasmusvillemoes.dk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-cB5feE4NS2SCmVETGgyc"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1753832AbbAWD3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 22:29:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:20641 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbbAWD3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 22:29:45 -0500
+Message-ID: <54C1BFFD.9060707@oracle.com>
+Date: Thu, 22 Jan 2015 22:29:01 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
+Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337
+ rcu_read_unlock_special+0x369/0x550()
+References: <54BBC084.2030604@oracle.com> <20150118232255.GD9719@linux.vnet.ibm.com> <54BE76B9.7070907@oracle.com> <20150121025754.GV9719@linux.vnet.ibm.com> <54BFC979.8040107@oracle.com> <20150122004305.GJ9719@linux.vnet.ibm.com>
+In-Reply-To: <20150122004305.GJ9719@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/21/2015 07:43 PM, Paul E. McKenney wrote:
+> On Wed, Jan 21, 2015 at 10:44:57AM -0500, Sasha Levin wrote:
+>> On 01/20/2015 09:57 PM, Paul E. McKenney wrote:
+>>>>> So RCU believes that an RCU read-side critical section that ended within
+>>>>>>> an interrupt handler (in this case, an hrtimer) somehow got preempted.
+>>>>>>> Which is not supposed to happen.
+>>>>>>>
+>>>>>>> Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
+>>>>>>> and retry?
+>>>>>
+>>>>> I did have CONFIG_PROVE_RCU, and didn't see anything else besides what I pasted here.
+>>> OK, fair enough.  I do have a stack of RCU CPU stall-warning changes on
+>>> their way in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
+>>>
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+>>>
+>>> These handle the problems that Dave Jones, yourself, and a few others
+>>> located this past December.  Could you please give them a spin?
+>>
+>> They seem to be a part of -next already, so this testing already includes them.
+>>
+>> I seem to be getting them about once a day, anything I can add to debug it?
+> 
+> Could you please try reproducing with the following patch?
 
---=-cB5feE4NS2SCmVETGgyc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yes, and I've got mixed results. It reproduced, and all I got was:
 
-On Thu, 2015-01-22 at 23:53 +0100, Rasmus Villemoes wrote:
-> The comment explains the intention, but vid has type u16. Before the
-> inner shift, it is promoted to int, which has plenty of space for all
-> vid's bits, so nothing is dropped. Use a simple mask instead.
->=20
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  drivers/net/ethernet/intel/fm10k/fm10k_pf.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+[  717.645572] ===============================
+[  717.645572] [ INFO: suspicious RCU usage. ]
+[  717.645572] 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1809 Tainted: G        W
+[  717.645572] -------------------------------
+[  717.645572] kernel/rcu/tree_plugin.h:337 rcu_read_unlock() from irq or softirq with blocking in critical section!!!
+[  717.645572] !
+[  717.645572]
+[  717.645572] other info that might help us debug this:
+[  717.645572]
+[  717.645572]
+[  717.645572] rcu_scheduler_active = 1, debug_locks = 1
+[  717.645572] 3 locks held by trinity-c29/16497:
+[  717.645572]  #0:  (&sb->s_type->i_mutex_key){+.+.+.}, at: [<ffffffff81bec373>] lookup_slow+0xd3/0x420
+[  717.645572]  #1:
+[hang]
 
-Thanks Rasmus, I will add your patch to my queue.
+So the rest of the locks/stack trace didn't get printed, nor the pr_alert() which
+should follow that.
 
---=-cB5feE4NS2SCmVETGgyc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+I've removed the lockdep call and will re-run it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAABCgAGBQJUwb+4AAoJEOVv75VaS+3OIfIP/RcuhentUqJMrWPbjO7VNq68
-LyyzZNWEjRg2/WL3u/ppz9Yh7DEFXsJYe7u8uGN5gclN5y4u+Yh079oJ1+lWyzeT
-BguQnpArvbvLREDymuE95NIj1+A0n4sI2J10MRMfNLSN0JHwgx9+qzqDgpXLP9bd
-ZiS+xWc+ewSucth+ujyWc30XLEcZutGTg8dBjNllW8eyBDN16FUUQk0zx5wrXMCc
-juT2f21yD3Jgo16vtE0JcxzbLDapOjn9XF/AhaDCGqxhz3V79qXMfuZE0faK6y4A
-TH6j9eNFSHC9CKGxImr96+Cic9pjjRZr8vkX9LfimkGXzy+H6HTZOKGwQNsVcB7c
-dHbR3nwGqXiImWAgpmCS48PW+L7NHvg0fo+ak2YYNwgOV3j1FVDz1/fOTnXypFZ9
-fAbh3k6WIdOEh2H7nKf+siihVa+vunR98CArj6JpPS5Upa/vey7rD6bvnBJRKUmf
-mMC/d0MjdQzmvQCMFLdzHkfqiPSxDwp/M3so0P977tsvvZuxGn6L2BpGqhSMfOqa
-tYdhJENjHpGdPvIGDN1/SPRwhPt+rCymAEhJqYLdd1qqwtr/l3m4cPXn0SwlWUsA
-gybM3Nzq8Rh4WjIzzeYtbE5KlCGDmeT7EPANE8k63tHvJloJ1rG0WN7jjU7MvH9C
-5VIrSXc8LoXaqeRP0d/w
-=WGrr
------END PGP SIGNATURE-----
+Thanks,
+Sasha
 
---=-cB5feE4NS2SCmVETGgyc--
 
