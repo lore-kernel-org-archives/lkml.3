@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471AbbAWSh6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:37:58 -0500
-Received: from mga03.intel.com ([134.134.136.65]:17665 "EHLO mga03.intel.com"
+	id S1756569AbbAWSjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:39:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:52939 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756450AbbAWShx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:37:53 -0500
+	id S1756443AbbAWShw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 13:37:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.09,455,1418112000"; 
-   d="scan'208";a="655613544"
+   d="scan'208";a="674944826"
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 To: josh@joshtriplett.org
 Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH 05/10] drivers/char: Support compiling out /dev/zero
-Date: Fri, 23 Jan 2015 12:37:11 -0600
-Message-Id: <79846ac644fe9103ef9b7cb0ab69e6f196f27853.1422035184.git.tom.zanussi@linux.intel.com>
+Subject: [PATCH 06/10] drivers/char: Support compiling out /dev/full
+Date: Fri, 23 Jan 2015 12:37:12 -0600
+Message-Id: <42f8b4b6c8b37e1f349c4607feceff4472cc9d6c.1422035184.git.tom.zanussi@linux.intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1422035184.git.tom.zanussi@linux.intel.com>
 References: <cover.1422035184.git.tom.zanussi@linux.intel.com>
@@ -24,118 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some embedded systems with tightly controlled userspace have no use
-for /dev/zero, and could benefit from the size savings gained by
-omitting it.  Add a new EMBEDDED config option to disable it.
+Most embedded systems have no use for /dev/full, and omitting it saves
+space.  Add a new EMBEDDED config option to disable it.
 
 bloat-o-meter (based on tinyconfig):
 
-add/remove: 0/3 grow/shrink: 0/1 up/down: 0/-391 (-391)
+add/remove: 0/2 grow/shrink: 0/0 up/down: 0/-122 (-122)
 function                                     old     new   delta
-chr_dev_init                                 162     147     -15
-mmap_zero                                     16       -     -16
-zero_fops                                    116       -    -116
-zero_bdi                                     244       -    -244
+write_full                                     6       -      -6
+full_fops                                    116       -    -116
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- drivers/char/Kconfig | 10 ++++++++++
- drivers/char/mem.c   | 15 +++++++++++----
- 2 files changed, 21 insertions(+), 4 deletions(-)
+ drivers/char/Kconfig | 11 +++++++++++
+ drivers/char/mem.c   |  6 ++++++
+ 2 files changed, 17 insertions(+)
 
 diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 17f6ddf..00f9b8a 100644
+index 00f9b8a..62290e0 100644
 --- a/drivers/char/Kconfig
 +++ b/drivers/char/Kconfig
-@@ -46,6 +46,16 @@ config DEVNULL
+@@ -56,6 +56,17 @@ config DEVZERO
  	  systems with strictly controlled userspace may not need it.
  	  When in doubt, say "Y".
  
-+config DEVZERO
-+	bool "/dev/zero virtual device support" if EMBEDDED
++config DEVFULL
++	bool "/dev/full virtual device support" if EMBEDDED
 +	depends on DEVMEM_BASE
 +	default y
 +	help
-+	  Say Y here if you want to support the /dev/zero device. The
-+	  /dev/zero device is used by many programs, but some embedded
-+	  systems with strictly controlled userspace may not need it.
++	  Say Y here if you want to support the /dev/full device. The
++	  /dev/full device is used mainly for testing how programs
++	  respond to ENOSPC, and can be disabled on systems that will
++	  never use it in production, such as many embedded systems.
 +	  When in doubt, say "Y".
 +
  config SGI_SNSC
  	bool "SGI Altix system controller communication support"
  	depends on (IA64_SGI_SN2 || IA64_GENERIC)
 diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 25d6f5b..96f7a9d 100644
+index 96f7a9d..5b60003 100644
 --- a/drivers/char/mem.c
 +++ b/drivers/char/mem.c
-@@ -633,7 +633,8 @@ static ssize_t __maybe_unused aio_write_null(struct kiocb *iocb,
- 	return iov_length(iov, nr_segs);
+@@ -665,11 +665,13 @@ static int mmap_zero(struct file *file, struct vm_area_struct *vma)
  }
+ #endif
  
--static ssize_t read_iter_zero(struct kiocb *iocb, struct iov_iter *iter)
-+static ssize_t __maybe_unused read_iter_zero(struct kiocb *iocb,
-+					     struct iov_iter *iter)
- {
- 	size_t written = 0;
- 
-@@ -652,6 +653,7 @@ static ssize_t read_iter_zero(struct kiocb *iocb, struct iov_iter *iter)
- 	return written;
- }
- 
-+#ifdef CONFIG_DEVZERO
- static int mmap_zero(struct file *file, struct vm_area_struct *vma)
- {
- #ifndef CONFIG_MMU
-@@ -661,6 +663,7 @@ static int mmap_zero(struct file *file, struct vm_area_struct *vma)
- 		return shmem_zero_setup(vma);
- 	return 0;
- }
-+#endif
- 
++#ifdef CONFIG_DEVFULL
  static ssize_t write_full(struct file *file, const char __user *buf,
  			  size_t count, loff_t *ppos)
-@@ -767,6 +770,7 @@ static const struct file_operations port_fops = {
+ {
+ 	return -ENOSPC;
+ }
++#endif
+ 
+ /*
+  * Special lseek() function for /dev/null and /dev/zero.  Most notably, you
+@@ -791,12 +793,14 @@ static struct backing_dev_info zero_bdi = {
  };
  #endif
  
-+#ifdef CONFIG_DEVZERO
- static const struct file_operations zero_fops = {
- 	.llseek		= zero_lseek,
- 	.read		= new_sync_read,
-@@ -785,6 +789,7 @@ static struct backing_dev_info zero_bdi = {
- 	.name		= "char/mem",
- 	.capabilities	= BDI_CAP_MAP_COPY | BDI_CAP_NO_ACCT_AND_WRITEBACK,
- };
-+#endif
- 
++#ifdef CONFIG_DEVFULL
  static const struct file_operations full_fops = {
  	.llseek		= full_lseek,
-@@ -811,7 +816,9 @@ static const struct memdev {
- #ifdef CONFIG_DEVPORT
- 	 [4] = { "port", 0, &port_fops, NULL },
- #endif
-+#ifdef CONFIG_DEVZERO
- 	 [5] = { "zero", 0666, &zero_fops, &zero_bdi },
+ 	.read		= new_sync_read,
+ 	.read_iter	= read_iter_zero,
+ 	.write		= write_full,
+ };
 +#endif
+ 
+ static const struct memdev {
+ 	const char *name;
+@@ -819,7 +823,9 @@ static const struct memdev {
+ #ifdef CONFIG_DEVZERO
+ 	 [5] = { "zero", 0666, &zero_fops, &zero_bdi },
+ #endif
++#ifdef CONFIG_DEVFULL
  	 [7] = { "full", 0666, &full_fops, NULL },
++#endif
  	 [8] = { "random", 0666, &random_fops, NULL },
  	 [9] = { "urandom", 0666, &urandom_fops, NULL },
-@@ -864,12 +871,12 @@ static struct class *mem_class;
- static int __init chr_dev_init(void)
- {
- 	int minor;
--	int err;
- 
--	err = bdi_init(&zero_bdi);
-+#ifdef CONFIG_DEVZERO
-+	int err = bdi_init(&zero_bdi);
- 	if (err)
- 		return err;
--
-+#endif
- 	if (register_chrdev(MEM_MAJOR, "mem", &memory_fops))
- 		printk("unable to get major %d for memory devs\n", MEM_MAJOR);
- 
+ #ifdef CONFIG_PRINTK
 -- 
 1.9.3
 
