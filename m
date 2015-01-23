@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbbAWJjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:39:36 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:58609 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184AbbAWJje (ORCPT
+	id S1754821AbbAWJjz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:39:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35509 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184AbbAWJjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:39:34 -0500
+	Fri, 23 Jan 2015 04:39:51 -0500
+Date: Fri, 23 Jan 2015 01:39:36 -0800
+From: tip-bot for Colin King <tipbot@zytor.com>
+Message-ID: <tip-d505ad1d66c9cd31db5ab0d2c7bcb2a47e5bb29e@git.kernel.org>
+Cc: tglx@linutronix.de, colin.king@canonical.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Reply-To: hpa@zytor.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        colin.king@canonical.com, tglx@linutronix.de
+In-Reply-To: <1421244475-313-1-git-send-email-colin.king@canonical.com>
+References: <1421244475-313-1-git-send-email-colin.king@canonical.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86/rtc: Remove duplicate const specifier
+Git-Commit-ID: d505ad1d66c9cd31db5ab0d2c7bcb2a47e5bb29e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1422005180-13230-1-git-send-email-md.jamalmohiuddin@gmail.com>
-References: <1422005180-13230-1-git-send-email-md.jamalmohiuddin@gmail.com>
-Date: Fri, 23 Jan 2015 15:09:32 +0530
-Message-ID: <CAEUmHyYr6GRntbtSLdtcWbq13uzbhejLSkJtPRuhsseeSczyMA@mail.gmail.com>
-Subject: Re: [PATCH] net: ieee802154: cc2520: Fix coding style issues
-From: Varka Bhadram <varkabhadram@gmail.com>
-To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-Cc: Alexander Aring <alex.aring@gmail.com>,
-        linux-wpan - ML <linux-wpan@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mohammad Jamal,
+Commit-ID:  d505ad1d66c9cd31db5ab0d2c7bcb2a47e5bb29e
+Gitweb:     http://git.kernel.org/tip/d505ad1d66c9cd31db5ab0d2c7bcb2a47e5bb29e
+Author:     Colin King <colin.king@canonical.com>
+AuthorDate: Wed, 14 Jan 2015 14:07:55 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 23 Jan 2015 10:35:51 +0100
 
-These changes already there in the current bluetooth-next tree.
+x86/rtc: Remove duplicate const specifier
 
-On Fri, Jan 23, 2015 at 2:56 PM, Mohammad Jamal
-<md.jamalmohiuddin@gmail.com> wrote:
-> This patch solves the coding style issues such as space after ,
-> and removes the blank lines
->
-> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-> ---
->  drivers/net/ieee802154/cc2520.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/net/ieee802154/cc2520.c b/drivers/net/ieee802154/cc2520.c
-> index f9df9fa..dd129be 100644
-> --- a/drivers/net/ieee802154/cc2520.c
-> +++ b/drivers/net/ieee802154/cc2520.c
-> @@ -513,7 +513,6 @@ err_tx:
->         return rc;
->  }
->
-> -
->  static int cc2520_rx(struct cc2520_private *priv)
->  {
->         u8 len = 0, lqi = 0, bytes = 1;
-> @@ -551,14 +550,14 @@ cc2520_ed(struct ieee802154_hw *hw, u8 *level)
->         u8 rssi;
->         int ret;
->
-> -       ret = cc2520_read_register(priv , CC2520_RSSISTAT, &status);
-> +       ret = cc2520_read_register(priv, CC2520_RSSISTAT, &status);
->         if (ret)
->                 return ret;
->
->         if (status != RSSI_VALID)
->                 return -EINVAL;
->
-> -       ret = cc2520_read_register(priv , CC2520_RSSI, &rssi);
-> +       ret = cc2520_read_register(priv, CC2520_RSSI, &rssi);
->         if (ret)
->                 return ret;
->
-> @@ -947,7 +946,6 @@ static int cc2520_probe(struct spi_device *spi)
->         if (ret)
->                 goto err_hw_init;
->
-> -
->         gpio_set_value(pdata->vreg, HIGH);
->         usleep_range(100, 150);
->
-> --
-> 1.7.9.5
->
+Building with clang:
 
--- 
-Thanks and Regards,
-Varka Bhadram.
+  CC      arch/x86/kernel/rtc.o
+arch/x86/kernel/rtc.c:173:29: warning: duplicate 'const' declaration
+  specifier [-Wduplicate-decl-specifier]
+        static const char * const  const ids[] __initconst =
+
+Remove the duplicate const, it is not needed and causes a warning.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Link: http://lkml.kernel.org/r/1421244475-313-1-git-send-email-colin.king@canonical.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/rtc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index ca9622a..fe3dbfe 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -170,7 +170,7 @@ static struct platform_device rtc_device = {
+ static __init int add_rtc_cmos(void)
+ {
+ #ifdef CONFIG_PNP
+-	static const char * const  const ids[] __initconst =
++	static const char * const ids[] __initconst =
+ 	    { "PNP0b00", "PNP0b01", "PNP0b02", };
+ 	struct pnp_dev *dev;
+ 	struct pnp_id *id;
