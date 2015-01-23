@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614AbbAWQH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:07:59 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:35016 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765AbbAWQH4 (ORCPT
+	id S1755804AbbAWQI6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:08:58 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:50199 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755367AbbAWQIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:07:56 -0500
-Date: Fri, 23 Jan 2015 17:07:46 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        luto@amacapital.net
-Subject: Re: [RFC] sched, x86: Prevent resched interrupts if task in kernel
- mode and !CONFIG_PREEMPT
-Message-ID: <20150123160746.GD23123@twins.programming.kicks-ass.net>
-References: <1422028412.6345.6.camel@tkhai>
+	Fri, 23 Jan 2015 11:08:54 -0500
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 00/18] spi/xilinx: Speed-up
+Date: Fri, 23 Jan 2015 17:08:32 +0100
+Message-Id: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422028412.6345.6.camel@tkhai>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 06:53:32PM +0300, Kirill Tkhai wrote:
-> It's useless to send reschedule interrupts in such situations. The earliest
-> point, where schedule() call is possible, is sysret_careful(). But in that
-> function we directly test TIF_NEED_RESCHED.
-> 
-> So it's possible to get rid of that type of interrupts.
-> 
-> How about this idea? Is set_bit() cheap on x86 machines?
+This set of patches has been developed after using the core to access a spi
+nor flash. The initial performance was not as desired. The following changes
+have been done.
 
-So you set TIF_POLLING_NRFLAG on syscall entry and clear it again on
-exit? Thereby we avoid the IPI, because the exit path already checks for
-TIF_NEED_RESCHED.
+-This series of patches add driver support for hardware implemented modes:
+LSB_FIRS, LOOP and CS_HIGH.
 
-Should work I suppose, but I'm not too familiar with all that entry.S
-muck. Andy might know and appreciate this.
+-There is support for irq less operations.
 
-> ---
->  arch/x86/kernel/entry_64.S |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index c653dc4..a046ba8 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -409,6 +409,13 @@ GLOBAL(system_call_after_swapgs)
->  	movq_cfi rax,(ORIG_RAX-ARGOFFSET)
->  	movq  %rcx,RIP-ARGOFFSET(%rsp)
->  	CFI_REL_OFFSET rip,RIP-ARGOFFSET
-> +#if !defined(CONFIG_PREEMPT) || !defined(SMP)
-> +	/*
-> +	 * Tell resched_curr() do not send useless interrupts to us.
-> +	 * Kernel isn't preemptible till sysret_careful() anyway.
-> +	 */
-> +	LOCK ; bts $TIF_POLLING_NRFLAG,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-> +#endif
->  	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
->  	jnz tracesys
->  system_call_fastpath:
-> @@ -427,6 +434,9 @@ GLOBAL(system_call_after_swapgs)
->   * Has incomplete stack frame and undefined top of stack.
->   */
->  ret_from_sys_call:
-> +#if !defined(CONFIG_PREEMPT) || !defined(SMP)
-> +	LOCK ; btr $TIF_POLLING_NRFLAG,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-> +#endif
->  	movl $_TIF_ALLWORK_MASK,%edi
->  	/* edi:	flagmask */
->  sysret_check:
-> 
-> 
-> 
+-The buffer size of the core is detected at probe time, speeding up the
+operations.
+
+-Code has been simplify and cleaned
+
+This are the results, before and after the patchet
+
+Original
+root@qt5022:~# dd if=/dev/mtd0 of=/dev/null
+16384+0 records in
+16384+0 records out
+8388608 bytes (8.4 MB) copied, 117.985 s, 71.1 kB/s
+
+ 37:        107      82853  Xilinx INTC Level   1  b0010000.spi-flash
+
+After patchset (irq):
+root@qt5022:~# dd if=/dev/mtd0 of=/dev/null
+16384+0 records in
+16384+0 records out
+8388608 bytes (8.4 MB) copied, 49.009 s, 171 kB/s
+
+After patchset (irq):
+root@qt5022:~# dd if=/dev/mtd0 of=/dev/null
+16384+0 records in
+16384+0 records out
+8388608 bytes (8.4 MB) copied, 41.2526 s, 203 kB/s
+
+IRQS: ZERO
+
+This set of patches supersedes the previous patchet with only LSB_FIRST and LOOP
+
+Ricardo Ribalda Delgado (18):
+  spi/xilinx: Support for spi mode LSB_FIRST
+  spi/xilinx: Support for spi mode LOOP
+  spi/xilinx: Simplify data read from the Rx FIFO
+  spi-xilinx: Simplify spi_fill_tx_fifo
+  spi/xilinx: Leave the IRQ always enabled.
+  spi/xilinx: Code cleanup
+  spi/xilinx: Use cached value of register
+  spi/xilinx: Support cores with no interrupt
+  spi/xilinx: Do not inhibit transmission in polling mode
+  spi/xilinx: Support for spi mode CS_HIGH
+  spi/xilinx: Remove rx_fn and tx_fn pointer
+  spi/xilinx: Make spi_tx and spi_rx simmetric
+  spi/xilinx: Convert remainding_bytes in remaining words
+  spi/xilinx: Convert bits_per_word in bytes_per_word
+  spi/xilinx: Remove iowrite/ioread wrappers
+  spi/xilinx: Reset core before buffer_size detection
+  spi/xilinx: Remove remaining_words driver data variable
+  spi/xilinx: Check number of slaves range
+
+ drivers/spi/spi-xilinx.c | 306 ++++++++++++++++++++++-------------------------
+ 1 file changed, 146 insertions(+), 160 deletions(-)
+
+-- 
+2.1.4
+
