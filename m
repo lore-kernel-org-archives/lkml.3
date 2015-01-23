@@ -1,156 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbbAWPVY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:21:24 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50196 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750827AbbAWPVT (ORCPT
+	id S1755815AbbAWPrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:47:12 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:57216 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754098AbbAWPrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:21:19 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: al.stone@linaro.org
-Cc: tony.luck@intel.com, fenghua.yu@intel.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, lenb@kernel.org, robert.moore@intel.com,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devel@acpica.org, linaro-acpi@lists.linaro.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH 0/7] Start deprecating _OSI on new architectures
-Date: Fri, 23 Jan 2015 16:43:58 +0100
-Message-ID: <11226733.uCXYutOZUW@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1421973884-13029-1-git-send-email-al.stone@linaro.org>
-References: <1421973884-13029-1-git-send-email-al.stone@linaro.org>
+	Fri, 23 Jan 2015 10:47:10 -0500
+Message-ID: <54C26CE3.2060001@roeck-us.net>
+Date: Fri, 23 Jan 2015 07:46:43 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, mhocko@suse.cz, cl@linux.com
+Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
+ remove unnecessary soft limit tree node test'
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050802.GB22751@roeck-us.net> <20150123141817.GA22926@phnom.home.cmpxchg.org>
+In-Reply-To: <20150123141817.GA22926@phnom.home.cmpxchg.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54C26CFD.01DB,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 7
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On 01/23/2015 06:18 AM, Johannes Weiner wrote:
+> Hi Guenter,
+>
+> CC'ing Christoph for slub-stuff:
+>
+> On Thu, Jan 22, 2015 at 09:08:02PM -0800, Guenter Roeck wrote:
+>> On Thu, Jan 22, 2015 at 03:05:17PM -0800, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2015-01-22-15-04 has been uploaded to
+>>>
+>>>     http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>> qemu test for ppc64 fails with
+>>
+>> Unable to handle kernel paging request for data at address 0x0000af50
+>> Faulting instruction address: 0xc00000000089d5d4
+>> Oops: Kernel access of bad area, sig: 11 [#1]
+>>
+>> with the following call stack:
+>>
+>> Call Trace:
+>> [c00000003d32f920] [c00000000089d588] .__slab_alloc.isra.44+0x7c/0x6f4
+>> (unreliable)
+>> [c00000003d32fa90] [c00000000020cf8c] .kmem_cache_alloc_node_trace+0x12c/0x3b0
+>> [c00000003d32fb60] [c000000000bceeb4] .mem_cgroup_init+0x128/0x1b0
+>> [c00000003d32fbf0] [c00000000000a2b4] .do_one_initcall+0xd4/0x260
+>> [c00000003d32fce0] [c000000000ba26a8] .kernel_init_freeable+0x244/0x32c
+>> [c00000003d32fdb0] [c00000000000ac24] .kernel_init+0x24/0x140
+>> [c00000003d32fe30] [c000000000009564] .ret_from_kernel_thread+0x58/0x74
+>>
+>> bisect log:
+>
+> [...]
+>
+>> # first bad commit: [a40d0d2cf21e2714e9a6c842085148c938bf36ab] mm: memcontrol: remove unnecessary soft limit tree node test
+>
+> The change in question is this:
+>
+>      mm: memcontrol: remove unnecessary soft limit tree node test
+>
+>      kzalloc_node() automatically falls back to nodes with suitable memory.
+>
+>      Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+>      Acked-by: Michal Hocko <mhocko@suse.cz>
+>      Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
+>      Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index fb9788af4a3e..10db4a654d68 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4539,13 +4539,10 @@ static void __init mem_cgroup_soft_limit_tree_init(void)
+>   {
+>          struct mem_cgroup_tree_per_node *rtpn;
+>          struct mem_cgroup_tree_per_zone *rtpz;
+> -       int tmp, node, zone;
+> +       int node, zone;
+>
+>          for_each_node(node) {
+> -               tmp = node;
+> -               if (!node_state(node, N_NORMAL_MEMORY))
+> -                       tmp = -1;
+> -               rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, tmp);
+> +               rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, node);
+>                  BUG_ON(!rtpn);
+>
+>                  soft_limit_tree.rb_tree_per_node[node] = rtpn;
+>
+> --
+>
+> Is the assumption of this patch wrong?  Does the specified node have
+> to be online for the fallback to work?
+>
 
-On Thursday, January 22, 2015 05:44:37 PM al.stone@linaro.org wrote:
-> From: Al Stone <al.stone@linaro.org>
-> 
-> The use of the ACPI _OSI method in Linux has a long and sordid history.
-> Instead of perpetuating past complications on new architectures, the 
-> consensus amongst those writing the ACPI specification and those using
-> it seems to be to ultimately deprecate the use of _OSI.  I plan to
-> propose such a change to the ACPI specification in the near future.
-> 
-> In the meantime, these patches rearrange the implementation of _OSI so
-> that it can be deprecated, or ultimately removed completely, on at least
-> arm64 platforms.  This is done by simply moving the functions implementing 
-> _OSI to arch-dependent locations.  For x86, there should be no change
-> in functionality.  For ia64, while it does duplicate some code from x86,
-> there is no longer any connection to the ACPI blacklist code that is only
-> used by x86.  For arm64, any use of the _OSI method generates a warning
-> that it has been deprecated, and then always returns false; i.e., that
-> the capability being queried for, whether OS name or functionality, is
-> not supported.  This is the first six of the patches.
+I added some debugging. First, the problem is only seen with SMP disabled.
+Second, there is only one online node.
 
-While I seem to understand the motivation, I don't really like moving code
-around, especially in the ia64 area where we have limited means to test the
-changes.  And I hate code duplication pretty much in any form.
+Without your patch:
 
-Also I don't see anything wrong with sharing code between x86 and ia64 like
-we do today.
+Node 0 online 1 high 1 memory 1 cpu 0 normal 1 tmp 0 rtpn c00000003d240600
+Node 1 online 0 high 0 memory 0 cpu 0 normal 0 tmp -1 rtpn c00000003d240640
+Node 2 online 0 high 0 memory 0 cpu 0 normal 0 tmp -1 rtpn c00000003d240680
 
-So, why don't you move the _OSI handling out of osl.c into a separate file
-that will only build if something like CONFIG_ARCH_SPECIFIC_ACPI_OSI is not
-set (and same for blacklist.c).  Then, you'll only need to make ARM64
-set CONFIG_ARCH_SPECIFIC_ACPI_OSI and provide the necessary functions
-and you can leave the other architectures alone.
+[ and so on up to node 255 ]
 
-Does that make sense to you?
+With your patch:
 
-> The final patch changes the default value for the _OS_ method for arm64
-> only.  Since there is no need to pretend to be older versions of Windows,
-> or any other OS at all, the _OS_ method will return "Linux" on arm64.
-> One can still use the acpi_os_name kernel parameter if there is a need
-> to use some other value.
-> 
-> Since we are breaking apart code previously shared, I have tried to make
-> it so that applying the x86 patches alone will continue to compile, at
-> the expense of breaking the build on non-x86 platforms.  However, once
-> all of the patches are applied, we should be able to compile on all three
-> architectures.  It is best to treat these as one whole.
-> 
-> I have only done simple testing with these patches on arm64 and x86 (AMD
-> Seattle and a Lenovo t440s ThinkPad, respectively).  Things seem to work
-> as they should once booted, but this is a very, very small sample of
-> possible machines.  The ia64 patches cross-compile, but I personally have
-> no way to test them.
-> 
-> The arm64 patches also rely on having applied Hanjun's patches for ACPI 5.1
-> on arm64 [0].  The x86 and ia64 parts are not dependent on that patch set,
-> though, and should be usable independently (i.e., patches 1, 3, 4 and 6).
-> 
-> NB: some of the patches do not pass checkpatch.pl; the failures I saw were
-> all part of the original code but are only showing up because that code is
-> changing location, so I have left them as is.  If necessary, they could be
-> fixed but I was more concerned about the number of changes needed on ia64
-> and not having any way to test them.
-> 
-> 
-> [0] https://lkml.org/lkml/2015/1/14/586
-> 
-> 
-> Al Stone (6):
->   ia64: ACPI: move kernel acpi files to a directory
->   arm64: ACPI: move kernel acpi files to a directory
->   x86: ACPI: create arch-dependent version of acpi_osi_handler()
->   ia64: ACPI: create arch-dependent version of acpi_osi_handler()
->   arm64: ACPI: create arch-dependent version of acpi_osi_handler()
->   x86: ia64: arm64: ACPI: move _OSI support functions to arch-dependent
->     locations
-> 
-> Hanjun Guo (1):
->   ACPI: use Linux as ACPI_OS_NAME for _OS on ARM64
-> 
->  arch/arm64/Kconfig               |    1 +
->  arch/arm64/kernel/Makefile       |    2 +-
->  arch/arm64/kernel/acpi.c         |  359 --------------
->  arch/arm64/kernel/acpi/Makefile  |    1 +
->  arch/arm64/kernel/acpi/acpi.c    |  359 ++++++++++++++
->  arch/arm64/kernel/acpi/osi.c     |   26 +
->  arch/ia64/kernel/Makefile        |    2 +-
->  arch/ia64/kernel/acpi-ext.c      |  104 ----
->  arch/ia64/kernel/acpi.c          | 1000 --------------------------------------
->  arch/ia64/kernel/acpi/Makefile   |    1 +
->  arch/ia64/kernel/acpi/acpi-ext.c |  104 ++++
->  arch/ia64/kernel/acpi/acpi.c     | 1000 ++++++++++++++++++++++++++++++++++++++
->  arch/ia64/kernel/acpi/osi.c      |  119 +++++
->  arch/x86/kernel/acpi/Makefile    |    2 +-
->  arch/x86/kernel/acpi/blacklist.c |  327 +++++++++++++
->  arch/x86/kernel/acpi/boot.c      |    5 +-
->  arch/x86/kernel/acpi/osi.c       |  255 ++++++++++
->  drivers/acpi/Kconfig             |    8 +
->  drivers/acpi/Makefile            |    1 -
->  drivers/acpi/blacklist.c         |  323 ------------
->  drivers/acpi/osl.c               |  217 ---------
->  include/acpi/acconfig.h          |    2 +
->  include/acpi/platform/aclinux.h  |    4 +
->  include/linux/acpi.h             |    4 +-
->  24 files changed, 2215 insertions(+), 2011 deletions(-)
->  delete mode 100644 arch/arm64/kernel/acpi.c
->  create mode 100644 arch/arm64/kernel/acpi/Makefile
->  create mode 100644 arch/arm64/kernel/acpi/acpi.c
->  create mode 100644 arch/arm64/kernel/acpi/osi.c
->  delete mode 100644 arch/ia64/kernel/acpi-ext.c
->  delete mode 100644 arch/ia64/kernel/acpi.c
->  create mode 100644 arch/ia64/kernel/acpi/Makefile
->  create mode 100644 arch/ia64/kernel/acpi/acpi-ext.c
->  create mode 100644 arch/ia64/kernel/acpi/acpi.c
->  create mode 100644 arch/ia64/kernel/acpi/osi.c
->  create mode 100644 arch/x86/kernel/acpi/blacklist.c
->  create mode 100644 arch/x86/kernel/acpi/osi.c
->  delete mode 100644 drivers/acpi/blacklist.c
-> 
-> 
+Node 0 online 1 high 1 memory 1 cpu 0 normal 1 rtpn c00000003d240600
+Unable to handle kernel paging request for data at address 0x0000af50
+Faulting instruction address: 0xc000000000895a3c
+Oops: Kernel access of bad area, sig: 11 [#1]
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The log message is after the call to kzalloc_node.
+
+So it doesn't look like the fallback is working, at least not with ppc64
+in non-SMP mode.
+
+Guenter
+
