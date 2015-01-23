@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554AbbAWUHl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 15:07:41 -0500
-Received: from mail.atsec.com ([195.30.99.214]:37170 "EHLO mail.atsec.com"
+	id S1755577AbbAWUEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 15:04:07 -0500
+Received: from mga03.intel.com ([134.134.136.65]:13304 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755381AbbAWUHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 15:07:38 -0500
-X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jan 2015 15:07:38 EST
-From: Stephan Mueller <smueller@atsec.com>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: linux-crypto@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crypto/testmgr: mark rfc4106(gcm(aes)) as fips_allowed
-Date: Fri, 23 Jan 2015 20:58:18 +0100
-Message-ID: <47404663.9NCU8GY7rF@tauon>
-Organization: atsec information security GmbH
-User-Agent: KMail/4.14.3 (Linux/3.17.8-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1422034935-25537-1-git-send-email-jarod@redhat.com>
-References: <1422034935-25537-1-git-send-email-jarod@redhat.com>
+	id S1751403AbbAWUEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 15:04:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="444334126"
+Message-ID: <54C2A931.5020308@linux.intel.com>
+Date: Fri, 23 Jan 2015 14:04:01 -0600
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Theodore Ts'o" <tytso@mit.edu>, josh@joshtriplett.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/10] drivers/char: Support compiling out the getrandom(2)
+ syscall
+References: <cover.1422035184.git.tom.zanussi@linux.intel.com> <87fec26efb0a0e4a8daab238ee39261dca2dc985.1422035184.git.tom.zanussi@linux.intel.com> <20150123194610.GD8709@thunk.org>
+In-Reply-To: <20150123194610.GD8709@thunk.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 23. Januar 2015, 12:42:15 schrieb Jarod Wilson:
 
-Hi Jarod,
 
->This gcm variant is popular for ipsec use, and there are folks who
->would like to use it while in fips mode. Mark it with fips_allowed=1
->to facilitate that.
-
-Acked-by: Stephan Mueller <smueller@atsec.com>
-
-For the records: this change is ok as the RFC4106 "wrapper" only 
-massages the input data like IV or keys without changing the 
-cryptographic logic of GCM. As the basic cipher is not changed allowing 
-RFC4106 is harmless with respect to FIPS 140-2 to use and apply this 
-RFC4106 wrapper. This implies that the RFC4106 wrapper can be used in 
-FIPS mode.
+On 01/23/2015 01:46 PM, Theodore Ts'o wrote:
+> On Fri, Jan 23, 2015 at 12:37:16PM -0600, Tom Zanussi wrote:
+>> Many embedded systems have no use for getrandom, and could benefit
+>> from the size savings gained by omitting it.  Add a new EXPERT config
+>> option, CONFIG_GETRANDOM_SYSCALL (default y), to support compiling it
+>> out.
 >
->CC: LKML <linux-kernel@vger.kernel.org>
->CC: Stephan Mueller <smueller@atsec.com>
->Signed-off-by: Jarod Wilson <jarod@redhat.com>
->---
-> crypto/testmgr.c | 1 +
-> 1 file changed, 1 insertion(+)
+> I'm really not sure this is a good idea.  Even the tiniest embedded
+> device need secure crypto.  In fact, one could argue that in the case
+> of the Internet of Things, the tiniests embedded devices
+> **especially** need secure crypto.  It would be.... unfortunate.... if
+> the next time North Korea gets upset at the Great Satan, that all of
+> our light bulbs, refridgerators, cars, heating systems, etc., are
+> subject to attack.
 >
->diff --git a/crypto/testmgr.c b/crypto/testmgr.c
->index 235b1ff..758d028 100644
->--- a/crypto/testmgr.c
->+++ b/crypto/testmgr.c
->@@ -3293,6 +3293,7 @@ static const struct alg_test_desc
->alg_test_descs[] = { }, {
-> 		.alg = "rfc4106(gcm(aes))",
-> 		.test = alg_test_aead,
->+		.fips_allowed = 1,
-> 		.suite = {
-> 			.aead = {
-> 				.enc = {
 
+Right, but not everything is networked - there are standalone embedded 
+systems that could benefit from the savings.  Anyway, it's not a huge 
+savings so I could just remove them to avoid the temptation...
 
-Ciao
-Stephan
+Tom.
 
-
+> We know already that home routers are running ancient kernels that are
+> absolutely no protection whatever.  Is saving a few bytes really worth
+> potentially opening up a similar attack vector on devices that will
+> probably be at least an order of magnitude or more numerous than home
+> routers, and even harder to upgrade once they get out there?
+>
+> And if you don't have a good random number generator, you really are
+> *toast*.
+>
+> It's for this reason that /dev/[u]random were not eligible from being
+> disabled from the very beginning; it's too much of an attractive
+> nuisance to a clueless product manager....
+>
+> 	     	  	    	    	 - Ted
+>
