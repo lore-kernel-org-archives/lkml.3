@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302AbbAWS5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:57:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41174 "EHLO mx2.suse.de"
+	id S932147AbbAWS6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:58:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41202 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503AbbAWS5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:57:15 -0500
-Date: Fri, 23 Jan 2015 19:57:11 +0100
+	id S1755899AbbAWS6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 13:58:14 -0500
+Date: Fri, 23 Jan 2015 19:58:12 +0100
 From: "Luis R. Rodriguez" <mcgrof@suse.com>
 To: David Vrabel <david.vrabel@citrix.com>
 Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, konrad.wilk@oracle.com,
@@ -17,68 +17,95 @@ Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, konrad.wilk@oracle.com,
         Jan Beulich <JBeulich@suse.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>, paulmck@linux.vnet.ibm.com
-Subject: Re: [Xen-devel] [RFC v4 1/2] x86/xen: add
-	xen_is_preemptible_hypercall()
-Message-ID: <20150123185711.GW17887@wotan.suse.de>
-References: <1421972951-3940-1-git-send-email-mcgrof@do-not-panic.com> <1421972951-3940-2-git-send-email-mcgrof@do-not-panic.com> <54C230C8.4000207@citrix.com>
+Subject: Re: [Xen-devel] [RFC v4 2/2] x86/xen: allow privcmd hypercalls to
+	be preempted
+Message-ID: <20150123185812.GX17887@wotan.suse.de>
+References: <1421972951-3940-1-git-send-email-mcgrof@do-not-panic.com> <1421972951-3940-3-git-send-email-mcgrof@do-not-panic.com> <54C23442.9000008@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C230C8.4000207@citrix.com>
+In-Reply-To: <54C23442.9000008@citrix.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 11:30:16AM +0000, David Vrabel wrote:
+On Fri, Jan 23, 2015 at 11:45:06AM +0000, David Vrabel wrote:
 > On 23/01/15 00:29, Luis R. Rodriguez wrote:
 > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
 > > 
-> > On kernels with voluntary or no preemption we can run
-> > into situations where a hypercall issued through userspace
-> > will linger around as it addresses sub-operatiosn in kernel
-> > context (multicalls). Such operations can trigger soft lockup
-> > detection.
+> > Xen has support for splitting heavy work work into a series
+> > of hypercalls, called multicalls, and preempting them through
+> > what Xen calls continuation [0]. Despite this though without
+> > CONFIG_PREEMPT preemption won't happen, without preemption
+> > a system can become pretty useless on heavy handed hypercalls.
+> > Such is the case for example when creating a > 50 GiB HVM guest,
+> > we can get softlockups [1] with:.
 > > 
-> > We want to address a way to let the kernel voluntarily preempt
-> > such calls even on non preempt kernels, to address this we first
-> > need to distinguish which hypercalls fall under this category.
-> > This implements xen_is_preemptible_hypercall() which lets us do
-> > just that by adding a secondary hypercall page, calls made via
-> > the new page may be preempted.
+> > kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
+> > 
+> > The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
+> > (default 120 seconds), on the Xen side in this particular case
+> > this happens when the following Xen hypervisor code is used:
+> > 
+> > xc_domain_set_pod_target() -->
+> >   do_memory_op() -->
+> >     arch_memory_op() -->
+> >       p2m_pod_set_mem_target()
+> > 	-- long delay (real or emulated) --
+> > 
+> > This happens on arch_memory_op() on the XENMEM_set_pod_target memory
+> > op even though arch_memory_op() can handle continuation via
+> > hypercall_create_continuation() for example.
+> > 
+> > Machines over 50 GiB of memory are on high demand and hard to come
+> > by so to help replicate this sort of issue long delays on select
+> > hypercalls have been emulated in order to be able to test this on
+> > smaller machines [2].
+> > 
+> > On one hand this issue can be considered as expected given that
+> > CONFIG_PREEMPT=n is used however we have forced voluntary preemption
+> > precedent practices in the kernel even for CONFIG_PREEMPT=n through
+> > the usage of cond_resched() sprinkled in many places. To address
+> > this issue with Xen hypercalls though we need to find a way to aid
+> > to the schedular in the middle of hypercalls. We are motivated to
+> > address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
+> > rather unresponsive for long periods of time; in the worst case, at least
+> > only currently by emulating long delays on select io disk bound
+> > hypercalls, this can lead to filesystem corruption if the delay happens
+> > for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
+> > 
+> > We can address this problem by trying to check if we should schedule
+> > on the xen timer in the middle of a hypercall on the return from the
+> > timer interrupt. We want to be careful to not always force voluntary
+> > preemption though so to do this we only selectively enable preemption
+> > on very specific xen hypercalls.
 > [...]
-> > --- a/arch/x86/include/asm/xen/hypercall.h
-> > +++ b/arch/x86/include/asm/xen/hypercall.h
-> > @@ -84,6 +84,22 @@
+> > @@ -1243,6 +1247,25 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
+> >  	set_irq_regs(old_regs);
+> >  }
 > >  
-> >  extern struct { char _entry[32]; } hypercall_page[];
-> >  
-> > +#ifndef CONFIG_PREEMPT
-> > +extern struct { char _entry[32]; } preemptible_hypercall_page[];
-> > +
-> > +static inline bool xen_is_preemptible_hypercall(struct pt_regs *regs)
-> > +{
-> > +	return !user_mode_vm(regs) &&
-> > +		regs->ip >= (unsigned long)preemptible_hypercall_page &&
-> > +		regs->ip < (unsigned long)preemptible_hypercall_page + PAGE_SIZE;
+> > +/*
+> > + * CONFIG_PREEMPT=n kernels can end up triggering the softlock
+> > + * TASK_UNINTERRUPTIBLE hanger check (default 120 seconds)
+> > + * when certain multicalls are used [0] on large systems, in
+> > + * that case we need a way to voluntarily preempt. This is
+> > + * only an issue on CONFIG_PREEMPT=n kernels.
 > 
-> I think you can optimize this to:
+> Rewrite this comment as;
 > 
->     return (regs->ip >> PAGE_SHIFT) == preemptible_hypercall_pfn
+> * Some hypercalls issued by the toolstack can take many 10s of
 
-I take it you meant preemptible_hypercall_page ?
+Its not just hypercalls though, this is all about the interactions
+with multicalls no?
 
-> 	&& !user_mode_vm(regs);
+> * seconds.  Allow tasks running hypercalls via the privcmd driver to be
+> * voluntarily preempted even if full kernel preemption is disabled.
+> 
+> > + * [0] https://bugzilla.novell.com/show_bug.cgi?id=861093
+> 
+> This link isn't accessible so I don't think it should be included here.
 
-If so I don't see how this can work as an identical replacement.
-Consider a PAGE_SIZE is 16, so PAGE_SHIFT would be 4, and lets
-say we are checking for byte 2 which should be in the page:
+OK.
 
-; 0b0010 >>4
-	0
-
-Can you elaborate more on this, or can we perhaps leave such
-optimization as an evolution to avoid regressions if you are
-not 100% certain?
-
-  Luis
+ Luis
