@@ -1,54 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321AbbAWSKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:10:54 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42234 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603AbbAWSKx (ORCPT
+	id S1756467AbbAWTNW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 14:13:22 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:55520 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689AbbAWTNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:10:53 -0500
-Date: Fri, 23 Jan 2015 18:10:41 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Will Deacon <Will.Deacon@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Larry Bassel <larry.bassel@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [Resend Patch v4 03/16] smp, ARM64: Kill SMP single function
- call interrupt
-Message-ID: <20150123181041.GH9557@e104818-lin.cambridge.arm.com>
-References: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com>
- <1421991416-20297-4-git-send-email-jiang.liu@linux.intel.com>
+	Fri, 23 Jan 2015 14:13:19 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: Stathis Voukelatos <stathisv70@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Stathis Voukelatos <stathis.voukelatos@linn.co.uk>,
+        abrestic@chromium.org
+Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
+Date: Fri, 23 Jan 2015 19:12:53 +0100
+Message-ID: <1817503.588aons8oi@radagast>
+Organization: Imagination Technologies
+User-Agent: KMail/4.14.3 (Linux/3.18.3+; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
+References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421991416-20297-4-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 05:36:42AM +0000, Jiang Liu wrote:
-> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
-> similar to smp_call_function_single()" has unified the way to handle
-> single and multiple cross-CPU function calls. Now only one interrupt
-> is needed for architecture specific code to support generic SMP function
-> call interfaces, so kill the redundant single function call interrupt.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Acked-by: Will Deacon <will.deacon@arm.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
+Hi,
 
-I queued the arm64 patch for 3.20. Thanks.
+A few general things below (I'll leave the actual networking bits for
+others to comment about).
 
--- 
-Catalin
+On Friday 23 January 2015 10:07:01 Stathis Voukelatos wrote:
+> ---
+>  .../bindings/net/linn-ether-packet-sniffer.txt     |  27 ++
+>  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+>  MAINTAINERS                                        |   7 +
+>  drivers/net/Kconfig                                |   2 +
+>  drivers/net/Makefile                               |   1 +
+>  drivers/net/pkt-sniffer/Kconfig                    |  23 ++
+>  drivers/net/pkt-sniffer/Makefile                   |   8 +
+>  drivers/net/pkt-sniffer/backends/ether/channel.c   | 366 ++++++++++++++++++
+>  drivers/net/pkt-sniffer/backends/ether/channel.h   |  76 ++++
+>  drivers/net/pkt-sniffer/backends/ether/hw.h        |  46 +++
+>  drivers/net/pkt-sniffer/backends/ether/platform.c  | 231 +++++++++++
+>  drivers/net/pkt-sniffer/core/dev_table.c           | 124 ++++++
+>  drivers/net/pkt-sniffer/core/module.c              |  37 ++
+>  drivers/net/pkt-sniffer/core/nl.c                  | 427 +++++++++++++++++++++
+>  drivers/net/pkt-sniffer/core/nl.h                  |  34 ++
+>  drivers/net/pkt-sniffer/core/snf_core.h            |  64 +++
+>  include/linux/pkt_sniffer.h                        |  89 +++++
+
+Probably worth splitting this up a bit into a series of multiple
+logically separate patches. E.g. the vendor prefix, the core, the ether
+backend and dt bindings.
+
+> diff --git a/drivers/net/pkt-sniffer/Kconfig b/drivers/net/pkt-sniffer/Kconfig
+> new file mode 100644
+> index 0000000..26b4f98
+> --- /dev/null
+> +++ b/drivers/net/pkt-sniffer/Kconfig
+> @@ -0,0 +1,23 @@
+> +menuconfig PKT_SNIFFER
+> +    tristate "Linn packet sniffer support"
+
+Should the kconfig symbol have linn in the name, or should the prompt
+not have lin in the name?
+
+> +    ---help---
+> +    Say Y to add support for Linn packet sniffer drivers.
+> +
+> +    The core driver can also be built as a module. If so, the module
+> +    will be called snf_core.
+> +
+> +if PKT_SNIFFER
+
+Just make PKT_SNIFFER_ETHER depend first on PKT_SNIFFER, then it'll
+appear nested within it in menuconfig.
+
+> +
+> +config PKT_SNIFFER_ETHER
+> +    tristate "Ethernet packet sniffer"
+> +    depends on MIPS
+
+worth adding || COMPILE_TEST to get compile coverage on x86 allmodconfig
+builds, or does it have hard dependencies on the MIPS arch?
+
+> +    default n
+
+No need, n is default
+
+> +    help
+> +        Say Y here if you want to use the Linn Ethernet packet sniffer
+> +        module. It can be found in the upcoming Pistachio SoC by
+> +        Imagination Technologies.
+> +
+> +        The driver can also be built as a module. If so, the module
+> +        will be called snf_ether.
+> +
+> +endif # PKT_SNIFFER
+
+
+> +/* Called when the packet sniffer device is bound with the driver */
+> +static int esnf_driver_probe(struct platform_device *pdev)
+> +{
+> +	struct ether_snf *esnf;
+> +	struct resource *res;
+> +	int ret, irq;
+> +	u32 fifo_blk_words;
+> +	void __iomem *regs;
+> +	struct device_node *ofn = pdev->dev.of_node;
+> +
+> +	/* Allocate the device data structure */
+> +	esnf = devm_kzalloc(&pdev->dev, sizeof(*esnf), GFP_KERNEL);
+> +	if (!esnf)
+> +		return -ENOMEM;
+> +
+> +	/* Retrieve and remap register memory space */
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "regs");
+> +	if (!res)
+> +		return -ENODEV;
+
+No need for this check. devm_ioremap_resource does it for you.
+
+> +
+> +	regs = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(regs))
+> +		return PTR_ERR(regs);
+> +
+
+
+> +static const struct of_device_id esnf_of_match_table[] = {
+> +	{ .compatible = "linn,eth-sniffer", .data = NULL },
+
+Nit: not strictly necessary to initialise .data since it's static.
+
+Cheers
+James
+
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, esnf_of_match_table);
+> +
+> +static struct platform_driver esnf_platform_driver = {
+> +	.driver = {
+> +		.name = esnf_driver_name,
+> +		.of_match_table = esnf_of_match_table,
+> +	},
+> +	.probe = esnf_driver_probe,
+> +	.remove = esnf_driver_remove,
+> +};
+> +
+> +module_platform_driver(esnf_platform_driver);
+> +
+> +MODULE_DESCRIPTION("Linn Ethernet Packet Sniffer");
+> +MODULE_AUTHOR("Linn Products Ltd");
+> +MODULE_LICENSE("GPL v2");
+
