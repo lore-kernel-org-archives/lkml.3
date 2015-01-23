@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013AbbAWQeL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:34:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42744 "EHLO mx1.redhat.com"
+	id S1755739AbbAWQfl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:35:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36030 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755492AbbAWQeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:34:04 -0500
-Message-ID: <54C277B4.4090808@redhat.com>
-Date: Fri, 23 Jan 2015 09:32:52 -0700
+	id S1755889AbbAWQfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 11:35:34 -0500
+Message-ID: <54C2782A.8090200@redhat.com>
+Date: Fri, 23 Jan 2015 09:34:50 -0700
 From: Al Stone <ahs3@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
@@ -19,150 +19,120 @@ CC: tony.luck@intel.com, fenghua.yu@intel.com, catalin.marinas@arm.com,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devel@acpica.org, linaro-acpi@lists.linaro.org,
         linaro-kernel@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH 0/7] Start deprecating _OSI on new architectures
-References: <1421973884-13029-1-git-send-email-al.stone@linaro.org> <11226733.uCXYutOZUW@vostro.rjw.lan>
-In-Reply-To: <11226733.uCXYutOZUW@vostro.rjw.lan>
+Subject: Re: [PATCH 7/7] ACPI: use Linux as ACPI_OS_NAME for _OS on ARM64
+References: <1421973884-13029-1-git-send-email-al.stone@linaro.org> <1421973884-13029-8-git-send-email-al.stone@linaro.org> <3375613.hf7nCUoE0P@vostro.rjw.lan>
+In-Reply-To: <3375613.hf7nCUoE0P@vostro.rjw.lan>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 08:43 AM, Rafael J. Wysocki wrote:
-> Hi Al,
+On 01/23/2015 08:55 AM, Rafael J. Wysocki wrote:
+> On Thursday, January 22, 2015 05:44:44 PM al.stone@linaro.org wrote:
+>> From: Hanjun Guo <hanjun.guo@linaro.org>
+>>
+>> ACPI_OS_NAME is globally defined as "Microsoft Windows NT" for now.
+>> That doesn't make much sense in the ARM context, so set it to "Linux"
+>> when CONFIG_ARM64.
+>>
+>> If it is necessary to change the return value from \_OS_ (that is, return
+>> some value other than the default in ACPI_OS_NAME), use the kernel parameter
+>> "acpi_os_name=<string>".
+>>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>  arch/arm64/Kconfig              | 1 +
+>>  drivers/acpi/Kconfig            | 8 ++++++++
+>>  include/acpi/acconfig.h         | 2 ++
+>>  include/acpi/platform/aclinux.h | 4 ++++
+>>  4 files changed, 15 insertions(+)
+>>
+>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+>> index 915aa16..20677d1 100644
+>> --- a/arch/arm64/Kconfig
+>> +++ b/arch/arm64/Kconfig
+>> @@ -1,5 +1,6 @@
 > 
-> On Thursday, January 22, 2015 05:44:37 PM al.stone@linaro.org wrote:
->> From: Al Stone <al.stone@linaro.org>
->>
->> The use of the ACPI _OSI method in Linux has a long and sordid history.
->> Instead of perpetuating past complications on new architectures, the 
->> consensus amongst those writing the ACPI specification and those using
->> it seems to be to ultimately deprecate the use of _OSI.  I plan to
->> propose such a change to the ACPI specification in the near future.
->>
->> In the meantime, these patches rearrange the implementation of _OSI so
->> that it can be deprecated, or ultimately removed completely, on at least
->> arm64 platforms.  This is done by simply moving the functions implementing 
->> _OSI to arch-dependent locations.  For x86, there should be no change
->> in functionality.  For ia64, while it does duplicate some code from x86,
->> there is no longer any connection to the ACPI blacklist code that is only
->> used by x86.  For arm64, any use of the _OSI method generates a warning
->> that it has been deprecated, and then always returns false; i.e., that
->> the capability being queried for, whether OS name or functionality, is
->> not supported.  This is the first six of the patches.
+> If you added
 > 
-> While I seem to understand the motivation, I don't really like moving code
-> around, especially in the ia64 area where we have limited means to test the
-> changes.  And I hate code duplication pretty much in any form.
-
-I'm not too wild about it either, but it seemed to avoid #ifdefs when I
-was trying to think it through.
-
-> Also I don't see anything wrong with sharing code between x86 and ia64 like
-> we do today.
-
-Fair enough.  That's entirely up to you; the only reason I saw for
-separating them was removing the one call to check the blacklist on
-ia64.  That would have a tiny time savings at boot time, but it is
-definitely down in the noise level.
-
-> So, why don't you move the _OSI handling out of osl.c into a separate file
-> that will only build if something like CONFIG_ARCH_SPECIFIC_ACPI_OSI is not
-> set (and same for blacklist.c).  Then, you'll only need to make ARM64
-> set CONFIG_ARCH_SPECIFIC_ACPI_OSI and provide the necessary functions
-> and you can leave the other architectures alone.
+> 	config ACPI_OS_NAME
+> 		string
+> 		default "Linux"
+> 		depends on ACPI
 > 
-> Does that make sense to you?
-
-It does.  I'll rewrite these based on that approach.  Definitely a lot
-less code motion involved...
-
->> The final patch changes the default value for the _OS_ method for arm64
->> only.  Since there is no need to pretend to be older versions of Windows,
->> or any other OS at all, the _OS_ method will return "Linux" on arm64.
->> One can still use the acpi_os_name kernel parameter if there is a need
->> to use some other value.
->>
->> Since we are breaking apart code previously shared, I have tried to make
->> it so that applying the x86 patches alone will continue to compile, at
->> the expense of breaking the build on non-x86 platforms.  However, once
->> all of the patches are applied, we should be able to compile on all three
->> architectures.  It is best to treat these as one whole.
->>
->> I have only done simple testing with these patches on arm64 and x86 (AMD
->> Seattle and a Lenovo t440s ThinkPad, respectively).  Things seem to work
->> as they should once booted, but this is a very, very small sample of
->> possible machines.  The ia64 patches cross-compile, but I personally have
->> no way to test them.
->>
->> The arm64 patches also rely on having applied Hanjun's patches for ACPI 5.1
->> on arm64 [0].  The x86 and ia64 parts are not dependent on that patch set,
->> though, and should be usable independently (i.e., patches 1, 3, 4 and 6).
->>
->> NB: some of the patches do not pass checkpatch.pl; the failures I saw were
->> all part of the original code but are only showing up because that code is
->> changing location, so I have left them as is.  If necessary, they could be
->> fixed but I was more concerned about the number of changes needed on ia64
->> and not having any way to test them.
->>
->>
->> [0] https://lkml.org/lkml/2015/1/14/586
->>
->>
->> Al Stone (6):
->>   ia64: ACPI: move kernel acpi files to a directory
->>   arm64: ACPI: move kernel acpi files to a directory
->>   x86: ACPI: create arch-dependent version of acpi_osi_handler()
->>   ia64: ACPI: create arch-dependent version of acpi_osi_handler()
->>   arm64: ACPI: create arch-dependent version of acpi_osi_handler()
->>   x86: ia64: arm64: ACPI: move _OSI support functions to arch-dependent
->>     locations
->>
->> Hanjun Guo (1):
->>   ACPI: use Linux as ACPI_OS_NAME for _OS on ARM64
->>
->>  arch/arm64/Kconfig               |    1 +
->>  arch/arm64/kernel/Makefile       |    2 +-
->>  arch/arm64/kernel/acpi.c         |  359 --------------
->>  arch/arm64/kernel/acpi/Makefile  |    1 +
->>  arch/arm64/kernel/acpi/acpi.c    |  359 ++++++++++++++
->>  arch/arm64/kernel/acpi/osi.c     |   26 +
->>  arch/ia64/kernel/Makefile        |    2 +-
->>  arch/ia64/kernel/acpi-ext.c      |  104 ----
->>  arch/ia64/kernel/acpi.c          | 1000 --------------------------------------
->>  arch/ia64/kernel/acpi/Makefile   |    1 +
->>  arch/ia64/kernel/acpi/acpi-ext.c |  104 ++++
->>  arch/ia64/kernel/acpi/acpi.c     | 1000 ++++++++++++++++++++++++++++++++++++++
->>  arch/ia64/kernel/acpi/osi.c      |  119 +++++
->>  arch/x86/kernel/acpi/Makefile    |    2 +-
->>  arch/x86/kernel/acpi/blacklist.c |  327 +++++++++++++
->>  arch/x86/kernel/acpi/boot.c      |    5 +-
->>  arch/x86/kernel/acpi/osi.c       |  255 ++++++++++
->>  drivers/acpi/Kconfig             |    8 +
->>  drivers/acpi/Makefile            |    1 -
->>  drivers/acpi/blacklist.c         |  323 ------------
->>  drivers/acpi/osl.c               |  217 ---------
->>  include/acpi/acconfig.h          |    2 +
->>  include/acpi/platform/aclinux.h  |    4 +
->>  include/linux/acpi.h             |    4 +-
->>  24 files changed, 2215 insertions(+), 2011 deletions(-)
->>  delete mode 100644 arch/arm64/kernel/acpi.c
->>  create mode 100644 arch/arm64/kernel/acpi/Makefile
->>  create mode 100644 arch/arm64/kernel/acpi/acpi.c
->>  create mode 100644 arch/arm64/kernel/acpi/osi.c
->>  delete mode 100644 arch/ia64/kernel/acpi-ext.c
->>  delete mode 100644 arch/ia64/kernel/acpi.c
->>  create mode 100644 arch/ia64/kernel/acpi/Makefile
->>  create mode 100644 arch/ia64/kernel/acpi/acpi-ext.c
->>  create mode 100644 arch/ia64/kernel/acpi/acpi.c
->>  create mode 100644 arch/ia64/kernel/acpi/osi.c
->>  create mode 100644 arch/x86/kernel/acpi/blacklist.c
->>  create mode 100644 arch/x86/kernel/acpi/osi.c
->>  delete mode 100644 drivers/acpi/blacklist.c
->>
+> to this file, then you don't need to add the new select below and ->
+> 
+>>  config ARM64
+>>  	def_bool y
+>> +	select ACPI_OS_NAME_LINUX if ACPI
+>>  	select ACPI_REDUCED_HARDWARE_ONLY if ACPI
+>>  	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
+>>  	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+>> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+>> index 3e3bd35..024c5f0 100644
+>> --- a/drivers/acpi/Kconfig
+>> +++ b/drivers/acpi/Kconfig
+>> @@ -369,6 +369,14 @@ config ACPI_REDUCED_HARDWARE_ONLY
+>>  
+>>  	  If you are unsure what to do, do not enable this option.
+>>  
+>> +config ACPI_OS_NAME_LINUX
+>> +	bool "Using Linux for _OS method" if EXPERT
+>> +	def_bool n
+>> +	  When used, this option makes sure the _OS method returns
+>> +	  the value "Linux".
+>> +
+>> +	  If you are unsure what to do, do not enable this option.
+>> +
+> 
+> -> you don't need this at all ->>
+> 
+>>  source "drivers/acpi/apei/Kconfig"
+>>  
+>>  config ACPI_EXTLOG
+>> diff --git a/include/acpi/acconfig.h b/include/acpi/acconfig.h
+>> index 5a0a3e5..1980bf4 100644
+>> --- a/include/acpi/acconfig.h
+>> +++ b/include/acpi/acconfig.h
+>> @@ -69,7 +69,9 @@
+>>   * code that will not execute the _OSI method unless _OS matches the string
+>>   * below.  Therefore, change this string at your own risk.
+>>   */
+>> +#ifndef ACPI_OS_NAME
+>>  #define ACPI_OS_NAME                    "Microsoft Windows NT"
+>> +#endif
+>>  
+>>  /* Maximum objects in the various object caches */
+>>  
+>> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
+>> index 1ba7c19..a8a7ee3 100644
+>> --- a/include/acpi/platform/aclinux.h
+>> +++ b/include/acpi/platform/aclinux.h
+>> @@ -69,6 +69,10 @@
+>>  #define ACPI_REDUCED_HARDWARE 1
+>>  #endif
+>>  
+>> +#ifdef CONFIG_ACPI_OS_NAME_LINUX
+>> +#define ACPI_OS_NAME "Linux"
+>> +#endif
+> 
+> ->> and here you can do
+> 
+> +#ifdef CONFIG_ACPI_OS_NAME
+> +#define ACPI_OS_NAME CONFIG_ACPI_OS_NAME
+> +#endif
+> 
+> unless I'm missing something.
+> 
+>> +
+>>  #include <linux/string.h>
+>>  #include <linux/kernel.h>
+>>  #include <linux/ctype.h>
 >>
 > 
 
+D'oh.  Yup.  I'll correct it.
 
 -- 
 ciao,
