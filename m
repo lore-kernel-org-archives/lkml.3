@@ -1,46 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429AbbAWOgr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:36:47 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:58763 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755333AbbAWOgp (ORCPT
+	id S1755331AbbAWOiT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:38:19 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:57698 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbbAWOiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:36:45 -0500
+	Fri, 23 Jan 2015 09:38:15 -0500
+Date: Fri, 23 Jan 2015 23:38:49 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [PATCH 2/2] zram: protect zram->stat race with init_lock
+Message-ID: <20150123143849.GB2320@swordfish>
+References: <1421992707-32658-1-git-send-email-minchan@kernel.org>
+ <1421992707-32658-2-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-X-Originating-IP: [95.23.97.229]
-In-Reply-To: <1422023038-11842-1-git-send-email-jh80.chung@samsung.com>
-References: <1422023038-11842-1-git-send-email-jh80.chung@samsung.com>
-Date: Fri, 23 Jan 2015 15:36:43 +0100
-Message-ID: <CABxcv=mJhHTBKes38+6kHi5o3RmBHHN6sVqBUDRc-YyNvkdESQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: Add sd0_rst pinctrl node to exynos5420
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene@kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421992707-32658-2-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jaehoon,
-
-On Fri, Jan 23, 2015 at 3:23 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> Add sd0_rst node to exynos5420-pinctrl.dtsi.
-> (It's used on odroid-xu3 board)
->
-
-It would be good to mention which device needs this pinctrl line.
-
-> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+On (01/23/15 14:58), Minchan Kim wrote:
+> The zram->stat handling should be procted by init_lock.
+> Otherwise, user could see stale value from the stat.
+> 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 > ---
->  arch/arm/boot/dts/exynos5420-pinctrl.dtsi |    5 +++++
+> 
+> I don't think it's stable material. The race is rare in real practice
+> and this stale stat value read is not a critical.
+> 
+>  drivers/block/zram/zram_drv.c | 37 ++++++++++++++++++++++++++++---------
+>  1 file changed, 28 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 0299d82275e7..53f176f590b0 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -48,8 +48,13 @@ static ssize_t name##_show(struct device *d,		\
+>  				struct device_attribute *attr, char *b)	\
+>  {									\
 
-If this pin is used by the Odroid XU3 board, shouldn't be defined in
-the exynos5422-odroidxu3.dts instead?
+a side note: I wasn't Cc'd in that patchset and found out it only when it's
+been merged. I'm not sure I understand, why it has been renamed from specific
+zram_X_show to X_show. what gives?
 
-Best regards,
-Javier
+
+can't help, catches my eye every time, that rename has broken the original
+formatting:
+
+
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 9250b3f..c567af5 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -44,7 +44,7 @@ static const char *default_compressor = "lzo";
+ static unsigned int num_devices = 1;
+ 
+ #define ZRAM_ATTR_RO(name)						\
+-static ssize_t name##_show(struct device *d,		\
++static ssize_t name##_show(struct device *d,				\
+ 				struct device_attribute *attr, char *b)	\
+ {									\
+ 	struct zram *zram = dev_to_zram(d);				\
+
+
+
+I don't have any objections. but do we really want to wrap atomic ops in
+semaphore? it is really such serious race?
+
+
+	-ss
+
+>  	struct zram *zram = dev_to_zram(d);				\
+> -	return scnprintf(b, PAGE_SIZE, "%llu\n",			\
+> -		(u64)atomic64_read(&zram->stats.name));			\
+> +	u64 val = 0;							\
+> +									\
+> +	down_read(&zram->init_lock);					\
+> +	if (init_done(zram))						\
+> +		val = atomic64_read(&zram->stats.name);			\
+> +	up_read(&zram->init_lock);					\
+> +	return scnprintf(b, PAGE_SIZE, "%llu\n", val);			\
+>  }									\
+>  static DEVICE_ATTR_RO(name);
+>  
+> @@ -67,8 +72,14 @@ static ssize_t disksize_show(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+>  	struct zram *zram = dev_to_zram(dev);
+> +	u64 val = 0;
+> +
+> +	down_read(&zram->init_lock);
+> +	if (init_done(zram))
+> +		val = zram->disksize;
+> +	up_read(&zram->init_lock);
+>  
+> -	return scnprintf(buf, PAGE_SIZE, "%llu\n", zram->disksize);
+> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+>  }
+>  
+>  static ssize_t initstate_show(struct device *dev,
+> @@ -88,9 +99,14 @@ static ssize_t orig_data_size_show(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+>  	struct zram *zram = dev_to_zram(dev);
+> +	u64 val = 0;
+> +
+> +	down_read(&zram->init_lock);
+> +	if (init_done(zram))
+> +		val = atomic64_read(&zram->stats.pages_stored) << PAGE_SHIFT;
+> +	up_read(&zram->init_lock);
+>  
+> -	return scnprintf(buf, PAGE_SIZE, "%llu\n",
+> -		(u64)(atomic64_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
+> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+>  }
+>  
+>  static ssize_t mem_used_total_show(struct device *dev,
+> @@ -957,10 +973,6 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
+>  	struct bio_vec bv;
+>  
+>  	zram = bdev->bd_disk->private_data;
+> -	if (!valid_io_request(zram, sector, PAGE_SIZE)) {
+> -		atomic64_inc(&zram->stats.invalid_io);
+> -		return -EINVAL;
+> -	}
+>  
+>  	down_read(&zram->init_lock);
+>  	if (unlikely(!init_done(zram))) {
+> @@ -968,6 +980,13 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
+>  		goto out_unlock;
+>  	}
+>  
+> +	if (!valid_io_request(zram, sector, PAGE_SIZE)) {
+> +		atomic64_inc(&zram->stats.invalid_io);
+> +		err = -EINVAL;
+> +		goto out_unlock;
+> +	}
+> +
+> +
+>  	index = sector >> SECTORS_PER_PAGE_SHIFT;
+>  	offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
+>  
+> -- 
+> 1.9.1
+> 
