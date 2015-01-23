@@ -1,197 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537AbbAWHta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 02:49:30 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:44955 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168AbbAWHt2 (ORCPT
+	id S1753755AbbAWHts (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 02:49:48 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:38315 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753615AbbAWHtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 02:49:28 -0500
-From: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-To: linux-mm@kvack.org
-Cc: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
-        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
-        hughd@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
-        linux-kernel@vger.kernel.org, riel@redhat.com, aarcange@redhat.com,
-        Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Subject: [PATCH] mm: incorporate read-only pages into transparent huge pages
-Date: Fri, 23 Jan 2015 09:47:36 +0200
-Message-Id: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 23 Jan 2015 02:49:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <1421942488-13764-2-git-send-email-wxt@rock-chips.com>
+References: <1421942488-13764-1-git-send-email-wxt@rock-chips.com> <1421942488-13764-2-git-send-email-wxt@rock-chips.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Fri, 23 Jan 2015 15:49:25 +0800
+X-Google-Sender-Auth: 3ZfRsN4-k6V6Vp7aNeGpg1EG_Hg
+Message-ID: <CAGS+omCx-e8DWkLCjopCuOKknwSvvNTsKcO70_xAcLMB4eYr1w@mail.gmail.com>
+Subject: Re: [PATCH v4] thermal: rockchip: make temperature reporting much
+ more accurate
+To: Caesar Wang <wxt@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch aims to improve THP collapse rates, by allowing
-THP collapse in the presence of read-only ptes, like those
-left in place by do_swap_page after a read fault.
+On Fri, Jan 23, 2015 at 12:01 AM, Caesar Wang <wxt@rock-chips.com> wrote:
+> In general, the kernel should report temperature readings exactly as
+> reported by the hardware. The cpu / gpu thermal driver works in 5 degree
+> increments,but we ought to do more accurate. The temperature will do
+> linear interpolation between the entries in the table.
+>
+> Test= $md5sum /dev/zero &
+> $while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
+> sleep .5; done
+>
+> e.g. We can get the result as follows:
+>     /sys/class/thermal/thermal_zone1/temp:39994
+>     /sys/class/thermal/thermal_zone2/temp:39086
+>     /sys/class/thermal/thermal_zone1/temp:39994
+>     /sys/class/thermal/thermal_zone2/temp:39540
+>     /sys/class/thermal/thermal_zone1/temp:39540
+>     /sys/class/thermal/thermal_zone2/temp:39540
+>     /sys/class/thermal/thermal_zone1/temp:39540
+>     /sys/class/thermal/thermal_zone2/temp:39994
+>
+> Signed-off-by: Caesar Wang <wxt@rock-chips.com>
+> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+> ---
+>
+> Changes in v4:
+> "return -EAGAIN" instead of "return rk_tsadcv2_code_to_temp(code)"
+>
+> Changes in v3:
+> Suggested-by Daniel Kurtz,
+> the check doesn't reject "code == 0xfff"
+> Fixed in rk_tsadcv2_code_to_temp(u32 code)
+>
+> Changes in v2:
+> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+>  drivers/thermal/rockchip_thermal.c | 32 ++++++++++++++++++++++----------
+>  1 file changed, 22 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
+> index 1bcddfc..6267349 100644
+> --- a/drivers/thermal/rockchip_thermal.c
+> +++ b/drivers/thermal/rockchip_thermal.c
+> @@ -193,19 +193,22 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
+>
+>  static long rk_tsadcv2_code_to_temp(u32 code)
+>  {
+> -       int high, low, mid;
+> -
+> -       low = 0;
+> -       high = ARRAY_SIZE(v2_code_table) - 1;
+> -       mid = (high + low) / 2;
+> +       unsigned int low = 0;
+> +       unsigned int high = ARRAY_SIZE(v2_code_table) - 1;
+> +       unsigned int mid = (low + high) / 2;
+> +       unsigned int num;
+> +       unsigned long denom;
+>
+> +       /* No code available, return -EAGAIN */
+>         if (code > v2_code_table[low].code || code < v2_code_table[high].code)
+> -               return 125000; /* No code available, return max temperature */
+> +               return -EAGAIN;
 
-Currently THP can collapse 4kB pages into a THP when
-there are up to khugepaged_max_ptes_none pte_none ptes
-in a 2MB range. This patch applies the same limit for
-read-only ptes.
+I think the following is more clear:
 
-The patch was tested with a test program that allocates
-800MB of memory, writes to it, and then sleeps. I force
-the system to swap out all but 190MB of the program by
-touching other memory. Afterwards, the test program does
-a mix of reads and writes to its memory, and the memory
-gets swapped back in.
+(a) reject invalid codes:
 
-Without the patch, only the memory that did not get
-swapped out remained in THPs, which corresponds to 24% of
-the memory of the program. The percentage did not increase
-over time.
+ /* Invalid code, return -EAGAIN */
+ if (code >= TSADCV2_DATA_MASK)
+    return -EAGAIN;
 
-With this patch, after 5 minutes of waiting khugepaged had
-collapsed 55% of the program's memory back into THPs.
+(b) do not allow mid to be 0:
 
-Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
----
-I've written down test results:
+while (low < high && mid) {
 
-With the patch:
-After swapped out:
-cat /proc/pid/smaps:
-Anonymous:      100352 kB
-AnonHugePages:  98304 kB
-Swap:           699652 kB
-Fraction:       97,95
-
-cat /proc/meminfo:
-AnonPages:      1763732 kB
-AnonHugePages:  1716224 kB
-Fraction:       97,30
-
-After swapped in:
-In a few seconds:
-cat /proc/pid/smaps
-Anonymous:      800004 kB
-AnonHugePages:  235520 kB
-Swap:           0 kB
-Fraction:       29,43
-
-cat /proc/meminfo:
-AnonPages:      2464336 kB
-AnonHugePages:  1853440 kB
-Fraction:       75,21
-
-In five minutes:
-cat /proc/pid/smaps:
-Anonymous:      800004 kB
-AnonHugePages:  440320 kB
-Swap:           0 kB
-Fraction:       55,0
-
-cat /proc/meminfo:
-AnonPages:      2464340
-AnonHugePages:  2058240
-Fraction:       83,52
-
-Without the patch:
-After swapped out:
-cat /proc/pid/smaps:
-Anonymous:      190660 kB
-AnonHugePages:  190464 kB
-Swap:           609344 kB
-Fraction:       99,89
-
-cat /proc/meminfo:
-AnonPages:      1740456 kB
-AnonHugePages:  1667072 kB
-Fraction:       95,78
-
-After swapped in:
-cat /proc/pid/smaps:
-Anonymous:      800004 kB
-AnonHugePages:  190464 kB
-Swap:           0 kB
-Fraction:       23,80
-
-cat /proc/meminfo:
-AnonPages:      2350032 kB
-AnonHugePages:  1667072 kB
-Fraction:       70,93
-
-I waited 10 minutes the fractions
-did not change without the patch.
-
- mm/huge_memory.c | 25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 817a875..af750d9 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2158,7 +2158,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 			else
- 				goto out;
- 		}
--		if (!pte_present(pteval) || !pte_write(pteval))
-+		if (!pte_present(pteval))
- 			goto out;
- 		page = vm_normal_page(vma, address, pteval);
- 		if (unlikely(!page))
-@@ -2169,7 +2169,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
- 
- 		/* cannot use mapcount: can't collapse if there's a gup pin */
--		if (page_count(page) != 1)
-+		if (page_count(page) != 1 + !!PageSwapCache(page))
- 			goto out;
- 		/*
- 		 * We can do it before isolate_lru_page because the
-@@ -2179,6 +2179,17 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 		 */
- 		if (!trylock_page(page))
- 			goto out;
-+		if (!pte_write(pteval)) {
-+			if (PageSwapCache(page) && !reuse_swap_page(page)) {
-+					unlock_page(page);
-+					goto out;
-+			}
-+			/*
-+			 * Page is not in the swap cache, and page count is
-+			 * one (see above). It can be collapsed into a THP.
-+			 */
-+		}
-+
- 		/*
- 		 * Isolate the page to avoid collapsing an hugepage
- 		 * currently in use by the VM.
-@@ -2550,7 +2561,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- {
- 	pmd_t *pmd;
- 	pte_t *pte, *_pte;
--	int ret = 0, referenced = 0, none = 0;
-+	int ret = 0, referenced = 0, none = 0, ro = 0;
- 	struct page *page;
- 	unsigned long _address;
- 	spinlock_t *ptl;
-@@ -2573,8 +2584,12 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 			else
- 				goto out_unmap;
- 		}
--		if (!pte_present(pteval) || !pte_write(pteval))
-+		if (!pte_present(pteval))
- 			goto out_unmap;
-+		if (!pte_write(pteval)) {
-+			if (++ro > khugepaged_max_ptes_none)
-+				goto out_unmap;
-+		}
- 		page = vm_normal_page(vma, _address, pteval);
- 		if (unlikely(!page))
- 			goto out_unmap;
-@@ -2592,7 +2607,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
- 			goto out_unmap;
- 		/* cannot use mapcount: can't collapse if there's a gup pin */
--		if (page_count(page) != 1)
-+		if (page_count(page) != 1 + !!PageSwapCache(page))
- 			goto out_unmap;
- 		if (pte_young(pteval) || PageReferenced(page) ||
- 		    mmu_notifier_test_young(vma->vm_mm, address))
--- 
-1.9.1
-
+> -               if (code >= v2_code_table[mid].code && code <
+> -                   v2_code_table[mid - 1].code)
+> -                       return v2_code_table[mid].temp;
+> +               if (code >= v2_code_table[mid].code &&
+> +                   code < v2_code_table[mid - 1].code)
+> +                       break;
+> +               else if (code == TSADCV2_DATA_MASK)
+> +                       break;
+>                 else if (code < v2_code_table[mid].code)
+>                         low = mid + 1;
+>                 else
+> @@ -213,7 +216,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
+>                 mid = (low + high) / 2;
+>         }
+>
+> -       return 125000;
+> +       /*
+> +        * The 5C granularity provided by the table is too much. Let's
+> +        * assume that the relationship between sensor readings and
+> +        * temperature between 2 table entries is linear and interpolate
+> +        * to produce less granular result.
+> +        */
+> +       num = v2_code_table[mid].temp - v2_code_table[mid - 1].temp;
+> +       num *= v2_code_table[mid - 1].code - code;
+> +       denom = v2_code_table[mid - 1].code - v2_code_table[mid].code;
+> +       return v2_code_table[mid - 1].temp + (num / denom);
+>  }
+>
+>  /**
+> --
+> 1.9.1
+>
+>
