@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165AbbAWSFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:05:06 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45594 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754363AbbAWSFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:05:01 -0500
-Date: Fri, 23 Jan 2015 19:04:55 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Sasha Levin <sasha.levin@oracle.com>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
- context
-Message-ID: <20150123180455.GA3192@pd.tnic>
-References: <cover.1416604491.git.luto@amacapital.net>
- <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
- <54C17139.1040706@oracle.com>
- <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
+	id S1756193AbbAWSFr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:05:47 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:59381 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754363AbbAWSFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 13:05:44 -0500
+Message-ID: <54C28D71.6040603@gmail.com>
+Date: Fri, 23 Jan 2015 11:05:37 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Pawel Moll <pawel.moll@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v4 3/3] perf: Sample additional clock value
+References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>	 <1415292718-19785-4-git-send-email-pawel.moll@arm.com>	 <20150105134514.GS30905@twins.programming.kicks-ass.net> <1422032767.14076.151.camel@arm.com>
+In-Reply-To: <1422032767.14076.151.camel@arm.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 09:58:01AM -0800, Andy Lutomirski wrote:
-> > [  543.999079] Call Trace:
-> > [  543.999079] dump_stack (lib/dump_stack.c:52)
-> > [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
-> > [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
-> > [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
-> > [  543.999079] notify_die (kernel/notifier.c:538)
-> > [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
-> > [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
-> > [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
-> > [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
-> > [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
-> > [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
-> > [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
-> 
-> I don't know how to read this stack trace.  Are we in do_int3,
-> do_debug, or both?  I didn't change do_debug at all.
+On 1/23/15 10:06 AM, Pawel Moll wrote:
+> As far as I understand (John?) POSIX timers can be used on any clockid?
+> So it would be possible to obtain a dynamic clock id, for example for my
+> exotic trace hardware (by any means necessary, like opening a char
+> device) and create a timer firing every 1 ms (in the trace time domain).
+> Than this event would be somehow associated with a perf session (for
+> example, by passing the timerid via perf's ioctl) and then, every when
+> timer fires, a perf record (something like PERF_RECORD_TIMER?)
+> containing the timer/clock's value*and*  the normal perf timestamp,
+> would be injected into the circular buffer.
 
-It looks like we're in do_debug. do_int3 is only on the stack but not
-part of the current frame if I can trust the '?' ...
+Like this: https://lkml.org/lkml/2011/2/27/158 ? note the date -- 4 
+years ago. This is has been dragging on for a long time.
 
--- 
-Regards/Gruss,
-    Boris.
+A few problems with that approach:
+1. I would like to see a sample generated immediately to get the 
+perf_clock -> timeofday correlation immediately rather than have to wait 
+N (milli)seconds and have perf scan forward through an M-(giga)byte file 
+looking for the one sample that gives the correlation.
 
-ECO tip #101: Trim your mails when you reply.
---
+I tried to address that problem with an ioctl to force a sample into the 
+stream:
+    https://lkml.org/lkml/2011/2/27/159
+it did not go over very well.
+
+2. there is a risk that the realtime samples dominate a stream.
+
+Another issue that has been raised is updates to xtime by ntp / user. I 
+have suggested tracepoints to catch those:
+     https://lkml.org/lkml/2011/6/7/636
+I don't believe there were ever any comments on the tracepoints.
+
+David
