@@ -1,121 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050AbbAWEH7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 23:07:59 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:58444 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572AbbAWEHy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 23:07:54 -0500
-Date: Thu, 22 Jan 2015 20:07:51 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Devel FS Linux <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] nfs: prevent truncate on active swapfile
-Message-ID: <20150123040751.GA24282@mew>
-References: <fdc56e2887c3ed93f4e6a6e784ee0748c2d13295.1420708562.git.osandov@osandov.com>
- <CAHQdGtT=sXmDk=samGCD92mC-Rjr57NAOURudD9TRyFy3=YaBA@mail.gmail.com>
- <20150112194302.GA27355@mew.dhcp4.washington.edu>
+	id S1753143AbbAWEpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 23:45:46 -0500
+Received: from ozlabs.org ([103.22.144.67]:47804 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751930AbbAWEpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 23:45:44 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kees Cook <keescook@chromium.org>
+Cc: Oded Gabbay <oded.gabbay@amd.com>, Andi Kleen <ak@linux.intel.com>,
+        Alex Deucher <alexdeucher@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dana Elifaz <Dana.Elifaz@amd.com>, LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
+In-Reply-To: <CAGXu5jJFn_H1RQmffqvm-4OSbk0MXb5P3Re--5JK13aK3sGRUw@mail.gmail.com>
+References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com> <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com> <20141222184940.GB17192@tassilo.jf.intel.com> <20141222190041.GC17192@tassilo.jf.intel.com> <54986EA2.106@amd.com> <874msmt1hi.fsf@rustcorp.com.au> <549A85DE.1040006@amd.com> <87r3v96ebd.fsf@rustcorp.com.au> <CAGXu5jJFn_H1RQmffqvm-4OSbk0MXb5P3Re--5JK13aK3sGRUw@mail.gmail.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 23 Jan 2015 14:40:17 +1030
+Message-ID: <878uguuogm.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150112194302.GA27355@mew.dhcp4.washington.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 11:43:02AM -0800, Omar Sandoval wrote:
-> On Sat, Jan 10, 2015 at 05:08:03PM -0500, Trond Myklebust wrote:
-> > Hi Omar,
-> > 
-> > On Thu, Jan 8, 2015 at 4:18 AM, Omar Sandoval <osandov@osandov.com> wrote:
-> > > Most filesystems prevent truncation of an active swapfile by way of
-> > > inode_newsize_ok, called from inode_change_ok. NFS doesn't call either
-> > > from nfs_setattr, presumably because most of these checks are expected
-> > > to be done server-side. However, the IS_SWAPFILE check can only be done
-> > > client-side, and truncating a swapfile can't possibly be good.
-> > >
-> > > Signed-off-by: Omar Sandoval <osandov@osandov.com>
-> > > ---
-> > > Hi, Trond,
-> > >
-> > > Now that the holidays are over, could you take a look at this? It was
-> > > generated against v3.19-rc3.
-> > >
-> > > Thanks!
-> > >
-> > >  fs/nfs/inode.c | 7 ++++++-
-> > >  1 file changed, 6 insertions(+), 1 deletion(-)
-> > >
-> > > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> > > index 4bffe63..9205513 100644
-> > > --- a/fs/nfs/inode.c
-> > > +++ b/fs/nfs/inode.c
-> > > @@ -506,10 +506,15 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
-> > >                 attr->ia_valid &= ~ATTR_MODE;
-> > >
-> > >         if (attr->ia_valid & ATTR_SIZE) {
-> > > +               loff_t i_size;
-> > > +
-> > >                 BUG_ON(!S_ISREG(inode->i_mode));
-> > >
-> > > -               if (attr->ia_size == i_size_read(inode))
-> > > +               i_size = i_size_read(inode);
-> > > +               if (attr->ia_size == i_size)
-> > >                         attr->ia_valid &= ~ATTR_SIZE;
-> > > +               else if (attr->ia_size < i_size && IS_SWAPFILE(inode))
-> > > +                       return -ETXTBSY;
-> > >         }
-> > >
-> > >         /* Optimization: if the end result is no change, don't RPC */
-> > > --
-> > > 2.2.1
-> > >
-> > 
-> > I agree that truncating a swap file is bad, however as you point out,
-> > this really only addresses the case on the client that knows about
-> > this being a swap file.
-> > I'll take the patch,
-> 
-> Thanks, I appreciate it.
-> 
-> > but I'm wondering if we couldn't do better in the
-> > case where we're using NFSv4 by using share deny modes (which are
-> > enforced by the server). The problem is that there appears to be
-> > nothing in swapon() that tells the filesystem this is an open of a
-> > swap file...
-> 
-> Yeah, it would be nice for completeness to prevent one client from
-> truncating another client's swapfile. However, I'd hope that anyone
-> using swap-over-NFS on a shared NFS mount would take the necessary
-> precautions in terms of permissions, etc. to prevent someone from doing
-> that. Also, since the failure mode of truncating an NFS swapfile is a
-> corrupt swapfile rather than a corrupt filesystem (like on a local
-> filesystem), it's probably okay to just deal with the low-hanging fruit
-> for now.
-> 
-> Thanks!
-> 
-> > 
-> > Cheers
-> >   Trond
-> > -- 
-> > Trond Myklebust
-> > Linux NFS client maintainer, PrimaryData
-> > trond.myklebust@primarydata.com
-> 
-> -- 
-> Omar
+Kees Cook <keescook@chromium.org> writes:
+> On Sun, Jan 4, 2015 at 8:28 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Oded Gabbay <oded.gabbay@amd.com> writes:
+>>> On 12/24/2014 01:01 AM, Rusty Russell wrote:
+>>>> Oded Gabbay <oded.gabbay@amd.com> writes:
+>>>>> I didn't say it doesn't always work.
+>>>>> The actual thing that doesn't work is the define symbol_get and only in a
+>>>>> specific case of 32bit kernel AND CONFIG_MODULES is unset AND
+>>>>> CONFIG_RANDOMIZE_BASE is set.
+>>>>> The define in that case is:
+>>>>> #define symbol_get(x) ({ extern typeof(x) x __attribute__((weak)); &(x); })
+>>>>>
+>>>>> Why it doesn't work (doesn't return NULL when symbol doesn't exists) ?
+>>>>
+>>>> Hmm, I'd guess CONFIG_RANDOMIZE_BASE is relocating NULL symbols...
+>>>>
+>>>> No, I can't reproduce this.  Please send your .config privately.
+>>>>
+>>>> Here's my test case:
+>>>>
+>>>> diff --git a/init/main.c b/init/main.c
+>>>> index 61b993767db5..a3ee1ec97ec3 100644
+>>>> --- a/init/main.c
+>>>> +++ b/init/main.c
+>>>> @@ -683,6 +683,12 @@ asmlinkage __visible void __init start_kernel(void)
+>>>>
+>>>>      ftrace_init();
+>>>>
+>>>> +    {
+>>>> +            extern void nonexistent_fn(void);
+>>>> +            printk("symbol_get(nonexistent_fn) = %p\n",
+>>>> +                   symbol_get(nonexistent_fn));
+>>>> +    }
+>>>> +
+>>>>      /* Do the rest non-__init'ed, we're now alive */
+>>>>      rest_init();
+>>>>   }
+>>>>
+>>>> Thanks,
+>>>> Rusty.
+>>>>
+>>> Hi Rusty,
+>>>
+>>> Attached is the bad config file. (config-bad)
+>>> I have narrowed the changes you need to do to the config file in order to
+>>> reproduce this bug.
+>>> The base assumption is a 32-bit kernel and without modules support. Rest of the
+>>> config file is pretty standard, IMO.
+>>> Then, its not enough to enable CONFIG_RANDOMIZE_BASE like I wrote in my original
+>>> post. You need also to unset CONFIG_HIBERNATION.
+>>
+>> Indeed, thanks; your config breaks as reported.  With CONFIG_HIBERNATION
+>> the kernel offset is 0, so we don't see this.
+>>
+>> Kees, as far as I can tell you need another 0-terminated vmlinux.relocs
+>> section for weak symbols.  These should not be relocated if already 0.
+>>
+>> Put this somewhere to test.  It fails for x86_64, too:
+>>
+>> diff --git a/init/main.c b/init/main.c
+>> index 61b993767db5..c9e0195c792a 100644
+>> --- a/init/main.c
+>> +++ b/init/main.c
+>> @@ -683,6 +683,12 @@ asmlinkage __visible void __init start_kernel(void)
+>>
+>>         ftrace_init();
+>>
+>> +       {
+>> +               extern void __attribute__((weak)) nonexistent_fn(void);
+>> +               printk("nonexistent_fn = %p\n", nonexistent_fn);
+>> +               BUG_ON(nonexistent_fn != NULL);
+>> +       }
+>> +
+>>         /* Do the rest non-__init'ed, we're now alive */
+>>         rest_init();
+>>  }
+>
+> Hm, I can't reproduce this on v3.19-rc4. My nonexistent_fn comes back
+> NULL regardless of CONFIG and kaslr on/off states I've tried. Could
+> this be a (yet another) linker bug? What was the toolchain used? I
+> built with gcc 4.8.2 and binutils 2.24.
 
-Hi, Trond,
+$ ld --version
+GNU ld (GNU Binutils for Ubuntu) 2.24.90.20141014
+...
+$ gcc --version
+gcc (Ubuntu 4.9.1-16ubuntu6) 4.9.1
 
-Are you still planning on taking this patch? I didn't see it in your
-last pull request to Linus.
+I tested with gcc 4.8.3 as well, same fail.
 
-Thanks,
--- 
-Omar
+I'll send you the config I used separately.
+
+Cheers,
+Rusty.
+
+
+
