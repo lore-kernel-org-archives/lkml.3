@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366AbbAWNSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 08:18:08 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:42368 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249AbbAWNSF (ORCPT
+	id S1755379AbbAWNTz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 08:19:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60378 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207AbbAWNTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 08:18:05 -0500
-Date: Fri, 23 Jan 2015 05:17:58 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: module: fix module_refcount() return when running in a module
- exit routine
-Message-ID: <20150123131758.GC8045@infradead.org>
-References: <1421600146.2080.8.camel@HansenPartnership.com>
- <54BC93C3.7010808@hitachi.com>
- <878ugzco8c.fsf@rustcorp.com.au>
- <1421683701.2080.25.camel@HansenPartnership.com>
- <871tmqcmau.fsf@rustcorp.com.au>
- <1421774615.2080.88.camel@HansenPartnership.com>
- <20150122165018.GA27377@infradead.org>
- <1421946175.2093.1.camel@HansenPartnership.com>
- <87iofyurzc.fsf@rustcorp.com.au>
+	Fri, 23 Jan 2015 08:19:51 -0500
+Date: Fri, 23 Jan 2015 21:19:46 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>
+Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
+        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.or, dh.herrmann@gmail.com, tixxdz@opendz.org,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Mack <daniel@zonque.org>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+Message-ID: <20150123131946.GA26302@kroah.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+ <20150123062820.GB7949@Darwish.PC>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87iofyurzc.fsf@rustcorp.com.au>
+In-Reply-To: <20150123062820.GB7949@Darwish.PC>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 01:24:15PM +1030, Rusty Russell wrote:
-> The correct fix is to turn try_module_get() into __module_get(), and
-> always do the module_put().
+On Fri, Jan 23, 2015 at 08:28:20AM +0200, Ahmed S. Darwish wrote:
+> On Fri, Jan 16, 2015 at 11:16:05AM -0800, Greg Kroah-Hartman wrote:
+> > From: Daniel Mack <daniel@zonque.org>
+> > 
+> > kdbus is a system for low-latency, low-overhead, easy to use
+> > interprocess communication (IPC).
+> > 
+> > The interface to all functions in this driver is implemented via ioctls
+> > on files exposed through a filesystem called 'kdbusfs'. The default
+> > mount point of kdbusfs is /sys/fs/kdbus.
+> 
+> Pardon my ignorance, but we've always been told that adding
+> new ioctl()s to the kernel is a very big no-no.  But given
+> the seniority of the folks stewarding this kdbus effort,
+> there must be a good rationale ;-)
+> 
+> So, can the rationale behind introducing new ioctl()s be
+> further explained? It would be even better if it's included
+> in the documentation patch itself.
 
-Is this really safe?  __module_get sais it needs a non-zero refcount
-to start with, but scsi_device_get is the only thing every incrementing
-the refcount on the module pointer in the scsi host template, so
-exactly that case can happen easily.  There's not assert actually
-hardcoding the assumption, so I'm not sure if requirement the comment
-really just is nice to have or a strong requirement.
+The main reason to use an ioctl is that you want to atomically set
+and/or get something "complex" through the user/kernel boundary.  For
+simple device attributes, sysfs works great, for configuring devices,
+configfs works great, but for data streams / structures / etc. an ioctl
+is the correct thing to use.
+
+Examples of new ioctls being added to the kernel are all over the
+place, look at all of the special-purpose ioctls the filesystems keep
+creating (they aren't adding new syscalls), look at the monstrosity that
+is the DRM layer, look at other complex things like openvswitch, or
+"simpler" device-specific interfaces like the MEI one, or even more
+complex ones like the MMC interface.  These are all valid uses of ioctls
+as they are device/filesystem specific ways to interact with the kernel.
+
+The thing is, almost no one pays attention to these new ioctls as they
+are domain-specific interfaces, with open userspace programs talking to
+them, and they work well.  ioctl is a powerful and useful interface, and
+if we were to suddenly require no new ioctls, and require everything to
+be a syscall, we would do nothing except make apis more complex (hint,
+you now have to do extra validation on your file descriptor passed to
+you to determine if it really is what you can properly operate your
+ioctl on), and cause no real benefit at all.
+
+Yes, people abuse ioctls at times, but really, they are needed.
+
+And remember, I was one of the people who long ago thought we should not
+be adding more ioctls, but I have seen the folly of my ways, and chalk
+it up to youthful ignorance :)
+
+Hope this helps explain things better,
+
+greg k-h
