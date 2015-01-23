@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbbAWCwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 21:52:12 -0500
-Received: from mail-bn1bbn0105.outbound.protection.outlook.com ([157.56.111.105]:9141
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752017AbbAWCwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 21:52:09 -0500
-Date: Fri, 23 Jan 2015 10:56:45 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: Steve Longerbeam <slongerbeam@gmail.com>,
-        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "Fabio Estevam" <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
-        Jiada Wang <jiada_wang@mentor.com>,
-        "Steve Longerbeam" <steve_longerbeam@mentor.com>
-Subject: Re: [PATCH v2 0/7] imx-drm: ipuv3-crtc: Implement mode_fixup
-Message-ID: <20150123025643.GA11412@victor>
-References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
- <1420655248.3191.73.camel@pengutronix.de>
+	id S1753819AbbAWDAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 22:00:54 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:46776 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017AbbAWDAt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 22:00:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1420655248.3191.73.camel@pengutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; mentor.com; dkim=none (message not
- signed) header.d=none;mentor.com; dmarc=permerror action=none
- header.from=freescale.com;
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(24454002)(105606002)(110136001)(19580395003)(85426001)(6806004)(92566002)(106466001)(15975445007)(2950100001)(77096005)(87936001)(19580405001)(97756001)(23726002)(86362001)(83506001)(33656002)(46406003)(33716001)(50466002)(104016003)(62966003)(54356999)(50986999)(57986006)(76176999)(46102003)(77156002)(422495003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB246;H:tx30smr01.am.freescale.net;FPR:;SPF:None;MLV:sfv;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR03MB246;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB246;
-X-Forefront-PRVS: 0465429B7F
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB246;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Jan 2015 02:52:05.8139
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB246
+X-Originating-IP: [2620:0:1000:157d:c14d:441a:e93e:1340]
+In-Reply-To: <D177DF12-0F31-49CF-B98B-9FAC23AAB24C@codeaurora.org>
+References: <alpine.DEB.2.02.1501191226010.2973@galak-ubuntu.qualcomm.com>
+	<20150122011521.GA31815@quad.lixom.net>
+	<D177DF12-0F31-49CF-B98B-9FAC23AAB24C@codeaurora.org>
+Date: Thu, 22 Jan 2015 19:00:49 -0800
+Message-ID: <CAOesGMipp=Odc-cWvrba0e1pd1X7O+PKNH+WoM3fG4xX2GRFuA@mail.gmail.com>
+Subject: Re: [GIT PULL] qcom SoC changes for v3.20
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: "arm@kernel.org" <arm@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Lina Iyer <lina.iyer@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Vikram Mulukutla <markivx@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 22, 2015 at 9:02 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>
+> On Jan 21, 2015, at 7:15 PM, Olof Johansson <olof@lixom.net> wrote:
+>
+>> Hi,
+>>
+>>
+>> On Mon, Jan 19, 2015 at 12:27:15PM -0600, Kumar Gala wrote:
+>>> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+>>>
+>>>  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.20
+>>>
+>>> for you to fetch changes up to ae0a6075c046f9c8dbac18f53a779592f97b402e:
+>>>
+>>>  soc: qcom: scm: Clarify boot interface (2015-01-19 11:55:12 -0600)
+>>>
+>>> ----------------------------------------------------------------
+>>> Qualcomm ARM Based SoC Updates for v3.20
+>>>
+>>> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
+>>> * Various bug fixes and minor feature additions to scm code
+>>> * Added big-endian support to debug MSM uart
+>>> * Added big-endian support to ARCH_QCOM
+>>>
+>>> ----------------------------------------------------------------
+>>> Lina Iyer (2):
+>>>      ARM: qcom: Add SCM warmboot flags for quad core targets.
+>>>      soc: qcom: scm: Move scm-boot files to drivers/soc and include/soc
+>>>
+>>> Olav Haugan (1):
+>>>      ARM: qcom: scm: Add logging of actual return code from scm call
+>>>
+>>> Saravana Kannan (1):
+>>>      ARM: qcom: scm: Add API to query for service/command availability.
+>>>
+>>> Stephen Boyd (9):
+>>>      ARM: debug: Update MSM and QCOM DEBUG_LL help
+>>>      ARM: debug: msm: Support big-endian CPUs
+>>>      ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
+>>>      ARM: qcom: scm: Fix incorrect cache invalidation
+>>>      ARM: qcom: scm: Get cacheline size from CTR
+>>>      ARM: qcom: scm: Add a feat version query API
+>>>      soc: qcom: scm: Move the scm driver to drivers/soc/qcom
+>>
+>> I replied on the patch here just now. This isn't the right thing to do,
+>> as far as I can tell.
+>>
+>> Seems like sending a fresh request with the material besides the move
+>> to drivers/soc should be mergeable though, so feel free to do that while
+>> the rest is hashed out.
+>
+> Would the following be ok (dropped the move to drivers/soc and some additional unused scm APIs as of right now):
+>
+> ARM: qcom: Drop unnecessary selects from ARCH_QCOM
+> ARM: qcom: scm: Clarify boot interface
+> ARM: qcom: Add SCM warmboot flags for quad core targets.
+> ARM: qcom: scm: Add logging of actual return code from scm call
+> ARM: qcom: scm: Flush the command buffer only instead of the entire cache
+> ARM: qcom: scm: Get cacheline size from CTR
+> ARM: qcom: scm: Fix incorrect cache invalidation
+> ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
+> ARM: debug: msm: Support big-endian CPUs
+> ARM: debug: Update MSM and QCOM DEBUG_LL help
+>
+>  Kconfig.debug        |    5 ++--
+>  include/debug/msm.S  |    6 +++++
+>  mach-qcom/Kconfig    |    3 --
+>  mach-qcom/scm-boot.c |    2 -
+>  mach-qcom/scm-boot.h |    4 ++-
+>  mach-qcom/scm.c      |   55 +++++++++++++++++++++++++++++++++++++--------------
+>  6 files changed, 54 insertions(+), 21 deletions(-)
 
-It looks that the below commit makes my Hannstar XGA LVDS panel stop working
-on the i.MX6DL SabreSD board.  Any idea?
+I'd be OK with merging this, send a request and tag. Would that let
+the DRM folks make progress too?
 
-commit eb10d6355532def3a74aaabd115e2373cca70b9d
-Author: Steve Longerbeam <slongerbeam@gmail.com>
-Date:   Thu Dec 18 18:00:24 2014 -0800
+If you need a common place for this, drivers/firmware seems like a
+better home than drivers/soc.
 
-imx-drm: encoder prepare/mode_set must use adjusted mode
 
-The encoder ->prepare() and ->mode_set() methods need to use the
-hw adjusted mode, not the original mode.
-
-Signed-off-by: Steve Longerbeam <steve_longerbeam@mentor.com>
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-
-Regards,
-Liu Ying
-
-On Wed, Jan 07, 2015 at 07:27:28PM +0100, Philipp Zabel wrote:
-> Am Donnerstag, den 18.12.2014, 18:00 -0800 schrieb Steve Longerbeam:
-> > This patchset implements ->mode_fixup() in the imx ipuv3-crtc driver,
-> > using a new support function ipu_di_adjust_videomode(). This new
-> > function needs to be subsystem independent, so it accepts a video
-> > mode as a 'struct videomode'. Hence ipu-crtc ->mode_fixup() needs
-> > another support function to convert a drm_display_mode to a videomode
-> > before passing the mode to ipu_di_adjust_videomode() for fixup.
-> > 
-> > Also some related code cleanup: 'struct ipu_di_signal_cfg' should
-> > use 'struct videomode' for mode timings.
-> 
-> Alright, I have applied the series with
-> s/videomode_from_drm_display_mode/drm_display_mode_to_videomode/
-> 
-> thanks
-> Philipp
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-Olof
