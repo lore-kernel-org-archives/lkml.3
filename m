@@ -1,71 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbbAWXQP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 18:16:15 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36780 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbbAWXQN (ORCPT
+	id S1753179AbbAWXRn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 18:17:43 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:54595 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750820AbbAWXRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 18:16:13 -0500
-Date: Fri, 23 Jan 2015 15:16:06 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at
- kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
-Message-ID: <20150123231606.GA9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20150122004305.GJ9719@linux.vnet.ibm.com>
- <54C1BFFD.9060707@oracle.com>
- <20150123035158.GP9719@linux.vnet.ibm.com>
- <54C1C7D2.906@oracle.com>
- <54C1C899.8000106@oracle.com>
- <20150123065542.GQ9719@linux.vnet.ibm.com>
- <20150123093644.GA11175@linux.vnet.ibm.com>
- <54C2C278.1000608@oracle.com>
- <20150123225411.GZ9719@linux.vnet.ibm.com>
- <54C2D3B5.5080808@oracle.com>
+	Fri, 23 Jan 2015 18:17:41 -0500
+Date: Sat, 24 Jan 2015 00:17:38 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sylvain Rochet <sylvain.rochet@finsecur.com>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>, nicolas.ferre@atmel.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, peda@axentia.se,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 08/12] pm: at91: rename file name: pm_slowclock.S
+ -->pm_suspend.S
+Message-ID: <20150123231738.GB32318@piout.net>
+References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
+ <1421741825-18226-9-git-send-email-wenyou.yang@atmel.com>
+ <20150123191719.GA29601@gradator.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C2D3B5.5080808@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012323-0009-0000-0000-000008398C0B
+In-Reply-To: <20150123191719.GA29601@gradator.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 06:05:25PM -0500, Sasha Levin wrote:
-> On 01/23/2015 05:54 PM, Paul E. McKenney wrote:
-> > On Fri, Jan 23, 2015 at 04:51:52PM -0500, Sasha Levin wrote:
-> >> > On 01/23/2015 04:36 AM, Paul E. McKenney wrote:
-> >>> > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> >>> > > index 8669de884445..ec99dc16aa38 100644
-> >>> > > --- a/kernel/rcu/tree_plugin.h
-> >>> > > +++ b/kernel/rcu/tree_plugin.h
-> >>> > > @@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
-> >>> > >  	special = t->rcu_read_unlock_special;
-> >>> > >  	if (special.b.need_qs) {
-> >>> > >  		rcu_preempt_qs();
-> >>> > > +		t->rcu_read_unlock_special.need_qs = false;
-> >> > 
-> >> > It didn't compile, I've used:
-> >> > 
-> >> > 		t->rcu_read_unlock_special.b.need_qs = false;
-> > Apologies, I should have marked it "untested".  Good show on finding
-> > the correct fix.
-> > 
-> > But does your fixed version help?  ;-)
+Hi,
+
+On 23/01/2015 at 20:17:19 +0100, Sylvain Rochet wrote :
+> Hello Wenyou,
 > 
-> I haven't seen it happening it again, but you won't get a "yes" out of me
-> until tomorrow evening :)
+> On Tue, Jan 20, 2015 at 04:17:01PM +0800, Wenyou Yang wrote:
+> > 
+> > diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
+> > new file mode 100644
+> > index 0000000..420e730
+> > --- /dev/null
+> 
+> 
+> > +	/* Turn off the main oscillator */
+> > +	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
+> > +	bic	tmp1, tmp1, #AT91_PMC_MOSCEN
+> 
+> at91sam9x5 and probably others need a key here:
+> 	orr     tmp1, tmp1, #AT91_PMC_KEY
+> 
+> > +	str	tmp1, [pmc, #AT91_CKGR_MOR]
+> 
+> 
+> 
+> > +	/* Wait for interrupt */
+> > +	mcr	p15, 0, tmp1, c7, c0, 4
+> 
+> The linux-3.10-at91 branch uses a different approach which seem 
+> necessary for newer board, you probably forget to merge the following:
+> 
+> /*
+>  * Put the processor to enter into Standby mode, wait for interrupt to wakeup
+>  */
+> 	.macro _do_wfi
+> 
+> #if defined(CONFIG_CPU_V7)
+> 	dsb
+> 
+> 	/* Disable the processor clock */
+> 	mov	tmp1, #AT91_PMC_PCK
+> 	str	tmp1, [pmc, #AT91_PMC_SCDR]
+> 
+> 	wfi		@ Wait For Interrupt
+> #else
+> 	mcr	p15, 0, tmp1, c7, c0, 4
+> #endif
+> 
+> 	.endm
+> 
+> 	.text
+> 
+> ENTRY(at91_slow_clock)
+> (...)
+> 	/* Wait for interrupt */
+> 	_do_wfi
+> (...)
+> 
+> 
+> 
+> 
+> > +	/* Turn on the main oscillator */
+> > +	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
+> > +	orr	tmp1, tmp1, #AT91_PMC_MOSCEN
+> 
+> at91sam9x5 and probably others need a key here:
+>         orr     tmp1, tmp1, #AT91_PMC_KEY
+> 
+> > +	str	tmp1, [pmc, #AT91_CKGR_MOR]
+> 
+> 
+> 
+> What about the following parts which are also in linux-3.10-at91 branch 
+> but not in this rework, are they necessary ?
+> 
+> sdr_sr_done:
+> 	/* Disable MPDDRC Clock*/
+> 	cmp	ddrcid, #0
+> 	beq	2f
+> 	bic	tmp2, ddrcid, #0xe0 /* fetch lowest 5 bits */
+> 	mov	tmp1, #0x01
+> 	mov	tmp1, tmp1, lsl tmp2
+> 
+> 	tst	ddrcid, #0x20	/* > 32 ? */
+> 	beq	1f
+> 	str	tmp1, [pmc, #AT91_PMC_PCDR1]
+> 	b	2f
+> 1:
+> 	str	tmp1, [pmc, #AT91_PMC_PCDR]
+> 2:
+> 
+> 	/* Disable DDR Clock */
+> 	mov 	tmp1, #AT91_PMC_SYS_DDR
+> 	str	tmp1, [pmc, #AT91_PMC_SCDR]
+> 
+> 
+> 
+> 
+> 	/* Enable MPDDRC Clock*/
+> 	cmp	ddrcid, #0
+> 	beq	4f
+> 	bic	tmp2, ddrcid, #0xe0 /* fetch lowest 5 bits */
+> 	mov	tmp1, #0x01
+> 	mov	tmp1, tmp1, lsl tmp2
+> 
+> 	tst	ddrcid, #0x20	/* > 32 ? */
+> 	beq	3f
+> 	str	tmp1, [pmc, #AT91_PMC_PCER1]
+> 	b	4f
+> 3:
+> 	str	tmp1, [pmc, #AT91_PMC_PCER]
+> 4:
+> 
+> 	/* Enable DDR clock */
+> 	mov 	tmp1, #AT91_PMC_SYS_DDR
+> 	str	tmp1, [pmc, #AT91_PMC_SCER]
+> 
+> 
 
-Fair enough!  ;-)
+This is a rework, what is part of linux-3.10-at91 and not yet present in
+mainline should be part of a following series. I would prefer not mixing
+reworks and "new" functionalities (they have been present in the atmel
+tree for a while but never mainlined). I would say that PM on 9x5, n12
+and sama5 in mainline is clearly not well tested and is lagging behind
+the atmel tree.
 
-							Thanx, Paul
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
