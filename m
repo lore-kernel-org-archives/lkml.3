@@ -1,174 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbbAWRkD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:40:03 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:52362 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbbAWRj7 (ORCPT
+	id S1756030AbbAWRk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 12:40:26 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:60909 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755914AbbAWRkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:39:59 -0500
-Date: Fri, 23 Jan 2015 09:39:53 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Duson Lin <dusonlin@emc.com.tw>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        phoenix@emc.com.tw
-Subject: Re: [PATCH] Input: elan_i2c - Compare signature metadata before
- update fw
-Message-ID: <20150123173953.GA19140@dtor-ws>
-References: <1422016530-24071-1-git-send-email-dusonlin@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1422016530-24071-1-git-send-email-dusonlin@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Jan 2015 12:40:23 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-de-54c286f2ac90
+Message-id: <54C2877A.3040500@samsung.com>
+Date: Fri, 23 Jan 2015 18:40:10 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: tomasz.figa@gmail.com, mturquette@linaro.org, kgene@kernel.org,
+        pankaj.dubey@samsung.com, inki.dae@samsung.com,
+        chanho61.park@samsung.com, sw0312.kim@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 01/12] clk: samsung: exynos5433: Add clocks using common
+ clock framework
+References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
+ <1421821618-8627-2-git-send-email-cw00.choi@samsung.com>
+ <54C129B0.1090404@samsung.com> <54C1FBF6.4040405@samsung.com>
+In-reply-to: <54C1FBF6.4040405@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xK7qf2w6FGJwssri8X9vi+pfnrBaT
+	7k9gseh//JrZ4vKuOWwWM87vY7J4OuEim8WirV/YLWZMfslmsWrXH0YHLo+ds+6ye2xa1cnm
+	cefaHjaPvi2rGD0+b5ILYI3isklJzcksSy3St0vgytjasp6p4JhCxdHpZ9kaGG9KdjFycEgI
+	mEgceefcxcgJZIpJXLi3nq2LkYtDSGApo8SGzUuYIJxPjBKbDx9gBKniFdCSuLxnGTuIzSKg
+	KvHi+UsWEJtNwFCi92gfWI2oQITEybt72CHqBSV+TL4HViMioCEx8+8VsBpmgTeMEi86vUCO
+	EBZIlNi9jgti135GiZ0394P1cgpoS9ycu5wNpIZZQE/i/kUtiFZ5ic1r3jJPYBSYhWTDLISq
+	WUiqFjAyr2IUTS1NLihOSs810itOzC0uzUvXS87P3cQICf2vOxiXHrM6xCjAwajEw3vgzcEQ
+	IdbEsuLK3EOMEhzMSiK8GSmHQoR4UxIrq1KL8uOLSnNSiw8xMnFwSjUwFrOvYc7b8+18Y+u5
+	POkNL9uXVETurGvU4F/Z9z1yB4+H/TzNwgTh9/NyTzVPvOMqnW5ju+agU9G9vYenZE+fvcZy
+	3fyHO5/Zp1W93HJC5lpx0dZ7Hvt2br9Y58Mc+5t31Rrv3Wd/CP37f/8aw0/Wa7M/srhOfay9
+	S2fBslcpvLXeCdO4zE/GcCqxFGckGmoxFxUnAgDFX6o5WwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 08:35:30PM +0800, Duson Lin wrote:
-> To match different firmware file format, we replace original firmware file size
-> checking with the signature metadata comparison when update firmware, If failed,
-> the update will be aborted.
+On 23/01/15 08:44, Chanwoo Choi wrote:
+>>> +	cmu_top: clock-controller@0x10030000 {
+>>> >> +		compatible = "samsung,exynos5433-cmu-top";
+>>> >> +		reg = <0x10030000 0x0c04>;
+>>> >> +		#clock-cells = <1>;
+>>> >> +	};
+>>> >> +
+
+>>> >> +	cmu_fsys: clock-controller@0x156e0000 {
+>>> >> +		compatible = "samsung,exynos5433-cmu-fsys";
+>>> >> +		reg = <0x156e0000 0x0b04>;
+>>> >> +		#clock-cells = <1>;
+>>> >> +	};
+>> > 
+>> > What are the reasons to split the whole clock controller into separate
+>> > device nodes with different compatible strings like this? I doubt drivers
+>> > associated with each of those compatible strings could be ever reused on
+>> > different Exynos SoCs.
+>
+> No special reason. I added the clock controller according to clock domain
+> separately. As I knew, samsung clk drivers use this way to support various
+> clock domains. For exmaple, drivers/clk/samsung/clk-exynos7.c.
+
+I'm afraid exynos7 has that initialization ordering issue, unfortunately I
+didn't notice it before.
+
+>> > There are hardware dependencies between these clock domains, which are
+>> > not currently modelled in DT with your binding.
+>
+> Right. current samsung clock drivers cannot show the hierarchy among clock 
+> domains in DT.
 > 
-> Signed-off-by: Duson Lin <dusonlin@emc.com.tw>
+>> > IOW, there is currently
+>> > no way to ensure proper registration order of the CMUs (clock domains).
+>> > This may be important in some cases.
+>> > 
+>> > To address this we could either add clocks/clock-names properties in
+>> > respective CMU device nodes, pointing to any clocks in other CMU(s) or
+>> > make a single device node for the whole clock controller, with an
+>> > aggregated reg entry, e.g.
+>> > 
+>> >  cmu: clock-controller@0x10030000 {
+>> > 	compatible = "samsung,exynos5433-cmu";
+>> > 	reg =   <0x10030000 0x0c04>,
+>> > 		<0x10fc0000 0x0c04>,
+>> > 		<0x105b0000 0x100c>,
+>> > 		<0x14c80000 0x0b08>,
+>> > 		<0x10040000 0x0b20>,
+>> > 		<0x156e0000 0x0b04>,
+>> > 			...
+>> > 	reg-names = "top", "cpif", "mif", "peric", "peris", "fsys"...
+>> > 	#clock-cells = <1>;
+>> >  };
+>
+> If you make a single device node to support various clock domain,
+> How are you indicate the specific clock in some clock domain?
 
-Applied, thank you.
+This might be an issue, we would need to make all the clk indexes a one
+contiguous set. I'm wondering if there is really any use of having such
+information expressed explicitly in DT, or it would just make the DT
+binding closer resembling the SoC's documentation ?
 
-> ---
->  drivers/input/mouse/elan_i2c.h       |    6 +++---
->  drivers/input/mouse/elan_i2c_core.c  |   23 +++++++++++++----------
->  drivers/input/mouse/elan_i2c_i2c.c   |    1 -
->  drivers/input/mouse/elan_i2c_smbus.c |    1 -
->  4 files changed, 16 insertions(+), 15 deletions(-)
+Similarly, the clock controller is divided into subdomains in older SoCs,
+like exynos4, yet we do not create separate device nodes for each domain.
+Is reference to each individual clock domain required in any other SoC's
+part in case of exynos5433 ?
+
+> For example,
+> The serial dt node in exynos7.dtsi. serial_0 dt node use the uart clocks
+> in 'clock_peric0' clock domain and serial_1 dt node use the uart clocks
+> in 'clock-peric1' clock domain.
+>
+> When using the clock in specific clock domain,
+> we need to phandle(e.g., clock_peric0, clock_peric1) of clock domain.
 > 
-> diff --git a/drivers/input/mouse/elan_i2c.h b/drivers/input/mouse/elan_i2c.h
-> index 2e83862..e100c1b 100644
-> --- a/drivers/input/mouse/elan_i2c.h
-> +++ b/drivers/input/mouse/elan_i2c.h
-> @@ -4,7 +4,6 @@
->   * Copyright (c) 2013 ELAN Microelectronics Corp.
->   *
->   * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
-> - * Version: 1.5.5
->   *
->   * Based on cyapa driver:
->   * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
-> @@ -33,8 +32,9 @@
->  #define ETP_FW_IAP_PAGE_ERR	(1 << 5)
->  #define ETP_FW_IAP_INTF_ERR	(1 << 4)
->  #define ETP_FW_PAGE_SIZE	64
-> -#define ETP_FW_PAGE_COUNT	768
-> -#define ETP_FW_SIZE		(ETP_FW_PAGE_SIZE * ETP_FW_PAGE_COUNT)
-> +#define ETP_FW_VAILDPAGE_COUNT	768
-> +#define ETP_FW_SIGNATURE_SIZE	6
-> +#define ETP_FW_SIGNATURE_ADDRESS	0xBFFA
->  
->  struct i2c_client;
->  struct completion;
-> diff --git a/drivers/input/mouse/elan_i2c_core.c b/drivers/input/mouse/elan_i2c_core.c
-> index 0cb2be4..16f9584 100644
-> --- a/drivers/input/mouse/elan_i2c_core.c
-> +++ b/drivers/input/mouse/elan_i2c_core.c
-> @@ -4,7 +4,7 @@
->   * Copyright (c) 2013 ELAN Microelectronics Corp.
->   *
->   * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
-> - * Version: 1.5.5
-> + * Version: 1.5.6
->   *
->   * Based on cyapa driver:
->   * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
-> @@ -40,7 +40,7 @@
->  #include "elan_i2c.h"
->  
->  #define DRIVER_NAME		"elan_i2c"
-> -#define ELAN_DRIVER_VERSION	"1.5.5"
-> +#define ELAN_DRIVER_VERSION	"1.5.6"
->  #define ETP_PRESSURE_OFFSET	25
->  #define ETP_MAX_PRESSURE	255
->  #define ETP_FWIDTH_REDUCE	90
-> @@ -312,7 +312,7 @@ static int __elan_update_firmware(struct elan_tp_data *data,
->  	iap_start_addr = get_unaligned_le16(&fw->data[ETP_IAP_START_ADDR * 2]);
->  
->  	boot_page_count = (iap_start_addr * 2) / ETP_FW_PAGE_SIZE;
-> -	for (i = boot_page_count; i < ETP_FW_PAGE_COUNT; i++) {
-> +	for (i = boot_page_count; i < ETP_FW_VAILDPAGE_COUNT; i++) {
->  		u16 checksum = 0;
->  		const u8 *page = &fw->data[i * ETP_FW_PAGE_SIZE];
->  
-> @@ -434,10 +434,11 @@ static ssize_t elan_sysfs_update_fw(struct device *dev,
->  				    struct device_attribute *attr,
->  				    const char *buf, size_t count)
->  {
-> -	struct i2c_client *client = to_i2c_client(dev);
-> -	struct elan_tp_data *data = i2c_get_clientdata(client);
-> +	struct elan_tp_data *data = dev_get_drvdata(dev);
->  	const struct firmware *fw;
->  	int error;
-> +	const u8 *fw_signature;
-> +	static const u8 signature[] = {0xAA, 0x55, 0xCC, 0x33, 0xFF, 0xFF};
->  
->  	error = request_firmware(&fw, ETP_FW_NAME, dev);
->  	if (error) {
-> @@ -446,10 +447,12 @@ static ssize_t elan_sysfs_update_fw(struct device *dev,
->  		return error;
->  	}
->  
-> -	/* Firmware must be exactly PAGE_NUM * PAGE_SIZE bytes */
-> -	if (fw->size != ETP_FW_SIZE) {
-> -		dev_err(dev, "invalid firmware size = %zu, expected %d.\n",
-> -			fw->size, ETP_FW_SIZE);
-> +	/* Firmware file must match signature data */
-> +	fw_signature = &fw->data[ETP_FW_SIGNATURE_ADDRESS];
-> +	if (memcmp(fw_signature, signature, sizeof(signature)) != 0) {
-> +		dev_err(dev, "signature mismatch (expected %*ph, got %*ph)\n",
-> +			     (int)sizeof(signature), signature,
-> +			     (int)sizeof(signature), fw_signature);
->  		error = -EBADF;
->  		goto out_release_fw;
->  	}
-> @@ -464,7 +467,7 @@ static ssize_t elan_sysfs_update_fw(struct device *dev,
->  
->  out_release_fw:
->  	release_firmware(fw);
-> -	return error ?: count;
-> +	return error?: count;
-
-But dropped this chunk as it seems unintentional.
-
->  }
->  
->  static ssize_t calibrate_store(struct device *dev,
-> diff --git a/drivers/input/mouse/elan_i2c_i2c.c b/drivers/input/mouse/elan_i2c_i2c.c
-> index 97d4937..029941f 100644
-> --- a/drivers/input/mouse/elan_i2c_i2c.c
-> +++ b/drivers/input/mouse/elan_i2c_i2c.c
-> @@ -4,7 +4,6 @@
->   * Copyright (c) 2013 ELAN Microelectronics Corp.
->   *
->   * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
-> - * Version: 1.5.5
->   *
->   * Based on cyapa driver:
->   * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
-> diff --git a/drivers/input/mouse/elan_i2c_smbus.c b/drivers/input/mouse/elan_i2c_smbus.c
-> index 359bf85..5cd4a05 100644
-> --- a/drivers/input/mouse/elan_i2c_smbus.c
-> +++ b/drivers/input/mouse/elan_i2c_smbus.c
-> @@ -4,7 +4,6 @@
->   * Copyright (c) 2013 ELAN Microelectronics Corp.
->   *
->   * Author: 林政維 (Duson Lin) <dusonlin@emc.com.tw>
-> - * Version: 1.5.5
->   *
->   * Based on cyapa driver:
->   * copyright (c) 2011-2012 Cypress Semiconductor, Inc.
-> -- 
-> 1.7.10.4
+> 		serial_0: serial@13630000 {
+> 			compatible = "samsung,exynos4210-uart";
+> 			reg = <0x13630000 0x100>;
+> 			interrupts = <0 440 0>;
+> 			clocks = <&clock_peric0 PCLK_UART0>,
+> 				 <&clock_peric0 SCLK_UART0>;
+> 			clock-names = "uart", "clk_uart_baud0";
+> 			status = "disabled";
+> 		};
 > 
+> 		serial_1: serial@14c20000 {
+> 			compatible = "samsung,exynos4210-uart";
+> 			reg = <0x14c20000 0x100>;
+> 			interrupts = <0 456 0>;
+> 			clocks = <&clock_peric1 PCLK_UART1>,
+> 				 <&clock_peric1 SCLK_UART1>;
+> 			clock-names = "uart", "clk_uart_baud0";
+> 			status = "disabled";
+> 		};
+>
+>> > Then we could modify samsung_cmu_register_one() function by adding
+>> > the reg entry index or name argument. What do you think ?
+>
+> If there is more reasonable way to show the dependency between clock domains,
+> I will agree.
 
-Thanks.
+The other option I mentioned is specifying all parent clocks of a given
+clock domain in its device node with clocks(/clock-names) properties.
+But it might be a bit hard to list all the clock domain dependencies
+this way
 
--- 
-Dmitry
+--
+Regards,
+Sylwester
