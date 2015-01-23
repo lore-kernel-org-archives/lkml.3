@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758AbbAWQI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:08:56 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:58709 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492AbbAWQIy (ORCPT
+	id S932065AbbAWQQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:16:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35149 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788AbbAWQI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:08:54 -0500
-Message-ID: <54C27214.9020003@gmail.com>
-Date: Fri, 23 Jan 2015 11:08:52 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 23 Jan 2015 11:08:58 -0500
+Date: Sat, 24 Jan 2015 00:08:54 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
+        "Theodore T'so" <tytso@mit.edu>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+Message-ID: <20150123160854.GA5210@kroah.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+ <54BE5DC8.70706@gmail.com>
+ <54BE9D08.7010804@zonque.org>
+ <54BF805B.4000609@gmail.com>
+ <54BFDAAA.50203@zonque.org>
+ <54C0CE8A.5080805@gmail.com>
+ <CANq1E4S=3qNw599L85uj-8aXwxeV+mcurB_Nu_rHH8opAeePjw@mail.gmail.com>
+ <54C10DDC.9000503@gmail.com>
 MIME-Version: 1.0
-To: Sun Paul <paulrbk@gmail.com>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: Question on SCTP ABORT chunk is generated when the association_max_retrans
- is reached
-References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com> <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>
-In-Reply-To: <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C10DDC.9000503@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 05:25 AM, Sun Paul wrote:
-> Hi
-> 
-> I would like to check the behave in LKSCTP.
-> 
-> we are running DIAMETER message over SCTP, and we have set the
-> parameter "net.sctp.association_max_retrans = 4" in the LinuxOS.
-> 
-> We noticed that when remote peer have retry to send the same request
-> for 4 times, the LKSCTP will initiate an ABORT chunk with reason
-> "association exceeded its max_retrans count".
-> 
-> We would like to know whether this is the correct behavior? is there
-> any other option that we can alter in order to avoid the ABORT chunk
-> being sent?
-> 
+On Thu, Jan 22, 2015 at 09:49:00AM -0500, Austin S Hemmelgarn wrote:
+> While I agree that there should be a way for userspace to get the list of
+> supported operations, userspace apps will only actually care about that
+> once, when they begin talking to kdbus, because (ignoring the live kernel
+> patching that people have been working on recently) the list of supported
+> operations isn't going to change while the system is running.  While a u64
+> copy has relatively low overhead, it does have overhead, and that is very
+> significant when you consider part of the reason some people want kdbus is
+> for the performance gain.  Especially for those automotive applications that
+> have been mentioned which fire off thousands of messages during start-up,
+> every little bit of performance is significant.
 
-Why do you not want ABORT to be sent? SCTP has attempted to retransmit
-the data maximum allows times, and at this point it will terminate
-the association.  It sends an ABORT notifying the peer of this, but
-most likely the peer is unreachable anyway.
+A single u64 in a structure is not going to be measurable at all,
+processors just copy memory too fast these days for 4 extra bytes to be
+noticable.  So let's make this as easy as possible for userspace, making
+it simpler logic there, which is much more important than saving
+theoretical time in the kernel.
 
-Any message that a peer sends at this point will most likely result
-in an ABORT to be send back or an association restart.  Might
-as well start fresh.
+thanks,
 
--vlad
-
-> Thanks
-> 
-> PS
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+greg k-h
