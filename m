@@ -1,126 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238AbbAWRKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:10:30 -0500
-Received: from relay.parallels.com ([195.214.232.42]:38388 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866AbbAWRK2 (ORCPT
+	id S1756219AbbAWRKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 12:10:09 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30339 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755912AbbAWRKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:10:28 -0500
-Message-ID: <1422032989.6345.26.camel@tkhai>
-Subject: Re: [RFC] sched, x86: Prevent resched interrupts if task in kernel
- mode and !CONFIG_PREEMPT
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 23 Jan 2015 20:09:49 +0300
-In-Reply-To: <CALCETrVEsNj8dvqd-mNqb5tKNQOwQEgtMRUeTtJSS8-EmntAiA@mail.gmail.com>
-References: <1422028412.6345.6.camel@tkhai>
-	 <20150123160746.GD23123@twins.programming.kicks-ass.net>
-	 <CALCETrVEsNj8dvqd-mNqb5tKNQOwQEgtMRUeTtJSS8-EmntAiA@mail.gmail.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Fri, 23 Jan 2015 12:10:04 -0500
+Date: Fri, 23 Jan 2015 12:09:55 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Roger Pau Monne <roger.pau@citrix.com>, linux-kernel@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        xen-devel@lists.xenproject.org
+Subject: Re: [PATCH] xen-blk: add myself as maintainer of xen-blk{back/front}
+Message-ID: <20150123170955.GA4856@l.oracle.com>
+References: <1422029669-24845-1-git-send-email-roger.pau@citrix.com>
+ <54C27E10.2010802@citrix.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C27E10.2010802@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Пт, 23/01/2015 в 08:24 -0800, Andy Lutomirski пишет:
-> On Fri, Jan 23, 2015 at 8:07 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, Jan 23, 2015 at 06:53:32PM +0300, Kirill Tkhai wrote:
-> >> It's useless to send reschedule interrupts in such situations. The earliest
-> >> point, where schedule() call is possible, is sysret_careful(). But in that
-> >> function we directly test TIF_NEED_RESCHED.
-> >>
-> >> So it's possible to get rid of that type of interrupts.
-> >>
-> >> How about this idea? Is set_bit() cheap on x86 machines?
-> >
-> > So you set TIF_POLLING_NRFLAG on syscall entry and clear it again on
-> > exit? Thereby we avoid the IPI, because the exit path already checks for
-> > TIF_NEED_RESCHED.
+On Fri, Jan 23, 2015 at 05:00:00PM +0000, David Vrabel wrote:
+> On 23/01/15 16:14, Roger Pau Monne wrote:
+> > I've done quite a lot of work in blkfront/blkback, and I usually end up
+> > looking at the patches, so add myself as maintainer together with Konrad.
 > 
-> The idle code says:
+> Thanks, Roger.
 > 
->         /*
->          * If the arch has a polling bit, we maintain an invariant:
->          *
->          * Our polling bit is clear if we're not scheduled (i.e. if
->          * rq->curr != rq->idle).  This means that, if rq->idle has
->          * the polling bit set, then setting need_resched is
->          * guaranteed to cause the cpu to reschedule.
->          */
+> I can take care of shovelling the patches onto the xen/tip.git if you
+> don't have a kernel.org account.
+
+Please keep in mind that these patches need to go through Jens Axboe as
+he is the block maintainer.
+
+So the flow would have to be Roger -> David -> Roger posting GIT PULL To Jens -> Jens -> Linus.
 > 
-> Setting polling on non-idle tasks like this will either involve
-> weakening this a bit (it'll still be true for rq->idle) or changing
-> the polling state on context switch.
+> David
 > 
-> >
-> > Should work I suppose, but I'm not too familiar with all that entry.S
-> > muck. Andy might know and appreciate this.
-> >
-> >> ---
-> >>  arch/x86/kernel/entry_64.S |   10 ++++++++++
-> >>  1 file changed, 10 insertions(+)
-> >>
-> >> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> >> index c653dc4..a046ba8 100644
-> >> --- a/arch/x86/kernel/entry_64.S
-> >> +++ b/arch/x86/kernel/entry_64.S
-> >> @@ -409,6 +409,13 @@ GLOBAL(system_call_after_swapgs)
-> >>       movq_cfi rax,(ORIG_RAX-ARGOFFSET)
-> >>       movq  %rcx,RIP-ARGOFFSET(%rsp)
-> >>       CFI_REL_OFFSET rip,RIP-ARGOFFSET
-> >> +#if !defined(CONFIG_PREEMPT) || !defined(SMP)
-> >> +     /*
-> >> +      * Tell resched_curr() do not send useless interrupts to us.
-> >> +      * Kernel isn't preemptible till sysret_careful() anyway.
-> >> +      */
-> >> +     LOCK ; bts $TIF_POLLING_NRFLAG,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-> >> +#endif
-> 
-> That's kind of expensive.  What's the !SMP part for?
-
-smp_send_reschedule() is NOP on UP. There is no problem.
-
-> 
-> >>       testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-> >>       jnz tracesys
-> >>  system_call_fastpath:
-> >> @@ -427,6 +434,9 @@ GLOBAL(system_call_after_swapgs)
-> >>   * Has incomplete stack frame and undefined top of stack.
-> >>   */
-> >>  ret_from_sys_call:
-> >> +#if !defined(CONFIG_PREEMPT) || !defined(SMP)
-> >> +     LOCK ; btr $TIF_POLLING_NRFLAG,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-> >> +#endif
-> 
-> If only it were this simple.  There are lots of ways out of syscalls,
-> and this is only one of them :(  If we did this, I'd rather do it
-> through the do_notify_resume mechanism or something.
-
-Yes, syscall is the only thing I did as an example.
-
-> I don't see any way to do this without at least one atomic op or
-> smp_mb per syscall, and that's kind of expensive.
-
-JFI, doesn't x86 set_bit() lock a small area of memory? I thought
-it's not very expensive on this arch (some bus optimizations or
-something like this).
-
-> Would it make sense to try to use context tracking instead?  On
-> systems that use context tracking, syscalls are already expensive, and
-> we're already keeping track of which CPUs are in user mode.
-
-I'll look at context_tracking, but I'm not sure some smp synchronization
-there.
-
-Thanks,
-Kirill
-
