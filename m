@@ -1,151 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256AbbAWOs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:48:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930AbbAWOs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:48:28 -0500
-Message-ID: <54C25F25.9070609@redhat.com>
-Date: Fri, 23 Jan 2015 15:48:05 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
+	id S1755432AbbAWOw0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:52:26 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:33337 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342AbbAWOwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 09:52:24 -0500
+Message-ID: <54C2601A.7000005@gmail.com>
+Date: Fri, 23 Jan 2015 17:52:10 +0300
+From: Dmitry Osipenko <digetx@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
-References: <1421992707-32658-1-git-send-email-minchan@kernel.org> <20150123142435.GA2320@swordfish>
-In-Reply-To: <20150123142435.GA2320@swordfish>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="331CEqU88CCo9Lp25IXqvcPqm50GPDixK"
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Bob Mottram <bob.mottram@codethink.co.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] i2c: tegra: Maintain CPU endianness
+References: <1421756555-20266-1-git-send-email-digetx@gmail.com> <20150122074001.GB427@ulmo> <CAAVeFuJHST9VOWXe_cZNvLmfGdamuU4HSgdZC6EoQvrsGFt+Fg@mail.gmail.com> <54C115D1.10206@gmail.com> <54C12010.8040504@gmail.com> <54C130EA.2050505@gmail.com> <20150123094552.GD3835@ulmo> <54C24C2B.1070907@gmail.com>
+In-Reply-To: <54C24C2B.1070907@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---331CEqU88CCo9Lp25IXqvcPqm50GPDixK
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
-
-On 01/23/2015 03:24 PM, Sergey Senozhatsky wrote:
-> On (01/23/15 14:58), Minchan Kim wrote:
->> We don't need to call zram_meta_free, zcomp_destroy and zs_free
->> under init_lock. What we need to prevent race with init_lock
->> in reset is setting NULL into zram->meta (ie, init_done).
->> This patch does it.
+23.01.2015 16:27, Dmitry Osipenko пишет:
+> 23.01.2015 12:45, Thierry Reding пишет:
+>> On Thu, Jan 22, 2015 at 08:18:34PM +0300, Dmitry Osipenko wrote:
+>>> 22.01.2015 19:06, Dmitry Osipenko пишет:
+>>>> 22.01.2015 18:22, Dmitry Osipenko пишет:
+>>>>> 22.01.2015 10:55, Alexandre Courbot пишет:
+>>>>>> On Thu, Jan 22, 2015 at 4:40 PM, Thierry Reding
+>>>>>> <thierry.reding@gmail.com> wrote:
+>>>>>>>
+>>>>>>> Should this not technically be le32_to_cpu() since the data originates
+>>>>>> >from the I2C controller?
+>>>>>
+>>>>> No, i2c_readl returns value in CPU endianness, so it's correct. But for
+>>>>> i2c_writel should be used le32_to_cpu(), since it takes value in CPU
+>>>>> endianness.
+>>>>> It's my overlook, V2 is coming.
+>>>>>
+>>>>>>>
+>>>>>>> Why does this have to be initialized to 0 now?
+>>>>>>
+>>>>>> I suspect this is because we are going to memcpy less than 4 bytes
+>>>>>> into it, but I cannot figure out how that memcpy if guaranteed to
+>>>>>> produce the expected result for both endiannesses.
+>>>>>>
+>>>>> That's correct. Memcpy is working with bytes, so it doesn't care about
+>>>>> endianness and produces expected result, since I2C message is char array.
+>>>>>
+>>>> I'll spend some more time reviewing, to see if nullifying should go as separate
+>>>> patch.
+>>>>
+>>> Well, I2C_FIFO_STATUS returns 8-bit value. The rest of bits very likely to
+>>> be RAZ, however I don't see anything on it in documentation. In that case it
+>>> won't cause any problems with LE value and nullifying is only needed for BE
+>>> mode.
 >>
->> Signed-off-by: Minchan Kim <minchan@kernel.org>
->> ---
->>  drivers/block/zram/zram_drv.c | 28 ++++++++++++++++------------
->>  1 file changed, 16 insertions(+), 12 deletions(-)
+>> What does I2C_FIFO_STATUS have to do with anything?
 >>
->> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_d=
-rv.c
->> index 9250b3f54a8f..0299d82275e7 100644
->> --- a/drivers/block/zram/zram_drv.c
->> +++ b/drivers/block/zram/zram_drv.c
->> @@ -708,6 +708,7 @@ static void zram_reset_device(struct zram *zram, b=
-ool reset_capacity)
->>  {
->>  	size_t index;
->>  	struct zram_meta *meta;
->> +	struct zcomp *comp;
->> =20
->>  	down_write(&zram->init_lock);
->> =20
->> @@ -719,20 +720,10 @@ static void zram_reset_device(struct zram *zram,=
- bool reset_capacity)
->>  	}
->> =20
->>  	meta =3D zram->meta;
->> -	/* Free all pages that are still in this zram device */
->> -	for (index =3D 0; index < zram->disksize >> PAGE_SHIFT; index++) {
->> -		unsigned long handle =3D meta->table[index].handle;
->> -		if (!handle)
->> -			continue;
->> -
->> -		zs_free(meta->mem_pool, handle);
->> -	}
->> -
->> -	zcomp_destroy(zram->comp);
->=20
-> I'm not so sure about moving zcomp destruction. if we would have detach=
-ed it
-> from zram, then yes. otherwise, think of zram ->destoy vs ->init race.
->=20
-> suppose,
-> CPU1 waits for down_write() init lock in disksize_store() with new comp=
- already allocated;
-> CPU0 detaches ->meta and releases write init lock;
-> CPU1 grabs the lock and does zram->comp =3D comp;
-> CPU0 reaches the point of zcomp_destroy(zram->comp);
-
-I don't see your point: this patch does not call
-zcomp_destroy(zram->comp) anymore, but zram_destroy(comp), where comp is
-the old zram->comp.
-
->=20
->=20
-> I'd probably prefer to keep zcomp destruction on its current place. I
-> see a little real value in introducing zcomp detaching and moving
-> destruction out of init_lock.
->=20
-> 	-ss
->=20
->> +	comp =3D zram->comp;
->> +	zram->meta =3D NULL;
->>  	zram->max_comp_streams =3D 1;
->> =20
->> -	zram_meta_free(zram->meta);
->> -	zram->meta =3D NULL;
->>  	/* Reset stats */
->>  	memset(&zram->stats, 0, sizeof(zram->stats));
->> =20
->> @@ -742,6 +733,19 @@ static void zram_reset_device(struct zram *zram, =
-bool reset_capacity)
->> =20
->>  	up_write(&zram->init_lock);
->> =20
->> +	/* Free all pages that are still in this zram device */
->> +	for (index =3D 0; index < zram->disksize >> PAGE_SHIFT; index++) {
->> +		unsigned long handle =3D meta->table[index].handle;
->> +
->> +		if (!handle)
->> +			continue;
->> +
->> +		zs_free(meta->mem_pool, handle);
->> +	}
->> +
->> +	zcomp_destroy(comp);
->> +	zram_meta_free(meta);
->> +
->>  	/*
->>  	 * Revalidate disk out of the init_lock to avoid lockdep splat.
->>  	 * It's okay because disk's capacity is protected by init_lock
->> --=20
->> 1.9.1
+>> My point was more that we already tell hardware how much data is to be
+>> transferred (via the packet header in tegra_i2c_xfer_msg()), hence the
+>> hardware shouldn't care whether the FIFO is padded with random data or
+>> zeros.
 >>
+>> Thierry
+>>
+> Got your point. I was thinking it's expected behavior, but now I'll elaborate
+> this more.
+>
+Gaahh! I'm sure it wasn't working before! I'll make more testing and send v3 
+without "val = 0", if all will be fine.
 
-
-
---331CEqU88CCo9Lp25IXqvcPqm50GPDixK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUwl8lAAoJEHTzHJCtsuoCKuUIALmejiu1FV2BV1bcy9S+V8KD
-W6FQJPzWcjQ2Gkt90550uvPdlYOlUJZ82RS9JbJZx8vWJq2jq8GvU+acr9avF7eN
-+HFkIpq7kY/bJ3eJwgg98Bo5TTICXR+hOxwuD4yu5NS6OveoXyrVZBqsS8JFZDed
-LLsr29/EvpYGHaZ/yB9UpFRJ7YcOG0OjCoinOg6KaqCyoFHtcSmtt9HcHPtBEruq
-1dUyDhhWuO2urRUyiIsjYjLnt+tuoZ8SA7V+/YS3jw6ZdG3XxKWMWV3eDT+g7Kde
-vg2EUuR23N/vZ9I4JqshxW+h2s86Rrxa+pbTtwdVDwFKkFs0+O2jBPMk/3ccWsQ=
-=bDSs
------END PGP SIGNATURE-----
-
---331CEqU88CCo9Lp25IXqvcPqm50GPDixK--
+-- 
+Dmitry
