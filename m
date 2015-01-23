@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299AbbAWIqz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:46:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49757 "EHLO mx1.redhat.com"
+	id S1754176AbbAWIqI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:46:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58596 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409AbbAWIqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:46:53 -0500
-Date: Fri, 23 Jan 2015 16:44:53 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
-Subject: Re: [PATCH 3/3] x86, crash: Allocate enough low-mem when
- crashkernel=high
-Message-ID: <20150123084453.GL2461@dhcp-16-105.nay.redhat.com>
-References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
- <1420555874-11506-4-git-send-email-joro@8bytes.org>
+	id S1751849AbbAWIqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 03:46:04 -0500
+Date: Fri, 23 Jan 2015 09:45:51 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: jeremie.galarneau@efficios.com, rostedt@goodmis.org, bigeasy@linutronix.de,
+        lizefan@huawei.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/2] perf: convert: fix duplicate field names and
+ avoid reserved keywords.
+Message-ID: <20150123084551.GB2709@krava.brq.redhat.com>
+References: <1421904958-24106-1-git-send-email-wangnan0@huawei.com>
+ <1421905003-24242-1-git-send-email-wangnan0@huawei.com>
+ <20150122132734.GB2473@krava.brq.redhat.com>
+ <54C1AAA1.4000300@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1420555874-11506-4-git-send-email-joro@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54C1AAA1.4000300@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-
-Yeah, it does happen if too many devices. I guess the reason no reports
-come to us on rhel is we always use a auto mechsanism. We always try to
-allocate from below 896M, if failed try below 4G, if failed try above
-4G.
-
-This could be solved in 2 ways:
-
-1) We could optimize the distro shell scripts which build the initramfs
-for kdump. Only include those devices which are necessary in kdump
-kernel. E.g for net dump only that NIC which connect to dump target will
-be brought up, this can decrease the dma memory requirement.
-
-2) increase low-mem when crashkernel=high. But we have to be careful to
-do this. We implement crashkernel=high not only for the unhappiness
-crashkernel reservation is limited below 4G, but dma/dma32 memory space
-is precious on some systems. If set crashkernel=high still too much low
-memory has to be reserved by default, it's important to find the
-balance. So if we have to increase the default low-mem, how much memory
-is enough, why 256M?  why not 128M/192M/320M/384M?  And if 256M works
-on your system, what if another person say it does't work because there
-are more devices on his system?
-
-Anyway, I understand the requirement, but we need find out how much
-memory can satisfy most of systems.
-
-
-Thanks
-Baoquan
-
-On 01/06/15 at 03:51pm, Joerg Roedel wrote:
-> From: Joerg Roedel <jroedel@suse.de>
+On Fri, Jan 23, 2015 at 09:57:53AM +0800, Wang Nan wrote:
+> On 2015/1/22 21:27, Jiri Olsa wrote:
+> > On Thu, Jan 22, 2015 at 01:36:43PM +0800, Wang Nan wrote:
+> >> (If Steven Rostedt accept the previous patch which introduce a priv
+> >>  field to 'struct format_field', we can use a relative simple method
+> >>  for name conversion. If not , perf must track name conversion by
+> >>  itself.)
+> >>
+> >> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
+> >> When dealing with them, perf convert to ctf meets some problem:
+> >>
+> >>  1. If a parameter with name 'nr', it will duplicate syscall's
+> >>     common field 'nr'. One such syscall is io_submit().
+> >>
+> >>  2. If a parameter with name 'event', it is denied to be inserted
+> >>     because 'event' is a babeltrace keywork. One such syscall is
+> >>     epoll_ctl.
+> >>
+> >> This patch appends '_dupl_X' suffix to avoid problem 1, prepend a '_'
+> >> prefix to avoid problem 2.
+> > 
+> > I've got compilation error:
+> > 
+> > util/data-convert-bt.c: In function ‘event_class_add_field’:
+> > util/data-convert-bt.c:629:2: error: suggest parentheses around assignment used as truth value [-Werror=parentheses]
+> >   while (t = bt_ctf_event_class_get_field_by_name(event_class, name)) {
+> > 
+> > what's your gcc version? mine's caught that..
+> > 
 > 
-> When the crashkernel is loaded above 4GiB in memory the
-> first kernel only allocates 72MiB of low-memory for the DMA
-> requirements of the second kernel. On systems with many
-> devices this is not enough and causes device driver
-> initialization errors and failed crash dumps. Set this
-> default value to 256MiB to make sure there is enough memory
-> available for DMA.
+> I also curious why you got so many Werror problems I'm not ever seen,
+> until I found a '-w' in my gcc options, which is introduced by your commit
 > 
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  arch/x86/kernel/setup.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+> 47810c1d429bc690e1f5e9467697538921962171: perf data: Disable Werror convert object.
 > 
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index ab4734e..d6e6a6d 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -536,8 +536,11 @@ static void __init reserve_crashkernel_low(void)
->  		 *	swiotlb overflow buffer: now is hardcoded to 32k.
->  		 *		We round it to 8M for other buffers that
->  		 *		may need to stay low too.
-> +		 *		Also make sure we allocate enough extra memory
-> +		 *		low memory so that we don't run out of DMA
-> +		 *		buffers for 32bit devices.
->  		 */
-> -		low_size = swiotlb_size_or_default() + (8UL<<20);
-> +		low_size = max(swiotlb_size_or_default() + (8UL<<20), 256UL<<20);
->  		auto_set = true;
->  	} else {
->  		/* passed with crashkernel=0,low ? */
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I'll revert that commit in my tree.
+
+that one was to workaround the regression in babeltrace,
+I'm now using sane babeltrace HEAD as advertized by Jeremie:
+
+"In the meantime, testing against Babeltrace master 3baf0856 should be alright."
+
+jirka
