@@ -1,129 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719AbbAWGgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 01:36:10 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:47575 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbbAWGgI (ORCPT
+	id S1753548AbbAWGh4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 01:37:56 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:15265 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009AbbAWGhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 01:36:08 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Fri, 23 Jan 2015 15:37:10 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        akpm@linux-foundation.org, lauraa@codeaurora.org
-Subject: Re: [PATCH 2/3] mm: cma: allocation trigger
-Message-ID: <20150123063710.GC809@js1304-P5Q-DELUXE>
-References: <1421775513-4460-1-git-send-email-sasha.levin@oracle.com>
- <1421775513-4460-3-git-send-email-sasha.levin@oracle.com>
- <20150122082628.GH21444@js1304-P5Q-DELUXE>
- <54C1B679.5030000@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C1B679.5030000@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Jan 2015 01:37:53 -0500
+X-AuditID: cbfee68f-f791c6d000004834-a0-54c1ec3ffe6c
+From: Kukjin Kim <kgene@kernel.org>
+To: "'Kevin Hilman'" <khilman@kernel.org>, linux-samsung-soc@vger.kernel.org
+Cc: linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
+        "'Sjoerd Simons'" <sjoerd.simons@collabora.co.uk>,
+        "'Kevin Hilman'" <khilman@linaro.org>,
+        "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Pawel Moll'" <pawel.moll@arm.com>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
+        "'Kumar Gala'" <galak@codeaurora.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Kukjin Kim'" <kgene@kernel.org>,
+        "'open list:OPEN FIRMWARE AND...'" <devicetree@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1421963668-28359-1-git-send-email-khilman@kernel.org>
+In-reply-to: <1421963668-28359-1-git-send-email-khilman@kernel.org>
+Subject: RE: [PATCH v3] ARM: dts: exynos5422-odroidxu3: add on-board INA231
+ sensors
+Date: Fri, 23 Jan 2015 15:37:50 +0900
+Message-id: <0b5701d036d7$1bdcad20$53960760$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: ko
+Thread-index: AQJqdtlF/jQmSku3bh+6RB1diiIGoZuYwAew
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t8zY137NwdDDCYuU7aYf+Qcq0X/m4Ws
+	FuderWS0OPq7wKL/8Wtmi6ebHzNZfD28gtHi/aFnzBabHl9jtbi8aw6bxYzz+5gsbl/mtVh6
+	/SKTxYTpa1ksWvceYbeYfvwtq4OAx5p5axg9Wpp72Dwu9/Uyefx9fp3FY+XyL2wem1Z1snnc
+	ubaHzWPzknqP2/8eM3t83iQXwBXFZZOSmpNZllqkb5fAlXFs5RS2gn9CFduW72BsYLzI18XI
+	ySEhYCJx/s4eFghbTOLCvfVsXYxcHEICyxglGg4tZupi5AAr6jmiDFIjJLCIUWLOE0GImr+M
+	Er/Xz2cGqWETUJZobNIHqREW0JJYuKUJbKaIgJfE/WnNjCA2s8ALFomHH5Mg5jhJXNt5GKyG
+	U8BZYvfHl0wQvaESeyf+YQaxWQRUJfqubgGr4RWwkPiw4j0bhC0o8WPyPRaImVoS63ceZ4Kw
+	5SU2r3nLDPGLgsSOs6+h9opI7HvxjhHiHiOJphVvwH6UELjCIXFr0102iGUCEt8mH2KB+FdW
+	YtMBqDmSEgdX3GCZwCg5C8nqWUhWz0KyehaSdQsYWVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn
+	525ihCSW/h2Mdw9YH2IU4GBU4uFt2HIwRIg1say4MvcQoynQRROZpUST84HpK68k3tDYzMjC
+	1MTU2Mjc0kxJnHeh1M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzJLj7GSfYJbzl2J8u/
+	Ckp/rp/1pFbHn49Z+miE87VS51CP/dKm97X3N5rt9HIq77W8sthpe6FVT47/Gb5UG+Wggu1a
+	Owpr9t7jNr2a7uTEsUxlZsq37FkPHLe+cpM7/Xyb3B/RTZq/XsdJzl26O4+PR236vs1n54Ry
+	ZJtwLXXpOlK059OL00osxRmJhlrMRcWJACFW2PonAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHKsWRmVeSWpSXmKPExsVy+t9jAV37NwdDDB6/lrGYf+Qcq0X/m4Ws
+	FuderWS0OPq7wKL/8Wtmi6ebHzNZfD28gtHi/aFnzBabHl9jtbi8aw6bxYzz+5gsbl/mtVh6
+	/SKTxYTpa1ksWvceYbeYfvwtq4OAx5p5axg9Wpp72Dwu9/Uyefx9fp3FY+XyL2wem1Z1snnc
+	ubaHzWPzknqP2/8eM3t83iQXwBXVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlh
+	rqSQl5ibaqvk4hOg65aZA/SKkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCw
+	jjHj2MopbAX/hCq2Ld/B2MB4ka+LkYNDQsBEoueIchcjJ5ApJnHh3no2EFtIYBGjxJwngl2M
+	XED2X0aJ3+vnM4PUswkoSzQ26YPUCAtoSSzc0sQCYosIeEncn9bMCGIzC7xgkXj4MQlijpPE
+	tZ2HwWo4BZwldn98yQTRGyqxd+IfZhCbRUBVou/qFrAaXgELiQ8r3rNB2IISPybfY4GYqSWx
+	fudxJghbXmLzmrfMEDcrSOw4+xpqr4jEvhfvGCHuMZJoWvGGbQKj8Cwko2YhGTULyahZSNoX
+	MLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhOW8+kdjCubLA4xCjAwajEw9uw5WCIEGti
+	WXFl7iFGCQ5mJRHe7kdAId6UxMqq1KL8+KLSnNTiQ4ymQJ9OZJYSTc4HptS8knhDYxMzI0sj
+	MwsjE3NzJXFeJfu2ECGB9MSS1OzU1ILUIpg+Jg5OqQbGXOuFRva9K1au7zcKcc/J8Qlkic3L
+	3v3U1XZ6o5Gnr9a8e5Y/NmmePnG24nTOZsviqo+PX/2ML7ht7XyYgYH1/d22DxvPX7bj4BJ1
+	E34/2fN9OksX28dyhUyOJ5sMWfLkX0w+8X6pgVky0yVfq0ib3tDXJXofxbZ6hx7V5NO8wvSb
+	51bDwkdKLMUZiYZazEXFiQAyPwyUcQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 09:48:25PM -0500, Sasha Levin wrote:
-> On 01/22/2015 03:26 AM, Joonsoo Kim wrote:
-> > On Tue, Jan 20, 2015 at 12:38:32PM -0500, Sasha Levin wrote:
-> >> Provides a userspace interface to trigger a CMA allocation.
-> >>
-> >> Usage:
-> >>
-> >> 	echo [pages] > alloc
-> >>
-> >> This would provide testing/fuzzing access to the CMA allocation paths.
-> >>
-> >> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> >> ---
-> >>  mm/cma_debug.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >>  1 file changed, 58 insertions(+)
-> >>
-> >> diff --git a/mm/cma_debug.c b/mm/cma_debug.c
-> >> index 3a25413..eda0a41 100644
-> >> --- a/mm/cma_debug.c
-> >> +++ b/mm/cma_debug.c
-> >> @@ -7,9 +7,22 @@
-> >>  
-> >>  #include <linux/debugfs.h>
-> >>  #include <linux/cma.h>
-> >> +#include <linux/list.h>
-> >> +#include <linux/kernel.h>
-> >> +#include <linux/dma-contiguous.h>
-> >> +#include <linux/slab.h>
-> >>  
-> >>  #include "cma.h"
-> >>  
-> >> +struct cma_mem {
-> >> +	struct hlist_node node;
-> >> +	struct page *p;
-> >> +	unsigned long n;
-> >> +};
-> >> +
-> >> +static HLIST_HEAD(cma_mem_head);
-> >> +static DEFINE_SPINLOCK(cma_mem_head_lock);
-> >> +
-> >>  static struct dentry *cma_debugfs_root;
-> >>  
-> >>  static int cma_debugfs_get(void *data, u64 *val)
-> >> @@ -44,6 +57,48 @@ static void cma_debugfs_add_one(struct cma *cma, int idx)
-> >>  	debugfs_create_u32_array("bitmap", S_IRUGO, tmp, (u32*)cma->bitmap, u32s);
-> >>  }
-> >>  
-> >> +static void cma_add_to_cma_mem_list(struct cma_mem *mem)
-> >> +{
-> >> +	spin_lock(&cma_mem_head_lock);
-> >> +	hlist_add_head(&mem->node, &cma_mem_head);
-> >> +	spin_unlock(&cma_mem_head_lock);
-> >> +}
-> >> +
-> >> +static int cma_alloc_mem(int count)
-> >> +{
-> >> +	struct cma_mem *mem;
-> >> +	struct page *p;
-> >> +
-> >> +	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
-> >> +	if (!mem) 
-> >> +		return -ENOMEM;
-> >> +
-> >> +	p = cma_alloc(dma_contiguous_default_area, count, CONFIG_CMA_ALIGNMENT);
-> >> +	if (!p) {
-> >> +		pr_info("CMA: Allocation failed.\n");
-> >> +		kfree(mem);
-> >> +		return -ENOMEM;
-> >> +	}
-> > 
-> > Hello,
-> > 
-> > I'm glad to see this patchset. I had similar one privately. :)
-> > Without this kind of facility, testing CMA is really hard.
-> > 
-> > Anyway, dma_contiguous_default_area is defined only in CONFIG_DMA_CMA.
-> > So, it would cause build break.
-> > 
-> > And, I think that it is better for this tester to have an ability to
-> > allocate pages on specific CMA reserved region. It could be easily
-> > achieved by moving 'alloc' registration to cma_debugfs_add_one(). Is
-> > there any reason not to do that?
+Kevin Hilman wrote:
 > 
-> Agreed, that would make more sense.
+> From: Kevin Hilman <khilman@linaro.org>
 > 
-> >> +
-> >> +	pr_info("CMA: Allocated %d pages at %p\n", count, p);
-> > 
-> > I don't think this output is needed. If CONFIG_CMA_DEBUG is enabled,
-> > cma_alloc() print similar output.
+> The odroid-xu3 has 4 INA231 current sensors on board which can be
+> accessed from the Linux via the hwmon interface.
 > 
-> I didn't see any other output (and I have CONFIG_CMA_DEBUG set), which
-> is why I've added this pr_info().
+> There is one sensor for each of these power rails:
+> 
+> - A15 cluster: VDD_ARM
+> - A7 cluster: VDD_KFC
+> - GPU: VDD_G3D
+> - memory: VDD_MEM
+> 
+> In addition to adding the sensors, LDO26 from the PMIC needs to be
+> enabled because it's powering these sensor.
+> 
+> Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Cc: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+> Reviewed-By: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+> v3: extend existing i2c_0 node
+> v2: use "ti,ina231" as compatible string.
+> 
+> Applies on top of "ARM: dts: Add dts file for odroid XU3 board" from Sjoerd Simons.
+> 
+>  arch/arm/boot/dts/exynos5422-odroidxu3.dts | 39 ++++++++++++++++++++++++++++++
+>  1 file changed, 39 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos5422-odroidxu3.dts b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+> index c29123c0734d..38694a4a5417 100644
+> --- a/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+> +++ b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+> @@ -174,6 +174,13 @@
+>  					regulator-always-on;
+>  				};
+> 
+> +				ldo26_reg: LDO26 {
+> +					regulator-name = "vdd_ldo26";
+> +					regulator-min-microvolt = <3000000>;
+> +					regulator-max-microvolt = <3000000>;
+> +					regulator-always-on;
+> +				};
+> +
+>  				buck1_reg: BUCK1 {
+>  					regulator-name = "vdd_mif";
+>  					regulator-min-microvolt = <800000>;
+> @@ -330,3 +337,35 @@
+>  &usbdrd_dwc3_1 {
+>  	dr_mode = "otg";
+>  };
+> +
+> +&i2c_0 {
+> +	status = "okay";
+> +
+> +	/* A15 cluster: VDD_ARM */
+> +	ina231@40 {
+> +		compatible = "ti,ina231";
+> +		reg = <0x40>;
+> +		shunt-resistor = <10000>;
+> +	};
+> +
+> +	/* memory: VDD_MEM */
+> +	ina231@41 {
+> +		compatible = "ti,ina231";
+> +		reg = <0x41>;
+> +		shunt-resistor = <10000>;
+> +	};
+> +
+> +	/* GPU: VDD_G3D */
+> +	ina231@44 {
+> +		compatible = "ti,ina231";
+> +		reg = <0x44>;
+> +		shunt-resistor = <10000>;
+> +	};
+> +
+> +	/* A7 cluster: VDD_KFC */
+> +	ina231@45 {
+> +		compatible = "ti,ina231";
+> +		reg = <0x45>;
+> +		shunt-resistor = <10000>;
+> +	};
+> +};
+> --
+> 2.1.3
 
-If you raise up your loglevel, you can see it.
-That message is printed through pr_debug().
+OK, let me replace the applied patch with this in my tree.
 
-Thanks.
+Thanks,
+Kukjin
+
