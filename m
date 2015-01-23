@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbbAWWgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 17:36:44 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:47637 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbbAWWgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 17:36:39 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "linux-omap" <linux-omap@vger.kernel.org>
-Subject: Re: N900 v3.19-rc5 arm atags_to_fdt.c is broken
-Date: Fri, 23 Jan 2015 23:36:36 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Laura Abbott <lauraa@codeaurora.org>
-References: <201501232239.55801@pali>
-In-Reply-To: <201501232239.55801@pali>
+	id S1753564AbbAWWi1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 17:38:27 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40971 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617AbbAWWiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 17:38:24 -0500
+Date: Fri, 23 Jan 2015 16:37:45 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Felipe Balbi <balbi@ti.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: Re: perf not capturing stack traces
+Message-ID: <20150123223745.GJ26557@saruman.tx.rr.com>
+Reply-To: <balbi@ti.com>
+References: <20150123195128.GE26557@saruman.tx.rr.com>
+ <20150123205959.GD3073@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2581763.h7yRvStkLW";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201501232336.36187@pali>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tAmVnWIZ6lqEAvSf"
+Content-Disposition: inline
+In-Reply-To: <20150123205959.GD3073@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2581763.h7yRvStkLW
-Content-Type: Text/Plain;
-  charset="utf-8"
+--tAmVnWIZ6lqEAvSf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Friday 23 January 2015 22:39:55 Pali Roh=C3=A1r wrote:
-> Hello,
+On Fri, Jan 23, 2015 at 05:59:59PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Jan 23, 2015 at 01:51:28PM -0600, Felipe Balbi escreveu:
+> > I'm using v3.19-rc5 on an ARM Cortex A9 board. Unfortunately, perf is
+> > not able to capture any stack traces even though I CONFIG_STACKTRACE,
+> > CONFIG_FRAME_POINTER and CONFIG_ARM_UNWIND all enabled.
+> >=20
+> > I wonder if anybody else is facing similar issues.
 >=20
-> when I boot zImage with appended DT n900 in qemu
-> fdt_open_into() function called from file
-> arch/arm/boot/compressed/atags_to_fdt.c (in function
-> atags_to_fdt) always returns -FDT_ERR_NOSPACE.
->=20
-> It means that all ATAGS (including cmdline arguments) passed
-> by bootloader are ignored.
->=20
-> On real n900 device I see that booted DT version also ignore
-> cmdline arguments from bootloader. I cannot debug decompress
-> code on real device, but I think it is same problem as in
-> qemu.
+> Did it work with a previous kernel?
 
-Looks like this quick patch is fixing above problem:
+haven't checked with this board. First time I tried to use perf for
+anything.
 
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/hea=
-d.S
-index 68be901..4a7d75b 100644
-=2D-- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -268,7 +268,7 @@ restart:	adr	r0, LC0
- 		 * area.  No GOT fixup has occurred yet, but none of the
- 		 * code we're about to call uses any global variable.
- 		*/
-=2D		add	sp, sp, #0x10000
-+		add	sp, sp, #0x20000
- 		stmfd	sp!, {r0-r3, ip, lr}
- 		mov	r0, r8
- 		mov	r1, r6
-@@ -289,7 +289,7 @@ restart:	adr	r0, LC0
- 		bleq	atags_to_fdt
-=20
- 		ldmfd	sp!, {r0-r3, ip, lr}
-=2D		sub	sp, sp, #0x10000
-+		sub	sp, sp, #0x20000
- #endif
-=20
- 		mov	r8, r6			@ use the appended device tree
+--=20
+balbi
 
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart2581763.h7yRvStkLW
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+--tAmVnWIZ6lqEAvSf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1
 
-iEYEABECAAYFAlTCzPQACgkQi/DJPQPkQ1J1dgCfeSVVW5Eplof775qo1RzZU6pb
-CkYAni5ZKzxZQKK/RREC3FomkshXSMdK
-=EW5B
+iQIcBAEBAgAGBQJUws05AAoJEIaOsuA1yqRE8tsP/1RWi5wlQCGuuuGV/pYWw9va
+iQUmX3q7q5vB00pPEEwmlNr85/NdA1xLZ00W7jEzhOGe/ysbu7dNQVtfJG0Evg0x
+hQQG+mV/3ylkSd4BjzEs8Ar8f73zo9SxXLvhgzS4q1Gakz78C4577wklUuOO/Yj5
+Afc9yZPmhoh9+7pTyKMfxpJmaFiv7WkO1xL4oKBhIALLafIddEXBItcK+uD9Qa+C
+vgJaSHW13+PKd0SP9erMrIqmUWwgtUucU60BZtRZPJgVmbxtUYuAQ9EfZeXRNfDc
+C2LmMZrgiPRW/w3SeiaxkqInb5nRIfpX6T/3Ozb74hy21dCZiUegCjjOafRUXiqV
+61Cjc2e3psCTqDh2FXV2IN0quucY8kfRPsi8fgjq2N/HPkjTYb/meYe8aVZjpJpL
+SQZEptkrbRNUiC9ATiurKG2ae6pTe9cpCB2nSUFgohCYpFKLSKoikj67Oz/ZuiRG
+Lv24kx4S0gDrbV4MMiCavH7xYqGGhas//0v8mko5Mv3aLPKeF3Tfp+NQoKJrvYkC
+zn3I/Rq7JRGKkvkPUISecwcEcEKa/jOd1CMt9S6qjvJkzGh/zfYTayxpndaD6GGF
+pBdg8PxTioriHsBPbTKzpTgyv+NXxF3P9avx7W0svMUwsRndaHh8FShlxYH5Szx9
+6/wqVAUfQFPv2fo7NsGH
+=ZdoC
 -----END PGP SIGNATURE-----
 
---nextPart2581763.h7yRvStkLW--
+--tAmVnWIZ6lqEAvSf--
