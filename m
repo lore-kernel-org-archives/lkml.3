@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104AbbAWBLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 20:11:36 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46154 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188AbbAWBLV (ORCPT
+	id S1754818AbbAWBNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 20:13:30 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:38648 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbbAWBN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 20:11:21 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net 2/2] samples: bpf: relax test_maps check
-Date: Thu, 22 Jan 2015 17:11:09 -0800
-Message-Id: <1421975469-13035-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1421975469-13035-1-git-send-email-ast@plumgrid.com>
-References: <1421975469-13035-1-git-send-email-ast@plumgrid.com>
+	Thu, 22 Jan 2015 20:13:29 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0N1D2ID007885, This message is accepted by code: ctloc85258
+From: =?gb2312?B?vrTI8Q==?= <micky_ching@realsil.com.cn>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "Keerthimai Janarthanan" <keerthimaipb@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fabio Falzoi <fabio.falzoi84@gmail.com>,
+        "Tina Johnson" <tinajohnson.1234@gmail.com>,
+        Surya Seetharaman <surya.seetharaman9@gmail.com>
+Subject: Re: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
+Thread-Topic: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
+Thread-Index: AQHQM7pK0ZLyxQpn5keVKEAMtFX8lpzK2y0AgAB7JYCAAQ+YgA==
+Date: Fri, 23 Jan 2015 01:13:01 +0000
+Message-ID: <54C1A021.3090805@realsil.com.cn>
+References: <1421652347-8484-1-git-send-email-der.herr@hofr.at>
+ <54C05500.8050809@realsil.com.cn> <20150122090101.GB27741@opentech.at>
+In-Reply-To: <20150122090101.GB27741@opentech.at>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.29.41.103]
+Content-Type: text/plain; charset="gb2312"
+Content-ID: <62C1546E78B8644DACA095EDB71071AC@realsil.com.cn>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0N1DZ8Z030738
 
-hash map is unordered, so get_next_key() iterator shouldn't
-rely on particular order of elements. So relax this test.
 
-Fixes: ffb65f27a155 ("bpf: add a testsuite for eBPF maps")
-Reported-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- samples/bpf/test_maps.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/samples/bpf/test_maps.c b/samples/bpf/test_maps.c
-index e286b42..6299ee9 100644
---- a/samples/bpf/test_maps.c
-+++ b/samples/bpf/test_maps.c
-@@ -69,9 +69,9 @@ static void test_hashmap_sanity(int i, void *data)
- 
- 	/* iterate over two elements */
- 	assert(bpf_get_next_key(map_fd, &key, &next_key) == 0 &&
--	       next_key == 2);
-+	       (next_key == 1 || next_key == 2));
- 	assert(bpf_get_next_key(map_fd, &next_key, &next_key) == 0 &&
--	       next_key == 1);
-+	       (next_key == 1 || next_key == 2));
- 	assert(bpf_get_next_key(map_fd, &next_key, &next_key) == -1 &&
- 	       errno == ENOENT);
- 
--- 
-1.7.9.5
-
+On 01/22/2015 05:01 PM, Nicholas Mc Guire wrote:
+> sorry - that was a typo - should this be
+> resubmitted for traceability or is that not
+> necessary ?
+resubmit, thanks.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
