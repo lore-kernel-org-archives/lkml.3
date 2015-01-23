@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbbAWXGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 18:06:17 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23099 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263AbbAWXGM (ORCPT
+	id S1754216AbbAWXGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 18:06:11 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:50035 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010AbbAWXGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 18:06:12 -0500
-Message-ID: <54C2D3B5.5080808@oracle.com>
-Date: Fri, 23 Jan 2015 18:05:25 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 23 Jan 2015 18:06:09 -0500
+Date: Fri, 23 Jan 2015 15:06:09 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: cleanup/soc for 3.20 #3
+Message-ID: <20150123230609.GV20896@quad.lixom.net>
+References: <1422033307-9702-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337
- rcu_read_unlock_special+0x369/0x550()
-References: <20150121025754.GV9719@linux.vnet.ibm.com> <54BFC979.8040107@oracle.com> <20150122004305.GJ9719@linux.vnet.ibm.com> <54C1BFFD.9060707@oracle.com> <20150123035158.GP9719@linux.vnet.ibm.com> <54C1C7D2.906@oracle.com> <54C1C899.8000106@oracle.com> <20150123065542.GQ9719@linux.vnet.ibm.com> <20150123093644.GA11175@linux.vnet.ibm.com> <54C2C278.1000608@oracle.com> <20150123225411.GZ9719@linux.vnet.ibm.com>
-In-Reply-To: <20150123225411.GZ9719@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422033307-9702-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 05:54 PM, Paul E. McKenney wrote:
-> On Fri, Jan 23, 2015 at 04:51:52PM -0500, Sasha Levin wrote:
->> > On 01/23/2015 04:36 AM, Paul E. McKenney wrote:
->>> > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
->>> > > index 8669de884445..ec99dc16aa38 100644
->>> > > --- a/kernel/rcu/tree_plugin.h
->>> > > +++ b/kernel/rcu/tree_plugin.h
->>> > > @@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
->>> > >  	special = t->rcu_read_unlock_special;
->>> > >  	if (special.b.need_qs) {
->>> > >  		rcu_preempt_qs();
->>> > > +		t->rcu_read_unlock_special.need_qs = false;
->> > 
->> > It didn't compile, I've used:
->> > 
->> > 		t->rcu_read_unlock_special.b.need_qs = false;
-> Apologies, I should have marked it "untested".  Good show on finding
-> the correct fix.
+On Fri, Jan 23, 2015 at 06:15:07PM +0100, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
 > 
-> But does your fixed version help?  ;-)
+> This is a batch of cleanup/soc modifications that you may also stack on top of
+> your "soc" branch as the previous one. It stabilizes a little bit our cleanup
+> action before going further.
+> I also have the feeling that multi-platform would be hard to reach for 3.20...
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit 29ee506d0d56f6d39cc237de2512f9cb5629cbf7:
+> 
+>   ARM: at91: move at91rm9200_idle() to clk/at91/pmc.c (2015-01-16 18:08:42 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup3
+> 
+> for you to fetch changes up to d7b943cd96a1196a7e4f8ae48fc16a086ccc9a6a:
+> 
+>   ARM: at91: pm: remove warning to remove SOC_AT91SAM9263 usage (2015-01-23 12:35:50 +0100)
+> 
 
-I haven't seen it happening it again, but you won't get a "yes" out of me
-until tomorrow evening :)
+Hi,
+
+I had a comment on the very first patch in this branch, so please address that
+and send a fresh pull request.
 
 
 Thanks,
-Sasha
+
+-Olof
