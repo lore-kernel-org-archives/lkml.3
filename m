@@ -1,141 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320AbbAWMct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 07:32:49 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:44114 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753026AbbAWMcq (ORCPT
+	id S1755289AbbAWMcS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 07:32:18 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:52198 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753026AbbAWMcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 07:32:46 -0500
-From: Punit Agrawal <punit.agrawal@arm.com>
-To: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, leo.yan@linaro.org, yexl@marvell.com,
-        Will.Deacon@arm.com, Catalin.Marinas@arm.com, Mark.Rutland@arm.com,
+	Fri, 23 Jan 2015 07:32:14 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-f1-54c23ebaab7d
+Content-transfer-encoding: 8BIT
+Message-id: <54C23F49.8040109@partner.samsung.com>
+Date: Fri, 23 Jan 2015 15:32:09 +0300
+From: Stefan Strogin <s.strogin@partner.samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+To: Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction emulation
-References: <1421844191-9263-1-git-send-email-suzuki.poulose@arm.com>
-	<1421844191-9263-2-git-send-email-suzuki.poulose@arm.com>
-	<1421844191-9263-3-git-send-email-suzuki.poulose@arm.com>
-Date: Fri, 23 Jan 2015 12:31:40 +0000
-In-Reply-To: <1421844191-9263-3-git-send-email-suzuki.poulose@arm.com> (Suzuki
-	K. Poulose's message of "Wed, 21 Jan 2015 12:43:10 +0000")
-Message-ID: <9hhoappn0er.fsf@e105922-lin.cambridge.arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+Cc: Stefan Strogin <stefan.strogin@gmail.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        aneesh.kumar@linux.vnet.ibm.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Pintu Kumar <pintu.k@samsung.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Hui Zhu <zhuhui@xiaomi.com>,
+        Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        s.strogin@partner.samsung.com
+Subject: Re: [PATCH 2/3] mm: cma: introduce /proc/cmainfo
+References: <cover.1419602920.git.s.strogin@partner.samsung.com>
+ <264ce8ad192124f2afec9a71a2fc28779d453ba7.1419602920.git.s.strogin@partner.samsung.com>
+ <xa1tzjaaz9f9.fsf@mina86.com> <54A160B6.5030605@gmail.com>
+ <54A34E01.2050405@lge.com>
+In-reply-to: <54A34E01.2050405@lge.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t/xy7q77A6FGPw4oWIxZ/0aNovHr+ex
+	WDxr+sJosbK7mc1ie+cMdovOiUvYLS7vmsNmcW/Nf1aLtUfuslssON7CarHs63t2i77vh9kt
+	Js+Wsvh2cg6zxeU3/9ktps74wW5xcsNZVosNzVwOQh6X+3qZPHbOusvuMbtjJqvHplWdbB6b
+	Pk1i9+h6e4XJ48SM3yweDw5tZvFY9+cVk8fBd3uYPPq2rGL0+LxJzqNr4y/WAN4oLpuU1JzM
+	stQifbsErozV10+wFUzhrzi36jhrA+NPri5GTg4JAROJqce6WSFsMYkL99azdTFycQgJLGWU
+	aP6wjgkkwSsgKPFj8j2WLkYODmYBeYkjl7IhTHWJKVNyIco/Mkqc6NvBClFuJPF0xy8mkBoW
+	AVWJL7OtQcJsQKuOXZjOCGKLCkRIzD/2mhnEFhEIlriw9yILyBxmgessEnNOHwNLCAtYSpzf
+	tZkNxBYS+MIose+yEojNCbT30p6DLBMYBWYhuW4WwnWzEK5bwMi8ilE0tTS5oDgpPddQrzgx
+	t7g0L10vOT93EyMkMr/sYFx8zOoQowAHoxIP746nB0OEWBPLiitzDzFKcDArifBaax4KEeJN
+	SaysSi3Kjy8qzUktPsTIxMEp1cAouZpVNa9+Yoba/euMl1bFqhhv6U0X/Jsmeuf9zIpDK2c+
+	12thu3vx5MRbFZy5awonTj7RfbXjj+PdqepLp6zYN3nVp+AXAX2d/z7OnlW63/0qJ5+N0bd/
+	R43Vrge+PhnmFywq1pFgJmXwK+NM37L5GlITVJ+KbVy1YtGiBCn/BZah1kX1O/dGKbEUZyQa
+	ajEXFScCAMemB6yqAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suzuki,
+Hello Gioh,
 
-A possible simplification below.
-
-"Suzuki K. Poulose" <suzuki.poulose@arm.com> writes:
-
-> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+On 31/12/14 04:14, Gioh Kim wrote:
 >
-> As of now each insn_emulation has a cpu hotplug notifier that
-> enables/disables the CPU feature bit for the functionality. This
-> patch re-arranges the code, such that there is only one notifier
-> that runs through the list of registered emulation hooks and runs
-> their corresponding set_hw_mode.
+> Is it ok if the information is too big?
+> I'm not sure but I remember that seq_printf has 4K limitation.
+
+Thanks for reviewing, excuse me for a long delay.
+
+If I understand correctly it is OK, since it's written in comments for
+seq_has_overflowed():
+>  * seq_files have a buffer which may overflow. When this happens a larger
+>  * buffer is reallocated and all the data will be printed again.
+>  * The overflow state is true when m->count == m->size.
+And exactly this happens in traverse().
+
+But I think that it's not important anymore as I intent not to use
+seq_files in the second version.
+
+
 >
-> We do nothing when a CPU is dying as we will set the appropriate bits
-> as it comes back online based on the state of the hooks.
+> So I made seq_operations with seq_list_start/next functions.
 >
-> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Punit Agrawal <punit.agrawal@arm.com>
-> ---
->  arch/arm64/include/asm/cputype.h     |    2 +
->  arch/arm64/kernel/armv8_deprecated.c |  125 +++++++++++++++++++++-------------
->  2 files changed, 79 insertions(+), 48 deletions(-)
+> EX)
 >
-
-[...]
-
-> diff --git a/arch/arm64/kernel/armv8_deprecated.c b/arch/arm64/kernel/armv8_deprecated.c
-> index c363671..2c991f1 100644
-> --- a/arch/arm64/kernel/armv8_deprecated.c
-> +++ b/arch/arm64/kernel/armv8_deprecated.c
-> @@ -19,6 +19,7 @@
->  #include <asm/system_misc.h>
->  #include <asm/traps.h>
->  #include <asm/uaccess.h>
-> +#include <asm/cpufeature.h>
->  
->  #define CREATE_TRACE_POINTS
->  #include "trace-events-emulation.h"
-> @@ -85,6 +86,57 @@ static void remove_emulation_hooks(struct insn_emulation_ops *ops)
->  	pr_notice("Removed %s emulation handler\n", ops->name);
->  }
->  
-> +static void enable_insn_hw_mode(void *data)
-> +{
-> +	struct insn_emulation *insn = (struct insn_emulation *)data;
-> +	if (insn && insn->ops->set_hw_mode)
-
-You can simplify (drop?) this...
-
-> +		insn->ops->set_hw_mode(true);
-> +}
-> +
-> +static void disable_insn_hw_mode(void *data)
-> +{
-> +	struct insn_emulation *insn = (struct insn_emulation *)data;
-> +	if (insn && insn->ops->set_hw_mode)
-
-and this check since...
-
-> +		insn->ops->set_hw_mode(false);
-> +}
-> +
-> +/* Run set_hw_mode(mode) on all active CPUs */
-> +static int run_all_cpu_set_hw_mode(struct insn_emulation *insn, bool enable)
-> +{
-> +	if (!insn->ops->set_hw_mode)
-> +		return -EINVAL;
-
-insn->ops->set_hw_mode is already checked here.
-
-> +	if (enable)
-> +		on_each_cpu(enable_insn_hw_mode, (void *)insn, true);
-> +	else
-> +		on_each_cpu(disable_insn_hw_mode, (void *)insn, true);
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Run set_hw_mode for all insns on a starting CPU.
-> + * Returns:
-> + *  0 		- If all the hooks ran successfully.
-> + * -EINVAL	- At least one hook is not supported by the CPU.
-> + */
-> +static int run_all_insn_set_hw_mode(unsigned long cpu)
-> +{
-> +	int rc = 0;
-> +	unsigned long flags;
-> +	struct insn_emulation *insn;
-> +
-> +	raw_spin_lock_irqsave(&insn_emulation_lock, flags);
-> +	list_for_each_entry(insn, &insn_emulation, node) {
-> +		bool enable = (insn->current_mode == INSN_HW);
-> +		if (insn->ops->set_hw_mode && insn->ops->set_hw_mode(enable)) {
-> +			pr_warn(enable, "CPU[%ld] cannot support the emulation of %s",
-> +							cpu, insn->ops->name);
-> +			rc = -EINVAL;
-> +		}
-> +	}
-> +	raw_spin_unlock_irqrestore(&insn_emulation_lock, flags);
-> +	return rc;
-> +}
-> +
->  static int update_insn_emulation_mode(struct insn_emulation *insn,
->  				       enum insn_emulation_mode prev)
->  {
-
-[...]
+> static void *debug_seq_start(struct seq_file *s, loff_t *pos)
+> {
+> »       mutex_lock(&debug_lock);
+> »       return seq_list_start(&debug_list, *pos);
+> }   
+>
+> static void debug_seq_stop(struct seq_file *s, void *data)
+> {
+> »       struct debug_header *header = data;
+>
+> »       if (header == NULL || &header->head_list == &debug_list) {
+> »       »       seq_printf(s, "end of info");
+> »       }
+>
+> »       mutex_unlock(&debug_lock);
+> }
+>
+> static void *debug_seq_next(struct seq_file *s, void *data, loff_t *pos)
+> {
+> »       return seq_list_next(data, &debug_list, pos);
+> }
+>
+> static int debug_seq_show(struct seq_file *sfile, void *data)
+> {
+> »       struct debug_header *header;
+> »       char *p;
+>
+> »       header= list_entry(data,
+> »       »       »          struct debug_header,   
+> »       »       »          head_list);
+>
+> »       seq_printf(sfile, "print info");
+> »       return 0;
+> }
+> static const struct seq_operations debug_seq_ops = {
+> »       .start = debug_seq_start,   
+> »       .next = debug_seq_next,   
+> »       .stop = debug_seq_stop,   
+> »       .show = debug_seq_show,   
+> };
 
