@@ -1,105 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693AbbAWLNa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:13:30 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:36793 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795AbbAWLN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:13:28 -0500
-Date: Fri, 23 Jan 2015 13:13:04 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
- page tables to the process'
-Message-ID: <20150123111304.GA5975@node.dhcp.inet.fi>
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
- <20150123050445.GA22751@roeck-us.net>
+	id S1755151AbbAWLNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:13:36 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:56498 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795AbbAWLNb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 06:13:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123050445.GA22751@roeck-us.net>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <20150123103636.GA23493@leverpostej>
+References: <1422008491-16452-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1422008491-16452-2-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20150123103636.GA23493@leverpostej>
+Date: Fri, 23 Jan 2015 19:13:29 +0800
+Message-ID: <CAAfSe-vQL8gXzNui1wD9_=vp6yGHrEUGQgJOtdNxvt2=AH1Xsg@mail.gmail.com>
+Subject: Re: [PATCH v6 1/2] arm64: dts: Add support for Spreadtrum SC9836 SoC
+ in dts and Makefile
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "Joel.Schopp@amd.com" <Joel.Schopp@amd.com>,
+        "Thomas.Lendacky@amd.com" <Thomas.Lendacky@amd.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 09:04:45PM -0800, Guenter Roeck wrote:
-> On Thu, Jan 22, 2015 at 03:05:17PM -0800, akpm@linux-foundation.org wrote:
-> > The mm-of-the-moment snapshot 2015-01-22-15-04 has been uploaded to
-> > 
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> qemu:sh fails to shut down.
-> 
-> bisect log:
-> 
-> # bad: [03586ad04b2170ee816e6936981cc7cd2aeba129] pci: test for unexpectedly disabled bridges
-> # good: [ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc] Linux 3.19-rc5
-> git bisect start 'HEAD' 'v3.19-rc5'
-> # bad: [d113ba21d15c7d3615fd88490d1197615bb39fc0] mm: remove lock validation check for MADV_FREE
-> git bisect bad d113ba21d15c7d3615fd88490d1197615bb39fc0
-> # good: [17351d1625a5030fa16f1346b77064c03b51f107] mm:add KPF_ZERO_PAGE flag for /proc/kpageflags
-> git bisect good 17351d1625a5030fa16f1346b77064c03b51f107
-> # good: [ad18ad1fce6f241a9cbd4adfd6b16c9283181e39] memcg: add BUILD_BUG_ON() for string tables
-> git bisect good ad18ad1fce6f241a9cbd4adfd6b16c9283181e39
-> # bad: [aa7e7cbfa43b74f6faef04ff730b5098544a4f77] mm/compaction: enhance tracepoint output for compaction begin/end
-> git bisect bad aa7e7cbfa43b74f6faef04ff730b5098544a4f77
-> # good: [a40d0d2cf21e2714e9a6c842085148c938bf36ab] mm: memcontrol: remove unnecessary soft limit tree node test
-> git bisect good a40d0d2cf21e2714e9a6c842085148c938bf36ab
-> # good: [4ec4aa2e07c1d6eee61f6cace29401c6febcb6c5] mm: make FIRST_USER_ADDRESS unsigned long on all archs
-> git bisect good 4ec4aa2e07c1d6eee61f6cace29401c6febcb6c5
-> # bad: [22310c209483224a64436a6e815a86feda681659] mm: account pmd page tables to the process
-> git bisect bad 22310c209483224a64436a6e815a86feda681659
-> # good: [19a41261b1dcd8d12372d9c57c2035144608a599] arm: define __PAGETABLE_PMD_FOLDED for !LPAE
-> git bisect good 19a41261b1dcd8d12372d9c57c2035144608a599
-> # first bad commit: [22310c209483224a64436a6e815a86feda681659] mm: account pmd page tables to the process
-> 
-> ---
-> 
-> qemu:microblaze generates warnings to the console.
-> 
-> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
-> 
-> with various call stacks. See
-> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
-> for details.
+On Fri, Jan 23, 2015 at 6:36 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Fri, Jan 23, 2015 at 10:21:30AM +0000, Chunyan Zhang wrote:
+>> From: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
+>>
+>> Adds the device tree support for Spreadtrum SC9836 SoC which is based on
+>> Sharkl64 platform.
+>>
+>> Sharkl64 platform contains the common nodes of Spreadtrum's arm64-based SoCs.
+>>
+>> Signed-off-by: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
+>> Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
+>> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+>> ---
+>>  arch/arm64/boot/dts/Makefile                  |    1 +
+>>  arch/arm64/boot/dts/sprd/Makefile             |    5 ++
+>>  arch/arm64/boot/dts/sprd/sc9836-openphone.dts |   49 ++++++++++++++++
+>>  arch/arm64/boot/dts/sprd/sc9836.dtsi          |   74 +++++++++++++++++++++++++
+>>  arch/arm64/boot/dts/sprd/sharkl64.dtsi        |   65 ++++++++++++++++++++++
+>>  5 files changed, 194 insertions(+)
+>>  create mode 100644 arch/arm64/boot/dts/sprd/Makefile
+>>  create mode 100644 arch/arm64/boot/dts/sprd/sc9836-openphone.dts
+>>  create mode 100644 arch/arm64/boot/dts/sprd/sc9836.dtsi
+>>  create mode 100644 arch/arm64/boot/dts/sprd/sharkl64.dtsi
+>>
+>> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+>> index 3b8d427..806a717 100644
+>> --- a/arch/arm64/boot/dts/Makefile
+>> +++ b/arch/arm64/boot/dts/Makefile
+>> @@ -2,6 +2,7 @@ dts-dirs += amd
+>>  dts-dirs += apm
+>>  dts-dirs += arm
+>>  dts-dirs += cavium
+>> +dts-dirs += sprd
+>>
+>>  always               := $(dtb-y)
+>>  subdir-y     := $(dts-dirs)
+>> diff --git a/arch/arm64/boot/dts/sprd/Makefile b/arch/arm64/boot/dts/sprd/Makefile
+>> new file mode 100644
+>> index 0000000..b658c5e
+>> --- /dev/null
+>> +++ b/arch/arm64/boot/dts/sprd/Makefile
+>> @@ -0,0 +1,5 @@
+>> +dtb-$(CONFIG_ARCH_SPRD) += sc9836-openphone.dtb
+>> +
+>> +always               := $(dtb-y)
+>> +subdir-y     := $(dts-dirs)
+>> +clean-files  := *.dtb
+>> diff --git a/arch/arm64/boot/dts/sprd/sc9836-openphone.dts b/arch/arm64/boot/dts/sprd/sc9836-openphone.dts
+>> new file mode 100644
+>> index 0000000..b8a69b2
+>> --- /dev/null
+>> +++ b/arch/arm64/boot/dts/sprd/sc9836-openphone.dts
+>> @@ -0,0 +1,49 @@
+>> +/*
+>> + * Spreadtrum SC9836 openphone board DTS file
+>> + *
+>> + * Copyright (C) 2014, Spreadtrum Communications Inc.
+>> + *
+>> + * This file is licensed under a dual GPLv2 or X11 license.
+>> + */
+>> +
+>> +/dts-v1/;
+>> +
+>> +#include "sc9836.dtsi"
+>> +
+>> +/ {
+>> +     model = "Spreadtrum SC9836 Openphone Board";
+>> +
+>> +     compatible = "sprd,sc9836-openphone", "sprd,sc9836";
+>> +
+>> +     aliases {
+>> +             serial0 = &uart0;
+>> +             serial1 = &uart1;
+>> +             serial2 = &uart2;
+>> +             serial3 = &uart3;
+>> +     };
+>> +
+>> +     memory@80000000 {
+>> +             device_type = "memory";
+>> +             reg = <0 0x80000000 0 0x20000000>;
+>> +     };
+>> +
+>> +     chosen {
+>> +             stdout-path = &uart0;
+>> +     };
+>
+> It would be good to use an explicit configuration here. e.g. have:
+>
+>         chosen {
+>                 stdout-path = "serial0:115200n8";
+>         };
+>
+> Where '115200n8' is replaced by whatever the bootloader leaves the UART
+> configured as on this board.
+>
+> That means you won't need a 'console=' to get nice consistent serial
+> output at boot, and won't be relying on implicit defaults all over the
+> place.
+>
 
-Could you try patch below? Completely untested.
+ok, I've changed and tested pass.
 
->From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Fri, 23 Jan 2015 13:08:26 +0200
-Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
+>> +};
+>> +
+>> +&uart0 {
+>> +     status = "okay";
+>> +};
+>> +
+>> +&uart1 {
+>> +     status = "okay";
+>> +};
+>> +
+>> +&uart2 {
+>> +     status = "okay";
+>> +};
+>> +
+>> +&uart3 {
+>> +     status = "okay";
+>> +};
+>> diff --git a/arch/arm64/boot/dts/sprd/sc9836.dtsi b/arch/arm64/boot/dts/sprd/sc9836.dtsi
+>> new file mode 100644
+>> index 0000000..c646123
+>> --- /dev/null
+>> +++ b/arch/arm64/boot/dts/sprd/sc9836.dtsi
+>> @@ -0,0 +1,74 @@
+>> +/*
+>> + * Spreadtrum SC9836 SoC DTS file
+>> + *
+>> + * Copyright (C) 2014, Spreadtrum Communications Inc.
+>> + *
+>> + * This file is licensed under a dual GPLv2 or X11 license.
+>> + */
+>> +
+>> +#include "sharkl64.dtsi"
+>> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+>> +
+>> +/ {
+>> +     compatible = "sprd,sc9836";
+>> +
+>> +     cpus {
+>> +             #address-cells = <2>;
+>> +             #size-cells = <0>;
+>> +
+>> +             cpu@0 {
+>> +                     device_type = "cpu";
+>> +                     compatible = "arm,cortex-a53", "arm,armv8";
+>> +                     reg = <0x0 0x0>;
+>> +                     enable-method = "psci";
+>> +             };
+>> +
+>> +             cpu@1 {
+>> +                     device_type = "cpu";
+>> +                     compatible = "arm,cortex-a53", "arm,armv8";
+>> +                     reg = <0x0 0x1>;
+>> +                     enable-method = "psci";
+>> +             };
+>> +
+>> +             cpu@2 {
+>> +                     device_type = "cpu";
+>> +                     compatible = "arm,cortex-a53", "arm,armv8";
+>> +                     reg = <0x0 0x2>;
+>> +                     enable-method = "psci";
+>> +             };
+>> +
+>> +             cpu@3 {
+>> +                     device_type = "cpu";
+>> +                     compatible = "arm,cortex-a53", "arm,armv8";
+>> +                     reg = <0x0 0x3>;
+>> +                     enable-method = "psci";
+>> +             };
+>> +     };
+>> +
+>> +     gic: interrupt-controller@12001000 {
+>> +             compatible = "arm,gic-400";
+>> +             reg = <0 0x12001000 0 0x1000>,
+>> +                   <0 0x12002000 0 0x2000>,
+>> +                   <0 0x12004000 0 0x2000>,
+>> +                   <0 0x12006000 0 0x2000>;
+>> +             #interrupt-cells = <3>;
+>> +             interrupt-controller;
+>> +             interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_HIGH)>;
+>> +     };
+>> +
+>> +     psci {
+>> +             compatible      = "arm,psci";
+>> +             method          = "smc";
+>> +             cpu_on          = <0xc4000003>;
+>> +             cpu_off         = <0x84000002>;
+>> +             cpu_suspend     = <0xc4000001>;
+>> +     };
+>
+> Given that there are no suspend states in this dts, the cpu_suspend
+> property here could be omitted for now (though I guess it doesn't matter
+> either way).
+>
+>> +
+>> +     timer {
+>> +             compatible = "arm,armv8-timer";
+>> +             interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+>> +                          <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+>> +                          <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+>> +                          <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
+>> +     };
+>> +};
+>> diff --git a/arch/arm64/boot/dts/sprd/sharkl64.dtsi b/arch/arm64/boot/dts/sprd/sharkl64.dtsi
+>> new file mode 100644
+>> index 0000000..6b4bdc5
+>> --- /dev/null
+>> +++ b/arch/arm64/boot/dts/sprd/sharkl64.dtsi
+>> @@ -0,0 +1,65 @@
+>> +/*
+>> + * Spreadtrum Sharkl64 platform DTS file
+>> + *
+>> + * Copyright (C) 2014, Spreadtrum Communications Inc.
+>> + *
+>> + * This file is licensed under a dual GPLv2 or X11 license.
+>> + */
+>> +
+>> +/ {
+>> +     interrupt-parent = <&gic>;
+>> +     #address-cells = <2>;
+>> +     #size-cells = <2>;
+>> +
+>> +     soc {
+>> +             compatible = "simple-bus";
+>> +             #address-cells = <2>;
+>> +             #size-cells = <2>;
+>> +             ranges;
+>> +
+>> +             ap-apb {
+>> +                     compatible = "simple-bus";
+>> +                     #address-cells = <2>;
+>> +                     #size-cells = <2>;
+>> +                     ranges;
+>> +
+>> +                     uart0: serial@70000000 {
+>> +                             compatible = "sprd,sc9836-uart";
+>> +                             reg = <0 0x70000000 0 0x100>;
+>> +                             interrupts = <0 2 0xf04>;
+>> +                             clocks = <&clk26mhz>;
+>> +                             status = "disabled";
+>> +                     };
+>> +
+>> +                     uart1: serial@70100000 {
+>> +                             compatible = "sprd,sc9836-uart";
+>> +                             reg = <0 0x70100000 0 0x100>;
+>> +                             interrupts = <0 3 0xf04>;
+>> +                             clocks = <&clk26mhz>;
+>> +                             status = "disabled";
+>> +                     };
+>> +
+>> +                     uart2: serial@70200000 {
+>> +                             compatible = "sprd,sc9836-uart";
+>> +                             reg = <0 0x70200000 0 0x100>;
+>> +                             interrupts = <0 2 0xf04>;
+>> +                             clocks = <&clk26mhz>;
+>> +                             status = "disabled";
+>> +                     };
+>> +
+>> +                     uart3: serial@70300000 {
+>> +                             compatible = "sprd,sc9836-uart";
+>> +                             reg = <0 0x70300000 0 0x100>;
+>> +                             interrupts = <0 3 0xf04>;
+>> +                             clocks = <&clk26mhz>;
+>> +                             status = "disabled";
+>> +                     };
+>> +             };
+>> +     };
+>> +
+>> +     clk26mhz: clk26mhz {
+>> +             compatible = "fixed-clock";
+>> +             #clock-cells = <0>;
+>> +             clock-frequency = <26000000>;
+>> +     };
+>> +};
+>
+> Other than my comments above, this looks fine to me. I assume the UART
+> binding and driver are already queued somewhere else?
+>
 
-Microblaze uses custom implementation of PMD folding, but doesn't define
-__PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
+Since the last version patch series must be split for applying.
+I'll send the UART bindings with UART driver soon.
 
-Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
-It also fixes problems with recently-introduced pmd accounting.
+For this case, can I still add your Acked-by and send these two patch
+to Greg right now?
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reported-by: Guenter Roeck <linux@roeck-us.net>
----
- arch/microblaze/include/asm/pgtable.h | 2 ++
- 1 file changed, 2 insertions(+)
+Thanks a lot,
+Chunyan
 
-diff --git a/arch/microblaze/include/asm/pgtable.h b/arch/microblaze/include/asm/pgtable.h
-index 46637bb090eb..e53b8532353c 100644
---- a/arch/microblaze/include/asm/pgtable.h
-+++ b/arch/microblaze/include/asm/pgtable.h
-@@ -61,6 +61,8 @@ extern int mem_init_done;
- 
- #include <asm-generic/4level-fixup.h>
- 
-+#define __PAGETABLE_PMD_FOLDED
-+
- #ifdef __KERNEL__
- #ifndef __ASSEMBLY__
- 
--- 
- Kirill A. Shutemov
+> If so:
+>
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+>
+> Thanks,
+> Mark.
