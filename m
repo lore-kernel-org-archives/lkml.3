@@ -1,182 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193AbbAWQWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:22:08 -0500
-Received: from mga02.intel.com ([134.134.136.20]:44824 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006AbbAWQWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:22:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,454,1418112000"; 
-   d="scan'208";a="516658695"
-Date: Fri, 23 Jan 2015 16:22:02 +0000 (UTC)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.lm.intel.com
-To: Christoph Hellwig <hch@infradead.org>
-cc: Yan Liu <yan@purestorage.com>, Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
-Subject: Re: [PATCH 1/1] NVMe: Do not take nsid while a passthrough IO command
- is being issued via a block device file descriptor
-In-Reply-To: <20150123075708.GA17232@infradead.org>
-Message-ID: <alpine.LNX.2.00.1501231451380.15481@localhost.lm.intel.com>
-References: <1421971328-5065-1-git-send-email-yan@purestorage.com> <20150123075708.GA17232@infradead.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1756069AbbAWQWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:22:19 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:55368 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006AbbAWQWP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 11:22:15 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [GIT PULL] qcom SoC changes for v3.20
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <CAOesGMipp=Odc-cWvrba0e1pd1X7O+PKNH+WoM3fG4xX2GRFuA@mail.gmail.com>
+Date: Fri, 23 Jan 2015 10:22:09 -0600
+Cc: "arm@kernel.org" <arm@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Lina Iyer <lina.iyer@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Vikram Mulukutla <markivx@codeaurora.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DBE63F76-D4CB-49D5-90C6-642CFCA7687F@codeaurora.org>
+References: <alpine.DEB.2.02.1501191226010.2973@galak-ubuntu.qualcomm.com> <20150122011521.GA31815@quad.lixom.net> <D177DF12-0F31-49CF-B98B-9FAC23AAB24C@codeaurora.org> <CAOesGMipp=Odc-cWvrba0e1pd1X7O+PKNH+WoM3fG4xX2GRFuA@mail.gmail.com>
+To: Olof Johansson <olof@lixom.net>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015, Christoph Hellwig wrote:
-> On Thu, Jan 22, 2015 at 04:02:08PM -0800, Yan Liu wrote:
->> When a passthrough IO command is issued with a specific block device file descriptor. It should be applied at
->> the namespace which is associated with that block device file descriptor. This patch makes such passthrough
->> command ignore nsid in nvme_passthru_cmd structure. Instead it takes the namespace ID asscoiated with the
->> block device descriptor.
->>
->> Signed-off-by: Yan Liu <yan@purestorage.com>
->
-> Please move the code to find the ns into the caller, or even better a
-> seaprate helper used by the caller. instead of adding another argument to
-> nvme_user_cmd.
 
-The namespace id should be enforced on block devices, but is there a
-problem allowing arbitrary commands through the management char device?
-I have a need for a pure passthrough, but the proposed patch requires
-a matching namespace id all the time.
+On Jan 22, 2015, at 9:00 PM, Olof Johansson <olof@lixom.net> wrote:
 
-I wrote and tested the one below to override nsid on block devices,
-but doesn't require a visible namespace through the management device.
+> On Thu, Jan 22, 2015 at 9:02 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>> 
+>> On Jan 21, 2015, at 7:15 PM, Olof Johansson <olof@lixom.net> wrote:
+>> 
+>>> Hi,
+>>> 
+>>> 
+>>> On Mon, Jan 19, 2015 at 12:27:15PM -0600, Kumar Gala wrote:
+>>>> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+>>>> 
+>>>> Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+>>>> 
+>>>> are available in the git repository at:
+>>>> 
+>>>> git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.20
+>>>> 
+>>>> for you to fetch changes up to ae0a6075c046f9c8dbac18f53a779592f97b402e:
+>>>> 
+>>>> soc: qcom: scm: Clarify boot interface (2015-01-19 11:55:12 -0600)
+>>>> 
+>>>> ----------------------------------------------------------------
+>>>> Qualcomm ARM Based SoC Updates for v3.20
+>>>> 
+>>>> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
+>>>> * Various bug fixes and minor feature additions to scm code
+>>>> * Added big-endian support to debug MSM uart
+>>>> * Added big-endian support to ARCH_QCOM
+>>>> 
+>>>> ----------------------------------------------------------------
+>>>> Lina Iyer (2):
+>>>>     ARM: qcom: Add SCM warmboot flags for quad core targets.
+>>>>     soc: qcom: scm: Move scm-boot files to drivers/soc and include/soc
+>>>> 
+>>>> Olav Haugan (1):
+>>>>     ARM: qcom: scm: Add logging of actual return code from scm call
+>>>> 
+>>>> Saravana Kannan (1):
+>>>>     ARM: qcom: scm: Add API to query for service/command availability.
+>>>> 
+>>>> Stephen Boyd (9):
+>>>>     ARM: debug: Update MSM and QCOM DEBUG_LL help
+>>>>     ARM: debug: msm: Support big-endian CPUs
+>>>>     ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
+>>>>     ARM: qcom: scm: Fix incorrect cache invalidation
+>>>>     ARM: qcom: scm: Get cacheline size from CTR
+>>>>     ARM: qcom: scm: Add a feat version query API
+>>>>     soc: qcom: scm: Move the scm driver to drivers/soc/qcom
+>>> 
+>>> I replied on the patch here just now. This isn't the right thing to do,
+>>> as far as I can tell.
+>>> 
+>>> Seems like sending a fresh request with the material besides the move
+>>> to drivers/soc should be mergeable though, so feel free to do that while
+>>> the rest is hashed out.
+>> 
+>> Would the following be ok (dropped the move to drivers/soc and some additional unused scm APIs as of right now):
+>> 
+>> ARM: qcom: Drop unnecessary selects from ARCH_QCOM
+>> ARM: qcom: scm: Clarify boot interface
+>> ARM: qcom: Add SCM warmboot flags for quad core targets.
+>> ARM: qcom: scm: Add logging of actual return code from scm call
+>> ARM: qcom: scm: Flush the command buffer only instead of the entire cache
+>> ARM: qcom: scm: Get cacheline size from CTR
+>> ARM: qcom: scm: Fix incorrect cache invalidation
+>> ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
+>> ARM: debug: msm: Support big-endian CPUs
+>> ARM: debug: Update MSM and QCOM DEBUG_LL help
+>> 
+>> Kconfig.debug        |    5 ++--
+>> include/debug/msm.S  |    6 +++++
+>> mach-qcom/Kconfig    |    3 --
+>> mach-qcom/scm-boot.c |    2 -
+>> mach-qcom/scm-boot.h |    4 ++-
+>> mach-qcom/scm.c      |   55 +++++++++++++++++++++++++++++++++++++--------------
+>> 6 files changed, 54 insertions(+), 21 deletions(-)
+> 
+> I'd be OK with merging this, send a request and tag. Would that let
+> the DRM folks make progress too?
 
----
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index cb529e9..bdec1d7 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -1682,7 +1682,7 @@ static int nvme_submit_io(struct nvme_ns *ns, struct nvme_user_io __user *uio)
-  	return status;
-  }
+Will do, I don’t think it will address the DRM folks needs as they need access to make firmware calls from the DRM driver.
 
--static int nvme_user_cmd(struct nvme_dev *dev, struct nvme_ns *ns,
-+static int nvme_user_cmd(struct nvme_dev *dev, struct request_queue *q,
-  			struct nvme_passthru_cmd __user *ucmd)
-  {
-  	struct nvme_passthru_cmd cmd;
-@@ -1690,6 +1690,8 @@ static int nvme_user_cmd(struct nvme_dev *dev, struct nvme_ns *ns,
-  	int status, length;
-  	struct nvme_iod *uninitialized_var(iod);
-  	unsigned timeout;
-+	struct request *req;
-+	struct nvme_ns *ns = q->queuedata;
+> If you need a common place for this, drivers/firmware seems like a
+> better home than drivers/soc.
 
-  	if (!capable(CAP_SYS_ADMIN))
-  		return -EACCES;
-@@ -1699,7 +1701,7 @@ static int nvme_user_cmd(struct nvme_dev *dev, struct nvme_ns *ns,
-  	memset(&c, 0, sizeof(c));
-  	c.common.opcode = cmd.opcode;
-  	c.common.flags = cmd.flags;
--	c.common.nsid = cpu_to_le32(cmd.nsid);
-+	c.common.nsid = ns ? cpu_to_le32(ns->ns_id) : cpu_to_le32(cmd.nsid);
-  	c.common.cdw2[0] = cpu_to_le32(cmd.cdw2);
-  	c.common.cdw2[1] = cpu_to_le32(cmd.cdw3);
-  	c.common.cdw10[0] = cpu_to_le32(cmd.cdw10);
-@@ -1725,21 +1727,15 @@ static int nvme_user_cmd(struct nvme_dev *dev, struct nvme_ns *ns,
+Agreed, what’s you take than on moving to use firmware_ops as defined in arch/arm and extended it or just leaving this as a qcom specific firmware interface?
 
-  	if (length != cmd.data_len)
-  		status = -ENOMEM;
--	else if (ns) {
--		struct request *req;
--
--		req = blk_mq_alloc_request(ns->queue, WRITE,
--						(GFP_KERNEL|__GFP_WAIT), false);
--		if (IS_ERR(req))
--			status = PTR_ERR(req);
--		else {
--			status = nvme_submit_sync_cmd(req, &c, &cmd.result,
--								timeout);
--			blk_mq_free_request(req);
--		}
--	} else
--		status = __nvme_submit_admin_cmd(dev, &c, &cmd.result, timeout);
+- k
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
-+	req = blk_mq_alloc_request(q, WRITE, (GFP_KERNEL|__GFP_WAIT), false);
-+	if (IS_ERR(req)) {
-+		status = PTR_ERR(req);
-+		goto out;
-+	}
-+	status = nvme_submit_sync_cmd(req, &c, &cmd.result, timeout);
-+	blk_mq_free_request(req);
-+ out:
-  	if (cmd.data_len) {
-  		nvme_unmap_user_pages(dev, cmd.opcode & 1, iod);
-  		nvme_free_iod(dev, iod);
-@@ -1762,9 +1758,9 @@ static int nvme_ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd,
-  		force_successful_syscall_return();
-  		return ns->ns_id;
-  	case NVME_IOCTL_ADMIN_CMD:
--		return nvme_user_cmd(ns->dev, NULL, (void __user *)arg);
-+		return nvme_user_cmd(ns->dev, ns->dev->admin_q, (void __user *)arg);
-  	case NVME_IOCTL_IO_CMD:
--		return nvme_user_cmd(ns->dev, ns, (void __user *)arg);
-+		return nvme_user_cmd(ns->dev, ns->queue, (void __user *)arg);
-  	case NVME_IOCTL_SUBMIT_IO:
-  		return nvme_submit_io(ns, (void __user *)arg);
-  	case SG_GET_VERSION_NUM:
-@@ -2155,6 +2151,17 @@ static int nvme_dev_add(struct nvme_dev *dev)
-  	if (blk_mq_alloc_tag_set(&dev->tagset))
-  		goto out;
-
-+	dev->io_q = blk_mq_init_queue(&dev->tagset);
-+	if (IS_ERR(dev->io_q)) {
-+		blk_mq_free_tag_set(&dev->tagset);
-+		goto out;
-+	}
-+	if (!blk_get_queue(dev->io_q)) {
-+		blk_cleanup_queue(dev->io_q);
-+		blk_mq_free_tag_set(&dev->tagset);
-+		goto out;
-+	}
-+
-  	id_ns = mem;
-  	for (i = 1; i <= nn; i++) {
-  		res = nvme_identify(dev, i, 0, dma_addr);
-@@ -2565,6 +2572,7 @@ static void nvme_free_dev(struct kref *kref)
-  	nvme_release_instance(dev);
-  	blk_mq_free_tag_set(&dev->tagset);
-  	blk_put_queue(dev->admin_q);
-+	blk_put_queue(dev->io_q);
-  	kfree(dev->queues);
-  	kfree(dev->entry);
-  	kfree(dev);
-@@ -2589,16 +2597,12 @@ static int nvme_dev_release(struct inode *inode, struct file *f)
-  static long nvme_dev_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
-  {
-  	struct nvme_dev *dev = f->private_data;
--	struct nvme_ns *ns;
-
-  	switch (cmd) {
-  	case NVME_IOCTL_ADMIN_CMD:
--		return nvme_user_cmd(dev, NULL, (void __user *)arg);
-+		return nvme_user_cmd(dev, dev->admin_q, (void __user *)arg);
-  	case NVME_IOCTL_IO_CMD:
--		if (list_empty(&dev->namespaces))
--			return -ENOTTY;
--		ns = list_first_entry(&dev->namespaces, struct nvme_ns, list);
--		return nvme_user_cmd(dev, ns, (void __user *)arg);
-+		return nvme_user_cmd(dev, dev->io_q, (void __user *)arg);
-  	default:
-  		return -ENOTTY;
-  	}
-diff --git a/include/linux/nvme.h b/include/linux/nvme.h
-index 258945f..d3b467b 100644
---- a/include/linux/nvme.h
-+++ b/include/linux/nvme.h
-@@ -74,6 +74,7 @@ struct nvme_dev {
-  	struct list_head node;
-  	struct nvme_queue **queues;
-  	struct request_queue *admin_q;
-+	struct request_queue *io_q;
-  	struct blk_mq_tag_set tagset;
-  	struct blk_mq_tag_set admin_tagset;
-  	u32 __iomem *dbs;
---
