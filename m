@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962AbbAWKWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 05:22:25 -0500
-Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:9773 "EHLO
-	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754029AbbAWKWX (ORCPT
+	id S1753916AbbAWKVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 05:21:46 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:65077 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031AbbAWKVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 05:22:23 -0500
-From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-To: <mark.rutland@arm.com>, <arnd@arndb.de>, <catalin.marinas@arm.com>,
-        <will.deacon@arm.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>
-CC: <Joel.Schopp@amd.com>, <Thomas.Lendacky@amd.com>,
-        <Suravee.Suthikulpanit@amd.com>, <broonie@kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <geng.ren@spreadtrum.com>,
-        <zhizhou.zhang@spreadtrum.com>, <zhang.lyra@gmail.com>,
-        <wei.qiao@spreadtrum.com>, <orsonzhai@gmail.com>
-Subject: [PATCH v6 2/2] arm64: Add support for Spreadtrum's Sharkl64 Platform in Kconfig and defconfig
-Date: Fri, 23 Jan 2015 18:21:31 +0800
-Message-ID: <1422008491-16452-3-git-send-email-chunyan.zhang@spreadtrum.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422008491-16452-1-git-send-email-chunyan.zhang@spreadtrum.com>
-References: <sprd-dt-v6>
- <1422008491-16452-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	Fri, 23 Jan 2015 05:21:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stathis Voukelatos <stathisv70@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Stathis Voukelatos <stathis.voukelatos@linn.co.uk>,
+        abrestic@chromium.org
+Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
+Date: Fri, 23 Jan 2015 11:21:37 +0100
+Message-ID: <3515756.ch1oRd7PaS@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
+References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.0.67.142]
-X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
- SHMBX01.spreadtrum.com (10.0.1.203)
-X-MAIL: SHSQR01.spreadtrum.com t0NAM0r8022271
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:+Lr813aC9WJL7hzsz5LR24oR8yqobNHtYQUA3h9wKwOEQGgNS3X
+ c40xaGwkDiwPPcCc1ultnxClyOgIsKKTlTZniBM+psuGH4KoMYI27UIk7OFV8cWFiohmGx5
+ LU/hMfaKm6W7pNHsG5AO2f+g3EuQBRtKXA7t4k8wIWUUiErKXbvyqZh3x50ej09EY1xX9G6
+ 27UkzVucEbbKdYN39H6jQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
+On Friday 23 January 2015 10:07:01 Stathis Voukelatos wrote:
+> +- interrupts : sniffer interrupt specifier
+> +- clocks : specify the system clock for the peripheral
+> +- clock-names : must contain the "sys" entry
+> +- fifo-block-words : number of words in one data FIFO entry
+> +
+> +Example:
+> +
+> +sniffer@1814a000 {
+> +        compatible = "linn,eth-sniffer";
+> +        reg = <0x1814a000 0x100>, <0x1814a400 0x400>, <0x1814a800 0x400>;
+> +        reg-names = "regs", "tx-ram", "rx-ram";
+> +        interrupts = <GIC_SHARED 58 IRQ_TYPE_LEVEL_HIGH>;
+> +        interrupt-names = "eth-sniffer-irq";
+> +        clocks = <&system_clk>;
+> +        clock-names = "sys";
+> +        fifo-block-words = <4>;
+> 
 
-Adds support for Spreadtrum's SoC Platform in the arm64 Kconfig and
-defconfig files.
+The example contains an interrupt-names property that is not documented.
+If you want to name interrupts, the exact name strings need to
+be mandated by the binding. Alternatively just drop the name.
+I notice that the driver requests the first interrupt without giving
+a name anyway, and the description above suggests that there can
+only be one interrupt.
 
-Signed-off-by: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
-Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
-Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
----
- arch/arm64/Kconfig           |    5 +++++
- arch/arm64/configs/defconfig |    1 +
- 2 files changed, 6 insertions(+)
-
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index b1f9a20..885c1f4 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -153,6 +153,11 @@ config ARCH_SEATTLE
- 	help
- 	  This enables support for AMD Seattle SOC Family
- 
-+config ARCH_SPRD
-+	bool "Spreadtrum SoC platform"
-+	help
-+	  Support for Spreadtrum ARM based SoCs
-+
- config ARCH_THUNDER
- 	bool "Cavium Inc. Thunder SoC Family"
- 	help
-diff --git a/arch/arm64/configs/defconfig b/arch/arm64/configs/defconfig
-index dd301be..c1677ca 100644
---- a/arch/arm64/configs/defconfig
-+++ b/arch/arm64/configs/defconfig
-@@ -33,6 +33,7 @@ CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
- # CONFIG_IOSCHED_DEADLINE is not set
- CONFIG_ARCH_THUNDER=y
-+CONFIG_ARCH_SPRD=y
- CONFIG_ARCH_VEXPRESS=y
- CONFIG_ARCH_XGENE=y
- CONFIG_PCI=y
--- 
-1.7.9.5
-
+	Arnd
