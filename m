@@ -1,71 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505AbbAWPHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:07:44 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:64736 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222AbbAWPHl (ORCPT
+	id S1755548AbbAWPIj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:08:39 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51640 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbbAWPIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:07:41 -0500
-Date: Fri, 23 Jan 2015 16:07:34 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL] sched: Fix missing preemption opportunity
-Message-ID: <20150123150730.GA16254@lerouge>
-References: <1421946484-9298-1-git-send-email-fweisbec@gmail.com>
- <20150123091353.GI2896@worktop.programming.kicks-ass.net>
+	Fri, 23 Jan 2015 10:08:37 -0500
+Message-ID: <54C263CC.1060904@roeck-us.net>
+Date: Fri, 23 Jan 2015 07:07:56 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123091353.GI2896@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, mhocko@suse.cz,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
+ page tables to the process'
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050445.GA22751@roeck-us.net> <20150123111304.GA5975@node.dhcp.inet.fi>
+In-Reply-To: <20150123111304.GA5975@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54C263F4.03C6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 7
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:13:53AM +0100, Peter Zijlstra wrote:
-> 
-> I picked up the patch; will drop it if Ingo also does ;-)
-> 
-> On Thu, Jan 22, 2015 at 06:08:04PM +0100, Frederic Weisbecker wrote:
-> > +++ b/kernel/sched/core.c
-> > @@ -2877,6 +2877,21 @@ void __sched schedule_preempt_disabled(void)
-> >  	preempt_disable();
-> >  }
-> >  
-> > +static void preempt_schedule_common(void)
-> > +{
-> > +	do {
-> > +		__preempt_count_add(PREEMPT_ACTIVE);
-> > +		__schedule();
-> > +		__preempt_count_sub(PREEMPT_ACTIVE);
-> > +
-> > +		/*
-> > +		 * Check again in case we missed a preemption opportunity
-> > +		 * between schedule and now.
-> > +		 */
-> > +		barrier();
-> 
-> I do however wonder about this barrier() here; why do we think we need
-> it?
-> 
-> Is that because test_bit() it 'broken'? The bitops are typically atomic
-> ops and atomic reads should be through a volatile cast (x86
-> constant_test_bit doesn't seem to do this).
-> 
-> Should we go audit and fix that?
+On 01/23/2015 03:13 AM, Kirill A. Shutemov wrote:
+> On Thu, Jan 22, 2015 at 09:04:45PM -0800, Guenter Roeck wrote:
+>> On Thu, Jan 22, 2015 at 03:05:17PM -0800, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2015-01-22-15-04 has been uploaded to
+>>>
+>>>     http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>> qemu:sh fails to shut down.
+>>
+>> bisect log:
+>>
+>> # bad: [03586ad04b2170ee816e6936981cc7cd2aeba129] pci: test for unexpectedly disabled bridges
+>> # good: [ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc] Linux 3.19-rc5
+>> git bisect start 'HEAD' 'v3.19-rc5'
+>> # bad: [d113ba21d15c7d3615fd88490d1197615bb39fc0] mm: remove lock validation check for MADV_FREE
+>> git bisect bad d113ba21d15c7d3615fd88490d1197615bb39fc0
+>> # good: [17351d1625a5030fa16f1346b77064c03b51f107] mm:add KPF_ZERO_PAGE flag for /proc/kpageflags
+>> git bisect good 17351d1625a5030fa16f1346b77064c03b51f107
+>> # good: [ad18ad1fce6f241a9cbd4adfd6b16c9283181e39] memcg: add BUILD_BUG_ON() for string tables
+>> git bisect good ad18ad1fce6f241a9cbd4adfd6b16c9283181e39
+>> # bad: [aa7e7cbfa43b74f6faef04ff730b5098544a4f77] mm/compaction: enhance tracepoint output for compaction begin/end
+>> git bisect bad aa7e7cbfa43b74f6faef04ff730b5098544a4f77
+>> # good: [a40d0d2cf21e2714e9a6c842085148c938bf36ab] mm: memcontrol: remove unnecessary soft limit tree node test
+>> git bisect good a40d0d2cf21e2714e9a6c842085148c938bf36ab
+>> # good: [4ec4aa2e07c1d6eee61f6cace29401c6febcb6c5] mm: make FIRST_USER_ADDRESS unsigned long on all archs
+>> git bisect good 4ec4aa2e07c1d6eee61f6cace29401c6febcb6c5
+>> # bad: [22310c209483224a64436a6e815a86feda681659] mm: account pmd page tables to the process
+>> git bisect bad 22310c209483224a64436a6e815a86feda681659
+>> # good: [19a41261b1dcd8d12372d9c57c2035144608a599] arm: define __PAGETABLE_PMD_FOLDED for !LPAE
+>> git bisect good 19a41261b1dcd8d12372d9c57c2035144608a599
+>> # first bad commit: [22310c209483224a64436a6e815a86feda681659] mm: account pmd page tables to the process
+>>
+>> ---
+>>
+>> qemu:microblaze generates warnings to the console.
+>>
+>> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
+>>
+>> with various call stacks. See
+>> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
+>> for details.
+>
+> Could you try patch below? Completely untested.
+>
+>>From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Date: Fri, 23 Jan 2015 13:08:26 +0200
+> Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
+>
+> Microblaze uses custom implementation of PMD folding, but doesn't define
+> __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
+>
+> Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
+> It also fixes problems with recently-introduced pmd accounting.
+>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Reported-by: Guenter Roeck <linux@roeck-us.net>
 
-I looked up with git blame and this was already there prior the first git commit v2.6.12
-without appropriate explanation.
+Tested working.
 
-We must make sure that the PREEMPT_ACTIVE decrement is visible before we do the NEED_RESCHED
-test or an interrupt could spuriously miss a preempt_schedule_irq() opportunity.
+Tested-by: Guenter Roeck <linux@roeck-us.net>
 
-__preempt_count_sub() in asm-generic is an inline, so an implicit barrier(). Only x86
-overwrites it yet and it does so through an inline as well.
+Any idea how to fix the sh problem ?
 
-And __preempt_count_ops() must really imply a barrier() anyway, anything else would
-be insane (probably we should specify that in a comment somewhere). Although I see
-that responsability is taken from non-underscored callers...
+Thanks,
+Guenter
+
