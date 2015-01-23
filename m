@@ -1,64 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413AbbAWIsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:48:50 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:37155 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbbAWIsr (ORCPT
+	id S1753212AbbAWIwb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:52:31 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:62141 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbbAWIwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:48:47 -0500
-Message-ID: <54C20AE7.3020508@collabora.co.uk>
-Date: Fri, 23 Jan 2015 09:48:39 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Fri, 23 Jan 2015 03:52:30 -0500
+Message-ID: <54C20BCA.9040102@gmail.com>
+Date: Fri, 23 Jan 2015 09:52:26 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Kukjin Kim <kgene@kernel.org>, "'Mike Turquette'" <mturquette@linaro.org>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>
-CC: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Arun Kumar K'" <arun.kk@samsung.com>,
-        "'Doug Anderson'" <dianders@chromium.org>,
-        "'Olof Johansson'" <olof@lixom.net>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Tobias Jakobi'" <liquid.acid@gmx.net>,
-        "'Andrzej Hajda'" <a.hajda@samsung.com>,
-        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>,
-        "'Kevin Hilman'" <khilman@linaro.org>,
-        "'Joonyoung Shim'" <jy0922.shim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] clk: exynos5420: Add IDs for clocks used in DISP1
- power domain
-References: <1421750127-22536-1-git-send-email-javier.martinez@collabora.co.uk> <1421750127-22536-2-git-send-email-javier.martinez@collabora.co.uk> <54BE6050.1090205@samsung.com> <20150120175402.22722.84342@quantum> <54BF81C2.3020000@collabora.co.uk> <0c2601d036d9$1276e7d0$3764b770$@kernel.org>
-In-Reply-To: <0c2601d036d9$1276e7d0$3764b770$@kernel.org>
+To: lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com
+Subject: man-pages-3.78 is released
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+Gidday,
 
-On 01/23/2015 07:51 AM, Kukjin Kim wrote:
->> >>
->> >> Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> >
->> > Acked-by: Michael Turquette <mturquette@linaro.org>
->> >
->> 
->> Thanks a lot Sylwester and Mike for your acks.
->> 
->> Kukjin, could you please pick $subject and "Patch 2/2 ARM: dts: Add DISP1
->> power domain for exynos5420" through your tree?
->> 
-> Sure, I will after applying Marek's generic power domain patch.
->
+The Linux man-pages maintainer proudly announces:
 
-Awesome, thanks a lot for your help!
- 
-> Thanks,
-> Kukjin
-> 
+    man-pages-3.78 - man pages for Linux
 
-Best regards,
-Javier
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.78
+
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2015/01/man-pages-378-is-released.html
+
+A selection of changes in this release that may be interesting
+for readers of this list is shown below.
+
+Cheers,
+
+Michael
+
+
+==================== Changes in man-pages-3.78 ====================
+
+
+New and rewritten pages
+-----------------------
+
+execveat.2
+    David Drysdale, Michael Kerrisk  [Rich Felker]
+        New page for execveat(2)
+
+memfd_create.2
+    Michael Kerrisk, David Herrmann
+        New page for memfd_create() system call
+             Including notes about file sealing
+
+s390_pci_mmio_write.2
+    Alexey Ishchuk
+        New page for s390 s390_pci_mmio_write() and s390_pci_mmio_read()
+            New manual page for the new PCI MMIO memory access system
+            calls, s390_pci_mmio_write() and s390_pci_mmio_read(),
+            added for the s390 platform.
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+fcntl.2
+    David Herrmann  [Michael Kerrisk]
+        Document F_ADD_SEALS and F_GET_SEALS commands
+
+proc.5
+    Elie De Brauwer
+        Document /proc/sys/vm/compact_memory
+    Michael Kerrisk
+        Document /proc/sys/fs/nr_open
+
+
+Changes to individual pages
+---------------------------
+
+perf_event_open.2
+    Vince Weaver
+        Clarify description of overflow events
+            Update the perf_event_open manpage to be more consistent when
+            discussing overflow events.  It merges the discussion of
+            poll-type notifications with those generated by SIGIO
+            signal handlers.
+            This addresses the remaining FIXMEs is the document.
+    Vince Weaver
+        Remove inaccurate paragraph describing attr.config
+            Remove an inaccurate paragraph about values in the attr.config
+            field.  This information was never true in any released kernel;
+            it somehow snuck into the manpage because it is still described
+            this way in tools/perf/design.txt in the kernel source tree.
+
+ptrace.2
+sigaction.2
+seccomp.2
+    Kees Cook
+        Ptrace and siginfo details
+            While writing some additional seccomp tests, I realized
+            PTRACE_EVENT_SECCOMP wasn't documented yet. Fixed this, and added
+            additional notes related to ptrace events SIGTRAP details.
+
+readv.2
+    Michael Kerrisk
+        Update details on glibc readv()/writev() wrapper behavior
+            And add a historical detail about Linux 2.0.
+
+syscall.2
+    Kees Cook
+        Add arm64 and mips
+            Add mips and arm64 to tables, along with some further
+            details on these architectures,
+
+fexecve.3
+    Michael Kerrisk
+        Rewrite the script+close-on-exec problem as a BUG
+            Also, add one or two details about this scenario.
+    Michael Kerrisk
+        The natural idiom when using fexecve() is to use the close-on-exec flag
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
