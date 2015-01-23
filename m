@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbbAWXNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 18:13:22 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:54537 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751036AbbAWXNT (ORCPT
+	id S1752680AbbAWXQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 18:16:15 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:36780 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbbAWXQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 18:13:19 -0500
-Date: Sat, 24 Jan 2015 00:13:15 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Sylvain Rochet <sylvain.rochet@finsecur.com>
-Cc: Wenyou Yang <wenyou.yang@atmel.com>, nicolas.ferre@atmel.com,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, peda@axentia.se,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 07/12] pm: at91: the standby mode uses the same sram
- function as the suspend to memory mode
-Message-ID: <20150123231315.GA32318@piout.net>
-References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
- <1421741825-18226-8-git-send-email-wenyou.yang@atmel.com>
- <20150123165020.GA24210@gradator.net>
+	Fri, 23 Jan 2015 18:16:13 -0500
+Date: Fri, 23 Jan 2015 15:16:06 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
+Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at
+ kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
+Message-ID: <20150123231606.GA9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20150122004305.GJ9719@linux.vnet.ibm.com>
+ <54C1BFFD.9060707@oracle.com>
+ <20150123035158.GP9719@linux.vnet.ibm.com>
+ <54C1C7D2.906@oracle.com>
+ <54C1C899.8000106@oracle.com>
+ <20150123065542.GQ9719@linux.vnet.ibm.com>
+ <20150123093644.GA11175@linux.vnet.ibm.com>
+ <54C2C278.1000608@oracle.com>
+ <20150123225411.GZ9719@linux.vnet.ibm.com>
+ <54C2D3B5.5080808@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150123165020.GA24210@gradator.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54C2D3B5.5080808@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012323-0009-0000-0000-000008398C0B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/01/2015 at 17:50:20 +0100, Sylvain Rochet wrote :
-> Hello Wenyou,
-> 
-> 
-> On Tue, Jan 20, 2015 at 04:17:00PM +0800, Wenyou Yang wrote:
+On Fri, Jan 23, 2015 at 06:05:25PM -0500, Sasha Levin wrote:
+> On 01/23/2015 05:54 PM, Paul E. McKenney wrote:
+> > On Fri, Jan 23, 2015 at 04:51:52PM -0500, Sasha Levin wrote:
+> >> > On 01/23/2015 04:36 AM, Paul E. McKenney wrote:
+> >>> > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> >>> > > index 8669de884445..ec99dc16aa38 100644
+> >>> > > --- a/kernel/rcu/tree_plugin.h
+> >>> > > +++ b/kernel/rcu/tree_plugin.h
+> >>> > > @@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+> >>> > >  	special = t->rcu_read_unlock_special;
+> >>> > >  	if (special.b.need_qs) {
+> >>> > >  		rcu_preempt_qs();
+> >>> > > +		t->rcu_read_unlock_special.need_qs = false;
+> >> > 
+> >> > It didn't compile, I've used:
+> >> > 
+> >> > 		t->rcu_read_unlock_special.b.need_qs = false;
+> > Apologies, I should have marked it "untested".  Good show on finding
+> > the correct fix.
 > > 
-> > diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-> > index 691e6db..a1010f0 100644
-> > --- a/arch/arm/mach-at91/pm.c
-> > +++ b/arch/arm/mach-at91/pm.c
+> > But does your fixed version help?  ;-)
 > 
-> 
-> > @@ -145,62 +145,51 @@ extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
-> >  			    void __iomem *ramc1, int memctrl);
-> >  extern u32 at91_slow_clock_sz;
-> >  
-> > +static void at91_pm_suspend(suspend_state_t state)
-> > +{
->       (...)
-> > +	slow_clock(at91_pmc_base, at91_ramc_base[0],
-> > +			at91_ramc_base[1], pm_data);
-> > +}
-> 
-> 
-> > -			if (slow_clock) {
-> > -				slow_clock(at91_pmc_base, at91_ramc_base[0],
-> > -					   at91_ramc_base[1],
-> > -					   at91_pm_data.memctrl);
->       (...)
-> > +               at91_pm_suspend(state);
-> 
-> 
-> By doing that you removed the condition "if (slow_clock)".
-> 
-> But slow_clock can still be NULL, see commit d2e4679, there are multiple 
-> reasons which ends up with a NULL slow_clock.
-> 
+> I haven't seen it happening it again, but you won't get a "yes" out of me
+> until tomorrow evening :)
 
-I would fix that by not calling suspend_set_ops(&at91_pm_ops) when
-slow_clock is NULL in patch 6 (quick and easy) or copying the whole
-at91_pm_sram_init() in at91_pm_init() and handle failures from there.
+Fair enough!  ;-)
 
+							Thanx, Paul
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
