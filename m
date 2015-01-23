@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250AbbAWALu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 19:11:50 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:33103 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887AbbAWAJj (ORCPT
+	id S1755232AbbAWALr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 19:11:47 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:34126 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890AbbAWAJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 19:09:39 -0500
+	Thu, 22 Jan 2015 19:09:40 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@codemonkey.org.uk>,
@@ -16,9 +16,9 @@ Cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@codemonkey.org.uk>,
         Prarit Bhargava <prarit@redhat.com>,
         Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 05/12] time: Add debugging checks to warn if we see delays
-Date: Thu, 22 Jan 2015 16:09:20 -0800
-Message-Id: <1421971767-17707-6-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 06/12] time: Add infrastructure to cap clocksource reads to the max_cycles value
+Date: Thu, 22 Jan 2015 16:09:21 -0800
+Message-Id: <1421971767-17707-7-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421971767-17707-1-git-send-email-john.stultz@linaro.org>
 References: <1421971767-17707-1-git-send-email-john.stultz@linaro.org>
@@ -26,24 +26,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently there's been some request for better sanity
-checking in the time code, so that its more clear
-when something is going wrong since timekeeping issues
-could manifest in a large number of strange ways with
-various subsystems.
+When calculating the current delta since the last tick, we
+currently have no hard protections to prevent a multiplciation
+overflow from ocurring.
 
-Thus, this patch adds some extra infrastructure to
-add a check update_wall_time to print warnings if we
-see the call delayed beyond the max_cycles overflow
-point, or beyond the clocksource max_idle_ns value
-which is currently 50% of the overflow point.
+This patch introduces infrastructure to allow a capp that
+limits the read delta value to the max_cycles value, which is
+where an overflow would occur.
 
-This extra infrastructure is conditionalized
-behind a new CONFIG_DEBUG_TIMEKEEPING option
-also added in this patch.
+Since this is in the hotpath, it adds the extra checking under
+CONFIG_DEBUG_TIMEKEEPING.
 
-Tested this a bit by halting qemu for specified
-lengths of time to trigger the warnings.
+There was some concern that capping time like this could cause
+problems as we may stop expiring timers, which could go circular
+if the timer that triggers time accumulation were misscheduled
+too far in the future, which would cause time to stop.
+
+However, since the mult overflow would result in a smaller time
+value, we would effectively have the same problem there.
 
 Cc: Dave Jones <davej@codemonkey.org.uk>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
@@ -55,87 +55,79 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/jiffies.c     |  1 +
- kernel/time/timekeeping.c | 23 +++++++++++++++++++++++
- lib/Kconfig.debug         | 12 ++++++++++++
- 3 files changed, 36 insertions(+)
+ kernel/time/timekeeping.c | 39 +++++++++++++++++++++++++++------------
+ 1 file changed, 27 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
-index a6a5bf5..7e41390 100644
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -71,6 +71,7 @@ static struct clocksource clocksource_jiffies = {
- 	.mask		= 0xffffffff, /*32bits*/
- 	.mult		= NSEC_PER_JIFFY << JIFFIES_SHIFT, /* details above */
- 	.shift		= JIFFIES_SHIFT,
-+	.max_cycles	= 10,
- };
- 
- __cacheline_aligned_in_smp DEFINE_SEQLOCK(jiffies_lock);
 diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 6a93185..daa0d43 100644
+index daa0d43..ae3945d 100644
 --- a/kernel/time/timekeeping.c
 +++ b/kernel/time/timekeeping.c
-@@ -118,6 +118,26 @@ static inline void tk_update_sleep_time(struct timekeeper *tk, ktime_t delta)
- 	tk->offs_boot = ktime_add(tk->offs_boot, delta);
+@@ -134,8 +134,31 @@ static void timekeeping_check_update(struct timekeeper *tk, cycle_t offset)
+ 			" the %s 50%% safety margin (%lld)\n",
+ 			offset, name, max_cycles>>1);
  }
- 
-+#ifdef CONFIG_DEBUG_TIMEKEEPING
-+static void timekeeping_check_update(struct timekeeper *tk, cycle_t offset)
++
++static inline cycle_t timekeeping_get_delta(struct tk_read_base *tkr)
 +{
++	cycle_t cycle_now, delta;
 +
-+	cycle_t max_cycles = tk->tkr.clock->max_cycles;
-+	const char *name = tk->tkr.clock->name;
++	/* read clocksource */
++	cycle_now = tkr->read(tkr->clock);
 +
-+	if (offset > max_cycles)
-+		printk_deferred("ERROR: cycle offset (%lld) is larger then"
-+			" allowed %s max_cycles (%lld)\n",
-+			offset, name, max_cycles);
-+	else if (offset > (max_cycles >> 1))
-+		printk_deferred("WARNING: cycle offset (%lld) is past"
-+			" the %s 50%% safety margin (%lld)\n",
-+			offset, name, max_cycles>>1);
++	/* calculate the delta since the last update_wall_time */
++	delta = clocksource_delta(cycle_now, tkr->cycle_last, tkr->mask);
++
++	/* Cap delta value to the max_cycles values to avoid mult overflows */
++	if (unlikely(delta > tkr->clock->max_cycles))
++		delta = tkr->clock->max_cycles;
++
++	return delta;
 +}
-+#else
-+#define timekeeping_check_update(x, y)
-+#endif
-+
+ #else
+ #define timekeeping_check_update(x, y)
++static inline cycle_t timekeeping_get_delta(struct tk_read_base *tkr)
++{
++	/* calculate the delta since the last update_wall_time */
++	return clocksource_delta(tkr->read(tkr->clock), tkr->cycle_last,
++								tkr->mask);
++}
+ #endif
+ 
  /**
-  * tk_setup_internals - Set up internals to use clocksource clock.
-  *
-@@ -1602,6 +1622,9 @@ void update_wall_time(void)
- 	if (offset < real_tk->cycle_interval)
- 		goto out;
+@@ -213,14 +236,10 @@ static inline u32 arch_gettimeoffset(void) { return 0; }
  
-+	/* Do some additional sanity checking */
-+	timekeeping_check_update(real_tk, offset);
-+
- 	/*
- 	 * With NO_HZ we may have to accumulate many cycle_intervals
- 	 * (think "ticks") worth of time at once. To do this efficiently,
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 5f2ce61..c7b040d 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -852,6 +852,18 @@ config SCHED_STACK_END_CHECK
- 	  data corruption or a sporadic crash at a later stage once the region
- 	  is examined. The runtime overhead introduced is minimal.
+ static inline s64 timekeeping_get_ns(struct tk_read_base *tkr)
+ {
+-	cycle_t cycle_now, delta;
++	cycle_t delta;
+ 	s64 nsec;
  
-+config DEBUG_TIMEKEEPING
-+	bool "Enable extra timekeeping sanity checking"
-+	help
-+	  This option will enable additional timekeeping sanity checks
-+	  which may be helpful when diagnoising issues where timekeeping
-+	  problems are suspected.
-+
-+	  This may include checks in the timekeeping hotpaths, so this
-+	  option may have a performance impact to some workloads.
-+
-+	  If unsure, say N.
-+
- config TIMER_STATS
- 	bool "Collect kernel timers statistics"
- 	depends on DEBUG_KERNEL && PROC_FS
+-	/* read clocksource: */
+-	cycle_now = tkr->read(tkr->clock);
+-
+-	/* calculate the delta since the last update_wall_time: */
+-	delta = clocksource_delta(cycle_now, tkr->cycle_last, tkr->mask);
++	delta = timekeeping_get_delta(tkr);
+ 
+ 	nsec = delta * tkr->mult + tkr->xtime_nsec;
+ 	nsec >>= tkr->shift;
+@@ -232,14 +251,10 @@ static inline s64 timekeeping_get_ns(struct tk_read_base *tkr)
+ static inline s64 timekeeping_get_ns_raw(struct timekeeper *tk)
+ {
+ 	struct clocksource *clock = tk->tkr.clock;
+-	cycle_t cycle_now, delta;
++	cycle_t delta;
+ 	s64 nsec;
+ 
+-	/* read clocksource: */
+-	cycle_now = tk->tkr.read(clock);
+-
+-	/* calculate the delta since the last update_wall_time: */
+-	delta = clocksource_delta(cycle_now, tk->tkr.cycle_last, tk->tkr.mask);
++	delta = timekeeping_get_delta(&tk->tkr);
+ 
+ 	/* convert delta to nanoseconds. */
+ 	nsec = clocksource_cyc2ns(delta, clock->mult, clock->shift);
 -- 
 1.9.1
 
