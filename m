@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365AbbAWP3u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:29:50 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47732 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652AbbAWP3s (ORCPT
+	id S1755500AbbAWPaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:30:10 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41935 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064AbbAWPaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:29:48 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "Fu\, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
-        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
-        <hdegoede@redhat.com>, <wens@csie.org>,
-        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
-        <netdev@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
-References: <54BDCC06.8090107@linux.intel.com>
-	<87twzincvz.fsf@kamboji.qca.qualcomm.com>
-	<54C1012F.1020400@cogentembedded.com> <54C1646B.4080409@broadcom.com>
-Date: Fri, 23 Jan 2015 17:29:40 +0200
-In-Reply-To: <54C1646B.4080409@broadcom.com> (Arend van Spriel's message of
-	"Thu, 22 Jan 2015 21:58:19 +0100")
-Message-ID: <87y4otldln.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 23 Jan 2015 10:30:04 -0500
+Date: Fri, 23 Jan 2015 15:29:56 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Min-Hua Chen <orca.chen@gmail.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: add ioremap physical address information
+Message-ID: <20150123152956.GA9557@e104818-lin.cambridge.arm.com>
+References: <CAHkaATSM=V+BNZvAXC+VG6NDjOK9m0ZP3Q=SUaoxtgDw4SKZog@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHkaATSM=V+BNZvAXC+VG6NDjOK9m0ZP3Q=SUaoxtgDw4SKZog@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arend van Spriel <arend@broadcom.com> writes:
+On Fri, Dec 26, 2014 at 04:52:10PM +0000, Min-Hua Chen wrote:
+> In /proc/vmallocinfo, it's good to show the physical address
+> of each ioremap in vmallocinfo. Add physical address information
+> in arm64 ioremap.
+> 
+> 0xffffc900047f2000-0xffffc900047f4000    8192 _nv013519rm+0x57/0xa0
+> [nvidia] phys=f8100000 ioremap
+> 0xffffc900047f4000-0xffffc900047f6000    8192 _nv013519rm+0x57/0xa0
+> [nvidia] phys=f8008000 ioremap
+> 0xffffc90004800000-0xffffc90004821000  135168 e1000_probe+0x22c/0xb95
+> [e1000e] phys=f4300000 ioremap
+> 0xffffc900049c0000-0xffffc900049e1000  135168 _nv013521rm+0x4d/0xd0
+> [nvidia] phys=e0140000 ioremap
+> 
+> Signed-off-by: Min-Hua Chen <orca.chen@gmail.com>
 
-> On 01/22/15 14:54, Sergei Shtylyov wrote:
->> Hello.
->>
->> On 1/22/2015 4:49 PM, Kalle Valo wrote:
->>
->>>> >From 04d3fa673897ca4ccbea6c76836d0092dba2484a Mon Sep 17 00:00:00 2001
->>>> From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
->>>> Date: Tue, 20 Jan 2015 11:14:13 +0800
->>>> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
->>
->>>> WiFi chip has 2 SDIO functions, and PM core will trigger
->>>> twice suspend/resume operations for one WiFi chip to do
->>>> the same things. This patch avoid this case.
->>
->>>> Acked-by: Arend van Spriel <arend@broadcom.com>
->>>> Acked-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
->>>> Acked-by: Kalle Valo <kvalo@codeaurora.org>
->>>> Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
->>
->>> I don't remember giving Acked-by to this (or for matter to anything for
->>> a long time). What about Sergei or Arend?
->>
->> I haven't ACK'ed this patch either.
->
-> I did ACK the initial patch and felt it still valid for this 'V2' patch.
-
-Ok, thanks. So the patch is good, Zhonghui just needs to remove the two
-acked-by lines.
+Applied. Thanks.
 
 -- 
-Kalle Valo
+Catalin
