@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342AbbAWFDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 00:03:12 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:51754 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732AbbAWFDF (ORCPT
+	id S1753175AbbAWFDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 00:03:30 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:14407 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395AbbAWFDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 00:03:05 -0500
-X-AuditID: cbfee68d-f79296d000004278-58-54c1d606b7ff
+	Fri, 23 Jan 2015 00:03:19 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-0f-54c1d606bc31
 From: Jaewon Kim <jaewon02.kim@samsung.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         linux-pm@vger.kernel.org
@@ -19,38 +19,38 @@ Cc: Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
         Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>,
         Beomho Seo <beomho.seo@samsung.com>,
         Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH 1/6] mfd: max77843: Add max77843 MFD driver core driver
-Date: Fri, 23 Jan 2015 14:02:42 +0900
-Message-id: <1421989367-32721-2-git-send-email-jaewon02.kim@samsung.com>
+Subject: [PATCH 2/6] extcon: max77843: Add max77843 MUIC driver
+Date: Fri, 23 Jan 2015 14:02:43 +0900
+Message-id: <1421989367-32721-3-git-send-email-jaewon02.kim@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
 References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42JZI2JSoMt27WCIwdE9vBanP21jt5j68Amb
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42JZI2JSoMt27WCIwd71ghanP21jt5j68Amb
 	xfUvz1kt5h85x2rR/2Yhq8W5VysZLSbdn8BisaPhCKvF/a9HGS0u75rDZvG59wijxdLrF5ks
 	Jkxfy2LRuvcIu8Xp3SUO/B5r5q1h9Ljc18vksXL5FzaPTas62TzuXNvD5tG3ZRWjx+dNcgHs
-	UVw2Kak5mWWpRfp2CVwZC+b2MhX82clYcfzyZuYGxvnzGLsYOTkkBEwk/m6byAJhi0lcuLee
-	rYuRi0NIYCmjRNe/y6wwRavuTWKBSExnlNg6cRUrhNPGJNHxYSE7SBWbgLbE9/WLwTpEBCIk
-	nn9cyQxSxCxwkFmi4+JpsCJhAXeJNRdfMIHYLAKqEudXHgKzeQU8JB7NXAjUzAG0TkFiziQb
-	kDCngKfEuz0v2EBsIaCS1RNOgl0hIfCSXeLx1i9sEHMEJL5NPsQC0SsrsekAM8TVkhIHV9xg
-	mcAovICRYRWjaGpBckFxUnqRoV5xYm5xaV66XnJ+7iZGYDyd/vesdwfj7QPWhxgFOBiVeHgb
-	thwMEWJNLCuuzD3EaAq0YSKzlGhyPjBq80riDY3NjCxMTUyNjcwtzZTEeRWlfgYLCaQnlqRm
-	p6YWpBbFF5XmpBYfYmTi4JRqYDSfuXHG/q2T2MV2F16+lrN1oXj0kt2nwzM2hF5yjAnStP5z
-	dEGZwf0du/sb0xglRJRuv7Fe12q1Z/+GnZekCydUvjy5o316m3xZZM3NnA0xwVPzs/aZGevp
-	l4etSwjh1+Uv/M/TzcJbZ1DWHNIV5LQ9tr3sltqa4DkuW8PWGMd8lMp5lr5BQImlOCPRUIu5
-	qDgRADRo+0GiAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t9jQV22awdDDE69ZbQ4/Wkbu8XUh0/Y
+	UVw2Kak5mWWpRfp2CVwZn6dqFly9xlgxZ9tM9gbGG5sZuxg5OSQETCR2XFgGZYtJXLi3ng3E
+	FhJYyiixaJ4gTM36w1+Zuhi5gOLTGSW6Fi9mhXDamCQ6PixkB6liE9CW+L4eJMHJISIQIfH8
+	40pmkCJmgYPMEh0XTwMVcXAIC9hLtMwMAalhEVCVePBnPtg2XgEPiTun37GClEgIKEjMmWQD
+	EuYU8JR4t+cF1EEeEqsnnGQBGSkh8JJdon/6BVaIOQIS3yYfYoHolZXYdIAZ4mhJiYMrbrBM
+	YBRewMiwilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMwkk7/ezZxB+P9A9aHGAU4GJV4eBu2
+	HAwRYk0sK67MPcRoCrRhIrOUaHI+MF7zSuINjc2MLExNTI2NzC3NlMR5daR/BgsJpCeWpGan
+	phakFsUXleakFh9iZOLglGpgtPvC7q4oUnBCcJWegeVsHRf/Jfsm3kgQTapJ/ccirXDLqGUB
+	k3pt0M/O3ReDjx1hCPS69q+NWVv5d8KcE48FW3+HyVTUPGlXqrP5+uI0678FLCyS2sYzysOq
+	W79qGIbHP/jwXqZ40XQvpq64Qx1cPi02Xux2ZwSZ3Z4dXd+/x2W73a3I7LdKLMUZiYZazEXF
+	iQA7krzGnwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t9jQV22awdDDGauZbM4/Wkbu8XUh0/Y
 	LK5/ec5qMf/IOVaL/jcLWS3OvVrJaDHp/gQWix0NR1gt7n89ymhxedccNovPvUcYLZZev8hk
 	MWH6WhaL1r1H2C1O7y5x4PdYM28No8flvl4mj5XLv7B5bFrVyeZx59oeNo++LasYPT5vkgtg
 	j2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOlxJ
-	oSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmLFgbi9TwZ+djBXHL29mbmCc
-	P4+xi5GTQ0LARGLVvUksELaYxIV769m6GLk4hASmM0psnbiKFcJpY5Lo+LCQHaSKTUBb4vv6
-	xawgtohAhMTzjyuZQYqYBQ4yS3RcPA1WJCzgLrHm4gsmEJtFQFXi/MpDYDavgIfEo5kLgZo5
-	gNYpSMyZZAMS5hTwlHi35wUbiC0EVLJ6wkmWCYy8CxgZVjGKphYkFxQnpeca6RUn5haX5qXr
-	JefnbmIER+sz6R2MqxosDjEKcDAq8fA2bDkYIsSaWFZcmXuIUYKDWUmE98kBoBBvSmJlVWpR
-	fnxRaU5q8SFGU6CjJjJLiSbnAxNJXkm8obGJmZGlkbmhhZGxuZI4r5J9W4iQQHpiSWp2ampB
-	ahFMHxMHp1QD46QDdrtsbP4nG2kZ55olPSpZftr3ZHnBQasdNq+O3q9acEPP1nTO1IJVR+Zo
-	H7jE8dffYLnLGes+kZ+icr8CDZqWrWsWPpm6zfjVf7F72rHc8s2e2t9DN4kJ9p5senhw2R/5
-	4vv5jxWkzpZosVe9EDrnq+Hw9UZV/eFctaKDKiy7fgl099+xUWIpzkg01GIuKk4EAHx1fEfs	AgAA
+	oSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmPF5qmbB1WuMFXO2zWRvYLyx
+	mbGLkZNDQsBEYv3hr0wQtpjEhXvr2boYuTiEBKYzSnQtXswK4bQxSXR8WMgOUsUmoC3xfT1I
+	gpNDRCBC4vnHlcwgRcwCB5klOi6eBiri4BAWsJdomRkCUsMioCrx4M98NhCbV8BD4s7pd6wg
+	JRICChJzJtmAhDkFPCXe7XkBViIEVLJ6wkmWCYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXr
+	JefnbmIER+ozqR2MKxssDjEKcDAq8fA2bDkYIsSaWFZcmXuIUYKDWUmE98kBoBBvSmJlVWpR
+	fnxRaU5q8SFGU6CjJjJLiSbnA5NIXkm8obGJmZGlkbmhhZGxuZI4r5J9W4iQQHpiSWp2ampB
+	ahFMHxMHp1QDo+SjHT33dJcIv140Vfia/4Grvc8nen3vZr3gcVPogsHNFb7NOSfNXTKk6/I7
+	QuLDzz3LXbO3Vfde46r/jIJzW9ZMSXqrIDx1WU+eQfCZ7FbvsKMfpvnpVv42izDO53T5J30j
+	iCHVVCK8YrFg69eFwZs2uKddnJSxrGa21PP/VafMb5ycdTS1XImlOCPRUIu5qDgRAMok46Lq	AgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,70 +58,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds MAX77843 core/irq driver to support PMIC,
-MUIC(Micro USB Interface Controller), Charger, Fuel Gauge,
-LED and Haptic device.
+This patch adds MAX77843 extcon driver to support for MUIC(Micro
+USB Interface Controller) device by using EXTCON subsystem to handle
+various external connectors.
 
-Cc: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
 ---
- drivers/mfd/Kconfig                  |   14 ++
- drivers/mfd/Makefile                 |    1 +
- drivers/mfd/max77843.c               |  241 ++++++++++++++++++++
- include/linux/mfd/max77843-private.h |  410 ++++++++++++++++++++++++++++++++++
- 4 files changed, 666 insertions(+)
- create mode 100644 drivers/mfd/max77843.c
- create mode 100644 include/linux/mfd/max77843-private.h
+ drivers/extcon/Kconfig           |   10 +
+ drivers/extcon/Makefile          |    1 +
+ drivers/extcon/extcon-max77843.c |  871 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 882 insertions(+)
+ create mode 100644 drivers/extcon/extcon-max77843.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 2e6b731..0c67c79 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -442,6 +442,20 @@ config MFD_MAX77693
- 	  additional drivers must be enabled in order to use the functionality
- 	  of the device.
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index 6a1f7de..0b67538 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -55,6 +55,16 @@ config EXTCON_MAX77693
+ 	  Maxim MAX77693 PMIC. The MAX77693 MUIC is a USB port accessory
+ 	  detector and switch.
  
-+config MFD_MAX77843
-+	bool "Maxim Semiconductor MAX77843 PMIC Support"
-+	depends on I2C=y
-+	select MFD_CORE
++config EXTCON_MAX77843
++	tristate "MAX77843 EXTCON Support"
++	depends on MFD_MAX77843
++	select IRQ_DOMAIN
 +	select REGMAP_I2C
-+	select REGMAP_IRQ
 +	help
-+	  Say yes here to add support for Maxim Semiconductor MAX77843.
-+	  This is companion Power Management IC with LEDs, Haptic, Charger,
-+	  Fuel Gauge, MUIC(Micro USB Interface Controller) controls on chip.
-+	  This driver provides common support for accessing the device;
-+	  additional drivers must be enabled in order to use the functionality
-+	  of the device.
++	  If you say yes here you get support for the MUIC device of
++	  Maxim MAX77843. The MAX77843 MUIC is a USB port accessory
++	  detector add switch.
 +
- config MFD_MAX8907
- 	tristate "Maxim Semiconductor MAX8907 PMIC Support"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 53467e2..fe4f75c 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -117,6 +117,7 @@ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
- obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
- obj-$(CONFIG_MFD_MAX77686)	+= max77686.o
- obj-$(CONFIG_MFD_MAX77693)	+= max77693.o
-+obj-$(CONFIG_MFD_MAX77843)	+= max77843.o
- obj-$(CONFIG_MFD_MAX8907)	+= max8907.o
- max8925-objs			:= max8925-core.o max8925-i2c.o
- obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
-diff --git a/drivers/mfd/max77843.c b/drivers/mfd/max77843.c
+ config EXTCON_MAX8997
+ 	tristate "MAX8997 EXTCON Support"
+ 	depends on MFD_MAX8997 && IRQ_DOMAIN
+diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+index 0370b42..f21d5c4 100644
+--- a/drivers/extcon/Makefile
++++ b/drivers/extcon/Makefile
+@@ -8,6 +8,7 @@ obj-$(CONFIG_EXTCON_ARIZONA)	+= extcon-arizona.o
+ obj-$(CONFIG_EXTCON_GPIO)	+= extcon-gpio.o
+ obj-$(CONFIG_EXTCON_MAX14577)	+= extcon-max14577.o
+ obj-$(CONFIG_EXTCON_MAX77693)	+= extcon-max77693.o
++obj-$(CONFIG_EXTCON_MAX77843)	+= extcon-max77843.o
+ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+ obj-$(CONFIG_EXTCON_PALMAS)	+= extcon-palmas.o
+ obj-$(CONFIG_EXTCON_RT8973A)	+= extcon-rt8973a.o
+diff --git a/drivers/extcon/extcon-max77843.c b/drivers/extcon/extcon-max77843.c
 new file mode 100644
-index 0000000..d7f8b76
+index 0000000..caae9a7
 --- /dev/null
-+++ b/drivers/mfd/max77843.c
-@@ -0,0 +1,241 @@
++++ b/drivers/extcon/extcon-max77843.c
+@@ -0,0 +1,871 @@
 +/*
-+ * max77843.c - MFD core driver for the Maxim MAX77843
++ * extcon-max77843.c - MAX77843 extcon driver to support MUIC
 + *
 + * Copyright (C) 2014 Samsung Electrnoics
-+ * Author: Jaewon Kim <jaewon02.kim@samsung.com>
++ *  Author: Jaewon Kim <jaewon02.kim@samsung.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -129,651 +122,865 @@ index 0000000..d7f8b76
 + * (at your option) any later version.
 + */
 +
-+#include <linux/err.h>
++#include <linux/extcon.h>
 +#include <linux/i2c.h>
-+#include <linux/init.h>
 +#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/mfd/core.h>
++#include <linux/kernel.h>
 +#include <linux/mfd/max77843-private.h>
-+#include <linux/of_device.h>
++#include <linux/module.h>
 +#include <linux/platform_device.h>
++#include <linux/workqueue.h>
 +
-+static const struct mfd_cell max77843_devs[] = {
-+	{
-+		.name = "max77843-muic",
-+		.of_compatible = "maxim,max77843-muic",
-+	}, {
-+		.name = "max77843-regulator",
-+		.of_compatible = "maxim,max77843-regulator",
-+	}, {
-+		.name = "max77843-charger",
-+		.of_compatible = "maxim,max77843-charger"
-+	}, {
-+		.name = "max77843-fuelgauge",
-+		.of_compatible = "maxim,max77843-fuelgauge",
-+	},
++#define DELAY_MS_DEFAULT		15000	/* unit: millisecond */
++
++enum max77843_muic_acc_type {
++	MAX77843_MUIC_ADC_GROUND = 0,
++	MAX77843_MUIC_ADC_SEND_END_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S1_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S2_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S3_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S4_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S5_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S6_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S7_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S8_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S9_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S10_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S11_BUTTON,
++	MAX77843_MUIC_ADC_REMOTE_S12_BUTTON,
++	MAX77843_MUIC_ADC_RESERVED_ACC_1,
++	MAX77843_MUIC_ADC_RESERVED_ACC_2,
++	MAX77843_MUIC_ADC_RESERVED_ACC_3,
++	MAX77843_MUIC_ADC_RESERVED_ACC_4,
++	MAX77843_MUIC_ADC_RESERVED_ACC_5,
++	MAX77843_MUIC_ADC_AUDIO_DEVICE_TYPE2,
++	MAX77843_MUIC_ADC_PHONE_POWERED_DEV,
++	MAX77843_MUIC_ADC_TTY_CONVERTER,
++	MAX77843_MUIC_ADC_UART_CABLE,
++	MAX77843_MUIC_ADC_CEA936A_TYPE1_CHG,
++	MAX77843_MUIC_ADC_FACTORY_MODE_USB_OFF,
++	MAX77843_MUIC_ADC_FACTORY_MODE_USB_ON,
++	MAX77843_MUIC_ADC_AV_CABLE_NOLOAD,
++	MAX77843_MUIC_ADC_CEA936A_TYPE2_CHG,
++	MAX77843_MUIC_ADC_FACTORY_MODE_UART_OFF,
++	MAX77843_MUIC_ADC_FACTORY_MODE_UART_ON,
++	MAX77843_MUIC_ADC_AUDIO_DEVICE_TYPE1,
++	MAX77843_MUIC_ADC_OPEN,
 +};
 +
-+static const struct regmap_config max77843_charger_regmap_config = {
-+	.reg_bits	= 8,
-+	.val_bits	= 8,
-+	.max_register	= MAX77843_CHG_REG_END,
++enum max77843_muic_cable_group {
++	MAX77843_CABLE_GROUP_ADC = 0,
++	MAX77843_CABLE_GROUP_CHG,
++	MAX77843_CABLE_GROUP_GND,
 +};
 +
-+static const struct regmap_config max77843_regmap_config = {
-+	.reg_bits	= 8,
-+	.val_bits	= 8,
-+	.max_register	= MAX77843_SYS_REG_END,
++enum max77843_muic_adv_debounce_time {
++	MAX77843_DEBOUNCE_TIME_5MS = 0,
++	MAX77843_DEBOUNCE_TIME_10MS,
++	MAX77843_DEBOUNCE_TIME_25MS,
++	MAX77843_DEBOUNCE_TIME_38_62MS,
 +};
 +
-+static const struct regmap_irq max77843_irqs[] = {
-+	/* TOPSYS interrupts */
-+	{ .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSUVLO_INT, },
-+	{ .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSOVLO_INT, },
-+	{ .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TSHDN_INT, },
-+	{ .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TM_INT, },
++enum max77843_muic_support_list {
++	EXTCON_CABLE_USB = 0,
++	EXTCON_CABLE_USB_HOST,
++	EXTCON_CABLE_USB_HOST_TA,
++	EXTCON_CABLE_TA,
++	EXTCON_CABLE_FAST_CHARGER,
++	EXTCON_CABLE_SLOW_CHARGER,
++	EXTCON_CABLE_CHARGE_DOWNSTREAM,
++	EXTCON_CABLE_MHL,
++	EXTCON_CABLE_MHL_TA,
++	EXTCON_CABLE_JIG_USB_ON,
++	EXTCON_CABLE_JIG_USB_OFF,
++	EXTCON_CABLE_JIG_UART_OFF,
++	EXTCON_CABLE_JIG_UART_ON,
++
++	EXTCON_CABLE_NUM,
 +};
 +
-+static const struct regmap_irq_chip max77843_irq_chip = {
-+	.name		= "max77843",
-+	.status_base	= MAX77843_SYS_REG_SYSINTSRC,
-+	.mask_base	= MAX77843_SYS_REG_SYSINTMASK,
-+	.mask_invert	= false,
-+	.num_regs	= 1,
-+	.irqs		= max77843_irqs,
-+	.num_irqs	= ARRAY_SIZE(max77843_irqs),
++enum max77843_muic_gnd_cable {
++	MAX77843_MUIC_GND_USB_OTG	= 0x0,
++	MAX77843_MUIC_GND_USB_OTG_VB	= 0x1,
++	MAX77843_MUIC_GND_MHL		= 0x2,
++	MAX77843_MUIC_GND_MHL_VB	= 0x3,
++
++	MAX77843_MUIC_GND_NUM,
 +};
 +
-+static int max77843_chg_init(struct max77843 *max77843)
-+{
-+	int ret;
++enum max77843_muic_status {
++	MAX77843_MUIC_STATUS1 = 0,
++	MAX77843_MUIC_STATUS2,
++	MAX77843_MUIC_STATUS3,
 +
-+	max77843->i2c_chg = i2c_new_dummy(max77843->i2c->adapter, I2C_ADDR_CHG);
-+	if (!max77843->i2c_chg) {
-+		dev_err(&max77843->i2c->dev,
-+				"Cannot allocate I2C device for Charger\n");
-+		return PTR_ERR(max77843->i2c_chg);
-+	}
-+	i2c_set_clientdata(max77843->i2c_chg, max77843);
++	MAX77843_MUIC_STATUS_NUM,
++};
 +
-+	max77843->regmap_chg = devm_regmap_init_i2c(max77843->i2c_chg,
-+			&max77843_charger_regmap_config);
-+	if (IS_ERR(max77843->regmap_chg)) {
-+		ret = PTR_ERR(max77843->regmap_chg);
-+		goto err_chg_i2c;
-+	}
++enum max77843_muic_charger_type {
++	MAX77843_CHG_TYPE_NONE = 0,
++	MAX77843_CHG_TYPE_USB,
++	MAX77843_CHG_TYPE_DOWNSTREAM,
++	MAX77843_CHG_TYPE_DEDICATED,
++	MAX77843_CHG_TYPE_SPECIAL_500MA,
++	MAX77843_CHG_TYPE_SPECIAL_1A,
++	MAX77843_CHG_TYPE_SPECIAL_BIAS,
 +
-+	return 0;
++	MAX77843_CHG_TYPE_END,
++};
 +
-+err_chg_i2c:
-+	i2c_unregister_device(max77843->i2c_chg);
++enum max77843_muic_detection {
++	MAX77843_MUIC_AUTO_NONE = 0,
++	MAX77843_MUIC_AUTO_USB,
++	MAX77843_MUIC_AUTO_FAC,
++	MAX77843_MUIC_AUTO_USB_FAC,
++};
 +
-+	return ret;
-+}
-+
-+static int max77843_probe(struct i2c_client *i2c,
-+					const struct i2c_device_id *id)
-+{
++struct max77843_muic_info {
++	struct device *dev;
 +	struct max77843 *max77843;
-+	int ret;
-+	unsigned int reg_data;
++	struct extcon_dev *edev;
 +
-+	max77843 = devm_kzalloc(&i2c->dev, sizeof(*max77843), GFP_KERNEL);
-+	if (!max77843)
-+		return -ENOMEM;
++	struct mutex mutex;
++	struct work_struct irq_work;
++	struct delayed_work wq_detcable;
++	struct max77843_muic_irq *muic_irqs;
 +
-+	i2c_set_clientdata(i2c, max77843);
-+	max77843->dev = &i2c->dev;
-+	max77843->i2c = i2c;
-+	max77843->irq = i2c->irq;
++	u8 status[MAX77843_MUIC_STATUS_NUM];
++	int prev_cable_type;
++	int prev_chg_type;
++	int prev_gnd_type;
 +
-+	max77843->regmap = devm_regmap_init_i2c(i2c,
-+			&max77843_regmap_config);
-+	if (IS_ERR(max77843->regmap)) {
-+		dev_err(&i2c->dev, "Failed to allocate topsys register map\n");
-+		return PTR_ERR(max77843->regmap);
-+	}
++	bool irq_adc;
++	bool irq_chg;
++	bool init_done;
++};
 +
-+	ret = regmap_add_irq_chip(max77843->regmap, max77843->irq,
-+			IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_SHARED,
-+			0, &max77843_irq_chip, &max77843->irq_data);
-+	if (ret) {
-+		dev_err(&i2c->dev, "Failed to add TOPSYS IRQ chip\n");
++struct max77843_muic_irq {
++	unsigned int irq;
++	const char *name;
++	unsigned int virq;
++};
++
++static const struct regmap_config max77843_muic_regmap_config = {
++	.reg_bits       = 8,
++	.val_bits       = 8,
++	.max_register   = MAX77843_MUIC_REG_END,
++};
++
++static const struct regmap_irq max77843_muic_irq[] = {
++	/* MUIC:INT1 interrupts */
++	{ .reg_offset = 0, .mask = MAX77843_MUIC_ADC, },
++	{ .reg_offset = 0, .mask = MAX77843_MUIC_ADCERROR, },
++	{ .reg_offset = 0, .mask = MAX77843_MUIC_ADC1K, },
++
++	/* MUIC:INT2 interrupts */
++	{ .reg_offset = 1, .mask = MAX77843_MUIC_CHGTYP, },
++	{ .reg_offset = 1, .mask = MAX77843_MUIC_CHGDETRUN, },
++	{ .reg_offset = 1, .mask = MAX77843_MUIC_DCDTMR, },
++	{ .reg_offset = 1, .mask = MAX77843_MUIC_DXOVP, },
++	{ .reg_offset = 1, .mask = MAX77843_MUIC_VBVOLT, },
++
++	/* MUIC:INT3 interrupts */
++	{ .reg_offset = 2, .mask = MAX77843_MUIC_VBADC, },
++	{ .reg_offset = 2, .mask = MAX77843_MUIC_VDNMON, },
++	{ .reg_offset = 2, .mask = MAX77843_MUIC_DNRES, },
++	{ .reg_offset = 2, .mask = MAX77843_MUIC_MPNACK, },
++	{ .reg_offset = 2, .mask = MAX77843_MUIC_MRXBUFOW, },
++	{ .reg_offset = 2, .mask = MAX77843_MUIC_MRXTRF, },
++	{ .reg_offset = 2, .mask = MAX77843_MUIC_MRXPERR, },
++	{ .reg_offset = 2, .mask = MAX77843_MUIC_MRXRDY, },
++};
++
++static const struct regmap_irq_chip max77843_muic_irq_chip = {
++	.name           = "max77843-muic",
++	.status_base    = MAX77843_MUIC_REG_INT1,
++	.mask_base      = MAX77843_MUIC_REG_INTMASK1,
++	.mask_invert    = true,
++	.num_regs       = 3,
++	.irqs           = max77843_muic_irq,
++	.num_irqs       = ARRAY_SIZE(max77843_muic_irq),
++};
++
++static const char *max77843_extcon_cable[] = {
++	[EXTCON_CABLE_USB]			= "USB",
++	[EXTCON_CABLE_USB_HOST]			= "USB-HOST",
++	[EXTCON_CABLE_USB_HOST_TA]		= "USB-HOST-TA",
++	[EXTCON_CABLE_TA]			= "TA",
++	[EXTCON_CABLE_FAST_CHARGER]		= "FAST-CHARGER",
++	[EXTCON_CABLE_SLOW_CHARGER]		= "SLOW-CHARGER",
++	[EXTCON_CABLE_CHARGE_DOWNSTREAM]	= "CHARGER-DOWNSTREAM",
++	[EXTCON_CABLE_MHL]			= "MHL",
++	[EXTCON_CABLE_MHL_TA]			= "MHL-TA",
++	[EXTCON_CABLE_JIG_USB_ON]		= "JIG-USB-ON",
++	[EXTCON_CABLE_JIG_USB_OFF]		= "JIG-USB-OFF",
++	[EXTCON_CABLE_JIG_UART_OFF]		= "JIG-UART-OFF",
++	[EXTCON_CABLE_JIG_UART_ON]		= "JIG-UART-ON",
++};
++
++static struct max77843_muic_irq max77843_muic_irqs[] = {
++	{ MAX77843_MUIC_IRQ_INT1_ADC,		"MUIC-ADC" },
++	{ MAX77843_MUIC_IRQ_INT1_ADCERROR,	"MUIC-ADC_ERROR" },
++	{ MAX77843_MUIC_IRQ_INT1_ADC1K,		"MUIC-ADC1K" },
++	{ MAX77843_MUIC_IRQ_INT2_CHGTYP,	"MUIC-CHGTYP" },
++	{ MAX77843_MUIC_IRQ_INT2_CHGDETRUN,	"MUIC-CHGDETRUN" },
++	{ MAX77843_MUIC_IRQ_INT2_DCDTMR,	"MUIC-DCDTMR" },
++	{ MAX77843_MUIC_IRQ_INT2_DXOVP,		"MUIC-DXOVP" },
++	{ MAX77843_MUIC_IRQ_INT2_VBVOLT,	"MUIC-VBVOLT" },
++	{ MAX77843_MUIC_IRQ_INT3_VBADC,		"MUIC-VBADC" },
++	{ MAX77843_MUIC_IRQ_INT3_VDNMON,	"MUIC-VDNMON" },
++	{ MAX77843_MUIC_IRQ_INT3_DNRES,		"MUIC-DNRES" },
++	{ MAX77843_MUIC_IRQ_INT3_MPNACK,	"MUIC-MPNACK"},
++	{ MAX77843_MUIC_IRQ_INT3_MRXBUFOW,	"MUIC-MRXBUFOW"},
++	{ MAX77843_MUIC_IRQ_INT3_MRXTRF,	"MUIC-MRXTRF"},
++	{ MAX77843_MUIC_IRQ_INT3_MRXPERR,	"MUIC-MRXPERR"},
++	{ MAX77843_MUIC_IRQ_INT3_MRXRDY,	"MUIC-MRXRDY"},
++};
++
++static int max77843_muic_set_path(struct max77843_muic_info *info,
++		u8 val, bool attached)
++{
++	struct max77843 *max77843 = info->max77843;
++	int ret = 0;
++	unsigned int ctrl1, ctrl2;
++
++	if (attached)
++		ctrl1 = val;
++	else
++		ctrl1 = MAX77843_SWITCH_OPEN;
++
++	ret = regmap_update_bits(max77843->regmap_muic,
++			MAX77843_MUIC_REG_CONTROL1,
++			MAX77843_SIWTH_PORT, ctrl1);
++	if (ret < 0) {
++		dev_err(info->dev, "Cannot switch MUIC port\n");
 +		return ret;
 +	}
 +
-+	ret = regmap_read(max77843->regmap,
-+			MAX77843_SYS_REG_PMICID, &reg_data);
-+	if (ret < 0) {
-+		dev_err(&i2c->dev, "Failed to read PMIC ID\n");
-+		goto err_pmic_id;
-+	}
-+	dev_info(&i2c->dev, "device ID: 0x%x\n", reg_data);
++	if (attached)
++		ctrl2 = MAX77843_MUIC_CONTROL2_CPEN_MASK;
++	else
++		ctrl2 = MAX77843_MUIC_CONTROL2_LOWPWR_MASK;
 +
-+	ret = max77843_chg_init(max77843);
++	ret = regmap_update_bits(max77843->regmap_muic,
++			MAX77843_MUIC_REG_CONTROL2,
++			MAX77843_MUIC_CONTROL2_LOWPWR_MASK |
++			MAX77843_MUIC_CONTROL2_CPEN_MASK, ctrl2);
++	if (ret < 0) {
++		dev_err(info->dev, "Cannot update lowpower mode\n");
++		return ret;
++	}
++
++	dev_dbg(info->dev,
++		"CONTROL1 : 0x%02x, CONTROL2 : 0x%02x, state : %s\n",
++		ctrl1, ctrl2, attached ? "attached" : "detached");
++
++	return 0;
++}
++
++static int max77843_muic_get_cable_type(struct max77843_muic_info *info,
++		enum max77843_muic_cable_group group, bool *attached)
++{
++	int adc, chg_type, cable_type, gnd_type;
++
++	adc = info->status[MAX77843_MUIC_STATUS1] &
++			MAX77843_MUIC_STATUS1_ADC_MASK;
++	adc >>= STATUS1_ADC_SHIFT;
++
++	switch (group) {
++	case MAX77843_CABLE_GROUP_ADC:
++		if (adc == MAX77843_MUIC_ADC_OPEN) {
++			*attached = false;
++			cable_type = info->prev_cable_type;
++			info->prev_cable_type = MAX77843_MUIC_ADC_OPEN;
++		} else {
++			*attached = true;
++			cable_type = info->prev_cable_type = adc;
++		}
++
++		break;
++	case MAX77843_CABLE_GROUP_CHG:
++		if (adc == MAX77843_MUIC_ADC_GROUND) {
++			*attached = true;
++			cable_type = adc;
++			break;
++		}
++
++		chg_type = info->status[MAX77843_MUIC_STATUS2] &
++			MAX77843_MUIC_STATUS2_CHGTYP_MASK;
++		chg_type >>= STATUS2_CHGTYP_SHIFT;
++
++		if (chg_type == MAX77843_CHG_TYPE_NONE) {
++			*attached = false;
++			cable_type = info->prev_chg_type;
++			info->prev_chg_type = MAX77843_CHG_TYPE_NONE;
++		} else {
++			*attached = true;
++			cable_type = info->prev_chg_type = chg_type;
++		}
++
++		break;
++	case MAX77843_CABLE_GROUP_GND:
++		adc = info->status[MAX77843_MUIC_STATUS1] &
++			MAX77843_MUIC_STATUS1_ADC_MASK;
++		adc >>= STATUS1_ADC_SHIFT;
++
++		if (adc == MAX77843_MUIC_ADC_GROUND) {
++			*attached = true;
++			gnd_type = (info->status[MAX77843_MUIC_STATUS1] &
++					MAX77843_MUIC_STATUS1_ADC1K_MASK) >>
++					(STATUS1_ADC1K_SHIFT-1);
++			gnd_type |= (info->status[MAX77843_MUIC_STATUS2] &
++					MAX77843_MUIC_STATUS2_VBVOLT_MASK) >>
++					STATUS2_VBVOLT_SHIFT;
++			cable_type = info->prev_gnd_type = gnd_type;
++		} else {
++			*attached = false;
++			cable_type = info->prev_gnd_type;
++			info->prev_gnd_type = MAX77843_MUIC_GND_NUM;
++		}
++
++		break;
++	default:
++		dev_err(info->dev, "Unknown cable group (%d)\n", group);
++		cable_type = -EINVAL;
++
++		break;
++	}
++
++	return cable_type;
++}
++
++static int max77843_muic_adc_gnd_handler(struct max77843_muic_info *info)
++{
++	int ret, gnd_cable_type;
++	u8 path;
++	bool attached;
++
++	gnd_cable_type = max77843_muic_get_cable_type(info,
++			MAX77843_CABLE_GROUP_GND, &attached);
++	dev_dbg(info->dev, "external connector is %s (gnd:0x%02x)\n",
++			attached ? "attached" : "detached", gnd_cable_type);
++
++	switch (gnd_cable_type) {
++	case MAX77843_MUIC_GND_USB_OTG:
++		extcon_set_cable_state(info->edev, "USB-HOST", attached);
++		path = MAX77843_SWITCH_USB;
++		info->irq_chg = false;
++		break;
++	case MAX77843_MUIC_GND_USB_OTG_VB:
++		extcon_set_cable_state(info->edev, "USB-HOST-TA", attached);
++		path = MAX77843_SWITCH_USB;
++		info->irq_chg = false;
++		break;
++	case MAX77843_MUIC_GND_MHL:
++		extcon_set_cable_state(info->edev, "MHL", attached);
++		path = MAX77843_SWITCH_OPEN;
++		info->irq_chg = false;
++		break;
++	case MAX77843_MUIC_GND_MHL_VB:
++		extcon_set_cable_state(info->edev, "MHL-TA", attached);
++		path = MAX77843_SWITCH_OPEN;
++		info->irq_chg = false;
++		break;
++	default:
++		dev_err(info->dev, "Cannot detect %s cable of gnd type\n",
++			attached ? "attached" : "detached");
++		return -EINVAL;
++	}
++
++	ret = max77843_muic_set_path(info, path, attached);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static int max77843_muic_jig_handler(struct max77843_muic_info *info,
++		int cable_type, bool attached)
++{
++	char cable_name[32];
++	u8 path = MAX77843_SWITCH_OPEN;
++	int ret;
++
++	dev_dbg(info->dev, "external connector is %s (adc:0x%02x)\n",
++			attached ? "attached" : "detached", cable_type);
++
++	switch (cable_type) {
++	case MAX77843_MUIC_ADC_FACTORY_MODE_USB_OFF:
++		strcpy(cable_name, "JIG-USB-OFF");
++		path = MAX77843_SWITCH_USB;
++		break;
++	case MAX77843_MUIC_ADC_FACTORY_MODE_USB_ON:
++		strcpy(cable_name, "JIG-USB-ON");
++		path = MAX77843_SWITCH_USB;
++		break;
++	case MAX77843_MUIC_ADC_FACTORY_MODE_UART_OFF:
++		strcpy(cable_name, "JIG-UART-OFF");
++		path = MAX77843_SWITCH_UART;
++		break;
++	default:
++		break;
++	}
++
++	ret = max77843_muic_set_path(info, path, attached);
++	if (ret < 0)
++		return ret;
++
++	extcon_set_cable_state(info->edev, cable_name, attached);
++
++	return 0;
++}
++
++static int max77843_muic_adc_handler(struct max77843_muic_info *info)
++{
++	int ret, cable_type;
++	bool attached;
++
++	cable_type = max77843_muic_get_cable_type(info,
++			MAX77843_CABLE_GROUP_ADC, &attached);
++
++	dev_dbg(info->dev,
++		"external connector is %s (adc:0x%02x, prev_adc:0x%x)\n",
++		attached ? "attached" : "detached", cable_type,
++		info->prev_cable_type);
++
++	switch (cable_type) {
++	case MAX77843_MUIC_ADC_GROUND:
++		ret = max77843_muic_adc_gnd_handler(info);
++		if (ret < 0)
++			return ret;
++		break;
++	case MAX77843_MUIC_ADC_FACTORY_MODE_USB_OFF:
++	case MAX77843_MUIC_ADC_FACTORY_MODE_USB_ON:
++	case MAX77843_MUIC_ADC_FACTORY_MODE_UART_OFF:
++		ret = max77843_muic_jig_handler(info, cable_type, attached);
++		if (ret < 0)
++			return ret;
++		break;
++	case MAX77843_MUIC_ADC_SEND_END_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S1_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S2_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S3_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S4_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S5_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S6_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S7_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S8_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S9_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S10_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S11_BUTTON:
++	case MAX77843_MUIC_ADC_REMOTE_S12_BUTTON:
++	case MAX77843_MUIC_ADC_RESERVED_ACC_1:
++	case MAX77843_MUIC_ADC_RESERVED_ACC_2:
++	case MAX77843_MUIC_ADC_RESERVED_ACC_3:
++	case MAX77843_MUIC_ADC_RESERVED_ACC_4:
++	case MAX77843_MUIC_ADC_RESERVED_ACC_5:
++	case MAX77843_MUIC_ADC_AUDIO_DEVICE_TYPE2:
++	case MAX77843_MUIC_ADC_PHONE_POWERED_DEV:
++	case MAX77843_MUIC_ADC_TTY_CONVERTER:
++	case MAX77843_MUIC_ADC_UART_CABLE:
++	case MAX77843_MUIC_ADC_CEA936A_TYPE1_CHG:
++	case MAX77843_MUIC_ADC_AV_CABLE_NOLOAD:
++	case MAX77843_MUIC_ADC_CEA936A_TYPE2_CHG:
++	case MAX77843_MUIC_ADC_FACTORY_MODE_UART_ON:
++	case MAX77843_MUIC_ADC_AUDIO_DEVICE_TYPE1:
++	case MAX77843_MUIC_ADC_OPEN:
++		dev_err(info->dev,
++			"accessory is %s but it isn't used (adc:0x%x)\n",
++			attached ? "attached" : "detached", cable_type);
++		return -EAGAIN;
++	default:
++		dev_err(info->dev,
++			"failed to detect %s accessory (adc:0x%x)\n",
++			attached ? "attached" : "detached", cable_type);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int max77843_muic_chg_handler(struct max77843_muic_info *info)
++{
++	int ret, chg_type;
++	bool attached;
++	u8 path = MAX77843_SWITCH_OPEN;
++
++	chg_type = max77843_muic_get_cable_type(info,
++			MAX77843_CABLE_GROUP_CHG, &attached);
++
++	dev_dbg(info->dev,
++		"external connector is %s(chg_type:0x%x, prev_chg_type:0x%x)\n",
++		attached ? "attached" : "detached",
++		chg_type, info->prev_chg_type);
++
++	switch (chg_type) {
++	case MAX77843_CHG_TYPE_USB:
++		path = MAX77843_SWITCH_USB;
++		extcon_set_cable_state(info->edev, "USB", attached);
++		break;
++	case MAX77843_CHG_TYPE_DOWNSTREAM:
++		path = MAX77843_SWITCH_OPEN;
++		extcon_set_cable_state(info->edev,
++				"CHARGER-DOWNSTREAM", attached);
++		break;
++	case MAX77843_CHG_TYPE_DEDICATED:
++		path = MAX77843_SWITCH_OPEN;
++		extcon_set_cable_state(info->edev, "TA", attached);
++		break;
++	case MAX77843_CHG_TYPE_SPECIAL_500MA:
++		path = MAX77843_SWITCH_OPEN;
++		extcon_set_cable_state(info->edev, "SLOW-CHAREGER", attached);
++		break;
++	case MAX77843_CHG_TYPE_SPECIAL_1A:
++		path = MAX77843_SWITCH_OPEN;
++		extcon_set_cable_state(info->edev, "FAST-CHARGER", attached);
++		break;
++	case MAX77843_CHG_TYPE_SPECIAL_BIAS:
++		path = MAX77843_SWITCH_OPEN;
++		break;
++	case MAX77843_CHG_TYPE_NONE:
++		return 0;
++	default:
++		dev_err(info->dev,
++			"failed to detect %s accessory (chg_type:0x%x)\n",
++			attached ? "attached" : "detached", chg_type);
++		return -EINVAL;
++	}
++
++	ret = max77843_muic_set_path(info, path, attached);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static void max77843_muic_irq_work(struct work_struct *work)
++{
++	struct max77843_muic_info *info = container_of(work,
++			struct max77843_muic_info, irq_work);
++	struct max77843 *max77843 = info->max77843;
++	int ret = 0;
++
++	if (!info->edev)
++		return;
++
++	mutex_lock(&info->mutex);
++
++	ret = regmap_bulk_read(max77843->regmap_muic,
++			MAX77843_MUIC_REG_STATUS1, info->status,
++			MAX77843_MUIC_STATUS_NUM);
 +	if (ret) {
-+		dev_err(&i2c->dev, "Failed to init Charger\n");
-+		goto err_pmic_id;
++		dev_err(info->dev, "Cannot read STATUS registers\n");
++		mutex_unlock(&info->mutex);
++		return;
 +	}
 +
-+	ret = regmap_update_bits(max77843->regmap,
-+			MAX77843_SYS_REG_INTSRCMASK,
-+			MAX77843_INTSRC_MASK_MASK,
-+			(unsigned int)~MAX77843_INTSRC_MASK_MASK);
-+	if (ret < 0) {
-+		dev_err(&i2c->dev, "Failed to unmask interrupt sourece\n");
-+		goto err_pmic_id;
++	if (info->irq_adc) {
++		ret = max77843_muic_adc_handler(info);
++		if (ret)
++			dev_err(info->dev, "Unknown cable type\n");
++		info->irq_adc = false;
 +	}
 +
-+	ret = mfd_add_devices(max77843->dev, -1, max77843_devs,
-+			ARRAY_SIZE(max77843_devs), NULL, 0, NULL);
-+	if (ret < 0) {
-+		dev_err(&i2c->dev, "Failed to add mfd device\n");
-+		goto err_pmic_id;
++	if (info->irq_chg) {
++		ret = max77843_muic_chg_handler(info);
++		if (ret)
++			dev_err(info->dev, "Unknown charger type\n");
++		info->irq_chg = false;
 +	}
 +
-+	device_init_wakeup(max77843->dev, 1);
++	mutex_unlock(&info->mutex);
++}
++
++static irqreturn_t max77843_muic_irq_handler(int irq, void *data)
++{
++	struct max77843_muic_info *info = data;
++	int i, irq_type = -1;
++
++	if (!info->init_done)
++		return IRQ_HANDLED;
++
++	for (i = 0; i < ARRAY_SIZE(max77843_muic_irqs); i++)
++		if (irq == info->muic_irqs[i].virq)
++			irq_type = info->muic_irqs[i].irq;
++
++	switch (irq_type) {
++	case MAX77843_MUIC_IRQ_INT1_ADC:
++	case MAX77843_MUIC_IRQ_INT1_ADCERROR:
++	case MAX77843_MUIC_IRQ_INT1_ADC1K:
++		info->irq_adc = true;
++		break;
++	case MAX77843_MUIC_IRQ_INT2_CHGTYP:
++	case MAX77843_MUIC_IRQ_INT2_CHGDETRUN:
++	case MAX77843_MUIC_IRQ_INT2_DCDTMR:
++	case MAX77843_MUIC_IRQ_INT2_DXOVP:
++	case MAX77843_MUIC_IRQ_INT2_VBVOLT:
++		info->irq_chg = true;
++		break;
++	case MAX77843_MUIC_IRQ_INT3_VBADC:
++	case MAX77843_MUIC_IRQ_INT3_VDNMON:
++	case MAX77843_MUIC_IRQ_INT3_DNRES:
++	case MAX77843_MUIC_IRQ_INT3_MPNACK:
++	case MAX77843_MUIC_IRQ_INT3_MRXBUFOW:
++	case MAX77843_MUIC_IRQ_INT3_MRXTRF:
++	case MAX77843_MUIC_IRQ_INT3_MRXPERR:
++	case MAX77843_MUIC_IRQ_INT3_MRXRDY:
++		break;
++	default:
++		dev_err(info->dev, "Cannot recognize IRQ(%d)\n", irq_type);
++		break;
++	}
++
++	schedule_work(&info->irq_work);
++
++	return IRQ_HANDLED;
++}
++
++static void max77843_muic_detect_cable_wq(struct work_struct *work)
++{
++	struct max77843_muic_info *info = container_of(to_delayed_work(work),
++			struct max77843_muic_info, wq_detcable);
++	struct max77843 *max77843 = info->max77843;
++	int chg_type, adc, ret;
++	bool attached;
++
++	mutex_lock(&info->mutex);
++
++	ret = regmap_bulk_read(max77843->regmap_muic,
++			MAX77843_MUIC_REG_STATUS1, info->status,
++			MAX77843_MUIC_STATUS_NUM);
++	if (ret) {
++		dev_err(info->dev, "Cannot read STATUS registers\n");
++		goto err_cable_wq;
++	}
++
++	adc = max77843_muic_get_cable_type(info,
++			MAX77843_CABLE_GROUP_ADC, &attached);
++	if (attached && adc != MAX77843_MUIC_ADC_OPEN) {
++		ret = max77843_muic_adc_handler(info);
++		if (ret < 0) {
++			dev_err(info->dev, "Cannot detect accessory\n");
++			goto err_cable_wq;
++		}
++	}
++
++	chg_type = max77843_muic_get_cable_type(info,
++			MAX77843_CABLE_GROUP_CHG, &attached);
++	if (attached && chg_type != MAX77843_CHG_TYPE_NONE) {
++		ret = max77843_muic_chg_handler(info);
++		if (ret < 0) {
++			dev_err(info->dev, "Cannot detect charger accessory\n");
++			goto err_cable_wq;
++		}
++	}
++
++err_cable_wq:
++	mutex_unlock(&info->mutex);
++}
++
++static int max77843_muic_set_debounce_time(struct max77843_muic_info *info,
++		enum max77843_muic_adv_debounce_time time)
++{
++	struct max77843 *max77843 = info->max77843;
++	unsigned int ret;
++
++	switch (time) {
++	case MAX77843_DEBOUNCE_TIME_5MS:
++	case MAX77843_DEBOUNCE_TIME_10MS:
++	case MAX77843_DEBOUNCE_TIME_25MS:
++	case MAX77843_DEBOUNCE_TIME_38_62MS:
++		ret = regmap_update_bits(max77843->regmap_muic,
++				MAX77843_MUIC_REG_CONTROL4,
++				MAX77843_MUIC_CONTROL4_ADCDBSET_MASK,
++				time << CONTROL4_ADCDBSET_SHIFT);
++		if (ret) {
++			dev_err(info->dev, "Cannot write MUIC regmap\n");
++			return ret;
++		}
++
++		break;
++	default:
++		dev_err(info->dev, "Invalid ADC debounce time\n");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int max77843_init_muic_regmap(struct max77843 *max77843)
++{
++	int ret;
++
++	max77843->i2c_muic = i2c_new_dummy(max77843->i2c->adapter,
++			I2C_ADDR_MUIC);
++	if (!max77843->i2c_muic) {
++		dev_err(&max77843->i2c->dev,
++				"Cannot allocate I2C device for MUIC\n");
++		return PTR_ERR(max77843->i2c_muic);
++	}
++
++	i2c_set_clientdata(max77843->i2c_muic, max77843);
++
++	max77843->regmap_muic = devm_regmap_init_i2c(max77843->i2c_muic,
++			&max77843_muic_regmap_config);
++	if (IS_ERR(max77843->regmap_muic)) {
++		ret = PTR_ERR(max77843->regmap_muic);
++		goto err_muic_i2c;
++	}
++
++	ret = regmap_add_irq_chip(max77843->regmap_muic, max77843->irq,
++			IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_SHARED,
++			0, &max77843_muic_irq_chip, &max77843->irq_data_muic);
++	if (ret) {
++		dev_err(&max77843->i2c->dev, "Cannot add MUIC IRQ chip\n");
++		goto err_muic_i2c;
++	}
 +
 +	return 0;
 +
-+err_pmic_id:
-+	regmap_del_irq_chip(max77843->irq, max77843->irq_data);
++err_muic_i2c:
++	i2c_unregister_device(max77843->i2c_muic);
 +
 +	return ret;
 +}
 +
-+static int max77843_remove(struct i2c_client *i2c)
++static int max77843_muic_probe(struct platform_device *pdev)
 +{
-+	struct max77843 *max77843 = i2c_get_clientdata(i2c);
++	struct max77843 *max77843 = dev_get_drvdata(pdev->dev.parent);
++	struct max77843_muic_info *info;
++	unsigned int id;
++	int i, ret;
 +
-+	mfd_remove_devices(max77843->dev);
++	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
 +
-+	regmap_del_irq_chip(max77843->irq, max77843->irq_data);
++	info->dev = &pdev->dev;
++	info->max77843 = max77843;
++	info->muic_irqs = max77843_muic_irqs;
++	info->init_done = false;
 +
-+	i2c_unregister_device(max77843->i2c);
++	platform_set_drvdata(pdev, info);
++	mutex_init(&info->mutex);
++	INIT_WORK(&info->irq_work, max77843_muic_irq_work);
++
++	/* Initialize i2c and regmap */
++	ret = max77843_init_muic_regmap(max77843);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to init MUIC regmap\n");
++		return ret;
++	}
++
++	/* Turn off auto detection configuration */
++	ret = regmap_update_bits(max77843->regmap_muic,
++			MAX77843_MUIC_REG_CONTROL4,
++			MAX77843_MUIC_CONTROL4_USBAUTO_MASK |
++			MAX77843_MUIC_CONTROL4_FCTAUTO_MASK,
++			MAX77843_MUIC_AUTO_NONE << CONTROL4_USBAUTO_SHIFT);
++
++	/* Support virtual irq domain for max77843 MUIC device */
++	for (i = 0; i < ARRAY_SIZE(max77843_muic_irqs); i++) {
++		struct max77843_muic_irq *muic_irq = &info->muic_irqs[i];
++		unsigned int virq = 0;
++
++		virq = regmap_irq_get_virq(max77843->irq_data_muic,
++				muic_irq->irq);
++		if (virq <= 0) {
++			ret = -EINVAL;
++			goto err_muic_irq;
++		}
++		muic_irq->virq = virq;
++
++		ret = devm_request_threaded_irq(&pdev->dev, virq, NULL,
++				max77843_muic_irq_handler, IRQF_NO_SUSPEND,
++				muic_irq->name, info);
++		if (ret) {
++			dev_err(&pdev->dev,
++				"Failed: irq request (IRQ: %d, error: %d)\n",
++				muic_irq->irq, ret);
++			goto err_muic_irq;
++		}
++	}
++
++	/* Initialize extcon device */
++	info->edev = devm_extcon_dev_allocate(&pdev->dev,
++			max77843_extcon_cable);
++	if (IS_ERR(info->edev)) {
++		dev_err(&pdev->dev, "Failed to allocate memory for extcon\n");
++		ret = -ENODEV;
++		goto err_muic_irq;
++	}
++
++	info->edev->name = dev_name(&pdev->dev);
++
++	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to register extcon device\n");
++		goto err_muic_irq;
++	}
++
++	/* Set ADC debounce time */
++	max77843_muic_set_debounce_time(info, MAX77843_DEBOUNCE_TIME_25MS);
++
++	/* Set initial path for UART */
++	max77843_muic_set_path(info, MAX77843_SWITCH_UART, true);
++
++	/* Detect accessory after completing the initialization of platform */
++	INIT_DELAYED_WORK(&info->wq_detcable, max77843_muic_detect_cable_wq);
++	queue_delayed_work(system_power_efficient_wq,
++			&info->wq_detcable, msecs_to_jiffies(DELAY_MS_DEFAULT));
++
++	/* Check revision number of MUIC device */
++	ret = regmap_read(max77843->regmap_muic, MAX77843_MUIC_REG_ID, &id);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to read revision number\n");
++		return ret;
++	}
++	dev_info(info->dev, "MUIC device ID : 0x%x\n", id);
++
++	info->init_done = true;
++
++	return 0;
++
++err_muic_irq:
++	regmap_del_irq_chip(max77843->irq, max77843->irq_data_muic);
++
++	return ret;
++}
++
++static int max77843_muic_remove(struct platform_device *pdev)
++{
++	struct max77843_muic_info *info = platform_get_drvdata(pdev);
++
++	cancel_work_sync(&info->irq_work);
 +
 +	return 0;
 +}
 +
-+static const struct of_device_id max77843_dt_match[] = {
-+	{ .compatible = "maxim,max77843", },
-+	{ /* sentinel */ },
++static const struct platform_device_id max77843_muic_id[] = {
++	{ "max77843-muic", },
++	{ },
 +};
++MODULE_DEVICE_TABLE(platform, max77843_muic_id);
 +
-+static const struct i2c_device_id max77843_id[] = {
-+	{ "max77843", },
-+	{ /* sentinel */ },
-+};
-+MODULE_DEVICE_TABLE(i2c, max77843_id);
-+
-+static int __maybe_unused max77843_suspend(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct max77843 *max77843 = i2c_get_clientdata(i2c);
-+
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(max77843->irq);
-+	disable_irq(max77843->irq);
-+
-+	return 0;
-+}
-+
-+static int __maybe_unused max77843_resume(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct max77843 *max77843 = i2c_get_clientdata(i2c);
-+
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(max77843->irq);
-+	enable_irq(max77843->irq);
-+
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(max77843_pm, max77843_suspend, max77843_resume);
-+
-+static struct i2c_driver max77843_i2c_driver = {
++static struct platform_driver max77843_muic_driver = {
 +	.driver		= {
-+		.name		= "max77843",
-+		.pm		= &max77843_pm,
-+		.of_match_table = max77843_dt_match,
++		.name		= "max77843-muic",
 +	},
-+	.probe		= max77843_probe,
-+	.remove		= max77843_remove,
-+	.id_table	= max77843_id,
++	.probe		= max77843_muic_probe,
++	.remove		= max77843_muic_remove,
++	.id_table	= max77843_muic_id,
 +};
-+static int __init max77843_i2c_init(void)
-+{
-+	return i2c_add_driver(&max77843_i2c_driver);
-+}
-+subsys_initcall(max77843_i2c_init);
 +
-+static void __exit max77843_i2c_exit(void)
++static int __init max77843_muic_init(void)
 +{
-+	i2c_del_driver(&max77843_i2c_driver);
++	return platform_driver_register(&max77843_muic_driver);
 +}
-+module_exit(max77843_i2c_exit);
++subsys_initcall(max77843_muic_init);
 +
++MODULE_DESCRIPTION("Maxim MAX77843 Extcon driver");
 +MODULE_AUTHOR("Jaewon Kim <jaewon02.kim@samsung.com>");
-+MODULE_DESCRIPTION("Maxim MAX77843 multi-function core driver");
 +MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max77843-private.h b/include/linux/mfd/max77843-private.h
-new file mode 100644
-index 0000000..560ed73
---- /dev/null
-+++ b/include/linux/mfd/max77843-private.h
-@@ -0,0 +1,410 @@
-+/*
-+ * max77843-private.h - Common API for the Maxim MAX77843 internal sub chip
-+ *
-+ * Copyright (C) 2014 Samsung Electrnoics
-+ * Author: Jaewon Kim <jaewon02.kim@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#ifndef __MAX77843_PRIVATE_H_
-+#define __MAX77843_PRIVATE_H_
-+
-+#include <linux/i2c.h>
-+#include <linux/regmap.h>
-+
-+#define I2C_ADDR_TOPSYS	(0xCC >> 1)
-+#define I2C_ADDR_CHG	(0xD2 >> 1)
-+#define I2C_ADDR_FG	(0x6C >> 1)
-+#define I2C_ADDR_MUIC	(0x4A >> 1)
-+
-+/* Topsys, Haptic and LED registers */
-+enum max77843_sys_reg {
-+	MAX77843_SYS_REG_PMICID		= 0x00,
-+	MAX77843_SYS_REG_PMICREV	= 0x01,
-+	MAX77843_SYS_REG_MAINCTRL1	= 0x02,
-+	MAX77843_SYS_REG_INTSRC		= 0x22,
-+	MAX77843_SYS_REG_INTSRCMASK	= 0x23,
-+	MAX77843_SYS_REG_SYSINTSRC	= 0x24,
-+	MAX77843_SYS_REG_SYSINTMASK	= 0x26,
-+	MAX77843_SYS_REG_TOPSYS_STAT	= 0x28,
-+	MAX77843_SYS_REG_SAFEOUTCTRL	= 0xC6,
-+
-+	MAX77843_SYS_REG_END,
-+};
-+
-+enum max77843_led_reg {
-+	MAX77843_LED_REG_LEDEN		= 0x30,
-+	MAX77843_LED_REG_LED0BRT	= 0x31,
-+	MAX77843_LED_REG_LED1BRT	= 0x32,
-+	MAX77843_LED_REG_LED2BRT	= 0x33,
-+	MAX77843_LED_REG_LED3BRT	= 0x34,
-+	MAX77843_LED_REG_LEDBLNK	= 0x38,
-+	MAX77843_LED_REG_LEDRAMP	= 0x36,
-+
-+	MAX77843_LED_REG_END,
-+};
-+
-+/* Charger registers */
-+enum max77843_charger_reg {
-+	MAX77843_CHG_REG_CHG_INT	= 0xB0,
-+	MAX77843_CHG_REG_CHG_INT_MASK	= 0xB1,
-+	MAX77843_CHG_REG_CHG_INT_OK	= 0xB2,
-+	MAX77843_CHG_REG_CHG_DTLS_00	= 0xB3,
-+	MAX77843_CHG_REG_CHG_DTLS_01	= 0xB4,
-+	MAX77843_CHG_REG_CHG_DTLS_02	= 0xB5,
-+	MAX77843_CHG_REG_CHG_CNFG_00	= 0xB7,
-+	MAX77843_CHG_REG_CHG_CNFG_01	= 0xB8,
-+	MAX77843_CHG_REG_CHG_CNFG_02	= 0xB9,
-+	MAX77843_CHG_REG_CHG_CNFG_03	= 0xBA,
-+	MAX77843_CHG_REG_CHG_CNFG_04	= 0xBB,
-+	MAX77843_CHG_REG_CHG_CNFG_06	= 0xBD,
-+	MAX77843_CHG_REG_CHG_CNFG_07	= 0xBE,
-+	MAX77843_CHG_REG_CHG_CNFG_09	= 0xC0,
-+	MAX77843_CHG_REG_CHG_CNFG_10	= 0xC1,
-+	MAX77843_CHG_REG_CHG_CNFG_11	= 0xC2,
-+	MAX77843_CHG_REG_CHG_CNFG_12	= 0xC3,
-+
-+	MAX77843_CHG_REG_END,
-+};
-+
-+/* Fuel gauge registers */
-+enum max77843_fuelgauge {
-+	MAX77843_FG_REG_STATUS		= 0x00,
-+	MAX77843_FG_REG_VALRT_TH	= 0x01,
-+	MAX77843_FG_REG_TALRT_TH	= 0x02,
-+	MAX77843_FG_REG_SALRT_TH	= 0x03,
-+	MAX77843_FG_RATE_AT_RATE	= 0x04,
-+	MAX77843_FG_REG_REMCAP_REP	= 0x05,
-+	MAX77843_FG_REG_SOCREP		= 0x06,
-+	MAX77843_FG_REG_AGE		= 0x07,
-+	MAX77843_FG_REG_TEMP		= 0x08,
-+	MAX77843_FG_REG_VCELL		= 0x09,
-+	MAX77843_FG_REG_CURRENT		= 0x0A,
-+	MAX77843_FG_REG_AVG_CURRENT	= 0x0B,
-+	MAX77843_FG_REG_SOCMIX		= 0x0D,
-+	MAX77843_FG_REG_SOCAV		= 0x0E,
-+	MAX77843_FG_REG_REMCAP_MIX	= 0x0F,
-+	MAX77843_FG_REG_FULLCAP		= 0x10,
-+	MAX77843_FG_REG_AVG_TEMP	= 0x16,
-+	MAX77843_FG_REG_CYCLES		= 0x17,
-+	MAX77843_FG_REG_AVG_VCELL	= 0x19,
-+	MAX77843_FG_REG_CONFIG		= 0x1D,
-+	MAX77843_FG_REG_REMCAP_AV	= 0x1F,
-+	MAX77843_FG_REG_FULLCAP_NOM	= 0x23,
-+	MAX77843_FG_REG_MISCCFG		= 0x2B,
-+	MAX77843_FG_REG_RCOMP		= 0x38,
-+	MAX77843_FG_REG_FSTAT		= 0x3D,
-+	MAX77843_FG_REG_DQACC		= 0x45,
-+	MAX77843_FG_REG_DPACC		= 0x46,
-+	MAX77843_FG_REG_OCV		= 0xEE,
-+	MAX77843_FG_REG_VFOCV		= 0xFB,
-+	MAX77843_FG_SOCVF		= 0xFF,
-+
-+	MAX77843_FG_END,
-+};
-+
-+/* Muic registers */
-+enum max77843_muic_reg {
-+	MAX77843_MUIC_REG_ID		= 0x00,
-+	MAX77843_MUIC_REG_INT1		= 0x01,
-+	MAX77843_MUIC_REG_INT2		= 0x02,
-+	MAX77843_MUIC_REG_INT3		= 0x03,
-+	MAX77843_MUIC_REG_STATUS1	= 0x04,
-+	MAX77843_MUIC_REG_STATUS2	= 0x05,
-+	MAX77843_MUIC_REG_STATUS3	= 0x06,
-+	MAX77843_MUIC_REG_INTMASK1	= 0x07,
-+	MAX77843_MUIC_REG_INTMASK2	= 0x08,
-+	MAX77843_MUIC_REG_INTMASK3	= 0x09,
-+	MAX77843_MUIC_REG_CDETCTRL1	= 0x0A,
-+	MAX77843_MUIC_REG_CDETCTRL2	= 0x0B,
-+	MAX77843_MUIC_REG_CONTROL1	= 0x0C,
-+	MAX77843_MUIC_REG_CONTROL2	= 0x0D,
-+	MAX77843_MUIC_REG_CONTROL3	= 0x0E,
-+	MAX77843_MUIC_REG_CONTROL4	= 0x16,
-+	MAX77843_MUIC_REG_HVCONTROL1	= 0x17,
-+	MAX77843_MUIC_REG_HVCONTROL2	= 0x18,
-+
-+	MAX77843_MUIC_REG_END,
-+};
-+
-+enum max77843_irq {
-+	/* Topsys: SYSTEM */
-+	MAX77843_SYS_IRQ_SYSINTSRC_SYSUVLO_INT,
-+	MAX77843_SYS_IRQ_SYSINTSRC_SYSOVLO_INT,
-+	MAX77843_SYS_IRQ_SYSINTSRC_TSHDN_INT,
-+	MAX77843_SYS_IRQ_SYSINTSRC_TM_INT,
-+
-+	/* Charger: CHG_INT */
-+	MAX77843_CHG_IRQ_CHG_INT_BYP_I,
-+	MAX77843_CHG_IRQ_CHG_INT_BATP_I,
-+	MAX77843_CHG_IRQ_CHG_INT_BAT_I,
-+	MAX77843_CHG_IRQ_CHG_INT_CHG_I,
-+	MAX77843_CHG_IRQ_CHG_INT_WCIN_I,
-+	MAX77843_CHG_IRQ_CHG_INT_CHGIN_I,
-+	MAX77843_CHG_IRQ_CHG_INT_AICL_I,
-+
-+	MAX77843_IRQ_NUM,
-+};
-+
-+enum max77843_irq_muic {
-+	/* MUIC: INT1 */
-+	MAX77843_MUIC_IRQ_INT1_ADC,
-+	MAX77843_MUIC_IRQ_INT1_ADCERROR,
-+	MAX77843_MUIC_IRQ_INT1_ADC1K,
-+
-+	/* MUIC: INT2 */
-+	MAX77843_MUIC_IRQ_INT2_CHGTYP,
-+	MAX77843_MUIC_IRQ_INT2_CHGDETRUN,
-+	MAX77843_MUIC_IRQ_INT2_DCDTMR,
-+	MAX77843_MUIC_IRQ_INT2_DXOVP,
-+	MAX77843_MUIC_IRQ_INT2_VBVOLT,
-+
-+	/* MUIC: INT3 */
-+	MAX77843_MUIC_IRQ_INT3_VBADC,
-+	MAX77843_MUIC_IRQ_INT3_VDNMON,
-+	MAX77843_MUIC_IRQ_INT3_DNRES,
-+	MAX77843_MUIC_IRQ_INT3_MPNACK,
-+	MAX77843_MUIC_IRQ_INT3_MRXBUFOW,
-+	MAX77843_MUIC_IRQ_INT3_MRXTRF,
-+	MAX77843_MUIC_IRQ_INT3_MRXPERR,
-+	MAX77843_MUIC_IRQ_INT3_MRXRDY,
-+
-+	MAX77843_MUIC_IRQ_NUM,
-+};
-+
-+/* MAX77843 interrupts */
-+#define MAX77843_SYS_IRQ_SYSUVLO_INT		BIT(0)
-+#define MAX77843_SYS_IRQ_SYSOVLO_INT		BIT(1)
-+#define MAX77843_SYS_IRQ_TSHDN_INT		BIT(2)
-+#define MAX77843_SYS_IRQ_TM_INT			BIT(3)
-+
-+/* Max77843 charger insterrupts */
-+#define MAX77843_CHG_BYP_I			BIT(0)
-+#define MAX77843_CHG_BATP_I			BIT(2)
-+#define MAX77843_CHG_BAT_I			BIT(3)
-+#define MAX77843_CHG_CHG_I			BIT(4)
-+#define MAX77843_CHG_WCIN_I			BIT(5)
-+#define MAX77843_CHG_CHGIN_I			BIT(6)
-+#define MAX77843_CHG_AICL_I			BIT(7)
-+
-+/* MAX77843 CHG_INT_OK register */
-+#define MAX77843_CHG_BYP_OK			BIT(0)
-+#define MAX77843_CHG_BATP_OK			BIT(2)
-+#define MAX77843_CHG_BAT_OK			BIT(3)
-+#define MAX77843_CHG_CHG_OK			BIT(4)
-+#define MAX77843_CHG_WCIN_OK			BIT(5)
-+#define MAX77843_CHG_CHGIN_OK			BIT(6)
-+#define MAX77843_CHG_AICL_OK			BIT(7)
-+
-+/* MAX77843 CHG_DETAILS_00 register */
-+#define MAX77843_CHG_BAT_DTLS			BIT(0)
-+
-+/* MAX77843 CHG_DETAILS_01 register */
-+#define MAX77843_CHG_DTLS_MASK			0x0f
-+#define MAX77843_CHG_PQ_MODE			0x00
-+#define MAX77843_CHG_CC_MODE			0x01
-+#define MAX77843_CHG_CV_MODE			0x02
-+#define MAX77843_CHG_TO_MODE			0x03
-+#define MAX77843_CHG_DO_MODE			0x04
-+#define MAX77843_CHG_HT_MODE			0x05
-+#define MAX77843_CHG_TF_MODE			0x06
-+#define MAX77843_CHG_TS_MODE			0x07
-+#define MAX77843_CHG_OFF_MODE			0x08
-+
-+#define MAX77843_CHG_BAT_DTLS_MASK		0xf0
-+#define MAX77843_CHG_NO_BAT			(0x00 << 4)
-+#define MAX77843_CHG_LOW_VOLT_BAT		(0x01 << 4)
-+#define MAX77843_CHG_LONG_BAT_TIME		(0x02 << 4)
-+#define MAX77843_CHG_OK_BAT			(0x03 << 4)
-+#define MAX77843_CHG_OK_LOW_VOLT_BAT		(0x04 << 4)
-+#define MAX77843_CHG_OVER_VOLT_BAT		(0x05 << 4)
-+#define MAX77843_CHG_OVER_CURRENT_BAT		(0x06 << 4)
-+
-+/* MAX77843 CHG_CNFG_00 register */
-+#define MAX77843_CHG_DISABLE			0x00
-+#define MAX77843_CHG_ENABLE			0x05
-+#define MAX77843_CHG_MASK			0x01
-+#define MAX77843_CHG_BUCK_MASK			0x04
-+
-+/* MAX77843 CHG_CNFG_01 register */
-+#define MAX77843_CHG_RESTART_THRESHOLD_100	0x00
-+#define MAX77843_CHG_RESTART_THRESHOLD_150	0x10
-+#define MAX77843_CHG_RESTART_THRESHOLD_200	0x20
-+#define MAX77843_CHG_RESTART_THRESHOLD_DISABLE	0x30
-+
-+/* MAX77843 CHG_CNFG_02 register */
-+#define MAX77843_CHG_FAST_CHG_CURRENT_MIN	100000
-+#define MAX77843_CHG_FAST_CHG_CURRENT_MAX	3150000
-+#define MAX77843_CHG_FAST_CHG_CURRENT_STEP	50000
-+#define MAX77843_CHG_FAST_CHG_CURRENT_MASK	0x3f
-+#define MAX77843_CHG_OTG_ILIMIT_500		(0x00 << 6)
-+#define MAX77843_CHG_OTG_ILIMIT_900		(0x01 << 6)
-+#define MAX77843_CHG_OTG_ILIMIT_1200		(0x02 << 6)
-+#define MAX77843_CHG_OTG_ILIMIT_1500		(0x03 << 6)
-+#define MAX77843_CHG_OTG_ILIMIT_MASK		0xc0
-+
-+/* MAX77843 CHG_CNFG_03 register */
-+#define MAX77843_CHG_TOP_OFF_CURRENT_MIN	125000
-+#define MAX77843_CHG_TOP_OFF_CURRENT_MAX	650000
-+#define MAX77843_CHG_TOP_OFF_CURRENT_STEP	75000
-+#define MAX77843_CHG_TOP_OFF_CURRENT_MASK	0x07
-+
-+/* MAX77843 CHG_CNFG_06 register */
-+#define MAX77843_CHG_WRITE_CAP_BLOCK		0x10
-+#define MAX77843_CHG_WRITE_CAP_UNBLOCK		0x0C
-+
-+/* MAX77843_CHG_CNFG_09_register */
-+#define MAX77843_CHG_INPUT_CURRENT_LIMIT_MIN	100000
-+#define MAX77843_CHG_INPUT_CURRENT_LIMIT_MAX	4000000
-+#define MAX77843_CHG_INPUT_CURRENT_LIMIT_REF	3367000
-+#define MAX77843_CHG_INPUT_CURRENT_LIMIT_STEP	33000
-+
-+#define MAX77843_MUIC_ADC			BIT(0)
-+#define MAX77843_MUIC_ADCERROR			BIT(2)
-+#define MAX77843_MUIC_ADC1K			BIT(3)
-+
-+#define MAX77843_MUIC_CHGTYP			BIT(0)
-+#define MAX77843_MUIC_CHGDETRUN			BIT(1)
-+#define MAX77843_MUIC_DCDTMR			BIT(2)
-+#define MAX77843_MUIC_DXOVP			BIT(3)
-+#define MAX77843_MUIC_VBVOLT			BIT(4)
-+
-+#define MAX77843_MUIC_VBADC			BIT(0)
-+#define MAX77843_MUIC_VDNMON			BIT(1)
-+#define MAX77843_MUIC_DNRES			BIT(2)
-+#define MAX77843_MUIC_MPNACK			BIT(3)
-+#define MAX77843_MUIC_MRXBUFOW			BIT(4)
-+#define MAX77843_MUIC_MRXTRF			BIT(5)
-+#define MAX77843_MUIC_MRXPERR			BIT(6)
-+#define MAX77843_MUIC_MRXRDY			BIT(7)
-+
-+/* MAX77843 INTSRCMASK register */
-+#define MAX77843_INTSRCMASK_CHGR		0
-+#define MAX77843_INTSRCMASK_SYS			1
-+#define MAX77843_INTSRCMASK_FG			2
-+#define MAX77843_INTSRCMASK_MUIC		3
-+
-+#define MAX77843_INTSRCMASK_CHGR_MASK          BIT(MAX77843_INTSRCMASK_CHGR)
-+#define MAX77843_INTSRCMASK_SYS_MASK           BIT(MAX77843_INTSRCMASK_SYS)
-+#define MAX77843_INTSRCMASK_FG_MASK            BIT(MAX77843_INTSRCMASK_FG)
-+#define MAX77843_INTSRCMASK_MUIC_MASK          BIT(MAX77843_INTSRCMASK_MUIC)
-+
-+#define MAX77843_INTSRC_MASK_MASK \
-+		(MAX77843_INTSRCMASK_MUIC_MASK | MAX77843_INTSRCMASK_FG_MASK | \
-+		MAX77843_INTSRCMASK_SYS_MASK | MAX77843_INTSRCMASK_CHGR_MASK)
-+
-+/* MAX77843 STATUS register*/
-+#define STATUS1_ADC_SHIFT			0
-+#define STATUS1_ADCERROR_SHIFT			6
-+#define STATUS1_ADC1K_SHIFT			7
-+#define STATUS2_CHGTYP_SHIFT			0
-+#define STATUS2_CHGDETRUN_SHIFT			3
-+#define STATUS2_DCDTMR_SHIFT			4
-+#define STATUS2_DXOVP_SHIFT			5
-+#define STATUS2_VBVOLT_SHIFT			6
-+#define STATUS3_VBADC_SHIFT			0
-+#define STATUS3_VDNMON_SHIFT			4
-+#define STATUS3_DNRES_SHIFT			5
-+#define STATUS3_MPNACK_SHIFT			6
-+
-+#define MAX77843_MUIC_STATUS1_ADC_MASK		(0x1f << STATUS1_ADC_SHIFT)
-+#define MAX77843_MUIC_STATUS1_ADCERROR_MASK	BIT(STATUS1_ADCERROR_SHIFT)
-+#define MAX77843_MUIC_STATUS1_ADC1K_MASK	BIT(STATUS1_ADC1K_SHIFT)
-+#define MAX77843_MUIC_STATUS2_CHGTYP_MASK	(0x7 << STATUS2_CHGTYP_SHIFT)
-+#define MAX77843_MUIC_STATUS2_CHGDETRUN_MASK	BIT(STATUS2_CHGDETRUN_SHIFT)
-+#define MAX77843_MUIC_STATUS2_DCDTMR_MASK	BIT(STATUS2_DCDTMR_SHIFT)
-+#define MAX77843_MUIC_STATUS2_DXOVP_MASK	BIT(STATUS2_DXOVP_SHIFT)
-+#define MAX77843_MUIC_STATUS2_VBVOLT_MASK	BIT(STATUS2_VBVOLT_SHIFT)
-+#define MAX77843_MUIC_STATUS3_VBADC_MASK	(0xf << STATUS3_VBADC_SHIFT)
-+#define MAX77843_MUIC_STATUS3_VDNMON_MASK	BIT(STATUS3_VDNMON_SHIFT)
-+#define MAX77843_MUIC_STATUS3_DNRES_MASK	BIT(STATUS3_DNRES_SHIFT)
-+#define MAX77843_MUIC_STATUS3_MPNACK_MASK	BIT(STATUS3_MPNACK_SHIFT)
-+
-+/* MAX77843 CONTROL register */
-+#define CONTROL1_COMP1SW_SHIFT			0
-+#define CONTROL1_COMP2SW_SHIFT			3
-+#define CONTROL1_IDBEN_SHIFT			7
-+#define CONTROL2_LOWPWR_SHIFT			0
-+#define CONTROL2_ADCEN_SHIFT			1
-+#define CONTROL2_CPEN_SHIFT			2
-+#define CONTROL2_ACC_DET_SHIFT			5
-+#define CONTROL2_USBCPINT_SHIFT			6
-+#define CONTROL2_RCPS_SHIFT			7
-+#define CONTROL3_JIGSET_SHIFT			0
-+#define CONTROL4_ADCDBSET_SHIFT			0
-+#define CONTROL4_USBAUTO_SHIFT			4
-+#define CONTROL4_FCTAUTO_SHIFT			5
-+#define CONTROL4_ADCMODE_SHIFT			6
-+
-+#define MAX77843_MUIC_CONTROL1_COMP1SW_MASK	(0x7 << CONTROL1_COMP1SW_SHIFT)
-+#define MAX77843_MUIC_CONTROL1_COMP2SW_MASK	(0x7 << CONTROL1_COMP2SW_SHIFT)
-+#define MAX77843_MUIC_CONTROL1_IDBEN_MASK	BIT(CONTROL1_IDBEN_SHIFT)
-+#define MAX77843_MUIC_CONTROL2_LOWPWR_MASK	BIT(CONTROL2_LOWPWR_SHIFT)
-+#define MAX77843_MUIC_CONTROL2_ADCEN_MASK	BIT(CONTROL2_ADCEN_SHIFT)
-+#define MAX77843_MUIC_CONTROL2_CPEN_MASK	BIT(CONTROL2_CPEN_SHIFT)
-+#define MAX77843_MUIC_CONTROL2_ACC_DET_MASK	BIT(CONTROL2_ACC_DET_SHIFT)
-+#define MAX77843_MUIC_CONTROL2_USBCPINT_MASK	BIT(CONTROL2_USBCPINT_SHIFT)
-+#define MAX77843_MUIC_CONTROL2_RCPS_MASK	BIT(CONTROL2_RCPS_SHIFT)
-+#define MAX77843_MUIC_CONTROL3_JIGSET_MASK	(0x3 << CONTROL3_JIGSET_SHIFT)
-+#define MAX77843_MUIC_CONTROL4_ADCDBSET_MASK	(0x3 << CONTROL4_ADCDBSET_SHIFT)
-+#define MAX77843_MUIC_CONTROL4_USBAUTO_MASK	BIT(CONTROL4_USBAUTO_SHIFT)
-+#define MAX77843_MUIC_CONTROL4_FCTAUTO_MASK	BIT(CONTROL4_FCTAUTO_SHIFT)
-+#define MAX77843_MUIC_CONTROL4_ADCMODE_MASK	(0x3 << CONTROL4_ADCMODE_SHIFT)
-+
-+/* MAX77843 switch port */
-+#define MAX77843_SIWTH_PORT \
-+(MAX77843_MUIC_CONTROL1_COMP1SW_MASK | MAX77843_MUIC_CONTROL1_COMP2SW_MASK)
-+
-+#define MAX77843_SWITCH_OPEN \
-+		(0 << CONTROL1_COMP1SW_SHIFT | 0 << CONTROL1_COMP2SW_SHIFT)
-+#define MAX77843_SWITCH_USB \
-+		(1 << CONTROL1_COMP1SW_SHIFT | 1 << CONTROL1_COMP2SW_SHIFT)
-+#define MAX77843_SWITCH_AUDIO \
-+		(2 << CONTROL1_COMP1SW_SHIFT | 2 << CONTROL1_COMP2SW_SHIFT)
-+#define MAX77843_SWITCH_UART \
-+		(3 << CONTROL1_COMP1SW_SHIFT | 3 << CONTROL1_COMP2SW_SHIFT)
-+#define MAX77843_SWITCH_AUX_USB \
-+		(4 << CONTROL1_COMP1SW_SHIFT | 4 << CONTROL1_COMP2SW_SHIFT)
-+#define MAX77843_SWITCH_AUX_UART \
-+		(5 << CONTROL1_COMP1SW_SHIFT | 5 << CONTROL1_COMP2SW_SHIFT)
-+
-+/* MAX77843 SAFEOUT LDO Control register */
-+#define SAFEOUTCTRL_SAFEOUT1_SHIFT		0
-+#define SAFEOUTCTRL_SAFEOUT2_SHIFT		2
-+#define SAFEOUTCTRL_ENSAFEOUT1_SHIFT		6
-+#define SAFEOUTCTRL_ENSAFEOUT2_SHIFT		7
-+
-+#define MAX77843_REG_SAFEOUTCTRL_ENSAFEOUT1 \
-+		BIT(SAFEOUTCTRL_ENSAFEOUT1_SHIFT)
-+#define MAX77843_REG_SAFEOUTCTRL_ENSAFEOUT2 \
-+		BIT(SAFEOUTCTRL_ENSAFEOUT2_SHIFT)
-+#define MAX77843_REG_SAFEOUTCTRL_SAFEOUT1_MASK \
-+		(0x3 << SAFEOUTCTRL_SAFEOUT1_SHIFT)
-+#define MAX77843_REG_SAFEOUTCTRL_SAFEOUT2_MASK \
-+		(0x3 << SAFEOUTCTRL_SAFEOUT2_SHIFT)
-+
-+struct max77843 {
-+	struct device *dev;
-+
-+	struct i2c_client *i2c;
-+	struct i2c_client *i2c_chg;
-+	struct i2c_client *i2c_fuel;
-+	struct i2c_client *i2c_muic;
-+
-+	struct regmap *regmap;
-+	struct regmap *regmap_chg;
-+	struct regmap *regmap_fuel;
-+	struct regmap *regmap_muic;
-+
-+	struct regmap_irq_chip_data *irq_data;
-+	struct regmap_irq_chip_data *irq_data_chg;
-+	struct regmap_irq_chip_data *irq_data_fuel;
-+	struct regmap_irq_chip_data *irq_data_muic;
-+
-+	int irq;
-+};
-+#endif /* __MAX77843_H__ */
 -- 
 1.7.9.5
 
