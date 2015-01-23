@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbbAWDaT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 22:30:19 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:37228 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960AbbAWDaQ (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Thu, 22 Jan 2015 22:30:16 -0500
-Message-ID: <1421983803.24914.3.camel@stgolabs.net>
-Subject: Re: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused
- by semop()
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: ethan zhao <ethan.zhao@oracle.com>
-Cc: Stephen Smalley <stephen.smalley@gmail.com>,
-        Ethan Zhao <ethan.kernel@gmail.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>,
-        selinux <selinux@tycho.nsa.gov>, linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, ethan.kernel@gmail.conm
-Date: Thu, 22 Jan 2015 19:30:03 -0800
-In-Reply-To: <54C1AFA2.8040900@oracle.com>
-References: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com>
-	 <54BE61F0.202@tycho.nsa.gov>
-	 <CABawtvPrhVWV3bC-=wygqfHJzctvrmd1WxDD1ciuLE7F7-_yaQ@mail.gmail.com>
-	 <54BF3971.2090003@colorfullife.com>
-	 <CABawtvO3PdKhmeH_H1v_tQxmgOBQrnLGNayTE1=EbcxJbtwAzQ@mail.gmail.com>
-	 <CAB9W1A3kabX9qMm56k=FJ1jcL8ou4APqt8teT38oFCiu=g1wNg@mail.gmail.com>
-	 <54C1AFA2.8040900@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
+	id S1754755AbbAWDa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 22:30:59 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:58776 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953AbbAWDax (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 22:30:53 -0500
+Message-ID: <54C1C04C.40205@ahsoftware.de>
+Date: Fri, 23 Jan 2015 04:30:20 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+CC: Paul Moore <pmoore@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: weird and wrong directory entries
+References: <20150123004138.GA2626@swordfish> <20150123013053.GY29656@ZenIV.linux.org.uk> <20150123020644.GA466@swordfish>
+In-Reply-To: <20150123020644.GA466@swordfish>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 10:19 +0800, ethan zhao wrote:
-> >   If not, what kernel
-> > version were you running when you triggered the bug?
->   To be honest, a kernel from distro, but not released, but before we 
-> get it clear, we wouldn't public more.
+Am 23.01.2015 um 03:06 schrieb Sergey Senozhatsky:
+> On (01/23/15 01:30), Al Viro wrote:
+>> On Fri, Jan 23, 2015 at 09:42:21AM +0900, Sergey Senozhatsky wrote:
+>>> Hello gents,
+>>>
+>>> I observe this sick behaviour for the past few days. (sorry, some lines are
+>>> over 80 symbols). all of the things above are happening during kernel compilation.
+>>> attached .config.
+>>
+>>> happens both on reiserfs and ext4, both on current linus's tree and linux-next.
+>>> no doubt, an attempt to rm -fr pkg/   kills   /usr/, etc.
+>>>
+>>
+>>> I'm puzzled. any thoughts?
+>>
+>> Try to bisect, perhaps?
+>>
 
-Sheesh, could Oracle be any more (ridiculously) secretive about what the
-hell kernel(s) they run... it's like pulling teeth. *sigh*
+There are some weird pieces in the kernel buildsysten which are
+generating Makefile content based on some filenames and might brake or
+confuse future builds. See e.g. https://lkml.org/lkml/2014/10/19/10.
+
+Maybe you've stumbled over a similiar thing.
+
+Regards,
+
+Alexander Holler
 
