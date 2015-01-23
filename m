@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbbAWGmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 01:42:53 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52947 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705AbbAWGmt (ORCPT
+	id S1754088AbbAWGm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 01:42:58 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35607 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120AbbAWGmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 01:42:49 -0500
-Subject: [PATCH -tip/urgent  0/2]kprobes bugfixes around optprobe
+	Fri, 23 Jan 2015 01:42:55 -0500
+Subject: [PATCH -tip/urgent 1/2] [BUGFIX]kprobes: set kprobes_all_disarmed
+ earlier to enable re-optimization.
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: tixy@linaro.org, Wang Nan <wangnan0@huawei.com>, linux@arm.linux.org.uk,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         lizefan@huawei.com, linux-arm-kernel@lists.infradead.org
-Date: Fri, 23 Jan 2015 15:42:17 +0900
-Message-ID: <20150123064217.30731.49156.stgit@localhost.localdomain>
+Date: Fri, 23 Jan 2015 15:42:24 +0900
+Message-ID: <20150123064224.30731.30127.stgit@localhost.localdomain>
+In-Reply-To: <20150123064217.30731.49156.stgit@localhost.localdomain>
+References: <20150123064217.30731.49156.stgit@localhost.localdomain>
 User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,30 +26,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Wang Nan <wangnan0@huawei.com>
 
-Here are two patches for fixing bugs in kprobes, related to
-optprobe and enable/disable kprobe knob.
+In original code, the probed instruction doesn't get optimized after
 
-These are reported and fixed by Wang Nan.
-https://lkml.org/lkml/2015/1/5/270
-https://lkml.org/lkml/2015/1/19/680
+echo 0 > /sys/kernel/debug/kprobes/enabled
+echo 1 > /sys/kernel/debug/kprobes/enabled
 
-Thank you,
+This is because original code checks kprobes_all_disarmed in
+optimize_kprobe(), but this flag is turned off after calling that
+function. Therefore, optimize_kprobe() will see
+kprobes_all_disarmed == true and doesn't do the optimization.
 
+This patch simply turns off kprobes_all_disarmed earlier to enable
+optimization.
 
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
+ kernel/kprobes.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Wang Nan (2):
-      [BUGFIX]kprobes: set kprobes_all_disarmed earlier to enable re-optimization.
-      [BUGFIX]kprobes: makes kprobes/enabled works correctly for optimized kprobes.
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 06f5830..9471710 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -2320,6 +2320,12 @@ static void arm_all_kprobes(void)
+ 	if (!kprobes_all_disarmed)
+ 		goto already_enabled;
+ 
++	/*
++	 * optimize_kprobe() called by arm_kprobe() checks
++	 * kprobes_all_disarmed, so set kprobes_all_disarmed before
++	 * arm_kprobe.
++	 */
++	kprobes_all_disarmed = false;
+ 	/* Arming kprobes doesn't optimize kprobe itself */
+ 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+ 		head = &kprobe_table[i];
+@@ -2328,7 +2334,6 @@ static void arm_all_kprobes(void)
+ 				arm_kprobe(p);
+ 	}
+ 
+-	kprobes_all_disarmed = false;
+ 	printk(KERN_INFO "Kprobes globally enabled\n");
+ 
+ already_enabled:
 
-
- kernel/kprobes.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
-
---
-Masami HIRAMATSU
-Software Platform Research Dpt. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
