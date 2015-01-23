@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169AbbAWBQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 20:16:06 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:40721 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323AbbAWBQD (ORCPT
+	id S1753359AbbAWBTl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 20:19:41 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:35857 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235AbbAWBTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 20:16:03 -0500
-Date: Fri, 23 Jan 2015 10:15:55 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Streetman <ddstreet@ieee.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Nitin Gupta <ngupta@vflare.org>, Juneho Choi <juno.choi@lge.com>,
-        Gunho Lee <gunho.lee@lge.com>, Luigi Semenzato <semenzato@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: Re: [PATCH v1 01/10] zram: avoid calling of zram_meta_free under
- init_lock
-Message-ID: <20150123011555.GB18918@blaptop>
-References: <1421820866-26521-1-git-send-email-minchan@kernel.org>
- <1421820866-26521-2-git-send-email-minchan@kernel.org>
- <20150121142115.GA986@swordfish>
- <20150123010336.GA18918@blaptop>
+	Thu, 22 Jan 2015 20:19:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123010336.GA18918@blaptop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAOesGMh1HE+hMP0VWr2vaHCp2itVjpQeiiFL6r9WeJUFes5tvw@mail.gmail.com>
+References: <1407202310-3359-1-git-send-email-sboyd@codeaurora.org>
+	<1407202310-3359-9-git-send-email-sboyd@codeaurora.org>
+	<CAOesGMh1HE+hMP0VWr2vaHCp2itVjpQeiiFL6r9WeJUFes5tvw@mail.gmail.com>
+Date: Thu, 22 Jan 2015 20:19:37 -0500
+Message-ID: <CAF6AEGs3058dj7f06qvngOaBPiuJn4QrYFKQD-RQV4ydZ1h2sw@mail.gmail.com>
+Subject: Re: [PATCH 8/8] msm: scm: Move the scm driver to drivers/soc/qcom
+From: Rob Clark <robdclark@gmail.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lina Iyer <lina.iyer@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:03:36AM +0900, Minchan Kim wrote:
-> Hello,
-> 
-> On Wed, Jan 21, 2015 at 11:21:53PM +0900, Sergey Senozhatsky wrote:
-> > On (01/21/15 15:14), Minchan Kim wrote:
-> > > We don't need to call zram_meta_free under init_lock.
-> > > What we need to prevent race is setting NULL into zram->meta
-> > > (ie, init_done). This patch does it.
-> > > 
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > ---
-> > >  drivers/block/zram/zram_drv.c | 5 +++--
-> > >  1 file changed, 3 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > > index 9250b3f..7e03d86 100644
-> > > --- a/drivers/block/zram/zram_drv.c
-> > > +++ b/drivers/block/zram/zram_drv.c
-> > > @@ -719,6 +719,8 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> > >  	}
-> > >  
-> > >  	meta = zram->meta;
-> > > +	zram->meta = NULL;
-> > > +
-> > >  	/* Free all pages that are still in this zram device */
-> > >  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> > >  		unsigned long handle = meta->table[index].handle;
-> > > @@ -731,8 +733,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> > >  	zcomp_destroy(zram->comp);
-> > >  	zram->max_comp_streams = 1;
-> > >  
-> > > -	zram_meta_free(zram->meta);
-> > > -	zram->meta = NULL;
-> > >  	/* Reset stats */
-> > >  	memset(&zram->stats, 0, sizeof(zram->stats));
-> > >  
-> > > @@ -741,6 +741,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> > >  		set_capacity(zram->disk, 0);
-> > >  
-> > >  	up_write(&zram->init_lock);
-> > > +	zram_meta_free(meta);
-> > 
-> > Hello,
-> > 
-> > since we detached ->meta from zram, this one doesn't really need
-> > ->init_lock protection:
-> > 
-> > 	/* Free all pages that are still in this zram device */
-> > 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> > 		unsigned long handle = meta->table[index].handle;
-> > 		if (!handle)
-> > 			continue;
-> > 
-> > 		zs_free(meta->mem_pool, handle);
-> > 	}
-> > 
-> > 
-> > 	-ss
-> 
-> Good catch.
-> 
-> As well, we could move zcomp_destroy and memset(&zram->stats)
-> out of the lock but zram_rw_page, ZRAM_ATTR_RO, disksize_show
-> and orig_data_size_show have a race bug which access stats
-> out of the lock so that it could show the stale vaule.
-> Although it's not a significant, there is no reason to hesitate the fix. :)
+On Wed, Jan 21, 2015 at 8:13 PM, Olof Johansson <olof@lixom.net> wrote:
+> I just saw this in the pull request from Kumar, so this is a bit late
+> w.r.t. to the patch, but so was his merging of the code. :)
+>
+>
+>
+> On Mon, Aug 4, 2014 at 6:31 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> Architectural changes in the ARM Linux kernel tree mandate
+>> the eventual removal of the mach-* directories. Move the
+>> scm driver to drivers/soc/qcom and the scm header to
+>> include/soc/qcom to support that removal.
+>
+> The idea is not blindly move one dumping ground to a new place.
+>
+> I see only two exported functions from scm.c:
+>
+> scm_get_version: This is not used anywhere in the kernel and can just be removed
+> scm_call: This is used by scm-boot, and would be better to translate
+> over to firmware_ops in the first place.
+>
+>
+> So, can you please rework this with the above in mind instead of just
+> moving the files over? Thanks!
+>
 
-Argh, sent wrong version.
-zram->stats should be protected by the lock but other stat show
-functions don't hold a lock so it's racy.
 
-> 
-> I will fix it. Thanks!
-> 
-> 
-> > 
-> > >  	/*
-> > >  	 * Revalidate disk out of the init_lock to avoid lockdep splat.
-> > > -- 
-> > > 1.9.3
-> > > 
+jfyi, we have some pending drm/msm patches blocked on this move
+
+(not trying to comment one way or another on whether all or some
+should be moved..  just pointing out there would be more in-tree users
+of it if it was moved)
+
+BR,
+-R
+
+>
+> -Olof
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
