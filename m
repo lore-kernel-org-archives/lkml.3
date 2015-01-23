@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732AbbAWP6E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:58:04 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:34090 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754866AbbAWP6B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:58:01 -0500
-Date: Fri, 23 Jan 2015 07:57:24 -0800
-From: Shaohua Li <shli@fb.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <Kernel-team@fb.com>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC 2/2] perf: update userspace page info for software event
-Message-ID: <20150123155724.GA631220@devbig257.prn2.facebook.com>
-References: <119aa7d433860f568136ab623fb4a510c28e9e6f.1421906750.git.shli@fb.com>
- <e0f8f6f0a114c464e8e38cd73be31564bd5ea7da.1421906750.git.shli@fb.com>
- <20150123084451.GE2896@worktop.programming.kicks-ass.net>
+	id S1755880AbbAWP6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:58:21 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:36207 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755801AbbAWP6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 10:58:18 -0500
+Date: Fri, 23 Jan 2015 17:58:02 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Rik van Riel <riel@redhat.com>
+Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, mhocko@suse.cz, mgorman@suse.de,
+        rientjes@google.com, sasha.levin@oracle.com, hughd@google.com,
+        hannes@cmpxchg.org, vbabka@suse.cz, linux-kernel@vger.kernel.org,
+        aarcange@redhat.com
+Subject: Re: [PATCH] mm: incorporate read-only pages into transparent huge
+ pages
+Message-ID: <20150123155802.GA7011@node.dhcp.inet.fi>
+References: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
+ <20150123113701.GB5975@node.dhcp.inet.fi>
+ <54C2613F.6080403@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150123084451.GE2896@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-23_05:2015-01-23,2015-01-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=29.7537444223261
- compositescore=0.928745990228454 urlsuspect_oldscore=0.928745990228454
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.928745990228454 spamscore=0
- recipient_to_sender_domain_totalscore=11 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501230150
-X-FB-Internal: deliver
+In-Reply-To: <54C2613F.6080403@redhat.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 09:44:51AM +0100, Peter Zijlstra wrote:
-> On Thu, Jan 22, 2015 at 01:09:02PM -0800, Shaohua Li wrote:
-> > ---
-> >  kernel/events/core.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index 4edde3e..4221240 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -5950,6 +5950,7 @@ static int perf_swevent_add(struct perf_event *event, int flags)
-> >  	}
-> >  
-> >  	hlist_add_head_rcu(&event->hlist_entry, head);
-> > +	perf_event_update_userpage(event);
-> >  
-> >  	return 0;
-> >  }
-> > @@ -6419,6 +6420,7 @@ static int cpu_clock_event_add(struct perf_event *event, int flags)
-> >  {
-> >  	if (flags & PERF_EF_START)
-> >  		cpu_clock_event_start(event, flags);
-> > +	perf_event_update_userpage(event);
-> >  
-> >  	return 0;
-> >  }
-> > @@ -6493,6 +6495,7 @@ static int task_clock_event_add(struct perf_event *event, int flags)
-> >  {
-> >  	if (flags & PERF_EF_START)
-> >  		task_clock_event_start(event, flags);
-> > +	perf_event_update_userpage(event);
-> >  
-> >  	return 0;
-> >  }
+On Fri, Jan 23, 2015 at 09:57:03AM -0500, Rik van Riel wrote:
+> On 01/23/2015 06:37 AM, Kirill A. Shutemov wrote:
+> > On Fri, Jan 23, 2015 at 09:47:36AM +0200, Ebru Akagunduz wrote:
+> >> This patch aims to improve THP collapse rates, by allowing
+> >> THP collapse in the presence of read-only ptes, like those
+> >> left in place by do_swap_page after a read fault.
+> >>
+> >> Currently THP can collapse 4kB pages into a THP when
+> >> there are up to khugepaged_max_ptes_none pte_none ptes
+> >> in a 2MB range. This patch applies the same limit for
+> >> read-only ptes.
 > 
-> How about the one I sent; which adds it to {start,stop} instead of add?
-> {start,stop} is the right place to add them, although this add might be
-> sufficient for your use case.
-Hi Peter,
-I tried {start, stop}, it doesn't work (doesn't get called in context
-switch) and I still get a CLOCK_MONOTONIC. So I added it to .add, which
-is called in context switch and I got correct thread time. Am I missing
-anything?
+> >> @@ -2179,6 +2179,17 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+> >>  		 */
+> >>  		if (!trylock_page(page))
+> >>  			goto out;
+> >> +		if (!pte_write(pteval)) {
+> >> +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
+> >> +					unlock_page(page);
+> >> +					goto out;
+> >> +			}
+> >> +			/*
+> >> +			 * Page is not in the swap cache, and page count is
+> >> +			 * one (see above). It can be collapsed into a THP.
+> >> +			 */
+> >> +		}
+> > 
+> > Hm. As a side effect it will effectevely allow collapse in PROT_READ vmas,
+> > right? I'm not convinced it's a good idea.
+> 
+> It will only allow a THP collapse if there is at least one
+> read-write pte.
+> 
+> I suspect that excludes read-only VMAs automatically.
 
-Thanks,
-Shaohua
+Ah. Okay. I missed that condition.
+
+Looks good to me.
+
+-- 
+ Kirill A. Shutemov
