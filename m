@@ -1,134 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258AbbAWMb0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 07:31:26 -0500
-Received: from domu-toccata.ens-lyon.fr ([140.77.166.138]:39477 "EHLO
-	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026AbbAWMbY (ORCPT
+	id S1755320AbbAWMct (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 07:32:49 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:44114 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753026AbbAWMcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 07:31:24 -0500
-Date: Fri, 23 Jan 2015 13:31:22 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Pavel Machek <pavel@ucw.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
-        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCHv5 0/2] INPUT: Route keyboard LEDs through the generic
- LEDs layer
-Message-ID: <20150123123122.GC3188@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Pavel Machek <pavel@ucw.cz>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
-	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-	Arnaud Patard <arnaud.patard@rtp-net.org>,
-	Peter Korsgaard <jacmet@sunsite.dk>,
-	Sascha Hauer <s.hauer@pengutronix.de>,
-	Rob Clark <robdclark@gmail.com>,
-	Niels de Vos <devos@fedoraproject.org>,
-	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-References: <20141226232116.GA5069@type>
- <20150102195350.GB27538@amd>
- <20150121152112.GA24789@type.bordeaux.inria.fr>
+	Fri, 23 Jan 2015 07:32:46 -0500
+From: Punit Agrawal <punit.agrawal@arm.com>
+To: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, leo.yan@linaro.org, yexl@marvell.com,
+        Will.Deacon@arm.com, Catalin.Marinas@arm.com, Mark.Rutland@arm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction emulation
+References: <1421844191-9263-1-git-send-email-suzuki.poulose@arm.com>
+	<1421844191-9263-2-git-send-email-suzuki.poulose@arm.com>
+	<1421844191-9263-3-git-send-email-suzuki.poulose@arm.com>
+Date: Fri, 23 Jan 2015 12:31:40 +0000
+In-Reply-To: <1421844191-9263-3-git-send-email-suzuki.poulose@arm.com> (Suzuki
+	K. Poulose's message of "Wed, 21 Jan 2015 12:43:10 +0000")
+Message-ID: <9hhoappn0er.fsf@e105922-lin.cambridge.arm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150121152112.GA24789@type.bordeaux.inria.fr>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Suzuki,
 
-Samuel Thibault, le Wed 21 Jan 2015 16:21:12 +0100, a écrit :
-> I have just tried what you described on a thinkpad lenovo T500, without
-> any problem, except that the thinkpad BIOS does a couple of funky
-> things:
+A possible simplification below.
 
-Actually it's even worse than that: depending on whether it is in
-synchronized mode or independent mode, *and* depending on the current
-*state* of the internal numlock LED, and probably also whether an
-external keyboard is connected, the internal numlock key will produce
-*or not* key events!  The actual transition table for this seems quite
-clumsy, basically the BIOS seems to be assuming that the the numlock
-key toggles the numlock LED, and setting up anything different leads
-to all kinds of confusing effects, the "simplest" of which being that
-you definitely not want to set e.g. a heartbeat trigger on the numlock
-LED, or else the right part of the keyboard will randomly behave as a
-keypad...
+"Suzuki K. Poulose" <suzuki.poulose@arm.com> writes:
 
-I guess that may happen with other laptops, so I'm afraid I can only
-reject any kind of bug report involving the internal numlock LED or key
-of a laptop.
+> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+>
+> As of now each insn_emulation has a cpu hotplug notifier that
+> enables/disables the CPU feature bit for the functionality. This
+> patch re-arranges the code, such that there is only one notifier
+> that runs through the list of registered emulation hooks and runs
+> their corresponding set_hw_mode.
+>
+> We do nothing when a CPU is dying as we will set the appropriate bits
+> as it comes back online based on the state of the hooks.
+>
+> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Punit Agrawal <punit.agrawal@arm.com>
+> ---
+>  arch/arm64/include/asm/cputype.h     |    2 +
+>  arch/arm64/kernel/armv8_deprecated.c |  125 +++++++++++++++++++++-------------
+>  2 files changed, 79 insertions(+), 48 deletions(-)
+>
 
-So we're left with these:
+[...]
 
-Pavel Machek, le Fri 02 Jan 2015 20:53:51 +0100, a écrit :
-> > Here is v5 coming, with separate patches for the kbd and the input
-> > parts.
-> 
-> After booting with this, capslock led does not seem to work on text
-> console.
+> diff --git a/arch/arm64/kernel/armv8_deprecated.c b/arch/arm64/kernel/armv8_deprecated.c
+> index c363671..2c991f1 100644
+> --- a/arch/arm64/kernel/armv8_deprecated.c
+> +++ b/arch/arm64/kernel/armv8_deprecated.c
+> @@ -19,6 +19,7 @@
+>  #include <asm/system_misc.h>
+>  #include <asm/traps.h>
+>  #include <asm/uaccess.h>
+> +#include <asm/cpufeature.h>
+>  
+>  #define CREATE_TRACE_POINTS
+>  #include "trace-events-emulation.h"
+> @@ -85,6 +86,57 @@ static void remove_emulation_hooks(struct insn_emulation_ops *ops)
+>  	pr_notice("Removed %s emulation handler\n", ops->name);
+>  }
+>  
+> +static void enable_insn_hw_mode(void *data)
+> +{
+> +	struct insn_emulation *insn = (struct insn_emulation *)data;
+> +	if (insn && insn->ops->set_hw_mode)
 
-Did you check that it was working before?  If you are using
-console-setup, it is a known bug that the capslock LED doesn't reflect
-the layout capslock state, because console-setup uses another modifier
-than the capslock modifier, because that one has unwanted legacy
-hardcoded effects.  That's precisely the point of the keyboard part
-of my two led patches to provide console-setup with an interface to
-properly route the layout capslock state (expressed as another modifier
-than capslock) to the capslock LED.
+You can simplify (drop?) this...
 
-> input4::capsl/trigger was none by default, that can't be right, right?
+> +		insn->ops->set_hw_mode(true);
+> +}
+> +
+> +static void disable_insn_hw_mode(void *data)
+> +{
+> +	struct insn_emulation *insn = (struct insn_emulation *)data;
+> +	if (insn && insn->ops->set_hw_mode)
 
-That is still not right, and I still don't see how that can happen: my
-patch registers the input4::capsl LED with its default trigger name
-just before the input4-capsl trigger, and doesn't do anything about
-trigger assignment after that, so I don't see how it can be coming from
-my patch.
+and this check since...
 
-> I tried putting kbd-capslock and input4-capsl there, but that did not
-> seem to help.
+> +		insn->ops->set_hw_mode(false);
+> +}
+> +
+> +/* Run set_hw_mode(mode) on all active CPUs */
+> +static int run_all_cpu_set_hw_mode(struct insn_emulation *insn, bool enable)
+> +{
+> +	if (!insn->ops->set_hw_mode)
+> +		return -EINVAL;
 
-Was it at least changing the content of the trigger file?  Again, if you
-are using console-setup, it is normal that the capslock modifier does
-not change, console-setup uses another modifier, that can be seen in
-dumpkeys | grep 58, depending on your precise configuration it will use
-various modifiers.  So in that case the kbd-capslock and input*-capsl
-are not good tests.
+insn->ops->set_hw_mode is already checked here.
 
-Basically you're left with the kbd-scrollock and input*-scrolll triggers
-and scrollock key for easy testing, if you happen to have that key on
-your keyboard... (apparently the thinkpad I'm testing doesn't do funky
-things with it).
+> +	if (enable)
+> +		on_each_cpu(enable_insn_hw_mode, (void *)insn, true);
+> +	else
+> +		on_each_cpu(disable_insn_hw_mode, (void *)insn, true);
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Run set_hw_mode for all insns on a starting CPU.
+> + * Returns:
+> + *  0 		- If all the hooks ran successfully.
+> + * -EINVAL	- At least one hook is not supported by the CPU.
+> + */
+> +static int run_all_insn_set_hw_mode(unsigned long cpu)
+> +{
+> +	int rc = 0;
+> +	unsigned long flags;
+> +	struct insn_emulation *insn;
+> +
+> +	raw_spin_lock_irqsave(&insn_emulation_lock, flags);
+> +	list_for_each_entry(insn, &insn_emulation, node) {
+> +		bool enable = (insn->current_mode == INSN_HW);
+> +		if (insn->ops->set_hw_mode && insn->ops->set_hw_mode(enable)) {
+> +			pr_warn(enable, "CPU[%ld] cannot support the emulation of %s",
+> +							cpu, insn->ops->name);
+> +			rc = -EINVAL;
+> +		}
+> +	}
+> +	raw_spin_unlock_irqrestore(&insn_emulation_lock, flags);
+> +	return rc;
+> +}
+> +
+>  static int update_insn_emulation_mode(struct insn_emulation *insn,
+>  				       enum insn_emulation_mode prev)
+>  {
 
-> It works with heartbeat trigger, but not with input4-numl
-> trigger. (But numlock led works ok with that trigger, weird).
+[...]
 
-That is probably due to the weird numlock behavior of the thinkpad.
-
-> vt::capsl/brightness controls capslock led, even when
-> input4-capsl/trigger is set to input4-numl.
-
-That is also not right, I can't reproduce it, and I don't see how it can
-happen with my patch.  Could you copy/paste the commands you are using?
-
-I have also posted reworked patches according to Dmitry's comments,
-probably better try those now.
-
-I'm sorry I forgot to make the second threaded with the first, but they
-are independent anyway.
-
-Samuel
