@@ -1,94 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843AbbAWBgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 20:36:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235AbbAWBgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 20:36:40 -0500
-Message-ID: <54C1A596.2000600@redhat.com>
-Date: Thu, 22 Jan 2015 19:36:22 -0600
-From: Wei Huang <wei@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754405AbbAWBkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 20:40:52 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:49590 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347AbbAWBkt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 20:40:49 -0500
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Christoffer Dall <cdall@cs.columbia.edu>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+In-Reply-To: <1421972951-3940-3-git-send-email-mcgrof@do-not-panic.com>
+References: <1421972951-3940-1-git-send-email-mcgrof@do-not-panic.com> <1421972951-3940-3-git-send-email-mcgrof@do-not-panic.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 22 Jan 2015 17:40:27 -0800
+Message-ID: <CALCETrXKeoFKCDYcqeN=HV6MJt_CjwSPQmn_DbBxY6s-76W3Tw@mail.gmail.com>
+Subject: Re: [RFC v4 2/2] x86/xen: allow privcmd hypercalls to be preempted
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: linux-next: manual merge of the kvm-arm tree with the arm64 tree
-References: <20150122160704.5ad5aeb9@canb.auug.org.au> <87r3unfb9x.fsf@approximate.cambridge.arm.com>
-In-Reply-To: <87r3unfb9x.fsf@approximate.cambridge.arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jan Beulich <JBeulich@suse.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 02:51 AM, Marc Zyngier wrote:
-> On Thu, Jan 22 2015 at  5:07:04 am GMT, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> Hi Stephen,
-> 
->> Today's linux-next merge of the kvm-arm tree got a conflict in
->> arch/arm64/include/asm/kvm_arm.h between commit 6e53031ed840 ("arm64:
->> kvm: remove ESR_EL2_* macros") from the arm64 tree and commit
->> 0d97f8848104 ("arm/arm64: KVM: add tracing support for arm64 exit
->> handler") from the kvm-arm tree.
->>
->> I fixed it up (see below, but this probably requires more work) and can
->> carry the fix as necessary (no action is required).
-> 
-> Thanks for dealing with this. I think the following patch should be
-> applied on top of your resolution, making the new macro part of the
-> asm/esr.h file.
-> 
-> Mark, Wei: does it match your expectations?
-Looks good to me. Thanks for handling this issue.
+On Thu, Jan 22, 2015 at 4:29 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>
+> Xen has support for splitting heavy work work into a series
+> of hypercalls, called multicalls, and preempting them through
+> what Xen calls continuation [0]. Despite this though without
+> CONFIG_PREEMPT preemption won't happen, without preemption
+> a system can become pretty useless on heavy handed hypercalls.
+> Such is the case for example when creating a > 50 GiB HVM guest,
+> we can get softlockups [1] with:.
+>
+> kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
+>
+> The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
+> (default 120 seconds), on the Xen side in this particular case
+> this happens when the following Xen hypervisor code is used:
+>
+> xc_domain_set_pod_target() -->
+>   do_memory_op() -->
+>     arch_memory_op() -->
+>       p2m_pod_set_mem_target()
+>         -- long delay (real or emulated) --
+>
+> This happens on arch_memory_op() on the XENMEM_set_pod_target memory
+> op even though arch_memory_op() can handle continuation via
+> hypercall_create_continuation() for example.
+>
+> Machines over 50 GiB of memory are on high demand and hard to come
+> by so to help replicate this sort of issue long delays on select
+> hypercalls have been emulated in order to be able to test this on
+> smaller machines [2].
+>
+> On one hand this issue can be considered as expected given that
+> CONFIG_PREEMPT=n is used however we have forced voluntary preemption
+> precedent practices in the kernel even for CONFIG_PREEMPT=n through
+> the usage of cond_resched() sprinkled in many places. To address
+> this issue with Xen hypercalls though we need to find a way to aid
+> to the schedular in the middle of hypercalls. We are motivated to
+> address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
+> rather unresponsive for long periods of time; in the worst case, at least
+> only currently by emulating long delays on select io disk bound
+> hypercalls, this can lead to filesystem corruption if the delay happens
+> for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
+>
+> We can address this problem by trying to check if we should schedule
+> on the xen timer in the middle of a hypercall on the return from the
+> timer interrupt. We want to be careful to not always force voluntary
+> preemption though so to do this we only selectively enable preemption
+> on very specific xen hypercalls.
+>
+> This enables hypercall preemption by selectively forcing checks for
+> voluntary preempting only on ioctl initiated private hypercalls
+> where we know some folks have run into reported issues [1].
+>
+> This also adds a trace event to be able to review when xen hypercalls
+> are preemtped, right now we just tell you when it happens and which
+> CPU got preempted.
+>
+> ergon:~ # echo 1 > /sys/kernel/debug/tracing/events/xen/xen_hypercall_preemption/trigger
+> ergon:~ # cat /sys/kernel/debug/tracing/trace_pipe
+> ...
+>  qemu-system-i38-2114  [000] ....   491.038440: xen_hypercall_preemption: on CPU 0
+>  qemu-system-i38-2114  [003] ....   518.138592: xen_hypercall_preemption: on CPU 3
+> ...
+>
+> [0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
+> [1] https://bugzilla.novell.com/show_bug.cgi?id=861093
+> [2] http://ftp.suse.com/pub/people/mcgrof/xen/emulate-long-xen-hypercalls.patch
+>
+> Based on original work by: David Vrabel <david.vrabel@citrix.com>
+> Suggested-by: Andy Lutomirski <luto@amacapital.net>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Jan Beulich <JBeulich@suse.com>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+>  arch/x86/kernel/entry_32.S       |  2 ++
+>  arch/x86/kernel/entry_64.S       |  2 ++
+>  drivers/xen/events/events_base.c | 23 +++++++++++++++++++++++
+>  include/trace/events/xen.h       |  9 +++++++++
+>  include/xen/events.h             |  1 +
+>  5 files changed, 37 insertions(+)
+>
 
--Wei
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 
-> 
-> Thanks,
-> 
-> 	M.
-> 
-> diff --git a/arch/arm64/include/asm/esr.h b/arch/arm64/include/asm/esr.h
-> index 6216709..92bbae3 100644
-> --- a/arch/arm64/include/asm/esr.h
-> +++ b/arch/arm64/include/asm/esr.h
-> @@ -96,6 +96,7 @@
->  #define ESR_ELx_COND_SHIFT	(20)
->  #define ESR_ELx_COND_MASK	(UL(0xF) << ESR_ELx_COND_SHIFT)
->  #define ESR_ELx_WFx_ISS_WFE	(UL(1) << 0)
-> +#define ESR_ELx_xVC_IMM_MASK	((1UL << 16) - 1)
->  
->  #ifndef __ASSEMBLY__
->  #include <asm/types.h>
-> diff --git a/arch/arm64/include/asm/kvm_arm.h b/arch/arm64/include/asm/kvm_arm.h
-> index 53fbc1e..94674eb 100644
-> --- a/arch/arm64/include/asm/kvm_arm.h
-> +++ b/arch/arm64/include/asm/kvm_arm.h
-> @@ -192,6 +192,4 @@
->  /* Hyp Prefetch Fault Address Register (HPFAR/HDFAR) */
->  #define HPFAR_MASK	(~UL(0xf))
->  
-> -#define ESR_EL2_HVC_IMM_MASK	((1UL << 16) - 1)
-> -
->  #endif /* __ARM64_KVM_ARM_H__ */
-> diff --git a/arch/arm64/include/asm/kvm_emulate.h b/arch/arm64/include/asm/kvm_emulate.h
-> index b861ff6..bbc17cd 100644
-> --- a/arch/arm64/include/asm/kvm_emulate.h
-> +++ b/arch/arm64/include/asm/kvm_emulate.h
-> @@ -133,7 +133,7 @@ static inline phys_addr_t kvm_vcpu_get_fault_ipa(const struct kvm_vcpu *vcpu)
->  
->  static inline u32 kvm_vcpu_hvc_get_imm(const struct kvm_vcpu *vcpu)
->  {
-> -	return kvm_vcpu_get_hsr(vcpu) & ESR_EL2_HVC_IMM_MASK;
-> +	return kvm_vcpu_get_hsr(vcpu) & ESR_ELx_xVC_IMM_MASK;
->  }
->  
->  static inline bool kvm_vcpu_dabt_isvalid(const struct kvm_vcpu *vcpu)
-> 
+>
+> +/*
+> + * CONFIG_PREEMPT=n kernels can end up triggering the softlock
+> + * TASK_UNINTERRUPTIBLE hanger check (default 120 seconds)
+> + * when certain multicalls are used [0] on large systems, in
+> + * that case we need a way to voluntarily preempt. This is
+> + * only an issue on CONFIG_PREEMPT=n kernels.
+> + *
+> + * [0] https://bugzilla.novell.com/show_bug.cgi?id=861093
+> + */
+> +void xen_end_upcall(struct pt_regs *regs)
+> +{
+> +       if (xen_is_preemptible_hypercall(regs)) {
+> +               int cpuid = smp_processor_id();
+> +               if (_cond_resched())
+> +                       trace_xen_hypercall_preemption(cpuid);
+
+If you want to speed this up a bit, I think you could move the
+smp_processor_id() into the TP_fast_assign.  But don't tracepoints
+report the cpu number even without any action?
