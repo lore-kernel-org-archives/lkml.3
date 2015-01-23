@@ -1,219 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663AbbAWJbs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:31:48 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:42972 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbbAWJbp (ORCPT
+	id S1754717AbbAWJcJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:32:09 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:54924 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192AbbAWJcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:31:45 -0500
-From: Thierry Reding <thierry.reding@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: Daniel Vetter <daniel@ffwll.ch>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] drm/tegra: Track active planes in CRTC state
-Date: Fri, 23 Jan 2015 10:31:41 +0100
-Message-Id: <1422005501-11222-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421750935-4023-35-git-send-email-thierry.reding@gmail.com>
-References: <1421750935-4023-35-git-send-email-thierry.reding@gmail.com>
+	Fri, 23 Jan 2015 04:32:07 -0500
+Date: Fri, 23 Jan 2015 10:32:00 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [Resend Patch v4 14/16] smp, s390: Kill SMP single function call
+ interrupt
+Message-ID: <20150123093200.GB5101@osiris>
+References: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com>
+ <1421991416-20297-15-git-send-email-jiang.liu@linux.intel.com>
+ <20150123065410.GA5101@osiris>
+ <54C212A6.5030702@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C212A6.5030702@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012309-0041-0000-0000-000002FA71D7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Fri, Jan 23, 2015 at 05:21:42PM +0800, Jiang Liu wrote:
+> On 2015/1/23 14:54, Heiko Carstens wrote:
+> > On Fri, Jan 23, 2015 at 01:36:53PM +0800, Jiang Liu wrote:
+> >> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+> >> similar to smp_call_function_single()" has unified the way to handle
+> >> single and multiple cross-CPU function calls. Now only one interrupt
+> >> is needed for architecture specific code to support generic SMP function
+> >> call interfaces, so kill the redundant single function call interrupt.
+> >>
+> >> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> >> Acked-by: Heiko Carstens <heiko.carst...@de.ibm.com>
+> > 
+> > Is this really the patch I acked, whenever that was? Because the patch
+> > description doesn't match what your patch does.
+> > All it does is renaming ec_call_function_single to ec_call_function,
+> > nothing else.
+> > 
+> > Could you please resend with a proper patch description?
+> > Thanks!
+> > 
+> >> ---
+> >>  arch/s390/kernel/smp.c |   10 +++++-----
+> >>  1 file changed, 5 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+> >> index 0b499f5cbe19..5b89eabc3a01 100644
+> >> --- a/arch/s390/kernel/smp.c
+> >> +++ b/arch/s390/kernel/smp.c
+> >> @@ -50,7 +50,7 @@
+> >>
+> >>  enum {
+> >>  	ec_schedule = 0,
+> >> -	ec_call_function_single,
+> >> +	ec_call_function,
+> >>  	ec_stop_cpu,
+> >>  };
+> >>
+> >> @@ -416,8 +416,8 @@ static void smp_handle_ext_call(void)
+> >>  		smp_stop_cpu();
+> >>  	if (test_bit(ec_schedule, &bits))
+> >>  		scheduler_ipi();
+> >> -	if (test_bit(ec_call_function_single, &bits))
+> >> -		generic_smp_call_function_single_interrupt();
+> HI Heiko,
+> 	The background is that the generic smp_call_xxx() interfaces
+> only use on interrupt now, previously it used two (FUNC_CALL and
+> FUNC_CALL_SINGLE). So the whole patch set is to kill
+> FUNC_CALL_SINGLE from all architectures.
+> 	Above code kills generic_smp_call_function_single_interrupt().
+> We also replaces ec_call_function_single with ec_call_function so
+> only one interrupt will be used to support smp_call_xxx().
 
-Wrap struct drm_crtc_state in a driver-specific structure and add the
-planes field which keeps track of which planes are updated or disabled
-during a modeset. This allows atomic updates of the the display engine
-at ->atomic_flush() time.
-
-v2: open-code getting the state of the CRTC that the plane is being
-    attached to (Daniel Vetter)
-
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/gpu/drm/tegra/dc.c | 72 ++++++++++++++++++++++++++++------------------
- 1 file changed, 44 insertions(+), 28 deletions(-)
-
-diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-index 5da1b59e7cfd..c283ea4d0095 100644
---- a/drivers/gpu/drm/tegra/dc.c
-+++ b/drivers/gpu/drm/tegra/dc.c
-@@ -54,6 +54,8 @@ struct tegra_dc_state {
- 	struct clk *clk;
- 	unsigned long pclk;
- 	unsigned int div;
-+
-+	u32 planes;
- };
- 
- static inline struct tegra_dc_state *to_dc_state(struct drm_crtc_state *state)
-@@ -64,20 +66,6 @@ static inline struct tegra_dc_state *to_dc_state(struct drm_crtc_state *state)
- 	return NULL;
- }
- 
--static void tegra_dc_window_commit(struct tegra_dc *dc, unsigned int index)
--{
--	u32 value = WIN_A_ACT_REQ << index;
--
--	tegra_dc_writel(dc, value << 8, DC_CMD_STATE_CONTROL);
--	tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
--}
--
--static void tegra_dc_cursor_commit(struct tegra_dc *dc)
--{
--	tegra_dc_writel(dc, CURSOR_ACT_REQ << 8, DC_CMD_STATE_CONTROL);
--	tegra_dc_writel(dc, CURSOR_ACT_REQ, DC_CMD_STATE_CONTROL);
--}
--
- /*
-  * Reads the active copy of a register. This takes the dc->lock spinlock to
-  * prevent races with the VBLANK processing which also needs access to the
-@@ -395,8 +383,6 @@ static void tegra_dc_setup_window(struct tegra_dc *dc, unsigned int index,
- 		break;
- 	}
- 
--	tegra_dc_window_commit(dc, index);
--
- 	spin_unlock_irqrestore(&dc->lock, flags);
- }
- 
-@@ -439,9 +425,28 @@ static void tegra_plane_cleanup_fb(struct drm_plane *plane,
- {
- }
- 
-+static int tegra_plane_state_add(struct tegra_plane *plane,
-+				 struct drm_plane_state *state)
-+{
-+	struct drm_crtc_state *crtc_state;
-+	struct tegra_dc_state *tegra;
-+
-+	/* Propagate errors from allocation or locking failures. */
-+	crtc_state = drm_atomic_get_crtc_state(state->state, state->crtc);
-+	if (IS_ERR(crtc_state))
-+		return PTR_ERR(crtc_state);
-+
-+	tegra = to_dc_state(crtc_state);
-+
-+	tegra->planes |= WIN_A_ACT_REQ << plane->index;
-+
-+	return 0;
-+}
-+
- static int tegra_plane_atomic_check(struct drm_plane *plane,
- 				    struct drm_plane_state *state)
- {
-+	struct tegra_plane *tegra = to_tegra_plane(plane);
- 	struct tegra_dc *dc = to_tegra_dc(state->crtc);
- 	struct tegra_bo_tiling tiling;
- 	int err;
-@@ -472,6 +477,10 @@ static int tegra_plane_atomic_check(struct drm_plane *plane,
- 		}
- 	}
- 
-+	err = tegra_plane_state_add(tegra, state);
-+	if (err < 0)
-+		return err;
-+
- 	return 0;
- }
- 
-@@ -538,8 +547,6 @@ static void tegra_plane_atomic_disable(struct drm_plane *plane,
- 	value &= ~WIN_ENABLE;
- 	tegra_dc_writel(dc, value, DC_WIN_WIN_OPTIONS);
- 
--	tegra_dc_window_commit(dc, p->index);
--
- 	spin_unlock_irqrestore(&dc->lock, flags);
- }
- 
-@@ -599,6 +606,9 @@ static const u32 tegra_cursor_plane_formats[] = {
- static int tegra_cursor_atomic_check(struct drm_plane *plane,
- 				     struct drm_plane_state *state)
- {
-+	struct tegra_plane *tegra = to_tegra_plane(plane);
-+	int err;
-+
- 	/* no need for further checks if the plane is being disabled */
- 	if (!state->crtc)
- 		return 0;
-@@ -616,6 +626,10 @@ static int tegra_cursor_atomic_check(struct drm_plane *plane,
- 	    state->crtc_w != 128 && state->crtc_w != 256)
- 		return -EINVAL;
- 
-+	err = tegra_plane_state_add(tegra, state);
-+	if (err < 0)
-+		return err;
-+
- 	return 0;
- }
- 
-@@ -680,9 +694,6 @@ static void tegra_cursor_atomic_update(struct drm_plane *plane,
- 	value = (state->crtc_y & 0x3fff) << 16 | (state->crtc_x & 0x3fff);
- 	tegra_dc_writel(dc, value, DC_DISP_CURSOR_POSITION);
- 
--	/* apply changes */
--	tegra_dc_cursor_commit(dc);
--	tegra_dc_commit(dc);
- }
- 
- static void tegra_cursor_atomic_disable(struct drm_plane *plane,
-@@ -700,9 +711,6 @@ static void tegra_cursor_atomic_disable(struct drm_plane *plane,
- 	value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
- 	value &= ~CURSOR_ENABLE;
- 	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
--
--	tegra_dc_cursor_commit(dc);
--	tegra_dc_commit(dc);
- }
- 
- static const struct drm_plane_funcs tegra_cursor_plane_funcs = {
-@@ -734,6 +742,13 @@ static struct drm_plane *tegra_dc_cursor_plane_create(struct drm_device *drm,
- 	if (!plane)
- 		return ERR_PTR(-ENOMEM);
- 
-+	/*
-+	 * We'll treat the cursor as an overlay plane with index 6 here so
-+	 * that the update and activation request bits in DC_CMD_STATE_CONTROL
-+	 * match up.
-+	 */
-+	plane->index = 6;
-+
- 	num_formats = ARRAY_SIZE(tegra_cursor_plane_formats);
- 	formats = tegra_cursor_plane_formats;
- 
-@@ -1029,7 +1044,6 @@ static void tegra_crtc_disable(struct drm_crtc *crtc)
- 	}
- 
- 	drm_crtc_vblank_off(crtc);
--	tegra_dc_commit(dc);
- }
- 
- static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
-@@ -1202,10 +1216,7 @@ static void tegra_crtc_prepare(struct drm_crtc *crtc)
- 
- static void tegra_crtc_commit(struct drm_crtc *crtc)
- {
--	struct tegra_dc *dc = to_tegra_dc(crtc);
--
- 	drm_crtc_vblank_on(crtc);
--	tegra_dc_commit(dc);
- }
- 
- static int tegra_crtc_atomic_check(struct drm_crtc *crtc,
-@@ -1230,6 +1241,11 @@ static void tegra_crtc_atomic_begin(struct drm_crtc *crtc)
- 
- static void tegra_crtc_atomic_flush(struct drm_crtc *crtc)
- {
-+	struct tegra_dc_state *state = to_dc_state(crtc->state);
-+	struct tegra_dc *dc = to_tegra_dc(crtc);
-+
-+	tegra_dc_writel(dc, state->planes << 8, DC_CMD_STATE_CONTROL);
-+	tegra_dc_writel(dc, state->planes, DC_CMD_STATE_CONTROL);
- }
- 
- static const struct drm_crtc_helper_funcs tegra_crtc_helper_funcs = {
--- 
-2.1.3
+Ah right, I missed that while looking at your patch. Apologies!
 
