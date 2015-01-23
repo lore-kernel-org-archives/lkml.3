@@ -1,148 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398AbbAWGzz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 01:55:55 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:53948 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188AbbAWGzt (ORCPT
+	id S1753561AbbAWG4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 01:56:47 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:47685 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbbAWG4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 01:55:49 -0500
-Date: Thu, 22 Jan 2015 22:55:42 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at
- kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
-Message-ID: <20150123065542.GQ9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <54BBC084.2030604@oracle.com>
- <20150118232255.GD9719@linux.vnet.ibm.com>
- <54BE76B9.7070907@oracle.com>
- <20150121025754.GV9719@linux.vnet.ibm.com>
- <54BFC979.8040107@oracle.com>
- <20150122004305.GJ9719@linux.vnet.ibm.com>
- <54C1BFFD.9060707@oracle.com>
- <20150123035158.GP9719@linux.vnet.ibm.com>
- <54C1C7D2.906@oracle.com>
- <54C1C899.8000106@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C1C899.8000106@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012306-0021-0000-0000-00000800C12A
+	Fri, 23 Jan 2015 01:56:45 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-71-54c1f0a37eb6
+From: Kukjin Kim <kgene@kernel.org>
+To: "'Jaewon Kim'" <jaewon02.kim@samsung.com>,
+        "'Kukjin Kim'" <kgene@kernel.org>
+Cc: "'Chanwoo Choi'" <cw00.choi@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+References: <1421826960-26491-1-git-send-email-jaewon02.kim@samsung.com>
+In-reply-to: <1421826960-26491-1-git-send-email-jaewon02.kim@samsung.com>
+Subject: RE: [PATCH RESEND 0/2] Add regulator-haptic device tree
+Date: Fri, 23 Jan 2015 15:56:35 +0900
+Message-id: <0c4e01d036d9$ba40dac0$2ec29040$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: ko
+Thread-index: AQMX83OVldaw6UCplgsgnB/04+Xx95o9zEpg
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsWyRsSkRXfxh4MhBl9malhc//Kc1WJHwxFW
+	i/7Hr5ktbn76xmpxedccNosZ5/cxObB5bFrVyebRt2UVo8fnTXIBzFFcNimpOZllqUX6dglc
+	GX+6fQqusVRcOn2NtYHxLnMXIyeHhICJxJPmbjYIW0ziwr31QDYXh5DAUkaJRfc6mGCK/p8/
+	wQJiCwksYpToag6AKPrLKDHh1AWgSRwcbALKEo1N+iA1wgJaEgu3NIHViwj4SDzYsYEFpJ5Z
+	oItRYt2X+VCDPCQOvH/ACtLLKeApcXWmHESvg8STxRC7WARUJT5dPQRm8wpYSGzrfsAOYQtK
+	/Jh8DyzODLRr/c7jTBC2vMTmNW+hHlOQ2HH2NSNEXERi34t3jBD3GEls6uphBLlHQuAau0T3
+	lGdMEMsEJL5NBlnGAZSQldh0AGqOpMTBFTdYJjBKzkKyehaS1bOQrJ6FZN0CRpZVjKKpBckF
+	xUnpRaZ6xYm5xaV56XrJ+bmbGIFRe/rfs4k7GO8fsD7EKMDBqMTD27DlYIgQa2JZcWXuIUZT
+	oIsmMkuJJucDU0NeSbyhsZmRhamJqbGRuaWZkjivjvTPYCGB9MSS1OzU1ILUovii0pzU4kOM
+	TBycUg2M2+Pdfrv8XWB77JjetXuN0983vc65Oiv53fJX5vdnrDn37d7VHDadR6d5D/E//vRW
+	gyepZUH58XmrH2ce0hTm1fb39/y3SON40YnZjxdwnnEvNZhm4vi4v87vkVqF36w7F27EGKjc
+	/nr81SXOPTldnJ/kZsSb3Vi+4aKHC6+anRzjq5L9h5MXnlNiKc5INNRiLipOBADZEddk1QIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xgO7iDwdDDLZtVrG4/uU5q8WOhiOs
+	Fv2PXzNb3Pz0jdXi8q45bBYzzu9jcmDz2LSqk82jb8sqRo/Pm+QCmKMaGG0yUhNTUosUUvOS
+	81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgBYrKZQl5pQChQISi4uV9O0w
+	TQgNcdO1gGmM0PUNCYLrMTJAAwnrGDP+dPsUXGOpuHT6GmsD413mLkZODgkBE4n/50+wQNhi
+	EhfurWcDsYUEFjFKdDUHdDFyAdl/GSUmnLoA1MDBwSagLNHYpA9SIyygJbFwSxNYr4iAj8SD
+	HRtYQOqZBboYJdZ9mc8CMchD4sD7B6wgvZwCnhJXZ8pB9DpIPFkMsZdFQFXi09VDYDavgIXE
+	tu4H7BC2oMSPyffA4sxAu9bvPM4EYctLbF7zFup+BYkdZ18zQsRFJPa9eMcIcY+RxKauHsYJ
+	jMKzkIyahWTULCSjZiFpX8DIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOCU8k9rBuLLB
+	4hCjAAejEg9vw5aDIUKsiWXFlbmHGCU4mJVEeLsfAYV4UxIrq1KL8uOLSnNSiw8xmgJ9OpFZ
+	SjQ5H5iu8kriDY1NzIwsjcwsjEzMzZXEeZXs20KEBNITS1KzU1MLUotg+pg4OKUaGNMOsHFf
+	fbSz1D9825Oq1vyby2xn1D7aHjj7ge0ro7Wmf63PGBbIHFz4f1ZJ6hXnfyZH2fd8Likvc7a8
+	Yabrq/PrRcOjMDHnDxKahz/MXGAq6RdiI/KaTWjzvKAazWPJ3289jKmfzlN9au7sdfka1n98
+	rxT2ZgmGcyctdz9sO0Ev5lbH7l1HpimxFGckGmoxFxUnAgD0AOcMHwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 11:05:45PM -0500, Sasha Levin wrote:
-> On 01/22/2015 11:02 PM, Sasha Levin wrote:
-> > On 01/22/2015 10:51 PM, Paul E. McKenney wrote:
-> >> On Thu, Jan 22, 2015 at 10:29:01PM -0500, Sasha Levin wrote:
-> >>>> On 01/21/2015 07:43 PM, Paul E. McKenney wrote:
-> >>>>>> On Wed, Jan 21, 2015 at 10:44:57AM -0500, Sasha Levin wrote:
-> >>>>>>>> On 01/20/2015 09:57 PM, Paul E. McKenney wrote:
-> >>>>>>>>>>>>>> So RCU believes that an RCU read-side critical section that ended within
-> >>>>>>>>>>>>>>>>>> an interrupt handler (in this case, an hrtimer) somehow got preempted.
-> >>>>>>>>>>>>>>>>>> Which is not supposed to happen.
-> >>>>>>>>>>>>>>>>>>
-> >>>>>>>>>>>>>>>>>> Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
-> >>>>>>>>>>>>>>>>>> and retry?
-> >>>>>>>>>>>>>>
-> >>>>>>>>>>>>>> I did have CONFIG_PROVE_RCU, and didn't see anything else besides what I pasted here.
-> >>>>>>>>>> OK, fair enough.  I do have a stack of RCU CPU stall-warning changes on
-> >>>>>>>>>> their way in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
-> >>>>>>>>>>
-> >>>>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> >>>>>>>>>>
-> >>>>>>>>>> These handle the problems that Dave Jones, yourself, and a few others
-> >>>>>>>>>> located this past December.  Could you please give them a spin?
-> >>>>>>>>
-> >>>>>>>> They seem to be a part of -next already, so this testing already includes them.
-> >>>>>>>>
-> >>>>>>>> I seem to be getting them about once a day, anything I can add to debug it?
-> >>>>>>
-> >>>>>> Could you please try reproducing with the following patch?
-> >>>>
-> >>>> Yes, and I've got mixed results. It reproduced, and all I got was:
-> >>>>
-> >>>> [  717.645572] ===============================
-> >>>> [  717.645572] [ INFO: suspicious RCU usage. ]
-> >>>> [  717.645572] 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1809 Tainted: G        W
-> >>>> [  717.645572] -------------------------------
-> >>>> [  717.645572] kernel/rcu/tree_plugin.h:337 rcu_read_unlock() from irq or softirq with blocking in critical section!!!
-> >>>> [  717.645572] !
-> >>>> [  717.645572]
-> >>>> [  717.645572] other info that might help us debug this:
-> >>>> [  717.645572]
-> >>>> [  717.645572]
-> >>>> [  717.645572] rcu_scheduler_active = 1, debug_locks = 1
-> >>>> [  717.645572] 3 locks held by trinity-c29/16497:
-> >>>> [  717.645572]  #0:  (&sb->s_type->i_mutex_key){+.+.+.}, at: [<ffffffff81bec373>] lookup_slow+0xd3/0x420
-> >>>> [  717.645572]  #1:
-> >>>> [hang]
-> >>>>
-> >>>> So the rest of the locks/stack trace didn't get printed, nor the pr_alert() which
-> >>>> should follow that.
-> >>>>
-> >>>> I've removed the lockdep call and will re-run it.
-> >> Thank you!  You are keeping the pr_alert(), correct?
-> > 
-> > Yup, just the lockdep call goes away.
+Jaewon Kim wrote:
 > 
-> Okay, this reproduced faster than I anticipated:
+> This patch series adds regulator-haptic device tree in rinato and monk boards.
 > 
-> [  786.160131] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
-> [  786.239513] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
-> [  786.240503] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
-> [  786.242575] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
-> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
-> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
-> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
-> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
-> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> The regulator-haptic has haptic motor and it is controlled by
+> voltage of regulator via force feedback framework.
 > 
-> It seems like the WARN_ON_ONCE was hiding the fact it actually got hit couple
-> of times in a very short interval. Maybe that would also explain lockdep crapping
-> itself.
+> regualtor-haptic driver merged at linux-next
+> ref : https://lkml.org/lkml/2014/12/17/477
+> 
+Found the series in linux-next.
 
-OK, that was what I thought was the situation.  I have not yet fully
-worked out how RCU gets into that state, but in the meantime, here
-is a patch that should prevent the splats.  (It requires a subtle
-interaction of quiescent-state detection and the scheduling-clock
-interrupt.)
+> Jaewon Kim (2):
+>   ARM: dts: exynos3250-rinato: Add regulator-haptic node for haptics
+>   ARM: dts: exynos3250-monk: Add regulator-haptic node for haptics
+> 
+OK, looks good to me, will apply this series.
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Clear need_qs flag to prevent splat
-
-If the scheduling-clock interrupt sets the current tasks need_qs flag,
-but if the current CPU passes through a quiescent state in the meantime,
-then rcu_preempt_qs() will fail to clear the need_qs flag, which can fool
-RCU into thinking that additional rcu_read_unlock_special() processing
-is needed.  This commit therefore clears the need_qs flag before checking
-for additional processing.
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 8669de884445..ec99dc16aa38 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
- 	special = t->rcu_read_unlock_special;
- 	if (special.b.need_qs) {
- 		rcu_preempt_qs();
-+		t->rcu_read_unlock_special.need_qs = false;
- 		if (!t->rcu_read_unlock_special.s) {
- 			local_irq_restore(flags);
- 			return;
+Thanks,
+Kukjin
 
