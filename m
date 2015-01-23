@@ -1,89 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbbAWXqB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 18:46:01 -0500
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:36580 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbbAWXp5 (ORCPT
+	id S1753328AbbAWXqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 18:46:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42381 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbbAWXqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 18:45:57 -0500
-X-Greylist: delayed 15738 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jan 2015 18:45:57 EST
-Message-ID: <1422056755.2436.36.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH] sched, timer: Use atomics for thread_group_cputimer
- stats
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org,
-        jason.low2@hp.com
-Date: Fri, 23 Jan 2015 15:45:55 -0800
-In-Reply-To: <20150123200828.GE23123@twins.programming.kicks-ass.net>
-References: <1421983913.4432.22.camel@j-VirtualBox>
-	 <20150123092508.GJ2896@worktop.programming.kicks-ass.net>
-	 <1422041016.2436.19.camel@j-VirtualBox>
-	 <20150123200828.GE23123@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 23 Jan 2015 18:46:02 -0500
+Date: Sat, 24 Jan 2015 07:45:59 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Stephen Smalley <stephen.smalley@gmail.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, arve@android.com,
+        Nick Kralevich <nnk@google.com>, Paul Moore <paul@paul-moore.com>,
+        selinux <selinux@tycho.nsa.gov>, linux-security-module@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH] Add security hooks to binder and implement the hooks for
+ SELinux.
+Message-ID: <20150123234559.GA11112@kroah.com>
+References: <1421855650-22522-1-git-send-email-sds@tycho.nsa.gov>
+ <20150122085150.GB1268@kroah.com>
+ <54C13CBC.3050004@schaufler-ca.com>
+ <CAB9W1A3B1e8X+VoFb+CNqUo=mH3eK1AdJjU2D7DvWjFdsywWgA@mail.gmail.com>
+ <20150123023045.GA17138@kroah.com>
+ <54C2C38C.2000207@schaufler-ca.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C2C38C.2000207@schaufler-ca.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 21:08 +0100, Peter Zijlstra wrote:
-> On Fri, Jan 23, 2015 at 11:23:36AM -0800, Jason Low wrote:
-> > On Fri, 2015-01-23 at 10:25 +0100, Peter Zijlstra wrote:
-> > > On Thu, Jan 22, 2015 at 07:31:53PM -0800, Jason Low wrote:
-> > > > +static void update_gt_cputime(struct thread_group_cputimer *a, struct task_cputime *b)
-> > > >  {
-> > > > +	if (b->utime > atomic64_read(&a->utime))
-> > > > +		atomic64_set(&a->utime, b->utime);
-> > > >  
-> > > > +	if (b->stime > atomic64_read(&a->stime))
-> > > > +		atomic64_set(&a->stime, b->stime);
-> > > >  
-> > > > +	if (b->sum_exec_runtime > atomic64_read(&a->sum_exec_runtime))
-> > > > +		atomic64_set(&a->sum_exec_runtime, b->sum_exec_runtime);
-> > > >  }
-> > > 
-> > > See something like this is not safe against concurrent adds.
-> > 
-> > How about something like:
-> > 
-> > u64 a_utime, a_stime, a_sum_exec_runtime;
-> > 
-> > retry_utime:
-> > 	a_utime = atomic64_read(&a->utime);
-> > 	if (b->utime > a_utime) {
-> > 		if (atomic64_cmpxchg(&a->utime, a_utime, b->utime) != a_utime)
-> > 			goto retry_utime;
-> > 	}
-> > 
-> > retry_stime:
-> > 	a_stime = atomic64_read(&a->stime);
-> > 	if (b->stime > a_stime) {
-> > 		if (atomic64_cmpxchg(&a->stime, a_stime, b->stime) != a_stime)
-> > 			goto retry_stime;
-> > 	}
-> > 
-> > retry_sum_exec_runtime:
-> > 	a_sum_exec_runtime = atomic64_read(&a->sum_exec_runtime);
-> > 	if (b->sum_exec_runtime > a_sum_exec_runtime) {
-> > 		if (atomic64_cmpxchg(&a->sum_exec_runtime, a_sum_exec_runtime,
-> > 				     b->sum_exec_runtime) != a_sum_exec_runtime)
-> > 			goto retry_sum_exec_runtime;
-> > 	}
+On Fri, Jan 23, 2015 at 01:56:28PM -0800, Casey Schaufler wrote:
+> On 1/22/2015 6:30 PM, Greg KH wrote:
+> > On Thu, Jan 22, 2015 at 01:47:29PM -0500, Stephen Smalley wrote:
+> >> On Thu, Jan 22, 2015 at 1:09 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+> >>> On 1/22/2015 12:51 AM, Greg KH wrote:
+> >>>> On Wed, Jan 21, 2015 at 10:54:10AM -0500, Stephen Smalley wrote:
+> >>>>> Add security hooks to the binder and implement the hooks for SELinux.
+> >>>>> The security hooks enable security modules such as SELinux to implement
+> >>>>> controls over binder IPC.  The security hooks include support for
+> >>>>> controlling what process can become the binder context manager
+> >>>>> (binder_set_context_mgr), controlling the ability of a process
+> >>>>> to invoke a binder transaction/IPC to another process (binder_transaction),
+> >>>>> controlling the ability of a process to transfer a binder reference to
+> >>>>> another process (binder_transfer_binder), and controlling the ability
+> >>>>> of a process to transfer an open file to another process (binder_transfer_file).
+> >>>>>
+> >>>>> These hooks have been included in the Android kernel trees since Android 4.3.
+> >>>> Very interesting, I missed the fact that these were added in that tree,
+> >>>> thanks for digging it out and submitting it.
+> >>>>
+> >>>> I'd like some acks from some Android developers before I take these.
+> >>>> Or, if it's easier for them to go through the security tree, that's fine
+> >>>> with me as well.
+> >>> My only concern is that we're about to see a set of hooks proposed
+> >>> for kdbus as well, and it would be a shame if we had two sets of hooks
+> >>> that do roughly the same thing (ok, *very roughly*) introduced back to back.
+> >> Not sure how much commonality there truly is among them (based on the
+> >> last set of proposed kdbus lsm hooks that I saw, admittedly a while
+> >> ago) and modules may want to distinguish between the two
+> >> forms of IPC regardless.  The binder hooks have been in place in the
+> >> Android kernel trees for quite some time, so this patch is just making
+> >> the mainline binder driver consistent with what is already in Android.
+> >> If it turns out that there is significant duplication when the kdbus
+> >> lsm hooks land, I'd be happy to help coalesce them.
+> > Yeah, I would wait and see what happens with how the kdbus hooks look
+> > before worrying about this all that much.  As people are using the
+> > binder hooks today, and binder is in the kernel tree, but kdbus isn't,
+> > let's not worry about kdbus until that is merged.
 > 
-> Disgusting, at least use an inline or macro to avoid repeating it :-)
+> That seems like a sane plan to me in light of the situation. I am somewhat
+> concerned about the growth in special case security behavior. The tun hooks,
+> now the binder hooks and later the kdbus hooks. It looks like we're going
+> in the direction of special policies for each kind of communication rather
+> than a system IPC policy. On the other hand, that appears to be the trend in
+> system security overall, so even I can see that it may be prudent.
 
-Okay, let me see if I can make that a bit more readable  :)
+If you know of some way to make a more "unified" system IPC policy, that
+would be great to have, I don't know if anyone is even considering that
+work, as it seems people are just more concerned about addressing the
+more real issues of the different IPC methods these days.
 
-On a side note, if we just move the cputimer->running = 1 to after the
-call to update_gt_cputime in thread_group_cputimer(), then we don't have
-to worry about concurrent adds occuring in this function?
+Maybe it would be a good research project for someone to write a thesis
+on?  :)
 
+thanks,
+
+greg k-h
