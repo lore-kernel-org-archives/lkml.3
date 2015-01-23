@@ -1,49 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818AbbAWBNa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 20:13:30 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:38648 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbbAWBN3 (ORCPT
+	id S1755169AbbAWBQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 20:16:06 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:40721 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323AbbAWBQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 20:13:29 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0N1D2ID007885, This message is accepted by code: ctloc85258
-From: =?gb2312?B?vrTI8Q==?= <micky_ching@realsil.com.cn>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "Keerthimai Janarthanan" <keerthimaipb@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fabio Falzoi <fabio.falzoi84@gmail.com>,
-        "Tina Johnson" <tinajohnson.1234@gmail.com>,
-        Surya Seetharaman <surya.seetharaman9@gmail.com>
-Subject: Re: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
-Thread-Topic: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
-Thread-Index: AQHQM7pK0ZLyxQpn5keVKEAMtFX8lpzK2y0AgAB7JYCAAQ+YgA==
-Date: Fri, 23 Jan 2015 01:13:01 +0000
-Message-ID: <54C1A021.3090805@realsil.com.cn>
-References: <1421652347-8484-1-git-send-email-der.herr@hofr.at>
- <54C05500.8050809@realsil.com.cn> <20150122090101.GB27741@opentech.at>
-In-Reply-To: <20150122090101.GB27741@opentech.at>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.29.41.103]
-Content-Type: text/plain; charset="gb2312"
-Content-ID: <62C1546E78B8644DACA095EDB71071AC@realsil.com.cn>
+	Thu, 22 Jan 2015 20:16:03 -0500
+Date: Fri, 23 Jan 2015 10:15:55 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Streetman <ddstreet@ieee.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Nitin Gupta <ngupta@vflare.org>, Juneho Choi <juno.choi@lge.com>,
+        Gunho Lee <gunho.lee@lge.com>, Luigi Semenzato <semenzato@google.com>,
+        Jerome Marchand <jmarchan@redhat.com>
+Subject: Re: [PATCH v1 01/10] zram: avoid calling of zram_meta_free under
+ init_lock
+Message-ID: <20150123011555.GB18918@blaptop>
+References: <1421820866-26521-1-git-send-email-minchan@kernel.org>
+ <1421820866-26521-2-git-send-email-minchan@kernel.org>
+ <20150121142115.GA986@swordfish>
+ <20150123010336.GA18918@blaptop>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150123010336.GA18918@blaptop>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0N1DZ8Z030738
 
+On Fri, Jan 23, 2015 at 10:03:36AM +0900, Minchan Kim wrote:
+> Hello,
+> 
+> On Wed, Jan 21, 2015 at 11:21:53PM +0900, Sergey Senozhatsky wrote:
+> > On (01/21/15 15:14), Minchan Kim wrote:
+> > > We don't need to call zram_meta_free under init_lock.
+> > > What we need to prevent race is setting NULL into zram->meta
+> > > (ie, init_done). This patch does it.
+> > > 
+> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > > ---
+> > >  drivers/block/zram/zram_drv.c | 5 +++--
+> > >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > > index 9250b3f..7e03d86 100644
+> > > --- a/drivers/block/zram/zram_drv.c
+> > > +++ b/drivers/block/zram/zram_drv.c
+> > > @@ -719,6 +719,8 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> > >  	}
+> > >  
+> > >  	meta = zram->meta;
+> > > +	zram->meta = NULL;
+> > > +
+> > >  	/* Free all pages that are still in this zram device */
+> > >  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> > >  		unsigned long handle = meta->table[index].handle;
+> > > @@ -731,8 +733,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> > >  	zcomp_destroy(zram->comp);
+> > >  	zram->max_comp_streams = 1;
+> > >  
+> > > -	zram_meta_free(zram->meta);
+> > > -	zram->meta = NULL;
+> > >  	/* Reset stats */
+> > >  	memset(&zram->stats, 0, sizeof(zram->stats));
+> > >  
+> > > @@ -741,6 +741,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> > >  		set_capacity(zram->disk, 0);
+> > >  
+> > >  	up_write(&zram->init_lock);
+> > > +	zram_meta_free(meta);
+> > 
+> > Hello,
+> > 
+> > since we detached ->meta from zram, this one doesn't really need
+> > ->init_lock protection:
+> > 
+> > 	/* Free all pages that are still in this zram device */
+> > 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> > 		unsigned long handle = meta->table[index].handle;
+> > 		if (!handle)
+> > 			continue;
+> > 
+> > 		zs_free(meta->mem_pool, handle);
+> > 	}
+> > 
+> > 
+> > 	-ss
+> 
+> Good catch.
+> 
+> As well, we could move zcomp_destroy and memset(&zram->stats)
+> out of the lock but zram_rw_page, ZRAM_ATTR_RO, disksize_show
+> and orig_data_size_show have a race bug which access stats
+> out of the lock so that it could show the stale vaule.
+> Although it's not a significant, there is no reason to hesitate the fix. :)
 
-On 01/22/2015 05:01 PM, Nicholas Mc Guire wrote:
-> sorry - that was a typo - should this be
-> resubmitted for traceability or is that not
-> necessary ?
-resubmit, thanks.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Argh, sent wrong version.
+zram->stats should be protected by the lock but other stat show
+functions don't hold a lock so it's racy.
+
+> 
+> I will fix it. Thanks!
+> 
+> 
+> > 
+> > >  	/*
+> > >  	 * Revalidate disk out of the init_lock to avoid lockdep splat.
+> > > -- 
+> > > 1.9.3
+> > > 
