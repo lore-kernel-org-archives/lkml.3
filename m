@@ -1,164 +1,623 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbbAWGNR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 01:13:17 -0500
-Received: from fgwmail8.fujitsu.co.jp ([192.51.44.38]:45079 "EHLO
-	fgwmail8.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095AbbAWGNO (ORCPT
+	id S1752729AbbAWGQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 01:16:57 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:27485 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbbAWGQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 01:13:14 -0500
-From: "Izumi, Taku" <izumi.taku@jp.fujitsu.com>
-To: "Lai, Jiangshan" <laijs@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Lai, Jiangshan" <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        "Ishimatsu, Yasuaki" <isimatu.yasuaki@jp.fujitsu.com>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        "Tang, Chen" <tangchen@cn.fujitsu.com>,
-        "Kamezawa, Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: RE: [RFC PATCH 0/2 shit_A shit_B] workqueue: fix wq_numa bug
-Thread-Topic: [RFC PATCH 0/2 shit_A shit_B] workqueue: fix wq_numa bug
-Thread-Index: AQHQL9gTKmnvINLs+kqM8mDDt0qofJzNRGOg
-Date: Fri, 23 Jan 2015 06:13:07 +0000
-Message-ID: <E86EADE93E2D054CBCD4E708C38D364A54134B14@G01JPEXMBYT01>
-References: <54B5D8B4.7010708@cn.fujitsu.com>
- <1421225658-3978-1-git-send-email-laijs@cn.fujitsu.com>
-In-Reply-To: <1421225658-3978-1-git-send-email-laijs@cn.fujitsu.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-securitypolicycheck: OK by SHieldMailChecker v1.7.4
-x-originating-ip: [10.124.102.50]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+	Fri, 23 Jan 2015 01:16:55 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-cc-54c1e7528c34
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+References: <000a01d02e37$8e245890$aa6d09b0$@samsung.com>
+ <20150123014802.GA17947@jaegeuk-mac02>
+In-reply-to: <20150123014802.GA17947@jaegeuk-mac02>
+Subject: RE: [f2fs-dev][RFC PATCH 06/10] f2fs: add core functions for rb-tree
+ extent cache
+Date: Fri, 23 Jan 2015 14:15:56 +0800
+Message-id: <00ed01d036d4$28fb0310$7af10930$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQKeVPLQy9+F4bGTWoVZW3/EA2BwswFKrMx+myZ/fUA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jAd3g5wdDDC5fZrS4tq+RyeLJ+lnM
+	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxoGZZ5gL
+	btdXzH17iqmBsSupi5GTQ0LARGLh3PvsELaYxIV769m6GLk4hAQWMUo8aj3JAuH8YJT4MPUa
+	I0gVm4CKxPKO/0wgtoiAmkTvvilANgcHs0CRxKoVAiBhIYEkibN/v7GC2JwCxhKXPr9nA7GF
+	BWIk+t++ZAaxWQRUJZqPXwSr4RWwlOh7sZMRwhaU+DH5HguIzSygJbF+53EmCFteYvOat8wQ
+	hypI7Dj7mhHiBCuJKSu+s0LUiEtsPHKLZQKj0Cwko2YhGTULyahZSFoWMLKsYhRNLUguKE5K
+	zzXUK07MLS7NS9dLzs/dxAiOgWdSOxhXNlgcYhTgYFTi4W3YcjBEiDWxrLgy9xCjBAezkghv
+	9yOgEG9KYmVValF+fFFpTmrxIUZpDhYlcV4l+7YQIYH0xJLU7NTUgtQimCwTB6dUA2PJ14tp
+	T71tW/1m/RPsOKSi6HLR55Ne7XwWto9vvZoYC281b1p24tPHdStlXrFN4TGN+7hGXeukxNTQ
+	xi1nGj5uWftaSsA5PEupTFEq8MvVjAf8IdFXLdRs3O3UmtxM9yR8ES2buqx4cdnhv5va6wPN
+	tl3QNG1bxNJS7aF1LPfaMc3okFWLtJRYijMSDbWYi4oTAY9SCvR9AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0N6DMMl031835
 
+Hi Jaegeuk,
 
-> This patches are un-changloged, un-compiled, un-booted, un-tested,
-> they are just shits, I even hope them un-sent or blocked.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Friday, January 23, 2015 9:48 AM
+> To: Chao Yu
+> Cc: Changman Lee; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> Subject: Re: [f2fs-dev][RFC PATCH 06/10] f2fs: add core functions for rb-tree extent cache
 > 
-> The patches include two -solutions-:
+> On Mon, Jan 12, 2015 at 03:14:48PM +0800, Chao Yu wrote:
+> > This patch adds core functions including slab cache init function and
+> > init/lookup/update/shrink/destroy function for rb-tree based extent cache.
+> >
+> > Thank Jaegeuk Kim and Changman Lee as they gave much suggestion about detail
+> > design and implementation of extent cache.
+> >
+> > Todo:
+> >  * add a cached_ei into struct extent_tree for a quick recent cache.
+> >  * register rb-based extent cache shrink with mm shrink interface.
+> >  * disable dir inode's extent cache.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > Signed-off-by: Changman Lee <cm224.lee@samsung.com>
+> > ---
+> >  fs/f2fs/data.c | 458 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  fs/f2fs/node.c |   9 +-
+> >  2 files changed, 466 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> > index 4f5b871e..bf8c5eb 100644
+> > --- a/fs/f2fs/data.c
+> > +++ b/fs/f2fs/data.c
+> > @@ -25,6 +25,9 @@
+> >  #include "trace.h"
+> >  #include <trace/events/f2fs.h>
+> >
+> > +struct kmem_cache *extent_tree_slab;
+> > +struct kmem_cache *extent_node_slab;
+> > +
+> >  static void f2fs_read_end_io(struct bio *bio, int err)
+> >  {
+> >  	struct bio_vec *bvec;
+> > @@ -373,6 +376,430 @@ end_update:
+> >  	return need_update;
+> >  }
+> >
+> > +static struct extent_node *__lookup_extent_tree(struct extent_tree *et,
+> > +							unsigned int fofs)
+> > +{
+> > +	struct rb_node *node = et->root.rb_node;
+> > +	struct extent_node *en;
+> > +
+> > +	while (node) {
+> > +		en = rb_entry(node, struct extent_node, rb_node);
+> > +		if (fofs < en->ei.fofs)
+> > +			node = node->rb_left;
+> > +		else if (fofs >= en->ei.fofs + en->ei.len)
+> > +			node = node->rb_right;
+> > +		else
+> > +			return en;
+> > +	}
+> > +	return NULL;
+> > +}
+> > +
+> > +static inline void set_extent_info(struct extent_info *ei, unsigned int fofs,
+> > +						u32 blk, unsigned int len)
+> > +{
+> > +	ei->fofs = fofs;
+> > +	ei->blk = blk;
+> > +	ei->len = len;
+> > +}
+> > +
+> > +static inline bool __is_extent_mergeable(struct extent_info *back,
+> > +						struct extent_info *front)
+> > +{
+> > +	return (back->fofs + back->len == front->fofs &&
+> > +			back->blk + back->len == front->blk);
+> > +}
+> > +
+> > +static bool __is_back_mergeable(struct extent_info *cur,
+> > +						struct extent_info *back)
+> > +{
+> > +	return __is_extent_mergeable(back, cur);
+> > +}
+> > +
+> > +static bool __is_front_mergeable(struct extent_info *cur,
+> > +						struct extent_info *front)
+> > +{
+> > +	return __is_extent_mergeable(cur, front);
+> > +}
 > 
-> Shit_A:
->   workqueue: reset pool->node and unhash the pool when the node is
->     offline
->   update wq_numa when cpu_present_mask changed
 > 
->  kernel/workqueue.c | 107 +++++++++++++++++++++++++++++++++++++++++------------
->  1 file changed, 84 insertions(+), 23 deletions(-)
-> 
-> 
-> Shit_B:
->   workqueue: reset pool->node and unhash the pool when the node is
->     offline
->   workqueue: remove wq_numa_possible_cpumask
->   workqueue: directly update attrs of pools when cpu hot[un]plug
-> 
->  kernel/workqueue.c | 135 +++++++++++++++++++++++++++++++++++++++--------------
->  1 file changed, 101 insertions(+), 34 deletions(-)
-> 
+> How about declaring these four functions as inline ones and locating them
+> inside f2fs.h?
 
-  I tried your patchsets.
-  linux-3.18.3 + Shit_A:
+Good idea! Will do.
 
-    Build OK. 
-    I tried to reproduce the problem that Ishimatsu had reported, but it doesn't occur.
-    It seems that your patch fixes this problem.
-
-  linux-3.18.3  + Shit_B: 
-
-    Build OK, but I encountered kernel panic at boot time.
-
-[    0.189000] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[    0.189000] IP: [<ffffffff8131ef96>] __list_add+0x16/0xc0
-[    0.189000] PGD 0 
-[    0.189000] Oops: 0000 [#1] SMP 
-[    0.189000] Modules linked in:
-[    0.189000] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.3+ #3
-[    0.189000] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.81 12/03/2014
-[    0.189000] task: ffff880869678000 ti: ffff880869664000 task.ti: ffff880869664000
-[    0.189000] RIP: 0010:[<ffffffff8131ef96>]  [<ffffffff8131ef96>] __list_add+0x16/0xc0
-[    0.189000] RSP: 0000:ffff880869667be8  EFLAGS: 00010296
-[    0.189000] RAX: ffff88087f83cda8 RBX: ffff88087f83cd80 RCX: 0000000000000000
-[    0.189000] RDX: 0000000000000000 RSI: ffff88086912bb98 RDI: ffff88087f83cd80
-[    0.189000] RBP: ffff880869667c08 R08: 0000000000000000 R09: ffff88087f807480
-[    0.189000] R10: ffffffff810911b6 R11: ffffffff810956ac R12: 0000000000000000
-[    0.189000] R13: ffff88086912bb98 R14: 0000000000000400 R15: 0000000000000400
-[    0.189000] FS:  0000000000000000(0000) GS:ffff88087fc00000(0000) knlGS:0000000000000000
-[    0.189000] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[    0.189000] CR2: 0000000000000008 CR3: 0000000001998000 CR4: 00000000001407f0
-[    0.189000] Stack:
-[    0.189000]  000000000000000a ffff88086912b800 ffff88087f83cd00 ffff88087f80c000
-[    0.189000]  ffff880869667c48 ffffffff810912c8 ffff880869667c28 ffff88087f803f00
-[    0.189000]  00000000fffffff4 ffff88086964b760 ffff88086964b6a0 ffff88086964b740
-[    0.189000] Call Trace:
-[    0.189000]  [<ffffffff810912c8>] alloc_unbound_pwq+0x298/0x3b0
-[    0.189000]  [<ffffffff81091ce8>] apply_workqueue_attrs+0x158/0x4c0
-[    0.189000]  [<ffffffff81092424>] __alloc_workqueue_key+0x174/0x5b0
-[    0.189000]  [<ffffffff813052a6>] ? alloc_cpumask_var_node+0x56/0x80
-[    0.189000]  [<ffffffff81b21573>] init_workqueues+0x33d/0x40f
-[    0.189000]  [<ffffffff81b21236>] ? ftrace_define_fields_workqueue_execute_start+0x6a/0x6a
-[    0.189000]  [<ffffffff81002144>] do_one_initcall+0xd4/0x210
-[    0.189000]  [<ffffffff81b12f4d>] ? native_smp_prepare_cpus+0x34d/0x352
-[    0.189000]  [<ffffffff81b0026d>] kernel_init_freeable+0xf5/0x23c
-[    0.189000]  [<ffffffff81653370>] ? rest_init+0x80/0x80
-[    0.189000]  [<ffffffff8165337e>] kernel_init+0xe/0xf0
-[    0.189000]  [<ffffffff8166bcfc>] ret_from_fork+0x7c/0xb0
-[    0.189000]  [<ffffffff81653370>] ? rest_init+0x80/0x80
-[    0.189000] Code: ff b8 f4 ff ff ff e9 3b ff ff ff b8 f4 ff ff ff e9 31 ff ff ff 55 48 89 e5 41 55 49 89 f5 41 54 49 89 d4 53 48 89 fb 48 83 ec 08 <4c> 8b 42 08 49 39 f0 75 2e 4d 8b 45 00 4d 39 c4 75 6c 4c 39 e3 
-[    0.189000] RIP  [<ffffffff8131ef96>] __list_add+0x16/0xc0
-[    0.189000]  RSP <ffff880869667be8>
-[    0.189000] CR2: 0000000000000008
-[    0.189000] ---[ end trace 58feee6875cf67cf ]---
-[    0.189000] Kernel panic - not syncing: Fatal exception
-[    0.189000] ---[ end Kernel panic - not syncing: Fatal exception
-
-   
-  Sincerely,
-  Taku Izumi
-
-
-> Both patch1 of the both solutions are: reset pool->node and unhash the pool,
-> it is suggested by TJ, I found it is a good leading-step for fixing the bug.
 > 
-> The other patches are handling wq_numa_possible_cpumask where the solutions
-> diverge.
+> > +
+> > +static struct extent_node *__try_back_merge(struct extent_tree *et,
+> > +						struct extent_node *en)
+> > +{
+> > +	struct extent_node *prev;
+> > +	struct rb_node *node;
+> > +
+> > +	node = rb_prev(&en->rb_node);
+> > +	if (!node)
+> > +		return NULL;
+> > +
+> > +	prev = rb_entry(node, struct extent_node, rb_node);
+> > +	if (__is_back_mergeable(&en->ei, &prev->ei)) {
+> > +		en->ei.fofs = prev->ei.fofs;
+> > +		en->ei.blk = prev->ei.blk;
+> > +		en->ei.len += prev->ei.len;
+> > +		rb_erase(&prev->rb_node, &et->root);
+> > +		et->count--;
+> > +		return prev;
+> > +	}
+> > +	return NULL;
+> > +}
+> > +
+> > +static struct extent_node *__try_front_merge(struct extent_tree *et,
+> > +						struct extent_node *en)
+> > +{
+> > +	struct extent_node *next;
+> > +	struct rb_node *node;
+> > +
+> > +	node = rb_next(&en->rb_node);
+> > +	if (!node)
+> > +		return NULL;
+> > +
+> > +	next = rb_entry(node, struct extent_node, rb_node);
+> > +	if (__is_front_mergeable(&en->ei, &next->ei)) {
+> > +		en->ei.len += next->ei.len;
+> > +		rb_erase(&next->rb_node, &et->root);
+> > +		et->count--;
+> > +		return next;
+> > +	}
+> > +	return NULL;
+> > +}
+> > +
+> > +static struct extent_node *__insert_extent_tree(struct f2fs_sb_info *sbi,
+> > +				struct extent_tree *et, struct extent_info *ei,
+> > +				struct extent_node **den)
+> > +{
+> > +	struct rb_node **p = &et->root.rb_node;
+> > +	struct rb_node *parent = NULL;
+> > +	struct extent_node *en;
+> > +
+> > +	while (*p) {
+> > +		parent = *p;
+> > +		en = rb_entry(parent, struct extent_node, rb_node);
+> > +
+> > +		if (ei->fofs < en->ei.fofs) {
+> > +			if (__is_front_mergeable(ei, &en->ei)) {
+> > +				f2fs_bug_on(sbi, !den);
+> > +				en->ei.fofs = ei->fofs;
+> > +				en->ei.blk = ei->blk;
+> > +				en->ei.len += ei->len;
+> > +				*den = __try_back_merge(et, en);
+> > +				return en;
+> > +			}
+> > +			p = &(*p)->rb_left;
+> > +		} else if (ei->fofs >= en->ei.fofs + en->ei.len) {
+> > +			if (__is_back_mergeable(ei, &en->ei)) {
+> > +				f2fs_bug_on(sbi, !den);
+> > +				en->ei.len += ei->len;
+> > +				*den = __try_front_merge(et, en);
+> > +				return en;
+> > +			}
+> > +			p = &(*p)->rb_right;
+> > +		} else
+> > +			f2fs_bug_on(F2FS_I_SB(inode), 1);
 > 
-> Solution_A uses present_mask rather than possible_cpumask. It adds
-> wq_numa_notify_cpu_present_set/cleared() for notifications of
-> the changes of cpu_present_mask.  But the notifications are un-existed
-> right now, so I fake one (wq_numa_check_present_cpumask_changes())
-> to imitate them.  I hope the memory people add a real one.
+> Coding style.
 > 
-> Solution_B uses online_mask rather than possible_cpumask.
-> this solution remove more coupling between numa_code and workqueue,
-> it just depends on cpumask_of_node(node).
+> } else {
+> 	...
+> }
+
+will fix.
+
 > 
-> Patch2_of_Solution_B removes the wq_numa_possible_cpumask and add
-> overhead when cpu hot[un]plug, Patch3 reduce this overhead.
+> > +	}
+> 
+> How about adding __attach_extent_node()?
+
+That's more readable.
+
+How do you think of the following functions:
+
+struct extent_node *__attach_extent_node(struct f2fs_sb_info *sbi,
+				struct extent_tree *et, struct extent_info *ei,
+				struct rb_node *parent, struct rb_node **p)
+{
+	struct extent_node *en;
+
+	en = kmem_cache_alloc(extent_node_slab, GFP_ATOMIC);
+	if (!en)
+		return NULL;
+
+	en->ei = *ei;
+	INIT_LIST_HEAD(&en->list);
+
+	rb_link_node(&en->rb_node, parent, p);
+	rb_insert_color(&en->rb_node, &et->root);
+	et->count++;
+	atomic_inc(&sbi->total_ext_node);
+	return en;
+}
+
+static void __detach_extent_node(struct f2fs_sb_info *sbi,
+				struct extent_tree *et, struct extent_node *en)
+{
+	rb_erase(&en->rb_node, &et->root);
+	et->count--;
+	atomic_dec(&sbi->total_ext_node);
+}
+
+> {
+> > +
+> > +	en = kmem_cache_alloc(extent_node_slab, GFP_ATOMIC);
+> 
+> 	en = f2fs_kmem_cache_alloc(.., GFP_ATOMIC);
+
+We should avoid cond_resched() in f2fs_kmem_cache_alloc when we are holding write_lock.
+
+IMO, it's better to return NULL if we fail to alloc extent_node here.
+Otherwise we'd better alloc extent_node before write_lock.
+
+> 
+> > +	en->ei = *ei;
+> > +	INIT_LIST_HEAD(&en->list);
+> > +
+> > +	rb_link_node(&en->rb_node, parent, p);
+> > +	rb_insert_color(&en->rb_node, &et->root);
+> > +	atomic_inc(&sbi->total_ext_node);
+> > +	et->count++;
+> 
+> }
+> 
+> > +
+> > +	return en;
+> > +}
+> > +
+> > +static struct extent_node *__remove_extent_tree(struct extent_tree *et,
+> > +							unsigned int fofs)
+> 
+> This is __detach_extent_node()?
+> 
+> > +{
+> > +	struct rb_node *p = et->root.rb_node;
+> > +	struct extent_node *en;
+> > +
+> > +	while (p) {
+> > +		en = rb_entry(p, struct extent_node, rb_node);
+> > +
+> > +		if (fofs < en->ei.fofs)
+> > +			p = p->rb_left;
+> 
+> Coding style.
+> 
+> if () {
+> } else {
+> }
+
+will fix.
+
+> 
+> > +		else if (fofs >= en->ei.fofs + en->ei.len)
+> > +			p = p->rb_right;
+> > +		else {
+> > +			rb_erase(&en->rb_node, &et->root);
+> > +			et->count--;
+> 
+> Add here?
+> 			atomic_dec(&sbi->total_ext_node);
+
+Agree, see __detach_extent_node() implementation above.
+
+> 
+> > +			return en;
+> > +		}
+> > +	}
+> > +	return NULL;
+> > +}
+> > +
+> > +static unsigned int __free_extent_tree(struct f2fs_sb_info *sbi,
+> > +					struct extent_tree *et, bool free_all)
+> > +{
+> > +	struct rb_node *node, *next;
+> > +	struct extent_node *en;
+> > +	unsigned int count = et->count;
+> > +
+> > +	node = rb_first(&et->root);
+> > +	while (node) {
+> > +		next = rb_next(node);
+> > +		en = rb_entry(node, struct extent_node, rb_node);
+> > +
+> > +		if (free_all) {
+> > +			spin_lock(&sbi->extent_lock);
+> > +			if (!list_empty(&en->list))
+> > +				list_del_init(&en->list);
+> > +			spin_unlock(&sbi->extent_lock);
+> > +		}
+> > +
+> > +		if (free_all || list_empty(&en->list)) {
+> > +			rb_erase(node, &et->root);
+> > +			kmem_cache_free(extent_node_slab, en);
+> > +			atomic_dec(&sbi->total_ext_node);
+> > +			et->count--;
+> > +		}
+> > +		node = next;
+> > +	}
+> > +
+> > +	return count - et->count;
+> > +}
+> > +
+> > +static bool f2fs_lookup_extent_tree(struct inode *inode, pgoff_t pgofs,
+> > +							struct extent_info *ei)
+> > +{
+> > +	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+> > +	struct extent_tree *et;
+> > +	struct extent_node *en;
+> > +
+> > +	if (is_inode_flag_set(F2FS_I(inode), FI_NO_EXTENT))
+> > +		return false;
+> > +
+> > +	down_read(&sbi->extent_tree_lock);
+> > +	et = radix_tree_lookup(&sbi->extent_tree_root, inode->i_ino);
+> > +	if (!et) {
+> > +		up_read(&sbi->extent_tree_lock);
+> > +		return false;
+> > +	}
+> > +	atomic_inc(&et->refcount);
+> > +	up_read(&sbi->extent_tree_lock);
+> > +
+> > +	read_lock(&et->lock);
+> > +	en = __lookup_extent_tree(et, pgofs);
+> > +	if (en) {
+> > +		*ei = en->ei;
+> > +		spin_lock(&sbi->extent_lock);
+> > +		if (!list_empty(&en->list))
+> > +			list_move_tail(&en->list, &sbi->extent_list);
+> > +		spin_unlock(&sbi->extent_lock);
+> > +		stat_inc_read_hit(sbi->sb);
+> > +	}
+> > +	stat_inc_total_hit(sbi->sb);
+> > +	read_unlock(&et->lock);
+> > +
+> > +	atomic_dec(&et->refcount);
+> > +	return en ? true : false;
+> > +}
+> > +
+> > +static void f2fs_update_extent_tree(struct inode *inode, pgoff_t fofs,
+> > +							block_t blkaddr)
+> > +{
+> > +	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+> > +	nid_t ino = inode->i_ino;
+> > +	struct extent_tree *et;
+> > +	struct extent_node *en = NULL, *en1 = NULL, *en2 = NULL, *en3 = NULL;
+> > +	struct extent_node *den = NULL;
+> > +	struct extent_info *pei;
+> > +	struct extent_info ei;
+> > +	unsigned int endofs;
+> > +
+> > +	if (is_inode_flag_set(F2FS_I(inode), FI_NO_EXTENT))
+> > +		return;
+> > +
+> > +retry:
+> > +	down_write(&sbi->extent_tree_lock);
+> > +	et = radix_tree_lookup(&sbi->extent_tree_root, ino);
+> > +	if (!et) {
+> > +		et = kmem_cache_alloc(extent_tree_slab, GFP_ATOMIC);
+> 
+> et = f2fs_kmem_cache_alloc(.., GFP_ATOMIC);
+
+How about modifying as below to avoid holding extent_tree_lock for long time?
+
+et = kmem_cache_alloc(extent_tree_slab, GFP_ATOMIC);
+if (!et) {
+	up_write(&sbi->extent_tree_lock);
+	cond_resched();
+	goto retry;
+}
+
+> 
+> > +		if (!et) {
+> > +			up_write(&sbi->extent_tree_lock);
+> > +			goto retry;
+> > +		}
+> > +		if (radix_tree_insert(&sbi->extent_tree_root, ino, et)) {
+> > +			up_write(&sbi->extent_tree_lock);
+> > +			kmem_cache_free(extent_tree_slab, et);
+
+cond_resched()?
+
+> > +			goto retry;
+> > +		}
+> > +		memset(et, 0, sizeof(struct extent_tree));
+> > +		et->ino = ino;
+> > +		et->root = RB_ROOT;
+> > +		rwlock_init(&et->lock);
+> > +		atomic_set(&et->refcount, 0);
+> > +		et->count = 0;
+> > +		sbi->total_ext_tree++;
+> > +	}
+> > +	atomic_inc(&et->refcount);
+> > +	up_write(&sbi->extent_tree_lock);
+> > +
+> > +	write_lock(&et->lock);
+> > +
+> > +	/* 1. lookup and remove exist extent info in cache */
+> 
+>                                 existing
+
+got it.
+
+> 
+> > +	en = __remove_extent_tree(et, fofs);
+> 
+> en = __detach_extent_node();?
+
+OK, it seems that most codes of __remove_extent_tree and __lookup_extent_tree 
+are the same, so here I want to remove extent node like this:
+
+	en = __lookup_extent_tree(et, fofs);
+	if (!en)
+		goto update_extent;
+
+	dei = en->ei;
+	__detach_extent_node(sbi, et, en);
+
+How do you think?
+
+> 
+> > +	if (!en)
+> > +		goto update_extent;
+> > +
+> > +	pei = &en->ei;
+> > +	/* 2. if extent can be split more, split and insert the left part */
+> > +	if (pei->len > 1) {
+> > +		/*  insert left part of split extent into cache */
+> > +		if (pei->fofs < fofs) {
+> > +			set_extent_info(&ei, pei->fofs, pei->blk,
+> > +							fofs - pei->fofs);
+> > +			en1 = __insert_extent_tree(sbi, et, &ei, NULL);
+> > +		}
+> > +
+> > +		/* insert right part of split extent into cache */
+> > +		endofs = pei->fofs + pei->len - 1;
+> > +		if (endofs > fofs) {
+> > +			set_extent_info(&ei, fofs + 1,
+> > +				fofs - pei->fofs + pei->blk, endofs - fofs);
+> > +			en2 = __insert_extent_tree(sbi, et, &ei, NULL);
+> > +		}
+> > +	}
+> > +
+> > +update_extent:
+> > +	/* 3. update extent in extent cache */
+> > +	if (blkaddr) {
+> > +		set_extent_info(&ei, fofs, blkaddr, 1);
+> > +		en3 = __insert_extent_tree(sbi, et, &ei, &den);
+> > +	}
+> > +
+> > +	/* 4. update in global extent list */
+> > +	spin_lock(&sbi->extent_lock);
+> > +	if (en && !list_empty(&en->list))
+> > +		list_del_init(&en->list);
+> > +	/*
+> > +	 * en1 and en2 split from en, they will become more and more smaller
+> > +	 * fragments after splitting several times. So if the length is smaller
+> > +	 * than F2FS_MIN_EXTENT_LEN, we will not add them into extent_list,
+> > +	 * but just waiting shrinker to free them for reclaiming when OOM.
+> > +	 */
+> 
+> Can we just remove en1 and en2 in __insert_extent_tree?
+
+en1 and en2 is newly added, in __attach_extent_node we do not add en1 and en2 into
+lru list, so if you do not want to keep split part in lru list, let's just remove
+the below codes.
+
+> 
+> > +	if (en1 && en1->ei.len >= F2FS_MIN_EXTENT_LEN)
+> > +		list_add_tail(&en1->list, &sbi->extent_list);
+> > +	if (en2 && en2->ei.len >= F2FS_MIN_EXTENT_LEN)
+> > +		list_add_tail(&en2->list, &sbi->extent_list);
+> > +	if (en3) {
+> > +		if (list_empty(&en3->list))
+> > +			list_add_tail(&en3->list, &sbi->extent_list);
+> > +		else
+> > +			list_move_tail(&en3->list, &sbi->extent_list);
+> > +	}
+> > +	if (den && !list_empty(&den->list))
+> > +		list_del_init(&den->list);
+> > +	spin_unlock(&sbi->extent_lock);
+> > +
+> > +	if (en) {
+> > +		kmem_cache_free(extent_node_slab, en);
+> > +		atomic_dec(&sbi->total_ext_node);
+> 
+> 		--> move into __detach_extent_node().
+
+will do.
+
+> 
+> > +	}
+> > +	if (den) {
+> > +		kmem_cache_free(extent_node_slab, den);
+> > +		atomic_dec(&sbi->total_ext_node);
+> > +	}
+> > +
+> > +	write_unlock(&et->lock);
+> > +	atomic_dec(&et->refcount);
+> > +}
+> > +
+> > +void f2fs_shrink_extent_tree(struct f2fs_sb_info *sbi, int nr_shrink)
+> > +{
+> > +	struct extent_tree *treevec[EXT_TREE_VEC_SIZE];
+> > +	struct extent_node *en, *tmp;
+> > +	unsigned long ino = F2FS_ROOT_INO(sbi);
+> > +	struct radix_tree_iter iter;
+> > +	void **slot;
+> > +	unsigned int found;
+> > +	unsigned int node_cnt = 0, tree_cnt = 0;
+> > +
+> > +	if (available_free_memory(sbi, EXTENT_CACHE))
+> > +		return;
+> > +
+> > +	spin_lock(&sbi->extent_lock);
+> > +	list_for_each_entry_safe(en, tmp, &sbi->extent_list, list) {
+> > +		if (!nr_shrink--)
+> > +			break;
+> > +		list_del_init(&en->list);
+> > +	}
+> > +	spin_unlock(&sbi->extent_lock);
+> > +
+> > +	down_read(&sbi->extent_tree_lock);
+> > +	while ((found = radix_tree_gang_lookup(&sbi->extent_tree_root,
+> > +				(void **)treevec, ino, EXT_TREE_VEC_SIZE))) {
+> > +		unsigned i;
+> > +
+> > +		ino = treevec[found - 1]->ino + 1;
+> > +		for (i = 0; i < found; i++) {
+> > +			struct extent_tree *et = treevec[i];
+> > +
+> > +			atomic_inc(&et->refcount);
+> > +			write_lock(&et->lock);
+> > +			node_cnt += __free_extent_tree(sbi, et, false);
+> > +			write_unlock(&et->lock);
+> > +			atomic_dec(&et->refcount);
+> > +		}
+> > +	}
+> > +	up_read(&sbi->extent_tree_lock);
+> > +
+> > +	down_write(&sbi->extent_tree_lock);
+> > +	radix_tree_for_each_slot(slot, &sbi->extent_tree_root, &iter,
+> > +							F2FS_ROOT_INO(sbi)) {
+> > +		struct extent_tree *et = (struct extent_tree *)*slot;
+> > +
+> > +		if (!atomic_read(&et->refcount) && !et->count) {
+> > +			radix_tree_delete(&sbi->extent_tree_root, et->ino);
+> > +			kmem_cache_free(extent_tree_slab, et);
+> > +			sbi->total_ext_tree--;
+> > +			tree_cnt++;
+> 
+> No use of tree_cnt.
+
+This is used by trace function in RFC PATCH 10/10.
+
+Thanks for your review! :)
+
+Regards,
+Yu
+
 > 
 > Thanks,
-> Lai
-> 
-> 
-> Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: "Gu, Zheng" <guz.fnst@cn.fujitsu.com>
-> Cc: tangchen <tangchen@cn.fujitsu.com>
-> Cc: Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
-> --
-> 2.1.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+[snip]
+
