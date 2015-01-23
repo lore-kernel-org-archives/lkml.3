@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857AbbAWTEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 14:04:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36000 "EHLO mx1.redhat.com"
+	id S1756351AbbAWTFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 14:05:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52573 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753402AbbAWTEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 14:04:34 -0500
-Message-ID: <54C29B2B.4070800@redhat.com>
-Date: Fri, 23 Jan 2015 14:04:11 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752848AbbAWTFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 14:05:50 -0500
+Message-ID: <54C29B82.7090502@redhat.com>
+Date: Fri, 23 Jan 2015 20:05:38 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-mm@kvack.org
-CC: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
-        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
-        hughd@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
-        linux-kernel@vger.kernel.org, aarcange@redhat.com
-Subject: Re: [PATCH] mm: incorporate read-only pages into transparent huge
- pages
-References: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
-In-Reply-To: <1421999256-3881-1-git-send-email-ebru.akagunduz@gmail.com>
-Content-Type: text/plain; charset=windows-1252
+To: Michael Tuexen <tuexen@fh-muenster.de>
+CC: Vlad Yasevich <vyasevich@gmail.com>, Sun Paul <paulrbk@gmail.com>,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Question on SCTP ABORT chunk is generated when the association_max_retrans
+ is reached
+References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com> <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com> <54C23581.9060809@redhat.com> <54C27137.5010405@gmail.com> <54C2807E.8080607@redhat.com> <8BBFBEE6-FA34-4190-BFCB-AB6BEC093774@fh-muenster.de>
+In-Reply-To: <8BBFBEE6-FA34-4190-BFCB-AB6BEC093774@fh-muenster.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 02:47 AM, Ebru Akagunduz wrote:
+On 01/23/2015 07:36 PM, Michael Tuexen wrote:
+...
+> Yepp. It might not reach the peer or it might. If it does it helps
+> to keep the states in sync. If it doesn't it sometimes helps in
+> analysing tracefiles. In BSD, we also send it. It is not required,
+> doesn't harm and is useful in some cases...
 
-> @@ -2169,7 +2169,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
->  		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
->  
->  		/* cannot use mapcount: can't collapse if there's a gup pin */
-> -		if (page_count(page) != 1)
-> +		if (page_count(page) != 1 + !!PageSwapCache(page))
->  			goto out;
->  		/*
->  		 * We can do it before isolate_lru_page because the
-> @@ -2179,6 +2179,17 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
->  		 */
->  		if (!trylock_page(page))
->  			goto out;
-> +		if (!pte_write(pteval)) {
-> +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
-> +					unlock_page(page);
-> +					goto out;
-> +			}
-> +			/*
-> +			 * Page is not in the swap cache, and page count is
-> +			 * one (see above). It can be collapsed into a THP.
-> +			 */
-> +		}
+Ok, as the TCB is destroyed in any case, should be fine then.
 
-Andrea pointed out a bug between the above two parts of
-the patch.
-
-In-between where we check page_count(page), and where we
-check whether the page got added to the swap cache, the
-page count may change, causing us to get into a race
-condition with get_user_pages_fast, the pageout code, etc.
-
-It is necessary to check the page count again right after
-the trylock_page(page) above, to make sure it was not changed
-while the page was not yet locked.
-
-That second check should have a comment explaining that
-the first "page_count(page) != 1 + !!PageSwapCache(page)"
-check could be unsafe due to the page not yet locked,
-so the check needs to be repeated. Maybe something along
-the lines of:
-
-     /* Re-check the page count with the page locked */
+Thanks,
+Daniel
