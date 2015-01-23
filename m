@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025AbbAWSzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:55:00 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:46422 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbbAWSy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:54:57 -0500
+	id S1756302AbbAWS5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:57:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41174 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751503AbbAWS5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 13:57:15 -0500
+Date: Fri, 23 Jan 2015 19:57:11 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
+        Borislav Petkov <bp@suse.de>, kvm@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@redhat.com>,
+        Jan Beulich <JBeulich@suse.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>, paulmck@linux.vnet.ibm.com
+Subject: Re: [Xen-devel] [RFC v4 1/2] x86/xen: add
+	xen_is_preemptible_hypercall()
+Message-ID: <20150123185711.GW17887@wotan.suse.de>
+References: <1421972951-3940-1-git-send-email-mcgrof@do-not-panic.com> <1421972951-3940-2-git-send-email-mcgrof@do-not-panic.com> <54C230C8.4000207@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <0000014b17cfde4d-df42e887-9524-4f07-a46b-5d81f01fc687-000000@email.amazonses.com>
-References: <1422033640-4104-1-git-send-email-jimkeir@oracledbadirect.com>
-	<0000014b17cfde4d-df42e887-9524-4f07-a46b-5d81f01fc687-000000@email.amazonses.com>
-Date: Fri, 23 Jan 2015 13:54:56 -0500
-Message-ID: <CAN+gG=FHtsRzouBNY-YqXhH8SXKCc4Gw2TF6Z+_-+Cp_iPj6RA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Fix force effect modifications for the Microsoft
- Sidewinder Force Feedback Pro 2 joystick
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jim Keir <jimkeir@oracledbadirect.com>
-Cc: linux-input <linux-input@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C230C8.4000207@citrix.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have no clue what this code is doing (don't know much about the ff system).
-Quoting your initial 0001/0001, I thing the commit message should be
-the following.
-Jim, can you please validate it?
+On Fri, Jan 23, 2015 at 11:30:16AM +0000, David Vrabel wrote:
+> On 23/01/15 00:29, Luis R. Rodriguez wrote:
+> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > 
+> > On kernels with voluntary or no preemption we can run
+> > into situations where a hypercall issued through userspace
+> > will linger around as it addresses sub-operatiosn in kernel
+> > context (multicalls). Such operations can trigger soft lockup
+> > detection.
+> > 
+> > We want to address a way to let the kernel voluntarily preempt
+> > such calls even on non preempt kernels, to address this we first
+> > need to distinguish which hypercalls fall under this category.
+> > This implements xen_is_preemptible_hypercall() which lets us do
+> > just that by adding a secondary hypercall page, calls made via
+> > the new page may be preempted.
+> [...]
+> > --- a/arch/x86/include/asm/xen/hypercall.h
+> > +++ b/arch/x86/include/asm/xen/hypercall.h
+> > @@ -84,6 +84,22 @@
+> >  
+> >  extern struct { char _entry[32]; } hypercall_page[];
+> >  
+> > +#ifndef CONFIG_PREEMPT
+> > +extern struct { char _entry[32]; } preemptible_hypercall_page[];
+> > +
+> > +static inline bool xen_is_preemptible_hypercall(struct pt_regs *regs)
+> > +{
+> > +	return !user_mode_vm(regs) &&
+> > +		regs->ip >= (unsigned long)preemptible_hypercall_page &&
+> > +		regs->ip < (unsigned long)preemptible_hypercall_page + PAGE_SIZE;
+> 
+> I think you can optimize this to:
+> 
+>     return (regs->ip >> PAGE_SHIFT) == preemptible_hypercall_pfn
 
-"
-The FF2 driver (usbhid/hid-pidff.c) does not set the effect ID when
-uploading an effect. The result is that the initial upload works but
-subsequent uploads to modify effect parameters are all directed at the
-last-created effect.
+I take it you meant preemptible_hypercall_page ?
 
-The targeted effect ID must be passed back to the device when effect
-parameters are changed. This is done at the start of
-"pidff_set_condition_report", "pidff_set_periodic_report" etc. based on
-the value of "pidff->block_load[PID_EFFECT_
-BLOCK_INDEX].value[0]".
-However, this value is only ever set during pidff_request_effect_upload.
-The result is stored in "pidff->pid_id[effect->id]" at the end of
-pid_upload_effect, for later use. However, if an effect is modified and
-re-sent then this identifier is not being copied back from
-pidff->pid_id[effect->id] before sending the command to the device. The
-fix is to do this at the start of pidff_upload_effect.
-"
+> 	&& !user_mode_vm(regs);
 
----
+If so I don't see how this can work as an identical replacement.
+Consider a PAGE_SIZE is 16, so PAGE_SHIFT would be 4, and lets
+say we are checking for byte 2 which should be in the page:
 
-As said, I have no clue* of what this is supposed to do, so I can not
-add my reviewed-by here. The patch seems good however so nothing
-should prevent us to take it if it fixes your problem :)
+; 0b0010 >>4
+	0
 
-Cheers,
-Benjamin
+Can you elaborate more on this, or can we perhaps leave such
+optimization as an evolution to avoid regressions if you are
+not 100% certain?
 
-* OK, I am pushing a little bit, I just don't want today to go deep in
-the code :-)
-
-
-On Fri, Jan 23, 2015 at 12:21 PM, Jim Keir <jimkeir@oracledbadirect.com> wrote:
-> ---
-> Hi,
->
-> Changes from previous patches:
-> - All changes removed from higher-level files
-> - Extra debug line removed
->
-> Signed-off-by: Jim Keir <jimkeir@oracledbadirect.com>
->
->  drivers/hid/usbhid/hid-pidff.c | 6 ++++++
->  1 file changed, 6 insertions(+)
->
-> diff --git a/drivers/hid/usbhid/hid-pidff.c b/drivers/hid/usbhid/hid-pidff.c
-> index 0b531c6..1b3fa70 100644
-> --- a/drivers/hid/usbhid/hid-pidff.c
-> +++ b/drivers/hid/usbhid/hid-pidff.c
-> @@ -568,6 +568,12 @@ static int pidff_upload_effect(struct input_dev *dev, struct ff_effect *effect,
->         int type_id;
->         int error;
->
-> +       pidff->block_load[PID_EFFECT_BLOCK_INDEX].value[0] = 0;
-> +       if (old && effect) {
-> +               pidff->block_load[PID_EFFECT_BLOCK_INDEX].value[0] =
-> +                       pidff->pid_id[effect->id];
-> +       }
-> +
->         switch (effect->type) {
->         case FF_CONSTANT:
->                 if (!old) {
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  Luis
