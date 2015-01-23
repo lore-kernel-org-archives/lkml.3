@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbbAWXCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 18:02:48 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:46803 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397AbbAWXCq (ORCPT
+	id S1753303AbbAWXDn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 18:03:43 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:60312 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227AbbAWXDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 18:02:46 -0500
-Date: Fri, 23 Jan 2015 15:02:44 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] platform-drivers-x86 for 3.19-2
-Message-ID: <20150123230244.GA76977@vmdeb7>
+	Fri, 23 Jan 2015 18:03:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [2620:0:1000:157d:d966:4ba0:21e9:c020]
+In-Reply-To: <1421751268-21401-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1421745792.9655.98.camel@x220>
+	<1421751268-21401-1-git-send-email-nicolas.ferre@atmel.com>
+Date: Fri, 23 Jan 2015 15:03:39 -0800
+Message-ID: <CAOesGMjwm=e+GSiPcr-7hAf8uNOP9qdCoWjd7aLEny2=tK9vbg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: at91: fix Kconfig.debug by adding DEBUG_AT91_UART option
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Nicolas,
 
-The support for the dell-laptop keyboard backlight was flawed and the fix:
+On Tue, Jan 20, 2015 at 2:54 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> The DEBUG_AT91_UART Kconfig option was forgotten when moving the
+> AT91 debug-macro.S file. Add it and use it for the at91.S compilation.
+>
+> Reported-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+> Hi Alexandre,
+> Please tell me if this patch makes sense to fix the lack of this
+> DEBUG_AT91_UART Kconfig option.
+>
+> Paul,
+> Thanks for the heads up.
+>
+> Bye,
+>   Nico.
+>
+>  arch/arm/Kconfig.debug | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index e34d24949c6a..b3d388e5f4ff 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -1164,12 +1164,15 @@ config DEBUG_STI_UART
+>         bool
+>         depends on ARCH_STI
+>
+> +config DEBUG_AT91_UART
+> +       bool
+> +       depends on ARCH_AT91
+> +
 
-https://lkml.org/lkml/2015/1/14/539
+This is not inserted in the list alphabetically. It's not very well
+sorted today either, but it should probably go above exynos.
 
-was more invasive that I felt comfortable sending at RC5.
+Also, there are a number of configs that _select_ DEBUG_AT91_UART in
+the list above, but they don't depend on AT91. So what can happen is
+that you can select those, and then they will enable this option
+(which will spit out a warning about unfulfilled dependency).
 
-This series reverts the support for the dell-laptop keyboard backlight as well
-as the documentation for the newly created sysfs attributes. We'll get this
-implemented correctly for 3.20.
+You should probably make the choices that select this option also
+depend on AT91?
 
-Thanks,
 
-Darren Hart
-Intel Open Source Technology Center
-
-The following changes since commit ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc:
-
-  Linux 3.19-rc5 (2015-01-18 18:02:20 +1200)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/dvhart/linux-platform-drivers-x86.git tags/platform-drivers-x86-v3.19-2
-
-for you to fetch changes up to b78695a71de994cdbd58f4b3be9085a60bd2203d:
-
-  Revert "platform: x86: dell-laptop: Add support for keyboard backlight" (2015-01-23 11:10:32 -0800)
-
-----------------------------------------------------------------
-platform-drivers-x86 for 3.19-2
-
-dell-laptop: Revert keyboard backlight sysfs support and documentation
-
-----------------------------------------------------------------
-Darren Hart (2):
-      Revert "Documentation: Add entry for dell-laptop sysfs interface"
-      Revert "platform: x86: dell-laptop: Add support for keyboard backlight"
-
- .../ABI/testing/sysfs-platform-dell-laptop         |   60 --
- drivers/platform/x86/dell-laptop.c                 | 1055 +-------------------
- 2 files changed, 6 insertions(+), 1109 deletions(-)
- delete mode 100644 Documentation/ABI/testing/sysfs-platform-dell-laptop
--- 
-Darren Hart
-Intel Open Source Technology Center
+-Olof
