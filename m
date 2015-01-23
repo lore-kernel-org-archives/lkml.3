@@ -1,92 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbbAWJrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:47:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34505 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920AbbAWJrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:47:33 -0500
-Date: Fri, 23 Jan 2015 10:46:51 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
-        peterz@infradead.org, hbabu@us.ibm.com,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 1/7] perf: provide sysfs_show for struct
- perf_pmu_events_attr
-Message-ID: <20150123094651.GB4654@krava.brq.redhat.com>
-References: <1419234532-22657-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1419234532-22657-2-git-send-email-sukadev@linux.vnet.ibm.com>
+	id S1754525AbbAWJrF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:47:05 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:58427 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031AbbAWJq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 04:46:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419234532-22657-2-git-send-email-sukadev@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1422005800-13442-1-git-send-email-md.jamalmohiuddin@gmail.com>
+References: <1422005800-13442-1-git-send-email-md.jamalmohiuddin@gmail.com>
+Date: Fri, 23 Jan 2015 15:16:58 +0530
+Message-ID: <CAEUmHybQkyR7_TqOstDFcU=7iohL8E8ZaQYSNPiZC+MCi=hLmA@mail.gmail.com>
+Subject: Re: [PATCH] net: ieee802154: cc2520: fix coding style issue
+From: Varka Bhadram <varkabhadram@gmail.com>
+To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+Cc: Alexander Aring <alex.aring@gmail.com>,
+        linux-wpan - ML <linux-wpan@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 11:48:46PM -0800, Sukadev Bhattiprolu wrote:
-> From: Cody P Schafer <cody@linux.vnet.ibm.com>
-> 
-> (struct perf_pmu_events_attr) is defined in include/linux/perf_event.h,
-> but the only "show" for it is in x86 and contains x86 specific stuff.
-> 
-> Make a generic one for those of us who are just using the event_str.
-> 
-> CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> CC: Haren Myneni <hbabu@us.ibm.com>
-> CC: Cody P Schafer <dev@codyps.com>
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Hi Mohammad Jamal,
+
+On Fri, Jan 23, 2015 at 3:06 PM, Mohammad Jamal
+<md.jamalmohiuddin@gmail.com> wrote:
+> This patch solves the coding style issue warning
+> by replacing the shifting operations by BIT macro
+>
+> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
 > ---
->  include/linux/perf_event.h | 3 +++
->  kernel/events/core.c       | 8 ++++++++
->  2 files changed, 11 insertions(+)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 486e84c..58f59bd 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -897,6 +897,9 @@ struct perf_pmu_events_attr {
->  	const char *event_str;
->  };
->  
-> +ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
-> +			      char *page);
-> +
->  #define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
->  static struct perf_pmu_events_attr _var = {				\
->  	.attr = __ATTR(_name, 0444, _show, NULL),			\
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index af0a5ba..1808d0e 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -8276,6 +8276,14 @@ void __init perf_event_init(void)
->  		     != 1024);
->  }
->  
-> +ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
-> +			      char *page)
-> +{
-> +	struct perf_pmu_events_attr *pmu_attr =
-> +		container_of(attr, struct perf_pmu_events_attr, attr);
-> +	return sprintf(page, "%s\n", pmu_attr->event_str);
-> +}
-> +
+>  drivers/net/ieee802154/cc2520.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/net/ieee802154/cc2520.c b/drivers/net/ieee802154/cc2520.c
+> index dd129be..b9b2a49 100644
+> --- a/drivers/net/ieee802154/cc2520.c
+> +++ b/drivers/net/ieee802154/cc2520.c
+> @@ -45,9 +45,9 @@
+>  #define        CC2520_FREG_MASK        0x3F
+>
+>  /* status byte values */
+> -#define        CC2520_STATUS_XOSC32M_STABLE    (1 << 7)
+> -#define        CC2520_STATUS_RSSI_VALID        (1 << 6)
+> -#define        CC2520_STATUS_TX_UNDERFLOW      (1 << 3)
+> +#define        CC2520_STATUS_XOSC32M_STABLE    BIT(7)
+> +#define        CC2520_STATUS_RSSI_VALID        BIT(6)
+> +#define        CC2520_STATUS_TX_UNDERFLOW      BIT(3)
+>
+>  /* IEEE-802.15.4 defined constants (2.4 GHz logical channels) */
+>  #define        CC2520_MINCHANNEL               11
+> --
+> 1.7.9.5
+>
 
-Stephane just added same local one for RAPL pmu:
-  433678bdc6ed perf/rapl: Fix sysfs_show() initialization for RAPL PMU
+Please work on bluetooth-next[1] tree and also include
+'bluetooth-next' tag for the patch.
 
-with additional pmu_attr->event_str check
+[1]: http://git.kernel.org/cgit/linux/kernel/git/bluetooth/bluetooth-next.git/
 
-same for PMU_EVENT_ATTR_STRING macro
-
-if you could add this additional check plus the id initialization
-in the PMU_EVENT_ATTR_STRING macro, we could use the generic
-version in RAPL object as well
-
-thanks,
-jirka
+-- 
+Thanks and Regards,
+Varka Bhadram.
