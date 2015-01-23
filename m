@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486AbbAWSqD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:46:03 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:33799 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756137AbbAWSpy (ORCPT
+	id S932195AbbAWSr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:47:59 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:42600 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbbAWSp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:45:54 -0500
+	Fri, 23 Jan 2015 13:45:56 -0500
 From: Matt Fleming <matt@codeblueprint.co.uk>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
@@ -18,9 +18,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         Vikas Shivappa <vikas.shivappa@linux.intel.com>,
         Matt Fleming <matt.fleming@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/9] perf: Make perf_cgroup_from_task() global
-Date: Fri, 23 Jan 2015 18:45:40 +0000
-Message-Id: <1422038748-21397-2-git-send-email-matt@codeblueprint.co.uk>
+Subject: [PATCH 2/9] perf: Add ->count() function to read per-package counters
+Date: Fri, 23 Jan 2015 18:45:41 +0000
+Message-Id: <1422038748-21397-3-git-send-email-matt@codeblueprint.co.uk>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1422038748-21397-1-git-send-email-matt@codeblueprint.co.uk>
 References: <1422038748-21397-1-git-send-email-matt@codeblueprint.co.uk>
@@ -30,122 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Move perf_cgroup_from_task() from kernel/events/ to include/linux/ along
-with the necessary struct definitions, so that it can be used by the PMU
-code.
+For PMU drivers that record per-package counters, the ->count variable
+cannot be used to record an accurate aggregated value, since it's not
+possible to perform SMP cross-calls to cpus on other packages from the
+context in which we update ->count.
 
-When the upcoming Intel Cache Monitoring PMU driver assigns monitoring
-IDs to perf events, it needs to be able to check whether any two
-monitoring events overlap (say, a cgroup and task event), which means we
-need to be able to lookup the cgroup associated with a task (if any).
+Introduce a new optional ->count() accessor function that can be used to
+customize how values are collected. If a PMU driver doesn't provide a
+->count() function, we fallback to the existing code.
+
+There is necessarily a window of staleness with this approach because
+the task that generated the counter value may not have been scheduled by
+the cpu recently.
+
+An alternative and more complex approach would be to use a hrtimer to
+periodically refresh the values from a more permissive scheduling
+context. So, we're trading off complexity for accuracy.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- include/linux/perf_event.h | 30 ++++++++++++++++++++++++++++++
- kernel/events/core.c       | 28 +---------------------------
- 2 files changed, 31 insertions(+), 27 deletions(-)
+ include/linux/perf_event.h | 10 ++++++++++
+ kernel/events/core.c       |  5 ++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 3a7bd80b4db8..72482f06401c 100644
+index 72482f06401c..48879562ba25 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -53,6 +53,7 @@ struct perf_guest_info_callbacks {
- #include <linux/sysfs.h>
- #include <linux/perf_regs.h>
- #include <linux/workqueue.h>
-+#include <linux/cgroup.h>
- #include <asm/local.h>
- 
- struct perf_callchain_entry {
-@@ -539,6 +540,35 @@ struct perf_output_handle {
- 	int				page;
+@@ -259,6 +259,11 @@ struct pmu {
+ 	 * flush branch stack on context-switches (needed in cpu-wide mode)
+ 	 */
+ 	void (*flush_branch_stack)	(void);
++
++	/*
++	 * Return the count value for a counter.
++	 */
++	u64 (*count)			(struct perf_event *event); /*optional*/
  };
  
-+#ifdef CONFIG_CGROUP_PERF
-+
-+/*
-+ * perf_cgroup_info keeps track of time_enabled for a cgroup.
-+ * This is a per-cpu dynamically allocated data structure.
-+ */
-+struct perf_cgroup_info {
-+	u64				time;
-+	u64				timestamp;
-+};
-+
-+struct perf_cgroup {
-+	struct cgroup_subsys_state	css;
-+	struct perf_cgroup_info	__percpu *info;
-+};
-+
-+/*
-+ * Must ensure cgroup is pinned (css_get) before calling
-+ * this function. In other words, we cannot call this function
-+ * if there is no cgroup event for the current CPU context.
-+ */
-+static inline struct perf_cgroup *
-+perf_cgroup_from_task(struct task_struct *task)
-+{
-+	return container_of(task_css(task, perf_event_cgrp_id),
-+			    struct perf_cgroup, css);
-+}
-+#endif /* CONFIG_CGROUP_PERF */
-+
- #ifdef CONFIG_PERF_EVENTS
+ /**
+@@ -760,6 +765,11 @@ static inline void perf_event_task_sched_out(struct task_struct *prev,
+ 		__perf_event_task_sched_out(prev, next);
+ }
  
- extern int perf_pmu_register(struct pmu *pmu, const char *name, int type);
++static inline u64 __perf_event_count(struct perf_event *event)
++{
++	return local64_read(&event->count) + atomic64_read(&event->child_count);
++}
++
+ extern void perf_event_mmap(struct vm_area_struct *vma);
+ extern struct perf_guest_info_callbacks *perf_guest_cbs;
+ extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index c10124b772c4..dcb292a14127 100644
+index dcb292a14127..56efd5142f3e 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -34,11 +34,11 @@
- #include <linux/syscalls.h>
- #include <linux/anon_inodes.h>
- #include <linux/kernel_stat.h>
-+#include <linux/cgroup.h>
- #include <linux/perf_event.h>
- #include <linux/ftrace_event.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/mm_types.h>
--#include <linux/cgroup.h>
- #include <linux/module.h>
- #include <linux/mman.h>
- #include <linux/compat.h>
-@@ -351,32 +351,6 @@ static void perf_ctx_unlock(struct perf_cpu_context *cpuctx,
+@@ -3076,7 +3076,10 @@ static void __perf_event_read(void *info)
  
- #ifdef CONFIG_CGROUP_PERF
- 
--/*
-- * perf_cgroup_info keeps track of time_enabled for a cgroup.
-- * This is a per-cpu dynamically allocated data structure.
-- */
--struct perf_cgroup_info {
--	u64				time;
--	u64				timestamp;
--};
--
--struct perf_cgroup {
--	struct cgroup_subsys_state	css;
--	struct perf_cgroup_info	__percpu *info;
--};
--
--/*
-- * Must ensure cgroup is pinned (css_get) before calling
-- * this function. In other words, we cannot call this function
-- * if there is no cgroup event for the current CPU context.
-- */
--static inline struct perf_cgroup *
--perf_cgroup_from_task(struct task_struct *task)
--{
--	return container_of(task_css(task, perf_event_cgrp_id),
--			    struct perf_cgroup, css);
--}
--
- static inline bool
- perf_cgroup_match(struct perf_event *event)
+ static inline u64 perf_event_count(struct perf_event *event)
  {
+-	return local64_read(&event->count) + atomic64_read(&event->child_count);
++	if (event->pmu->count)
++		return event->pmu->count(event);
++
++	return __perf_event_count(event);
+ }
+ 
+ static u64 perf_event_read(struct perf_event *event)
 -- 
 1.9.3
 
