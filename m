@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703AbbAWPpH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:45:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:51422 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752593AbbAWPpE (ORCPT
+	id S1755584AbbAWPlt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:41:49 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:52655 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755536AbbAWPlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:45:04 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Gregory Clement <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org, Boris Brezillon <boris@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Lior Amsalem <alior@marvell.com>, linux-kernel@vger.kernel.org,
-        Sudhakar Gundubogula <sudhakar@marvell.com>,
-        Seif Mazareeb <seif@marvell.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH 1/2] mtd: nand: pxa3xx: Fix PIO FIFO draining
-Date: Fri, 23 Jan 2015 16:41:42 +0100
-Message-Id: <1422027703-3763-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1422027703-3763-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1422027703-3763-1-git-send-email-maxime.ripard@free-electrons.com>
+	Fri, 23 Jan 2015 10:41:45 -0500
+MIME-Version: 1.0
+Date: Fri, 23 Jan 2015 16:41:43 +0100
+Message-ID: <CAOQDsMxSxrquwx5249aWDNP7dzEqySwHzEzjPyZuJMxg-Cd1Tg@mail.gmail.com>
+Subject: Cannot boot Linux kernel
+From: Dorian VEGARA <dorian.vegara@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NDDB register holds the data that are needed by the read and write
-commands.
+Hello to everyone,
 
-However, during a read PIO access, the datasheet specifies that after each 32
-bits read in that register, when BCH is enabled, we have to make sure that the
-RDDREQ bit is set in the NDSR register.
+I'm trying to boot Linux kernel 3.14.25 but I'm encountering a problem
+: when I boot Linux, a "Warning : CPU" is shown and Linux crashes...
+Let's see what I did. :)
 
-This fixes an issue that was seen on the Armada 385, and presumably other mvebu
-SoCs, when a read on a newly erased page would end up in the driver reporting a
-timeout from the NAND.
+After I downloaded the kernel and extracted it, I typed :
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/mtd/nand/pxa3xx_nand.c | 36 ++++++++++++++++++++++++++++++------
- 1 file changed, 30 insertions(+), 6 deletions(-)
+$ make defconfig
 
-diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-index 96b0b1d27df1..320c2ab14d4e 100644
---- a/drivers/mtd/nand/pxa3xx_nand.c
-+++ b/drivers/mtd/nand/pxa3xx_nand.c
-@@ -480,6 +480,30 @@ static void disable_int(struct pxa3xx_nand_info *info, uint32_t int_mask)
- 	nand_writel(info, NDCR, ndcr | int_mask);
- }
- 
-+static void drain_fifo(struct pxa3xx_nand_info *info,
-+		       void *data,
-+		       int len)
-+{
-+	u32 *dst = (u32 *)data;
-+
-+	if (info->ecc_bch) {
-+		while (len--) {
-+			*dst++ = nand_readl(info, NDDB);
-+
-+			/*
-+			 * According to the datasheet, when reading
-+			 * from NDDB with BCH enabled, after each 32
-+			 * bits reads, we have to make sure that the
-+			 * NDSR.RDDREQ bit is set
-+			 */
-+			while (!(nand_readl(info, NDSR) & NDSR_RDDREQ))
-+				cpu_relax();
-+		}
-+	} else {
-+		__raw_readsl(info->mmio_base + NDDB, data, len);
-+	}
-+}
-+
- static void handle_data_pio(struct pxa3xx_nand_info *info)
- {
- 	unsigned int do_bytes = min(info->data_size, info->chunk_size);
-@@ -496,14 +520,14 @@ static void handle_data_pio(struct pxa3xx_nand_info *info)
- 				      DIV_ROUND_UP(info->oob_size, 4));
- 		break;
- 	case STATE_PIO_READING:
--		__raw_readsl(info->mmio_base + NDDB,
--			     info->data_buff + info->data_buff_pos,
--			     DIV_ROUND_UP(do_bytes, 4));
-+		drain_fifo(info,
-+			   info->data_buff + info->data_buff_pos,
-+			   DIV_ROUND_UP(do_bytes, 4));
- 
- 		if (info->oob_size > 0)
--			__raw_readsl(info->mmio_base + NDDB,
--				     info->oob_buff + info->oob_buff_pos,
--				     DIV_ROUND_UP(info->oob_size, 4));
-+			drain_fifo(info,
-+				   info->oob_buff + info->oob_buff_pos,
-+				   DIV_ROUND_UP(info->oob_size, 4));
- 		break;
- 	default:
- 		dev_err(&info->pdev->dev, "%s: invalid state %d\n", __func__,
--- 
-2.2.2
+It chose the defconfig x86_64.
+After, I typed another command :
 
+$ make && make modules_install
+
+The bzImage arch/x86/boot/bzImage was properly created ("x86", not
+"x86_64" like defconfig - I don't know if it's important).
+
+The modules have been installed correctly. The last message is "DEPMOD 3.14.25".
+
+I think my GRUB2 configuration is OK :
+menuentry 'Linux' {
+ insmod gzio
+ insmod part_msdos
+ insmod btrfs
+ set root='hd0,msdos6'
+ linux /boot/linux
+}
+
+
+So the boot may be successfully done... But it crashes :
+http://nsa33.casimages.com/img/2015/01/23/150123012550291970.jpg
+
+You can find the .config generated with the command $ make defconfig
+here : http://textup.fr/116850NO
+
+... and the log file created thanks to the command sh -c "make && make
+modules_config > leFichierLog 2>&1" is here :
+http://textup.fr/116855TB
+
+
+Could you help me please ? :)
+Thanks a lot.
+
+Best regards,
