@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110AbbAWTeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 14:34:37 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43687 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411AbbAWTee (ORCPT
+	id S1752577AbbAWTgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 14:36:19 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:51981 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321AbbAWTgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 14:34:34 -0500
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Subject: Re: wireless: p54: add handling of the signal case
-From: Kalle Valo <kvalo@codeaurora.org>
-In-Reply-To: <1421731543-13290-1-git-send-email-der.herr@hofr.at>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Christian Lamparter <chunkeey@googlemail.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Message-Id: <20150123193434.5F4AA141E7F@smtp.codeaurora.org>
-Date: Fri, 23 Jan 2015 19:34:34 +0000 (UTC)
+	Fri, 23 Jan 2015 14:36:17 -0500
+From: mathieu.poirier@linaro.org
+To: mathieu.poirier@linaro.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] coresight: fixing CPU hwid lookup in device tree
+Date: Fri, 23 Jan 2015 12:35:41 -0700
+Message-Id: <1422041741-26803-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-> if(!wait_for_completion_interruptible_timeout(...))
-> only handles the timeout case - this patch adds handling the
-> signal case the same as timeout.
-> 
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+Some DT specification will represent CPU nodes with address
+cells greater than one, making the current code fail.  Using
+the proper retrieval helper function ensure the correct hwid
+for CPUs is read properly with different address cell size.
 
-Thanks, applied to wireless-drivers-next.git but I removed "wireless:" from the
-title.
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/coresight/of_coresight.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-Kalle Valo
+diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
+index 9a5ff56f34d9..c3efa418a86d 100644
+--- a/drivers/coresight/of_coresight.c
++++ b/drivers/coresight/of_coresight.c
+@@ -117,7 +117,7 @@ struct coresight_platform_data *of_get_coresight_platform_data(
+ 	struct coresight_platform_data *pdata;
+ 	struct of_endpoint endpoint, rendpoint;
+ 	struct device *rdev;
+-	struct device_node *cpu;
++	struct device_node *dn;
+ 	struct device_node *ep = NULL;
+ 	struct device_node *rparent = NULL;
+ 	struct device_node *rport = NULL;
+@@ -186,14 +186,16 @@ struct coresight_platform_data *of_get_coresight_platform_data(
+ 
+ 	/* Affinity defaults to CPU0 */
+ 	pdata->cpu = 0;
+-	cpu = of_parse_phandle(node, "cpu", 0);
+-	if (cpu) {
+-		const u32 *mpidr;
++	dn = of_parse_phandle(node, "cpu", 0);
++	if (dn) {
++		const u32 *cell;
+ 		int len, index;
++		u64 hwid;
+ 
+-		mpidr = of_get_property(cpu, "reg", &len);
+-		if (mpidr && len == 4) {
+-			index = get_logical_index(be32_to_cpup(mpidr));
++		cell = of_get_property(dn, "reg", &len);
++		if (cell) {
++			hwid = of_read_number(cell, of_n_addr_cells(dn));
++			index = get_logical_index(hwid);
+ 			if (index != -EINVAL)
+ 				pdata->cpu = index;
+ 		}
+-- 
+1.9.1
+
