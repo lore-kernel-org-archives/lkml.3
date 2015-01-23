@@ -1,145 +1,807 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312AbbAWIkE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:40:04 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:40249 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753498AbbAWIjv (ORCPT
+	id S1753492AbbAWIn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:43:29 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:15506 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbbAWIn0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:39:51 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="56519880"
-Message-ID: <54C20928.6010009@cn.fujitsu.com>
-Date: Fri, 23 Jan 2015 16:41:12 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: <paulmck@linux.vnet.ibm.com>, Sasha Levin <sasha.levin@oracle.com>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337
- rcu_read_unlock_special+0x369/0x550()
-References: <54BBC084.2030604@oracle.com> <20150118232255.GD9719@linux.vnet.ibm.com> <54BE76B9.7070907@oracle.com> <20150121025754.GV9719@linux.vnet.ibm.com> <54BFC979.8040107@oracle.com> <20150122004305.GJ9719@linux.vnet.ibm.com> <54C1BFFD.9060707@oracle.com> <20150123035158.GP9719@linux.vnet.ibm.com> <54C1C7D2.906@oracle.com> <54C1C899.8000106@oracle.com> <20150123065542.GQ9719@linux.vnet.ibm.com>
-In-Reply-To: <20150123065542.GQ9719@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+	Fri, 23 Jan 2015 03:43:26 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-92-54c209aa3122
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 8BIT
+Message-id: <54C209AA.8030604@samsung.com>
+Date: Fri, 23 Jan 2015 17:43:22 +0900
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Beomho Seo <beomho.seo@samsung.com>
+Subject: Re: [PATCH 1/6] mfd: max77843: Add max77843 MFD driver core driver
+References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
+ <1421989367-32721-2-git-send-email-jaewon02.kim@samsung.com>
+ <54C1EF17.2010804@samsung.com>
+In-reply-to: <54C1EF17.2010804@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsWyRsSkSHc156EQg4/LWC1Of9rGbjH14RM2
+	i+tfnrNazD9yjtWi/81CVotzr1YyWky6P4HF4v7Xo4wWl3fNYbP43HuE0WLp9YtMFhOmr2Wx
+	aN17hN3i9O4SBz6PNfPWMHpc7utl8li5/Aubx6ZVnWwed67tYfPo27KK0ePzJrkA9igum5TU
+	nMyy1CJ9uwSujB8PelkL9l9irJi+5DFLA2P3BsYuRg4OCQETie4e2y5GTiBTTOLCvfVsXYxc
+	HEICSxklFs3fyA6RMJFYc+AYC0RiEaPE/CcXGUESvAKCEj8m32MBsZkFzCQetaxjhrBFJdoe
+	nYOytSWWLXzNDNH8mlGi6/A1ZpDNvAJaEp37ykFqWARUJWYf7GMFsdmA6r+vXwxmiwpESMw/
+	9hpsjoiAhsTMv1cYQeYwC5xilji5uIcJZI6wgLfE8iY/kBohgRWMEofbTUBsTqA5x97tAtsr
+	ITCTQ6J13VZGiGUCEt8mH2KB+F5WYtMBZognJSUOrrjBMoFRfBaS12YheW0WktdmIXltASPL
+	KkbR1ILkguKk9CITveLE3OLSvHS95PzcTYzABHD637MJOxjvHbA+xCjAwajEw9uw5WCIEGti
+	WXFl7iFGU6CLJjJLiSbnA9NMXkm8obGZkYWpiamxkbmlmZI472upn8FCAumJJanZqakFqUXx
+	RaU5qcWHGJk4OKUaGN3j/kYqNYWKK69hyVwoLuaa+Gaiav+8v9fkp/hVq3NN2rFlT73xusny
+	1+q3OhRUGIisvK3x6C/T/BW1Zzc+KxNMWC1kIR1tUBKqlh12zlPJVrzW8G9rX5dBn0d/2uw+
+	9fdOm+K+PDzTvTM/M2Ml6wa7u29Z+yyNNao+5yosdHki56r70+qtEktxRqKhFnNRcSIARm4S
+	dvsCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jAd1VnIdCDE6+M7Y4/Wkbu8XUh0/Y
+	LK5/ec5qMf/IOVaL/jcLWS3OvVrJaDHp/gQWi/tfjzJaXN41h83ic+8RRoul1y8yWUyYvpbF
+	onXvEXaL07tLHPg81sxbw+hxua+XyWPl8i9sHptWdbJ53Lm2h82jb8sqRo/Pm+QC2KMaGG0y
+	UhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgG5WUihLzCkF
+	CgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGbMmvqRveD2ecaKnl/tjA2My9cydjFy
+	ckgImEisOXCMBcIWk7hwbz1bFyMXh5DAIkaJ+U8ughXxCghK/Jh8D6iIg4NZQF7iyKVskDCz
+	gJnEo5Z1zBD1rxklug5fYwap4RXQkujcVw5SwyKgKjH7YB8riM0moC3xff1iMFtUIEJi/rHX
+	zCC2iICGxMy/VxhB5jALnGKWOLm4hwlkjrCAt8TyJj+QGiGBFYwSh9tNQGxOoDnH3u1insAo
+	MAvJdbMQrpuF5LoFjMyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYKTxTOpHYwrGywOMQpw
+	MCrx8DZsORgixJpYVlyZe4hRgoNZSYQ37gtQiDclsbIqtSg/vqg0J7X4EKMp0HMTmaVEk/OB
+	iSyvJN7Q2MTMyNLI3NDCyNhcSZxXyb4tREggPbEkNTs1tSC1CKaPiYNTqoHxlOLqH4VGS94f
+	3ec/mZnLMWzVHF6d+hcrylKSnxvYs0w6+OA7d++sPV4mub91mlwsXrBc/t678Jd8UvFc6czk
+	J3uXfDoxq5Wf1eJh08WS3JDvie/uuj178Crthcm/qKPac7/d3aC7Z6lvXMreA1d0tzE977mr
+	9Uju5oybHQ/Pn9+tXfA6RuFbsBJLcUaioRZzUXEiAEOYLNIsAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 02:55 PM, Paul E. McKenney wrote:
-> On Thu, Jan 22, 2015 at 11:05:45PM -0500, Sasha Levin wrote:
->> On 01/22/2015 11:02 PM, Sasha Levin wrote:
->>> On 01/22/2015 10:51 PM, Paul E. McKenney wrote:
->>>> On Thu, Jan 22, 2015 at 10:29:01PM -0500, Sasha Levin wrote:
->>>>>> On 01/21/2015 07:43 PM, Paul E. McKenney wrote:
->>>>>>>> On Wed, Jan 21, 2015 at 10:44:57AM -0500, Sasha Levin wrote:
->>>>>>>>>> On 01/20/2015 09:57 PM, Paul E. McKenney wrote:
->>>>>>>>>>>>>>>> So RCU believes that an RCU read-side critical section that ended within
->>>>>>>>>>>>>>>>>>>> an interrupt handler (in this case, an hrtimer) somehow got preempted.
->>>>>>>>>>>>>>>>>>>> Which is not supposed to happen.
->>>>>>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>>>>>> Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
->>>>>>>>>>>>>>>>>>>> and retry?
->>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>> I did have CONFIG_PROVE_RCU, and didn't see anything else besides what I pasted here.
->>>>>>>>>>>> OK, fair enough.  I do have a stack of RCU CPU stall-warning changes on
->>>>>>>>>>>> their way in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
->>>>>>>>>>>>
->>>>>>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
->>>>>>>>>>>>
->>>>>>>>>>>> These handle the problems that Dave Jones, yourself, and a few others
->>>>>>>>>>>> located this past December.  Could you please give them a spin?
->>>>>>>>>>
->>>>>>>>>> They seem to be a part of -next already, so this testing already includes them.
->>>>>>>>>>
->>>>>>>>>> I seem to be getting them about once a day, anything I can add to debug it?
->>>>>>>>
->>>>>>>> Could you please try reproducing with the following patch?
->>>>>>
->>>>>> Yes, and I've got mixed results. It reproduced, and all I got was:
->>>>>>
->>>>>> [  717.645572] ===============================
->>>>>> [  717.645572] [ INFO: suspicious RCU usage. ]
->>>>>> [  717.645572] 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1809 Tainted: G        W
->>>>>> [  717.645572] -------------------------------
->>>>>> [  717.645572] kernel/rcu/tree_plugin.h:337 rcu_read_unlock() from irq or softirq with blocking in critical section!!!
->>>>>> [  717.645572] !
->>>>>> [  717.645572]
->>>>>> [  717.645572] other info that might help us debug this:
->>>>>> [  717.645572]
->>>>>> [  717.645572]
->>>>>> [  717.645572] rcu_scheduler_active = 1, debug_locks = 1
->>>>>> [  717.645572] 3 locks held by trinity-c29/16497:
->>>>>> [  717.645572]  #0:  (&sb->s_type->i_mutex_key){+.+.+.}, at: [<ffffffff81bec373>] lookup_slow+0xd3/0x420
->>>>>> [  717.645572]  #1:
->>>>>> [hang]
->>>>>>
->>>>>> So the rest of the locks/stack trace didn't get printed, nor the pr_alert() which
->>>>>> should follow that.
->>>>>>
->>>>>> I've removed the lockdep call and will re-run it.
->>>> Thank you!  You are keeping the pr_alert(), correct?
->>>
->>> Yup, just the lockdep call goes away.
->>
->> Okay, this reproduced faster than I anticipated:
->>
->> [  786.160131] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->> [  786.239513] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->> [  786.240503] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->> [  786.242575] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
->>
->> It seems like the WARN_ON_ONCE was hiding the fact it actually got hit couple
->> of times in a very short interval. Maybe that would also explain lockdep crapping
->> itself.
-> 
-> OK, that was what I thought was the situation.  I have not yet fully
-> worked out how RCU gets into that state, but in the meantime, here
-> is a patch that should prevent the splats.  (It requires a subtle
-> interaction of quiescent-state detection and the scheduling-clock
-> interrupt.)
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> rcu: Clear need_qs flag to prevent splat
-> 
-> If the scheduling-clock interrupt sets the current tasks need_qs flag,
-> but if the current CPU passes through a quiescent state in the meantime,
+HI Chanwoo,
 
-How does the above things happen?
-"the scheduling-clock interrupt" is local-irq-disabled.
+2015년 01월 23일 15:49에 Chanwoo Choi 이(가) 쓴 글:
+> Hi Jaewon,
+>
+> On 01/23/2015 02:02 PM, Jaewon Kim wrote:
+>> This patch adds MAX77843 core/irq driver to support PMIC,
+>> MUIC(Micro USB Interface Controller), Charger, Fuel Gauge,
+>> LED and Haptic device.
+>>
+>> Cc: Lee Jones <lee.jones@linaro.org>
+>> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+>> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+>> ---
+>>   drivers/mfd/Kconfig                  |   14 ++
+>>   drivers/mfd/Makefile                 |    1 +
+>>   drivers/mfd/max77843.c               |  241 ++++++++++++++++++++
+>>   include/linux/mfd/max77843-private.h |  410 ++++++++++++++++++++++++++++++++++
+>>   4 files changed, 666 insertions(+)
+>>   create mode 100644 drivers/mfd/max77843.c
+>>   create mode 100644 include/linux/mfd/max77843-private.h
+>>
+>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>> index 2e6b731..0c67c79 100644
+>> --- a/drivers/mfd/Kconfig
+>> +++ b/drivers/mfd/Kconfig
+>> @@ -442,6 +442,20 @@ config MFD_MAX77693
+>>   	  additional drivers must be enabled in order to use the functionality
+>>   	  of the device.
+>>   
+>> +config MFD_MAX77843
+>> +	bool "Maxim Semiconductor MAX77843 PMIC Support"
+>> +	depends on I2C=y
+>> +	select MFD_CORE
+>> +	select REGMAP_I2C
+>> +	select REGMAP_IRQ
+>> +	help
+>> +	  Say yes here to add support for Maxim Semiconductor MAX77843.
+>> +	  This is companion Power Management IC with LEDs, Haptic, Charger,
+>> +	  Fuel Gauge, MUIC(Micro USB Interface Controller) controls on chip.
+>> +	  This driver provides common support for accessing the device;
+>> +	  additional drivers must be enabled in order to use the functionality
+>> +	  of the device.
+>> +
+>>   config MFD_MAX8907
+>>   	tristate "Maxim Semiconductor MAX8907 PMIC Support"
+>>   	select MFD_CORE
+>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>> index 53467e2..fe4f75c 100644
+>> --- a/drivers/mfd/Makefile
+>> +++ b/drivers/mfd/Makefile
+>> @@ -117,6 +117,7 @@ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+>>   obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+>>   obj-$(CONFIG_MFD_MAX77686)	+= max77686.o
+>>   obj-$(CONFIG_MFD_MAX77693)	+= max77693.o
+>> +obj-$(CONFIG_MFD_MAX77843)	+= max77843.o
+>>   obj-$(CONFIG_MFD_MAX8907)	+= max8907.o
+>>   max8925-objs			:= max8925-core.o max8925-i2c.o
+>>   obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
+>> diff --git a/drivers/mfd/max77843.c b/drivers/mfd/max77843.c
+>> new file mode 100644
+>> index 0000000..d7f8b76
+>> --- /dev/null
+>> +++ b/drivers/mfd/max77843.c
+>> @@ -0,0 +1,241 @@
+>> +/*
+>> + * max77843.c - MFD core driver for the Maxim MAX77843
+>> + *
+>> + * Copyright (C) 2014 Samsung Electrnoics
+>> + * Author: Jaewon Kim <jaewon02.kim@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + */
+>> +
+>> +#include <linux/err.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/init.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/module.h>
+>> +#include <linux/mfd/core.h>
+>> +#include <linux/mfd/max77843-private.h>
+>> +#include <linux/of_device.h>
+>> +#include <linux/platform_device.h>
+>> +
+>> +static const struct mfd_cell max77843_devs[] = {
+>> +	{
+>> +		.name = "max77843-muic",
+>> +		.of_compatible = "maxim,max77843-muic",
+>> +	}, {
+>> +		.name = "max77843-regulator",
+>> +		.of_compatible = "maxim,max77843-regulator",
+>> +	}, {
+>> +		.name = "max77843-charger",
+>> +		.of_compatible = "maxim,max77843-charger"
+>> +	}, {
+>> +		.name = "max77843-fuelgauge",
+>> +		.of_compatible = "maxim,max77843-fuelgauge",
+>> +	},
+>> +};
+>> +
+>> +static const struct regmap_config max77843_charger_regmap_config = {
+>> +	.reg_bits	= 8,
+>> +	.val_bits	= 8,
+>> +	.max_register	= MAX77843_CHG_REG_END,
+>> +};
+>> +
+>> +static const struct regmap_config max77843_regmap_config = {
+>> +	.reg_bits	= 8,
+>> +	.val_bits	= 8,
+>> +	.max_register	= MAX77843_SYS_REG_END,
+>> +};
+>> +
+>> +static const struct regmap_irq max77843_irqs[] = {
+>> +	/* TOPSYS interrupts */
+>> +	{ .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSUVLO_INT, },
+>> +	{ .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSOVLO_INT, },
+>> +	{ .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TSHDN_INT, },
+>> +	{ .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TM_INT, },
+>> +};
+>> +
+>> +static const struct regmap_irq_chip max77843_irq_chip = {
+>> +	.name		= "max77843",
+>> +	.status_base	= MAX77843_SYS_REG_SYSINTSRC,
+>> +	.mask_base	= MAX77843_SYS_REG_SYSINTMASK,
+>> +	.mask_invert	= false,
+>> +	.num_regs	= 1,
+>> +	.irqs		= max77843_irqs,
+>> +	.num_irqs	= ARRAY_SIZE(max77843_irqs),
+>> +};
+>> +
+>> +static int max77843_chg_init(struct max77843 *max77843)
+>> +{
+>> +	int ret;
+>> +
+>> +	max77843->i2c_chg = i2c_new_dummy(max77843->i2c->adapter, I2C_ADDR_CHG);
+>> +	if (!max77843->i2c_chg) {
+>> +		dev_err(&max77843->i2c->dev,
+>> +				"Cannot allocate I2C device for Charger\n");
+>> +		return PTR_ERR(max77843->i2c_chg);
+>> +	}
+>> +	i2c_set_clientdata(max77843->i2c_chg, max77843);
+>> +
+>> +	max77843->regmap_chg = devm_regmap_init_i2c(max77843->i2c_chg,
+>> +			&max77843_charger_regmap_config);
+>> +	if (IS_ERR(max77843->regmap_chg)) {
+>> +		ret = PTR_ERR(max77843->regmap_chg);
+>> +		goto err_chg_i2c;
+>> +	}
+>> +
+>> +	return 0;
+>> +
+>> +err_chg_i2c:
+>> +	i2c_unregister_device(max77843->i2c_chg);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +static int max77843_probe(struct i2c_client *i2c,
+>> +					const struct i2c_device_id *id)
+>> +{
+>> +	struct max77843 *max77843;
+>> +	int ret;
+>> +	unsigned int reg_data;
+>> +
+>> +	max77843 = devm_kzalloc(&i2c->dev, sizeof(*max77843), GFP_KERNEL);
+>> +	if (!max77843)
+>> +		return -ENOMEM;
+>> +
+>> +	i2c_set_clientdata(i2c, max77843);
+>> +	max77843->dev = &i2c->dev;
+>> +	max77843->i2c = i2c;
+>> +	max77843->irq = i2c->irq;
+>> +
+>> +	max77843->regmap = devm_regmap_init_i2c(i2c,
+>> +			&max77843_regmap_config);
+>> +	if (IS_ERR(max77843->regmap)) {
+>> +		dev_err(&i2c->dev, "Failed to allocate topsys register map\n");
+>> +		return PTR_ERR(max77843->regmap);
+>> +	}
+>> +
+>> +	ret = regmap_add_irq_chip(max77843->regmap, max77843->irq,
+>> +			IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_SHARED,
+>> +			0, &max77843_irq_chip, &max77843->irq_data);
+>> +	if (ret) {
+>> +		dev_err(&i2c->dev, "Failed to add TOPSYS IRQ chip\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = regmap_read(max77843->regmap,
+>> +			MAX77843_SYS_REG_PMICID, &reg_data);
+>> +	if (ret < 0) {
+>> +		dev_err(&i2c->dev, "Failed to read PMIC ID\n");
+>> +		goto err_pmic_id;
+>> +	}
+>> +	dev_info(&i2c->dev, "device ID: 0x%x\n", reg_data);
+>> +
+>> +	ret = max77843_chg_init(max77843);
+>> +	if (ret) {
+>> +		dev_err(&i2c->dev, "Failed to init Charger\n");
+>> +		goto err_pmic_id;
+>> +	}
+>> +
+>> +	ret = regmap_update_bits(max77843->regmap,
+>> +			MAX77843_SYS_REG_INTSRCMASK,
+>> +			MAX77843_INTSRC_MASK_MASK,
+>> +			(unsigned int)~MAX77843_INTSRC_MASK_MASK);
+> Do you must need the casting with (unsigned int)?
+> I think you better use the correct value which
+> includes the unmasking data of some interrupts
+> instead of (unsigned int)~MAX77843_INTSRC_MASK_MASK.
 
-> then rcu_preempt_qs() will fail to clear the need_qs flag, which can fool
-> RCU into thinking that additional rcu_read_unlock_special() processing
-> is needed.  This commit therefore clears the need_qs flag before checking
-> for additional processing.
-> 
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 8669de884445..ec99dc16aa38 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
->  	special = t->rcu_read_unlock_special;
->  	if (special.b.need_qs) {
->  		rcu_preempt_qs();
-> +		t->rcu_read_unlock_special.need_qs = false;
->  		if (!t->rcu_read_unlock_special.s) {
->  			local_irq_restore(flags);
->  			return;
-> 
-> .
-> 
+Okay, I will use with correct value.
+
+
+>
+>> +	if (ret < 0) {
+>> +		dev_err(&i2c->dev, "Failed to unmask interrupt sourece\n");
+>> +		goto err_pmic_id;
+>> +	}
+>> +
+>> +	ret = mfd_add_devices(max77843->dev, -1, max77843_devs,
+>> +			ARRAY_SIZE(max77843_devs), NULL, 0, NULL);
+>> +	if (ret < 0) {
+>> +		dev_err(&i2c->dev, "Failed to add mfd device\n");
+>> +		goto err_pmic_id;
+>> +	}
+>> +
+>> +	device_init_wakeup(max77843->dev, 1);
+>> +
+>> +	return 0;
+>> +
+>> +err_pmic_id:
+>> +	regmap_del_irq_chip(max77843->irq, max77843->irq_data);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +static int max77843_remove(struct i2c_client *i2c)
+>> +{
+>> +	struct max77843 *max77843 = i2c_get_clientdata(i2c);
+>> +
+>> +	mfd_remove_devices(max77843->dev);
+>> +
+>> +	regmap_del_irq_chip(max77843->irq, max77843->irq_data);
+>> +
+>> +	i2c_unregister_device(max77843->i2c);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct of_device_id max77843_dt_match[] = {
+>> +	{ .compatible = "maxim,max77843", },
+>> +	{ /* sentinel */ },
+>> +};
+>> +
+>> +static const struct i2c_device_id max77843_id[] = {
+>> +	{ "max77843", },
+>> +	{ /* sentinel */ },
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, max77843_id);
+>> +
+>> +static int __maybe_unused max77843_suspend(struct device *dev)
+>> +{
+>> +	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+>> +	struct max77843 *max77843 = i2c_get_clientdata(i2c);
+>> +
+>> +	if (device_may_wakeup(dev))
+>> +		enable_irq_wake(max77843->irq);
+>> +	disable_irq(max77843->irq);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int __maybe_unused max77843_resume(struct device *dev)
+>> +{
+>> +	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+>> +	struct max77843 *max77843 = i2c_get_clientdata(i2c);
+>> +
+>> +	if (device_may_wakeup(dev))
+>> +		disable_irq_wake(max77843->irq);
+>> +	enable_irq(max77843->irq);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static SIMPLE_DEV_PM_OPS(max77843_pm, max77843_suspend, max77843_resume);
+>> +
+>> +static struct i2c_driver max77843_i2c_driver = {
+>> +	.driver		= {
+>> +		.name		= "max77843",
+>> +		.pm		= &max77843_pm,
+>> +		.of_match_table = max77843_dt_match,
+>> +	},
+>> +	.probe		= max77843_probe,
+>> +	.remove		= max77843_remove,
+>> +	.id_table	= max77843_id,
+>> +};
+>> +static int __init max77843_i2c_init(void)
+>> +{
+>> +	return i2c_add_driver(&max77843_i2c_driver);
+>> +}
+>> +subsys_initcall(max77843_i2c_init);
+>> +
+>> +static void __exit max77843_i2c_exit(void)
+>> +{
+>> +	i2c_del_driver(&max77843_i2c_driver);
+>> +}
+>> +module_exit(max77843_i2c_exit);
+>> +
+>> +MODULE_AUTHOR("Jaewon Kim <jaewon02.kim@samsung.com>");
+>> +MODULE_DESCRIPTION("Maxim MAX77843 multi-function core driver");
+>> +MODULE_LICENSE("GPL");
+>> diff --git a/include/linux/mfd/max77843-private.h b/include/linux/mfd/max77843-private.h
+>> new file mode 100644
+>> index 0000000..560ed73
+>> --- /dev/null
+>> +++ b/include/linux/mfd/max77843-private.h
+>> @@ -0,0 +1,410 @@
+>> +/*
+>> + * max77843-private.h - Common API for the Maxim MAX77843 internal sub chip
+>> + *
+>> + * Copyright (C) 2014 Samsung Electrnoics
+>> + * Author: Jaewon Kim <jaewon02.kim@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + */
+>> +
+>> +#ifndef __MAX77843_PRIVATE_H_
+>> +#define __MAX77843_PRIVATE_H_
+>> +
+>> +#include <linux/i2c.h>
+>> +#include <linux/regmap.h>
+>> +
+>> +#define I2C_ADDR_TOPSYS	(0xCC >> 1)
+>> +#define I2C_ADDR_CHG	(0xD2 >> 1)
+>> +#define I2C_ADDR_FG	(0x6C >> 1)
+>> +#define I2C_ADDR_MUIC	(0x4A >> 1)
+>> +
+>> +/* Topsys, Haptic and LED registers */
+>> +enum max77843_sys_reg {
+>> +	MAX77843_SYS_REG_PMICID		= 0x00,
+>> +	MAX77843_SYS_REG_PMICREV	= 0x01,
+>> +	MAX77843_SYS_REG_MAINCTRL1	= 0x02,
+>> +	MAX77843_SYS_REG_INTSRC		= 0x22,
+>> +	MAX77843_SYS_REG_INTSRCMASK	= 0x23,
+>> +	MAX77843_SYS_REG_SYSINTSRC	= 0x24,
+>> +	MAX77843_SYS_REG_SYSINTMASK	= 0x26,
+>> +	MAX77843_SYS_REG_TOPSYS_STAT	= 0x28,
+>> +	MAX77843_SYS_REG_SAFEOUTCTRL	= 0xC6,
+>> +
+>> +	MAX77843_SYS_REG_END,
+>> +};
+>> +
+>> +enum max77843_led_reg {
+>> +	MAX77843_LED_REG_LEDEN		= 0x30,
+>> +	MAX77843_LED_REG_LED0BRT	= 0x31,
+>> +	MAX77843_LED_REG_LED1BRT	= 0x32,
+>> +	MAX77843_LED_REG_LED2BRT	= 0x33,
+>> +	MAX77843_LED_REG_LED3BRT	= 0x34,
+>> +	MAX77843_LED_REG_LEDBLNK	= 0x38,
+>> +	MAX77843_LED_REG_LEDRAMP	= 0x36,
+>> +
+>> +	MAX77843_LED_REG_END,
+>> +};
+>> +
+>> +/* Charger registers */
+>> +enum max77843_charger_reg {
+>> +	MAX77843_CHG_REG_CHG_INT	= 0xB0,
+>> +	MAX77843_CHG_REG_CHG_INT_MASK	= 0xB1,
+>> +	MAX77843_CHG_REG_CHG_INT_OK	= 0xB2,
+>> +	MAX77843_CHG_REG_CHG_DTLS_00	= 0xB3,
+>> +	MAX77843_CHG_REG_CHG_DTLS_01	= 0xB4,
+>> +	MAX77843_CHG_REG_CHG_DTLS_02	= 0xB5,
+>> +	MAX77843_CHG_REG_CHG_CNFG_00	= 0xB7,
+>> +	MAX77843_CHG_REG_CHG_CNFG_01	= 0xB8,
+>> +	MAX77843_CHG_REG_CHG_CNFG_02	= 0xB9,
+>> +	MAX77843_CHG_REG_CHG_CNFG_03	= 0xBA,
+>> +	MAX77843_CHG_REG_CHG_CNFG_04	= 0xBB,
+>> +	MAX77843_CHG_REG_CHG_CNFG_06	= 0xBD,
+>> +	MAX77843_CHG_REG_CHG_CNFG_07	= 0xBE,
+>> +	MAX77843_CHG_REG_CHG_CNFG_09	= 0xC0,
+>> +	MAX77843_CHG_REG_CHG_CNFG_10	= 0xC1,
+>> +	MAX77843_CHG_REG_CHG_CNFG_11	= 0xC2,
+>> +	MAX77843_CHG_REG_CHG_CNFG_12	= 0xC3,
+>> +
+>> +	MAX77843_CHG_REG_END,
+>> +};
+>> +
+>> +/* Fuel gauge registers */
+>> +enum max77843_fuelgauge {
+>> +	MAX77843_FG_REG_STATUS		= 0x00,
+>> +	MAX77843_FG_REG_VALRT_TH	= 0x01,
+>> +	MAX77843_FG_REG_TALRT_TH	= 0x02,
+>> +	MAX77843_FG_REG_SALRT_TH	= 0x03,
+>> +	MAX77843_FG_RATE_AT_RATE	= 0x04,
+>> +	MAX77843_FG_REG_REMCAP_REP	= 0x05,
+>> +	MAX77843_FG_REG_SOCREP		= 0x06,
+>> +	MAX77843_FG_REG_AGE		= 0x07,
+>> +	MAX77843_FG_REG_TEMP		= 0x08,
+>> +	MAX77843_FG_REG_VCELL		= 0x09,
+>> +	MAX77843_FG_REG_CURRENT		= 0x0A,
+>> +	MAX77843_FG_REG_AVG_CURRENT	= 0x0B,
+>> +	MAX77843_FG_REG_SOCMIX		= 0x0D,
+>> +	MAX77843_FG_REG_SOCAV		= 0x0E,
+>> +	MAX77843_FG_REG_REMCAP_MIX	= 0x0F,
+>> +	MAX77843_FG_REG_FULLCAP		= 0x10,
+>> +	MAX77843_FG_REG_AVG_TEMP	= 0x16,
+>> +	MAX77843_FG_REG_CYCLES		= 0x17,
+>> +	MAX77843_FG_REG_AVG_VCELL	= 0x19,
+>> +	MAX77843_FG_REG_CONFIG		= 0x1D,
+>> +	MAX77843_FG_REG_REMCAP_AV	= 0x1F,
+>> +	MAX77843_FG_REG_FULLCAP_NOM	= 0x23,
+>> +	MAX77843_FG_REG_MISCCFG		= 0x2B,
+>> +	MAX77843_FG_REG_RCOMP		= 0x38,
+>> +	MAX77843_FG_REG_FSTAT		= 0x3D,
+>> +	MAX77843_FG_REG_DQACC		= 0x45,
+>> +	MAX77843_FG_REG_DPACC		= 0x46,
+>> +	MAX77843_FG_REG_OCV		= 0xEE,
+>> +	MAX77843_FG_REG_VFOCV		= 0xFB,
+>> +	MAX77843_FG_SOCVF		= 0xFF,
+>> +
+>> +	MAX77843_FG_END,
+>> +};
+>> +
+>> +/* Muic registers */
+>> +enum max77843_muic_reg {
+>> +	MAX77843_MUIC_REG_ID		= 0x00,
+>> +	MAX77843_MUIC_REG_INT1		= 0x01,
+>> +	MAX77843_MUIC_REG_INT2		= 0x02,
+>> +	MAX77843_MUIC_REG_INT3		= 0x03,
+>> +	MAX77843_MUIC_REG_STATUS1	= 0x04,
+>> +	MAX77843_MUIC_REG_STATUS2	= 0x05,
+>> +	MAX77843_MUIC_REG_STATUS3	= 0x06,
+>> +	MAX77843_MUIC_REG_INTMASK1	= 0x07,
+>> +	MAX77843_MUIC_REG_INTMASK2	= 0x08,
+>> +	MAX77843_MUIC_REG_INTMASK3	= 0x09,
+>> +	MAX77843_MUIC_REG_CDETCTRL1	= 0x0A,
+>> +	MAX77843_MUIC_REG_CDETCTRL2	= 0x0B,
+>> +	MAX77843_MUIC_REG_CONTROL1	= 0x0C,
+>> +	MAX77843_MUIC_REG_CONTROL2	= 0x0D,
+>> +	MAX77843_MUIC_REG_CONTROL3	= 0x0E,
+>> +	MAX77843_MUIC_REG_CONTROL4	= 0x16,
+>> +	MAX77843_MUIC_REG_HVCONTROL1	= 0x17,
+>> +	MAX77843_MUIC_REG_HVCONTROL2	= 0x18,
+>> +
+>> +	MAX77843_MUIC_REG_END,
+>> +};
+>> +
+>> +enum max77843_irq {
+>> +	/* Topsys: SYSTEM */
+>> +	MAX77843_SYS_IRQ_SYSINTSRC_SYSUVLO_INT,
+>> +	MAX77843_SYS_IRQ_SYSINTSRC_SYSOVLO_INT,
+>> +	MAX77843_SYS_IRQ_SYSINTSRC_TSHDN_INT,
+>> +	MAX77843_SYS_IRQ_SYSINTSRC_TM_INT,
+>> +
+>> +	/* Charger: CHG_INT */
+>> +	MAX77843_CHG_IRQ_CHG_INT_BYP_I,
+>> +	MAX77843_CHG_IRQ_CHG_INT_BATP_I,
+>> +	MAX77843_CHG_IRQ_CHG_INT_BAT_I,
+>> +	MAX77843_CHG_IRQ_CHG_INT_CHG_I,
+>> +	MAX77843_CHG_IRQ_CHG_INT_WCIN_I,
+>> +	MAX77843_CHG_IRQ_CHG_INT_CHGIN_I,
+>> +	MAX77843_CHG_IRQ_CHG_INT_AICL_I,
+>> +
+>> +	MAX77843_IRQ_NUM,
+>> +};
+>> +
+>> +enum max77843_irq_muic {
+>> +	/* MUIC: INT1 */
+>> +	MAX77843_MUIC_IRQ_INT1_ADC,
+>> +	MAX77843_MUIC_IRQ_INT1_ADCERROR,
+>> +	MAX77843_MUIC_IRQ_INT1_ADC1K,
+>> +
+>> +	/* MUIC: INT2 */
+>> +	MAX77843_MUIC_IRQ_INT2_CHGTYP,
+>> +	MAX77843_MUIC_IRQ_INT2_CHGDETRUN,
+>> +	MAX77843_MUIC_IRQ_INT2_DCDTMR,
+>> +	MAX77843_MUIC_IRQ_INT2_DXOVP,
+>> +	MAX77843_MUIC_IRQ_INT2_VBVOLT,
+>> +
+>> +	/* MUIC: INT3 */
+>> +	MAX77843_MUIC_IRQ_INT3_VBADC,
+>> +	MAX77843_MUIC_IRQ_INT3_VDNMON,
+>> +	MAX77843_MUIC_IRQ_INT3_DNRES,
+>> +	MAX77843_MUIC_IRQ_INT3_MPNACK,
+>> +	MAX77843_MUIC_IRQ_INT3_MRXBUFOW,
+>> +	MAX77843_MUIC_IRQ_INT3_MRXTRF,
+>> +	MAX77843_MUIC_IRQ_INT3_MRXPERR,
+>> +	MAX77843_MUIC_IRQ_INT3_MRXRDY,
+>> +
+>> +	MAX77843_MUIC_IRQ_NUM,
+>> +};
+>> +
+>> +/* MAX77843 interrupts */
+>> +#define MAX77843_SYS_IRQ_SYSUVLO_INT		BIT(0)
+>> +#define MAX77843_SYS_IRQ_SYSOVLO_INT		BIT(1)
+>> +#define MAX77843_SYS_IRQ_TSHDN_INT		BIT(2)
+>> +#define MAX77843_SYS_IRQ_TM_INT			BIT(3)
+>> +
+>> +/* Max77843 charger insterrupts */
+>> +#define MAX77843_CHG_BYP_I			BIT(0)
+>> +#define MAX77843_CHG_BATP_I			BIT(2)
+>> +#define MAX77843_CHG_BAT_I			BIT(3)
+>> +#define MAX77843_CHG_CHG_I			BIT(4)
+>> +#define MAX77843_CHG_WCIN_I			BIT(5)
+>> +#define MAX77843_CHG_CHGIN_I			BIT(6)
+>> +#define MAX77843_CHG_AICL_I			BIT(7)
+>> +
+>> +/* MAX77843 CHG_INT_OK register */
+>> +#define MAX77843_CHG_BYP_OK			BIT(0)
+>> +#define MAX77843_CHG_BATP_OK			BIT(2)
+>> +#define MAX77843_CHG_BAT_OK			BIT(3)
+>> +#define MAX77843_CHG_CHG_OK			BIT(4)
+>> +#define MAX77843_CHG_WCIN_OK			BIT(5)
+>> +#define MAX77843_CHG_CHGIN_OK			BIT(6)
+>> +#define MAX77843_CHG_AICL_OK			BIT(7)
+>> +
+>> +/* MAX77843 CHG_DETAILS_00 register */
+>> +#define MAX77843_CHG_BAT_DTLS			BIT(0)
+>> +
+>> +/* MAX77843 CHG_DETAILS_01 register */
+>> +#define MAX77843_CHG_DTLS_MASK			0x0f
+>> +#define MAX77843_CHG_PQ_MODE			0x00
+>> +#define MAX77843_CHG_CC_MODE			0x01
+>> +#define MAX77843_CHG_CV_MODE			0x02
+>> +#define MAX77843_CHG_TO_MODE			0x03
+>> +#define MAX77843_CHG_DO_MODE			0x04
+>> +#define MAX77843_CHG_HT_MODE			0x05
+>> +#define MAX77843_CHG_TF_MODE			0x06
+>> +#define MAX77843_CHG_TS_MODE			0x07
+>> +#define MAX77843_CHG_OFF_MODE			0x08
+>> +
+>> +#define MAX77843_CHG_BAT_DTLS_MASK		0xf0
+>> +#define MAX77843_CHG_NO_BAT			(0x00 << 4)
+>> +#define MAX77843_CHG_LOW_VOLT_BAT		(0x01 << 4)
+>> +#define MAX77843_CHG_LONG_BAT_TIME		(0x02 << 4)
+>> +#define MAX77843_CHG_OK_BAT			(0x03 << 4)
+>> +#define MAX77843_CHG_OK_LOW_VOLT_BAT		(0x04 << 4)
+>> +#define MAX77843_CHG_OVER_VOLT_BAT		(0x05 << 4)
+>> +#define MAX77843_CHG_OVER_CURRENT_BAT		(0x06 << 4)
+>> +
+>> +/* MAX77843 CHG_CNFG_00 register */
+>> +#define MAX77843_CHG_DISABLE			0x00
+>> +#define MAX77843_CHG_ENABLE			0x05
+>> +#define MAX77843_CHG_MASK			0x01
+>> +#define MAX77843_CHG_BUCK_MASK			0x04
+>> +
+>> +/* MAX77843 CHG_CNFG_01 register */
+>> +#define MAX77843_CHG_RESTART_THRESHOLD_100	0x00
+>> +#define MAX77843_CHG_RESTART_THRESHOLD_150	0x10
+>> +#define MAX77843_CHG_RESTART_THRESHOLD_200	0x20
+>> +#define MAX77843_CHG_RESTART_THRESHOLD_DISABLE	0x30
+>> +
+>> +/* MAX77843 CHG_CNFG_02 register */
+>> +#define MAX77843_CHG_FAST_CHG_CURRENT_MIN	100000
+>> +#define MAX77843_CHG_FAST_CHG_CURRENT_MAX	3150000
+>> +#define MAX77843_CHG_FAST_CHG_CURRENT_STEP	50000
+>> +#define MAX77843_CHG_FAST_CHG_CURRENT_MASK	0x3f
+>> +#define MAX77843_CHG_OTG_ILIMIT_500		(0x00 << 6)
+>> +#define MAX77843_CHG_OTG_ILIMIT_900		(0x01 << 6)
+>> +#define MAX77843_CHG_OTG_ILIMIT_1200		(0x02 << 6)
+>> +#define MAX77843_CHG_OTG_ILIMIT_1500		(0x03 << 6)
+>> +#define MAX77843_CHG_OTG_ILIMIT_MASK		0xc0
+>> +
+>> +/* MAX77843 CHG_CNFG_03 register */
+>> +#define MAX77843_CHG_TOP_OFF_CURRENT_MIN	125000
+>> +#define MAX77843_CHG_TOP_OFF_CURRENT_MAX	650000
+>> +#define MAX77843_CHG_TOP_OFF_CURRENT_STEP	75000
+>> +#define MAX77843_CHG_TOP_OFF_CURRENT_MASK	0x07
+>> +
+>> +/* MAX77843 CHG_CNFG_06 register */
+>> +#define MAX77843_CHG_WRITE_CAP_BLOCK		0x10
+>> +#define MAX77843_CHG_WRITE_CAP_UNBLOCK		0x0C
+>> +
+>> +/* MAX77843_CHG_CNFG_09_register */
+>> +#define MAX77843_CHG_INPUT_CURRENT_LIMIT_MIN	100000
+>> +#define MAX77843_CHG_INPUT_CURRENT_LIMIT_MAX	4000000
+>> +#define MAX77843_CHG_INPUT_CURRENT_LIMIT_REF	3367000
+>> +#define MAX77843_CHG_INPUT_CURRENT_LIMIT_STEP	33000
+>> +
+>> +#define MAX77843_MUIC_ADC			BIT(0)
+>> +#define MAX77843_MUIC_ADCERROR			BIT(2)
+>> +#define MAX77843_MUIC_ADC1K			BIT(3)
+>> +
+>> +#define MAX77843_MUIC_CHGTYP			BIT(0)
+>> +#define MAX77843_MUIC_CHGDETRUN			BIT(1)
+>> +#define MAX77843_MUIC_DCDTMR			BIT(2)
+>> +#define MAX77843_MUIC_DXOVP			BIT(3)
+>> +#define MAX77843_MUIC_VBVOLT			BIT(4)
+>> +
+>> +#define MAX77843_MUIC_VBADC			BIT(0)
+>> +#define MAX77843_MUIC_VDNMON			BIT(1)
+>> +#define MAX77843_MUIC_DNRES			BIT(2)
+>> +#define MAX77843_MUIC_MPNACK			BIT(3)
+>> +#define MAX77843_MUIC_MRXBUFOW			BIT(4)
+>> +#define MAX77843_MUIC_MRXTRF			BIT(5)
+>> +#define MAX77843_MUIC_MRXPERR			BIT(6)
+>> +#define MAX77843_MUIC_MRXRDY			BIT(7)
+>> +
+>> +/* MAX77843 INTSRCMASK register */
+>> +#define MAX77843_INTSRCMASK_CHGR		0
+>> +#define MAX77843_INTSRCMASK_SYS			1
+>> +#define MAX77843_INTSRCMASK_FG			2
+>> +#define MAX77843_INTSRCMASK_MUIC		3
+>> +
+>> +#define MAX77843_INTSRCMASK_CHGR_MASK          BIT(MAX77843_INTSRCMASK_CHGR)
+>> +#define MAX77843_INTSRCMASK_SYS_MASK           BIT(MAX77843_INTSRCMASK_SYS)
+>> +#define MAX77843_INTSRCMASK_FG_MASK            BIT(MAX77843_INTSRCMASK_FG)
+>> +#define MAX77843_INTSRCMASK_MUIC_MASK          BIT(MAX77843_INTSRCMASK_MUIC)
+>> +
+>> +#define MAX77843_INTSRC_MASK_MASK \
+>> +		(MAX77843_INTSRCMASK_MUIC_MASK | MAX77843_INTSRCMASK_FG_MASK | \
+>> +		MAX77843_INTSRCMASK_SYS_MASK | MAX77843_INTSRCMASK_CHGR_MASK)
+>> +
+>> +/* MAX77843 STATUS register*/
+>> +#define STATUS1_ADC_SHIFT			0
+>> +#define STATUS1_ADCERROR_SHIFT			6
+>> +#define STATUS1_ADC1K_SHIFT			7
+>> +#define STATUS2_CHGTYP_SHIFT			0
+>> +#define STATUS2_CHGDETRUN_SHIFT			3
+>> +#define STATUS2_DCDTMR_SHIFT			4
+>> +#define STATUS2_DXOVP_SHIFT			5
+>> +#define STATUS2_VBVOLT_SHIFT			6
+>> +#define STATUS3_VBADC_SHIFT			0
+>> +#define STATUS3_VDNMON_SHIFT			4
+>> +#define STATUS3_DNRES_SHIFT			5
+>> +#define STATUS3_MPNACK_SHIFT			6
+>> +
+>> +#define MAX77843_MUIC_STATUS1_ADC_MASK		(0x1f << STATUS1_ADC_SHIFT)
+>> +#define MAX77843_MUIC_STATUS1_ADCERROR_MASK	BIT(STATUS1_ADCERROR_SHIFT)
+>> +#define MAX77843_MUIC_STATUS1_ADC1K_MASK	BIT(STATUS1_ADC1K_SHIFT)
+>> +#define MAX77843_MUIC_STATUS2_CHGTYP_MASK	(0x7 << STATUS2_CHGTYP_SHIFT)
+>> +#define MAX77843_MUIC_STATUS2_CHGDETRUN_MASK	BIT(STATUS2_CHGDETRUN_SHIFT)
+>> +#define MAX77843_MUIC_STATUS2_DCDTMR_MASK	BIT(STATUS2_DCDTMR_SHIFT)
+>> +#define MAX77843_MUIC_STATUS2_DXOVP_MASK	BIT(STATUS2_DXOVP_SHIFT)
+>> +#define MAX77843_MUIC_STATUS2_VBVOLT_MASK	BIT(STATUS2_VBVOLT_SHIFT)
+>> +#define MAX77843_MUIC_STATUS3_VBADC_MASK	(0xf << STATUS3_VBADC_SHIFT)
+>> +#define MAX77843_MUIC_STATUS3_VDNMON_MASK	BIT(STATUS3_VDNMON_SHIFT)
+>> +#define MAX77843_MUIC_STATUS3_DNRES_MASK	BIT(STATUS3_DNRES_SHIFT)
+>> +#define MAX77843_MUIC_STATUS3_MPNACK_MASK	BIT(STATUS3_MPNACK_SHIFT)
+>> +
+>> +/* MAX77843 CONTROL register */
+>> +#define CONTROL1_COMP1SW_SHIFT			0
+>> +#define CONTROL1_COMP2SW_SHIFT			3
+>> +#define CONTROL1_IDBEN_SHIFT			7
+>> +#define CONTROL2_LOWPWR_SHIFT			0
+>> +#define CONTROL2_ADCEN_SHIFT			1
+>> +#define CONTROL2_CPEN_SHIFT			2
+>> +#define CONTROL2_ACC_DET_SHIFT			5
+>> +#define CONTROL2_USBCPINT_SHIFT			6
+>> +#define CONTROL2_RCPS_SHIFT			7
+>> +#define CONTROL3_JIGSET_SHIFT			0
+>> +#define CONTROL4_ADCDBSET_SHIFT			0
+>> +#define CONTROL4_USBAUTO_SHIFT			4
+>> +#define CONTROL4_FCTAUTO_SHIFT			5
+>> +#define CONTROL4_ADCMODE_SHIFT			6
+>> +
+>> +#define MAX77843_MUIC_CONTROL1_COMP1SW_MASK	(0x7 << CONTROL1_COMP1SW_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL1_COMP2SW_MASK	(0x7 << CONTROL1_COMP2SW_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL1_IDBEN_MASK	BIT(CONTROL1_IDBEN_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL2_LOWPWR_MASK	BIT(CONTROL2_LOWPWR_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL2_ADCEN_MASK	BIT(CONTROL2_ADCEN_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL2_CPEN_MASK	BIT(CONTROL2_CPEN_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL2_ACC_DET_MASK	BIT(CONTROL2_ACC_DET_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL2_USBCPINT_MASK	BIT(CONTROL2_USBCPINT_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL2_RCPS_MASK	BIT(CONTROL2_RCPS_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL3_JIGSET_MASK	(0x3 << CONTROL3_JIGSET_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL4_ADCDBSET_MASK	(0x3 << CONTROL4_ADCDBSET_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL4_USBAUTO_MASK	BIT(CONTROL4_USBAUTO_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL4_FCTAUTO_MASK	BIT(CONTROL4_FCTAUTO_SHIFT)
+>> +#define MAX77843_MUIC_CONTROL4_ADCMODE_MASK	(0x3 << CONTROL4_ADCMODE_SHIFT)
+>> +
+>> +/* MAX77843 switch port */
+>> +#define MAX77843_SIWTH_PORT \
+>> +(MAX77843_MUIC_CONTROL1_COMP1SW_MASK | MAX77843_MUIC_CONTROL1_COMP2SW_MASK)
+>> +
+>> +#define MAX77843_SWITCH_OPEN \
+>> +		(0 << CONTROL1_COMP1SW_SHIFT | 0 << CONTROL1_COMP2SW_SHIFT)
+>> +#define MAX77843_SWITCH_USB \
+>> +		(1 << CONTROL1_COMP1SW_SHIFT | 1 << CONTROL1_COMP2SW_SHIFT)
+>> +#define MAX77843_SWITCH_AUDIO \
+>> +		(2 << CONTROL1_COMP1SW_SHIFT | 2 << CONTROL1_COMP2SW_SHIFT)
+>> +#define MAX77843_SWITCH_UART \
+>> +		(3 << CONTROL1_COMP1SW_SHIFT | 3 << CONTROL1_COMP2SW_SHIFT)
+>> +#define MAX77843_SWITCH_AUX_USB \
+>> +		(4 << CONTROL1_COMP1SW_SHIFT | 4 << CONTROL1_COMP2SW_SHIFT)
+>> +#define MAX77843_SWITCH_AUX_UART \
+>> +		(5 << CONTROL1_COMP1SW_SHIFT | 5 << CONTROL1_COMP2SW_SHIFT)
+>> +
+>> +/* MAX77843 SAFEOUT LDO Control register */
+>> +#define SAFEOUTCTRL_SAFEOUT1_SHIFT		0
+>> +#define SAFEOUTCTRL_SAFEOUT2_SHIFT		2
+>> +#define SAFEOUTCTRL_ENSAFEOUT1_SHIFT		6
+>> +#define SAFEOUTCTRL_ENSAFEOUT2_SHIFT		7
+>> +
+>> +#define MAX77843_REG_SAFEOUTCTRL_ENSAFEOUT1 \
+>> +		BIT(SAFEOUTCTRL_ENSAFEOUT1_SHIFT)
+>> +#define MAX77843_REG_SAFEOUTCTRL_ENSAFEOUT2 \
+>> +		BIT(SAFEOUTCTRL_ENSAFEOUT2_SHIFT)
+>> +#define MAX77843_REG_SAFEOUTCTRL_SAFEOUT1_MASK \
+>> +		(0x3 << SAFEOUTCTRL_SAFEOUT1_SHIFT)
+>> +#define MAX77843_REG_SAFEOUTCTRL_SAFEOUT2_MASK \
+>> +		(0x3 << SAFEOUTCTRL_SAFEOUT2_SHIFT)
+>> +
+>> +struct max77843 {
+>> +	struct device *dev;
+>> +
+>> +	struct i2c_client *i2c;
+>> +	struct i2c_client *i2c_chg;
+>> +	struct i2c_client *i2c_fuel;
+>> +	struct i2c_client *i2c_muic;
+>> +
+>> +	struct regmap *regmap;
+>> +	struct regmap *regmap_chg;
+>> +	struct regmap *regmap_fuel;
+>> +	struct regmap *regmap_muic;
+>> +
+>> +	struct regmap_irq_chip_data *irq_data;
+>> +	struct regmap_irq_chip_data *irq_data_chg;
+>> +	struct regmap_irq_chip_data *irq_data_fuel;
+>> +	struct regmap_irq_chip_data *irq_data_muic;
+>> +
+>> +	int irq;
+>> +};
+>> +#endif /* __MAX77843_H__ */
+>>
+> Thanks,
+> Chanwoo Choi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
