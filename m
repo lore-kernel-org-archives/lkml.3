@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbbAWAn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 19:43:57 -0500
-Received: from mail-bl2on0148.outbound.protection.outlook.com ([65.55.169.148]:38259
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752235AbbAWAny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 19:43:54 -0500
-Message-ID: <1421973825.4961.253.camel@freescale.com>
-Subject: Re: [PATCH] powerpc/fsl_pci: Fix pci stack build bug with FRAME_WARN
-From: Scott Wood <scottwood@freescale.com>
-To: Kim Phillips <kim.phillips@freescale.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Wang Dongsheng <dongsheng.wang@freescale.com>,
-        Anton Blanchard <anton@samba.org>,
-        "Himangi Saraogi" <himangi774@gmail.com>,
-        Aaron Sierra <asierra@xes-inc.com>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Date: Thu, 22 Jan 2015 18:43:45 -0600
-In-Reply-To: <20150122182056.cc3436bd90a6cbba70da538a@freescale.com>
-References: <20150120140349.a7a9885065c241b555b91717@freescale.com>
-	 <1421800292.4961.215.camel@freescale.com>
-	 <20150121204844.fda3d4ab23a8226b6cdfdaf6@freescale.com>
-	 <1421895747.4961.232.camel@freescale.com>
-	 <20150122182056.cc3436bd90a6cbba70da538a@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1754747AbbAWAoj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 19:44:39 -0500
+Received: from domu-toccata.ens-lyon.fr ([140.77.166.138]:33277 "EHLO
+	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbbAWAof (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 19:44:35 -0500
+Date: Fri, 23 Jan 2015 01:44:29 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        akpm@linux-foundation.org, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCHv5 2/2] INPUT: Introduce generic trigger/LED pairs to
+ input LEDs
+Message-ID: <20150123004429.GD3123@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+	akpm@linux-foundation.org, jslaby@suse.cz,
+	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+References: <20141226232116.GA5069@type>
+ <20150123001038.GA2940@type.youpi.perso.aquilenet.fr>
+ <20150123003011.GC3123@type.youpi.perso.aquilenet.fr>
+ <1756449.aIckN0M451@dtor-glaptop>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: SN2PR10CA0027.namprd10.prod.outlook.com (25.160.12.165) To
- BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
-Authentication-Results: freescale.com; dkim=none (message not signed)
- header.d=none;freescale.com; dmarc=none action=none
- header.from=freescale.com;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR0301MB0728;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0728;
-X-Forefront-PRVS: 0465429B7F
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(377424004)(24454002)(42186005)(92566002)(50986999)(47776003)(46102003)(19580395003)(76176999)(19580405001)(86362001)(87976001)(50226001)(62966003)(77156002)(36756003)(40100003)(93886004)(23676002)(33646002)(103116003)(50466002)(2950100001)(110136001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Jan 2015 00:43:51.1694
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0728
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1756449.aIckN0M451@dtor-glaptop>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-22 at 18:20 -0600, Kim Phillips wrote:
-> On Wed, 21 Jan 2015 21:02:27 -0600
-> Scott Wood <scottwood@freescale.com> wrote:
-> 
-> > On Wed, 2015-01-21 at 20:48 -0600, Kim Phillips wrote:
-> > > fake_pci_bus()' version is static, so it's not on the stack.
+Dmitry Torokhov, le Thu 22 Jan 2015 16:37:02 -0800, a écrit :
+> On Friday, January 23, 2015 01:30:11 AM Samuel Thibault wrote:
+> > Samuel Thibault, le Fri 23 Jan 2015 01:10:38 +0100, a écrit :
+> > > Dmitry Torokhov, le Sun 04 Jan 2015 15:28:38 -0800, a écrit :
+> > > > > +	dev = cdev->dev->platform_data;
+> > > > 
+> > > > Umm, platform data is not the best place for storing this. Why not
+> > > > drvdata?
 > > > 
-> > > given that, maybe fsl_pcie_check_link()'s should be static too?
+> > > Ah, actually led_classdev already makes use of it, see the
+> > > device_create_with_groups call in led_classdev_register.
 > > 
-> > Oh.  How would you ensure that it's only called once at a time?  It
-> > doesn't look like this is only called during early boot.
-> > fsl_pcie_check_link() is called every time we do any config read through
-> > the normal interface.  This is also a concern for the call to
-> > early_read_config_dword().
+> > Actually I'd say it makes sense to be using the platform_data field:
+> > from the point of view of the led object, the input object is indeed
+> > something like a platform.
 > 
-> I really don't know how that works: that code has been there since
-> before linux was maintained in git.
+> No, platform data is what difefrentiates an arm board from another arm board, 
+> or an x86 or mips one.
 
-Regardless, now that it's been noticed we should figure it out.
-fsl_pcie_check_link() is using the early_*() functions in a context that
-is not early and thus appears to be breaking the assumption that
-fake_pci_bus() makes.
+>From the point of view of a device connected to that board, yes. But
+from the point of view of LEDs connected to a keyboard, the platform is
+the keyboard.
 
-fsl_pcie_check_link() is fairly recent, FWIW.
-
-> Below is the v2.
-
-Please send as a standalone patch so I don't have to edit all the
-discussion out of the commit message.
-
--Scott
-
-
+Samuel
