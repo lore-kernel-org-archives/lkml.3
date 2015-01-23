@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451AbbAWOKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:10:30 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52306 "EHLO
+	id S1755354AbbAWOKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:10:38 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52333 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391AbbAWOKY (ORCPT
+	with ESMTP id S1755447AbbAWOKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:10:24 -0500
+	Fri, 23 Jan 2015 09:10:31 -0500
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -20,9 +20,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?YH=20Chen=20=28=E9=99=B3=E6=98=B1=E8=B1=AA=29?= 
 	<yh.chen@mediatek.com>,
         Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 5/7] ARM: dts: mt8135: Add pericfg, infracfg and pmic wrapper nodes
-Date: Fri, 23 Jan 2015 15:10:00 +0100
-Message-Id: <1422022202-7526-6-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 6/7] ARM: dts: mt8135-evbp1: Add PMIC support
+Date: Fri, 23 Jan 2015 15:10:01 +0100
+Message-Id: <1422022202-7526-7-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
 References: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
@@ -34,73 +34,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the perisys, infracfg and pmic wrapper nodes to the
-MediaTek MT8135 dtsi file.
+The MT8135 eval board contains a MT6397 PMIC. This adds the
+corresponding device node to the dts file.
 
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- arch/arm/boot/dts/mt8135.dtsi | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ arch/arm/boot/dts/mt8135-evbp1.dts | 193 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 193 insertions(+)
 
-diff --git a/arch/arm/boot/dts/mt8135.dtsi b/arch/arm/boot/dts/mt8135.dtsi
-index 7d56a98..14ba41d 100644
---- a/arch/arm/boot/dts/mt8135.dtsi
-+++ b/arch/arm/boot/dts/mt8135.dtsi
-@@ -14,6 +14,7 @@
- 
- #include <dt-bindings/interrupt-controller/irq.h>
- #include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <dt-bindings/reset-controller/mt8135-resets.h>
- #include "skeleton64.dtsi"
- 
- / {
-@@ -86,6 +87,12 @@
- 			clock-frequency = <32000>;
- 			#clock-cells = <0>;
- 		};
-+
-+		clk_26m: clk26m {
-+			compatible = "fixed-clock";
-+			clock-frequency = <26000000>;
-+			#clock-cells = <0>;
-+		};
+diff --git a/arch/arm/boot/dts/mt8135-evbp1.dts b/arch/arm/boot/dts/mt8135-evbp1.dts
+index a5adf97..3be2c8b 100644
+--- a/arch/arm/boot/dts/mt8135-evbp1.dts
++++ b/arch/arm/boot/dts/mt8135-evbp1.dts
+@@ -23,3 +23,196 @@
+ 		reg = <0 0x80000000 0 0x40000000>;
  	};
- 
- 	soc {
-@@ -94,6 +101,33 @@
- 		compatible = "simple-bus";
- 		ranges;
- 
-+		infracfg: infracfg@10001000 {
-+			#reset-cells = <1>;
-+			#clock-cells = <1>;
-+			compatible = "mediatek,mt8135-infracfg";
-+			reg = <0 0x10001000 0 0x1000>;
-+		};
+ };
 +
-+		pericfg: pericfg@10003000 {
-+			#reset-cells = <1>;
-+			#clock-cells = <1>;
-+			compatible = "mediatek,mt8135-pericfg";
-+			reg = <0 0x10003000 0 0x1000>;
-+		};
++&pwrap {
++	pmic: mt6397 {
++		compatible = "mediatek,mt6397";
 +
-+		pwrap: pwrap@1000f000 {
-+			compatible = "mediatek,mt8135-pwrap";
-+			reg = <0 0x1000f000 0 0x1000>,
-+				<0 0x11017000 0 0x1000>;
-+			reg-names = "pwrap-base", "pwrap-bridge-base";
-+			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
-+			resets = <&infracfg MT8135_INFRA_PMIC_WRAP_RST>,
-+					<&pericfg MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
-+			reset-names = "pwrap", "pwrap-bridge";
-+			clocks = <&clk_26m>, <&clk_26m>;
-+			clock-names = "spi", "wrap";
-+		};
++		mt6397regulator: mt6397regulator {
++			compatible = "mediatek,mt6397-regulator";
 +
- 		timer: timer@10008000 {
- 			compatible = "mediatek,mt8135-timer",
- 					"mediatek,mt6577-timer";
++			mt6397_vpca15_reg: buck_vpca15 {
++				regulator-compatible = "buck_vpca15";
++				regulator-name = "vpca15";
++				regulator-min-microvolt = < 850000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-ramp-delay = <12500>;
++				regulator-always-on;
++			};
++
++			mt6397_vpca7_reg: buck_vpca7 {
++				regulator-compatible = "buck_vpca7";
++				regulator-name = "vpca7";
++				regulator-min-microvolt = < 850000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-ramp-delay = <12500>;
++				regulator-always-on;
++			};
++
++			mt6397_vsramca15_reg: buck_vsramca15 {
++				regulator-compatible = "buck_vsramca15";
++				regulator-name = "vsramca15";
++				regulator-min-microvolt = < 850000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-ramp-delay = <12500>;
++				regulator-always-on;
++			};
++
++			mt6397_vsramca7_reg: buck_vsramca7 {
++				regulator-compatible = "buck_vsramca7";
++				regulator-name = "vsramca7";
++				regulator-min-microvolt = < 850000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-ramp-delay = <12500>;
++				regulator-always-on;
++			};
++
++			mt6397_vcore_reg: buck_vcore {
++				regulator-compatible = "buck_vcore";
++				regulator-name = "vcore";
++				regulator-min-microvolt = < 850000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-ramp-delay = <12500>;
++				regulator-always-on;
++			};
++
++			mt6397_vgpu_reg: buck_vgpu {
++				regulator-compatible = "buck_vgpu";
++				regulator-name = "vgpu";
++				regulator-min-microvolt = < 700000>;
++				regulator-max-microvolt = <1350000>;
++				regulator-ramp-delay = <12500>;
++				regulator-enable-ramp-delay = <115>;
++			};
++
++			mt6397_vdrm_reg: buck_vdrm {
++				regulator-compatible = "buck_vdrm";
++				regulator-name = "vdrm";
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <1400000>;
++				regulator-ramp-delay = <12500>;
++				regulator-always-on;
++			};
++
++			mt6397_vio18_reg: buck_vio18 {
++				regulator-compatible = "buck_vio18";
++				regulator-name = "vio18";
++				regulator-min-microvolt = <1620000>;
++				regulator-max-microvolt = <1980000>;
++				regulator-ramp-delay = <12500>;
++				regulator-always-on;
++			};
++
++			mt6397_vtcxo_reg: ldo_vtcxo {
++				regulator-compatible = "ldo_vtcxo";
++				regulator-name = "vtcxo";
++				regulator-always-on;
++			};
++
++			mt6397_va28_reg: ldo_va28 {
++				regulator-compatible = "ldo_va28";
++				regulator-name = "va28";
++				regulator-always-on;
++			};
++
++			mt6397_vcama_reg: ldo_vcama {
++				regulator-compatible = "ldo_vcama";
++				regulator-name = "vcama";
++				regulator-min-microvolt = <1500000>;
++				regulator-max-microvolt = <2800000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vio28_reg: ldo_vio28 {
++				regulator-compatible = "ldo_vio28";
++				regulator-name = "vio28";
++				regulator-always-on;
++			};
++
++			mt6397_vusb_reg: ldo_vusb {
++				regulator-compatible = "ldo_vusb";
++				regulator-name = "vusb";
++			};
++
++			mt6397_vmc_reg: ldo_vmc {
++				regulator-compatible = "ldo_vmc";
++				regulator-name = "vmc";
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vmch_reg: ldo_vmch {
++				regulator-compatible = "ldo_vmch";
++				regulator-name = "vmch";
++				regulator-min-microvolt = <3000000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vemc_3v3_reg: ldo_vemc3v3 {
++				regulator-compatible = "ldo_vemc3v3";
++				regulator-name = "vemc_3v3";
++				regulator-min-microvolt = <3000000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vgp1_reg: ldo_vgp1 {
++				regulator-compatible = "ldo_vgp1";
++				regulator-name = "vcamd";
++				regulator-min-microvolt = <1220000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <240>;
++			};
++
++			mt6397_vgp2_reg: ldo_vgp2 {
++				regulator-compatible = "ldo_vgp2";
++				regulator-name = "vcamio";
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vgp3_reg: ldo_vgp3 {
++				regulator-compatible = "ldo_vgp3";
++				regulator-name = "vcamaf";
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vgp4_reg: ldo_vgp4 {
++				regulator-compatible = "ldo_vgp4";
++				regulator-name = "vgp4";
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vgp5_reg: ldo_vgp5 {
++				regulator-compatible = "ldo_vgp5";
++				regulator-name = "vgp5";
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <3000000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vgp6_reg: ldo_vgp6 {
++				regulator-compatible = "ldo_vgp6";
++				regulator-name = "vgp6";
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++
++			mt6397_vibr_reg: ldo_vibr {
++				regulator-compatible = "ldo_vibr";
++				regulator-name = "vibr";
++				regulator-min-microvolt = <1300000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-enable-ramp-delay = <218>;
++			};
++		};
++	};
++};
 -- 
 2.1.4
 
