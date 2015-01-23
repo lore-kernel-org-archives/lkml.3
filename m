@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724AbbAWPpK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:45:10 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:51430 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755492AbbAWPpF (ORCPT
+	id S1755634AbbAWPmZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:42:25 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41961 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545AbbAWPmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:45:05 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Gregory Clement <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Cc: linux-mtd@lists.infradead.org, Boris Brezillon <boris@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Lior Amsalem <alior@marvell.com>, linux-kernel@vger.kernel.org,
-        Sudhakar Gundubogula <sudhakar@marvell.com>,
-        Seif Mazareeb <seif@marvell.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 2/2] ARM: mvebu: a385-db-ap: Enable the NAND
-Date: Fri, 23 Jan 2015 16:41:43 +0100
-Message-Id: <1422027703-3763-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1422027703-3763-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1422027703-3763-1-git-send-email-maxime.ripard@free-electrons.com>
+	Fri, 23 Jan 2015 10:42:22 -0500
+Date: Fri, 23 Jan 2015 15:42:14 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH repost 03/16] arm64/uaccess: fix sparse errors
+Message-ID: <20150123154213.GB31460@arm.com>
+References: <1419499661-8566-1-git-send-email-mst@redhat.com>
+ <1419499661-8566-4-git-send-email-mst@redhat.com>
+ <20150123153316.GB9557@e104818-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150123153316.GB9557@e104818-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Armada 385 Access Point Development Board has a 1GB NAND SLC chip from
-Micron as its main storage. Enable it.
+On Fri, Jan 23, 2015 at 03:33:16PM +0000, Catalin Marinas wrote:
+> On Thu, Dec 25, 2014 at 09:28:41AM +0000, Michael S. Tsirkin wrote:
+> > virtio wants to read bitwise types from userspace using get_user.  At the
+> > moment this triggers sparse errors, since the value is passed through an
+> > integer.
+> > 
+> > Fix that up using __force.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > 
+> > Acked-by: Will Deacon <will.deacon@arm.com>
+> 
+> I'm not sure who's going to merge this series. In the meantime, I
+> cherry-picked the arm64 patch. Thanks.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/boot/dts/armada-385-db-ap.dts | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+I think there was a pull request for the whole series that went to Arnd, so
+I don't think we need to do anything on the arm64 side.
 
-diff --git a/arch/arm/boot/dts/armada-385-db-ap.dts b/arch/arm/boot/dts/armada-385-db-ap.dts
-index b891b4c897f5..ee648fb19075 100644
---- a/arch/arm/boot/dts/armada-385-db-ap.dts
-+++ b/arch/arm/boot/dts/armada-385-db-ap.dts
-@@ -130,6 +130,19 @@
- 				phy-mode = "rgmii-id";
- 			};
- 
-+			nfc: flash@d0000 {
-+				status = "okay";
-+				#address-cells = <1>;
-+				#size-cells = <1>;
-+
-+				num-cs = <1>;
-+				nand-ecc-strength = <4>;
-+				nand-ecc-step-size = <512>;
-+				marvell,nand-keep-config;
-+				marvell,nand-enable-arbiter;
-+				nand-on-flash-bbt;
-+			};
-+
- 			usb3@f0000 {
- 				status = "okay";
- 				usb-phy = <&usb3_phy>;
--- 
-2.2.2
-
+Will
