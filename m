@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992AbbAWIXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:23:54 -0500
-Received: from mga01.intel.com ([192.55.52.88]:43148 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884AbbAWIXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:23:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,453,1418112000"; 
-   d="scan'208";a="666341287"
-Date: Fri, 23 Jan 2015 10:23:48 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] phy: ulpi: add driver for TI TUSB1210
-Message-ID: <20150123082348.GC30522@kuha.fi.intel.com>
-References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1421745502-169447-4-git-send-email-heikki.krogerus@linux.intel.com>
- <20150120154539.GB8988@saruman>
- <20150121091749.GB22716@kuha.fi.intel.com>
- <20150121113958.GC22716@kuha.fi.intel.com>
- <20150122205124.GG22288@saruman.tx.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754154AbbAWIZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:25:41 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:54938 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849AbbAWIZj convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Fri, 23 Jan 2015 03:25:39 -0500
+Message-Id: <54C2139202000078000588F7@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Fri, 23 Jan 2015 08:25:38 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Peter Zijlstra" <peterz@infradead.org>, <mingo@redhat.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: sched/fair: avoid using uninitialized variable in
+ preferred_group_nid()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20150122205124.GG22288@saruman.tx.rr.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 02:51:24PM -0600, Felipe Balbi wrote:
-> On Wed, Jan 21, 2015 at 01:39:58PM +0200, Heikki Krogerus wrote:
-> > Hi,
-> > 
-> > On Wed, Jan 21, 2015 at 11:17:49AM +0200, Heikki Krogerus wrote:
-> > > On Tue, Jan 20, 2015 at 09:45:39AM -0600, Felipe Balbi wrote:
-> > > > > diff --git a/drivers/phy/ulpi/tusb1210.c b/drivers/phy/ulpi/tusb1210.c
-> > > > > new file mode 100644
-> > > > > index 0000000..ac77f98
-> > > > > --- /dev/null
-> > > > > +++ b/drivers/phy/ulpi/tusb1210.c
-> > > > 
-> > > > do you really need this extra ulpi directory ?
-> > > > 
-> > > > I wonder if phy-tusb1210.c as a name would be enough.
-> > > 
-> > > IMO grouping the ULPI PHY drivers and other ULPI bus code into
-> > > separate folder from the start is the right thing to do.
-> > 
-> > A correction to this comment. I probable don't need this folder. Like
-> > you said, phy-tusb1210.c should be enough..
-> > 
-> > <snip>
-> > 
-> > > > In fact, we might decide to add an entire ULPI bus, eventually, though
-> > > > I'm still considering if there's any benefit to that.
-> > > 
-> > > I don't think I understand this comment? ULPI bus is what I'm
-> > > introducing in this set (the first patch in it)?
-> > 
-> > ..I talked with Alex about this :). So I think the bus belongs under
-> > drivers/usb/core/ instead of driver/phy/. It's not really tied to the
-> > Generic PHY framework in any way, but ULPI is of course USB specific.
-> 
-> right, maybe drivers/usb/ulpi or maybe drivers/ulpi, and have
-> phy-tusb1201 register under that ulpi_bus_type instead of
-> platform_bus_type, but still use drivers/phy to register itself a phy
-> provider ;-)
+At least some gcc versions - validly afaict - warn about potentially
+using max_group uninitialized: There's no way the compiler can prove
+that the body of the conditional where it and max_faults get set/
+updated gets executed; in fact, without knowing all the details of
+other scheduler code, I can't prove this either.
 
-So just for the record: This driver does not register under
-platform_bus_type bus but instead already under ulpi_bus_type.
+Generally the necessary change would appear to be to clear max_group
+prior to entering the inner loop, and break out of the outer loop when
+it ends up being all clear after the inner one. This, however, seems
+inefficient, and afaict the same effect can be achieved by exiting the
+outer loop when max_faults is still zero after the inner loop. For the
+compiler's sake, mark max_group uninitialized, as we're now able to
+prove it's not actually being used uninitalized anymore.
 
-I'll prepare new version out of these today and try to figure out
-proper place for the code (maybe drivers/usb/ulpi?).
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- 3.19-rc5/kernel/sched/fair.c
++++ 3.19-rc5-sched-fair-preferred-group-nid/kernel/sched/fair.c
+@@ -1730,7 +1730,7 @@ static int preferred_group_nid(struct ta
+ 	nodes = node_online_map;
+ 	for (dist = sched_max_numa_distance; dist > LOCAL_DISTANCE; dist--) {
+ 		unsigned long max_faults = 0;
+-		nodemask_t max_group;
++		nodemask_t uninitialized_var(max_group);
+ 		int a, b;
+ 
+ 		/* Are there nodes at this distance from each other? */
+@@ -1764,6 +1764,8 @@ static int preferred_group_nid(struct ta
+ 			}
+ 		}
+ 		/* Next round, evaluate the nodes within max_group. */
++		if (!max_faults)
++			break;
+ 		nodes = max_group;
+ 	}
+ 	return nid;
 
 
-Cheers,
 
--- 
-heikki
