@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564AbbAWKuw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 05:50:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43180 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938AbbAWKut (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 05:50:49 -0500
-Message-ID: <1422010236.3017.12.camel@pengutronix.de>
-Subject: Re: [PATCH v2 0/7] imx-drm: ipuv3-crtc: Implement mode_fixup
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Liu Ying <Ying.Liu@freescale.com>
-Cc: Steve Longerbeam <slongerbeam@gmail.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        David Airlie <airlied@linux.ie>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
-        Jiada Wang <jiada_wang@mentor.com>,
-        Steve Longerbeam <steve_longerbeam@mentor.com>
-Date: Fri, 23 Jan 2015 11:50:36 +0100
-In-Reply-To: <20150123025643.GA11412@victor>
-References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
-	 <1420655248.3191.73.camel@pengutronix.de> <20150123025643.GA11412@victor>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754776AbbAWKvF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 05:51:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36731 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754345AbbAWKuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 05:50:51 -0500
+Date: Fri, 23 Jan 2015 11:50:49 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Howells <dhowells@redhat.com>
+cc: Rusty Russell <rusty@rustcorp.com.au>, Jonathan Corbet <corbet@lwn.net>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] MODSIGN: /proc/keys is not unconditionally available
+In-Reply-To: <11415.1421965730@warthog.procyon.org.uk>
+Message-ID: <alpine.LNX.2.00.1501231150380.10817@pobox.suse.cz>
+References: <alpine.LNX.2.00.1501222142160.10817@pobox.suse.cz> <alpine.LNX.2.00.1501131555510.4162@pobox.suse.cz> <11415.1421965730@warthog.procyon.org.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Liu,
+On Thu, 22 Jan 2015, David Howells wrote:
 
-Am Freitag, den 23.01.2015, 10:56 +0800 schrieb Liu Ying:
-> Hi,
+> > > Documentation/module-signing.txt file is referring to /proc/keys file in 
+> > > order to view all keys contained in the kernel's keyring. That file is not 
+> > > universally avialble when CONFIG_KEYS is enabled, which is confusing. The 
+> > > fact that the option needed for this procfs interface to exist contains 
+> > > "_DEBUG_" in its name makes it even more confusing. Document this fact.
+> > > 
+> > > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> > 
+> > Noone complained, but it doesn't seem to have made its way to linux-next 
+> > either. I am now pushing it out to trivial.git.
 > 
-> It looks that the below commit makes my Hannstar XGA LVDS panel stop working
-> on the i.MX6DL SabreSD board.  Any idea?
-> 
-> commit eb10d6355532def3a74aaabd115e2373cca70b9d
-> Author: Steve Longerbeam <slongerbeam@gmail.com>
-> Date:   Thu Dec 18 18:00:24 2014 -0800
-> 
-> imx-drm: encoder prepare/mode_set must use adjusted mode
-> 
-> The encoder ->prepare() and ->mode_set() methods need to use the
-> hw adjusted mode, not the original mode.
-> 
-> Signed-off-by: Steve Longerbeam <steve_longerbeam@mentor.com>
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> 
-> Regards,
-> Liu Ying
+> Sorry, I should've dealt with this.  What we actually need to do is make
+> /proc/keys unconditional as it's used by libkeyutils.
 
-What are this panel timings? The adjustment should increase the vertical
-back porch by up to two lines (so it is at least two lines), reducing
-the front porch or vsync length by the same amount. Does this panel use
-the HSYNC/VSYNC signals embedded in the LVDS stream?
+OK, I am dropping the documentation update. Thanks,
 
-regards
-Philipp
-
+-- 
+Jiri Kosina
+SUSE Labs
