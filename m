@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480AbbAWQDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:03:42 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:48958 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464AbbAWQDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:03:39 -0500
-Date: Fri, 23 Jan 2015 11:03:35 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz, cl@linux.com
-Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
- remove unnecessary soft limit tree node test'
-Message-ID: <20150123160335.GB32592@phnom.home.cmpxchg.org>
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
- <20150123050802.GB22751@roeck-us.net>
- <20150123141817.GA22926@phnom.home.cmpxchg.org>
- <54C26CE3.2060001@roeck-us.net>
+	id S1755687AbbAWQFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:05:17 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:62487 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085AbbAWQFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 11:05:14 -0500
+Message-ID: <54C27137.5010405@gmail.com>
+Date: Fri, 23 Jan 2015 11:05:11 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C26CE3.2060001@roeck-us.net>
+To: Daniel Borkmann <dborkman@redhat.com>, Sun Paul <paulrbk@gmail.com>
+CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fwd: Question on SCTP ABORT chunk is generated when the association_max_retrans
+ is reached
+References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com> <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com> <54C23581.9060809@redhat.com>
+In-Reply-To: <54C23581.9060809@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 07:46:43AM -0800, Guenter Roeck wrote:
-> I added some debugging. First, the problem is only seen with SMP disabled.
-> Second, there is only one online node.
+On 01/23/2015 06:50 AM, Daniel Borkmann wrote:
+> Hi,
 > 
-> Without your patch:
+> On 01/23/2015 11:25 AM, Sun Paul wrote:
+> ...
+>> I would like to check the behave in LKSCTP.
+>>
+>> we are running DIAMETER message over SCTP, and we have set the
+>> parameter "net.sctp.association_max_retrans = 4" in the LinuxOS.
+>>
+>> We noticed that when remote peer have retry to send the same request
+>> for 4 times, the LKSCTP will initiate an ABORT chunk with reason
+>> "association exceeded its max_retrans count".
+>>
+>> We would like to know whether this is the correct behavior? is there
+>> any other option that we can alter in order to avoid the ABORT chunk
+>> being sent?
 > 
-> Node 0 online 1 high 1 memory 1 cpu 0 normal 1 tmp 0 rtpn c00000003d240600
-> Node 1 online 0 high 0 memory 0 cpu 0 normal 0 tmp -1 rtpn c00000003d240640
-> Node 2 online 0 high 0 memory 0 cpu 0 normal 0 tmp -1 rtpn c00000003d240680
-> 
-> [ and so on up to node 255 ]
-> 
-> With your patch:
-> 
-> Node 0 online 1 high 1 memory 1 cpu 0 normal 1 rtpn c00000003d240600
-> Unable to handle kernel paging request for data at address 0x0000af50
-> Faulting instruction address: 0xc000000000895a3c
-> Oops: Kernel access of bad area, sig: 11 [#1]
-> 
-> The log message is after the call to kzalloc_node.
-> 
-> So it doesn't look like the fallback is working, at least not with ppc64
-> in non-SMP mode.
+> I don't recall the RFC saying to send an ABORT, but let me double
+> check in the mean time.
 
-Yep, and Christoph confirmed that it's not meant to work like that.
-The patch is flawed.
+The RFC is silent on the matter.  The abort got added in 3.8 so
+it's been there for a while.
 
-Thanks for testing and sorry for breaking your setup.
+
+> 
+> Hmm, untested, but could you try something like that?
+> 
+> diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
+> index fef2acd..5ce198d 100644
+> --- a/net/sctp/sm_sideeffect.c
+> +++ b/net/sctp/sm_sideeffect.c
+> @@ -584,7 +584,8 @@ static void sctp_cmd_assoc_failed(sctp_cmd_seq_t *commands,
+>          sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP,
+>                  SCTP_ULPEVENT(event));
+> 
+> -    if (asoc->overall_error_count >= asoc->max_retrans) {
+> +    if (asoc->overall_error_count >= asoc->max_retrans &&
+> +        error != SCTP_ERROR_NO_ERROR) {
+>          abort = sctp_make_violation_max_retrans(asoc, chunk);
+>          if (abort)
+>              sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+
+
+This would pretty much stop all ABORTs due to excessive rtx.  Might
+as well take the code out :).
+
+I was a bit concerned about this ABORT when it went in.
+
+-vlad
