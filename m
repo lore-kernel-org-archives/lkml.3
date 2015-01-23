@@ -1,296 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbbAWHQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 02:16:11 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:31638 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009AbbAWHQJ (ORCPT
+	id S1753221AbbAWHS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 02:18:27 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:62821 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632AbbAWHSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 02:16:09 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f126d000001e9a-25-54c1f4a4c621
-Content-transfer-encoding: 8BIT
-Message-id: <1421997364.27149.5.camel@AMDC1943>
-Subject: Re: [PATCH 1/6] mfd: max77843: Add max77843 MFD driver core driver
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: Jaewon Kim <jaewon02.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pm@vger.kernel.org,
-        Inki Dae <inki.dae@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>
-Date: Fri, 23 Jan 2015 08:16:04 +0100
-In-reply-to: <54C1ED09.1080607@samsung.com>
-References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
- <1421989367-32721-2-git-send-email-jaewon02.kim@samsung.com>
- <CAJKOXPfRYhJNUAE=W3zPWvyza9k_YA=hu4KjLRuLh7kie3guQA@mail.gmail.com>
- <54C1ED09.1080607@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xK7pLvhwMMVg/09Di9Kdt7BZTHz5h
-	s7j+5Tmrxfwj51gt+t8sZLU492olo8Wk+xNYLHY0HGG1uP/1KKPF5V1z2Cw+9x5htFh6/SKT
-	xYTpa1ksWvceYbc4vbvEgd9jzbw1jB6X+3qZPFYu/8LmsWlVJ5vHnWt72Dz6tqxi9Pi8SS6A
-	PYrLJiU1J7MstUjfLoEr48ja+0wFK30rnj16z9jA+Nasi5GDQ0LAROLrFvUuRk4gU0ziwr31
-	bF2MXBxCAksZJfrWfmUESfAKCEr8mHyPBaSeWUBe4silbJAws4C6xKR5i5gh6j8zSqz618sE
-	Ua8v8WnOdXaQemEBb4nlTX4gYTYBY4nNy5ewgdgiQL0773SC9TILfGKW2P1mNTNIgkVAVWLV
-	9CusIDangLbEscNtrBAL3jNKHG/4zwZxtLJEY7/bBEaBWUjOm4Vw3iwk5y1gZF7FKJpamlxQ
-	nJSea6hXnJhbXJqXrpecn7uJERJDX3YwLj5mdYhRgINRiYd3x9ODIUKsiWXFlbmHGCU4mJVE
-	eLsfAYV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwJq7Z0DG/9ULqvzjPbqb7keafN6xcLfH7dUY4
-	75erd8+qmU2Vev5pe/9JoXARJYsEa5kWi4gfJze02e+Z7NLhqO95+K5fqIqYQfHD5W7Tdnv8
-	c1d4w97nvGbztyyn97fSa0xCvFZ6bF41o/7oXJcotQ2rP+ffOn7ZzH7aEb94nYz3zlsjJvd+
-	UmIpzkg01GIuKk4EAPp3My5/AgAA
+	Fri, 23 Jan 2015 02:18:25 -0500
+Message-ID: <54C1F5BF.30105@gmail.com>
+Date: Thu, 22 Jan 2015 23:18:23 -0800
+From: Alexander Duyck <alexander.duyck@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Hayato Momma <h-momma@ce.jp.nec.com>
+Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
+ mode control
+References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>	<874mrlu18e.fsf@nemi.mork.no>	<7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>	<F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>	<7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>	<F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>	<7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>	<063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>	<7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>	<F6FB0E698C9B3143BDF729DF222866469129BC03@ORSMSX110.amr.corp.intel.com>	<063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>	<F6FB0E698C9B3143BDF729DF222866469129BFFD@ORSMSX110.amr.corp.intel.com>	<87bnlqpq6v.fsf@nemi.mork.no>	<F6FB0E698C9B3143BDF729DF222866469129C09C@ORSMSX110.amr.corp.intel.com> <7F861DC0615E0C47A872E6F3C5FCDDBD05E0B6B1@BPXM14GP.gisp.nec.co.jp>
+In-Reply-To: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0B6B1@BPXM14GP.gisp.nec.co.jp>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2015-01-23 at 15:41 +0900, Beomho Seo wrote:
-> On 01/23/2015 03:32 PM, Krzysztof Kozlowski wrote:
-> > 2015-01-23 6:02 GMT+01:00 Jaewon Kim <jaewon02.kim@samsung.com>:
-> >> This patch adds MAX77843 core/irq driver to support PMIC,
-> >> MUIC(Micro USB Interface Controller), Charger, Fuel Gauge,
-> >> LED and Haptic device.
-> >>
-> >> Cc: Lee Jones <lee.jones@linaro.org>
-> >> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-> >> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-> >> ---
-> >>  drivers/mfd/Kconfig                  |   14 ++
-> >>  drivers/mfd/Makefile                 |    1 +
-> >>  drivers/mfd/max77843.c               |  241 ++++++++++++++++++++
-> >>  include/linux/mfd/max77843-private.h |  410 ++++++++++++++++++++++++++++++++++
-> >>  4 files changed, 666 insertions(+)
-> >>  create mode 100644 drivers/mfd/max77843.c
-> >>  create mode 100644 include/linux/mfd/max77843-private.h
-> >>
-> >> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> >> index 2e6b731..0c67c79 100644
-> >> --- a/drivers/mfd/Kconfig
-> >> +++ b/drivers/mfd/Kconfig
-> >> @@ -442,6 +442,20 @@ config MFD_MAX77693
-> >>           additional drivers must be enabled in order to use the functionality
-> >>           of the device.
-> >>
-> >> +config MFD_MAX77843
-> >> +       bool "Maxim Semiconductor MAX77843 PMIC Support"
-> >> +       depends on I2C=y
-> >> +       select MFD_CORE
-> >> +       select REGMAP_I2C
-> >> +       select REGMAP_IRQ
-> >> +       help
-> >> +         Say yes here to add support for Maxim Semiconductor MAX77843.
-> >> +         This is companion Power Management IC with LEDs, Haptic, Charger,
-> >> +         Fuel Gauge, MUIC(Micro USB Interface Controller) controls on chip.
-> >> +         This driver provides common support for accessing the device;
-> >> +         additional drivers must be enabled in order to use the functionality
-> >> +         of the device.
-> >> +
-> >>  config MFD_MAX8907
-> >>         tristate "Maxim Semiconductor MAX8907 PMIC Support"
-> >>         select MFD_CORE
-> >> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> >> index 53467e2..fe4f75c 100644
-> >> --- a/drivers/mfd/Makefile
-> >> +++ b/drivers/mfd/Makefile
-> >> @@ -117,6 +117,7 @@ obj-$(CONFIG_MFD_DA9063)    += da9063.o
-> >>  obj-$(CONFIG_MFD_MAX14577)     += max14577.o
-> >>  obj-$(CONFIG_MFD_MAX77686)     += max77686.o
-> >>  obj-$(CONFIG_MFD_MAX77693)     += max77693.o
-> >> +obj-$(CONFIG_MFD_MAX77843)     += max77843.o
-> >>  obj-$(CONFIG_MFD_MAX8907)      += max8907.o
-> >>  max8925-objs                   := max8925-core.o max8925-i2c.o
-> >>  obj-$(CONFIG_MFD_MAX8925)      += max8925.o
-> >> diff --git a/drivers/mfd/max77843.c b/drivers/mfd/max77843.c
-> >> new file mode 100644
-> >> index 0000000..d7f8b76
-> >> --- /dev/null
-> >> +++ b/drivers/mfd/max77843.c
-> >> @@ -0,0 +1,241 @@
-> >> +/*
-> >> + * max77843.c - MFD core driver for the Maxim MAX77843
-> >> + *
-> >> + * Copyright (C) 2014 Samsung Electrnoics
-> >> + * Author: Jaewon Kim <jaewon02.kim@samsung.com>
-> >> + *
-> >> + * This program is free software; you can redistribute it and/or modify
-> >> + * it under the terms of the GNU General Public License as published by
-> >> + * the Free Software Foundation; either version 2 of the License, or
-> >> + * (at your option) any later version.
-> >> + */
-> >> +
-> >> +#include <linux/err.h>
-> >> +#include <linux/i2c.h>
-> >> +#include <linux/init.h>
-> >> +#include <linux/interrupt.h>
-> >> +#include <linux/module.h>
-> >> +#include <linux/mfd/core.h>
-> >> +#include <linux/mfd/max77843-private.h>
-> >> +#include <linux/of_device.h>
-> >> +#include <linux/platform_device.h>
-> >> +
-> >> +static const struct mfd_cell max77843_devs[] = {
-> >> +       {
-> >> +               .name = "max77843-muic",
-> >> +               .of_compatible = "maxim,max77843-muic",
-> >> +       }, {
-> >> +               .name = "max77843-regulator",
-> >> +               .of_compatible = "maxim,max77843-regulator",
-> >> +       }, {
-> >> +               .name = "max77843-charger",
-> >> +               .of_compatible = "maxim,max77843-charger"
-> >> +       }, {
-> >> +               .name = "max77843-fuelgauge",
-> >> +               .of_compatible = "maxim,max77843-fuelgauge",
-> >> +       },
-> >> +};
-> >> +
-> >> +static const struct regmap_config max77843_charger_regmap_config = {
-> >> +       .reg_bits       = 8,
-> >> +       .val_bits       = 8,
-> >> +       .max_register   = MAX77843_CHG_REG_END,
-> >> +};
-> >> +
-> >> +static const struct regmap_config max77843_regmap_config = {
-> >> +       .reg_bits       = 8,
-> >> +       .val_bits       = 8,
-> >> +       .max_register   = MAX77843_SYS_REG_END,
-> >> +};
-> >> +
-> >> +static const struct regmap_irq max77843_irqs[] = {
-> >> +       /* TOPSYS interrupts */
-> >> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSUVLO_INT, },
-> >> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSOVLO_INT, },
-> >> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TSHDN_INT, },
-> >> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TM_INT, },
-> >> +};
-> >> +
-> >> +static const struct regmap_irq_chip max77843_irq_chip = {
-> >> +       .name           = "max77843",
-> >> +       .status_base    = MAX77843_SYS_REG_SYSINTSRC,
-> >> +       .mask_base      = MAX77843_SYS_REG_SYSINTMASK,
-> >> +       .mask_invert    = false,
-> >> +       .num_regs       = 1,
-> >> +       .irqs           = max77843_irqs,
-> >> +       .num_irqs       = ARRAY_SIZE(max77843_irqs),
-> >> +};
-> >> +
-> >> +static int max77843_chg_init(struct max77843 *max77843)
-> >> +{
-> > 
-> > Could this function be moved to the charger driver? This way the
-> > driver will manage its own resources instead of depending on parent
-> > MFD driver.
-> > 
-> 
-> Charger regulator and Charger share same resources.
-> So I include this function core driver.
+On 01/22/2015 04:32 PM, Hiroshi Shimamoto wrote:
+>> Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
+>>> "Skidmore, Donald C" <donald.c.skidmore@intel.com> writes:
+>>>
+>>>> My hang up is more related to: without the nob to enable it (off by
+>>>> default) we are letting one VF dictate policy for all the other VFs
+>>>> and the PF.  If one VF needs to be in promiscuous multicast so is
+>>>> everyone else.  Their stacks now needs to deal with all the extra
+>>>> multicast packets.  As you point out this might not be a direct
+>>>> concern for isolation in that the VM could have 'chosen' to join any
+>>>> Multicast group and seen this traffic.  My concern over isolation is
+>>>> one VF has chosen that all the other VM now have to see this multicast
+>>>> traffic.
+>>> Apologies if this question is stupid, but I just have to ask about stuff I don't
+>>> understand...
+>>>
+>>> Looking at the proposed implementation, the promiscous multicast flag
+>>> seems to be a per-VF flag:
+>>>
+>>> +int ixgbe_ndo_set_vf_mc_promisc(struct net_device *netdev, int vf, bool
+>>> +setting) {
+>>> +	struct ixgbe_adapter *adapter = netdev_priv(netdev);
+>>> +	struct ixgbe_hw *hw = &adapter->hw;
+>>> +	u32 vmolr;
+>>> +
+>>> +	if (vf >= adapter->num_vfs)
+>>> +		return -EINVAL;
+>>> +
+>>> +	adapter->vfinfo[vf].mc_promisc_enabled = setting;
+>>> +
+>>> +	vmolr = IXGBE_READ_REG(hw, IXGBE_VMOLR(vf));
+>>> +	if (setting) {
+>>> +		e_info(drv, "VF %u: enabling multicast promiscuous\n", vf);
+>>> +		vmolr |= IXGBE_VMOLR_MPE;
+>>> +	} else {
+>>> +		e_info(drv, "VF %u: disabling multicast promiscuous\n", vf);
+>>> +		vmolr &= ~IXGBE_VMOLR_MPE;
+>>> +	}
+>>> +
+>>> +	IXGBE_WRITE_REG(hw, IXGBE_VMOLR(vf), vmolr);
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>>
+>>> I haven't read the data sheet, but I took a quick look at the excellent high
+>>> level driver docs:
+>>> http://www.intel.com/content/dam/doc/design-guide/82599-sr-iov-driver-
+>>> companion-guide.pdf
+>>>
+>>> It mentions "Multicast Promiscuous Enable" in its "Thoughts for
+>>> Customization" section:
+>>>
+>>>  7.1 Multicast Promiscuous Enable
+>>>
+>>>  The controller has provisions to allow each VF to be put into Multicast
+>>> Promiscuous mode.  The Intel reference driver does not configure this
+>>> option .
+>>>
+>>>  The capability can be enabled/disabled by manipulating the MPE field  (bit
+>>> 28) of the PF VF L2 Control Register (PFVML2FLT – 0x0F000)
+>>>
+>>> and showing a section from the data sheet describing the "PF VM L2 Control
+>>> Register - PFVML2FLT[n]  (0x0F000 + 4 * n, n=0...63; RW)"
+>>>
+>>> To me it looks like enabling Promiscuos Multicast for a VF won't affect any
+>>> other VF at all.  Is this really not the case?
+>>>
+>>>
+>>>
+>>> Bjørn
+>> Clearly not a dumb question at all and I'm glad you mentioned that. :)  I was going off the assumption, been awhile since
+>> I read the patch, that the patch was using FCTRL.MPE or MANC.MCST_PASS_L2 which would turn multicast promiscuous on for
+>> everyone.  Since the patch is using PFVML2FLT.MPE this lessens my concern over effect on the entire system.
+> I believe the patches for this VF multicast promiscuous mode is per VF.
+>
+>> That said I still would prefer having a way to override this behavior on the PF, although I admit my argument is weaker.
+>> I'm still concerned about a VF changing the behavior of the PF without any way to prevent it.  This might be one part
+>> philosophical (PF sets policy not the VF) but this still could have a noticeable effect on the overall system.  If any
+>> other VFs (or the PF) are receiving MC packets these will have to be replicated which will be a performance hit.  When
+>> we use the MC hash this is limited vs. when anyone is in MC promiscuous every MC packet used by another pool would be
+>> replicated.  I could imagine in some environments (i.e. public clouds) where you don't trust what is running in your VM
+>> you might what to block this from happening.
+> I understand your request and I'm thinking to submit the patches
+>   1) Add new mbox API between ixgbe/ixgbevf to turn MC promiscuous on,
+>      and enables it when ixgbevf needs over 30 MC addresses.
+>   2) Add a policy knob to prevent enabling it from the PF.
+>
+> Does it seem okay?
 
-OK, I see... Could you describe it in comments somewhere? For example in
-comment above the function. Currently this looks like only as regmap for
-charger.
+I would advise that if such a knob is added it should be set to disabled
+by default.  The main problem with supporting that many multicast
+addresses per VF is that you run the risk for flooding the PCIe
+interface on the network adapter if too many adapters were to go into
+such a mode.
 
-Unfortunately current solution imposes problem with releasing resources.
-Who is the owner of i2c dummy device?
+> BTW, I'm bit worried about to use ndo interface for 2) because adding a
+> new hook makes core code complicated.
+> Is it really reasonable to do it with ndo?
+> I haven't find any other suitable method to do it, right now. And using
+> ndo VF hook looks standard way to control VF functionality.
+> Then, I think it's the best way to implement this policy in ndo hook.
 
-1. The charger driver will unregister it if max77843_charger_probe()
-fails. What will happen with regulator driver in such case?
+The ndo is probably the only way to go on this.  It is how past controls
+for the VF network functionality have been implemented.
 
-2. Who will release this i2c dummy device in normal unbind? Currently it
-leaks.
+>> In some ways it is almost the mirror image of the issue you brought up:
+>>
+>> Adding a new hook for this seems over-complicated to me.  And it still
+>> doesn't solve the real problems that
+>>  a) the user has to know about this limit, and
+>>  b) manually configure the feature
+>>
+>> My reverse argument might be that if this happens automatically.  It might take the VM provider a long time to realize
+>> performance has taken a hit because some VM asked to join 31 multicast groups and entered MC promiscuous.  Then only to
+>> find that they have no way to block such behavior.
+>>
+>> Maybe I wouldn't as concerned if the patch author could provide some performance results to show this won't have as a
+>> negative effect as I'm afraid it might?
+> Hm, what kind of test case would you like to have?
+> The user A who has 30 MC addresses vs the user B who has 31 MC addresses, which
+> means that MC promiscuous mode, and coming MC packets the user doesn't expect?
+>
+> thanks,
+> Hiroshi
 
-Best regards,
-Krzysztof
+The question I would have is how many of these interfaces do you expect
+to have supporting the expanded multicast mode?  As it currently stands
+multicast traffic has the potential to flood the adapter, greatly reduce
+the overall throughput, and add extra workload to the PF and all VFs. 
+For example if several VFs enable this feature, and then someone on the
+network sends a stream of multicast traffic what happens to the CPU load
+for the host system?
 
-> 
-> >> +       int ret;
-> >> +
-> >> +       max77843->i2c_chg = i2c_new_dummy(max77843->i2c->adapter, I2C_ADDR_CHG);
-> >> +       if (!max77843->i2c_chg) {
-> >> +               dev_err(&max77843->i2c->dev,
-> >> +                               "Cannot allocate I2C device for Charger\n");
-> >> +               return PTR_ERR(max77843->i2c_chg);
-> >> +       }
-> >> +       i2c_set_clientdata(max77843->i2c_chg, max77843);
-> >> +
-> >> +       max77843->regmap_chg = devm_regmap_init_i2c(max77843->i2c_chg,
-> >> +                       &max77843_charger_regmap_config);
-> >> +       if (IS_ERR(max77843->regmap_chg)) {
-> >> +               ret = PTR_ERR(max77843->regmap_chg);
-> >> +               goto err_chg_i2c;
-> >> +       }
-> >> +
-> >> +       return 0;
-> >> +
-> >> +err_chg_i2c:
-> >> +       i2c_unregister_device(max77843->i2c_chg);
-> >> +
-> >> +       return ret;
-> >> +}
-> >> +
-> >> +static int max77843_probe(struct i2c_client *i2c,
-> >> +                                       const struct i2c_device_id *id)
-> >> +{
-> >> +       struct max77843 *max77843;
-> >> +       int ret;
-> >> +       unsigned int reg_data;
-> >> +
-> >> +       max77843 = devm_kzalloc(&i2c->dev, sizeof(*max77843), GFP_KERNEL);
-> >> +       if (!max77843)
-> >> +               return -ENOMEM;
-> >> +
-> >> +       i2c_set_clientdata(i2c, max77843);
-> >> +       max77843->dev = &i2c->dev;
-> >> +       max77843->i2c = i2c;
-> >> +       max77843->irq = i2c->irq;
-> >> +
-> >> +       max77843->regmap = devm_regmap_init_i2c(i2c,
-> >> +                       &max77843_regmap_config);
-> >> +       if (IS_ERR(max77843->regmap)) {
-> >> +               dev_err(&i2c->dev, "Failed to allocate topsys register map\n");
-> >> +               return PTR_ERR(max77843->regmap);
-> >> +       }
-> >> +
-> >> +       ret = regmap_add_irq_chip(max77843->regmap, max77843->irq,
-> >> +                       IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_SHARED,
-> >> +                       0, &max77843_irq_chip, &max77843->irq_data);
-> > 
-> > Why shared IRQ?
-> > 
-> >> +       if (ret) {
-> >> +               dev_err(&i2c->dev, "Failed to add TOPSYS IRQ chip\n");
-> >> +               return ret;
-> >> +       }
-> >> +
-> >> +       ret = regmap_read(max77843->regmap,
-> >> +                       MAX77843_SYS_REG_PMICID, &reg_data);
-> >> +       if (ret < 0) {
-> >> +               dev_err(&i2c->dev, "Failed to read PMIC ID\n");
-> >> +               goto err_pmic_id;
-> >> +       }
-> >> +       dev_info(&i2c->dev, "device ID: 0x%x\n", reg_data);
-> >> +
-> >> +       ret = max77843_chg_init(max77843);
-> >> +       if (ret) {
-> >> +               dev_err(&i2c->dev, "Failed to init Charger\n");
-> >> +               goto err_pmic_id;
-> >> +       }
-> >> +
-> >> +       ret = regmap_update_bits(max77843->regmap,
-> >> +                       MAX77843_SYS_REG_INTSRCMASK,
-> >> +                       MAX77843_INTSRC_MASK_MASK,
-> >> +                       (unsigned int)~MAX77843_INTSRC_MASK_MASK);
-> >> +       if (ret < 0) {
-> >> +               dev_err(&i2c->dev, "Failed to unmask interrupt sourece\n");
-> > 
-> > s/sourece/source/
-> > 
-> > Best regards,
-> > Krzysztof
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
+Also how many addresses beyond 30 is it you require?  An alternative to
+adding multicast promiscuous might be to consider extending the mailbox
+API to support sending more than 30 addresses via something such as a
+multi-part multicast configuration message.  The fm10k driver already
+has logic similar to this as it adds addresses 1 at a time though a
+separate Switch interface API between the PF and the Switch.  You might
+be able to reuse some of that code to reach beyond the 30 address limit.
 
+- Alex
