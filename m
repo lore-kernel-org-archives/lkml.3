@@ -1,132 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089AbbAWRkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:40:47 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:51424 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914AbbAWRkl (ORCPT
+	id S1756123AbbAWRlC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 12:41:02 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:60919 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755817AbbAWRk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:40:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150123162126.GD9557@e104818-lin.cambridge.arm.com>
-References: <1418110007-13270-1-git-send-email-zhichang.yuan@linaro.org>
-	<20150123162126.GD9557@e104818-lin.cambridge.arm.com>
-Date: Fri, 23 Jan 2015 17:40:40 +0000
-Message-ID: <CAKv+Gu8OQB+eziL6X85-v-+9KKPsK6Z=h2+1oDrM9imnSU8drg@mail.gmail.com>
-Subject: Re: [PATCHv2] arm64:mm: free the useless initial page table
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "zhichang.yuan@linaro.org" <zhichang.yuan@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "liguozhu@huawei.com" <liguozhu@huawei.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 23 Jan 2015 12:40:59 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-c3-54c28718db8f
+Message-id: <54C287A0.50407@samsung.com>
+Date: Fri, 23 Jan 2015 18:40:48 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: tomasz.figa@gmail.com, mturquette@linaro.org, kgene@kernel.org,
+        pankaj.dubey@samsung.com, inki.dae@samsung.com,
+        chanho61.park@samsung.com, sw0312.kim@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 01/12] clk: samsung: exynos5433: Add clocks using common
+ clock framework
+References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
+ <1421821618-8627-2-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1421821618-8627-2-git-send-email-cw00.choi@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t/xy7oS7YdCDPqOmlhc3q9tcf3Lc1aL
+	SfcnsFj0P37NbHF51xw2ixnn9zFZPJ1wkc1i0dYv7BYzJr9ks1i16w+jA5fHzll32T02repk
+	87hzbQ+bR9+WVYwenzfJBbBGcdmkpOZklqUW6dslcGU8/fqcteAXe8XcZXuZGhh3sHUxcnJI
+	CJhITJzyH8oWk7hwbz2QzcUhJLCUUaLx9RJWCOcTo8SZI/8YQap4BTQkVs1tAbNZBFQlfp2+
+	ywJiswkYSvQe7QOLiwpESJy8u4cdol5Q4sfke2A1IkC9M/9eAathFnjDKPGi06uLkYNDWCBR
+	Yvc6LpCwkEC9xPLNbcwgNqeAq8Tl3z8YQUqYBfQk7l/UguiUl9i85i3zBEaBWUgWzEKomoWk
+	agEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkOD/soNx8TGrQ4wCHIxKPLw7nh4MEWJN
+	LCuuzD3EKMHBrCTCm5FyKESINyWxsiq1KD++qDQntfgQIxMHp1QDI0P5WSOfOTIPtBebCzpf
+	upKTM6ekJU9oZqU1Y8IGlmubRN5++3pZazKvVJK/s9708uXut69MPu2ht7D/y87Vj9rapAxz
+	Va1U81KWX4ztK1sUmReRftmTPWrR9KfH3xXeO21+Zn6ItNXGvf6acT9f3GK5Z7rte9+FPTYR
+	FQs+fHFg1Xwt2B/TpcRSnJFoqMVcVJwIABACuLNcAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 January 2015 at 16:21, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Tue, Dec 09, 2014 at 07:26:47AM +0000, zhichang.yuan@linaro.org wrote:
->> From: "zhichang.yuan" <zhichang.yuan@linaro.org>
->>
->> For 64K page system, after mapping a PMD section, the corresponding initial
->> page table is not needed any more. That page can be freed.
->>
->> Changes since v1:
->>
->> * make consistent code between alloc_init_pmd and alloc_init_pud;
->> * flush the TLB before the unused page table is freed;
->>
->> Signed-off-by: Zhichang Yuan <zhichang.yuan@linaro.org>
->
-> I thought about queuing this patch but I realised that
-> alloc_init_pmd/pud may be called in a late context where memblock_free()
-> would no longer make sense. Cc'ing Laura and Ard for any ideas here but
-> I think we may just end up with a few old page table pages sitting
-> around (not many though). In general we don't go from smaller to larger
-> mappings (that's what this patch targets) but given the API, I'm not
-> sure we have any guarantee.
->
-> One solution would be to check for alloc == early_alloc or something
-> similar. Cc'ing Laura and Ard as they added the create_mapping_late()
-> code.
->
+On 21/01/15 07:26, Chanwoo Choi wrote:
+> +/* list of all parent clock list */
 
-The UEFI page tables are only built up once, based on a series of
-disjoint memory regions, so that will never hit either of the
-memblock_free() branches.
-And AFAICT, the DEBUG_RODATA code does the splitting early, which
-causes the create_mapping_late() code to only change permissions, not
-change the granularity of any regions.
+> +PNAME(mout_bus_pll_user_p)	= { "fin_pll", "sclk_bus_pll", };
+...
+> +
+> +static struct samsung_mux_clock top_mux_clks[] __initdata = {
 
-Perhaps it's sufficient to add a comment and a BUG_ON(alloc !=
-early_alloc) to the memblock_free() branches?
+> +	MUX(CLK_MOUT_BUS_PLL_USER, "mout_bus_pll_user", mout_bus_pll_user_p,
+> +			MUX_SEL_TOP1, 0, 1),
+...
+> +};
+> +
+> +static struct samsung_div_clock top_div_clks[] __initdata = {
+...
+> +	/* DIV_TOP3 */
+> +	DIV(CLK_DIV_ACLK_IMEM_SSSX_266, "div_aclk_imem_sssx_266",
+> +			"mout_bus_pll_user", DIV_TOP3, 24, 3),
 
--- 
-Ard.
+Shouldn't "fin_pll" be renamed to "oscclk" ? In the documentation
+the root clock (from XXTI input pin) seems to be referred as OSCCLK.
+And I can't see "fin_pll" clock registered anywhere. Shouldn't there
+be a "fixed-rate-clock" as a parent of at least CMU_TOP? e.g.
 
+xxti: xxti {
+	compatible = "fixed-clock";
+	#clock-cells = <0>;
+	clock-output-names = "oscclk";
+	clock-frequency = <24000000>;
+};
 
->> ---
->>  arch/arm64/include/asm/pgtable.h |    3 +++
->>  arch/arm64/mm/mmu.c              |   15 ++++++++++++---
->>  2 files changed, 15 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
->> index 41a43bf..8a135b6 100644
->> --- a/arch/arm64/include/asm/pgtable.h
->> +++ b/arch/arm64/include/asm/pgtable.h
->> @@ -337,9 +337,12 @@ extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
->>
->>  #ifdef CONFIG_ARM64_64K_PAGES
->>  #define pud_sect(pud)                (0)
->> +#define pud_table(pud)               (1)
->>  #else
->>  #define pud_sect(pud)                ((pud_val(pud) & PUD_TYPE_MASK) == \
->>                                PUD_TYPE_SECT)
->> +#define pud_table(pud)               ((pud_val(pud) & PUD_TYPE_MASK) == \
->> +                                     PUD_TYPE_TABLE)
->>  #endif
->>
->>  static inline void set_pmd(pmd_t *pmdp, pmd_t pmd)
->> diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
->> index f4f8b50..515f75b 100644
->> --- a/arch/arm64/mm/mmu.c
->> +++ b/arch/arm64/mm/mmu.c
->> @@ -191,8 +191,14 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
->>                        * Check for previous table entries created during
->>                        * boot (__create_page_tables) and flush them.
->>                        */
->> -                     if (!pmd_none(old_pmd))
->> +                     if (!pmd_none(old_pmd)) {
->>                               flush_tlb_all();
->> +                             if (pmd_table(old_pmd)) {
->> +                                     phys_addr_t table = __pa(pte_offset_map(&old_pmd, 0));
->> +
->> +                                     memblock_free(table, PAGE_SIZE);
->> +                             }
->> +                     }
->>               } else {
->>                       alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys),
->>                                      prot_pte);
->> @@ -234,9 +240,12 @@ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
->>                        * Look up the old pmd table and free it.
->>                        */
->>                       if (!pud_none(old_pud)) {
->> -                             phys_addr_t table = __pa(pmd_offset(&old_pud, 0));
->> -                             memblock_free(table, PAGE_SIZE);
->>                               flush_tlb_all();
->> +                             if (pud_table(old_pud)) {
->> +                                     phys_addr_t table = __pa(pmd_offset(&old_pud, 0));
->> +
->> +                                     memblock_free(table, PAGE_SIZE);
->> +                             }
->>                       }
->>               } else {
->>                       alloc_init_pmd(pud, addr, next, phys, map_io);
->> --
->> 1.7.9.5
+&cmu_top {
+	clocks = <&xxti>;
+};
+
+--
+Regards,
+Sylwester
