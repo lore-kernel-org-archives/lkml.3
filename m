@@ -1,180 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928AbbAWKvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 05:51:42 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41548 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645AbbAWKvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 05:51:38 -0500
-Date: Fri, 23 Jan 2015 10:51:14 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stathis Voukelatos <stathisv70@gmail.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stathis Voukelatos <stathis.voukelatos@linn.co.uk>,
-        "abrestic@chromium.org" <abrestic@chromium.org>
-Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
-Message-ID: <20150123105114.GB23493@leverpostej>
-References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
+	id S1754196AbbAWKzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 05:55:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36770 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753314AbbAWKzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 05:55:15 -0500
+Message-ID: <54C22891.6070506@suse.cz>
+Date: Fri, 23 Jan 2015 11:55:13 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
-Thread-Topic: [PATCH] net: Linn Ethernet Packet Sniffer driver
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] modsign: provide option to automatically delete the key
+ after modules were installed
+References: <1421976009-9819-1-git-send-email-holler@ahsoftware.de> <54C21361.1080500@suse.cz> <54C216D8.8040004@ahsoftware.de> <54C21F35.1040206@ahsoftware.de>
+In-Reply-To: <54C21F35.1040206@ahsoftware.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:07:01AM +0000, Stathis Voukelatos wrote:
-> This patch adds support the Ethernet Packet Sniffer H/W module
-> developed by Linn Products Ltd and found in the IMG Pistachio SoC.
-> The module allows Ethernet packets to be parsed, matched against
-> a user-defined pattern and timestamped. It sits between a 100M
-> Ethernet MAC and PHY and is completely passive with respect to
-> Ethernet frames.
->
-> Matched packet bytes and timestamp values are returned through a
-> FIFO. Timestamps are provided to the module through an externally
-> generated Gray-encoded counter.
->
-> The command pattern for packet matching is stored in module RAM
-> and consists of a sequence of 16-bit entries. Each entry includes
-> an 8-bit command code and and 8-bit data value. Valid command
-> codes are:
-> 0 - Don't care
-> 1 - Match: packet data must match command string byte
-> 2 - Copy: packet data will be copied to FIFO
-> 3 - Match/Stamp: if packet data matches string byte, a timestamp
->                  is copied into the FIFO
-> 4 - Copy/Done: packet data will be copied into the FIFO.
->                This command terminates the command string.
->
-> The driver consists of two modules:
-> - Core: it provides an API to user space using the Generic Netlink
->         framework. Specific backend implementations, like the
->         Ethernet Packet Sniffer, register one or more channels
->         with the Core. For each channel a Genl family is created.
->         User space can access a channel by sending Genl messages
->         to the Genl family associated with the channel. Packet
->         matching events are multicast.
->
-> - Ethernet Packet Sniffer backend: provides the driver for the
->         Linn Ethernet Packet Sniffer H/W modules.
+On 2015-01-23 11:15, Alexander Holler wrote:
+> Am 23.01.2015 um 10:39 schrieb Alexander Holler:
+>> Am 23.01.2015 um 10:24 schrieb Michal Marek:
+>>
+>>>> +	@rm ./signing_key.priv
+>>>> +	@rm ./signing_key.x509
+>>>
+>>> Why do you need to delete the certificate?
+>>
+>> No special reason.
+>>
+>> I'm just not sure (and too lazy to look it up) if it might contain the
+>> private key too (like it's possible in pem files), so I've deleted it too.
+> 
+> Or in other words, while .priv leads me to the educated guess that it 
+> contains the private key, .x509 doesn't give me an obvious indication 
+> what it contains.
+> 
+> If someone assures me that .x509 doesn't contain the private key 
+> necessary to sign the modules, I'll send a v2 of the patch.
 
-It sounds like the framework and particular driver need to be split into
-separate patches.
+The .x509 file contains a certificate signed by the private key, but not
+the private key. With some scripting, it can be used to verify the
+module signatures.
 
-Also, please split the binding patch as per
-Documentation/devicetree/bindings/submitting-patches.txt.
+Michal
 
->
-> The split between a core and backend modules allows software-only
-> implementations to be added for platforms where no H/W support
-> is available.
->
-> Based on 3.19-rc5
->
-> Signed-off-by: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
-> ---
->  .../bindings/net/linn-ether-packet-sniffer.txt     |  27 ++
->  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
->  MAINTAINERS                                        |   7 +
->  drivers/net/Kconfig                                |   2 +
->  drivers/net/Makefile                               |   1 +
->  drivers/net/pkt-sniffer/Kconfig                    |  23 ++
->  drivers/net/pkt-sniffer/Makefile                   |   8 +
->  drivers/net/pkt-sniffer/backends/ether/channel.c   | 366 ++++++++++++++++++
->  drivers/net/pkt-sniffer/backends/ether/channel.h   |  76 ++++
->  drivers/net/pkt-sniffer/backends/ether/hw.h        |  46 +++
->  drivers/net/pkt-sniffer/backends/ether/platform.c  | 231 +++++++++++
->  drivers/net/pkt-sniffer/core/dev_table.c           | 124 ++++++
->  drivers/net/pkt-sniffer/core/module.c              |  37 ++
->  drivers/net/pkt-sniffer/core/nl.c                  | 427 +++++++++++++++++++++
->  drivers/net/pkt-sniffer/core/nl.h                  |  34 ++
->  drivers/net/pkt-sniffer/core/snf_core.h            |  64 +++
->  include/linux/pkt_sniffer.h                        |  89 +++++
->  17 files changed, 1563 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
->  create mode 100644 drivers/net/pkt-sniffer/Kconfig
->  create mode 100644 drivers/net/pkt-sniffer/Makefile
->  create mode 100644 drivers/net/pkt-sniffer/backends/ether/channel.c
->  create mode 100644 drivers/net/pkt-sniffer/backends/ether/channel.h
->  create mode 100644 drivers/net/pkt-sniffer/backends/ether/hw.h
->  create mode 100644 drivers/net/pkt-sniffer/backends/ether/platform.c
->  create mode 100644 drivers/net/pkt-sniffer/core/dev_table.c
->  create mode 100644 drivers/net/pkt-sniffer/core/module.c
->  create mode 100644 drivers/net/pkt-sniffer/core/nl.c
->  create mode 100644 drivers/net/pkt-sniffer/core/nl.h
->  create mode 100644 drivers/net/pkt-sniffer/core/snf_core.h
->  create mode 100644 include/linux/pkt_sniffer.h
->
-> diff --git a/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt b/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
-> new file mode 100644
-> index 0000000..6b6e105
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
-> @@ -0,0 +1,27 @@
-> +* Linn Products Ethernet Packet Sniffer
-> +
-> +Required properties:
-> +- compatible : must be "linn,eth-sniffer"
-> +- reg : physical addresses and sizes of registers. Must contain 3 entries:
-> +          first entry: registers memory space
-> +          second entry: TX command memory
-> +          third entry: RX command memory
-
-Just to check: are those memories are part of the packet sniffer device,
-or are carveouts from other memory?
-
-> +- reg-names : must contain the following 3 entries:
-> +                  "regs", "tx-ram", "rx-ram"
-
-If you use reg-names, please define reg in terms of reg-names. It's a
-little pointless to have redundant name and index requirements.
-
-> +- interrupts : sniffer interrupt specifier
-> +- clocks : specify the system clock for the peripheral
-> +- clock-names : must contain the "sys" entry
-
-Likewise with clocks and clock-names.
-
-> +- fifo-block-words : number of words in one data FIFO entry
-> +
-> +Example:
-> +
-> +sniffer@1814a000 {
-> +        compatible = "linn,eth-sniffer";
-> +        reg = <0x1814a000 0x100>, <0x1814a400 0x400>, <0x1814a800 0x400>;
-> +        reg-names = "regs", "tx-ram", "rx-ram";
-> +        interrupts = <GIC_SHARED 58 IRQ_TYPE_LEVEL_HIGH>;
-> +        interrupt-names = "eth-sniffer-irq";
-> +        clocks = <&system_clk>;
-> +        clock-names = "sys";
-> +        fifo-block-words = <4>;
-> +    };
-
-Surely the relationship between the sniffer, MAC, and PHY should be
-described, so we know which interface the sniffer is related to?
-
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index b1df0ad..2c96f35 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -90,6 +90,7 @@ lacie LaCie
->  lantiq Lantiq Semiconductor
->  lenovo Lenovo Group Ltd.
->  lg     LG Corporation
-> +linn   Linn Products Ltd.
->  linux  Linux-specific binding
->  lsi    LSI Corp. (LSI Logic)
->  lltc   Linear Technology Corporation
-
-This addition looks fine to me.
-
-Thanks,
-Mark.
