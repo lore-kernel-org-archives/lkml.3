@@ -1,90 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494AbbAWXjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 18:39:25 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:52898 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbbAWXjX (ORCPT
+	id S1752715AbbAWXle (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 18:41:34 -0500
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:55431 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbbAWXl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 18:39:23 -0500
-Message-ID: <1422056361.2436.31.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH] sched, timer: Use atomics for thread_group_cputimer
- stats
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org,
-        jason.low2@hp.com
-Date: Fri, 23 Jan 2015 15:39:21 -0800
-In-Reply-To: <20150123200828.GE23123@twins.programming.kicks-ass.net>
-References: <1421983913.4432.22.camel@j-VirtualBox>
-	 <20150123092508.GJ2896@worktop.programming.kicks-ass.net>
-	 <1422041016.2436.19.camel@j-VirtualBox>
-	 <20150123200828.GE23123@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 23 Jan 2015 18:41:28 -0500
+Date: Fri, 23 Jan 2015 17:41:24 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
+        iommu@lists.linux-foundation.org, Joerg Roedel <joro@8bytes.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH v4 4/6] of/pci: add of_pci_dma_configure() update dma
+ configuration
+Message-ID: <20150123234124.GW29776@google.com>
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
+ <1422052359-12384-5-git-send-email-m-karicheri2@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422052359-12384-5-git-send-email-m-karicheri2@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 21:08 +0100, Peter Zijlstra wrote:
-> On Fri, Jan 23, 2015 at 11:23:36AM -0800, Jason Low wrote:
-> > On Fri, 2015-01-23 at 10:25 +0100, Peter Zijlstra wrote:
-> > > On Thu, Jan 22, 2015 at 07:31:53PM -0800, Jason Low wrote:
-> > > > +static void update_gt_cputime(struct thread_group_cputimer *a, struct task_cputime *b)
-> > > >  {
-> > > > +	if (b->utime > atomic64_read(&a->utime))
-> > > > +		atomic64_set(&a->utime, b->utime);
-> > > >  
-> > > > +	if (b->stime > atomic64_read(&a->stime))
-> > > > +		atomic64_set(&a->stime, b->stime);
-> > > >  
-> > > > +	if (b->sum_exec_runtime > atomic64_read(&a->sum_exec_runtime))
-> > > > +		atomic64_set(&a->sum_exec_runtime, b->sum_exec_runtime);
-> > > >  }
-> > > 
-> > > See something like this is not safe against concurrent adds.
-> > 
-> > How about something like:
-> > 
-> > u64 a_utime, a_stime, a_sum_exec_runtime;
-> > 
-> > retry_utime:
-> > 	a_utime = atomic64_read(&a->utime);
-> > 	if (b->utime > a_utime) {
-> > 		if (atomic64_cmpxchg(&a->utime, a_utime, b->utime) != a_utime)
-> > 			goto retry_utime;
-> > 	}
-> > 
-> > retry_stime:
-> > 	a_stime = atomic64_read(&a->stime);
-> > 	if (b->stime > a_stime) {
-> > 		if (atomic64_cmpxchg(&a->stime, a_stime, b->stime) != a_stime)
-> > 			goto retry_stime;
-> > 	}
-> > 
-> > retry_sum_exec_runtime:
-> > 	a_sum_exec_runtime = atomic64_read(&a->sum_exec_runtime);
-> > 	if (b->sum_exec_runtime > a_sum_exec_runtime) {
-> > 		if (atomic64_cmpxchg(&a->sum_exec_runtime, a_sum_exec_runtime,
-> > 				     b->sum_exec_runtime) != a_sum_exec_runtime)
-> > 			goto retry_sum_exec_runtime;
-> > 	}
+On Fri, Jan 23, 2015 at 05:32:37PM -0500, Murali Karicheri wrote:
+> Add of_pci_dma_configure() to allow updating the dma configuration
+> of the pci device using the configuration from DT of the parent of
+> the root bridge device.
 > 
-> Disgusting, at least use an inline or macro to avoid repeating it :-)
+> Cc: Joerg Roedel <joro@8bytes.org>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 > 
-> Also, does anyone care about performance on 32bit systems? There's a few
-> where atomic64 is abysmal.
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+>  drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_pci.h |   12 ++++++++++++
+>  2 files changed, 51 insertions(+)
+> 
+> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> index 88471d3..34878c9 100644
+> --- a/drivers/of/of_pci.c
+> +++ b/drivers/of/of_pci.c
+> @@ -2,6 +2,7 @@
+>  #include <linux/export.h>
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+> +#include <linux/of_device.h>
+>  #include <linux/of_pci.h>
+>  #include <linux/slab.h>
+>  
+> @@ -229,6 +230,44 @@ parse_failed:
+>  	return err;
+>  }
+>  EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
+> +
+> +/**
+> + * of_get_pci_root_bridge_parent - get the OF node of the root bridge's parent
+> + * @dev: ptr to pci_dev struct of the pci device
+> + *
+> + * This function will traverse the bus up to the root bus starting with
+> + * the child and return the OF node ptr to root bridge device's parent device.
+> + */
+> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
 
-Yeah, though we're also avoiding spin lock/unlock calls each time, so
-not sure if we're really adding anything of significance to the "overall
-cost" on 32 bit systems. And update_gt_cputime wouldn't get called too
-frequently.
+I'm not an OF person, but this interface seems like it might be too
+special-purpose.  Maybe it would be enough to add
+"of_get_pci_root_bridge()", and the caller could do this:
 
+    struct device *bridge = of_get_pci_root_bridge(dev);
+    struct device_node *parent_np = bridge->parent->of_node;
+
+Also, the name "of_get_..." suggests that it increments a refcount, as
+of_get_parent() does.  But you aren't doing anything with the refcount.
+
+But I guess an "of_get_pci_root_bridge()" isn't doing anything OF-related,
+so maybe we should just add a "pci_get_host_bridge(struct pci_dev *)"
+to PCI instead.
+
+Bjorn
+
+> +{
+> +	struct pci_bus *bus = dev->bus;
+> +	struct device *bridge;
+> +
+> +	while (!pci_is_root_bus(bus))
+> +		bus = bus->parent;
+> +	bridge = bus->bridge;
+> +
+> +	return bridge->parent->of_node;
+> +}
+> +EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
+> +
+> +/**
+> + * of_pci_dma_configure - Setup DMA configuration
+> + * @dev: ptr to pci_dev struct of the pci device
+> + *
+> + * Function to update PCI devices's DMA configuration using the same
+> + * info from the OF node of root host bridge's parent.
+> + */
+> +void of_pci_dma_configure(struct pci_dev *pci_dev)
+> +{
+> +	struct device *dev = &pci_dev->dev;
+> +	struct device_node *parent_np;
+> +
+> +	parent_np = of_get_pci_root_bridge_parent(pci_dev);
+> +	of_dma_configure(dev, parent_np);
+> +}
+> +EXPORT_SYMBOL_GPL(of_pci_dma_configure);
+> +
+>  #endif /* CONFIG_OF_ADDRESS */
+>  
+>  #ifdef CONFIG_PCI_MSI
+> diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
+> index ce0e5ab..0465a2a 100644
+> --- a/include/linux/of_pci.h
+> +++ b/include/linux/of_pci.h
+> @@ -16,6 +16,8 @@ int of_pci_get_devfn(struct device_node *np);
+>  int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
+>  int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
+>  int of_get_pci_domain_nr(struct device_node *node);
+> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev);
+> +void of_pci_dma_configure(struct pci_dev *pci_dev);
+>  #else
+>  static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
+>  {
+> @@ -50,6 +52,16 @@ of_get_pci_domain_nr(struct device_node *node)
+>  {
+>  	return -1;
+>  }
+> +
+> +static inline struct device_node
+> +*of_get_pci_root_bridge_parent(struct pci_dev *dev)
+> +{
+> +	return NULL;
+> +}
+> +
+> +static inline void of_pci_dma_configure(struct pci_dev *pci_dev)
+> +{
+> +}
+>  #endif
+>  
+>  #if defined(CONFIG_OF_ADDRESS)
+> -- 
+> 1.7.9.5
+> 
