@@ -1,48 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674AbbAWPdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:33:45 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:41947 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007AbbAWPdm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:33:42 -0500
-Date: Fri, 23 Jan 2015 15:33:16 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH repost 03/16] arm64/uaccess: fix sparse errors
-Message-ID: <20150123153316.GB9557@e104818-lin.cambridge.arm.com>
-References: <1419499661-8566-1-git-send-email-mst@redhat.com>
- <1419499661-8566-4-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419499661-8566-4-git-send-email-mst@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755442AbbAWPhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:37:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37336 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751765AbbAWPhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 10:37:47 -0500
+From: Vlastimil Babka <vbabka@suse.cz>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/3] mm: when stealing freepages, also take pages created by splitting buddy page
+Date: Fri, 23 Jan 2015 16:37:26 +0100
+Message-Id: <1422027446-10275-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1422018906-8880-1-git-send-email-vbabka@suse.cz>
+References: <1422018906-8880-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 25, 2014 at 09:28:41AM +0000, Michael S. Tsirkin wrote:
-> virtio wants to read bitwise types from userspace using get_user.  At the
-> moment this triggers sparse errors, since the value is passed through an
-> integer.
-> 
-> Fix that up using __force.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> Acked-by: Will Deacon <will.deacon@arm.com>
+When __rmqueue_fallback() is called to allocate a page of order X, it will
+find a page of order Y >= X of a fallback migratetype, which is different from
+the desired migratetype. With the help of try_to_steal_freepages(), it may
+change the migratetype (to the desired one) also of:
 
-I'm not sure who's going to merge this series. In the meantime, I
-cherry-picked the arm64 patch. Thanks.
+1) all currently free pages in the pageblock containing the fallback page
+2) the fallback pageblock itself
+3) buddy pages created by splitting the fallback page (when Y > X)
 
+These decisions take the order Y into account, as well as the desired
+migratetype, with the goal of preventing multiple fallback allocations that
+could e.g. distribute UNMOVABLE allocations among multiple pageblocks.
+
+Originally, decision for 1) has implied the decision for 3). Commit
+47118af076f6 ("mm: mmzone: MIGRATE_CMA migration type added") changed that
+(probably unintentionally) so that the buddy pages in case 3) are always
+changed to the desired migratetype, except for CMA pageblocks.
+
+Commit fef903efcf0c ("mm/page_allo.c: restructure free-page stealing code and
+fix a bug") did some refactoring and added a comment that the case of 3) is
+intended. Commit 0cbef29a7821 ("mm: __rmqueue_fallback() should respect
+pageblock type") removed the comment and tried to restore the original behavior
+where 1) implies 3), but due to the previous refactoring, the result is instead
+that only 2) implies 3) - and the conditions for 2) are less frequently met
+than conditions for 1). This may increase fragmentation in situations where the
+code decides to steal all free pages from the pageblock (case 1)), but then
+gives back the buddy pages produced by splitting.
+
+This patch restores the original intended logic where 1) implies 3). During
+testing with stress-highalloc from mmtests, this has shown to decrease the
+number of events where UNMOVABLE and RECLAIMABLE allocations steal from MOVABLE
+pageblocks, which can lead to permanent fragmentation. In some cases it has
+increased the number of events when MOVABLE allocations steal from UNMOVABLE
+or RECLAIMABLE pageblocks, but these are fixable by sync compaction and thus
+less harmful.
+
+Note that evaluation has shown that the behavior introduced by 47118af076f6
+for buddy pages in case 3) is actually even better than the original logic,
+so the following patch will introduce it properly once again.
+For stable backports of this patch it makes thus sense to only fix versions
+containing 0cbef29a7821.
+
+[iamjoonsoo.kim@lge.com: tracepoint fix]
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: <stable@vger.kernel.org> # v3.13+ containing 0cbef29a7821
+---
+ include/trace/events/kmem.h |  7 ++++---
+ mm/page_alloc.c             | 12 +++++-------
+ 2 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/include/trace/events/kmem.h b/include/trace/events/kmem.h
+index aece134..4ad10ba 100644
+--- a/include/trace/events/kmem.h
++++ b/include/trace/events/kmem.h
+@@ -268,11 +268,11 @@ TRACE_EVENT(mm_page_alloc_extfrag,
+ 
+ 	TP_PROTO(struct page *page,
+ 		int alloc_order, int fallback_order,
+-		int alloc_migratetype, int fallback_migratetype, int new_migratetype),
++		int alloc_migratetype, int fallback_migratetype),
+ 
+ 	TP_ARGS(page,
+ 		alloc_order, fallback_order,
+-		alloc_migratetype, fallback_migratetype, new_migratetype),
++		alloc_migratetype, fallback_migratetype),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(	struct page *,	page			)
+@@ -289,7 +289,8 @@ TRACE_EVENT(mm_page_alloc_extfrag,
+ 		__entry->fallback_order		= fallback_order;
+ 		__entry->alloc_migratetype	= alloc_migratetype;
+ 		__entry->fallback_migratetype	= fallback_migratetype;
+-		__entry->change_ownership	= (new_migratetype == alloc_migratetype);
++		__entry->change_ownership	= (alloc_migratetype ==
++					get_pageblock_migratetype(page));
+ 	),
+ 
+ 	TP_printk("page=%p pfn=%lu alloc_order=%d fallback_order=%d pageblock_order=%d alloc_migratetype=%d fallback_migratetype=%d fragmenting=%d change_ownership=%d",
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 7633c50..2d40492 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1138,8 +1138,8 @@ static void change_pageblock_range(struct page *pageblock_page,
+  * nor move CMA pages to different free lists. We don't want unmovable pages
+  * to be allocated from MIGRATE_CMA areas.
+  *
+- * Returns the new migratetype of the pageblock (or the same old migratetype
+- * if it was unchanged).
++ * Returns the allocation migratetype if free pages were stolen, or the
++ * fallback migratetype if it was decided not to steal.
+  */
+ static int try_to_steal_freepages(struct zone *zone, struct page *page,
+ 				  int start_type, int fallback_type)
+@@ -1170,12 +1170,10 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
+ 
+ 		/* Claim the whole block if over half of it is free */
+ 		if (pages >= (1 << (pageblock_order-1)) ||
+-				page_group_by_mobility_disabled) {
+-
++				page_group_by_mobility_disabled)
+ 			set_pageblock_migratetype(page, start_type);
+-			return start_type;
+-		}
+ 
++		return start_type;
+ 	}
+ 
+ 	return fallback_type;
+@@ -1227,7 +1225,7 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
+ 			set_freepage_migratetype(page, new_type);
+ 
+ 			trace_mm_page_alloc_extfrag(page, order, current_order,
+-				start_migratetype, migratetype, new_type);
++				start_migratetype, migratetype);
+ 
+ 			return page;
+ 		}
 -- 
-Catalin
+2.1.2
+
