@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131AbbAWRGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:06:32 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:42999 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895AbbAWRG2 (ORCPT
+	id S1756141AbbAWRHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 12:07:09 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46698 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755503AbbAWRHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:06:28 -0500
-Date: Fri, 23 Jan 2015 09:06:27 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: "Andy Falanga (afalanga)" <afalanga@micron.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, Doug Gilbert <dgilbert@interlog.com>
-Subject: Re: block layer copying user io vectors
-Message-ID: <20150123170627.GA8652@infradead.org>
-References: <60F6FAE47D1BCE4380CC06D18F49789B952F7ED3@NTXBOIMBX02.micron.com>
+	Fri, 23 Jan 2015 12:07:05 -0500
+Message-ID: <54C27FB5.7070904@acm.org>
+Date: Fri, 23 Jan 2015 11:07:01 -0600
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <60F6FAE47D1BCE4380CC06D18F49789B952F7ED3@NTXBOIMBX02.micron.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: nick <xerofoify@gmail.com>, Sasha Levin <sasha.levin@oracle.com>
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] char:ipmi: Free ipmi_recv_msg messages from the
+ linked list,recv_msgs for the function,ipmi_release in the file,ipmi_devintf.c
+References: <1421723653-19633-1-git-send-email-xerofoify@gmail.com> <54C0F59B.8090709@acm.org> <54C1D30B.8090705@oracle.com> <54C27857.8030203@gmail.com>
+In-Reply-To: <54C27857.8030203@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 09:33:08PM +0000, Andy Falanga (afalanga) wrote:
-> Please CC me directly.
-> 
-> I am working in kernel 2.6.32 (CentOS 6).  To increase the upper limit
-> of sg from 4mb to at least 128mb in a single SCSI command.  At first I
-> thought this issue was in sg, but have tracked the issue to the block
-> layer.
+On 01/23/2015 10:35 AM, nick wrote:
+> Sasha,
+> How is this patch broken? It builds and clearly frees 
+> the list entries. Please explain how to me.
+> Nick
 
-2.6.32 is fairly old, but fortunately for you not too many things should
-have changed in this area.
+Oh, it does not free priv.  That code should not have been removed.
 
-> 
-> Thinking I could solve this issue by using scatter/gather lists, I
-> increased the size from 32k to 4mb of each vector.  This did work
-> until I tried to send 8mb.  When I do so, I get errno EINVAL.  After
-> some tracing, I tracked the problem into bio_copy_user_iov().
-> 
-> This function does something that seems rather strange.  On line 859,
-> a for loop determines the number of pages needed for the copying of the
-> user data to kernel space.  Then the memory is allocated (line
-> 886 bio_kmalloc()).  Then, strangely, on line 895, there is this
-> conditional:
+-corey
 
-This is because the function can also be used with preallocated pages,
-a feature only used by the sg and tape drivers.
+> On 2015-01-22 11:50 PM, Sasha Levin wrote:
+>> On 01/22/2015 08:05 AM, Corey Minyard wrote:
+>>> Patch is queued for 3.20.  Thanks.
+>> That patch is horribly broken.
+>>
+>>
+>> Thanks,
+>> Sasha
+>>
+>>> -corey
+>>>
+>>> On 01/19/2015 09:14 PM, Nicholas Krause wrote:
+>>>> This adds a loop through the elements in the linked list, recv_msgs using
+>>>> list_for_entry_safe in order to free messages in this list.  In addition
+>>>> we are using the safe version of this marco in order to prevent use after
+>>>> bugs related to deleting the element we are on currently by holding a
+>>>> pointer to the next element after the current one we are on and freeing
+>>>> with the function, ipmi_free_recv_msg internally in this loop.
+>>>>
+>>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>>>> ---
+>>>>  drivers/char/ipmi/ipmi_devintf.c | 7 ++++---
+>>>>  1 file changed, 4 insertions(+), 3 deletions(-)
+>>>>
+>>>> diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
+>>>> index ec318bf..d2af38a 100644
+>>>> --- a/drivers/char/ipmi/ipmi_devintf.c
+>>>> +++ b/drivers/char/ipmi/ipmi_devintf.c
+>>>> @@ -157,14 +157,15 @@ static int ipmi_release(struct inode *inode, struct file *file)
+>>>>  {
+>>>>  	struct ipmi_file_private *priv = file->private_data;
+>>>>  	int                      rv;
+>>>> +	struct  ipmi_recv_msg *msg, *next;
+>>>>  
+>>>>  	rv = ipmi_destroy_user(priv->user);
+>>>>  	if (rv)
+>>>>  		return rv;
+>>>>  
+>>>> -	/* FIXME - free the messages in the list. */
+>>>> -	kfree(priv);
+>>>> -
+>>>> +	list_for_each_entry_safe(msg, next, &priv->recv_msgs, link) {
+>>>> +		ipmi_free_recv_msg(msg);
+>>>> +	}
+>>>>  	return 0;
+>>>>  }
+>>>>  
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
 
-Make sure your user memory is 4k aligned, and you should be able
-to avoid the copy entirely (1).
-
-(1) except that the sg driver disables the direct mapping of user pages
-    when using readv/writev.  I can't really see why and it should be
-    fixable by just removign that condition from the if in sg_start_req.
-    Alternatively use the SG_IO ioctl directly on the disk device node,
-    which neither has the read/writev limitation, nor does it use
-    a fixed upper bound preallocated page pool.
-
-> 
-> if (map_data) {
->     nr_pages = 1 << map_data->page_order;
->     i = map_data->offset / PAGE_SIZE;
-> }
-> 
-> This effectively ignores the number of pages counted earlier (in this
-> case which applies to me), and then apparently disregards whatever
-> memory may have been allocated earlier.  Thinking that this was the
-> root I tried to correct this by commenting that simple branch from
-> bio_copy_user_iov, but still had the same result.  Can someone
-> help me understand what is happening in the block layer?
