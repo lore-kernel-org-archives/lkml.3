@@ -1,145 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739AbbAWQfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:35:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755889AbbAWQfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:35:34 -0500
-Message-ID: <54C2782A.8090200@redhat.com>
-Date: Fri, 23 Jan 2015 09:34:50 -0700
-From: Al Stone <ahs3@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1756036AbbAWQfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:35:13 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42040 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537AbbAWQfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 11:35:10 -0500
+Date: Fri, 23 Jan 2015 16:35:01 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Christopher Covington <cov@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH repost 03/16] arm64/uaccess: fix sparse errors
+Message-ID: <20150123163500.GE9557@e104818-lin.cambridge.arm.com>
+References: <1419499661-8566-1-git-send-email-mst@redhat.com>
+ <1419499661-8566-4-git-send-email-mst@redhat.com>
+ <20150123153316.GB9557@e104818-lin.cambridge.arm.com>
+ <20150123154213.GB31460@arm.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, al.stone@linaro.org
-CC: tony.luck@intel.com, fenghua.yu@intel.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, lenb@kernel.org, robert.moore@intel.com,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devel@acpica.org, linaro-acpi@lists.linaro.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH 7/7] ACPI: use Linux as ACPI_OS_NAME for _OS on ARM64
-References: <1421973884-13029-1-git-send-email-al.stone@linaro.org> <1421973884-13029-8-git-send-email-al.stone@linaro.org> <3375613.hf7nCUoE0P@vostro.rjw.lan>
-In-Reply-To: <3375613.hf7nCUoE0P@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150123154213.GB31460@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 08:55 AM, Rafael J. Wysocki wrote:
-> On Thursday, January 22, 2015 05:44:44 PM al.stone@linaro.org wrote:
->> From: Hanjun Guo <hanjun.guo@linaro.org>
->>
->> ACPI_OS_NAME is globally defined as "Microsoft Windows NT" for now.
->> That doesn't make much sense in the ARM context, so set it to "Linux"
->> when CONFIG_ARM64.
->>
->> If it is necessary to change the return value from \_OS_ (that is, return
->> some value other than the default in ACPI_OS_NAME), use the kernel parameter
->> "acpi_os_name=<string>".
->>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->> ---
->>  arch/arm64/Kconfig              | 1 +
->>  drivers/acpi/Kconfig            | 8 ++++++++
->>  include/acpi/acconfig.h         | 2 ++
->>  include/acpi/platform/aclinux.h | 4 ++++
->>  4 files changed, 15 insertions(+)
->>
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index 915aa16..20677d1 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -1,5 +1,6 @@
+On Fri, Jan 23, 2015 at 03:42:14PM +0000, Will Deacon wrote:
+> On Fri, Jan 23, 2015 at 03:33:16PM +0000, Catalin Marinas wrote:
+> > On Thu, Dec 25, 2014 at 09:28:41AM +0000, Michael S. Tsirkin wrote:
+> > > virtio wants to read bitwise types from userspace using get_user.  At the
+> > > moment this triggers sparse errors, since the value is passed through an
+> > > integer.
+> > > 
+> > > Fix that up using __force.
+> > > 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > 
+> > > Acked-by: Will Deacon <will.deacon@arm.com>
+> > 
+> > I'm not sure who's going to merge this series. In the meantime, I
+> > cherry-picked the arm64 patch. Thanks.
 > 
-> If you added
-> 
-> 	config ACPI_OS_NAME
-> 		string
-> 		default "Linux"
-> 		depends on ACPI
-> 
-> to this file, then you don't need to add the new select below and ->
-> 
->>  config ARM64
->>  	def_bool y
->> +	select ACPI_OS_NAME_LINUX if ACPI
->>  	select ACPI_REDUCED_HARDWARE_ONLY if ACPI
->>  	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
->>  	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
->> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
->> index 3e3bd35..024c5f0 100644
->> --- a/drivers/acpi/Kconfig
->> +++ b/drivers/acpi/Kconfig
->> @@ -369,6 +369,14 @@ config ACPI_REDUCED_HARDWARE_ONLY
->>  
->>  	  If you are unsure what to do, do not enable this option.
->>  
->> +config ACPI_OS_NAME_LINUX
->> +	bool "Using Linux for _OS method" if EXPERT
->> +	def_bool n
->> +	  When used, this option makes sure the _OS method returns
->> +	  the value "Linux".
->> +
->> +	  If you are unsure what to do, do not enable this option.
->> +
-> 
-> -> you don't need this at all ->>
-> 
->>  source "drivers/acpi/apei/Kconfig"
->>  
->>  config ACPI_EXTLOG
->> diff --git a/include/acpi/acconfig.h b/include/acpi/acconfig.h
->> index 5a0a3e5..1980bf4 100644
->> --- a/include/acpi/acconfig.h
->> +++ b/include/acpi/acconfig.h
->> @@ -69,7 +69,9 @@
->>   * code that will not execute the _OSI method unless _OS matches the string
->>   * below.  Therefore, change this string at your own risk.
->>   */
->> +#ifndef ACPI_OS_NAME
->>  #define ACPI_OS_NAME                    "Microsoft Windows NT"
->> +#endif
->>  
->>  /* Maximum objects in the various object caches */
->>  
->> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
->> index 1ba7c19..a8a7ee3 100644
->> --- a/include/acpi/platform/aclinux.h
->> +++ b/include/acpi/platform/aclinux.h
->> @@ -69,6 +69,10 @@
->>  #define ACPI_REDUCED_HARDWARE 1
->>  #endif
->>  
->> +#ifdef CONFIG_ACPI_OS_NAME_LINUX
->> +#define ACPI_OS_NAME "Linux"
->> +#endif
-> 
-> ->> and here you can do
-> 
-> +#ifdef CONFIG_ACPI_OS_NAME
-> +#define ACPI_OS_NAME CONFIG_ACPI_OS_NAME
-> +#endif
-> 
-> unless I'm missing something.
-> 
->> +
->>  #include <linux/string.h>
->>  #include <linux/kernel.h>
->>  #include <linux/ctype.h>
->>
-> 
+> I think there was a pull request for the whole series that went to Arnd, so
+> I don't think we need to do anything on the arm64 side.
 
-D'oh.  Yup.  I'll correct it.
+OK. I dropped the patch.
 
 -- 
-ciao,
-al
------------------------------------
-Al Stone
-Software Engineer
-Red Hat, Inc.
-ahs3@redhat.com
------------------------------------
+Catalin
