@@ -1,242 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474AbbAWKaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 05:30:16 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49318 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751121AbbAWKaL (ORCPT
+	id S1754648AbbAWKca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 05:32:30 -0500
+Received: from mail-db3on0058.outbound.protection.outlook.com ([157.55.234.58]:29425
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751753AbbAWKcX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 05:30:11 -0500
-Date: Fri, 23 Jan 2015 11:30:06 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sylvain.rochet@finsecur.com, peda@axentia.se
-Subject: Re: [PATCH 07/12] pm: at91: the standby mode uses the same sram
- function as the suspend to memory mode
-Message-ID: <20150123103006.GH19922@piout.net>
-References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
- <1421741825-18226-8-git-send-email-wenyou.yang@atmel.com>
+	Fri, 23 Jan 2015 05:32:23 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421741825-18226-8-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Wolfgang Grandegger <wg@grandegger.com>
+From: Andri Yngvason <andri.yngvason@marel.com>
+In-Reply-To: <20150123060734.GA7949@Darwish.PC>
+CC: Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <20141223154654.GB6460@vivalin-002> <20150120214409.GA16828@linux>
+ <20150120214537.GB16828@linux> <20150121103319.14511.57709@shannon>
+ <e5439ed067931dc01bda70592eb6ed52@grandegger.com>
+ <20150121144323.GA17070@linux> <20150121150015.31351.6605@shannon>
+ <20150121153647.GB17070@linux>
+ <49707d45a389a1acb9ccec4295d05762@grandegger.com>
+ <20150123060734.GA7949@Darwish.PC>
+Message-ID: <20150123103213.6205.54618@shannon>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v5 2/5] can: kvaser_usb: Consolidate and unify state change
+ handling
+Date: Fri, 23 Jan 2015 10:32:13 +0000
+X-Originating-IP: [10.100.11.118]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 212.30.206.5)
+ smtp.mailfrom=Andri.Yngvason@marel.com; gmail.com; dkim=none (message not
+ signed) header.d=none;gmail.com; dmarc=permerror action=none
+ header.from=marel.com;
+X-Forefront-Antispam-Report: CIP:212.30.206.5;CTRY:IS;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(51704005)(377424004)(24454002)(15975445007)(23676002)(87936001)(88526003)(71226002)(50466002)(77096005)(57986006)(54356999)(50986999)(76176999)(47776003)(83506001)(106466001)(2950100001)(6806004)(46102003)(33716001)(16796002)(92566002)(76506005)(19580405001)(19580395003)(86362001)(93886004)(62966003)(77156002);DIR:OUT;SFP:1101;SCL:1;SRVR:AM2PR05MB0820;H:smtp.marel.com;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:AM2PR05MB0820;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:AM2PR05MB0820;
+X-Forefront-PRVS: 0465429B7F
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:AM2PR05MB0820;
+X-OriginatorOrg: marel.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Jan 2015 10:32:20.3582
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: e5f498be-7303-45fd-a594-9e3fd22a77d7
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=e5f498be-7303-45fd-a594-9e3fd22a77d7;Ip=[212.30.206.5]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: AM2PR05MB0820
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/01/2015 at 16:17:00 +0800, Wenyou Yang wrote :
-> To simply the PM code, the suspend to standby mode uses the same sram function
-> as the suspend to memory mode, running in the internal SRAM,
-> instead of the respective code for each mode.
+Quoting Ahmed S. Darwish (2015-01-23 06:07:34)
+> On Wed, Jan 21, 2015 at 05:13:45PM +0100, Wolfgang Grandegger wrote:
+> > On Wed, 21 Jan 2015 10:36:47 -0500, "Ahmed S. Darwish"
+> > <darwish.07@gmail.com> wrote:
+> > > On Wed, Jan 21, 2015 at 03:00:15PM +0000, Andri Yngvason wrote:
+> > >> Quoting Ahmed S. Darwish (2015-01-21 14:43:23)
+> > >> > Hi!
+> > > 
+> > > ...
+> > > 
+> > >> > <-- Unplug the cable -->
+> > >> > 
+> > >> >  (000.009106)  can0  20000080   [8]  00 00 00 00 00 00 08 00  
+> > >> >  ERRORFRAME
+> > >> >         bus-error
+> > >> >         error-counter-tx-rx{{8}{0}}
+> > >> >  (000.001872)  can0  20000080   [8]  00 00 00 00 00 00 10 00  
+> > 
+> > For a bus-errors I would also expcect some more information in the
+> > data[2..3] fields. But these are always zero.
+> > 
 > 
-> But for the suspend to standby mode, the master clock doesn't
-> switch to the slow clock,  and the main oscillator doesn't
-> turn off as well.
+> M16C error factors made it possible to report things like
+> CAN_ERR_PROT_FORM/STUFF/BIT0/BIT1/TX in data[2], and
+> CAN_ERR_PROT_LOC_ACK/CRC_DEL in data[3].
 > 
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> Unfortunately such error factors are only reported in Leaf, but
+> not in USBCan-II due to the wire format change in the error event:
+> 
+>         struct leaf_msg_error_event {
+>                 u8 tid;
+>                 u8 flags;
+>                 __le16 time[3];
+>                 u8 channel;
+>                 u8 padding;
+>                 u8 tx_errors_count;
+>                 u8 rx_errors_count;
+>                 u8 status;
+>                 u8 error_factor;
+>         } __packed;
+> 
+>         struct usbcan_msg_error_event {
+>                 u8 tid;
+>                 u8 padding;
+>                 u8 tx_errors_count_ch0;
+>                 u8 rx_errors_count_ch0;
+>                 u8 tx_errors_count_ch1;
+>                 u8 rx_errors_count_ch1;
+>                 u8 status_ch0;
+>                 u8 status_ch1;
+>                 __le16 time;
+>         } __packed;
+> 
+> I speculate that the wire format was changed due to controller
+> bugs in the USBCan-II, which was slightly mentioned in their
+> data sheets here:
+> 
+>         http://www.kvaser.com/canlib-webhelp/page_hardware_specific_can_controllers.html
+> 
+> So it seems there's really no way for filling such bus error
+> info given the very limited amount of data exported :-(
+>
+We experienced similar problems with FlexCAN.
+> 
+> The issue of incomplete data does not even stop here, kindly
+> check below notes regarding reverse state transitions:
+> 
+> > >> >  ERRORFRAME
+> > >> >         bus-error
+> > >> >         error-counter-tx-rx{{16}{0}}
+> > >> [...]
+[...]
+> > >> >  ERRORFRAME
+> > >> >         bus-error
+> > >> >         error-counter-tx-rx{{128}{0}}
+> > >> > 
+> > >> > (( Then a continous flood, exactly similar to the above packet,
+> > >> > appears.
+> > >> >    Unfortunately this flooding is a firmware problem. ))
+> > >> > 
+> > >> > <-- Replug the cable, after a good amount of time -->
+> > >> >
+> > >> Where are the reverse state transitions?
+> > >> > 
+> > > 
+> > > Hmmm...
+> > > 
+> > > [ ... ]
+> > >> 
+> > >> Reverse state transitions are missing from the logs. See comments
+> > above.
+> > >> 
+> > > 
+> > > When the device is on the _receiving_ end, and I unplug the CAN cable
+> > after
+> > > introducing some noise to the level of reaching WARNING or PASSIVE, I
+> > > receive a BUS_ERROR event with the rxerr count reset back to 0 or 1. In
+> > > that case, the driver correctly transitions back the state to
+> > ERROR_ACTIVE
+> > > and candump produces something similar to:
+> > > 
+> > >     (000.000362)  can0  2000008C   [8]  00 40 40 00 00 00 00 01  
+> > >     ERRORFRAME
+> > >     controller-problem{}
+> > >     protocol-violation{{back-to-error-active}{}}
+> > >     bus-error
+> > >     error-counter-tx-rx{{0}{1}}
+> > > 
+> > > which is, AFAIK, the correct behaviour from the driver side.
+> > > 
+> > > Meanwhile, when the device is on the _sending_ end and I re-plug the CAN
+> > > cable again. Sometimes I receive events with txerr reset to 0 or 1, and
+> > > the driver correctly reverts back to ERROR_ACTIVE in that case. But on
+> > > another times like the quoted case above, I don't receive any events
+> > > resetting txerr back -- only data packets on the bus.
+> > 
+> > Well, the firmware seems to report *only* bus-errors via
+> > CMD_CAN_ERROR_EVENT messages, also carrying the new state, but no
+> > CMD_CHIP_STATE_EVENT just for the state changes.
+> > 
+> 
+> I've dumped _every_ message I receive from the firmware while
+> disconnecting the CAN bus, waiting a while, and connecting it again.
+> I really received _nothing_ from the firmware when the CAN bus was
+> reconnected and the data packets were flowing again. Not even a
+> single CHIP_STATE_EVENT, even after waiting for a long time.
+> 
+> So it's basically:
+> ...
+> ERR EVENT, txerr=128, rxerr=0
+> ERR EVENT, txerr=128, rxerr=0
+> ERR EVENT, txerr=128, rxerr=0
+> ...
+> 
+> then complete silence, except the data frames. I've even tried with
+> different versions of the firmware, but the same behaviour persisted.
+> 
+> > > So, What can the driver do given the above?
+> > 
+> > Little if the notification does not come.
+> > 
+> 
+> We can poll the state by sending CMD_GET_CHIP_STATE to the firmware,
+> and it will hopefully reply with a CHIP_STATE_EVENT response
+> containing the new txerr and rxerr values that we can use for
+> reverse state transitions.
+>
+> But do we _really_ want to go through the path? I feel that it will
+> open some cans of worms w.r.t. concurrent access to both the netdev
+> and USB stacks from a single driver.
+>
+Honestly, I don't know.
+>
+> A possible solution can be setting up a kernel thread that queries
+> for a CHIP_STATE_EVENT every second?
+> 
+Have you considered polling in kvaser_usb_tx_acknowledge? You could do something
+like:
+if(unlikely(dev->can.state != CAN_STATE_ERROR_ACTIVE))
+{
+    request_state();
+}
 
-That looks quite better, thanks.
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+I don't think that anything beyond that would be worth pursuing.
 
-> ---
->  arch/arm/mach-at91/pm.c           |   81 ++++++++++++++++---------------------
->  arch/arm/mach-at91/pm.h           |    6 +++
->  arch/arm/mach-at91/pm_slowclock.S |   18 +++++++++
->  3 files changed, 59 insertions(+), 46 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-> index 691e6db..a1010f0 100644
-> --- a/arch/arm/mach-at91/pm.c
-> +++ b/arch/arm/mach-at91/pm.c
-> @@ -145,62 +145,51 @@ extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
->  			    void __iomem *ramc1, int memctrl);
->  extern u32 at91_slow_clock_sz;
->  
-> +static void at91_pm_suspend(suspend_state_t state)
-> +{
-> +	unsigned int pm_data = at91_pm_data.memctrl;
-> +
-> +	pm_data |= (state == PM_SUSPEND_MEM) ?
-> +			(AT91_PM_SLOW_CLOCK << AT91_PM_MODE_OFFSET) : 0;
-> +
-> +	slow_clock(at91_pmc_base, at91_ramc_base[0],
-> +			at91_ramc_base[1], pm_data);
-> +}
-> +
->  static int at91_pm_enter(suspend_state_t state)
->  {
->  	at91_pinctrl_gpio_suspend();
->  
->  	switch (state) {
-> +	/*
-> +	 * Suspend-to-RAM is like STANDBY plus slow clock mode, so
-> +	 * drivers must suspend more deeply, the master clock switches
-> +	 * to the clk32k and turns off the main oscillator
-> +	 *
-> +	 * STANDBY mode has *all* drivers suspended; ignores irqs not
-> +	 * marked as 'wakeup' event sources; and reduces DRAM power.
-> +	 * But otherwise it's identical to PM_SUSPEND_ON:  cpu idle, and
-> +	 * nothing fancy done with main or cpu clocks.
-> +	 */
-> +	case PM_SUSPEND_MEM:
-> +	case PM_SUSPEND_STANDBY:
->  		/*
-> -		 * Suspend-to-RAM is like STANDBY plus slow clock mode, so
-> -		 * drivers must suspend more deeply:  only the master clock
-> -		 * controller may be using the main oscillator.
-> +		 * Ensure that clocks are in a valid state.
->  		 */
-> -		case PM_SUSPEND_MEM:
-> -			/*
-> -			 * Ensure that clocks are in a valid state.
-> -			 */
-> -			if (!at91_pm_verify_clocks())
-> -				goto error;
-> -
-> -			/*
-> -			 * Enter slow clock mode by switching over to clk32k and
-> -			 * turning off the main oscillator; reverse on wakeup.
-> -			 */
-> -			if (slow_clock) {
-> -				slow_clock(at91_pmc_base, at91_ramc_base[0],
-> -					   at91_ramc_base[1],
-> -					   at91_pm_data.memctrl);
-> -				break;
-> -			} else {
-> -				pr_info("AT91: PM - no slow clock mode enabled ...\n");
-> -				/* FALLTHROUGH leaving master clock alone */
-> -			}
-> +		if (!at91_pm_verify_clocks())
-> +			goto error;
->  
-> -		/*
-> -		 * STANDBY mode has *all* drivers suspended; ignores irqs not
-> -		 * marked as 'wakeup' event sources; and reduces DRAM power.
-> -		 * But otherwise it's identical to PM_SUSPEND_ON:  cpu idle, and
-> -		 * nothing fancy done with main or cpu clocks.
-> -		 */
-> -		case PM_SUSPEND_STANDBY:
-> -			/*
-> -			 * NOTE: the Wait-for-Interrupt instruction needs to be
-> -			 * in icache so no SDRAM accesses are needed until the
-> -			 * wakeup IRQ occurs and self-refresh is terminated.
-> -			 * For ARM 926 based chips, this requirement is weaker
-> -			 * as at91sam9 can access a RAM in self-refresh mode.
-> -			 */
-> -			if (at91_pm_standby)
-> -				at91_pm_standby();
-> -			break;
-> +		at91_pm_suspend(state);
->  
-> -		case PM_SUSPEND_ON:
-> -			cpu_do_idle();
-> -			break;
-> +		break;
->  
-> -		default:
-> -			pr_debug("AT91: PM - bogus suspend state %d\n", state);
-> -			goto error;
-> +	case PM_SUSPEND_ON:
-> +		cpu_do_idle();
-> +		break;
-> +
-> +	default:
-> +		pr_debug("AT91: PM - bogus suspend state %d\n", state);
-> +		goto error;
->  	}
->  
->  error:
-> diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
-> index 7664d39..fbfea42 100644
-> --- a/arch/arm/mach-at91/pm.h
-> +++ b/arch/arm/mach-at91/pm.h
-> @@ -15,6 +15,12 @@
->  
->  #include <mach/at91_ramc.h>
->  
-> +#define AT91_PM_MEMCTRL_MASK	0x0f
-> +#define AT91_PM_MODE_OFFSET	4
-> +#define AT91_PM_MODE_MASK	0x0f
-> +
-> +#define	AT91_PM_SLOW_CLOCK	0x01
-> +
->  /*
->   * On all at91 except rm9200 and x40 have the System Controller starts
->   * at address 0xffffc000 and has a size of 16KiB.
-> diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-> index 634d819..92d7e63 100644
-> --- a/arch/arm/mach-at91/pm_slowclock.S
-> +++ b/arch/arm/mach-at91/pm_slowclock.S
-> @@ -15,12 +15,15 @@
->  #include <linux/clk/at91_pmc.h>
->  #include <mach/at91_ramc.h>
->  
-> +#include "pm.h"
-> +
->  pmc	.req	r0
->  sdramc	.req	r1
->  ramc1	.req	r2
->  memctrl	.req	r3
->  tmp1	.req	r4
->  tmp2	.req	r5
-> +mode	.req	r6
->  
->  /*
->   * Wait until master clock is ready (after switching master clock source)
-> @@ -72,6 +75,13 @@ ENTRY(at91_slow_clock)
->  	mov	tmp1, #0
->  	mcr	p15, 0, tmp1, c7, c10, 4
->  
-> +	mov	tmp1, memctrl
-> +	mov	tmp2, tmp1, lsr#AT91_PM_MODE_OFFSET
-> +	and	mode, tmp2, #AT91_PM_MODE_MASK
-> +
-> +	mov	tmp1, memctrl
-> +	and	memctrl, tmp1, #AT91_PM_MEMCTRL_MASK
-> +
->  	cmp	memctrl, #AT91_MEMCTRL_MC
->  	bne	ddr_sr_enable
->  
-> @@ -144,6 +154,9 @@ sdr_sr_enable:
->  	str	tmp1, [sdramc, #AT91_SDRAMC_LPR]
->  
->  sdr_sr_done:
-> +	tst	mode, #AT91_PM_SLOW_CLOCK
-> +	beq	skip_disable_clock
-> +
->  	/* Save Master clock setting */
->  	ldr	tmp1, [pmc, #AT91_PMC_MCKR]
->  	str	tmp1, .saved_mckr
-> @@ -169,9 +182,13 @@ sdr_sr_done:
->  	bic	tmp1, tmp1, #AT91_PMC_MOSCEN
->  	str	tmp1, [pmc, #AT91_CKGR_MOR]
->  
-> +skip_disable_clock:
->  	/* Wait for interrupt */
->  	mcr	p15, 0, tmp1, c7, c0, 4
->  
-> +	tst	mode, #AT91_PM_SLOW_CLOCK
-> +	beq	skip_enable_clock
-> +
->  	/* Turn on the main oscillator */
->  	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
->  	orr	tmp1, tmp1, #AT91_PMC_MOSCEN
-> @@ -199,6 +216,7 @@ sdr_sr_done:
->  
->  	wait_mckrdy
->  
-> +skip_enable_clock:
->  	/*
->  	 * at91rm9200 Memory controller
->  	 * Do nothing - self-refresh is automatically disabled.
-> -- 
-> 1.7.9.5
-> 
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Best regards,
+Andri
