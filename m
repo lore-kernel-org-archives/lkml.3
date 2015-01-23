@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbbAWTDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 14:03:15 -0500
-Received: from mail.kernel.org ([198.145.29.136]:50990 "EHLO mail.kernel.org"
+	id S1753163AbbAWTD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 14:03:56 -0500
+Received: from mail.kernel.org ([198.145.29.136]:51026 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801AbbAWTDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 14:03:11 -0500
-Date: Fri, 23 Jan 2015 11:03:04 -0800
+	id S1752364AbbAWTDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 14:03:53 -0500
+Date: Fri, 23 Jan 2015 11:03:49 -0800
 From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Dave Chinner <david@fromorbit.com>
+To: Chao Yu <chao2.yu@samsung.com>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, xfs@oss.sgi.com
-Subject: Re: [PATCH 1/2] xfs: introduce a generic shutdown ioctl
-Message-ID: <20150123190304.GA22493@jaegeuk-mac02.mot.com>
-References: <1420796076-82847-1-git-send-email-jaegeuk@kernel.org>
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH 2/2] f2fs: do checkpoint when umount flag is
+ not set
+Message-ID: <20150123190349.GB22493@jaegeuk-mac02.mot.com>
+References: <1421971730-17024-1-git-send-email-jaegeuk@kernel.org>
+ <1421971730-17024-2-git-send-email-jaegeuk@kernel.org>
+ <000501d036f8$f5e99660$e1bcc320$@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420796076-82847-1-git-send-email-jaegeuk@kernel.org>
+In-Reply-To: <000501d036f8$f5e99660$e1bcc320$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Fri, Jan 23, 2015 at 06:39:25PM +0800, Chao Yu wrote:
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> > Sent: Friday, January 23, 2015 8:09 AM
+> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> > linux-f2fs-devel@lists.sourceforge.net
+> > Cc: Jaegeuk Kim
+> > Subject: [f2fs-dev] [PATCH 2/2] f2fs: do checkpoint when umount flag is not set
+> > 
+> > If the previous checkpoint was done without CP_UMOUNT flag, it needs to do
+> > checkpoint with CP_UMOUNT for the next fast boot.
+> > 
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> 
+> Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+> 
+> > ---
+> >  fs/f2fs/checkpoint.c | 3 ++-
+> >  fs/f2fs/super.c      | 3 ++-
+> >  2 files changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> > index 9f5317c..231d8c9 100644
+> > --- a/fs/f2fs/checkpoint.c
+> > +++ b/fs/f2fs/checkpoint.c
+> > @@ -1043,7 +1043,8 @@ void write_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
+> > 
+> >  	mutex_lock(&sbi->cp_mutex);
+> > 
+> > -	if (!sbi->s_dirty && cpc->reason != CP_DISCARD)
+> > +	if (!sbi->s_dirty &&
+> > +			cpc->reason != CP_DISCARD && cpc->reason != CP_UMOUNT)
+> >  		goto out;
+> >  	if (unlikely(f2fs_cp_error(sbi)))
+> >  		goto out;
+> > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> > index 84f95cd..6ef1458 100644
+> > --- a/fs/f2fs/super.c
+> > +++ b/fs/f2fs/super.c
+> > @@ -448,7 +448,8 @@ static void f2fs_put_super(struct super_block *sb)
+> >  	stop_gc_thread(sbi);
+> > 
+> >  	/* We don't need to do checkpoint when it's clean */
+> 
+> Better to update the annotation above.
 
-Any obejction for this patch?
-Can I push this patch during the next merge window?
+Added some comments. :)
 
 Thanks,
 
-On Fri, Jan 09, 2015 at 01:34:35AM -0800, Jaegeuk Kim wrote:
-> This patch introduces a generic ioctl for fs shutdown used by xfs.
 > 
-> Cc: Dave Chinner <david@fromorbit.com>
-> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> ---
->  fs/xfs/xfs_fs.h         | 8 ++++----
->  include/uapi/linux/fs.h | 8 ++++++++
->  2 files changed, 12 insertions(+), 4 deletions(-)
+> Thanks,
+> Yu
 > 
-> diff --git a/fs/xfs/xfs_fs.h b/fs/xfs/xfs_fs.h
-> index 18dc721..fe0eeee 100644
-> --- a/fs/xfs/xfs_fs.h
-> +++ b/fs/xfs/xfs_fs.h
-> @@ -484,9 +484,9 @@ typedef struct xfs_swapext
->  /*
->   * Flags for going down operation
->   */
-> -#define XFS_FSOP_GOING_FLAGS_DEFAULT		0x0	/* going down */
-> -#define XFS_FSOP_GOING_FLAGS_LOGFLUSH		0x1	/* flush log but not data */
-> -#define XFS_FSOP_GOING_FLAGS_NOLOGFLUSH		0x2	/* don't flush log nor data */
-> +#define XFS_FSOP_GOING_FLAGS_DEFAULT	FS_GOING_DOWN_FULLSYNC
-> +#define XFS_FSOP_GOING_FLAGS_LOGFLUSH	FS_GOING_DOWN_METASYNC
-> +#define XFS_FSOP_GOING_FLAGS_NOLOGFLUSH	FS_GOING_DOWN_NOSYNC
->  
->  /*
->   * ioctl commands that are used by Linux filesystems
-> @@ -555,7 +555,7 @@ typedef struct xfs_swapext
->  #define XFS_IOC_ATTRLIST_BY_HANDLE   _IOW ('X', 122, struct xfs_fsop_attrlist_handlereq)
->  #define XFS_IOC_ATTRMULTI_BY_HANDLE  _IOW ('X', 123, struct xfs_fsop_attrmulti_handlereq)
->  #define XFS_IOC_FSGEOMETRY	     _IOR ('X', 124, struct xfs_fsop_geom)
-> -#define XFS_IOC_GOINGDOWN	     _IOR ('X', 125, __uint32_t)
-> +#define XFS_IOC_GOINGDOWN	     FS_IOC_SHUTDOWN
->  /*	XFS_IOC_GETFSUUID ---------- deprecated 140	 */
->  
->  
-> diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-> index 3735fa0..a4e4be5 100644
-> --- a/include/uapi/linux/fs.h
-> +++ b/include/uapi/linux/fs.h
-> @@ -157,6 +157,7 @@ struct inodes_stat_t {
->  #define FIFREEZE	_IOWR('X', 119, int)	/* Freeze */
->  #define FITHAW		_IOWR('X', 120, int)	/* Thaw */
->  #define FITRIM		_IOWR('X', 121, struct fstrim_range)	/* Trim */
-> +#define FS_IOC_SHUTDOWN	_IOR('X', 125, __u32)	/* Shutdown */
->  
->  #define	FS_IOC_GETFLAGS			_IOR('f', 1, long)
->  #define	FS_IOC_SETFLAGS			_IOW('f', 2, long)
-> @@ -205,4 +206,11 @@ struct inodes_stat_t {
->  #define SYNC_FILE_RANGE_WRITE		2
->  #define SYNC_FILE_RANGE_WAIT_AFTER	4
->  
-> +/*
-> + * Flags for going down operation used by FS_IOC_GOINGDOWN
-> + */
-> +#define FS_GOING_DOWN_FULLSYNC	0x0	/* going down with full sync */
-> +#define FS_GOING_DOWN_METASYNC	0x1	/* going down with metadata */
-> +#define FS_GOING_DOWN_NOSYNC	0x2	/* going down */
-> +
->  #endif /* _UAPI_LINUX_FS_H */
-> -- 
-> 2.1.1
+> > -	if (sbi->s_dirty) {
+> > +	if (sbi->s_dirty ||
+> > +			!is_set_ckpt_flags(F2FS_CKPT(sbi), CP_UMOUNT_FLAG)) {
+> >  		struct cp_control cpc = {
+> >  			.reason = CP_UMOUNT,
+> >  		};
+> > --
+> > 2.1.1
+> > 
