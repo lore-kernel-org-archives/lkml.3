@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbbAWOXJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:23:09 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:59740 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565AbbAWOXF (ORCPT
+	id S932140AbbAWO0U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:26:20 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:55866 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610AbbAWOYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:23:05 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-ae-54c258b50fb3
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene@kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] ARM: exynos_defconfig: Enable PMIC and MUIC drivers for Gears
- and Trats2
-Date: Fri, 23 Jan 2015 15:22:46 +0100
-Message-id: <1422022966-15897-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPJMWRmVeSWpSXmKPExsVy+t/xa7pbIw6FGJx/Zm6xccZ6Voujvwss
-	Xr8wtOh//JrZ4mzTG3aLTY+vsVpc3jWHzWLG+X1MFrcv81qsPXKX3YHLo6W5h83j7/PrLB6b
-	VnWyeWxeUu/Rt2UVo8fnTXIBbFFcNimpOZllqUX6dglcGV+/v2Yr2MJb0bz5OEsD42XuLkZO
-	DgkBE4nbUy6yQdhiEhfurQeyuTiEBJYySjzpPcoK4fQxSby8+JIZpIpNwFhi8/IlYB0iAh8Z
-	JTa9sAEpYhY4yihxY9ZdJpCEsEC0xOP3J1lBbBYBVYmJ9zazgNi8Au4Sh97OhlonJ3Hy2GTW
-	CYzcCxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEBNKXHYyLj1kdYhTgYFTi4d3x9GCI
-	EGtiWXFl7iFGCQ5mJRFea81DIUK8KYmVValF+fFFpTmpxYcYmTg4pRoYdfb5Bt7kesogPLFS
-	LVo2eXum69NPSaw9Weucj2pPKevS7Rd39tj4ZUus8I8b3uVnC3PzM2bb55nwsacyrvVWfmOu
-	sfvZXceVKS//th61nWwsZyLyiOusPVfIw9yOY7oidrNDKx6FP7mb42bw5Gs6I/Mi87RXsmUv
-	uS9mr7imIv/f10Vuw0UlluKMREMt5qLiRABLJvqwAgIAAA==
+	Fri, 23 Jan 2015 09:24:02 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-f9-54c25980cbea
+From: Jaehoon Chung <jh80.chung@samsung.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: kgene@kernel.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jaehoon Chung <jh80.chung@samsung.com>
+Subject: [PATCH] ARM: dts: Add sd0_rst pinctrl node to exynos5420
+Date: Fri, 23 Jan 2015 23:23:58 +0900
+Message-id: <1422023038-11842-1-git-send-email-jh80.chung@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsWyRsSkQLch8lCIwfKdUhbzj5xjtbjxq43V
+	ov/xa2aLy7vmsFnMOL+PyYHVY9OqTjaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyuha/Jux
+	4CJrxc8PtxkbGM+xdDFyckgImEis2XYTyhaTuHBvPVsXIxeHkMBSRolL194wwxSt3jyJFSIx
+	nVHi78UZUE4bk0Trjq1sIFVsAjoS278dZwKxRQRUJT63LWAHsZkFKiTObXwNFhcWcJTY9LYd
+	zGYBqpm5fzOYzSvgJrFl53/GLkYOoG0KEnMm2YDMlxB4zCZxdOUjqHoBiW+TD7FA1MhKbDoA
+	dZykxMEVN1gmMAouYGRYxSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iREYjqf/PZuwg/HeAetD
+	jAIcjEo8vA1bDoYIsSaWFVfmHmI0BdowkVlKNDkfGPR5JfGGxmZGFqYmpsZG5pZmSuK8r6V+
+	BgsJpCeWpGanphakFsUXleakFh9iZOLglGpgjP9SxVfNe8baQL57xbtZRbt2GO51kG2znKZd
+	us+O6z5L24acma1dbNMTeTzSK/M8N5peVDXYo2hzQN+R4cZcT4mTPA9u6fctX7VlquDz64Eu
+	v2+xK/9/4/ygclHRsSDj1pLQnvvM0/z2Rwj3Kif22H4Ofx6+78p9jdnGLx9ceej+ze2uyJ5Z
+	SizFGYmGWsxFxYkAC1t7dUICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t9jQd2GyEMhBiuOC1vMP3KO1eLGrzZW
+	i/7Hr5ktLu+aw2Yx4/w+JgdWj02rOtk8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/d
+	Vsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2inkkJZYk4pUCggsbhYSd8O04TQEDdd
+	C5jGCF3fkCC4HiMDNJCwhjGja/FvxoKLrBU/P9xmbGA8x9LFyMkhIWAisXrzJFYIW0ziwr31
+	bF2MXBxCAtMZJf5enMEK4bQxSbTu2MoGUsUmoCOx/dtxJhBbREBV4nPbAnYQm1mgQuLcxtdg
+	cWEBR4lNb9vBbBagmpn7N4PZvAJuElt2/mfsYuQA2qYgMWeSzQRG7gWMDKsYRVMLkguKk9Jz
+	DfWKE3OLS/PS9ZLzczcxgoP9mdQOxpUNFocYBTgYlXh4G7YcDBFiTSwrrsw9xCjBwawkwmut
+	eShEiDclsbIqtSg/vqg0J7X4EKMp0PKJzFKiyfnASMwriTc0NjEzsjQyN7QwMjZXEudVsm8L
+	ERJITyxJzU5NLUgtgulj4uCUamBMq5/DySfmour5fp2xyyPlw9e6btw58jhksaJkLhfLsRlG
+	D88Gfch9+MKYp3et4relP/Y625yZK7NxTU/vi6WXv/IfvR9x/g7HjwWLp8Vt/RyUu12w+mTv
+	XJ4kp8MqPkXJteq/Pjyud/K8uT+ZY+mS0ArJlli3310921e9aj+86v3xf6VP5x8uVWIpzkg0
+	1GIuKk4EAKzsatKMAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable drivers for PMICs and MUICs present on Exynos-based devices:
- - max14577: charger, extcon, fuel gauge (max17040), regulator,
-   used on: Gear 1, Gear 2,
- - max77693: charger, extcon, fuel gauge (max17042),
-   used on: Trats2,
+Add sd0_rst node to exynos5420-pinctrl.dtsi.
+(It's used on odroid-xu3 board)
 
-This allows full usage of charging stack on these devices along with
-extcon connector.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
 ---
- arch/arm/configs/exynos_defconfig | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/arm/boot/dts/exynos5420-pinctrl.dtsi |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-index 3d0c5d65c741..01758378a1b1 100644
---- a/arch/arm/configs/exynos_defconfig
-+++ b/arch/arm/configs/exynos_defconfig
-@@ -83,6 +83,10 @@ CONFIG_I2C_S3C2410=y
- CONFIG_DEBUG_GPIO=y
- CONFIG_POWER_SUPPLY=y
- CONFIG_BATTERY_SBS=y
-+CONFIG_BATTERY_MAX17040=y
-+CONFIG_BATTERY_MAX17042=y
-+CONFIG_CHARGER_MAX14577=y
-+CONFIG_CHARGER_MAX77693=y
- CONFIG_CHARGER_TPS65090=y
- CONFIG_HWMON=y
- CONFIG_SENSORS_LM90=y
-@@ -94,6 +98,7 @@ CONFIG_S3C2410_WATCHDOG=y
- CONFIG_MFD_CROS_EC=y
- CONFIG_MFD_CROS_EC_I2C=y
- CONFIG_MFD_CROS_EC_SPI=y
-+CONFIG_MFD_MAX14577=y
- CONFIG_MFD_MAX77686=y
- CONFIG_MFD_MAX77693=y
- CONFIG_MFD_MAX8997=y
-@@ -102,6 +107,7 @@ CONFIG_MFD_TPS65090=y
- CONFIG_REGULATOR=y
- CONFIG_REGULATOR_FIXED_VOLTAGE=y
- CONFIG_REGULATOR_GPIO=y
-+CONFIG_REGULATOR_MAX14577=y
- CONFIG_REGULATOR_MAX8997=y
- CONFIG_REGULATOR_MAX77686=y
- CONFIG_REGULATOR_MAX77802=y
-@@ -168,6 +174,9 @@ CONFIG_COMMON_CLK_MAX77686=y
- CONFIG_COMMON_CLK_MAX77802=y
- CONFIG_COMMON_CLK_S2MPS11=y
- CONFIG_EXYNOS_IOMMU=y
-+CONFIG_EXTCON=y
-+CONFIG_EXTCON_MAX14577=y
-+CONFIG_EXTCON_MAX77693=y
- CONFIG_IIO=y
- CONFIG_EXYNOS_ADC=y
- CONFIG_PWM=y
+diff --git a/arch/arm/boot/dts/exynos5420-pinctrl.dtsi b/arch/arm/boot/dts/exynos5420-pinctrl.dtsi
+index ba686e4..315cad7 100644
+--- a/arch/arm/boot/dts/exynos5420-pinctrl.dtsi
++++ b/arch/arm/boot/dts/exynos5420-pinctrl.dtsi
+@@ -194,6 +194,11 @@
+ 			samsung,pin-drv = <3>;
+ 		};
+ 
++		sd0_rst: sd0-rst {
++			samsung,pins = "gpd1-0";
++			samsung,pin-function = <1>;
++		};
++
+ 		sd1_clk: sd1-clk {
+ 			samsung,pins = "gpc1-0";
+ 			samsung,pin-function = <2>;
 -- 
-1.9.1
+1.7.9.5
 
