@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640AbbAWOY0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:24:26 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41093 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070AbbAWOYW (ORCPT
+	id S1755583AbbAWOXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:23:09 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:59740 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565AbbAWOXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:24:22 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>
-Subject: [PATCH 3.19-rc2 v15 8/8] ARM: Fix on-demand backtrace triggered by IRQ
-Date: Fri, 23 Jan 2015 14:22:32 +0000
-Message-Id: <1422022952-31552-9-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1422022952-31552-1-git-send-email-daniel.thompson@linaro.org>
-References: <1422022952-31552-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 23 Jan 2015 09:23:05 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-ae-54c258b50fb3
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene@kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] ARM: exynos_defconfig: Enable PMIC and MUIC drivers for Gears
+ and Trats2
+Date: Fri, 23 Jan 2015 15:22:46 +0100
+Message-id: <1422022966-15897-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPJMWRmVeSWpSXmKPExsVy+t/xa7pbIw6FGJx/Zm6xccZ6Voujvwss
+	Xr8wtOh//JrZ4mzTG3aLTY+vsVpc3jWHzWLG+X1MFrcv81qsPXKX3YHLo6W5h83j7/PrLB6b
+	VnWyeWxeUu/Rt2UVo8fnTXIBbFFcNimpOZllqUX6dglcGV+/v2Yr2MJb0bz5OEsD42XuLkZO
+	DgkBE4nbUy6yQdhiEhfurQeyuTiEBJYySjzpPcoK4fQxSby8+JIZpIpNwFhi8/IlYB0iAh8Z
+	JTa9sAEpYhY4yihxY9ZdJpCEsEC0xOP3J1lBbBYBVYmJ9zazgNi8Au4Sh97OhlonJ3Hy2GTW
+	CYzcCxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEBNKXHYyLj1kdYhTgYFTi4d3x9GCI
+	EGtiWXFl7iFGCQ5mJRFea81DIUK8KYmVValF+fFFpTmpxYcYmTg4pRoYdfb5Bt7kesogPLFS
+	LVo2eXum69NPSaw9Weucj2pPKevS7Rd39tj4ZUus8I8b3uVnC3PzM2bb55nwsacyrvVWfmOu
+	sfvZXceVKS//th61nWwsZyLyiOusPVfIw9yOY7oidrNDKx6FP7mb42bw5Gs6I/Mi87RXsmUv
+	uS9mr7imIv/f10Vuw0UlluKMREMt5qLiRABLJvqwAgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if arch_trigger_all_cpu_backtrace() is called with interrupts
-disabled and on a platform the delivers IPI_CPU_BACKTRACE using regular
-IRQ requests the system will wedge for ten seconds waiting for the
-current CPU to react to a masked interrupt.
+Enable drivers for PMICs and MUICs present on Exynos-based devices:
+ - max14577: charger, extcon, fuel gauge (max17040), regulator,
+   used on: Gear 1, Gear 2,
+ - max77693: charger, extcon, fuel gauge (max17042),
+   used on: Trats2,
 
-This patch resolves this issue by calling directly into the backtrace
-dump code instead of generating an IPI.
+This allows full usage of charging stack on these devices along with
+extcon connector.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/arm/kernel/smp.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ arch/arm/configs/exynos_defconfig | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 93fe51d305d1..ef35cf832aee 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -739,6 +739,16 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 		cpumask_clear_cpu(this_cpu, to_cpumask(backtrace_mask));
- 	cpumask_copy(&printtrace_mask, to_cpumask(backtrace_mask));
- 
-+	/*
-+	 * If irqs are disabled on the current processor then, if
-+	 * IPI_CPU_BACKTRACE is delivered using IRQ, we will won't be able to
-+	 * react to IPI_CPU_BACKTRACE until we leave this function. We avoid
-+	 * the potential timeout (not to mention the failure to print useful
-+	 * information) by calling the backtrace directly.
-+	 */
-+	if (include_self && irqs_disabled())
-+		ipi_cpu_backtrace(in_interrupt() ? get_irq_regs() : NULL);
-+
- 	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
- 		pr_info("Sending FIQ to %s CPUs:\n",
- 			(include_self ? "all" : "other"));
-@@ -767,7 +777,10 @@ void ipi_cpu_backtrace(struct pt_regs *regs)
- 	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
- 		orig = this_cpu_begin_nmi_printk();
- 		pr_warn("FIQ backtrace for cpu %d\n", cpu);
--		show_regs(regs);
-+		if (regs != NULL)
-+			show_regs(regs);
-+		else
-+			dump_stack();
- 		this_cpu_end_nmi_printk(orig);
- 
- 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
+index 3d0c5d65c741..01758378a1b1 100644
+--- a/arch/arm/configs/exynos_defconfig
++++ b/arch/arm/configs/exynos_defconfig
+@@ -83,6 +83,10 @@ CONFIG_I2C_S3C2410=y
+ CONFIG_DEBUG_GPIO=y
+ CONFIG_POWER_SUPPLY=y
+ CONFIG_BATTERY_SBS=y
++CONFIG_BATTERY_MAX17040=y
++CONFIG_BATTERY_MAX17042=y
++CONFIG_CHARGER_MAX14577=y
++CONFIG_CHARGER_MAX77693=y
+ CONFIG_CHARGER_TPS65090=y
+ CONFIG_HWMON=y
+ CONFIG_SENSORS_LM90=y
+@@ -94,6 +98,7 @@ CONFIG_S3C2410_WATCHDOG=y
+ CONFIG_MFD_CROS_EC=y
+ CONFIG_MFD_CROS_EC_I2C=y
+ CONFIG_MFD_CROS_EC_SPI=y
++CONFIG_MFD_MAX14577=y
+ CONFIG_MFD_MAX77686=y
+ CONFIG_MFD_MAX77693=y
+ CONFIG_MFD_MAX8997=y
+@@ -102,6 +107,7 @@ CONFIG_MFD_TPS65090=y
+ CONFIG_REGULATOR=y
+ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_REGULATOR_GPIO=y
++CONFIG_REGULATOR_MAX14577=y
+ CONFIG_REGULATOR_MAX8997=y
+ CONFIG_REGULATOR_MAX77686=y
+ CONFIG_REGULATOR_MAX77802=y
+@@ -168,6 +174,9 @@ CONFIG_COMMON_CLK_MAX77686=y
+ CONFIG_COMMON_CLK_MAX77802=y
+ CONFIG_COMMON_CLK_S2MPS11=y
+ CONFIG_EXYNOS_IOMMU=y
++CONFIG_EXTCON=y
++CONFIG_EXTCON_MAX14577=y
++CONFIG_EXTCON_MAX77693=y
+ CONFIG_IIO=y
+ CONFIG_EXYNOS_ADC=y
+ CONFIG_PWM=y
 -- 
-1.9.3
+1.9.1
 
