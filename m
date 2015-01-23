@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378AbbAWShj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:37:39 -0500
-Received: from mga11.intel.com ([192.55.52.93]:38728 "EHLO mga11.intel.com"
+	id S1756409AbbAWShq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:37:46 -0500
+Received: from mga01.intel.com ([192.55.52.88]:49840 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752139AbbAWShg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:37:36 -0500
+	id S1756380AbbAWShk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 13:37:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.09,455,1418112000"; 
-   d="scan'208";a="655613504"
+   d="scan'208";a="674944791"
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 To: josh@joshtriplett.org
 Cc: linux-kernel@vger.kernel.org, Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH 01/10] drivers/char: Support compiling out memory-access char devices
-Date: Fri, 23 Jan 2015 12:37:07 -0600
-Message-Id: <15b4b4209511c374b6c06f4248d0528b22078a9b.1422035184.git.tom.zanussi@linux.intel.com>
+Subject: [PATCH 02/10] drivers/char: Support compiling out /dev/mem
+Date: Fri, 23 Jan 2015 12:37:08 -0600
+Message-Id: <85621d47d40652f5f7c5ba16d6dedda9821f64ca.1422035184.git.tom.zanussi@linux.intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1422035184.git.tom.zanussi@linux.intel.com>
 References: <cover.1422035184.git.tom.zanussi@linux.intel.com>
@@ -24,150 +24,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many embedded systems can get by without the complete set of
-memory-access char devices: /dev/mem, /dev/kmem, /dev/zero, /dev/null,
-/dev/full, /dev/random, /dev/urandom, /dev/port, and /dev/kmsg.
+Most embedded systems have no use for /dev/mem, and omitting it saves
+space.  Add a new EMBEDDED config option to disable it.
 
-Omitting them all can be accomplished by disabling DEVMEM_BASE, a new
-EMBEDDED config option.
+mmap_mem() is shared between /dev/mem and /dev/kmem; making it
+__maybe_unused prevents it from emitting warnings if both devices are
+compiled out, while avoiding ugly compound ifdefs.
 
-If DEVMEM_BASE is enabled, each of those devices can still be enabled
-individually.
+Also, STRICT_DEVMEM can now be refined to depend on DEVMEM rather than
+the big hammer, DEVMEM_BASE.
 
 bloat-o-meter (based on tinyconfig):
 
-add/remove: 0/51 grow/shrink: 2/1 up/down: 313/-5820 (-5507)
+add/remove: 0/4 grow/shrink: 1/0 up/down: 96/-565 (-469)
 function                                     old     new   delta
-sys_getrandom                                211     432    +221
-do_syslog                                   1027    1119     +92
-write_null                                     3       -      -3
-read_null                                      3       -      -3
-aio_read_null                                  3       -      -3
-pipe_to_null                                   4       -      -4
-mem_class                                      4       -      -4
-write_full                                     6       -      -6
-devkmsg_release                               15       -     -15
-random_fasync                                 16       -     -16
-mmap_zero                                     16       -     -16
-aio_write_null                                18       -     -18
-open_port                                     19       -     -19
-random_read                                   20       -     -20
-splice_write_null                             24       -     -24
-null_lseek                                    25       -     -25
-mmap_mem_ops                                  32       -     -32
-mem_devnode                                   35       -     -35
-mmap_kmem                                     37       -     -37
-random_write                                  42       -     -42
-write_pool                                    82       -     -82
-random_poll                                   83       -     -83
-read_iter_zero                                95       -     -95
-urandom_read                                  96       -     -96
-memory_open                                   96       -     -96
-devkmsg_poll                                  97       -     -97
-read_port                                     98       -     -98
+mmap_kmem                                     37     133     +96
 mmap_mem                                     103       -    -103
-devkmsg_open                                 112       -    -112
-check_syslog_permissions                     114       -    -114
-zero_fops                                    116       -    -116
-write_port                                   116       -    -116
-urandom_fops                                 116       -    -116
-random_fops                                  116       -    -116
-port_fops                                    116       -    -116
-null_fops                                    116       -    -116
-memory_fops                                  116       -    -116
 mem_fops                                     116       -    -116
-kmsg_fops                                    116       -    -116
-kmem_fops                                    116       -    -116
-full_fops                                    116       -    -116
-memory_lseek                                 122       -    -122
-devkmsg_llseek                               144       -    -144
-chr_dev_init                                 162       3    -159
 read_mem                                     162       -    -162
-_random_read.part                            173       -    -173
 write_mem                                    184       -    -184
-devlist                                      192       -    -192
-devkmsg_write                                209       -    -209
-zero_bdi                                     244       -    -244
+
+Here we see mmap_mem inlined in mmap_kmem and mmap_mem going away.
+
+bloat-o-meter showing only CONFIG_DEVKMEM off:
+
+add/remove: 0/4 grow/shrink: 0/0 up/down: 0/-792 (-792)
+function                                     old     new   delta
+mmap_kmem                                     37       -     -37
+kmem_fops                                    116       -    -116
 read_kmem                                    290       -    -290
-random_ioctl                                 319       -    -319
 write_kmem                                   349       -    -349
-devkmsg_read                                 699       -    -699
+
+bloat-o-meter showing the difference between only CONFIG_DEVKMEM off
+and both CONFIG_DEVKMEM and CONFIG_DEVMEM off:
+
+add/remove: 0/5 grow/shrink: 0/0 up/down: 0/-597 (-597)
+function                                     old     new   delta
+mmap_mem_ops                                  32       -     -32
+mmap_mem                                     103       -    -103
+mem_fops                                     116       -    -116
+read_mem                                     162       -    -162
+write_mem                                    184       -    -184
+
+Here we see mmap_mem going away as before, but also not being inlined
+by mmap_kmem because that's gone, and mmap_mem_ops goes away as well,
+because it's not being used by even an inlined mmap_mem.
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- arch/x86/Kconfig.debug |  1 +
- drivers/char/Kconfig   | 12 ++++++++++++
- drivers/char/mem.c     |  7 +++++++
- 3 files changed, 20 insertions(+)
+ arch/x86/Kconfig.debug |  2 +-
+ drivers/char/Kconfig   | 10 ++++++++++
+ drivers/char/mem.c     |  9 ++++++++-
+ 3 files changed, 19 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 61bd2ad..34a781a 100644
+index 34a781a..39afd1c 100644
 --- a/arch/x86/Kconfig.debug
 +++ b/arch/x86/Kconfig.debug
-@@ -7,6 +7,7 @@ source "lib/Kconfig.debug"
+@@ -7,7 +7,7 @@ source "lib/Kconfig.debug"
  
  config STRICT_DEVMEM
  	bool "Filter access to /dev/mem"
-+	depends on DEVMEM_BASE
+-	depends on DEVMEM_BASE
++	depends on DEVMEM
  	---help---
  	  If this option is disabled, you allow userspace (root) access to all
  	  of memory, including kernel and userspace memory. Accidental
 diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index efefd12..7a8204a 100644
+index 7a8204a..73e2bb8 100644
 --- a/drivers/char/Kconfig
 +++ b/drivers/char/Kconfig
-@@ -6,8 +6,19 @@ menu "Character devices"
+@@ -26,6 +26,16 @@ config DEVKMEM
+ 	  kind of kernel debugging operations.
+ 	  When in doubt, say "N".
  
- source "drivers/tty/Kconfig"
- 
-+config DEVMEM_BASE
-+	bool "Base support for memory-access char devices" if EMBEDDED
++config DEVMEM
++	bool "/dev/mem virtual device support" if EMBEDDED
++	depends on DEVMEM_BASE
 +	default y
 +	help
-+	  Say Y here if you want to support the various character
-+	  devices used to access memory, such as /dev/mem, /dev/null,
-+	  /dev/zero, /dev/random, etc.  Many embedded systems can get
-+	  by without these devices; doing so will save memory.  When
-+	  in doubt, say "Y".
++	  Say Y here if you want to support the /dev/mem device. The
++	  /dev/mem device is used mainly by X and dosemu, and can be
++	  disabled on systems that will never use either, such as many
++	  embedded systems.  When in doubt, say "Y".
 +
- config DEVKMEM
- 	bool "/dev/kmem virtual device support"
-+	depends on DEVMEM_BASE
- 	default y
- 	help
- 	  Say Y here if you want to support the /dev/kmem device. The
-@@ -577,6 +588,7 @@ config DEVPORT
- 	bool
- 	depends on !M68K
- 	depends on ISA || PCI
-+	depends on DEVMEM_BASE
- 	default y
- 
- source "drivers/s390/char/Kconfig"
+ config SGI_SNSC
+ 	bool "SGI Altix system controller communication support"
+ 	depends on (IA64_SGI_SN2 || IA64_GENERIC)
 diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 4c58333..c141c0f 100644
+index c141c0f..9b7b04e 100644
 --- a/drivers/char/mem.c
 +++ b/drivers/char/mem.c
-@@ -34,6 +34,7 @@
- # include <linux/efi.h>
+@@ -92,6 +92,7 @@ void __weak unxlate_dev_mem_ptr(phys_addr_t phys, void *addr)
+ }
  #endif
  
-+#ifdef CONFIG_DEVMEM_BASE
- #define DEVPORT_MINOR	4
- 
- static inline unsigned long size_inside_page(unsigned long start,
-@@ -876,5 +877,11 @@ static int __init chr_dev_init(void)
- 
- 	return tty_init();
++#ifdef CONFIG_DEVMEM
+ /*
+  * This funcion reads the *physical* memory. The f_pos points directly to the
+  * memory location.
+@@ -220,6 +221,7 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
+ 	*ppos += written;
+ 	return written;
  }
-+#else
-+static int __init chr_dev_init(void)
-+{
-+	return tty_init();
-+}
-+#endif /* CONFIG_DEVMEM_BASE */
++#endif
  
- fs_initcall(chr_dev_init);
+ int __weak phys_mem_access_prot_allowed(struct file *file,
+ 	unsigned long pfn, unsigned long size, pgprot_t *vma_prot)
+@@ -308,7 +310,8 @@ static const struct vm_operations_struct mmap_mem_ops = {
+ #endif
+ };
+ 
+-static int mmap_mem(struct file *file, struct vm_area_struct *vma)
++static int __maybe_unused mmap_mem(struct file *file,
++				   struct vm_area_struct *vma)
+ {
+ 	size_t size = vma->vm_end - vma->vm_start;
+ 
+@@ -716,6 +719,7 @@ static int open_port(struct inode *inode, struct file *filp)
+ #define open_mem	open_port
+ #define open_kmem	open_mem
+ 
++#ifdef CONFIG_DEVMEM
+ static const struct file_operations mem_fops = {
+ 	.llseek		= memory_lseek,
+ 	.read		= read_mem,
+@@ -724,6 +728,7 @@ static const struct file_operations mem_fops = {
+ 	.open		= open_mem,
+ 	.get_unmapped_area = get_unmapped_area_mem,
+ };
++#endif
+ 
+ #ifdef CONFIG_DEVKMEM
+ static const struct file_operations kmem_fops = {
+@@ -786,7 +791,9 @@ static const struct memdev {
+ 	const struct file_operations *fops;
+ 	struct backing_dev_info *dev_info;
+ } devlist[] = {
++#ifdef CONFIG_DEVMEM
+ 	 [1] = { "mem", 0, &mem_fops, &directly_mappable_cdev_bdi },
++#endif
+ #ifdef CONFIG_DEVKMEM
+ 	 [2] = { "kmem", 0, &kmem_fops, &directly_mappable_cdev_bdi },
+ #endif
 -- 
 1.9.3
 
