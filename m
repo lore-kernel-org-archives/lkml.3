@@ -1,398 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbbAWLXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:23:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:34799 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752810AbbAWLXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:23:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,453,1418112000"; 
-   d="scan'208,223";a="641540103"
-Date: Fri, 23 Jan 2015 13:21:22 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
-Message-ID: <20150123112122.GD30522@kuha.fi.intel.com>
-References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
- <4078818.ecVtLF3hjd@vostro.rjw.lan>
- <CAAVeFuJjMDfz7TZexkYnYrCGkAmRwubs32UhSPO-4qZWbMJjuQ@mail.gmail.com>
- <1564228.rcRekIyDUd@vostro.rjw.lan>
+	id S1755229AbbAWLV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:21:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37124 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337AbbAWLVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 06:21:55 -0500
+Date: Fri, 23 Jan 2015 03:21:41 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-9bc7491906b4113b4c5ae442157c7dfc4e10cd14@git.kernel.org>
+Cc: mingo@kernel.org, tglx@linutronix.de, stfomichev@yandex-team.ru,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Reply-To: stfomichev@yandex-team.ru, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@kernel.org
+In-Reply-To: <alpine.DEB.2.11.1501202049190.5526@nanos>
+References: <alpine.DEB.2.11.1501202049190.5526@nanos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] hrtimer:
+  Prevent stale expiry time in hrtimer_interrupt()
+Git-Commit-ID: 9bc7491906b4113b4c5ae442157c7dfc4e10cd14
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="Nq2Wo0NMKNjxTN9z"
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1564228.rcRekIyDUd@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  9bc7491906b4113b4c5ae442157c7dfc4e10cd14
+Gitweb:     http://git.kernel.org/tip/9bc7491906b4113b4c5ae442157c7dfc4e10cd14
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Tue, 20 Jan 2015 21:24:10 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 23 Jan 2015 12:13:20 +0100
 
---Nq2Wo0NMKNjxTN9z
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+hrtimer: Prevent stale expiry time in hrtimer_interrupt()
 
-Hi guys,
+hrtimer_interrupt() has the following subtle issue:
 
-On Thu, Jan 22, 2015 at 05:14:22PM +0100, Rafael J. Wysocki wrote:
-> On Thursday, January 22, 2015 11:57:55 AM Alexandre Courbot wrote:
-> > If we decide to go ahead with the solution proposed by this patch for
-> > practical reasons (which are good reasons indeed), I still have one
-> > problem with its current form.
-> > 
-> > As the discussion highlighted, this is an ACPI problem, so I'd very
-> > much like it to be confined to the ACPI GPIO code, to be enabled only
-> > when ACPI is, and to use function names that start with acpi_gpio.
-> 
-> I can agree with that.
-> 
-> > The current implementation leverages platform lookup, making said lookup
-> > less efficient in the process and bringing confusion about its
-> > purpose. Although the two processes are indeed similar, they are
-> > separate things: one is a legitimate way to map GPIOs, the other is a
-> > fixup for broken firmware.
-> > 
-> > I suppose we all agree this is a hackish fix, so let's confine it as
-> > much as we can.
-> 
-> OK
-> 
-> Heikki, any comments?
+hrtimer_interrupt()
+  lock(cpu_base);
+  expires_next = KTIME_MAX;
 
-I'm fine with that.
+  expire_timers(CLOCK_MONOTONIC);
+  expires = get_next_timer(CLOCK_MONOTONIC);
+  if (expires < expires_next)
+    expires_next = expires;
 
-That actually makes me think that we could then drop the lookup tables
-completely and use device properties instead with the help of "generic
-property" (attached):
+  expire_timers(CLOCK_REALTIME);
+    unlock(cpu_base);
+    wakeup()
+    hrtimer_start(CLOCK_MONOTONIC, newtimer);
+    lock(cpu_base();  
+  expires = get_next_timer(CLOCK_REALTIME);
+  if (expires < expires_next)
+    expires_next = expires;
 
-We would just need to agree on the format how to describe a gpio
-property, document it and of course convert the current users as
-usual. The format could be something like this as an example (I'm
-writing this out of my head so don't shoot me if you can see it would
-not work. Just an example):
+So because we already evaluated the next expiring timer of
+CLOCK_MONOTONIC we ignore that the expiry time of newtimer might be
+earlier than the overall next expiry time in hrtimer_interrupt().
 
-static const u32 example_gpio[] = { <gpio>, <flags>, };
+To solve this, remove the caching of the next expiry value from
+hrtimer_interrupt() and reevaluate all active clock bases for the next
+expiry value. To avoid another code duplication, create a shared
+evaluation function and use it for hrtimer_get_next_event(),
+hrtimer_force_reprogram() and hrtimer_interrupt().
 
-static struct dev_gen_prop example_prop[] =
-        {
-                .type = DEV_PROP_U32,
-                .name = "gpio,<con_id>",
-                .nval = 2,
-                .num = &example_gpio,
-        },
-        { },
-};
+There is another subtlety in this mechanism:
 
-static struct platform_device example_pdev = {
-        ...
-        .dev = {
-                .gen_prop = &example_prop,
-        },
-}
+While hrtimer_interrupt() is running, we want to avoid to touch the
+hardware device because we will reprogram it anyway at the end of
+hrtimer_interrupt(). This works nicely for hrtimers which get rearmed
+via the HRTIMER_RESTART mechanism, because we drop out when the
+callback on that CPU is running. But that fails, if a new timer gets
+enqueued like in the example above.
 
+This has another implication: While hrtimer_interrupt() is running we
+refuse remote enqueueing of timers - see hrtimer_interrupt() and
+hrtimer_check_target().
 
-In gpiolib.c we would then, instead of going through the lookups,
-simply ask for that property:
+hrtimer_interrupt() tries to prevent this by setting cpu_base->expires
+to KTIME_MAX, but that fails if a new timer gets queued.
 
-        ...
-        sprintf(propname, "gpio,%s", con_id);
-        device_property_read_u32_array(dev, propname, &val, 2);
-        ...
-        desc = gpio_to_desc(val[0]);
-        flags = val[1];
-        ...
+Prevent both the hardware access and the remote enqueue
+explicitely. We can loosen the restriction on the remote enqueue now
+due to reevaluation of the next expiry value, but that needs a
+seperate patch.
 
+Folded in a fix from Vignesh Radhakrishnan.
 
-So this is just and idea. I think it would be relatively easy to
-implement. What do you guys think?
-
-
-Cheers,
-
--- 
-heikki
-
---Nq2Wo0NMKNjxTN9z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-driver-core-property-support-for-generic-property.patch"
-
->From bb1146d8ca7c39386dfc53043051d389cba49cbe Mon Sep 17 00:00:00 2001
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Date: Wed, 7 Jan 2015 10:57:44 +0200
-Subject: [PATCH] driver core: property: support for generic property
-
-This extends the unified device property interface by adding
-"Generic Property" to it for cases where device tree or ACPI
-are not being used.
-
-That makes the unified device property interface cover also
-most of the cases where information is extracted from custom
-platform_data in the drivers. So if before we had to check
-separately is there custom platform_data for a driver:
-
-	if (pdata)
-		bar = pdata->bar;
-	else
-		device_property_read_u32(dev, "foo", &bar);
-
-we can now drop that check and simply always use the unified
-device property interface.
-
-That makes it possible to drop a lot of boiler plate from
-the drivers, plus quite a few header files under
-include/linux/ describing those driver specific platform
-data structures can be removed.
-
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Reported-and-tested-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Based-on-patch-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: vigneshr@codeaurora.org
+Cc: john.stultz@linaro.org
+Cc: viresh.kumar@linaro.org
+Cc: fweisbec@gmail.com
+Cc: cl@linux.com
+Cc: stuart.w.hayes@gmail.com
+Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1501202049190.5526@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/base/property.c  | 135 ++++++++++++++++++++++++++++++++++++++++++-----
- include/linux/device.h   |   3 ++
- include/linux/property.h |  17 ++++++
- 3 files changed, 143 insertions(+), 12 deletions(-)
+ include/linux/hrtimer.h |   2 +
+ kernel/time/hrtimer.c   | 108 ++++++++++++++++++++++--------------------------
+ 2 files changed, 52 insertions(+), 58 deletions(-)
 
-diff --git a/drivers/base/property.c b/drivers/base/property.c
-index c458458..4ea6d27 100644
---- a/drivers/base/property.c
-+++ b/drivers/base/property.c
-@@ -15,6 +15,108 @@
- #include <linux/acpi.h>
- #include <linux/of.h>
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index a036d05..05f6df1 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -170,6 +170,7 @@ enum  hrtimer_base_type {
+  * @clock_was_set:	Indicates that clock was set from irq context.
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
++ * @in_hrtirq:		hrtimer_interrupt() is currently executing
+  * @hres_active:	State of high resolution mode
+  * @hang_detected:	The last hrtimer interrupt detected a hang
+  * @nr_events:		Total number of hrtimer interrupt events
+@@ -185,6 +186,7 @@ struct hrtimer_cpu_base {
+ 	unsigned int			clock_was_set;
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	ktime_t				expires_next;
++	int				in_hrtirq;
+ 	int				hres_active;
+ 	int				hang_detected;
+ 	unsigned long			nr_events;
+diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
+index 37e50aa..b663653 100644
+--- a/kernel/time/hrtimer.c
++++ b/kernel/time/hrtimer.c
+@@ -440,6 +440,37 @@ static inline void debug_deactivate(struct hrtimer *timer)
+ 	trace_hrtimer_cancel(timer);
+ }
  
-+static struct dev_gen_prop *dev_prop_get(struct device *dev, const char *name)
++#if defined(CONFIG_NO_HZ_COMMON) || defined(CONFIG_HIGH_RES_TIMERS)
++ktime_t __hrtimer_get_next_event(struct hrtimer_cpu_base *cpu_base)
 +{
-+	struct dev_gen_prop *prop;
-+
-+	if (!dev->gen_prop)
-+		return NULL;
-+
-+	for (prop = dev->gen_prop; prop->name; prop++)
-+		if (!strcmp(name, prop->name))
-+			return prop;
-+	return NULL;
-+}
-+
-+static int dev_prop_copy_array_u8(u8 *src, u8 *val, size_t nval)
-+{
++	struct hrtimer_clock_base *base = cpu_base->clock_base;
++	ktime_t expires, expires_next = { .tv64 = KTIME_MAX };
 +	int i;
 +
-+	for (i = 0; i < nval; i++)
-+		val[i] = src[i];
-+	return 0;
-+}
++	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
++		struct timerqueue_node *next;
++		struct hrtimer *timer;
 +
-+static int dev_prop_copy_array_u16(u16 *src, u16 *val, size_t nval)
-+{
-+	int i;
++		next = timerqueue_getnext(&base->active);
++		if (!next)
++			continue;
 +
-+	for (i = 0; i < nval; i++)
-+		val[i] = src[i];
-+	return 0;
-+}
-+
-+static int dev_prop_copy_array_u32(u32 *src, u32 *val, size_t nval)
-+{
-+	int i;
-+
-+	for (i = 0; i < nval; i++)
-+		val[i] = src[i];
-+	return 0;
-+}
-+
-+static int dev_prop_copy_array_u64(u64 *src, u64 *val, size_t nval)
-+{
-+	int i;
-+
-+	for (i = 0; i < nval; i++)
-+		val[i] = src[i];
-+	return 0;
-+}
-+
-+static int dev_prop_copy_array_string(const char **src, const char **val,
-+				      size_t nval)
-+{
-+	int i;
-+
-+	for (i = 0; i < nval; i++)
-+		val[i] = src[i];
-+	return 0;
-+}
-+
-+static int dev_prop_read_array(struct device *dev, const char *name,
-+			       enum dev_prop_type type, void *val, size_t nval)
-+{
-+	struct dev_gen_prop *prop;
-+	int ret = 0;
-+
-+	prop = dev_prop_get(dev, name);
-+	if (!prop)
-+		return -ENODATA;
-+
-+	if (prop->type != type)
-+		return -EPROTO;
-+
-+	if (prop->nval < nval)
-+		return -EOVERFLOW;
-+
-+	switch (prop->type) {
-+	case DEV_PROP_U8:
-+		ret = dev_prop_copy_array_u8((u8 *)prop->num, (u8 *)val,
-+					     nval);
-+		break;
-+	case DEV_PROP_U16:
-+		ret = dev_prop_copy_array_u16((u16 *)prop->num, (u16 *)val,
-+					      nval);
-+		break;
-+	case DEV_PROP_U32:
-+		ret = dev_prop_copy_array_u32((u32 *)prop->num, (u32 *)val,
-+					      nval);
-+		break;
-+	case DEV_PROP_U64:
-+		ret = dev_prop_copy_array_u64(prop->num, (u64 *)val, nval);
-+		break;
-+	case DEV_PROP_STRING:
-+		ret = dev_prop_copy_array_string(prop->str,
-+						 (const char **)val, nval);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
++		timer = container_of(next, struct hrtimer, node);
++		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
++		if (expires.tv64 < expires_next.tv64)
++			expires_next = expires;
 +	}
-+	return ret;
++	/*
++	 * clock_was_set() might have changed base->offset of any of
++	 * the clock bases so the result might be negative. Fix it up
++	 * to prevent a false positive in clockevents_program_event().
++	 */
++	if (expires_next.tv64 < 0)
++		expires_next.tv64 = 0;
++	return expires_next;
 +}
++#endif
 +
- /**
-  * device_property_present - check if a property of a device is present
-  * @dev: Device whose property is being checked
-@@ -26,8 +128,9 @@ bool device_property_present(struct device *dev, const char *propname)
+ /* High resolution timer related functions */
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 
+@@ -488,32 +519,7 @@ static inline int hrtimer_hres_active(void)
+ static void
+ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
  {
- 	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
- 		return of_property_read_bool(dev->of_node, propname);
+-	int i;
+-	struct hrtimer_clock_base *base = cpu_base->clock_base;
+-	ktime_t expires, expires_next;
 -
--	return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
-+	if (ACPI_HANDLE(dev))
-+		return !acpi_dev_prop_get(ACPI_COMPANION(dev), propname, NULL);
-+	return !!dev_prop_get(dev, propname);
- }
- EXPORT_SYMBOL_GPL(device_property_present);
+-	expires_next.tv64 = KTIME_MAX;
+-
+-	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+-		struct hrtimer *timer;
+-		struct timerqueue_node *next;
+-
+-		next = timerqueue_getnext(&base->active);
+-		if (!next)
+-			continue;
+-		timer = container_of(next, struct hrtimer, node);
+-
+-		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
+-		/*
+-		 * clock_was_set() has changed base->offset so the
+-		 * result might be negative. Fix it up to prevent a
+-		 * false positive in clockevents_program_event()
+-		 */
+-		if (expires.tv64 < 0)
+-			expires.tv64 = 0;
+-		if (expires.tv64 < expires_next.tv64)
+-			expires_next = expires;
+-	}
++	ktime_t expires_next = __hrtimer_get_next_event(cpu_base);
  
-@@ -55,8 +158,11 @@ EXPORT_SYMBOL_GPL(fwnode_property_present);
- 	IS_ENABLED(CONFIG_OF) && _dev_->of_node ? \
- 		(OF_DEV_PROP_READ_ARRAY(_dev_->of_node, _propname_, _type_, \
- 					_val_, _nval_)) : \
--		acpi_dev_prop_read(ACPI_COMPANION(_dev_), _propname_, \
--				   _proptype_, _val_, _nval_)
-+		ACPI_HANDLE(_dev_) ? \
-+			acpi_dev_prop_read(ACPI_COMPANION(_dev_), _propname_, \
-+					   _proptype_, _val_, _nval_) : \
-+			dev_prop_read_array(_dev_, _propname_, _proptype_, \
-+					   _val_, _nval_)
+ 	if (skip_equal && expires_next.tv64 == cpu_base->expires_next.tv64)
+ 		return;
+@@ -587,6 +593,15 @@ static int hrtimer_reprogram(struct hrtimer *timer,
+ 		return 0;
  
- /**
-  * device_property_read_u8_array - return a u8 array property of a device
-@@ -169,10 +275,13 @@ EXPORT_SYMBOL_GPL(device_property_read_u64_array);
- int device_property_read_string_array(struct device *dev, const char *propname,
- 				      const char **val, size_t nval)
- {
--	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
--		of_property_read_string_array(dev->of_node, propname, val, nval) :
--		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
--				   DEV_PROP_STRING, val, nval);
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		return of_property_read_string_array(dev->of_node, propname,
-+						     val, nval);
-+	if (ACPI_HANDLE(dev))
-+		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
-+					  DEV_PROP_STRING, val, nval);
-+	return dev_prop_read_array(dev, propname, DEV_PROP_STRING, val, nval);
- }
- EXPORT_SYMBOL_GPL(device_property_read_string_array);
- 
-@@ -193,10 +302,12 @@ EXPORT_SYMBOL_GPL(device_property_read_string_array);
- int device_property_read_string(struct device *dev, const char *propname,
- 				const char **val)
- {
--	return IS_ENABLED(CONFIG_OF) && dev->of_node ?
--		of_property_read_string(dev->of_node, propname, val) :
--		acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
--				   DEV_PROP_STRING, val, 1);
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		return of_property_read_string(dev->of_node, propname, val);
-+	if (ACPI_HANDLE(dev))
-+		return acpi_dev_prop_read(ACPI_COMPANION(dev), propname,
-+					  DEV_PROP_STRING, val, 1);
-+	return dev_prop_read_array(dev, propname, DEV_PROP_STRING, val, 1);
- }
- EXPORT_SYMBOL_GPL(device_property_read_string);
- 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index fb50673..738dc25 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -27,6 +27,7 @@
- #include <linux/ratelimit.h>
- #include <linux/uidgid.h>
- #include <linux/gfp.h>
-+#include <linux/property.h>
- #include <asm/device.h>
- 
- struct device;
-@@ -704,6 +705,7 @@ struct acpi_dev_node {
-  * @archdata:	For arch-specific additions.
-  * @of_node:	Associated device tree node.
-  * @acpi_node:	Associated ACPI device node.
-+ * @gen_prop:	Generic device property
-  * @devt:	For creating the sysfs "dev".
-  * @id:		device instance
-  * @devres_lock: Spinlock to protect the resource of the device.
-@@ -780,6 +782,7 @@ struct device {
- 
- 	struct device_node	*of_node; /* associated device tree node */
- 	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
-+	struct dev_gen_prop	*gen_prop; /* generic device property */
- 
- 	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
- 	u32			id;	/* device instance */
-diff --git a/include/linux/property.h b/include/linux/property.h
-index a6a3d98..44e875f 100644
---- a/include/linux/property.h
-+++ b/include/linux/property.h
-@@ -26,6 +26,23 @@ enum dev_prop_type {
- 	DEV_PROP_MAX,
- };
- 
-+/**
-+ * struct dev_gen_prop - Generic Device Property
-+ * @name: property name
-+ * @nval: number of elements in the array
-+ * @str: value array of strings
-+ * @num: value array of numbers
-+ *
-+ * Used when of_node and acpi_node are missing.
-+ */
-+struct dev_gen_prop {
-+	enum dev_prop_type type;
-+	const char *name;
-+	size_t nval;
-+	const char **str;
-+	u64 *num;
-+};
+ 	/*
++	 * When the target cpu of the timer is currently executing
++	 * hrtimer_interrupt(), then we do not touch the clock event
++	 * device. hrtimer_interrupt() will reevaluate all clock bases
++	 * before reprogramming the device.
++	 */
++	if (cpu_base->in_hrtirq)
++		return 0;
 +
- bool device_property_present(struct device *dev, const char *propname);
- int device_property_read_u8_array(struct device *dev, const char *propname,
- 				  u8 *val, size_t nval);
--- 
-2.1.4
-
-
---Nq2Wo0NMKNjxTN9z--
++	/*
+ 	 * If a hang was detected in the last timer interrupt then we
+ 	 * do not schedule a timer which is earlier than the expiry
+ 	 * which we enforced in the hang detection. We want the system
+@@ -1104,29 +1119,14 @@ EXPORT_SYMBOL_GPL(hrtimer_get_remaining);
+ ktime_t hrtimer_get_next_event(void)
+ {
+ 	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+-	struct hrtimer_clock_base *base = cpu_base->clock_base;
+-	ktime_t delta, mindelta = { .tv64 = KTIME_MAX };
++	ktime_t mindelta = { .tv64 = KTIME_MAX };
+ 	unsigned long flags;
+-	int i;
+ 
+ 	raw_spin_lock_irqsave(&cpu_base->lock, flags);
+ 
+-	if (!hrtimer_hres_active()) {
+-		for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
+-			struct hrtimer *timer;
+-			struct timerqueue_node *next;
+-
+-			next = timerqueue_getnext(&base->active);
+-			if (!next)
+-				continue;
+-
+-			timer = container_of(next, struct hrtimer, node);
+-			delta.tv64 = hrtimer_get_expires_tv64(timer);
+-			delta = ktime_sub(delta, base->get_time());
+-			if (delta.tv64 < mindelta.tv64)
+-				mindelta.tv64 = delta.tv64;
+-		}
+-	}
++	if (!hrtimer_hres_active())
++		mindelta = ktime_sub(__hrtimer_get_next_event(cpu_base),
++				     ktime_get());
+ 
+ 	raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
+ 
+@@ -1253,7 +1253,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
+ 	raw_spin_lock(&cpu_base->lock);
+ 	entry_time = now = hrtimer_update_base(cpu_base);
+ retry:
+-	expires_next.tv64 = KTIME_MAX;
++	cpu_base->in_hrtirq = 1;
+ 	/*
+ 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
+ 	 * held to prevent that a timer is enqueued in our queue via
+@@ -1291,28 +1291,20 @@ retry:
+ 			 * are right-of a not yet expired timer, because that
+ 			 * timer will have to trigger a wakeup anyway.
+ 			 */
+-
+-			if (basenow.tv64 < hrtimer_get_softexpires_tv64(timer)) {
+-				ktime_t expires;
+-
+-				expires = ktime_sub(hrtimer_get_expires(timer),
+-						    base->offset);
+-				if (expires.tv64 < 0)
+-					expires.tv64 = KTIME_MAX;
+-				if (expires.tv64 < expires_next.tv64)
+-					expires_next = expires;
++			if (basenow.tv64 < hrtimer_get_softexpires_tv64(timer))
+ 				break;
+-			}
+ 
+ 			__run_hrtimer(timer, &basenow);
+ 		}
+ 	}
+-
++	/* Reevaluate the clock bases for the next expiry */
++	expires_next = __hrtimer_get_next_event(cpu_base);
+ 	/*
+ 	 * Store the new expiry value so the migration code can verify
+ 	 * against it.
+ 	 */
+ 	cpu_base->expires_next = expires_next;
++	cpu_base->in_hrtirq = 0;
+ 	raw_spin_unlock(&cpu_base->lock);
+ 
+ 	/* Reprogramming necessary ? */
