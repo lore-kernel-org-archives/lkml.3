@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751387AbbAWFbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 00:31:04 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53169 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbbAWFbB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 00:31:01 -0500
-Date: Fri, 23 Jan 2015 05:30:56 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, rgb@redhat.com, sd@queasysnail.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Overhaul the audit filename handling
-Message-ID: <20150123053056.GC29656@ZenIV.linux.org.uk>
-References: <20150122045303.1347.98054.stgit@localhost>
- <20150122075429.GV29656@ZenIV.linux.org.uk>
- <4011794.crgx99Gu8a@sifl>
- <25860171.h6aocaXFeh@sifl>
- <20150122212902.GW29656@ZenIV.linux.org.uk>
- <20150122214000.GX29656@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122214000.GX29656@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752396AbbAWFeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 00:34:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:44049 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750732AbbAWFeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 00:34:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="444041798"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
+Subject: [Resend Patch v4 00/16] Kill SMP single function call interrupt
+Date: Fri, 23 Jan 2015 13:36:39 +0800
+Message-Id: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 09:40:01PM +0000, Al Viro wrote:
-> On Thu, Jan 22, 2015 at 09:29:03PM +0000, Al Viro wrote:
-> > On Thu, Jan 22, 2015 at 04:25:13PM -0500, Paul Moore wrote:
-> > 
-> > > Your experimental branch looks good to me, thanks.
-> > 
-> > Pushed into for-next; I'm probably going to move that stuff into a never-rebased
-> > branch, merged into for-next and safe to pull into your tree if you want to do
-> > something on top of that set.
-> 
-> OK, vfs.git#getname is it; it's in never-to-be-rebased mode and it's merged
-> into vfs.git#for-next (as of right now; HEAD is 9ee4c4).  If you need to do
-> something on top of that stuff, pulling vfs.git#getname is safe.
+This patch set has been hanging around for more than one year since v3.
+Resend for collecting more Acks targetting v3.20 merging window.
+Patches for ARC, Hexagon, Metag, MIPS and PARISC has been merged.
+Gained Acks for Tile, Xen, ARM64 and S390.
 
-Unfortunately, that thing was -rc2-based, leading to conflict with mainline
-in kernel/auditsc.c.  My fault, I hadn't realized that "audit: create private
-file name copies when auditing inodes" in audit tree was, in fact, present in
-mainline.  vfs.git#getname2 is -rc3-based, same resulting kernel/auditsc.c as
-in #getname.  Please, use that.  vfs.git#for-next merges from that one now,
-so tomorrow -next should have no problems from vfs.git...
+Since commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use
+logic similar to smp_call_function_single()", single and multiple
+(mask version) cross CPU function calls are handled in the same way,
+and generic_smp_call_function_interrupt() becomes an aliases of
+generic_smp_call_function_single_interrupt(), so only one interrupt
+is needed for arch code to support generic SMP function call interfaces.
+This patch series simplifies arch code by killing the redundant
+interrupt for cross CPU function calls.
+
+We choose to keep generic_smp_call_function_interrupt() instead of
+generic_smp_call_function_single_interrupt() because the former is
+more generic.
+
+Jiang Liu (16):
+  smp, alpha: Kill SMP single function call interrupt
+  smp, ARM: Kill SMP single function call interrupt
+  smp, ARM64: Kill SMP single function call interrupt
+  smp, IA64: Kill SMP single function call interrupt
+  smp, m32r: Kill SMP single function call interrupt
+  smp, mn10300: Kill SMP single function call interrupt
+  smp, mn10300: Enable arch_send_call_function_ipi_mask()
+  smp, sh: Kill SMP single function call interrupt
+  smp, sparc64: Kill SMP single function call interrupt
+  smp, sparc: Kill SMP single function call interrupt
+  smp, x86, xen: Kill SMP single function call interrupt
+  smp, x86: Kill SMP single function call interrupt
+  smp, tile: Kill SMP single function call interrupt
+  smp, s390: Kill SMP single function call interrupt
+  smp: Cleanup unsued generic_smp_call_function_single_interrupt()
+  smp, trivial: Remove unused function prototype from smp_boot.h
+
+ arch/alpha/kernel/smp.c                  |    8 +------
+ arch/arm/include/asm/hardirq.h           |    2 +-
+ arch/arm/kernel/smp.c                    |   10 +-------
+ arch/arm64/include/asm/hardirq.h         |    2 +-
+ arch/arm64/kernel/smp.c                  |   10 +-------
+ arch/ia64/kernel/smp.c                   |    8 ++-----
+ arch/m32r/include/asm/smp.h              |    1 -
+ arch/m32r/kernel/smp.c                   |    9 +-------
+ arch/m32r/kernel/traps.c                 |    3 +--
+ arch/mn10300/include/asm/smp.h           |    2 +-
+ arch/mn10300/kernel/smp.c                |   19 ++++++++-------
+ arch/s390/kernel/smp.c                   |   10 ++++----
+ arch/sh/include/asm/smp.h                |    1 -
+ arch/sh/kernel/smp.c                     |    5 +---
+ arch/sparc/include/asm/pil.h             |    5 ++--
+ arch/sparc/include/asm/smp_32.h          |    4 +---
+ arch/sparc/kernel/entry.S                |   10 ++------
+ arch/sparc/kernel/leon_smp.c             |   31 ++++++-------------------
+ arch/sparc/kernel/smp_32.c               |   14 ++---------
+ arch/sparc/kernel/smp_64.c               |   13 +----------
+ arch/sparc/kernel/sun4d_smp.c            |   31 ++++++-------------------
+ arch/sparc/kernel/sun4m_smp.c            |   11 ++-------
+ arch/sparc/kernel/ttable_64.S            |   12 ++++------
+ arch/sparc/mm/ultra.S                    |    5 ----
+ arch/tile/include/asm/smp.h              |    7 +++---
+ arch/tile/kernel/smp.c                   |    6 +----
+ arch/x86/include/asm/entry_arch.h        |    1 -
+ arch/x86/include/asm/hw_irq.h            |    3 ---
+ arch/x86/include/asm/irq_vectors.h       |    7 +++---
+ arch/x86/include/asm/trace/irq_vectors.h |    6 -----
+ arch/x86/include/asm/xen/events.h        |    1 -
+ arch/x86/kernel/entry_64.S               |    2 --
+ arch/x86/kernel/irqinit.c                |    4 ----
+ arch/x86/kernel/smp.c                    |   24 +------------------
+ arch/x86/xen/smp.c                       |   37 +-----------------------------
+ include/linux/smp.h                      |    4 +---
+ include/linux/smpboot.h                  |    1 -
+ kernel/smp.c                             |    4 ++--
+ 38 files changed, 65 insertions(+), 268 deletions(-)
+
+-- 
+1.7.10.4
+
