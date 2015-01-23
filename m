@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbbAWVJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 16:09:26 -0500
-Received: from resqmta-ch2-09v.sys.comcast.net ([69.252.207.41]:57840 "EHLO
-	resqmta-ch2-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752722AbbAWVJW (ORCPT
+	id S1756404AbbAWVKo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 16:10:44 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:64501 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbbAWVKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 16:09:22 -0500
-Date: Fri, 23 Jan 2015 15:09:20 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Guenter Roeck <linux@roeck-us.net>
-cc: Johannes Weiner <hannes@cmpxchg.org>, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
- remove unnecessary soft limit tree node test'
-In-Reply-To: <54C2B01D.4070303@roeck-us.net>
-Message-ID: <alpine.DEB.2.11.1501231508020.7871@gentwo.org>
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050802.GB22751@roeck-us.net> <20150123141817.GA22926@phnom.home.cmpxchg.org> <alpine.DEB.2.11.1501231419420.11767@gentwo.org> <54C2B01D.4070303@roeck-us.net>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 23 Jan 2015 16:10:41 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: netdev@vger.kernel.org
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        "David S . Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: [PATCH] net: dsa/mv88e6xxx: add reg read and write debug
+Date: Fri, 23 Jan 2015 16:10:36 -0500
+Message-Id: <1422047436-6864-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: git-send-email 2.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jan 2015, Guenter Roeck wrote:
+This commit adds debug messages for the generic mv88e6xxx read and write
+routines. The output is similar to this:
 
-> Wouldn't that have unintended consequences ? So far
-> rb tree nodes are allocated even if a node not online;
-> the above would change that. Are you saying it is
-> unnecessary to initialize rb tree nodes if the node
-> is not online ?
+    mdio-gpio mdio-gpio.0: <- addr: 0x1b reg: 0x05 val: 0x4000
+    mdio-gpio mdio-gpio.0: -> addr: 0x1b reg: 0x07 val: 0x3113
+    mdio-gpio mdio-gpio.0: -> addr: 0x1b reg: 0x08 val: 0x0330
+    mdio-gpio mdio-gpio.0: -> addr: 0x1b reg: 0x09 val: 0x0000
 
-It is not advisable to allocate since an offline node means that the
-structure cannot be allocated on the node where it would be most
-beneficial. Typically subsystems allocate the per node data structures
-when the node is brought online.
+This is convenient to dynamically debug operations through debugfs with:
 
-> Not that I have any idea what is correct, it just seems odd
-> that the existing code would do all this allocation if it is not
-> necessary.
+    echo file mv88e6xxx.c +p > <debugfs>/dynamic_debug/control
 
-Not sure how the code there works just guessing from other subsystems.
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+---
+ drivers/net/dsa/mv88e6xxx.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
+index cd6807c..3e7e31a 100644
+--- a/drivers/net/dsa/mv88e6xxx.c
++++ b/drivers/net/dsa/mv88e6xxx.c
+@@ -85,6 +85,12 @@ int mv88e6xxx_reg_read(struct dsa_switch *ds, int addr, int reg)
+ 	ret = __mv88e6xxx_reg_read(bus, ds->pd->sw_addr, addr, reg);
+ 	mutex_unlock(&ps->smi_mutex);
+ 
++	if (ret < 0)
++		return ret;
++
++	dev_dbg(ds->master_dev, "<- addr: 0x%.2x reg: 0x%.2x val: 0x%.4x\n",
++		addr, reg, ret);
++
+ 	return ret;
+ }
+ 
+@@ -128,6 +134,9 @@ int mv88e6xxx_reg_write(struct dsa_switch *ds, int addr, int reg, u16 val)
+ 	if (bus == NULL)
+ 		return -EINVAL;
+ 
++	dev_dbg(ds->master_dev, "-> addr: 0x%.2x reg: 0x%.2x val: 0x%.4x\n",
++		addr, reg, val);
++
+ 	mutex_lock(&ps->smi_mutex);
+ 	ret = __mv88e6xxx_reg_write(bus, ds->pd->sw_addr, addr, reg, val);
+ 	mutex_unlock(&ps->smi_mutex);
+-- 
+2.2.2
 
