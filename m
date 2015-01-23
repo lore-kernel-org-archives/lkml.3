@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540AbbAWPax (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:30:53 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:59454 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbbAWPas convert rfc822-to-8bit (ORCPT
+	id S1755576AbbAWPcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:32:10 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:61177 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbbAWPcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:30:48 -0500
+	Fri, 23 Jan 2015 10:32:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sergey Dyasly <s.dyasly@samsung.com>,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <JBottomley@parallels.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] ARM: use default ioremap alignment for SMP or LPAE
+Date: Fri, 23 Jan 2015 16:31:51 +0100
+Message-ID: <52689548.6W7Vnxiz8L@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150123145235.GB21789@e104818-lin.cambridge.arm.com>
+References: <1421911075-8814-1-git-send-email-s.dyasly@samsung.com> <3060178.HEZJjJCl1e@wuerfel> <20150123145235.GB21789@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-In-Reply-To: <1421983803.24914.3.camel@stgolabs.net>
-References: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com>
-	<54BE61F0.202@tycho.nsa.gov>
-	<CABawtvPrhVWV3bC-=wygqfHJzctvrmd1WxDD1ciuLE7F7-_yaQ@mail.gmail.com>
-	<54BF3971.2090003@colorfullife.com>
-	<CABawtvO3PdKhmeH_H1v_tQxmgOBQrnLGNayTE1=EbcxJbtwAzQ@mail.gmail.com>
-	<CAB9W1A3kabX9qMm56k=FJ1jcL8ou4APqt8teT38oFCiu=g1wNg@mail.gmail.com>
-	<54C1AFA2.8040900@oracle.com>
-	<1421983803.24914.3.camel@stgolabs.net>
-Date: Fri, 23 Jan 2015 23:30:47 +0800
-Message-ID: <CABawtvMCyWL1DQb4Q4jM_S0mGWO+V5t_qtq94aE78ar75=+ouA@mail.gmail.com>
-Subject: Re: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused by semop()
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: ethan zhao <ethan.zhao@oracle.com>,
-        Stephen Smalley <stephen.smalley@gmail.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>,
-        selinux <selinux@tycho.nsa.gov>, linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, ethan.kernel@gmail.conm
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:FfP5ze5QJuCHh6ypMz0IEqbHZx/taqHOXO6i2g7i/duyd66Hkax
+ oy/zPwF0rKRb4h7mWFmxqL0isWeXCDzWNH4+RxbAdoCyEIn3aWB3mzykPw9QA7SCE+EW0NN
+ pTsTTtgTueN7Cg+fsGBI7Hyd3+UMI+AaE5BMdwpXgQt17G9uNMLuTlhiYDnV8Zb0CSW83bj
+ hQ4zL90N2poT7wvwFyuTw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Davidlohr，
+On Friday 23 January 2015 14:52:36 Catalin Marinas wrote:
+> On Thu, Jan 22, 2015 at 11:03:00AM +0000, Arnd Bergmann wrote:
+> > Unrelated to this question however is whether we want to keep
+> > supersection mappings as a performance optimization to save TLBs.
+> > It seems useful to me, but not critical.
+> 
+> Currently in Linux we allow 16MB mappings only if the phys address is
+> over 32-bit and !LPAE which makes it unlikely for normal RAM with
+> pre-LPAE hardware.
 
-    I read your commit 53dad6d3a8e5ac1af8bacc6ac2134ae1a8b085f1,
-    ipc: fix race with LSMs
+Ah, I missed this part when looking at the code.
 
-    The issue we hit without the above patch, the race may happen  when
-process call semctl with IPC_RMID just as  Manfred Spraul mentioned:
+> IIRC a bigger problem was that supersections are optional in the
+> architecture but there was no CPUID bit field in ARMv6 (and early ARMv7)
+> to check for their presence. The ID_MMFR3 contains this information but
+> for example on early Cortex-A8 that bitfield was reserved and the TRM
+> states "unpredictable" on read (so probably zero in practice).
+> 
+> On newer ARMv7 (not necessarily with LPAE), we could indeed revisit the
+> 16MB section mapping but it won't go well with single zImage if you want
+> to support earlier ARMv7 or ARMv6.
 
-Thread A:
-   IPC_RMID
-   -> freeary()
-       ->wake_up_sem_queue_do()
-                                                                   Thread B:
-       ->security_sem_free()                           semtimedop()
+I see. If there is desire to have it as an optimization, we could do
+it for armv7ve-only kernels. We don't currently have an build-time
+option for those, but we should introduce one anyway, in order to
+better make use of the idiv instructions and to prevent one from
+enabling LPAE on a multiplatform kernel that contains pre-lpae armv7
+machines (Cortex a8/a9/a5, and some others I'm not sure about).
 
-->ipcperms()
-       ->ipc_rcu_putref()
-
-   If this is the only race, the bug should be fixed with your patch applied
-  (not verified yet on my case).
-
-
-Thanks,
-Ethan
-
-
-
-On Fri, Jan 23, 2015 at 11:30 AM, Davidlohr Bueso <dave@stgolabs.net> wrote:
-> On Fri, 2015-01-23 at 10:19 +0800, ethan zhao wrote:
->> >   If not, what kernel
->> > version were you running when you triggered the bug?
->>   To be honest, a kernel from distro, but not released, but before we
->> get it clear, we wouldn't public more.
->
-> Sheesh, could Oracle be any more (ridiculously) secretive about what the
-> hell kernel(s) they run... it's like pulling teeth. *sigh*
->
+	Arnd
