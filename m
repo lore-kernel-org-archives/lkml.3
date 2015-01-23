@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542AbbAWONx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:13:53 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:53013 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778AbbAWONu (ORCPT
+	id S1755561AbbAWON6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:13:58 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:40105 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543AbbAWONy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:13:50 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-76-54c2568a976d
-Message-id: <54C25712.4090704@samsung.com>
-Date: Fri, 23 Jan 2015 15:13:38 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Inha Song <ideal.song@samsung.com>, alsa-devel@alsa-project.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, kgene@kernel.org, sbkim73@samsung.com,
-        lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH v4 2/3] ASoC: samsung: Document Trats2 audio
- subsystem bindings
-References: <1421989410-12490-1-git-send-email-ideal.song@samsung.com>
- <1421989410-12490-3-git-send-email-ideal.song@samsung.com>
-In-reply-to: <1421989410-12490-3-git-send-email-ideal.song@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t/xK7pdYYdCDDoeS1tcuXiIyWLqwyds
-	FvOPnGO16H+zkNXiwJ8djBa7/t5ntDj3aiWjRf/j18wW3650MFlsenyN1eLyrjlsFjPO72Oy
-	uH2Z12Lp9YtMFhOmr2Wx6NzVz2rRuvcIu8XFFV+YLF5ufsPkIOyx4XMTm8eaeWsYPVqae9g8
-	Lvf1MnnsnHWX3WPl8i9sHptWdbJ53Lm2h81j85J6j31vl7F59G1Zxeix+XS1x+dNcgG8UVw2
-	Kak5mWWpRfp2CVwZs27PYy+4wVhx5NYhlgbGrYxdjJwcEgImEpP272GDsMUkLtxbD2RzcQgJ
-	LGWUmNLeD+RwADmfGCXuF4HU8ApoSbTcmskMYrMIqEr8fN7PBGKzCRhK9B7tA5spKhAhcfLu
-	HnaIekGJH5PvsYCMERFwlvjXlwUynllgEbPEvbmPwPYKCyRJ7Pu8lQlibzOjxIkp/5lAGjgF
-	3CU2NheBmMwCehL3L2qBlDMLyEtsXvOWeQKjwCwkG2YhVM1CUrWAkXkVo2hqaXJBcVJ6rpFe
-	cWJucWleul5yfu4mRkiEft3BuPSY1SFGAQ5GJR7eA28OhgixJpYVV+YeYpTgYFYS4bXWPBQi
-	xJuSWFmVWpQfX1Sak1p8iJGJg1OqgXF375l+i3q3e/yP9q570LUj+a1Ax399Jb7DTiXn7mZH
-	+n2tSzeTTT+g/mlFvHbrmt19Rh+uFQt/+PnUZvf6P3Id9yMMT8pyxFoIuNS+f7645nc/06tu
-	7YTHC5TCJv+YaWG/Su6Qf/E13YmXYxzmHtadKbDtpUliyqTHadYaOWn1q37ETtB7laXEUpyR
-	aKjFXFScCAB4jxNZrgIAAA==
+	Fri, 23 Jan 2015 09:13:54 -0500
+Date: Fri, 23 Jan 2015 15:13:46 +0100
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: Alexei Starovoitov <ast@kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH] samples/bpf: Fix test_maps/bpf_get_next_key() test
+Message-ID: <20150123151346.28ae0d6c@holzheu>
+In-Reply-To: <CAADnVQ+3exrhp8bS50HEnMrYdg4i3+K7c6ewNZHRkBqtW-uwOA@mail.gmail.com>
+References: <CAADnVQ+3exrhp8bS50HEnMrYdg4i3+K7c6ewNZHRkBqtW-uwOA@mail.gmail.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012314-0029-0000-0000-00000313A69D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/01/15 06:03, Inha Song wrote:
-> This patch add Trats2 audio subsystem bindings document.
-> 
-> Signed-off-by: Inha Song <ideal.song@samsung.com>
+On Thu, 22 Jan 2015 09:32:43 -0800
+Alexei Starovoitov <alexei.starovoitov@gmail.com> wrote:
 
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> On Thu, Jan 22, 2015 at 8:01 AM, Michael Holzheu
+> <holzheu@linux.vnet.ibm.com> wrote:
+> > Looks like the "test_maps" test case expects to get the keys in
+> > the wrong order when iterating over the elements:
+> >
+> > test_maps: samples/bpf/test_maps.c:79: test_hashmap_sanity: Assertion
+> > `bpf_get_next_key(map_fd, &key, &next_key) == 0 && next_key == 2' failed.
+> > Aborted
+> >
+> > Fix this and test for the correct order.
+> 
+> that will break this test on x86...
+> we need to understand first why the order of two elements
+> came out different on s390...
+> Could it be that jhash() produced different hash for the same
+> values on x86 vs s390 ?
+
+Yes I think jhash() produces different results for input > 12 bytes
+on big and little endian machines because of the following code
+in include/linux/jhash.h:
+
+        while (length > 12) {
+                a += __get_unaligned_cpu32(k);
+                b += __get_unaligned_cpu32(k + 4);
+                c += __get_unaligned_cpu32(k + 8);
+                __jhash_mix(a, b, c);
+                length -= 12;
+                k += 12;
+        }
+
+The contents of "k" is directly used as u32 and the result
+of "__get_unaligned_cpu32(k)" is different for big and
+little endian.
+
+Michael
 
