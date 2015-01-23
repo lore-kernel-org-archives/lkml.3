@@ -1,97 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311AbbAWNH6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 08:07:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755109AbbAWNHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 08:07:53 -0500
-Message-ID: <54C2479A.3080307@redhat.com>
-Date: Fri, 23 Jan 2015 14:07:38 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755149AbbAWNHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 08:07:44 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:37387 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553AbbAWNHm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 08:07:42 -0500
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
-References: <1421992707-32658-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1421992707-32658-1-git-send-email-minchan@kernel.org>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="pDPdHvHteOPovA7cqvEq4NPjlCUs6Glgm"
+In-Reply-To: <20150123040751.GA24282@mew>
+References: <fdc56e2887c3ed93f4e6a6e784ee0748c2d13295.1420708562.git.osandov@osandov.com>
+	<CAHQdGtT=sXmDk=samGCD92mC-Rjr57NAOURudD9TRyFy3=YaBA@mail.gmail.com>
+	<20150112194302.GA27355@mew.dhcp4.washington.edu>
+	<20150123040751.GA24282@mew>
+Date: Fri, 23 Jan 2015 08:07:41 -0500
+Message-ID: <CAHQdGtRrJe4Z_REFpm=DZBC-KWct9TSKN1ueUW5jGX3qhKUXCA@mail.gmail.com>
+Subject: Re: [PATCH RESEND] nfs: prevent truncate on active swapfile
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Omar Sandoval <osandov@osandov.com>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Devel FS Linux <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---pDPdHvHteOPovA7cqvEq4NPjlCUs6Glgm
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 22, 2015 at 11:07 PM, Omar Sandoval <osandov@osandov.com> wrote:
+> On Mon, Jan 12, 2015 at 11:43:02AM -0800, Omar Sandoval wrote:
+>> On Sat, Jan 10, 2015 at 05:08:03PM -0500, Trond Myklebust wrote:
+>> > Hi Omar,
+>> >
+>> > On Thu, Jan 8, 2015 at 4:18 AM, Omar Sandoval <osandov@osandov.com> wrote:
+>> > > Most filesystems prevent truncation of an active swapfile by way of
+>> > > inode_newsize_ok, called from inode_change_ok. NFS doesn't call either
+>> > > from nfs_setattr, presumably because most of these checks are expected
+>> > > to be done server-side. However, the IS_SWAPFILE check can only be done
+>> > > client-side, and truncating a swapfile can't possibly be good.
+>> > >
+>> > > Signed-off-by: Omar Sandoval <osandov@osandov.com>
+>> > > ---
+>> > > Hi, Trond,
+>> > >
+>> > > Now that the holidays are over, could you take a look at this? It was
+>> > > generated against v3.19-rc3.
+>> > >
+>> > > Thanks!
+>> > >
+>> > >  fs/nfs/inode.c | 7 ++++++-
+>> > >  1 file changed, 6 insertions(+), 1 deletion(-)
+>> > >
+>> > > diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+>> > > index 4bffe63..9205513 100644
+>> > > --- a/fs/nfs/inode.c
+>> > > +++ b/fs/nfs/inode.c
+>> > > @@ -506,10 +506,15 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
+>> > >                 attr->ia_valid &= ~ATTR_MODE;
+>> > >
+>> > >         if (attr->ia_valid & ATTR_SIZE) {
+>> > > +               loff_t i_size;
+>> > > +
+>> > >                 BUG_ON(!S_ISREG(inode->i_mode));
+>> > >
+>> > > -               if (attr->ia_size == i_size_read(inode))
+>> > > +               i_size = i_size_read(inode);
+>> > > +               if (attr->ia_size == i_size)
+>> > >                         attr->ia_valid &= ~ATTR_SIZE;
+>> > > +               else if (attr->ia_size < i_size && IS_SWAPFILE(inode))
+>> > > +                       return -ETXTBSY;
+>> > >         }
+>> > >
+>> > >         /* Optimization: if the end result is no change, don't RPC */
+>> > > --
+>> > > 2.2.1
+>> > >
+>> >
+>> > I agree that truncating a swap file is bad, however as you point out,
+>> > this really only addresses the case on the client that knows about
+>> > this being a swap file.
+>> > I'll take the patch,
+>>
+>> Thanks, I appreciate it.
+>>
+>> > but I'm wondering if we couldn't do better in the
+>> > case where we're using NFSv4 by using share deny modes (which are
+>> > enforced by the server). The problem is that there appears to be
+>> > nothing in swapon() that tells the filesystem this is an open of a
+>> > swap file...
+>>
+>> Yeah, it would be nice for completeness to prevent one client from
+>> truncating another client's swapfile. However, I'd hope that anyone
+>> using swap-over-NFS on a shared NFS mount would take the necessary
+>> precautions in terms of permissions, etc. to prevent someone from doing
+>> that. Also, since the failure mode of truncating an NFS swapfile is a
+>> corrupt swapfile rather than a corrupt filesystem (like on a local
+>> filesystem), it's probably okay to just deal with the low-hanging fruit
+>> for now.
+>>
+>> Thanks!
+>>
+>> >
+>> > Cheers
+>> >   Trond
+>> > --
+>> > Trond Myklebust
+>> > Linux NFS client maintainer, PrimaryData
+>> > trond.myklebust@primarydata.com
+>>
+>> --
+>> Omar
+>
+> Hi, Trond,
+>
+> Are you still planning on taking this patch? I didn't see it in your
+> last pull request to Linus.
 
-On 01/23/2015 06:58 AM, Minchan Kim wrote:
-> We don't need to call zram_meta_free, zcomp_destroy and zs_free
-> under init_lock. What we need to prevent race with init_lock
-> in reset is setting NULL into zram->meta (ie, init_done).
-> This patch does it.
->=20
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+I was planning on pushing it in the 3.20 merge window.
 
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Is there any reason to fasttrack it earlier as an important bugfix? To
+me it seems more like an "assist user to not shoot self in foot" type
+of thing.
 
-On a side note, when zram->meta replaced init_done, no comment was
-added in zram structure to explain that. Things could be made more
-explicit.
+Cheers
+  Trond
 
----
-Subject: [PATCH] zram: explicitely state that zram->meta is used to deter=
-mine
- the init state
-
-zram->meta is used to determine the initialization state of a zram struct=
-ure.
-This patch adds a comment to zram structure to make this clear.
-
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- drivers/block/zram/zram_drv.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.=
-h
-index b05a816..551569a 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -99,7 +99,7 @@ struct zram_meta {
- };
-=20
- struct zram {
--	struct zram_meta *meta;
-+	struct zram_meta *meta;	/* also used to determine the init state */
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	struct zcomp *comp;
---=20
-1.9.3
-
-
---pDPdHvHteOPovA7cqvEq4NPjlCUs6Glgm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUwkeaAAoJEHTzHJCtsuoCydsH/A5GbUNu7fbCyxXJBma0Edma
-/S2z+15ch/htCY1euoL2zenPePk/HjlEYYKz8d57HwmeE8ajE47aYwX/Bdk8s2ZN
-RcBKu3KCZRXxTz11IAS1pCCLL0Uk+OcPlv+O7gl3XlwFw1z+275poWp1gDWrEXzi
-yu0cqD65xLcwA7jnmwYXjjh4bY08+KCxSUKsUJYFleeEvAp4mU5cDWBkPU+ytMGc
-Pg9gqzSVChIlE/4A7AAXBoiqRWJXthZrTuC6oQcKCB/AMQ71xg0gvdo0sUG77Mm2
-xSzveZVLnu40bXuqUyLckYbPBky30LeHfi6n9ZWySjH118k1WEyNPmaIjP/oBEs=
-=YhRf
------END PGP SIGNATURE-----
-
---pDPdHvHteOPovA7cqvEq4NPjlCUs6Glgm--
+-- 
+Trond Myklebust
+Linux NFS client maintainer, PrimaryData
+trond.myklebust@primarydata.com
