@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690AbbAWVwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 16:52:39 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:32070 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbbAWVwg (ORCPT
+	id S1756697AbbAWVzX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 16:55:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40136 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbbAWVzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 16:52:36 -0500
-Message-ID: <54C2C278.1000608@oracle.com>
-Date: Fri, 23 Jan 2015 16:51:52 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337
- rcu_read_unlock_special+0x369/0x550()
-References: <20150118232255.GD9719@linux.vnet.ibm.com> <54BE76B9.7070907@oracle.com> <20150121025754.GV9719@linux.vnet.ibm.com> <54BFC979.8040107@oracle.com> <20150122004305.GJ9719@linux.vnet.ibm.com> <54C1BFFD.9060707@oracle.com> <20150123035158.GP9719@linux.vnet.ibm.com> <54C1C7D2.906@oracle.com> <54C1C899.8000106@oracle.com> <20150123065542.GQ9719@linux.vnet.ibm.com> <20150123093644.GA11175@linux.vnet.ibm.com>
-In-Reply-To: <20150123093644.GA11175@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
+	Fri, 23 Jan 2015 16:55:21 -0500
+Date: Fri, 23 Jan 2015 13:55:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
+ page tables to the process'
+Message-Id: <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org>
+In-Reply-To: <54C263CC.1060904@roeck-us.net>
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
+	<20150123050445.GA22751@roeck-us.net>
+	<20150123111304.GA5975@node.dhcp.inet.fi>
+	<54C263CC.1060904@roeck-us.net>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 04:36 AM, Paul E. McKenney wrote:
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 8669de884445..ec99dc16aa38 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
->  	special = t->rcu_read_unlock_special;
->  	if (special.b.need_qs) {
->  		rcu_preempt_qs();
-> +		t->rcu_read_unlock_special.need_qs = false;
+On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
 
-It didn't compile, I've used:
+> >>
+> >> qemu:microblaze generates warnings to the console.
+> >>
+> >> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
+> >>
+> >> with various call stacks. See
+> >> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
+> >> for details.
+> >
+> > Could you try patch below? Completely untested.
+> >
+> >>From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > Date: Fri, 23 Jan 2015 13:08:26 +0200
+> > Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
+> >
+> > Microblaze uses custom implementation of PMD folding, but doesn't define
+> > __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
+> >
+> > Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
+> > It also fixes problems with recently-introduced pmd accounting.
+> >
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > Reported-by: Guenter Roeck <linux@roeck-us.net>
+> 
+> Tested working.
+> 
+> Tested-by: Guenter Roeck <linux@roeck-us.net>
+> 
+> Any idea how to fix the sh problem ?
 
-		t->rcu_read_unlock_special.b.need_qs = false;
-
-
-Thanks,
-Sasha
+Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
+shut down", which isn't very clear.
