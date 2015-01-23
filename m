@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777AbbAWWSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 17:18:09 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:49500 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbbAWWSG (ORCPT
+	id S1751942AbbAWWT0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 17:19:26 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43192 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbbAWWTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 17:18:06 -0500
-Message-ID: <54C2C89C.8080002@gmail.com>
-Date: Fri, 23 Jan 2015 17:18:04 -0500
-From: John Moser <john.r.moser@gmail.com>
+	Fri, 23 Jan 2015 17:19:23 -0500
+Message-ID: <54C2C8C5.7020300@oracle.com>
+Date: Fri, 23 Jan 2015 17:18:45 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: OOM at low page cache?
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        James Morris <james.l.morris@oracle.com>, yoshfuji@linux-ipv6.org,
+        Patrick McHardy <kaber@trash.net>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: net: raw socket accessing invalid memory
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why is there no tunable to OOM at low page cache?
+Hi all,
 
-I have no swap configured.  I have 16GB RAM.  If Chrome or Gimp or some
-other stupid program goes off the deep end and eats up my RAM, I hit
-some 15.5GB or 15.75GB usage and stay there for about 40 minutes.  Every
-time the program tries to do something to eat more RAM, it cranks disk
-hard; the disk starts thrashing, the mouse pointer stops moving, and
-nothing goes on.  It's like swapping like crazy, except you're reading
-library files instead of paged anonymous RAM.
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel and the KASan patchset, I've stumbled on the following spew:
 
-If only I could tell the system to OOM kill at 512MB or 1GB or 95%
-non-evictable RAM, it would recover on its own.  As-is, I need to wait
-or trigger the OOM killer by sysrq.
+[ 2560.693067] BUG: AddressSanitizer: out of bounds on stack in memcpy_fromiovec+0x24d/0x260 at addr ffff880200697dd0
+[ 2560.693067] Read of size 8 by task trinity-c9/25362
+[ 2560.693067] page:ffffea000801a5c0 count:0 mapcount:0 mapping:          (null) index:0x0
+[ 2560.693067] flags: 0x1afffff80000000()
+[ 2560.693067] page dumped because: kasan: bad access detected
+[ 2560.693067] CPU: 9 PID: 25362 Comm: trinity-c9 Not tainted 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1810
+[ 2560.693067]  0000000000000000 0000000000000000 ffff880200697790 ffff8802006976d8
+[ 2560.693067]  ffffffff92e9e8b7 1ffffd40010034bf ffffea000801a5c0 ffff880200697778
+[ 2560.693067]  ffffffff81b4a7b2 ffffed00629442ba dffffc0000000000 ffffed00629442b8
+[ 2560.693067] Call Trace:
+[ 2560.693067] dump_stack (lib/dump_stack.c:52)
+[ 2560.693067] kasan_report_error (mm/kasan/report.c:136 mm/kasan/report.c:194)
+[ 2560.693067] __asan_report_load8_noabort (mm/kasan/report.c:236)
+[ 2560.693067] memcpy_fromiovec (lib/iovec.c:14)
+[ 2560.693067] raw_sendmsg (net/ipv4/raw.c:444 net/ipv4/raw.c:606)
+[ 2560.693067] inet_sendmsg (net/ipv4/af_inet.c:734)
+[ 2560.693067] ? inet_sendmsg (include/net/sock.h:875 net/ipv4/af_inet.c:726)
+[ 2560.693067] do_sock_sendmsg (net/socket.c:645 (discriminator 4))
+[ 2560.771124] SYSC_sendto (net/socket.c:1782)
+[ 2560.794593] SyS_sendto (net/socket.c:1748)
+[ 2560.794593] tracesys_phase2 (arch/x86/kernel/entry_64.S:530)
+[ 2560.794593] Memory state around the buggy address:
+[ 2560.794593]  ffff880200697c80: 00 f4 f4 f3 f3 f3 f3 00 00 00 00 00 00 00 00 00
+[ 2560.794593]  ffff880200697d00: 00 00 00 f1 f1 f1 f1 04 f4 f4 f4 f2 f2 f2 f2 04
+[ 2560.794593] >ffff880200697d80: f4 f4 f4 f2 f2 f2 f2 00 00 f4 f4 f2 f2 f2 f2 00
+[ 2560.794593]                                                  ^
+[ 2560.794593]  ffff880200697e00: 00 00 00 00 00 00 00 00 00 f4 f4 f2 f2 f2 f2 00
+[ 2560.794593]  ffff880200697e80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f3
 
-Am I just the only person in the world who's ever had that problem?  Or
-is it a matter of questions fast popping up when you try to do this
-*and* enable paging to disk?  (In my experience, that's a matter of too
-much swap space:  if you have 16GB RAM and your computer dies at 15.25GB
-usage, your swap space should be no larger than 750MB plus inactive
-working RAM; obviously, your computer can't handle paging 750MB back and
-forth.  If you make it 8GB wide and you start swap thrashing at 2GB
-usage, you have too much swap available).
 
-I guess you could try to detect excessive swap and page cache thrashing,
-but that's complex; if anyone really wanted to do that, it would be done
-by now.  A low-barrier OOM is much simpler.
+Thanks,
+Sasha
