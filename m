@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbbAWW6x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 17:58:53 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:55808 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbbAWW6v (ORCPT
+	id S1752527AbbAWXCJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 18:02:09 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:54425 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751673AbbAWXCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 17:58:51 -0500
-Date: Fri, 23 Jan 2015 14:58:51 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: arm@kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Boyd <sboyd@codeaurora.org>, Lina Iyer <lina.iyer@linaro.org>,
-        skannan@codeaurora.org, Olav Haugan <ohaugan@codeaurora.org>,
-        markivx@codeaurora.org, agross@codeaurora.org
-Subject: Re: [GIT PULL] qcom SoC changes for v3.20-2
-Message-ID: <20150123225851.GU20896@quad.lixom.net>
-References: <alpine.DEB.2.02.1501231035340.27036@galak-ubuntu.qualcomm.com>
+	Fri, 23 Jan 2015 18:02:06 -0500
+Date: Sat, 24 Jan 2015 00:02:00 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sylvain Rochet <sylvain.rochet@finsecur.com>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>, nicolas.ferre@atmel.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, peda@axentia.se,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 07/12] pm: at91: the standby mode uses the same sram
+ function as the suspend to memory mode
+Message-ID: <20150123230200.GI19922@piout.net>
+References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
+ <1421741825-18226-8-git-send-email-wenyou.yang@atmel.com>
+ <20150123173234.GA26382@gradator.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1501231035340.27036@galak-ubuntu.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150123173234.GA26382@gradator.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:37:37AM -0600, Kumar Gala wrote:
-> Updated from the tags/qcom-soc-for-3.20, dropped the movement of scm
-> code into drivers/soc/qcom, added a few other minor scm bug fixes,
-> and Andy Gross as co-maintainer.
+On 23/01/2015 at 18:32:34 +0100, Sylvain Rochet wrote :
+> Hello Wenyou,
 > 
-> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+> On Tue, Jan 20, 2015 at 04:17:00PM +0800, Wenyou Yang wrote:
+> > 
+> > diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+> > index 691e6db..a1010f0 100644
+> > --- a/arch/arm/mach-at91/pm.c
+> > +++ b/arch/arm/mach-at91/pm.c
+>   (...)
+> >  static int at91_pm_enter(suspend_state_t state)
+> >  {
+> >  	at91_pinctrl_gpio_suspend();
+> >  
+> >  	switch (state) {
+> > +	/*
+> > +	 * Suspend-to-RAM is like STANDBY plus slow clock mode, so
+> > +	 * drivers must suspend more deeply, the master clock switches
+> > +	 * to the clk32k and turns off the main oscillator
+> > +	 *
+> > +	 * STANDBY mode has *all* drivers suspended; ignores irqs not
+> > +	 * marked as 'wakeup' event sources; and reduces DRAM power.
+> > +	 * But otherwise it's identical to PM_SUSPEND_ON:  cpu idle, and
+> > +	 * nothing fancy done with main or cpu clocks.
+> > +	 */
+> > +	case PM_SUSPEND_MEM:
+> > +	case PM_SUSPEND_STANDBY:
+>    (...)
+> > -		case PM_SUSPEND_MEM:
+> > -			/*
+> > -			 * Ensure that clocks are in a valid state.
+> > -			 */
+> > -			if (!at91_pm_verify_clocks())
+> > -				goto error;
+>    (...)
+> > +		if (!at91_pm_verify_clocks())
+> > +			goto error;
+> >  
+>    (...)
+> > -		case PM_SUSPEND_STANDBY:
+> > -			/*
+> > -			 * NOTE: the Wait-for-Interrupt instruction needs to be
 > 
->   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+> By doing that at91_pm_verify_clocks() is now called for both MEM and 
+> STANDBY targets.
 > 
-> are available in the git repository at:
+> In my opinion this function is misnamed and should be called 
+> at91_pm_verify_clocks_for_slow_clock_mode(). This function actually 
+> checks if we can safely switch to slow clock mode, if some peripherals 
+> are still using the master clock, we abort the suspend because we can't 
+> suspend in good condition. Hard unclocking peripherals which ask for a 
+> soft stop, like USB controllers, is something we should avoid doing.
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.20-2
+> This function checks if USB PLL and PLL B are stopped, if PCK0..PCK3 are 
+> stopped too (or just using the 32k clock). If all drivers suspended 
+> correctly this is the state we expect and we can suspend in a deep 
+> state.
 > 
-> for you to fetch changes up to f5d3af9d21f9790ac078276e6c103871c12a3daa:
+> Not this is currently not the case in linux-next, suspend/resume support 
+> to all Atmel USB drivers (ehci-atmel,ohci-at91,atmel_usba,at91_udc) are 
+> in my series:
+>  [PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
+>    <1421761144-11767-1-git-send-email-sylvain.rochet@finsecur.com>
+>  [PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements 
+>    <1421945805-31129-1-git-send-email-sylvain.rochet@finsecur.com>
 > 
->   MAINTAINERS: Add co-maintainer for ARM/Qualcomm Support (2015-01-23 10:29:21 -0600)
+> We are not going to change any clock for STANDBY target, there is no 
+> clock to check, so we don't need to call at91_pm_verify_clocks() for 
+> this target.
+> 
 
-Merged, thanks.
+I think we should actually stop checking those clocks. In the meantime,
+you are right and at91_pm_verify_clocks must not be called
+unconditionally.
 
-
--Olof
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
