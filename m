@@ -1,129 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069AbbAWQWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:22:19 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:55368 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbbAWQWP convert rfc822-to-8bit (ORCPT
+	id S1756099AbbAWQZG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:25:06 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:37918 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbbAWQZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:22:15 -0500
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [GIT PULL] qcom SoC changes for v3.20
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <CAOesGMipp=Odc-cWvrba0e1pd1X7O+PKNH+WoM3fG4xX2GRFuA@mail.gmail.com>
-Date: Fri, 23 Jan 2015 10:22:09 -0600
-Cc: "arm@kernel.org" <arm@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+	Fri, 23 Jan 2015 11:25:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150123160746.GD23123@twins.programming.kicks-ass.net>
+References: <1422028412.6345.6.camel@tkhai> <20150123160746.GD23123@twins.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 23 Jan 2015 08:24:40 -0800
+Message-ID: <CALCETrVEsNj8dvqd-mNqb5tKNQOwQEgtMRUeTtJSS8-EmntAiA@mail.gmail.com>
+Subject: Re: [RFC] sched, x86: Prevent resched interrupts if task in kernel
+ mode and !CONFIG_PREEMPT
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kirill Tkhai <ktkhai@parallels.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Lina Iyer <lina.iyer@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Vikram Mulukutla <markivx@codeaurora.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <DBE63F76-D4CB-49D5-90C6-642CFCA7687F@codeaurora.org>
-References: <alpine.DEB.2.02.1501191226010.2973@galak-ubuntu.qualcomm.com> <20150122011521.GA31815@quad.lixom.net> <D177DF12-0F31-49CF-B98B-9FAC23AAB24C@codeaurora.org> <CAOesGMipp=Odc-cWvrba0e1pd1X7O+PKNH+WoM3fG4xX2GRFuA@mail.gmail.com>
-To: Olof Johansson <olof@lixom.net>
-X-Mailer: Apple Mail (2.1878.6)
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 23, 2015 at 8:07 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Jan 23, 2015 at 06:53:32PM +0300, Kirill Tkhai wrote:
+>> It's useless to send reschedule interrupts in such situations. The earliest
+>> point, where schedule() call is possible, is sysret_careful(). But in that
+>> function we directly test TIF_NEED_RESCHED.
+>>
+>> So it's possible to get rid of that type of interrupts.
+>>
+>> How about this idea? Is set_bit() cheap on x86 machines?
+>
+> So you set TIF_POLLING_NRFLAG on syscall entry and clear it again on
+> exit? Thereby we avoid the IPI, because the exit path already checks for
+> TIF_NEED_RESCHED.
 
-On Jan 22, 2015, at 9:00 PM, Olof Johansson <olof@lixom.net> wrote:
+The idle code says:
 
-> On Thu, Jan 22, 2015 at 9:02 AM, Kumar Gala <galak@codeaurora.org> wrote:
->> 
->> On Jan 21, 2015, at 7:15 PM, Olof Johansson <olof@lixom.net> wrote:
->> 
->>> Hi,
->>> 
->>> 
->>> On Mon, Jan 19, 2015 at 12:27:15PM -0600, Kumar Gala wrote:
->>>> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
->>>> 
->>>> Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
->>>> 
->>>> are available in the git repository at:
->>>> 
->>>> git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.20
->>>> 
->>>> for you to fetch changes up to ae0a6075c046f9c8dbac18f53a779592f97b402e:
->>>> 
->>>> soc: qcom: scm: Clarify boot interface (2015-01-19 11:55:12 -0600)
->>>> 
->>>> ----------------------------------------------------------------
->>>> Qualcomm ARM Based SoC Updates for v3.20
->>>> 
->>>> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
->>>> * Various bug fixes and minor feature additions to scm code
->>>> * Added big-endian support to debug MSM uart
->>>> * Added big-endian support to ARCH_QCOM
->>>> 
->>>> ----------------------------------------------------------------
->>>> Lina Iyer (2):
->>>>     ARM: qcom: Add SCM warmboot flags for quad core targets.
->>>>     soc: qcom: scm: Move scm-boot files to drivers/soc and include/soc
->>>> 
->>>> Olav Haugan (1):
->>>>     ARM: qcom: scm: Add logging of actual return code from scm call
->>>> 
->>>> Saravana Kannan (1):
->>>>     ARM: qcom: scm: Add API to query for service/command availability.
->>>> 
->>>> Stephen Boyd (9):
->>>>     ARM: debug: Update MSM and QCOM DEBUG_LL help
->>>>     ARM: debug: msm: Support big-endian CPUs
->>>>     ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
->>>>     ARM: qcom: scm: Fix incorrect cache invalidation
->>>>     ARM: qcom: scm: Get cacheline size from CTR
->>>>     ARM: qcom: scm: Add a feat version query API
->>>>     soc: qcom: scm: Move the scm driver to drivers/soc/qcom
->>> 
->>> I replied on the patch here just now. This isn't the right thing to do,
->>> as far as I can tell.
->>> 
->>> Seems like sending a fresh request with the material besides the move
->>> to drivers/soc should be mergeable though, so feel free to do that while
->>> the rest is hashed out.
->> 
->> Would the following be ok (dropped the move to drivers/soc and some additional unused scm APIs as of right now):
->> 
->> ARM: qcom: Drop unnecessary selects from ARCH_QCOM
->> ARM: qcom: scm: Clarify boot interface
->> ARM: qcom: Add SCM warmboot flags for quad core targets.
->> ARM: qcom: scm: Add logging of actual return code from scm call
->> ARM: qcom: scm: Flush the command buffer only instead of the entire cache
->> ARM: qcom: scm: Get cacheline size from CTR
->> ARM: qcom: scm: Fix incorrect cache invalidation
->> ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
->> ARM: debug: msm: Support big-endian CPUs
->> ARM: debug: Update MSM and QCOM DEBUG_LL help
->> 
->> Kconfig.debug        |    5 ++--
->> include/debug/msm.S  |    6 +++++
->> mach-qcom/Kconfig    |    3 --
->> mach-qcom/scm-boot.c |    2 -
->> mach-qcom/scm-boot.h |    4 ++-
->> mach-qcom/scm.c      |   55 +++++++++++++++++++++++++++++++++++++--------------
->> 6 files changed, 54 insertions(+), 21 deletions(-)
-> 
-> I'd be OK with merging this, send a request and tag. Would that let
-> the DRM folks make progress too?
+        /*
+         * If the arch has a polling bit, we maintain an invariant:
+         *
+         * Our polling bit is clear if we're not scheduled (i.e. if
+         * rq->curr != rq->idle).  This means that, if rq->idle has
+         * the polling bit set, then setting need_resched is
+         * guaranteed to cause the cpu to reschedule.
+         */
 
-Will do, I don’t think it will address the DRM folks needs as they need access to make firmware calls from the DRM driver.
+Setting polling on non-idle tasks like this will either involve
+weakening this a bit (it'll still be true for rq->idle) or changing
+the polling state on context switch.
 
-> If you need a common place for this, drivers/firmware seems like a
-> better home than drivers/soc.
+>
+> Should work I suppose, but I'm not too familiar with all that entry.S
+> muck. Andy might know and appreciate this.
+>
+>> ---
+>>  arch/x86/kernel/entry_64.S |   10 ++++++++++
+>>  1 file changed, 10 insertions(+)
+>>
+>> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+>> index c653dc4..a046ba8 100644
+>> --- a/arch/x86/kernel/entry_64.S
+>> +++ b/arch/x86/kernel/entry_64.S
+>> @@ -409,6 +409,13 @@ GLOBAL(system_call_after_swapgs)
+>>       movq_cfi rax,(ORIG_RAX-ARGOFFSET)
+>>       movq  %rcx,RIP-ARGOFFSET(%rsp)
+>>       CFI_REL_OFFSET rip,RIP-ARGOFFSET
+>> +#if !defined(CONFIG_PREEMPT) || !defined(SMP)
+>> +     /*
+>> +      * Tell resched_curr() do not send useless interrupts to us.
+>> +      * Kernel isn't preemptible till sysret_careful() anyway.
+>> +      */
+>> +     LOCK ; bts $TIF_POLLING_NRFLAG,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+>> +#endif
 
-Agreed, what’s you take than on moving to use firmware_ops as defined in arch/arm and extended it or just leaving this as a qcom specific firmware interface?
+That's kind of expensive.  What's the !SMP part for?
 
-- k
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+>>       testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+>>       jnz tracesys
+>>  system_call_fastpath:
+>> @@ -427,6 +434,9 @@ GLOBAL(system_call_after_swapgs)
+>>   * Has incomplete stack frame and undefined top of stack.
+>>   */
+>>  ret_from_sys_call:
+>> +#if !defined(CONFIG_PREEMPT) || !defined(SMP)
+>> +     LOCK ; btr $TIF_POLLING_NRFLAG,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+>> +#endif
 
+If only it were this simple.  There are lots of ways out of syscalls,
+and this is only one of them :(  If we did this, I'd rather do it
+through the do_notify_resume mechanism or something.
+
+I don't see any way to do this without at least one atomic op or
+smp_mb per syscall, and that's kind of expensive.
+
+Would it make sense to try to use context tracking instead?  On
+systems that use context tracking, syscalls are already expensive, and
+we're already keeping track of which CPUs are in user mode.
+
+--Andy
