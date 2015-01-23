@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971AbbAWQJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:09:30 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:65420 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939AbbAWQJV (ORCPT
+	id S1755758AbbAWQI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:08:56 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:58709 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755492AbbAWQIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:09:21 -0500
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 18/18] spi/xilinx: Check number of slaves range
-Date: Fri, 23 Jan 2015 17:08:50 +0100
-Message-Id: <1422029330-10971-19-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
+	Fri, 23 Jan 2015 11:08:54 -0500
+Message-ID: <54C27214.9020003@gmail.com>
+Date: Fri, 23 Jan 2015 11:08:52 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Sun Paul <paulrbk@gmail.com>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Fwd: Question on SCTP ABORT chunk is generated when the association_max_retrans
+ is reached
+References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com> <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>
+In-Reply-To: <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core only supports up to 32 slaves, and the chipselect function
-expects the same.
+On 01/23/2015 05:25 AM, Sun Paul wrote:
+> Hi
+> 
+> I would like to check the behave in LKSCTP.
+> 
+> we are running DIAMETER message over SCTP, and we have set the
+> parameter "net.sctp.association_max_retrans = 4" in the LinuxOS.
+> 
+> We noticed that when remote peer have retry to send the same request
+> for 4 times, the LKSCTP will initiate an ABORT chunk with reason
+> "association exceeded its max_retrans count".
+> 
+> We would like to know whether this is the correct behavior? is there
+> any other option that we can alter in order to avoid the ABORT chunk
+> being sent?
+> 
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/spi/spi-xilinx.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Why do you not want ABORT to be sent? SCTP has attempted to retransmit
+the data maximum allows times, and at this point it will terminate
+the association.  It sends an ABORT notifying the peer of this, but
+most likely the peer is unreachable anyway.
 
-diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
-index 026f4c5..134d8cd 100644
---- a/drivers/spi/spi-xilinx.c
-+++ b/drivers/spi/spi-xilinx.c
-@@ -22,6 +22,8 @@
- #include <linux/spi/xilinx_spi.h>
- #include <linux/io.h>
- 
-+#define MAX_CS			32
-+
- #define XILINX_SPI_NAME "xilinx_spi"
- 
- /* Register definitions as per "OPB Serial Peripheral Interface (SPI) (v1.00e)
-@@ -340,6 +342,11 @@ static int xilinx_spi_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
-+	if (num_cs > MAX_CS) {
-+		dev_err(&pdev->dev, "Invalid number of spi slaves\n");
-+		return -EINVAL;
-+	}
-+
- 	master = spi_alloc_master(&pdev->dev, sizeof(struct xilinx_spi));
- 	if (!master)
- 		return -ENODEV;
--- 
-2.1.4
+Any message that a peer sends at this point will most likely result
+in an ABORT to be send back or an association restart.  Might
+as well start fresh.
+
+-vlad
+
+> Thanks
+> 
+> PS
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
