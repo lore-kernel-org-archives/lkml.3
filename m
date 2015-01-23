@@ -1,139 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbbAWIwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:52:31 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:62141 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbbAWIwa (ORCPT
+	id S1753666AbbAWIx6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:53:58 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:35866 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849AbbAWIx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:52:30 -0500
-Message-ID: <54C20BCA.9040102@gmail.com>
-Date: Fri, 23 Jan 2015 09:52:26 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 23 Jan 2015 03:53:56 -0500
+Date: Fri, 23 Jan 2015 09:53:33 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>, Andy Lutomirski <luto@amacapital.net>,
+        David Drysdale <drysdale@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        xen-devel@lists.xenproject.org
+Subject: Re: [Resend Patch v4 12/16] smp, x86: Kill SMP single function call
+ interrupt
+Message-ID: <20150123085333.GF2896@worktop.programming.kicks-ass.net>
+References: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com>
+ <1421991416-20297-13-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>
-CC: mtk.manpages@gmail.com
-Subject: man-pages-3.78 is released
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421991416-20297-13-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gidday,
+On Fri, Jan 23, 2015 at 01:36:51PM +0800, Jiang Liu wrote:
+> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+> similar to smp_call_function_single()" has unified the way to handle
+> single and multiple cross-CPU function calls. Now only one interrupt
+> is needed for architecture specific code to support generic SMP function
+> call interfaces, so kill the redundant single function call interrupt.
+> 
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-The Linux man-pages maintainer proudly announces:
-
-    man-pages-3.78 - man pages for Linux
-
-Tarball download:
-    http://www.kernel.org/doc/man-pages/download.html
-Git repository:
-    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
-Online changelog:
-    http://man7.org/linux/man-pages/changelog.html#release_3.78
-
-A short summary of the release is blogged at:
-http://linux-man-pages.blogspot.com/2015/01/man-pages-378-is-released.html
-
-A selection of changes in this release that may be interesting
-for readers of this list is shown below.
-
-Cheers,
-
-Michael
-
-
-==================== Changes in man-pages-3.78 ====================
-
-
-New and rewritten pages
------------------------
-
-execveat.2
-    David Drysdale, Michael Kerrisk  [Rich Felker]
-        New page for execveat(2)
-
-memfd_create.2
-    Michael Kerrisk, David Herrmann
-        New page for memfd_create() system call
-             Including notes about file sealing
-
-s390_pci_mmio_write.2
-    Alexey Ishchuk
-        New page for s390 s390_pci_mmio_write() and s390_pci_mmio_read()
-            New manual page for the new PCI MMIO memory access system
-            calls, s390_pci_mmio_write() and s390_pci_mmio_read(),
-            added for the s390 platform.
-
-
-Newly documented interfaces in existing pages
----------------------------------------------
-
-fcntl.2
-    David Herrmann  [Michael Kerrisk]
-        Document F_ADD_SEALS and F_GET_SEALS commands
-
-proc.5
-    Elie De Brauwer
-        Document /proc/sys/vm/compact_memory
-    Michael Kerrisk
-        Document /proc/sys/fs/nr_open
-
-
-Changes to individual pages
----------------------------
-
-perf_event_open.2
-    Vince Weaver
-        Clarify description of overflow events
-            Update the perf_event_open manpage to be more consistent when
-            discussing overflow events.  It merges the discussion of
-            poll-type notifications with those generated by SIGIO
-            signal handlers.
-            This addresses the remaining FIXMEs is the document.
-    Vince Weaver
-        Remove inaccurate paragraph describing attr.config
-            Remove an inaccurate paragraph about values in the attr.config
-            field.  This information was never true in any released kernel;
-            it somehow snuck into the manpage because it is still described
-            this way in tools/perf/design.txt in the kernel source tree.
-
-ptrace.2
-sigaction.2
-seccomp.2
-    Kees Cook
-        Ptrace and siginfo details
-            While writing some additional seccomp tests, I realized
-            PTRACE_EVENT_SECCOMP wasn't documented yet. Fixed this, and added
-            additional notes related to ptrace events SIGTRAP details.
-
-readv.2
-    Michael Kerrisk
-        Update details on glibc readv()/writev() wrapper behavior
-            And add a historical detail about Linux 2.0.
-
-syscall.2
-    Kees Cook
-        Add arm64 and mips
-            Add mips and arm64 to tables, along with some further
-            details on these architectures,
-
-fexecve.3
-    Michael Kerrisk
-        Rewrite the script+close-on-exec problem as a BUG
-            Also, add one or two details about this scenario.
-    Michael Kerrisk
-        The natural idiom when using fexecve() is to use the close-on-exec flag
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
