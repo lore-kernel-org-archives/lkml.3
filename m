@@ -1,41 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294AbbAWPRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:17:50 -0500
-Received: from resqmta-po-12v.sys.comcast.net ([96.114.154.171]:53799 "EHLO
-	resqmta-po-12v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751464AbbAWPRr (ORCPT
+	id S1755649AbbAWPTk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:19:40 -0500
+Received: from [198.137.202.10] ([198.137.202.10]:40081 "EHLO
+	terminus.zytor.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841AbbAWPTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:17:47 -0500
-Date: Fri, 23 Jan 2015 09:17:44 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Guenter Roeck <linux@roeck-us.net>, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        mhocko@suse.cz
-Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
- remove unnecessary soft limit tree node test'
-In-Reply-To: <20150123141817.GA22926@phnom.home.cmpxchg.org>
-Message-ID: <alpine.DEB.2.11.1501230908560.15325@gentwo.org>
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050802.GB22751@roeck-us.net> <20150123141817.GA22926@phnom.home.cmpxchg.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 23 Jan 2015 10:19:36 -0500
+Date: Fri, 23 Jan 2015 07:18:36 -0800
+From: tip-bot for WANG Chao <tipbot@zytor.com>
+Message-ID: <tip-7389882c81474d635a208726edb22938645ff9ad@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, pure.logic@nexus-software.ie,
+        matt.fleming@intel.com, chaowang@redhat.com, tglx@linutronix.de,
+        santosh.shilimkar@ti.com, bp@suse.de, mingo@kernel.org
+Reply-To: mingo@kernel.org, bp@suse.de, santosh.shilimkar@ti.com,
+        tglx@linutronix.de, chaowang@redhat.com, matt.fleming@intel.com,
+        hpa@zytor.com, pure.logic@nexus-software.ie,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1420628150-16872-1-git-send-email-chaowang@redhat.com>
+References: <1420628150-16872-1-git-send-email-chaowang@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, setup: Let early_memremap()
+  handle page alignment
+Git-Commit-ID: 7389882c81474d635a208726edb22938645ff9ad
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jan 2015, Johannes Weiner wrote:
+Commit-ID:  7389882c81474d635a208726edb22938645ff9ad
+Gitweb:     http://git.kernel.org/tip/7389882c81474d635a208726edb22938645ff9ad
+Author:     WANG Chao <chaowang@redhat.com>
+AuthorDate: Wed, 7 Jan 2015 18:55:48 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 23 Jan 2015 16:14:26 +0100
 
-> Is the assumption of this patch wrong?  Does the specified node have
-> to be online for the fallback to work?
+x86, setup: Let early_memremap() handle page alignment
 
-Nodes that are offline have no control structures allocated and thus
-allocations will likely segfault when the address of the controls
-structure for the node is accessed.
+early_memremap() takes care of page alignment and map size, so we can
+just remap the required data size and get rid of the adjustments in
+the setup code.
 
-If we wanted to prevent that then every allocation would have to add a
-check to see if the nodes are online which would impact performance.
+[tglx: Massaged changelog ]
 
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Link: http://lkml.kernel.org/r/1420628150-16872-1-git-send-email-chaowang@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/setup.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index ab4734e..c4648ada 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -431,15 +431,13 @@ static void __init parse_setup_data(void)
+ 
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+-		u32 data_len, map_len, data_type;
++		u32 data_len, data_type;
+ 
+-		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
+-			      (u64)sizeof(struct setup_data));
+-		data = early_memremap(pa_data, map_len);
++		data = early_memremap(pa_data, sizeof(*data));
+ 		data_len = data->len + sizeof(struct setup_data);
+ 		data_type = data->type;
+ 		pa_next = data->next;
+-		early_iounmap(data, map_len);
++		early_iounmap(data, sizeof(*data));
+ 
+ 		switch (data_type) {
+ 		case SETUP_E820_EXT:
