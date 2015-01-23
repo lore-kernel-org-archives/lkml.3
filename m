@@ -1,148 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbbAWB6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 20:58:40 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:32484 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbbAWB6j (ORCPT
+	id S1753640AbbAWCAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 21:00:41 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33106 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbbAWCAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 20:58:39 -0500
-Message-ID: <54C1AAA1.4000300@huawei.com>
-Date: Fri, 23 Jan 2015 09:57:53 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 22 Jan 2015 21:00:39 -0500
+Message-ID: <54C1AB29.3050908@oracle.com>
+Date: Fri, 23 Jan 2015 10:00:09 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, <jeremie.galarneau@efficios.com>
-CC: <rostedt@goodmis.org>, <bigeasy@linutronix.de>, <lizefan@huawei.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 2/2] perf: convert: fix duplicate field names and
- avoid reserved keywords.
-References: <1421904958-24106-1-git-send-email-wangnan0@huawei.com> <1421905003-24242-1-git-send-email-wangnan0@huawei.com> <20150122132734.GB2473@krava.brq.redhat.com>
-In-Reply-To: <20150122132734.GB2473@krava.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.69.129]
-X-CFilter-Loop: Reflected
+To: Manfred Spraul <manfred@colorfullife.com>
+CC: Ethan Zhao <ethan.kernel@gmail.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        james.l.morris@oracle.com, serge@hallyn.com,
+        Eric Paris <eparis@parisplace.org>, Paul Moore <paul@paul-moore.com>,
+        selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused
+ by semop()
+References: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com> <54BE61F0.202@tycho.nsa.gov> <CABawtvPrhVWV3bC-=wygqfHJzctvrmd1WxDD1ciuLE7F7-_yaQ@mail.gmail.com> <54BF3971.2090003@colorfullife.com> <CABawtvO3PdKhmeH_H1v_tQxmgOBQrnLGNayTE1=EbcxJbtwAzQ@mail.gmail.com> <54C13E5B.3020208@colorfullife.com>
+In-Reply-To: <54C13E5B.3020208@colorfullife.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/22 21:27, Jiri Olsa wrote:
-> On Thu, Jan 22, 2015 at 01:36:43PM +0800, Wang Nan wrote:
->> (If Steven Rostedt accept the previous patch which introduce a priv
->>  field to 'struct format_field', we can use a relative simple method
->>  for name conversion. If not , perf must track name conversion by
->>  itself.)
+Manfred,
+
+On 2015/1/23 2:15, Manfred Spraul wrote:
+> On 01/22/2015 03:44 AM, Ethan Zhao wrote:
+>> On Wed, Jan 21, 2015 at 1:30 PM, Manfred Spraul
+>> <manfred@colorfullife.com> wrote:
+>>> On 01/21/2015 04:53 AM, Ethan Zhao wrote:
+>>>> On Tue, Jan 20, 2015 at 10:10 PM, Stephen Smalley <sds@tycho.nsa.gov>
+>>>> wrote:
+>>>>> On 01/20/2015 04:18 AM, Ethan Zhao wrote:
+>>>>>>        sys_semget()
+>>>>>>        ->newary()
+>>>>>>            ->security_sem_alloc()
+>>>>>>              ->sem_alloc_security()
+>>>>>>                    selinux_sem_alloc_security()
+>>>>>>                    ->ipc_alloc_security() {
+>>>>>>                      ->rc = avc_has_perm()
+>>>>>>                                 if (rc) {
+>>>>>>
+>>>>>> ipc_free_security(&sma->sem_perm);
+>>>>>>                                         return rc;
+>>>>> We free the security structure here to avoid a memory leak on a
+>>>>> failed/denied semaphore set creation.  In this situation, we 
+>>>>> return an
+>>>>> error to the caller (ultimately to newary), it does an
+>>>>> ipc_rcu_putref(sma, ipc_rcu_free), and it returns an error to the
+>>>>> caller.  Thus, it never calls ipc_addid() and the semaphore set is 
+>>>>> not
+>>>>> created.  So how then can you call semtimedop() on it?
+>>>> Seems it wouldn't happen after commit
+>>>> e8577d1f0329d4842e8302e289fb2c22156abef4 ?
+>>> That was my first guess when I read the bug report - but it can't be 
+>>> the
+>>> fix, because security_sem_alloc() is before the ipc_addid(), with or 
+>>> without
+>>> the patch.
+>>>
+>>> thread A:
+>>>              thread B:
+>>>
+>>> semtimedop()
+>>> -> sem_obtain_object_check()
+>>>              semctl(IPC_RMID)
+>>>              -> freeary()
+>>>              -> ipc_rcu_putref()
+>>>              -> call_rcu()
+>>> -> somehow a grace period
+>>>              -> sem_rcu_free()
+>>>              -> security_sem_free()
+>>>
+>>> Perhaps: modify ipc_free_security() to hexdump perm and a few more 
+>>> bytes if
+>>> the pointer is NULL?
+>> I tried to ask for vmcore and do more analysis, basically, the race 
+>> condition
+>> still exists and open a hole to be DoS.
+> Is the issue reproducable?
+  It was hit on an user's VMware while running a process named "opcmon" 
+maybe ported from HP_UX. I asked for the vmwcore, but not get it yet.
+
+> If yes, can you try something like the attached patch?
+  Yes, will.
+
+  Thanks,
+  Ethan
+>
+>> --- a/security/selinux/hooks.c
+>> +++ b/security/selinux/hooks.c
+>> @@ -5129,6 +5129,8 @@ static int ipc_has_perm(struct kern_ipc_perm
+>> *ipc_perms,
+>>         u32 sid = current_sid();
 >>
->> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
->> When dealing with them, perf convert to ctf meets some problem:
+>>         isec = ipc_perms->security;
+>> +     if (!isec)
+>> +             return -EACCES;
 >>
->>  1. If a parameter with name 'nr', it will duplicate syscall's
->>     common field 'nr'. One such syscall is io_submit().
->>
->>  2. If a parameter with name 'event', it is denied to be inserted
->>     because 'event' is a babeltrace keywork. One such syscall is
->>     epoll_ctl.
->>
->> This patch appends '_dupl_X' suffix to avoid problem 1, prepend a '_'
->> prefix to avoid problem 2.
-> 
-> I've got compilation error:
-> 
-> util/data-convert-bt.c: In function ‘event_class_add_field’:
-> util/data-convert-bt.c:629:2: error: suggest parentheses around assignment used as truth value [-Werror=parentheses]
->   while (t = bt_ctf_event_class_get_field_by_name(event_class, name)) {
-> 
-> what's your gcc version? mine's caught that..
-> 
-
-I also curious why you got so many Werror problems I'm not ever seen,
-until I found a '-w' in my gcc options, which is introduced by your commit
-
-47810c1d429bc690e1f5e9467697538921962171: perf data: Disable Werror convert object.
-
-I'll revert that commit in my tree.
-
-> [jolsa@krava perf]$ gcc --version
-> gcc (GCC) 4.8.3 20140911 (Red Hat 4.8.3-7)
-> 
-> SNIP
-> 
->>  
->> +/* If dup < 0, add a prefix. Else, add _dupl_X suffix. */
->> +static char *change_name(char *name, char *orig_name, int dup)
->> +{
->> +	char *new_name = NULL;
->> +	size_t len;
->> +
->> +	if (!name)
->> +		name = orig_name;
->> +
->> +	if (dup >= 10)
->> +		goto out;
->> +
->> +	if (dup < 0)
->> +		len = strlen(name) + sizeof("_");
->> +	else
->> +		len = strlen(orig_name) + sizeof("_dupl_X");
-> 
-> if we allow for _dupl_10, should we use 'sizeof("_dupl_x")' ^^^ in here?
-> 
->> +
->> +	new_name = malloc(len);
->> +	if (!new_name)
->> +		goto out;
->> +
->> +	if (dup < 0)
->> +		snprintf(new_name, len, "_%s", name);
->> +	else
->> +		snprintf(new_name, len, "%s_dupl_%d", orig_name, dup);
->> +
->> +out:
->> +	if (name != orig_name)
->> +		free(name);
->> +	return new_name;
-> 
-> SNIP
-> 
->> +
->> +	name = field->name;
->> +	while (t = bt_ctf_event_class_get_field_by_name(event_class, name)) {
->> +		bt_ctf_field_type_put(t);
->> +		name = change_name(name, field->name, dup++);
->> +		if (!name) {
->> +			pr_err("Failed to create dup name for '%s'\n", field->name);
->> +			return -1;
->> +		}
->> +	}
->> +
->> +	ret = bt_ctf_event_class_add_field(event_class, type, name);
->> +
->> +	/* if failed, we may hit a keywork. try again with a '_' prefix */
->> +	if (ret) {
->> +		name = change_name(name, field->name, -1);
->> +		if (!name) {
->> +			pr_err("Failed to alloc name for '_%s'\n", field->name);
->> +			return -1;
->> +		}
->> +		ret = bt_ctf_event_class_add_field(event_class, type, name);
-> 
-> so there's no other way on checking up with the blacklist right?
-> 
-
-AFAIK there's no official method to check blacklist right now. Utilizing existing
-functions to check blacklist is possible. For example, we can create a clock using
-bt_ctf_clock_create() with the checked name and then free it. However, it is hacky
-and I think you won't like it.
-
-I believe my solution should be acceptable before babeltrace export its
-validate_identifier() function to users. Jérémie Galarneau, do you have better
-idea on it?
-
-Thanks.
-
-> thanks,
-> jirka
-> 
-
+>>         ad.type = LSM_AUDIT_DATA_IPC;
+>>         ad.u.ipc_id = ipc_perms->key;
+> ipc_has_perm() runs without any spinlocks/semaphores, only 
+> rcu_read_lock().
+> Testing for ipc_perms->security!=NULL does solve the issue that 
+> ipc_perm->key could be an access to kfree'd memory: Nothing prevents 
+> that the kfree could happen just after the test.
+>
+> I.e.: The patch can't be the right solution.
+>
+> -- 
+>     Manfred
 
