@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109AbbAWQL7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:11:59 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:43096 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909AbbAWQJP (ORCPT
+	id S1756095AbbAWQL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:11:56 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:61365 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081AbbAWQJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:09:15 -0500
+	Fri, 23 Jan 2015 11:09:16 -0500
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>,
         =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 13/18] spi/xilinx: Convert remainding_bytes in remaining words
-Date: Fri, 23 Jan 2015 17:08:45 +0100
-Message-Id: <1422029330-10971-14-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH 14/18] spi/xilinx: Convert bits_per_word in bytes_per_word
+Date: Fri, 23 Jan 2015 17:08:46 +0100
+Message-Id: <1422029330-10971-15-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -27,59 +27,74 @@ Simplify the code by using the unit used on most of the code logic.
 
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/spi/spi-xilinx.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/spi/spi-xilinx.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
-index 514ad01..fce5d0b 100644
+index fce5d0b..5d3503a 100644
 --- a/drivers/spi/spi-xilinx.c
 +++ b/drivers/spi/spi-xilinx.c
-@@ -86,7 +86,7 @@ struct xilinx_spi {
- 
+@@ -87,7 +87,7 @@ struct xilinx_spi {
  	u8 *rx_ptr;		/* pointer in the Tx buffer */
  	const u8 *tx_ptr;	/* pointer in the Rx buffer */
--	int remaining_bytes;	/* the number of bytes left to transfer */
-+	int remaining_words;	/* the number of words left to transfer */
- 	u8 bits_per_word;
+ 	int remaining_words;	/* the number of words left to transfer */
+-	u8 bits_per_word;
++	u8 bytes_per_word;
  	int buffer_size;	/* buffer size in words */
  	u32 cs_inactive;	/* Level of the CS pins when inactive*/
-@@ -231,7 +231,7 @@ static int xilinx_spi_setup_transfer(struct spi_device *spi,
+ 	unsigned int (*read_fn)(void __iomem *);
+@@ -121,7 +121,7 @@ static void xilinx_spi_tx(struct xilinx_spi *xspi)
+ 		return;
+ 	}
+ 	xspi->write_fn(*(u32 *)(xspi->tx_ptr), xspi->regs + XSPI_TXD_OFFSET);
+-	xspi->tx_ptr += xspi->bits_per_word/8;
++	xspi->tx_ptr += xspi->bytes_per_word;
+ }
  
- static void xilinx_spi_fill_tx_fifo(struct xilinx_spi *xspi, int n_words)
- {
--	xspi->remaining_bytes -= n_words * xspi->bits_per_word / 8;
-+	xspi->remaining_words -= n_words;
+ static void xilinx_spi_rx(struct xilinx_spi *xspi)
+@@ -131,19 +131,19 @@ static void xilinx_spi_rx(struct xilinx_spi *xspi)
+ 	if (!xspi->rx_ptr)
+ 		return;
  
- 	while (n_words--)
- 		xilinx_spi_tx(xspi);
-@@ -246,15 +246,14 @@ static int xilinx_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
+-	switch (xspi->bits_per_word) {
+-	case 8:
++	switch (xspi->bytes_per_word) {
++	case 1:
+ 		*(u8 *)(xspi->rx_ptr) = data;
+ 		break;
+-	case 16:
++	case 2:
+ 		*(u16 *)(xspi->rx_ptr) = data;
+ 		break;
+-	case 32:
++	case 4:
+ 		*(u32 *)(xspi->rx_ptr) = data;
+ 		break;
+ 	}
+ 
+-	xspi->rx_ptr += xspi->bits_per_word/8;
++	xspi->rx_ptr += xspi->bytes_per_word;
+ }
+ 
+ static void xspi_init_hw(struct xilinx_spi *xspi)
+@@ -246,7 +246,7 @@ static int xilinx_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
  
  	xspi->tx_ptr = t->tx_buf;
  	xspi->rx_ptr = t->rx_buf;
--	xspi->remaining_bytes = t->len;
-+	xspi->remaining_words = (t->len * 8) / xspi->bits_per_word;
+-	xspi->remaining_words = (t->len * 8) / xspi->bits_per_word;
++	xspi->remaining_words = t->len / xspi->bytes_per_word;
  	reinit_completion(&xspi->done);
  
--	while (xspi->remaining_bytes) {
-+	while (xspi->remaining_words) {
- 		u16 cr = 0;
- 		int n_words;
- 
--		n_words = (xspi->remaining_bytes * 8) / xspi->bits_per_word;
--		n_words = min(n_words, xspi->buffer_size);
-+		n_words = min(xspi->remaining_words, xspi->buffer_size);
- 
- 		xilinx_spi_fill_tx_fifo(xspi, n_words);
- 
-@@ -286,7 +285,7 @@ static int xilinx_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
- 			xilinx_spi_rx(xspi);
+ 	while (xspi->remaining_words) {
+@@ -403,7 +403,7 @@ static int xilinx_spi_probe(struct platform_device *pdev)
  	}
  
--	return t->len - xspi->remaining_bytes;
-+	return t->len;
- }
+ 	master->bits_per_word_mask = SPI_BPW_MASK(bits_per_word);
+-	xspi->bits_per_word = bits_per_word;
++	xspi->bytes_per_word = bits_per_word / 8;
+ 	xspi->buffer_size = xilinx_spi_find_buffer_size(xspi);
  
- 
+ 	xspi->irq = platform_get_irq(pdev, 0);
 -- 
 2.1.4
 
