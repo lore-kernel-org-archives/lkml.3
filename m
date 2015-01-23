@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010AbbAWRui (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:50:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37474 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530AbbAWRug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:50:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,454,1418112000"; 
-   d="scan'208";a="655590512"
-Date: Fri, 23 Jan 2015 17:50:33 +0000 (UTC)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.lm.intel.com
-To: Christoph Hellwig <hch@infradead.org>
-cc: Keith Busch <keith.busch@intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org, Yan Liu <yan@purestorage.com>
-Subject: Re: [PATCH 1/1] NVMe: Do not take nsid while a passthrough IO command
- is being issued via a block device file descriptor
-In-Reply-To: <20150123172745.GA28005@infradead.org>
-Message-ID: <alpine.LNX.2.00.1501231737070.15481@localhost.lm.intel.com>
-References: <1421971328-5065-1-git-send-email-yan@purestorage.com> <20150123075708.GA17232@infradead.org> <alpine.LNX.2.00.1501231451380.15481@localhost.lm.intel.com> <20150123172745.GA28005@infradead.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756112AbbAWRu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 12:50:56 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42209 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580AbbAWRux (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 12:50:53 -0500
+Date: Fri, 23 Jan 2015 17:50:39 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: arm64 -- psci tell the compiler in which registers we are
+ expecting arguments
+Message-ID: <20150123175039.GC13772@arm.com>
+References: <1422034314-27084-1-git-send-email-apw@canonical.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422034314-27084-1-git-send-email-apw@canonical.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jan 2015, Christoph Hellwig wrote:
-> On Fri, Jan 23, 2015 at 04:22:02PM +0000, Keith Busch wrote:
->> The namespace id should be enforced on block devices, but is there a
->> problem allowing arbitrary commands through the management char device?
->> I have a need for a pure passthrough, but the proposed patch requires
->> a matching namespace id all the time.
->>
->> I wrote and tested the one below to override nsid on block devices,
->> but doesn't require a visible namespace through the management device.
->
-> Allowing requests to differetn namespaces through the admin interface
-> doesn't sound too horrible in general, but I still don't like your patch
-> below.  Instead of allocating another queue that allows arbitrary nsids
-> we should simply look up the namespace when sent through the admin device,
-> and still reject it if the namespace isn't valid.  If a namespaces
-> is marked hidden we should still create a device for it in Linux,
-> as that whole concept of hiding a namespace is silly.
+Hi Andy,
 
-No argument against removing the hidden attribute handling, but there
-are unadvertised NSID's that have special meaning. Like NSID 0xffffffff
-means to apply a command to all namespaces. Vendor specific commands
-may have other special NSID meanings as well.
+Thanks for the patch.
+
+On Fri, Jan 23, 2015 at 05:31:54PM +0000, Andy Whitcroft wrote:
+> When compiling the kernel with very recent gcc-4.9 compilers we see the
+> following errors:
+> 
+>     /tmp/ccEayz7S.s: Assembler messages:
+>     /tmp/ccEayz7S.s:41: Error: .err encountered
+>     /tmp/ccEayz7S.s:42: Error: .err encountered
+>     /tmp/ccEayz7S.s:43: Error: .err encountered
+>     /tmp/ccEayz7S.s:101: Error: .err encountered
+>     /tmp/ccEayz7S.s:102: Error: .err encountered
+>     /tmp/ccEayz7S.s:103: Error: .err encountered
+> 
+> This is due to assumptions about the register assignments made by gcc on
+> function entry.  The errors above occur when these assignments are not
+> as expected.  It turns out that when you enable mcount preables (-pg)
+> these are altered and the compilation failed.
+> 
+> Inform the compiler of these register requirements.
+> 
+> BugLink: http://bugs.launchpad.net/bugs/1414002
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> ---
+>  arch/arm64/kernel/psci.c | 18 ++++++++++++++----
+>  1 file changed, 14 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
+> index f1dbca7..425cf78 100644
+> --- a/arch/arm64/kernel/psci.c
+> +++ b/arch/arm64/kernel/psci.c
+> @@ -113,9 +113,14 @@ static void psci_power_state_unpack(u32 power_state,
+>   * The following two functions are invoked via the invoke_psci_fn pointer
+>   * and will not be inlined, allowing us to piggyback on the AAPCS.
+>   */
+> -static noinline int __invoke_psci_fn_hvc(u64 function_id, u64 arg0, u64 arg1,
+> -					 u64 arg2)
+> +static noinline int __invoke_psci_fn_hvc(u64 _function_id, u64 _arg0,
+> +					 u64 _arg1, u64 _arg2)
+>  {
+> +	register u64 function_id asm("x0") = _function_id;
+> +	register u64 arg0 asm("x1") = _arg0;
+> +	register u64 arg1 asm("x2") = _arg1;
+> +	register u64 arg2 asm("x3") = _arg2;
+> +
+
+Given that we've already been bitten by the compiler, I think we should
+just bite the bullet and implement these two functions in assembly in a
+separate file rather than rely on register variables doing what we want.
+
+Will
