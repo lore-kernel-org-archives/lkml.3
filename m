@@ -1,155 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbbAWOiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:38:19 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:57698 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900AbbAWOiP (ORCPT
+	id S1752927AbbAWOo0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:44:26 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:64945 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbbAWOoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:38:15 -0500
-Date: Fri, 23 Jan 2015 23:38:49 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [PATCH 2/2] zram: protect zram->stat race with init_lock
-Message-ID: <20150123143849.GB2320@swordfish>
-References: <1421992707-32658-1-git-send-email-minchan@kernel.org>
- <1421992707-32658-2-git-send-email-minchan@kernel.org>
+	Fri, 23 Jan 2015 09:44:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421992707-32658-2-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1422010236.3017.12.camel@pengutronix.de>
+References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
+	<1420655248.3191.73.camel@pengutronix.de>
+	<20150123025643.GA11412@victor>
+	<1422010236.3017.12.camel@pengutronix.de>
+Date: Fri, 23 Jan 2015 12:44:21 -0200
+Message-ID: <CAOMZO5AjsjW=F7_8yS03uBtq0qKMmmNYUn-5Z+KGXOnm4up2RQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/7] imx-drm: ipuv3-crtc: Implement mode_fixup
+From: Fabio Estevam <festevam@gmail.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Liu Ying <Ying.Liu@freescale.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        Steve Longerbeam <steve_longerbeam@mentor.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Denis Carikli <denis@eukrea.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Steve Longerbeam <slongerbeam@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/23/15 14:58), Minchan Kim wrote:
-> The zram->stat handling should be procted by init_lock.
-> Otherwise, user could see stale value from the stat.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
-> 
-> I don't think it's stable material. The race is rare in real practice
-> and this stale stat value read is not a critical.
-> 
->  drivers/block/zram/zram_drv.c | 37 ++++++++++++++++++++++++++++---------
->  1 file changed, 28 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 0299d82275e7..53f176f590b0 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -48,8 +48,13 @@ static ssize_t name##_show(struct device *d,		\
->  				struct device_attribute *attr, char *b)	\
->  {									\
+Hi Philipp,
 
-a side note: I wasn't Cc'd in that patchset and found out it only when it's
-been merged. I'm not sure I understand, why it has been renamed from specific
-zram_X_show to X_show. what gives?
+On Fri, Jan 23, 2015 at 8:50 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
 
+> What are this panel timings? The adjustment should increase the vertical
+> back porch by up to two lines (so it is at least two lines), reducing
+> the front porch or vsync length by the same amount. Does this panel use
+> the HSYNC/VSYNC signals embedded in the LVDS stream?
 
-can't help, catches my eye every time, that rename has broken the original
-formatting:
+The panel on this board is a Hannstar HSD100PXN1. The timings we use
+are described in imx6qdl-sabresd.dtsi:
 
-
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 9250b3f..c567af5 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -44,7 +44,7 @@ static const char *default_compressor = "lzo";
- static unsigned int num_devices = 1;
- 
- #define ZRAM_ATTR_RO(name)						\
--static ssize_t name##_show(struct device *d,		\
-+static ssize_t name##_show(struct device *d,				\
- 				struct device_attribute *attr, char *b)	\
- {									\
- 	struct zram *zram = dev_to_zram(d);				\
-
-
-
-I don't have any objections. but do we really want to wrap atomic ops in
-semaphore? it is really such serious race?
-
-
-	-ss
-
->  	struct zram *zram = dev_to_zram(d);				\
-> -	return scnprintf(b, PAGE_SIZE, "%llu\n",			\
-> -		(u64)atomic64_read(&zram->stats.name));			\
-> +	u64 val = 0;							\
-> +									\
-> +	down_read(&zram->init_lock);					\
-> +	if (init_done(zram))						\
-> +		val = atomic64_read(&zram->stats.name);			\
-> +	up_read(&zram->init_lock);					\
-> +	return scnprintf(b, PAGE_SIZE, "%llu\n", val);			\
->  }									\
->  static DEVICE_ATTR_RO(name);
->  
-> @@ -67,8 +72,14 @@ static ssize_t disksize_show(struct device *dev,
->  		struct device_attribute *attr, char *buf)
->  {
->  	struct zram *zram = dev_to_zram(dev);
-> +	u64 val = 0;
-> +
-> +	down_read(&zram->init_lock);
-> +	if (init_done(zram))
-> +		val = zram->disksize;
-> +	up_read(&zram->init_lock);
->  
-> -	return scnprintf(buf, PAGE_SIZE, "%llu\n", zram->disksize);
-> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
->  }
->  
->  static ssize_t initstate_show(struct device *dev,
-> @@ -88,9 +99,14 @@ static ssize_t orig_data_size_show(struct device *dev,
->  		struct device_attribute *attr, char *buf)
->  {
->  	struct zram *zram = dev_to_zram(dev);
-> +	u64 val = 0;
-> +
-> +	down_read(&zram->init_lock);
-> +	if (init_done(zram))
-> +		val = atomic64_read(&zram->stats.pages_stored) << PAGE_SHIFT;
-> +	up_read(&zram->init_lock);
->  
-> -	return scnprintf(buf, PAGE_SIZE, "%llu\n",
-> -		(u64)(atomic64_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
-> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
->  }
->  
->  static ssize_t mem_used_total_show(struct device *dev,
-> @@ -957,10 +973,6 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
->  	struct bio_vec bv;
->  
->  	zram = bdev->bd_disk->private_data;
-> -	if (!valid_io_request(zram, sector, PAGE_SIZE)) {
-> -		atomic64_inc(&zram->stats.invalid_io);
-> -		return -EINVAL;
-> -	}
->  
->  	down_read(&zram->init_lock);
->  	if (unlikely(!init_done(zram))) {
-> @@ -968,6 +980,13 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
->  		goto out_unlock;
->  	}
->  
-> +	if (!valid_io_request(zram, sector, PAGE_SIZE)) {
-> +		atomic64_inc(&zram->stats.invalid_io);
-> +		err = -EINVAL;
-> +		goto out_unlock;
-> +	}
-> +
-> +
->  	index = sector >> SECTORS_PER_PAGE_SHIFT;
->  	offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
->  
-> -- 
-> 1.9.1
-> 
+        display-timings {
+            native-mode = <&timing0>;
+            timing0: hsd100pxn1 {
+                clock-frequency = <65000000>;
+                hactive = <1024>;
+                vactive = <768>;
+                hback-porch = <220>;
+                hfront-porch = <40>;
+                vback-porch = <21>;
+                vfront-porch = <7>;
+                hsync-len = <60>;
+                vsync-len = <10>;
+            };
