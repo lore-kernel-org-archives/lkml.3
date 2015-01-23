@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbbAWQJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:09:15 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:48793 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081AbbAWQJL (ORCPT
+	id S1755935AbbAWQJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:09:18 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:48761 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755536AbbAWQJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:09:11 -0500
+	Fri, 23 Jan 2015 11:09:12 -0500
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>,
         =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 10/18] spi/xilinx: Support for spi mode CS_HIGH
-Date: Fri, 23 Jan 2015 17:08:42 +0100
-Message-Id: <1422029330-10971-11-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH 11/18] spi/xilinx: Remove rx_fn and tx_fn pointer
+Date: Fri, 23 Jan 2015 17:08:43 +0100
+Message-Id: <1422029330-10971-12-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -23,116 +23,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core controls the chip select lines individually.
-
-By default, all the lines are consider active_low. After
-spi_setup_transfer, it has its real value.
+Simplify the code by removing the tx and and rx function pointers and
+substitute them by a single function.
 
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/spi/spi-xilinx.c | 62 +++++++++++++++++++++++++++++-------------------
- 1 file changed, 38 insertions(+), 24 deletions(-)
+ drivers/spi/spi-xilinx.c | 69 +++++++++++++-----------------------------------
+ 1 file changed, 18 insertions(+), 51 deletions(-)
 
 diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
-index a70cb91..29edf1b 100644
+index 29edf1b..6b6c658 100644
 --- a/drivers/spi/spi-xilinx.c
 +++ b/drivers/spi/spi-xilinx.c
-@@ -89,6 +89,7 @@ struct xilinx_spi {
- 	int remaining_bytes;	/* the number of bytes left to transfer */
- 	u8 bits_per_word;
- 	int buffer_size;	/* buffer size in words */
-+	u32 cs_inactive;	/* Level of the CS pins when inactive*/
+@@ -92,8 +92,6 @@ struct xilinx_spi {
+ 	u32 cs_inactive;	/* Level of the CS pins when inactive*/
  	unsigned int (*read_fn)(void __iomem *);
  	void (*write_fn)(u32, void __iomem *);
- 	void (*tx_fn)(struct xilinx_spi *);
-@@ -194,33 +195,37 @@ static void xspi_init_hw(struct xilinx_spi *xspi)
- static void xilinx_spi_chipselect(struct spi_device *spi, int is_on)
- {
- 	struct xilinx_spi *xspi = spi_master_get_devdata(spi->master);
-+	u16 cr;
-+	u32 cs;
+-	void (*tx_fn)(struct xilinx_spi *);
+-	void (*rx_fn)(struct xilinx_spi *);
+ };
  
- 	if (is_on == BITBANG_CS_INACTIVE) {
- 		/* Deselect the slave on the SPI bus */
--		xspi->write_fn(0xffff, xspi->regs + XSPI_SSR_OFFSET);
--	} else if (is_on == BITBANG_CS_ACTIVE) {
--		/* Set the SPI clock phase and polarity */
--		u16 cr = xspi->read_fn(xspi->regs + XSPI_CR_OFFSET)
--			 & ~XSPI_CR_MODE_MASK;
--		if (spi->mode & SPI_CPHA)
--			cr |= XSPI_CR_CPHA;
--		if (spi->mode & SPI_CPOL)
--			cr |= XSPI_CR_CPOL;
--		if (spi->mode & SPI_LSB_FIRST)
--			cr |= XSPI_CR_LSB_FIRST;
--		if (spi->mode & SPI_LOOP)
--			cr |= XSPI_CR_LOOP;
--		xspi->write_fn(cr, xspi->regs + XSPI_CR_OFFSET);
+ static void xspi_write32(u32 val, void __iomem *addr)
+@@ -116,49 +114,32 @@ static unsigned int xspi_read32_be(void __iomem *addr)
+ 	return ioread32be(addr);
+ }
+ 
+-static void xspi_tx8(struct xilinx_spi *xspi)
+-{
+-	xspi->write_fn(*xspi->tx_ptr, xspi->regs + XSPI_TXD_OFFSET);
+-	xspi->tx_ptr++;
+-}
 -
--		/* We do not check spi->max_speed_hz here as the SPI clock
--		 * frequency is not software programmable (the IP block design
--		 * parameter)
--		 */
+-static void xspi_tx16(struct xilinx_spi *xspi)
+-{
+-	xspi->write_fn(*(u16 *)(xspi->tx_ptr), xspi->regs + XSPI_TXD_OFFSET);
+-	xspi->tx_ptr += 2;
+-}
 -
--		/* Activate the chip select */
--		xspi->write_fn(~(0x0001 << spi->chip_select),
--			xspi->regs + XSPI_SSR_OFFSET);
-+		xspi->write_fn(xspi->cs_inactive, xspi->regs + XSPI_SSR_OFFSET);
+-static void xspi_tx32(struct xilinx_spi *xspi)
++static void xilinx_spi_tx(struct xilinx_spi *xspi)
+ {
+ 	xspi->write_fn(*(u32 *)(xspi->tx_ptr), xspi->regs + XSPI_TXD_OFFSET);
+-	xspi->tx_ptr += 4;
++	xspi->tx_ptr += xspi->bits_per_word/8;
+ }
+ 
+-static void xspi_rx8(struct xilinx_spi *xspi)
++static void xilinx_spi_rx(struct xilinx_spi *xspi)
+ {
+ 	u32 data = xspi->read_fn(xspi->regs + XSPI_RXD_OFFSET);
+-	if (xspi->rx_ptr) {
+-		*xspi->rx_ptr = data & 0xff;
+-		xspi->rx_ptr++;
+-	}
+-}
+ 
+-static void xspi_rx16(struct xilinx_spi *xspi)
+-{
+-	u32 data = xspi->read_fn(xspi->regs + XSPI_RXD_OFFSET);
+-	if (xspi->rx_ptr) {
+-		*(u16 *)(xspi->rx_ptr) = data & 0xffff;
+-		xspi->rx_ptr += 2;
+-	}
+-}
++	if (!xspi->rx_ptr)
 +		return;
+ 
+-static void xspi_rx32(struct xilinx_spi *xspi)
+-{
+-	u32 data = xspi->read_fn(xspi->regs + XSPI_RXD_OFFSET);
+-	if (xspi->rx_ptr) {
++	switch (xspi->bits_per_word) {
++	case 8:
++		*(u8 *)(xspi->rx_ptr) = data;
++		break;
++	case 16:
++		*(u16 *)(xspi->rx_ptr) = data;
++		break;
++	case 32:
+ 		*(u32 *)(xspi->rx_ptr) = data;
+-		xspi->rx_ptr += 4;
++		break;
  	}
 +
-+	/* Set the SPI clock phase and polarity */
-+	cr = xspi->read_fn(xspi->regs + XSPI_CR_OFFSET)	& ~XSPI_CR_MODE_MASK;
-+	if (spi->mode & SPI_CPHA)
-+		cr |= XSPI_CR_CPHA;
-+	if (spi->mode & SPI_CPOL)
-+		cr |= XSPI_CR_CPOL;
-+	if (spi->mode & SPI_LSB_FIRST)
-+		cr |= XSPI_CR_LSB_FIRST;
-+	if (spi->mode & SPI_LOOP)
-+		cr |= XSPI_CR_LOOP;
-+	xspi->write_fn(cr, xspi->regs + XSPI_CR_OFFSET);
-+
-+	/* We do not check spi->max_speed_hz here as the SPI clock
-+	 * frequency is not software programmable (the IP block design
-+	 * parameter)
-+	 */
-+
-+	cs = xspi->cs_inactive;
-+	cs ^= BIT(spi->chip_select);
-+
-+	/* Activate the chip select */
-+	xspi->write_fn(cs, xspi->regs + XSPI_SSR_OFFSET);
++	xspi->rx_ptr += xspi->bits_per_word/8;
  }
  
- /* spi_bitbang requires custom setup_transfer() to be defined if there is a
-@@ -229,6 +234,13 @@ static void xilinx_spi_chipselect(struct spi_device *spi, int is_on)
- static int xilinx_spi_setup_transfer(struct spi_device *spi,
- 		struct spi_transfer *t)
- {
-+	struct xilinx_spi *xspi = spi_master_get_devdata(spi->master);
-+
-+	if (spi->mode & SPI_CS_HIGH)
-+		xspi->cs_inactive &= ~BIT(spi->chip_select);
-+	else
-+		xspi->cs_inactive |= BIT(spi->chip_select);
-+
- 	return 0;
- }
+ static void xspi_init_hw(struct xilinx_spi *xspi)
+@@ -250,7 +231,7 @@ static void xilinx_spi_fill_tx_fifo(struct xilinx_spi *xspi, int n_words)
  
-@@ -369,9 +381,11 @@ static int xilinx_spi_probe(struct platform_device *pdev)
- 		return -ENODEV;
+ 	while (n_words--)
+ 		if (xspi->tx_ptr)
+-			xspi->tx_fn(xspi);
++			xilinx_spi_tx(xspi);
+ 		else
+ 			xspi->write_fn(0, xspi->regs + XSPI_TXD_OFFSET);
+ 	return;
+@@ -301,7 +282,7 @@ static int xilinx_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
  
- 	/* the spi->mode bits understood by this driver: */
--	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST | SPI_LOOP;
-+	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST | SPI_LOOP |
-+			    SPI_CS_HIGH;
+ 		/* Read out all the data from the Rx FIFO */
+ 		while (n_words--)
+-			xspi->rx_fn(xspi);
++			xilinx_spi_rx(xspi);
+ 	}
  
- 	xspi = spi_master_get_devdata(master);
-+	xspi->cs_inactive = 0xffffffff;
- 	xspi->bitbang.master = master;
- 	xspi->bitbang.chipselect = xilinx_spi_chipselect;
- 	xspi->bitbang.setup_transfer = xilinx_spi_setup_transfer;
+ 	return t->len - xspi->remaining_bytes;
+@@ -423,20 +404,6 @@ static int xilinx_spi_probe(struct platform_device *pdev)
+ 
+ 	master->bits_per_word_mask = SPI_BPW_MASK(bits_per_word);
+ 	xspi->bits_per_word = bits_per_word;
+-	if (xspi->bits_per_word == 8) {
+-		xspi->tx_fn = xspi_tx8;
+-		xspi->rx_fn = xspi_rx8;
+-	} else if (xspi->bits_per_word == 16) {
+-		xspi->tx_fn = xspi_tx16;
+-		xspi->rx_fn = xspi_rx16;
+-	} else if (xspi->bits_per_word == 32) {
+-		xspi->tx_fn = xspi_tx32;
+-		xspi->rx_fn = xspi_rx32;
+-	} else {
+-		ret = -EINVAL;
+-		goto put_master;
+-	}
+-
+ 	xspi->buffer_size = xilinx_spi_find_buffer_size(xspi);
+ 
+ 	xspi->irq = platform_get_irq(pdev, 0);
 -- 
 2.1.4
 
