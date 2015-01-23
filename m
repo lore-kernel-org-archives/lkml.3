@@ -1,96 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725AbbAVXu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 18:50:29 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50871 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668AbbAVXu1 (ORCPT
+	id S1753371AbbAWACY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 19:02:24 -0500
+Received: from na3sys010aog107.obsmtp.com ([74.125.245.82]:42408 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752338AbbAWACX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 18:50:27 -0500
-Date: Thu, 22 Jan 2015 15:50:20 -0800
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: Zidan Wang <b50113@freescale.com>
-Cc: Zidan Wang <zidan.wang@freescale.com>, timur@tabi.org, Xiubo.Lee@gmail.com,
-        lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel][PATCH 2/3] ASoC: fsl_sai: Add support for tdm slots
- operation
-Message-ID: <20150122235019.GA3204@Asurada-GSX>
-References: <1421756480-7055-1-git-send-email-zidan.wang@freescale.com>
- <1421756480-7055-3-git-send-email-zidan.wang@freescale.com>
- <20150121180801.GA3361@Alpha>
- <20150122045515.GA3467@b50113>
- <20150122054409.GA7748@Asurada>
- <20150122062004.GA7046@b50113>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122062004.GA7046@b50113>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Thu, 22 Jan 2015 19:02:23 -0500
+From: Yan Liu <yan@purestorage.com>
+To: Matthew Wilcox <willy@linux.intel.com>, linux-nvme@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Yan Liu <yan@purestorage.com>
+Subject: [PATCH 1/1] NVMe: Do not take nsid while a passthrough IO command is being issued via a block device file descriptor
+Date: Thu, 22 Jan 2015 16:02:08 -0800
+Message-Id: <1421971328-5065-1-git-send-email-yan@purestorage.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 02:20:06PM +0800, Zidan Wang wrote:
-> > > > > @@ -369,10 +380,25 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
-> > > > >  	u32 word_width = snd_pcm_format_width(params_format(params));
-> > > > >  	u32 val_cr4 = 0, val_cr5 = 0;
-> > > > >  	int ret;
-> > > > > +	u32 bclk;
-> > > > > +
-> > > > > +	if (channels == 1)
-> > > > > +		channels = 2;
-> > > > > +
-> > > > > +	if (!sai->slots || sai->slots % channels)
-> > > > > +		sai->slots = channels;
-> > > > > +
-> > > > > +	sai->slots = sai->slots / channels;
-> > > > > +
-> > > > > +	if (sai->slot_width < word_width || sai->is_dsp_mode)
-> > > > > +		sai->slot_width = word_width;
-> > > > 
-> > > > Could you pls explain a bit what's this overriding for?
-> > > > Or it might be better to put into a comment.
-> > > >
-> > > In machine driver, we should use snd_soc_dai_set_tdm_slot to set slots
-> > > and slot width. In my opinion, slots in machine driver means the slot
-> > > number of all channels. But in sai driver, the slots means the slot number
-> > > of one channel. So snd_soc_calc_bclk use fs*sample_size*channels*tdm_slots
-> > > to caculate bclk.
-> > 
-> > Could you pls use the standard way as you described for slot number
-> > in machine driver instead of defining some other meanings? That one
-> > is really confusing, not to mention a code without any comment.
-> > 
-> > You can add some extra local variables with extinguished names and
-> > calculate the slot number and channels you want without changing
-> > the original sai->slots and channels in the hw_params(). As you said,
-> > you only need that new slot number and channels for snd_soc_calc_bclk
-> > call. So you may also put this code right before the call -- a normal
-> > routine doesn't need to recalculate the special slots and channels,
-> > right?
+When a passthrough IO command is issued with a specific block device file descriptor. It should be applied at
+the namespace which is associated with that block device file descriptor. This patch makes such passthrough
+command ignore nsid in nvme_passthru_cmd structure. Instead it takes the namespace ID asscoiated with the
+block device descriptor.
 
-> Actually i don't kown which meaning is the standard way. Because i found
-> in wm8993 and wm8904 codec driver, they also use slots/channels to set 
-> tdm_slots in set_tdm_slot function.
+Signed-off-by: Yan Liu <yan@purestorage.com>
+---
+ drivers/block/nvme-core.c | 34 +++++++++++++++++++++++-----------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
-The slots via machine driver should be total slot number per frame.
-For I2S, we're passing 2 for slots parameter in our machine drivers.
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index cb529e9..8bb08ab 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -1683,7 +1683,7 @@ static int nvme_submit_io(struct nvme_ns *ns, struct nvme_user_io __user *uio)
+ }
+ 
+ static int nvme_user_cmd(struct nvme_dev *dev, struct nvme_ns *ns,
+-			struct nvme_passthru_cmd __user *ucmd)
++			struct nvme_passthru_cmd __user *ucmd, bool ioq)
+ {
+ 	struct nvme_passthru_cmd cmd;
+ 	struct nvme_command c;
+@@ -1699,7 +1699,7 @@ static int nvme_user_cmd(struct nvme_dev *dev, struct nvme_ns *ns,
+ 	memset(&c, 0, sizeof(c));
+ 	c.common.opcode = cmd.opcode;
+ 	c.common.flags = cmd.flags;
+-	c.common.nsid = cpu_to_le32(cmd.nsid);
++	c.common.nsid = ns ? cpu_to_le32(ns->ns_id) : cpu_to_le32(cmd.nsid);
+ 	c.common.cdw2[0] = cpu_to_le32(cmd.cdw2);
+ 	c.common.cdw2[1] = cpu_to_le32(cmd.cdw3);
+ 	c.common.cdw10[0] = cpu_to_le32(cmd.cdw10);
+@@ -1725,9 +1725,25 @@ static int nvme_user_cmd(struct nvme_dev *dev, struct nvme_ns *ns,
+ 
+ 	if (length != cmd.data_len)
+ 		status = -ENOMEM;
+-	else if (ns) {
++	else if (ioq) {
+ 		struct request *req;
+ 
++		if (!ns) {
++			if (list_empty(&dev->namespaces)) {
++				return -ENOTTY;
++
++			struct nvme_ns *ns_ptr;
++
++			list_for_each_entry(ns_ptr, &dev->namespaces, list) {
++				if (ns_ptr->ns_id == cmd.nsid) {
++					ns = ns_ptr;
++					break;
++				}
++			}
++			if (!ns)
++				return -EINVAL;
++		}
++
+ 		req = blk_mq_alloc_request(ns->queue, WRITE,
+ 						(GFP_KERNEL|__GFP_WAIT), false);
+ 		if (IS_ERR(req))
+@@ -1762,9 +1778,9 @@ static int nvme_ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd,
+ 		force_successful_syscall_return();
+ 		return ns->ns_id;
+ 	case NVME_IOCTL_ADMIN_CMD:
+-		return nvme_user_cmd(ns->dev, NULL, (void __user *)arg);
++		return nvme_user_cmd(ns->dev, NULL, (void __user *)arg, false);
+ 	case NVME_IOCTL_IO_CMD:
+-		return nvme_user_cmd(ns->dev, ns, (void __user *)arg);
++		return nvme_user_cmd(ns->dev, ns, (void __user *)arg, true);
+ 	case NVME_IOCTL_SUBMIT_IO:
+ 		return nvme_submit_io(ns, (void __user *)arg);
+ 	case SG_GET_VERSION_NUM:
+@@ -2589,16 +2605,12 @@ static int nvme_dev_release(struct inode *inode, struct file *f)
+ static long nvme_dev_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+ {
+ 	struct nvme_dev *dev = f->private_data;
+-	struct nvme_ns *ns;
+ 
+ 	switch (cmd) {
+ 	case NVME_IOCTL_ADMIN_CMD:
+-		return nvme_user_cmd(dev, NULL, (void __user *)arg);
++		return nvme_user_cmd(dev, NULL, (void __user *)arg, false);
+ 	case NVME_IOCTL_IO_CMD:
+-		if (list_empty(&dev->namespaces))
+-			return -ENOTTY;
+-		ns = list_first_entry(&dev->namespaces, struct nvme_ns, list);
+-		return nvme_user_cmd(dev, ns, (void __user *)arg);
++		return nvme_user_cmd(dev, NULL, (void __user *)arg, true);
+ 	default:
+ 		return -ENOTTY;
+ 	}
+-- 
+1.9.1
 
-So why not just following that pattern. You code for calculating slot
-per channel is used to calculate bclk. But keeping slot per frame will
-also allow you to do that, meanwhile you can drop some code to do the
-extra calculation so as to keep it neat.
-
-I suggest you to take a look at fsl_esai.c and to follow that way:
-Override slots and slot_width if specified from machine driver.
-
-And another problem of your patch is the configurations for FRSZ and
-xMR fields. For monaural case, the channels == 1, the current code
-passes it directly to set them while your code overrides it to 2.
-
-I'm not sure if you've tested the monaural case and confirmed it works.
-But, apparently, the configurations look pretty different.
-
-Nicolin
