@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118AbbAWQZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:25:21 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:57952 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321AbbAWQZP (ORCPT
+	id S1756151AbbAWQ0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:26:01 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:55272 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbbAWQZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:25:15 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-58-54c275e9e70c
+	Fri, 23 Jan 2015 11:25:19 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-5d-54c275ed5647
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Kukjin Kim <kgene@kernel.org>, Daniel Lezcano <daniel.lezcano@linaro.org>,
@@ -17,98 +17,92 @@ Cc: Kukjin Kim <kgene@kernel.org>, Daniel Lezcano <daniel.lezcano@linaro.org>,
         linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         b.zolnierkie@samsung.com
-Subject: [PATCH v3 0/2] cpuidle: exynos: add coupled cpuidle support for
- Exynos4210
-Date: Fri, 23 Jan 2015 17:24:52 +0100
-Message-id: <1422030294-20925-1-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v3 1/2] ARM: EXYNOS: apply S5P_CENTRAL_SEQ_OPTION fix only when
+ necessary
+Date: Fri, 23 Jan 2015 17:24:53 +0100
+Message-id: <1422030294-20925-2-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFLMWRmVeSWpSXmKPExsVy+t9jAd2XpYdCDBZslrLYOGM9q8WCGe3M
-	FvM+y1q8fmFo0bvgKptF/+PXzBZnm96wW7w/9IzZ4vKuOWwWn3uPMFrMOL+PyWLVrj+MDjwe
-	O2fdZfdYsKnUY9OqTjaPO9f2sHnc/veY2aNvyypGj8+b5ALYo7hsUlJzMstSi/TtErgy7j7O
-	KdguVvH90WamBsZngl2MnBwSAiYSR9v2MkHYYhIX7q1n62Lk4hASWMQoMXfrZlaQhJBAF5PE
-	4xYFEJtNwEpiYvsqRhBbREBNomfxVkaQBmaBHmaJjvWzwBLCAqESCy53ATVzcLAIqEqcfMwP
-	EuYV8JB486mbHWKZokT3swlsExi5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIDrFn
-	0jsYVzVYHGIU4GBU4uFt2HIwRIg1say4MvcQowQHs5IIb0bKoRAh3pTEyqrUovz4otKc1OJD
-	jNIcLErivEr2bSFCAumJJanZqakFqUUwWSYOTqkGRrUfMw67H1lS6vrkiIjsdPemr6kTWY0u
-	1PjVHFbfYh78MpRz69+gXec0O+aXmNaLeD1IXJ6r1FBspO7N6F/ty3KjpkPr4N2zm1/1q/73
-	D3vizW3E+YTl++m4m1IuN4Ou8KrsfWFRazKv8VWjzaeNDjq9J87P0hF+kst1X86lffXh3Xvc
-	12/3VWIpzkg01GIuKk4EACGgkX8tAgAA
+In-reply-to: <1422030294-20925-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1422030294-20925-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t9jAd13pYdCDG5EWGycsZ7VYsGMdmaL
+	eZ9lLV6/MLToXXCVzaL/8Wtmi7NNb9gt3h96xmxxedccNovPvUcYLWac38dksWrXH0YHHo+d
+	s+6yeyzYVOqxaVUnm8eda3vYPG7/e8zs0bdlFaPH501yAexRXDYpqTmZZalF+nYJXBlrXqQX
+	LBeu+LPxNUsD4yqBLkYODgkBE4kD7QFdjJxAppjEhXvr2boYuTiEBBYxSmxbOoMJwulikrj0
+	eC4zSBWbgJXExPZVjCC2iICaRM/irYwgRcwCPcwSHetngSWEBaIllvxdzAZiswioSqy8u5wR
+	ZBuvgIfEi31RENsUJbqfTQAr4RTwlFizYicriC0EVPKs+QLjBEbeBYwMqxhFUwuSC4qT0nON
+	9IoTc4tL89L1kvNzNzGCA/KZ9A7GVQ0WhxgFOBiVeHgbthwMEWJNLCuuzD3EKMHBrCTCm5Fy
+	KESINyWxsiq1KD++qDQntfgQozQHi5I4r5J9W4iQQHpiSWp2ampBahFMlomDU6qB0b1fuOFU
+	6lzZnaei/23d2ZvoJ9H0puDDTMVlp6Qv3HdzWC3bzbjmY8YhIWunJRMOPeW+fc+L0VCdUePr
+	htlXD7p4H50wTcdhY1XfJ0U3GU3p+Q/ntcc5LO5teTlPMPRVyMev39Qbjq+5tOT28am9hyU/
+	xJh61ldVThFus1IWqjKbnXrjG9PrFiWW4oxEQy3mouJEAGB8xtBEAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit c2dd114d2486 ("ARM: EXYNOS: fix register setup for AFTR mode
+code") added S5P_CENTRAL_SEQ_OPTION register setup fix for all
+Exynos SoCs to AFTR mode code-path.  It turned out that for coupled
+cpuidle AFTR mode on Exynos4210 (added by the next patch) applying
+this fix causes lockup so enable it in the AFTR mode code-path only
+on SoCs that require it (in the suspend code-path it can be always
+applied like it was before commit c2dd114d2486).
 
-The following patchset adds coupled cpuidle support for Exynos4210
-to an existing cpuidle-exynos driver.  As a result it enables AFTR
-mode to be used by default on Exynos4210 without the need to hot
-unplug CPU1 first.
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Colin Cross <ccross@google.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/mach-exynos/pm.c      | 11 +++++++----
+ arch/arm/mach-exynos/suspend.c |  4 ++++
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-This work is heavily based on earlier cpuidle-exynos4210 driver from
-Daniel Lezcano:
-
-http://www.spinics.net/lists/linux-samsung-soc/msg28134.html
-
-Changes from Daniel's code include:
-- porting code to current kernels
-- fixing it to work on my setup (by using S5P_INFORM register
-  instead of S5P_VA_SYSRAM one on Revison 1.1 and retrying poking
-  CPU1 out of the BOOT ROM if necessary)
-- fixing rare lockup caused by waiting for CPU1 to get stuck in
-  the BOOT ROM (CPU hotplug code in arch/arm/mach-exynos/platsmp.c
-  doesn't require this and works fine)
-- moving Exynos specific code to arch/arm/mach-exynos/pm.c
-- using cpu_boot_reg_base() helper instead of BOOT_VECTOR macro
-- using exynos_cpu_*() helpers instead of accessing registers
-  directly
-- using arch_send_wakeup_ipi_mask() instead of dsb_sev()
-  (this matches CPU hotplug code in arch/arm/mach-exynos/platsmp.c)
-- integrating separate exynos4210-cpuidle driver into existing
-  exynos-cpuidle one
-
-patch #1 is a fix for Exynos platform PM code preparing it for
-coupled cpuidle support
-
-patch #2 adds coupled cpuidle AFTR mode for Exynos4210
-
-The patchset depends on:
-- for-next branch (commit: 9663ad71912b) of linux-samsung.git
-  kernel tree
-
-Changes since v2:
-- rebased on top of for-next branch (commit: 9663ad71912b) of
-  linux-samsung.git kernel tree
-
-Changes since v1:
-- rebased on top of for-next branch (commit: 760a7d4763c8) of
-  linux-samsung.git kernel tree (the patchset also applies fine
-  to next-20141126 branch of linux-next kernel tree but needs
-  CPUIDLE_FLAG_TIME_VALID flag usage removed to fix build)
-- added Signed-off-by from Daniel Lezcano to patch #2
-- added separate struct cpuidle_driver exynos_coupled_idle_driver
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
-
-Bartlomiej Zolnierkiewicz (2):
-  ARM: EXYNOS: apply S5P_CENTRAL_SEQ_OPTION fix only when necessary
-  cpuidle: exynos: add coupled cpuidle support for Exynos4210
-
- arch/arm/mach-exynos/common.h                |   4 +
- arch/arm/mach-exynos/exynos.c                |   4 +
- arch/arm/mach-exynos/platsmp.c               |   2 +-
- arch/arm/mach-exynos/pm.c                    | 133 ++++++++++++++++++++++++++-
- arch/arm/mach-exynos/suspend.c               |   4 +
- drivers/cpuidle/Kconfig.arm                  |   1 +
- drivers/cpuidle/cpuidle-exynos.c             |  76 ++++++++++++++-
- include/linux/platform_data/cpuidle-exynos.h |  20 ++++
- 8 files changed, 234 insertions(+), 10 deletions(-)
- create mode 100644 include/linux/platform_data/cpuidle-exynos.h
-
+diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+index dfc8594..1a7454d 100644
+--- a/arch/arm/mach-exynos/pm.c
++++ b/arch/arm/mach-exynos/pm.c
+@@ -98,10 +98,6 @@ void exynos_pm_central_suspend(void)
+ 	tmp = pmu_raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
+ 	tmp &= ~S5P_CENTRAL_LOWPWR_CFG;
+ 	pmu_raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
+-
+-	/* Setting SEQ_OPTION register */
+-	pmu_raw_writel(S5P_USE_STANDBY_WFI0 | S5P_USE_STANDBY_WFE0,
+-		       S5P_CENTRAL_SEQ_OPTION);
+ }
+ 
+ int exynos_pm_central_resume(void)
+@@ -165,6 +161,13 @@ void exynos_enter_aftr(void)
+ 
+ 	exynos_pm_central_suspend();
+ 
++	if (of_machine_is_compatible("samsung,exynos4212") ||
++	    of_machine_is_compatible("samsung,exynos4412")) {
++		/* Setting SEQ_OPTION register */
++		pmu_raw_writel(S5P_USE_STANDBY_WFI0 | S5P_USE_STANDBY_WFE0,
++			       S5P_CENTRAL_SEQ_OPTION);
++	}
++
+ 	cpu_suspend(0, exynos_aftr_finisher);
+ 
+ 	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
+diff --git a/arch/arm/mach-exynos/suspend.c b/arch/arm/mach-exynos/suspend.c
+index 82e6b6f..666ec3e 100644
+--- a/arch/arm/mach-exynos/suspend.c
++++ b/arch/arm/mach-exynos/suspend.c
+@@ -319,6 +319,10 @@ static int exynos_pm_suspend(void)
+ {
+ 	exynos_pm_central_suspend();
+ 
++	/* Setting SEQ_OPTION register */
++	pmu_raw_writel(S5P_USE_STANDBY_WFI0 | S5P_USE_STANDBY_WFE0,
++		       S5P_CENTRAL_SEQ_OPTION);
++
+ 	if (read_cpuid_part() == ARM_CPU_PART_CORTEX_A9)
+ 		exynos_cpu_save_register();
+ 
 -- 
 1.8.2.3
 
