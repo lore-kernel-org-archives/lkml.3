@@ -1,136 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599AbbAWPdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 10:33:11 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63277 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750827AbbAWPdG (ORCPT
+	id S1755732AbbAWP6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 10:58:04 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:34090 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754866AbbAWP6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 10:33:06 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: al.stone@linaro.org
-Cc: tony.luck@intel.com, fenghua.yu@intel.com, catalin.marinas@arm.com,
-        will.deacon@arm.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, lenb@kernel.org, robert.moore@intel.com,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devel@acpica.org, linaro-acpi@lists.linaro.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH 7/7] ACPI: use Linux as ACPI_OS_NAME for _OS on ARM64
-Date: Fri, 23 Jan 2015 16:55:43 +0100
-Message-ID: <3375613.hf7nCUoE0P@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1421973884-13029-8-git-send-email-al.stone@linaro.org>
-References: <1421973884-13029-1-git-send-email-al.stone@linaro.org> <1421973884-13029-8-git-send-email-al.stone@linaro.org>
+	Fri, 23 Jan 2015 10:58:01 -0500
+Date: Fri, 23 Jan 2015 07:57:24 -0800
+From: Shaohua Li <shli@fb.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <Kernel-team@fb.com>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC 2/2] perf: update userspace page info for software event
+Message-ID: <20150123155724.GA631220@devbig257.prn2.facebook.com>
+References: <119aa7d433860f568136ab623fb4a510c28e9e6f.1421906750.git.shli@fb.com>
+ <e0f8f6f0a114c464e8e38cd73be31564bd5ea7da.1421906750.git.shli@fb.com>
+ <20150123084451.GE2896@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20150123084451.GE2896@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-23_05:2015-01-23,2015-01-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=29.7537444223261
+ compositescore=0.928745990228454 urlsuspect_oldscore=0.928745990228454
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.928745990228454 spamscore=0
+ recipient_to_sender_domain_totalscore=11 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501230150
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 22, 2015 05:44:44 PM al.stone@linaro.org wrote:
-> From: Hanjun Guo <hanjun.guo@linaro.org>
+On Fri, Jan 23, 2015 at 09:44:51AM +0100, Peter Zijlstra wrote:
+> On Thu, Jan 22, 2015 at 01:09:02PM -0800, Shaohua Li wrote:
+> > ---
+> >  kernel/events/core.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+> > index 4edde3e..4221240 100644
+> > --- a/kernel/events/core.c
+> > +++ b/kernel/events/core.c
+> > @@ -5950,6 +5950,7 @@ static int perf_swevent_add(struct perf_event *event, int flags)
+> >  	}
+> >  
+> >  	hlist_add_head_rcu(&event->hlist_entry, head);
+> > +	perf_event_update_userpage(event);
+> >  
+> >  	return 0;
+> >  }
+> > @@ -6419,6 +6420,7 @@ static int cpu_clock_event_add(struct perf_event *event, int flags)
+> >  {
+> >  	if (flags & PERF_EF_START)
+> >  		cpu_clock_event_start(event, flags);
+> > +	perf_event_update_userpage(event);
+> >  
+> >  	return 0;
+> >  }
+> > @@ -6493,6 +6495,7 @@ static int task_clock_event_add(struct perf_event *event, int flags)
+> >  {
+> >  	if (flags & PERF_EF_START)
+> >  		task_clock_event_start(event, flags);
+> > +	perf_event_update_userpage(event);
+> >  
+> >  	return 0;
+> >  }
 > 
-> ACPI_OS_NAME is globally defined as "Microsoft Windows NT" for now.
-> That doesn't make much sense in the ARM context, so set it to "Linux"
-> when CONFIG_ARM64.
-> 
-> If it is necessary to change the return value from \_OS_ (that is, return
-> some value other than the default in ACPI_OS_NAME), use the kernel parameter
-> "acpi_os_name=<string>".
-> 
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  arch/arm64/Kconfig              | 1 +
->  drivers/acpi/Kconfig            | 8 ++++++++
->  include/acpi/acconfig.h         | 2 ++
->  include/acpi/platform/aclinux.h | 4 ++++
->  4 files changed, 15 insertions(+)
-> 
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index 915aa16..20677d1 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -1,5 +1,6 @@
+> How about the one I sent; which adds it to {start,stop} instead of add?
+> {start,stop} is the right place to add them, although this add might be
+> sufficient for your use case.
+Hi Peter,
+I tried {start, stop}, it doesn't work (doesn't get called in context
+switch) and I still get a CLOCK_MONOTONIC. So I added it to .add, which
+is called in context switch and I got correct thread time. Am I missing
+anything?
 
-If you added
-
-	config ACPI_OS_NAME
-		string
-		default "Linux"
-		depends on ACPI
-
-to this file, then you don't need to add the new select below and ->
-
->  config ARM64
->  	def_bool y
-> +	select ACPI_OS_NAME_LINUX if ACPI
->  	select ACPI_REDUCED_HARDWARE_ONLY if ACPI
->  	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
->  	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 3e3bd35..024c5f0 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -369,6 +369,14 @@ config ACPI_REDUCED_HARDWARE_ONLY
->  
->  	  If you are unsure what to do, do not enable this option.
->  
-> +config ACPI_OS_NAME_LINUX
-> +	bool "Using Linux for _OS method" if EXPERT
-> +	def_bool n
-> +	  When used, this option makes sure the _OS method returns
-> +	  the value "Linux".
-> +
-> +	  If you are unsure what to do, do not enable this option.
-> +
-
--> you don't need this at all ->>
-
->  source "drivers/acpi/apei/Kconfig"
->  
->  config ACPI_EXTLOG
-> diff --git a/include/acpi/acconfig.h b/include/acpi/acconfig.h
-> index 5a0a3e5..1980bf4 100644
-> --- a/include/acpi/acconfig.h
-> +++ b/include/acpi/acconfig.h
-> @@ -69,7 +69,9 @@
->   * code that will not execute the _OSI method unless _OS matches the string
->   * below.  Therefore, change this string at your own risk.
->   */
-> +#ifndef ACPI_OS_NAME
->  #define ACPI_OS_NAME                    "Microsoft Windows NT"
-> +#endif
->  
->  /* Maximum objects in the various object caches */
->  
-> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-> index 1ba7c19..a8a7ee3 100644
-> --- a/include/acpi/platform/aclinux.h
-> +++ b/include/acpi/platform/aclinux.h
-> @@ -69,6 +69,10 @@
->  #define ACPI_REDUCED_HARDWARE 1
->  #endif
->  
-> +#ifdef CONFIG_ACPI_OS_NAME_LINUX
-> +#define ACPI_OS_NAME "Linux"
-> +#endif
-
-->> and here you can do
-
-+#ifdef CONFIG_ACPI_OS_NAME
-+#define ACPI_OS_NAME CONFIG_ACPI_OS_NAME
-+#endif
-
-unless I'm missing something.
-
-> +
->  #include <linux/string.h>
->  #include <linux/kernel.h>
->  #include <linux/ctype.h>
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks,
+Shaohua
