@@ -1,100 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbbAWGyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 01:54:19 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:39998 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbbAWGyQ (ORCPT
+	id S1753136AbbAWGzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 01:55:41 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:47462 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbbAWGzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 01:54:16 -0500
-Date: Fri, 23 Jan 2015 07:54:10 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [Resend Patch v4 14/16] smp, s390: Kill SMP single function call
- interrupt
-Message-ID: <20150123065410.GA5101@osiris>
-References: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com>
- <1421991416-20297-15-git-send-email-jiang.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421991416-20297-15-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012306-0021-0000-0000-000002A75E53
+	Fri, 23 Jan 2015 01:55:38 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed
+X-AuditID: cbfee68f-f791c6d000004834-31-54c1f068275b
+Content-transfer-encoding: 8BIT
+Message-id: <54C1F067.90907@samsung.com>
+Date: Fri, 23 Jan 2015 15:55:35 +0900
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Beomho Seo <beomho.seo@samsung.com>
+Subject: Re: [PATCH 1/6] mfd: max77843: Add max77843 MFD driver core driver
+References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
+ <1421989367-32721-2-git-send-email-jaewon02.kim@samsung.com>
+ <CAJKOXPfRYhJNUAE=W3zPWvyza9k_YA=hu4KjLRuLh7kie3guQA@mail.gmail.com>
+In-reply-to: <CAJKOXPfRYhJNUAE=W3zPWvyza9k_YA=hu4KjLRuLh7kie3guQA@mail.gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsWyRsSkSDfjw8EQg3NTlC1Of9rGbjH14RM2
+	i+tfnrNazD9yjtWi/81CVotzr1YyWky6P4HF4vULQ4v7X48yWlzeNYfN4nPvEUaLpdcvMllM
+	mL6WxaJ17xF2i9O7Sxz4PdbMW8Pocbmvl8lj5fIvbB6bVnWyedy5tofNo2/LKkaPz5vkAtij
+	uGxSUnMyy1KL9O0SuDJWPFQsmOFWceNnC2sDY59RFyMnh4SAicSav6uZIGwxiQv31rN1MXJx
+	CAksZZSY23+LFabowZ12qMQiRomj91vYQRK8AoISPybfY+li5OBgFpCXOHIpGyTMLGAm8eXl
+	YVaI+teMEjf6Z0HVa0hMnHydDcRmEVCV2LP7LiOIzSagLfF9/WKwZaICERLzj71mBrFFBAwl
+	Du7ezgQyiFngA7PE/95DTCDLhAW8JZY3+UEsOMcocenbHrAGToFgib2/j4E1SAjM5JCYOXkP
+	E8Q2AYlvkw+BXSohICux6QAzxGeSEgdX3GCZwCg2C8k/sxD+mYXknwWMzKsYRVMLkguKk9KL
+	jPWKE3OLS/PS9ZLzczcxAqP69L9n/TsY7x6wPsQowMGoxMPbsOVgiBBrYllxZe4hRlOgIyYy
+	S4km5wNTR15JvKGxmZGFqYmpsZG5pZmSOO9CqZ/BQgLpiSWp2ampBalF8UWlOanFhxiZODil
+	GhjFZ9sXt/x+qxSWPHke8weHIp9NKTccZyrF6Ybsb6vj/+fJbVjxdOFhORfbfx/3R52/vyje
+	1bfXpcbgm8WiMr4tF67KnLY483HF9a6P3xJiFrp2MNdlXszueuW/eYlV26/wxt5pJsnnD9ef
+	WO4m/8Z5brPiS5HrnrpZa03TBBaa+0ssmdcXV6rEUpyRaKjFXFScCADvMqpz5QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jAd2MDwdDDC4sl7A4/Wkbu8XUh0/Y
+	LK5/ec5qMf/IOVaL/jcLWS3OvVrJaDHp/gQWi9cvDC3ufz3KaHF51xw2i8+9Rxgtll6/yGQx
+	YfpaFovWvUfYLU7vLnHg91gzbw2jx+W+XiaPlcu/sHlsWtXJ5nHn2h42j74tqxg9Pm+SC2CP
+	amC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6W0mh
+	LDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOYseKhYsEMt4obP1tYGxj7jLoY
+	OTkkBEwkHtxpZ4OwxSQu3FsPZHNxCAksYpQ4er+FHSTBKyAo8WPyPZYuRg4OZgF5iSOXskHC
+	zAJmEl9eHmaFqH/NKHGjfxZUvYbExMnXwYayCKhK7Nl9lxHEZhPQlvi+fjEriC0qECEx/9hr
+	ZhBbRMBQ4uDu7Uwgg5gFPjBL/O89xASyTFjAW2J5kx/EgnOMEpe+7QFr4BQIltj7+xjTBEaB
+	WUjum4Vw3ywk9y1gZF7FKJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZwynkntYFzZYHGIUYCD
+	UYmHt2HLwRAh1sSy4srcQ4wSHMxKIrzdj4BCvCmJlVWpRfnxRaU5qcWHGE2BvpvILCWanA9M
+	Z3kl8YbGJmZGlkbmhhZGxuZK4rxK9m0hQgLpiSWp2ampBalFMH1MHJxSDYwHvKVvdJsnHP16
+	cfWHhneeXuvWrsyz3PHYTzYxpGvupDkmRcHbtJ+9OvVm+wHjHpvY7ZxzvtuUrazODZg79+4p
+	jdmX+vR36j/4U3ct7GPo87vPRF7/P79r+545zLWb0/lk07uYtR9UVe8N5bG4IPK1w06t4DOb
+	P8+ant7aW/9lm2be5Xt42WmZEktxRqKhFnNRcSIAkHwSAi8DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 01:36:53PM +0800, Jiang Liu wrote:
-> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
-> similar to smp_call_function_single()" has unified the way to handle
-> single and multiple cross-CPU function calls. Now only one interrupt
-> is needed for architecture specific code to support generic SMP function
-> call interfaces, so kill the redundant single function call interrupt.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> Acked-by: Heiko Carstens <heiko.carst...@de.ibm.com>
+Hi Krzysztof,
 
-Is this really the patch I acked, whenever that was? Because the patch
-description doesn't match what your patch does.
-All it does is renaming ec_call_function_single to ec_call_function,
-nothing else.
+2015년 01월 23일 15:32에 Krzysztof Kozlowski 이(가) 쓴 글:
+> 2015-01-23 6:02 GMT+01:00 Jaewon Kim <jaewon02.kim@samsung.com>:
+>> This patch adds MAX77843 core/irq driver to support PMIC,
+>> MUIC(Micro USB Interface Controller), Charger, Fuel Gauge,
+>> LED and Haptic device.
+>>
+>> Cc: Lee Jones <lee.jones@linaro.org>
+>> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+>> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+>> ---
+>>   drivers/mfd/Kconfig                  |   14 ++
+>>   drivers/mfd/Makefile                 |    1 +
+>>   drivers/mfd/max77843.c               |  241 ++++++++++++++++++++
+>>   include/linux/mfd/max77843-private.h |  410 ++++++++++++++++++++++++++++++++++
+>>   4 files changed, 666 insertions(+)
+>>   create mode 100644 drivers/mfd/max77843.c
+>>   create mode 100644 include/linux/mfd/max77843-private.h
+>>
+>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>> index 2e6b731..0c67c79 100644
+>> --- a/drivers/mfd/Kconfig
+>> +++ b/drivers/mfd/Kconfig
+>> @@ -442,6 +442,20 @@ config MFD_MAX77693
+>>            additional drivers must be enabled in order to use the functionality
+>>            of the device.
+>>
+>> +config MFD_MAX77843
+>> +       bool "Maxim Semiconductor MAX77843 PMIC Support"
+>> +       depends on I2C=y
+>> +       select MFD_CORE
+>> +       select REGMAP_I2C
+>> +       select REGMAP_IRQ
+>> +       help
+>> +         Say yes here to add support for Maxim Semiconductor MAX77843.
+>> +         This is companion Power Management IC with LEDs, Haptic, Charger,
+>> +         Fuel Gauge, MUIC(Micro USB Interface Controller) controls on chip.
+>> +         This driver provides common support for accessing the device;
+>> +         additional drivers must be enabled in order to use the functionality
+>> +         of the device.
+>> +
+>>   config MFD_MAX8907
+>>          tristate "Maxim Semiconductor MAX8907 PMIC Support"
+>>          select MFD_CORE
+>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>> index 53467e2..fe4f75c 100644
+>> --- a/drivers/mfd/Makefile
+>> +++ b/drivers/mfd/Makefile
+>> @@ -117,6 +117,7 @@ obj-$(CONFIG_MFD_DA9063)    += da9063.o
+>>   obj-$(CONFIG_MFD_MAX14577)     += max14577.o
+>>   obj-$(CONFIG_MFD_MAX77686)     += max77686.o
+>>   obj-$(CONFIG_MFD_MAX77693)     += max77693.o
+>> +obj-$(CONFIG_MFD_MAX77843)     += max77843.o
+>>   obj-$(CONFIG_MFD_MAX8907)      += max8907.o
+>>   max8925-objs                   := max8925-core.o max8925-i2c.o
+>>   obj-$(CONFIG_MFD_MAX8925)      += max8925.o
+>> diff --git a/drivers/mfd/max77843.c b/drivers/mfd/max77843.c
+>> new file mode 100644
+>> index 0000000..d7f8b76
+>> --- /dev/null
+>> +++ b/drivers/mfd/max77843.c
+>> @@ -0,0 +1,241 @@
+>> +/*
+>> + * max77843.c - MFD core driver for the Maxim MAX77843
+>> + *
+>> + * Copyright (C) 2014 Samsung Electrnoics
+>> + * Author: Jaewon Kim <jaewon02.kim@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + */
+>> +
+>> +#include <linux/err.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/init.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/module.h>
+>> +#include <linux/mfd/core.h>
+>> +#include <linux/mfd/max77843-private.h>
+>> +#include <linux/of_device.h>
+>> +#include <linux/platform_device.h>
+>> +
+>> +static const struct mfd_cell max77843_devs[] = {
+>> +       {
+>> +               .name = "max77843-muic",
+>> +               .of_compatible = "maxim,max77843-muic",
+>> +       }, {
+>> +               .name = "max77843-regulator",
+>> +               .of_compatible = "maxim,max77843-regulator",
+>> +       }, {
+>> +               .name = "max77843-charger",
+>> +               .of_compatible = "maxim,max77843-charger"
+>> +       }, {
+>> +               .name = "max77843-fuelgauge",
+>> +               .of_compatible = "maxim,max77843-fuelgauge",
+>> +       },
+>> +};
+>> +
+>> +static const struct regmap_config max77843_charger_regmap_config = {
+>> +       .reg_bits       = 8,
+>> +       .val_bits       = 8,
+>> +       .max_register   = MAX77843_CHG_REG_END,
+>> +};
+>> +
+>> +static const struct regmap_config max77843_regmap_config = {
+>> +       .reg_bits       = 8,
+>> +       .val_bits       = 8,
+>> +       .max_register   = MAX77843_SYS_REG_END,
+>> +};
+>> +
+>> +static const struct regmap_irq max77843_irqs[] = {
+>> +       /* TOPSYS interrupts */
+>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSUVLO_INT, },
+>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_SYSOVLO_INT, },
+>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TSHDN_INT, },
+>> +       { .reg_offset = 0, .mask = MAX77843_SYS_IRQ_TM_INT, },
+>> +};
+>> +
+>> +static const struct regmap_irq_chip max77843_irq_chip = {
+>> +       .name           = "max77843",
+>> +       .status_base    = MAX77843_SYS_REG_SYSINTSRC,
+>> +       .mask_base      = MAX77843_SYS_REG_SYSINTMASK,
+>> +       .mask_invert    = false,
+>> +       .num_regs       = 1,
+>> +       .irqs           = max77843_irqs,
+>> +       .num_irqs       = ARRAY_SIZE(max77843_irqs),
+>> +};
+>> +
+>> +static int max77843_chg_init(struct max77843 *max77843)
+>> +{
+> Could this function be moved to the charger driver? This way the
+> driver will manage its own resources instead of depending on parent
+> MFD driver.
+>
+>> +       int ret;
+>> +
+>> +       max77843->i2c_chg = i2c_new_dummy(max77843->i2c->adapter, I2C_ADDR_CHG);
+>> +       if (!max77843->i2c_chg) {
+>> +               dev_err(&max77843->i2c->dev,
+>> +                               "Cannot allocate I2C device for Charger\n");
+>> +               return PTR_ERR(max77843->i2c_chg);
+>> +       }
+>> +       i2c_set_clientdata(max77843->i2c_chg, max77843);
+>> +
+>> +       max77843->regmap_chg = devm_regmap_init_i2c(max77843->i2c_chg,
+>> +                       &max77843_charger_regmap_config);
+>> +       if (IS_ERR(max77843->regmap_chg)) {
+>> +               ret = PTR_ERR(max77843->regmap_chg);
+>> +               goto err_chg_i2c;
+>> +       }
+>> +
+>> +       return 0;
+>> +
+>> +err_chg_i2c:
+>> +       i2c_unregister_device(max77843->i2c_chg);
+>> +
+>> +       return ret;
+>> +}
+>> +
+>> +static int max77843_probe(struct i2c_client *i2c,
+>> +                                       const struct i2c_device_id *id)
+>> +{
+>> +       struct max77843 *max77843;
+>> +       int ret;
+>> +       unsigned int reg_data;
+>> +
+>> +       max77843 = devm_kzalloc(&i2c->dev, sizeof(*max77843), GFP_KERNEL);
+>> +       if (!max77843)
+>> +               return -ENOMEM;
+>> +
+>> +       i2c_set_clientdata(i2c, max77843);
+>> +       max77843->dev = &i2c->dev;
+>> +       max77843->i2c = i2c;
+>> +       max77843->irq = i2c->irq;
+>> +
+>> +       max77843->regmap = devm_regmap_init_i2c(i2c,
+>> +                       &max77843_regmap_config);
+>> +       if (IS_ERR(max77843->regmap)) {
+>> +               dev_err(&i2c->dev, "Failed to allocate topsys register map\n");
+>> +               return PTR_ERR(max77843->regmap);
+>> +       }
+>> +
+>> +       ret = regmap_add_irq_chip(max77843->regmap, max77843->irq,
+>> +                       IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_SHARED,
+>> +                       0, &max77843_irq_chip, &max77843->irq_data);
+> Why shared IRQ?
 
-Could you please resend with a proper patch description?
-Thanks!
+This IRQ shared with submodules.
+you can see another IRQ register process in extcon-max77843 driver.
 
-> ---
->  arch/s390/kernel/smp.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
-> index 0b499f5cbe19..5b89eabc3a01 100644
-> --- a/arch/s390/kernel/smp.c
-> +++ b/arch/s390/kernel/smp.c
-> @@ -50,7 +50,7 @@
-> 
->  enum {
->  	ec_schedule = 0,
-> -	ec_call_function_single,
-> +	ec_call_function,
->  	ec_stop_cpu,
->  };
-> 
-> @@ -416,8 +416,8 @@ static void smp_handle_ext_call(void)
->  		smp_stop_cpu();
->  	if (test_bit(ec_schedule, &bits))
->  		scheduler_ipi();
-> -	if (test_bit(ec_call_function_single, &bits))
-> -		generic_smp_call_function_single_interrupt();
-> +	if (test_bit(ec_call_function, &bits))
-> +		generic_smp_call_function_interrupt();
->  }
-> 
->  static void do_ext_call_interrupt(struct ext_code ext_code,
-> @@ -432,12 +432,12 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
->  	int cpu;
-> 
->  	for_each_cpu(cpu, mask)
-> -		pcpu_ec_call(pcpu_devices + cpu, ec_call_function_single);
-> +		pcpu_ec_call(pcpu_devices + cpu, ec_call_function);
->  }
-> 
->  void arch_send_call_function_single_ipi(int cpu)
->  {
-> -	pcpu_ec_call(pcpu_devices + cpu, ec_call_function_single);
-> +	pcpu_ec_call(pcpu_devices + cpu, ec_call_function);
->  }
-> 
->  #ifndef CONFIG_64BIT
-> -- 
-> 1.7.10.4
-> 
+>
+>> +       if (ret) {
+>> +               dev_err(&i2c->dev, "Failed to add TOPSYS IRQ chip\n");
+>> +               return ret;
+>> +       }
+>> +
+>> +       ret = regmap_read(max77843->regmap,
+>> +                       MAX77843_SYS_REG_PMICID, &reg_data);
+>> +       if (ret < 0) {
+>> +               dev_err(&i2c->dev, "Failed to read PMIC ID\n");
+>> +               goto err_pmic_id;
+>> +       }
+>> +       dev_info(&i2c->dev, "device ID: 0x%x\n", reg_data);
+>> +
+>> +       ret = max77843_chg_init(max77843);
+>> +       if (ret) {
+>> +               dev_err(&i2c->dev, "Failed to init Charger\n");
+>> +               goto err_pmic_id;
+>> +       }
+>> +
+>> +       ret = regmap_update_bits(max77843->regmap,
+>> +                       MAX77843_SYS_REG_INTSRCMASK,
+>> +                       MAX77843_INTSRC_MASK_MASK,
+>> +                       (unsigned int)~MAX77843_INTSRC_MASK_MASK);
+>> +       if (ret < 0) {
+>> +               dev_err(&i2c->dev, "Failed to unmask interrupt sourece\n");
+> s/sourece/source/
 
+I will fix typo in next version.
+
+>
+> Best regards,
+> Krzysztof
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+Thanks to review my patch.
+Jaewon Kim
