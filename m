@@ -1,134 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152AbbAWQSr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:18:47 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33803 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755718AbbAWQSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:18:42 -0500
-Date: Fri, 23 Jan 2015 10:18:38 -0600
+	id S932168AbbAWQTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:19:18 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:39085 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211AbbAWQTQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 11:19:16 -0500
+Date: Fri, 23 Jan 2015 10:19:09 -0600
 From: Felipe Balbi <balbi@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Baolu Lu <baolu.lu@linux.intel.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] phy: ulpi: add driver for TI TUSB1210
-Message-ID: <20150123161838.GE8585@saruman.tx.rr.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, <tony@atomide.com>, <myungjoo.ham@samsung.com>,
+        <cw00.choi@samsung.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] extcon: usb: Introduce USB GPIO extcon driver. Fix
+ DRA7 USB.
+Message-ID: <20150123161909.GF8585@saruman.tx.rr.com>
 Reply-To: <balbi@ti.com>
-References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1421745502-169447-4-git-send-email-heikki.krogerus@linux.intel.com>
- <20150120154539.GB8988@saruman>
- <20150121091749.GB22716@kuha.fi.intel.com>
- <20150122204925.GF22288@saruman.tx.rr.com>
- <20150123081241.GB30522@kuha.fi.intel.com>
+References: <1421689942-10201-1-git-send-email-rogerq@ti.com>
+ <20150120190237.GG15169@saruman>
+ <54C0FBDC.6040803@ti.com>
+ <54C10FF4.5030503@ti.com>
+ <20150122202907.GC22288@saruman.tx.rr.com>
+ <54C1F7C0.4020505@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tMbDGjvJuJijemkf"
+	protocol="application/pgp-signature"; boundary="RE3pQJLXZi4fr8Xo"
 Content-Disposition: inline
-In-Reply-To: <20150123081241.GB30522@kuha.fi.intel.com>
+In-Reply-To: <54C1F7C0.4020505@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tMbDGjvJuJijemkf
+--RE3pQJLXZi4fr8Xo
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jan 23, 2015 at 10:12:41AM +0200, Heikki Krogerus wrote:
-> Hi,
+On Fri, Jan 23, 2015 at 09:26:56AM +0200, Roger Quadros wrote:
+> Felipe,
 >=20
-> On Thu, Jan 22, 2015 at 02:49:25PM -0600, Felipe Balbi wrote:
-> > On Wed, Jan 21, 2015 at 11:17:49AM +0200, Heikki Krogerus wrote:
-> > > > > +	/* Store initial eye diagram optimisation value */
-> > > > > +	ret =3D ulpi_read(ulpi, ULPI_EXT_VENDOR_SPECIFIC);
-> > > >=20
-> > > > do they *all* use this register for eye diagram optimization or is =
-this
-> > > > something that Intel decided to do ?
-> > > >=20
-> > > > (sorry, don't know much about tusb1210 other than it sucks like hel=
-l :-)
-> > >=20
-> > > All I know that somebody needs to save the value. The ones using this
-> > > PHY who don't need to save it can most likely live without the driver.
+> On 22/01/15 22:29, Felipe Balbi wrote:
+> > On Thu, Jan 22, 2015 at 04:57:56PM +0200, Roger Quadros wrote:
+> >>
+> >> On 22/01/15 15:32, Roger Quadros wrote:
+> >>> Felipe,
+> >>>
+> >>> On 20/01/15 21:02, Felipe Balbi wrote:
+> >>>> On Mon, Jan 19, 2015 at 07:52:17PM +0200, Roger Quadros wrote:
+> >>>>> Hi,
+> >>>>>
+> >>>>> On DRA7 EVMs the USB ID pin is connected to a GPIO line. The USB dr=
+ivers
+> >>>>> (dwc3 + dwc3-omap) depend on extcon framework to get the USB cable =
+state
+> >>>>> (USB or USB-Host) to put the controller in the right mode.
+> >>>>>
+> >>>>> There were earlier attempts [1] to get this working by trying to pa=
+tch up
+> >>>>> the existing GPIO extcon driver.
+> >>>>>
+> >>>>> This series attemts to take a different approach by introducing a n=
+ew
+> >>>>> USB specific extcon driver to handle the USB ID GPIO pin and
+> >>>>> interpret a right USB cable state.
+> >>>>>
+> >>>>> The reasoning to introduce this new driver is:
+> >>>>> 1) The existing GPIO extcon driver doesn't understand USB cable sta=
+tes
+> >>>>> and it can't handle more than one cable per instance.
+> >>>>>   =20
+> >>>>> For the USB case we need to handle at least 2 cable states.
+> >>>>>     a) USB (attach/detach)
+> >>>>>     b) USB-Host (attach/detach)
+> >>>>> and could possible include more states like
+> >>>>>     c) Fast-charger (attach/detach)
+> >>>>>     d) Slow-charger (attach/detach)
+> >>>>>    =20
+> >>>>> 2) This USB specific driver can be easily updated in the future to
+> >>>>> handle VBUS events, or charger detect events, in case it happens
+> >>>>> to be available on GPIO for any platform.
+> >>>>>
+> >>>>> 3) The DT implementation is very easy. You just need one extcon nod=
+e per USB
+> >>>>> instead of one extcon node per cable state as in case of [1].
+> >>>>>
+> >>>>> 4) The cable state string doesn't need to be encoded in the device =
+tree
+> >>>>> as in case of [1].
+> >>>>>
+> >>>>> 5) With only ID event available, you can simulate a USB-peripheral =
+attach
+> >>>>> when USB-Host is detacted instead of hacking the USB driver to do t=
+he same.
+> >>>>>
+> >>>>> Tested on DRA7-evm and DRA72-evm.
+> >>>>
+> >>>> while at that, you might want to patch X15 too.
+> >>>>
+> >>> USB2 port is meant for peripheral use only. ID pin from USB port is n=
+ot connected to GPIO.
+> >>>
+> >>
+> >> OK answering myself here :).
+> >> Peripheral mode doesn't work on x15-bb as the USB driver (dwc3-omap)
+> >> doesn't set the mailbox correctly even when dwc3 node is set as otg =
+=3D "peripheral".
+> >>
+> >> Looks like we need to implement usb-gpio-extcon for x15 even though ID=
+ is hard coded.
 > >=20
-> > right, but what I mean is: is it mandatory that Eye diagram
-> > configuration be stored in *this* register? Or is it more like a scratch
-> > register which Intel just happens to be using for Eye diagram data ?
->=20
-> The eye diagram tuning is in that register. Here's the spec:
-> http://www.ti.com/lit/ds/symlink/tusb1210.pdf
->=20
-> I'll add definition for the register (which is colourfully named
-> "VENDOR_SPECIFIC2").
-
-alright, thanks.
-
-> > > > > +	if (ret < 0)
-> > > > > +		return ret;
-> > > > > +
-> > > > > +	tusb->ctx[0] =3D ret;
-> > > > > +
-> > > > > +	tusb->phy =3D ulpi_phy_create(ulpi, &phy_ops);
-> > > > > +	if (IS_ERR(tusb->phy))
-> > > > > +		return PTR_ERR(tusb->phy);
-> > > > > +
-> > > > > +	tusb->ulpi =3D ulpi;
-> > > > > +
-> > > > > +	phy_set_drvdata(tusb->phy, tusb);
-> > > > > +	dev_set_drvdata(&ulpi->dev, tusb);
-> > > > > +	return 0;
-> > > > > +}
-> > > > > +
-> > > > > +static void tusb1210_remove(struct ulpi *ulpi)
-> > > > > +{
-> > > > > +	struct tusb1210 *tusb =3D dev_get_drvdata(&ulpi->dev);
-> > > >=20
-> > > > completely unrelated to $subject, but we might want to have a
-> > > > ulpi_{set,get}_drvdata() at some point.
-> > >=20
-> > > Makes sense.
-> > >=20
-> > > > In fact, we might decide to add an entire ULPI bus, eventually, tho=
-ugh
-> > > > I'm still considering if there's any benefit to that.
-> > >=20
-> > > I don't think I understand this comment? ULPI bus is what I'm
-> > > introducing in this set (the first patch in it)?
+> > right, another option is to have dwc3-omap read the child's DTS to check
+> > dr_mode and hardcode things based on that.
 > >=20
-> > I mean introducing a real struct bus ulpi_bus_type :-) With match,
-> > probe, remove, etc.
->=20
-> I'm already doing that. Please check the first patch in this set:
-> "phy: add bus for USB ULPI PHYs".
+> I think that option is better as it doesn't require a GPIO line to be
+> reserved for ID when USB is not meant for dual-role use.
 
-yeah, sorry about that.
+yeah, let's implement that for 3.21.
 
 --=20
 balbi
 
---tMbDGjvJuJijemkf
+--RE3pQJLXZi4fr8Xo
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUwnReAAoJEIaOsuA1yqREGIUQAIiWUi3N54pUgm8TUdmRL+R0
-OH+GUweb47Ee9Ni/utOedhaJMD9EEzILk51aZHcHjse/Ax0LCS0IlKXjm6M5PocD
-sHOS1Y/NRBFaitVTBCJGi/Ur/ZKNaVslskW5kQtymGudy0TyN38elymPq12dKyGc
-qMDnOyiLKKuXn3dZ5oBJdLI3yw5SXh2A0C0VAZx+1rYONLV399qZ0PePvPbQu/j6
-dasx+zgiDtnlXZ4dWNu5BCfHOSJDiWx3sd5QtD1GvAXnoAEjsr01XXfOyvl/k0qe
-YIK3ct3sWXdF8Bx178of2M26sLkHWiZC7lTETNmgZRsucDiP8c0C3LxjBEwSEbvP
-4i+PzRddIC0MTqWlekP4plVDQE8dLQbmzzP6Mfh4x0YJnUyPBRXYyxKIO6N7spdC
-lZP6DM/M7C0S4/bQUO/JxyXhTTX8H+CwGnt9bXvCsn7sYo3g+mCprEn9dsAno2Hr
-+jbr2Y7eCYcxtvRirsE5S3S6VnxE13bh+tZ/3/X0Ewx6APq00wI4jy6xbvitRmaS
-Lf7o2RcmvRfi2hsWYcB5oo3IJuhMj9P/o7X5i6UbhJUZSAMFf4PeMNqZ3/XUeo3L
-Jbg9s+eVpa9Owwolq4AdSJehlFe8iT24/sIILWR6BVILnl+DacnyKBaIiZbNpJk3
-XoNRfUOONQOGuvBD9Z0f
-=B7r3
+iQIcBAEBAgAGBQJUwnR9AAoJEIaOsuA1yqREP8IP/0hI6aYpSTIVwCTQpyuqueKx
+8EownKqdtaKISUfkkFv6BSLYXcuFBXi7UTCcFq9RCWmrWOxIt2uenWwnWOyh8KJA
+Xq4PSpap/xTafR6vcWn3f9WHFFkTXNlkp1mImDAF4+7MC+NZkhSPtUWDjbkWNyHE
+A9NwGz2KUXfxIHq1KixgFtQll6RIyh0NMzN2cYOXl8ZlTuN4gkzGOCX0+5hv8sk7
+qiL+LbqQ/T1GA4849Cdlb42glkt5l9MJkUMO0MVYqhR3BPnPRKrv0K+FQ7C8B4zi
+OdXCL+Uj8Cx7+TNSyVBZj+c6GRG+tq3h7FoE4bhKVP1Mu86SVMCS7FByVyNlbQCe
+ES6XlnRvgs+XACqRvbYxsjm8BrZwzUQ9XqdxTPiQdAOkuigsMZwZmdIQCaJgFGbQ
+UUqtSVJCj9jU+6030aiQjLQuLFjzH2iq7WOCPRW2QDmjYJ/oYtsttrgAk2i7dunp
+Na2/O2QETwDGBiU4Vyr7jmdAKwW04BFBmI4qBmxPSCsQ3AfSbYeGxIKCQz1iw6t5
+t1Ve9XZkoDBC3JexjLFvt0zdtmQCdyofIT95rj5o9Q3mRGqKrySWeIp1+qPnY0r3
+6egqwcGT1mNJ4golT2J3rwIjHkCbWz2JAWsCuF1u/1ooVVCy5Rcd18OiYGAV7a1+
+5ZktkvLmy8poYrixJM60
+=/1ku
 -----END PGP SIGNATURE-----
 
---tMbDGjvJuJijemkf--
+--RE3pQJLXZi4fr8Xo--
