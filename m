@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196AbbAWQ1n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:27:43 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:61224 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944AbbAWQ1k (ORCPT
+	id S1756328AbbAWQ1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:27:55 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:56535 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944AbbAWQ1w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:27:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1422029904.3017.37.camel@pengutronix.de>
-References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
-	<1420655248.3191.73.camel@pengutronix.de>
-	<20150123025643.GA11412@victor>
-	<CAOMZO5AYKbq34j2VnZKWqSBVfJgoOOhZX+mPgnMwZ1mzBAKGJQ@mail.gmail.com>
-	<1422029904.3017.37.camel@pengutronix.de>
-Date: Fri, 23 Jan 2015 14:27:40 -0200
-Message-ID: <CAOMZO5D=wXFswNggf7PCK2iWsQEaO0XoUTaTV-vEUMA4VgS_2A@mail.gmail.com>
-Subject: Re: [PATCH v2 0/7] imx-drm: ipuv3-crtc: Implement mode_fixup
-From: Fabio Estevam <festevam@gmail.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Liu Ying <Ying.Liu@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        Steve Longerbeam <steve_longerbeam@mentor.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Denis Carikli <denis@eukrea.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Steve Longerbeam <slongerbeam@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 23 Jan 2015 11:27:52 -0500
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] MAINTAINERS: update Qualcomm support entry
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <20150122214644.GB8057@qualcomm.com>
+Date: Fri, 23 Jan 2015 10:27:48 -0600
+Cc: Joe Perches <joe@perches.com>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8D1CBBAD-4C1D-474A-81F6-FDD882154BE0@codeaurora.org>
+References: <1421901564-8854-1-git-send-email-agross@codeaurora.org> <1421902005.18480.3.camel@perches.com> <20150122214644.GB8057@qualcomm.com>
+To: Andy Gross <agross@codeaurora.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
 
-On Fri, Jan 23, 2015 at 2:18 PM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
-> @@ -281,6 +267,9 @@ static void imx_ldb_encoder_mode_set(struct drm_encoder *encoder,
->         struct imx_ldb_channel *imx_ldb_ch = enc_to_imx_ldb_ch(encoder);
->         struct imx_ldb *ldb = imx_ldb_ch->ldb;
->         int dual = ldb->ldb_ctrl & LDB_SPLIT_MODE_EN;
-> +       unsigned long serial_clk;
-> +       unsigned long di_clk = mode->clock * 1000;
-> +       int mux = imx_ldb_get_mux_id(imx_ldb_ch);
+On Jan 22, 2015, at 3:46 PM, Andy Gross <agross@codeaurora.org> wrote:
 
-I can't find imx_ldb_get_mux_id() on linux-next.
+> On Wed, Jan 21, 2015 at 08:46:45PM -0800, Joe Perches wrote:
+>>> +L:	linux-soc@vger.kernel.org
+>>> S:	Maintained
+>>> F:	arch/arm/mach-qcom/
+>>> +F:	drivers/soc/qcom
+>> 
+>> Please add a terminating /
+>> 
+>> F:	drivers/soc/qcom/
+> 
+> Noted, will fix.
+
+I’ll fix this up when I apply the patch.
+
+- k
+
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
