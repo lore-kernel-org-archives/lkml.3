@@ -1,96 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbbAWLxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:53:21 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:52978 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611AbbAWLxS (ORCPT
+	id S1755274AbbAWLyr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:54:47 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45452 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159AbbAWLyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:53:18 -0500
-Date: Fri, 23 Jan 2015 12:53:19 +0100
-From: Christoffer Dall <cdall@cs.columbia.edu>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Wei Huang <wei@redhat.com>
-Subject: Re: linux-next: manual merge of the kvm-arm tree with the arm64 tree
-Message-ID: <20150123115319.GL15076@cbox>
-References: <20150122160704.5ad5aeb9@canb.auug.org.au>
- <87r3unfb9x.fsf@approximate.cambridge.arm.com>
+	Fri, 23 Jan 2015 06:54:45 -0500
+Message-ID: <54C2367C.4000909@ahsoftware.de>
+Date: Fri, 23 Jan 2015 12:54:36 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r3unfb9x.fsf@approximate.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] modsign: provide option to automatically delete the key
+ after modules were installed
+References: <1421976009-9819-1-git-send-email-holler@ahsoftware.de> <54C21361.1080500@suse.cz> <54C216D8.8040004@ahsoftware.de> <54C21F35.1040206@ahsoftware.de> <54C22891.6070506@suse.cz> <54C233FB.3080309@ahsoftware.de>
+In-Reply-To: <54C233FB.3080309@ahsoftware.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 08:51:54AM +0000, Marc Zyngier wrote:
-> On Thu, Jan 22 2015 at  5:07:04 am GMT, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> Hi Stephen,
-> 
-> > Today's linux-next merge of the kvm-arm tree got a conflict in
-> > arch/arm64/include/asm/kvm_arm.h between commit 6e53031ed840 ("arm64:
-> > kvm: remove ESR_EL2_* macros") from the arm64 tree and commit
-> > 0d97f8848104 ("arm/arm64: KVM: add tracing support for arm64 exit
-> > handler") from the kvm-arm tree.
-> >
-> > I fixed it up (see below, but this probably requires more work) and can
-> > carry the fix as necessary (no action is required).
-> 
-> Thanks for dealing with this. I think the following patch should be
-> applied on top of your resolution, making the new macro part of the
-> asm/esr.h file.
-> 
-> Mark, Wei: does it match your expectations?
-> 
-> Thanks,
-> 
-> 	M.
-> 
-> diff --git a/arch/arm64/include/asm/esr.h b/arch/arm64/include/asm/esr.h
-> index 6216709..92bbae3 100644
-> --- a/arch/arm64/include/asm/esr.h
-> +++ b/arch/arm64/include/asm/esr.h
-> @@ -96,6 +96,7 @@
->  #define ESR_ELx_COND_SHIFT	(20)
->  #define ESR_ELx_COND_MASK	(UL(0xF) << ESR_ELx_COND_SHIFT)
->  #define ESR_ELx_WFx_ISS_WFE	(UL(1) << 0)
-> +#define ESR_ELx_xVC_IMM_MASK	((1UL << 16) - 1)
->  
->  #ifndef __ASSEMBLY__
->  #include <asm/types.h>
-> diff --git a/arch/arm64/include/asm/kvm_arm.h b/arch/arm64/include/asm/kvm_arm.h
-> index 53fbc1e..94674eb 100644
-> --- a/arch/arm64/include/asm/kvm_arm.h
-> +++ b/arch/arm64/include/asm/kvm_arm.h
-> @@ -192,6 +192,4 @@
->  /* Hyp Prefetch Fault Address Register (HPFAR/HDFAR) */
->  #define HPFAR_MASK	(~UL(0xf))
->  
-> -#define ESR_EL2_HVC_IMM_MASK	((1UL << 16) - 1)
-> -
->  #endif /* __ARM64_KVM_ARM_H__ */
-> diff --git a/arch/arm64/include/asm/kvm_emulate.h b/arch/arm64/include/asm/kvm_emulate.h
-> index b861ff6..bbc17cd 100644
-> --- a/arch/arm64/include/asm/kvm_emulate.h
-> +++ b/arch/arm64/include/asm/kvm_emulate.h
-> @@ -133,7 +133,7 @@ static inline phys_addr_t kvm_vcpu_get_fault_ipa(const struct kvm_vcpu *vcpu)
->  
->  static inline u32 kvm_vcpu_hvc_get_imm(const struct kvm_vcpu *vcpu)
->  {
-> -	return kvm_vcpu_get_hsr(vcpu) & ESR_EL2_HVC_IMM_MASK;
-> +	return kvm_vcpu_get_hsr(vcpu) & ESR_ELx_xVC_IMM_MASK;
->  }
->  
->  static inline bool kvm_vcpu_dabt_isvalid(const struct kvm_vcpu *vcpu)
-> 
+Am 23.01.2015 um 12:43 schrieb Alexander Holler:
+> Am 23.01.2015 um 11:55 schrieb Michal Marek:
 
-This looks good to me too, I'll sync with Paolo on how to get this
-upstream.
+>> The .x509 file contains a certificate signed by the private key, but not
+>> the private key. With some scripting, it can be used to verify the
+>> module signatures.
+>
+>
+> Assuming that doesn't change (hopefully), I'll send v2 in a few minutes
+> (it just compiles in order to test it). Thanks for assuring me that
+> .x509 does not and will not contain the private key.
 
--Christoffer
+I'm happy I did that. Just deleting the private key currently doesn't 
+work. A subsequent make fails:
+
+-----------------------------
+(...)
+###
+### Deleting the private key used to sign modules.
+###
+   DEPMOD  3.18.3-00076-ga775cc9
+[root@krabat linux]# less signing_key.x509
+"signing_key.x509" may be a binary file.  See it anyway?
+[root@krabat linux]# make -j4 bzImage modules && make -j4 modules_install
+   CHK     include/config/kernel.release
+   CHK     include/generated/uapi/linux/version.h
+   CHK     include/generated/utsrelease.h
+   CALL    scripts/checksyscalls.sh
+   CHK     include/generated/compile.h
+X.509 certificate list changed
+   CHK     kernel/config_data.h
+   CERTS   kernel/x509_certificate_list
+   - Including cert signing_key.x509
+   AS      kernel/system_certificates.o
+   LD      kernel/built-in.o
+   LINK    vmlinux
+   LD      vmlinux.o
+   MODPOST vmlinux.o
+   GEN     .version
+   CHK     include/generated/compile.h
+   UPD     include/generated/compile.h
+   CC      init/version.o
+   LD      init/built-in.o
+   KSYM    .tmp_kallsyms1.o
+   KSYM    .tmp_kallsyms2.o
+   LD      vmlinux
+   SORTEX  vmlinux
+   SYSMAP  System.map
+   Building modules, stage 2.
+   VOFFSET arch/x86/boot/voffset.h
+   CC      arch/x86/boot/version.o
+   OBJCOPY arch/x86/boot/compressed/vmlinux.bin
+   RELOCS  arch/x86/boot/compressed/vmlinux.relocs
+   CC      arch/x86/boot/compressed/aslr.o
+   LZMA    arch/x86/boot/compressed/vmlinux.bin.lzma
+   MODPOST 747 modules
+   MKPIGGY arch/x86/boot/compressed/piggy.S
+   AS      arch/x86/boot/compressed/piggy.o
+   LD      arch/x86/boot/compressed/vmlinux
+   OBJCOPY arch/x86/boot/vmlinux.bin
+   ZOFFSET arch/x86/boot/zoffset.h
+   AS      arch/x86/boot/header.o
+   LD      arch/x86/boot/setup.elf
+   OBJCOPY arch/x86/boot/setup.bin
+   BUILD   arch/x86/boot/bzImage
+Setup is 16316 bytes (padded to 16384 bytes).
+System is 3908 kB
+CRC a049b366
+Kernel: arch/x86/boot/bzImage is ready  (#682)
+   INSTALL arch/x86/crypto/aes-x86_64.ko
+   INSTALL arch/x86/crypto/blowfish-x86_64.ko
+   INSTALL arch/x86/crypto/camellia-aesni-avx-x86_64.ko
+   INSTALL arch/x86/crypto/aesni-intel.ko
+Can't read private key
+(...)
+-----------------------------
+
+Maybe that's the reason I've always deleted both files, can't remember.
+
+I will see if I find the time and passion to change the Makefile in 
+order to fix that. So you might either use my existing patch or wait if 
+I will send a new one.
+
+Regards,
+
+Alexander Holler
+
