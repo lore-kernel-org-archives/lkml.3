@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719AbbAWAhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 19:37:10 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:43666 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215AbbAWAhG convert rfc822-to-8bit (ORCPT
+	id S1754903AbbAWAhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 19:37:36 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:57607 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140AbbAWAhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 19:37:06 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Cc: Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        akpm@linux-foundation.org, jslaby@suse.cz,
-        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-        Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCHv5 2/2] INPUT: Introduce generic trigger/LED pairs to input LEDs
-Date: Thu, 22 Jan 2015 16:37:02 -0800
-Message-ID: <1756449.aIckN0M451@dtor-glaptop>
-User-Agent: KMail/4.13.3 (Linux/3.13.0-43-generic; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20150123003011.GC3123@type.youpi.perso.aquilenet.fr>
-References: <20141226232116.GA5069@type> <20150123001038.GA2940@type.youpi.perso.aquilenet.fr> <20150123003011.GC3123@type.youpi.perso.aquilenet.fr>
+	Thu, 22 Jan 2015 19:37:33 -0500
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-gpio@vger.kernel.org, gnurou@gmail.com, linus.walleij@linaro.org,
+        Wei.Chen@csr.com, Baohua.Song@csr.com,
+        Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Subject: [PATCH] gpio: sx150x: Fix compile issue when CONFIG_OF_GPIO is not defined
+Date: Thu, 22 Jan 2015 22:37:09 -0200
+Message-Id: <1421973429-9663-1-git-send-email-mopsfelder@gmail.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 23, 2015 01:30:11 AM Samuel Thibault wrote:
-> Samuel Thibault, le Fri 23 Jan 2015 01:10:38 +0100, a �crit :
-> > Dmitry Torokhov, le Sun 04 Jan 2015 15:28:38 -0800, a �crit :
-> > > > +	dev = cdev->dev->platform_data;
-> > > 
-> > > Umm, platform data is not the best place for storing this. Why not
-> > > drvdata?
-> > 
-> > Ah, actually led_classdev already makes use of it, see the
-> > device_create_with_groups call in led_classdev_register.
-> 
-> Actually I'd say it makes sense to be using the platform_data field:
-> from the point of view of the led object, the input object is indeed
-> something like a platform.
+Without this patch, the compilation of gpio-sx150x.c fails because
+struct gpio_chip members 'of_node' and 'of_gpio_n_cells' do not exist
+when CONFIG_OF_GPIO is not defined:
 
-No, platform data is what difefrentiates an arm board from another arm board, 
-or an x86 or mips one.
+drivers/gpio/gpio-sx150x.c: In function ‘sx150x_init_chip’:
+drivers/gpio/gpio-sx150x.c:487:17: error: ‘struct gpio_chip’ has no member named ‘of_node’
+  chip->gpio_chip.of_node          = client->dev.of_node;
+                 ^
+drivers/gpio/gpio-sx150x.c:488:17: error: ‘struct gpio_chip’ has no member named ‘of_gpio_n_cells’
+  chip->gpio_chip.of_gpio_n_cells  = 2;
+                 ^
 
-Thanks.
+This issue was introduced by the commit
+04d2264c3bf07f5c3d18165ba78de0a93360c6c0 "gpio: sx150x: add dts support for sx150x driver".
 
+Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+---
+ drivers/gpio/gpio-sx150x.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/gpio/gpio-sx150x.c b/drivers/gpio/gpio-sx150x.c
+index 88012e2..b1e2f1c 100644
+--- a/drivers/gpio/gpio-sx150x.c
++++ b/drivers/gpio/gpio-sx150x.c
+@@ -484,8 +484,10 @@ static void sx150x_init_chip(struct sx150x_chip *chip,
+ 	chip->gpio_chip.base             = pdata->gpio_base;
+ 	chip->gpio_chip.can_sleep        = true;
+ 	chip->gpio_chip.ngpio            = chip->dev_cfg->ngpios;
++#ifdef CONFIG_OF_GPIO
+ 	chip->gpio_chip.of_node          = client->dev.of_node;
+ 	chip->gpio_chip.of_gpio_n_cells  = 2;
++#endif
+ 	if (pdata->oscio_is_gpo)
+ 		++chip->gpio_chip.ngpio;
+ 
 -- 
-Dmitry
+2.1.0
+
