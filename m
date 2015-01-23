@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbbAWJTH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:19:07 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:44878 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbbAWJTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:19:01 -0500
-Date: Fri, 23 Jan 2015 10:18:57 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Rob Clark <robdclark@gmail.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/36] drm/plane: Make ->atomic_update() mandatory
-Message-ID: <20150123091856.GA3835@ulmo>
-References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
- <1421750935-4023-3-git-send-email-thierry.reding@gmail.com>
- <CAF6AEGvObX_YBvw7f+SytnBokpdQopom-sWGoxaPG2k+g1YjTA@mail.gmail.com>
+	id S1753499AbbAWJVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:21:50 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19933 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751730AbbAWJVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 04:21:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,453,1418112000"; 
+   d="scan'208";a="641485457"
+Message-ID: <54C212A6.5030702@linux.intel.com>
+Date: Fri, 23 Jan 2015 17:21:42 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <CAF6AEGvObX_YBvw7f+SytnBokpdQopom-sWGoxaPG2k+g1YjTA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [Resend Patch v4 14/16] smp, s390: Kill SMP single function call
+ interrupt
+References: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com> <1421991416-20297-15-git-send-email-jiang.liu@linux.intel.com> <20150123065410.GA5101@osiris>
+In-Reply-To: <20150123065410.GA5101@osiris>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2015/1/23 14:54, Heiko Carstens wrote:
+> On Fri, Jan 23, 2015 at 01:36:53PM +0800, Jiang Liu wrote:
+>> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+>> similar to smp_call_function_single()" has unified the way to handle
+>> single and multiple cross-CPU function calls. Now only one interrupt
+>> is needed for architecture specific code to support generic SMP function
+>> call interfaces, so kill the redundant single function call interrupt.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> Acked-by: Heiko Carstens <heiko.carst...@de.ibm.com>
+> 
+> Is this really the patch I acked, whenever that was? Because the patch
+> description doesn't match what your patch does.
+> All it does is renaming ec_call_function_single to ec_call_function,
+> nothing else.
+> 
+> Could you please resend with a proper patch description?
+> Thanks!
+> 
+>> ---
+>>  arch/s390/kernel/smp.c |   10 +++++-----
+>>  1 file changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+>> index 0b499f5cbe19..5b89eabc3a01 100644
+>> --- a/arch/s390/kernel/smp.c
+>> +++ b/arch/s390/kernel/smp.c
+>> @@ -50,7 +50,7 @@
+>>
+>>  enum {
+>>  	ec_schedule = 0,
+>> -	ec_call_function_single,
+>> +	ec_call_function,
+>>  	ec_stop_cpu,
+>>  };
+>>
+>> @@ -416,8 +416,8 @@ static void smp_handle_ext_call(void)
+>>  		smp_stop_cpu();
+>>  	if (test_bit(ec_schedule, &bits))
+>>  		scheduler_ipi();
+>> -	if (test_bit(ec_call_function_single, &bits))
+>> -		generic_smp_call_function_single_interrupt();
+HI Heiko,
+	The background is that the generic smp_call_xxx() interfaces
+only use on interrupt now, previously it used two (FUNC_CALL and
+FUNC_CALL_SINGLE). So the whole patch set is to kill
+FUNC_CALL_SINGLE from all architectures.
+	Above code kills generic_smp_call_function_single_interrupt().
+We also replaces ec_call_function_single with ec_call_function so
+only one interrupt will be used to support smp_call_xxx().
+Regards!
+Gerry
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Jan 20, 2015 at 08:51:15AM -0500, Rob Clark wrote:
-> On Tue, Jan 20, 2015 at 5:48 AM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> >
-> > There is no use-case where it would be useful for drivers not to
-> > implement this function and the transitional plane helpers already
-> > require drivers to provide an implementation.
-> >
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > ---
-> >  drivers/gpu/drm/drm_atomic_helper.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/gpu/drm/drm_atomic_helper.c b/drivers/gpu/drm/drm_=
-atomic_helper.c
-> > index d467185f7942..010661f23035 100644
-> > --- a/drivers/gpu/drm/drm_atomic_helper.c
-> > +++ b/drivers/gpu/drm/drm_atomic_helper.c
-> > @@ -1108,7 +1108,7 @@ void drm_atomic_helper_commit_planes(struct drm_d=
-evice *dev,
-> >
-> >                 funcs =3D plane->helper_private;
-> >
-> > -               if (!funcs || !funcs->atomic_update)
-> > +               if (!funcs)
->=20
-> maybe WARN_ON() here.. or drm_universal_plane_init(), or somewhere,
-> for missing mandatory fxns would be a nice thing to avoid explosions
-> under console_lock for first modeset?
-
-WARN_ON() here isn't going to do you any good under console_lock and
-may drivers use drm_universal_plane_init() without having converted to
-atomic mode-setting.
-
-Adding a comment to kerneldoc that it's mandatory is probably the best
-we can do here.
-
-Thierry
-
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUwhIAAAoJEN0jrNd/PrOhWyoQALgplJMyYsD6PWby0qAET1Bw
-/JZ4OUaOyPuhmNiiSjdm7wuBBr+stM++OfNcIO5RgT1gORlg9zkqytnV+81xZ6zh
-WNewyY92QaNH+sOZfMthWpaho224cyvTzlV5sFya4vtQBTmh7Vk4tT5vUpPAGvtv
-TJnc9WCwdRmNVU8wRqaQOItTsTY9umlE6YBxUxd1xZW5zaND86ElFDTQNycpFaY6
-zGx6HBh0abycWjRi2RslhTua7EKsdoUBuJAJRIj5ILbZHxCotxckgbaDxd70wMTz
-YSXV9YWEfc/IlG8eh+2fiOJldivmCe9VVcl2WnnnoHMbqM/8iaEYuSIBKcIsN6vM
-tuQEo/7PsIolngupp6WmWLaFXA0IQG6FM4CbEIytbyMCpZ5N+vIZS35iUkRzI1Mp
-ItB8ugFKCmRS0p0cyGlPGMo49zcgf4fK4w7lbA0rej/RPuSfxomYid7SISCKLsH/
-R1/Dvfv/L0DOj3wROgvtVNlMh0Mfr2+NWdvGckq6uv930KhMajAq1mu1/d4X/nWA
-rwLC8fgNqOXjI42Fs2ndFY9dSgcciX8jmDKTuY7ZR/UtsqoUx5iMJN7s/xifK3za
-CykvrM1YhO/+mATup55QlnuNEFOBgVxBNjtN0t8yyVWUB3DackeIBSrdMwBORQns
-+0YSIQoh+p3X1dc0NRJ+
-=snr2
------END PGP SIGNATURE-----
-
---uAKRQypu60I7Lcqm--
+>> +	if (test_bit(ec_call_function, &bits))
+>> +		generic_smp_call_function_interrupt();
+>>  }
+>>
+>>  static void do_ext_call_interrupt(struct ext_code ext_code,
+>> @@ -432,12 +432,12 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>>  	int cpu;
+>>
+>>  	for_each_cpu(cpu, mask)
+>> -		pcpu_ec_call(pcpu_devices + cpu, ec_call_function_single);
+>> +		pcpu_ec_call(pcpu_devices + cpu, ec_call_function);
+>>  }
+>>
+>>  void arch_send_call_function_single_ipi(int cpu)
+>>  {
+>> -	pcpu_ec_call(pcpu_devices + cpu, ec_call_function_single);
+>> +	pcpu_ec_call(pcpu_devices + cpu, ec_call_function);
+>>  }
+>>
+>>  #ifndef CONFIG_64BIT
+>> -- 
+>> 1.7.10.4
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
