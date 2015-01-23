@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619AbbAWUWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 15:22:35 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:56127 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672AbbAWUWK (ORCPT
+	id S1756652AbbAWU0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 15:26:25 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:40565 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191AbbAWU0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 15:22:10 -0500
-From: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
-To: linux-kernel@vger.kernel.org, ard.biesheuvel@linaro.org
-Cc: dmidecode-devel@nongnu.org, grant.likely@linaro.org,
-        leif.lindholm@linaro.org, matt.fleming@intel.com,
-        Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
-Subject: [PATCH 2/2] firmware: dmi-sysfs: add SMBIOS entry point area attribute
-Date: Fri, 23 Jan 2015 22:21:47 +0200
-Message-Id: <1422044507-22982-3-git-send-email-ivan.khoronzhuk@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422044507-22982-1-git-send-email-ivan.khoronzhuk@linaro.org>
-References: <1422044507-22982-1-git-send-email-ivan.khoronzhuk@linaro.org>
+	Fri, 23 Jan 2015 15:26:22 -0500
+Date: Fri, 23 Jan 2015 21:26:19 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] atheros/atlx: Simplify bit manipulations
+Message-ID: <20150123202619.GA10084@electric-eye.fr.zoreil.com>
+References: <1422011212-30095-1-git-send-email-linux@rasmusvillemoes.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422011212-30095-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are situations when code needs to access SMBIOS entry table
-area, but cannot use /dev/mem for this. As the table format is
-consistent only for a version, and can be changed, use binary
-attribute to give access to raw SMBIOS entry table area.
+Rasmus Villemoes <linux@rasmusvillemoes.dk> :
+[...]
+> diff --git a/drivers/net/ethernet/atheros/atlx/atl2.c b/drivers/net/ethernet/atheros/atlx/atl2.c
+> index 84a09e8ddd9c..46d1b959daa8 100644
+> --- a/drivers/net/ethernet/atheros/atlx/atl2.c
+> +++ b/drivers/net/ethernet/atheros/atlx/atl2.c
+> @@ -1278,14 +1278,10 @@ static void atl2_setup_pcicmd(struct pci_dev *pdev)
+>  
+>  	pci_read_config_word(pdev, PCI_COMMAND, &cmd);
+>  
+> -	if (cmd & PCI_COMMAND_INTX_DISABLE)
+> -		cmd &= ~PCI_COMMAND_INTX_DISABLE;
+> -	if (cmd & PCI_COMMAND_IO)
+> -		cmd &= ~PCI_COMMAND_IO;
+> -	if (0 == (cmd & PCI_COMMAND_MEMORY))
+> -		cmd |= PCI_COMMAND_MEMORY;
+> -	if (0 == (cmd & PCI_COMMAND_MASTER))
+> -		cmd |= PCI_COMMAND_MASTER;
+> +	cmd &= ~PCI_COMMAND_INTX_DISABLE;
+> +	cmd &= ~PCI_COMMAND_IO;
+> +	cmd |= PCI_COMMAND_MEMORY;
+> +	cmd |= PCI_COMMAND_MASTER;
+>  	pci_write_config_word(pdev, PCI_COMMAND, cmd);
 
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
----
- drivers/firmware/dmi-sysfs.c | 42 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+Mostly open-coded pci_set_master, pci_enable_device_mem and pci_intx.
 
-diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
-index e0f1cb3..b5c0558 100644
---- a/drivers/firmware/dmi-sysfs.c
-+++ b/drivers/firmware/dmi-sysfs.c
-@@ -46,6 +46,8 @@ struct dmi_sysfs_entry {
- static LIST_HEAD(entry_list);
- static DEFINE_SPINLOCK(entry_list_lock);
- 
-+static unsigned char smbios_raw_header[32];
-+
- /* dmi_sysfs_attribute - Top level attribute. used by all entries. */
- struct dmi_sysfs_attribute {
- 	struct attribute attr;
-@@ -646,9 +648,37 @@ static void cleanup_entry_list(void)
- 	}
- }
- 
-+static ssize_t smbios_entry_area_raw_read(struct file *filp,
-+					  struct kobject *kobj,
-+					  struct bin_attribute *bin_attr,
-+					  char *buf, loff_t pos, size_t count)
-+{
-+	ssize_t size;
-+
-+	size = bin_attr->size;
-+
-+	if (size > pos)
-+		size -= pos;
-+	else
-+		return 0;
-+
-+	if (count < size)
-+		size = count;
-+
-+	memcpy(buf, &smbios_raw_header[pos], size);
-+
-+	return size;
-+}
-+
-+static struct bin_attribute smbios_entry_area_raw_attr = {
-+	.read = smbios_entry_area_raw_read,
-+	.attr = {.name = "smbios_raw_header", .mode = 0400},
-+};
-+
- static int __init dmi_sysfs_init(void)
- {
- 	int error = -ENOMEM;
-+	int size;
- 	int val;
- 
- 	/* Set up our directory */
-@@ -669,6 +699,18 @@ static int __init dmi_sysfs_init(void)
- 		goto err;
- 	}
- 
-+	size = dmi_get_smbios_entry_area(smbios_raw_header);
-+	if (size == -ENODATA) {
-+		pr_debug("dmi-sysfs: SMBIOS raw data is not available.\n");
-+		error = size;
-+		goto err;
-+	}
-+
-+	/* Create the raw binary file to access the entry area */
-+	smbios_entry_area_raw_attr.size = size;
-+	if (sysfs_create_bin_file(dmi_kobj, &smbios_entry_area_raw_attr))
-+		goto err;
-+
- 	pr_debug("dmi-sysfs: loaded.\n");
- 
- 	return 0;
+I'd suggest to ignore the PCI_COMMAND_IO bit at all then use the standard
+pci helpers.
+
 -- 
-1.9.1
-
+Ueimor
