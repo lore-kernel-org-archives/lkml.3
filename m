@@ -1,76 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747AbbAWAoj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 19:44:39 -0500
-Received: from domu-toccata.ens-lyon.fr ([140.77.166.138]:33277 "EHLO
-	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596AbbAWAof (ORCPT
+	id S1754919AbbAWApA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 19:45:00 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:42814 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501AbbAWAo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 19:44:35 -0500
-Date: Fri, 23 Jan 2015 01:44:29 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        akpm@linux-foundation.org, jslaby@suse.cz,
-        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCHv5 2/2] INPUT: Introduce generic trigger/LED pairs to
- input LEDs
-Message-ID: <20150123004429.GD3123@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
-	akpm@linux-foundation.org, jslaby@suse.cz,
-	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-	Arnaud Patard <arnaud.patard@rtp-net.org>,
-	Peter Korsgaard <jacmet@sunsite.dk>,
-	Sascha Hauer <s.hauer@pengutronix.de>,
-	Rob Clark <robdclark@gmail.com>,
-	Niels de Vos <devos@fedoraproject.org>,
-	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-References: <20141226232116.GA5069@type>
- <20150123001038.GA2940@type.youpi.perso.aquilenet.fr>
- <20150123003011.GC3123@type.youpi.perso.aquilenet.fr>
- <1756449.aIckN0M451@dtor-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1756449.aIckN0M451@dtor-glaptop>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+	Thu, 22 Jan 2015 19:44:56 -0500
+From: al.stone@linaro.org
+To: tony.luck@intel.com, fenghua.yu@intel.com, rjw@rjwysocki.net,
+        catalin.marinas@arm.com, will.deacon@arm.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, lenb@kernel.org,
+        robert.moore@intel.com
+Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devel@acpica.org, linaro-acpi@lists.linaro.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org
+Subject: [PATCH 0/7] Start deprecating _OSI on new architectures
+Date: Thu, 22 Jan 2015 17:44:37 -0700
+Message-Id: <1421973884-13029-1-git-send-email-al.stone@linaro.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov, le Thu 22 Jan 2015 16:37:02 -0800, a écrit :
-> On Friday, January 23, 2015 01:30:11 AM Samuel Thibault wrote:
-> > Samuel Thibault, le Fri 23 Jan 2015 01:10:38 +0100, a écrit :
-> > > Dmitry Torokhov, le Sun 04 Jan 2015 15:28:38 -0800, a écrit :
-> > > > > +	dev = cdev->dev->platform_data;
-> > > > 
-> > > > Umm, platform data is not the best place for storing this. Why not
-> > > > drvdata?
-> > > 
-> > > Ah, actually led_classdev already makes use of it, see the
-> > > device_create_with_groups call in led_classdev_register.
-> > 
-> > Actually I'd say it makes sense to be using the platform_data field:
-> > from the point of view of the led object, the input object is indeed
-> > something like a platform.
-> 
-> No, platform data is what difefrentiates an arm board from another arm board, 
-> or an x86 or mips one.
+From: Al Stone <al.stone@linaro.org>
 
->From the point of view of a device connected to that board, yes. But
-from the point of view of LEDs connected to a keyboard, the platform is
-the keyboard.
+The use of the ACPI _OSI method in Linux has a long and sordid history.
+Instead of perpetuating past complications on new architectures, the 
+consensus amongst those writing the ACPI specification and those using
+it seems to be to ultimately deprecate the use of _OSI.  I plan to
+propose such a change to the ACPI specification in the near future.
 
-Samuel
+In the meantime, these patches rearrange the implementation of _OSI so
+that it can be deprecated, or ultimately removed completely, on at least
+arm64 platforms.  This is done by simply moving the functions implementing 
+_OSI to arch-dependent locations.  For x86, there should be no change
+in functionality.  For ia64, while it does duplicate some code from x86,
+there is no longer any connection to the ACPI blacklist code that is only
+used by x86.  For arm64, any use of the _OSI method generates a warning
+that it has been deprecated, and then always returns false; i.e., that
+the capability being queried for, whether OS name or functionality, is
+not supported.  This is the first six of the patches.
+
+The final patch changes the default value for the _OS_ method for arm64
+only.  Since there is no need to pretend to be older versions of Windows,
+or any other OS at all, the _OS_ method will return "Linux" on arm64.
+One can still use the acpi_os_name kernel parameter if there is a need
+to use some other value.
+
+Since we are breaking apart code previously shared, I have tried to make
+it so that applying the x86 patches alone will continue to compile, at
+the expense of breaking the build on non-x86 platforms.  However, once
+all of the patches are applied, we should be able to compile on all three
+architectures.  It is best to treat these as one whole.
+
+I have only done simple testing with these patches on arm64 and x86 (AMD
+Seattle and a Lenovo t440s ThinkPad, respectively).  Things seem to work
+as they should once booted, but this is a very, very small sample of
+possible machines.  The ia64 patches cross-compile, but I personally have
+no way to test them.
+
+The arm64 patches also rely on having applied Hanjun's patches for ACPI 5.1
+on arm64 [0].  The x86 and ia64 parts are not dependent on that patch set,
+though, and should be usable independently (i.e., patches 1, 3, 4 and 6).
+
+NB: some of the patches do not pass checkpatch.pl; the failures I saw were
+all part of the original code but are only showing up because that code is
+changing location, so I have left them as is.  If necessary, they could be
+fixed but I was more concerned about the number of changes needed on ia64
+and not having any way to test them.
+
+
+[0] https://lkml.org/lkml/2015/1/14/586
+
+
+Al Stone (6):
+  ia64: ACPI: move kernel acpi files to a directory
+  arm64: ACPI: move kernel acpi files to a directory
+  x86: ACPI: create arch-dependent version of acpi_osi_handler()
+  ia64: ACPI: create arch-dependent version of acpi_osi_handler()
+  arm64: ACPI: create arch-dependent version of acpi_osi_handler()
+  x86: ia64: arm64: ACPI: move _OSI support functions to arch-dependent
+    locations
+
+Hanjun Guo (1):
+  ACPI: use Linux as ACPI_OS_NAME for _OS on ARM64
+
+ arch/arm64/Kconfig               |    1 +
+ arch/arm64/kernel/Makefile       |    2 +-
+ arch/arm64/kernel/acpi.c         |  359 --------------
+ arch/arm64/kernel/acpi/Makefile  |    1 +
+ arch/arm64/kernel/acpi/acpi.c    |  359 ++++++++++++++
+ arch/arm64/kernel/acpi/osi.c     |   26 +
+ arch/ia64/kernel/Makefile        |    2 +-
+ arch/ia64/kernel/acpi-ext.c      |  104 ----
+ arch/ia64/kernel/acpi.c          | 1000 --------------------------------------
+ arch/ia64/kernel/acpi/Makefile   |    1 +
+ arch/ia64/kernel/acpi/acpi-ext.c |  104 ++++
+ arch/ia64/kernel/acpi/acpi.c     | 1000 ++++++++++++++++++++++++++++++++++++++
+ arch/ia64/kernel/acpi/osi.c      |  119 +++++
+ arch/x86/kernel/acpi/Makefile    |    2 +-
+ arch/x86/kernel/acpi/blacklist.c |  327 +++++++++++++
+ arch/x86/kernel/acpi/boot.c      |    5 +-
+ arch/x86/kernel/acpi/osi.c       |  255 ++++++++++
+ drivers/acpi/Kconfig             |    8 +
+ drivers/acpi/Makefile            |    1 -
+ drivers/acpi/blacklist.c         |  323 ------------
+ drivers/acpi/osl.c               |  217 ---------
+ include/acpi/acconfig.h          |    2 +
+ include/acpi/platform/aclinux.h  |    4 +
+ include/linux/acpi.h             |    4 +-
+ 24 files changed, 2215 insertions(+), 2011 deletions(-)
+ delete mode 100644 arch/arm64/kernel/acpi.c
+ create mode 100644 arch/arm64/kernel/acpi/Makefile
+ create mode 100644 arch/arm64/kernel/acpi/acpi.c
+ create mode 100644 arch/arm64/kernel/acpi/osi.c
+ delete mode 100644 arch/ia64/kernel/acpi-ext.c
+ delete mode 100644 arch/ia64/kernel/acpi.c
+ create mode 100644 arch/ia64/kernel/acpi/Makefile
+ create mode 100644 arch/ia64/kernel/acpi/acpi-ext.c
+ create mode 100644 arch/ia64/kernel/acpi/acpi.c
+ create mode 100644 arch/ia64/kernel/acpi/osi.c
+ create mode 100644 arch/x86/kernel/acpi/blacklist.c
+ create mode 100644 arch/x86/kernel/acpi/osi.c
+ delete mode 100644 drivers/acpi/blacklist.c
+
+-- 
+2.1.0
+
