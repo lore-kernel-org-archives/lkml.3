@@ -1,83 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbbAWXet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 18:34:49 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:53323 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbbAWXeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 18:34:46 -0500
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: netdev@vger.kernel.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        kernel@savoirfairelinux.com
-Subject: [PATCH] net: dsa/mv88e6352: make mv88e6352_wait generic
-Date: Fri, 23 Jan 2015 18:34:41 -0500
-Message-Id: <1422056081-30088-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 2.2.2
+	id S1752607AbbAXCX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 21:23:56 -0500
+Received: from ozlabs.org ([103.22.144.67]:41904 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750836AbbAXCXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 21:23:54 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@infradead.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: module: fix module_refcount() return when running in a module exit routine
+In-Reply-To: <1422038567.2126.14.camel@HansenPartnership.com>
+References: <1421600146.2080.8.camel@HansenPartnership.com> <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au> <1421683701.2080.25.camel@HansenPartnership.com> <871tmqcmau.fsf@rustcorp.com.au> <1421774615.2080.88.camel@HansenPartnership.com> <20150122165018.GA27377@infradead.org> <1421946175.2093.1.camel@HansenPartnership.com> <87iofyurzc.fsf@rustcorp.com.au> <20150123131758.GC8045@infradead.org> <1422038567.2126.14.camel@HansenPartnership.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Sat, 24 Jan 2015 10:05:18 +1030
+Message-ID: <87mw59rryh.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some busy bits are available in the global register 1, such as the ATU
-Busy bit. We may want to use this function to wait for them to change,
-so add a new parameter to mv88e6352_wait() instead of hard-coding
-REG_GLOBAL2.
+James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+> On Fri, 2015-01-23 at 05:17 -0800, Christoph Hellwig wrote:
+>> On Fri, Jan 23, 2015 at 01:24:15PM +1030, Rusty Russell wrote:
+>> > The correct fix is to turn try_module_get() into __module_get(), and
+>> > always do the module_put().
+>> 
+>> Is this really safe?  __module_get sais it needs a non-zero refcount
+>> to start with, but scsi_device_get is the only thing every incrementing
+>> the refcount on the module pointer in the scsi host template, so
+>> exactly that case can happen easily.  There's not assert actually
+>> hardcoding the assumption, so I'm not sure if requirement the comment
+>> really just is nice to have or a strong requirement.
 
-In the meantime, since the REG_READ() macro already checks for error,
-remove the redundant check for ret < 0.
+Yes, as James says, my patch makes it no worse.
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
----
- drivers/net/dsa/mv88e6352.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+The "someone else grabs a reference" can be fixed in two ways.  James'
+alternate path as per below, or by waiting in the exit function.  The
+latter is kind of annoying, which is why we do the whole atomic
+deregistration for modules...
 
-diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
-index 258d9ef..e13adc7 100644
---- a/drivers/net/dsa/mv88e6352.c
-+++ b/drivers/net/dsa/mv88e6352.c
-@@ -22,17 +22,14 @@
- #include <net/dsa.h>
- #include "mv88e6xxx.h"
- 
--static int mv88e6352_wait(struct dsa_switch *ds, int reg, u16 mask)
-+static int mv88e6352_wait(struct dsa_switch *ds, int reg, int offset, u16 mask)
- {
- 	unsigned long timeout = jiffies + HZ / 10;
- 
- 	while (time_before(jiffies, timeout)) {
- 		int ret;
- 
--		ret = REG_READ(REG_GLOBAL2, reg);
--		if (ret < 0)
--			return ret;
--
-+		ret = REG_READ(reg, offset);
- 		if (!(ret & mask))
- 			return 0;
- 
-@@ -43,17 +40,17 @@ static int mv88e6352_wait(struct dsa_switch *ds, int reg, u16 mask)
- 
- static inline int mv88e6352_phy_wait(struct dsa_switch *ds)
- {
--	return mv88e6352_wait(ds, 0x18, 0x8000);
-+	return mv88e6352_wait(ds, REG_GLOBAL2, 0x18, 0x8000);
- }
- 
- static inline int mv88e6352_eeprom_load_wait(struct dsa_switch *ds)
- {
--	return mv88e6352_wait(ds, 0x14, 0x0800);
-+	return mv88e6352_wait(ds, REG_GLOBAL2, 0x14, 0x0800);
- }
- 
- static inline int mv88e6352_eeprom_busy_wait(struct dsa_switch *ds)
- {
--	return mv88e6352_wait(ds, 0x14, 0x8000);
-+	return mv88e6352_wait(ds, REG_GLOBAL2, 0x14, 0x8000);
- }
- 
- static int __mv88e6352_phy_read(struct dsa_switch *ds, int addr, int regnum)
--- 
-2.2.2
+Cheers,
+Rusty.
 
+> The comment was just documenting the old status quo: the
+> try_module_get() was expected to fail if called within the host module
+> remove path.  If you look at the flow, we use the refcounts on the
+> actual scsi device to measure.  If they fail we know we have a problem.
+> The module stuff is really only slaved to our master refcount on the
+> device.  It's purpose is to prevent an inopportune rmmod.  Our default
+> operating state is zero references on everything, so the user can just
+> do rmmod ... obviously if the device is open or mounted then we hold
+> both the device and the module.
+>
+> To that point, Rusty's patch just keeps the status quo in the new
+> module_refcount() environment, so it's the quick bandaid.
+>
+> I think the use case you're worrying about is what happens if someone
+> tries to use a device after module removal begins executing but before
+> the device has been deleted (say by opening it)?  We'll exit the device
+> removal routines and then kill the module, because after the module code
+> gets to ->exit(), nothing re-checks the module refcount, so the host
+> module will get free'd while we're still using the device.
+>
+> The fix for this seems to be to differentiate between special uses of
+> scsi_get_device, which are allowed to get the device in the module exit
+> routines and ordinary uses which aren't.  Something like this? (the
+> patch isn't complete, but you get the idea).
+>
+> James
+>
+> ---
+>
+> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> index 08c90a7..31ba254 100644
+> --- a/drivers/scsi/scsi.c
+> +++ b/drivers/scsi/scsi.c
+> @@ -965,6 +965,15 @@ int scsi_report_opcode(struct scsi_device *sdev, unsigned char *buffer,
+>  }
+>  EXPORT_SYMBOL(scsi_report_opcode);
+>  
+> +static int __scsi_device_get_common(struct scsi_device *sdev)
+> +{
+> +	if (sdev->sdev_state == SDEV_DEL)
+> +		return -ENXIO;
+> +	if (!get_device(&sdev->sdev_gendev))
+> +		return -ENXIO;
+> +	return 0;
+> +}
+> +
+>  /**
+>   * scsi_device_get  -  get an additional reference to a scsi_device
+>   * @sdev:	device to get a reference to
+> @@ -975,19 +984,45 @@ EXPORT_SYMBOL(scsi_report_opcode);
+>   */
+>  int scsi_device_get(struct scsi_device *sdev)
+>  {
+> -	if (sdev->sdev_state == SDEV_DEL)
+> -		return -ENXIO;
+> -	if (!get_device(&sdev->sdev_gendev))
+> -		return -ENXIO;
+> -	/* We can fail this if we're doing SCSI operations
+> -	 * from module exit (like cache flush) */
+> -	try_module_get(sdev->host->hostt->module);
+> +	int ret;
+>  
+> -	return 0;
+> +	ret = __scsi_device_get_common(sdev);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = try_module_get(sdev->host->hostt->module);
+> +
+> +	if (ret)
+> +		put_device(&sdev->sdev_gendev);
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL(scsi_device_get);
+>  
+>  /**
+> + * scsi_device_get_in_module_exit() - get an additional reference to a scsi_device
+> + * @sdev:	device to get a reference to
+> + *
+> + * Functions identically to scsi_device_get() except that it unconditionally
+> + * gets the module reference.  This allows it to be called from module exit
+> + * routines where scsi_device_get() will fail.  This routine is still paired
+> + * with scsi_device_put().
+> + */
+> +int scsi_device_get_in_module_exit(struct scsi_device *sdev)
+> +{
+> +	int ret;
+> +
+> +	ret = __scsi_device_get_common(sdev);
+> +	if (ret)
+> +		return ret;
+> +
+> +	__module_get(sdev->host->hostt->module);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(scsi_device_get_in_module_exit);
+> +
+> +/**
+>   * scsi_device_put  -  release a reference to a scsi_device
+>   * @sdev:	device to release a reference on.
+>   *
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index ebf35cb6..057604e 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -564,16 +564,22 @@ static int sd_major(int major_idx)
+>  	}
+>  }
+>  
+> -static struct scsi_disk *__scsi_disk_get(struct gendisk *disk)
+> +static struct scsi_disk *__scsi_disk_get(struct gendisk *disk, int in_exit)
+>  {
+>  	struct scsi_disk *sdkp = NULL;
+>  
+>  	if (disk->private_data) {
+> +		int ret;
+> +
+>  		sdkp = scsi_disk(disk);
+> -		if (scsi_device_get(sdkp->device) == 0)
+> -			get_device(&sdkp->dev);
+> +		if (in_exit)
+> +			ret = scsi_device_get_in_module_exit(sdkp->device);
+>  		else
+> +			ret = scsi_device_get(sdkp->device);
+> +		if (unlikely(ret))
+>  			sdkp = NULL;
+> +		else
+> +			get_device(&sdkp->dev);
+>  	}
+>  	return sdkp;
+>  }
+> @@ -583,19 +589,19 @@ static struct scsi_disk *scsi_disk_get(struct gendisk *disk)
+>  	struct scsi_disk *sdkp;
+>  
+>  	mutex_lock(&sd_ref_mutex);
+> -	sdkp = __scsi_disk_get(disk);
+> +	sdkp = __scsi_disk_get(disk, 0);
+>  	mutex_unlock(&sd_ref_mutex);
+>  	return sdkp;
+>  }
+>  
+> -static struct scsi_disk *scsi_disk_get_from_dev(struct device *dev)
+> +static struct scsi_disk *scsi_disk_get_from_dev(struct device *dev, int in_exit)
+>  {
+>  	struct scsi_disk *sdkp;
+>  
+>  	mutex_lock(&sd_ref_mutex);
+>  	sdkp = dev_get_drvdata(dev);
+>  	if (sdkp)
+> -		sdkp = __scsi_disk_get(sdkp->disk);
+> +		sdkp = __scsi_disk_get(sdkp->disk, in_exit);
+>  	mutex_unlock(&sd_ref_mutex);
+>  	return sdkp;
+>  }
+> @@ -1525,7 +1531,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+>  
+>  static void sd_rescan(struct device *dev)
+>  {
+> -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
+>  
+>  	if (sdkp) {
+>  		revalidate_disk(sdkp->disk);
+> @@ -3147,7 +3153,7 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
+>   */
+>  static void sd_shutdown(struct device *dev)
+>  {
+> -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 1);
+>  
+>  	if (!sdkp)
+>  		return;         /* this can happen */
+> @@ -3171,7 +3177,7 @@ exit:
+>  
+>  static int sd_suspend_common(struct device *dev, bool ignore_stop_errors)
+>  {
+> -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
+>  	int ret = 0;
+>  
+>  	if (!sdkp)
+> @@ -3213,7 +3219,7 @@ static int sd_suspend_runtime(struct device *dev)
+>  
+>  static int sd_resume(struct device *dev)
+>  {
+> -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
+>  	int ret = 0;
+>  
+>  	if (!sdkp->device->manage_start_stop)
+> diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+> index 2e0281e..0bad37c 100644
+> --- a/include/scsi/scsi_device.h
+> +++ b/include/scsi/scsi_device.h
+> @@ -327,6 +327,7 @@ extern int scsi_unregister_device_handler(struct scsi_device_handler *scsi_dh);
+>  void scsi_attach_vpd(struct scsi_device *sdev);
+>  
+>  extern int scsi_device_get(struct scsi_device *);
+> +extern int scsi_device_get_in_module_exit(struct scsi_device *);
+>  extern void scsi_device_put(struct scsi_device *);
+>  extern struct scsi_device *scsi_device_lookup(struct Scsi_Host *,
+>  					      uint, uint, u64);
