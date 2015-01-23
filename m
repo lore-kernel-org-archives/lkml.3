@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635AbbAWJ35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:29:57 -0500
-Received: from 89.100.82.208.static.ipv4.dnsptr.net ([208.82.100.89]:60066
-	"EHLO mail.menehune.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbbAWJ3z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:29:55 -0500
-X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jan 2015 04:29:55 EST
-Content-Type: text/plain; charset=US-ASCII
+	id S1753658AbbAWJYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:24:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34966 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751888AbbAWJYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 04:24:51 -0500
+Message-ID: <54C21361.1080500@suse.cz>
+Date: Fri, 23 Jan 2015 10:24:49 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Confidential Business Proposal!!
-To: linux-kernel@vger.kernel.org
-From: admin@menehune.net
-Date: Fri, 23 Jan 2015 10:23:34 +0100
-Reply-To: silver.jackpot1@aol.com
-Message-Id: <20150123093649.5FB3E4B1111@mail.menehune.net>
+To: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] modsign: provide option to automatically delete the key
+ after modules were installed
+References: <1421976009-9819-1-git-send-email-holler@ahsoftware.de>
+In-Reply-To: <1421976009-9819-1-git-send-email-holler@ahsoftware.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Confidential Business Proposal!!
+On 2015-01-23 02:20, Alexander Holler wrote:
+> I usually throw away (delete) the key used to sign modules after having
+> called make -jN (b)zImage modules && make -jN modules_install. Because I've
+> got bored to always have to type rm signing_key.* afterwards, I've build
+> this patch some time ago.
+> As I'm not eager anymore to publish kernel patches, it rested in my private
+> chest of patches until I've seen the keynote of Linux.conf.au 2015. It made
+> me aware that this patch might have a chance to become included. ;)
+> 
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> ---
+>  Makefile     |  7 +++++++
+>  init/Kconfig | 12 ++++++++++++
+>  2 files changed, 19 insertions(+)
+> 
+> diff --git a/Makefile b/Makefile
+> index fb93350..95e07ca 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -1129,6 +1129,13 @@ _modinst_:
+>  	@cp -f $(objtree)/modules.order $(MODLIB)/
+>  	@cp -f $(objtree)/modules.builtin $(MODLIB)/
+>  	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modinst
+> +ifeq ($(CONFIG_MODULE_SIG_THROW_AWAY), y)
+> +	@echo "###"
+> +	@echo "### Deleting key used to sign modules."
+> +	@echo "###"
 
-I am senior staff work with a bank here in Spain, I have a business which will benefit both
-of us, The amount of money involved is ($9 .5 Million Dollars) which i want to
-transfer from an abandoned account to your bank account; it is 100% risk free.
-
-My position is an advance for this deal. 
-
-A lot of customers open private accounts with different Banks without the
-knowledge of their families and when they die, such money will be lost to the
-Bank, unless someone comes to claim it. This is how a lot of Bank Directors make
-so much money silently.
+Use @$(kecho) "..." to suppress output with make -s
 
 
-I have evaluated the risks and the only risk I have here is from you
-refusing to work with me. I am the only one who knows about this situation, and now
-you are second. Therefore, if my offer is of no appeal to you, delete this
-message and forget I ever contacted you. My Contact email ; alfonso_cortez1@aol.com
+> +	@rm ./signing_key.priv
+> +	@rm ./signing_key.x509
 
-Thanks
-Mr Alfonso  Cortez
+Why do you need to delete the certificate?
 
+Michal
