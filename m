@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbbAWOSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:18:31 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:48910 "EHLO gum.cmpxchg.org"
+	id S1755511AbbAWOTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:19:16 -0500
+Received: from sauhun.de ([89.238.76.85]:45204 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753706AbbAWOS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:18:27 -0500
-Date: Fri, 23 Jan 2015 09:18:17 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz, cl@linux.com
-Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
- remove unnecessary soft limit tree node test'
-Message-ID: <20150123141817.GA22926@phnom.home.cmpxchg.org>
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
- <20150123050802.GB22751@roeck-us.net>
+	id S1753706AbbAWOTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 09:19:14 -0500
+Date: Fri, 23 Jan 2015 15:18:53 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: jdelvare@suse.de, arnd@arndb.de, maxime.ripard@free-electrons.com,
+        dianders@chromium.org, u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
+        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
+        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, mika.westerberg@linux.intel.com,
+        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
+        christian.ruppert@abilis.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V4 2/2] i2c-designware: Add Intel Baytrail PMIC I2C bus
+ support
+Message-ID: <20150123141853.GA9592@katana>
+References: <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+ <1421313137-1613-3-git-send-email-david.e.box@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="17pEHd4RhPHOinZp"
 Content-Disposition: inline
-In-Reply-To: <20150123050802.GB22751@roeck-us.net>
+In-Reply-To: <1421313137-1613-3-git-send-email-david.e.box@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
 
-CC'ing Christoph for slub-stuff:
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jan 22, 2015 at 09:08:02PM -0800, Guenter Roeck wrote:
-> On Thu, Jan 22, 2015 at 03:05:17PM -0800, akpm@linux-foundation.org wrote:
-> > The mm-of-the-moment snapshot 2015-01-22-15-04 has been uploaded to
-> > 
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> qemu test for ppc64 fails with
-> 
-> Unable to handle kernel paging request for data at address 0x0000af50
-> Faulting instruction address: 0xc00000000089d5d4
-> Oops: Kernel access of bad area, sig: 11 [#1]
-> 
-> with the following call stack:
-> 
-> Call Trace:
-> [c00000003d32f920] [c00000000089d588] .__slab_alloc.isra.44+0x7c/0x6f4
-> (unreliable)
-> [c00000003d32fa90] [c00000000020cf8c] .kmem_cache_alloc_node_trace+0x12c/0x3b0
-> [c00000003d32fb60] [c000000000bceeb4] .mem_cgroup_init+0x128/0x1b0
-> [c00000003d32fbf0] [c00000000000a2b4] .do_one_initcall+0xd4/0x260
-> [c00000003d32fce0] [c000000000ba26a8] .kernel_init_freeable+0x244/0x32c
-> [c00000003d32fdb0] [c00000000000ac24] .kernel_init+0x24/0x140
-> [c00000003d32fe30] [c000000000009564] .ret_from_kernel_thread+0x58/0x74
-> 
-> bisect log:
 
-[...]
+Mostly good, except one thing:
 
-> # first bad commit: [a40d0d2cf21e2714e9a6c842085148c938bf36ab] mm: memcontrol: remove unnecessary soft limit tree node test
+> +config I2C_DESIGNWARE_BAYTRAIL
+> +	bool "Intel Baytrail I2C semaphore support"
+> +	depends on I2C_DESIGNWARE_PLATFORM
+> +	select IOSF_MBI
 
-The change in question is this:
+This needs some dependency on something Baytrail specific. Otherwise, it
+causes lots of build errors:
 
-    mm: memcontrol: remove unnecessary soft limit tree node test
-    
-    kzalloc_node() automatically falls back to nodes with suitable memory.
-    
-    Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-    Acked-by: Michal Hocko <mhocko@suse.cz>
-    Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+With ARM allnoconfig, I can select this option but there are no headers
+for iosf.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index fb9788af4a3e..10db4a654d68 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4539,13 +4539,10 @@ static void __init mem_cgroup_soft_limit_tree_init(void)
- {
-        struct mem_cgroup_tree_per_node *rtpn;
-        struct mem_cgroup_tree_per_zone *rtpz;
--       int tmp, node, zone;
-+       int node, zone;
- 
-        for_each_node(node) {
--               tmp = node;
--               if (!node_state(node, N_NORMAL_MEMORY))
--                       tmp = -1;
--               rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, tmp);
-+               rtpn = kzalloc_node(sizeof(*rtpn), GFP_KERNEL, node);
-                BUG_ON(!rtpn);
- 
-                soft_limit_tree.rb_tree_per_node[node] = rtpn;
+With x86_64_defconfig and disabled ACPI, I can select this option but it
+fails over "implicit declaration of function =E2=80=98acpi_evaluate_integer=
+=E2=80=99".
 
---
+An incremental patch will do for me, the rest looks good.
 
-Is the assumption of this patch wrong?  Does the specified node have
-to be online for the fallback to work?
 
-Thanks
+--17pEHd4RhPHOinZp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUwlhNAAoJEBQN5MwUoCm2rkUP/iYlfnu/9Kxz6dGnXV+BJCXC
+DTs/nJfuL07/Tpw7Dtgk0QWfEVrdqZFazDt2rCMpXNKTj+BI8DxrXmKRvf1Jk2NT
+oQoexr8Ua32pbjEk3ab0Mzt0tOiny4ePhVJRHGXneOUsj4hPLiNQjzd7cJQn0iRu
+dwZZjtB3a3da0e1P77cWIkSPn7F794bgALFShhg8BodPNatLkTtYMMEEDQEaO4Lo
+aClDzF1VTii+Y9TkDiRMb3Cn3zgA+QszGOvpRO4A8dd5RtAKbYnMM7fuDJPCJ1wn
+a7kvt6coE5n1nTNzspaIcRAVz48uvpG8nMwmn2Ul64trj4hU6BnCoOYtMavaHx0O
+J7yPk6S8HjV2c+uwiO6ciGGi8HbYsZxTgJFquQmZhzi0itWGsFhD155vxFJwtgc8
+QpsffIgVhTO3yfCTP958pJVZPjJvO06LtieAyf3KVSsaKk/tOfL0jUa4zJ1sv5rq
+e9IrRdn+TgsMeC/hzPC8QzJpQebRtOiozeukSLfAUPsQNkgk/MZ7lIdZi9I4l/65
+4M3UUSowGNoLCUhaSmMzQ0MbHMwXcm3LrOrgJTUX5mLqSNlOdtZ+W9I1psMsE422
+jIx0CyFFJLn0S3o6IcwEsrcU04zHTP21tQdINNESJfcGn8I9URAKzQvZVcZFuzQF
+Gys86cNje2tf0RBHgEhR
+=hydN
+-----END PGP SIGNATURE-----
+
+--17pEHd4RhPHOinZp--
