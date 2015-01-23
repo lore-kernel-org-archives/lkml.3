@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704AbbAWAJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 19:09:21 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:62448 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609AbbAWAJQ (ORCPT
+	id S1754827AbbAWAJe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 19:09:34 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:46694 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754609AbbAWAJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 19:09:16 -0500
-Date: Fri, 23 Jan 2015 02:09:11 +0200
-From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-To: Heba Aamer <heba93aamer@gmail.com>
-Cc: devel@driverdev.osuosl.org, tvboxspy@gmail.com, gregkh@linuxfoundation.org,
-        forest@alittletooquiet.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6656: fix Prefer ether_addr_copy() over
- memcpy() if the Ethernet addresses are __aligned(2)
-Message-ID: <20150123000911.GC2332@localhost.localdomain>
-References: <20150121110848.GA9282@mohammed-Inspiron-3537>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150121110848.GA9282@mohammed-Inspiron-3537>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 22 Jan 2015 19:09:32 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 00/12][RFC] Increased clocksource validation and cleanups (v2)
+Date: Thu, 22 Jan 2015 16:09:15 -0800
+Message-Id: <1421971767-17707-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 01:08:48PM +0200, Heba Aamer wrote:
-> This patch fixes the following checkpatch.pl warning:
-> fix Prefer ether_addr_copy() over memcpy() 
-> if the Ethernet addresses are __aligned(2)
-> 
-> Pahole showed that the 2 structs are aligned to u16
-> 
-> struct vnt_mic_hdr {
->         u8                         id;                   /*     0     1 */
->         u8                         tx_priority;          /*     1     1 */
->         u8                         mic_addr2[6];         /*     2     6 */
->         u8                         ccmp_pn[6];           /*     8     6 */
->         __be16                     payload_len;          /*    14     2 */
->         __be16                     hlen;                 /*    16     2 */
->         __le16                     frame_control;        /*    18     2 */
->         u8                         addr1[6];             /*    20     6 */
->         u8                         addr2[6];             /*    26     6 */
->         u8                         addr3[6];             /*    32     6 */
->         __le16                     seq_ctrl;             /*    38     2 */
->         u8                         addr4[6];             /*    40     6 */
->         u16                        packing;              /*    46     2 */
-> 
->         /* size: 48, cachelines: 1, members: 13 */
->         /* last cacheline: 48 bytes */
-> };
-> 
-> struct ieee80211_hdr {
->         __le16                     frame_control;        /*     0     2 */
->         __le16                     duration_id;          /*     2     2 */
->         u8                         addr1[6];             /*     4     6 */
->         u8                         addr2[6];             /*    10     6 */
->         u8                         addr3[6];             /*    16     6 */
->         __le16                     seq_ctrl;             /*    22     2 */
->         u8                         addr4[6];             /*    24     6 */
-> 
->         /* size: 30, cachelines: 1, members: 7 */
->         /* last cacheline: 30 bytes */
-> };
-> 
-> Signed-off-by: Heba Aamer <heba93aamer@gmail.com>
-Reviewed-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+So here's another round for this series, which is the result of
+earlier discussions with Linus and his suggestions around
+improvements to clocksource validation in the hope we can more
+easily catch bad hardware.
 
-> ---
->  drivers/staging/vt6656/rxtx.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-> index bb6a4d4..b74f672 100644
-> --- a/drivers/staging/vt6656/rxtx.c
-> +++ b/drivers/staging/vt6656/rxtx.c
-> @@ -738,7 +738,7 @@ static void vnt_fill_txkey(struct vnt_usb_send_context *tx_context,
->  
->  		mic_hdr->id = 0x59;
->  		mic_hdr->payload_len = cpu_to_be16(payload_len);
-> -		memcpy(mic_hdr->mic_addr2, hdr->addr2, ETH_ALEN);
-> +		ether_addr_copy(mic_hdr->mic_addr2, hdr->addr2);
->  
->  		ieee80211_get_key_tx_seq(tx_key, &seq);
->  
-> -- 
-> 1.7.9.5
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+There's also a few cleanups Linus suggested as well as a few I've been
+meaning to get to for awhile.
+
+I tried in address all the feedback that had been given, adding
+the checks behind CONFIG_DEBUG_TIMEKEEPING.  I also sorted out a
+sane way to print rate-limited warnings if we see cycle deltas that
+are too large, or if they look like small underflows.
+
+Let me know what you think. I'm still a bit hesitant to queue
+any of this for 3.20 (particularly the last few cleanups), but
+if there aren't many more objections I might see if it can
+still make it.
+
+thanks
+-john
+
+Cc: Dave Jones <davej@codemonkey.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+
+John Stultz (12):
+  clocksource: Simplify clocks_calc_max_nsecs logic
+  clocksource: Simplify logic around clocksource wrapping saftey margins
+  clocksource: Remove clocksource_max_deferment()
+  clocksource: Add max_cycles to clocksource structure
+  time: Add debugging checks to warn if we see delays
+  time: Add infrastructure to cap clocksource reads to the max_cycles
+    value
+  time: Try to catch clocksource delta underflows
+  time: Add warnings when overflows or underflows are observed
+  clocksource: Improve clocksource watchdog reporting
+  clocksource: Mostly kill clocksource_register()
+  sparc: Convert to using clocksource_register_hz()
+  clocksource: Add some debug info about clocksources being registered
+
+ arch/s390/kernel/time.c     |   2 +-
+ arch/sparc/kernel/time_32.c |   6 +-
+ include/linux/clocksource.h |  16 ++++-
+ kernel/time/clocksource.c   | 164 +++++++++++++++++++-------------------------
+ kernel/time/jiffies.c       |   5 +-
+ kernel/time/sched_clock.c   |   6 +-
+ kernel/time/timekeeping.c   | 113 ++++++++++++++++++++++++++----
+ lib/Kconfig.debug           |  12 ++++
+ 8 files changed, 205 insertions(+), 119 deletions(-)
+
+-- 
+1.9.1
+
