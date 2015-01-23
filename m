@@ -1,116 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbbAWCMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 21:12:42 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:37390 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135AbbAWCMj (ORCPT
+	id S1755162AbbAWCPB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 21:15:01 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:19723 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbbAWCO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 21:12:39 -0500
-Message-ID: <54C1AE00.3020804@huawei.com>
-Date: Fri, 23 Jan 2015 10:12:16 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 22 Jan 2015 21:14:58 -0500
+X-IronPort-AV: E=Sophos;i="5.09,453,1418112000"; 
+   d="scan'208";a="55397305"
+Message-ID: <54C1AE9F.3020407@broadcom.com>
+Date: Thu, 22 Jan 2015 18:14:55 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>,
-        <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Marc Zyngier <marc.zyngier@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tony Luck <tony.luck@intel.com>,
-        <linux-ia64@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>, <linux-alpha@vger.kernel.org>,
-        <linux-m68k@vger.kernel.org>, Liviu Dudau <liviu@dudau.co.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        <xen-devel@lists.xenproject.org>
-Subject: Re: [PATCH v2 03/30] xen/PCI: Don't use deprecated function pci_scan_bus_parented()
-References: <1421800225-26230-1-git-send-email-wangyijing@huawei.com> <1421800225-26230-4-git-send-email-wangyijing@huawei.com> <20150122202523.GC5813@l.oracle.com>
-In-Reply-To: <20150122202523.GC5813@l.oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Scott Branden <sbranden@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/4] pinctrl: Broadcom Cygnus pinctrl device tree binding
+References: <rjui@broadcom.com>	<1417131990-17954-1-git-send-email-rjui@broadcom.com>	<1417131990-17954-2-git-send-email-rjui@broadcom.com>	<CACRpkdb5pNMbXmWGjrGpAYNLLwv6pWWOJQy0C6BLetNcStFM6A@mail.gmail.com>	<54B01D44.5080601@broadcom.com> <CACRpkdbW5P=w0CPYYf_gfBuD7W0WOdAYCKpTXM5MsK9mdYDc5w@mail.gmail.com>
+In-Reply-To: <CACRpkdbW5P=w0CPYYf_gfBuD7W0WOdAYCKpTXM5MsK9mdYDc5w@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/23 4:25, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jan 21, 2015 at 08:29:58AM +0800, Yijing Wang wrote:
->> From: Arnd Bergmann <arnd@arndb.de>
->>
->> Use pci_scan_root_bus() instead of deprecated function
->> pci_scan_bus_parented().
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> CC: xen-devel@lists.xenproject.org
+
+
+On 1/13/2015 12:20 AM, Linus Walleij wrote:
+> On Fri, Jan 9, 2015 at 7:26 PM, Ray Jui <rjui@broadcom.com> wrote:
+>> On 1/9/2015 2:12 AM, Linus Walleij wrote:
 > 
-> It looks OK to me thought I need to test it first.
-
-Thanks!
-
->> ---
->>  drivers/pci/xen-pcifront.c |   10 +++++++---
->>  1 files changed, 7 insertions(+), 3 deletions(-)
+>>> Just use "groups" and "function" and refer to
+>>> Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
+>>>
+>>> Then "alt1", "alt2" etc are non-functional names of functions.
+>>> Use the real function names, like "spi0" or so. This
+>>> alt-business seems to be just a shortcut to make it
+>>> simple, don't do that.
+>>>
+>>> Then you use e.g. "spi0" as a group name. I prefer you
+>>> call that "spi0_grp" or something to say it is a group of
+>>> pins associated with spi0, as spi0 is actually the
+>>> function.
+>>>
+>> Hmmm, I did this by following brcm,bcm11351-pinctrl.txt:
+>> - function: String. Specifies the pin mux selection. Values must be one
+>> of: "alt1", "alt2", "alt3", "alt4"
 >>
->> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
->> index b1ffebe..240ddbc 100644
->> --- a/drivers/pci/xen-pcifront.c
->> +++ b/drivers/pci/xen-pcifront.c
->> @@ -446,6 +446,7 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
->>  				 unsigned int domain, unsigned int bus)
->>  {
->>  	struct pci_bus *b;
->> +	LIST_HEAD(resources);
->>  	struct pcifront_sd *sd = NULL;
->>  	struct pci_bus_entry *bus_entry = NULL;
->>  	int err = 0;
->> @@ -470,17 +471,20 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
->>  		err = -ENOMEM;
->>  		goto err_out;
->>  	}
->> +	pci_add_resource(&resources, &ioport_resource);
->> +	pci_add_resource(&resources, &iomem_resource);
->>  	pcifront_init_sd(sd, domain, bus, pdev);
->>  
->>  	pci_lock_rescan_remove();
->>  
->> -	b = pci_scan_bus_parented(&pdev->xdev->dev, bus,
->> -				  &pcifront_bus_ops, sd);
->> +	b = pci_scan_root_bus(&pdev->xdev->dev, bus,
->> +				  &pcifront_bus_ops, sd, &resources);
->>  	if (!b) {
->>  		dev_err(&pdev->xdev->dev,
->>  			"Error creating PCI Frontend Bus!\n");
->>  		err = -ENOMEM;
->>  		pci_unlock_rescan_remove();
->> +		pci_free_resource_list(&resources);
->>  		goto err_out;
->>  	}
->>  
->> @@ -488,7 +492,7 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
->>  
->>  	list_add(&bus_entry->list, &pdev->root_buses);
->>  
->> -	/* pci_scan_bus_parented skips devices which do not have a have
->> +	/* pci_scan_root_bus skips devices which do not have a have
->>  	* devfn==0. The pcifront_scan_bus enumerates all devfn. */
->>  	err = pcifront_scan_bus(pdev, domain, bus, b);
->>  
->> -- 
->> 1.7.1
+>> But you are right, in the pinctrl binding document it describes the
+>> generic pin multiplexing nodes use "function" and "group".
+> 
+> Note "function" and "groups". Note groups is pluralis. You can
+> select multiple groups for a single function.
+> 
+>> For example, the group "lcd" covers 30 pins. When I configure "lcd" to
+>> alternate function 1, all 30 pins are muxed to LCD function. When
+>> configured to function 2, all pins are muxed to SRAM function. Now, here
+>> comes the issue, when configured to function 3, pins 1-15 and 20-30
+>> become GPIO function, but pins 16-19 becomes SPI5 function. When it's
+>> configured to function 4, all 30 pins become GPIO.
+> 
+> I would split the use case in two groups for LCD and SRAM,
+> and three groups for GPIO:
+> "lcd_grp", "sram_grp", "gpio-1-15_grp",
+> "gpio-16-19_grp", "gpio-20-30_grp", "spi5_grp"
+> 
+> Valid combinations become
+> 
+> function = "lcd"
+> groups = "lcd_grp";
+> 
+> function = "sram"
+> groups = "sram_grp"
+> 
+> For all GPIO only this:
+> 
+> function = "gpio"
+> groups = "gpio-1-16_grp", "gpio-16-19_grp", "gpio-20-30_grp"
+> 
+> For a combined GPIO+SPI:
+> 
+> function = "gpio"
+> groups = "gpio-1-16_grp", "gpio-20-30_grp"
+> 
+> function = "spi5"
+> groups = "spi5_grp"
+> 
+> The pinctrl runtile will protest if you try to combine spi5_grp
+> with gpio-16-19_grp.
+> 
+>> In some other cases, when I configure a group to other functions, there
+>> could be spare pins which become unused (not brought out to the pad).
+>> Or, the spare pins may also become a separate function.
+> 
+> That's cool.
+> 
+>> Based on the LCD example, I'd assume I would do the following for the
+>> default LCD function:
 >>
+>> lcd_node {
+>>         group = "lcd_grp";
+>>         function = "lcd";
+>> };
+>>
+>> And in the case of function 3, I would call the function "spi5" and
+>> assume the rest of pins become either GPIO (or unused)?
+>>
+>> spi5_node {
+>>         group = "lcd_grp";
+>>         function = "spi5";
+>> };
 > 
-> .
+> Looks cool per above.
+> 
+> You need some clever code in the driver to handle double-configuration
+> of registers and so on, but I think it can be done.
+> 
+> Using pin control as a GPIO backend can be a bit tricky and will need
+> some testing and elaboration, but the subsystem will block collisions.
+> 
+> Yours,
+> Linus Walleij
 > 
 
+Hi Linus,
 
--- 
-Thanks!
-Yijing
+I have another question here. In the B0 revision of our Cygnus chip, the
+ASIC team added a feature to allow individual pins to be muxed to GPIO.
+The pinmux controller can still only do group-based muxing in general,
+but at the same time, you can override most (but not all) individual
+pins to GPIO.
 
+I believe this HW design actually forces us to mix use "groups" and
+"pins" in DT.
+
+For example, assuming we mux pins 1 - 10 as MMC (one cmd line, one clk
+line, and 8 data lines). One might make the decision that he only needs
+4 data lines instead of 8 data lines, and he wants to free up the 4 data
+lines and uses as GPIO. Based on this example, is the following DT
+configuration valid?
+
+sd_node {
+    function = "sd";
+    groups = "sd_grps";
+};
+
+gpio_node {
+    function = "gpio";
+    pins = "gpio_7", "gpio_8", "gpio_9", "gpio_10"; /* assuming 1:1
+mapping between gpio and pin number to make this example simple */
+};
+
+Thanks,
+
+Ray
