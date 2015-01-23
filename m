@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbbAWN1m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 08:27:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755396AbbAWN11 convert rfc822-to-8bit (ORCPT
+	id S1755387AbbAWN1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 08:27:24 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:58413 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778AbbAWN1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 08:27:27 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: jmorris@namei.org
-cc: dhowells@redhat.com, arnd@arndb.de, jkosina@suse.cz,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Keyrings, modsigning adjustments
+	Fri, 23 Jan 2015 08:27:20 -0500
+Message-ID: <54C24C2B.1070907@gmail.com>
+Date: Fri, 23 Jan 2015 16:27:07 +0300
+From: Dmitry Osipenko <digetx@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <27883.1422019625.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 23 Jan 2015 13:27:05 +0000
-Message-ID: <27884.1422019625@warthog.procyon.org.uk>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Bob Mottram <bob.mottram@codethink.co.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] i2c: tegra: Maintain CPU endianness
+References: <1421756555-20266-1-git-send-email-digetx@gmail.com> <20150122074001.GB427@ulmo> <CAAVeFuJHST9VOWXe_cZNvLmfGdamuU4HSgdZC6EoQvrsGFt+Fg@mail.gmail.com> <54C115D1.10206@gmail.com> <54C12010.8040504@gmail.com> <54C130EA.2050505@gmail.com> <20150123094552.GD3835@ulmo>
+In-Reply-To: <20150123094552.GD3835@ulmo>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+23.01.2015 12:45, Thierry Reding пишет:
+> On Thu, Jan 22, 2015 at 08:18:34PM +0300, Dmitry Osipenko wrote:
+>> 22.01.2015 19:06, Dmitry Osipenko пишет:
+>>> 22.01.2015 18:22, Dmitry Osipenko пишет:
+>>>> 22.01.2015 10:55, Alexandre Courbot пишет:
+>>>>> On Thu, Jan 22, 2015 at 4:40 PM, Thierry Reding
+>>>>> <thierry.reding@gmail.com> wrote:
+>>>>>>
+>>>>>> Should this not technically be le32_to_cpu() since the data originates
+>>>>> >from the I2C controller?
+>>>>
+>>>> No, i2c_readl returns value in CPU endianness, so it's correct. But for
+>>>> i2c_writel should be used le32_to_cpu(), since it takes value in CPU endianness.
+>>>> It's my overlook, V2 is coming.
+>>>>
+>>>>>>
+>>>>>> Why does this have to be initialized to 0 now?
+>>>>>
+>>>>> I suspect this is because we are going to memcpy less than 4 bytes
+>>>>> into it, but I cannot figure out how that memcpy if guaranteed to
+>>>>> produce the expected result for both endiannesses.
+>>>>>
+>>>> That's correct. Memcpy is working with bytes, so it doesn't care about
+>>>> endianness and produces expected result, since I2C message is char array.
+>>>>
+>>> I'll spend some more time reviewing, to see if nullifying should go as separate
+>>> patch.
+>>>
+>> Well, I2C_FIFO_STATUS returns 8-bit value. The rest of bits very likely to
+>> be RAZ, however I don't see anything on it in documentation. In that case it
+>> won't cause any problems with LE value and nullifying is only needed for BE
+>> mode.
+>
+> What does I2C_FIFO_STATUS have to do with anything?
+>
+> My point was more that we already tell hardware how much data is to be
+> transferred (via the packet header in tegra_i2c_xfer_msg()), hence the
+> hardware shouldn't care whether the FIFO is padded with random data or
+> zeros.
+>
+> Thierry
+>
+Got your point. I was thinking it's expected behavior, but now I'll elaborate 
+this more.
 
-Could you pull these into security/next?  There are the following pieces:
-
- (1) Make /proc/keys unconditional as it's used by libkeyutils now.
-
- (2) Reduce the verbosity of the ASN.1 compiler and the X.509 certificate
-     collection during building.
-
-Thanks,
-David
----
-The following changes since commit 961be7ef6963806cb978ccd6acf6bf84b0c63346:
-
-  tpm/tpm_tis: Add missing ifdef CONFIG_ACPI for pnp_acpi_device (2015-01-22 13:37:33 +1100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-20150123
-
-for you to fetch changes up to e994393acd65e729a574aaca466eab22b5b39cc6:
-
-  X.509: silence asn1 compiler debug output (2015-01-23 12:10:39 +0000)
-
-----------------------------------------------------------------
-Keyrings changes for next
-
-----------------------------------------------------------------
-Arnd Bergmann (2):
-      X.509: shut up about included cert for silent build
-      X.509: silence asn1 compiler debug output
-
-David Howells (1):
-      KEYS: Make /proc/keys unconditional if CONFIG_KEYS=y
-
- Documentation/security/keys.txt |  2 --
- kernel/Makefile                 |  2 +-
- scripts/asn1_compiler.c         | 30 +++++++++++++++++++-----------
- security/keys/Kconfig           | 18 ------------------
- security/keys/proc.c            |  8 --------
- 5 files changed, 20 insertions(+), 40 deletions(-)
+-- 
+Dmitry
