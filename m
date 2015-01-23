@@ -1,101 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbbAWJil (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:38:41 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:33801 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbbAWJih (ORCPT
+	id S1754604AbbAWJin (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:38:43 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:59298 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589AbbAWJij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:38:37 -0500
-Message-ID: <54C21692.8040703@linaro.org>
-Date: Fri, 23 Jan 2015 17:38:26 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 23 Jan 2015 04:38:39 -0500
+Date: Fri, 23 Jan 2015 01:38:30 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
+Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at
+ kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
+Message-ID: <20150123093830.GS9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <54BE76B9.7070907@oracle.com>
+ <20150121025754.GV9719@linux.vnet.ibm.com>
+ <54BFC979.8040107@oracle.com>
+ <20150122004305.GJ9719@linux.vnet.ibm.com>
+ <54C1BFFD.9060707@oracle.com>
+ <20150123035158.GP9719@linux.vnet.ibm.com>
+ <54C1C7D2.906@oracle.com>
+ <54C1C899.8000106@oracle.com>
+ <20150123065542.GQ9719@linux.vnet.ibm.com>
+ <54C20928.6010009@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v7 13/17] ARM64 / ACPI: Add GICv2 specific ACPI boot support
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-14-git-send-email-hanjun.guo@linaro.org> <54B8F2E3.80306@arm.com> <CACxGe6tBb8L8upS3zenZbrOc_c0E=MA=DqLjkSezEbregaAaaA@mail.gmail.com> <54B92245.6080306@arm.com> <54C0F133.8060901@linaro.org> <54C10D31.1090203@arm.com>
-In-Reply-To: <54C10D31.1090203@arm.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C20928.6010009@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012309-0013-0000-0000-000008266079
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015年01月22日 22:46, Marc Zyngier wrote:
-> Hi Hanjun,
->
-> On 22/01/15 12:46, Hanjun Guo wrote:
->> Hi Marc,
->>
->> We (Tomasz, Suravee and me) are working on supporting stacked domain on
->> ACPI, and rework GIC ACPI related patch, before we going further, we
->> need your guidance to see if we are going the right direction.
->>
->>     - You said that we spread GIC related code every where, so how
->>       about put all the ACPI related GIC init code in one file under
->>       drivers/irqchip/ with name irq-gic-acpi.c?
->
-> That would certainly be an improvement.
->
->>     - ACPI only support one GICD for now, so we assume that there
->>      only one gicv2/v3 core domain and every device not using MSI
->>       will refer to that irqdomain in default.
->
-> That's good enough, provided that nobody comes up with any form of
-> chained interrupt controller (in whatever way that's implemented). ACPI
-> doesn't seem to cater for that anyway.
->
-> But default domains are only a quick optimization (it is only there to
-> cope with code that didn't know about irq domains at all). What we need
-> is a proper integration of the ACPI namespace in the irq domain code.
-> Being able to lookup a domain by ACPI table, for example (just like
-> irq_find_host returns the domain associated to a DT node).
+On Fri, Jan 23, 2015 at 04:41:12PM +0800, Lai Jiangshan wrote:
+> On 01/23/2015 02:55 PM, Paul E. McKenney wrote:
+> > On Thu, Jan 22, 2015 at 11:05:45PM -0500, Sasha Levin wrote:
+> >> On 01/22/2015 11:02 PM, Sasha Levin wrote:
+> >>> On 01/22/2015 10:51 PM, Paul E. McKenney wrote:
+> >>>> On Thu, Jan 22, 2015 at 10:29:01PM -0500, Sasha Levin wrote:
+> >>>>>> On 01/21/2015 07:43 PM, Paul E. McKenney wrote:
+> >>>>>>>> On Wed, Jan 21, 2015 at 10:44:57AM -0500, Sasha Levin wrote:
+> >>>>>>>>>> On 01/20/2015 09:57 PM, Paul E. McKenney wrote:
+> >>>>>>>>>>>>>>>> So RCU believes that an RCU read-side critical section that ended within
+> >>>>>>>>>>>>>>>>>>>> an interrupt handler (in this case, an hrtimer) somehow got preempted.
+> >>>>>>>>>>>>>>>>>>>> Which is not supposed to happen.
+> >>>>>>>>>>>>>>>>>>>>
+> >>>>>>>>>>>>>>>>>>>> Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
+> >>>>>>>>>>>>>>>>>>>> and retry?
+> >>>>>>>>>>>>>>>>
+> >>>>>>>>>>>>>>>> I did have CONFIG_PROVE_RCU, and didn't see anything else besides what I pasted here.
+> >>>>>>>>>>>> OK, fair enough.  I do have a stack of RCU CPU stall-warning changes on
+> >>>>>>>>>>>> their way in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
+> >>>>>>>>>>>>
+> >>>>>>>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> >>>>>>>>>>>>
+> >>>>>>>>>>>> These handle the problems that Dave Jones, yourself, and a few others
+> >>>>>>>>>>>> located this past December.  Could you please give them a spin?
+> >>>>>>>>>>
+> >>>>>>>>>> They seem to be a part of -next already, so this testing already includes them.
+> >>>>>>>>>>
+> >>>>>>>>>> I seem to be getting them about once a day, anything I can add to debug it?
+> >>>>>>>>
+> >>>>>>>> Could you please try reproducing with the following patch?
+> >>>>>>
+> >>>>>> Yes, and I've got mixed results. It reproduced, and all I got was:
+> >>>>>>
+> >>>>>> [  717.645572] ===============================
+> >>>>>> [  717.645572] [ INFO: suspicious RCU usage. ]
+> >>>>>> [  717.645572] 3.19.0-rc5-next-20150121-sasha-00064-g3c37e35-dirty #1809 Tainted: G        W
+> >>>>>> [  717.645572] -------------------------------
+> >>>>>> [  717.645572] kernel/rcu/tree_plugin.h:337 rcu_read_unlock() from irq or softirq with blocking in critical section!!!
+> >>>>>> [  717.645572] !
+> >>>>>> [  717.645572]
+> >>>>>> [  717.645572] other info that might help us debug this:
+> >>>>>> [  717.645572]
+> >>>>>> [  717.645572]
+> >>>>>> [  717.645572] rcu_scheduler_active = 1, debug_locks = 1
+> >>>>>> [  717.645572] 3 locks held by trinity-c29/16497:
+> >>>>>> [  717.645572]  #0:  (&sb->s_type->i_mutex_key){+.+.+.}, at: [<ffffffff81bec373>] lookup_slow+0xd3/0x420
+> >>>>>> [  717.645572]  #1:
+> >>>>>> [hang]
+> >>>>>>
+> >>>>>> So the rest of the locks/stack trace didn't get printed, nor the pr_alert() which
+> >>>>>> should follow that.
+> >>>>>>
+> >>>>>> I've removed the lockdep call and will re-run it.
+> >>>> Thank you!  You are keeping the pr_alert(), correct?
+> >>>
+> >>> Yup, just the lockdep call goes away.
+> >>
+> >> Okay, this reproduced faster than I anticipated:
+> >>
+> >> [  786.160131] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >> [  786.239513] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >> [  786.240503] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >> [  786.242575] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >> [  786.243565] ->rcu_read_unlock_special: 0x100 (b: 0, nq: 1)
+> >>
+> >> It seems like the WARN_ON_ONCE was hiding the fact it actually got hit couple
+> >> of times in a very short interval. Maybe that would also explain lockdep crapping
+> >> itself.
+> > 
+> > OK, that was what I thought was the situation.  I have not yet fully
+> > worked out how RCU gets into that state, but in the meantime, here
+> > is a patch that should prevent the splats.  (It requires a subtle
+> > interaction of quiescent-state detection and the scheduling-clock
+> > interrupt.)
+> > 
+> > 							Thanx, Paul
+> > 
+> > ------------------------------------------------------------------------
+> > 
+> > rcu: Clear need_qs flag to prevent splat
+> > 
+> > If the scheduling-clock interrupt sets the current tasks need_qs flag,
+> > but if the current CPU passes through a quiescent state in the meantime,
+> 
+> How does the above things happen?
+> "the scheduling-clock interrupt" is local-irq-disabled.
 
-I totally agree, so we have different ways to handle devices using
-MSI and devices not using MSI.
+The scheduling-clock interrupt just sets things up.  The remainder of the
+failure scenario happens after this interrupt returns.  See my earlier
+email for the whole sad story.  ;-)
 
-   - Devices using MSI, there is a IORT table to map the dev id to ITS,
-     then every device can easily lookup a domain;
+							Thanx, Paul
 
-   - Devices not using MSI, we only present the GSI (hwirq num) used
-     in DSDT by this device to OS, no property to indicate its interrupt
-     parent, since we have only one domain for now, we can just let
-     those devices refer to the gic core domain, and it will work.
+> > then rcu_preempt_qs() will fail to clear the need_qs flag, which can fool
+> > RCU into thinking that additional rcu_read_unlock_special() processing
+> > is needed.  This commit therefore clears the need_qs flag before checking
+> > for additional processing.
+> > 
+> > Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > index 8669de884445..ec99dc16aa38 100644
+> > --- a/kernel/rcu/tree_plugin.h
+> > +++ b/kernel/rcu/tree_plugin.h
+> > @@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+> >  	special = t->rcu_read_unlock_special;
+> >  	if (special.b.need_qs) {
+> >  		rcu_preempt_qs();
+> > +		t->rcu_read_unlock_special.need_qs = false;
+> >  		if (!t->rcu_read_unlock_special.s) {
+> >  			local_irq_restore(flags);
+> >  			return;
+> > 
+> > .
+> > 
+> 
 
-For x86, devices using GSI have no such problem, because every
-IOAPIC have the GSI base reported and how many GSI is supported,
-so with a GSI num, we can easily find a IOAPIC then pointing to
-its irqdomain, can we do something similar to x86 here?
-
->
-> This would ensure that we can reuse most of the existing code (stacked
-> domains, per-device MSI domains [WIP]) without too much effort.
-
-I agree.
-
-Thanks
-Hanjun
