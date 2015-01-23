@@ -1,127 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743AbbAWVre (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 16:47:34 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:47008 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900AbbAWVrb (ORCPT
+	id S1756640AbbAWVv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 16:51:29 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:54315 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756559AbbAWVv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 16:47:31 -0500
-Date: Fri, 23 Jan 2015 13:47:26 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Fabio Porcedda <fabio.porcedda@gmail.com>
-Subject: Re: [PATCH] PCI: keystone: fix incorrect annotations on probe and
- remove
-Message-ID: <20150123214726.GA4688@dtor-ws>
-References: <20150108221736.GA39839@dtor-ws>
- <20150123213412.GK29776@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123213412.GK29776@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Jan 2015 16:51:27 -0500
+Message-Id: <20150123215010.626661716@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Fri, 23 Jan 2015 16:50:10 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/2] tracing: Some clean ups that will help tracefs
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+I added these two patches before applying my tracefs changes.
+I'm still waiting on review from Al or Greg from tracefs, but these
+fixes are just some clean ups that are unrelated. But should go into
+linux-next now anyway.
 
-On Fri, Jan 23, 2015 at 03:34:12PM -0600, Bjorn Helgaas wrote:
-> [+cc Fabio]
-> 
-> On Thu, Jan 08, 2015 at 02:17:36PM -0800, Dmitry Torokhov wrote:
-> > Even though platform bus is not hot-pluggable, devices on it can be unbound
-> > from the driver and bound back to it via sysfs, so we should not be using
-> > __init annotations on probe() and __exit annotations on remove() methods.
-> 
-> I don't completely understand this problem.  Does this mean there should be
-> no __init/__exit annotations in these drivers at all?  If other PCI host
-> bridge drivers have the same problem, I'd like to fix them all at once.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
 
-Basically they should not use __init/__exit, unless you take explicit
-steps to make sure that devices can't be unbound and bound again later
-via sysfs by setting driver->suppress_bind_attrs and/or using
-platform_driver_probe(). Note that if you use platform_driver_probe()
-then your driver can't cope with -EPROBE_DEFER reported by any of the
-subsystems it might be using.
+Head SHA1: 14a5ae40f0def33a422a45b2ed09198adb7bf11c
 
-> 
-> For example, after applying this patch, ks_pcie_probe() is non-__init, but
-> it calls ks_add_pcie_port(), which is still __init.  I thought that was
-> illegal.
 
-My bad, I missed that. The __init marking on ks_add_pcie_port() shoudl
-be removed as well.
+Steven Rostedt (Red Hat) (2):
+      tracing: Remove unneeded includes of debugfs.h and fs.h
+      tracing: Use IS_ERR() check for return value of tracing_init_dentry()
 
-> 
-> I'm not sure about module_platform_driver_probe() either; it generates
-> __init and __exit functions.  Should those annotations be removed, too?
-
-module_platform_driver_probe() does internally platform_driver_probe()
-so it is OK for that probe function be __init (because we'd suppress
-sysfs bind/unbind and deferred probing so discaring init section is
-safe).
-
-Note that above applied to driver's ->probe() and ->remove() code paths
-only.  Marking module init/exit code as __init and __exit is still right
-thing to do.
-
-Thanks.
-
-> 
-> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > ---
-> > 
-> > Not tested, found by casual code inspection.
-> > 
-> >  drivers/pci/host/pci-keystone.c | 8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
-> > index 1b893bc..7b84e1d 100644
-> > --- a/drivers/pci/host/pci-keystone.c
-> > +++ b/drivers/pci/host/pci-keystone.c
-> > @@ -332,7 +332,7 @@ static const struct of_device_id ks_pcie_of_match[] = {
-> >  };
-> >  MODULE_DEVICE_TABLE(of, ks_pcie_of_match);
-> >  
-> > -static int __exit ks_pcie_remove(struct platform_device *pdev)
-> > +static int ks_pcie_remove(struct platform_device *pdev)
-> >  {
-> >  	struct keystone_pcie *ks_pcie = platform_get_drvdata(pdev);
-> >  
-> > @@ -341,7 +341,7 @@ static int __exit ks_pcie_remove(struct platform_device *pdev)
-> >  	return 0;
-> >  }
-> >  
-> > -static int __init ks_pcie_probe(struct platform_device *pdev)
-> > +static int ks_pcie_probe(struct platform_device *pdev)
-> >  {
-> >  	struct device *dev = &pdev->dev;
-> >  	struct keystone_pcie *ks_pcie;
-> > @@ -398,9 +398,9 @@ fail_clk:
-> >  	return ret;
-> >  }
-> >  
-> > -static struct platform_driver ks_pcie_driver __refdata = {
-> > +static struct platform_driver ks_pcie_driver = {
-> >  	.probe  = ks_pcie_probe,
-> > -	.remove = __exit_p(ks_pcie_remove),
-> > +	.remove = ks_pcie_remove,
-> >  	.driver = {
-> >  		.name	= "keystone-pcie",
-> >  		.owner	= THIS_MODULE,
-> > -- 
-> > 2.2.0.rc0.207.ga3a616c
-> > 
-> > 
-> > -- 
-> > Dmitry
-
--- 
-Dmitry
+----
+ kernel/trace/ftrace.c                | 2 +-
+ kernel/trace/ring_buffer.c           | 2 --
+ kernel/trace/trace.c                 | 8 ++++----
+ kernel/trace/trace_branch.c          | 1 -
+ kernel/trace/trace_events.c          | 2 +-
+ kernel/trace/trace_export.c          | 2 --
+ kernel/trace/trace_functions_graph.c | 2 +-
+ kernel/trace/trace_irqsoff.c         | 2 --
+ kernel/trace/trace_kprobe.c          | 2 +-
+ kernel/trace/trace_nop.c             | 2 --
+ kernel/trace/trace_printk.c          | 4 +---
+ kernel/trace/trace_sched_switch.c    | 2 --
+ kernel/trace/trace_sched_wakeup.c    | 2 --
+ kernel/trace/trace_stack.c           | 4 +---
+ kernel/trace/trace_stat.c            | 2 +-
+ kernel/trace/trace_uprobe.c          | 2 +-
+ 16 files changed, 12 insertions(+), 29 deletions(-)
