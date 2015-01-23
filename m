@@ -1,98 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529AbbAWVvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 16:51:06 -0500
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:57202 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966AbbAWVvD (ORCPT
+	id S1756690AbbAWVwj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 16:52:39 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32070 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbbAWVwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 16:51:03 -0500
-Date: Fri, 23 Jan 2015 15:50:58 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, aacraid@adaptec.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: quirks: DMA alias quirk for Adaptec 3405
-Message-ID: <20150123215058.GM29776@google.com>
-References: <20150113182605.15479.9020.stgit@gimli.home>
+	Fri, 23 Jan 2015 16:52:36 -0500
+Message-ID: <54C2C278.1000608@oracle.com>
+Date: Fri, 23 Jan 2015 16:51:52 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113182605.15479.9020.stgit@gimli.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
+Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337
+ rcu_read_unlock_special+0x369/0x550()
+References: <20150118232255.GD9719@linux.vnet.ibm.com> <54BE76B9.7070907@oracle.com> <20150121025754.GV9719@linux.vnet.ibm.com> <54BFC979.8040107@oracle.com> <20150122004305.GJ9719@linux.vnet.ibm.com> <54C1BFFD.9060707@oracle.com> <20150123035158.GP9719@linux.vnet.ibm.com> <54C1C7D2.906@oracle.com> <54C1C899.8000106@oracle.com> <20150123065542.GQ9719@linux.vnet.ibm.com> <20150123093644.GA11175@linux.vnet.ibm.com>
+In-Reply-To: <20150123093644.GA11175@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:26:50AM -0700, Alex Williamson wrote:
-> As noted in the added comment, this device is actually an Intel 80333
-> I/O processor where the exposed device at 0e.0 is actually the address
-> translation unit of the I/O processor and a hidden, private device at
-> 01.0 masters the DMA for the device.  In order to enable the IOMMU, we
-> therefore need to create a fixed alias between the exposed and hidden
-> devfn.
-> 
-> Scenarios like this are potentially likely for any device incorporating
-> this I/O processor, so this little bit of abstraction with the fixed
-> alias table should make future additions trivial.
+On 01/23/2015 04:36 AM, Paul E. McKenney wrote:
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 8669de884445..ec99dc16aa38 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+>  	special = t->rcu_read_unlock_special;
+>  	if (special.b.need_qs) {
+>  		rcu_preempt_qs();
+> +		t->rcu_read_unlock_special.need_qs = false;
 
-This sounds like the result of some serious debugging :)  Do you have a
-pointer to a bugzilla or some email discussion?  I'd like to make the fix
-discoverable starting with a failure symptom.
+It didn't compile, I've used:
 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-> ---
-> 
->  drivers/pci/quirks.c |   37 +++++++++++++++++++++++++++++++++++++
->  1 file changed, 37 insertions(+)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index ed6f89b..19bdb17 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -3528,6 +3528,43 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_JMICRON,
->  			 quirk_dma_func1_alias);
->  
->  /*
-> + * Some devices DMA with the wrong devfn, not just the wrong function.
-> + * quirk_fixed_dma_alias() uses this table to create fixed aliass, where
-> + * the alias is "fixed" and independent of the device devfn.
-> + *
-> + * For example, the Adaptec 3405 is a PCIe card making use of an Intel 80333
-> + * I/O processor.  To software, this appears as a straightforward PCIe-to-PCI/X
-> + * bridge with a single device on the subordinate bus.  In reality, the exposed
-> + * device at 0e.0 is the Address Translation Unit (ATU) of the controller that
-> + * provides a bridge to the internal bus of the I/O processor.  The controller
-> + * supports private devices, which can be hidden from PCI config space.  In the
-> + * case of the Adaptec 3405, a private device at 01.0 appears to be the DMA
-> + * engine, which therefore needs to become a DMA alias for the device.
-> + */
-> +static const struct pci_device_id fixed_dma_alias_tbl[] = {
-> +	{ PCI_DEVICE_SUB(PCI_VENDOR_ID_ADAPTEC2, 0x0285,
-> +			 PCI_VENDOR_ID_ADAPTEC2, 0x02bb), /* Adaptec 3405 */
-> +	  .driver_data = PCI_DEVFN(1, 0) },
-> +	{ 0 }
-> +};
-> +
-> +static void quirk_fixed_dma_alias(struct pci_dev *dev)
-> +{
-> +	const struct pci_device_id *id;
-> +
-> +	id = pci_match_id(fixed_dma_alias_tbl, dev);
-> +	if (id) {
-> +		dev->dma_alias_devfn = id->driver_data;
-> +		dev->dev_flags |= PCI_DEV_FLAGS_DMA_ALIAS_DEVFN;
-> +		dev_info(&dev->dev, "Enabling fixed DMA alias to %02x.%d\n",
-> +			 PCI_SLOT(dev->dma_alias_devfn),
-> +			 PCI_FUNC(dev->dma_alias_devfn));
-> +	}
-> +}
-> +
-> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ADAPTEC2, 0x0285, quirk_fixed_dma_alias);
-> +
-> +/*
->   * A few PCIe-to-PCI bridges fail to expose a PCIe capability, resulting in
->   * using the wrong DMA alias for the device.  Some of these devices can be
->   * used as either forward or reverse bridges, so we need to test whether the
-> 
+		t->rcu_read_unlock_special.b.need_qs = false;
+
+
+Thanks,
+Sasha
