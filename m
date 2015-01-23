@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625AbbAWOYF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 09:24:05 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:59505 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755611AbbAWOYC (ORCPT
+	id S932125AbbAWOZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 09:25:26 -0500
+Received: from www.linutronix.de ([62.245.132.108]:36903 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755659AbbAWOZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 09:24:02 -0500
-Date: Fri, 23 Jan 2015 23:24:35 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
-Message-ID: <20150123142435.GA2320@swordfish>
-References: <1421992707-32658-1-git-send-email-minchan@kernel.org>
+	Fri, 23 Jan 2015 09:25:21 -0500
+Date: Fri, 23 Jan 2015 15:24:45 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: WANG Chao <chaowang@redhat.com>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Borislav Petkov <bp@suse.de>, Daniel Kiper <daniel.kiper@oracle.com>,
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        "open list:X86 ARCHITECTURE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86: add macro for_each_setup_data()
+In-Reply-To: <1420628150-16872-2-git-send-email-chaowang@redhat.com>
+Message-ID: <alpine.DEB.2.11.1501231502350.5526@nanos>
+References: <1420628150-16872-1-git-send-email-chaowang@redhat.com> <1420628150-16872-2-git-send-email-chaowang@redhat.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421992707-32658-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/23/15 14:58), Minchan Kim wrote:
-> We don't need to call zram_meta_free, zcomp_destroy and zs_free
-> under init_lock. What we need to prevent race with init_lock
-> in reset is setting NULL into zram->meta (ie, init_done).
-> This patch does it.
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/block/zram/zram_drv.c | 28 ++++++++++++++++------------
->  1 file changed, 16 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 9250b3f54a8f..0299d82275e7 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -708,6 +708,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  {
->  	size_t index;
->  	struct zram_meta *meta;
-> +	struct zcomp *comp;
->  
->  	down_write(&zram->init_lock);
->  
-> @@ -719,20 +720,10 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  	}
->  
->  	meta = zram->meta;
-> -	/* Free all pages that are still in this zram device */
-> -	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> -		unsigned long handle = meta->table[index].handle;
-> -		if (!handle)
-> -			continue;
-> -
-> -		zs_free(meta->mem_pool, handle);
-> -	}
-> -
-> -	zcomp_destroy(zram->comp);
-
-I'm not so sure about moving zcomp destruction. if we would have detached it
-from zram, then yes. otherwise, think of zram ->destoy vs ->init race.
-
-suppose,
-CPU1 waits for down_write() init lock in disksize_store() with new comp already allocated;
-CPU0 detaches ->meta and releases write init lock;
-CPU1 grabs the lock and does zram->comp = comp;
-CPU0 reaches the point of zcomp_destroy(zram->comp);
-
-
-I'd probably prefer to keep zcomp destruction on its current place. I
-see a little real value in introducing zcomp detaching and moving
-destruction out of init_lock.
-
-	-ss
-
-> +	comp = zram->comp;
-> +	zram->meta = NULL;
->  	zram->max_comp_streams = 1;
->  
-> -	zram_meta_free(zram->meta);
-> -	zram->meta = NULL;
->  	/* Reset stats */
->  	memset(&zram->stats, 0, sizeof(zram->stats));
->  
-> @@ -742,6 +733,19 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  
->  	up_write(&zram->init_lock);
->  
-> +	/* Free all pages that are still in this zram device */
-> +	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> +		unsigned long handle = meta->table[index].handle;
+On Wed, 7 Jan 2015, WANG Chao wrote:
+  
+> +#define for_each_setup_data(pa_data, data) \
+> +	for (pa_data = boot_params.hdr.setup_data; \
+> +		pa_data && (data = early_memremap(pa_data, sizeof(*data))); \
+> +		pa_data = data->next, early_iounmap(data, sizeof(*data)))
 > +
-> +		if (!handle)
-> +			continue;
-> +
-> +		zs_free(meta->mem_pool, handle);
-> +	}
-> +
-> +	zcomp_destroy(comp);
-> +	zram_meta_free(meta);
-> +
->  	/*
->  	 * Revalidate disk out of the init_lock to avoid lockdep splat.
->  	 * It's okay because disk's capacity is protected by init_lock
-> -- 
-> 1.9.1
-> 
+
+That makes the code obfuscated not clearer. Brain went into spiral
+mode.
+
+struct setup_iter {
+       u64 pa_data, pa_next;
+       u32 len, type;
+};
+
+....
+{
+     struct setup_iter iter = { .pa_next = boot_params.hdr.setup_data };
+
+     while (get_next_setup_data(&iter)) {
+     	   switch (iter.type) {
+	   case SETUP_E820_EXT:
+	      	 parse_e820_ext(iter.pa_data, iter.len);  	  
+....
+
+Perhaps?
+
+Thanks,
+
+	tglx
