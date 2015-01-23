@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660AbbAWTXm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 14:23:42 -0500
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:52999 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbbAWTXj (ORCPT
+	id S1756339AbbAWTY2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 14:24:28 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:48525 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890AbbAWTY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 14:23:39 -0500
-Message-ID: <1422041016.2436.19.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH] sched, timer: Use atomics for thread_group_cputimer
- stats
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org,
-        jason.low2@hp.com
-Date: Fri, 23 Jan 2015 11:23:36 -0800
-In-Reply-To: <20150123092508.GJ2896@worktop.programming.kicks-ass.net>
-References: <1421983913.4432.22.camel@j-VirtualBox>
-	 <20150123092508.GJ2896@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 23 Jan 2015 14:24:26 -0500
+Message-ID: <54C29FE8.8080905@infradead.org>
+Date: Fri, 23 Jan 2015 11:24:24 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Masanari Iida <standby24x7@gmail.com>, trivial@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [trivial] treewide: Fix typo in printk messages
+References: <1421931414-24426-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1421931414-24426-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 10:25 +0100, Peter Zijlstra wrote:
-> On Thu, Jan 22, 2015 at 07:31:53PM -0800, Jason Low wrote:
-> > +static void update_gt_cputime(struct thread_group_cputimer *a, struct task_cputime *b)
-> >  {
-> > +	if (b->utime > atomic64_read(&a->utime))
-> > +		atomic64_set(&a->utime, b->utime);
-> >  
-> > +	if (b->stime > atomic64_read(&a->stime))
-> > +		atomic64_set(&a->stime, b->stime);
-> >  
-> > +	if (b->sum_exec_runtime > atomic64_read(&a->sum_exec_runtime))
-> > +		atomic64_set(&a->sum_exec_runtime, b->sum_exec_runtime);
-> >  }
+On 01/22/15 04:56, Masanari Iida wrote:
+> This patch fix spelling typo in printk messages.
 > 
-> See something like this is not safe against concurrent adds.
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-How about something like:
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-u64 a_utime, a_stime, a_sum_exec_runtime;
+Thanks.
 
-retry_utime:
-	a_utime = atomic64_read(&a->utime);
-	if (b->utime > a_utime) {
-		if (atomic64_cmpxchg(&a->utime, a_utime, b->utime) != a_utime)
-			goto retry_utime;
-	}
+> ---
+>  arch/powerpc/perf/hv-24x7.c                      | 2 +-
+>  drivers/clk/samsung/clk.c                        | 2 +-
+>  drivers/gpu/drm/drm_atomic.c                     | 4 ++--
+>  drivers/gpu/drm/nouveau/core/engine/graph/nv10.c | 4 ++--
+>  drivers/mfd/si476x-i2c.c                         | 2 +-
+>  drivers/mmc/core/mmc.c                           | 4 ++--
+>  drivers/mmc/core/sd.c                            | 4 ++--
+>  drivers/mtd/nand/gpmi-nand/gpmi-lib.c            | 2 +-
+>  drivers/net/phy/dp83640.c                        | 2 +-
+>  drivers/net/wireless/airo.c                      | 4 ++--
+>  drivers/net/wireless/ath/wcn36xx/smd.c           | 2 +-
+>  drivers/pinctrl/nomadik/pinctrl-abx500.c         | 2 +-
+>  drivers/scsi/ch.c                                | 2 +-
+>  drivers/usb/gadget/udc/bdc/bdc_ep.c              | 2 +-
+>  fs/jffs2/xattr.c                                 | 2 +-
+>  lib/rhashtable.c                                 | 2 +-
+>  net/atm/mpoa_proc.c                              | 2 +-
+>  sound/soc/soc-core.c                             | 4 ++--
+>  18 files changed, 24 insertions(+), 24 deletions(-)
 
-retry_stime:
-	a_stime = atomic64_read(&a->stime);
-	if (b->stime > a_stime) {
-		if (atomic64_cmpxchg(&a->stime, a_stime, b->stime) != a_stime)
-			goto retry_stime;
-	}
 
-retry_sum_exec_runtime:
-	a_sum_exec_runtime = atomic64_read(&a->sum_exec_runtime);
-	if (b->sum_exec_runtime > a_sum_exec_runtime) {
-		if (atomic64_cmpxchg(&a->sum_exec_runtime, a_sum_exec_runtime,
-				     b->sum_exec_runtime) != a_sum_exec_runtime)
-			goto retry_sum_exec_runtime;
-	}
-
+-- 
+~Randy
