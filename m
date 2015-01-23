@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940AbbAWKQb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 05:16:31 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:60906 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753934AbbAWKQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 05:16:28 -0500
-Date: Fri, 23 Jan 2015 11:16:23 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: tony.luck@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: x86/MCE: drop bogus const modifier from AMD's bank4_names()
-Message-ID: <20150123101623.GB22635@pd.tnic>
-References: <54C21511020000780005890E@mail.emea.novell.com>
- <20150123095838.GA22635@pd.tnic>
- <54C22B040200007800058A07@mail.emea.novell.com>
+	id S1754829AbbAWKWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 05:22:16 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:15315 "EHLO
+	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754495AbbAWKWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 05:22:11 -0500
+From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+To: <mark.rutland@arm.com>, <arnd@arndb.de>, <catalin.marinas@arm.com>,
+        <will.deacon@arm.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>
+CC: <Joel.Schopp@amd.com>, <Thomas.Lendacky@amd.com>,
+        <Suravee.Suthikulpanit@amd.com>, <broonie@kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <geng.ren@spreadtrum.com>,
+        <zhizhou.zhang@spreadtrum.com>, <zhang.lyra@gmail.com>,
+        <wei.qiao@spreadtrum.com>, <orsonzhai@gmail.com>
+Subject: [PATCH v6 0/2] Add Spreadtrum Sharkl64 Platform support
+Date: Fri, 23 Jan 2015 18:21:29 +0800
+Message-ID: <1422008491-16452-1-git-send-email-chunyan.zhang@spreadtrum.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <sprd-dt-v6>
+References: <sprd-dt-v6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <54C22B040200007800058A07@mail.emea.novell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.0.67.142]
+X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
+ SHMBX01.spreadtrum.com (10.0.1.203)
+X-MAIL: SHSQR01.spreadtrum.com t0NALtAM022183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:05:40AM +0000, Jan Beulich wrote:
-> It's been a long while ago that I noticed and fixed the warning, so
-> I don't recall the details. What I do know is that I didn't force any
-> extra flags, and that a similar issue elsewhere in the tree (fixed
-> in 3.19-rc5) triggered the same warning in at least one of my builds
-> (again without any extra warning options) in -rc4.
+This patch-set split the last version, and addressed the review comments from
+last version on serial driver code.
 
-Older compiler maybe. Not that it is worth wasting too much time on it
-though...
+Changes from v5:
+	- Added maintenance interrupt for gic
+	- Removed reg property from 'soc' and 'apb' nodes
+
+Zhizhou Zhang (2):
+  arm64: dts: Add support for Spreadtrum SC9836 SoC in dts and Makefile
+  arm64: Add support for Spreadtrum's Sharkl64 Platform in Kconfig and
+    defconfig
+
+ arch/arm64/Kconfig                            |    5 ++
+ arch/arm64/boot/dts/Makefile                  |    1 +
+ arch/arm64/boot/dts/sprd/Makefile             |    5 ++
+ arch/arm64/boot/dts/sprd/sc9836-openphone.dts |   49 ++++++++++++++++
+ arch/arm64/boot/dts/sprd/sc9836.dtsi          |   74 +++++++++++++++++++++++++
+ arch/arm64/boot/dts/sprd/sharkl64.dtsi        |   65 ++++++++++++++++++++++
+ arch/arm64/configs/defconfig                  |    1 +
+ 7 files changed, 200 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/sprd/Makefile
+ create mode 100644 arch/arm64/boot/dts/sprd/sc9836-openphone.dts
+ create mode 100644 arch/arm64/boot/dts/sprd/sc9836.dtsi
+ create mode 100644 arch/arm64/boot/dts/sprd/sharkl64.dtsi
 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-ECO tip #101: Trim your mails when you reply.
---
