@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229AbbAWIjw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:39:52 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:60228 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbbAWIjs (ORCPT
+	id S1753736AbbAWIkj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:40:39 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:36811 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752004AbbAWIkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:39:48 -0500
-Date: Fri, 23 Jan 2015 09:39:31 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, vincent.weaver@maine.edu,
-        cl@linux.com, paulus@samba.org, acme@redhat.com
-Subject: Re: [PATCH] perf/rapl: fix crash in rapl_scale()
-Message-ID: <20150123083931.GD2896@worktop.programming.kicks-ass.net>
-References: <20150122203834.GA10228@thinkpad>
+	Fri, 23 Jan 2015 03:40:37 -0500
+Message-ID: <54C208D9.6050006@st.com>
+Date: Fri, 23 Jan 2015 09:39:53 +0100
+From: David Paris <david.paris@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122203834.GA10228@thinkpad>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <kernel@stlinux.com>, <rtc-linux@googlegroups.com>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux@roeck-us.net>
+Subject: Re: [PATCH v2 4/9] ARM: STi: DT: STiH407: Add Device Tree node for
+ the LPC
+References: <1421927767-28889-1-git-send-email-lee.jones@linaro.org> <1421927767-28889-5-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1421927767-28889-5-git-send-email-lee.jones@linaro.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.83]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-23_02:2015-01-23,2015-01-23,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 09:38:34PM +0100, Stephane Eranian wrote:
-> 
-> This patch fixes a systematic crash in rapl_scale()
-> due to an invalid pointer.
-> 
-> The bug was introduced by commit:
-> commit 89cbc76768c2fa4ed95545bf961f3a14ddfeed21
-> Author: Christoph Lameter <cl@linux.com>
-> Date:   Sun Aug 17 12:30:40 2014 -0500
-> 
->     x86: Replace __get_cpu_var uses
-> 
-> 
-> The fix is simple. Just put the parenthesis where it needs
-> to be, i.e., around rapl_pmu. To my surprise, the compiler
-> was not complaining about passing an integer instead of a
-> pointer.
-> 
-> Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Hi Lee,
 
-Thanks!
+     Just a minor remark/question,
+
+     David
+
+On 01/22/2015 12:56 PM, Lee Jones wrote:
+> On current ST platforms the LPC controls a number of functions.  This
+> patch enables support for the LPC Watchdog and LPC RTC devices on LPC1
+> and LPC2 respectively.
+>
+> Signed-off-by: David Paris <david.paris@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>   arch/arm/boot/dts/stih407-family.dtsi | 20 ++++++++++++++++++++
+>   1 file changed, 20 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/stih407-family.dtsi b/arch/arm/boot/dts/stih407-family.dtsi
+> index 3e31d32..04448a7 100644
+> --- a/arch/arm/boot/dts/stih407-family.dtsi
+> +++ b/arch/arm/boot/dts/stih407-family.dtsi
+> @@ -7,6 +7,7 @@
+>    * publishhed by the Free Software Foundation.
+>    */
+>   #include "stih407-pinctrl.dtsi"
+> +#include <dt-bindings/mfd/st-lpc.h>
+>   #include <dt-bindings/reset-controller/stih407-resets.h>
+>   / {
+>   	#address-cells = <1>;
+> @@ -274,5 +275,24 @@
+>   
+>   			status = "disabled";
+>   		};
+> +
+> +		/* Watchdog and Real-Time Clock */
+> +		lpc@8787000 {
+> +			compatible = "st,stih407-lpc";
+> +			reg = <0x8787000 0x1000>;
+> +			interrupts = <GIC_SPI 129 IRQ_TYPE_EDGE_RISING>;
+In case of Watchdog, "interrupt" property is not used. So I think we can 
+remove it ?
+> +			clocks = <&clk_s_d3_flexgen CLK_LPC_0>;
+> +			timeout-sec = <120>;
+> +			st,syscfg = <&syscfg_core>;
+> +			st,lpc-mode = <ST_LPC_MODE_WDT>;
+> +		};
+> +
+> +		lpc@8788000 {
+> +			compatible = "st,stih407-lpc";
+> +			reg = <0x8788000 0x1000>;
+> +			interrupts = <GIC_SPI 130 IRQ_TYPE_EDGE_RISING>;
+> +			clocks = <&clk_s_d3_flexgen CLK_LPC_1>;
+> +			st,lpc-mode = <ST_LPC_MODE_RTC>;
+> +		};
+>   	};
+>   };
+
