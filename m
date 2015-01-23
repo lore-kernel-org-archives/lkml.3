@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166AbbAWLuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 06:50:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60591 "EHLO mx1.redhat.com"
+	id S1755243AbbAWLvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 06:51:15 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:23545 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077AbbAWLud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 06:50:33 -0500
-Message-ID: <54C23581.9060809@redhat.com>
-Date: Fri, 23 Jan 2015 12:50:25 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754972AbbAWLvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 06:51:12 -0500
+X-IronPort-AV: E=Sophos;i="5.09,453,1418083200"; 
+   d="scan'208";a="219966832"
+Message-ID: <54C235AD.5010202@citrix.com>
+Date: Fri, 23 Jan 2015 11:51:09 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Sun Paul <paulrbk@gmail.com>
-CC: linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vyasevich@gmail.com
-Subject: Re: Fwd: Question on SCTP ABORT chunk is generated when the association_max_retrans
- is reached
-References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com> <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>
-In-Reply-To: <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, <david.vrabel@citrix.com>,
+        <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
+        <xen-devel@lists.xenproject.org>
+CC: <kvm@vger.kernel.org>, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <rostedt@goodmis.org>, <paulmck@linux.vnet.ibm.com>
+Subject: Re: [Xen-devel] [RFC v4 0/2] x86/xen: add xen hypercall preemption
+References: <1421972951-3940-1-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1421972951-3940-1-git-send-email-mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 23/01/15 00:29, Luis R. Rodriguez wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> 
+> This v4 addresses some of the cleanups recommended and adds
+> tracing option for when we do actually preempt a hypercall.
+> I kept the NOKPROBE_SYMBOL() for now but did remove the 'notrace'
+> stuff.
+> 
+> This goes out as RFC still as I have not been able to test 32-bit.
+> Can anyone test that or at least confirm that the 32-bit point
+> we do the upcall is definitely not on the IRQ stack?
 
-On 01/23/2015 11:25 AM, Sun Paul wrote:
-...
-> I would like to check the behave in LKSCTP.
->
-> we are running DIAMETER message over SCTP, and we have set the
-> parameter "net.sctp.association_max_retrans = 4" in the LinuxOS.
->
-> We noticed that when remote peer have retry to send the same request
-> for 4 times, the LKSCTP will initiate an ABORT chunk with reason
-> "association exceeded its max_retrans count".
->
-> We would like to know whether this is the correct behavior? is there
-> any other option that we can alter in order to avoid the ABORT chunk
-> being sent?
+You can omit fixing this for 32-bit guests (provided you note as such in
+the commit message).
 
-I don't recall the RFC saying to send an ABORT, but let me double
-check in the mean time.
-
-Hmm, untested, but could you try something like that?
-
-diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-index fef2acd..5ce198d 100644
---- a/net/sctp/sm_sideeffect.c
-+++ b/net/sctp/sm_sideeffect.c
-@@ -584,7 +584,8 @@ static void sctp_cmd_assoc_failed(sctp_cmd_seq_t *commands,
-  		sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP,
-  				SCTP_ULPEVENT(event));
-
--	if (asoc->overall_error_count >= asoc->max_retrans) {
-+	if (asoc->overall_error_count >= asoc->max_retrans &&
-+	    error != SCTP_ERROR_NO_ERROR) {
-  		abort = sctp_make_violation_max_retrans(asoc, chunk);
-  		if (abort)
-  			sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+David
