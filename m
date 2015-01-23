@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbbAWREI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 12:04:08 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:48973 "EHLO gum.cmpxchg.org"
+	id S1756091AbbAWREd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 12:04:33 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39507 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752117AbbAWREF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 12:04:05 -0500
-Date: Fri, 23 Jan 2015 12:03:53 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Cgroups <cgroups@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] mm: memcontrol: default hierarchy interface for memory
- fix - "none"
-Message-ID: <20150123170353.GA12036@phnom.home.cmpxchg.org>
-References: <1421508107-29377-1-git-send-email-hannes@cmpxchg.org>
- <20150120133711.GI25342@dhcp22.suse.cz>
- <20150120143002.GB11181@phnom.home.cmpxchg.org>
- <20150120143644.GL25342@dhcp22.suse.cz>
- <CAOS58YNZFuSP6cKLAkYKkK+QUDxwngnKE5UGHmAL7n3PygraaQ@mail.gmail.com>
+	id S1756015AbbAWREa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 12:04:30 -0500
+Date: Fri, 23 Jan 2015 18:04:25 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH 1/3] swiotlb: Warn on allocation failure in
+ swiotlb_alloc_coherent
+Message-ID: <20150123170425.GI22635@pd.tnic>
+References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
+ <1420555874-11506-2-git-send-email-joro@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAOS58YNZFuSP6cKLAkYKkK+QUDxwngnKE5UGHmAL7n3PygraaQ@mail.gmail.com>
+In-Reply-To: <1420555874-11506-2-git-send-email-joro@8bytes.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 12:00:11PM -0500, Tejun Heo wrote:
-> Hello,
+On Tue, Jan 06, 2015 at 03:51:12PM +0100, Joerg Roedel wrote:
+> From: Joerg Roedel <jroedel@suse.de>
 > 
-> On Tue, Jan 20, 2015 at 9:36 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Tue 20-01-15 09:30:02, Johannes Weiner wrote:
-> > [...]
-> >> Another possibility would be "infinity",
-> >
-> > yes infinity definitely sounds much better to me.
+> Print a warning when all allocation tries have been failed
+> and the function is about to return NULL. This prepares for
+> calling the function with __GFP_NOWARN to suppress
+> allocation failure warnings before all fall-backs have
+> failed.
 > 
-> FWIW, I prefer "max". It's shorter and clear enough. I don't think
-> there's anything ambiguous about "the memory max limit is at its
-> maximum". No need to introduce a different term.
+> Signed-off-by: Joerg Roedel <jroedel@suse.de>
+> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
 
-While I don't feel too strongly, I do agree with this.  I don't see
-much potential for confusion, and "max" is much shorter and sweeter.
+...
 
-Michal?
+> @@ -677,6 +677,13 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+>  	memset(ret, 0, size);
+>  
+>  	return ret;
+> +
+> +err_warn:
+> +	pr_warn("swiotlb: coherent allocation failed for device %s size=%zu\n",
+> +		dev_name(hwdev), size);
+> +	dump_stack();
+
+Are we really sure we want to be that noisy about it? What happens if
+that fails, we can't do DMA anymore or should we free some precious DMA
+memory, as a compromise?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+ECO tip #101: Trim your mails when you reply.
+--
