@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbbAWI1T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:27:19 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:35451 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204AbbAWI1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:27:17 -0500
-Date: Fri, 23 Jan 2015 00:27:09 -0800
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: Zidan Wang <b50113@freescale.com>
-Cc: Zidan Wang <zidan.wang@freescale.com>, timur@tabi.org, Xiubo.Lee@gmail.com,
-        lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel][PATCH 2/3] ASoC: fsl_sai: Add support for tdm slots
- operation
-Message-ID: <20150123082708.GA3408@Alpha>
-References: <1421756480-7055-1-git-send-email-zidan.wang@freescale.com>
- <1421756480-7055-3-git-send-email-zidan.wang@freescale.com>
- <20150121180801.GA3361@Alpha>
- <20150122045515.GA3467@b50113>
- <20150122054409.GA7748@Asurada>
- <20150122062004.GA7046@b50113>
- <20150122235019.GA3204@Asurada-GSX>
- <20150123025507.GA2382@b50113>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753783AbbAWI3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 03:29:52 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:60258 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651AbbAWI3t convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 23 Jan 2015 03:29:49 -0500
+Message-Id: <54C2148E02000078000588FB@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Fri, 23 Jan 2015 08:29:50 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <james.t.kukunas@linux.intel.com>, <neilb@suse.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/raid6: correctly check for assembler capabilities
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20150123025507.GA2382@b50113>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:55:09AM +0800, Zidan Wang wrote:
-> I have another question.
-> 
-> Can a channel have several slots? Or channel just means slot.
+Just like for AVX2 (which simply needs an #if -> #ifdef conversion),
+SSSE3 assembler support should be checked for before using it.
 
-Strictly speaking, a channel surely may have several slots IMO.
-The idea for TDM, even for I2S, left channel can bear multiple
-slots -- each may be masked and then received by a different
-peripheral.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Jim Kukunas <james.t.kukunas@linux.intel.com>
+Cc: Neil Brown <neilb@suse.de>
+---
+ arch/x86/Makefile       |    1 +
+ lib/raid6/algos.c       |    2 +-
+ lib/raid6/recov_avx2.c  |    2 +-
+ lib/raid6/recov_ssse3.c |    6 ++++++
+ 4 files changed, 9 insertions(+), 2 deletions(-)
 
-The reason I've said that much against your code is not fully
-objection against your idea of using Slot Per Channel but for
-the implementation -- you divided them and then multiplied them
-again while your true motivation was just to calculate the bclk.
-And I could not understand it without seeing your later explain.
-Code and things would be much easier if you make it straight
-forward.
+--- 3.19-rc5/arch/x86/Makefile
++++ 3.19-rc5-raid6-SSSE3/arch/x86/Makefile
+@@ -148,6 +148,7 @@ cfi-sections := $(call as-instr,.cfi_sec
+ 
+ # does binutils support specific instructions?
+ asinstr := $(call as-instr,fxsaveq (%rax),-DCONFIG_AS_FXSAVEQ=1)
++asinstr += $(call as-instr,pshufb %xmm0$(comma)%xmm0,-DCONFIG_AS_SSSE3=1)
+ asinstr += $(call as-instr,crc32l %eax$(comma)%eax,-DCONFIG_AS_CRC32=1)
+ avx_instr := $(call as-instr,vxorps %ymm0$(comma)%ymm1$(comma)%ymm2,-DCONFIG_AS_AVX=1)
+ avx2_instr :=$(call as-instr,vpbroadcastb %xmm0$(comma)%ymm1,-DCONFIG_AS_AVX2=1)
+--- 3.19-rc5/lib/raid6/algos.c
++++ 3.19-rc5-raid6-SSSE3/lib/raid6/algos.c
+@@ -89,10 +89,10 @@ void (*raid6_datap_recov)(int, size_t, i
+ EXPORT_SYMBOL_GPL(raid6_datap_recov);
+ 
+ const struct raid6_recov_calls *const raid6_recov_algos[] = {
+-#if (defined(__i386__) || defined(__x86_64__)) && !defined(__arch_um__)
+ #ifdef CONFIG_AS_AVX2
+ 	&raid6_recov_avx2,
+ #endif
++#ifdef CONFIG_AS_SSSE3
+ 	&raid6_recov_ssse3,
+ #endif
+ 	&raid6_recov_intx1,
+--- 3.19-rc5/lib/raid6/recov_avx2.c
++++ 3.19-rc5-raid6-SSSE3/lib/raid6/recov_avx2.c
+@@ -8,7 +8,7 @@
+  * of the License.
+  */
+ 
+-#if CONFIG_AS_AVX2
++#ifdef CONFIG_AS_AVX2
+ 
+ #include <linux/raid/pq.h>
+ #include "x86.h"
+--- 3.19-rc5/lib/raid6/recov_ssse3.c
++++ 3.19-rc5-raid6-SSSE3/lib/raid6/recov_ssse3.c
+@@ -7,6 +7,8 @@
+  * of the License.
+  */
+ 
++#ifdef CONFIG_AS_SSSE3
++
+ #include <linux/raid/pq.h>
+ #include "x86.h"
+ 
+@@ -330,3 +332,7 @@ const struct raid6_recov_calls raid6_rec
+ #endif
+ 	.priority = 1,
+ };
++
++#else
++#warning "your version of binutils lacks SSSE3 support"
++#endif
 
-But actually I don't mind if you feel comfortable to make a
-detour like that, but as I commented at the first place. Code
-like that should be companied with comments to tell its meaning.
-And I still don't fully understand why you override the channels
-for monaural cases.
 
-> > And another problem of your patch is the configurations for FRSZ and
-> > xMR fields. For monaural case, the channels == 1, the current code
-> > passes it directly to set them while your code overrides it to 2.
-> > 
-> > I'm not sure if you've tested the monaural case and confirmed it works.
-> > But, apparently, the configurations look pretty different.
 
-> I have tested the mono case, it works well.
-
-I just ran a simple test with speaker-test -Dhw:0 -c1, it works
-but the FRSZ value is changed to 0x1 for a monaural case (0x0
-originally). Setting FRSZ to 0x0 makes more sense to me since
-it looks like the configuration for active slot number. But
-that depends on the internal logic design of SAI so it may be
-better for you to double check with IC owner and run more tests.
-If you confirm that, I for sure will be willing to ignore the
-change here.
-
-Nicolin
