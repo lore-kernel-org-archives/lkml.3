@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814AbbAWJqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:46:00 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:53989 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753589AbbAWJp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:45:56 -0500
-Date: Fri, 23 Jan 2015 10:45:53 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Dmitry Osipenko <digetx@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Bob Mottram <bob.mottram@codethink.co.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] i2c: tegra: Maintain CPU endianness
-Message-ID: <20150123094552.GD3835@ulmo>
-References: <1421756555-20266-1-git-send-email-digetx@gmail.com>
- <20150122074001.GB427@ulmo>
- <CAAVeFuJHST9VOWXe_cZNvLmfGdamuU4HSgdZC6EoQvrsGFt+Fg@mail.gmail.com>
- <54C115D1.10206@gmail.com>
- <54C12010.8040504@gmail.com>
- <54C130EA.2050505@gmail.com>
+	id S1754839AbbAWJrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:47:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752920AbbAWJrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 04:47:33 -0500
+Date: Fri, 23 Jan 2015 10:46:51 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
+        peterz@infradead.org, hbabu@us.ibm.com,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 1/7] perf: provide sysfs_show for struct
+ perf_pmu_events_attr
+Message-ID: <20150123094651.GB4654@krava.brq.redhat.com>
+References: <1419234532-22657-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <1419234532-22657-2-git-send-email-sukadev@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bjuZg6miEcdLYP6q"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C130EA.2050505@gmail.com>
+In-Reply-To: <1419234532-22657-2-git-send-email-sukadev@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Dec 21, 2014 at 11:48:46PM -0800, Sukadev Bhattiprolu wrote:
+> From: Cody P Schafer <cody@linux.vnet.ibm.com>
+> 
+> (struct perf_pmu_events_attr) is defined in include/linux/perf_event.h,
+> but the only "show" for it is in x86 and contains x86 specific stuff.
+> 
+> Make a generic one for those of us who are just using the event_str.
+> 
+> CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+> CC: Haren Myneni <hbabu@us.ibm.com>
+> CC: Cody P Schafer <dev@codyps.com>
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  include/linux/perf_event.h | 3 +++
+>  kernel/events/core.c       | 8 ++++++++
+>  2 files changed, 11 insertions(+)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 486e84c..58f59bd 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -897,6 +897,9 @@ struct perf_pmu_events_attr {
+>  	const char *event_str;
+>  };
+>  
+> +ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
+> +			      char *page);
+> +
+>  #define PMU_EVENT_ATTR(_name, _var, _id, _show)				\
+>  static struct perf_pmu_events_attr _var = {				\
+>  	.attr = __ATTR(_name, 0444, _show, NULL),			\
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index af0a5ba..1808d0e 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -8276,6 +8276,14 @@ void __init perf_event_init(void)
+>  		     != 1024);
+>  }
+>  
+> +ssize_t perf_event_sysfs_show(struct device *dev, struct device_attribute *attr,
+> +			      char *page)
+> +{
+> +	struct perf_pmu_events_attr *pmu_attr =
+> +		container_of(attr, struct perf_pmu_events_attr, attr);
+> +	return sprintf(page, "%s\n", pmu_attr->event_str);
+> +}
+> +
 
---bjuZg6miEcdLYP6q
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Stephane just added same local one for RAPL pmu:
+  433678bdc6ed perf/rapl: Fix sysfs_show() initialization for RAPL PMU
 
-On Thu, Jan 22, 2015 at 08:18:34PM +0300, Dmitry Osipenko wrote:
-> 22.01.2015 19:06, Dmitry Osipenko =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
-> >22.01.2015 18:22, Dmitry Osipenko =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
-> >>22.01.2015 10:55, Alexandre Courbot =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
-> >>>On Thu, Jan 22, 2015 at 4:40 PM, Thierry Reding
-> >>><thierry.reding@gmail.com> wrote:
-> >>>>
-> >>>>Should this not technically be le32_to_cpu() since the data originates
-> >>>>from the I2C controller?
-> >>
-> >>No, i2c_readl returns value in CPU endianness, so it's correct. But for
-> >>i2c_writel should be used le32_to_cpu(), since it takes value in CPU en=
-dianness.
-> >>It's my overlook, V2 is coming.
-> >>
-> >>>>
-> >>>>Why does this have to be initialized to 0 now?
-> >>>
-> >>>I suspect this is because we are going to memcpy less than 4 bytes
-> >>>into it, but I cannot figure out how that memcpy if guaranteed to
-> >>>produce the expected result for both endiannesses.
-> >>>
-> >>That's correct. Memcpy is working with bytes, so it doesn't care about
-> >>endianness and produces expected result, since I2C message is char arra=
-y.
-> >>
-> >I'll spend some more time reviewing, to see if nullifying should go as s=
-eparate
-> >patch.
-> >
-> Well, I2C_FIFO_STATUS returns 8-bit value. The rest of bits very likely to
-> be RAZ, however I don't see anything on it in documentation. In that case=
- it
-> won't cause any problems with LE value and nullifying is only needed for =
-BE
-> mode.
+with additional pmu_attr->event_str check
 
-What does I2C_FIFO_STATUS have to do with anything?
+same for PMU_EVENT_ATTR_STRING macro
 
-My point was more that we already tell hardware how much data is to be
-transferred (via the packet header in tegra_i2c_xfer_msg()), hence the
-hardware shouldn't care whether the FIFO is padded with random data or
-zeros.
+if you could add this additional check plus the id initialization
+in the PMU_EVENT_ATTR_STRING macro, we could use the generic
+version in RAPL object as well
 
-Thierry
-
---bjuZg6miEcdLYP6q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUwhhQAAoJEN0jrNd/PrOhQmIP+gNfs4SsJkc4AZNmiU+XbDl6
-7euJQfIlEAc0Qu0flxIBdCfd+QrfvYuBnWyxpPDWKYIIUVmb7tEzzBrj2xX7Tgbj
-voZuV9p30M7MXq2IC62PH45GOtDA4muW+Ma0j2BUmute6BlhvN1H73WnWxcQyXdw
-SJNn37fAzOCFOiJgbmHS77bJgXydMIl+bXX+MV6T8RHTIB1hZzf6VQMvVrKOzCOU
-3zGRSi+us+iJNd17/fw/DmfN6ihaSI6rj/ZuR7fUwBWBbCFqBJH5bBB7GcJHLacU
-Yaue2r6oUF4zMn2VB45SORM8mGlGkFJEGqepm+35vkVMp8qp78ATAbXQslEA/uUy
-Eri2+MQrs6jl+vq79GxsEUVnY08j13BzY4LozRy0c1nLN5t1sFpi4ZEo/RvK5Ntv
-yt8eA1zvCxXX1zfiwqlgHGSK19lvbt0f4ScBYzDw1pcD8C/W7bDaFAXJQGSnW366
-WD+q4pjzvXzQhwX4kQ/ystq3sB1AuX3TAfD8HTnRdxazNbApNowVp9tOcu0Ecuqt
-pzC0DrAyJ9RmayakzY78XDlKT8qt0y0eMzyenuqqYeuV7ZG7auIVqjZJu2XsTRA9
-FtLa3PmZZny7vtY8iWq0QPApxogOsrWBGTQiSihwoYbYDlwea/IkwW36uDOcii39
-6t4QKjDgIpseKfP2itR5
-=VPuR
------END PGP SIGNATURE-----
-
---bjuZg6miEcdLYP6q--
+thanks,
+jirka
