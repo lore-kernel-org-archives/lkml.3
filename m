@@ -1,144 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892AbbAWIIW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 03:08:22 -0500
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:46597 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849AbbAWIIR convert rfc822-to-8bit (ORCPT
+	id S1753266AbbAWH4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 02:56:37 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:53703 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271AbbAWH4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 03:08:17 -0500
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH v2] ARM: at91: fix PM initialization for newer SoCs
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <1421942867-11309-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Fri, 23 Jan 2015 15:50:13 +0800
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        linux-kernel@vger.kernel.org, Wenyou Yang <wenyou.yang@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D0221EB9-B6B3-4860-83D6-427E3C718193@jcrosoft.com>
-References: <1421942584-2364-1-git-send-email-nicolas.ferre@atmel.com> <1421942867-11309-1-git-send-email-nicolas.ferre@atmel.com>
-To: Nicolas FERRE <nicolas.ferre@atmel.com>
-X-Mailer: Apple Mail (2.1993)
-X-Ovh-Tracer-Id: 18246615366633040748
-X-Ovh-Remote: 80.15.34.121 (lmontsouris-656-1-34-121.w80-15.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejkedrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejkedrtdelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 23 Jan 2015 02:56:35 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-7c-54c1feb01090
+From: Kukjin Kim <kgene@kernel.org>
+To: "'Chanwoo Choi'" <cw00.choi@samsung.com>, myungjoo.ham@samsung.com,
+        kgene@kernel.org
+Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
+        mark.rutland@arm.com, a.kesavan@samsung.com, tomasz.figa@gmail.com,
+        k.kozlowski@samsung.com, b.zolnierkie@samsung.com, robh+dt@kernel.org,
+        inki.dae@samsung.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+References: <1421737809-4010-1-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1421737809-4010-1-git-send-email-cw00.choi@samsung.com>
+Subject: RE: [PATCH v9 0/7] devfreq: Add devfreq-event class to provide raw
+ data for devfreq device
+Date: Fri, 23 Jan 2015 16:56:32 +0900
+Message-id: <0dd401d036e2$1a4431d0$4ecc9570$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: ko
+Thread-index: AQJfN+xh9VpZWCYVKIRtX/Pihw1mXpuvUvng
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+Zge6GfwdDDG5uNbF4vGYxk8XGGetZ
+	La5/ec5qMen+BBaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLK4
+	3biCzeLxirfsFq17j7BbrNr1h9FBwGPNvDWMHjtn3WX3WLznJZPHplWdbB6bl9R79G1Zxejx
+	eZNcAHsUl01Kak5mWWqRvl0CV0ZbT1DBbfGKlXvfszUw3hfsYuTkkBAwkVi0cxUThC0mceHe
+	erYuRi4OIYFljBLvnm9mgSlq7VzABmILCUxnlDj6qg6i6C+Q/XceUIKDg01AWaKxSR+kRlhA
+	S2LhliawXhGBCIk37VfAhjILPGaSePZiKhPEIBeJ5s/vwWxOAVeJ7VsuM0I0p0rsO3aECWQm
+	i4CqxJ4NySBhXgELiamNvxghbEGJH5Pvgc1nBtq1fudxJghbXmLzmrfMEDcrSOw4+5oRIi4i
+	se/FO0aIe4wk7s34yw5yj4TAHg6J80e2gTWzCAhIfJt8iAVkr4SArMSmA1BzJCUOrrjBMoFR
+	chaS1bOQrJ6FZPUsJOsWMLKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAhJHhN3MN4/YH2I
+	UYCDUYmHt2HLwRAh1sSy4srcQ4ymQBdNZJYSTc4Hpqi8knhDYzMjC1MTU2Mjc0szJXFeHemf
+	wUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYy1l7H5nrXNSIFN7g1lvvbftjwaVcrodfVq4X
+	/2gVGRGS3l8qLvl3ZtyqJpcjsVtO3Vj0wltT8e3SIodJZr1P2xWL3t277vMqY8Isr/aGJjc7
+	GcWF11qedSUx2PPIzayrEmzccaVHO0v9w++rOYf2e0Seqdy/47Dv1SZdB8+XTzK+Jf/67r1R
+	iaU4I9FQi7moOBEAq0XUFxkDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAKsWRmVeSWpSXmKPExsVy+t9jQd0N/w6GGBzermfxeM1iJouNM9az
+	Wlz/8pzVYtL9CSwWr18YWvQ/fs1scbbpDbvFpsfXWC0u75rDZvG59wijxYzz+5gsll6/yGRx
+	u3EFm8XjFW/ZLVr3HmG3WLXrD6ODgMeaeWsYPXbOusvusXjPSyaPTas62Tw2L6n36NuyitHj
+	8ya5APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfM
+	HKDjlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZbT1BBbfFK1bufc/W
+	wHhfsIuRk0NCwESitXMBG4QtJnHh3nowW0hgOqPE0Vd1XYxcQPZfIPvvPKAEBwebgLJEY5M+
+	SI2wgJbEwi1NLCC2iECExJv2K2wg9cwCj5kknr2YygQxyEWi+fN7MJtTwFVi+5bLjBDNqRL7
+	jh1hApnJIqAqsWdDMkiYV8BCYmrjL0YIW1Dix+R7YPOZgXat33mcCcKWl9i85i0zxM0KEjvO
+	vmaEiItI7HvxjhHiHiOJezP+sk9gFJ6FZNQsJKNmIRk1C0n7AkaWVYyiqQXJBcVJ6bmGesWJ
+	ucWleel6yfm5mxjBqemZ1A7GlQ0WhxgFOBiVeHgbthwMEWJNLCuuzD3EKMHBrCTCG/cFKMSb
+	klhZlVqUH19UmpNafIjRFOjRicxSosn5wLSZVxJvaGxiZmRpZGZhZGJuriTOq2TfFiIkkJ5Y
+	kpqdmlqQWgTTx8TBKdXAuHn6upBlzTu+ngj0edrIGTpT4e9G7h9P/081WDotgjeIq2ndjrB/
+	P4P3NSbpe1zqTfsjtfqD7cLCVgkx3gk8OVJnGnq51a+m3bWYLhlwZOnitdsO9sZFVNtoNX8L
+	Wie+d9unb5LX2IWNN65LV+TcXme8MtLQdRb3+3WO75I3vHk+Z+FhfvcTfEosxRmJhlrMRcWJ
+	ACtPj39jAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Chanwoo Choi wrote:
+> 
+Hi,
 
-> On Jan 23, 2015, at 12:07 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> This patchset add new devfreq_event class to provide raw data to determine
+> current utilization of device  which is used for devfreq governor.
 > 
-> Newer SoCs: at91sam9x5, at91sam9n12, sama5d3 and sama5d4 embed a DDR controller
-> and have a different PMC status register layout than the at91sam9g45. Create
-> another at91_sam9x5_pm_init() function to match this compatibility.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> arch/arm/mach-at91/board-dt-sam9.c  | 20 ++++++++++++++++++++
-> arch/arm/mach-at91/board-dt-sama5.c |  2 +-
-> arch/arm/mach-at91/generic.h        |  2 ++
-> arch/arm/mach-at91/pm.c             |  7 +++++++
-> 4 files changed, 30 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-at91/board-dt-sam9.c b/arch/arm/mach-at91/board-dt-sam9.c
-> index 0fe1ced608c5..c8252ddac6f0 100644
-> --- a/arch/arm/mach-at91/board-dt-sam9.c
-> +++ b/arch/arm/mach-at91/board-dt-sam9.c
-> @@ -61,3 +61,23 @@ DT_MACHINE_START(at91sam9g45_dt, "Atmel AT91SAM9G45")
-> 	.init_machine	= sam9g45_dt_device_init,
-> 	.dt_compat	= at91_9g45_board_compat,
-> MACHINE_END
-> +
-> +static void __init sam9x5_dt_device_init(void)
-> +{
-> +	at91_sam9x5_pm_init();
-> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> +}
-> +
-> +static const char *at91_9x5_board_compat[] __initconst = {
-> +	"atmel,at91sam9x5",
-> +	"atmel,at91sam9n12",
-> +	NULL
-> +};
-> +
-> +DT_MACHINE_START(at91sam9x5_dt, "Atmel AT91SAM9”)
-sam9? sam9x5
-> +	/* Maintainer: Atmel */
-> +	.map_io		= at91_map_io,
-> +	.init_early	= at91_dt_initialize,
-> +	.init_machine	= sam9x5_dt_device_init,
-> +	.dt_compat	= at91_9x5_board_compat,
-> +MACHINE_END
+Yes, would be nice to use common framework something like the devfreq_event you created :)
 
-why a second START instead of a pdata?
+> The following description explains the feature of two kind of devfreq class:
+> - devfreq class (existing)
+>  : devfreq consumer device use raw data from devfreq_event device for
+>    determining proper current system state and change voltage/frequency
+>    dynamically using various governors.
+> - devfreq_event class (new)
+>  : Provide measured raw data to devfreq device for governor
 
-and create a second dt compatible
-e
-Best Regards,
-J.
-> diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-> index 44d372a22a29..b7338966c8ab 100644
-> --- a/arch/arm/mach-at91/board-dt-sama5.c
-> +++ b/arch/arm/mach-at91/board-dt-sama5.c
-> @@ -28,7 +28,7 @@
+[...]
+
+> Chanwoo Choi (7):
+>   devfreq: event: Add new devfreq_event class to provide basic data for devfreq governor
+>   devfreq: event: Add exynos-ppmu devfreq-event driver
+>   devfreq: event: Add documentation for exynos-ppmu devfreq-event driver
+>   ARM: dts: Add PPMU dt node for Exynos3250 SoC
+>   ARM: dts: Add PPMU dt node for Exynos4 SoCs
+>   ARM: dts: exynos: Add PPMU node for Exynos3250-based Rinato/Monk board
+>   ARM: dts: exynos: Add PPMU node for Exynos4412-based TRATS2 board
 > 
-> static void __init sama5_dt_device_init(void)
-> {
-> -	at91_sam9260_pm_init();
-> +	at91_sam9x5_pm_init();
-> 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> }
+>  .../bindings/devfreq/event/exynos-ppmu.txt         | 110 +++++
+>  arch/arm/boot/dts/exynos3250-monk.dts              |  40 ++
+>  arch/arm/boot/dts/exynos3250-rinato.dts            |  40 ++
+>  arch/arm/boot/dts/exynos3250.dtsi                  |  74 +++
+>  arch/arm/boot/dts/exynos4.dtsi                     | 108 +++++
+>  arch/arm/boot/dts/exynos4210.dtsi                  |   8 +
+>  arch/arm/boot/dts/exynos4412-trats2.dts            |  40 ++
+>  drivers/devfreq/Kconfig                            |   2 +
+>  drivers/devfreq/Makefile                           |   6 +-
+>  drivers/devfreq/devfreq-event.c                    | 498 +++++++++++++++++++++
+>  drivers/devfreq/event/Kconfig                      |  25 ++
+>  drivers/devfreq/event/Makefile                     |   2 +
+>  drivers/devfreq/event/exynos-ppmu.c                | 374 ++++++++++++++++
+>  drivers/devfreq/event/exynos-ppmu.h                |  93 ++++
+>  include/linux/devfreq-event.h                      | 196 ++++++++
+>  15 files changed, 1615 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/devfreq/event/exynos-ppmu.txt
+>  create mode 100644 drivers/devfreq/devfreq-event.c
+>  create mode 100644 drivers/devfreq/event/Kconfig
+>  create mode 100644 drivers/devfreq/event/Makefile
+>  create mode 100644 drivers/devfreq/event/exynos-ppmu.c
+>  create mode 100644 drivers/devfreq/event/exynos-ppmu.h
+>  create mode 100644 include/linux/devfreq-event.h
 > 
-> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-> index 1e60faec2eba..709570cbef2b 100644
-> --- a/arch/arm/mach-at91/generic.h
-> +++ b/arch/arm/mach-at91/generic.h
-> @@ -32,10 +32,12 @@ extern void at91sam9_idle(void);
-> extern void __init at91_rm9200_pm_init(void);
-> extern void __init at91_sam9260_pm_init(void);
-> extern void __init at91_sam9g45_pm_init(void);
-> +extern void __init at91_sam9x5_pm_init(void);
-> #else
-> void __init at91_rm9200_pm_init(void) { }
-> void __init at91_sam9260_pm_init(void) { }
-> void __init at91_sam9g45_pm_init(void) { }
-> +void __init at91_sam9x5_pm_init(void) { }
-> #endif
-> 
-> #endif /* _AT91_GENERIC_H */
-> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-> index 81f2f12d3cc1..87c1fd8aa1b6 100644
-> --- a/arch/arm/mach-at91/pm.c
-> +++ b/arch/arm/mach-at91/pm.c
-> @@ -306,3 +306,10 @@ void __init at91_sam9g45_pm_init(void)
-> 	at91_pm_data.memctrl = AT91_MEMCTRL_DDRSDR;
-> 	return at91_pm_init();
-> }
-> +
-> +void __init at91_sam9x5_pm_init(void)
-> +{
-> +	at91_pm_data.uhp_udp_mask = AT91SAM926x_PMC_UHP | AT91SAM926x_PMC_UDP;
-> +	at91_pm_data.memctrl = AT91_MEMCTRL_DDRSDR;
-> +	return at91_pm_init();
-> +}
-> -- 
-> 2.1.3
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> --
+
+Looks good to me.
+
+Myungjoo, shall I take DT changes in this series into Samsung tree?
+
+4/7 ARM: dts: Add PPMU dt node for Exynos3250 SoC
+5/7 ARM: dts: Add PPMU dt node for Exynos4 SoCs
+6/7 ARM: dts: exynos: Add PPMU node for Exynos3250-based Rinato/Monk board
+7/7 ARM: dts: exynos: Add PPMU node for Exynos4412-based TRATS2 board
+
+Thanks,
+Kukjin
 
