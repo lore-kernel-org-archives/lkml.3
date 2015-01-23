@@ -1,101 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbbAWUlC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 15:41:02 -0500
-Received: from mga03.intel.com ([134.134.136.65]:27345 "EHLO mga03.intel.com"
+	id S1755914AbbAWUpq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 15:45:46 -0500
+Received: from mail.efficios.com ([78.47.125.74]:59992 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750966AbbAWUks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 15:40:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,456,1418112000"; 
-   d="scan'208";a="674998219"
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        H Peter Anvin <h.peter.anvin@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>
-Subject: [PATCH v2 2/2] x86: Add support for the clwb instruction
-Date: Fri, 23 Jan 2015 13:40:28 -0700
-Message-Id: <1422045628-16225-3-git-send-email-ross.zwisler@linux.intel.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1422045628-16225-1-git-send-email-ross.zwisler@linux.intel.com>
-References: <1422045628-16225-1-git-send-email-ross.zwisler@linux.intel.com>
+	id S1751025AbbAWUpo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 15:45:44 -0500
+Date: Fri, 23 Jan 2015 20:45:46 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: =?utf-8?B?SsOpcsOpbWll?= Galarneau 
+	<jeremie.galarneau@efficios.com>
+Cc: Wang Nan <wangnan0@huawei.com>, Jiri Olsa <jolsa@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org
+Message-ID: <1074266107.40857.1422045946295.JavaMail.zimbra@efficios.com>
+In-Reply-To: <CA+jJMxu-QPVQTW0rSwUQH0dCy=mZo+0LimnPMVhOoJ9-ybc-9A@mail.gmail.com>
+References: <20150120130609.GC15315@krava.brq.redhat.com> <1421810634-1373-1-git-send-email-wangnan0@huawei.com> <20150121141101.GA6835@krava.brq.redhat.com> <CA+jJMxtaEF587MyW00YQ_7d7BYmW-QpcgQ8g1KByYWwzMg-_cw@mail.gmail.com> <54C0547B.7000407@huawei.com> <CA+jJMxu-QPVQTW0rSwUQH0dCy=mZo+0LimnPMVhOoJ9-ybc-9A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf: convert: fix duplicate field names and avoid
+ reserved keywords.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [173.246.22.116]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF35 (Linux)/8.0.7_GA_6021)
+Thread-Topic: perf: convert: fix duplicate field names and avoid reserved keywords.
+Thread-Index: coiQeLP5ZsFK8rrUXWduzcGmRVB2Yw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the new clwb instruction.  This instruction was
-announced in the document "Intel Architecture Instruction Set Extensions
-Programming Reference" with reference number 319433-022.
+----- Original Message -----
+> From: "Jérémie Galarneau" <jeremie.galarneau@efficios.com>
+> To: "Wang Nan" <wangnan0@huawei.com>
+> Cc: "Jiri Olsa" <jolsa@redhat.com>, "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>, "Li Zefan"
+> <lizefan@huawei.com>, linux-kernel@vger.kernel.org, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Sent: Wednesday, January 21, 2015 10:14:16 PM
+> Subject: Re: [PATCH 1/2] perf: convert: fix duplicate field names and avoid reserved keywords.
+> 
+> On Wed, Jan 21, 2015 at 8:38 PM, Wang Nan <wangnan0@huawei.com> wrote:
+> > On 2015/1/21 23:56, Jérémie Galarneau wrote:
+> >> On Wed, Jan 21, 2015 at 9:11 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> >>> On Wed, Jan 21, 2015 at 11:23:54AM +0800, Wang Nan wrote:
+> >>>> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
+> >>>> When dealing with them, perf convert to ctf meets some problem:
+> >>>>
+> >>>>  1. If a parameter with name 'nr', it will duplicate syscall's
+> >>>>     common field 'nr'. One such syscall is io_submit().
+> >>>>
+> >>>>  2. If a parameter with name 'event', it is denied to be inserted
+> >>>>     because 'event' is a babeltrace keywork. One such syscall is
+> >>>>     epoll_ctl.
+> >>>
+> >>> hum, so this problem 2 is detectable only via
+> >>> bt_ctf_event_class_add_field function?
+> >>>
+> >>> how big is the blaklist?
+> >>>
+> >>
+> >> The blacklist is defined by the CTF specification here [1].
+> >>
+> >> Jérémie
+> >>
+> >> [1]
+> >> http://git.efficios.com/?p=ctf.git;a=blob;f=common-trace-format-specification.txt;h=abe4fb70fff7f17f6e8242f313fb74bff44cf89a;hb=HEAD#l1477
+> >
+> > Is there any possibility that the someone expand the list?
+> >
+> 
+> Good question. There is discussion around a v1.9 version of the CTF
+> spec going on at the moment (which should not affect the Babeltrace
+> API).
+> 
+> As far as I know, adding "__attribute__" has been discussed. CC'ing
+> Mathieu Desnoyers who may have other extensions in mind.
 
-https://software.intel.com/sites/default/files/managed/0d/53/319433-022.pdf
+I've had in mind adding an optional $ prefix to identifiers so they
+don't clash with reserved keywords. This would have to go into a
+CTF 1.9 though.
 
-Regarding the details of how the alternatives assembly is set up, we
-need one additional byte at the beginning of the clflush so that we can
-flip it into a clflushopt by changing that byte into a 0x66 prefix.  Two
-options are to either insert a 1 byte ASM_NOP1, or to add a 1 byte
-NOP_DS_PREFIX.  Both have no functional effect with the plain clflush,
-but I've been told that executing a clflush + prefix should be faster
-than executing a clflush + NOP.
+Meanwhile, validating that there are no identifier clash in babeltrace
+seems like a good idea. Alternatively, prefixing all identifiers with
+an underscore eliminates those clashes, and Babeltrace even strip those
+underscore before printing, but since underscore is a character that
+is allowed within keywords, this can bring interesting clash when
+a keyword actually begins with an underscore, so I would like to
+replace those by $.
 
-We had to hard code the assembly for clwb because, lacking the ability
-to assemble the clwb instruction itself, the next closest thing is to
-have an xsaveopt instruction with a 0x66 prefix.  Unfortunately xsaveopt
-itself is also relatively new, and isn't included by all the GCC
-versions that the kernel needs to support.
+Thoughts ?
 
-I tested this patch with the following versions of GCC:
-gcc (GCC) 4.8.3 20140911 (Red Hat 4.8.3-7)
-gcc (GCC) 4.1.2 20080704 (Red Hat 4.1.2-55)
+Thanks,
 
-Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
-Cc: H Peter Anvin <h.peter.anvin@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Borislav Petkov <bp@alien8.de>
----
- arch/x86/include/asm/cpufeature.h    |  1 +
- arch/x86/include/asm/special_insns.h | 14 ++++++++++++++
- 2 files changed, 15 insertions(+)
+Mathieu
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index dfdd689..dc91747 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -222,6 +222,7 @@
- #define X86_FEATURE_SMAP	( 9*32+20) /* Supervisor Mode Access Prevention */
- #define X86_FEATURE_PCOMMIT	( 9*32+22) /* PCOMMIT instruction */
- #define X86_FEATURE_CLFLUSHOPT	( 9*32+23) /* CLFLUSHOPT instruction */
-+#define X86_FEATURE_CLWB	( 9*32+24) /* CLWB instruction */
- #define X86_FEATURE_AVX512PF	( 9*32+26) /* AVX-512 Prefetch */
- #define X86_FEATURE_AVX512ER	( 9*32+27) /* AVX-512 Exponential and Reciprocal */
- #define X86_FEATURE_AVX512CD	( 9*32+28) /* AVX-512 Conflict Detection */
-diff --git a/arch/x86/include/asm/special_insns.h b/arch/x86/include/asm/special_insns.h
-index 1709a2e..8883cbc 100644
---- a/arch/x86/include/asm/special_insns.h
-+++ b/arch/x86/include/asm/special_insns.h
-@@ -199,6 +199,20 @@ static inline void clflushopt(volatile void *__p)
- 		       "+m" (*(volatile char __force *)__p));
- }
- 
-+static inline void clwb(volatile void *__p)
-+{
-+	volatile struct { char x[64]; } *p = __p;
-+
-+	asm volatile(ALTERNATIVE_2(
-+		".byte " __stringify(NOP_DS_PREFIX) "; clflush (%[pax])",
-+		".byte 0x66; clflush (%[pax])", /* clflushopt (%%rax) */
-+		X86_FEATURE_CLFLUSHOPT,
-+		".byte 0x66, 0x0f, 0xae, 0x30",  /* clwb (%%rax) */
-+		X86_FEATURE_CLWB)
-+		: [p] "+m" (*p)
-+		: [pax] "a" (p));
-+}
-+
- static inline void pcommit(void)
- {
- 	alternative(ASM_NOP4, ".byte 0x66, 0x0f, 0xae, 0xf8",
+> 
+> Jérémie
+> 
+> >>
+> >>> SNIP
+> >>>
+> >>>> +}
+> >>>> +
+> >>>>  static int add_tracepoint_fields_types(struct ctf_writer *cw,
+> >>>>                                      struct format_field *fields,
+> >>>>                                      struct bt_ctf_event_class
+> >>>>                                      *event_class)
+> >>>> @@ -577,6 +609,9 @@ static int add_tracepoint_fields_types(struct
+> >>>> ctf_writer *cw,
+> >>>>       for (field = fields; field; field = field->next) {
+> >>>>               struct bt_ctf_field_type *type;
+> >>>>               unsigned long flags = field->flags;
+> >>>> +             struct bt_ctf_field_type *f = NULL;
+> >>>> +             char *name;
+> >>>> +             int dup = 1;
+> >>>>
+> >>>>               pr2("  field '%s'\n", field->name);
+> >>>>
+> >>>> @@ -595,14 +630,36 @@ static int add_tracepoint_fields_types(struct
+> >>>> ctf_writer *cw,
+> >>>>               if (flags & FIELD_IS_ARRAY)
+> >>>>                       type = bt_ctf_field_type_array_create(type,
+> >>>>                       field->arraylen);
+> >>>>
+> >>>> -             ret = bt_ctf_event_class_add_field(event_class, type,
+> >>>> -                             field->name);
+> >>>> +             /* Check name duplication */
+> >>>> +             name = field->name;
+> >>>
+> >>> could you please put this in separated function like 'get_field_name(..)'
+> >>> so we dont polute this function even more
+> >>>
+> >>>                 name == get_field_name(...)
+> >>>                 if (!name)
+> >>>                         error path
+> >>>
+> >>>
+> >>> thanks,
+> >>> jirka
+> >>
+> >>
+> >>
+> >
+> >
+> 
+> 
+> 
+> --
+> Jérémie Galarneau
+> EfficiOS Inc.
+> http://www.efficios.com
+> 
+
 -- 
-1.9.3
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
