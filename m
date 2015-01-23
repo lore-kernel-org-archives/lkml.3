@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbbAWHkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 02:40:43 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:57912 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121AbbAWHkj (ORCPT
+	id S1753145AbbAWHo7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 02:44:59 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:48783 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432AbbAWHo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 02:40:39 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-6d-54c1faf4612a
-Message-id: <54C1FAF3.9090701@samsung.com>
-Date: Fri, 23 Jan 2015 16:40:35 +0900
-From: Beomho Seo <beomho.seo@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.4.0
+	Fri, 23 Jan 2015 02:44:57 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-92-54c1fbf7d1a0
+Message-id: <54C1FBF6.4040405@samsung.com>
+Date: Fri, 23 Jan 2015 16:44:54 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
 MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>,
-        Jaewon Kim <jaewon02.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-pm@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        Sebastian Reichel <sre@kernel.org>, Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH 6/6] Documentation: Add device tree bindings document for
- max77843
-References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
- <1421989367-32721-7-git-send-email-jaewon02.kim@samsung.com>
- <54C1E943.2020800@samsung.com>
-In-reply-to: <54C1E943.2020800@samsung.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: tomasz.figa@gmail.com, mturquette@linaro.org, kgene@kernel.org,
+        pankaj.dubey@samsung.com, inki.dae@samsung.com,
+        chanho61.park@samsung.com, sw0312.kim@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 01/12] clk: samsung: exynos5433: Add clocks using common
+ clock framework
+References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
+ <1421821618-8627-2-git-send-email-cw00.choi@samsung.com>
+ <54C129B0.1090404@samsung.com>
+In-reply-to: <54C129B0.1090404@samsung.com>
 Content-type: text/plain; charset=windows-1252
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsWyRsSkQPfLr4MhBjdaRSymPnzCZnH9y3NW
-	i/lHzrFa9L9ZyGpx7tVKRotJ9yewWOxoOMJqcf/rUUaLy7vmsFl87j3CaLH0+kUmiwnT17JY
-	tO49wm5xeneJA5/HmnlrGD0u9/Uyeaxc/oXNY9OqTjaPO9f2sHn0bVnF6PF5k1wAexSXTUpq
-	TmZZapG+XQJXxqfLC1gL9qhVrLy4gqmB8Z5cFyMnh4SAicT+iftZIGwxiQv31rN1MXJxCAks
-	ZZSYtqSHDaboyN/HrBCJRYwSO+dOY4FwXjNKbGs+xgRSxSugJXHgx15mEJtFQFWibfVVsG42
-	AU2J91OugK0QFYiQmH/sNTNEvaDEj8n3wOIiAv4Sndvng8WZBRYzS+x6W9DFyMEhDFR/4gE7
-	xK4VjBJvHs0Fq+EU0JZY0HScDaSGWUBP4v5FLYhWeYnNa94yg9RLCEzkkLi6up8N4h4BiW+T
-	D7GA1EsIyEpsOsAM8ZikxMEVN1gmMIrNQnLRLISps5BMXcDIvIpRNLUguaA4Kb3ISK84Mbe4
-	NC9dLzk/dxMjMJpP/3vWt4Px5gHrQ4wCHIxKPLyNWw6GCLEmlhVX5h5iNAU6YiKzlGhyPjBl
-	5JXEGxqbGVmYmpgaG5lbmimJ8yZI/QwWEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwOjWeHDZ
-	Ti3HegWtMwmyeXJpZYxf5q1gnbPpWMq7N+xZOw8e8548gd3Ldq/SqaRXQmJy13MKG4zkBEM+
-	XvEtZpKcftvIXU1XZ9uCl4lfNk+99vxD0jSxAlUV986itxMyfeWYypIia5z8r+T9vx4l1qJw
-	2NBZ4Z/F0896yaG9/35+YCucaXYuQomlOCPRUIu5qDgRAGbwkHThAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAd0vvw6GGCyfxGUx9eETNovrX56z
-	Wsw/co7Vov/NQlaLc69WMlpMuj+BxWJHwxFWi/tfjzJaXN41h83ic+8RRoul1y8yWUyYvpbF
-	onXvEXaL07tLHPg81sxbw+hxua+XyWPl8i9sHptWdbJ53Lm2h82jb8sqRo/Pm+QC2KMaGG0y
-	UhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgG5WUihLzCkF
-	CgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGZ8uryAtWCPWsXKiyuYGhjvyXUxcnJI
-	CJhIHPn7mBXCFpO4cG89WxcjF4eQwCJGiZ1zp7FAOK8ZJbY1H2MCqeIV0JI48GMvM4jNIqAq
-	0bb6KhuIzSagKfF+yhUWEFtUIEJi/rHXzBD1ghI/Jt8Di4sI+Et0bp8PFmcWWMwssettQRcj
-	B4cwUP2JB+wQu1YwSrx5NBeshlNAW2JB03E2kBpmAT2J+xe1IFrlJTavecs8gVFgFpINsxCq
-	ZiGpWsDIvIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOFU8k9rBuLLB4hCjAAejEg9vw5aD
-	IUKsiWXFlbmHGCU4mJVEeOO+AIV4UxIrq1KL8uOLSnNSiw8xmgL9P5FZSjQ5H5jG8kriDY1N
-	zIwsjcwNLYyMzZXEeZXs20KEBNITS1KzU1MLUotg+pg4OKUaGEv0F12P5LPoe6u0cjVHeFsN
-	i+Xtt1/9pM24Lj1sE62/Kcc059i0fXdM9B/vnq+lsNtydd0LxT+C7ZHmbNc8m7/cuvaw1GTj
-	1KOi0dwnK9zf2vbrXGJSutJy5snRUIbj7mYpLyZezXz1NFNl7Q/7a+4WBU93JJ3g2JXLx8XO
-	fptv6YTi6/9ClyqxFGckGmoxFxUnAgBcmKQKKwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsWyRsSkQPf774MhBj+usVtc3q9tMen+BBaL
+	/sevmS0u75rDZjHj/D4mi6cTLrJZLNr6hd3i8Jt2VosZk1+yWaza9YfRgctj56y77B6bVnWy
+	edy5tofNo2/LKkaPz5vkAlijuGxSUnMyy1KL9O0SuDLed+5hL7huULH6RitzA+MK9S5GTg4J
+	AROJexv2MkHYYhIX7q1n62Lk4hASWMoocaLvAhtM0ZoNDYwQiUWMEptOvWQBSQgJvGaUeP6t
+	HsTmFdCSWHbiDVgDi4CqxMpj2xlBbDag+P4XN8DiogJhEiunX2GBqBeU+DH5HpgtIqAvsWTV
+	RbAaZoE3jBIvOr26GDk4hAUSJXav44LYu4BR4u+Mo6wgNZwC2hIXfr9hB6lhFtCTuH9RC6JV
+	XmLzmrfMIPUSAo/YJT6evcYMcY+AxLfJh1hA6iUEZCU2HWCG+EtS4uCKGywTGMVmIbloFsLU
+	WUimLmBkXsUomlqQXFCclF5kolecmFtcmpeul5yfu4kRGI+n/z2bsIPx3gHrQ4wCHIxKPLwN
+	Ww6GCLEmlhVX5h5iNAU6YiKzlGhyPjDq80riDY3NjCxMTUyNjcwtzZTEeV9L/QwWEkhPLEnN
+	Tk0tSC2KLyrNSS0+xMjEwSnVwMhSdvnt16BzMyY8uFHqed7nj91euZI9ClscIg5MVJg3xyr4
+	5+qmUknbExaFNWx/qgOWqK6elxXiw6zQ2CmQHhO3yPz2tow9oo3FEqYxR6zXWx32+XpgaaL6
+	xvnJOj9OpqbMdeucdvnyhGb1mH1tbEVfZ15vjhNJqHAMCtPSU/Fj/qwkklZoqsRSnJFoqMVc
+	VJwIAIHmet7CAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jAd1vvw+GGHRfsba4vF/bYtL9CSwW
+	/Y9fM1tc3jWHzWLG+X1MFk8nXGSzWLT1C7vF4TftrBYzJr9ks1i16w+jA5fHzll32T02repk
+	87hzbQ+bR9+WVYwenzfJBbBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp
+	5CXmptoqufgE6Lpl5gBdpaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM
+	eN+5h73gukHF6hutzA2MK9S7GDk5JARMJNZsaGCEsMUkLtxbz9bFyMUhJLCIUWLTqZcsIAkh
+	gdeMEs+/1YPYvAJaEstOvGEDsVkEVCVWHtsO1swGFN//4gZYXFQgTGLl9CssEPWCEj8m3wOz
+	RQT0JZasughWwyzwhlHiRadXFyMHh7BAosTudVwQexcwSvydcZQVpIZTQFviwu837CA1zAJ6
+	EvcvakG0yktsXvOWeQKjwCwkG2YhVM1CUrWAkXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4m
+	RnC0P5PewbiqweIQowAHoxIPb8OWgyFCrIllxZW5hxglOJiVRHjjvgCFeFMSK6tSi/Lji0pz
+	UosPMZoC/T+RWUo0OR+YiPJK4g2NTcyMLI3MDS2MjM2VxHmV7NtChATSE0tSs1NTC1KLYPqY
+	ODilGhjXtgcyr3/Z8lVWivdW0ZEfS2LusCjckNe9uFBpWud68X7xG5sWOzae2beSMeXwnGsP
+	AxUXOvC6bi77fqkw8vqbmwfv7s8U4naZuXW33rczjIsmp6oeeqL6a4ZM7RS25Ec71ba9W9Hg
+	6/lRUujle956ibnZjIde5CjtCJwsd+Au132uBJX+a5XPlFiKMxINtZiLihMBvTA0jAwDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -65,152 +60,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 03:25 PM, Chanwoo Choi wrote:
-> Hi Jaewon,
+Hi Sylwester,
+
+On 01/23/2015 01:47 AM, Sylwester Nawrocki wrote:
+> Hi Chanwoo,
 > 
-> On 01/23/2015 02:02 PM, Jaewon Kim wrote:
->> Add document describing device tree bindings for max77843 MFD.
->> Drivers: MFD core, regulator, extcon, charger and fuelgauge.
->>
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Cc: Pawel Moll <pawel.moll@arm.com>
->> Cc: Mark Rutland <mark.rutland@arm.com>
->> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
->> Cc: Kumar Gala <galak@codeaurora.org>
->> Cc: Lee Jones <lee.jones@linaro.org>
->> Cc: Chanwoo Choi <cw00.choi@samsung.com>
->> Cc: Sebastian Reichel <sre@kernel.org>
->> Cc: Mark Brown <broonie@kernel.org>
->> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
->> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
->> ---
->>  Documentation/devicetree/bindings/mfd/max77843.txt |   87 ++++++++++++++++++++
->>  1 file changed, 87 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/mfd/max77843.txt
->>
->> diff --git a/Documentation/devicetree/bindings/mfd/max77843.txt b/Documentation/devicetree/bindings/mfd/max77843.txt
+> On 21/01/15 07:26, Chanwoo Choi wrote:
+>> This patch adds the support for CMU (Clock Management Units) of Exynos5433
+>> which is 64bit SoC and has Octa-cores. This patch supports necessary clocks
+>> (PLL/MMC/UART/MCT/I2C/SPI) for kernel boot and includes binding documentation
+>> for Exynos5433 clock controller.
+> 
+>> diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
 >> new file mode 100644
->> index 0000000..6895604
+>> index 0000000..72cd0ba
 >> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/mfd/max77843.txt
->> @@ -0,0 +1,87 @@
->> +Maxim MAX77843 multi-function device
+>> +++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
+>> @@ -0,0 +1,106 @@
+>> +* Samsung Exynos5433 CMU (Clock Management Units)
 >> +
->> +MAX77843 is a Multi-Function Device with the following submodules:
->> +- PMIC	  : 2 SAFEOUT LDOs for USB device
->> +- CHARGER : Li+ battery charger with Fuel Gauge
->> +- MUIC	  : Micro USB Interface Circuit
->> +- HAPTIC  : motor control driver for haptics
-> 
-> HAPTIC ?
-> 
->> +- LED	  : 4 channel RGBW LED
-> 
-> LED ?
-> 
-> This patchset don't include andy haptic/led drivers.
-> I think it is un-necessary information.
-> 
-> When you implement the haptic/led driver, you will add the information
-> for haptic/led driver.
-> 
-
-OK. I will remove them.
-
+>> +The Exynos5433 clock controller generates and supplies clock to various
+>> +controllers within the Exynos5433 SoC.
 >> +
->> +It is interfaced to host controller using I2C.
+>> +Required Properties:
 >> +
->> +Required properties:
->> +- compatible : Must be "maxim,max77843".
->> +- reg : I2C slave address of PMIC block.
->> +- interrupts : I2C line for main SoCs.
->> +- interrupt-parent : The parent of interrupt controller.
+>> +- compatible: should be one of the following.
+>> +  - "samsung,exynos5433-cmu-top"   - clock controller compatible for CMU_TOP
+>> +    which generates clocks for IMEM/FSYS/G3D/GSCL/HEVC/MSCL/G2D/MFC/PERIC/PERIS
+>> +    domains and bus clocks.
+>> +  - "samsung,exynos5433-cmu-cpif"  - clock controller compatible for CMU_CPIF
+>> +    which generates clocks for LLI (Low Latency Interface) IP.
+>> +  - "samsung,exynos5433-cmu-mif"   - clock controller compatible for CMU_MIF
+>> +    which generates clocks for DRAM Memory Controller domain.
+>> +  - "samsung,exynos5433-cmu-peric" - clock controller compatible for CMU_PERIC
+>> +    which generates clocks for UART/I2C/SPI/I2S/PCM/SPDIF/PWM/SLIMBUS IPs.
+>> +  - "samsung,exynos5433-cmu-peris" - clock controller compatible for CMU_PERIS
+>> +    which generates clocks for PMU/TMU/MCT/WDT/RTC/SECKEY/TZPC IPs.
+>> +  - "samsung,exynos5433-cmu-fsys"  - clock controller compatible for CMU_FSYS
+>> +    which generates clocks for USB/UFS/SDMMC/TSI/PDMA IPs.
 >> +
->> +Optional properties:
->> +- regulators : The regulators of max77843 have to be instantiated under subnode
->> +	named "regulators" using the following format.
+>> +- reg: physical base address of the controller and length of memory mapped
+>> +  region.
 >> +
->> +	[*]refer : Documentation/devicetree/bindings/regulator/regulator.txt
+>> +- #clock-cells: should be 1.
 >> +
->> +	regulators {
->> +		SAFEOUT {
->> +			regulator-name = "SAFEOUT";
->> +		};
->> +	}
+>> +Each clock is assigned an identifier and client nodes can use this identifier
+>> +to specify the clock which they consume.
 >> +
->> +	List of valid regulator names:
->> +	- SAFEOUT1, SAFEOUT2, CHARGER.
+>> +All available clocks are defined as preprocessor macros in
+>> +dt-bindings/clock/exynos5433.h header and can be used in device
+>> +tree sources.
 >> +
->> +- max77843-muic : This properties used by extcon consumers.
->> +	Required properties:
->> +		- compatible : Must be "maxim,max77842-muic".
+>> +Example 1: Examples of clock controller nodes are listed below.
 >> +
->> +- max77843-charger : There battery charger of MAX77843 have to be instantiated
->> +	under sub-node named "max77843-charger" using the following format.
->> +	Required properties:
->> +		- compatible : Must be "maxim,max77842-charger".
->> +		- maxim,fast-charge-uamp : Fast charge current levels are
->> +			100 mA to 3150 mA programmed by I2C per 100 mA.
->> +		- maxim,top-off-uamp : Top off current threshold levels are
->> +			125 mA to 650 mA programmed by I2C per 75 mA.
->> +		- maxim,input-uamp-limit : Input current limit levels are
->> +			100 mA to 3533 mA programmed by I2C per 33 mA.
->> +- max77843-fuelgauge : There fuelgauge of MAX77843 have to be instantiated
->> +	under sub-node named "max77843-fuelgauge" using the following format.
->> +	Required properties:
->> +		- compatible : Must be "maxim,max77842-fuelgauge".
->> +
->> +Example:
->> +	max77843@66 {
->> +		compatible = "samsung,max77843";
->> +		reg = <0x66>;
->> +		interrupt-parent = <&gpa1>;
->> +		interrupts = <5 2>;
->> +
->> +		regulators {
->> +			SAFEOUT1 {
->> +				regulator-name = "SAFEOUT1";
->> +				regulator-min-microvolt = <3300000>;
->> +				regulator-max-microvolt = <4950000>;
->> +			};
->> +			SAFEOUT2 {
->> +				regulator-name = "SAFEOUT2";
->> +				regulator-min-microvolt = <3300000>;
->> +				regulator-max-microvolt = <4950000>;
->> +			};
-> 
-> As I knew, max77843 regulator driver supprot 'CHARGER' regulator.
-> I think you have to add the 'CHARGER' dt node for regulators.
-> 
-> 
-
-Right, I will include charger regulator.
-
->> +		};
->> +
->> +		max77843-muic {
->> +			compatible = "maxim,max77843-muic";
->> +		};
->> +
->> +		max77843-charger {
->> +			compatible = "maxim,max77843-charger";
->> +			maxim,fast-charge-uamp = <450000>;
->> +			maxim,top-off-uamp = <125000>;
->> +			maxim,input-uamp-limit = <500000>;
->> +		};
->> +
->> +		max77843-fuelgauge {
->> +			compatible = "maxim,max77843-fuelgauge";
->> +		};
->> +
+>> +	cmu_top: clock-controller@0x10030000 {
+>> +		compatible = "samsung,exynos5433-cmu-top";
+>> +		reg = <0x10030000 0x0c04>;
+>> +		#clock-cells = <1>;
 >> +	};
->>
+>> +
+>> +	cmu_cpif: clock-controller@0x10fc0000 {
+>> +		compatible = "samsung,exynos5433-cmu-cpif";
+>> +		reg = <0x10fc0000 0x0c04>;
+>> +		#clock-cells = <1>;
+>> +	};
+>> +
+>> +	cmu_mif: clock-controller@0x105b0000 {
+>> +		compatible = "samsung,exynos5433-cmu-mif";
+>> +		reg = <0x105b0000 0x100c>;
+>> +		#clock-cells = <1>;
+>> +	};
+>> +
+>> +	cmu_peric: clock-controller@0x14c80000 {
+>> +		compatible = "samsung,exynos5433-cmu-peric";
+>> +		reg = <0x14c80000 0x0b08>;
+>> +		#clock-cells = <1>;
+>> +	};
+>> +
+>> +	cmu_peris: clock-controller@0x10040000 {
+>> +		compatible = "samsung,exynos5433-cmu-peris";
+>> +		reg = <0x10040000 0x0b20>;
+>> +		#clock-cells = <1>;
+>> +	};
+>> +
+>> +	cmu_fsys: clock-controller@0x156e0000 {
+>> +		compatible = "samsung,exynos5433-cmu-fsys";
+>> +		reg = <0x156e0000 0x0b04>;
+>> +		#clock-cells = <1>;
+>> +	};
 > 
-> Thanks,
-> Chanwoo Choi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> What are the reasons to split the whole clock controller into separate
+> device nodes with different compatible strings like this? I doubt drivers
+> associated with each of those compatible strings could be ever reused on
+> different Exynos SoCs.
+
+No special reason. I added the clock controller according to clock domain
+separately. As I knew, samsung clk drivers use this way to support various
+clock domains. For exmaple, drivers/clk/samsung/clk-exynos7.c.
+
 > 
+> There are hardware dependencies between these clock domains, which are
+> not currently modelled in DT with your binding.
+
+Right. current samsung clock drivers cannot show the hierarchy among clock domains in DT.
+
+IOW, there is currently
+> no way to ensure proper registration order of the CMUs (clock domains).
+> This may be important in some cases.
+> 
+> To address this we could either add clocks/clock-names properties in
+> respective CMU device nodes, pointing to any clocks in other CMU(s) or
+> make a single device node for the whole clock controller, with an
+> aggregated reg entry, e.g.
+> 
+>  cmu: clock-controller@0x10030000 {
+> 	compatible = "samsung,exynos5433-cmu";
+> 	reg =   <0x10030000 0x0c04>,
+> 		<0x10fc0000 0x0c04>,
+> 		<0x105b0000 0x100c>,
+> 		<0x14c80000 0x0b08>,
+> 		<0x10040000 0x0b20>,
+> 		<0x156e0000 0x0b04>,
+> 			...
+> 	reg-names = "top", "cpif", "mif", "peric", "peris", "fsys"...
+> 	#clock-cells = <1>;
+>  };
+
+If you make a single device node to support various clock domain,
+How are you indicate the specific clock in some clock domain?
+
+For example,
+The serial dt node in exynos7.dtsi. serial_0 dt node use the uart clocks
+in 'clock_peric0' clock domain and serial_1 dt node use the uart clocks
+in 'clock-peric1' clock domain.
+
+When using the clock in specific clock domain,
+we need to phandle(e.g., clock_peric0, clock_peric1) of clock domain.
+
+		serial_0: serial@13630000 {
+			compatible = "samsung,exynos4210-uart";
+			reg = <0x13630000 0x100>;
+			interrupts = <0 440 0>;
+			clocks = <&clock_peric0 PCLK_UART0>,
+				 <&clock_peric0 SCLK_UART0>;
+			clock-names = "uart", "clk_uart_baud0";
+			status = "disabled";
+		};
+
+		serial_1: serial@14c20000 {
+			compatible = "samsung,exynos4210-uart";
+			reg = <0x14c20000 0x100>;
+			interrupts = <0 456 0>;
+			clocks = <&clock_peric1 PCLK_UART1>,
+				 <&clock_peric1 SCLK_UART1>;
+			clock-names = "uart", "clk_uart_baud0";
+			status = "disabled";
+		};
+
+> 
+> Then we could modify samsung_cmu_register_one() function by adding
+> the reg entry index or name argument. What do you think ?
+
+If there is more reasonable way to show the dependency between clock domains,
+I will agree.
+
+Best Regards,
+Chanwoo Choi
 
