@@ -1,141 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbbAWSn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:43:29 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:34720 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755782AbbAWSn0 convert rfc822-to-8bit (ORCPT
+	id S1756348AbbAWSpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 13:45:55 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:51758 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbbAWSpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:43:26 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:157d:d966:4ba0:21e9:c020]
-In-Reply-To: <DBE63F76-D4CB-49D5-90C6-642CFCA7687F@codeaurora.org>
-References: <alpine.DEB.2.02.1501191226010.2973@galak-ubuntu.qualcomm.com>
-	<20150122011521.GA31815@quad.lixom.net>
-	<D177DF12-0F31-49CF-B98B-9FAC23AAB24C@codeaurora.org>
-	<CAOesGMipp=Odc-cWvrba0e1pd1X7O+PKNH+WoM3fG4xX2GRFuA@mail.gmail.com>
-	<DBE63F76-D4CB-49D5-90C6-642CFCA7687F@codeaurora.org>
-Date: Fri, 23 Jan 2015 10:43:26 -0800
-Message-ID: <CAOesGMht4VaNgwr5rOyher081Vk7w_HKTMeOm677rEAkOcCPAg@mail.gmail.com>
-Subject: Re: [GIT PULL] qcom SoC changes for v3.20
-From: Olof Johansson <olof@lixom.net>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: "arm@kernel.org" <arm@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Lina Iyer <lina.iyer@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Vikram Mulukutla <markivx@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 23 Jan 2015 13:45:52 -0500
+From: Matt Fleming <matt@codeblueprint.co.uk>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Vikas Shivappa <vikas.shivappa@linux.intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH v5 0/9] perf: Intel Cache QoS Monitoring support
+Date: Fri, 23 Jan 2015 18:45:39 +0000
+Message-Id: <1422038748-21397-1-git-send-email-matt@codeblueprint.co.uk>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 8:22 AM, Kumar Gala <galak@codeaurora.org> wrote:
->
-> On Jan 22, 2015, at 9:00 PM, Olof Johansson <olof@lixom.net> wrote:
->
->> On Thu, Jan 22, 2015 at 9:02 AM, Kumar Gala <galak@codeaurora.org> wrote:
->>>
->>> On Jan 21, 2015, at 7:15 PM, Olof Johansson <olof@lixom.net> wrote:
->>>
->>>> Hi,
->>>>
->>>>
->>>> On Mon, Jan 19, 2015 at 12:27:15PM -0600, Kumar Gala wrote:
->>>>> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
->>>>>
->>>>> Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
->>>>>
->>>>> are available in the git repository at:
->>>>>
->>>>> git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.20
->>>>>
->>>>> for you to fetch changes up to ae0a6075c046f9c8dbac18f53a779592f97b402e:
->>>>>
->>>>> soc: qcom: scm: Clarify boot interface (2015-01-19 11:55:12 -0600)
->>>>>
->>>>> ----------------------------------------------------------------
->>>>> Qualcomm ARM Based SoC Updates for v3.20
->>>>>
->>>>> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
->>>>> * Various bug fixes and minor feature additions to scm code
->>>>> * Added big-endian support to debug MSM uart
->>>>> * Added big-endian support to ARCH_QCOM
->>>>>
->>>>> ----------------------------------------------------------------
->>>>> Lina Iyer (2):
->>>>>     ARM: qcom: Add SCM warmboot flags for quad core targets.
->>>>>     soc: qcom: scm: Move scm-boot files to drivers/soc and include/soc
->>>>>
->>>>> Olav Haugan (1):
->>>>>     ARM: qcom: scm: Add logging of actual return code from scm call
->>>>>
->>>>> Saravana Kannan (1):
->>>>>     ARM: qcom: scm: Add API to query for service/command availability.
->>>>>
->>>>> Stephen Boyd (9):
->>>>>     ARM: debug: Update MSM and QCOM DEBUG_LL help
->>>>>     ARM: debug: msm: Support big-endian CPUs
->>>>>     ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
->>>>>     ARM: qcom: scm: Fix incorrect cache invalidation
->>>>>     ARM: qcom: scm: Get cacheline size from CTR
->>>>>     ARM: qcom: scm: Add a feat version query API
->>>>>     soc: qcom: scm: Move the scm driver to drivers/soc/qcom
->>>>
->>>> I replied on the patch here just now. This isn't the right thing to do,
->>>> as far as I can tell.
->>>>
->>>> Seems like sending a fresh request with the material besides the move
->>>> to drivers/soc should be mergeable though, so feel free to do that while
->>>> the rest is hashed out.
->>>
->>> Would the following be ok (dropped the move to drivers/soc and some additional unused scm APIs as of right now):
->>>
->>> ARM: qcom: Drop unnecessary selects from ARCH_QCOM
->>> ARM: qcom: scm: Clarify boot interface
->>> ARM: qcom: Add SCM warmboot flags for quad core targets.
->>> ARM: qcom: scm: Add logging of actual return code from scm call
->>> ARM: qcom: scm: Flush the command buffer only instead of the entire cache
->>> ARM: qcom: scm: Get cacheline size from CTR
->>> ARM: qcom: scm: Fix incorrect cache invalidation
->>> ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
->>> ARM: debug: msm: Support big-endian CPUs
->>> ARM: debug: Update MSM and QCOM DEBUG_LL help
->>>
->>> Kconfig.debug        |    5 ++--
->>> include/debug/msm.S  |    6 +++++
->>> mach-qcom/Kconfig    |    3 --
->>> mach-qcom/scm-boot.c |    2 -
->>> mach-qcom/scm-boot.h |    4 ++-
->>> mach-qcom/scm.c      |   55 +++++++++++++++++++++++++++++++++++++--------------
->>> 6 files changed, 54 insertions(+), 21 deletions(-)
->>
->> I'd be OK with merging this, send a request and tag. Would that let
->> the DRM folks make progress too?
->
-> Will do, I don’t think it will address the DRM folks needs as they need access to make firmware calls from the DRM driver.
->
->> If you need a common place for this, drivers/firmware seems like a
->> better home than drivers/soc.
->
-> Agreed, what’s you take than on moving to use firmware_ops as defined in arch/arm and extended it or just leaving this as a qcom specific firmware interface?
+From: Matt Fleming <matt.fleming@intel.com>
 
-Are there any other SoCs out there with similar requirements on
-firmware interfaces? I think most of them so far have been fairly
-simple compared to the complexity of the qualcomm firmware.
+This patch series adds a new PMU driver for the Intel Cache Monitoring
+hardware feature available in Intel Xeon processors, which allows
+monitoring of LLC occupancy on a task, group or system-wide basis.
 
-Would it make sense to use firmware_ops for the common pieces and have
-direct smc calls for the rest? I'm not sure that would buy us all that
-much. Hm.
+All the tools/perf changes have already been merged. 
 
-Well, at least it's an internal implementation detail. If we move it
-now and find a better way to do it down the road it can be refactored.
+I've left a notoriously funky bit of code near the end of the series,
+the RMID rotation code, in an attempt to simplify things. Doing the
+rotation provides the ability to multiplex the RMIDs and basically
+overcome the hardware limitation, but the rest of the patches work fine
+without it. But there are a number of scenarios where being able to
+monitor more tasks than RMIDs is extremely useful.
+
+The series is based on tip/perf/core.
+
+Changes in v5:
+
+ - Drop the patches to tools/perf that have been picked up
+
+ - Use ACCESS_ONCE() to grab RMID instead of using locks
+
+ - Pack struct cqm_rmid_entry by rearranging members
+
+ - Add steal limit code to mitigate all RMIDs ending up in limbo
+
+ - s/intel_cqm_sched_out_events/intel_cqm_sched_out_conflicting_events/
+
+ - Drop list_move_tail() from scheduling code as it breaks fairness
+
+Changes in v4:
+
+ - Swapped smp_call_function_many() for on_each_cpu_mask()
+
+ - Use atomic_t for serialisation for cache occupancy IPI reads 
+
+ - Calculate a max threshold value based on number of RMIDs and LLC size
+
+ - Drop the list, bitmap, list juggle in favour of RMID ->state member
+
+ - Use pmu::hrtimer_interval_ms as rotation timer tick for consistency
+
+Changes in v3:
+
+ - Dropped patches that have been applied in tip/perf/core
+
+ - Upated commit message in PATCH 3 based on Peter's feedback
+
+ - Simplified PATCH 5 by only using int cgroup_fd as param
+
+ - Added a new patch (11) to perform internal scheduling on conflict
+   monitoring events
+
+ - Make RMIDs wait in limbo for a minimium queue time to avoid IPIs
+   wherever possible
+
+ - Provide a user-configurable upper bound on the recycling threshold 
+
+ - Reduce the size of a preemption disabled section (pointed out by
+   Thomas Gleixner)
+
+ - Reduce the limbo bitmap size due to worries of mass memory
+   consumption on larg CPU systems (Peter Zijlstra)
+
+ - Picked a patch (2) from Jiri to fix the -I (interval) mode of perf
+   stat with CQM
+
+Changes in v2:
+
+ - Added Jiri Olsa's Acked-by to PATCH 02/11.
+
+ - Use x86_match_cpu() in intel_cqm_init() and make sure we grab the
+   hotplug lock to prevent races as pointed out by Andi Kleen in
+   PATCH 08/11.
+
+ - Delete a stale comment in commit message of PATCH 10/11.
 
 
--Olof
+Matt Fleming (8):
+  perf: Make perf_cgroup_from_task() global
+  perf: Add ->count() function to read per-package counters
+  perf: Move cgroup init before PMU ->event_init()
+  perf/x86/intel: Add Intel Cache QoS Monitoring support
+  perf/x86/intel: Implement LRU monitoring ID allocation for CQM
+  perf/x86/intel: Support task events with Intel CQM
+  perf/x86/intel: Perform rotation on Intel CQM RMIDs
+  perf/x86/intel: Enable conflicting event scheduling for CQM
+
+Peter P Waskiewicz Jr (1):
+  x86: Add support for Intel Cache QoS Monitoring (CQM) detection
+
+ arch/x86/include/asm/cpufeature.h          |    9 +-
+ arch/x86/include/asm/processor.h           |    3 +
+ arch/x86/kernel/cpu/Makefile               |    2 +-
+ arch/x86/kernel/cpu/common.c               |   39 +
+ arch/x86/kernel/cpu/perf_event_intel_cqm.c | 1379 ++++++++++++++++++++++++++++
+ include/linux/perf_event.h                 |   48 +
+ include/uapi/linux/perf_event.h            |    1 +
+ kernel/events/core.c                       |   63 +-
+ 8 files changed, 1502 insertions(+), 42 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_cqm.c
+
+-- 
+1.9.3
+
