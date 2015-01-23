@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232AbbAWKqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 05:46:08 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:44122 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751121AbbAWKqF (ORCPT
+	id S1753605AbbAWKs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 05:48:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36331 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbbAWKsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 05:46:05 -0500
-Message-ID: <54C22657.8020102@st.com>
-Date: Fri, 23 Jan 2015 16:15:43 +0530
-From: Amit Virdi <amit.virdi@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 23 Jan 2015 05:48:54 -0500
+Date: Fri, 23 Jan 2015 02:48:39 -0800
+From: tip-bot for Chunyan Zhang <tipbot@zytor.com>
+Message-ID: <tip-41fbf3b39d5eca01527338b4d0ee15ee1ae1023c@git.kernel.org>
+Cc: arnd@linaro.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        zhang.chunyan@linaro.org, mingo@kernel.org, tglx@linutronix.de
+Reply-To: arnd@linaro.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        zhang.chunyan@linaro.org, tglx@linutronix.de, mingo@kernel.org
+In-Reply-To: <1418793095-18780-1-git-send-email-zhang.chunyan@linaro.org>
+References: <1418793095-18780-1-git-send-email-zhang.chunyan@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] ktime.h: Introduce ktime_ms_delta
+Git-Commit-ID: 41fbf3b39d5eca01527338b4d0ee15ee1ae1023c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Asaf Vertz <asaf.vertz@tandemg.com>, "balbi@ti.com" <balbi@ti.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "andrzej.p@samsung.com" <andrzej.p@samsung.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: zero: fix format string warnings
-References: <20150121090633.GA15849@ubuntu>
-In-Reply-To: <20150121090633.GA15849@ubuntu>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-23_03:2015-01-23,2015-01-23,1970-01-01 signatures=0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/21/2015 2:36 PM, Asaf Vertz wrote:
-> Fixed the following warnings (reported by cppcheck):
-> [drivers/usb/gadget/function/f_sourcesink.c:1217]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1261]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1305]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1349]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1393]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1437]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1476]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1520]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1564]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/usb/gadget/function/f_sourcesink.c:1608]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'
->
-> Signed-off-by: Asaf Vertz<asaf.vertz@tandemg.com>
-> ---
->   drivers/usb/gadget/function/f_sourcesink.c |   20 ++++++++++----------
->   1 files changed, 10 insertions(+), 10 deletions(-)
+Commit-ID:  41fbf3b39d5eca01527338b4d0ee15ee1ae1023c
+Gitweb:     http://git.kernel.org/tip/41fbf3b39d5eca01527338b4d0ee15ee1ae1023c
+Author:     Chunyan Zhang <zhang.chunyan@linaro.org>
+AuthorDate: Wed, 17 Dec 2014 13:11:35 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 23 Jan 2015 11:47:15 +0100
 
-Reviewed-by: Amit Virdi <amit.virdi@st.com>
+ktime.h: Introduce ktime_ms_delta
+
+This patch adds a reusable time difference function which returns the
+difference in millisecond, as often used in some driver code, e.g.
+mtd/test, media/rc, etc.
+
+Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
+Acked-by: Arnd Bergmann <arnd@linaro.org>
+Cc: zhang.lyra@gmail.com
+Cc: davem@davemloft.net
+Cc: john.stultz@linaro.org
+Cc: dborkman@redhat.com
+Link: http://lkml.kernel.org/r/1418793095-18780-1-git-send-email-zhang.chunyan@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/ktime.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/linux/ktime.h b/include/linux/ktime.h
+index c9d645a..891ea92 100644
+--- a/include/linux/ktime.h
++++ b/include/linux/ktime.h
+@@ -186,6 +186,11 @@ static inline s64 ktime_us_delta(const ktime_t later, const ktime_t earlier)
+        return ktime_to_us(ktime_sub(later, earlier));
+ }
+ 
++static inline s64 ktime_ms_delta(const ktime_t later, const ktime_t earlier)
++{
++	return ktime_to_ms(ktime_sub(later, earlier));
++}
++
+ static inline ktime_t ktime_add_us(const ktime_t kt, const u64 usec)
+ {
+ 	return ktime_add_ns(kt, usec * NSEC_PER_USEC);
