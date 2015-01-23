@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060AbbAWAKI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 19:10:08 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:54189 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934AbbAWAJs (ORCPT
+	id S1755164AbbAWAKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 19:10:50 -0500
+Received: from sonata.ens-lyon.org ([140.77.166.138]:33035 "EHLO
+	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514AbbAWAKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 19:09:48 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 12/12] clocksource: Add some debug info about clocksources being registered
-Date: Thu, 22 Jan 2015 16:09:27 -0800
-Message-Id: <1421971767-17707-13-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421971767-17707-1-git-send-email-john.stultz@linaro.org>
-References: <1421971767-17707-1-git-send-email-john.stultz@linaro.org>
+	Thu, 22 Jan 2015 19:10:47 -0500
+Date: Fri, 23 Jan 2015 01:10:38 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        akpm@linux-foundation.org, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCHv5 2/2] INPUT: Introduce generic trigger/LED pairs to
+ input LEDs
+Message-ID: <20150123001038.GA2940@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+	akpm@linux-foundation.org, jslaby@suse.cz,
+	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+References: <20141226232116.GA5069@type>
+ <20141226232310.GD5069@type>
+ <20150104232838.GA14912@dtor-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150104232838.GA14912@dtor-glaptop>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print the mask, max_cycles, and max_idle_ns values for clocksources
-being registered.
+Dmitry Torokhov, le Sun 04 Jan 2015 15:28:38 -0800, a écrit :
+> > +	dev = cdev->dev->platform_data;
+> 
+> Umm, platform data is not the best place for storing this. Why not drvdata?
 
-Cc: Dave Jones <davej@codemonkey.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/time/clocksource.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Ah, actually led_classdev already makes use of it, see the
+device_create_with_groups call in led_classdev_register.
 
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index b56f4b9..ec7b552 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -773,6 +773,10 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
- 	cs->max_idle_ns = clocks_calc_max_nsecs(cs->mult, cs->shift,
- 						 cs->maxadj, cs->mask,
- 						 &cs->max_cycles);
-+
-+	pr_info("clocksource %s: mask: 0x%llx max_cycles: 0x%llx, max_idle_ns: %lld ns\n",
-+			cs->name, cs->mask, cs->max_cycles, cs->max_idle_ns);
-+
- }
- EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
- 
--- 
-1.9.1
-
+Samuel
