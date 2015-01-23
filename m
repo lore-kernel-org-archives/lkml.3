@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbbAWFfv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 00:35:51 -0500
+	id S1754133AbbAWFfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 00:35:55 -0500
 Received: from mga01.intel.com ([192.55.52.88]:45686 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753620AbbAWFfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 00:35:48 -0500
+	id S1754025AbbAWFfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 00:35:51 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="444042282"
+   d="scan'208";a="444042290"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sam Ravnborg <sam@ravnborg.org>, Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: [Resend Patch v4 10/16] smp, sparc: Kill SMP single function call interrupt
-Date: Fri, 23 Jan 2015 13:36:49 +0800
-Message-Id: <1421991416-20297-11-git-send-email-jiang.liu@linux.intel.com>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        Jiang Liu <liuj97@gmail.com>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org
+Subject: [Resend Patch v4 11/16] smp, x86, xen: Kill SMP single function call interrupt
+Date: Fri, 23 Jan 2015 13:36:50 +0800
+Message-Id: <1421991416-20297-12-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1421991416-20297-1-git-send-email-jiang.liu@linux.intel.com>
@@ -31,293 +36,118 @@ single and multiple cross-CPU function calls. Now only one interrupt
 is needed for architecture specific code to support generic SMP function
 call interfaces, so kill the redundant single function call interrupt.
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: sparclinux@vger.kernel.org
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: x86@kernel.org
+Cc: xen-devel@lists.xensource.com
+Cc: virtualization@lists.linux-foundation.org
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/sparc/include/asm/smp_32.h |    4 +---
- arch/sparc/kernel/entry.S       |   10 ++--------
- arch/sparc/kernel/leon_smp.c    |   31 +++++++------------------------
- arch/sparc/kernel/smp_32.c      |   14 ++------------
- arch/sparc/kernel/sun4d_smp.c   |   31 +++++++------------------------
- arch/sparc/kernel/sun4m_smp.c   |   11 ++---------
- 6 files changed, 21 insertions(+), 80 deletions(-)
+ arch/x86/include/asm/xen/events.h |    1 -
+ arch/x86/xen/smp.c                |   38 ++-----------------------------------
+ 2 files changed, 2 insertions(+), 37 deletions(-)
 
-diff --git a/arch/sparc/include/asm/smp_32.h b/arch/sparc/include/asm/smp_32.h
-index 7c24e08a88d2..51e53c606cc9 100644
---- a/arch/sparc/include/asm/smp_32.h
-+++ b/arch/sparc/include/asm/smp_32.h
-@@ -48,7 +48,6 @@ void smp_callin(void);
- void smp_store_cpu_info(int);
- 
- void smp_resched_interrupt(void);
--void smp_call_function_single_interrupt(void);
- void smp_call_function_interrupt(void);
- 
- struct seq_file;
-@@ -60,8 +59,7 @@ struct sparc32_ipi_ops {
- 			   unsigned long arg2, unsigned long arg3,
- 			   unsigned long arg4);
- 	void (*resched)(int cpu);
--	void (*single)(int cpu);
--	void (*mask_one)(int cpu);
-+	void (*func_call)(int cpu);
+diff --git a/arch/x86/include/asm/xen/events.h b/arch/x86/include/asm/xen/events.h
+index 608a79d5a466..a9e54dc05c50 100644
+--- a/arch/x86/include/asm/xen/events.h
++++ b/arch/x86/include/asm/xen/events.h
+@@ -4,7 +4,6 @@
+ enum ipi_vector {
+ 	XEN_RESCHEDULE_VECTOR,
+ 	XEN_CALL_FUNCTION_VECTOR,
+-	XEN_CALL_FUNCTION_SINGLE_VECTOR,
+ 	XEN_SPIN_UNLOCK_VECTOR,
+ 	XEN_IRQ_WORK_VECTOR,
+ 	XEN_NMI_VECTOR,
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 4c071aeb8417..d54c122a0486 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -47,12 +47,10 @@ struct xen_common_irq {
  };
- extern const struct sparc32_ipi_ops *sparc32_ipi_ops;
+ static DEFINE_PER_CPU(struct xen_common_irq, xen_resched_irq) = { .irq = -1 };
+ static DEFINE_PER_CPU(struct xen_common_irq, xen_callfunc_irq) = { .irq = -1 };
+-static DEFINE_PER_CPU(struct xen_common_irq, xen_callfuncsingle_irq) = { .irq = -1 };
+ static DEFINE_PER_CPU(struct xen_common_irq, xen_irq_work) = { .irq = -1 };
+ static DEFINE_PER_CPU(struct xen_common_irq, xen_debug_irq) = { .irq = -1 };
  
-diff --git a/arch/sparc/kernel/entry.S b/arch/sparc/kernel/entry.S
-index 33c02b15f478..98bacfb16fa8 100644
---- a/arch/sparc/kernel/entry.S
-+++ b/arch/sparc/kernel/entry.S
-@@ -263,7 +263,7 @@ smp4m_ticker:
- 	 * on some level other than 15 which is the NMI and only used
- 	 * for cross calls.  That has a separate entry point below.
- 	 *
--	 * IPIs are sent on Level 12, 13 and 14. See IRQ_IPI_*.
-+	 * IPIs are sent on Level 13 and 14. See IRQ_IPI_*.
- 	 */
- maybe_smp4m_msg:
- 	GET_PROCESSOR4M_ID(o3)
-@@ -287,14 +287,8 @@ maybe_smp4m_msg:
- 	wr	%l4, PSR_ET, %psr
- 	WRITE_PAUSE
- 	srl	%o3, 28, %o2		! shift for simpler checks below
--maybe_smp4m_msg_check_single:
--	andcc	%o2, 0x1, %g0
--	beq,a	maybe_smp4m_msg_check_mask
--	 andcc	%o2, 0x2, %g0
--	call	smp_call_function_single_interrupt
--	 nop
--	andcc	%o2, 0x2, %g0
- maybe_smp4m_msg_check_mask:
-+	andcc	%o2, 0x2, %g0
- 	beq,a	maybe_smp4m_msg_check_resched
- 	 andcc	%o2, 0x4, %g0
- 	call	smp_call_function_interrupt
-diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
-index 71e16f2241c2..ee3c6599c271 100644
---- a/arch/sparc/kernel/leon_smp.c
-+++ b/arch/sparc/kernel/leon_smp.c
-@@ -260,8 +260,7 @@ void __init leon_smp_done(void)
- }
+ static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id);
+-static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id);
+ static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id);
  
- struct leon_ipi_work {
--	int single;
--	int msk;
-+	int func_call;
- 	int resched;
- };
- 
-@@ -297,7 +296,7 @@ static void __init leon_ipi_init(void)
- 
- 	for_each_possible_cpu(cpu) {
- 		work = &per_cpu(leon_ipi_work, cpu);
--		work->single = work->msk = work->resched = 0;
-+		work->func_call = work->resched = 0;
+ /*
+@@ -136,13 +134,6 @@ static void xen_smp_intr_free(unsigned int cpu)
+ 		kfree(per_cpu(xen_debug_irq, cpu).name);
+ 		per_cpu(xen_debug_irq, cpu).name = NULL;
  	}
- }
- 
-@@ -308,23 +307,12 @@ static void leon_send_ipi(int cpu, int level)
- 	LEON3_BYPASS_STORE_PA(&leon3_irqctrl_regs->force[cpu], mask);
- }
- 
--static void leon_ipi_single(int cpu)
-+static void leon_ipi_func_call(int cpu)
- {
- 	struct leon_ipi_work *work = &per_cpu(leon_ipi_work, cpu);
- 
- 	/* Mark work */
--	work->single = 1;
--
--	/* Generate IRQ on the CPU */
--	leon_send_ipi(cpu, leon_ipi_irq);
--}
--
--static void leon_ipi_mask_one(int cpu)
--{
--	struct leon_ipi_work *work = &per_cpu(leon_ipi_work, cpu);
--
--	/* Mark work */
--	work->msk = 1;
-+	work->func_call = 1;
- 
- 	/* Generate IRQ on the CPU */
- 	leon_send_ipi(cpu, leon_ipi_irq);
-@@ -345,12 +333,8 @@ void leonsmp_ipi_interrupt(void)
- {
- 	struct leon_ipi_work *work = this_cpu_ptr(&leon_ipi_work);
- 
--	if (work->single) {
--		work->single = 0;
--		smp_call_function_single_interrupt();
+-	if (per_cpu(xen_callfuncsingle_irq, cpu).irq >= 0) {
+-		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu).irq,
+-				       NULL);
+-		per_cpu(xen_callfuncsingle_irq, cpu).irq = -1;
+-		kfree(per_cpu(xen_callfuncsingle_irq, cpu).name);
+-		per_cpu(xen_callfuncsingle_irq, cpu).name = NULL;
 -	}
--	if (work->msk) {
--		work->msk = 0;
-+	if (work->func_call) {
-+		work->func_call = 0;
- 		smp_call_function_interrupt();
- 	}
- 	if (work->resched) {
-@@ -456,8 +440,7 @@ void leon_cross_call_irq(void)
- static const struct sparc32_ipi_ops leon_ipi_ops = {
- 	.cross_call = leon_cross_call,
- 	.resched    = leon_ipi_resched,
--	.single     = leon_ipi_single,
--	.mask_one   = leon_ipi_mask_one,
-+	.func_call   = leon_ipi_func_call,
- };
+ 	if (xen_hvm_domain())
+ 		return;
  
- void __init leon_init_smp(void)
-diff --git a/arch/sparc/kernel/smp_32.c b/arch/sparc/kernel/smp_32.c
-index b3a5d81b20f0..0d5287bad74c 100644
---- a/arch/sparc/kernel/smp_32.c
-+++ b/arch/sparc/kernel/smp_32.c
-@@ -137,17 +137,15 @@ void smp_send_stop(void)
+@@ -191,18 +182,6 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 	per_cpu(xen_debug_irq, cpu).irq = rc;
+ 	per_cpu(xen_debug_irq, cpu).name = debug_name;
  
- void arch_send_call_function_single_ipi(int cpu)
+-	callfunc_name = kasprintf(GFP_KERNEL, "callfuncsingle%d", cpu);
+-	rc = bind_ipi_to_irqhandler(XEN_CALL_FUNCTION_SINGLE_VECTOR,
+-				    cpu,
+-				    xen_call_function_single_interrupt,
+-				    IRQF_PERCPU|IRQF_NOBALANCING,
+-				    callfunc_name,
+-				    NULL);
+-	if (rc < 0)
+-		goto fail;
+-	per_cpu(xen_callfuncsingle_irq, cpu).irq = rc;
+-	per_cpu(xen_callfuncsingle_irq, cpu).name = callfunc_name;
+-
+ 	/*
+ 	 * The IRQ worker on PVHVM goes through the native path and uses the
+ 	 * IPI mechanism.
+@@ -599,8 +578,7 @@ static void xen_smp_send_call_function_ipi(const struct cpumask *mask)
+ 
+ static void xen_smp_send_call_function_single_ipi(int cpu)
  {
--	/* trigger one IPI single call on one CPU */
--	sparc32_ipi_ops->single(cpu);
-+	sparc32_ipi_ops->func_call(cpu);
+-	__xen_send_IPI_mask(cpumask_of(cpu),
+-			  XEN_CALL_FUNCTION_SINGLE_VECTOR);
++	__xen_send_IPI_mask(cpumask_of(cpu), XEN_CALL_FUNCTION_VECTOR);
  }
  
- void arch_send_call_function_ipi_mask(const struct cpumask *mask)
- {
- 	int cpu;
- 
--	/* trigger IPI mask call on each CPU */
- 	for_each_cpu(cpu, mask)
--		sparc32_ipi_ops->mask_one(cpu);
-+		sparc32_ipi_ops->func_call(cpu);
+ static inline int xen_map_vector(int vector)
+@@ -612,10 +590,8 @@ static inline int xen_map_vector(int vector)
+ 		xen_vector = XEN_RESCHEDULE_VECTOR;
+ 		break;
+ 	case CALL_FUNCTION_VECTOR:
+-		xen_vector = XEN_CALL_FUNCTION_VECTOR;
+-		break;
+ 	case CALL_FUNCTION_SINGLE_VECTOR:
+-		xen_vector = XEN_CALL_FUNCTION_SINGLE_VECTOR;
++		xen_vector = XEN_CALL_FUNCTION_VECTOR;
+ 		break;
+ 	case IRQ_WORK_VECTOR:
+ 		xen_vector = XEN_IRQ_WORK_VECTOR;
+@@ -693,16 +669,6 @@ static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
  }
  
- void smp_resched_interrupt(void)
-@@ -159,14 +157,6 @@ void smp_resched_interrupt(void)
- 	/* re-schedule routine called by interrupt return code. */
- }
- 
--void smp_call_function_single_interrupt(void)
+-static irqreturn_t xen_call_function_single_interrupt(int irq, void *dev_id)
 -{
 -	irq_enter();
 -	generic_smp_call_function_single_interrupt();
--	local_cpu_data().irq_call_count++;
+-	inc_irq_stat(irq_call_count);
 -	irq_exit();
+-
+-	return IRQ_HANDLED;
 -}
 -
- void smp_call_function_interrupt(void)
+ static irqreturn_t xen_irq_work_interrupt(int irq, void *dev_id)
  {
  	irq_enter();
-diff --git a/arch/sparc/kernel/sun4d_smp.c b/arch/sparc/kernel/sun4d_smp.c
-index 9d98e5002a09..61d9f87334a1 100644
---- a/arch/sparc/kernel/sun4d_smp.c
-+++ b/arch/sparc/kernel/sun4d_smp.c
-@@ -181,8 +181,7 @@ void __init smp4d_smp_done(void)
- 
- /* Memory structure giving interrupt handler information about IPI generated */
- struct sun4d_ipi_work {
--	int single;
--	int msk;
-+	int func_call;
- 	int resched;
- };
- 
-@@ -198,7 +197,7 @@ static void __init smp4d_ipi_init(void)
- 
- 	for_each_possible_cpu(cpu) {
- 		work = &per_cpu(sun4d_ipi_work, cpu);
--		work->single = work->msk = work->resched = 0;
-+		work->func_call = work->resched = 0;
- 	}
- }
- 
-@@ -206,12 +205,8 @@ void sun4d_ipi_interrupt(void)
- {
- 	struct sun4d_ipi_work *work = this_cpu_ptr(&sun4d_ipi_work);
- 
--	if (work->single) {
--		work->single = 0;
--		smp_call_function_single_interrupt();
--	}
--	if (work->msk) {
--		work->msk = 0;
-+	if (work->func_call) {
-+		work->func_call = 0;
- 		smp_call_function_interrupt();
- 	}
- 	if (work->resched) {
-@@ -233,23 +228,12 @@ static void sun4d_send_ipi(int cpu, int level)
- 	cc_set_igen(IGEN_MESSAGE(0, cpu << 3, 6 + ((level >> 1) & 7), 1 << (level - 1)));
- }
- 
--static void sun4d_ipi_single(int cpu)
--{
--	struct sun4d_ipi_work *work = &per_cpu(sun4d_ipi_work, cpu);
--
--	/* Mark work */
--	work->single = 1;
--
--	/* Generate IRQ on the CPU */
--	sun4d_send_ipi(cpu, SUN4D_IPI_IRQ);
--}
--
--static void sun4d_ipi_mask_one(int cpu)
-+static void sun4d_ipi_func_call(int cpu)
- {
- 	struct sun4d_ipi_work *work = &per_cpu(sun4d_ipi_work, cpu);
- 
- 	/* Mark work */
--	work->msk = 1;
-+	work->func_call = 1;
- 
- 	/* Generate IRQ on the CPU */
- 	sun4d_send_ipi(cpu, SUN4D_IPI_IRQ);
-@@ -392,8 +376,7 @@ void smp4d_percpu_timer_interrupt(struct pt_regs *regs)
- static const struct sparc32_ipi_ops sun4d_ipi_ops = {
- 	.cross_call = sun4d_cross_call,
- 	.resched    = sun4d_ipi_resched,
--	.single     = sun4d_ipi_single,
--	.mask_one   = sun4d_ipi_mask_one,
-+	.func_call   = sun4d_ipi_func_call,
- };
- 
- void __init sun4d_init_smp(void)
-diff --git a/arch/sparc/kernel/sun4m_smp.c b/arch/sparc/kernel/sun4m_smp.c
-index d3408e72d20c..d4b7d0149128 100644
---- a/arch/sparc/kernel/sun4m_smp.c
-+++ b/arch/sparc/kernel/sun4m_smp.c
-@@ -20,7 +20,6 @@
- #include "irq.h"
- #include "kernel.h"
- 
--#define IRQ_IPI_SINGLE		12
- #define IRQ_IPI_MASK		13
- #define IRQ_IPI_RESCHED		14
- #define IRQ_CROSS_CALL		15
-@@ -145,12 +144,7 @@ static void sun4m_ipi_resched(int cpu)
- 	sun4m_send_ipi(cpu, IRQ_IPI_RESCHED);
- }
- 
--static void sun4m_ipi_single(int cpu)
--{
--	sun4m_send_ipi(cpu, IRQ_IPI_SINGLE);
--}
--
--static void sun4m_ipi_mask_one(int cpu)
-+static void sun4m_ipi_func_call(int cpu)
- {
- 	sun4m_send_ipi(cpu, IRQ_IPI_MASK);
- }
-@@ -262,8 +256,7 @@ void smp4m_percpu_timer_interrupt(struct pt_regs *regs)
- static const struct sparc32_ipi_ops sun4m_ipi_ops = {
- 	.cross_call = sun4m_cross_call,
- 	.resched    = sun4m_ipi_resched,
--	.single     = sun4m_ipi_single,
--	.mask_one   = sun4m_ipi_mask_one,
-+	.func_call   = sun4m_ipi_func_call,
- };
- 
- void __init sun4m_init_smp(void)
 -- 
 1.7.10.4
 
