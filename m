@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385AbbAWJ0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 04:26:42 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64103 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367AbbAWJ0k (ORCPT
+	id S1754434AbbAWJ2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 04:28:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35262 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667AbbAWJ15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 04:26:40 -0500
-From: Thierry Reding <thierry.reding@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: Daniel Vetter <daniel@ffwll.ch>, Rob Clark <robdclark@gmail.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] drm/plane: Make ->atomic_update() mandatory
-Date: Fri, 23 Jan 2015 10:26:37 +0100
-Message-Id: <1422005197-10964-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421750935-4023-3-git-send-email-thierry.reding@gmail.com>
-References: <1421750935-4023-3-git-send-email-thierry.reding@gmail.com>
+	Fri, 23 Jan 2015 04:27:57 -0500
+Date: Fri, 23 Jan 2015 01:27:32 -0800
+From: "tip-bot for Bryan O'Donoghue" <tipbot@zytor.com>
+Message-ID: <tip-38a1dfda8e77d7ba74c94d06d8bc41ba98a4bc8c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, thomas.petazzoni@free-electrons.com,
+        tglx@linutronix.de, pure.logic@nexus-software.ie, hpa@zytor.com,
+        andy.shevchenko@gmail.com, mingo@kernel.org
+Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com,
+        pure.logic@nexus-software.ie, tglx@linutronix.de, mingo@kernel.org,
+        andy.shevchenko@gmail.com, thomas.petazzoni@free-electrons.com
+In-Reply-To: <1421967529-9037-1-git-send-email-pure.logic@nexus-software.ie>
+References: <1421967529-9037-1-git-send-email-pure.logic@nexus-software.ie>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/apic:
+  Re-enable PCI_MSI support for non-SMP X86_32
+Git-Commit-ID: 38a1dfda8e77d7ba74c94d06d8bc41ba98a4bc8c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+Commit-ID:  38a1dfda8e77d7ba74c94d06d8bc41ba98a4bc8c
+Gitweb:     http://git.kernel.org/tip/38a1dfda8e77d7ba74c94d06d8bc41ba98a4bc8c
+Author:     Bryan O'Donoghue <pure.logic@nexus-software.ie>
+AuthorDate: Thu, 22 Jan 2015 22:58:49 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 23 Jan 2015 10:20:30 +0100
 
-There is no use-case where it would be useful for drivers not to
-implement this function and the transitional plane helpers already
-require drivers to provide an implementation.
+x86/apic: Re-enable PCI_MSI support for non-SMP X86_32
 
-v2: add new requirement to kerneldoc
+Commit 0dbc6078c06bc0 ('x86, build, pci: Fix PCI_MSI build on !SMP')
+introduced the dependency that X86_UP_APIC is only available when
+PCI_MSI is false. This effectively prevents PCI_MSI support on 32bit
+UP systems because it disables both APIC and IO-APIC. But APIC support
+is architecturally required for PCI_MSI.
 
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+The intention of the patch was to enforce APIC support when PCI_MSI is
+enabled, but failed to do so.
+
+Remove the !PCI_MSI dependency from X86_UP_APIC and enforce
+X86_UP_APIC when PCI_MSI support is enabled on 32bit UP systems.
+
+[ tglx: Massaged changelog ]
+
+Fixes 0dbc6078c06bc0 'x86, build, pci: Fix PCI_MSI build on !SMP'
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/1421967529-9037-1-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/gpu/drm/drm_atomic_helper.c | 2 +-
- include/drm/drm_plane_helper.h      | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/Kconfig | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_atomic_helper.c b/drivers/gpu/drm/drm_atomic_helper.c
-index d467185f7942..010661f23035 100644
---- a/drivers/gpu/drm/drm_atomic_helper.c
-+++ b/drivers/gpu/drm/drm_atomic_helper.c
-@@ -1108,7 +1108,7 @@ void drm_atomic_helper_commit_planes(struct drm_device *dev,
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ba397bd..0dc9d01 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -857,7 +857,7 @@ source "kernel/Kconfig.preempt"
  
- 		funcs = plane->helper_private;
+ config X86_UP_APIC
+ 	bool "Local APIC support on uniprocessors"
+-	depends on X86_32 && !SMP && !X86_32_NON_STANDARD && !PCI_MSI
++	depends on X86_32 && !SMP && !X86_32_NON_STANDARD
+ 	---help---
+ 	  A local APIC (Advanced Programmable Interrupt Controller) is an
+ 	  integrated interrupt controller in the CPU. If you have a single-CPU
+@@ -868,6 +868,10 @@ config X86_UP_APIC
+ 	  performance counters), and the NMI watchdog which detects hard
+ 	  lockups.
  
--		if (!funcs || !funcs->atomic_update)
-+		if (!funcs)
- 			continue;
- 
- 		old_plane_state = old_state->plane_states[i];
-diff --git a/include/drm/drm_plane_helper.h b/include/drm/drm_plane_helper.h
-index 0f2230311aa8..a44139abbd5e 100644
---- a/include/drm/drm_plane_helper.h
-+++ b/include/drm/drm_plane_helper.h
-@@ -51,7 +51,7 @@ int drm_crtc_init(struct drm_device *dev, struct drm_crtc *crtc,
-  * @prepare_fb: prepare a framebuffer for use by the plane
-  * @cleanup_fb: cleanup a framebuffer when it's no longer used by the plane
-  * @atomic_check: check that a given atomic state is valid and can be applied
-- * @atomic_update: apply an atomic state to the plane
-+ * @atomic_update: apply an atomic state to the plane (mandatory)
-  *
-  * The helper operations are called by the mid-layer CRTC helper.
-  */
--- 
-2.1.3
-
++config X86_UP_APIC_MSI
++	def_bool y
++	select X86_UP_APIC if X86_32 && !SMP && !X86_32_NON_STANDARD && PCI_MSI
++
+ config X86_UP_IOAPIC
+ 	bool "IO-APIC support on uniprocessors"
+ 	depends on X86_UP_APIC
