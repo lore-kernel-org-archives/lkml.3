@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbbAWX1j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 18:27:39 -0500
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:34805 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011AbbAWX13 (ORCPT
+	id S1752128AbbAWXet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 18:34:49 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:53323 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395AbbAWXeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 18:27:29 -0500
-Date: Fri, 23 Jan 2015 17:27:25 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Joerg Roedel <joro@8bytes.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH v4 5/6] PCI: update dma configuration from DT
-Message-ID: <20150123232725.GV29776@google.com>
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
- <1422052359-12384-6-git-send-email-m-karicheri2@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422052359-12384-6-git-send-email-m-karicheri2@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 23 Jan 2015 18:34:46 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: netdev@vger.kernel.org
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: [PATCH] net: dsa/mv88e6352: make mv88e6352_wait generic
+Date: Fri, 23 Jan 2015 18:34:41 -0500
+Message-Id: <1422056081-30088-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: git-send-email 2.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 05:32:38PM -0500, Murali Karicheri wrote:
-> If there is a DT node available for the root bridge's parent device,
-> use the dma configuration from that device node. For example, keystone
-> PCI devices would require dma_pfn_offset to be set correctly in the
-> device structure of the pci device in order to have the correct dma mask.
-> The DT node will have dma-ranges defined for this. Also support using
-> the DT property dma-coherent to allow coherent DMA operation by the
-> PCI device.
-> 
-> This patch use the new helper function of_pci_dma_configure() to update
-> the device dma configuration.
-> 
-> Cc: Joerg Roedel <joro@8bytes.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Some busy bits are available in the global register 1, such as the ATU
+Busy bit. We may want to use this function to wait for them to change,
+so add a new parameter to mv88e6352_wait() instead of hard-coding
+REG_GLOBAL2.
 
-I assume this series will be merged via some non-PCI tree, so:
+In the meantime, since the REG_READ() macro already checks for error,
+remove the redundant check for ret < 0.
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+---
+ drivers/net/dsa/mv88e6352.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-> ---
->  drivers/pci/probe.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 23212f8..d7dcd6c 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -6,6 +6,7 @@
->  #include <linux/delay.h>
->  #include <linux/init.h>
->  #include <linux/pci.h>
-> +#include <linux/of_pci.h>
->  #include <linux/pci_hotplug.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> @@ -1520,6 +1521,7 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
->  	dev->dev.dma_mask = &dev->dma_mask;
->  	dev->dev.dma_parms = &dev->dma_parms;
->  	dev->dev.coherent_dma_mask = 0xffffffffull;
-> +	of_pci_dma_configure(dev);
->  
->  	pci_set_dma_max_seg_size(dev, 65536);
->  	pci_set_dma_seg_boundary(dev, 0xffffffff);
-> -- 
-> 1.7.9.5
-> 
+diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
+index 258d9ef..e13adc7 100644
+--- a/drivers/net/dsa/mv88e6352.c
++++ b/drivers/net/dsa/mv88e6352.c
+@@ -22,17 +22,14 @@
+ #include <net/dsa.h>
+ #include "mv88e6xxx.h"
+ 
+-static int mv88e6352_wait(struct dsa_switch *ds, int reg, u16 mask)
++static int mv88e6352_wait(struct dsa_switch *ds, int reg, int offset, u16 mask)
+ {
+ 	unsigned long timeout = jiffies + HZ / 10;
+ 
+ 	while (time_before(jiffies, timeout)) {
+ 		int ret;
+ 
+-		ret = REG_READ(REG_GLOBAL2, reg);
+-		if (ret < 0)
+-			return ret;
+-
++		ret = REG_READ(reg, offset);
+ 		if (!(ret & mask))
+ 			return 0;
+ 
+@@ -43,17 +40,17 @@ static int mv88e6352_wait(struct dsa_switch *ds, int reg, u16 mask)
+ 
+ static inline int mv88e6352_phy_wait(struct dsa_switch *ds)
+ {
+-	return mv88e6352_wait(ds, 0x18, 0x8000);
++	return mv88e6352_wait(ds, REG_GLOBAL2, 0x18, 0x8000);
+ }
+ 
+ static inline int mv88e6352_eeprom_load_wait(struct dsa_switch *ds)
+ {
+-	return mv88e6352_wait(ds, 0x14, 0x0800);
++	return mv88e6352_wait(ds, REG_GLOBAL2, 0x14, 0x0800);
+ }
+ 
+ static inline int mv88e6352_eeprom_busy_wait(struct dsa_switch *ds)
+ {
+-	return mv88e6352_wait(ds, 0x14, 0x8000);
++	return mv88e6352_wait(ds, REG_GLOBAL2, 0x14, 0x8000);
+ }
+ 
+ static int __mv88e6352_phy_read(struct dsa_switch *ds, int addr, int regnum)
+-- 
+2.2.2
+
