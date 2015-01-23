@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386AbbAWS6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 13:58:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41217 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755899AbbAWS6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 13:58:47 -0500
-Date: Fri, 23 Jan 2015 19:58:45 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
-        kvm@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [Xen-devel] [RFC v4 0/2] x86/xen: add xen hypercall preemption
-Message-ID: <20150123185845.GY17887@wotan.suse.de>
-References: <1421972951-3940-1-git-send-email-mcgrof@do-not-panic.com> <54C235AD.5010202@citrix.com>
+	id S1756296AbbAWTAi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 14:00:38 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:64776 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbbAWTAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 14:00:35 -0500
+Message-ID: <54C29A51.1050904@acm.org>
+Date: Fri, 23 Jan 2015 13:00:33 -0600
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C235AD.5010202@citrix.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: nick <xerofoify@gmail.com>
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] char:ipmi: Free ipmi_recv_msg messages from the linked
+ list,recv_msgs for the function,ipmi_release in the file,ipmi_devintf.c
+References: <1422036143-27808-1-git-send-email-xerofoify@gmail.com> <54C292A7.9090000@gmail.com>
+In-Reply-To: <54C292A7.9090000@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 11:51:09AM +0000, David Vrabel wrote:
-> On 23/01/15 00:29, Luis R. Rodriguez wrote:
-> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > 
-> > This v4 addresses some of the cleanups recommended and adds
-> > tracing option for when we do actually preempt a hypercall.
-> > I kept the NOKPROBE_SYMBOL() for now but did remove the 'notrace'
-> > stuff.
-> > 
-> > This goes out as RFC still as I have not been able to test 32-bit.
-> > Can anyone test that or at least confirm that the 32-bit point
-> > we do the upcall is definitely not on the IRQ stack?
-> 
-> You can omit fixing this for 32-bit guests (provided you note as such in
-> the commit message).
+On 01/23/2015 12:27 PM, nick wrote:
+> Corney,
+> Hope this patch fixes the issue. Sorry about missing that kfree
+> being required. :(
 
-I'll be happy to do that.
+Well, the kfree needs to be after the free of the messages.    You can't
+use an item after you free it.
 
- Luis
+-corey
+
+> Nick
+>
+>
+> On 2015-01-23 01:02 PM, Nicholas Krause wrote:
+>> This adds a loop through the elements in the linked list, recv_msgs using
+>> list_for_entry_safe in order to free messages in this list.  In addition
+>> we are using the safe version of this marco in order to prevent use after
+>> bugs related to deleting the element we are on currently by holding a
+>> pointer to the next element after the current one we are on and freeing
+>> with the function, ipmi_free_recv_msg internally in this loop.
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  drivers/char/ipmi/ipmi_devintf.c | 7 ++++++-
+>>  1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
+>> index ec318bf..a625510 100644
+>> --- a/drivers/char/ipmi/ipmi_devintf.c
+>> +++ b/drivers/char/ipmi/ipmi_devintf.c
+>> @@ -157,14 +157,19 @@ static int ipmi_release(struct inode *inode, struct file *file)
+>>  {
+>>  	struct ipmi_file_private *priv = file->private_data;
+>>  	int                      rv;
+>> +	struct  ipmi_recv_msg *msg, *next;
+>>  
+>>  	rv = ipmi_destroy_user(priv->user);
+>>  	if (rv)
+>>  		return rv;
+>>  
+>> -	/* FIXME - free the messages in the list. */
+>>  	kfree(priv);
+>>  
+>> +	list_for_each_entry_safe(msg, next, &priv->recv_msgs, link) {
+>> +		ipmi_free_recv_msg(msg);
+>> +	}
+>> +
+>> +
+>>  	return 0;
+>>  }
+>>  
+>>
+
