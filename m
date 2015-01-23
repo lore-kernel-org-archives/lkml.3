@@ -1,103 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087AbbAWQYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 11:24:50 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39308 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832AbbAWQYr (ORCPT
+	id S1756118AbbAWQZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 11:25:21 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:57952 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321AbbAWQZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 11:24:47 -0500
-Date: Fri, 23 Jan 2015 10:24:43 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Baolu Lu <baolu.lu@linux.intel.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] usb: dwc3: add ULPI interface support
-Message-ID: <20150123162443.GH8585@saruman.tx.rr.com>
-Reply-To: <balbi@ti.com>
-References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1422025978-178336-7-git-send-email-heikki.krogerus@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TKYYegg/GYAC5JIZ"
-Content-Disposition: inline
-In-Reply-To: <1422025978-178336-7-git-send-email-heikki.krogerus@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 23 Jan 2015 11:25:15 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-58-54c275e9e70c
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Kukjin Kim <kgene@kernel.org>, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Colin Cross <ccross@google.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        b.zolnierkie@samsung.com
+Subject: [PATCH v3 0/2] cpuidle: exynos: add coupled cpuidle support for
+ Exynos4210
+Date: Fri, 23 Jan 2015 17:24:52 +0100
+Message-id: <1422030294-20925-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFLMWRmVeSWpSXmKPExsVy+t9jAd2XpYdCDBZslrLYOGM9q8WCGe3M
+	FvM+y1q8fmFo0bvgKptF/+PXzBZnm96wW7w/9IzZ4vKuOWwWn3uPMFrMOL+PyWLVrj+MDjwe
+	O2fdZfdYsKnUY9OqTjaPO9f2sHnc/veY2aNvyypGj8+b5ALYo7hsUlJzMstSi/TtErgy7j7O
+	KdguVvH90WamBsZngl2MnBwSAiYSR9v2MkHYYhIX7q1n62Lk4hASWMQoMXfrZlaQhJBAF5PE
+	4xYFEJtNwEpiYvsqRhBbREBNomfxVkaQBmaBHmaJjvWzwBLCAqESCy53ATVzcLAIqEqcfMwP
+	EuYV8JB486mbHWKZokT3swlsExi5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIDrFn
+	0jsYVzVYHGIU4GBU4uFt2HIwRIg1say4MvcQowQHs5IIb0bKoRAh3pTEyqrUovz4otKc1OJD
+	jNIcLErivEr2bSFCAumJJanZqakFqUUwWSYOTqkGRrUfMw67H1lS6vrkiIjsdPemr6kTWY0u
+	1PjVHFbfYh78MpRz69+gXec0O+aXmNaLeD1IXJ6r1FBspO7N6F/ty3KjpkPr4N2zm1/1q/73
+	D3vizW3E+YTl++m4m1IuN4Ou8KrsfWFRazKv8VWjzaeNDjq9J87P0hF+kst1X86lffXh3Xvc
+	12/3VWIpzkg01GIuKk4EACGgkX8tAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---TKYYegg/GYAC5JIZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi,
 
-On Fri, Jan 23, 2015 at 05:12:56PM +0200, Heikki Krogerus wrote:
-> +int dwc3_ulpi_init(struct dwc3 *dwc)
-> +{
-> +	u32 reg;
-> +
-> +	/* First check USB2 PHY interface type */
-> +	switch (DWC3_GHWPARAMS3_HSPHY_IFC(dwc->hwparams.hwparams3)) {
-> +	case DWC3_GHWPARAMS3_HSPHY_IFC_UTMI_ULPI:
-> +		/* Select ULPI Interface */
-> +		reg =3D dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
-> +		reg |=3D DWC3_GUSB2PHYCFG_ULPI_UTMI;
-> +		dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
-> +		/* FALLTHROUGH */
-> +	case DWC3_GHWPARAMS3_HSPHY_IFC_ULPI:
-> +		break;
-> +	default:
-> +		return 0;
-> +	}
-> +
-> +	/* Register the interface */
-> +	dwc->ulpi =3D ulpi_register_interface(dwc->dev, &dwc3_ulpi);
-> +	if (IS_ERR(dwc->ulpi)) {
+The following patchset adds coupled cpuidle support for Exynos4210
+to an existing cpuidle-exynos driver.  As a result it enables AFTR
+mode to be used by default on Exynos4210 without the need to hot
+unplug CPU1 first.
 
-so, this will only build and link if DWC3_ULPI is enabled, in case of
-error you return early...
+This work is heavily based on earlier cpuidle-exynos4210 driver from
+Daniel Lezcano:
 
-> +		dev_err(dwc->dev, "failed to register ULPI interface");
-> +		return PTR_ERR(dwc->ulpi);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +void dwc3_ulpi_exit(struct dwc3 *dwc)
-> +{
-> +	if (dwc->ulpi) {
+http://www.spinics.net/lists/linux-samsung-soc/msg28134.html
 
-=2E.. looks like this branch is unnecessary.
+Changes from Daniel's code include:
+- porting code to current kernels
+- fixing it to work on my setup (by using S5P_INFORM register
+  instead of S5P_VA_SYSRAM one on Revison 1.1 and retrying poking
+  CPU1 out of the BOOT ROM if necessary)
+- fixing rare lockup caused by waiting for CPU1 to get stuck in
+  the BOOT ROM (CPU hotplug code in arch/arm/mach-exynos/platsmp.c
+  doesn't require this and works fine)
+- moving Exynos specific code to arch/arm/mach-exynos/pm.c
+- using cpu_boot_reg_base() helper instead of BOOT_VECTOR macro
+- using exynos_cpu_*() helpers instead of accessing registers
+  directly
+- using arch_send_wakeup_ipi_mask() instead of dsb_sev()
+  (this matches CPU hotplug code in arch/arm/mach-exynos/platsmp.c)
+- integrating separate exynos4210-cpuidle driver into existing
+  exynos-cpuidle one
 
---=20
-balbi
+patch #1 is a fix for Exynos platform PM code preparing it for
+coupled cpuidle support
 
---TKYYegg/GYAC5JIZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+patch #2 adds coupled cpuidle AFTR mode for Exynos4210
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+The patchset depends on:
+- for-next branch (commit: 9663ad71912b) of linux-samsung.git
+  kernel tree
 
-iQIcBAEBAgAGBQJUwnXLAAoJEIaOsuA1yqRE9a0P/jOSaBX9ETM7JZ5jm+Tu0Lhe
-b0Y0LbCI/tZ3vu4fDcU4ROa4+gASM6tW7kBsYrceOQL6vsixZ2K9QdCjSdmMphL0
-w9WImk0103H340jKASe7N4xG0R0/MfdEm+Y5LGYR/Fi0JU+X8Dnoj10h6qry/ecI
-8EcmqCu6jUwYK0XK9IBlj9oOCOIIyHPIQemRWOz/eoBF2MgRVTgOV5V/PCIpxQGq
-fuxUxqBQNUCt49YM5sx6xVSUqxaAtbTvHv9pfLG4wAvoELjATU4sHY8APNz7719I
-EQBHvmkoLXfTazN82Fh6WxigpaC9aNg2YU8R1pDCkyNLX95LF1116Fu/3wUJ04e4
-VoyUu1DR5/BpZJWLBkPw8hI5h7lA6J3LsCyuDb6SZTymdb1Le89TqCu7GIDkM+Hb
-XORsRuCr9Q5c6FrwpATNMiI+GQQMp8JRWEgdgcAwablx++gW3UOdZ8OdiRTXsY9p
-6HSN/cqqRd9r9xj6vqy4g9CXYE5pTQR9StOpeZO/Ls56TDyRy0zplFsz2+sjIYq+
-w/fg9omXOoDPutP28Vm1QzqnxJY6ewt6Dvh4bkwtQ0jrFed5ym1JGiW9Zfxylq12
-eAT3uQX7YAMoVyhHbKhYcrXL5Nm9FWD28c5/JEgHO51Z+rVxKQZ8LOFEhhdrhwcF
-ZjaN9NBjC1WIHW8joQ/i
-=WnRn
------END PGP SIGNATURE-----
+Changes since v2:
+- rebased on top of for-next branch (commit: 9663ad71912b) of
+  linux-samsung.git kernel tree
 
---TKYYegg/GYAC5JIZ--
+Changes since v1:
+- rebased on top of for-next branch (commit: 760a7d4763c8) of
+  linux-samsung.git kernel tree (the patchset also applies fine
+  to next-20141126 branch of linux-next kernel tree but needs
+  CPUIDLE_FLAG_TIME_VALID flag usage removed to fix build)
+- added Signed-off-by from Daniel Lezcano to patch #2
+- added separate struct cpuidle_driver exynos_coupled_idle_driver
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+
+Bartlomiej Zolnierkiewicz (2):
+  ARM: EXYNOS: apply S5P_CENTRAL_SEQ_OPTION fix only when necessary
+  cpuidle: exynos: add coupled cpuidle support for Exynos4210
+
+ arch/arm/mach-exynos/common.h                |   4 +
+ arch/arm/mach-exynos/exynos.c                |   4 +
+ arch/arm/mach-exynos/platsmp.c               |   2 +-
+ arch/arm/mach-exynos/pm.c                    | 133 ++++++++++++++++++++++++++-
+ arch/arm/mach-exynos/suspend.c               |   4 +
+ drivers/cpuidle/Kconfig.arm                  |   1 +
+ drivers/cpuidle/cpuidle-exynos.c             |  76 ++++++++++++++-
+ include/linux/platform_data/cpuidle-exynos.h |  20 ++++
+ 8 files changed, 234 insertions(+), 10 deletions(-)
+ create mode 100644 include/linux/platform_data/cpuidle-exynos.h
+
+-- 
+1.8.2.3
+
