@@ -1,123 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832AbbAXLZG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 06:25:06 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:55349 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571AbbAXLZB (ORCPT
+	id S1753029AbbAXL1l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 06:27:41 -0500
+Received: from smtp-out-230.synserver.de ([212.40.185.230]:1045 "EHLO
+	smtp-out-230.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929AbbAXL1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 06:25:01 -0500
-Date: Sat, 24 Jan 2015 12:24:55 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jeremiah Mahler <jmmahler@gmail.com>,
-        Matt Roper <matthew.d.roper@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and
- overshoots
-Message-ID: <20150124112455.GE10113@phenom.ffwll.local>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Matt Roper <matthew.d.roper@intel.com>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	Dave Airlie <airlied@redhat.com>,
-	Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org
-References: <20150117100635.GA1281@hudson.localdomain>
- <20150119090847.GQ10649@intel.com>
- <54BCE1BF.5050808@intel.com>
- <20150119110404.GA26577@nuc-i3427.alporthouse.com>
- <20150119164024.GI22549@intel.com>
- <20150120054842.GN26519@phenom.ffwll.local>
- <20150124065732.GA17057@hudson.localdomain>
+	Sat, 24 Jan 2015 06:27:37 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 18675
+Message-ID: <54C381A7.3020209@metafoo.de>
+Date: Sat, 24 Jan 2015 12:27:35 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150124065732.GA17057@hudson.localdomain>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: Mark Brown <broonie@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Jyri Sarha <jsarha@ti.com>
+Subject: Re: [alsa-devel] [PATCH v2 3/3] ASoC: add generic dt-card support
+References: <cover.1421868426.git.moinejf@free.fr>	<d0c66c2e2f200119f9990fa52a503b1a4af6238f.1421868426.git.moinejf@free.fr>	<54C0088F.9070609@metafoo.de>	<20150122090723.50ac0156@armhf>	<54C14EB3.8080305@metafoo.de>	<20150123131554.623003f9@armhf>	<54C252F4.9000504@metafoo.de> <20150123193456.276ea512@armhf>
+In-Reply-To: <20150123193456.276ea512@armhf>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:57:32PM -0800, Jeremiah Mahler wrote:
-> all,
-> 
-> On Tue, Jan 20, 2015 at 06:48:42AM +0100, Daniel Vetter wrote:
-> > On Mon, Jan 19, 2015 at 08:40:24AM -0800, Matt Roper wrote:
-> > > On Mon, Jan 19, 2015 at 11:04:04AM +0000, Chris Wilson wrote:
-> > > > On Mon, Jan 19, 2015 at 11:51:43AM +0100, Daniel Vetter wrote:
-> > > > > There's also an issue in (most) X drivers which exaberates this
-> > > > > issues: When changing the cursor buffer the X cursor code does a a)
-> > > > > disable cursor b) update cursor image c) enable cursor cycle.
-> > > > 
-> > > > Notably not -intel on which the bug has been observed. And more
-> > > > importantly, the slow downs don't seem to correlate with cursor change,
-> > > > just cursor movement.
-> > > > -Chris
-> > > > 
-> > > > -- 
-> > > > Chris Wilson, Intel Open Source Technology Centre
-> > > 
-> > > It seems that the simple fix for this case (movement only) is to just
-> > > skip the prepare_fb/cleanup_fb calls (and the associated vblank wait) in
-> > > the transitional plane helper when newfb == oldfb.  I just posted a
-> > > small patch that makes that change (and solves the cursor lag for me).
-> > > 
-> > > This won't solve the case if userspace uses a different framebuffer for
-> > > each update (while trying to update faster than the refresh rate).  Is
-> > > there any existing userspace that behaves this way that we can test
-> > > with?
-> > 
-> > Hm, I've thought I've merged that patch already:
-> > 
-> > commit ab58e3384b9f9863bfd029b458ff337d381bf6d2
-> > Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > Date:   Mon Nov 24 20:42:42 2014 +0100
-> > 
-> >     drm/atomic-helper: Skip vblank waits for unchanged fbs
-> > 
-> > Or is the problem here that the transitional plane helpers aren't up to
-> > the task? If so please reference that in your patch.
-> > 
-> > And we still need a hack for the "changed fb cursor" issue, I'll whip
-> > something up.
-> > -Daniel
-> > -- 
-> > Daniel Vetter
-> > Software Engineer, Intel Corporation
-> > +41 (0) 79 365 57 48 - http://blog.ffwll.ch
-> 
-> Just checking if anyone has come up with a fix.  I am still stuck at
-> next-20150112 because of this bug.
+On 01/23/2015 07:34 PM, Jean-Francois Moine wrote:
+> On Fri, 23 Jan 2015 14:56:04 +0100
+> Lars-Peter Clausen <lars@metafoo.de> wrote:
+>
+>> On 01/23/2015 01:15 PM, Jean-Francois Moine wrote:
+>> [...]
+>>> The DT should describe the hardware, and the simple-card mixes hardware
+>>> and software.
+>>> For example, the kirkwood controller may create 2 CPU DAIs. With the
+>>> simple-card, the DT contains a number to reference these DAIs (for
+>>> example, implicitly, <audio1 0> references the I2S output). So, what if
+>>> the controller creates only one DAI, or, what if the FreeBSD/OpenBSD/..
+>>> driver does not set the same references to these DAIs?
+>>> The graph of port fixes this problem.
+>>
+>> Even with the simple-card bindings there are no software specific bits. The
+>> DAI that is referenced in your example is the physical DAI as it exists in
+>> the hardware. Which DAI maps to which specifier is defined in the devicetree
+>> bindings definition for the hardware unit.
+>
+> There is no first or second output in the kirkwood controller; there
+> are I2S and S/PDIF outputs. Their hardware controls are done by bits in
+> the different registers. Then, the driver may define its DAIs in any
+> order and assign any DAI ID to these DAIs. So, for a given DAI, there
+> is no relation between its type (I2s or S/PDIF), index in the dai
+> driver (= asoc component index) and ID.
+>
+> In the simple-card DT, the CPU DAI (as the CODEC DAI) is referenced by
+> a phandle (the audio-controller) and a number which should identify the
+> DAI. This number is translated to a DAI name thanks to the function
+> snd_soc_get_dai_name(). This function scans the components and returns
+> the name of the DAI (component) supported by the audio controller with
+> the searched number equal to the component index (there is no 'xlate'
+> function).
+>
+> So, with the simple-card, the CPU or CODEC DAI binding (phandle +
+> number) identifies what the software has put in its table, but not a
+> hardware entity.
 
-I've merged a patch from Matt Roper:
+Are you talking about the kirkwood driver or about things in general?
 
-commit d99b70ce7d73d78a88311453ccdd0fa0a670dd50
-Author: Matt Roper <matthew.d.roper@intel.com>
-Date:   Mon Jan 19 08:31:49 2015 -0800
+What you are saying is not true in general, if it is true for the kirkwood 
+driver than the driver is broken in regards to DT bindings.
 
-    drm/plane-helper: Skip prepare_fb/cleanup_fb when newfb==oldfb
+The specifier that follows after the phandle is hardware specific. This can 
+be any number of integers. And the meaning of this is defined in the 
+bindings specification for that hardware.
 
-that should rectify the sluggish i915 cursor. But it's in a separate topic
-branch which isn't in linux-next. Should show up in drm-next next week
-though.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Many specifications define a binding in which either no specifier needs to 
+be supplied, since there is only a single DAI, or one integer specifier 
+which denotes which DAI is referenced for a multi-DAI controller. In the 
+later case the bindings specification has to state which number maps to 
+which physical DAI. Out of convenience many drivers use the same order as 
+given in the bindings specification for their ASoC DAIs. Which is why the 
+ASoC core provides a standard implementation for translating phandle + 
+specifier to a ASoC DAI. But it is important to remember that the 
+authoritative entity here is the bindings specification and not the driver.
+
+If the bindings specification uses a different scheme for referencing the 
+DAIs a custom xlate function needs to be provided by the driver confirms to 
+this specification.
+
+>
+>>> More: a simple audio card may easily be created from a graph of ports
+>>> as the simple-card does, but by the audio-controller (sorry, I also
+>>> forgot the kirkwood patch for this in my previous patch request).
+>>> In case of complex cards, the links and properties of this graph may
+>>> also be used by board specific card devices.
+>>>
+>>>> One issue is how to deal with multi-point-to-multi-point links. I2S/TDM is a
+>>>> bus and can have more than one reader/writer.
+>>>>
+>>>> The second issue is how to describe the clock and frame master
+>>>> relationships. Multiple different buses can share the same clock and frame
+>>>> generator. E.g. typically the capture and playback stream are linked in this
+>>>> way.
+>>>
+>>> The ports and endpoints may contain properties to describe these
+>>> configurations. Complex cases should be handled by specific card
+>>> builders.
+>>
+>> Could you describe in detail what a card builder is and how to decide when
+>> and how a card builder is executed?
+>
+> A card builder is a device which
+> - scans the graph of ports,
+> - fills the struct snd_soc_card according to the links between the
+>    ports and their properties,
+> - and, eventually, calls snd_soc_register_card().
+>
+> The simple card builder, 'dt-card' (maybe a better name would have been
+> 'graph-card'), acts just like the simple-card except that it does not
+> appear in the DT. Its creation is done by an audio controller.
+>
+> For complex cards, a card builder would be the same as an actual card
+> driver, but with the capability to know about the board thanks to the
+> graph of ports. Its creation could be done by a compatible device in
+> the DT (as actually) or by the unique or a 'master' audio controller.
+>
+> A card builder is subject to a PROBE_DEFER after calling
+> snd_soc_register_card(), so, when it is created by an audio controller,
+> this last one should have created its own resources.
+>
+> An audio controller does the following:
+> - initialize the hardware and software,
+> - create the DAIs from:
+> 	- the graph of ports or
+> 	- default values
+> - register these DAIs and
+> - if the DAIs where created by a graph of port,
+> 	create the card builder.
+
+I don't understand how invoking the card builder from the CPU side audio 
+controller driver will work. The audio controller driver does not know what 
+card it is part of, so how does it decide which builder to call, and what 
+happens in the case of multiple CPU side audio controllers involved in the 
+same card. In rare cases there might not even be a CPU side audio controller 
+involved at all.
+
+I think this is something that needs to be done in the ASoC/ALSA core 
+itself. Create the graph, wait until all endpoints of the graph have been 
+registered and then create the card. Or something similar.
+
+- Lars
