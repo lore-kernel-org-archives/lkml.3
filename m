@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262AbbAXOEi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 09:04:38 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:39316 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080AbbAXOEa (ORCPT
+	id S1754191AbbAXOEf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 09:04:35 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:55173 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908AbbAXOEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 09:04:30 -0500
+	Sat, 24 Jan 2015 09:04:31 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 27/32] mm: use %*pb[l] to print bitmaps including cpumasks and nodemasks
-Date: Sat, 24 Jan 2015 09:03:33 -0500
-Message-Id: <1422108218-25398-28-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Steffen Klassert <steffen.klassert@secunet.com>
+Subject: [PATCH 28/32] padata: use %*pb[l] to print bitmaps including cpumasks and nodemasks
+Date: Sat, 24 Jan 2015 09:03:34 -0500
+Message-Id: <1422108218-25398-29-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422108218-25398-1-git-send-email-tj@kernel.org>
 References: <1422108218-25398-1-git-send-email-tj@kernel.org>
@@ -35,26 +36,34 @@ before applying to subsystem trees.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
 ---
- mm/mempolicy.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ kernel/padata.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 0e0961b..b8a6907 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2838,8 +2838,7 @@ void mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol)
- 			p += snprintf(p, buffer + maxlen - p, "relative");
- 	}
+diff --git a/kernel/padata.c b/kernel/padata.c
+index 161402f..b38bea9 100644
+--- a/kernel/padata.c
++++ b/kernel/padata.c
+@@ -917,15 +917,10 @@ static ssize_t show_cpumask(struct padata_instance *pinst,
+ 	else
+ 		cpumask = pinst->cpumask.pcpu;
  
--	if (!nodes_empty(nodes)) {
--		p += snprintf(p, buffer + maxlen - p, ":");
--	 	p += nodelist_scnprintf(p, buffer + maxlen - p, nodes);
--	}
-+	if (!nodes_empty(nodes))
-+		p += scnprintf(p, buffer + maxlen - p, ":%*pbl",
-+			       nodemask_pr_args(&nodes));
+-	len = bitmap_scnprintf(buf, PAGE_SIZE, cpumask_bits(cpumask),
+-			       nr_cpu_ids);
+-	if (PAGE_SIZE - len < 2)
+-		len = -EINVAL;
+-	else
+-		len += sprintf(buf + len, "\n");
+-
++	len = snprintf(buf, PAGE_SIZE, "%*pb\n",
++		       nr_cpu_ids, cpumask_bits(cpumask));
+ 	mutex_unlock(&pinst->lock);
+-	return len;
++	return len < PAGE_SIZE ? len : -EINVAL;
  }
+ 
+ static ssize_t store_cpumask(struct padata_instance *pinst,
 -- 
 2.1.0
 
