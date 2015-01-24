@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569AbbAXCJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 21:09:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43430 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbbAXCJq (ORCPT
+	id S1753150AbbAXDKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 22:10:46 -0500
+Received: from vl22022.dns-privadas.es ([212.48.80.61]:49987 "EHLO
+	vl22022.dns-privadas.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbbAXDKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 21:09:46 -0500
-Date: Sat, 24 Jan 2015 10:09:42 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Dave Mielke <dave@mielke.cc>
-Subject: Re: [PATCH] vt: provide notifications on selection changes
-Message-ID: <20150124020942.GA3230@kroah.com>
-References: <alpine.LFD.2.11.1501231636200.1322@knanqh.ubzr>
+	Fri, 23 Jan 2015 22:10:44 -0500
+X-Greylist: delayed 3282 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jan 2015 22:10:41 EST
+Message-ID: <cae57c4fcb9d565050de7f1040bc9abc.squirrel@la-oca.com>
+Date: Sat, 24 Jan 2015 03:11:19 +0100
+Subject: Darlehen Angebot
+From: "Krause Arno" <oficina@la-oca.com>
+Reply-To: krause.arno@yahoo.com
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1501231636200.1322@knanqh.ubzr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - vl22022.dns-privadas.es
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - la-oca.com
+X-Get-Message-Sender-Via: vl22022.dns-privadas.es: authenticated_id: oficina@la-oca.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 05:07:21PM -0500, Nicolas Pitre wrote:
-> The vcs device's poll/fasync support relies on the vt notifier to signal
-> changes to the screen content.  Notifier invocations were missing for
-> changes that comes through the selection interface though.  Fix that.
-> 
-> Tested with BRLTTY 5.2.
-> 
-> Signed-off-by: Nicolas Pitre <nico@linaro.org>
-> Cc: Dave Mielke <dave@mielke.cc>
-> 
-> ---
-> 
-> Greg: Would be highly convenient to have this patch applied to the 
-> stable tree as well to help affected blind Linux users via distro 
-> updates.  Yet it took a while before this issue was discovered. Your 
-> call.
 
-Ok, that sounds good, I'll queue this up for 3.20-rc1 and mark it for
-stable so it will get backported.
 
-thanks,
 
-greg k-h
+Guten Morgen
+Sind Sie in Darlehen interessiert?
+Der Preis ist niedrig
+Für weitere Informationen und Erklärungen
+Meine E-Mail: info.krause.arno@gmail.com
+Danke
+
