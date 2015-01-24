@@ -1,96 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbbAXWYk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 17:24:40 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:54921 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956AbbAXWYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 17:24:39 -0500
-Date: Sat, 24 Jan 2015 16:23:42 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: perf not capturing stack traces
-Message-ID: <20150124222342.GA26941@saruman.tx.rr.com>
-Reply-To: <balbi@ti.com>
-References: <20150123195128.GE26557@saruman.tx.rr.com>
- <20150123205959.GD3073@kernel.org>
- <20150123223745.GJ26557@saruman.tx.rr.com>
- <20150124151204.GF3073@kernel.org>
+	id S1751715AbbAXWlP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 17:41:15 -0500
+Received: from www.linutronix.de ([62.245.132.108]:41421 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbbAXWlN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 17:41:13 -0500
+Date: Sat, 24 Jan 2015 23:40:46 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+cc: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>
+Subject: Re: [PATCH 3.19-rc2 v15 4/8] sched_clock: Avoid deadlock during read
+ from NMI
+In-Reply-To: <1422022952-31552-5-git-send-email-daniel.thompson@linaro.org>
+Message-ID: <alpine.DEB.2.11.1501242248170.5526@nanos>
+References: <1422022952-31552-1-git-send-email-daniel.thompson@linaro.org> <1422022952-31552-5-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
-Content-Disposition: inline
-In-Reply-To: <20150124151204.GF3073@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---XsQoSWH+UP9D9v3l
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 23 Jan 2015, Daniel Thompson wrote:
+> This patch fixes that problem by providing banked clock data in a
+> similar manner to Thomas Gleixner's 4396e058c52e("timekeeping: Provide
+> fast and NMI safe access to CLOCK_MONOTONIC").
 
-Hi,
+By some definition of similar.
 
-On Sat, Jan 24, 2015 at 12:12:04PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jan 23, 2015 at 04:37:45PM -0600, Felipe Balbi escreveu:
-> > On Fri, Jan 23, 2015 at 05:59:59PM -0300, Arnaldo Carvalho de Melo wrot=
-e:
-> > > Em Fri, Jan 23, 2015 at 01:51:28PM -0600, Felipe Balbi escreveu:
-> > > > I'm using v3.19-rc5 on an ARM Cortex A9 board. Unfortunately, perf =
-is
-> > > > not able to capture any stack traces even though I CONFIG_STACKTRAC=
-E,
-> > > > CONFIG_FRAME_POINTER and CONFIG_ARM_UNWIND all enabled.
-> > > >=20
-> > > > I wonder if anybody else is facing similar issues.
-> > >=20
-> > > Did it work with a previous kernel?
-> >=20
-> > haven't checked with this board. First time I tried to use perf for
-> > anything.
->=20
-> And it is the first time I've heard about such a problem, not dealing
-> with ARM myself, so I guess this is a case for looking if there was some
-> previous kernel where this worked, then trying to bisect where the
-> problem was introduced :-\
+> -struct clock_data {
+> -	ktime_t wrap_kt;
+> +struct clock_data_banked {
+>  	u64 epoch_ns;
+>  	u64 epoch_cyc;
+> -	seqcount_t seq;
+> -	unsigned long rate;
+> +	u64 (*read_sched_clock)(void);
+> +	u64 sched_clock_mask;
+>  	u32 mult;
+>  	u32 shift;
+>  	bool suspended;
+>  };
+>  
+> +struct clock_data {
+> +	ktime_t wrap_kt;
+> +	seqcount_t seq;
+> +	unsigned long rate;
+> +	struct clock_data_banked bank[2];
+> +};
 
-yeah, I'll try a few older kernels, also see if I can reproduce on other
-boards.
+....
 
-cheers
+> -static u64 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
+> +static struct clock_data cd = {
+> +	.bank = {
+> +		[0] = {
+> +			.mult	= NSEC_PER_SEC / HZ,
+> +			.read_sched_clock = jiffy_sched_clock_read,
+> +		},
+> +	},
+> +};
 
---=20
-balbi
+If you had carefully studied the changes which made it possible to do
+the nmi safe clock monotonic accessor then you'd had noticed that I
+went a great way to optimize the cache foot print first and then add
+this new fangled thing.
 
---XsQoSWH+UP9D9v3l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So in the first place 'cd' lacks ____cacheline_aligned. It should have
+been there before, but that's a different issue. You should have
+noticed.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Secondly, I don't see any hint that you actually thought about the
+cache foot print of the result struct clock_data. 
 
-iQIcBAEBAgAGBQJUxBtuAAoJEIaOsuA1yqREY04QAKD2Iw6pAQN7tCjURA8ll+aa
-qVa14qrSQWadeqcvuNHwmtr6e0fTtVnEb5GwaNR9rG27XiteEv51WHnhGPR9bYWG
-z3d5lyHF8Aha2KZH9kmzi8RBQ3MRuMmWQ1bmNDyXMTWGZxbNA7AseIS/yxEwiHAd
-vP+cFPNdNCq51KhT7CYBPc0B+6ORjQ+xFZhSwyvGI3HbBjiaioJUbi/mPuFOQUyl
-lMqrMNW+e8VI8rhLERWBJqmCLKWdKceWTGA35d1XwFR37gBZvJAwRCcyb68sWjfE
-zgnQGng/kL3tX7JjwvRydByfsxDAf1wYKEuI6Hbxe9GY8mRn+ehkKiKhDr+cyJx9
-rjOnpYksmqutKUHeA0wCSqeGeGdb7c9cXZ+Qpp2h2Mj7GU+oXYLm/fII6Q08DM+y
-8S2Z4tvgYf74MAhLhEOiuy18OGk8+IaSxulfd1o97RT0Uk4pRz74YebW6AKoOlfs
-42m6fjjEae5gpPe5dyOzqkdYpMQlfuv2gw4RLjVtKS62Q8ypFLY9zgwhIPnUbXG6
-/2383K1A1PuBB2m2OJ5pLGkOlPGjtU3DRJfe9LHfCNr2qT3LBFzqVHIrX7bfw3eI
-w+dWbKLi1R7VlVoI+3NdufdZ6lUU7BDJcDLkZAPirsYEJ5t85J8/kZSA6HULHL6U
-9y7Pc+ihMmnsH63Ay2D1
-=eaJX
------END PGP SIGNATURE-----
+struct clock_data {
+	ktime_t wrap_kt;
+	seqcount_t seq;
+	unsigned long rate;
+	struct clock_data_banked bank[2];
+};
 
---XsQoSWH+UP9D9v3l--
+wrap_kt and rate are completely irrelevant for the hotpath. The whole
+thing up to the last member of bank[0] still fits into 64 byte on both
+32 and 64bit, but that's not by design and not documented so anyone
+who is aware of cache foot print issues will go WTF when the first
+member of a hot path data structure is completely irrelevant.
+
+>  static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
+>  {
+> @@ -58,50 +65,82 @@ static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
+>  
+>  unsigned long long notrace sched_clock(void)
+>  {
+> -	u64 epoch_ns;
+> -	u64 epoch_cyc;
+>  	u64 cyc;
+>  	unsigned long seq;
+> -
+> -	if (cd.suspended)
+> -		return cd.epoch_ns;
+> +	struct clock_data_banked *b;
+> +	u64 res;
+
+So we now have
+
+  	u64 cyc;
+  	unsigned long seq;
+	struct clock_data_banked *b;
+	u64 res;
+
+Let me try a different version of that:
+
+	struct clock_data_banked *b;
+  	unsigned long seq;
+	u64 res, cyc;
+
+Can you spot the difference in the reading experience?
+ 
+>  	do {
+> -		seq = raw_read_seqcount_begin(&cd.seq);
+> -		epoch_cyc = cd.epoch_cyc;
+> -		epoch_ns = cd.epoch_ns;
+> +		seq = raw_read_seqcount(&cd.seq);
+> +		b = cd.bank + (seq & 1);
+> +		if (b->suspended) {
+> +			res = b->epoch_ns;
+
+So now we have read_sched_clock as a pointer in the bank. Why do you
+still need b->suspended?
+
+What's wrong with setting b->read_sched_clock to NULL at suspend and
+restore the proper pointer on resume and use that as a conditional?
+ 
+It would allow the compiler to generate better code, but that's
+obviously not the goal here. Darn, this is hot path code and not some
+random driver.
+
+> +		} else {
+> +			cyc = b->read_sched_clock();
+> +			cyc = (cyc - b->epoch_cyc) & b->sched_clock_mask;
+> +			res = b->epoch_ns + cyc_to_ns(cyc, b->mult, b->shift);
+
+It would allow the following optimization as well:
+
+   	 res = b->epoch_ns;
+	 if (b->read_sched_clock) {
+	    	...
+	 }
+
+If you think that compilers are smart enough to figure all that out
+for you, you might get surprised. The more clear your code is the
+better is the chance that the compiler gets it right. We have seen the
+opposite of that as well, but that's clearly a compiler bug.
+
+> +/*
+> + * Start updating the banked clock data.
+> + *
+> + * sched_clock will never observe mis-matched data even if called from
+> + * an NMI. We do this by maintaining an odd/even copy of the data and
+> + * steering sched_clock to one or the other using a sequence counter.
+> + * In order to preserve the data cache profile of sched_clock as much
+> + * as possible the system reverts back to the even copy when the update
+> + * completes; the odd copy is used *only* during an update.
+> + *
+> + * The caller is responsible for avoiding simultaneous updates.
+> + */
+> +static struct clock_data_banked *update_bank_begin(void)
+> +{
+> +	/* update the backup (odd) bank and steer readers towards it */
+> +	memcpy(cd.bank + 1, cd.bank, sizeof(struct clock_data_banked));
+> +	raw_write_seqcount_latch(&cd.seq);
+> +
+> +	return cd.bank;
+> +}
+> +
+> +/*
+> + * Finalize update of banked clock data.
+> + *
+> + * This is just a trivial switch back to the primary (even) copy.
+> + */
+> +static void update_bank_end(void)
+> +{
+> +	raw_write_seqcount_latch(&cd.seq);
+>  }
+
+What's wrong with having a master struct
+
+struct master_data {
+	struct clock_data_banked master_data;
+	ktime_t wrap_kt;
+	unsigned long rate;
+	u64 (*real_read_sched_clock)(void);
+};
+
+Then you only have to care about the serialization of the master_data
+update and then the hotpath data update would be the same simple
+function as update_fast_timekeeper(). And it would have the same
+ordering scheme and aside of that the resulting code would be simpler,
+more intuitive to read and I'm pretty sure faster.
+
+Thanks,
+
+	tglx
+
+
