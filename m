@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbbAXKXJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 05:23:09 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:47740 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923AbbAXKXI (ORCPT
+	id S1753292AbbAXKYH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 05:24:07 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:57287 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226AbbAXKYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 05:23:08 -0500
+	Sat, 24 Jan 2015 05:24:03 -0500
 MIME-Version: 1.0
 From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Sat, 24 Jan 2015 18:22:45 +0800
-Message-ID: <CACzj_yX7ezZ-=QShuXHRFX9udSSc9+2TnM+GEY+rLZu4YHY=5Q@mail.gmail.com>
-Subject: [PATCH v3 4/6] KVM: nVMX: Enable nested apic register virtualization.
+Date: Sat, 24 Jan 2015 18:23:41 +0800
+Message-ID: <CACzj_yU5x=EePe-HsMw7ABrL5F7Pf2R_GLevUJpMCCdr1HNUPw@mail.gmail.com>
+Subject: [PATCH v3 5/6] KVM: nVMX: Enable nested virtual interrupt delivery.
 To: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
         "Zhang, Yang Z" <yang.z.zhang@intel.com>
 Cc: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
@@ -24,90 +24,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can reduce apic register virtualization cost with this feature,
-it is also a requirement for virtual interrupt delivery and posted
-interrupt processing.
+With virtual interrupt delivery, the hardware prevent KVM from
+the low efficiency interrupt inject way. In nested vmx, it is
+a important feature, we can reduce much more nested-vmexit,
+especially in high throughput scenes.
 
 Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
 ---
- arch/x86/kvm/vmx.c |   24 ++++++++++++++++++++----
- 1 files changed, 20 insertions(+), 4 deletions(-)
+ arch/x86/kvm/vmx.c |   63 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 62 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 6ec0c2c..d57e370 100644
+index d57e370..5d8500c 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -1130,6 +1130,11 @@ static inline bool
-nested_cpu_has_virt_x2apic_mode(struct vmcs12 *vmcs12)
-        return nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE);
+@@ -216,6 +216,10 @@ struct __packed vmcs12 {
+        u64 virtual_apic_page_addr;
+        u64 apic_access_addr;
+        u64 ept_pointer;
++       u64 eoi_exit_bitmap0;
++       u64 eoi_exit_bitmap1;
++       u64 eoi_exit_bitmap2;
++       u64 eoi_exit_bitmap3;
+        u64 xss_exit_bitmap;
+        u64 guest_physical_address;
+        u64 vmcs_link_pointer;
+@@ -338,6 +342,7 @@ struct __packed vmcs12 {
+        u16 guest_gs_selector;
+        u16 guest_ldtr_selector;
+        u16 guest_tr_selector;
++       u16 guest_intr_status;
+        u16 host_es_selector;
+        u16 host_cs_selector;
+        u16 host_ss_selector;
+@@ -624,6 +629,7 @@ static const unsigned short vmcs_field_to_offset_table[] = {
+        FIELD(GUEST_GS_SELECTOR, guest_gs_selector),
+        FIELD(GUEST_LDTR_SELECTOR, guest_ldtr_selector),
+        FIELD(GUEST_TR_SELECTOR, guest_tr_selector),
++       FIELD(GUEST_INTR_STATUS, guest_intr_status),
+        FIELD(HOST_ES_SELECTOR, host_es_selector),
+        FIELD(HOST_CS_SELECTOR, host_cs_selector),
+        FIELD(HOST_SS_SELECTOR, host_ss_selector),
+@@ -641,6 +647,10 @@ static const unsigned short
+vmcs_field_to_offset_table[] = {
+        FIELD64(VIRTUAL_APIC_PAGE_ADDR, virtual_apic_page_addr),
+        FIELD64(APIC_ACCESS_ADDR, apic_access_addr),
+        FIELD64(EPT_POINTER, ept_pointer),
++       FIELD64(EOI_EXIT_BITMAP0, eoi_exit_bitmap0),
++       FIELD64(EOI_EXIT_BITMAP1, eoi_exit_bitmap1),
++       FIELD64(EOI_EXIT_BITMAP2, eoi_exit_bitmap2),
++       FIELD64(EOI_EXIT_BITMAP3, eoi_exit_bitmap3),
+        FIELD64(XSS_EXIT_BITMAP, xss_exit_bitmap),
+        FIELD64(GUEST_PHYSICAL_ADDRESS, guest_physical_address),
+        FIELD64(VMCS_LINK_POINTER, vmcs_link_pointer),
+@@ -1135,6 +1145,11 @@ static inline bool
+nested_cpu_has_apic_reg_virt(struct vmcs12 *vmcs12)
+        return nested_cpu_has2(vmcs12, SECONDARY_EXEC_APIC_REGISTER_VIRT);
  }
 
-+static inline bool nested_cpu_has_apic_reg_virt(struct vmcs12 *vmcs12)
++static inline bool nested_cpu_has_vid(struct vmcs12 *vmcs12)
 +{
-+       return nested_cpu_has2(vmcs12, SECONDARY_EXEC_APIC_REGISTER_VIRT);
++       return nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY);
 +}
 +
  static inline bool is_exception(u32 intr_info)
  {
         return (intr_info & (INTR_INFO_INTR_TYPE_MASK | INTR_INFO_VALID_MASK))
-@@ -2423,6 +2428,7 @@ static void nested_vmx_setup_ctls_msrs(struct
+@@ -2429,6 +2444,7 @@ static void nested_vmx_setup_ctls_msrs(struct
 vcpu_vmx *vmx)
-        vmx->nested.nested_vmx_secondary_ctls_high &=
                 SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
                 SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE |
-+               SECONDARY_EXEC_APIC_REGISTER_VIRT |
+                SECONDARY_EXEC_APIC_REGISTER_VIRT |
++               SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
                 SECONDARY_EXEC_WBINVD_EXITING |
                 SECONDARY_EXEC_XSAVES;
 
-@@ -8435,6 +8441,7 @@ static int
-nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,
- static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
-                                               struct vmcs12 *vmcs12)
- {
-+       int msr;
-        struct page *page;
-        unsigned long *msr_bitmap;
-
-@@ -8455,12 +8462,19 @@ static inline bool
+@@ -7389,6 +7405,10 @@ static bool nested_vmx_exit_handled(struct
+kvm_vcpu *vcpu)
+        case EXIT_REASON_APIC_ACCESS:
+                return nested_cpu_has2(vmcs12,
+                        SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
++       case EXIT_REASON_APIC_WRITE:
++       case EXIT_REASON_EOI_INDUCED:
++               /* apic_write and eoi_induced should exit unconditionally. */
++               return 1;
+        case EXIT_REASON_EPT_VIOLATION:
+                /*
+                 * L0 always deals with the EPT violation. If nested EPT is
+@@ -8474,6 +8494,19 @@ static inline bool
 nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
-
-        memset(vmx_msr_bitmap_nested, 0xff, PAGE_SIZE);
-
--       if (nested_cpu_has_virt_x2apic_mode(vmcs12))
-+       if (nested_cpu_has_virt_x2apic_mode(vmcs12)) {
-+               if (nested_cpu_has_apic_reg_virt(vmcs12))
-+                       for (msr = 0x800; msr <= 0x8ff; msr++)
-+                               nested_vmx_disable_intercept_for_msr(
-+                                       msr_bitmap,
-+                                       vmx_msr_bitmap_nested,
-+                                       msr, MSR_TYPE_R);
-                /* TPR is allowed */
-                nested_vmx_disable_intercept_for_msr(msr_bitmap,
                                 vmx_msr_bitmap_nested,
                                 APIC_BASE_MSR + (APIC_TASKPRI >> 4),
                                 MSR_TYPE_R | MSR_TYPE_W);
-+       }
++               if (nested_cpu_has_vid(vmcs12)) {
++                       /* EOI and self-IPI are allowed */
++                       nested_vmx_disable_intercept_for_msr(
++                               msr_bitmap,
++                               vmx_msr_bitmap_nested,
++                               APIC_BASE_MSR + (APIC_EOI >> 4),
++                               MSR_TYPE_W);
++                       nested_vmx_disable_intercept_for_msr(
++                               msr_bitmap,
++                               vmx_msr_bitmap_nested,
++                               APIC_BASE_MSR + (APIC_SELF_IPI >> 4),
++                               MSR_TYPE_W);
++               }
+        }
         kunmap(page);
         nested_release_page_clean(page);
-
-@@ -8478,12 +8492,14 @@ static inline int
+@@ -8489,17 +8522,29 @@ static inline int
 nested_vmx_check_virt_x2apic(struct kvm_vcpu *vcpu,
+        return 0;
+ }
+
++static inline int nested_vmx_check_vid(struct kvm_vcpu *vcpu,
++                                      struct vmcs12 *vmcs12)
++{
++       if (!nested_exit_on_intr(vcpu))
++               return -EINVAL;
++       return 0;
++}
++
  static int nested_vmx_check_apicv_controls(struct kvm_vcpu *vcpu,
                                            struct vmcs12 *vmcs12)
  {
--       int r;
-+       int r = 0;
+        int r = 0;
 
--       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
-+       if (!nested_cpu_has_virt_x2apic_mode(vmcs12) &&
-+           !nested_cpu_has_apic_reg_virt(vmcs12))
+        if (!nested_cpu_has_virt_x2apic_mode(vmcs12) &&
+-           !nested_cpu_has_apic_reg_virt(vmcs12))
++           !nested_cpu_has_apic_reg_virt(vmcs12) &&
++           !nested_cpu_has_vid(vmcs12))
                 return 0;
 
--       r = nested_vmx_check_virt_x2apic(vcpu, vmcs12);
-+       if (nested_cpu_has_virt_x2apic_mode(vmcs12))
-+               r = nested_vmx_check_virt_x2apic(vcpu, vmcs12);
+        if (nested_cpu_has_virt_x2apic_mode(vmcs12))
+                r = nested_vmx_check_virt_x2apic(vcpu, vmcs12);
++       if (nested_cpu_has_vid(vmcs12))
++               r |= nested_vmx_check_vid(vcpu, vmcs12);
++
         if (r)
                 goto fail;
 
+@@ -8815,6 +8860,19 @@ static void prepare_vmcs02(struct kvm_vcpu
+*vcpu, struct vmcs12 *vmcs12)
+                        kvm_vcpu_reload_apic_access_page(vcpu);
+                }
+
++               if (exec_control & SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY) {
++                       vmcs_write64(EOI_EXIT_BITMAP0,
++                               vmcs12->eoi_exit_bitmap0);
++                       vmcs_write64(EOI_EXIT_BITMAP1,
++                               vmcs12->eoi_exit_bitmap1);
++                       vmcs_write64(EOI_EXIT_BITMAP2,
++                               vmcs12->eoi_exit_bitmap2);
++                       vmcs_write64(EOI_EXIT_BITMAP3,
++                               vmcs12->eoi_exit_bitmap3);
++                       vmcs_write16(GUEST_INTR_STATUS,
++                               vmcs12->guest_intr_status);
++               }
++
+                vmcs_write32(SECONDARY_VM_EXEC_CONTROL, exec_control);
+        }
+
+@@ -9386,6 +9444,9 @@ static void prepare_vmcs12(struct kvm_vcpu
+*vcpu, struct vmcs12 *vmcs12,
+                vmcs12->guest_pdptr3 = vmcs_read64(GUEST_PDPTR3);
+        }
+
++       if (nested_cpu_has_vid(vmcs12))
++               vmcs12->guest_intr_status = vmcs_read16(GUEST_INTR_STATUS);
++
+        vmcs12->vm_entry_controls =
+                (vmcs12->vm_entry_controls & ~VM_ENTRY_IA32E_MODE) |
+                (vm_entry_controls_get(to_vmx(vcpu)) & VM_ENTRY_IA32E_MODE);
 --
 1.7.1
