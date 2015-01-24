@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbbAXU1e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 15:27:34 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:45679 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbbAXU1a (ORCPT
+	id S1752290AbbAXU3U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 15:29:20 -0500
+Received: from exprod5og108.obsmtp.com ([64.18.0.186]:54964 "EHLO
+	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbbAXU3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 15:27:30 -0500
-Date: Sat, 24 Jan 2015 12:27:26 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Matt Roper <matthew.d.roper@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Ville =?utf-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and
- overshoots
-Message-ID: <20150124202726.GA1415@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Matt Roper <matthew.d.roper@intel.com>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Ville =?utf-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	Dave Airlie <airlied@redhat.com>,
-	Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org
-References: <20150117100635.GA1281@hudson.localdomain>
- <20150119090847.GQ10649@intel.com>
- <54BCE1BF.5050808@intel.com>
- <20150119110404.GA26577@nuc-i3427.alporthouse.com>
- <20150119164024.GI22549@intel.com>
- <20150120054842.GN26519@phenom.ffwll.local>
- <20150124065732.GA17057@hudson.localdomain>
- <20150124112455.GE10113@phenom.ffwll.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150124112455.GE10113@phenom.ffwll.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 24 Jan 2015 15:29:18 -0500
+From: Semen Protsenko <semen.protsenko@globallogic.com>
+To: Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] ARM: OMAP2+: gpmc: Fix writing in gpmc_cs_set_memconf
+Date: Sat, 24 Jan 2015 22:28:38 +0200
+Message-Id: <1422131320-1018-1-git-send-email-semen.protsenko@globallogic.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel, Matt,
+Some GPMC_CONFIG7 register bits marked as "RESERVED", means they
+shouldn't be overwritten. A typical approach to handle such bits called
+"Read-Modify-Write". Writing procedure used in gpmc_cs_set_memconf()
+utilizes RMW technique, but implemented incorrectly. Due to obvious typo
+in code read register value is being rewritten by another value, which
+leads to loss of read RESERVED bits. This patch fixes this.
 
-On Sat, Jan 24, 2015 at 12:24:55PM +0100, Daniel Vetter wrote:
-> On Fri, Jan 23, 2015 at 10:57:32PM -0800, Jeremiah Mahler wrote:
-> > all,
-> > 
-> > On Tue, Jan 20, 2015 at 06:48:42AM +0100, Daniel Vetter wrote:
-> > > On Mon, Jan 19, 2015 at 08:40:24AM -0800, Matt Roper wrote:
-> > > > On Mon, Jan 19, 2015 at 11:04:04AM +0000, Chris Wilson wrote:
-> > > > > On Mon, Jan 19, 2015 at 11:51:43AM +0100, Daniel Vetter wrote:
-[...]
->     drm/plane-helper: Skip prepare_fb/cleanup_fb when newfb==oldfb
-> 
-> that should rectify the sluggish i915 cursor. But it's in a separate topic
-> branch which isn't in linux-next. Should show up in drm-next next week
-> though.
-> -Daniel
-> -- 
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+While at it, replace magic numbers with named constants to improve code
+readability.
 
-I found the patch and tried it out.  It does fix the mouse pointer
-problem.  Thanks for the fix.
+Signed-off-by: Semen Protsenko <semen.protsenko@globallogic.com>
+---
+ drivers/memory/omap-gpmc.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/memory/omap-gpmc.c b/drivers/memory/omap-gpmc.c
+index 24696f5..10eb4ac 100644
+--- a/drivers/memory/omap-gpmc.c
++++ b/drivers/memory/omap-gpmc.c
+@@ -153,6 +153,15 @@
+ #define GPMC_CONFIG1_FCLK_DIV4          (GPMC_CONFIG1_FCLK_DIV(3))
+ #define GPMC_CONFIG7_CSVALID		(1 << 6)
+ 
++#define GPMC_CONFIG7_BASEADDRESS_MASK	0x3f
++#define GPMC_CONFIG7_CSVALID_MASK	BIT(6)
++#define GPMC_CONFIG7_MASKADDRESS_OFFSET	8
++#define GPMC_CONFIG7_MASKADDRESS_MASK	(0xf << GPMC_CONFIG7_MASKADDRESS_OFFSET)
++/* All CONFIG7 bits except reserved bits */
++#define GPMC_CONFIG7_MASK		(GPMC_CONFIG7_BASEADDRESS_MASK | \
++					 GPMC_CONFIG7_CSVALID_MASK |     \
++					 GPMC_CONFIG7_MASKADDRESS_MASK)
++
+ #define GPMC_DEVICETYPE_NOR		0
+ #define GPMC_DEVICETYPE_NAND		2
+ #define GPMC_CONFIG_WRITEPROTECT	0x00000010
+@@ -586,12 +595,15 @@ static int gpmc_cs_set_memconf(int cs, u32 base, u32 size)
+ 	if (base & (size - 1))
+ 		return -EINVAL;
+ 
++	base >>= GPMC_CHUNK_SHIFT;
+ 	mask = (1 << GPMC_SECTION_SHIFT) - size;
++	mask >>= GPMC_CHUNK_SHIFT;
++	mask <<= GPMC_CONFIG7_MASKADDRESS_OFFSET;
++
+ 	l = gpmc_cs_read_reg(cs, GPMC_CS_CONFIG7);
+-	l &= ~0x3f;
+-	l = (base >> GPMC_CHUNK_SHIFT) & 0x3f;
+-	l &= ~(0x0f << 8);
+-	l |= ((mask >> GPMC_CHUNK_SHIFT) & 0x0f) << 8;
++	l &= ~GPMC_CONFIG7_MASK;
++	l |= base & GPMC_CONFIG7_BASEADDRESS_MASK;
++	l |= mask & GPMC_CONFIG7_MASKADDRESS_MASK;
+ 	l |= GPMC_CONFIG7_CSVALID;
+ 	gpmc_cs_write_reg(cs, GPMC_CS_CONFIG7, l);
+ 
 -- 
-- Jeremiah Mahler
+1.7.9.5
+
