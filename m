@@ -1,111 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435AbbAXTwT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 14:52:19 -0500
-Received: from outbound-smtp06.blacknight.com ([81.17.249.39]:32920 "EHLO
-	outbound-smtp06.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753770AbbAXTwR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 14:52:17 -0500
-Message-ID: <54C3F7E7.6090306@nexus-software.ie>
-Date: Sat, 24 Jan 2015 19:52:07 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1752615AbbAXUVb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 15:21:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45096 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752290AbbAXUVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 15:21:30 -0500
+Date: Sat, 24 Jan 2015 21:20:21 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: question about save_xstate_sig() - WHY DOES THIS WORK?
+Message-ID: <20150124202021.GA1285@redhat.com>
+References: <54C2A245.4010307@redhat.com>
 MIME-Version: 1.0
-To: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
-References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie> <1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B73270D4C5@PGSMSX105.gar.corp.intel.com>
-In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B73270D4C5@PGSMSX105.gar.corp.intel.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C2A245.4010307@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/01/15 01:48, Ong, Boon Leong wrote:
+Let me abuse this thread to ask more questions.
 
-Skipping stuff I agree with.
+Peter, could you help?
 
->  From V1 comment:
-> Suggest to add a statement on 3 different types of IMR: General IMR, Host Memory
-> I/O Boundary IMR & System Management Mode IMR. Then, call out that this patch
-> is meant to support general IMR type only.
-
-Hmm - There's no mention of grouping like that in the documentation, nor 
-in released silicon - to my knowledge.
-
-Also why do you want a statement added saying that it supports CPU only 
-mode ?
-
-This patch will support adding IMRs for SMM mode - if calling code wants 
-do do that - it's just imr_add_range(base, size, SMM, SMM);
-
-Same thing with virtual-channels, RMU, etc.
-
-
->> +	ret = imr_check_range(base, size);
->> +	if (ret)
->> +		return ret;
->> +
->> +	if (size < IMR_ALIGN)
->> +		return -EINVAL;
-> I believe this is redundant because imr_check_range() has test for (size & IMR_MASK)
-> which means if the size is indeed smaller than 0x400, the test will caught it anyway.
-
-Nope.
-
-(0 & 0x3FF) == 0
-
-We need to bounds check for a zero size.
-
-I'll change it to
-
-if (size == 0)
-	return -EINVAL;
-
-to avoid confusion.
-
->> +
->> +	/* Tweak the size value */
->> +	size = imr_fixup_size(size);
->> +	pr_debug("IMR %d phys 0x%08lx-0x%08lx rmask 0x%08x wmask
->> 0x%08x\n",
->> +		reg, base, end, rmask, wmask);
-> Do we want to account for the 'size fixup' above on 'end'
->> +
->> +	/* Allocate IMR */
->> +	imr.addr_lo = phys_to_imr(base);
->> +	imr.addr_hi = phys_to_imr(end);
+On 01/23, Rik van Riel wrote:
 >
-> The fix-up size above is never factored here ...
-> 'end-size' should be the correct one
+> Not only is this broken with my new code, but it looks like it may
+> be broken with the current code, too...
 
-hmmm.
+As I already mentioned, at least math_error()->save_init_fpu() looks
+buggy. And unlazy_fpu() doesn't look right too.
 
-The correct fix is
+Note that save_init_fpu() is calles after conditional_sti(), so unless
+I missed something the task can be preempted and we can actually hit
+WARN_ON_ONCE(!__thread_has_fpu()) if !use_eager_fpu() && .fpu_counter == 0.
 
-size = imr_fixup_size(size);
-end = base + size;
+Worse, the unconditional __save_init_fpu() is obviously wrong in this case.
 
->> +	} else {
->> +		/* Search for match based on address range */
->> +		for (i = 0; i < imr_dev.max_imr; i++) {
->> +			ret = imr_read(reg, &imr);
-> A serious bug here.... 'reg' should be 'i' . We enter this branch if reg=-1
-> Is there a miss in your test case?
+I already have a patch which (like the patch from Rik) turns it into
 
-Hmm you're right.
+	static inline void save_init_fpu(struct task_struct *tsk)
+	{
+		preempt_disable();
+		if (__thread_has_fpu(tsk)) {
+			if (use_eager_fpu()) {
+				__save_fpu(tsk);
+			} else {
+				__save_init_fpu(tsk);
+				__thread_fpu_end(tsk);
+			}
+		}
+		preempt_enable();
+	}
 
-Turns out there's only the one test case for imr_del_range();
+and I think this fix needs the separate patch/changelog.
 
-Good catch.
+Now the questions:
 
---
-BOD
+- This doesn't hurt, but does it really need __thread_fpu_end?
+
+  Perhaps this is because we do not check the error code returned
+  by __save_init_fpu? although I am not sure I understand the comment
+  above fpu_save_init correctly...
+
+- What about do_bounds() ? Should not it use save_init_fpu() rather
+  than fpu_save_init() ?
+
+- Why unlazy_fpu() always does __save_init_fpu() even if use_eager_fpu?
+
+  and note that in this case __thread_fpu_end() is wrong if use_eager_fpu,
+  but fortunately the only possible caller of unlazy_fpu() is coredump.
+  fpu_copy() checks use_eager_fpu().
+
+- Is unlazy_fpu()->__save_init_fpu() safe wrt __kernel_fpu_begin() from
+  irq?
+
+  I mean, is it safe if __save_init_fpu() path is interrupted by another
+  __save_init_fpu() + restore_fpu_checking() from __kernel_fpu_begin/end?
+
+Thanks,
+
+Oleg.
 
