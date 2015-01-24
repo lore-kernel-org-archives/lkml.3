@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373AbbAXARb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 19:17:31 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63514 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752775AbbAXAR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 19:17:29 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH][v3] PCI / PM: Avoid resuming PCI devices during system suspend
-Date: Sat, 24 Jan 2015 01:40:08 +0100
-Message-ID: <1608158.mpjigghEOx@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAErSpo6CFNBWp_CDZQc3XmCFzR5nEjWSfLSVG5c549pEHn4g4Q@mail.gmail.com>
-References: <1460212.bInrzeZle0@vostro.rjw.lan> <20035664.sy5Q5n4bIK@vostro.rjw.lan> <CAErSpo6CFNBWp_CDZQc3XmCFzR5nEjWSfLSVG5c549pEHn4g4Q@mail.gmail.com>
+	id S1752062AbbAXAnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 19:43:13 -0500
+Received: from mga03.intel.com ([134.134.136.65]:23564 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820AbbAXAnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 19:43:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,457,1418112000"; 
+   d="scan'208";a="641871891"
+Message-ID: <54C2EA9B.9090101@linux.intel.com>
+Date: Sat, 24 Jan 2015 08:43:07 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Thomas Gleixner <tglx@linutronix.de>, Marc Zyngier <marc.zyngier@arm.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] genirq: Allow irq_desc to carry the union of stacked
+ irq_chip flags
+References: <1421246717-11640-1-git-send-email-marc.zyngier@arm.com> <1421246717-11640-3-git-send-email-marc.zyngier@arm.com> <alpine.DEB.2.11.1501231648110.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501231648110.5526@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 23, 2015 02:55:25 PM Bjorn Helgaas wrote:
-> On Tue, Jan 20, 2015 at 7:17 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> > Commit f25c0ae2b4c4 (ACPI / PM: Avoid resuming devices in ACPI PM
-> > domain during system suspend) modified the ACPI PM domain's system
-> > suspend callbacks to allow devices attached to it to be left in the
-> > runtime-suspended state during system suspend so as to optimize
-> > the suspend process.
-> >
-> > This was based on the general mechanism introduced by commit
-> > aae4518b3124 (PM / sleep: Mechanism to avoid resuming runtime-suspended
-> > devices unnecessarily).
-> >
-> > Extend that approach to PCI devices by modifying the PCI bus type's
-> > ->prepare callback to return 1 for devices that are runtime-suspended
-> > when it is being executed and that are in a suitable power state and
-> > need not be resumed going forward.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 2015/1/23 23:55, Thomas Gleixner wrote:
+> On Wed, 14 Jan 2015, Marc Zyngier wrote:
 > 
-> I don't profess to understand this, and it seems like something you
-> could merge via your PM tree.  So I trust you to do the right thing
-> with it :)
+>> The current infrastructure for stacked domains doesn't propagate
+>> irq_chip flags, and as we only look at the top-level irq_chip,
+>> we may miss a number of critical flags.
+>>
+>> This patch accumulates the flags into a new set, stored at the
+>> irq_desc level, with an additional flag to indicate that this is
+>> a stack of irqchip. The accessor is updated to return the right one.
 > 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+>>  static inline unsigned long irq_desc_get_chip_flags(struct irq_desc *desc)
+>>  {
+>> +#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
+>> +	if (desc->chip_flags & IRQCHIP_STACKED_CHIPS)
+>> +		return desc->chip_flags;
+>> +#endif
+>>  	return desc->irq_data.chip->flags;
+> 
+> We can avoid the extra conditional if we just make the accumulated
+> flags unconditional and collect them even for the !hierarchy case.
+> 
+> Also this patch is missing that chips can be swapped at runtime either
+> via the normal interfaces or via __irq_set_chip_handler_name_locked().
+> 
+> This needs to be addressed otherwise we might end up looking at the
+> wrong flags.
+I'm splitting irq_data into irq_common_data and irq_data, seems
+we could host flags by using irq_common_data instead of irq_desc.
 
-Thanks!
-
+> 
+> Thanks,
+> 
+> 	tglx
+> 
