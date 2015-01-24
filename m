@@ -1,149 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667AbbAXQL7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 11:11:59 -0500
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:51872 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381AbbAXQL4 (ORCPT
+	id S1753895AbbAXQPy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 11:15:54 -0500
+Received: from www.linutronix.de ([62.245.132.108]:40696 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381AbbAXQPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 11:11:56 -0500
+	Sat, 24 Jan 2015 11:15:51 -0500
+Date: Sat, 24 Jan 2015 17:15:22 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        John Stultz <john.stultz@linaro.org>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH RESEND] PM / sleep: Fix racing timers
+In-Reply-To: <97acd41d4ec349de80a2c1f30ec18efa@BL2FFO11FD007.protection.gbl>
+Message-ID: <alpine.DEB.2.11.1501241254010.5526@nanos>
+References: <1411405623-7869-1-git-send-email-soren.brinkmann@xilinx.com> <1025ebd0a9984037bf15adf3ae4889d9@BN1BFFO11FD013.protection.gbl> <99d5bcca1d6541a49ff8a9f41f9b18af@BL2FFO11FD039.protection.gbl> <12360948.gSvRbI0dui@vostro.rjw.lan>
+ <20150112154347.GA23297@red-moon> <2313f65696c04c48867a3e8ce65ceb0b@BL2FFO11FD015.protection.gbl> <20150112161453.GA25281@red-moon> <97acd41d4ec349de80a2c1f30ec18efa@BL2FFO11FD007.protection.gbl>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <54C129B0.1090404@samsung.com>
-References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
-	<1421821618-8627-2-git-send-email-cw00.choi@samsung.com>
-	<54C129B0.1090404@samsung.com>
-Date: Sun, 25 Jan 2015 01:11:55 +0900
-Message-ID: <CA+Ln22Ej5VZQq0d9tmZ8RYPSrTyshETecXanVEj_iPSrX3Tm1A@mail.gmail.com>
-Subject: Re: [PATCH v3 01/12] clk: samsung: exynos5433: Add clocks using
- common clock framework
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        Michael Turquette <mturquette@linaro.org>,
-        Kukjin Kim <kgene@kernel.org>, Pankaj Dubey <pankaj.dubey@samsung.com>,
-        InKi Dae <inki.dae@samsung.com>,
-        Chanho Park <chanho61.park@samsung.com>,
-        "sw0312.kim" <sw0312.kim@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-704767873-1422102053=:5526"
+Content-ID: <alpine.DEB.2.11.1501241322300.5526@nanos>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-23 1:47 GMT+09:00 Sylwester Nawrocki <s.nawrocki@samsung.com>:
-> Hi Chanwoo,
->
-> On 21/01/15 07:26, Chanwoo Choi wrote:
->> This patch adds the support for CMU (Clock Management Units) of Exynos5433
->> which is 64bit SoC and has Octa-cores. This patch supports necessary clocks
->> (PLL/MMC/UART/MCT/I2C/SPI) for kernel boot and includes binding documentation
->> for Exynos5433 clock controller.
->
->> diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
->> new file mode 100644
->> index 0000000..72cd0ba
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
->> @@ -0,0 +1,106 @@
->> +* Samsung Exynos5433 CMU (Clock Management Units)
->> +
->> +The Exynos5433 clock controller generates and supplies clock to various
->> +controllers within the Exynos5433 SoC.
->> +
->> +Required Properties:
->> +
->> +- compatible: should be one of the following.
->> +  - "samsung,exynos5433-cmu-top"   - clock controller compatible for CMU_TOP
->> +    which generates clocks for IMEM/FSYS/G3D/GSCL/HEVC/MSCL/G2D/MFC/PERIC/PERIS
->> +    domains and bus clocks.
->> +  - "samsung,exynos5433-cmu-cpif"  - clock controller compatible for CMU_CPIF
->> +    which generates clocks for LLI (Low Latency Interface) IP.
->> +  - "samsung,exynos5433-cmu-mif"   - clock controller compatible for CMU_MIF
->> +    which generates clocks for DRAM Memory Controller domain.
->> +  - "samsung,exynos5433-cmu-peric" - clock controller compatible for CMU_PERIC
->> +    which generates clocks for UART/I2C/SPI/I2S/PCM/SPDIF/PWM/SLIMBUS IPs.
->> +  - "samsung,exynos5433-cmu-peris" - clock controller compatible for CMU_PERIS
->> +    which generates clocks for PMU/TMU/MCT/WDT/RTC/SECKEY/TZPC IPs.
->> +  - "samsung,exynos5433-cmu-fsys"  - clock controller compatible for CMU_FSYS
->> +    which generates clocks for USB/UFS/SDMMC/TSI/PDMA IPs.
->> +
->> +- reg: physical base address of the controller and length of memory mapped
->> +  region.
->> +
->> +- #clock-cells: should be 1.
->> +
->> +Each clock is assigned an identifier and client nodes can use this identifier
->> +to specify the clock which they consume.
->> +
->> +All available clocks are defined as preprocessor macros in
->> +dt-bindings/clock/exynos5433.h header and can be used in device
->> +tree sources.
->> +
->> +Example 1: Examples of clock controller nodes are listed below.
->> +
->> +     cmu_top: clock-controller@0x10030000 {
->> +             compatible = "samsung,exynos5433-cmu-top";
->> +             reg = <0x10030000 0x0c04>;
->> +             #clock-cells = <1>;
->> +     };
->> +
->> +     cmu_cpif: clock-controller@0x10fc0000 {
->> +             compatible = "samsung,exynos5433-cmu-cpif";
->> +             reg = <0x10fc0000 0x0c04>;
->> +             #clock-cells = <1>;
->> +     };
->> +
->> +     cmu_mif: clock-controller@0x105b0000 {
->> +             compatible = "samsung,exynos5433-cmu-mif";
->> +             reg = <0x105b0000 0x100c>;
->> +             #clock-cells = <1>;
->> +     };
->> +
->> +     cmu_peric: clock-controller@0x14c80000 {
->> +             compatible = "samsung,exynos5433-cmu-peric";
->> +             reg = <0x14c80000 0x0b08>;
->> +             #clock-cells = <1>;
->> +     };
->> +
->> +     cmu_peris: clock-controller@0x10040000 {
->> +             compatible = "samsung,exynos5433-cmu-peris";
->> +             reg = <0x10040000 0x0b20>;
->> +             #clock-cells = <1>;
->> +     };
->> +
->> +     cmu_fsys: clock-controller@0x156e0000 {
->> +             compatible = "samsung,exynos5433-cmu-fsys";
->> +             reg = <0x156e0000 0x0b04>;
->> +             #clock-cells = <1>;
->> +     };
->
-> What are the reasons to split the whole clock controller into separate
-> device nodes with different compatible strings like this? I doubt drivers
-> associated with each of those compatible strings could be ever reused on
-> different Exynos SoCs.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Well, they are separate IP blocks, so this is how they should be
-represented in DT and IMHO using different compatible strings is a bit
-cleaner than relying on aliases to get instance index.
+--8323329-704767873-1422102053=:5526
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.11.1501241322301.5526@nanos>
 
-Plus we probably want to learn from mistakes done when designing
-Exynos4x12 clock bindings, which prevent us from fixing the issue of
-ISP power domain, in which the ISP CMU is located. AFAICS, Exynos5433
-clock tree is split between several such "ISP CMUs".
+On Fri, 23 Jan 2015, Sören Brinkmann wrote:
+> On Mon, 2015-01-12 at 04:14PM +0000, Lorenzo Pieralisi wrote:
+> > I thought that a shutdown clock event device explicitly disables IRQ
+> > assertion, that's why I am inquiring, I do not understand how this
+> > can happen - how can you have a pending timer IRQ at step 3 above.
+> 
+> It does I guess, but the shutdown of the IRQ happens after disabling
+> IRQs. During that window the IRQ can become pening without anybody
+> handling it. Shutting the timer down usually just ensures that no new
+> interrupts are signaled but it apparently doesn't check whether any are
+> still pending (which isn't necessary in almost all cases since the ISR
+> would take care of it).
 
->
-> There are hardware dependencies between these clock domains, which are
-> not currently modelled in DT with your binding. IOW, there is currently
-> no way to ensure proper registration order of the CMUs (clock domains).
-> This may be important in some cases.
->
-> To address this we could either add clocks/clock-names properties in
-> respective CMU device nodes, pointing to any clocks in other CMU(s)
+Well, the issue is that lots of platforms are just not affected by
+this because they either power off or simply do not propagate
+interrupts which are not explicitely marked as wakeup sources.
 
-which I believe is the proper way of doing things, which lets us
-preserve the correct representation of separate CMUs in DT.
+After thinking more about it, we really should try to handle it at the
+core code, especially because the freezer folks who try to shutdown
+the tick completely run into similar issues.
 
-Best regards,
-Tomasz
+But, I don't think that just moving the suspend() call before
+disabling interrupts is sufficient. I rather think it's outright
+dangerous.
+
+suspend_ce()
+   local_irq_disable();
+
+---> Interrupt becomes pending
+
+   shutdown(ce);
+   local_irq_enable();
+
+---> Interrupt fires
+
+There are implementations which actually switch of clocks and such at
+shutdown. So depending on the code in the actual interrupt handler (not the
+clockevent->handler, though that might have issues as well) we might
+touch a disfunctional device with possibly fatal consequences.
+
+Right now this cannot happen as the invocation of the interrupt
+handler is guaranteed to happen _after_ the device has been
+resumed. Just because it does not explode in your implementation does
+not mean its safe to inflict on everyone.
+
+So if we try to handle this issue at the core level, then we really
+must deal with the interrupt itself.
+
+Timer interrupts are always marked IRQF_NO_SUSPEND, because we still
+need them until syscore_suspend(). So in case we really shut down the
+clockevent device via tick_suspend() then we must disable the
+interrupt there as well and reenable it in tick_resume().
+
+But that's not really possible at the core level today. Timer
+interrupts are delivered by various mechanisms:
+
+      - plain interrupts
+      - percpu interrupts
+      - per cpu direct vectors
+      - more complex stuff
+
+and we have no idea which type we are dealing with. So the only option
+would be to have a callback and let the suspend code do:
+
+   if (cedev->disable_irq)
+      cedev->disable_irq(cddev);
+
+and the reverse operation for resume. So we can provide default
+implementations for the callbacks:
+
+   void ce_[dis|en]able_irq(...)
+   void ce_[dis|en]able_percpu_irq(...)
+
+which would rely on cedev->irq. Those two would cover most of the
+implementations. The ones with special requirements can implement
+their own.
+
+Now at the irq level, we'd need a new function for the device irqs:
+
+    disable_and_mask_irq_nosync(irq)
+
+which makes sure that the line is masked at the hardware level. That's
+necessary because the lazy interrupt disable is not sufficient. The
+percpu irqs are already masking at the hardware level.
+
+One might argue that we could handle this in set_mode() as well, but
+we are thinking about going away from that multiplex call. Aside of
+that, ensuring the symmetry of disable/enable invocations would be
+problematic with the existing set_mode() implementations and usage.
+
+Thanks,
+
+	tglx
+
+
+--8323329-704767873-1422102053=:5526--
