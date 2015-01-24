@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbbAXQjr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 11:39:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36716 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397AbbAXQjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 11:39:44 -0500
-Date: Sat, 24 Jan 2015 17:39:25 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: =?iso-8859-1?Q?J=E9r=E9mie?= Galarneau 
-	<jeremie.galarneau@efficios.com>
-Cc: Wang Nan <wangnan0@huawei.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2] perf: convert: fix duplicate field names and
- avoid reserved keywords.
-Message-ID: <20150124163925.GD17627@krava.brq.redhat.com>
-References: <1421904958-24106-1-git-send-email-wangnan0@huawei.com>
- <1421905003-24242-1-git-send-email-wangnan0@huawei.com>
- <20150122132734.GB2473@krava.brq.redhat.com>
- <54C1AAA1.4000300@huawei.com>
- <CA+jJMxsjh=H+f3z+cnJ6tFbmyrD-ArGSe7agVVvc4tird8MdHw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+jJMxsjh=H+f3z+cnJ6tFbmyrD-ArGSe7agVVvc4tird8MdHw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753908AbbAXQtW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 11:49:22 -0500
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:51862 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752397AbbAXQtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 11:49:19 -0500
+Message-ID: <1422118156.27947.7.camel@x220>
+Subject: Re: [PATCH 0/4] defconfigs: cleanup obsolete MTD configs
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Semen Protsenko <semen.protsenko@globallogic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        adi-buildroot-devel@lists.sourceforge.net, linux-am33-list@redhat.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-mtd@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org
+Date: Sat, 24 Jan 2015 17:49:16 +0100
+In-Reply-To: <1422117213-3130-1-git-send-email-semen.protsenko@globallogic.com>
+References: <1422117213-3130-1-git-send-email-semen.protsenko@globallogic.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Jan 2015 16:49:16.0411 (UTC) FILETIME=[B0A8C4B0:01D037F5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 05:40:02PM -0500, Jérémie Galarneau wrote:
+On Sat, 2015-01-24 at 18:33 +0200, Semen Protsenko wrote:
+> This patch series removes next obsolete MTD configs from all defconfig files:
+>   - CONFIG_MTD_CHAR
+>   - CONFIG_MTD_CONCAT
+>   - CONFIG_MTD_DEBUG
+>   - CONFIG_MTD_DEBUG_VERBOSE
+>   - CONFIG_MTD_PARTITIONS
+> 
+> All those configs were removed from drivers/mtd/Kconfig earlier, but their usage
+> in defconfig files was remain unnoticed. There are at least two obvious reasons
+> to get rid of those configs:
+>   1. Their usage may cause to build warnings
 
-SNIP
+That's news for me. I thought they are silently ignored. Do you have an
+example of such a warning?
 
-> > bt_ctf_clock_create() with the checked name and then free it. However, it is hacky
-> > and I think you won't like it.
+>   2. Their usage may confuse someone who is grepping defconfig files to get
+>      the clue what MTD configuration may look like.
 > 
-> The prospect of seeing that code has convinced me to introduce
-> int bt_ctf_validate_identifier(const char *identifier);
-> 
-> commit 654c1444b546fd79b209288b93ed4e87d9bb8a2b
-> Author: Jérémie Galarneau <jeremie.galarneau@efficios.com>
-> Date:   Fri Jan 23 16:24:52 2015 -0500
-> 
->     Add utility function to validate CTF identifiers
-> 
->     Introduces bt_ctf_validate_identifier() which validates a given
->     identifier against the list of CTF reserved keywords.
-> 
->     This function may evolve to perform additional validity checks in
->     the future as the CTF specification moves forward.
-> 
->     Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
->     Signed-off-by: Jérémie Galarneau <jeremie.galarneau@efficios.com>
+> This series is harmless for all those defconfigs and will not break anything.
 > 
 > 
-> Does that take care of the problem?
+> Semen Protsenko (4):
+>   defconfigs: remove CONFIG_MTD_CONCAT
+>   defconfigs: remove CONFIG_MTD_PARTITIONS
+>   defconfigs: remove CONFIG_MTD_CHAR
+>   defconfigs: remove CONFIG_MTD_DEBUG*
+> 
+>  arch/arm/configs/acs5k_defconfig                   |    3 ---
+> [...]
+>  arch/unicore32/configs/unicore32_defconfig         |    2 --
+>  226 files changed, 364 deletions(-)
 
-seems good to me, thanks
+Seems like the kind of change that can only be reviewed by a script.
 
-jirka
+Is there any policy on keeping defconfig files up to date? Because, only
+slightly exaggerated, all the defconfig files are outdated, in minor or
+major ways, at any given moment.
+
+I seem to remember Greg stating that defconfig files are on their way
+out. Did I remember that correctly?  
+
+
+Paul Bolle
+
