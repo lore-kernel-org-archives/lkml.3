@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbbAXTak (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 14:30:40 -0500
-Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:26392 "EHLO
-	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753614AbbAXTai (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 14:30:38 -0500
-Date: Sat, 24 Jan 2015 13:30:32 -0600
-From: Jeff Epler <jepler@unpythonic.net>
-To: Anshul Garg <aksgarg1989@gmail.com>
-Cc: akpm@linux-foundation.org, Levente Kurusa <levex@linux.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        "anshul.g@samsung.com" <anshul.g@samsung.com>
-Subject: Re: [PATCH] lib/kstrtox.c clean kstrtoll function
-Message-ID: <20150124193031.GG40116@unpythonic.net>
-References: <aksgarg1989@gmai.com>
- <1421934850-77446-1-git-send-email-aksgarg1989@gmail.com>
- <20150122172501.GE40116@unpythonic.net>
- <CA+HOOsiP-uLJPJzn=24XiodaK89-y7Fy8oj+ALnbw4iHdtGR5A@mail.gmail.com>
+	id S1754456AbbAXTgw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 14:36:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58259 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752845AbbAXTgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 14:36:50 -0500
+Message-ID: <54C3F435.3070505@redhat.com>
+Date: Sat, 24 Jan 2015 14:36:21 -0500
+From: "Carlos O'Donell" <carlos@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+HOOsiP-uLJPJzn=24XiodaK89-y7Fy8oj+ALnbw4iHdtGR5A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thomas Gleixner <tglx@linutronix.de>, Daniel Church <dchurch@andplus.com>
+CC: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org
+Subject: Re: [PATCH v2 2/2] posix-timers: Exposes DELAYTIMER_MAX constant
+ used to govern overruns
+References: <[PATCH 0/2] posix-timers: Prevents overrun counter overflow, adds DELAYTIMER_MAX> <1422121737-3686-1-git-send-email-dchurch@andplus.com> <1422121737-3686-3-git-send-email-dchurch@andplus.com> <alpine.DEB.2.11.1501242015260.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501242015260.5526@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/24/2015 02:20 PM, Thomas Gleixner wrote:
+> On Sat, 24 Jan 2015, Daniel Church wrote:
+> 
+>> POSIX.1-2001 specification of timer_getoverrun() supports constant
+>> DELAYTIMER_MAX which prevents overflow and caps overrun count.  Exposes
+>> delaytimer_max value to userland via /proc/sys/kernel/delaytimer_max such
+> 
+> I know that you try to match the posix name, but when looking at the
+> prctl w/o knowing about DELAYTIMER_MAX, it's non intuitive.
+> 
+> Something like posixtimer_max_overruns or if you insist on the
+> delaytimer_max part, then let us prepend it with posixtimer_ at least.
+> 
+> New prctls require an update of Documentation/sysctl/kernel.txt.
 
-On Fri, Jan 23, 2015 at 06:55:36PM +0530, Anshul Garg wrote:
-> if (((long long)tmp < LLONG_MIN) || ((long long)tmp > LLONG_MAX) )
-> + return -ERANGE;
+Agreed, the name should be self-explanatory and point at POSIX.
 
-This proposed code is still wrong (-ERANGE can never be returned by this
-statement).  It may be best to leave the code alone, rather than propose
-more untested alternatives.
+The documentation should be detailed and explain exactly what this
+is for, what are valid values, and why you would ever want to change
+them.
 
-Jeff
+Cheers,
+Carlos.
+
