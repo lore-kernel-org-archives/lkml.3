@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781AbbAXBsY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 20:48:24 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:33614 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883AbbAXBsU (ORCPT
+	id S1756760AbbAXBsR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 20:48:17 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:60251 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883AbbAXBsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 20:48:20 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org (open list:NETWORKING [GENERAL])
-Subject: [PATCH] net: llc: use correct size for sysctl timeout entries
-Date: Fri, 23 Jan 2015 20:47:00 -0500
-Message-Id: <1422064020-22080-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 2.1.0
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 23 Jan 2015 20:48:14 -0500
+Message-ID: <54C2F9C9.2000404@roeck-us.net>
+Date: Fri, 23 Jan 2015 17:47:53 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
+Subject: Re: [PATCH] net: dsa/mv88e6352: make mv88e6352_wait generic
+References: <1422056081-30088-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+In-Reply-To: <1422056081-30088-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54C2F9DD.00FA,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timeout entries are sizeof(int) rather than sizeof(long), which
-means that when they were getting read we'd also leak kernel memory
-to userspace along with the timeout values.
+On 01/23/2015 03:34 PM, Vivien Didelot wrote:
+> Some busy bits are available in the global register 1, such as the ATU
+> Busy bit. We may want to use this function to wait for them to change,
+> so add a new parameter to mv88e6352_wait() instead of hard-coding
+> REG_GLOBAL2.
+>
+> In the meantime, since the REG_READ() macro already checks for error,
+> remove the redundant check for ret < 0.
+>
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- net/llc/sysctl_net_llc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Acked-by: Guenter Roeck <linux@roeck-us.net>
 
-diff --git a/net/llc/sysctl_net_llc.c b/net/llc/sysctl_net_llc.c
-index 612a5dd..799bafc 100644
---- a/net/llc/sysctl_net_llc.c
-+++ b/net/llc/sysctl_net_llc.c
-@@ -18,28 +18,28 @@ static struct ctl_table llc2_timeout_table[] = {
- 	{
- 		.procname	= "ack",
- 		.data		= &sysctl_llc2_ack_timeout,
--		.maxlen		= sizeof(long),
-+		.maxlen		= sizeof(sysctl_llc2_ack_timeout),
- 		.mode		= 0644,
- 		.proc_handler   = proc_dointvec_jiffies,
- 	},
- 	{
- 		.procname	= "busy",
- 		.data		= &sysctl_llc2_busy_timeout,
--		.maxlen		= sizeof(long),
-+		.maxlen		= sizeof(sysctl_llc2_busy_timeout),
- 		.mode		= 0644,
- 		.proc_handler   = proc_dointvec_jiffies,
- 	},
- 	{
- 		.procname	= "p",
- 		.data		= &sysctl_llc2_p_timeout,
--		.maxlen		= sizeof(long),
-+		.maxlen		= sizeof(sysctl_llc2_p_timeout),
- 		.mode		= 0644,
- 		.proc_handler   = proc_dointvec_jiffies,
- 	},
- 	{
- 		.procname	= "rej",
- 		.data		= &sysctl_llc2_rej_timeout,
--		.maxlen		= sizeof(long),
-+		.maxlen		= sizeof(sysctl_llc2_rej_timeout),
- 		.mode		= 0644,
- 		.proc_handler   = proc_dointvec_jiffies,
- 	},
--- 
-1.7.10.4
+Guenter
+
 
