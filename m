@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbbAXQiV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 11:38:21 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40788 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471AbbAXQiT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 11:38:19 -0500
-Date: Sat, 24 Jan 2015 17:37:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-cc: Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/5] ARM: at91: fix irq_pm_install_action WARNING
-In-Reply-To: <1422032971-14139-1-git-send-email-boris.brezillon@free-electrons.com>
-Message-ID: <alpine.DEB.2.11.1501241735530.5526@nanos>
-References: <1422032971-14139-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1754091AbbAXQjr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 11:39:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36716 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752397AbbAXQjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 11:39:44 -0500
+Date: Sat, 24 Jan 2015 17:39:25 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: =?iso-8859-1?Q?J=E9r=E9mie?= Galarneau 
+	<jeremie.galarneau@efficios.com>
+Cc: Wang Nan <wangnan0@huawei.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/2] perf: convert: fix duplicate field names and
+ avoid reserved keywords.
+Message-ID: <20150124163925.GD17627@krava.brq.redhat.com>
+References: <1421904958-24106-1-git-send-email-wangnan0@huawei.com>
+ <1421905003-24242-1-git-send-email-wangnan0@huawei.com>
+ <20150122132734.GB2473@krava.brq.redhat.com>
+ <54C1AAA1.4000300@huawei.com>
+ <CA+jJMxsjh=H+f3z+cnJ6tFbmyrD-ArGSe7agVVvc4tird8MdHw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+jJMxsjh=H+f3z+cnJ6tFbmyrD-ArGSe7agVVvc4tird8MdHw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jan 2015, Boris Brezillon wrote:
->  - change the compatible string to clearly show that this chip is purely
->    virtual
+On Fri, Jan 23, 2015 at 05:40:02PM -0500, Jérémie Galarneau wrote:
 
-So we probably want to do : s/dumb/virt/ for both DT and code to make
-it clear from the names as well.
+SNIP
 
-Thanks,
+> > bt_ctf_clock_create() with the checked name and then free it. However, it is hacky
+> > and I think you won't like it.
+> 
+> The prospect of seeing that code has convinced me to introduce
+> int bt_ctf_validate_identifier(const char *identifier);
+> 
+> commit 654c1444b546fd79b209288b93ed4e87d9bb8a2b
+> Author: Jérémie Galarneau <jeremie.galarneau@efficios.com>
+> Date:   Fri Jan 23 16:24:52 2015 -0500
+> 
+>     Add utility function to validate CTF identifiers
+> 
+>     Introduces bt_ctf_validate_identifier() which validates a given
+>     identifier against the list of CTF reserved keywords.
+> 
+>     This function may evolve to perform additional validity checks in
+>     the future as the CTF specification moves forward.
+> 
+>     Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>     Signed-off-by: Jérémie Galarneau <jeremie.galarneau@efficios.com>
+> 
+> 
+> Does that take care of the problem?
 
-	tglx
+seems good to me, thanks
+
+jirka
