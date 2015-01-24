@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbbAXRPz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 12:15:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40856 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467AbbAXRPw (ORCPT
+	id S1754055AbbAXRUI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 12:20:08 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:56475 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753261AbbAXRUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 12:15:52 -0500
-Date: Sat, 24 Jan 2015 18:15:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Marc Zyngier <marc.zyngier@arm.com>
-cc: Liviu Dudau <Liviu.Dudau@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <Mark.Rutland@arm.com>,
+	Sat, 24 Jan 2015 12:20:06 -0500
+Date: Sat, 24 Jan 2015 18:20:00 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4] irqchip: gic: Allow interrupt level to be set for
- PPIs.
-In-Reply-To: <87mw5bf256.fsf@approximate.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.11.1501241814430.5526@nanos>
-References: <1421772779-25764-1-git-send-email-Liviu.Dudau@arm.com> <87mw5bf256.fsf@approximate.cambridge.arm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/5] ARM: at91: fix irq_pm_install_action WARNING
+Message-ID: <20150124182000.59a4a96b@bbrezillon>
+In-Reply-To: <alpine.DEB.2.11.1501241735530.5526@nanos>
+References: <1422032971-14139-1-git-send-email-boris.brezillon@free-electrons.com>
+	<alpine.DEB.2.11.1501241735530.5526@nanos>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jan 2015, Marc Zyngier wrote:
+Hi Thomas,
 
-> On Tue, Jan 20 2015 at  4:52:59 pm GMT, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > During a recent cleanup of the arm64 DTs it has become clear that
-> > the handling of PPIs in xxxx_set_type() is incorrect. The ARM TRMs
-> > for GICv2 and later allow for "implementation defined" support for
-> > setting the edge or level type of the PPI interrupts and don't restrict
-> > the activation level of the signal. Current ARM implementations
-> > do restrict the PPI level type to IRQ_TYPE_LEVEL_LOW, but licensees
-> > of the IP can decide to shoot themselves in the foot at any time.
-> >
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+On Sat, 24 Jan 2015 17:37:48 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
+
+> On Fri, 23 Jan 2015, Boris Brezillon wrote:
+> >  - change the compatible string to clearly show that this chip is purely
+> >    virtual
 > 
-> For the GIC and GICv3 parts:
-> 
-> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+> So we probably want to do : s/dumb/virt/ for both DT and code to make
+> it clear from the names as well.
 
-So I queue that if there are no further objections from Russell or the
-DT folks.
+I thought the dumb word was denoting the simplicity (stupidity ?) of
+the irq demultiplexer, but indeed, I don't see how a virtual irq demuxer
+could have enough information to do a better job (if there's an
+interrupt cause register, then it's not a virtual/software demuxer
+anymore).
+So replacing dumb by virt or virtual makes sense here.
 
-Thanks,
 
-	tglx
+Best Regards,
+
+Boris
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
