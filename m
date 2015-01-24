@@ -1,145 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbbAYVCO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 16:02:14 -0500
-Received: from smtprelay0116.hostedemail.com ([216.40.44.116]:49778 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753634AbbAYVCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 16:02:12 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1605:1711:1730:1747:1777:1792:1801:2194:2199:2393:2559:2562:2729:2828:2904:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:4225:4250:4321:4605:5007:6119:7652:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12294:12296:12438:12517:12519:12740:13019:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: loss56_68528fdab2c02
-X-Filterd-Recvd-Size: 4360
-Message-ID: <1422135432.18650.2.camel@perches.com>
-Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
-From: Joe Perches <joe@perches.com>
-To: Stathis Voukelatos <stathisv70@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Stathis Voukelatos <stathis.voukelatos@linn.co.uk>,
-        abrestic@chromium.org
-In-Reply-To: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
-References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Sat, 24 Jan 2015 13:37:12 -0800
-Mime-Version: 1.0
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1752216AbbAXVsS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 16:48:18 -0500
+Received: from netz39.de ([78.46.22.20]:48017 "EHLO mail.netz39.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750840AbbAXVsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 16:48:13 -0500
+X-Greylist: delayed 529 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Jan 2015 16:48:12 EST
+X-Spam-Report: -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+	0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	See
+	http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	for more information.
+	[URIs: netz39.de]
+	-1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+From: Stefan Haun <tux@netz39.de>
+Organization: Netz39 e.V.
+To: y@mail.netz39.de
+Subject: Re: [PATCH 2/2] fs: fix checkpatch code warnings for inotify
+Date: Sat, 24 Jan 2015 22:39:04 +0100
+User-Agent: KMail/1.13.7 (Linux/3.19.0-rc4+; KDE/4.8.4; x86_64; ; )
+Cc: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org
+References: <1421421311-4475-1-git-send-email-y> <1421421311-4475-2-git-send-email-y>
+In-Reply-To: <1421421311-4475-2-git-send-email-y>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1676826.lU7HgFF2q8";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201501242239.13739.tux@netz39.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 10:07 +0000, Stathis Voukelatos wrote:
-> This patch adds support the Ethernet Packet Sniffer H/W module
-> developed by Linn Products Ltd and found in the IMG Pistachio SoC.
-> The module allows Ethernet packets to be parsed, matched against
-> a user-defined pattern and timestamped. It sits between a 100M
-> Ethernet MAC and PHY and is completely passive with respect to
-> Ethernet frames.
-[]
->  include/linux/pkt_sniffer.h                        |  89 +++++
+--nextPart1676826.lU7HgFF2q8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Why should this file be here?
-Why not in the drivers/net/pkt-sniffer directory?
+I just noticed that I failed in setting the right From: header. Sorry for=20
+this, I will re-post the patches with correct meta-data set.
 
-> diff --git a/drivers/net/pkt-sniffer/backends/ether/channel.c b/drivers/net/pkt-sniffer/backends/ether/channel.c
-[]
-> +static int esnf_start(struct snf_chan *dev);
 
-Be nice to rearrange the code to avoid the forward declarations.
-
-> +static int esnf_stop(struct snf_chan *dev);
-> +static int esnf_set_pattern(struct snf_chan *dev, const u8 *pattern, int count);
-> +static int esnf_num_recs_avail(struct snf_chan *dev);
-> +static int esnf_max_ptn_entries(struct snf_chan *dev);
-> +static int esnf_max_match_bytes(struct snf_chan *dev);
-> +static int validate_pattern(
-> +			struct ether_snf_chan *ch,
-> +			const u8 *buf,
-> +			int count);
-
-[]
-
-> +static int validate_pattern(struct ether_snf_chan *ch, const u8 *buf, int count)
-> +{
-
-Maybe better as bool
-
-> +	int i, complete, max_copy_bytes;
-[]
-> +	/* Check if the string was properly terminated
-> +	 * and contained valid number of commands
-> +	 */
-> +	if (complete) {
-> +		max_copy_bytes = ch->fifo_blk_words * 4;
-> +		if (ts)
-> +			max_copy_bytes -= 4;
-> +		if ((copy_before + copy_after) > max_copy_bytes)
-> +			return 0;
-> +		ch->ts_present = ts;
-> +		ch->nfb_before = copy_before;
-> +		ch->nfb_after = copy_after;
-> +		return 1;
-> +	} else {
-> +		return 0;
-> +	}
-
-	return complete;
-
-[]
-
-> +/* Interrupt thread function */
-> +static irqreturn_t esnf_irq_thread(int irq, void *dev_id)
-> +{
-> +	struct platform_device *pdev = (struct platform_device *)dev_id;
-> +	struct ether_snf *esnf = (struct ether_snf *)platform_get_drvdata(pdev);
-> +	u32 irq_status;
+Am Freitag, 16. Januar 2015, 16:15:11 schrieb y@mail.netz39.de:
+> From: Stefan Haun <tux@netz39.de>
+>=20
+> ./fs/notify/inotify/inotify.h:23:
+> CHECK: extern prototypes should be avoided in .h files
+> ./fs/notify/inotify/inotify.h:25:
+> CHECK: extern prototypes should be avoided in .h files
+>=20
+> 	Removed extrn keywords; the matter, however, seems to be an open
+> 	debate.
+>=20
+> ./fs/notify/inotify/inotify_fsnotify.c:140:
+> ERROR: do not initialise statics to 0 or NULL
+>=20
+> 	Replace the initialization by a comment:
+> 	Compiler takes care of the proper initialization.
+>=20
+> ./fs/notify/inotify/inotify_fsnotify.c:159:
+> WARNING: Prefer [subsystem eg: netdev]_warn([subsystem]dev, ... then
+> dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+> ./fs/notify/inotify/inotify_user.c:473:
+> WARNING: Prefer [subsystem eg: netdev]_err([subsystem]dev, ... then
+> dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+> ./fs/notify/inotify/inotify_user.c:474:
+> WARNING: quoted string split across lines
+>=20
+> 	Use pr_warn instead of printk and fix line break.
+>=20
+> ./fs/notify/inotify/inotify_user.c:645:
+> CHECK: Prefer kmalloc(sizeof(*oevent)...) over
+> kmalloc(sizeof(struct inotify_event_info)...)
+>=20
+> 	Done that (complies to coding stlye).
+>=20
+> Signed-off-by: Stefan Haun <tux@netz39.de>
+> ---
+>  fs/notify/inotify/inotify.h          |   16 ++++++++--------
+>  fs/notify/inotify/inotify_fsnotify.c |    6 +++---
+>  fs/notify/inotify/inotify_user.c     |    8 ++++----
+>  3 files changed, 15 insertions(+), 15 deletions(-)
+>=20
+> diff --git a/fs/notify/inotify/inotify.h b/fs/notify/inotify/inotify.h
+> index ed855ef..9d6d4e2 100644
+> --- a/fs/notify/inotify/inotify.h
+> +++ b/fs/notify/inotify/inotify.h
+> @@ -20,13 +20,13 @@ static inline struct inotify_event_info
+> *INOTIFY_E(struct fsnotify_event *fse) return container_of(fse, struct
+> inotify_event_info, fse);
+>  }
+>=20
+> -extern void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mar=
+k,
+> -					   struct fsnotify_group *group);
+> -extern int inotify_handle_event(struct fsnotify_group *group,
+> -				struct inode *inode,
+> -				struct fsnotify_mark *inode_mark,
+> -				struct fsnotify_mark *vfsmount_mark,
+> -				u32 mask, void *data, int data_type,
+> -				const unsigned char *file_name, u32 cookie);
+> +void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
+> +				    struct fsnotify_group *group);
 > +
-> +	if (unlikely(esnf->irq != irq))
-> +		return IRQ_NONE;
-> +
-> +	irq_status = ioread32(esnf->regs + INTERRUPT_STATUS) &
-> +				 ioread32(esnf->regs + INTERRUPT_ENABLE);
-> +
-> +	dev_dbg(&pdev->dev, "irq: 0x%08x\n", irq_status);
-> +
-> +	/* TX FIFO full */
-> +	if (unlikely(irq_status & TX_FULL_IRQ_BIT))
-> +		dev_notice(&pdev->dev, "TX FIFO full");
+> +int inotify_handle_event(struct fsnotify_group *group, struct inode
+> *inode, +			 struct fsnotify_mark *inode_mark,
+> +			 struct fsnotify_mark *vfsmount_mark,
+> +			 u32 mask, void *data, int data_type,
+> +			 const unsigned char *file_name, u32 cookie);
+>=20
+>  extern const struct fsnotify_ops inotify_fsnotify_ops;
+> diff --git a/fs/notify/inotify/inotify_fsnotify.c
+> b/fs/notify/inotify/inotify_fsnotify.c index 0238615..16efe98 100644
+> --- a/fs/notify/inotify/inotify_fsnotify.c
+> +++ b/fs/notify/inotify/inotify_fsnotify.c
+> @@ -137,7 +137,7 @@ static int idr_callback(int id, void *p, void *data)
+>  {
+>  	struct fsnotify_mark *fsn_mark;
+>  	struct inotify_inode_mark *i_mark;
+> -	static bool warned =3D false;
+> +	static bool warned; /* =3D false;  default by GCC */
+>=20
+>  	if (warned)
+>  		return 0;
+> @@ -156,8 +156,8 @@ static int idr_callback(int id, void *p, void *data)
+>  	 * BUG() that was here.
+>  	 */
+>  	if (fsn_mark)
+> -		printk(KERN_WARNING "fsn_mark->group=3D%p inode=3D%p wd=3D%d\n",
+> -		       fsn_mark->group, fsn_mark->inode, i_mark->wd);
+> +		pr_warn("fsn_mark->group=3D%p inode=3D%p wd=3D%d\n",
+> +			fsn_mark->group, fsn_mark->inode, i_mark->wd);
+>  	return 0;
+>  }
+>=20
+> diff --git a/fs/notify/inotify/inotify_user.c
+> b/fs/notify/inotify/inotify_user.c index 3214e2b..d7e3e58 100644
+> --- a/fs/notify/inotify/inotify_user.c
+> +++ b/fs/notify/inotify/inotify_user.c
+> @@ -470,9 +470,9 @@ static void inotify_remove_from_idr(struct
+> fsnotify_group *group, * one ref grabbed by inotify_idr_find
+>  	 */
+>  	if (unlikely(atomic_read(&i_mark->fsn_mark.refcnt) < 3)) {
+> -		printk(KERN_ERR "%s: i_mark=3D%p i_mark->wd=3D%d i_mark->group=3D%p"
+> -			" i_mark->inode=3D%p\n", __func__, i_mark, i_mark->wd,
+> -			i_mark->fsn_mark.group, i_mark->fsn_mark.inode);
+> +		pr_err("%s: i_mark=3D%p i_mark->wd=3D%d i_mark->group=3D%p
+> i_mark->inode=3D%p\n", +		       __func__, i_mark, i_mark->wd,
+> i_mark->fsn_mark.group,
+> +		       i_mark->fsn_mark.inode);
+>  		/* we can't really recover with bad ref cnting.. */
+>  		BUG();
+>  	}
+> @@ -642,7 +642,7 @@ static struct fsnotify_group
+> *inotify_new_group(unsigned int max_events) if (IS_ERR(group))
+>  		return group;
+>=20
+> -	oevent =3D kmalloc(sizeof(struct inotify_event_info), GFP_KERNEL);
+> +	oevent =3D kmalloc(sizeof(*oevent), GFP_KERNEL);
+>  	if (unlikely(!oevent)) {
+>  		fsnotify_destroy_group(group);
+>  		return ERR_PTR(-ENOMEM);
 
-Missing terminating newlines
-> +
-> +	/* RX FIFO full */
-> +	if (unlikely(irq_status & RX_FULL_IRQ_BIT))
-> +		dev_notice(&pdev->dev, "RX FIFO full");
-> +
-> +	/* TX match data available */
-> +	if (irq_status & TX_DATA_IRQ_BIT) {
-> +		dev_dbg(&pdev->dev, "TX data");
-> +		channel_data_available(&esnf->txc);
-> +	}
-> +
-> +	/* RX match data available */
-> +	if (irq_status & RX_DATA_IRQ_BIT) {
-> +		dev_dbg(&pdev->dev, "RX data");
-> +		channel_data_available(&esnf->rxc);
-> +	}
 
-> diff --git a/drivers/net/pkt-sniffer/core/nl.c b/drivers/net/pkt-sniffer/core/nl.c
-[]
-> +int snf_netlink_init(int id, struct snf_chan *dev, const char *name)
-> +{
-[]
-> +	/* Allocate ops array and copy template data */
-> +	nl->ops = kmalloc(sizeof(snf_ops_tmpl), GFP_KERNEL);
-> +	if (!nl->ops) {
-> +		ret = -ENOMEM;
-> +		goto fail2;
-> +	}
-> +	memcpy(nl->ops, snf_ops_tmpl, sizeof(snf_ops_tmpl));
-
-kmemdup
+=2D-=20
+Netz39 e.V. - Real World Virtuality                http://www.netz39.de
+Stefan Haun                                               tux@netz39.de
 
 
+E-Mail: kontakt@netz39.de
 
+Vertretungsberechtigter Vorstand: Ren=C3=A9 Meye, Sebastian Mai
+Inhaltlich verantwortlich gem=C3=A4=C3=9F =C2=A755 (2) RStV: Ren=C3=A9 Meye
+
+Registergericht: Amtsgericht Stendal
+Registernummer:  VR 3169
+
+
+Disclaimer:   Diese E-Mail ist in keiner Form b=C3=B6se oder beleidigend ge-
+meint. Sollte sie an Stellen doch so sein, dann sage mir das bitte. Ich=20
+werde Dein Feedback annehmen und nur beantworten, falls Du es ausdr=C3=BCck-
+lich w=C3=BCnschst.
+
+--nextPart1676826.lU7HgFF2q8
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJUxBD4AAoJEFRUU2UON0vb4scQAL7BM6+7vJ8MidxrOzKWbVzA
+n4a7MOM83m9+nVDy9D1r2OqtzXxMKzbkFHYo73qZSb6c00FdFjFvngNhBuBv0/aY
+ddl4yZ+zptqznJ9EizXHSbRompB4V6iRDjlGxuZv88smirt0RDTO1IxggBqc/nds
+qFX63tB3HwdjKKmKYRwb46FIFaEjW9mY7UxMnX1KWa8cMtqvxWbQ8njMC/nH+3rX
+63L9M4+xByqOmSJ/A6VpZDR49Zm9LTvquqfvmbPbUONVrSDIcriTWl2MF4FoaN2I
+Yk2vD4/f98vBzRYKEodgt9fJTLcII3v0uzzRVLnZA3zaDRlSys/rOqAuvnsgTXtX
+kIFWrQcDAkshUWZrm4jAP50sDpt+NHGnGPDnvV4+RoAISF1oeMKqyG/9gAXZszAj
+6D1JJDuU7EuVJsrR3du6Fm5zQL+jcipFL61e0Y3CpbqRqQrXpGcr5JeuOOrg5YFt
+qs5gHD2Yh/fqdCP0cAltjOIoh/Spu/gjr1cLA2EOkMUH4ramIhixRejhUwCBbzoL
+nUmdO13fD+IlQ7lBQEFUZDcVN1bemtgEwkUH8fEJkmjLgpyRMXIitxyjrHCzRpvO
+48W8HbHykzLW02gOXlA+JXCedKf3VqElpl14WJRJro4KqReYaxK0OVn0+vfJ0TyK
+2J1DNboVHGLUyLQKoqkh
+=87cZ
+-----END PGP SIGNATURE-----
+
+--nextPart1676826.lU7HgFF2q8--
