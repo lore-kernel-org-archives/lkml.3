@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561AbbAXAee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 19:34:34 -0500
-Received: from mga03.intel.com ([134.134.136.65]:9970 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbbAXAea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 19:34:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,457,1418112000"; 
-   d="scan'208";a="516875207"
-Date: Sat, 24 Jan 2015 08:33:41 +0800
-From: kbuild test robot <fengguang.wu@intel.com>
-To: Michael Halcrow <mhalcrow@google.com>
-Cc: kbuild-all@01.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Uday Savagaonkar <savagaon@google.com>,
-        Ildar Muslukhov <ildarm@google.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH ext4] ext4 crypto: ext4_find_dest_de_crypt() can be static
-Message-ID: <20150124003341.GA46929@lkp-sb04>
-References: <201501240824.lsZlTlwQ%fengguang.wu@intel.com>
+	id S1753373AbbAXARb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 19:17:31 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63514 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752775AbbAXAR3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jan 2015 19:17:29 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linux PCI <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH][v3] PCI / PM: Avoid resuming PCI devices during system suspend
+Date: Sat, 24 Jan 2015 01:40:08 +0100
+Message-ID: <1608158.mpjigghEOx@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAErSpo6CFNBWp_CDZQc3XmCFzR5nEjWSfLSVG5c549pEHn4g4Q@mail.gmail.com>
+References: <1460212.bInrzeZle0@vostro.rjw.lan> <20035664.sy5Q5n4bIK@vostro.rjw.lan> <CAErSpo6CFNBWp_CDZQc3XmCFzR5nEjWSfLSVG5c549pEHn4g4Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201501240824.lsZlTlwQ%fengguang.wu@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: fengguang.wu@intel.com
-X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fs/ext4/namei.c:2056:5: sparse: symbol 'ext4_find_dest_de_crypt' was not declared. Should it be static?
+On Friday, January 23, 2015 02:55:25 PM Bjorn Helgaas wrote:
+> On Tue, Jan 20, 2015 at 7:17 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > Commit f25c0ae2b4c4 (ACPI / PM: Avoid resuming devices in ACPI PM
+> > domain during system suspend) modified the ACPI PM domain's system
+> > suspend callbacks to allow devices attached to it to be left in the
+> > runtime-suspended state during system suspend so as to optimize
+> > the suspend process.
+> >
+> > This was based on the general mechanism introduced by commit
+> > aae4518b3124 (PM / sleep: Mechanism to avoid resuming runtime-suspended
+> > devices unnecessarily).
+> >
+> > Extend that approach to PCI devices by modifying the PCI bus type's
+> > ->prepare callback to return 1 for devices that are runtime-suspended
+> > when it is being executed and that are in a suitable power state and
+> > need not be resumed going forward.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> I don't profess to understand this, and it seems like something you
+> could merge via your PM tree.  So I trust you to do the right thing
+> with it :)
+> 
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- namei.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks!
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 0bd6758..7bbf0f9 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2053,7 +2053,7 @@ journal_error:
- }
- 
- #ifdef CONFIG_EXT4_FS_ENCRYPTION
--int ext4_find_dest_de_crypt(struct inode *dir, struct inode *inode,
-+static int ext4_find_dest_de_crypt(struct inode *dir, struct inode *inode,
- 			    struct buffer_head *bh,
- 			    void *buf, int buf_size,
- 			    const char *name, int namelen,
