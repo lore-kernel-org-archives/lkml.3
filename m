@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499AbbAXSOy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 13:14:54 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:30616 "EHLO
+	id S1754844AbbAXSPk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 13:15:40 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:8390 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753261AbbAXSOu (ORCPT
+	by vger.kernel.org with ESMTP id S1754204AbbAXSOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 13:14:50 -0500
-Message-Id: <20150124181448.499062732@goodmis.org>
+	Sat, 24 Jan 2015 13:14:51 -0500
+Message-Id: <20150124181448.680347393@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Sat, 24 Jan 2015 13:13:31 -0500
+Date: Sat, 24 Jan 2015 13:13:32 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -17,12 +17,12 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 1/5] tools lib fs: Add helper to find mounted file systems
+Subject: [PATCH 2/5] tools lib api fs: Add tracefs mount helper functions
 References: <20150124181330.195149364@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-tools-lib-fs-Add-helper-to-find-mounted-file-systems.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0002-tools-lib-api-fs-Add-tracefs-mount-helper-functions.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,195 +30,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-In preparation for adding tracefs for perf to use, create a findfs
-helper utility that find_debugfs uses instead of hard coding the search
-in the code. This will allow for a find_tracefs to be used as well.
+Since tracefs will now hold the event directory for perf, and
+even though by default, debugfs still mounts tracefs on the
+debugfs/tracing directory, the system admin may now choose to not
+mount debugfs and instead just mount tracefs instead.
+
+Having tracefs helper functions will facilitate having perf look
+for tracefs first, and then try debugfs as a fallback.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
  tools/lib/api/Makefile     |  2 ++
- tools/lib/api/fs/debugfs.c | 45 ++++-----------------------------
- tools/lib/api/fs/findfs.c  | 63 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/lib/api/fs/findfs.h  | 10 ++++++++
- 4 files changed, 80 insertions(+), 40 deletions(-)
- create mode 100644 tools/lib/api/fs/findfs.c
- create mode 100644 tools/lib/api/fs/findfs.h
+ tools/lib/api/fs/tracefs.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/lib/api/fs/tracefs.h | 29 +++++++++++++++++++
+ 3 files changed, 102 insertions(+)
+ create mode 100644 tools/lib/api/fs/tracefs.c
+ create mode 100644 tools/lib/api/fs/tracefs.h
 
 diff --git a/tools/lib/api/Makefile b/tools/lib/api/Makefile
-index 36c08b1f4afb..22b2f15d7255 100644
+index 22b2f15d7255..212aa4fd65a0 100644
 --- a/tools/lib/api/Makefile
 +++ b/tools/lib/api/Makefile
-@@ -9,11 +9,13 @@ LIB_H=
+@@ -9,12 +9,14 @@ LIB_H=
  LIB_OBJS=
  
  LIB_H += fs/debugfs.h
-+LIB_H += fs/findfs.h
++LIB_H += fs/tracefs.h
+ LIB_H += fs/findfs.h
  LIB_H += fs/fs.h
  # See comment below about piggybacking...
  LIB_H += fd/array.h
  
  LIB_OBJS += $(OUTPUT)fs/debugfs.o
-+LIB_OBJS += $(OUTPUT)fs/findfs.o
++LIB_OBJS += $(OUTPUT)fs/tracefs.o
+ LIB_OBJS += $(OUTPUT)fs/findfs.o
  LIB_OBJS += $(OUTPUT)fs/fs.o
  # XXX piggybacking here, need to introduce libapikfd, or rename this
- # to plain libapik.a and make it have it all api goodies
-diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
-index a74fba6d7743..76eb92c0623f 100644
---- a/tools/lib/api/fs/debugfs.c
-+++ b/tools/lib/api/fs/debugfs.c
-@@ -8,6 +8,7 @@
- #include <linux/kernel.h>
- 
- #include "debugfs.h"
-+#include "findfs.h"
- 
- char debugfs_mountpoint[PATH_MAX + 1] = "/sys/kernel/debug";
- 
-@@ -22,55 +23,19 @@ static bool debugfs_found;
- /* find the path to the mounted debugfs */
- const char *debugfs_find_mountpoint(void)
- {
--	const char * const *ptr;
--	char type[100];
--	FILE *fp;
--
- 	if (debugfs_found)
- 		return (const char *)debugfs_mountpoint;
- 
--	ptr = debugfs_known_mountpoints;
--	while (*ptr) {
--		if (debugfs_valid_mountpoint(*ptr) == 0) {
--			debugfs_found = true;
--			strcpy(debugfs_mountpoint, *ptr);
--			return debugfs_mountpoint;
--		}
--		ptr++;
--	}
--
--	/* give up and parse /proc/mounts */
--	fp = fopen("/proc/mounts", "r");
--	if (fp == NULL)
--		return NULL;
--
--	while (fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
--		      debugfs_mountpoint, type) == 2) {
--		if (strcmp(type, "debugfs") == 0)
--			break;
--	}
--	fclose(fp);
--
--	if (strcmp(type, "debugfs") != 0)
--		return NULL;
--
--	debugfs_found = true;
--
--	return debugfs_mountpoint;
-+	return find_mountpoint("debugfs", (long) DEBUGFS_MAGIC,
-+			       debugfs_mountpoint, PATH_MAX + 1,
-+			       debugfs_known_mountpoints);
- }
- 
- /* verify that a mountpoint is actually a debugfs instance */
- 
- int debugfs_valid_mountpoint(const char *debugfs)
- {
--	struct statfs st_fs;
--
--	if (statfs(debugfs, &st_fs) < 0)
--		return -ENOENT;
--	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
--		return -ENOENT;
--
--	return 0;
-+	return valid_mountpoint(debugfs, (long) DEBUGFS_MAGIC);
- }
- 
- /* mount the debugfs somewhere if it's not mounted */
-diff --git a/tools/lib/api/fs/findfs.c b/tools/lib/api/fs/findfs.c
+diff --git a/tools/lib/api/fs/tracefs.c b/tools/lib/api/fs/tracefs.c
 new file mode 100644
-index 000000000000..fc62c84cc2e9
+index 000000000000..bdaf54142c5d
 --- /dev/null
-+++ b/tools/lib/api/fs/findfs.c
-@@ -0,0 +1,63 @@
++++ b/tools/lib/api/fs/tracefs.c
+@@ -0,0 +1,71 @@
 +#include <errno.h>
 +#include <stdio.h>
 +#include <stdlib.h>
 +#include <string.h>
 +#include <stdbool.h>
 +#include <sys/vfs.h>
++#include <sys/mount.h>
++#include <linux/kernel.h>
 +
++#include "tracefs.h"
 +#include "findfs.h"
 +
-+/* verify that a mountpoint is actually the type we want */
++#ifndef TRACEFS_DEFAULT_PATH
++#define TRACEFS_DEFAULT_PATH		"/sys/kernel/tracing"
++#endif
 +
-+int valid_mountpoint(const char *mount, long magic)
++char tracefs_mountpoint[PATH_MAX + 1] = TRACEFS_DEFAULT_PATH;
++
++static const char * const tracefs_known_mountpoints[] = {
++	TRACEFS_DEFAULT_PATH,
++	"/sys/kernel/debug/tracing",
++	"/tracing",
++	"/trace",
++	0,
++};
++
++static bool tracefs_found;
++
++/* find the path to the mounted tracefs */
++const char *tracefs_find_mountpoint(void)
 +{
-+	struct statfs st_fs;
++	if (tracefs_found)
++		return (const char *)tracefs_mountpoint;
 +
-+	if (statfs(mount, &st_fs) < 0)
-+		return -ENOENT;
-+	else if (st_fs.f_type != magic)
-+		return -ENOENT;
-+
-+	return 0;
++	return find_mountpoint("tracefs", (long) TRACEFS_MAGIC,
++			       tracefs_mountpoint, PATH_MAX + 1,
++			       tracefs_known_mountpoints);
 +}
 +
-+/* find the path to a mounted file system */
-+const char *find_mountpoint(const char *fstype, long magic,
-+			    char *mountpoint, int len,
-+			    const char * const *known_mountpoints)
++/* verify that a mountpoint is actually a tracefs instance */
++
++int tracefs_valid_mountpoint(const char *tracefs)
 +{
-+	const char * const *ptr;
-+	char format[128];
-+	char type[100];
-+	FILE *fp;
-+
-+	if (known_mountpoints) {
-+		ptr = known_mountpoints;
-+		while (*ptr) {
-+			if (valid_mountpoint(*ptr, magic) == 0) {
-+				strncpy(mountpoint, *ptr, len - 1);
-+				mountpoint[len-1] = 0;
-+				return mountpoint;
-+			}
-+			ptr++;
-+		}
-+	}
-+
-+	/* give up and parse /proc/mounts */
-+	fp = fopen("/proc/mounts", "r");
-+	if (fp == NULL)
-+		return NULL;
-+
-+	snprintf(format, 128, "%%*s %%%ds %%99s %%*s %%*d %%*d\n", len);
-+
-+	while (fscanf(fp, format, mountpoint, type) == 2) {
-+		if (strcmp(type, fstype) == 0)
-+			break;
-+	}
-+	fclose(fp);
-+
-+	if (strcmp(type, fstype) != 0)
-+		return NULL;
-+
-+	return mountpoint;
++	return valid_mountpoint(tracefs, (long) TRACEFS_MAGIC);
 +}
-diff --git a/tools/lib/api/fs/findfs.h b/tools/lib/api/fs/findfs.h
++
++/* mount the tracefs somewhere if it's not mounted */
++char *tracefs_mount(const char *mountpoint)
++{
++	/* see if it's already mounted */
++	if (tracefs_find_mountpoint())
++		goto out;
++
++	/* if not mounted and no argument */
++	if (mountpoint == NULL) {
++		/* see if environment variable set */
++		mountpoint = getenv(PERF_TRACEFS_ENVIRONMENT);
++		/* if no environment variable, use default */
++		if (mountpoint == NULL)
++			mountpoint = TRACEFS_DEFAULT_PATH;
++	}
++
++	if (mount(NULL, mountpoint, "tracefs", 0, NULL) < 0)
++		return NULL;
++
++	/* save the mountpoint */
++	tracefs_found = true;
++	strncpy(tracefs_mountpoint, mountpoint, sizeof(tracefs_mountpoint));
++out:
++	return tracefs_mountpoint;
++}
+diff --git a/tools/lib/api/fs/tracefs.h b/tools/lib/api/fs/tracefs.h
 new file mode 100644
-index 000000000000..37bd7d94ce7e
+index 000000000000..576206500e15
 --- /dev/null
-+++ b/tools/lib/api/fs/findfs.h
-@@ -0,0 +1,10 @@
-+#ifndef __API_FINDFS_H__
-+#define __API_FINDFS_H__
++++ b/tools/lib/api/fs/tracefs.h
+@@ -0,0 +1,29 @@
++#ifndef __API_TRACEFS_H__
++#define __API_TRACEFS_H__
 +
-+const char *find_mountpoint(const char *fstype, long magic,
-+			    char *mountpoint, int len,
-+			    const char * const *known_mountpoints);
++#define _STR(x) #x
++#define STR(x) _STR(x)
 +
-+int valid_mountpoint(const char *mount, long magic);
++/*
++ * On most systems <limits.h> would have given us this, but  not on some systems
++ * (e.g. GNU/Hurd).
++ */
++#ifndef PATH_MAX
++#define PATH_MAX 4096
++#endif
 +
-+#endif /* __API_FINDFS_H__ */
++#ifndef TRACEFS_MAGIC
++#define TRACEFS_MAGIC          0x74726163
++#endif
++
++#ifndef PERF_TRACEFS_ENVIRONMENT
++#define PERF_TRACEFS_ENVIRONMENT "PERF_TRACEFS_DIR"
++#endif
++
++const char *tracefs_find_mountpoint(void);
++int tracefs_valid_mountpoint(const char *debugfs);
++char *tracefs_mount(const char *mountpoint);
++
++extern char tracefs_mountpoint[];
++
++#endif /* __API_DEBUGFS_H__ */
 -- 
 2.1.4
 
