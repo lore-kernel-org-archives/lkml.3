@@ -1,137 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbbAXCp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 21:45:26 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:39900 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbbAXCpS (ORCPT
+	id S1752678AbbAXDAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 22:00:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43649 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564AbbAXDAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 21:45:18 -0500
-Message-ID: <54C3072A.1030604@roeck-us.net>
-Date: Fri, 23 Jan 2015 18:44:58 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Fri, 23 Jan 2015 22:00:44 -0500
+Date: Sat, 24 Jan 2015 11:00:41 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/5 v2] tracing: Automatically mount tracefs on
+ debugfs/tracing
+Message-ID: <20150124030041.GB5009@kroah.com>
+References: <20150123155525.795129339@goodmis.org>
+ <20150123162414.580817092@goodmis.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
- page tables to the process'
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>	<20150123050445.GA22751@roeck-us.net>	<20150123111304.GA5975@node.dhcp.inet.fi>	<54C263CC.1060904@roeck-us.net> <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org>
-In-Reply-To: <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54C3073D.00A8,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 7
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150123162414.580817092@goodmis.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 01:55 PM, Andrew Morton wrote:
-> On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
->
->>>>
->>>> qemu:microblaze generates warnings to the console.
->>>>
->>>> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
->>>>
->>>> with various call stacks. See
->>>> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
->>>> for details.
->>>
->>> Could you try patch below? Completely untested.
->>>
->>> >From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
->>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>> Date: Fri, 23 Jan 2015 13:08:26 +0200
->>> Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
->>>
->>> Microblaze uses custom implementation of PMD folding, but doesn't define
->>> __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
->>>
->>> Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
->>> It also fixes problems with recently-introduced pmd accounting.
->>>
->>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->>> Reported-by: Guenter Roeck <linux@roeck-us.net>
->>
->> Tested working.
->>
->> Tested-by: Guenter Roeck <linux@roeck-us.net>
->>
->> Any idea how to fix the sh problem ?
->
-> Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
-> shut down", which isn't very clear.
->
+On Fri, Jan 23, 2015 at 10:55:28AM -0500, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> As tools currently rely on the tracing directory in debugfs, we can not
+> just created a tracefs infrastructure and expect sysadmins to mount
+> the new tracefs to have their old tools work.
+> 
+> Instead, the debugfs tracing directory is still created and the tracefs
+> file system is mounted there when the debugfs filesystem is mounted.
+> 
+> No longer does the tracing infrastructure update the debugfs file system,
+> but instead interacts with the tracefs file system. But now, it still
+> appears to the user like nothing changed, except you also have the feature
+> of mounting just the tracing system without needing all of debugfs!
+> 
+> Note, because debugfs_create_dir() happens to end up setting the
+> dentry->d_op, we can not use d_set_d_op() but must manually assign the
+> new op, that has automount set, to the dentry returned. This can be
+> racy, but since this happens during the initcall sequence on boot up,
+> there should be nothing that races with it.
+> 
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/trace/trace.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 50 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index fb577a2a60ea..4fb557917d39 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/splice.h>
+>  #include <linux/kdebug.h>
+>  #include <linux/string.h>
+> +#include <linux/mount.h>
+>  #include <linux/rwsem.h>
+>  #include <linux/slab.h>
+>  #include <linux/ctype.h>
+> @@ -5815,10 +5816,35 @@ static __init int register_snapshot_cmd(void)
+>  static inline __init int register_snapshot_cmd(void) { return 0; }
+>  #endif /* defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE) */
+>  
+> +static struct vfsmount *trace_automount(struct path *path)
+> +{
+> +	struct vfsmount *mnt;
+> +	struct file_system_type *type;
+> +
+> +	/*
+> +	 * To maintain backward compatibility for tools that mount
+> +	 * debugfs to get to the tracing facility, tracefs is automatically
+> +	 * mounted to the debugfs/tracing directory.
+> +	 */
+> +	type = get_fs_type("tracefs");
+> +	if (!type)
+> +		return NULL;
+> +	mnt = vfs_kern_mount(type, 0, "tracefs", NULL);
+> +	put_filesystem(type);
+> +	if (IS_ERR(mnt))
+> +		return NULL;
+> +	mntget(mnt);
+> +
+> +	return mnt;
+> +}
+> +
+>  #define TRACE_TOP_DIR_ENTRY		((struct dentry *)1)
+>  
+>  struct dentry *tracing_init_dentry_tr(struct trace_array *tr)
+>  {
+> +	static struct dentry_operations trace_ops;
+> +	struct dentry *traced;
+> +
+>  	/* Top entry does not have a descriptor */
+>  	if (tr->dir == TRACE_TOP_DIR_ENTRY)
+>  		return NULL;
+> @@ -5831,7 +5857,30 @@ struct dentry *tracing_init_dentry_tr(struct trace_array *tr)
+>  		return ERR_PTR(-ENODEV);
+>  
+>  	if (tr->flags & TRACE_ARRAY_FL_GLOBAL) {
+> -		tr->dir = debugfs_create_dir("tracing", NULL);
+> +		traced = debugfs_create_dir("tracing", NULL);
+> +		if (!traced)
+> +			return ERR_PTR(-ENOMEM);
+> +		/* copy the dentry ops and add an automount to it */
+> +		if (traced->d_op) {
+> +			/*
+> +			 * FIXME:
+> +			 * Currently debugfs sets the d_op by a side-effect
+> +			 * of calling simple_lookup(). Normally, we should
+> +			 * never change d_op of a dentry, but as this is
+> +			 * happening at boot up and shouldn't be racing with
+> +			 * any other users, this should be OK. But it is still
+> +			 * a hack, and needs to be properly done.
+> +			 */
+> +			trace_ops = *traced->d_op;
+> +			trace_ops.d_automount = trace_automount;
+> +			traced->d_flags |= DCACHE_NEED_AUTOMOUNT;
+> +			traced->d_op = &trace_ops;
+> +		} else {
+> +			/* Ideally, this is what should happen */
+> +			trace_ops = simple_dentry_operations;
+> +			trace_ops.d_automount = trace_automount;
+> +			d_set_d_op(traced, &trace_ops);
 
-qemu command line:
+How will this else block run if debugfs is setting d_op in the
+debugfs_create_dir() call?
 
-/opt/buildbot/bin/qemu-system-sh4 -M r2d -kernel ./arch/sh/boot/zImage \
-         -drive file=rootfs.ext2,if=ide \
-         -append "root=/dev/sda console=ttySC1,115200 noiotrap"
-         -serial null -serial stdio -net nic,model=rtl8139 -net user
-         -nographic -monitor null
+What really do you want to do here, just automount a filesystem on
+debugfs?  If so, can't we just add a new debugfs call to do that?
 
---
-Poweroff log in mainline (v3.19-rc5-119-gb942c65):
+thanks,
 
-/ # poweroff
-The system is going down NOW!
-Sent SIGTERM to all processes
-Sent SIGKILL to all processes
-Requesting system poweroff
-sd 0:0:0:0: [sda] Synchronizing SCSI cache
-sd 0:0:0:0: [sda] Stopping disk
-reboot: Power down
-
---
-Poweroff log in mmotm (v3.19-rc5-417-gc64429b):
-
-/ # poweroff
-
-[ nothing else happens until I kill the qemu session ]
-
-The "halt" command does not work either.
-
---
-The message "The system is going down NOW" is from the init process.
-If I use "kill -12 1" instead of "halt" or "poweroff", the system does
-shut down as expected. "poweroff -f" also works.
-
-Trying to debug this further, I noticed that the "ps" command hangs
-as well, so the problem is not limited to poweroff or halt.
-
-I'll be happy to debug this further, I just have no idea where to start.
-
-Thanks,
-Guenter
-
+greg k-h
