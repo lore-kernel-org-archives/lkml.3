@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbbAXOF4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 09:05:56 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:47016 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754130AbbAXOEe (ORCPT
+	id S1754459AbbAXOEo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 09:04:44 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:58382 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150AbbAXOEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 09:04:34 -0500
+	Sat, 24 Jan 2015 09:04:35 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 30/32] irq: use %*pb[l] to print bitmaps including cpumasks and nodemasks
-Date: Sat, 24 Jan 2015 09:03:36 -0500
-Message-Id: <1422108218-25398-31-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 31/32] profile: use %*pb[l] to print bitmaps including cpumasks and nodemasks
+Date: Sat, 24 Jan 2015 09:03:37 -0500
+Message-Id: <1422108218-25398-32-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422108218-25398-1-git-send-email-tj@kernel.org>
 References: <1422108218-25398-1-git-send-email-tj@kernel.org>
@@ -36,45 +35,21 @@ before applying to subsystem trees.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/irq/proc.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ kernel/profile.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index 9dc9bfd..df2f464 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -46,10 +46,9 @@ static int show_irq_affinity(int type, struct seq_file *m, void *v)
- 		mask = desc->pending_mask;
- #endif
- 	if (type)
--		seq_cpumask_list(m, mask);
-+		seq_printf(m, "%*pbl\n", cpumask_pr_args(mask));
- 	else
--		seq_cpumask(m, mask);
--	seq_putc(m, '\n');
-+		seq_printf(m, "%*pb\n", cpumask_pr_args(mask));
- 	return 0;
- }
+diff --git a/kernel/profile.c b/kernel/profile.c
+index 54bf5ba..a7bcd28 100644
+--- a/kernel/profile.c
++++ b/kernel/profile.c
+@@ -422,8 +422,7 @@ void profile_tick(int type)
  
-@@ -67,8 +66,7 @@ static int irq_affinity_hint_proc_show(struct seq_file *m, void *v)
- 		cpumask_copy(mask, desc->affinity_hint);
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 
--	seq_cpumask(m, mask);
--	seq_putc(m, '\n');
-+	seq_printf(m, "%*pb\n", cpumask_pr_args(mask));
- 	free_cpumask_var(mask);
- 
- 	return 0;
-@@ -186,8 +184,7 @@ static const struct file_operations irq_affinity_list_proc_fops = {
- 
- static int default_affinity_show(struct seq_file *m, void *v)
+ static int prof_cpu_mask_proc_show(struct seq_file *m, void *v)
  {
--	seq_cpumask(m, irq_default_affinity);
+-	seq_cpumask(m, prof_cpu_mask);
 -	seq_putc(m, '\n');
-+	seq_printf(m, "%*pb\n", cpumask_pr_args(irq_default_affinity));
++	seq_printf(m, "%*pb\n", cpumask_pr_args(prof_cpu_mask));
  	return 0;
  }
  
