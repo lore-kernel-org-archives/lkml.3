@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbbAXKBA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 05:01:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47961 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbbAXKA5 (ORCPT
+	id S1752244AbbAXKGI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 05:06:08 -0500
+Received: from www.linutronix.de ([62.245.132.108]:40132 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbbAXKGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 05:00:57 -0500
-Date: Sat, 24 Jan 2015 02:00:28 -0800
-From: tip-bot for kbuild test robot <tipbot@zytor.com>
-Message-ID: <tip-4ebbda5251374d532ba8939de4241d769d1420b6@git.kernel.org>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        hpa@zytor.com, fengguang.wu@intel.com
-Reply-To: fengguang.wu@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20150123121206.GA4766@snb>
-References: <20150123121206.GA4766@snb>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] hrtimer: Make __hrtimer_get_next_event() static
-Git-Commit-ID: 4ebbda5251374d532ba8939de4241d769d1420b6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 24 Jan 2015 05:06:03 -0500
+Date: Sat, 24 Jan 2015 11:05:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Torvald Riegel <triegel@redhat.com>
+cc: Darren Hart <dvhart@linux.intel.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "Carlos O'Donell" <carlos@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Darren Hart <dvhart@infradead.org>, Anton Blanchard <anton@samba.org>,
+        Petr Baudis <pasky@suse.cz>, Eric Dumazet <edumazet@google.com>,
+        bill o gallmeister <bgallmeister@gmail.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
+        Rich Felker <dalias@libc.org>
+Subject: Re: futex(2) man page update help request
+In-Reply-To: <1422037145.27573.0.camel@triegel.csb>
+Message-ID: <alpine.DEB.2.11.1501241102450.5526@nanos>
+References: <537346E5.4050407@gmail.com>  <CF98E3EF.90564%dvhart@linux.intel.com>  <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com>  <5373D0CA.2050204@redhat.com>  <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> 
+ <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com>  <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de>  <54B7D87C.3090901@gmail.com> <alpine.DEB.2.11.1501152313330.5526@nanos>  <54B92B71.2090509@gmail.com> <alpine.DEB.2.11.1501161618080.5526@nanos>
+  <54B97A72.2050205@gmail.com>  <D0DEECA2.B7EAD%dvhart@linux.intel.com> <1422037145.27573.0.camel@triegel.csb>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4ebbda5251374d532ba8939de4241d769d1420b6
-Gitweb:     http://git.kernel.org/tip/4ebbda5251374d532ba8939de4241d769d1420b6
-Author:     kbuild test robot <fengguang.wu@intel.com>
-AuthorDate: Fri, 23 Jan 2015 20:12:06 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 24 Jan 2015 10:53:36 +0100
+On Fri, 23 Jan 2015, Torvald Riegel wrote:
 
-hrtimer: Make __hrtimer_get_next_event() static
+> On Fri, 2015-01-16 at 16:46 -0800, Darren Hart wrote:
+> > On 1/16/15, 12:54 PM, "Michael Kerrisk (man-pages)"
+> > <mtk.manpages@gmail.com> wrote:
+> > 
+> > >Color me stupid, but I can't see this in futex_requeue(). Where is that
+> > >check that is "independent of the requeue type (normal/pi)"?
+> > >
+> > >When I look through futex_requeue(), all the likely looking sources
+> > >of EINVAL are governed by a check on the 'requeue_pi' argument.
+> > 
+> > 
+> > Right, in the non-PI case, I believe there are valid use cases: move to
+> > the back of the FIFO, for example (OK, maybe the only example?).
+> 
+> But we never guarantee a futex is a FIFO, or do we?  If we don't, then
+> such a requeue could be implemented as a no-op by the kernel, which
+> would sort of invalidate the use case.
+> 
+> (And I guess we don't want to guarantee FIFO behavior for futexes.)
 
-kernel/time/hrtimer.c:444:9: sparse: symbol '__hrtimer_get_next_event' was not declared. Should it be static?
+The (current) behaviour is:
 
-Fixes: 9bc7491906b4 hrtimer: Prevent stale expiry time in hrtimer_interrupt()
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: kbuild-all@01.org
-Link: http://lkml.kernel.org/r/20150123121206.GA4766@snb
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/hrtimer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+    real-time threads:   FIFO per priority level
+    sched-other threads: FIFO independent of nice level
 
-diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
-index b67ebea..ce8221a 100644
---- a/kernel/time/hrtimer.c
-+++ b/kernel/time/hrtimer.c
-@@ -441,7 +441,7 @@ static inline void debug_deactivate(struct hrtimer *timer)
- }
- 
- #if defined(CONFIG_NO_HZ_COMMON) || defined(CONFIG_HIGH_RES_TIMERS)
--ktime_t __hrtimer_get_next_event(struct hrtimer_cpu_base *cpu_base)
-+static ktime_t __hrtimer_get_next_event(struct hrtimer_cpu_base *cpu_base)
- {
- 	struct hrtimer_clock_base *base = cpu_base->clock_base;
- 	ktime_t expires, expires_next = { .tv64 = KTIME_MAX };
+The wakeup is priority ordered. Highest priority level first.
+
+Thanks,
+
+	tglx
+
+
+
