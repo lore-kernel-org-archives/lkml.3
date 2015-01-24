@@ -1,52 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbbAXKqN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 05:46:13 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:57613 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561AbbAXKqL (ORCPT
+	id S1752835AbbAXLCd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 06:02:33 -0500
+Received: from mail-yk0-f179.google.com ([209.85.160.179]:54071 "EHLO
+	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbbAXLC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 05:46:11 -0500
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH v2] modsign: use shred to overwrite the private key before deleting it
-Date: Sat, 24 Jan 2015 11:45:27 +0100
-Message-Id: <1422096327-4483-1-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <54C2F4F8.20809@draigBrady.com>
-References: <54C2F4F8.20809@draigBrady.com>
+	Sat, 24 Jan 2015 06:02:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B73270D4C5@PGSMSX105.gar.corp.intel.com>
+References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie>
+	<1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie>
+	<AF233D1473C1364ABD51D28909A1B1B73270D4C5@PGSMSX105.gar.corp.intel.com>
+Date: Sat, 24 Jan 2015 13:02:28 +0200
+Message-ID: <CAHp75VcCcpUZ7AuKk96-aVUd6Vykfc8_yod+8T_at2DMuTve3Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is for the more paranoid people, also it's
-questionable what paranoid nowadays means.
+On Sat, Jan 24, 2015 at 3:48 AM, Ong, Boon Leong
+<boon.leong.ong@intel.com> wrote:
 
-It uses shred, in the hope it will somedays learn how to shred stuff on
-FLASH based devices securely too, once that has become possible.
+>>+static int imr_enabled(struct imr_regs *imr)
+> Do we want to make it inline perhaps since it is 1 liner?
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
----
- Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Since it is declared static I would even suggest the new name is_imr_enabled().
 
-diff --git a/Makefile b/Makefile
-index 7ad66de..733421b 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1132,7 +1132,7 @@ ifeq ($(CONFIG_MODULE_SIG_THROW_AWAY), y)
- 	@echo "###"
- 	@echo "### Deleting key used to sign modules."
- 	@echo "###"
--	@rm ./signing_key.priv
-+	@shred -n1 -u ./signing_key.priv
- 	@rm ./signing_key.x509
- endif
- 
+[]
+
+>>+int imr_remove_range(int reg, unsigned long base, unsigned long size)
+>>+{
+>>+      struct imr_regs imr;
+>>+      int found = 0, i, ret = 0;
+> Please make each of the defined variables as individual line here..
+
+I would suggest to type i as unsigned int and found as bool.
+
+[]
+
+>>+              if (!imr_enabled(&imr) || imr.addr_lo & IMR_LOCK) {
+>>+                      ret = -ENODEV;
+>>+                      goto done;
+>>+              }
+>>+              found = 1;
+>>+
+
+Redundant empty line.
+
+>>+      } else {
+>>+              /* Search for match based on address range */
+>>+              for (i = 0; i < imr_dev.max_imr; i++) {
+>>+                      ret = imr_read(reg, &imr);
+> A serious bug here.... 'reg' should be 'i' . We enter this branch if reg=-1
+> Is there a miss in your test case?
+>
+>>+                      if (ret)
+>>+                              goto done;
+>>+
+>>+                      if (!imr_enabled(&imr) || imr.addr_lo & IMR_LOCK)
+>>+                              continue;
+>>+
+>>+                      if ((imr_to_phys(imr.addr_lo) == base) &&
+>>+                          (imr_to_phys(imr.addr_hi) == max)) {
+> I think we need to take care of the size that has been fix-up here ...
+>
+>>+                              found = 1;
+>>+                              reg = i;
+
+According to your comment this line becomes redundant.
+
+[]
+
+>>+static void __init imr_fixup_memmap(void)
+>>+{
+>>+      unsigned long base  = virt_to_phys(&_text);
+>>+      unsigned long size = virt_to_phys(&__end_rodata) - base;
+> What about the size fixup to be consistent?
+> We should not guard more than it is needed .....
+>
+>>+      int i, ret;
+> Two int declaration line here.
+
+unsigned int i; ?
+
 -- 
-2.1.0
-
+With Best Regards,
+Andy Shevchenko
