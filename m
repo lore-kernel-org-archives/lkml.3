@@ -1,115 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbbAXKsv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 05:48:51 -0500
-Received: from a8-41.smtp-out.amazonses.com ([54.240.8.41]:54873 "EHLO
-	a8-41.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751722AbbAXKsr (ORCPT
+	id S1752065AbbAXJ4H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 04:56:07 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:56167 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbbAXJ4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 05:48:47 -0500
-X-Greylist: delayed 3973 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Jan 2015 05:48:47 EST
-Message-ID: <0000014b1b51014e-a736e0b0-11f5-4a60-b857-4585e9e9106d-000000@email.amazonses.com>
-Date: Sat, 24 Jan 2015 09:41:08 +0000
-From: Jim Keir <jimkeir@oracledbadirect.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Sat, 24 Jan 2015 04:56:03 -0500
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-CC: linux-input <linux-input@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 2/2] Fix force effect modifications for the Microsoft
- Sidewinder Force Feedback Pro 2 joystick
-References: <1422033640-4104-1-git-send-email-jimkeir@oracledbadirect.com>	<0000014b17cfde4d-df42e887-9524-4f07-a46b-5d81f01fc687-000000@email.amazonses.com> <CAN+gG=FHtsRzouBNY-YqXhH8SXKCc4Gw2TF6Z+_-+Cp_iPj6RA@mail.gmail.com>
-In-Reply-To: <CAN+gG=FHtsRzouBNY-YqXhH8SXKCc4Gw2TF6Z+_-+Cp_iPj6RA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SES-Outgoing: 2015.01.24-54.240.8.41
-Feedback-ID: us-east-1.amlta2VpckBvcmFjbGVkYmFkaXJlY3QuY29t:AmazonSES
+In-Reply-To: <1421790436.1112.14.camel@linux-0dmf.site>
+References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
+ <1421751814.29486.13.camel@linux-0dmf.site> <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
+ <1421762788.29486.28.camel@linux-0dmf.site> <CABVT_gdCvbK8mUQMjDmiAmc_6kbBUMf4XFeAZ=zzjOYS+7oCGg@mail.gmail.com>
+ <1421775689.1112.4.camel@linux-0dmf.site> <CABVT_geh3RjaG+zX6xUWL9RQtwoAeyuC33xf2vT2o0HPPkokcg@mail.gmail.com>
+ <1421790436.1112.14.camel@linux-0dmf.site>
+From: Kirill Elagin <kirelagin@gmail.com>
+Date: Sat, 24 Jan 2015 13:55:39 +0400
+Message-ID: <CABVT_geRjB12v8XnRvNbf_2h6-hQJwgxuFkqxBhwQv2nrZ-w9A@mail.gmail.com>
+Subject: Re: USB autosuspend causing trouble with bluetooth
+To: Oliver Neukum <oneukum@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jan 21, 2015 at 12:47 AM, Oliver Neukum <oneukum@suse.de> wrote:
+> On Tue, 2015-01-20 at 23:25 +0400, Kirill Elagin wrote:
+>
+>> Hm, I'm pretty sure I never touched anything with `port` in its name,
+>> all the ports are set to `auto` (that's what laptop-mode-tools does).
+>
+> Here we go.
+>
+>> Right now I think I see three possibly unrelated issues:
+>>
+>> Issue #1. BT trackpad not working properly when connected to the
+>> builtin bluetooth adapter.
+>> ----------
+>>
+>> The adapter is attached to a USB1.1 hub:
+>>
+>> ~~~~
+>> # lsusb -t
+>> ...
+>> /:  Bus 03.Port 1: Dev 1, Class=root_hub, Driver=uhci_hcd/2p, 12M
+>>     |__ Port 2: Dev 2, If 0, Class=Wireless, Driver=btusb, 12M
+>>     |__ Port 2: Dev 2, If 1, Class=Wireless, Driver=btusb, 12M
+>>     |__ Port 2: Dev 2, If 2, Class=Vendor Specific Class, Driver=, 12M
+>>     |__ Port 2: Dev 2, If 3, Class=Application Specific Interface, Driver=, 12M
+>> ...
+>>
+>> # cat usb3/power/control
+>> auto
+>>
+>> # cat usb3/3-*/usb3-port*/power/control
+>> auto
+>> auto
+>
+> Try setting this to on.
+>
+>> # cat usb3/3-2/power/control
+>> on
+>
+> Here "auto" should work. Please try.
+> [..]
+>> Issue #2. No hotplug with USB1.1:
+>> ----------
+>>
+>> To see this I pick one physical port. When I plug a USB1.1 device it
+>> appears on bus 4 port 2; a USB2.0 device appears on bus 1 port 4.
+>>
+>> ~~~~
+>> # cat usb4/power/control
+>> auto
+>> # cat usb4/4-*/usb4-port*/power/control
+>> auto
+>> auto
+>
+> Please set this to "on"
+>
+>> # cat usb1/power/control
+>> auto
+>> # cat usb1/1-*/usb1-port*/power/control
+>
+> Please set this to "on"
 
-Yes, confirmed. The description below still holds.
+I started with the defaults (`auto` everywhere) and did:
 
-Cheers,
-Jim
+~~~~
+for f in /sys/bus/usb/devices/usb*/*-*/*-port*/power/control; do echo
+on > $f; done
+~~~~
 
-On 23/01/2015 18:54, Benjamin Tissoires wrote:
-> I have no clue what this code is doing (don't know much about the ff system).
-> Quoting your initial 0001/0001, I thing the commit message should be
-> the following.
-> Jim, can you please validate it?
->
-> "
-> The FF2 driver (usbhid/hid-pidff.c) does not set the effect ID when
-> uploading an effect. The result is that the initial upload works but
-> subsequent uploads to modify effect parameters are all directed at the
-> last-created effect.
->
-> The targeted effect ID must be passed back to the device when effect
-> parameters are changed. This is done at the start of
-> "pidff_set_condition_report", "pidff_set_periodic_report" etc. based on
-> the value of "pidff->block_load[PID_EFFECT_
-> BLOCK_INDEX].value[0]".
-> However, this value is only ever set during pidff_request_effect_upload.
-> The result is stored in "pidff->pid_id[effect->id]" at the end of
-> pid_upload_effect, for later use. However, if an effect is modified and
-> re-sent then this identifier is not being copied back from
-> pidff->pid_id[effect->id] before sending the command to the device. The
-> fix is to do this at the start of pidff_upload_effect.
-> "
->
-> ---
->
-> As said, I have no clue* of what this is supposed to do, so I can not
-> add my reviewed-by here. The patch seems good however so nothing
-> should prevent us to take it if it fixes your problem :)
->
-> Cheers,
-> Benjamin
->
-> * OK, I am pushing a little bit, I just don't want today to go deep in
-> the code :-)
->
->
-> On Fri, Jan 23, 2015 at 12:21 PM, Jim Keir <jimkeir@oracledbadirect.com> wrote:
->> ---
->> Hi,
->>
->> Changes from previous patches:
->> - All changes removed from higher-level files
->> - Extra debug line removed
->>
->> Signed-off-by: Jim Keir <jimkeir@oracledbadirect.com>
->>
->>   drivers/hid/usbhid/hid-pidff.c | 6 ++++++
->>   1 file changed, 6 insertions(+)
->>
->> diff --git a/drivers/hid/usbhid/hid-pidff.c b/drivers/hid/usbhid/hid-pidff.c
->> index 0b531c6..1b3fa70 100644
->> --- a/drivers/hid/usbhid/hid-pidff.c
->> +++ b/drivers/hid/usbhid/hid-pidff.c
->> @@ -568,6 +568,12 @@ static int pidff_upload_effect(struct input_dev *dev, struct ff_effect *effect,
->>          int type_id;
->>          int error;
->>
->> +       pidff->block_load[PID_EFFECT_BLOCK_INDEX].value[0] = 0;
->> +       if (old && effect) {
->> +               pidff->block_load[PID_EFFECT_BLOCK_INDEX].value[0] =
->> +                       pidff->pid_id[effect->id];
->> +       }
->> +
->>          switch (effect->type) {
->>          case FF_CONSTANT:
->>                  if (!old) {
->> --
->> 1.9.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This had absolutely _no_ effect on hotplug. As before, when I insert
+the keyboard receiver nothing happens until I echo `on` to
+`usb6/power/control`.
 
+>
+> [..]
+>>
+>> Issue #3. No hot-plug-out for USB1.1.
+>> --------
+>
+>> I think that the first two issues are fixed by keeping all the USB1.1
+>> hubs and the builtin BT always `on`, but I just wanted to know whether
+>> those are hardware or software bugs.
+>
+> I suspect this is caused by outdated laptop-mode-tools.
+
+I have laptop-mode-tools-1.66 and actually I initially blamed the new
+runtime-pm module. But it turns out, `laptop_mode` doesn't touch the
+ports at all.
+
+>
+> Basically setting the port controls (as opposed to hub and device
+> controls) to "auto" tells the kernel that it may disable hotplugging
+> to save energy. Hotunplug for devices that need remote wakeup will
+> still work. Likewise if you disable autosuspend of the attached devices.
+>
+>         Regards
+>                 Oliver
+>
+>
