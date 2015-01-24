@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810AbbAXRwV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 12:52:21 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40973 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167AbbAXRwT (ORCPT
+	id S1754137AbbAXSLq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 13:11:46 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:43345 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261AbbAXSLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 12:52:19 -0500
-Date: Sat, 24 Jan 2015 18:51:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Jason Cooper <jason@lakedaemon.net>, Ralf Baechle <ralf@linux-mips.org>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Florian Fainelli <f.fainelli@gmail.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>
-Subject: Re: [PATCH V4 01/14] sh: Eliminate unused irq_reg_{readl,writel}
- accessors
-In-Reply-To: <CAMuHMdUpxURV4ztpa3x0TORsSWtxiKxe6_EDO5QsO_vhedip0A@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1501241851090.5526@nanos>
-References: <1415342669-30640-1-git-send-email-cernekee@gmail.com> <1415342669-30640-2-git-send-email-cernekee@gmail.com> <CAMuHMdW+L8YbE8Z8jrtnm8xWk63sRGaFdM7TPM6MmrDg9XwHuQ@mail.gmail.com> <20141114163843.GH29662@linux-mips.org> <20141114170525.GL3698@titan.lakedaemon.net>
- <CAMuHMdXMsxhcD9C079YPc6Toxdo0e23oqM_9KeSG=NrFa4auRQ@mail.gmail.com> <CAMuHMdUpxURV4ztpa3x0TORsSWtxiKxe6_EDO5QsO_vhedip0A@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sat, 24 Jan 2015 13:11:43 -0500
+From: Alexander Kuleshov <kuleshovmail@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Martin Mares <mj@ucw.cz>, Ingo Molnar <mingo@redhat.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Kuleshov <kuleshovmail@gmail.com>
+Subject: [PATCH] x86/boot/video: move video_segment variable to video.c
+Date: Sun, 25 Jan 2015 00:11:32 +0600
+Message-Id: <1422123092-28750-1-git-send-email-kuleshovmail@gmail.com>
+X-Mailer: git-send-email 2.3.0.rc1.275.g028c360
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jan 2015, Geert Uytterhoeven wrote:
-> Will you still do so, or shall I forward the patch to Andrew Morton?
+It's only user of the video_segment variable, so move it to video.c
 
-akpm please.
+Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+---
+ arch/x86/boot/video-mode.c | 4 +---
+ arch/x86/boot/video.c      | 2 ++
+ arch/x86/boot/video.h      | 1 -
+ 3 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/boot/video-mode.c b/arch/x86/boot/video-mode.c
+index 748e8d0..aa8a96b 100644
+--- a/arch/x86/boot/video-mode.c
++++ b/arch/x86/boot/video-mode.c
+@@ -22,10 +22,8 @@
+ /*
+  * Common variables
+  */
+-int adapter;			/* 0=CGA/MDA/HGC, 1=EGA, 2=VGA+ */
+-u16 video_segment;
++int adapter;		/* 0=CGA/MDA/HGC, 1=EGA, 2=VGA+ */
+ int force_x, force_y;	/* Don't query the BIOS for cols/rows */
+-
+ int do_restore;		/* Screen contents changed during mode flip */
+ int graphic_mode;	/* Graphic mode with linear frame buffer */
+ 
+diff --git a/arch/x86/boot/video.c b/arch/x86/boot/video.c
+index 43eda28..05111bb 100644
+--- a/arch/x86/boot/video.c
++++ b/arch/x86/boot/video.c
+@@ -17,6 +17,8 @@
+ #include "video.h"
+ #include "vesa.h"
+ 
++static u16 video_segment;
++
+ static void store_cursor_position(void)
+ {
+ 	struct biosregs ireg, oreg;
+diff --git a/arch/x86/boot/video.h b/arch/x86/boot/video.h
+index 0bb2549..b54e032 100644
+--- a/arch/x86/boot/video.h
++++ b/arch/x86/boot/video.h
+@@ -91,7 +91,6 @@ int mode_defined(u16 mode);	/* video.c */
+ #define ADAPTER_VGA	2
+ 
+ extern int adapter;
+-extern u16 video_segment;
+ extern int force_x, force_y;	/* Don't query the BIOS for cols/rows */
+ extern int do_restore;		/* Restore screen contents */
+ extern int graphic_mode;	/* Graphics mode with linear frame buffer */
+-- 
+2.3.0.rc1.275.g028c360
+
