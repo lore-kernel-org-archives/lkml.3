@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbbAXLCd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 06:02:33 -0500
-Received: from mail-yk0-f179.google.com ([209.85.160.179]:54071 "EHLO
-	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbbAXLC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 06:02:29 -0500
+	id S1752765AbbAXLOn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 06:14:43 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39502 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557AbbAXLOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 06:14:38 -0500
+Date: Sat, 24 Jan 2015 12:14:30 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <h.peter.anvin@intel.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 0/2] add support for new persistent memory instructions
+Message-ID: <20150124111430.GA10084@pd.tnic>
+References: <1422045628-16225-1-git-send-email-ross.zwisler@linux.intel.com>
+ <54C2D34D.7010709@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B73270D4C5@PGSMSX105.gar.corp.intel.com>
-References: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie>
-	<1421865968-7373-2-git-send-email-pure.logic@nexus-software.ie>
-	<AF233D1473C1364ABD51D28909A1B1B73270D4C5@PGSMSX105.gar.corp.intel.com>
-Date: Sat, 24 Jan 2015 13:02:28 +0200
-Message-ID: <CAHp75VcCcpUZ7AuKk96-aVUd6Vykfc8_yod+8T_at2DMuTve3Q@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] x86: Add Isolated Memory Regions for Quark X1000
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <54C2D34D.7010709@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 24, 2015 at 3:48 AM, Ong, Boon Leong
-<boon.leong.ong@intel.com> wrote:
+On Fri, Jan 23, 2015 at 03:03:41PM -0800, H. Peter Anvin wrote:
+> For the specific case of CLWB, we can use an "m" input rather than a
+> "+m" output, simply because CLWB (or CLFLUSH* used as a standin for CLWB
+> doesn't need to be ordered with respect to loads (whereas CLFLUSH* do).
 
->>+static int imr_enabled(struct imr_regs *imr)
-> Do we want to make it inline perhaps since it is 1 liner?
+Well, we could do something like:
 
-Since it is declared static I would even suggest the new name is_imr_enabled().
+        volatile struct { char x[64]; } *p = __p;
 
-[]
+        if (static_cpu_has(X86_FEATURE_CLWB))
+                asm volatile(".byte 0x66,0x0f,0xae,0x30" :: "m" (*p), "a" (p));
+        else
+                asm volatile(ALTERNATIVE(
+                        ".byte 0x3e; clflush (%[pax])",
+                        ".byte 0x66; clflush (%[pax])", /* clflushopt (%%rax) */
+                        X86_FEATURE_CLFLUSHOPT)
+                        : [p] "+m" (*p)
+                        : [pax] "a" (p));
 
->>+int imr_remove_range(int reg, unsigned long base, unsigned long size)
->>+{
->>+      struct imr_regs imr;
->>+      int found = 0, i, ret = 0;
-> Please make each of the defined variables as individual line here..
+which would simplify the alternative macro too.
 
-I would suggest to type i as unsigned int and found as bool.
+Generated asm looks ok to me (my objdump doesn't know CLWB yet :)):
 
-[]
+0000000000000aa0 <myclflush>:
+ aa0:   55                      push   %rbp
+ aa1:   48 89 e5                mov    %rsp,%rbp
+ aa4:   eb 0a                   jmp    ab0 <myclflush+0x10>
+ aa6:   48 89 f8                mov    %rdi,%rax
+ aa9:   66 0f ae 30             data16 xsaveopt (%rax)
+ aad:   5d                      pop    %rbp
+ aae:   c3                      retq
+ aaf:   90                      nop
+ ab0:   48 89 f8                mov    %rdi,%rax
+ ab3:   3e 0f ae 38             clflush %ds:(%rax)
+ ab7:   5d                      pop    %rbp
+ ab8:   c3                      retq
 
->>+              if (!imr_enabled(&imr) || imr.addr_lo & IMR_LOCK) {
->>+                      ret = -ENODEV;
->>+                      goto done;
->>+              }
->>+              found = 1;
->>+
+> Should we use an SFENCE as a standin if pcommit is unavailable, in case
+> we end up using CLFLUSHOPT?
 
-Redundant empty line.
-
->>+      } else {
->>+              /* Search for match based on address range */
->>+              for (i = 0; i < imr_dev.max_imr; i++) {
->>+                      ret = imr_read(reg, &imr);
-> A serious bug here.... 'reg' should be 'i' . We enter this branch if reg=-1
-> Is there a miss in your test case?
->
->>+                      if (ret)
->>+                              goto done;
->>+
->>+                      if (!imr_enabled(&imr) || imr.addr_lo & IMR_LOCK)
->>+                              continue;
->>+
->>+                      if ((imr_to_phys(imr.addr_lo) == base) &&
->>+                          (imr_to_phys(imr.addr_hi) == max)) {
-> I think we need to take care of the size that has been fix-up here ...
->
->>+                              found = 1;
->>+                              reg = i;
-
-According to your comment this line becomes redundant.
-
-[]
-
->>+static void __init imr_fixup_memmap(void)
->>+{
->>+      unsigned long base  = virt_to_phys(&_text);
->>+      unsigned long size = virt_to_phys(&__end_rodata) - base;
-> What about the size fixup to be consistent?
-> We should not guard more than it is needed .....
->
->>+      int i, ret;
-> Two int declaration line here.
-
-unsigned int i; ?
+Btw, is PCOMMIT a lightweight SFENCE for this persistent memory aspect
+to make sure stuff has become persistent after executing it? But not all
+stuff like SFENCE so SFENCE is the bigger hammer?
 
 -- 
-With Best Regards,
-Andy Shevchenko
+Regards/Gruss,
+    Boris.
+
+ECO tip #101: Trim your mails when you reply.
+--
