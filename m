@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417AbbAXHDz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 02:03:55 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:53918 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946AbbAXHDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 02:03:51 -0500
-Date: Fri, 23 Jan 2015 23:03:41 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+	id S1752582AbbAXHQi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 02:16:38 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:49040 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534AbbAXHQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 02:16:36 -0500
+Date: Sat, 24 Jan 2015 02:16:23 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: mmotm 2015-01-23-16-19: build failures due to 'mm/page_alloc.c:
- don't offset memmap for flatmem'
-Message-ID: <20150124070341.GA30638@roeck-us.net>
-References: <54c2e51c.VbfIg4TfoWD0Qi0z%akpm@linux-foundation.org>
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
+Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
+ remove unnecessary soft limit tree node test'
+Message-ID: <20150124071623.GA17705@phnom.home.cmpxchg.org>
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
+ <20150123050802.GB22751@roeck-us.net>
+ <20150123141817.GA22926@phnom.home.cmpxchg.org>
+ <alpine.DEB.2.11.1501231419420.11767@gentwo.org>
+ <54C2B01D.4070303@roeck-us.net>
+ <alpine.DEB.2.11.1501231508020.7871@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54c2e51c.VbfIg4TfoWD0Qi0z%akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54C343D6.0088,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <alpine.DEB.2.11.1501231508020.7871@gentwo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 04:19:40PM -0800, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2015-01-23-16-19 has been uploaded to
+On Fri, Jan 23, 2015 at 03:09:20PM -0600, Christoph Lameter wrote:
+> On Fri, 23 Jan 2015, Guenter Roeck wrote:
 > 
->    http://www.ozlabs.org/~akpm/mmotm/
+> > Wouldn't that have unintended consequences ? So far
+> > rb tree nodes are allocated even if a node not online;
+> > the above would change that. Are you saying it is
+> > unnecessary to initialize rb tree nodes if the node
+> > is not online ?
 > 
-New build failure:
+> It is not advisable to allocate since an offline node means that the
+> structure cannot be allocated on the node where it would be most
+> beneficial. Typically subsystems allocate the per node data structures
+> when the node is brought online.
 
-mm/page_alloc.c: In function 'alloc_node_mem_map':
-mm/page_alloc.c:4973: error: 'ARCH_PFN_OFFSET' undeclared (first use in this
-function)
-mm/page_alloc.c:4973: error: (Each undeclared identifier is reported only once
-mm/page_alloc.c:4973: error: for each function it appears in.)
-make[1]: *** [mm/page_alloc.o] Error 1
-
-Culprit is c2ae2ed329 ("mm/page_alloc.c: don't offset memmap for flatmem").
-While the code in question was already there, it is now also built if
-CONFIG_FLATMEM is defined. Since the file defining ARCH_PFN_OFFSET
-is not directly included, the build now fails for some architectures.
-
-Affected:
-	avr32:defconfig
-	avr32:merisc_defconfig
-	avr32:atngw100mkii_evklcd101_defconfig
-	m68k:m5272c3_defconfig
-	m68k:m5307c3_defconfig
-	m68k:m5249evb_defconfig
-	m68k:m5407c3_defconfig
-	mn10300:asb2303_defconfig
-	mn10300:asb2364_defconfig
-
-Guenter
+I would generally agree, but this code, which implements a userspace
+interface, is already grotesquely inefficient and heavyhanded.  It's
+also superseded in the next release, so we can just keep this simple
+at this point.
