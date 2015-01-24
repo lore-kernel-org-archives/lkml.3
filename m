@@ -1,140 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870AbbAXDGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jan 2015 22:06:03 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:43361 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbbAXDGA (ORCPT
+	id S1752472AbbAXDQL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jan 2015 22:16:11 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:56134 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751827AbbAXDQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jan 2015 22:06:00 -0500
-Message-ID: <54C30C06.7010408@roeck-us.net>
-Date: Fri, 23 Jan 2015 19:05:42 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Fri, 23 Jan 2015 22:16:09 -0500
+Date: Fri, 23 Jan 2015 19:15:44 -0800
+From: Calvin Owens <calvinowens@fb.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
+        Pavel Emelyanov <xemul@openvz.org>
+Subject: [RFC][PATCH v2] procfs: Always expose /proc/<pid>/map_files/ and
+ make it readable
+Message-ID: <20150124031544.GA1992748@mail.thefacebook.com>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+ <20150114152501.GB9820@node.dhcp.inet.fi>
+ <20150114153323.GF2253@moon>
+ <20150114204653.GA26698@mail.thefacebook.com>
+ <20150114211613.GH2253@moon>
+ <20150122024554.GB23762@mail.thefacebook.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
- page tables to the process'
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>	<20150123050445.GA22751@roeck-us.net>	<20150123111304.GA5975@node.dhcp.inet.fi>	<54C263CC.1060904@roeck-us.net> <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org> <54C3072A.1030604@roeck-us.net>
-In-Reply-To: <54C3072A.1030604@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54C30C16.0130,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 7
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20150122024554.GB23762@mail.thefacebook.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-24_01:2015-01-24,2015-01-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.165369342820785 urlsuspect_oldscore=0.165369342820785
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.165369342820785 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501240030
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 06:44 PM, Guenter Roeck wrote:
-> On 01/23/2015 01:55 PM, Andrew Morton wrote:
->> On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
->>
->>>>>
->>>>> qemu:microblaze generates warnings to the console.
->>>>>
->>>>> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
->>>>>
->>>>> with various call stacks. See
->>>>> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
->>>>> for details.
->>>>
->>>> Could you try patch below? Completely untested.
->>>>
->>>> >From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
->>>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>>> Date: Fri, 23 Jan 2015 13:08:26 +0200
->>>> Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
->>>>
->>>> Microblaze uses custom implementation of PMD folding, but doesn't define
->>>> __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
->>>>
->>>> Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
->>>> It also fixes problems with recently-introduced pmd accounting.
->>>>
->>>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->>>> Reported-by: Guenter Roeck <linux@roeck-us.net>
->>>
->>> Tested working.
->>>
->>> Tested-by: Guenter Roeck <linux@roeck-us.net>
->>>
->>> Any idea how to fix the sh problem ?
->>
->> Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
->> shut down", which isn't very clear.
->>
->
-> qemu command line:
->
-> /opt/buildbot/bin/qemu-system-sh4 -M r2d -kernel ./arch/sh/boot/zImage \
->          -drive file=rootfs.ext2,if=ide \
->          -append "root=/dev/sda console=ttySC1,115200 noiotrap"
->          -serial null -serial stdio -net nic,model=rtl8139 -net user
->          -nographic -monitor null
->
-> --
-> Poweroff log in mainline (v3.19-rc5-119-gb942c65):
->
-> / # poweroff
-> The system is going down NOW!
-> Sent SIGTERM to all processes
-> Sent SIGKILL to all processes
-> Requesting system poweroff
-> sd 0:0:0:0: [sda] Synchronizing SCSI cache
-> sd 0:0:0:0: [sda] Stopping disk
-> reboot: Power down
->
-> --
-> Poweroff log in mmotm (v3.19-rc5-417-gc64429b):
->
-> / # poweroff
->
-> [ nothing else happens until I kill the qemu session ]
->
-> The "halt" command does not work either.
->
-> --
-> The message "The system is going down NOW" is from the init process.
-> If I use "kill -12 1" instead of "halt" or "poweroff", the system does
-> shut down as expected. "poweroff -f" also works.
->
-> Trying to debug this further, I noticed that the "ps" command hangs
-> as well, so the problem is not limited to poweroff or halt.
->
-> I'll be happy to debug this further, I just have no idea where to start.
->
+Currently, /proc/<pid>/map_files/ is restricted to CAP_SYS_ADMIN, and
+is only exposed if CONFIG_CHECKPOINT_RESTORE is set. This interface
+is very useful for enumerating the files mapped into a process when
+the more verbose information in /proc/<pid>/maps is not needed.
 
-Another data point: Reverting commit 22310c209483 does fix the problem.
+This patch moves the folder out from behind CHECKPOINT_RESTORE, and
+removes the CAP_SYS_ADMIN restrictions. Following the links requires
+the ability to ptrace the process in question, so this doesn't allow
+an attacker to do anything they couldn't already do before.
 
-Guenter
+Signed-off-by: Calvin Owens <calvinowens@fb.com>
+---
+Changes in v2: 	Removed the follow_link() stub that returned -EPERM if
+		the caller didn't have CAP_SYS_ADMIN, since the caller
+		in my chroot() scenario gets -EACCES anyway.
+
+ fs/proc/base.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 3f3d7ae..67b15ac 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1632,8 +1632,6 @@ end_instantiate:
+ 	return dir_emit(ctx, name, len, 1, DT_UNKNOWN);
+ }
+ 
+-#ifdef CONFIG_CHECKPOINT_RESTORE
+-
+ /*
+  * dname_to_vma_addr - maps a dentry name into two unsigned longs
+  * which represent vma start and end addresses.
+@@ -1660,11 +1658,6 @@ static int map_files_d_revalidate(struct dentry *dentry, unsigned int flags)
+ 	if (flags & LOOKUP_RCU)
+ 		return -ECHILD;
+ 
+-	if (!capable(CAP_SYS_ADMIN)) {
+-		status = -EPERM;
+-		goto out_notask;
+-	}
+-
+ 	inode = dentry->d_inode;
+ 	task = get_proc_task(inode);
+ 	if (!task)
+@@ -1792,10 +1785,6 @@ static struct dentry *proc_map_files_lookup(struct inode *dir,
+ 	int result;
+ 	struct mm_struct *mm;
+ 
+-	result = -EPERM;
+-	if (!capable(CAP_SYS_ADMIN))
+-		goto out;
+-
+ 	result = -ENOENT;
+ 	task = get_proc_task(dir);
+ 	if (!task)
+@@ -1849,10 +1838,6 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
+ 	struct map_files_info *p;
+ 	int ret;
+ 
+-	ret = -EPERM;
+-	if (!capable(CAP_SYS_ADMIN))
+-		goto out;
+-
+ 	ret = -ENOENT;
+ 	task = get_proc_task(file_inode(file));
+ 	if (!task)
+@@ -2040,7 +2025,6 @@ static const struct file_operations proc_timers_operations = {
+ 	.llseek		= seq_lseek,
+ 	.release	= seq_release_private,
+ };
+-#endif /* CONFIG_CHECKPOINT_RESTORE */
+ 
+ static int proc_pident_instantiate(struct inode *dir,
+ 	struct dentry *dentry, struct task_struct *task, const void *ptr)
+@@ -2537,9 +2521,7 @@ static const struct inode_operations proc_task_inode_operations;
+ static const struct pid_entry tgid_base_stuff[] = {
+ 	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
+ 	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
+-#ifdef CONFIG_CHECKPOINT_RESTORE
+ 	DIR("map_files",  S_IRUSR|S_IXUSR, proc_map_files_inode_operations, proc_map_files_operations),
+-#endif
+ 	DIR("fdinfo",     S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
+ 	DIR("ns",	  S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
+ #ifdef CONFIG_NET
+-- 
+1.8.1
 
