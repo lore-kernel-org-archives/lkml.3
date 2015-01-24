@@ -1,67 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbbAXNN2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 08:13:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43447 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081AbbAXNNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 08:13:25 -0500
-Subject: Re: futex(2) man page update help request
-From: Torvald Riegel <triegel@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Darren Hart <dvhart@infradead.org>, Anton Blanchard <anton@samba.org>,
-        Eric Dumazet <edumazet@google.com>,
-        bill o gallmeister <bgallmeister@gmail.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
-        Rich Felker <dalias@libc.org>
-In-Reply-To: <alpine.DEB.2.11.1501241116160.5526@nanos>
-References: <537346E5.4050407@gmail.com>
-	 <CF98E3EF.90564%dvhart@linux.intel.com>
-	 <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com>
-	 <5373D0CA.2050204@redhat.com>
-	 <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
-	 <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com>
-	 <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de>
-	 <54B7D87C.3090901@gmail.com> <1422037788.29655.0.camel@triegel.csb>
-	 <alpine.DEB.2.11.1501241116160.5526@nanos>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 24 Jan 2015 14:12:22 +0100
-Message-ID: <1422105142.29655.16.camel@triegel.csb>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753265AbbAXNSD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 08:18:03 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:54621 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbbAXNR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 08:17:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150123143849.GB2320@swordfish>
+References: <1421992707-32658-1-git-send-email-minchan@kernel.org>
+	<1421992707-32658-2-git-send-email-minchan@kernel.org>
+	<20150123143849.GB2320@swordfish>
+Date: Sat, 24 Jan 2015 21:17:58 +0800
+Message-ID: <CADAEsF_pd_n9G4jft1dnXYM6N7SZ+YMQSKCAAszuLrpygaTQvQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] zram: protect zram->stat race with init_lock
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2015-01-24 at 12:35 +0100, Thomas Gleixner wrote:
-> So we should never see -EINTR in the case of a spurious wakeup here.
-> 
-> But, here is the not so good news:
-> 
->  I did some archaeology. The restart handling of futex_wait() got
->  introduced in kernel 2.6.22, so anything older than that will have
->  the spurious -EINTR issues.
-> 
-> futex_wait_pi() always had the restart handling and glibc folks back
-> then (2006) requested that it should never return -EINTR, so it
-> unconditionally restarts the syscall whether a signal had been
-> delivered or not.
-> 
-> So kernels >= 2.6.22 should never return -EINTR spuriously. If that
-> happens it's a bug and needs to be fixed.
+Hello Sergey
 
-Thanks for looking into this.
+2015-01-23 22:38 GMT+08:00 Sergey Senozhatsky <sergey.senozhatsky@gmail.com>:
+> On (01/23/15 14:58), Minchan Kim wrote:
+>> The zram->stat handling should be procted by init_lock.
+>> Otherwise, user could see stale value from the stat.
+>>
+>> Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> ---
+>>
+>> I don't think it's stable material. The race is rare in real practice
+>> and this stale stat value read is not a critical.
+>>
+>>  drivers/block/zram/zram_drv.c | 37 ++++++++++++++++++++++++++++---------
+>>  1 file changed, 28 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+>> index 0299d82275e7..53f176f590b0 100644
+>> --- a/drivers/block/zram/zram_drv.c
+>> +++ b/drivers/block/zram/zram_drv.c
+>> @@ -48,8 +48,13 @@ static ssize_t name##_show(struct device *d,               \
+>>                               struct device_attribute *attr, char *b) \
+>>  {                                                                    \
+>
+> a side note: I wasn't Cc'd in that patchset and found out it only when it's
+> been merged. I'm not sure I understand, why it has been renamed from specific
+> zram_X_show to X_show. what gives?
 
-Michael, can you include the above in the documentation please?  This is
-useful for userspace code like glibc that expects a minimum kernel
-version.  Thanks!
+I changed from zram_attr_##name##_show to name##_show in commit:
+fcf1bce zram: use DEVICE_ATTR_[RW|RO|WO] to define zram sys device attribute
 
+I just want to keep the name consistent with others, like
+disksize_show(), initstate_show().
+
+Thanks.
+
+>
+>
+> can't help, catches my eye every time, that rename has broken the original
+> formatting:
+>
+>
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 9250b3f..c567af5 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -44,7 +44,7 @@ static const char *default_compressor = "lzo";
+>  static unsigned int num_devices = 1;
+>
+>  #define ZRAM_ATTR_RO(name)                                             \
+> -static ssize_t name##_show(struct device *d,           \
+> +static ssize_t name##_show(struct device *d,                           \
+>                                 struct device_attribute *attr, char *b) \
+>  {                                                                      \
+>         struct zram *zram = dev_to_zram(d);                             \
+>
+>
+>
+> I don't have any objections. but do we really want to wrap atomic ops in
+> semaphore? it is really such serious race?
+>
+>
+>         -ss
+>
+>>       struct zram *zram = dev_to_zram(d);                             \
+>> -     return scnprintf(b, PAGE_SIZE, "%llu\n",                        \
+>> -             (u64)atomic64_read(&zram->stats.name));                 \
+>> +     u64 val = 0;                                                    \
+>> +                                                                     \
+>> +     down_read(&zram->init_lock);                                    \
+>> +     if (init_done(zram))                                            \
+>> +             val = atomic64_read(&zram->stats.name);                 \
+>> +     up_read(&zram->init_lock);                                      \
+>> +     return scnprintf(b, PAGE_SIZE, "%llu\n", val);                  \
+>>  }                                                                    \
+>>  static DEVICE_ATTR_RO(name);
+>>
+>> @@ -67,8 +72,14 @@ static ssize_t disksize_show(struct device *dev,
+>>               struct device_attribute *attr, char *buf)
+>>  {
+>>       struct zram *zram = dev_to_zram(dev);
+>> +     u64 val = 0;
+>> +
+>> +     down_read(&zram->init_lock);
+>> +     if (init_done(zram))
+>> +             val = zram->disksize;
+>> +     up_read(&zram->init_lock);
+>>
+>> -     return scnprintf(buf, PAGE_SIZE, "%llu\n", zram->disksize);
+>> +     return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+>>  }
+>>
+>>  static ssize_t initstate_show(struct device *dev,
+>> @@ -88,9 +99,14 @@ static ssize_t orig_data_size_show(struct device *dev,
+>>               struct device_attribute *attr, char *buf)
+>>  {
+>>       struct zram *zram = dev_to_zram(dev);
+>> +     u64 val = 0;
+>> +
+>> +     down_read(&zram->init_lock);
+>> +     if (init_done(zram))
+>> +             val = atomic64_read(&zram->stats.pages_stored) << PAGE_SHIFT;
+>> +     up_read(&zram->init_lock);
+>>
+>> -     return scnprintf(buf, PAGE_SIZE, "%llu\n",
+>> -             (u64)(atomic64_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
+>> +     return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+>>  }
+>>
+>>  static ssize_t mem_used_total_show(struct device *dev,
+>> @@ -957,10 +973,6 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
+>>       struct bio_vec bv;
+>>
+>>       zram = bdev->bd_disk->private_data;
+>> -     if (!valid_io_request(zram, sector, PAGE_SIZE)) {
+>> -             atomic64_inc(&zram->stats.invalid_io);
+>> -             return -EINVAL;
+>> -     }
+>>
+>>       down_read(&zram->init_lock);
+>>       if (unlikely(!init_done(zram))) {
+>> @@ -968,6 +980,13 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
+>>               goto out_unlock;
+>>       }
+>>
+>> +     if (!valid_io_request(zram, sector, PAGE_SIZE)) {
+>> +             atomic64_inc(&zram->stats.invalid_io);
+>> +             err = -EINVAL;
+>> +             goto out_unlock;
+>> +     }
+>> +
+>> +
+>>       index = sector >> SECTORS_PER_PAGE_SHIFT;
+>>       offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
+>>
+>> --
+>> 1.9.1
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
