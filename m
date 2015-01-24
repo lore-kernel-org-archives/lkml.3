@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbbAXM5x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 07:57:53 -0500
-Received: from www.osadl.org ([62.245.132.105]:33181 "EHLO www.osadl.org"
+	id S1753162AbbAXM7K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 07:59:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53403 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846AbbAXM5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 07:57:51 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH RFC v2] sched: completion: lock-free checking of the blocking case
-Date: Sat, 24 Jan 2015 13:49:22 +0100
-Message-Id: <1422103762-21916-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751846AbbAXM7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jan 2015 07:59:08 -0500
+Subject: Re: futex(2) man page update help request
+From: Torvald Riegel <triegel@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "Carlos O'Donell" <carlos@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Darren Hart <dvhart@infradead.org>, Anton Blanchard <anton@samba.org>,
+        Eric Dumazet <edumazet@google.com>,
+        bill o gallmeister <bgallmeister@gmail.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
+        Rich Felker <dalias@libc.org>
+In-Reply-To: <alpine.DEB.2.11.1501241102450.5526@nanos>
+References: <537346E5.4050407@gmail.com>
+	 <CF98E3EF.90564%dvhart@linux.intel.com>
+	 <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com>
+	 <5373D0CA.2050204@redhat.com>
+	 <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
+	 <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com>
+	 <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de>
+	 <54B7D87C.3090901@gmail.com> <alpine.DEB.2.11.1501152313330.5526@nanos>
+	 <54B92B71.2090509@gmail.com> <alpine.DEB.2.11.1501161618080.5526@nanos>
+	 <54B97A72.2050205@gmail.com>  <D0DEECA2.B7EAD%dvhart@linux.intel.com>
+	 <1422037145.27573.0.camel@triegel.csb>
+	 <alpine.DEB.2.11.1501241102450.5526@nanos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 24 Jan 2015 13:58:07 +0100
+Message-ID: <1422104287.29655.13.camel@triegel.csb>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "thread would block" case can be checked without grabbing the lock
+On Sat, 2015-01-24 at 11:05 +0100, Thomas Gleixner wrote:
+> On Fri, 23 Jan 2015, Torvald Riegel wrote:
+> 
+> > On Fri, 2015-01-16 at 16:46 -0800, Darren Hart wrote:
+> > > On 1/16/15, 12:54 PM, "Michael Kerrisk (man-pages)"
+> > > <mtk.manpages@gmail.com> wrote:
+> > > 
+> > > >Color me stupid, but I can't see this in futex_requeue(). Where is that
+> > > >check that is "independent of the requeue type (normal/pi)"?
+> > > >
+> > > >When I look through futex_requeue(), all the likely looking sources
+> > > >of EINVAL are governed by a check on the 'requeue_pi' argument.
+> > > 
+> > > 
+> > > Right, in the non-PI case, I believe there are valid use cases: move to
+> > > the back of the FIFO, for example (OK, maybe the only example?).
+> > 
+> > But we never guarantee a futex is a FIFO, or do we?  If we don't, then
+> > such a requeue could be implemented as a no-op by the kernel, which
+> > would sort of invalidate the use case.
+> > 
+> > (And I guess we don't want to guarantee FIFO behavior for futexes.)
+> 
+> The (current) behaviour is:
+> 
+>     real-time threads:   FIFO per priority level
+>     sched-other threads: FIFO independent of nice level
+> 
+> The wakeup is priority ordered. Highest priority level first.
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
+OK.
 
-v2: return type is boot thus return should be false not 0  here
-    Reported-by kbuild test robot <fengguang.wu@intel.com>    
-
-
-If the check does not return early then grab the lock and recheck.
-A memory barrier is not needed as complete() and complete_all() imply
-a barrier.
-
-The ACCESS_ONCE is needed for calls in a loop that, if inlined, could
-optimize out the re-fetching of x->done.
-
- kernel/sched/completion.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/kernel/sched/completion.c b/kernel/sched/completion.c
-index 7c5cd70..5f7cf31 100644
---- a/kernel/sched/completion.c
-+++ b/kernel/sched/completion.c
-@@ -268,6 +268,15 @@ bool try_wait_for_completion(struct completion *x)
- 	unsigned long flags;
- 	int ret = 1;
- 
-+	/*
-+	 * Since x->done will need to be locked only
-+	 * in the non-blocking case, we check x->done
-+	 * first without taking the lock so we can
-+	 * return early in the blocking case.
-+	 */
-+	if (!ACCESS_ONCE(x->done))
-+		return false;
-+
- 	spin_lock_irqsave(&x->wait.lock, flags);
- 	if (!x->done)
- 		ret = 0;
--- 
-1.7.10.4
+But, just to be clear, do I correctly understand that you do not want to
+guarantee FIFO behavior in the specified futex semantics?  I think there
+are cases where being able to *rely* on FIFO (now and on all future
+kernels) would be helpful for users (e.g., on POSIX/C++11 condvars and I
+assume in other ordered-wakeup cases too) -- but at the same time, this
+would constrain future futex implementations.
 
