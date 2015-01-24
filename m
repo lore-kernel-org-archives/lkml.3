@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbbAXSLq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 13:11:46 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:43345 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261AbbAXSLn (ORCPT
+	id S1754921AbbAXSPp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 13:15:45 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:8390 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753875AbbAXSOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 13:11:43 -0500
-From: Alexander Kuleshov <kuleshovmail@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Martin Mares <mj@ucw.cz>, Ingo Molnar <mingo@redhat.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Kuleshov <kuleshovmail@gmail.com>
-Subject: [PATCH] x86/boot/video: move video_segment variable to video.c
-Date: Sun, 25 Jan 2015 00:11:32 +0600
-Message-Id: <1422123092-28750-1-git-send-email-kuleshovmail@gmail.com>
-X-Mailer: git-send-email 2.3.0.rc1.275.g028c360
+	Sat, 24 Jan 2015 13:14:50 -0500
+Message-Id: <20150124181330.195149364@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Sat, 24 Jan 2015 13:13:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 0/5] perf: Have perf become tracefs aware
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's only user of the video_segment variable, so move it to video.c
 
-Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
----
- arch/x86/boot/video-mode.c | 4 +---
- arch/x86/boot/video.c      | 2 ++
- arch/x86/boot/video.h      | 1 -
- 3 files changed, 3 insertions(+), 4 deletions(-)
+As I'm trying to move the tracing directory from debugfs, perf needs to
+be aware of this as system admins will now be able to mount the tracing
+directory without needing to mount debugfs. This patch series addresses
+this and makes perf aware of tracefs.
 
-diff --git a/arch/x86/boot/video-mode.c b/arch/x86/boot/video-mode.c
-index 748e8d0..aa8a96b 100644
---- a/arch/x86/boot/video-mode.c
-+++ b/arch/x86/boot/video-mode.c
-@@ -22,10 +22,8 @@
- /*
-  * Common variables
-  */
--int adapter;			/* 0=CGA/MDA/HGC, 1=EGA, 2=VGA+ */
--u16 video_segment;
-+int adapter;		/* 0=CGA/MDA/HGC, 1=EGA, 2=VGA+ */
- int force_x, force_y;	/* Don't query the BIOS for cols/rows */
--
- int do_restore;		/* Screen contents changed during mode flip */
- int graphic_mode;	/* Graphic mode with linear frame buffer */
- 
-diff --git a/arch/x86/boot/video.c b/arch/x86/boot/video.c
-index 43eda28..05111bb 100644
---- a/arch/x86/boot/video.c
-+++ b/arch/x86/boot/video.c
-@@ -17,6 +17,8 @@
- #include "video.h"
- #include "vesa.h"
- 
-+static u16 video_segment;
-+
- static void store_cursor_position(void)
- {
- 	struct biosregs ireg, oreg;
-diff --git a/arch/x86/boot/video.h b/arch/x86/boot/video.h
-index 0bb2549..b54e032 100644
---- a/arch/x86/boot/video.h
-+++ b/arch/x86/boot/video.h
-@@ -91,7 +91,6 @@ int mode_defined(u16 mode);	/* video.c */
- #define ADAPTER_VGA	2
- 
- extern int adapter;
--extern u16 video_segment;
- extern int force_x, force_y;	/* Don't query the BIOS for cols/rows */
- extern int do_restore;		/* Restore screen contents */
- extern int graphic_mode;	/* Graphics mode with linear frame buffer */
--- 
-2.3.0.rc1.275.g028c360
+I based this series on a recent tip branch: perf/core.
 
+You can also get this series from my repo as stated below.
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/core
+
+Head SHA1: 1a334ac9034ceefc1c87e4cd95c6e103ba29df44
+
+
+Steven Rostedt (Red Hat) (5):
+      tools lib fs: Add helper to find mounted file systems
+      tools lib api fs: Add tracefs mount helper functions
+      tools lib api fs: Add DEBUGFS_DEFAULT_PATH macro
+      tools lib api fs: Add {tracefs,debugfs}_configured() functions
+      perf: Make perf aware of tracefs
+
+----
+ tools/lib/api/Makefile                   |  4 ++
+ tools/lib/api/fs/debugfs.c               | 68 ++++++++++----------------
+ tools/lib/api/fs/debugfs.h               |  1 +
+ tools/lib/api/fs/findfs.c                | 63 ++++++++++++++++++++++++
+ tools/lib/api/fs/findfs.h                | 10 ++++
+ tools/lib/api/fs/tracefs.c               | 84 ++++++++++++++++++++++++++++++++
+ tools/lib/api/fs/tracefs.h               | 30 ++++++++++++
+ tools/perf/tests/open-syscall-all-cpus.c |  7 ++-
+ tools/perf/tests/open-syscall.c          |  7 ++-
+ tools/perf/tests/parse-events.c          | 13 ++++-
+ tools/perf/util/cache.h                  |  1 +
+ tools/perf/util/evlist.c                 |  7 +--
+ tools/perf/util/parse-events.c           | 15 ++++--
+ tools/perf/util/parse-events.h           |  2 +-
+ tools/perf/util/probe-event.c            | 24 ++++++---
+ tools/perf/util/util.c                   | 60 ++++++++++++++++++-----
+ tools/perf/util/util.h                   |  1 +
+ 17 files changed, 323 insertions(+), 74 deletions(-)
