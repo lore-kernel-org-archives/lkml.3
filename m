@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772AbbAXOMP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 09:12:15 -0500
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:53105 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438AbbAXOD5 (ORCPT
+	id S1756765AbbAXOLz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 09:11:55 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:36994 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332AbbAXOD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 09:03:57 -0500
+	Sat, 24 Jan 2015 09:03:59 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 06/32] powerpc: use %*pb[l] to print bitmaps including cpumasks and nodemasks
-Date: Sat, 24 Jan 2015 09:03:12 -0500
-Message-Id: <1422108218-25398-7-git-send-email-tj@kernel.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 07/32] s390: use %*pb[l] to print bitmaps including cpumasks and nodemasks
+Date: Sat, 24 Jan 2015 09:03:13 -0500
+Message-Id: <1422108218-25398-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422108218-25398-1-git-send-email-tj@kernel.org>
 References: <1422108218-25398-1-git-send-email-tj@kernel.org>
@@ -26,7 +27,8 @@ and nodemask also provide cpumask_pr_args() and nodemask_pr_args()
 respectively which can be used to generate the two printf arguments
 necessary to format the specified cpu/nodemask.
 
-* Spurious if (len > 1) test dropped from shared_cpu_map_show().
+* Line termination only requires one extra space at the end of the
+  buffer.  Use PAGE_SIZE - 1 instead of PAGE_SIZE - 2 when formatting.
 
 This patch is dependent on the following two patches.
 
@@ -38,78 +40,32 @@ before applying to subsystem trees.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- arch/powerpc/kernel/cacheinfo.c     | 15 ++++++---------
- arch/powerpc/sysdev/xics/ics-opal.c |  6 ++----
- arch/powerpc/sysdev/xics/ics-rtas.c |  7 ++-----
- 3 files changed, 10 insertions(+), 18 deletions(-)
+ arch/s390/kernel/cache.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/kernel/cacheinfo.c b/arch/powerpc/kernel/cacheinfo.c
-index 40198d5..ae77b7e 100644
---- a/arch/powerpc/kernel/cacheinfo.c
-+++ b/arch/powerpc/kernel/cacheinfo.c
-@@ -607,19 +607,16 @@ static ssize_t shared_cpu_map_show(struct kobject *k, struct kobj_attribute *att
- {
- 	struct cache_index_dir *index;
- 	struct cache *cache;
--	int len;
--	int n = 0;
-+	int ret;
+diff --git a/arch/s390/kernel/cache.c b/arch/s390/kernel/cache.c
+index c0b03c2..a026911 100644
+--- a/arch/s390/kernel/cache.c
++++ b/arch/s390/kernel/cache.c
+@@ -243,9 +243,12 @@ static ssize_t shared_cpu_map_func(struct kobject *kobj, int type, char *buf)
+ 	int len;
  
- 	index = kobj_to_cache_index_dir(k);
- 	cache = index->cache;
--	len = PAGE_SIZE - 2;
- 
--	if (len > 1) {
--		n = cpumask_scnprintf(buf, len, &cache->shared_cpu_map);
--		buf[n++] = '\n';
--		buf[n] = '\0';
--	}
--	return n;
-+	ret = scnprintf(buf, PAGE_SIZE - 1, "%*pb\n",
-+			cpumask_pr_args(&cache->shared_cpu_map));
-+	buf[ret++] = '\n';
-+	buf[ret] = '\0';
-+	return ret;
+ 	index = kobj_to_cache_index_dir(kobj);
+-	len = type ?
+-		cpulist_scnprintf(buf, PAGE_SIZE - 2, cpumask_of(index->cpu)) :
+-		cpumask_scnprintf(buf, PAGE_SIZE - 2, cpumask_of(index->cpu));
++	if (type)
++		len = scnprintf(buf, PAGE_SIZE - 1, "%*pbl",
++				cpumask_pr_args(cpumask_of(index->cpu)));
++	else
++		len = scnprintf(buf, PAGE_SIZE - 1, "%*pb",
++				cpumask_pr_args(cpumask_of(index->cpu)));
+ 	len += sprintf(&buf[len], "\n");
+ 	return len;
  }
- 
- static struct kobj_attribute cache_shared_cpu_map_attr =
-diff --git a/arch/powerpc/sysdev/xics/ics-opal.c b/arch/powerpc/sysdev/xics/ics-opal.c
-index 4ba554e..68c7e5c 100644
---- a/arch/powerpc/sysdev/xics/ics-opal.c
-+++ b/arch/powerpc/sysdev/xics/ics-opal.c
-@@ -131,10 +131,8 @@ static int ics_opal_set_affinity(struct irq_data *d,
- 
- 	wanted_server = xics_get_irq_server(d->irq, cpumask, 1);
- 	if (wanted_server < 0) {
--		char cpulist[128];
--		cpumask_scnprintf(cpulist, sizeof(cpulist), cpumask);
--		pr_warning("%s: No online cpus in the mask %s for irq %d\n",
--			   __func__, cpulist, d->irq);
-+		pr_warning("%s: No online cpus in the mask %*pb for irq %d\n",
-+			   __func__, cpumask_pr_args(cpumask), d->irq);
- 		return -1;
- 	}
- 	server = ics_opal_mangle_server(wanted_server);
-diff --git a/arch/powerpc/sysdev/xics/ics-rtas.c b/arch/powerpc/sysdev/xics/ics-rtas.c
-index bc81335b..0af97de 100644
---- a/arch/powerpc/sysdev/xics/ics-rtas.c
-+++ b/arch/powerpc/sysdev/xics/ics-rtas.c
-@@ -140,11 +140,8 @@ static int ics_rtas_set_affinity(struct irq_data *d,
- 
- 	irq_server = xics_get_irq_server(d->irq, cpumask, 1);
- 	if (irq_server == -1) {
--		char cpulist[128];
--		cpumask_scnprintf(cpulist, sizeof(cpulist), cpumask);
--		printk(KERN_WARNING
--			"%s: No online cpus in the mask %s for irq %d\n",
--			__func__, cpulist, d->irq);
-+		pr_warning("%s: No online cpus in the mask %*pb for irq %d\n",
-+			   __func__, cpumask_pr_args(cpumask), d->irq);
- 		return -1;
- 	}
- 
 -- 
 2.1.0
 
