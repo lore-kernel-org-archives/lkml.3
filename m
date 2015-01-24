@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538AbbAXOIp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 09:08:45 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:59622 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777AbbAXOEN (ORCPT
+	id S1756282AbbAXOI2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 09:08:28 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:56221 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbbAXOEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 09:04:13 -0500
+	Sat, 24 Jan 2015 09:04:15 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 16/32] time: use %*pb[l] to print bitmaps including cpumasks and nodemasks
-Date: Sat, 24 Jan 2015 09:03:22 -0500
-Message-Id: <1422108218-25398-17-git-send-email-tj@kernel.org>
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: [PATCH 17/32] percpu: use %*pb[l] to print bitmaps including cpumasks and nodemasks
+Date: Sat, 24 Jan 2015 09:03:23 -0500
+Message-Id: <1422108218-25398-18-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422108218-25398-1-git-send-email-tj@kernel.org>
 References: <1422108218-25398-1-git-send-email-tj@kernel.org>
@@ -36,40 +36,38 @@ before applying to subsystem trees.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Christoph Lameter <cl@linux-foundation.org>
 ---
- kernel/time/tick-sched.c | 11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ mm/percpu.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 1363d58..a4c4eda 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -326,13 +326,6 @@ static int tick_nohz_cpu_down_callback(struct notifier_block *nfb,
- 	return NOTIFY_OK;
- }
- 
--/*
-- * Worst case string length in chunks of CPU range seems 2 steps
-- * separations: 0,2,4,6,...
-- * This is NR_CPUS + sizeof('\0')
-- */
--static char __initdata nohz_full_buf[NR_CPUS + 1];
--
- static int tick_nohz_init_all(void)
+diff --git a/mm/percpu.c b/mm/percpu.c
+index d39e2f4..73c97a5 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1528,7 +1528,6 @@ static void pcpu_dump_alloc_info(const char *lvl,
+ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 				  void *base_addr)
  {
- 	int err = -1;
-@@ -393,8 +386,8 @@ void __init tick_nohz_init(void)
- 		context_tracking_cpu_set(cpu);
+-	static char cpus_buf[4096] __initdata;
+ 	static int smap[PERCPU_DYNAMIC_EARLY_SLOTS] __initdata;
+ 	static int dmap[PERCPU_DYNAMIC_EARLY_SLOTS] __initdata;
+ 	size_t dyn_size = ai->dyn_size;
+@@ -1541,12 +1540,11 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	int *unit_map;
+ 	int group, unit, i;
  
- 	cpu_notifier(tick_nohz_cpu_down_callback, 0);
--	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), tick_nohz_full_mask);
--	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
-+	pr_info("NO_HZ: Full dynticks CPUs: %*pbl.\n",
-+		cpumask_pr_args(tick_nohz_full_mask));
- }
- #endif
- 
+-	cpumask_scnprintf(cpus_buf, sizeof(cpus_buf), cpu_possible_mask);
+-
+ #define PCPU_SETUP_BUG_ON(cond)	do {					\
+ 	if (unlikely(cond)) {						\
+ 		pr_emerg("PERCPU: failed to initialize, %s", #cond);	\
+-		pr_emerg("PERCPU: cpu_possible_mask=%s\n", cpus_buf);	\
++		pr_emerg("PERCPU: cpu_possible_mask=%*pb\n",		\
++			 cpumask_pr_args(cpu_possible_mask));		\
+ 		pcpu_dump_alloc_info(KERN_EMERG, ai);			\
+ 		BUG();							\
+ 	}								\
 -- 
 2.1.0
 
