@@ -1,156 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029AbbAXL1l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 06:27:41 -0500
-Received: from smtp-out-230.synserver.de ([212.40.185.230]:1045 "EHLO
-	smtp-out-230.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929AbbAXL1h (ORCPT
+	id S1753066AbbAXLdG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 06:33:06 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:47521 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751923AbbAXLdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 06:27:37 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 18675
-Message-ID: <54C381A7.3020209@metafoo.de>
-Date: Sat, 24 Jan 2015 12:27:35 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
+	Sat, 24 Jan 2015 06:33:03 -0500
+Date: Sat, 24 Jan 2015 06:33:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/5 v2] tracing: Automatically mount tracefs on
+ debugfs/tracing
+Message-ID: <20150124063330.2c986ea2@grimm.local.home>
+In-Reply-To: <20150124030041.GB5009@kroah.com>
+References: <20150123155525.795129339@goodmis.org>
+	<20150123162414.580817092@goodmis.org>
+	<20150124030041.GB5009@kroah.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jean-Francois Moine <moinejf@free.fr>
-CC: Mark Brown <broonie@kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Jyri Sarha <jsarha@ti.com>
-Subject: Re: [alsa-devel] [PATCH v2 3/3] ASoC: add generic dt-card support
-References: <cover.1421868426.git.moinejf@free.fr>	<d0c66c2e2f200119f9990fa52a503b1a4af6238f.1421868426.git.moinejf@free.fr>	<54C0088F.9070609@metafoo.de>	<20150122090723.50ac0156@armhf>	<54C14EB3.8080305@metafoo.de>	<20150123131554.623003f9@armhf>	<54C252F4.9000504@metafoo.de> <20150123193456.276ea512@armhf>
-In-Reply-To: <20150123193456.276ea512@armhf>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 07:34 PM, Jean-Francois Moine wrote:
-> On Fri, 23 Jan 2015 14:56:04 +0100
-> Lars-Peter Clausen <lars@metafoo.de> wrote:
->
->> On 01/23/2015 01:15 PM, Jean-Francois Moine wrote:
->> [...]
->>> The DT should describe the hardware, and the simple-card mixes hardware
->>> and software.
->>> For example, the kirkwood controller may create 2 CPU DAIs. With the
->>> simple-card, the DT contains a number to reference these DAIs (for
->>> example, implicitly, <audio1 0> references the I2S output). So, what if
->>> the controller creates only one DAI, or, what if the FreeBSD/OpenBSD/..
->>> driver does not set the same references to these DAIs?
->>> The graph of port fixes this problem.
->>
->> Even with the simple-card bindings there are no software specific bits. The
->> DAI that is referenced in your example is the physical DAI as it exists in
->> the hardware. Which DAI maps to which specifier is defined in the devicetree
->> bindings definition for the hardware unit.
->
-> There is no first or second output in the kirkwood controller; there
-> are I2S and S/PDIF outputs. Their hardware controls are done by bits in
-> the different registers. Then, the driver may define its DAIs in any
-> order and assign any DAI ID to these DAIs. So, for a given DAI, there
-> is no relation between its type (I2s or S/PDIF), index in the dai
-> driver (= asoc component index) and ID.
->
-> In the simple-card DT, the CPU DAI (as the CODEC DAI) is referenced by
-> a phandle (the audio-controller) and a number which should identify the
-> DAI. This number is translated to a DAI name thanks to the function
-> snd_soc_get_dai_name(). This function scans the components and returns
-> the name of the DAI (component) supported by the audio controller with
-> the searched number equal to the component index (there is no 'xlate'
-> function).
->
-> So, with the simple-card, the CPU or CODEC DAI binding (phandle +
-> number) identifies what the software has put in its table, but not a
-> hardware entity.
+On Sat, 24 Jan 2015 11:00:41 +0800
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-Are you talking about the kirkwood driver or about things in general?
+> > +		if (traced->d_op) {
+> > +			/*
+> > +			 * FIXME:
+> > +			 * Currently debugfs sets the d_op by a
+> > side-effect
+> > +			 * of calling simple_lookup(). Normally,
+> > we should
+> > +			 * never change d_op of a dentry, but as
+> > this is
+> > +			 * happening at boot up and shouldn't be
+> > racing with
+> > +			 * any other users, this should be OK. But
+> > it is still
+> > +			 * a hack, and needs to be properly done.
+> > +			 */
+> > +			trace_ops = *traced->d_op;
+> > +			trace_ops.d_automount = trace_automount;
+> > +			traced->d_flags |= DCACHE_NEED_AUTOMOUNT;
+> > +			traced->d_op = &trace_ops;
+> > +		} else {
+> > +			/* Ideally, this is what should happen */
+> > +			trace_ops = simple_dentry_operations;
+> > +			trace_ops.d_automount = trace_automount;
+> > +			d_set_d_op(traced, &trace_ops);
+> 
+> How will this else block run if debugfs is setting d_op in the
+> debugfs_create_dir() call?
 
-What you are saying is not true in general, if it is true for the kirkwood 
-driver than the driver is broken in regards to DT bindings.
+It wont; I put the else block there to show what we would like to do.
+And would hopefully work if debugfs ever changed.
 
-The specifier that follows after the phandle is hardware specific. This can 
-be any number of integers. And the meaning of this is defined in the 
-bindings specification for that hardware.
 
-Many specifications define a binding in which either no specifier needs to 
-be supplied, since there is only a single DAI, or one integer specifier 
-which denotes which DAI is referenced for a multi-DAI controller. In the 
-later case the bindings specification has to state which number maps to 
-which physical DAI. Out of convenience many drivers use the same order as 
-given in the bindings specification for their ASoC DAIs. Which is why the 
-ASoC core provides a standard implementation for translating phandle + 
-specifier to a ASoC DAI. But it is important to remember that the 
-authoritative entity here is the bindings specification and not the driver.
+> 
+> What really do you want to do here, just automount a filesystem on
+> debugfs?  If so, can't we just add a new debugfs call to do that?
 
-If the bindings specification uses a different scheme for referencing the 
-DAIs a custom xlate function needs to be provided by the driver confirms to 
-this specification.
+We could add a call to debugfs to do that. Would you prefer that? From
+talking with Al, it sounds to me that changing d_ops on the fly is very
+racy. Adding a call in debugfs sounds like it would be open for other
+users to do the same and do so while the system is running. Would that
+be wise?
 
->
->>> More: a simple audio card may easily be created from a graph of ports
->>> as the simple-card does, but by the audio-controller (sorry, I also
->>> forgot the kirkwood patch for this in my previous patch request).
->>> In case of complex cards, the links and properties of this graph may
->>> also be used by board specific card devices.
->>>
->>>> One issue is how to deal with multi-point-to-multi-point links. I2S/TDM is a
->>>> bus and can have more than one reader/writer.
->>>>
->>>> The second issue is how to describe the clock and frame master
->>>> relationships. Multiple different buses can share the same clock and frame
->>>> generator. E.g. typically the capture and playback stream are linked in this
->>>> way.
->>>
->>> The ports and endpoints may contain properties to describe these
->>> configurations. Complex cases should be handled by specific card
->>> builders.
->>
->> Could you describe in detail what a card builder is and how to decide when
->> and how a card builder is executed?
->
-> A card builder is a device which
-> - scans the graph of ports,
-> - fills the struct snd_soc_card according to the links between the
->    ports and their properties,
-> - and, eventually, calls snd_soc_register_card().
->
-> The simple card builder, 'dt-card' (maybe a better name would have been
-> 'graph-card'), acts just like the simple-card except that it does not
-> appear in the DT. Its creation is done by an audio controller.
->
-> For complex cards, a card builder would be the same as an actual card
-> driver, but with the capability to know about the board thanks to the
-> graph of ports. Its creation could be done by a compatible device in
-> the DT (as actually) or by the unique or a 'master' audio controller.
->
-> A card builder is subject to a PROBE_DEFER after calling
-> snd_soc_register_card(), so, when it is created by an audio controller,
-> this last one should have created its own resources.
->
-> An audio controller does the following:
-> - initialize the hardware and software,
-> - create the DAIs from:
-> 	- the graph of ports or
-> 	- default values
-> - register these DAIs and
-> - if the DAIs where created by a graph of port,
-> 	create the card builder.
+Doing the automount here is guaranteed not to happen after system boot
+up, or when there might be users of debugfs while the ops changes.
 
-I don't understand how invoking the card builder from the CPU side audio 
-controller driver will work. The audio controller driver does not know what 
-card it is part of, so how does it decide which builder to call, and what 
-happens in the case of multiple CPU side audio controllers involved in the 
-same card. In rare cases there might not even be a CPU side audio controller 
-involved at all.
+-- Steve
 
-I think this is something that needs to be done in the ASoC/ALSA core 
-itself. Create the graph, wait until all endpoints of the graph have been 
-registered and then create the card. Or something similar.
 
-- Lars
+-- Steve
