@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027AbbAXOE1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 09:04:27 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:54292 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbbAXOEX (ORCPT
+	id S1755462AbbAXOHW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 09:07:22 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:43398 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945AbbAXOEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 09:04:23 -0500
+	Sat, 24 Jan 2015 09:04:25 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 22/32] input: use %*pb[l] to print bitmaps including cpumasks and nodemasks
-Date: Sat, 24 Jan 2015 09:03:28 -0500
-Message-Id: <1422108218-25398-23-git-send-email-tj@kernel.org>
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 23/32] scsi: use %*pb[l] to print bitmaps including cpumasks and nodemasks
+Date: Sat, 24 Jan 2015 09:03:29 -0500
+Message-Id: <1422108218-25398-24-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422108218-25398-1-git-send-email-tj@kernel.org>
 References: <1422108218-25398-1-git-send-email-tj@kernel.org>
@@ -26,8 +27,9 @@ and nodemask also provide cpumask_pr_args() and nodemask_pr_args()
 respectively which can be used to generate the two printf arguments
 necessary to format the specified cpu/nodemask.
 
-* Line termination only requires one extra space at the end of the
-  buffer.  Use PAGE_SIZE - 1 instead of PAGE_SIZE - 2 when formatting.
+* map_show()'s return value is too high by one and the function could
+  modify beyond the end of the buffer when the formatted text is long
+  enough.
 
 This patch is dependent on the following two patches.
 
@@ -39,40 +41,30 @@ before applying to subsystem trees.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi@vger.kernel.org
 ---
- drivers/input/keyboard/atkbd.c     | 4 ++--
- drivers/input/keyboard/gpio_keys.c | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/scsi_debug.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
-index e27a258..387c51f 100644
---- a/drivers/input/keyboard/atkbd.c
-+++ b/drivers/input/keyboard/atkbd.c
-@@ -1399,8 +1399,8 @@ static ssize_t atkbd_set_extra(struct atkbd *atkbd, const char *buf, size_t coun
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 7b8b51b..37b63a6 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -4536,10 +4536,10 @@ static ssize_t map_show(struct device_driver *ddp, char *buf)
+ 		return scnprintf(buf, PAGE_SIZE, "0-%u\n",
+ 				 sdebug_store_sectors);
  
- static ssize_t atkbd_show_force_release(struct atkbd *atkbd, char *buf)
- {
--	size_t len = bitmap_scnlistprintf(buf, PAGE_SIZE - 2,
--			atkbd->force_release_mask, ATKBD_KEYMAP_SIZE);
-+	size_t len = scnprintf(buf, PAGE_SIZE - 1, "%*pbl",
-+			       ATKBD_KEYMAP_SIZE, atkbd->force_release_mask);
+-	count = bitmap_scnlistprintf(buf, PAGE_SIZE, map_storep, map_size);
+-
++	count = scnprintf(buf, PAGE_SIZE - 1, "%*pbl",
++			  (int)map_size, map_storep);
+ 	buf[count++] = '\n';
+-	buf[count++] = 0;
++	buf[count] = '\0';
  
- 	buf[len++] = '\n';
- 	buf[len] = '\0';
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index 883d6ae..ddf4045 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -190,7 +190,7 @@ static ssize_t gpio_keys_attr_show_helper(struct gpio_keys_drvdata *ddata,
- 		__set_bit(bdata->button->code, bits);
- 	}
- 
--	ret = bitmap_scnlistprintf(buf, PAGE_SIZE - 2, bits, n_events);
-+	ret = scnprintf(buf, PAGE_SIZE - 1, "%*pbl", n_events, bits);
- 	buf[ret++] = '\n';
- 	buf[ret] = '\0';
- 
+ 	return count;
+ }
 -- 
 2.1.0
 
