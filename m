@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385AbbAYUcw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 15:32:52 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45942 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368AbbAYUbe (ORCPT
+	id S1752357AbbAYUbV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 15:31:21 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37545 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbbAYUbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 15:31:34 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/6] power/reset: restart-poweroff: Remove arm dependencies
-Date: Sun, 25 Jan 2015 12:30:45 -0800
-Message-Id: <1422217845-18901-7-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1422217845-18901-1-git-send-email-linux@roeck-us.net>
-References: <1422217845-18901-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54C552A6.0090,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 34
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Sun, 25 Jan 2015 15:31:19 -0500
+Date: Sun, 25 Jan 2015 20:31:15 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 3/5 v2] tracing: Automatically mount tracefs on
+ debugfs/tracing
+Message-ID: <20150125203115.GJ29656@ZenIV.linux.org.uk>
+References: <20150123155525.795129339@goodmis.org>
+ <20150123162414.580817092@goodmis.org>
+ <20150124030041.GB5009@kroah.com>
+ <20150124063330.2c986ea2@grimm.local.home>
+ <20150125132206.GA16249@kroah.com>
+ <20150125143830.760c448a@gandalf.local.home>
+ <20150125195932.GH29656@ZenIV.linux.org.uk>
+ <20150125202729.GI29656@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150125202729.GI29656@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is now arm specific anymore, so there is no need to include
-an arm specific include file. Also drop unnecessary depencency on ARM
-from Kconfig.
+On Sun, Jan 25, 2015 at 08:27:29PM +0000, Al Viro wrote:
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/power/reset/Kconfig            | 1 -
- drivers/power/reset/restart-poweroff.c | 1 -
- 2 files changed, 2 deletions(-)
+> Turns out that it is better that way (and less prone to abuse).  See
+> vfs.git#debugfs_automount; some massage on top of 3.19-rc5, the payoff is
+> in the last commit.
+> 
+> For your code it's a matter of replacing struct path *path with void *unused
+> in trace_automount() and just calling
+> 	debugfs_create_automount("tracing", NULL, trace_automount, NULL);
+> to create the sucker.  That's it - no games with ->d_op, etc.
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index bb81e2a..27f6646 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -103,7 +103,6 @@ config POWER_RESET_QNAP
- 
- config POWER_RESET_RESTART
- 	bool "Restart power-off driver"
--	depends on ARM
- 	help
- 	  Some boards don't actually have the ability to power off.
- 	  Instead they restart, and u-boot holds the SoC until the
-diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
-index f46f2c2..41b22c4 100644
---- a/drivers/power/reset/restart-poweroff.c
-+++ b/drivers/power/reset/restart-poweroff.c
-@@ -16,7 +16,6 @@
- #include <linux/of_platform.h>
- #include <linux/module.h>
- #include <linux/reboot.h>
--#include <asm/system_misc.h>
- 
- static void restart_poweroff_do_poweroff(void)
- {
--- 
-2.1.0
-
+... and the total is plus 8 lines.  Would be negative, if not for the
+kerneldoc comment in there...
