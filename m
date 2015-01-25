@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086AbbAYSln (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:41:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57868 "EHLO
+	id S1759328AbbAYTTh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:19:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57498 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755865AbbAYSKN (ORCPT
+	with ESMTP id S1755005AbbAYSJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:13 -0500
+	Sun, 25 Jan 2015 13:09:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.18 102/183] video/logo: prevent use of logos after they have been freed
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.14 46/98] [media] smiapp-pll: Correct clock debug prints
 Date: Sun, 25 Jan 2015 10:07:04 -0800
-Message-Id: <20150125180814.644318712@linuxfoundation.org>
+Message-Id: <20150125180714.864138182@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,68 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+From: Sakari Ailus <sakari.ailus@linux.intel.com>
 
-commit 92b004d1aa9f367c372511ca0330f58216b25703 upstream.
+commit bc47150ab93988714d1fab7bc82fe5f505a107ad upstream.
 
-If the probe of an fb driver has been deferred due to missing
-dependencies, and the probe is later ran when a module is loaded, the
-fbdev framework will try to find a logo to use.
+The PLL flags were not used correctly.
 
-However, the logos are __initdata, and have already been freed. This
-causes sometimes page faults, if the logo memory is not mapped,
-sometimes other random crashes as the logo data is invalid, and
-sometimes nothing, if the fbdev decides to reject the logo (e.g. the
-random value depicting the logo's height is too big).
-
-This patch adds a late_initcall function to mark the logos as freed. In
-reality the logos are freed later, and fbdev probe may be ran between
-this late_initcall and the freeing of the logos. In that case we will
-miss drawing the logo, even if it would be possible.
-
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/logo/logo.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/media/i2c/smiapp-pll.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/video/logo/logo.c
-+++ b/drivers/video/logo/logo.c
-@@ -21,6 +21,21 @@ static bool nologo;
- module_param(nologo, bool, 0);
- MODULE_PARM_DESC(nologo, "Disables startup logo");
- 
-+/*
-+ * Logos are located in the initdata, and will be freed in kernel_init.
-+ * Use late_init to mark the logos as freed to prevent any further use.
-+ */
-+
-+static bool logos_freed;
-+
-+static int __init fb_logo_late_init(void)
-+{
-+	logos_freed = true;
-+	return 0;
-+}
-+
-+late_initcall(fb_logo_late_init);
-+
- /* logo's are marked __initdata. Use __init_refok to tell
-  * modpost that it is intended that this function uses data
-  * marked __initdata.
-@@ -29,7 +44,7 @@ const struct linux_logo * __init_refok f
+--- a/drivers/media/i2c/smiapp-pll.c
++++ b/drivers/media/i2c/smiapp-pll.c
+@@ -67,7 +67,7 @@ static void print_pll(struct device *dev
  {
- 	const struct linux_logo *logo = NULL;
- 
--	if (nologo)
-+	if (nologo || logos_freed)
- 		return NULL;
- 
- 	if (depth >= 1) {
+ 	dev_dbg(dev, "pre_pll_clk_div\t%d\n",  pll->pre_pll_clk_div);
+ 	dev_dbg(dev, "pll_multiplier \t%d\n",  pll->pll_multiplier);
+-	if (pll->flags != SMIAPP_PLL_FLAG_NO_OP_CLOCKS) {
++	if (!(pll->flags & SMIAPP_PLL_FLAG_NO_OP_CLOCKS)) {
+ 		dev_dbg(dev, "op_sys_clk_div \t%d\n", pll->op_sys_clk_div);
+ 		dev_dbg(dev, "op_pix_clk_div \t%d\n", pll->op_pix_clk_div);
+ 	}
+@@ -77,7 +77,7 @@ static void print_pll(struct device *dev
+ 	dev_dbg(dev, "ext_clk_freq_hz \t%d\n", pll->ext_clk_freq_hz);
+ 	dev_dbg(dev, "pll_ip_clk_freq_hz \t%d\n", pll->pll_ip_clk_freq_hz);
+ 	dev_dbg(dev, "pll_op_clk_freq_hz \t%d\n", pll->pll_op_clk_freq_hz);
+-	if (pll->flags & SMIAPP_PLL_FLAG_NO_OP_CLOCKS) {
++	if (!(pll->flags & SMIAPP_PLL_FLAG_NO_OP_CLOCKS)) {
+ 		dev_dbg(dev, "op_sys_clk_freq_hz \t%d\n",
+ 			pll->op_sys_clk_freq_hz);
+ 		dev_dbg(dev, "op_pix_clk_freq_hz \t%d\n",
 
 
