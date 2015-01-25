@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbbAYTGT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:06:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
+	id S932084AbbAYSWV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:22:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388AbbAYSJa (ORCPT
+	with ESMTP id S1756142AbbAYSKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:30 -0500
+	Sun, 25 Jan 2015 13:10:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Slava Shwartsman <valyushash@gmail.com>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 90/98] iser-target: Fix implicit termination of connections
-Date: Sun, 25 Jan 2015 10:07:48 -0800
-Message-Id: <20150125180716.810990197@linuxfoundation.org>
+        Mario Schuknecht <mario.schuknecht@dresearch-fe.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.18 147/183] usb: gadget: gadgetfs: Free memory allocated by memdup_user()
+Date: Sun, 25 Jan 2015 10:07:49 -0800
+Message-Id: <20150125180816.552690984@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,129 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
 
-commit b02efbfc9a051b41e71fe8f94ddf967260e024a6 upstream.
+commit b44be2462dbe3e23f0aedff64de52a1e8e47a1cd upstream.
 
-In situations such as bond failover, The new session establishment
-implicitly invokes the termination of the old connection.
+Commit 3b74c73f8d6f053f422e85fce955b61fb181cfe7 switched over to memdup_user()
+in ep_write() function and removed kfree (kbuf).
+memdup_user() function allocates memory which is never freed.
 
-So, we don't want to wait for the old connection wait_conn to completely
-terminate before we accept the new connection and post a login response.
-
-The solution is to deffer the comp_wait completion and the conn_put to
-a work so wait_conn will effectively be non-blocking (flush errors are
-assumed to come very fast).
-
-We allocate isert_release_wq with WQ_UNBOUND and WQ_UNBOUND_MAX_ACTIVE
-to spread the concurrency of release works.
-
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: 3b74c73 (usb: gadget: inode: switch over to memdup_user())
+Signed-off-by: Mario Schuknecht <mario.schuknecht@dresearch-fe.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   42 +++++++++++++++++++++++++-------
- drivers/infiniband/ulp/isert/ib_isert.h |    1 
- 2 files changed, 35 insertions(+), 8 deletions(-)
+ drivers/usb/gadget/legacy/inode.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -41,6 +41,7 @@ static DEFINE_MUTEX(device_list_mutex);
- static LIST_HEAD(device_list);
- static struct workqueue_struct *isert_rx_wq;
- static struct workqueue_struct *isert_comp_wq;
-+static struct workqueue_struct *isert_release_wq;
- 
- static void
- isert_unmap_cmd(struct isert_cmd *isert_cmd, struct isert_conn *isert_conn);
-@@ -2905,6 +2906,24 @@ isert_free_np(struct iscsi_np *np)
- 	kfree(isert_np);
+--- a/drivers/usb/gadget/legacy/inode.c
++++ b/drivers/usb/gadget/legacy/inode.c
+@@ -449,6 +449,7 @@ ep_write (struct file *fd, const char __
+ 		data->name, len, (int) value);
+ free1:
+ 	mutex_unlock(&data->lock);
++	kfree (kbuf);
+ 	return value;
  }
  
-+static void isert_release_work(struct work_struct *work)
-+{
-+	struct isert_conn *isert_conn = container_of(work,
-+						     struct isert_conn,
-+						     release_work);
-+
-+	pr_info("Starting release conn %p\n", isert_conn);
-+
-+	wait_for_completion(&isert_conn->conn_wait);
-+
-+	mutex_lock(&isert_conn->conn_mutex);
-+	isert_conn->state = ISER_CONN_DOWN;
-+	mutex_unlock(&isert_conn->conn_mutex);
-+
-+	pr_info("Destroying conn %p\n", isert_conn);
-+	isert_put_conn(isert_conn);
-+}
-+
- static void isert_wait_conn(struct iscsi_conn *conn)
- {
- 	struct isert_conn *isert_conn = conn->context;
-@@ -2924,14 +2943,9 @@ static void isert_wait_conn(struct iscsi
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
- 	wait_for_completion(&isert_conn->conn_wait_comp_err);
--	wait_for_completion(&isert_conn->conn_wait);
--
--	mutex_lock(&isert_conn->conn_mutex);
--	isert_conn->state = ISER_CONN_DOWN;
--	mutex_unlock(&isert_conn->conn_mutex);
- 
--	pr_info("Destroying conn %p\n", isert_conn);
--	isert_put_conn(isert_conn);
-+	INIT_WORK(&isert_conn->release_work, isert_release_work);
-+	queue_work(isert_release_wq, &isert_conn->release_work);
- }
- 
- static void isert_free_conn(struct iscsi_conn *conn)
-@@ -2977,10 +2991,21 @@ static int __init isert_init(void)
- 		goto destroy_rx_wq;
- 	}
- 
-+	isert_release_wq = alloc_workqueue("isert_release_wq", WQ_UNBOUND,
-+					WQ_UNBOUND_MAX_ACTIVE);
-+	if (!isert_release_wq) {
-+		pr_err("Unable to allocate isert_release_wq\n");
-+		ret = -ENOMEM;
-+		goto destroy_comp_wq;
-+	}
-+
- 	iscsit_register_transport(&iser_target_transport);
--	pr_debug("iSER_TARGET[0] - Loaded iser_target_transport\n");
-+	pr_info("iSER_TARGET[0] - Loaded iser_target_transport\n");
-+
- 	return 0;
- 
-+destroy_comp_wq:
-+	destroy_workqueue(isert_comp_wq);
- destroy_rx_wq:
- 	destroy_workqueue(isert_rx_wq);
- 	return ret;
-@@ -2989,6 +3014,7 @@ destroy_rx_wq:
- static void __exit isert_exit(void)
- {
- 	flush_scheduled_work();
-+	destroy_workqueue(isert_release_wq);
- 	destroy_workqueue(isert_comp_wq);
- 	destroy_workqueue(isert_rx_wq);
- 	iscsit_unregister_transport(&iser_target_transport);
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -126,6 +126,7 @@ struct isert_conn {
- 	int			conn_fr_pool_size;
- 	/* lock to protect fastreg pool */
- 	spinlock_t		conn_lock;
-+	struct work_struct	release_work;
- #define ISERT_COMP_BATCH_COUNT	8
- 	int			conn_comp_batch;
- 	struct llist_head	conn_comp_llist;
 
 
