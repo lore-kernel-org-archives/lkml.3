@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932659AbbAYTIG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:08:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
+	id S932269AbbAYS3S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:29:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58023 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755342AbbAYSJ0 (ORCPT
+	with ESMTP id S1756032AbbAYSK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:26 -0500
+	Sun, 25 Jan 2015 13:10:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerry Hoemann <jerry.hoemann@hp.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ken Helias <kenhelias@firemail.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.14 96/98] fsnotify: next_i is freed during fsnotify_unmount_inodes.
-Date: Sun, 25 Jan 2015 10:07:54 -0800
-Message-Id: <20150125180717.057498861@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Joe Bryant <tenminjoe@yahoo.com>, Martin Long <martin@longhome.co.uk>
+Subject: [PATCH 3.18 153/183] USB: EHCI: fix initialization bug in iso_stream_schedule()
+Date: Sun, 25 Jan 2015 10:07:55 -0800
+Message-Id: <20150125180816.826575418@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -29,112 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jerry Hoemann <jerry.hoemann@hp.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 6424babfd68dd8a83d9c60a5242d27038856599f upstream.
+commit 6d89252a998a695ecb0348fc2d717dc33d90cae9 upstream.
 
-During file system stress testing on 3.10 and 3.12 based kernels, the
-umount command occasionally hung in fsnotify_unmount_inodes in the
-section of code:
+Commit c3ee9b76aa93 (EHCI: improved logic for isochronous scheduling)
+introduced the idea of using ehci->last_iso_frame as the origin (or
+base) for the circular calculations involved in modifying the
+isochronous schedule.  However, the new code it added used
+ehci->last_iso_frame before the value was properly initialized.  This
+patch rectifies the mistake by moving the initialization lines earlier
+in iso_stream_schedule().
 
-                spin_lock(&inode->i_lock);
-                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
-                        spin_unlock(&inode->i_lock);
-                        continue;
-                }
+This fixes Bugzilla #72891.
 
-As this section of code holds the global inode_sb_list_lock, eventually
-the system hangs trying to acquire the lock.
-
-Multiple crash dumps showed:
-
-The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
-back at itself.  As this is not the value of list upon entry to the
-function, the kernel never exits the loop.
-
-To help narrow down problem, the call to list_del_init in
-inode_sb_list_del was changed to list_del.  This poisons the pointers in
-the i_sb_list and causes a kernel to panic if it transverse a freed
-inode.
-
-Subsequent stress testing paniced in fsnotify_unmount_inodes at the
-bottom of the list_for_each_entry_safe loop showing next_i had become
-free.
-
-We believe the root cause of the problem is that next_i is being freed
-during the window of time that the list_for_each_entry_safe loop
-temporarily releases inode_sb_list_lock to call fsnotify and
-fsnotify_inode_delete.
-
-The code in fsnotify_unmount_inodes attempts to prevent the freeing of
-inode and next_i by calling __iget.  However, the code doesn't do the
-__iget call on next_i
-
-	if i_count == 0 or
-	if i_state & (I_FREEING | I_WILL_FREE)
-
-The patch addresses this issue by advancing next_i in the above two cases
-until we either find a next_i which we can __iget or we reach the end of
-the list.  This makes the handling of next_i more closely match the
-handling of the variable "inode."
-
-The time to reproduce the hang is highly variable (from hours to days.) We
-ran the stress test on a 3.10 kernel with the proposed patch for a week
-without failure.
-
-During list_for_each_entry_safe, next_i is becoming free causing
-the loop to never terminate.  Advance next_i in those cases where
-__iget is not done.
-
-Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Ken Helias <kenhelias@firemail.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Fixes: c3ee9b76aa93
+Reported-by: Joe Bryant <tenminjoe@yahoo.com>
+Tested-by: Joe Bryant <tenminjoe@yahoo.com>
+Tested-by: Martin Long <martin@longhome.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/inode_mark.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/usb/host/ehci-sched.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/notify/inode_mark.c
-+++ b/fs/notify/inode_mark.c
-@@ -288,20 +288,25 @@ void fsnotify_unmount_inodes(struct list
- 		spin_unlock(&inode->i_lock);
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1581,6 +1581,10 @@ iso_stream_schedule (
+ 	else
+ 		next = (now + 2 + 7) & ~0x07;	/* full frame cache */
  
- 		/* In case the dropping of a reference would nuke next_i. */
--		if ((&next_i->i_sb_list != list) &&
--		    atomic_read(&next_i->i_count)) {
-+		while (&next_i->i_sb_list != list) {
- 			spin_lock(&next_i->i_lock);
--			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
-+			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE)) &&
-+						atomic_read(&next_i->i_count)) {
- 				__iget(next_i);
- 				need_iput = next_i;
-+				spin_unlock(&next_i->i_lock);
-+				break;
- 			}
- 			spin_unlock(&next_i->i_lock);
-+			next_i = list_entry(next_i->i_sb_list.next,
-+						struct inode, i_sb_list);
- 		}
++	/* If needed, initialize last_iso_frame so that this URB will be seen */
++	if (ehci->isoc_count == 0)
++		ehci->last_iso_frame = now >> 3;
++
+ 	/*
+ 	 * Use ehci->last_iso_frame as the base.  There can't be any
+ 	 * TDs scheduled for earlier than that.
+@@ -1671,10 +1675,6 @@ iso_stream_schedule (
+ 	urb->start_frame = start & (mod - 1);
+ 	if (!stream->highspeed)
+ 		urb->start_frame >>= 3;
+-
+-	/* Make sure scan_isoc() sees these */
+-	if (ehci->isoc_count == 0)
+-		ehci->last_iso_frame = now >> 3;
+ 	return status;
  
- 		/*
--		 * We can safely drop inode_sb_list_lock here because we hold
--		 * references on both inode and next_i.  Also no new inodes
--		 * will be added since the umount has begun.
-+		 * We can safely drop inode_sb_list_lock here because either
-+		 * we actually hold references on both inode and next_i or
-+		 * end of list.  Also no new inodes will be added since the
-+		 * umount has begun.
- 		 */
- 		spin_unlock(&inode_sb_list_lock);
- 
+  fail:
 
 
