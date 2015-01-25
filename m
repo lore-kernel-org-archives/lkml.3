@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543AbbAYScZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:32:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57908 "EHLO
+	id S1756370AbbAYTGv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:06:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755993AbbAYSK0 (ORCPT
+	with ESMTP id S1755367AbbAYSJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:26 -0500
+	Sun, 25 Jan 2015 13:09:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arseny Solokha <asolokha@kb.kras.ru>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.18 140/183] OHCI: add a quirk for ULi M5237 blocking on reset
+        Christoph Hellwig <hch@lst.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 84/98] vhost-scsi: Add missing virtio-scsi -> TCM attribute conversion
 Date: Sun, 25 Jan 2015 10:07:42 -0800
-Message-Id: <20150125180816.261501737@linuxfoundation.org>
+Message-Id: <20150125180716.537282972@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,85 +26,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Arseny Solokha <asolokha@kb.kras.ru>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 56abcab833fafcfaeb2f5b25e0364c1dec45f53e upstream.
+commit 46243860806bdc2756f3ce8ac86b4d7c616bcd6c upstream.
 
-Commit 8dccddbc2368 ("OHCI: final fix for NVIDIA problems (I hope)")
-introduced into 3.1.9 broke boot on e.g. Freescale P2020DS development
-board. The code path that was previously specific to NVIDIA controllers
-had then become taken for all chips.
+While looking at hch's recent conversion to drop the MSG_*_TAG
+definitions, I noticed a long standing bug in vhost-scsi where
+the VIRTIO_SCSI_S_* attribute definitions where incorrectly
+being passed directly into target_submit_cmd_map_sgls().
 
-However, the M5237 installed on the board wedges solid when accessing
-its base+OHCI_FMINTERVAL register, making it impossible to boot any
-kernel newer than 3.1.8 on this particular and apparently other similar
-machines.
+This patch adds the missing virtio-scsi to TCM/SAM task attribute
+conversion.
 
-Don't readl() and writel() base+OHCI_FMINTERVAL on PCI ID 10b9:5237.
-
-The patch is suitable for the -next tree as well as all maintained
-kernels up to 3.2 inclusive.
-
-Signed-off-by: Arseny Solokha <asolokha@kb.kras.ru>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 
 ---
- drivers/usb/host/pci-quirks.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/vhost/scsi.c |   24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -571,7 +571,8 @@ static void quirk_usb_handoff_ohci(struc
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -861,6 +861,23 @@ vhost_scsi_map_iov_to_sgl(struct tcm_vho
+ 	return 0;
+ }
+ 
++static int vhost_scsi_to_tcm_attr(int attr)
++{
++	switch (attr) {
++	case VIRTIO_SCSI_S_SIMPLE:
++		return MSG_SIMPLE_TAG;
++	case VIRTIO_SCSI_S_ORDERED:
++		return MSG_ORDERED_TAG;
++	case VIRTIO_SCSI_S_HEAD:
++		return MSG_HEAD_TAG;
++	case VIRTIO_SCSI_S_ACA:
++		return MSG_ACA_TAG;
++	default:
++		break;
++	}
++	return MSG_SIMPLE_TAG;
++}
++
+ static void tcm_vhost_submission_work(struct work_struct *work)
  {
- 	void __iomem *base;
- 	u32 control;
--	u32 fminterval;
-+	u32 fminterval = 0;
-+	bool no_fminterval = false;
- 	int cnt;
- 
- 	if (!mmio_resource_enabled(pdev, 0))
-@@ -581,6 +582,13 @@ static void quirk_usb_handoff_ohci(struc
- 	if (base == NULL)
- 		return;
- 
-+	/*
-+	 * ULi M5237 OHCI controller locks the whole system when accessing
-+	 * the OHCI_FMINTERVAL offset.
-+	 */
-+	if (pdev->vendor == PCI_VENDOR_ID_AL && pdev->device == 0x5237)
-+		no_fminterval = true;
-+
- 	control = readl(base + OHCI_CONTROL);
- 
- /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
-@@ -619,7 +627,9 @@ static void quirk_usb_handoff_ohci(struc
- 	}
- 
- 	/* software reset of the controller, preserving HcFmInterval */
--	fminterval = readl(base + OHCI_FMINTERVAL);
-+	if (!no_fminterval)
-+		fminterval = readl(base + OHCI_FMINTERVAL);
-+
- 	writel(OHCI_HCR, base + OHCI_CMDSTATUS);
- 
- 	/* reset requires max 10 us delay */
-@@ -628,7 +638,9 @@ static void quirk_usb_handoff_ohci(struc
- 			break;
- 		udelay(1);
- 	}
--	writel(fminterval, base + OHCI_FMINTERVAL);
-+
-+	if (!no_fminterval)
-+		writel(fminterval, base + OHCI_FMINTERVAL);
- 
- 	/* Now the controller is safely in SUSPEND and nothing can wake it up */
- 	iounmap(base);
+ 	struct tcm_vhost_cmd *cmd =
+@@ -887,9 +904,10 @@ static void tcm_vhost_submission_work(st
+ 	rc = target_submit_cmd_map_sgls(se_cmd, tv_nexus->tvn_se_sess,
+ 			cmd->tvc_cdb, &cmd->tvc_sense_buf[0],
+ 			cmd->tvc_lun, cmd->tvc_exp_data_len,
+-			cmd->tvc_task_attr, cmd->tvc_data_direction,
+-			TARGET_SCF_ACK_KREF, sg_ptr, cmd->tvc_sgl_count,
+-			sg_bidi_ptr, sg_no_bidi, NULL, 0);
++			vhost_scsi_to_tcm_attr(cmd->tvc_task_attr),
++			cmd->tvc_data_direction, TARGET_SCF_ACK_KREF,
++			sg_ptr, cmd->tvc_sgl_count, sg_bidi_ptr, sg_no_bidi,
++			NULL, 0);
+ 	if (rc < 0) {
+ 		transport_send_check_condition_and_sense(se_cmd,
+ 				TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE, 0);
 
 
