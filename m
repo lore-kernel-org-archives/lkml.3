@@ -1,184 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbbAYOiE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 09:38:04 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:59719 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412AbbAYOiB (ORCPT
+	id S1753652AbbAYOjq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 09:39:46 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35637 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531AbbAYOjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 09:38:01 -0500
-Date: Sun, 25 Jan 2015 23:38:34 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Ganesh Mahendran <opensource.ganesh@gmail.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>
-Subject: Re: [PATCH 2/2] zram: protect zram->stat race with init_lock
-Message-ID: <20150125143834.GA951@swordfish>
-References: <1421992707-32658-1-git-send-email-minchan@kernel.org>
- <1421992707-32658-2-git-send-email-minchan@kernel.org>
- <20150123143849.GB2320@swordfish>
- <CADAEsF_pd_n9G4jft1dnXYM6N7SZ+YMQSKCAAszuLrpygaTQvQ@mail.gmail.com>
+	Sun, 25 Jan 2015 09:39:45 -0500
+Message-ID: <54C5002C.4050600@linaro.org>
+Date: Sun, 25 Jan 2015 15:39:40 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADAEsF_pd_n9G4jft1dnXYM6N7SZ+YMQSKCAAszuLrpygaTQvQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Sudeep Holla <Sudeep.Holla@arm.com>,
+        lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] : cpuidle-big.little fix when mcpm is not available
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Rafael,
 
-On (01/24/15 21:17), Ganesh Mahendran wrote:
-> Hello Sergey
-> 
-> 2015-01-23 22:38 GMT+08:00 Sergey Senozhatsky <sergey.senozhatsky@gmail.com>:
-> > On (01/23/15 14:58), Minchan Kim wrote:
-> >> The zram->stat handling should be procted by init_lock.
-> >> Otherwise, user could see stale value from the stat.
-> >>
-> >> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >> ---
-> >>
-> >> I don't think it's stable material. The race is rare in real practice
-> >> and this stale stat value read is not a critical.
-> >>
-> >>  drivers/block/zram/zram_drv.c | 37 ++++++++++++++++++++++++++++---------
-> >>  1 file changed, 28 insertions(+), 9 deletions(-)
-> >>
-> >> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> >> index 0299d82275e7..53f176f590b0 100644
-> >> --- a/drivers/block/zram/zram_drv.c
-> >> +++ b/drivers/block/zram/zram_drv.c
-> >> @@ -48,8 +48,13 @@ static ssize_t name##_show(struct device *d,               \
-> >>                               struct device_attribute *attr, char *b) \
-> >>  {                                                                    \
-> >
-> > a side note: I wasn't Cc'd in that patchset and found out it only when it's
-> > been merged. I'm not sure I understand, why it has been renamed from specific
-> > zram_X_show to X_show. what gives?
-> 
-> I changed from zram_attr_##name##_show to name##_show in commit:
-> fcf1bce zram: use DEVICE_ATTR_[RW|RO|WO] to define zram sys device attribute
-> 
-> I just want to keep the name consistent with others, like
-> disksize_show(), initstate_show().
+This pull request has a single patch which is a fix for the 
+cpuidle-big.little driver. If the mcpm backend is not available because 
+the CCI is not defined in the DT, the cpuidle driver will 
+unconditionally assume it is and call the mcpm functions leading to a 
+kernel WARNING.
 
-aha, I see.
+Sudeep Holla fixed that by checking at the init time the mcpm is 
+available before initializing the deeper idle states.
 
-	-ss
+Thanks
+   -- Daniel
 
-> Thanks.
-> 
-> >
-> >
-> > can't help, catches my eye every time, that rename has broken the original
-> > formatting:
-> >
-> >
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index 9250b3f..c567af5 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -44,7 +44,7 @@ static const char *default_compressor = "lzo";
-> >  static unsigned int num_devices = 1;
-> >
-> >  #define ZRAM_ATTR_RO(name)                                             \
-> > -static ssize_t name##_show(struct device *d,           \
-> > +static ssize_t name##_show(struct device *d,                           \
-> >                                 struct device_attribute *attr, char *b) \
-> >  {                                                                      \
-> >         struct zram *zram = dev_to_zram(d);                             \
-> >
-> >
-> >
-> > I don't have any objections. but do we really want to wrap atomic ops in
-> > semaphore? it is really such serious race?
-> >
-> >
-> >         -ss
-> >
-> >>       struct zram *zram = dev_to_zram(d);                             \
-> >> -     return scnprintf(b, PAGE_SIZE, "%llu\n",                        \
-> >> -             (u64)atomic64_read(&zram->stats.name));                 \
-> >> +     u64 val = 0;                                                    \
-> >> +                                                                     \
-> >> +     down_read(&zram->init_lock);                                    \
-> >> +     if (init_done(zram))                                            \
-> >> +             val = atomic64_read(&zram->stats.name);                 \
-> >> +     up_read(&zram->init_lock);                                      \
-> >> +     return scnprintf(b, PAGE_SIZE, "%llu\n", val);                  \
-> >>  }                                                                    \
-> >>  static DEVICE_ATTR_RO(name);
-> >>
-> >> @@ -67,8 +72,14 @@ static ssize_t disksize_show(struct device *dev,
-> >>               struct device_attribute *attr, char *buf)
-> >>  {
-> >>       struct zram *zram = dev_to_zram(dev);
-> >> +     u64 val = 0;
-> >> +
-> >> +     down_read(&zram->init_lock);
-> >> +     if (init_done(zram))
-> >> +             val = zram->disksize;
-> >> +     up_read(&zram->init_lock);
-> >>
-> >> -     return scnprintf(buf, PAGE_SIZE, "%llu\n", zram->disksize);
-> >> +     return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> >>  }
-> >>
-> >>  static ssize_t initstate_show(struct device *dev,
-> >> @@ -88,9 +99,14 @@ static ssize_t orig_data_size_show(struct device *dev,
-> >>               struct device_attribute *attr, char *buf)
-> >>  {
-> >>       struct zram *zram = dev_to_zram(dev);
-> >> +     u64 val = 0;
-> >> +
-> >> +     down_read(&zram->init_lock);
-> >> +     if (init_done(zram))
-> >> +             val = atomic64_read(&zram->stats.pages_stored) << PAGE_SHIFT;
-> >> +     up_read(&zram->init_lock);
-> >>
-> >> -     return scnprintf(buf, PAGE_SIZE, "%llu\n",
-> >> -             (u64)(atomic64_read(&zram->stats.pages_stored)) << PAGE_SHIFT);
-> >> +     return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> >>  }
-> >>
-> >>  static ssize_t mem_used_total_show(struct device *dev,
-> >> @@ -957,10 +973,6 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
-> >>       struct bio_vec bv;
-> >>
-> >>       zram = bdev->bd_disk->private_data;
-> >> -     if (!valid_io_request(zram, sector, PAGE_SIZE)) {
-> >> -             atomic64_inc(&zram->stats.invalid_io);
-> >> -             return -EINVAL;
-> >> -     }
-> >>
-> >>       down_read(&zram->init_lock);
-> >>       if (unlikely(!init_done(zram))) {
-> >> @@ -968,6 +980,13 @@ static int zram_rw_page(struct block_device *bdev, sector_t sector,
-> >>               goto out_unlock;
-> >>       }
-> >>
-> >> +     if (!valid_io_request(zram, sector, PAGE_SIZE)) {
-> >> +             atomic64_inc(&zram->stats.invalid_io);
-> >> +             err = -EINVAL;
-> >> +             goto out_unlock;
-> >> +     }
-> >> +
-> >> +
-> >>       index = sector >> SECTORS_PER_PAGE_SHIFT;
-> >>       offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
-> >>
-> >> --
-> >> 1.9.1
-> >>
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
+The following changes since commit ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc:
+
+   Linux 3.19-rc5 (2015-01-18 18:02:20 +1200)
+
+are available in the git repository at:
+
+   http://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.20
+
+for you to fetch changes up to 194fe6f28e2819d3f50fbed24c3b72f21501dbfa:
+
+   drivers: cpuidle: Don't initialize big.LITTLE driver if MCPM is 
+unavailable (2015-01-23 15:05:48 +0100)
+
+----------------------------------------------------------------
+Sudeep Holla (1):
+       drivers: cpuidle: Don't initialize big.LITTLE driver if MCPM is 
+unavailable
+
+  drivers/cpuidle/cpuidle-big_little.c | 4 ++++
+  1 file changed, 4 insertions(+)
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
