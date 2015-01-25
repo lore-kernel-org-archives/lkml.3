@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823AbbAYSKH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:10:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
+	id S1757890AbbAYShI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:37:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365AbbAYSIo (ORCPT
+	with ESMTP id S1755925AbbAYSKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:44 -0500
+	Sun, 25 Jan 2015 13:10:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Storah <Christopher.Storah@invetech.com.au>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 34/50] can: kvaser_usb: Dont send a RESET_CHIP for non-existing channels
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.18 122/183] ftrace/jprobes/x86: Fix conflict between jprobes and function graph tracing
 Date: Sun, 25 Jan 2015 10:07:24 -0800
-Message-Id: <20150125180704.601907357@linuxfoundation.org>
+Message-Id: <20150125180815.474948092@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,50 +25,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 5e7e6e0c9b47a45576c38b4a72d67927a5e049f7 upstream.
+commit 237d28db036e411f22c03cfd5b0f6dc2aa9bf3bc upstream.
 
-Recent Leaf firmware versions (>= 3.1.557) do not allow to send
-commands for non-existing channels.  If a command is sent for a
-non-existing channel, the firmware crashes.
+If the function graph tracer traces a jprobe callback, the system will
+crash. This can easily be demonstrated by compiling the jprobe
+sample module that is in the kernel tree, loading it and running the
+function graph tracer.
 
-Reported-by: Christopher Storah <Christopher.Storah@invetech.com.au>
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+ # modprobe jprobe_example.ko
+ # echo function_graph > /sys/kernel/debug/tracing/current_tracer
+ # ls
+
+The first two commands end up in a nice crash after the first fork.
+(do_fork has a jprobe attached to it, so "ls" just triggers that fork)
+
+The problem is caused by the jprobe_return() that all jprobe callbacks
+must end with. The way jprobes works is that the function a jprobe
+is attached to has a breakpoint placed at the start of it (or it uses
+ftrace if fentry is supported). The breakpoint handler (or ftrace callback)
+will copy the stack frame and change the ip address to return to the
+jprobe handler instead of the function. The jprobe handler must end
+with jprobe_return() which swaps the stack and does an int3 (breakpoint).
+This breakpoint handler will then put back the saved stack frame,
+simulate the instruction at the beginning of the function it added
+a breakpoint to, and then continue on.
+
+For function tracing to work, it hijakes the return address from the
+stack frame, and replaces it with a hook function that will trace
+the end of the call. This hook function will restore the return
+address of the function call.
+
+If the function tracer traces the jprobe handler, the hook function
+for that handler will not be called, and its saved return address
+will be used for the next function. This will result in a kernel crash.
+
+To solve this, pause function tracing before the jprobe handler is called
+and unpause it before it returns back to the function it probed.
+
+Some other updates:
+
+Used a variable "saved_sp" to hold kcb->jprobe_saved_sp. This makes the
+code look a bit cleaner and easier to understand (various tries to fix
+this bug required this change).
+
+Note, if fentry is being used, jprobes will change the ip address before
+the function graph tracer runs and it will not be able to trace the
+function that the jprobe is probing.
+
+Link: http://lkml.kernel.org/r/20150114154329.552437962@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/kvaser_usb.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/kprobes/core.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1494,6 +1494,10 @@ static int kvaser_usb_init_one(struct us
- 	struct kvaser_usb_net_priv *priv;
- 	int i, err;
- 
-+	err = kvaser_usb_send_simple_msg(dev, CMD_RESET_CHIP, channel);
-+	if (err)
-+		return err;
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1018,6 +1018,15 @@ int setjmp_pre_handler(struct kprobe *p,
+ 	regs->flags &= ~X86_EFLAGS_IF;
+ 	trace_hardirqs_off();
+ 	regs->ip = (unsigned long)(jp->entry);
 +
- 	netdev = alloc_candev(sizeof(*priv), MAX_TX_URBS);
- 	if (!netdev) {
- 		dev_err(&intf->dev, "Cannot alloc candev\n");
-@@ -1597,9 +1601,6 @@ static int kvaser_usb_probe(struct usb_i
++	/*
++	 * jprobes use jprobe_return() which skips the normal return
++	 * path of the function, and this messes up the accounting of the
++	 * function graph tracer to get messed up.
++	 *
++	 * Pause function graph tracing while performing the jprobe function.
++	 */
++	pause_graph_tracing();
+ 	return 1;
+ }
+ NOKPROBE_SYMBOL(setjmp_pre_handler);
+@@ -1046,24 +1055,25 @@ int longjmp_break_handler(struct kprobe
+ 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+ 	u8 *addr = (u8 *) (regs->ip - 1);
+ 	struct jprobe *jp = container_of(p, struct jprobe, kp);
++	void *saved_sp = kcb->jprobe_saved_sp;
  
- 	usb_set_intfdata(intf, dev);
- 
--	for (i = 0; i < MAX_NET_DEVICES; i++)
--		kvaser_usb_send_simple_msg(dev, CMD_RESET_CHIP, i);
--
- 	err = kvaser_usb_get_software_info(dev);
- 	if (err) {
- 		dev_err(&intf->dev,
+ 	if ((addr > (u8 *) jprobe_return) &&
+ 	    (addr < (u8 *) jprobe_return_end)) {
+-		if (stack_addr(regs) != kcb->jprobe_saved_sp) {
++		if (stack_addr(regs) != saved_sp) {
+ 			struct pt_regs *saved_regs = &kcb->jprobe_saved_regs;
+ 			printk(KERN_ERR
+ 			       "current sp %p does not match saved sp %p\n",
+-			       stack_addr(regs), kcb->jprobe_saved_sp);
++			       stack_addr(regs), saved_sp);
+ 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
+ 			show_regs(saved_regs);
+ 			printk(KERN_ERR "Current registers\n");
+ 			show_regs(regs);
+ 			BUG();
+ 		}
++		/* It's OK to start function graph tracing again */
++		unpause_graph_tracing();
+ 		*regs = kcb->jprobe_saved_regs;
+-		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+-		       kcb->jprobes_stack,
+-		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
++		memcpy(saved_sp, kcb->jprobes_stack, MIN_STACK_SIZE(saved_sp));
+ 		preempt_enable_no_resched();
+ 		return 1;
+ 	}
 
 
