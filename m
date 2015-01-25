@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384AbbAYUNJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 15:13:09 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33687 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135AbbAYUNH (ORCPT
+	id S932267AbbAYUPb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 15:15:31 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:44041 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300AbbAYUP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 15:13:07 -0500
-Date: Sun, 25 Jan 2015 20:12:54 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Esben Haabendal <esben.haabendal@gmail.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        Stefan Roese <sr@denx.de>
-Message-ID: <20150125201254.GX21293@sirena.org.uk>
-References: <1420472564.803.9.camel@gmail.com>
- <20150105154834.GV11764@sirena.org.uk>
- <CAOR3GqUBWyfUvNG-8JiPVkis6b_25Eq_REtcp=kLN3CUoqsG6g@mail.gmail.com>
- <20150123124529.GU21293@sirena.org.uk>
- <20150125173853.GA6467@kroah.com>
+	Sun, 25 Jan 2015 15:15:26 -0500
+Message-ID: <54C54EDB.4030406@roeck-us.net>
+Date: Sun, 25 Jan 2015 12:15:23 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="/cFG30PKHi9lwv6o"
-Content-Disposition: inline
-In-Reply-To: <20150125173853.GA6467@kroah.com>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Backport of spi-fsl-spi bugfix to 3.14.y
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Sebastian Reichel <sre@kernel.org>
+CC: linux-pm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] power/reset: arm-versatile: Register with kernel
+ restart handler
+References: <1422209622-31994-1-git-send-email-linux@roeck-us.net> <20150125184017.GA29704@earth.universe> <54C53EE4.4070109@roeck-us.net> <20150125200626.GA6536@earth.universe>
+In-Reply-To: <20150125200626.GA6536@earth.universe>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54C54EDE.002F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sebastian,
 
---/cFG30PKHi9lwv6o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 01/25/2015 12:06 PM, Sebastian Reichel wrote:
+>
+> Maybe update the battery/master branch?
+>
 
-On Sun, Jan 25, 2015 at 09:38:53AM -0800, Greg Kroah-Hartman wrote:
-> On Fri, Jan 23, 2015 at 12:45:29PM +0000, Mark Brown wrote:
+I thought I did. Tip is "99a7956 power: ds2782_battery: Simplify the PM hooks"
 
-> > So, I now see this has actually been merged into stable without getting
-> > to the bottom of why it's helping anything...  this is a bit worrying
-> > since it's adding new functionality and not really a bug fix.  It'd have
-> > been good to at least get a followup here.
+Does that look correct ?
 
-> Do you want me to revert something from the stable tree?  If so, has it
-> also been reverted upstream?
+Guenter
 
-The patch just isn't an obvious -stable patch - it's adding new
-functionality, not fixing a bug, and I was surprised to discover it had
-been added as a result.  It's fine as new functionality and therefore
-hasn't been reverted upstream.
-
-We can probably leave it there, though if this is OK that's a bit of a
-change, but if this new functionality is a good fix then we're probably
-leaving other systems unfixed which isn't good, I would be very much
-happier if we understood what had changed here.  If new functionality is
-OK there's a probably a bunch of other changes we should be pulling
-back.
-
---/cFG30PKHi9lwv6o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUxU5FAAoJECTWi3JdVIfQeEsH/ipnAy0CGkCv480YmZDjNnPD
-VX6o5p+GAYKN/tLhwpYlo9y3zWcapoZsLpJmxOrztsNjCes7vIC3g7eu1776mXyF
-hg5Qu8jszl63V1ZiEEXL9gv6CNt63p/bEiQXTnfdzta9zQx8mLqIxcAdVuF8w5BD
-89c+H6bsYB2WCnXRq+MFiaRKK0SLW0syINW0XGDRyabNM3kSGzpitN9YN99U9Tll
-YLV63kCSOThQPCg5f5sJ9S/SaeQioCaQWorwvzSUV5VTMbte6tPlx8EA55K967yY
-tWFJSNFzbe0hDqfqs9RekkFdh79ouv0oEtNhcc3v/ITVk1mSpY9yBaPaaJJUpmk=
-=/z9D
------END PGP SIGNATURE-----
-
---/cFG30PKHi9lwv6o--
