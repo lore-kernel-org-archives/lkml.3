@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669AbbAYT10 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:27:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57362 "EHLO
+	id S932111AbbAYSnM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:43:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714AbbAYSI6 (ORCPT
+	with ESMTP id S1754372AbbAYSKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:58 -0500
+	Sun, 25 Jan 2015 13:10:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sven Eckelmann <sven@narfation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 07/98] batman-adv: Unify fragment size calculation
-Date: Sun, 25 Jan 2015 10:06:25 -0800
-Message-Id: <20150125180713.173995219@linuxfoundation.org>
+        Dominique Leuenberger <dimstar@opensuse.org>,
+        Takashi Iwai <tiwai@suse.de>, Darren Hart <dvhart@linux.intel.com>
+Subject: [PATCH 3.18 064/183] hp_accel: Add support for HP ZBook 15
+Date: Sun, 25 Jan 2015 10:06:26 -0800
+Message-Id: <20150125180812.958039600@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,47 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sven Eckelmann <sven@narfation.org>
+From: Dominique Leuenberger <dimstar@opensuse.org>
 
-[ Upstream commit 0402e444cd199389b7fe47be68a67b817e09e097 ]
+commit 6583659e0f92e38079a8dd081e0a1181a0f37747 upstream.
 
-The fragmentation code was replaced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
-("batman-adv: Receive fragmented packets and merge") by an implementation which
-can handle up to 16 fragments of a packet. The packet is prepared for the split
-in fragments by the function batadv_frag_send_packet and the actual split is
-done by batadv_frag_create.
+HP ZBook 15 laptop needs a non-standard mapping (x_inverted).
 
-Both functions calculate the size of a fragment themself. But their calculation
-differs because batadv_frag_send_packet also subtracts ETH_HLEN. Therefore,
-the check in batadv_frag_send_packet "can a full fragment can be created?" may
-return true even when batadv_frag_create cannot create a full fragment.
-
-The function batadv_frag_create doesn't check the size of the skb before
-splitting it and therefore might try to create a larger fragment than the
-remaining buffer. This creates an integer underflow and an invalid len is given
-to skb_split.
-
-Signed-off-by: Sven Eckelmann <sven@narfation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+BugLink: http://bugzilla.opensuse.org/show_bug.cgi?id=905329
+Signed-off-by: Dominique Leuenberger <dimstar@opensuse.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/batman-adv/fragmentation.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/batman-adv/fragmentation.c
-+++ b/net/batman-adv/fragmentation.c
-@@ -434,7 +434,7 @@ bool batadv_frag_send_packet(struct sk_b
- 	 * fragments larger than BATADV_FRAG_MAX_FRAG_SIZE
- 	 */
- 	mtu = min_t(unsigned, mtu, BATADV_FRAG_MAX_FRAG_SIZE);
--	max_fragment_size = (mtu - header_size - ETH_HLEN);
-+	max_fragment_size = mtu - header_size;
- 	max_packet_size = max_fragment_size * BATADV_FRAG_MAX_FRAGMENTS;
- 
- 	/* Don't even try to fragment, if we need more than 16 fragments */
+---
+ drivers/platform/x86/hp_accel.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/platform/x86/hp_accel.c
++++ b/drivers/platform/x86/hp_accel.c
+@@ -246,6 +246,7 @@ static const struct dmi_system_id lis3lv
+ 	AXIS_DMI_MATCH("HPB64xx", "HP ProBook 64", xy_swap),
+ 	AXIS_DMI_MATCH("HPB64xx", "HP EliteBook 84", xy_swap),
+ 	AXIS_DMI_MATCH("HPB65xx", "HP ProBook 65", x_inverted),
++	AXIS_DMI_MATCH("HPZBook15", "HP ZBook 15", x_inverted),
+ 	{ NULL, }
+ /* Laptop models without axis info (yet):
+  * "NC6910" "HP Compaq 6910"
 
 
