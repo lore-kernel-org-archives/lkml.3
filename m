@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbbAYAQT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 19:16:19 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:48779 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751059AbbAYAQR (ORCPT
+	id S1751947AbbAYBC4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 20:02:56 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:56696 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbbAYBCy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 19:16:17 -0500
-Date: Sat, 24 Jan 2015 17:16:13 -0700
-From: Jens Axboe <axboe@fb.com>
-To: <torvalds@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Two block IO fixes for 3.19
-Message-ID: <20150125001613.GA20174@kernel.dk>
+	Sat, 24 Jan 2015 20:02:54 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-24_03:2015-01-24,2015-01-24,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.80189196896663e-13 kscore.compositescore=0
- circleOfTrustscore=37.7501936418875 compositescore=0.98609165920913
- urlsuspect_oldscore=0.98609165920913 suspectscore=11
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.98609165920913 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501250001
-X-FB-Internal: deliver
+Content-Transfer-Encoding: 8BIT
+To: Thierry Reding <thierry.reding@gmail.com>,
+        "Stephen Boyd" <sboyd@codeaurora.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20150123093409.GC3835@ulmo>
+Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Russell King" <linux@arm.linux.org.uk>,
+        "Tomeu Vizoso" <tomeu.vizoso@collabora.com>
+References: <1421750935-4023-2-git-send-email-thierry.reding@gmail.com>
+ <1421856780-32103-1-git-send-email-thierry.reding@gmail.com>
+ <54C04145.1010906@codeaurora.org> <20150122073707.GA427@ulmo>
+ <20150122202546.GO27202@codeaurora.org> <20150123093409.GC3835@ulmo>
+Message-ID: <20150125010241.22722.75005@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2] clk: Introduce clk_has_parent()
+Date: Sat, 24 Jan 2015 17:02:41 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Quoting Thierry Reding (2015-01-23 01:34:10)
+> On Thu, Jan 22, 2015 at 12:25:46PM -0800, Stephen Boyd wrote:
+> > On 01/22, Thierry Reding wrote:
+> > > On Wed, Jan 21, 2015 at 04:16:05PM -0800, Stephen Boyd wrote:
+> > > > On 01/21/2015 08:13 AM, Thierry Reding wrote:
+> > > > > From: Thierry Reding <treding@nvidia.com>
+> > > > >
+> > > > > This new function is similar to clk_set_parent(), except that it doesn't
+> > > > > actually change the parent. It merely checks that the given parent clock
+> > > > > can be a parent for the given clock.
+> > > > >
+> > > > > A situation where this is useful is to check that a particular setup is
+> > > > > valid before switching to it. One specific use-case for this is atomic
+> > > > > modesetting in the DRM framework where setting a mode is divided into a
+> > > > > check phase where a given configuration is validated before applying
+> > > > > changes to the hardware.
+> > > > >
+> > > > > Cc: Russell King <linux@arm.linux.org.uk>
+> > > > > Cc: Mike Turquette <mturquette@linaro.org>
+> > > > > Cc: Stephen Boyd <sboyd@codeaurora.org>
+> > > > > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > > > > ---
+> > > > 
+> > > > Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+> > > > 
+> > > > This will slightly conflict with Tomeu's  patches for per-user clock
+> > > > constraints. It would be best if we can take this through the clk tree
+> > > > to fix up any conflicts
+> > > 
+> > > I had hoped to take this through the drm tree to resolve the build-time.
+> > > Another possibility would be for me to include the clk tree (or a subset
+> > > thereof) in my pull-request. That way you can still fix things up in the
+> > > clock tree if there are any conflicts with other work. We could make
+> > > that work two ways: this patch gets applied to the clk tree and I pull
+> > > it, or I provide a stable branch that I base my pull request on and that
+> > > branch can be pulled into the clk tree.
+> > > 
+> > > Yet another alternative would be to split out the clk_has_parent()
+> > > change from the series and not use it for now. That way we're going to
+> > > miss this check, but we do that anyway currently and it will only be
+> > > temporary until v3.21.
+> > > 
+> > > Perhaps given where we are in the release cycle the latter would make
+> > > the most sense for now.
+> > 
+> > Ok well let's see what Mike wants to do given that he's doing all
+> > the patch applying right now. I'd think that we could put this
+> > one patch on a different branch that we can merge into clk-next
+> > and you can merge into the drm tree. At least that's the typical
+> > workflow that usually works for everyone.
+> 
+> I will be sending out a pull request today, so I'm not going to include
+> this patch or the dependent patch. I'll pick it up again after the merge
+> window and see if I need to rebase it on top of Tomeu's work.
 
-Two small patches that should make it into 3.19:
+I've created an immutable branch based on 3.19-rc1 with only this patch
+on it and I've merged that branch into the clk tree. Immutable branch:
 
-- A fixup from me for NVMe, making the cq_vector a signed variable.
-  Otherwise our -1 comparison fails, and commit 2b25d981790b doesn't do
-  what it was supposed to.
+git://git.kernel.org/pub/scm/linux/kernel/git/clk/linux.git clk-has-parent
 
-- A fixup for the hotplug handling for blk-mq from Ming Lei, using the
-  proper kobject referencing to ensure we release resources at the right
-  time.
+You can see it merged into the clk tree here:
 
-Please pull!
+https://git.kernel.org/cgit/linux/kernel/git/clk/linux.git/commit/?h=clk-next&id=57386798f7db7f09d69f3b44fc66570e6db91bba
 
-  git://git.kernel.dk/linux-block.git for-linus
+Regards,
+Mike
 
-----------------------------------------------------------------
-Jens Axboe (1):
-      NVMe: cq_vector should be signed
-
-Ming Lei (1):
-      blk-mq: fix hctx/ctx kobject use-after-free
-
- block/blk-mq-sysfs.c      | 25 +++++++++++++++++++++++--
- block/blk-mq.c            |  6 +-----
- drivers/block/nvme-core.c |  2 +-
- 3 files changed, 25 insertions(+), 8 deletions(-)
-
--- 
-Jens Axboe
-
+> 
+> Thierry
