@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000AbbAYTO5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:14:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57609 "EHLO
+	id S1757870AbbAYShG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:37:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204AbbAYSJP (ORCPT
+	with ESMTP id S1755927AbbAYSKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:15 -0500
+	Sun, 25 Jan 2015 13:10:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Joe Bryant <tenminjoe@yahoo.com>, Martin Long <martin@longhome.co.uk>
-Subject: [PATCH 3.14 66/98] USB: EHCI: fix initialization bug in iso_stream_schedule()
-Date: Sun, 25 Jan 2015 10:07:24 -0800
-Message-Id: <20150125180715.711220535@linuxfoundation.org>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.18 123/183] ftrace: Fix updating of filters for shared global_ops filters
+Date: Sun, 25 Jan 2015 10:07:25 -0800
+Message-Id: <20150125180815.516787231@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,58 +25,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 6d89252a998a695ecb0348fc2d717dc33d90cae9 upstream.
+commit 8f86f83709c585742dea5dd7f0d2b79c43f992ec upstream.
 
-Commit c3ee9b76aa93 (EHCI: improved logic for isochronous scheduling)
-introduced the idea of using ehci->last_iso_frame as the origin (or
-base) for the circular calculations involved in modifying the
-isochronous schedule.  However, the new code it added used
-ehci->last_iso_frame before the value was properly initialized.  This
-patch rectifies the mistake by moving the initialization lines earlier
-in iso_stream_schedule().
+As the set_ftrace_filter affects both the function tracer as well as the
+function graph tracer, the ops that represent each have a shared
+ftrace_ops_hash structure. This allows both to be updated when the filter
+files are updated.
 
-This fixes Bugzilla #72891.
+But if function graph is enabled and the global_ops (function tracing) ops
+is not, then it is possible that the filter could be changed without the
+update happening for the function graph ops. This will cause the changes
+to not take place and may even cause a ftrace_bug to occur as it could mess
+with the trampoline accounting.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Fixes: c3ee9b76aa93
-Reported-by: Joe Bryant <tenminjoe@yahoo.com>
-Tested-by: Joe Bryant <tenminjoe@yahoo.com>
-Tested-by: Martin Long <martin@longhome.co.uk>
+The solution is to check if the ops uses the shared global_ops filter and
+if the ops itself is not enabled, to check if there's another ops that is
+enabled and also shares the global_ops filter. In that case, the
+modification still needs to be executed.
+
+Link: http://lkml.kernel.org/r/20150114154329.055980438@goodmis.org
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-sched.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/trace/ftrace.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1581,6 +1581,10 @@ iso_stream_schedule (
- 	else
- 		next = (now + 2 + 7) & ~0x07;	/* full frame cache */
- 
-+	/* If needed, initialize last_iso_frame so that this URB will be seen */
-+	if (ehci->isoc_count == 0)
-+		ehci->last_iso_frame = now >> 3;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3786,8 +3786,32 @@ ftrace_match_addr(struct ftrace_hash *ha
+ static void ftrace_ops_update_code(struct ftrace_ops *ops,
+ 				   struct ftrace_hash *old_hash)
+ {
+-	if (ops->flags & FTRACE_OPS_FL_ENABLED && ftrace_enabled)
++	struct ftrace_ops *op;
 +
- 	/*
- 	 * Use ehci->last_iso_frame as the base.  There can't be any
- 	 * TDs scheduled for earlier than that.
-@@ -1671,10 +1675,6 @@ iso_stream_schedule (
- 	urb->start_frame = start & (mod - 1);
- 	if (!stream->highspeed)
- 		urb->start_frame >>= 3;
--
--	/* Make sure scan_isoc() sees these */
--	if (ehci->isoc_count == 0)
--		ehci->last_iso_frame = now >> 3;
- 	return status;
++	if (!ftrace_enabled)
++		return;
++
++	if (ops->flags & FTRACE_OPS_FL_ENABLED) {
+ 		ftrace_run_modify_code(ops, FTRACE_UPDATE_CALLS, old_hash);
++		return;
++	}
++
++	/*
++	 * If this is the shared global_ops filter, then we need to
++	 * check if there is another ops that shares it, is enabled.
++	 * If so, we still need to run the modify code.
++	 */
++	if (ops->func_hash != &global_ops.local_hash)
++		return;
++
++	do_for_each_ftrace_op(op, ftrace_ops_list) {
++		if (op->func_hash == &global_ops.local_hash &&
++		    op->flags & FTRACE_OPS_FL_ENABLED) {
++			ftrace_run_modify_code(op, FTRACE_UPDATE_CALLS, old_hash);
++			/* Only need to do this once */
++			return;
++		}
++	} while_for_each_ftrace_op(op);
+ }
  
-  fail:
+ static int
 
 
