@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038AbbAYSK2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:10:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
+	id S1758179AbbAYSnT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:43:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390AbbAYSIq (ORCPT
+	with ESMTP id S1755749AbbAYSKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:46 -0500
+	Sun, 25 Jan 2015 13:10:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [PATCH 3.10 12/50] ARC: [nsimosci] move peripherals to match model to FPGA
+        Yegor Yefremov <yegorslists@googlemail.com>,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.18 100/183] net: ethernet: cpsw: fix hangs with interrupts
 Date: Sun, 25 Jan 2015 10:07:02 -0800
-Message-Id: <20150125180703.255277557@linuxfoundation.org>
+Message-Id: <20150125180814.518867020@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,73 +26,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit e8ef060b37c2d3cc5fd0c0edbe4e42ec1cb9768b upstream.
+commit 7ce67a38f799d1fb332f672b117efbadedaa5352 upstream.
 
-This allows the sdplite/Zebu images to run on OSCI simulation platform
+The CPSW IP implements pulse-signaled interrupts. Due to
+that we must write a correct, pre-defined value to the
+CPDMA_MACEOIVECTOR register so the controller generates
+a pulse on the correct IRQ line to signal the End Of
+Interrupt.
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+The way the driver is written today, all four IRQ lines
+are requested using the same IRQ handler and, because of
+that, we could fall into situations where a TX IRQ fires
+but we tell the controller that we ended an RX IRQ (or
+vice-versa). This situation triggers an IRQ storm on the
+reserved IRQ 127 of INTC which will in turn call ack_bad_irq()
+which will, then, print a ton of:
+
+	unexpected IRQ trap at vector 00
+
+In order to fix the problem, we are moving all calls to
+cpdma_ctlr_eoi() inside the IRQ handler and making sure
+we *always* write the correct value to the CPDMA_MACEOIVECTOR
+register. Note that the algorithm assumes that IRQ numbers and
+value-to-be-written-to-EOI are proportional, meaning that a
+write of value 0 would trigger an EOI pulse for the RX_THRESHOLD
+Interrupt and that's the IRQ number sitting in the 0-th index
+of our irqs_table array.
+
+This, however, is safe at least for current implementations of
+CPSW so we will refrain from making the check smarter (and, as
+a side-effect, slower) until we actually have a platform where
+IRQ lines are swapped.
+
+This patch has been tested for several days with AM335x- and
+AM437x-based platforms. AM57x was left out because there are
+still pending patches to enable ethernet in mainline for that
+platform. A read of the TRM confirms the statement on previous
+paragraph.
+
+Reported-by: Yegor Yefremov <yegorslists@googlemail.com>
+Fixes: 510a1e7 (drivers: net: davinci_cpdma: acknowledge interrupt properly)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/boot/dts/nsimosci.dts |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/net/ethernet/ti/cpsw.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
---- a/arch/arc/boot/dts/nsimosci.dts
-+++ b/arch/arc/boot/dts/nsimosci.dts
-@@ -20,7 +20,7 @@
- 		/* this is for console on PGU */
- 		/* bootargs = "console=tty0 consoleblank=0"; */
- 		/* this is for console on serial */
--		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=tty0 console=ttyS0,115200n8 consoleblank=0 debug";
-+		bootargs = "earlycon=uart8250,mmio32,0xf0000000,115200n8 console=tty0 console=ttyS0,115200n8 consoleblank=0 debug";
- 	};
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -757,6 +757,14 @@ requeue:
+ static irqreturn_t cpsw_interrupt(int irq, void *dev_id)
+ {
+ 	struct cpsw_priv *priv = dev_id;
++	int value = irq - priv->irqs_table[0];
++
++	/* NOTICE: Ending IRQ here. The trick with the 'value' variable above
++	 * is to make sure we will always write the correct value to the EOI
++	 * register. Namely 0 for RX_THRESH Interrupt, 1 for RX Interrupt, 2
++	 * for TX Interrupt and 3 for MISC Interrupt.
++	 */
++	cpdma_ctlr_eoi(priv->dma, value);
  
- 	aliases {
-@@ -46,9 +46,9 @@
- 			#interrupt-cells = <1>;
- 		};
+ 	cpsw_intr_disable(priv);
+ 	if (priv->irq_enabled == true) {
+@@ -786,8 +794,6 @@ static int cpsw_poll(struct napi_struct
+ 	int			num_tx, num_rx;
  
--		uart0: serial@c0000000 {
-+		uart0: serial@f0000000 {
- 			compatible = "ns8250";
--			reg = <0xc0000000 0x2000>;
-+			reg = <0xf0000000 0x2000>;
- 			interrupts = <11>;
- 			clock-frequency = <3686400>;
- 			baud = <115200>;
-@@ -57,21 +57,21 @@
- 			no-loopback-test = <1>;
- 		};
+ 	num_tx = cpdma_chan_process(priv->txch, 128);
+-	if (num_tx)
+-		cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
  
--		pgu0: pgu@c9000000 {
-+		pgu0: pgu@f9000000 {
- 			compatible = "snps,arcpgufb";
--			reg = <0xc9000000 0x400>;
-+			reg = <0xf9000000 0x400>;
- 		};
+ 	num_rx = cpdma_chan_process(priv->rxch, budget);
+ 	if (num_rx < budget) {
+@@ -795,7 +801,6 @@ static int cpsw_poll(struct napi_struct
  
--		ps2: ps2@c9001000 {
-+		ps2: ps2@f9001000 {
- 			compatible = "snps,arc_ps2";
--			reg = <0xc9000400 0x14>;
-+			reg = <0xf9000400 0x14>;
- 			interrupts = <13>;
- 			interrupt-names = "arc_ps2_irq";
- 		};
+ 		napi_complete(napi);
+ 		cpsw_intr_enable(priv);
+-		cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
+ 		prim_cpsw = cpsw_get_slave_priv(priv, 0);
+ 		if (prim_cpsw->irq_enabled == false) {
+ 			prim_cpsw->irq_enabled = true;
+@@ -1310,8 +1315,6 @@ static int cpsw_ndo_open(struct net_devi
+ 	napi_enable(&priv->napi);
+ 	cpdma_ctlr_start(priv->dma);
+ 	cpsw_intr_enable(priv);
+-	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
+-	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
  
--		eth0: ethernet@c0003000 {
-+		eth0: ethernet@f0003000 {
- 			compatible = "snps,oscilan";
--			reg = <0xc0003000 0x44>;
-+			reg = <0xf0003000 0x44>;
- 			interrupts = <7>, <8>;
- 			interrupt-names = "rx", "tx";
- 		};
+ 	prim_cpsw = cpsw_get_slave_priv(priv, 0);
+ 	if (prim_cpsw->irq_enabled == false) {
+@@ -1578,9 +1581,6 @@ static void cpsw_ndo_tx_timeout(struct n
+ 	cpdma_chan_start(priv->txch);
+ 	cpdma_ctlr_int_ctrl(priv->dma, true);
+ 	cpsw_intr_enable(priv);
+-	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
+-	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
+-
+ }
+ 
+ static int cpsw_ndo_set_mac_address(struct net_device *ndev, void *p)
+@@ -1620,9 +1620,6 @@ static void cpsw_ndo_poll_controller(str
+ 	cpsw_interrupt(ndev->irq, priv);
+ 	cpdma_ctlr_int_ctrl(priv->dma, true);
+ 	cpsw_intr_enable(priv);
+-	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
+-	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
+-
+ }
+ #endif
+ 
 
 
