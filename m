@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522AbbAYSJj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:09:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S1757906AbbAYSiN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:38:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57896 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350AbbAYSIn (ORCPT
+	with ESMTP id S1755918AbbAYSKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:43 -0500
+	Sun, 25 Jan 2015 13:10:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Sobrie <olivier@sobrie.be>,
-        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 32/50] can: kvaser_usb: Dont free packets when tight on URBs
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.18 120/183] drivers: net: cpsw: fix multicast flush in dual emac mode
 Date: Sun, 25 Jan 2015 10:07:22 -0800
-Message-Id: <20150125180704.475709726@linuxfoundation.org>
+Message-Id: <20150125180815.397533774@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,85 +25,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
+From: Mugunthan V N <mugunthanvnm@ti.com>
 
-commit b442723fcec445fb0ae1104888dd22cd285e0a91 upstream.
+commit 25906052d953d3fbdb7e19480b9de5e6bb949f3f upstream.
 
-Flooding the Kvaser CAN to USB dongle with multiple reads and
-writes in high frequency caused seemingly-random panics in the
-kernel.
+Since ALE table is a common resource for both the interfaces in Dual EMAC
+mode and while bringing up the second interface in cpsw_ndo_set_rx_mode()
+all the multicast entries added by the first interface is flushed out and
+only second interface multicast addresses are added. Fixing this by
+flushing multicast addresses based on dual EMAC port vlans which will not
+affect the other emac port multicast addresses.
 
-On further inspection, it seems the driver erroneously freed the
-to-be-transmitted packet upon getting tight on URBs and returning
-NETDEV_TX_BUSY, leading to invalid memory writes and double frees
-at a later point in time.
-
-Note:
-
-Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
-is a driver bug in and out of itself: it means that our start/stop
-queue flow control is broken.
-
-This patch only fixes the (buggy) error handling code; the root
-cause shall be fixed in a later commit.
-
-Acked-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Fixes: d9ba8f9 (driver: net: ethernet: cpsw: dual emac interface implementation)
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/kvaser_usb.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/ti/cpsw.c     |   11 +++++++++--
+ drivers/net/ethernet/ti/cpsw_ale.c |   10 +++++++++-
+ drivers/net/ethernet/ti/cpsw_ale.h |    2 +-
+ 3 files changed, 19 insertions(+), 4 deletions(-)
 
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1286,12 +1286,14 @@ static netdev_tx_t kvaser_usb_start_xmit
- 	if (!urb) {
- 		netdev_err(netdev, "No memory left for URBs\n");
- 		stats->tx_dropped++;
--		goto nourbmem;
-+		dev_kfree_skb(skb);
-+		return NETDEV_TX_OK;
- 	}
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -610,7 +610,7 @@ static void cpsw_set_promiscious(struct
  
- 	buf = kmalloc(sizeof(struct kvaser_msg), GFP_ATOMIC);
- 	if (!buf) {
- 		stats->tx_dropped++;
-+		dev_kfree_skb(skb);
- 		goto nobufmem;
- 	}
+ 			/* Clear all mcast from ALE */
+ 			cpsw_ale_flush_multicast(ale, ALE_ALL_PORTS <<
+-						 priv->host_port);
++						 priv->host_port, -1);
  
-@@ -1326,6 +1328,7 @@ static netdev_tx_t kvaser_usb_start_xmit
- 		}
- 	}
+ 			/* Flood All Unicast Packets to Host port */
+ 			cpsw_ale_control_set(ale, 0, ALE_P0_UNI_FLOOD, 1);
+@@ -634,6 +634,12 @@ static void cpsw_set_promiscious(struct
+ static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
+ {
+ 	struct cpsw_priv *priv = netdev_priv(ndev);
++	int vid;
++
++	if (priv->data.dual_emac)
++		vid = priv->slaves[priv->emac_port].port_vlan;
++	else
++		vid = priv->data.default_vlan;
  
-+	/* This should never happen; it implies a flow control bug */
- 	if (!context) {
- 		netdev_warn(netdev, "cannot find free context\n");
- 		ret =  NETDEV_TX_BUSY;
-@@ -1356,9 +1359,6 @@ static netdev_tx_t kvaser_usb_start_xmit
- 	if (unlikely(err)) {
- 		can_free_echo_skb(netdev, context->echo_index);
+ 	if (ndev->flags & IFF_PROMISC) {
+ 		/* Enable promiscuous mode */
+@@ -649,7 +655,8 @@ static void cpsw_ndo_set_rx_mode(struct
+ 	cpsw_ale_set_allmulti(priv->ale, priv->ndev->flags & IFF_ALLMULTI);
  
--		skb = NULL; /* set to NULL to avoid double free in
--			     * dev_kfree_skb(skb) */
--
- 		atomic_dec(&priv->active_tx_urbs);
- 		usb_unanchor_urb(urb);
+ 	/* Clear all mcast from ALE */
+-	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port);
++	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port,
++				 vid);
  
-@@ -1380,8 +1380,6 @@ releasebuf:
- 	kfree(buf);
- nobufmem:
- 	usb_free_urb(urb);
--nourbmem:
--	dev_kfree_skb(skb);
- 	return ret;
+ 	if (!netdev_mc_empty(ndev)) {
+ 		struct netdev_hw_addr *ha;
+--- a/drivers/net/ethernet/ti/cpsw_ale.c
++++ b/drivers/net/ethernet/ti/cpsw_ale.c
+@@ -234,7 +234,7 @@ static void cpsw_ale_flush_mcast(struct
+ 		cpsw_ale_set_entry_type(ale_entry, ALE_TYPE_FREE);
  }
  
+-int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
++int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid)
+ {
+ 	u32 ale_entry[ALE_ENTRY_WORDS];
+ 	int ret, idx;
+@@ -245,6 +245,14 @@ int cpsw_ale_flush_multicast(struct cpsw
+ 		if (ret != ALE_TYPE_ADDR && ret != ALE_TYPE_VLAN_ADDR)
+ 			continue;
+ 
++		/* if vid passed is -1 then remove all multicast entry from
++		 * the table irrespective of vlan id, if a valid vlan id is
++		 * passed then remove only multicast added to that vlan id.
++		 * if vlan id doesn't match then move on to next entry.
++		 */
++		if (vid != -1 && cpsw_ale_get_vlan_id(ale_entry) != vid)
++			continue;
++
+ 		if (cpsw_ale_get_mcast(ale_entry)) {
+ 			u8 addr[6];
+ 
+--- a/drivers/net/ethernet/ti/cpsw_ale.h
++++ b/drivers/net/ethernet/ti/cpsw_ale.h
+@@ -92,7 +92,7 @@ void cpsw_ale_stop(struct cpsw_ale *ale)
+ 
+ int cpsw_ale_set_ageout(struct cpsw_ale *ale, int ageout);
+ int cpsw_ale_flush(struct cpsw_ale *ale, int port_mask);
+-int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask);
++int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid);
+ int cpsw_ale_add_ucast(struct cpsw_ale *ale, u8 *addr, int port,
+ 		       int flags, u16 vid);
+ int cpsw_ale_del_ucast(struct cpsw_ale *ale, u8 *addr, int port,
 
 
