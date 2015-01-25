@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759497AbbAYTXQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:23:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
+	id S1760001AbbAYTeE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:34:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57193 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886AbbAYSJE (ORCPT
+	with ESMTP id S1754140AbbAYSIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:04 -0500
+	Sun, 25 Jan 2015 13:08:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>,
-        Tomas Henzl <thenzl@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 36/98] Revert "[SCSI] mpt2sas: Remove phys on topology change."
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 04/50] tcp: Do not apply TSO segment limit to non-TSO packets
 Date: Sun, 25 Jan 2015 10:06:54 -0800
-Message-Id: <20150125180714.440121469@linuxfoundation.org>
+Message-Id: <20150125180702.827613145@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,51 +26,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 81a89c2d891b78695aa7e4cc0d5a7427785ae078 upstream.
+[ Upstream commit 843925f33fcc293d80acf2c5c8a78adf3344d49b ]
 
-This reverts commit 3520f9c779bed098ca76dd3fb6377264301d57ed
-("mpt2sas: Remove phys on topology change")
+Thomas Jarosch reported IPsec TCP stalls when a PMTU event occurs.
 
-Reverting the previous mpt2sas drives patch changes,
-since we will observe below issue
+In fact the problem was completely unrelated to IPsec.  The bug is
+also reproducible if you just disable TSO/GSO.
 
-Issue:
-Drives connected Enclosure/Expander will unregister with
-SCSI Transport Layer, if any one remove and add expander
-cable with in DMD (Device Missing Delay) time period or
-even any one power-off and power-on the Enclosure with in
-the DMD period.
+The problem is that when the MSS goes down, existing queued packet
+on the TX queue that have not been transmitted yet all look like
+TSO packets and get treated as such.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Reviewed-by: Tomas Henzl <thenzl@redhat.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+This then triggers a bug where tcp_mss_split_point tells us to
+generate a zero-sized packet on the TX queue.  Once that happens
+we're screwed because the zero-sized packet can never be removed
+by ACKs.
+
+Fixes: 1485348d242 ("tcp: Apply device TSO segment limit earlier")
+Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+
+Cheers,
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/scsi/mpt2sas/mpt2sas_transport.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ net/ipv4/tcp_output.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -1006,12 +1006,9 @@ mpt2sas_transport_update_links(struct MP
- 		    &mpt2sas_phy->remote_identify);
- 		_transport_add_phy_to_an_existing_port(ioc, sas_node,
- 		    mpt2sas_phy, mpt2sas_phy->remote_identify.sas_address);
--	} else {
-+	} else
- 		memset(&mpt2sas_phy->remote_identify, 0 , sizeof(struct
- 		    sas_identify));
--		_transport_del_phy_from_an_existing_port(ioc, sas_node,
--		    mpt2sas_phy);
--	}
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1862,7 +1862,7 @@ static bool tcp_write_xmit(struct sock *
+ 		if (unlikely(!tcp_snd_wnd_test(tp, skb, mss_now)))
+ 			break;
  
- 	if (mpt2sas_phy->phy)
- 		mpt2sas_phy->phy->negotiated_linkrate =
+-		if (tso_segs == 1) {
++		if (tso_segs == 1 || !sk->sk_gso_max_segs) {
+ 			if (unlikely(!tcp_nagle_test(tp, skb, mss_now,
+ 						     (tcp_skb_is_last(sk, skb) ?
+ 						      nonagle : TCP_NAGLE_PUSH))))
+@@ -1899,7 +1899,7 @@ static bool tcp_write_xmit(struct sock *
+ 		}
+ 
+ 		limit = mss_now;
+-		if (tso_segs > 1 && !tcp_urg_mode(tp))
++		if (tso_segs > 1 && sk->sk_gso_max_segs && !tcp_urg_mode(tp))
+ 			limit = tcp_mss_split_point(sk, skb, mss_now,
+ 						    min_t(unsigned int,
+ 							  cwnd_quota,
 
 
