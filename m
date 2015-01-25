@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669AbbAYSLb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
+	id S1757530AbbAYScW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:32:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292AbbAYSJY (ORCPT
+	with ESMTP id S1755991AbbAYSK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:24 -0500
+	Sun, 25 Jan 2015 13:10:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 83/98] tcm_loop: Fix wrong I_T nexus association
+        Johan Hovold <johan@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.18 139/183] gpio: sysfs: fix gpio device-attribute leak
 Date: Sun, 25 Jan 2015 10:07:41 -0800
-Message-Id: <20150125180716.494657587@linuxfoundation.org>
+Message-Id: <20150125180816.214434395@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,229 +25,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Johan Hovold <johan@kernel.org>
 
-commit 506787a2c7daed45f0a213674ca706cbc83a9089 upstream.
+commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
 
-tcm_loop has the I_T nexus associated with the HBA. This causes
-commands to become misdirected if the HBA has more than one
-target portal group; any command is then being sent to the
-first target portal group instead of the correct one.
+The gpio device attributes were never destroyed when the gpio was
+unexported (or on export failures).
 
-The nexus needs to be associated with the target portal group
-instead.
+Use device_create_with_groups() to create the default device attributes
+of the gpio class device. Note that this also fixes the
+attribute-creation race with userspace for these attributes.
 
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Remove contingent attributes in export error path and on unexport.
+
+Fixes: d8f388d8dc8d ("gpio: sysfs interface")
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/loopback/tcm_loop.c |   66 ++++++++++++-------------------------
- drivers/target/loopback/tcm_loop.h |    7 ---
- 2 files changed, 24 insertions(+), 49 deletions(-)
+ drivers/gpio/gpiolib-sysfs.c |   28 +++++++++++++---------------
+ 1 file changed, 13 insertions(+), 15 deletions(-)
 
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -190,7 +190,7 @@ static void tcm_loop_submission_work(str
- 		set_host_byte(sc, DID_TRANSPORT_DISRUPTED);
- 		goto out_done;
- 	}
--	tl_nexus = tl_hba->tl_nexus;
-+	tl_nexus = tl_tpg->tl_nexus;
- 	if (!tl_nexus) {
- 		scmd_printk(KERN_ERR, sc, "TCM_Loop I_T Nexus"
- 				" does not exist\n");
-@@ -256,16 +256,26 @@ static int tcm_loop_queuecommand(struct
-  * to struct scsi_device
-  */
- static int tcm_loop_issue_tmr(struct tcm_loop_tpg *tl_tpg,
--			      struct tcm_loop_nexus *tl_nexus,
- 			      int lun, int task, enum tcm_tmreq_table tmr)
- {
- 	struct se_cmd *se_cmd = NULL;
- 	struct se_session *se_sess;
- 	struct se_portal_group *se_tpg;
-+	struct tcm_loop_nexus *tl_nexus;
- 	struct tcm_loop_cmd *tl_cmd = NULL;
- 	struct tcm_loop_tmr *tl_tmr = NULL;
- 	int ret = TMR_FUNCTION_FAILED, rc;
- 
-+	/*
-+	 * Locate the tl_nexus and se_sess pointers
-+	 */
-+	tl_nexus = tl_tpg->tl_nexus;
-+	if (!tl_nexus) {
-+		pr_err("Unable to perform device reset without"
-+				" active I_T Nexus\n");
-+		return ret;
-+	}
-+
- 	tl_cmd = kmem_cache_zalloc(tcm_loop_cmd_cache, GFP_KERNEL);
- 	if (!tl_cmd) {
- 		pr_err("Unable to allocate memory for tl_cmd\n");
-@@ -281,7 +291,7 @@ static int tcm_loop_issue_tmr(struct tcm
- 
- 	se_cmd = &tl_cmd->tl_se_cmd;
- 	se_tpg = &tl_tpg->tl_se_tpg;
--	se_sess = tl_nexus->se_sess;
-+	se_sess = tl_tpg->tl_nexus->se_sess;
- 	/*
- 	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
- 	 */
-@@ -326,7 +336,6 @@ release:
- static int tcm_loop_abort_task(struct scsi_cmnd *sc)
- {
- 	struct tcm_loop_hba *tl_hba;
--	struct tcm_loop_nexus *tl_nexus;
- 	struct tcm_loop_tpg *tl_tpg;
- 	int ret = FAILED;
- 
-@@ -334,21 +343,8 @@ static int tcm_loop_abort_task(struct sc
- 	 * Locate the tcm_loop_hba_t pointer
- 	 */
- 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
--	/*
--	 * Locate the tl_nexus and se_sess pointers
--	 */
--	tl_nexus = tl_hba->tl_nexus;
--	if (!tl_nexus) {
--		pr_err("Unable to perform device reset without"
--				" active I_T Nexus\n");
--		return FAILED;
--	}
--
--	/*
--	 * Locate the tl_tpg pointer from TargetID in sc->device->id
--	 */
- 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
--	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
-+	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
- 				 sc->request->tag, TMR_ABORT_TASK);
- 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
+--- a/drivers/gpio/gpiolib-sysfs.c
++++ b/drivers/gpio/gpiolib-sysfs.c
+@@ -128,7 +128,7 @@ static ssize_t gpio_value_store(struct d
+ 	return status;
  }
-@@ -360,7 +356,6 @@ static int tcm_loop_abort_task(struct sc
- static int tcm_loop_device_reset(struct scsi_cmnd *sc)
- {
- 	struct tcm_loop_hba *tl_hba;
--	struct tcm_loop_nexus *tl_nexus;
- 	struct tcm_loop_tpg *tl_tpg;
- 	int ret = FAILED;
  
-@@ -368,20 +363,9 @@ static int tcm_loop_device_reset(struct
- 	 * Locate the tcm_loop_hba_t pointer
- 	 */
- 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
--	/*
--	 * Locate the tl_nexus and se_sess pointers
--	 */
--	tl_nexus = tl_hba->tl_nexus;
--	if (!tl_nexus) {
--		pr_err("Unable to perform device reset without"
--				" active I_T Nexus\n");
--		return FAILED;
--	}
--	/*
--	 * Locate the tl_tpg pointer from TargetID in sc->device->id
--	 */
- 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
--	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
-+
-+	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
- 				 0, TMR_LUN_RESET);
- 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
+-static const DEVICE_ATTR(value, 0644,
++static DEVICE_ATTR(value, 0644,
+ 		gpio_value_show, gpio_value_store);
+ 
+ static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
+@@ -353,18 +353,15 @@ static ssize_t gpio_active_low_store(str
+ 	return status ? : size;
  }
-@@ -988,8 +972,8 @@ static int tcm_loop_make_nexus(
- 	struct tcm_loop_nexus *tl_nexus;
- 	int ret = -ENOMEM;
  
--	if (tl_tpg->tl_hba->tl_nexus) {
--		pr_debug("tl_tpg->tl_hba->tl_nexus already exists\n");
-+	if (tl_tpg->tl_nexus) {
-+		pr_debug("tl_tpg->tl_nexus already exists\n");
- 		return -EEXIST;
- 	}
- 	se_tpg = &tl_tpg->tl_se_tpg;
-@@ -1024,7 +1008,7 @@ static int tcm_loop_make_nexus(
- 	 */
- 	__transport_register_session(se_tpg, tl_nexus->se_sess->se_node_acl,
- 			tl_nexus->se_sess, tl_nexus);
--	tl_tpg->tl_hba->tl_nexus = tl_nexus;
-+	tl_tpg->tl_nexus = tl_nexus;
- 	pr_debug("TCM_Loop_ConfigFS: Established I_T Nexus to emulated"
- 		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
- 		name);
-@@ -1040,12 +1024,8 @@ static int tcm_loop_drop_nexus(
- {
- 	struct se_session *se_sess;
- 	struct tcm_loop_nexus *tl_nexus;
--	struct tcm_loop_hba *tl_hba = tpg->tl_hba;
+-static const DEVICE_ATTR(active_low, 0644,
++static DEVICE_ATTR(active_low, 0644,
+ 		gpio_active_low_show, gpio_active_low_store);
  
--	if (!tl_hba)
--		return -ENODEV;
+-static const struct attribute *gpio_attrs[] = {
++static struct attribute *gpio_attrs[] = {
+ 	&dev_attr_value.attr,
+ 	&dev_attr_active_low.attr,
+ 	NULL,
+ };
 -
--	tl_nexus = tl_hba->tl_nexus;
-+	tl_nexus = tpg->tl_nexus;
- 	if (!tl_nexus)
- 		return -ENODEV;
+-static const struct attribute_group gpio_attr_group = {
+-	.attrs = (struct attribute **) gpio_attrs,
+-};
++ATTRIBUTE_GROUPS(gpio);
  
-@@ -1061,13 +1041,13 @@ static int tcm_loop_drop_nexus(
+ /*
+  * /sys/class/gpio/gpiochipN/
+@@ -561,18 +558,15 @@ int gpiod_export(struct gpio_desc *desc,
+ 	if (desc->chip->names && desc->chip->names[offset])
+ 		ioname = desc->chip->names[offset];
+ 
+-	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
+-			    desc, ioname ? ioname : "gpio%u",
+-			    desc_to_gpio(desc));
++	dev = device_create_with_groups(&gpio_class, desc->chip->dev,
++					MKDEV(0, 0), desc, gpio_groups,
++					ioname ? ioname : "gpio%u",
++					desc_to_gpio(desc));
+ 	if (IS_ERR(dev)) {
+ 		status = PTR_ERR(dev);
+ 		goto fail_unlock;
  	}
  
- 	pr_debug("TCM_Loop_ConfigFS: Removing I_T Nexus to emulated"
--		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
-+		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tpg->tl_hba),
- 		tl_nexus->se_sess->se_node_acl->initiatorname);
- 	/*
- 	 * Release the SCSI I_T Nexus to the emulated SAS Target Port
- 	 */
- 	transport_deregister_session(tl_nexus->se_sess);
--	tpg->tl_hba->tl_nexus = NULL;
-+	tpg->tl_nexus = NULL;
- 	kfree(tl_nexus);
+-	status = sysfs_create_group(&dev->kobj, &gpio_attr_group);
+-	if (status)
+-		goto fail_unregister_device;
+-
+ 	if (direction_may_change) {
+ 		status = device_create_file(dev, &dev_attr_direction);
+ 		if (status)
+@@ -583,13 +577,15 @@ int gpiod_export(struct gpio_desc *desc,
+ 				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
+ 		status = device_create_file(dev, &dev_attr_edge);
+ 		if (status)
+-			goto fail_unregister_device;
++			goto fail_remove_attr_direction;
+ 	}
+ 
+ 	set_bit(FLAG_EXPORT, &desc->flags);
+ 	mutex_unlock(&sysfs_lock);
  	return 0;
- }
-@@ -1083,7 +1063,7 @@ static ssize_t tcm_loop_tpg_show_nexus(
- 	struct tcm_loop_nexus *tl_nexus;
- 	ssize_t ret;
  
--	tl_nexus = tl_tpg->tl_hba->tl_nexus;
-+	tl_nexus = tl_tpg->tl_nexus;
- 	if (!tl_nexus)
- 		return -ENODEV;
++fail_remove_attr_direction:
++	device_remove_file(dev, &dev_attr_direction);
+ fail_unregister_device:
+ 	device_unregister(dev);
+ fail_unlock:
+@@ -723,6 +719,8 @@ void gpiod_unexport(struct gpio_desc *de
+ 	mutex_unlock(&sysfs_lock);
  
---- a/drivers/target/loopback/tcm_loop.h
-+++ b/drivers/target/loopback/tcm_loop.h
-@@ -27,11 +27,6 @@ struct tcm_loop_tmr {
- };
- 
- struct tcm_loop_nexus {
--	int it_nexus_active;
--	/*
--	 * Pointer to Linux/SCSI HBA from linux/include/scsi_host.h
--	 */
--	struct scsi_host *sh;
- 	/*
- 	 * Pointer to TCM session for I_T Nexus
- 	 */
-@@ -51,6 +46,7 @@ struct tcm_loop_tpg {
- 	atomic_t tl_tpg_port_count;
- 	struct se_portal_group tl_se_tpg;
- 	struct tcm_loop_hba *tl_hba;
-+	struct tcm_loop_nexus *tl_nexus;
- };
- 
- struct tcm_loop_hba {
-@@ -59,7 +55,6 @@ struct tcm_loop_hba {
- 	struct se_hba_s *se_hba;
- 	struct se_lun *tl_hba_lun;
- 	struct se_port *tl_hba_lun_sep;
--	struct tcm_loop_nexus *tl_nexus;
- 	struct device dev;
- 	struct Scsi_Host *sh;
- 	struct tcm_loop_tpg tl_hba_tpgs[TL_TPGS_PER_HBA];
+ 	if (dev) {
++		device_remove_file(dev, &dev_attr_edge);
++		device_remove_file(dev, &dev_attr_direction);
+ 		device_unregister(dev);
+ 		put_device(dev);
+ 	}
 
 
