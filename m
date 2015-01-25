@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496AbbAYSbo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:31:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57871 "EHLO
+	id S1759181AbbAYTRm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:17:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57558 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756012AbbAYSK1 (ORCPT
+	with ESMTP id S1754307AbbAYSJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:27 -0500
+	Sun, 25 Jan 2015 13:09:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.18 107/183] [media] sound: simplify au0828 quirk table
+Subject: [PATCH 3.14 51/98] [media] uvcvideo: Fix destruction order in uvc_delete()
 Date: Sun, 25 Jan 2015 10:07:09 -0800
-Message-Id: <20150125180814.851515552@linuxfoundation.org>
+Message-Id: <20150125180715.074141503@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,205 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5d1f00a20d2d56ed480e64e938a2391353ee565b upstream.
+commit 2228d80dd05a4fc5a410fde847677b8fb3eb23d7 upstream.
 
-Add a macro to simplify au0828 quirk table. That makes easier
-to check it against the USB IDs at drivers/media/usb/au0828/au0828-cards.c.
+We've got a bug report at disconnecting a Webcam, where the kernel
+spews warnings like below:
+  WARNING: CPU: 0 PID: 8385 at ../fs/sysfs/group.c:219 sysfs_remove_group+0x87/0x90()
+  sysfs group c0b2350c not found for kobject 'event3'
+  CPU: 0 PID: 8385 Comm: queue2:src Not tainted 3.16.2-1.gdcee397-default #1
+  Hardware name: ASUSTeK Computer INC. A7N8X-E/A7N8X-E, BIOS ASUS A7N8X-E Deluxe ACPI BIOS Rev 1013  11/12/2004
+    c08d0705 ddc75cbc c0718c5b ddc75ccc c024b654 c08c6d44 ddc75ce8 000020c1
+    c08d0705 000000db c03d1ec7 c03d1ec7 00000009 00000000 c0b2350c d62c9064
+    ddc75cd4 c024b6a3 00000009 ddc75ccc c08c6d44 ddc75ce8 ddc75cfc c03d1ec7
+  Call Trace:
+    [<c0205ba6>] try_stack_unwind+0x156/0x170
+    [<c02046f3>] dump_trace+0x53/0x180
+    [<c0205c06>] show_trace_log_lvl+0x46/0x50
+    [<c0204871>] show_stack_log_lvl+0x51/0xe0
+    [<c0205c67>] show_stack+0x27/0x50
+    [<c0718c5b>] dump_stack+0x3e/0x4e
+    [<c024b654>] warn_slowpath_common+0x84/0xa0
+    [<c024b6a3>] warn_slowpath_fmt+0x33/0x40
+    [<c03d1ec7>] sysfs_remove_group+0x87/0x90
+    [<c05a2c54>] device_del+0x34/0x180
+    [<c05e3989>] evdev_disconnect+0x19/0x50
+    [<c05e06fa>] __input_unregister_device+0x9a/0x140
+    [<c05e0845>] input_unregister_device+0x45/0x80
+    [<f854b1d6>] uvc_delete+0x26/0x110 [uvcvideo]
+    [<f84d66f8>] v4l2_device_release+0x98/0xc0 [videodev]
+    [<c05a25bb>] device_release+0x2b/0x90
+    [<c04ad8bf>] kobject_cleanup+0x6f/0x1a0
+    [<f84d5453>] v4l2_release+0x43/0x70 [videodev]
+    [<c0372f31>] __fput+0xb1/0x1b0
+    [<c02650c1>] task_work_run+0x91/0xb0
+    [<c024d845>] do_exit+0x265/0x910
+    [<c024df64>] do_group_exit+0x34/0xa0
+    [<c025a76f>] get_signal_to_deliver+0x17f/0x590
+    [<c0201b6a>] do_signal+0x3a/0x960
+    [<c02024f7>] do_notify_resume+0x67/0x90
+    [<c071ebb5>] work_notifysig+0x30/0x3b
+    [<b7739e60>] 0xb7739e5f
+   ---[ end trace b1e56095a485b631 ]---
 
+The cause is that uvc_status_cleanup() is called after usb_put_*() in
+uvc_delete().  usb_put_*() removes the sysfs parent and eventually
+removes the children recursively, so the later device_del() can't find
+its sysfs.  The fix is simply rearrange the call orders in
+uvc_delete() so that the child is removed before the parent.
+
+Bugzilla: https://bugzilla.suse.com/show_bug.cgi?id=897736
+Reported-and-tested-by: Martin Pluskal <mpluskal@suse.com>
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/au0828/au0828-cards.c |    5 +
- sound/usb/quirks-table.h                |  158 ++++++--------------------------
- 2 files changed, 36 insertions(+), 127 deletions(-)
+ drivers/media/usb/uvc/uvc_driver.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/media/usb/au0828/au0828-cards.c
-+++ b/drivers/media/usb/au0828/au0828-cards.c
-@@ -36,6 +36,11 @@ static void hvr950q_cs5340_audio(void *p
- 		au0828_clear(dev, REG_000, 0x10);
- }
- 
-+/*
-+ * WARNING: There's a quirks table at sound/usb/quirks-table.h
-+ * that should also be updated every time a new device with V4L2 support
-+ * is added here.
-+ */
- struct au0828_board au0828_boards[] = {
- 	[AU0828_BOARD_UNKNOWN] = {
- 		.name	= "Unknown board",
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -2804,133 +2804,37 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- 	}
- },
- 
--/* Hauppauge HVR-950Q and HVR-850 */
--{
--	USB_DEVICE_VENDOR_SPEC(0x2040, 0x7200),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-950Q",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
--{
--	USB_DEVICE_VENDOR_SPEC(0x2040, 0x7210),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-950Q",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
--{
--	USB_DEVICE_VENDOR_SPEC(0x2040, 0x7217),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-950Q",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
--{
--	USB_DEVICE_VENDOR_SPEC(0x2040, 0x721b),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-950Q",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
--{
--	USB_DEVICE_VENDOR_SPEC(0x2040, 0x721e),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-950Q",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
--{
--	USB_DEVICE_VENDOR_SPEC(0x2040, 0x721f),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-950Q",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
--{
--	USB_DEVICE_VENDOR_SPEC(0x2040, 0x7240),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-850",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
--{
--	USB_DEVICE_VENDOR_SPEC(0x2040, 0x7280),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-950Q",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
--{
--	USB_DEVICE_VENDOR_SPEC(0x0fd9, 0x0008),
--	.match_flags = USB_DEVICE_ID_MATCH_DEVICE |
--		       USB_DEVICE_ID_MATCH_INT_CLASS |
--		       USB_DEVICE_ID_MATCH_INT_SUBCLASS,
--	.bInterfaceClass = USB_CLASS_AUDIO,
--	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL,
--	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
--		.vendor_name = "Hauppauge",
--		.product_name = "HVR-950Q",
--		.ifnum = QUIRK_ANY_INTERFACE,
--		.type = QUIRK_AUDIO_ALIGN_TRANSFER,
--	}
--},
-+/*
-+ * Auvitek au0828 devices with audio interface.
-+ * This should be kept in sync with drivers/media/usb/au0828/au0828-cards.c
-+ * Please notice that some drivers are DVB only, and don't need to be
-+ * here. That's the case, for example, of DVICO_FUSIONHDTV7.
-+ */
-+
-+#define AU0828_DEVICE(vid, pid, vname, pname) { \
-+	USB_DEVICE_VENDOR_SPEC(vid, pid), \
-+	.match_flags = USB_DEVICE_ID_MATCH_DEVICE | \
-+		       USB_DEVICE_ID_MATCH_INT_CLASS | \
-+		       USB_DEVICE_ID_MATCH_INT_SUBCLASS, \
-+	.bInterfaceClass = USB_CLASS_AUDIO, \
-+	.bInterfaceSubClass = USB_SUBCLASS_AUDIOCONTROL, \
-+	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) { \
-+		.vendor_name = vname, \
-+		.product_name = pname, \
-+		.ifnum = QUIRK_ANY_INTERFACE, \
-+		.type = QUIRK_AUDIO_ALIGN_TRANSFER, \
-+	} \
-+}
-+
-+AU0828_DEVICE(0x2040, 0x7200, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x7210, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x7217, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x721b, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x721e, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x721f, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x7240, "Hauppauge", "HVR-850"),
-+AU0828_DEVICE(0x2040, 0x7280, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x0fd9, 0x0008, "Hauppauge", "HVR-950Q"),
- 
- /* Digidesign Mbox */
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -1603,12 +1603,12 @@ static void uvc_delete(struct uvc_device
  {
+ 	struct list_head *p, *n;
+ 
+-	usb_put_intf(dev->intf);
+-	usb_put_dev(dev->udev);
+-
+ 	uvc_status_cleanup(dev);
+ 	uvc_ctrl_cleanup_device(dev);
+ 
++	usb_put_intf(dev->intf);
++	usb_put_dev(dev->udev);
++
+ 	if (dev->vdev.dev)
+ 		v4l2_device_unregister(&dev->vdev);
+ #ifdef CONFIG_MEDIA_CONTROLLER
 
 
