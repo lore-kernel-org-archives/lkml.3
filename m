@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639AbbAYSL2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
+	id S1757992AbbAYSjo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:39:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288AbbAYSJW (ORCPT
+	with ESMTP id S1754373AbbAYSKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:22 -0500
+	Sun, 25 Jan 2015 13:10:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amit Virdi <amit.virdi@st.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 60/98] usb: dwc3: gadget: Stop TRB preparation after limit is reached
+        Tim Kryger <tim.kryger@gmail.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: [PATCH 3.18 116/183] mmc: sdhci: Set SDHCI_POWER_ON with external vmmc
 Date: Sun, 25 Jan 2015 10:07:18 -0800
-Message-Id: <20150125180715.448916623@linuxfoundation.org>
+Message-Id: <20150125180815.236559138@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,48 +26,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Amit Virdi <amit.virdi@st.com>
+From: Tim Kryger <tim.kryger@gmail.com>
 
-commit 39e60635a01520e8c8ed3946a28c2b98e6a46f79 upstream.
+commit 3cbc6123a93dc91b99b58f7ea37d267fe93e1cad upstream.
 
-DWC3 gadget sets up a pool of 32 TRBs for each EP during initialization. This
-means, the max TRBs that can be submitted for an EP is fixed to 32. Since the
-request queue for an EP is a linked list, any number of requests can be queued
-to it by the gadget layer.  However, the dwc3 driver must not submit TRBs more
-than the pool it has created for. This limit wasn't respected when SG was used
-resulting in submitting more than the max TRBs, eventually leading to
-non-transfer of the TRBs submitted over the max limit.
+Host controllers lacking the required internal vmmc regulator may still
+follow the spec with regard to the LSB of SDHCI_POWER_CONTROL.  Set the
+SDHCI_POWER_ON bit when vmmc is enabled to encourage the controller to
+to drive CMD, DAT, SDCLK.
 
-Root cause:
-When SG is used, there are two loops iterating to prepare TRBs:
- - Outer loop over the request_list
- - Inner loop over the SG list
-The code was missing break to get out of the outer loop.
+This fixes a regression observed on some Qualcomm and Nvidia boards
+caused by 5222161 mmc: sdhci: Improve external VDD regulator support.
 
-Fixes: eeb720fb21d6 (usb: dwc3: gadget: add support for SG lists)
-Signed-off-by: Amit Virdi <amit.virdi@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Fixes: 52221610dd84 (mmc: sdhci: Improve external VDD regulator support)
+Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
+Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/mmc/host/sdhci.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -905,6 +905,9 @@ static void dwc3_prepare_trbs(struct dwc
- 				if (last_one)
- 					break;
- 			}
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1239,6 +1239,12 @@ static void sdhci_set_power(struct sdhci
+ 		spin_unlock_irq(&host->lock);
+ 		mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
+ 		spin_lock_irq(&host->lock);
 +
-+			if (last_one)
-+				break;
- 		} else {
- 			dma = req->request.dma;
- 			length = req->request.length;
++		if (mode != MMC_POWER_OFF)
++			sdhci_writeb(host, SDHCI_POWER_ON, SDHCI_POWER_CONTROL);
++		else
++			sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
++
+ 		return;
+ 	}
+ 
 
 
