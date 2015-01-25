@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbbAYRaA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 12:30:00 -0500
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:62444 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbbAYR35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 12:29:57 -0500
+	id S1754134AbbAYRer (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 12:34:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753976AbbAYReo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 12:34:44 -0500
+Date: Sun, 25 Jan 2015 18:34:33 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 5/5] perf: Make perf aware of tracefs
+Message-ID: <20150125173433.GA10390@krava.brq.redhat.com>
+References: <20150124181330.195149364@goodmis.org>
+ <20150124181449.157590751@goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <20150125115123.GA12175@kroah.com>
-References: <1421577420-10115-1-git-send-email-lstoakes@gmail.com>
-	<20150125115123.GA12175@kroah.com>
-Date: Sun, 25 Jan 2015 17:29:56 +0000
-Message-ID: <CAA5enKan1gzYwh0SfnkSvYZCiJdbzLTWVKow+CFR34wA8rmGXw@mail.gmail.com>
-Subject: Re: [PATCH RESEND 2 1/4] staging: rtl8192u: fix comments
-From: Lorenzo Stoakes <lstoakes@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, Greg Donald <gdonald@gmail.com>,
-        tapaswenipathak@gmail.com, Jiayi Ye <yejiayily@gmail.com>,
-        mcgrof@do-not-panic.com, linux-kernel@vger.kernel.org,
-        Rui Silva <rmfrfs@gmail.com>, Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150124181449.157590751@goodmis.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 January 2015 at 11:51, Greg KH <gregkh@linuxfoundation.org> wrote:
->
-> This patch fails to apply to my staging-testing branch of staging.git,
-> so I can't apply it :(
->
-> Please refresh your series and resend.
+On Sat, Jan 24, 2015 at 01:13:35PM -0500, Steven Rostedt wrote:
 
-Apologies Greg, it turns out I clearly lost my mind last weekend and
-rebased against the test branch instead of staging-testing as you
-actually requested :) I will fix now.
+SNIP
 
--- 
-Lorenzo Stoakes
-https:/ljs.io
+> @@ -351,11 +385,15 @@ const char *find_tracing_dir(void)
+>  	if (tracing_found)
+>  		return tracing;
+>  
+> -	debugfs = find_debugfs();
+> -	if (!debugfs)
+> -		return NULL;
+> +	debugfs = find_tracefs();
+> +	if (!debugfs) {
+> +		tracing_dir = "/tracing";
+> +		debugfs = find_debugfs();
+> +		if (!debugfs)
+> +			return NULL;
+
+so this pattern 'try tracefs, if that does not work try debugfs'
+is all over the patch.. how about we add new new 'virtual' fs to
+encapsulate that, like:
+
+  with followign interface:
+    bool tpfs_configured(void);
+    const char *tpfs_find_mountpoint(void);
+    int tpfs_valid_mountpoint(const char *debugfs);
+    char *tpfs_mount(const char *mountpoint);
+    extern char tpfs_mountpoint[];
+
+It does not neceserily needs to reside in tools/lib/api/fs/tpfs.[ch],
+but I believe we need some form of encapsulation for this.
+
+jirka
