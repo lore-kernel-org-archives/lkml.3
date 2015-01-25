@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639AbbAYSy6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:54:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57892 "EHLO
+	id S1757429AbbAYSy4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:54:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57896 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648AbbAYSJu (ORCPT
+	with ESMTP id S1754214AbbAYSJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luciano Coelho <luciano.coelho@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.18 057/183] nl80211: check matches array length before acessing it
-Date: Sun, 25 Jan 2015 10:06:19 -0800
-Message-Id: <20150125180812.659839415@linuxfoundation.org>
+Subject: [PATCH 3.18 058/183] cfg80211: dont WARN about two consecutive Country IE hint
+Date: Sun, 25 Jan 2015 10:06:20 -0800
+Message-Id: <20150125180812.700845194@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -29,84 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luciano Coelho <luciano.coelho@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit f89f46cf3a23d8d7c98f924a461fd931e1331746 upstream.
+commit 70dcec5a488a7b81779190ac8089475fe4b8b962 upstream.
 
-If the userspace passes a malformed sched scan request (or a net
-detect wowlan configuration) by adding a NL80211_ATTR_SCHED_SCAN_MATCH
-attribute without any nested matchsets, a NULL pointer dereference
-will occur.  Fix this by checking that we do have matchsets in our
-array before trying to access it.
+This can happen and there is no point in added more
+detection code lower in the stack. Catching these in one
+single point (cfg80211) is enough. Stop WARNING about this
+case.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000024
-IP: [<ffffffffa002fd69>] nl80211_parse_sched_scan.part.67+0x6e9/0x900 [cfg80211]
-PGD 865c067 PUD 865b067 PMD 0
-Oops: 0002 [#1] SMP
-Modules linked in: iwlmvm(O) iwlwifi(O) mac80211(O) cfg80211(O) compat(O) [last unloaded: compat]
-CPU: 2 PID: 2442 Comm: iw Tainted: G           O   3.17.2 #31
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-task: ffff880013800790 ti: ffff880008d80000 task.ti: ffff880008d80000
-RIP: 0010:[<ffffffffa002fd69>]  [<ffffffffa002fd69>] nl80211_parse_sched_scan.part.67+0x6e9/0x900 [cfg80211]
-RSP: 0018:ffff880008d838d0  EFLAGS: 00010293
-RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
-RDX: 000000000000143c RSI: 0000000000000000 RDI: ffff880008ee8dd0
-RBP: ffff880008d83948 R08: 0000000000000002 R09: 0000000000000019
-R10: ffff88001d1b3c40 R11: 0000000000000002 R12: ffff880019e85e00
-R13: 00000000fffffed4 R14: ffff880009757800 R15: 0000000000001388
-FS:  00007fa3b6d13700(0000) GS:ffff88003e200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000024 CR3: 0000000008670000 CR4: 00000000000006e0
-Stack:
- ffff880009757800 ffff880000000001 0000000000000000 ffff880008ee84e0
- 0000000000000000 ffff880009757800 00000000fffffed4 ffff880008d83948
- ffffffff814689c9 ffff880009757800 ffff880008ee8000 0000000000000000
-Call Trace:
- [<ffffffff814689c9>] ? nla_parse+0xb9/0x120
- [<ffffffffa00306de>] nl80211_set_wowlan+0x75e/0x960 [cfg80211]
- [<ffffffff810bf3d5>] ? mark_held_locks+0x75/0xa0
- [<ffffffff8161a77b>] genl_family_rcv_msg+0x18b/0x360
- [<ffffffff810bf66d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff8161a9d4>] genl_rcv_msg+0x84/0xc0
- [<ffffffff8161a950>] ? genl_family_rcv_msg+0x360/0x360
- [<ffffffff81618e79>] netlink_rcv_skb+0xa9/0xd0
- [<ffffffff81619458>] genl_rcv+0x28/0x40
- [<ffffffff816184a5>] netlink_unicast+0x105/0x180
- [<ffffffff8161886f>] netlink_sendmsg+0x34f/0x7a0
- [<ffffffff8105a097>] ? kvm_clock_read+0x27/0x40
- [<ffffffff815c644d>] sock_sendmsg+0x8d/0xc0
- [<ffffffff811a75c9>] ? might_fault+0xb9/0xc0
- [<ffffffff811a756e>] ? might_fault+0x5e/0xc0
- [<ffffffff815d5d26>] ? verify_iovec+0x56/0xe0
- [<ffffffff815c73e0>] ___sys_sendmsg+0x3d0/0x3e0
- [<ffffffff810a7be8>] ? sched_clock_cpu+0x98/0xd0
- [<ffffffff810611b4>] ? __do_page_fault+0x254/0x580
- [<ffffffff810bb39f>] ? up_read+0x1f/0x40
- [<ffffffff810611b4>] ? __do_page_fault+0x254/0x580
- [<ffffffff812146ed>] ? __fget_light+0x13d/0x160
- [<ffffffff815c7b02>] __sys_sendmsg+0x42/0x80
- [<ffffffff815c7b52>] SyS_sendmsg+0x12/0x20
- [<ffffffff81751f69>] system_call_fastpath+0x16/0x1b
+This fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=89001
 
-Fixes: ea73cbce4e1f ("nl80211: fix scheduled scan RSSI matchset attribute confusion")
-Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
+Fixes: 2f1c6c572d7b ("cfg80211: process non country IE conflicting first")
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/nl80211.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/wireless/reg.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -5799,7 +5799,7 @@ static int nl80211_start_sched_scan(stru
- 		}
- 
- 		/* there was no other matchset, so the RSSI one is alone */
--		if (i == 0)
-+		if (i == 0 && n_match_sets)
- 			request->match_sets[0].rssi_thold = default_match_rssi;
- 
- 		request->min_rssi_thold = INT_MAX;
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -1839,11 +1839,8 @@ __reg_process_hint_country_ie(struct wip
+ 			return REG_REQ_IGNORE;
+ 		return REG_REQ_ALREADY_SET;
+ 	}
+-	/*
+-	 * Two consecutive Country IE hints on the same wiphy.
+-	 * This should be picked up early by the driver/stack
+-	 */
+-	if (WARN_ON(regdom_changes(country_ie_request->alpha2)))
++
++	if (regdom_changes(country_ie_request->alpha2))
+ 		return REG_REQ_OK;
+ 	return REG_REQ_ALREADY_SET;
+ }
 
 
