@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550AbbAYSLS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
+	id S1758144AbbAYSlz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:41:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57776 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540AbbAYSIy (ORCPT
+	with ESMTP id S1755856AbbAYSKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:54 -0500
+	Sun, 25 Jan 2015 13:10:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Jarosch <thomas.jarosch@intra2net.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 11/98] tcp: Do not apply TSO segment limit to non-TSO packets
+        Hannes Reinecke <hare@suse.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.18 067/183] tcm_loop: Fix wrong I_T nexus association
 Date: Sun, 25 Jan 2015 10:06:29 -0800
-Message-Id: <20150125180713.353198256@linuxfoundation.org>
+Message-Id: <20150125180813.085917147@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,58 +25,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Hannes Reinecke <hare@suse.de>
 
-[ Upstream commit 843925f33fcc293d80acf2c5c8a78adf3344d49b ]
+commit 506787a2c7daed45f0a213674ca706cbc83a9089 upstream.
 
-Thomas Jarosch reported IPsec TCP stalls when a PMTU event occurs.
+tcm_loop has the I_T nexus associated with the HBA. This causes
+commands to become misdirected if the HBA has more than one
+target portal group; any command is then being sent to the
+first target portal group instead of the correct one.
 
-In fact the problem was completely unrelated to IPsec.  The bug is
-also reproducible if you just disable TSO/GSO.
+The nexus needs to be associated with the target portal group
+instead.
 
-The problem is that when the MSS goes down, existing queued packet
-on the TX queue that have not been transmitted yet all look like
-TSO packets and get treated as such.
-
-This then triggers a bug where tcp_mss_split_point tells us to
-generate a zero-sized packet on the TX queue.  Once that happens
-we're screwed because the zero-sized packet can never be removed
-by ACKs.
-
-Fixes: 1485348d242 ("tcp: Apply device TSO segment limit earlier")
-Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-Cheers,
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_output.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1894,7 +1894,7 @@ static bool tcp_write_xmit(struct sock *
- 		if (unlikely(!tcp_snd_wnd_test(tp, skb, mss_now)))
- 			break;
+---
+ drivers/target/loopback/tcm_loop.c |   66 ++++++++++++-------------------------
+ drivers/target/loopback/tcm_loop.h |    7 ---
+ 2 files changed, 24 insertions(+), 49 deletions(-)
+
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -190,7 +190,7 @@ static void tcm_loop_submission_work(str
+ 		set_host_byte(sc, DID_TRANSPORT_DISRUPTED);
+ 		goto out_done;
+ 	}
+-	tl_nexus = tl_hba->tl_nexus;
++	tl_nexus = tl_tpg->tl_nexus;
+ 	if (!tl_nexus) {
+ 		scmd_printk(KERN_ERR, sc, "TCM_Loop I_T Nexus"
+ 				" does not exist\n");
+@@ -270,16 +270,26 @@ static int tcm_loop_queuecommand(struct
+  * to struct scsi_device
+  */
+ static int tcm_loop_issue_tmr(struct tcm_loop_tpg *tl_tpg,
+-			      struct tcm_loop_nexus *tl_nexus,
+ 			      int lun, int task, enum tcm_tmreq_table tmr)
+ {
+ 	struct se_cmd *se_cmd = NULL;
+ 	struct se_session *se_sess;
+ 	struct se_portal_group *se_tpg;
++	struct tcm_loop_nexus *tl_nexus;
+ 	struct tcm_loop_cmd *tl_cmd = NULL;
+ 	struct tcm_loop_tmr *tl_tmr = NULL;
+ 	int ret = TMR_FUNCTION_FAILED, rc;
  
--		if (tso_segs == 1) {
-+		if (tso_segs == 1 || !sk->sk_gso_max_segs) {
- 			if (unlikely(!tcp_nagle_test(tp, skb, mss_now,
- 						     (tcp_skb_is_last(sk, skb) ?
- 						      nonagle : TCP_NAGLE_PUSH))))
-@@ -1931,7 +1931,7 @@ static bool tcp_write_xmit(struct sock *
- 		}
++	/*
++	 * Locate the tl_nexus and se_sess pointers
++	 */
++	tl_nexus = tl_tpg->tl_nexus;
++	if (!tl_nexus) {
++		pr_err("Unable to perform device reset without"
++				" active I_T Nexus\n");
++		return ret;
++	}
++
+ 	tl_cmd = kmem_cache_zalloc(tcm_loop_cmd_cache, GFP_KERNEL);
+ 	if (!tl_cmd) {
+ 		pr_err("Unable to allocate memory for tl_cmd\n");
+@@ -295,7 +305,7 @@ static int tcm_loop_issue_tmr(struct tcm
  
- 		limit = mss_now;
--		if (tso_segs > 1 && !tcp_urg_mode(tp))
-+		if (tso_segs > 1 && sk->sk_gso_max_segs && !tcp_urg_mode(tp))
- 			limit = tcp_mss_split_point(sk, skb, mss_now,
- 						    min_t(unsigned int,
- 							  cwnd_quota,
+ 	se_cmd = &tl_cmd->tl_se_cmd;
+ 	se_tpg = &tl_tpg->tl_se_tpg;
+-	se_sess = tl_nexus->se_sess;
++	se_sess = tl_tpg->tl_nexus->se_sess;
+ 	/*
+ 	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
+ 	 */
+@@ -340,7 +350,6 @@ release:
+ static int tcm_loop_abort_task(struct scsi_cmnd *sc)
+ {
+ 	struct tcm_loop_hba *tl_hba;
+-	struct tcm_loop_nexus *tl_nexus;
+ 	struct tcm_loop_tpg *tl_tpg;
+ 	int ret = FAILED;
+ 
+@@ -348,21 +357,8 @@ static int tcm_loop_abort_task(struct sc
+ 	 * Locate the tcm_loop_hba_t pointer
+ 	 */
+ 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
+-	/*
+-	 * Locate the tl_nexus and se_sess pointers
+-	 */
+-	tl_nexus = tl_hba->tl_nexus;
+-	if (!tl_nexus) {
+-		pr_err("Unable to perform device reset without"
+-				" active I_T Nexus\n");
+-		return FAILED;
+-	}
+-
+-	/*
+-	 * Locate the tl_tpg pointer from TargetID in sc->device->id
+-	 */
+ 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
+-	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
++	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
+ 				 sc->request->tag, TMR_ABORT_TASK);
+ 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
+ }
+@@ -374,7 +370,6 @@ static int tcm_loop_abort_task(struct sc
+ static int tcm_loop_device_reset(struct scsi_cmnd *sc)
+ {
+ 	struct tcm_loop_hba *tl_hba;
+-	struct tcm_loop_nexus *tl_nexus;
+ 	struct tcm_loop_tpg *tl_tpg;
+ 	int ret = FAILED;
+ 
+@@ -382,20 +377,9 @@ static int tcm_loop_device_reset(struct
+ 	 * Locate the tcm_loop_hba_t pointer
+ 	 */
+ 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
+-	/*
+-	 * Locate the tl_nexus and se_sess pointers
+-	 */
+-	tl_nexus = tl_hba->tl_nexus;
+-	if (!tl_nexus) {
+-		pr_err("Unable to perform device reset without"
+-				" active I_T Nexus\n");
+-		return FAILED;
+-	}
+-	/*
+-	 * Locate the tl_tpg pointer from TargetID in sc->device->id
+-	 */
+ 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
+-	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
++
++	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
+ 				 0, TMR_LUN_RESET);
+ 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
+ }
+@@ -1005,8 +989,8 @@ static int tcm_loop_make_nexus(
+ 	struct tcm_loop_nexus *tl_nexus;
+ 	int ret = -ENOMEM;
+ 
+-	if (tl_tpg->tl_hba->tl_nexus) {
+-		pr_debug("tl_tpg->tl_hba->tl_nexus already exists\n");
++	if (tl_tpg->tl_nexus) {
++		pr_debug("tl_tpg->tl_nexus already exists\n");
+ 		return -EEXIST;
+ 	}
+ 	se_tpg = &tl_tpg->tl_se_tpg;
+@@ -1041,7 +1025,7 @@ static int tcm_loop_make_nexus(
+ 	 */
+ 	__transport_register_session(se_tpg, tl_nexus->se_sess->se_node_acl,
+ 			tl_nexus->se_sess, tl_nexus);
+-	tl_tpg->tl_hba->tl_nexus = tl_nexus;
++	tl_tpg->tl_nexus = tl_nexus;
+ 	pr_debug("TCM_Loop_ConfigFS: Established I_T Nexus to emulated"
+ 		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
+ 		name);
+@@ -1057,12 +1041,8 @@ static int tcm_loop_drop_nexus(
+ {
+ 	struct se_session *se_sess;
+ 	struct tcm_loop_nexus *tl_nexus;
+-	struct tcm_loop_hba *tl_hba = tpg->tl_hba;
+ 
+-	if (!tl_hba)
+-		return -ENODEV;
+-
+-	tl_nexus = tl_hba->tl_nexus;
++	tl_nexus = tpg->tl_nexus;
+ 	if (!tl_nexus)
+ 		return -ENODEV;
+ 
+@@ -1078,13 +1058,13 @@ static int tcm_loop_drop_nexus(
+ 	}
+ 
+ 	pr_debug("TCM_Loop_ConfigFS: Removing I_T Nexus to emulated"
+-		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
++		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tpg->tl_hba),
+ 		tl_nexus->se_sess->se_node_acl->initiatorname);
+ 	/*
+ 	 * Release the SCSI I_T Nexus to the emulated SAS Target Port
+ 	 */
+ 	transport_deregister_session(tl_nexus->se_sess);
+-	tpg->tl_hba->tl_nexus = NULL;
++	tpg->tl_nexus = NULL;
+ 	kfree(tl_nexus);
+ 	return 0;
+ }
+@@ -1100,7 +1080,7 @@ static ssize_t tcm_loop_tpg_show_nexus(
+ 	struct tcm_loop_nexus *tl_nexus;
+ 	ssize_t ret;
+ 
+-	tl_nexus = tl_tpg->tl_hba->tl_nexus;
++	tl_nexus = tl_tpg->tl_nexus;
+ 	if (!tl_nexus)
+ 		return -ENODEV;
+ 
+--- a/drivers/target/loopback/tcm_loop.h
++++ b/drivers/target/loopback/tcm_loop.h
+@@ -27,11 +27,6 @@ struct tcm_loop_tmr {
+ };
+ 
+ struct tcm_loop_nexus {
+-	int it_nexus_active;
+-	/*
+-	 * Pointer to Linux/SCSI HBA from linux/include/scsi_host.h
+-	 */
+-	struct scsi_host *sh;
+ 	/*
+ 	 * Pointer to TCM session for I_T Nexus
+ 	 */
+@@ -51,6 +46,7 @@ struct tcm_loop_tpg {
+ 	atomic_t tl_tpg_port_count;
+ 	struct se_portal_group tl_se_tpg;
+ 	struct tcm_loop_hba *tl_hba;
++	struct tcm_loop_nexus *tl_nexus;
+ };
+ 
+ struct tcm_loop_hba {
+@@ -59,7 +55,6 @@ struct tcm_loop_hba {
+ 	struct se_hba_s *se_hba;
+ 	struct se_lun *tl_hba_lun;
+ 	struct se_port *tl_hba_lun_sep;
+-	struct tcm_loop_nexus *tl_nexus;
+ 	struct device dev;
+ 	struct Scsi_Host *sh;
+ 	struct tcm_loop_tpg tl_hba_tpgs[TL_TPGS_PER_HBA];
 
 
