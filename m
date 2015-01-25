@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbbAYSJA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:09:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57204 "EHLO
+	id S1758018AbbAYSjt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:39:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294AbbAYSIk (ORCPT
+	with ESMTP id S1755890AbbAYSKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:40 -0500
+	Sun, 25 Jan 2015 13:10:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Holmberg <hans.holmberg@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.10 25/50] gpiolib: of: Correct error handling in of_get_named_gpiod_flags
-Date: Sun, 25 Jan 2015 10:07:15 -0800
-Message-Id: <20150125180703.970882239@linuxfoundation.org>
+        Linda Walsh <suse@tlinx.org>, NeilBrown <neilb@suse.de>,
+        Jeff Layton <jlayton@primarydata.com>
+Subject: [PATCH 3.18 114/183] locks: fix NULL-deref in generic_delete_lease
+Date: Sun, 25 Jan 2015 10:07:16 -0800
+Message-Id: <20150125180815.150914668@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,47 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans Holmberg <hans.holmberg@intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 7b8792bbdffdff3abda704f89c6a45ea97afdc62 upstream.
+commit 52d304eb4eaced9ad04b64ba7cd6ceb5153bbf18 upstream.
 
-of_get_named_gpiod_flags fails with -EPROBE_DEFER in cases
-where the gpio chip is available and the GPIO translation fails.
+commit 0efaa7e82f02fe69c05ad28e905f31fc86e6f08e
+  locks: generic_delete_lease doesn't need a file_lock at all
 
-This causes drivers to be re-probed erroneusly, and hides the
-real problem(i.e. the GPIO number being out of range).
+moves the call to fl->fl_lmops->lm_change() to a place in the
+code where fl might be a non-lease lock.
+When that happens, fl_lmops is NULL and an Oops ensures.
 
-Signed-off-by: Hans Holmberg <hans.holmberg@intel.com>
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+So add an extra test to restore correct functioning.
+
+Reported-by: Linda Walsh <suse@tlinx.org>
+Link: https://bugzilla.suse.com/show_bug.cgi?id=912569
+Fixes: 0efaa7e82f02fe69c05ad28e905f31fc86e6f08e
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpiolib-of.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/locks.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -42,8 +42,14 @@ static int of_gpiochip_find_and_xlate(st
- 		return false;
- 
- 	ret = gc->of_xlate(gc, &gg_data->gpiospec, gg_data->flags);
--	if (ret < 0)
--		return false;
-+	if (ret < 0) {
-+		/* We've found the gpio chip, but the translation failed.
-+		 * Return true to stop looking and return the translation
-+		 * error via out_gpio
-+		 */
-+		gg_data->out_gpio = ERR_PTR(ret);
-+		return true;
-+	 }
- 
- 	gg_data->out_gpio = ret + gc->base;
- 	return true;
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1702,7 +1702,7 @@ static int generic_delete_lease(struct f
+ 			break;
+ 	}
+ 	trace_generic_delete_lease(inode, fl);
+-	if (fl)
++	if (fl && IS_LEASE(fl))
+ 		error = fl->fl_lmops->lm_change(before, F_UNLCK, &dispose);
+ 	spin_unlock(&inode->i_lock);
+ 	locks_dispose_list(&dispose);
 
 
