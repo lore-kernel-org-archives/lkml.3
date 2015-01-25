@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759924AbbAYTbB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:31:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
+	id S1756433AbbAYSLK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509AbbAYSIv (ORCPT
+	with ESMTP id S1754513AbbAYSIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:08:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Long Li <longli@microsoft.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.10 16/50] storvsc: ring buffer failures may result in I/O freeze
-Date: Sun, 25 Jan 2015 10:07:06 -0800
-Message-Id: <20150125180703.492325995@linuxfoundation.org>
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.10 17/50] video/logo: prevent use of logos after they have been freed
+Date: Sun, 25 Jan 2015 10:07:07 -0800
+Message-Id: <20150125180703.545360665@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
 References: <20150125180702.521559311@linuxfoundation.org>
@@ -29,42 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Long Li <longli@microsoft.com>
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 
-commit e86fb5e8ab95f10ec5f2e9430119d5d35020c951 upstream.
+commit 92b004d1aa9f367c372511ca0330f58216b25703 upstream.
 
-When ring buffer returns an error indicating retry, storvsc may not
-return a proper error code to SCSI when bounce buffer is not used.
-This has introduced I/O freeze on RAID running atop storvsc devices.
-This patch fixes it by always returning a proper error code.
+If the probe of an fb driver has been deferred due to missing
+dependencies, and the probe is later ran when a module is loaded, the
+fbdev framework will try to find a logo to use.
 
-Signed-off-by: Long Li <longli@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+However, the logos are __initdata, and have already been freed. This
+causes sometimes page faults, if the logo memory is not mapped,
+sometimes other random crashes as the logo data is invalid, and
+sometimes nothing, if the fbdev decides to reject the logo (e.g. the
+random value depicting the logo's height is too big).
+
+This patch adds a late_initcall function to mark the logos as freed. In
+reality the logos are freed later, and fbdev probe may be ran between
+this late_initcall and the freeing of the logos. In that case we will
+miss drawing the logo, even if it would be possible.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/storvsc_drv.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/video/logo/logo.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1439,13 +1439,12 @@ static int storvsc_queuecommand(struct S
- 	if (ret == -EAGAIN) {
- 		/* no more space */
+--- a/drivers/video/logo/logo.c
++++ b/drivers/video/logo/logo.c
+@@ -25,6 +25,21 @@ static bool nologo;
+ module_param(nologo, bool, 0);
+ MODULE_PARM_DESC(nologo, "Disables startup logo");
  
--		if (cmd_request->bounce_sgl_count) {
-+		if (cmd_request->bounce_sgl_count)
- 			destroy_bounce_buffer(cmd_request->bounce_sgl,
- 					cmd_request->bounce_sgl_count);
++/*
++ * Logos are located in the initdata, and will be freed in kernel_init.
++ * Use late_init to mark the logos as freed to prevent any further use.
++ */
++
++static bool logos_freed;
++
++static int __init fb_logo_late_init(void)
++{
++	logos_freed = true;
++	return 0;
++}
++
++late_initcall(fb_logo_late_init);
++
+ /* logo's are marked __initdata. Use __init_refok to tell
+  * modpost that it is intended that this function uses data
+  * marked __initdata.
+@@ -33,7 +48,7 @@ const struct linux_logo * __init_refok f
+ {
+ 	const struct linux_logo *logo = NULL;
  
--			ret = SCSI_MLQUEUE_DEVICE_BUSY;
--			goto queue_error;
--		}
-+		ret = SCSI_MLQUEUE_DEVICE_BUSY;
-+		goto queue_error;
- 	}
+-	if (nologo)
++	if (nologo || logos_freed)
+ 		return NULL;
  
- 	return 0;
+ 	if (depth >= 1) {
 
 
