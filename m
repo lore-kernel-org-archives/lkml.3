@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758615AbbAYSt3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:49:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57892 "EHLO
+	id S933035AbbAYTQt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:16:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740AbbAYSKA (ORCPT
+	with ESMTP id S1755155AbbAYSJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:00 -0500
+	Sun, 25 Jan 2015 13:09:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.18 079/183] iscsi,iser-target: Expose supported protection ops according to t10_pi
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Imre Deak <imre.deak@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.14 23/98] drm/i915: Only warn the first time we attempt to mmio whilst suspended
 Date: Sun, 25 Jan 2015 10:06:41 -0800
-Message-Id: <20150125180813.615073362@linuxfoundation.org>
+Message-Id: <20150125180713.881563401@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,102 +27,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 23a548ee656c8ba6da8cb2412070edcd62e2ac5d upstream.
+commit 2b387059817fd100cddc5a97118d63e3f3fade74 upstream.
 
-iSER will report supported protection operations based on
-the tpg attribute t10_pi settings and HCA PI offload capabilities.
-If the HCA does not support PI offload or tpg attribute t10_pi is
-not set, we fall to SW PI mode.
+In all likelihood we will do a few hundred errnoneous register
+operations if we do a single invalid register access whilst the device
+is suspended. As each instance causes a WARN, this floods the system
+logs and can make the system unresponsive.
 
-In order to do that, we move iscsit_get_sup_prot_ops after connection
-tpg assignment.
+The warning was first introduced in
+commit b2ec142cb0101f298f8e091c7d75b1ec5b809b65
+Author: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Date:   Fri Feb 21 13:52:25 2014 -0300
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+    drm/i915: call assert_device_not_suspended at gen6_force_wake_work
+
+and despite the claims the WARN is still encountered in the wild today.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Cc: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c   |   14 +++++++++++---
- drivers/infiniband/ulp/isert/ib_isert.h   |    1 +
- drivers/target/iscsi/iscsi_target_login.c |    7 ++++---
- 3 files changed, 16 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_uncore.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -64,7 +64,7 @@ struct rdma_cm_id *isert_setup_id(struct
- static inline bool
- isert_prot_cmd(struct isert_conn *conn, struct se_cmd *cmd)
+--- a/drivers/gpu/drm/i915/intel_uncore.c
++++ b/drivers/gpu/drm/i915/intel_uncore.c
+@@ -451,8 +451,8 @@ hsw_unclaimed_reg_check(struct drm_i915_
+ static void
+ assert_device_not_suspended(struct drm_i915_private *dev_priv)
  {
--	return (conn->conn_device->pi_capable &&
-+	return (conn->pi_support &&
- 		cmd->prot_op != TARGET_PROT_NORMAL);
+-	WARN(HAS_RUNTIME_PM(dev_priv->dev) && dev_priv->pm.suspended,
+-	     "Device suspended\n");
++	WARN_ONCE(HAS_RUNTIME_PM(dev_priv->dev) && dev_priv->pm.suspended,
++		  "Device suspended\n");
  }
  
-@@ -2324,8 +2324,16 @@ isert_get_sup_prot_ops(struct iscsi_conn
- 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
- 	struct isert_device *device = isert_conn->conn_device;
- 
--	if (device->pi_capable)
--		return TARGET_PROT_ALL;
-+	if (conn->tpg->tpg_attrib.t10_pi) {
-+		if (device->pi_capable) {
-+			pr_info("conn %p PI offload enabled\n", isert_conn);
-+			isert_conn->pi_support = true;
-+			return TARGET_PROT_ALL;
-+		}
-+	}
-+
-+	pr_info("conn %p PI offload disabled\n", isert_conn);
-+	isert_conn->pi_support = false;
- 
- 	return TARGET_PROT_NORMAL;
- }
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -128,6 +128,7 @@ struct isert_conn {
- 	atomic_t		post_send_buf_count;
- 	u32			responder_resources;
- 	u32			initiator_depth;
-+	bool			pi_support;
- 	u32			max_sge;
- 	char			*login_buf;
- 	char			*login_req_buf;
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -281,7 +281,6 @@ static int iscsi_login_zero_tsih_s1(
- {
- 	struct iscsi_session *sess = NULL;
- 	struct iscsi_login_req *pdu = (struct iscsi_login_req *)buf;
--	enum target_prot_op sup_pro_ops;
- 	int ret;
- 
- 	sess = kzalloc(sizeof(struct iscsi_session), GFP_KERNEL);
-@@ -343,9 +342,8 @@ static int iscsi_login_zero_tsih_s1(
- 		kfree(sess);
- 		return -ENOMEM;
- 	}
--	sup_pro_ops = conn->conn_transport->iscsit_get_sup_prot_ops(conn);
- 
--	sess->se_sess = transport_init_session(sup_pro_ops);
-+	sess->se_sess = transport_init_session(TARGET_PROT_NORMAL);
- 	if (IS_ERR(sess->se_sess)) {
- 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
- 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-@@ -1367,6 +1365,9 @@ static int __iscsi_target_login_thread(s
- 	}
- 	login->zero_tsih = zero_tsih;
- 
-+	conn->sess->se_sess->sup_prot_ops =
-+		conn->conn_transport->iscsit_get_sup_prot_ops(conn);
-+
- 	tpg = conn->tpg;
- 	if (!tpg) {
- 		pr_err("Unable to locate struct iscsi_conn->tpg\n");
+ #define REG_READ_HEADER(x) \
 
 
