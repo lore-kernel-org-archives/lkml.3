@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbbAYSJy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:09:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
+	id S1757921AbbAYSj1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:39:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341AbbAYSIm (ORCPT
+	with ESMTP id S1754428AbbAYSKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:42 -0500
+	Sun, 25 Jan 2015 13:10:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Preston Fick <pffick@gmail.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 29/50] USB: cp210x: fix ID for production CEL MeshConnect USB Stick
+        Peter Maydell <Peter.Maydell@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.18 117/183] arm64: partially revert "ARM: 8167/1: extend the reserved memory for initrd to be page aligned"
 Date: Sun, 25 Jan 2015 10:07:19 -0800
-Message-Id: <20150125180704.223171970@linuxfoundation.org>
+Message-Id: <20150125180815.276456685@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,36 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Preston Fick <pffick@gmail.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 90441b4dbe90ba0c38111ea89fa093a8c9627801 upstream.
+commit 0145058c3d30b4319d747f64caa16a9cb15f0581 upstream.
 
-Fixing typo for MeshConnect IDs. The original PID (0x8875) is not in
-production and is not needed. Instead it has been changed to the
-official production PID (0x8857).
+This patch partially reverts commit 421520ba98290a73b35b7644e877a48f18e06004
+(only the arm64 part). There is no guarantee that the boot-loader places other
+images like dtb in a different page than initrd start/end, especially when the
+kernel is built with 64KB pages. When this happens, such pages must not be
+freed. The free_reserved_area() already takes care of rounding up "start" and
+rounding down "end" to avoid freeing partially used pages.
 
-Signed-off-by: Preston Fick <pffick@gmail.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Reported-by: Peter Maydell <Peter.Maydell@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/mm/init.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -120,7 +120,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
--	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
-+	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL MeshConnect USB Stick */
- 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
+--- a/arch/arm64/mm/init.c
++++ b/arch/arm64/mm/init.c
+@@ -333,14 +333,8 @@ static int keep_initrd;
+ 
+ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-	if (!keep_initrd) {
+-		if (start == initrd_start)
+-			start = round_down(start, PAGE_SIZE);
+-		if (end == initrd_end)
+-			end = round_up(end, PAGE_SIZE);
+-
++	if (!keep_initrd)
+ 		free_reserved_area((void *)start, (void *)end, 0, "initrd");
+-	}
+ }
+ 
+ static int __init keepinitrd_setup(char *__unused)
 
 
