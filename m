@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935AbbAYSiW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:38:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57882 "EHLO
+	id S1757618AbbAYTKf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:10:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755906AbbAYSKR (ORCPT
+	with ESMTP id S1755299AbbAYSJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:17 -0500
+	Sun, 25 Jan 2015 13:09:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eyal Shapira <eyalx.shapira@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.18 118/183] iwlwifi: mvm: fix Rx with both chains
+        David Peterson <david.peterson@cel.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 62/98] USB: cp210x: add IDs for CEL USB sticks and MeshWorks devices
 Date: Sun, 25 Jan 2015 10:07:20 -0800
-Message-Id: <20150125180815.316770239@linuxfoundation.org>
+Message-Id: <20150125180715.535853613@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,37 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eyal Shapira <eyal@wizery.com>
+From: David Peterson <david.peterson@cel.com>
 
-commit c93edc639392df733c7d72db4376a9add775d18a upstream.
+commit 1ae78a4870989a354028cb17dabf819b595e70e3 upstream.
 
-commit 5c90422439d6
-"iwlwifi: mvm: don't allow diversity if BT Coex / TT forbid it"
-broke Rx with 2 chains for diversity.
-This had an impact on throughput where we're using only a single
-stream (11a/b/g APs, single stream APs, static SMPS).
+Added virtual com port VID/PID entries for CEL USB sticks and MeshWorks
+devices.
 
-Fixes: 5c90422439d6 ("iwlwifi: mvm: don't allow diversity if BT Coex / TT forbid it")
-Signed-off-by: Eyal Shapira <eyalx.shapira@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: David Peterson <david.peterson@cel.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-diff --git a/drivers/net/wireless/iwlwifi/mvm/utils.c b/drivers/net/wireless/iwlwifi/mvm/utils.c
-index e56e77ef5d2e..917431e30f74 100644
---- a/drivers/net/wireless/iwlwifi/mvm/utils.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/utils.c
-@@ -665,7 +665,7 @@ bool iwl_mvm_rx_diversity_allowed(struct iwl_mvm *mvm)
- 	if (num_of_ant(mvm->fw->valid_rx_ant) == 1)
- 		return false;
- 
--	if (!mvm->cfg->rx_with_siso_diversity)
-+	if (mvm->cfg->rx_with_siso_diversity)
- 		return false;
- 
- 	ieee80211_iterate_active_interfaces_atomic(
+---
+ drivers/usb/serial/cp210x.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -120,10 +120,12 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+-	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL MeshConnect USB Stick */
++	{ USB_DEVICE(0x10C4, 0x8856) },	/* CEL EM357 ZigBee USB Stick - LR */
++	{ USB_DEVICE(0x10C4, 0x8857) },	/* CEL EM357 ZigBee USB Stick */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
++	{ USB_DEVICE(0x10C4, 0x8977) },	/* CEL MeshWorks DevKit Device */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
 
 
