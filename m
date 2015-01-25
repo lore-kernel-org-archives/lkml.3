@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758426AbbAYSrN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:47:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57871 "EHLO
+	id S1759608AbbAYTYr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:24:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348AbbAYSKE (ORCPT
+	with ESMTP id S1754825AbbAYSJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:04 -0500
+	Sun, 25 Jan 2015 13:09:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.18 087/183] clk: Really fix deadlock with mmap_sem
+        Jouni Malinen <jouni@qca.qualcomm.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 31/98] cfg80211: Fix 160 MHz channels with 80+80 and 160 MHz drivers
 Date: Sun, 25 Jan 2015 10:06:49 -0800
-Message-Id: <20150125180813.963008758@linuxfoundation.org>
+Message-Id: <20150125180714.218138763@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,60 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Jouni Malinen <jouni@qca.qualcomm.com>
 
-commit 89f7e9de59bf3e3cda2e00de12c66db22675a7cf upstream.
+commit 08f6f147773b23b765b94633a8eaa82e7defcf4c upstream.
 
-Commit 6314b6796e3c (clk: Don't hold prepare_lock across debugfs
-creation, 2014-09-04) forgot to update one place where we hold
-the prepare_lock while creating debugfs directories. This means
-we still have the chance of a deadlock that the commit was trying
-to fix. Actually fix it by moving the debugfs creation outside
-the prepare_lock.
+The VHT supported channel width field is a two bit integer, not a
+bitfield. cfg80211_chandef_usable() was interpreting it incorrectly and
+ended up rejecting 160 MHz channel width if the driver indicated support
+for both 160 and 80+80 MHz channels.
 
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Fixes: 6314b6796e3c "clk: Don't hold prepare_lock across debugfs creation"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Michael Turquette <mturquette@linaro.org>
-[mturquette@linaro.org: removed lockdep_assert]
+Fixes: 3d9d1d6656a73 ("nl80211/cfg80211: support VHT channel configuration")
+       (however, no real drivers had 160 MHz support it until 3.16)
+Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/clk.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/wireless/chan.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -240,7 +240,6 @@ static const struct file_operations clk_
- 	.release	= single_release,
- };
- 
--/* caller must hold prepare_lock */
- static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
+--- a/net/wireless/chan.c
++++ b/net/wireless/chan.c
+@@ -516,7 +516,7 @@ bool cfg80211_chandef_usable(struct wiph
  {
- 	struct dentry *d;
-@@ -1944,7 +1943,6 @@ int __clk_init(struct device *dev, struc
- 	else
- 		clk->rate = 0;
+ 	struct ieee80211_sta_ht_cap *ht_cap;
+ 	struct ieee80211_sta_vht_cap *vht_cap;
+-	u32 width, control_freq;
++	u32 width, control_freq, cap;
  
--	clk_debug_register(clk);
- 	/*
- 	 * walk the list of orphan clocks and reparent any that are children of
- 	 * this clock
-@@ -1979,6 +1977,9 @@ int __clk_init(struct device *dev, struc
- out:
- 	clk_prepare_unlock();
- 
-+	if (!ret)
-+		clk_debug_register(clk);
-+
- 	return ret;
- }
- 
+ 	if (WARN_ON(!cfg80211_chandef_valid(chandef)))
+ 		return false;
+@@ -554,7 +554,8 @@ bool cfg80211_chandef_usable(struct wiph
+ 			return false;
+ 		break;
+ 	case NL80211_CHAN_WIDTH_80P80:
+-		if (!(vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ))
++		cap = vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK;
++		if (cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)
+ 			return false;
+ 	case NL80211_CHAN_WIDTH_80:
+ 		if (!vht_cap->vht_supported)
+@@ -565,7 +566,9 @@ bool cfg80211_chandef_usable(struct wiph
+ 	case NL80211_CHAN_WIDTH_160:
+ 		if (!vht_cap->vht_supported)
+ 			return false;
+-		if (!(vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160MHZ))
++		cap = vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK;
++		if (cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160MHZ &&
++		    cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)
+ 			return false;
+ 		prohibited_flags |= IEEE80211_CHAN_NO_160MHZ;
+ 		width = 160;
 
 
