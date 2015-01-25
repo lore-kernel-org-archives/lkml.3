@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbbAYV5y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 16:57:54 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150AbbAYV5w (ORCPT
+	id S1752160AbbAYWB3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 17:01:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59450 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbbAYWB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 16:57:52 -0500
-From: Richard Weinberger <richard@nod.at>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] fs: Detect API misuse of i_op->lookup
-Date: Sun, 25 Jan 2015 22:57:40 +0100
-Message-Id: <1422223060-8561-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 2.2.2
+	Sun, 25 Jan 2015 17:01:27 -0500
+Date: Sun, 25 Jan 2015 14:01:24 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Luca Olivetti <luca@ventoso.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Fengguag Wu <fengguang.wu@intel.com>,
+        Frank =?iso-8859-1?Q?Sch=E4fer?= <fschaefer.oss@googlemail.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: Re: [PATCH 3.18 105/183] [media] af9005: fix kernel panic on init if
+ compiled without IR
+Message-ID: <20150125220124.GA28946@kroah.com>
+References: <20150125180810.160428929@linuxfoundation.org>
+ <20150125180814.764501379@linuxfoundation.org>
+ <54C544EB.3000104@ventoso.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C544EB.3000104@ventoso.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hunting down a refcount issue in an out-of-tree filesystem uncovered
-that its lookup function directly returned the dentry which was passed to it.
-Add a BUG_ON() to detect such misuse in future.
+On Sun, Jan 25, 2015 at 08:32:59PM +0100, Luca Olivetti wrote:
+> El 25/01/15 a les 19:07, Greg Kroah-Hartman ha escrit:
+> > 3.18-stable review patch.  If anyone has any objections, please let me know.
+> 
+> I don't have any objection apart from the description: IIRC the bug is
+> triggered only if the kernel is compiled without module support.
+> In any case I think that symbol_request should return NULL if the
+> requested symbol is not available, either because the kernel has been
+> compiled without module support or the required symbol is not provided
+> by any module (though I think in the latter case it already works this
+> way, at least it did at the time I wrote the driver).
+> Or, as I said here
+> https://lkml.org/lkml/2009/2/4/350
+> maybe symbol_request isn't the correct approach to provide multiple,
+> alternative, implementations.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- fs/namei.c | 1 +
- 1 file changed, 1 insertion(+)
+The description is identical to what is in Linus's tree, so there's not
+much I can do about it at this late point in time, sorry.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index bc35b02..f8ccae6 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1370,6 +1370,7 @@ static struct dentry *lookup_real(struct inode *dir, struct dentry *dentry,
- 
- 	old = dir->i_op->lookup(dir, dentry, flags);
- 	if (unlikely(old)) {
-+		BUG_ON(old == dentry);
- 		dput(dentry);
- 		dentry = old;
- 	}
--- 
-2.2.2
+thanks,
 
+greg k-h
