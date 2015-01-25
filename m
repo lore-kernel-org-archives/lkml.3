@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105AbbAYTdM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:33:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
+	id S1756478AbbAYSLN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467AbbAYSIt (ORCPT
+	with ESMTP id S1754534AbbAYSIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:49 -0500
+	Sun, 25 Jan 2015 13:08:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.10 47/50] netfilter: ipset: small potential read beyond the end of buffer
-Date: Sun, 25 Jan 2015 10:07:37 -0800
-Message-Id: <20150125180705.281438367@linuxfoundation.org>
+        Jerry Hoemann <jerry.hoemann@hp.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ken Helias <kenhelias@firemail.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 48/50] fsnotify: next_i is freed during fsnotify_unmount_inodes.
+Date: Sun, 25 Jan 2015 10:07:38 -0800
+Message-Id: <20150125180705.345166785@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
 References: <20150125180702.521559311@linuxfoundation.org>
@@ -30,37 +33,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jerry Hoemann <jerry.hoemann@hp.com>
 
-commit 2196937e12b1b4ba139806d132647e1651d655df upstream.
+commit 6424babfd68dd8a83d9c60a5242d27038856599f upstream.
 
-We could be reading 8 bytes into a 4 byte buffer here.  It seems
-harmless but adding a check is the right thing to do and it silences a
-static checker warning.
+During file system stress testing on 3.10 and 3.12 based kernels, the
+umount command occasionally hung in fsnotify_unmount_inodes in the
+section of code:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+                spin_lock(&inode->i_lock);
+                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
+                        spin_unlock(&inode->i_lock);
+                        continue;
+                }
+
+As this section of code holds the global inode_sb_list_lock, eventually
+the system hangs trying to acquire the lock.
+
+Multiple crash dumps showed:
+
+The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
+back at itself.  As this is not the value of list upon entry to the
+function, the kernel never exits the loop.
+
+To help narrow down problem, the call to list_del_init in
+inode_sb_list_del was changed to list_del.  This poisons the pointers in
+the i_sb_list and causes a kernel to panic if it transverse a freed
+inode.
+
+Subsequent stress testing paniced in fsnotify_unmount_inodes at the
+bottom of the list_for_each_entry_safe loop showing next_i had become
+free.
+
+We believe the root cause of the problem is that next_i is being freed
+during the window of time that the list_for_each_entry_safe loop
+temporarily releases inode_sb_list_lock to call fsnotify and
+fsnotify_inode_delete.
+
+The code in fsnotify_unmount_inodes attempts to prevent the freeing of
+inode and next_i by calling __iget.  However, the code doesn't do the
+__iget call on next_i
+
+	if i_count == 0 or
+	if i_state & (I_FREEING | I_WILL_FREE)
+
+The patch addresses this issue by advancing next_i in the above two cases
+until we either find a next_i which we can __iget or we reach the end of
+the list.  This makes the handling of next_i more closely match the
+handling of the variable "inode."
+
+The time to reproduce the hang is highly variable (from hours to days.) We
+ran the stress test on a 3.10 kernel with the proposed patch for a week
+without failure.
+
+During list_for_each_entry_safe, next_i is becoming free causing
+the loop to never terminate.  Advance next_i in those cases where
+__iget is not done.
+
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Ken Helias <kenhelias@firemail.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipset/ip_set_core.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/notify/inode_mark.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/net/netfilter/ipset/ip_set_core.c
-+++ b/net/netfilter/ipset/ip_set_core.c
-@@ -1754,6 +1754,12 @@ ip_set_sockfn_get(struct sock *sk, int o
- 	if (*op < IP_SET_OP_VERSION) {
- 		/* Check the version at the beginning of operations */
- 		struct ip_set_req_version *req_version = data;
-+
-+		if (*len < sizeof(struct ip_set_req_version)) {
-+			ret = -EINVAL;
-+			goto done;
-+		}
-+
- 		if (req_version->version != IPSET_PROTOCOL) {
- 			ret = -EPROTO;
- 			goto done;
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -288,20 +288,25 @@ void fsnotify_unmount_inodes(struct list
+ 		spin_unlock(&inode->i_lock);
+ 
+ 		/* In case the dropping of a reference would nuke next_i. */
+-		if ((&next_i->i_sb_list != list) &&
+-		    atomic_read(&next_i->i_count)) {
++		while (&next_i->i_sb_list != list) {
+ 			spin_lock(&next_i->i_lock);
+-			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
++			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE)) &&
++						atomic_read(&next_i->i_count)) {
+ 				__iget(next_i);
+ 				need_iput = next_i;
++				spin_unlock(&next_i->i_lock);
++				break;
+ 			}
+ 			spin_unlock(&next_i->i_lock);
++			next_i = list_entry(next_i->i_sb_list.next,
++						struct inode, i_sb_list);
+ 		}
+ 
+ 		/*
+-		 * We can safely drop inode_sb_list_lock here because we hold
+-		 * references on both inode and next_i.  Also no new inodes
+-		 * will be added since the umount has begun.
++		 * We can safely drop inode_sb_list_lock here because either
++		 * we actually hold references on both inode and next_i or
++		 * end of list.  Also no new inodes will be added since the
++		 * umount has begun.
+ 		 */
+ 		spin_unlock(&inode_sb_list_lock);
+ 
 
 
