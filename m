@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbbAYSI5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:08:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
+	id S932336AbbAYS3c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:29:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754252AbbAYSIj (ORCPT
+	with ESMTP id S1756018AbbAYSK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:39 -0500
+	Sun, 25 Jan 2015 13:10:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.10 20/50] [media] smiapp: Take mutex during PLL update in sensor initialisation
-Date: Sun, 25 Jan 2015 10:07:10 -0800
-Message-Id: <20150125180703.697125676@linuxfoundation.org>
+Subject: [PATCH 3.18 109/183] [media] uvcvideo: Fix destruction order in uvc_delete()
+Date: Sun, 25 Jan 2015 10:07:11 -0800
+Message-Id: <20150125180814.937003988@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,37 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sakari Ailus <sakari.ailus@linux.intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f85698cd296f08218a7750f321e94607da128600 upstream.
+commit 2228d80dd05a4fc5a410fde847677b8fb3eb23d7 upstream.
 
-The mutex does not serialise anything in this case but avoids a lockdep
-warning from the control framework.
+We've got a bug report at disconnecting a Webcam, where the kernel
+spews warnings like below:
+  WARNING: CPU: 0 PID: 8385 at ../fs/sysfs/group.c:219 sysfs_remove_group+0x87/0x90()
+  sysfs group c0b2350c not found for kobject 'event3'
+  CPU: 0 PID: 8385 Comm: queue2:src Not tainted 3.16.2-1.gdcee397-default #1
+  Hardware name: ASUSTeK Computer INC. A7N8X-E/A7N8X-E, BIOS ASUS A7N8X-E Deluxe ACPI BIOS Rev 1013  11/12/2004
+    c08d0705 ddc75cbc c0718c5b ddc75ccc c024b654 c08c6d44 ddc75ce8 000020c1
+    c08d0705 000000db c03d1ec7 c03d1ec7 00000009 00000000 c0b2350c d62c9064
+    ddc75cd4 c024b6a3 00000009 ddc75ccc c08c6d44 ddc75ce8 ddc75cfc c03d1ec7
+  Call Trace:
+    [<c0205ba6>] try_stack_unwind+0x156/0x170
+    [<c02046f3>] dump_trace+0x53/0x180
+    [<c0205c06>] show_trace_log_lvl+0x46/0x50
+    [<c0204871>] show_stack_log_lvl+0x51/0xe0
+    [<c0205c67>] show_stack+0x27/0x50
+    [<c0718c5b>] dump_stack+0x3e/0x4e
+    [<c024b654>] warn_slowpath_common+0x84/0xa0
+    [<c024b6a3>] warn_slowpath_fmt+0x33/0x40
+    [<c03d1ec7>] sysfs_remove_group+0x87/0x90
+    [<c05a2c54>] device_del+0x34/0x180
+    [<c05e3989>] evdev_disconnect+0x19/0x50
+    [<c05e06fa>] __input_unregister_device+0x9a/0x140
+    [<c05e0845>] input_unregister_device+0x45/0x80
+    [<f854b1d6>] uvc_delete+0x26/0x110 [uvcvideo]
+    [<f84d66f8>] v4l2_device_release+0x98/0xc0 [videodev]
+    [<c05a25bb>] device_release+0x2b/0x90
+    [<c04ad8bf>] kobject_cleanup+0x6f/0x1a0
+    [<f84d5453>] v4l2_release+0x43/0x70 [videodev]
+    [<c0372f31>] __fput+0xb1/0x1b0
+    [<c02650c1>] task_work_run+0x91/0xb0
+    [<c024d845>] do_exit+0x265/0x910
+    [<c024df64>] do_group_exit+0x34/0xa0
+    [<c025a76f>] get_signal_to_deliver+0x17f/0x590
+    [<c0201b6a>] do_signal+0x3a/0x960
+    [<c02024f7>] do_notify_resume+0x67/0x90
+    [<c071ebb5>] work_notifysig+0x30/0x3b
+    [<b7739e60>] 0xb7739e5f
+   ---[ end trace b1e56095a485b631 ]---
 
-Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+The cause is that uvc_status_cleanup() is called after usb_put_*() in
+uvc_delete().  usb_put_*() removes the sysfs parent and eventually
+removes the children recursively, so the later device_del() can't find
+its sysfs.  The fix is simply rearrange the call orders in
+uvc_delete() so that the child is removed before the parent.
+
+Bugzilla: https://bugzilla.suse.com/show_bug.cgi?id=897736
+Reported-and-tested-by: Martin Pluskal <mpluskal@suse.com>
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/smiapp/smiapp-core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/usb/uvc/uvc_driver.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/media/i2c/smiapp/smiapp-core.c
-+++ b/drivers/media/i2c/smiapp/smiapp-core.c
-@@ -2629,7 +2629,9 @@ static int smiapp_registered(struct v4l2
- 		pll->flags |= SMIAPP_PLL_FLAG_OP_PIX_CLOCK_PER_LANE;
- 	pll->scale_n = sensor->limits[SMIAPP_LIMIT_SCALER_N_MIN];
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -1623,12 +1623,12 @@ static void uvc_delete(struct uvc_device
+ {
+ 	struct list_head *p, *n;
  
-+	mutex_lock(&sensor->mutex);
- 	rval = smiapp_update_mode(sensor);
-+	mutex_unlock(&sensor->mutex);
- 	if (rval) {
- 		dev_err(&client->dev, "update mode failed\n");
- 		goto out_nvm_release;
+-	usb_put_intf(dev->intf);
+-	usb_put_dev(dev->udev);
+-
+ 	uvc_status_cleanup(dev);
+ 	uvc_ctrl_cleanup_device(dev);
+ 
++	usb_put_intf(dev->intf);
++	usb_put_dev(dev->udev);
++
+ 	if (dev->vdev.dev)
+ 		v4l2_device_unregister(&dev->vdev);
+ #ifdef CONFIG_MEDIA_CONTROLLER
 
 
