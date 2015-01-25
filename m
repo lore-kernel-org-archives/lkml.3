@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746AbbAYSes (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:34:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
+	id S932858AbbAYTMv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:12:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387AbbAYSKY (ORCPT
+	with ESMTP id S1755176AbbAYSJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:24 -0500
+	Sun, 25 Jan 2015 13:09:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyler Baker <tyler.baker@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3.18 130/183] reset: sunxi: fix spinlock initialization
+        Dmitry Voytik <voytikd@gmail.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.14 74/98] ARM: imx6q: drop unnecessary semicolon
 Date: Sun, 25 Jan 2015 10:07:32 -0800
-Message-Id: <20150125180815.818726969@linuxfoundation.org>
+Message-Id: <20150125180716.081698790@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,53 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tyler Baker <tyler.baker@linaro.org>
+From: Dmitry Voytik <voytikd@gmail.com>
 
-commit 41544f9f38f19cb46dc9a8fa37c58677a0300899 upstream.
+commit d2a10a1727b3948019128e83162f22c65859f1fd upstream.
 
-Call spin_lock_init() before the spinlocks are used, both in early init
-and probe functions preventing a lockdep splat.
+Drop unnecessary semicolon after closing curly bracket.
 
-I have been observing lockdep complaining [1] during boot on my a80 optimus [2]
-when CONFIG_PROVE_LOCKING has been enabled. This patch resolves the splat,
-and has been tested on a few other sunxi platforms without issue.
-
-[1] http://storage.kernelci.org/next/next-20150107/arm-multi_v7_defconfig+CONFIG_PROVE_LOCKING=y/lab-tbaker/boot-sun9i-a80-optimus.html
-[2] http://kernelci.org/boot/?a80-optimus
-
-Signed-off-by: Tyler Baker <tyler.baker@linaro.org>
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/reset/reset-sunxi.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/mach-imx/clk-imx6q.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/reset/reset-sunxi.c
-+++ b/drivers/reset/reset-sunxi.c
-@@ -102,6 +102,8 @@ static int sunxi_reset_init(struct devic
- 		goto err_alloc;
- 	}
+--- a/arch/arm/mach-imx/clk-imx6q.c
++++ b/arch/arm/mach-imx/clk-imx6q.c
+@@ -162,7 +162,7 @@ static void __init imx6q_clocks_init(str
+ 		post_div_table[2].div = 1;
+ 		video_div_table[1].div = 1;
+ 		video_div_table[2].div = 1;
+-	};
++	}
  
-+	spin_lock_init(&data->lock);
-+
- 	data->rcdev.owner = THIS_MODULE;
- 	data->rcdev.nr_resets = size * 32;
- 	data->rcdev.ops = &sunxi_reset_ops;
-@@ -157,6 +159,8 @@ static int sunxi_reset_probe(struct plat
- 	if (IS_ERR(data->membase))
- 		return PTR_ERR(data->membase);
- 
-+	spin_lock_init(&data->lock);
-+
- 	data->rcdev.owner = THIS_MODULE;
- 	data->rcdev.nr_resets = resource_size(res) * 32;
- 	data->rcdev.ops = &sunxi_reset_ops;
+ 	/*                   type                               name         parent_name  base     div_mask */
+ 	clk[pll1_sys]      = imx_clk_pllv3(IMX_PLLV3_SYS,	"pll1_sys",	"osc", base,        0x7f);
 
 
