@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbbAYM5r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 07:57:47 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41725 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537AbbAYM5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 07:57:45 -0500
-Date: Sun, 25 Jan 2015 13:57:38 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Todd Brandt <todd.e.brandt@linux.intel.com>
-Cc: linux-pm@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, todd.e.brandt@intel.com,
-        jacob.jun.pan@linux.intel.com, sameo@linux.intel.com,
-        lee.jones@linaro.org, dbaryshkov@gmail.com, dwmw2@infradead.org,
-        david.woodhouse@intel.com
-Subject: Re: [PATCH v2 1/3] mfd/axp20x: change battery cell name to fuel gauge
-Message-ID: <20150125125738.GA2719@earth.universe>
-References: <cover.1421957474.git.todd.e.brandt@linux.intel.com>
- <b7c6d711c78eb85fc0c7d5904da4e4c930be0ca9.1421957474.git.todd.e.brandt@linux.intel.com>
+	id S1753353AbbAYM6N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 07:58:13 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:47042 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883AbbAYM6L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 07:58:11 -0500
+Message-ID: <54C4E84E.7090901@ahsoftware.de>
+Date: Sun, 25 Jan 2015 13:57:50 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="pf9I7BMVVzbSWLtt"
-Content-Disposition: inline
-In-Reply-To: <b7c6d711c78eb85fc0c7d5904da4e4c930be0ca9.1421957474.git.todd.e.brandt@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Richard Weinberger <richard@nod.at>
+CC: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigbrady.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] modsign: use shred to overwrite the private key before
+ deleting it
+References: <54C2F4F8.20809@draigBrady.com>	<1422096327-4483-1-git-send-email-holler@ahsoftware.de>	<54C383E0.9060408@ahsoftware.de>	<54C38B6D.1060806@ahsoftware.de>	<54C3901D.8040406@ahsoftware.de>	<54C45153.2050703@draigBrady.com>	<54C4583A.5040505@ahsoftware.de>	<54C4C65A.2020403@ahsoftware.de>	<54C4CC05.9090602@ahsoftware.de>	<54C4D6BA.4080308@ahsoftware.de> <CAFLxGvzZOfhwW5hp1GDhTHLU5Z=9ozkOQgvatqhwDT982hfYcA@mail.gmail.com> <54C4E080.4020507@ahsoftware.de> <54C4E181.4080004@nod.at>
+In-Reply-To: <54C4E181.4080004@nod.at>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 25.01.2015 um 13:28 schrieb Richard Weinberger:
+> Am 25.01.2015 um 13:24 schrieb Alexander Holler:
+>> Am 25.01.2015 um 13:08 schrieb Richard Weinberger:
+>>> On Sun, Jan 25, 2015 at 12:42 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+>>>> Now, after I ended up into flaming a lot (sorry again, but this topic made
+>>>> me angry for so long and I had to spent too much time to get rid of unwanted
+>>>> content and answering other peoples question in regard to that topic), I
+>>>> should offer something more useful.
+>>>>
+>>>> So I've written down in some short words, how I think it could be done:
+>>>>
+>>>> First offer a syscall named sunlink() (or whatever name) which fails if it
+>>>> can't overwrite or securely trim the contents of a file before deleting it.
+>>>>
+>>>> That could be done like this:
+>>>>
+>>>> (1) If it's a SSD or MMC without offering "Secure Trim" fail.
+>>>> (2) If it's a plain FLASH or conventional harddisk where writing a block
+>>>> means that block will be overwritten or if it's a SSD or MMC with "Secure
+>>>> Trim) go on with
+>>>> (3) Identify the blocks which contain the file contents (should be doable by
+>>>> using the same mechanisms used to read and write a file)
+>>>> (4) Mark the file as deleted
+>>>> (5) Overwrite or securely trim blocks which can be deleted completely
+>>>> (6) Build new blocks for blocks which can only partly deleted because they
+>>>> contain information still used by the FS or other files
+>>>> (7) Instruct the FS to us the new blocks instead of the old ones
+>>>> (8) Overwrite or securely trim the old blocks which previously contained
+>>>> partly information of other stuff.
+>>>>
+>>>> Afterwards use that new syscall in shred.
+>>>>
+>>>> Of course, this is just a totally simplified instruction in regard to how
+>>>> complicated filesystems have become, but I think there isn't any black magic
+>>>> involved in offering the user a simple way to really delete files.
+>>>
+>>> Or add support for the "s" chattr to major filesystems.
+>>>
+>> And change the manpage for the 's' attribute to change the "overwriting with zero" with some other wording.
+>>
+>> But thanks for the hint. I wasn't aware of that bit (maybe because it's still useless on most filesystems).
+>>
+>> But the above silly instruction might still help in implementing support for the 's' attribute.
+>>
+>> Also I wonder what happens if you delete a file with such an attribute on e.g. an SSD. I assume the user just gets a false positive that the file is deleted, which isn't much
+>> different to what nowadays happens and doesn't therefor really help.
+>
+> The implementation will be challenging. Especially for modern filesytems like btrfs or f2fs which are copy-on-write based.
 
---pf9I7BMVVzbSWLtt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sure. I didn't thought it's easy. A quick workaround for modern SSDs and 
+similiar would be to call secure trim on all free blocks whenever shred 
+is called. Would be a rather ugly workaround, but a least something 
+which might be achieved in a short time frame instead of some bigger 
+project like it's necessary to implement that erase as it should work 
+from the beginning. Especially because that fundamental design goal of 
+safelydeleting file wasn't a design goal from the beginning, which is 
+the real failure.
 
-On Thu, Jan 22, 2015 at 12:52:05PM -0800, Todd Brandt wrote:
-> Name changes to the battery cell structure to a
-> more generic cell type: fuel gauge.
->=20
-> Signed-off-by: Todd Brandt <todd.e.brandt@linux.intel.com>
-> ---
->  drivers/mfd/axp20x.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->=20
-> v1: 01/07/14
-> v2: 01/22/14
-> - replaced the const in axp20x_acpi_match declaration
->=20
-> diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-> index b1b580a..0acbe52 100644
-> --- a/drivers/mfd/axp20x.c
-> +++ b/drivers/mfd/axp20x.c
-> @@ -87,7 +87,7 @@ static struct resource axp20x_pek_resources[] =3D {
->  	},
->  };
-> =20
-> -static struct resource axp288_battery_resources[] =3D {
-> +static struct resource axp288_fuel_gauge_resources[] =3D {
->  	{
->  		.start =3D AXP288_IRQ_QWBTU,
->  		.end   =3D AXP288_IRQ_QWBTU,
-> @@ -350,9 +350,9 @@ static struct mfd_cell axp288_cells[] =3D {
->  		.resources =3D axp288_charger_resources,
->  	},
->  	{
-> -		.name =3D "axp288_battery",
-> -		.num_resources =3D ARRAY_SIZE(axp288_battery_resources),
-> -		.resources =3D axp288_battery_resources,
-> +		.name =3D "axp288_fuel_gauge",
-> +		.num_resources =3D ARRAY_SIZE(axp288_fuel_gauge_resources),
-> +		.resources =3D axp288_fuel_gauge_resources,
->  	},
->  	{
->  		.name =3D "axp288_pmic_acpi",
+Regards,
 
-Acked-By: Sebastian Reichel <sre@kernel.org>
-
--- Sebastian
-
---pf9I7BMVVzbSWLtt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUxOg/AAoJENju1/PIO/qaYigP/2LWEifF5zgADJj4OGJNQZRR
-S8X6xClxPe4sE5AJ/itgn0OBjK/QgcGP0B1Ozwr+FBuWAT1avV7C8JY8xAGlhjmH
-y/bv697Rbk9N/qrnnv2RtkNuSsYpAOVsQlNx79O4blSy5BmXCKluvBdzqVq31u8Y
-RVAgihpa0iAlrgKMEeG1RBbtdvWimPitGkXnUWHTs2ojcVe9lPSYmapH31OsFoPL
-GTQK6vXKykzpEjDIaJZPPcnii/4lf8UB3QMvAFUYQMGX+j/6Ji63UASbsowqCJg3
-iKob8p3C+oajiwrxu/uwjhYPKw/ODtAw0xhad0p9Lup5X5PigrLGyikrUD8RNGs4
-Cj9xlr9+T/F9XPvkBSuqVtZiiCF47Z5z0KVrzBaNPGk9aq1o7UCFVWnO3GJmYbDj
-EpfFFhugpTt7ZkqRKhbtEEKwcaGFcPcO6AveEGAJfwmk6L49ZracfwoN54sWq3JR
-WhsvKTY0Hcd1sXX2KBb2L5MQAu+t4Lp3t6xlEhLdC1WQNGQo0m8gNJ6Cs8oJapeV
-ZuuvJmonCcOXbrVsPjy5ZIa/paB0ZLqTD1kM/WjsVjq2VvOtc9yeHG7QPi1MmAjw
-/T5GjE5xIlhteGnfriiw6eAaEXvs95tPlyCmGfjGmmHH+iDCISuw9Z3NMLvjEB2v
-xpgz67HQ80uMOoguOQxD
-=pPsV
------END PGP SIGNATURE-----
-
---pf9I7BMVVzbSWLtt--
+Alexander Holler
