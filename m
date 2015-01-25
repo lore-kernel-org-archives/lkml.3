@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008AbbAYSjp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:39:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
+	id S1755423AbbAYSJc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:09:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895AbbAYSKP (ORCPT
+	with ESMTP id S1754316AbbAYSIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:15 -0500
+	Sun, 25 Jan 2015 13:08:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.18 115/183] powernv: Fix OPAL tracepoint code
+        Amit Virdi <amit.virdi@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.10 27/50] usb: dwc3: gadget: Fix TRB preparation during SG
 Date: Sun, 25 Jan 2015 10:07:17 -0800
-Message-Id: <20150125180815.190200481@linuxfoundation.org>
+Message-Id: <20150125180704.077699397@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,46 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Amit Virdi <amit.virdi@st.com>
 
-commit bfe5fda8e7ced129716f5741cf7ed2592a338824 upstream.
+commit ec512fb8e5611fed1df2895f90317ce6797d6b32 upstream.
 
-Patch c49f63530bb6 ("powernv: Add OPAL tracepoints") has a spurious
-store to the stack:
+When scatter gather (SG) is used, multiple TRBs are prepared from one DWC3
+request (dwc3_request). So while preparing TRBs, the 'last' flag should be set
+only when it is the last TRB being prepared from the last dwc3_request entry.
 
-	ld      r12,opal_tracepoint_refcount@toc(r2);           \
-	std     r12,32(r1);                                     \
+The current implementation uses list_is_last to check if the dwc3_request is the
+last entry from the request_list. However, list_is_last returns false for the
+last entry too. This is because, while preparing the first TRB from a request,
+the function dwc3_prepare_one_trb modifies the request's next and prev pointers
+while moving the URB to req_queued. Hence, list_is_last always returns false no
+matter what.
 
-The store was originally used to save the current tracepoint status
-so the entry and the exit tracepoints were always balanced. In the
-end I just created a separate path when tracepoints are enabled.
+The correct way is not to access the modified pointers of dwc3_request but to
+use list_empty macro instead.
 
-The offset on the stack used for this store is not valid for ABIv2
-and it causes strange issues. I noticed it because OPAL console input
-was broken.
-
-Fixes: c49f63530bb6 ("powernv: Add OPAL tracepoints")
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Fixes: e5ba5ec833aa (usb: dwc3: gadget: fix scatter gather implementation)
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/powernv/opal-wrappers.S |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/dwc3/gadget.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/powerpc/platforms/powernv/opal-wrappers.S
-+++ b/arch/powerpc/platforms/powernv/opal-wrappers.S
-@@ -40,7 +40,6 @@ BEGIN_FTR_SECTION;						\
- 	b	1f;						\
- END_FTR_SECTION(0, 1);						\
- 	ld	r12,opal_tracepoint_refcount@toc(r2);		\
--	std	r12,32(r1);					\
- 	cmpdi	r12,0;						\
- 	bne-	LABEL;						\
- 1:
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -907,8 +907,7 @@ static void dwc3_prepare_trbs(struct dwc
+ 
+ 				if (i == (request->num_mapped_sgs - 1) ||
+ 						sg_is_last(s)) {
+-					if (list_is_last(&req->list,
+-							&dep->request_list))
++					if (list_empty(&dep->request_list))
+ 						last_one = true;
+ 					chain = false;
+ 				}
 
 
