@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbbAYS3S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:29:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58023 "EHLO
+	id S932640AbbAYTHc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:07:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032AbbAYSK2 (ORCPT
+	with ESMTP id S1755353AbbAYSJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:28 -0500
+	Sun, 25 Jan 2015 13:09:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Joe Bryant <tenminjoe@yahoo.com>, Martin Long <martin@longhome.co.uk>
-Subject: [PATCH 3.18 153/183] USB: EHCI: fix initialization bug in iso_stream_schedule()
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.14 97/98] s390/3215: fix hanging console issue
 Date: Sun, 25 Jan 2015 10:07:55 -0800
-Message-Id: <20150125180816.826575418@linuxfoundation.org>
+Message-Id: <20150125180717.096396934@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,58 +24,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 6d89252a998a695ecb0348fc2d717dc33d90cae9 upstream.
+commit 26d766c60f4ea08cd14f0f3435a6db3d6cc2ae96 upstream.
 
-Commit c3ee9b76aa93 (EHCI: improved logic for isochronous scheduling)
-introduced the idea of using ehci->last_iso_frame as the origin (or
-base) for the circular calculations involved in modifying the
-isochronous schedule.  However, the new code it added used
-ehci->last_iso_frame before the value was properly initialized.  This
-patch rectifies the mistake by moving the initialization lines earlier
-in iso_stream_schedule().
+The ccw_device_start in raw3215_start_io can fail. raw3215_try_io
+does not check if the request could be started and removes any
+pending timer. This can leave the system in a hanging state.
+Check for pending request after raw3215_start_io and start a
+timer if necessary.
 
-This fixes Bugzilla #72891.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Fixes: c3ee9b76aa93
-Reported-by: Joe Bryant <tenminjoe@yahoo.com>
-Tested-by: Joe Bryant <tenminjoe@yahoo.com>
-Tested-by: Martin Long <martin@longhome.co.uk>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-sched.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/s390/char/con3215.c |   32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1581,6 +1581,10 @@ iso_stream_schedule (
- 	else
- 		next = (now + 2 + 7) & ~0x07;	/* full frame cache */
+--- a/drivers/s390/char/con3215.c
++++ b/drivers/s390/char/con3215.c
+@@ -288,12 +288,16 @@ static void raw3215_timeout(unsigned lon
+ 	unsigned long flags;
  
-+	/* If needed, initialize last_iso_frame so that this URB will be seen */
-+	if (ehci->isoc_count == 0)
-+		ehci->last_iso_frame = now >> 3;
-+
- 	/*
- 	 * Use ehci->last_iso_frame as the base.  There can't be any
- 	 * TDs scheduled for earlier than that.
-@@ -1671,10 +1675,6 @@ iso_stream_schedule (
- 	urb->start_frame = start & (mod - 1);
- 	if (!stream->highspeed)
- 		urb->start_frame >>= 3;
--
--	/* Make sure scan_isoc() sees these */
--	if (ehci->isoc_count == 0)
--		ehci->last_iso_frame = now >> 3;
- 	return status;
+ 	spin_lock_irqsave(get_ccwdev_lock(raw->cdev), flags);
+-	if (raw->flags & RAW3215_TIMER_RUNS) {
+-		del_timer(&raw->timer);
+-		raw->flags &= ~RAW3215_TIMER_RUNS;
+-		if (!(raw->port.flags & ASYNC_SUSPENDED)) {
+-			raw3215_mk_write_req(raw);
+-			raw3215_start_io(raw);
++	raw->flags &= ~RAW3215_TIMER_RUNS;
++	if (!(raw->port.flags & ASYNC_SUSPENDED)) {
++		raw3215_mk_write_req(raw);
++		raw3215_start_io(raw);
++		if ((raw->queued_read || raw->queued_write) &&
++		    !(raw->flags & RAW3215_WORKING) &&
++		    !(raw->flags & RAW3215_TIMER_RUNS)) {
++			raw->timer.expires = RAW3215_TIMEOUT + jiffies;
++			add_timer(&raw->timer);
++			raw->flags |= RAW3215_TIMER_RUNS;
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(get_ccwdev_lock(raw->cdev), flags);
+@@ -317,17 +321,15 @@ static inline void raw3215_try_io(struct
+ 		    (raw->flags & RAW3215_FLUSHING)) {
+ 			/* execute write requests bigger than minimum size */
+ 			raw3215_start_io(raw);
+-			if (raw->flags & RAW3215_TIMER_RUNS) {
+-				del_timer(&raw->timer);
+-				raw->flags &= ~RAW3215_TIMER_RUNS;
+-			}
+-		} else if (!(raw->flags & RAW3215_TIMER_RUNS)) {
+-			/* delay small writes */
+-			raw->timer.expires = RAW3215_TIMEOUT + jiffies;
+-			add_timer(&raw->timer);
+-			raw->flags |= RAW3215_TIMER_RUNS;
+ 		}
+ 	}
++	if ((raw->queued_read || raw->queued_write) &&
++	    !(raw->flags & RAW3215_WORKING) &&
++	    !(raw->flags & RAW3215_TIMER_RUNS)) {
++		raw->timer.expires = RAW3215_TIMEOUT + jiffies;
++		add_timer(&raw->timer);
++		raw->flags |= RAW3215_TIMER_RUNS;
++	}
+ }
  
-  fail:
+ /*
 
 
