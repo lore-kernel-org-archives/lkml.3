@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759248AbbAYTSE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:18:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57415 "EHLO
+	id S932171AbbAYSuA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:50:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041AbbAYSJJ (ORCPT
+	with ESMTP id S1755728AbbAYSJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:09 -0500
+	Sun, 25 Jan 2015 13:09:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 21/98] drm/radeon: properly filter DP1.2 4k modes on non-DP1.2 hw
-Date: Sun, 25 Jan 2015 10:06:39 -0800
-Message-Id: <20150125180713.790724050@linuxfoundation.org>
+        Slava Shwartsman <valyushash@gmail.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.18 078/183] iser-target: Fix NULL dereference in SW mode DIF
+Date: Sun, 25 Jan 2015 10:06:40 -0800
+Message-Id: <20150125180813.575069299@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,42 +26,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 410cce2a6b82299b46ff316c6384e789ce275ecb upstream.
+commit 302cc7c3ca14d21ccdffdebdb61c4fe028f2d5ad upstream.
 
-The check was already in place in the dp mode_valid check, but
-radeon_dp_get_dp_link_clock() never returned the high clock
-mode_valid was checking for because that function clipped the
-clock based on the hw capabilities.  Add an explicit check
-in the mode_valid function.
+Fallback to software mode DIF if HCA does not support
+PI (without crashing obviously). It is still possible to
+run with backend protection and an unprotected frontend,
+so looking at the command prot_op is not enough. Check
+device PI capability on a per-IO basis (isert_prot_cmd
+inline static) to determine if we need to handle protection
+information.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=87172
+Trace:
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+IP: [<ffffffffa037f8b1>] isert_reg_sig_mr+0x351/0x3b0 [ib_isert]
+Call Trace:
+ [<ffffffff812b003a>] ? swiotlb_map_sg_attrs+0x7a/0x130
+ [<ffffffffa038184d>] isert_reg_rdma+0x2fd/0x370 [ib_isert]
+ [<ffffffff8108f2ec>] ? idle_balance+0x6c/0x2c0
+ [<ffffffffa0382b68>] isert_put_datain+0x68/0x210 [ib_isert]
+ [<ffffffffa02acf5b>] lio_queue_data_in+0x2b/0x30 [iscsi_target_mod]
+ [<ffffffffa02306eb>] target_complete_ok_work+0x21b/0x310 [target_core_mod]
+ [<ffffffff8106ece2>] process_one_work+0x182/0x3b0
+ [<ffffffff8106fda0>] worker_thread+0x120/0x3c0
+ [<ffffffff8106fc80>] ? maybe_create_worker+0x190/0x190
+ [<ffffffff8107594e>] kthread+0xce/0xf0
+ [<ffffffff81075880>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff8159a22c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81075880>] ? kthread_freezable_should_stop+0x70/0x70
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/ulp/isert/ib_isert.c |   19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -576,6 +576,10 @@ int radeon_dp_mode_valid_helper(struct d
- 	struct radeon_connector_atom_dig *dig_connector;
- 	int dp_clock;
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -61,6 +61,14 @@ static int
+ isert_rdma_accept(struct isert_conn *isert_conn);
+ struct rdma_cm_id *isert_setup_id(struct isert_np *isert_np);
  
-+	if ((mode->clock > 340000) &&
-+	    (!radeon_connector_is_dp12_capable(connector)))
-+		return MODE_CLOCK_HIGH;
++static inline bool
++isert_prot_cmd(struct isert_conn *conn, struct se_cmd *cmd)
++{
++	return (conn->conn_device->pi_capable &&
++		cmd->prot_op != TARGET_PROT_NORMAL);
++}
 +
- 	if (!radeon_connector->con_priv)
- 		return MODE_CLOCK_HIGH;
- 	dig_connector = radeon_connector->con_priv;
++
+ static void
+ isert_qp_event_callback(struct ib_event *e, void *context)
+ {
+@@ -2919,8 +2927,7 @@ isert_reg_rdma(struct iscsi_conn *conn,
+ 	if (ret)
+ 		return ret;
+ 
+-	if (wr->data.dma_nents != 1 ||
+-	    se_cmd->prot_op != TARGET_PROT_NORMAL) {
++	if (wr->data.dma_nents != 1 || isert_prot_cmd(isert_conn, se_cmd)) {
+ 		spin_lock_irqsave(&isert_conn->conn_lock, flags);
+ 		fr_desc = list_first_entry(&isert_conn->conn_fr_pool,
+ 					   struct fast_reg_descriptor, list);
+@@ -2934,7 +2941,7 @@ isert_reg_rdma(struct iscsi_conn *conn,
+ 	if (ret)
+ 		goto unmap_cmd;
+ 
+-	if (se_cmd->prot_op != TARGET_PROT_NORMAL) {
++	if (isert_prot_cmd(isert_conn, se_cmd)) {
+ 		ret = isert_handle_prot_cmd(isert_conn, isert_cmd, wr);
+ 		if (ret)
+ 			goto unmap_cmd;
+@@ -2959,7 +2966,7 @@ isert_reg_rdma(struct iscsi_conn *conn,
+ 		send_wr->opcode = IB_WR_RDMA_WRITE;
+ 		send_wr->wr.rdma.remote_addr = isert_cmd->read_va;
+ 		send_wr->wr.rdma.rkey = isert_cmd->read_stag;
+-		send_wr->send_flags = se_cmd->prot_op == TARGET_PROT_NORMAL ?
++		send_wr->send_flags = !isert_prot_cmd(isert_conn, se_cmd) ?
+ 				      0 : IB_SEND_SIGNALED;
+ 	} else {
+ 		send_wr->opcode = IB_WR_RDMA_READ;
+@@ -3001,7 +3008,7 @@ isert_put_datain(struct iscsi_conn *conn
+ 		return rc;
+ 	}
+ 
+-	if (se_cmd->prot_op == TARGET_PROT_NORMAL) {
++	if (!isert_prot_cmd(isert_conn, se_cmd)) {
+ 		/*
+ 		 * Build isert_conn->tx_desc for iSCSI response PDU and attach
+ 		 */
+@@ -3024,7 +3031,7 @@ isert_put_datain(struct iscsi_conn *conn
+ 		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
+ 	}
+ 
+-	if (se_cmd->prot_op == TARGET_PROT_NORMAL)
++	if (!isert_prot_cmd(isert_conn, se_cmd))
+ 		pr_debug("Cmd: %p posted RDMA_WRITE + Response for iSER Data "
+ 			 "READ\n", isert_cmd);
+ 	else
 
 
