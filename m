@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591AbbAYTYm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:24:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57415 "EHLO
+	id S1758408AbbAYSrL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:47:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57868 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754846AbbAYSJC (ORCPT
+	with ESMTP id S1755784AbbAYSKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:02 -0500
+	Sun, 25 Jan 2015 13:10:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dominique Leuenberger <dimstar@opensuse.org>,
-        Takashi Iwai <tiwai@suse.de>, Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH 3.14 32/98] hp_accel: Add support for HP ZBook 15
-Date: Sun, 25 Jan 2015 10:06:50 -0800
-Message-Id: <20150125180714.264515853@linuxfoundation.org>
+        Kevin Hao <haokexin@gmail.com>, Scott Wood <scottwood@freescale.com>,
+        Michael Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.18 089/183] Revert "clk: ppc-corenet: Fix Section mismatch warning"
+Date: Sun, 25 Jan 2015 10:06:51 -0800
+Message-Id: <20150125180814.050239814@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,35 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dominique Leuenberger <dimstar@opensuse.org>
+From: Kevin Hao <haokexin@gmail.com>
 
-commit 6583659e0f92e38079a8dd081e0a1181a0f37747 upstream.
+commit 176a107b868781c8d6868454aea7d07e0b82d6b8 upstream.
 
-HP ZBook 15 laptop needs a non-standard mapping (x_inverted).
+This reverts commit da788acb28386aa896224e784954bb73c99ff26c.
 
-BugLink: http://bugzilla.opensuse.org/show_bug.cgi?id=905329
-Signed-off-by: Dominique Leuenberger <dimstar@opensuse.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+That commit tried to fix the section mismatch warning by moving the
+ppc_corenet_clk_driver struct to init section. This is definitely wrong
+because the kernel would free the memories occupied by this struct
+after boot while this driver is still registered in the driver core.
+The kernel would panic when accessing this driver struct.
+
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+Acked-by: Scott Wood <scottwood@freescale.com>
+Signed-off-by: Michael Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/platform/x86/hp_accel.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/clk/clk-ppc-corenet.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/platform/x86/hp_accel.c
-+++ b/drivers/platform/x86/hp_accel.c
-@@ -237,6 +237,7 @@ static struct dmi_system_id lis3lv02d_dm
- 	AXIS_DMI_MATCH("HPB64xx", "HP ProBook 64", xy_swap),
- 	AXIS_DMI_MATCH("HPB64xx", "HP EliteBook 84", xy_swap),
- 	AXIS_DMI_MATCH("HPB65xx", "HP ProBook 65", x_inverted),
-+	AXIS_DMI_MATCH("HPZBook15", "HP ZBook 15", x_inverted),
- 	{ NULL, }
- /* Laptop models without axis info (yet):
-  * "NC6910" "HP Compaq 6910"
+--- a/drivers/clk/clk-ppc-corenet.c
++++ b/drivers/clk/clk-ppc-corenet.c
+@@ -291,7 +291,7 @@ static const struct of_device_id ppc_clk
+ 	{}
+ };
+ 
+-static struct platform_driver ppc_corenet_clk_driver __initdata = {
++static struct platform_driver ppc_corenet_clk_driver = {
+ 	.driver = {
+ 		.name = "ppc_corenet_clock",
+ 		.owner = THIS_MODULE,
 
 
