@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758458AbbAYSrR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:47:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57948 "EHLO
+	id S1759656AbbAYTY6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:24:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763AbbAYSKB (ORCPT
+	with ESMTP id S1754294AbbAYSJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:01 -0500
+	Sun, 25 Jan 2015 13:09:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Battersby <tonyb@cybernetics.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.18 084/183] scsi: fix random memory corruption with scsi-mq + T10 PI
+        Vineet Gupta <vgupta@synopsys.com>
+Subject: [PATCH 3.14 28/98] ARC: switch to generic ENTRY/END assembler annotations
 Date: Sun, 25 Jan 2015 10:06:46 -0800
-Message-Id: <20150125180813.837432695@linuxfoundation.org>
+Message-Id: <20150125180714.091406531@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,46 +24,467 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tony Battersby <tonyb@cybernetics.com>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 120bb3e1e36da9c1ae6b978c825a28b944a5d7c5 upstream.
+commit ec7ac6afd07b2d958aab9dfc0a686300b856922a upstream.
 
-This fixes random memory corruption triggered when all three of the
-following are true:
+With commit 9df62f054406 "arch: use ASM_NL instead of ';'" the generic
+macros can handle the arch specific newline quirk. Hence we can get rid
+of ARC asm macros and use the "C" style macros.
 
-* scsi-mq enabled
-* T10 Protection Information (DIF) enabled
-* SCSI host with sg_tablesize > SCSI_MAX_SG_SEGMENTS (128)
-
-The symptoms of this bug are unpredictable memory corruption, BUG()s,
-oopses, lockups, etc., any of which may appear to be completely
-unrelated to the root cause.
-
-Signed-off-by: Tony Battersby <tonyb@cybernetics.com>
-Reviewed-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_lib.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arc/include/asm/linkage.h |   14 -----------
+ arch/arc/kernel/ctx_sw_asm.S   |    2 -
+ arch/arc/kernel/entry.S        |   52 ++++++++++++++++++++---------------------
+ arch/arc/lib/memcmp.S          |    6 ++--
+ arch/arc/lib/memcpy-700.S      |    6 ++--
+ arch/arc/lib/memset.S          |   10 +++----
+ arch/arc/lib/strchr-700.S      |    6 ++--
+ arch/arc/lib/strcmp.S          |    6 ++--
+ arch/arc/lib/strcpy-700.S      |    6 ++--
+ arch/arc/lib/strlen.S          |    6 ++--
+ arch/arc/mm/tlbex.S            |   10 +++----
+ 11 files changed, 54 insertions(+), 70 deletions(-)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1829,7 +1829,9 @@ static int scsi_mq_prep_fn(struct reques
+--- a/arch/arc/include/asm/linkage.h
++++ b/arch/arc/include/asm/linkage.h
+@@ -13,20 +13,6 @@
  
- 	if (scsi_host_get_prot(shost)) {
- 		cmd->prot_sdb = (void *)sg +
--			shost->sg_tablesize * sizeof(struct scatterlist);
-+			min_t(unsigned int,
-+			      shost->sg_tablesize, SCSI_MAX_SG_SEGMENTS) *
-+			sizeof(struct scatterlist);
- 		memset(cmd->prot_sdb, 0, sizeof(struct scsi_data_buffer));
+ #define ASM_NL		 `	/* use '`' to mark new line in macro */
  
- 		cmd->prot_sdb->table.sgl =
+-/* Can't use the ENTRY macro in linux/linkage.h
+- * gas considers ';' as comment vs. newline
+- */
+-.macro ARC_ENTRY name
+-	.global \name
+-	.align 4
+-	\name:
+-.endm
+-
+-.macro ARC_EXIT name
+-#define ASM_PREV_SYM_ADDR(name)  .-##name
+-	.size \ name, ASM_PREV_SYM_ADDR(\name)
+-.endm
+-
+ /* annotation for data we want in DCCM - if enabled in .config */
+ .macro ARCFP_DATA nm
+ #ifdef CONFIG_ARC_HAS_DCCM
+--- a/arch/arc/kernel/ctx_sw_asm.S
++++ b/arch/arc/kernel/ctx_sw_asm.S
+@@ -62,4 +62,4 @@ __switch_to:
+ 	ld.ab   blink, [sp, 4]
+ 	j       [blink]
+ 
+-ARC_EXIT __switch_to
++END(__switch_to)
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -141,7 +141,7 @@ VECTOR   EV_Extension            ; 0x130
+ VECTOR   reserved                ; Reserved Exceptions
+ .endr
+ 
+-#include <linux/linkage.h>   /* ARC_{EXTRY,EXIT} */
++#include <linux/linkage.h>   /* {EXTRY,EXIT} */
+ #include <asm/entry.h>       /* SAVE_ALL_{INT1,INT2,SYS...} */
+ #include <asm/errno.h>
+ #include <asm/arcregs.h>
+@@ -184,7 +184,7 @@ reserved:		; processor restart
+ ; ---------------------------------------------
+ ;  Level 2 ISR: Can interrupt a Level 1 ISR
+ ; ---------------------------------------------
+-ARC_ENTRY handle_interrupt_level2
++ENTRY(handle_interrupt_level2)
+ 
+ 	; TODO-vineetg for SMP this wont work
+ 	; free up r9 as scratchpad
+@@ -225,14 +225,14 @@ ARC_ENTRY handle_interrupt_level2
+ 
+ 	b   ret_from_exception
+ 
+-ARC_EXIT handle_interrupt_level2
++END(handle_interrupt_level2)
+ 
+ #endif
+ 
+ ; ---------------------------------------------
+ ;  Level 1 ISR
+ ; ---------------------------------------------
+-ARC_ENTRY handle_interrupt_level1
++ENTRY(handle_interrupt_level1)
+ 
+ 	/* free up r9 as scratchpad */
+ #ifdef CONFIG_SMP
+@@ -265,7 +265,7 @@ ARC_ENTRY handle_interrupt_level1
+ 	sr r8, [AUX_IRQ_LV12]       ; clear bit in Sticky Status Reg
+ 
+ 	b   ret_from_exception
+-ARC_EXIT handle_interrupt_level1
++END(handle_interrupt_level1)
+ 
+ ;################### Non TLB Exception Handling #############################
+ 
+@@ -273,7 +273,7 @@ ARC_EXIT handle_interrupt_level1
+ ; Instruction Error Exception Handler
+ ; ---------------------------------------------
+ 
+-ARC_ENTRY instr_service
++ENTRY(instr_service)
+ 
+ 	EXCEPTION_PROLOGUE
+ 
+@@ -284,13 +284,13 @@ ARC_ENTRY instr_service
+ 
+ 	bl  do_insterror_or_kprobe
+ 	b   ret_from_exception
+-ARC_EXIT instr_service
++END(instr_service)
+ 
+ ; ---------------------------------------------
+ ; Memory Error Exception Handler
+ ; ---------------------------------------------
+ 
+-ARC_ENTRY mem_service
++ENTRY(mem_service)
+ 
+ 	EXCEPTION_PROLOGUE
+ 
+@@ -301,13 +301,13 @@ ARC_ENTRY mem_service
+ 
+ 	bl  do_memory_error
+ 	b   ret_from_exception
+-ARC_EXIT mem_service
++END(mem_service)
+ 
+ ; ---------------------------------------------
+ ; Machine Check Exception Handler
+ ; ---------------------------------------------
+ 
+-ARC_ENTRY EV_MachineCheck
++ENTRY(EV_MachineCheck)
+ 
+ 	EXCEPTION_PROLOGUE
+ 
+@@ -331,13 +331,13 @@ ARC_ENTRY EV_MachineCheck
+ 
+ 	j  do_machine_check_fault
+ 
+-ARC_EXIT EV_MachineCheck
++END(EV_MachineCheck)
+ 
+ ; ---------------------------------------------
+ ; Protection Violation Exception Handler
+ ; ---------------------------------------------
+ 
+-ARC_ENTRY EV_TLBProtV
++ENTRY(EV_TLBProtV)
+ 
+ 	EXCEPTION_PROLOGUE
+ 
+@@ -385,12 +385,12 @@ ARC_ENTRY EV_TLBProtV
+ 
+ 	b   ret_from_exception
+ 
+-ARC_EXIT EV_TLBProtV
++END(EV_TLBProtV)
+ 
+ ; ---------------------------------------------
+ ; Privilege Violation Exception Handler
+ ; ---------------------------------------------
+-ARC_ENTRY EV_PrivilegeV
++ENTRY(EV_PrivilegeV)
+ 
+ 	EXCEPTION_PROLOGUE
+ 
+@@ -401,12 +401,12 @@ ARC_ENTRY EV_PrivilegeV
+ 
+ 	bl  do_privilege_fault
+ 	b   ret_from_exception
+-ARC_EXIT EV_PrivilegeV
++END(EV_PrivilegeV)
+ 
+ ; ---------------------------------------------
+ ; Extension Instruction Exception Handler
+ ; ---------------------------------------------
+-ARC_ENTRY EV_Extension
++ENTRY(EV_Extension)
+ 
+ 	EXCEPTION_PROLOGUE
+ 
+@@ -417,7 +417,7 @@ ARC_ENTRY EV_Extension
+ 
+ 	bl  do_extension_fault
+ 	b   ret_from_exception
+-ARC_EXIT EV_Extension
++END(EV_Extension)
+ 
+ ;######################### System Call Tracing #########################
+ 
+@@ -504,7 +504,7 @@ trap_with_param:
+ ;   (2) Break Points
+ ;------------------------------------------------------------------
+ 
+-ARC_ENTRY EV_Trap
++ENTRY(EV_Trap)
+ 
+ 	EXCEPTION_PROLOGUE
+ 
+@@ -534,9 +534,9 @@ ARC_ENTRY EV_Trap
+ 	jl      [r9]        ; Entry into Sys Call Handler
+ 
+ 	; fall through to ret_from_system_call
+-ARC_EXIT EV_Trap
++END(EV_Trap)
+ 
+-ARC_ENTRY ret_from_system_call
++ENTRY(ret_from_system_call)
+ 
+ 	st  r0, [sp, PT_r0]     ; sys call return value in pt_regs
+ 
+@@ -546,7 +546,7 @@ ARC_ENTRY ret_from_system_call
+ ;
+ ; If ret to user mode do we need to handle signals, schedule() et al.
+ 
+-ARC_ENTRY ret_from_exception
++ENTRY(ret_from_exception)
+ 
+ 	; Pre-{IRQ,Trap,Exception} K/U mode from pt_regs->status32
+ 	ld  r8, [sp, PT_status32]   ; returning to User/Kernel Mode
+@@ -728,9 +728,9 @@ not_level1_interrupt:
+ debug_marker_syscall:
+ 	rtie
+ 
+-ARC_EXIT ret_from_exception
++END(ret_from_exception)
+ 
+-ARC_ENTRY ret_from_fork
++ENTRY(ret_from_fork)
+ 	; when the forked child comes here from the __switch_to function
+ 	; r0 has the last task pointer.
+ 	; put last task in scheduler queue
+@@ -747,11 +747,11 @@ ARC_ENTRY ret_from_fork
+ 	; special case of kernel_thread entry point returning back due to
+ 	; kernel_execve() - pretend return from syscall to ret to userland
+ 	b    ret_from_exception
+-ARC_EXIT ret_from_fork
++END(ret_from_fork)
+ 
+ ;################### Special Sys Call Wrappers ##########################
+ 
+-ARC_ENTRY sys_clone_wrapper
++ENTRY(sys_clone_wrapper)
+ 	SAVE_CALLEE_SAVED_USER
+ 	bl  @sys_clone
+ 	DISCARD_CALLEE_SAVED_USER
+@@ -761,7 +761,7 @@ ARC_ENTRY sys_clone_wrapper
+ 	bnz  tracesys_exit
+ 
+ 	b ret_from_system_call
+-ARC_EXIT sys_clone_wrapper
++END(sys_clone_wrapper)
+ 
+ #ifdef CONFIG_ARC_DW2_UNWIND
+ ; Workaround for bug 94179 (STAR ):
+--- a/arch/arc/lib/memcmp.S
++++ b/arch/arc/lib/memcmp.S
+@@ -6,7 +6,7 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include <asm/linkage.h>
++#include <linux/linkage.h>
+ 
+ #ifdef __LITTLE_ENDIAN__
+ #define WORD2 r2
+@@ -16,7 +16,7 @@
+ #define SHIFT r2
+ #endif
+ 
+-ARC_ENTRY memcmp
++ENTRY(memcmp)
+ 	or	r12,r0,r1
+ 	asl_s	r12,r12,30
+ 	sub	r3,r2,1
+@@ -121,4 +121,4 @@ ARC_ENTRY memcmp
+ .Lnil:
+ 	j_s.d	[blink]
+ 	mov	r0,0
+-ARC_EXIT memcmp
++END(memcmp)
+--- a/arch/arc/lib/memcpy-700.S
++++ b/arch/arc/lib/memcpy-700.S
+@@ -6,9 +6,9 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include <asm/linkage.h>
++#include <linux/linkage.h>
+ 
+-ARC_ENTRY memcpy
++ENTRY(memcpy)
+ 	or	r3,r0,r1
+ 	asl_s	r3,r3,30
+ 	mov_s	r5,r0
+@@ -63,4 +63,4 @@ ARC_ENTRY memcpy
+ .Lendbloop:
+ 	j_s.d	[blink]
+ 	stb	r12,[r5,0]
+-ARC_EXIT memcpy
++END(memcpy)
+--- a/arch/arc/lib/memset.S
++++ b/arch/arc/lib/memset.S
+@@ -6,11 +6,11 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include <asm/linkage.h>
++#include <linux/linkage.h>
+ 
+ #define SMALL	7 /* Must be at least 6 to deal with alignment/loop issues.  */
+ 
+-ARC_ENTRY memset
++ENTRY(memset)
+ 	mov_s	r4,r0
+ 	or	r12,r0,r2
+ 	bmsk.f	r12,r12,1
+@@ -46,14 +46,14 @@ ARC_ENTRY memset
+ 	stb.ab	r1,[r4,1]
+ .Ltiny_end:
+ 	j_s	[blink]
+-ARC_EXIT memset
++END(memset)
+ 
+ ; memzero: @r0 = mem, @r1 = size_t
+ ; memset:  @r0 = mem, @r1 = char, @r2 = size_t
+ 
+-ARC_ENTRY memzero
++ENTRY(memzero)
+     ; adjust bzero args to memset args
+     mov r2, r1
+     mov r1, 0
+     b  memset    ;tail call so need to tinker with blink
+-ARC_EXIT memzero
++END(memzero)
+--- a/arch/arc/lib/strchr-700.S
++++ b/arch/arc/lib/strchr-700.S
+@@ -11,9 +11,9 @@
+    presence of the norm instruction makes it easier to operate on whole
+    words branch-free.  */
+ 
+-#include <asm/linkage.h>
++#include <linux/linkage.h>
+ 
+-ARC_ENTRY strchr
++ENTRY(strchr)
+ 	extb_s	r1,r1
+ 	asl	r5,r1,8
+ 	bmsk	r2,r0,1
+@@ -130,4 +130,4 @@ ARC_ENTRY strchr
+ 	j_s.d	[blink]
+ 	mov.mi	r0,0
+ #endif /* ENDIAN */
+-ARC_EXIT strchr
++END(strchr)
+--- a/arch/arc/lib/strcmp.S
++++ b/arch/arc/lib/strcmp.S
+@@ -13,9 +13,9 @@
+    source 1; however, that would increase the overhead for loop setup / finish,
+    and strcmp might often terminate early.  */
+ 
+-#include <asm/linkage.h>
++#include <linux/linkage.h>
+ 
+-ARC_ENTRY strcmp
++ENTRY(strcmp)
+ 	or	r2,r0,r1
+ 	bmsk_s	r2,r2,1
+ 	brne	r2,0,.Lcharloop
+@@ -93,4 +93,4 @@ ARC_ENTRY strcmp
+ .Lcmpend:
+ 	j_s.d	[blink]
+ 	sub	r0,r2,r3
+-ARC_EXIT strcmp
++END(strcmp)
+--- a/arch/arc/lib/strcpy-700.S
++++ b/arch/arc/lib/strcpy-700.S
+@@ -16,9 +16,9 @@
+    there, but the it is not likely to be taken often, and it
+    would also be likey to cost an unaligned mispredict at the next call.  */
+ 
+-#include <asm/linkage.h>
++#include <linux/linkage.h>
+ 
+-ARC_ENTRY strcpy
++ENTRY(strcpy)
+ 	or	r2,r0,r1
+ 	bmsk_s	r2,r2,1
+ 	brne.d	r2,0,charloop
+@@ -67,4 +67,4 @@ charloop:
+ 	brne.d	r3,0,charloop
+ 	stb.ab	r3,[r10,1]
+ 	j	[blink]
+-ARC_EXIT strcpy
++END(strcpy)
+--- a/arch/arc/lib/strlen.S
++++ b/arch/arc/lib/strlen.S
+@@ -6,9 +6,9 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#include <asm/linkage.h>
++#include <linux/linkage.h>
+ 
+-ARC_ENTRY strlen
++ENTRY(strlen)
+ 	or	r3,r0,7
+ 	ld	r2,[r3,-7]
+ 	ld.a	r6,[r3,-3]
+@@ -80,4 +80,4 @@ ARC_ENTRY strlen
+ .Learly_end:
+ 	b.d	.Lend
+ 	sub_s.ne r1,r1,r1
+-ARC_EXIT strlen
++END(strlen)
+--- a/arch/arc/mm/tlbex.S
++++ b/arch/arc/mm/tlbex.S
+@@ -260,7 +260,7 @@ ARCFP_CODE	;Fast Path Code, candidate fo
+ ; I-TLB Miss Exception Handler
+ ;-----------------------------------------------------------------------------
+ 
+-ARC_ENTRY EV_TLBMissI
++ENTRY(EV_TLBMissI)
+ 
+ 	TLBMISS_FREEUP_REGS
+ 
+@@ -293,13 +293,13 @@ ARC_ENTRY EV_TLBMissI
+ 	TLBMISS_RESTORE_REGS
+ 	rtie
+ 
+-ARC_EXIT EV_TLBMissI
++END(EV_TLBMissI)
+ 
+ ;-----------------------------------------------------------------------------
+ ; D-TLB Miss Exception Handler
+ ;-----------------------------------------------------------------------------
+ 
+-ARC_ENTRY EV_TLBMissD
++ENTRY(EV_TLBMissD)
+ 
+ 	TLBMISS_FREEUP_REGS
+ 
+@@ -381,6 +381,4 @@ do_slow_path_pf:
+ 	bl  do_page_fault
+ 	b   ret_from_exception
+ 
+-ARC_EXIT EV_TLBMissD
+-
+-ARC_ENTRY EV_TLBMissB   ; Bogus entry to measure sz of DTLBMiss hdlr
++END(EV_TLBMissD)
 
 
