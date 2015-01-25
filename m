@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487AbbAYQQN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 11:16:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54972 "EHLO
+	id S1754455AbbAYQQL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 11:16:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54975 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411AbbAYQQH (ORCPT
+	with ESMTP id S1754391AbbAYQQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 11:16:07 -0500
-Date: Sun, 25 Jan 2015 21:22:07 +0800
+	Sun, 25 Jan 2015 11:16:08 -0500
+Date: Sun, 25 Jan 2015 21:22:38 +0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/5 v2] tracing: Automatically mount tracefs on
- debugfs/tracing
-Message-ID: <20150125132206.GA16249@kroah.com>
-References: <20150123155525.795129339@goodmis.org>
- <20150123162414.580817092@goodmis.org>
- <20150124030041.GB5009@kroah.com>
- <20150124063330.2c986ea2@grimm.local.home>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 25/32] drivers/base: use %*pb[l] to print bitmaps
+ including cpumasks and nodemasks
+Message-ID: <20150125132238.GA19419@kroah.com>
+References: <1422108218-25398-1-git-send-email-tj@kernel.org>
+ <1422108218-25398-26-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150124063330.2c986ea2@grimm.local.home>
+In-Reply-To: <1422108218-25398-26-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 24, 2015 at 06:33:30AM -0500, Steven Rostedt wrote:
-> On Sat, 24 Jan 2015 11:00:41 +0800
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+On Sat, Jan 24, 2015 at 09:03:31AM -0500, Tejun Heo wrote:
+> printk and friends can now formap bitmaps using '%*pb[l]'.  cpumask
+> and nodemask also provide cpumask_pr_args() and nodemask_pr_args()
+> respectively which can be used to generate the two printf arguments
+> necessary to format the specified cpu/nodemask.
 > 
-> > > +		if (traced->d_op) {
-> > > +			/*
-> > > +			 * FIXME:
-> > > +			 * Currently debugfs sets the d_op by a
-> > > side-effect
-> > > +			 * of calling simple_lookup(). Normally,
-> > > we should
-> > > +			 * never change d_op of a dentry, but as
-> > > this is
-> > > +			 * happening at boot up and shouldn't be
-> > > racing with
-> > > +			 * any other users, this should be OK. But
-> > > it is still
-> > > +			 * a hack, and needs to be properly done.
-> > > +			 */
-> > > +			trace_ops = *traced->d_op;
-> > > +			trace_ops.d_automount = trace_automount;
-> > > +			traced->d_flags |= DCACHE_NEED_AUTOMOUNT;
-> > > +			traced->d_op = &trace_ops;
-> > > +		} else {
-> > > +			/* Ideally, this is what should happen */
-> > > +			trace_ops = simple_dentry_operations;
-> > > +			trace_ops.d_automount = trace_automount;
-> > > +			d_set_d_op(traced, &trace_ops);
-> > 
-> > How will this else block run if debugfs is setting d_op in the
-> > debugfs_create_dir() call?
+> * Line termination only requires one extra space at the end of the
+>   buffer.  Use PAGE_SIZE - 1 instead of PAGE_SIZE - 2 when formatting.
 > 
-> It wont; I put the else block there to show what we would like to do.
-> And would hopefully work if debugfs ever changed.
+> This patch is dependent on the following two patches.
 > 
+>  lib/vsprintf: implement bitmap printing through '%*pb[l]'
+>  cpumask, nodemask: implement cpumask/nodemask_pr_args()
 > 
-> > 
-> > What really do you want to do here, just automount a filesystem on
-> > debugfs?  If so, can't we just add a new debugfs call to do that?
+> Please wait till the forementioned patches are merged to mainline
+> before applying to subsystem trees.
 > 
-> We could add a call to debugfs to do that. Would you prefer that? From
-> talking with Al, it sounds to me that changing d_ops on the fly is very
-> racy. Adding a call in debugfs sounds like it would be open for other
-> users to do the same and do so while the system is running. Would that
-> be wise?
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-If we could do it in a non-racy way, that would be good, otherwise I
-don't see us being able to even take this patch :(
-
-thanks,
-
-greg k-h
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
