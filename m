@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924AbbAYIPS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 03:15:18 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:44664 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754AbbAYIPK (ORCPT
+	id S1753304AbbAYIQS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 03:16:18 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:39523 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827AbbAYIPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 03:15:10 -0500
+	Sun, 25 Jan 2015 03:15:14 -0500
 From: Sneeker Yeh <sneeker.yeh@gmail.com>
 X-Google-Original-From: Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -22,9 +22,9 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 Cc: Andy Green <andy.green@linaro.org>,
         Jassi Brar <jaswinder.singh@linaro.org>,
         Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
-Subject: [PATCH v3 2/5] xhci: Platform: Set Synopsis device disconnection quirk based on platform data
-Date: Sun, 25 Jan 2015 16:13:25 +0800
-Message-Id: <1422173608-24355-3-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+Subject: [PATCH v3 3/5] usb: dwc3: add revision number DWC3_REVISION_290A and DWC3_REVISION_300A
+Date: Sun, 25 Jan 2015 16:13:26 +0800
+Message-Id: <1422173608-24355-4-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1422173608-24355-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
 References: <1422173608-24355-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
@@ -32,48 +32,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an xhci platform has Synopsis device disconnection errata then enable
-XHCI_DISCONNECT_QUIRK quirk flag.
+Add the contstant for v2.90a and v3.00a dwc3 IP detection
 
 Signed-off-by: Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
 ---
- drivers/usb/host/xhci-plat.c     |    3 +++
- include/linux/usb/xhci_pdriver.h |    4 ++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/dwc3/core.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 08d402b..40beb95 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -147,6 +147,9 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	if ((node && of_property_read_bool(node, "usb3-lpm-capable")) ||
- 			(pdata && pdata->usb3_lpm_capable))
- 		xhci->quirks |= XHCI_LPM_SUPPORT;
-+
-+	if (pdata && pdata->delay_portcsc_clear)
-+		xhci->quirks |= XHCI_DISCONNECT_QUIRK;
- 	/*
- 	 * Set the xHCI pointer before xhci_plat_setup() (aka hcd_driver.reset)
- 	 * is called by usb_add_hcd().
-diff --git a/include/linux/usb/xhci_pdriver.h b/include/linux/usb/xhci_pdriver.h
-index 376654b..a37a3a5 100644
---- a/include/linux/usb/xhci_pdriver.h
-+++ b/include/linux/usb/xhci_pdriver.h
-@@ -18,10 +18,14 @@
-  *
-  * @usb3_lpm_capable:	determines if this xhci platform supports USB3
-  *			LPM capability
-+ * @delay_portcsc_clear:	determines if Synopsis USB3 core has errata in
-+ *				"DWC_USB3_SUSPEND_ON_DISCONNECT_EN=1" hardware
-+ *				configuration.
-  *
-  */
- struct usb_xhci_pdata {
- 	unsigned	usb3_lpm_capable:1;
-+	unsigned	delay_portcsc_clear:1;
- };
+diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+index 4bb9aa6..46f9f9a 100644
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -776,6 +776,8 @@ struct dwc3 {
+ #define DWC3_REVISION_260A	0x5533260a
+ #define DWC3_REVISION_270A	0x5533270a
+ #define DWC3_REVISION_280A	0x5533280a
++#define DWC3_REVISION_290A	0x5533290a
++#define DWC3_REVISION_300A	0x5533300a
  
- #endif /* __USB_CORE_XHCI_PDRIVER_H */
+ 	enum dwc3_ep0_next	ep0_next_event;
+ 	enum dwc3_ep0_state	ep0state;
 -- 
 1.7.9.5
 
