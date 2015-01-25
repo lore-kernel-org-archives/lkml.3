@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568AbbAYScb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:32:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57892 "EHLO
+	id S932795AbbAYTLr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:11:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755987AbbAYSK0 (ORCPT
+	with ESMTP id S1755264AbbAYSJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:26 -0500
+	Sun, 25 Jan 2015 13:09:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.18 136/183] gpio: fix memory leak and sleep-while-atomic
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 3.14 80/98] x86, um: actually mark system call tables readonly
 Date: Sun, 25 Jan 2015 10:07:38 -0800
-Message-Id: <20150125180816.089114188@linuxfoundation.org>
+Message-Id: <20150125180716.353030879@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,54 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 00acc3dc248063f982cfacfbe5e78c0d6797ffef upstream.
+commit b485342bd79af363c77ef1a421c4a0aef2de9812 upstream.
 
-Fix memory leak and sleep-while-atomic in gpiochip_remove.
+Commit a074335a370e ("x86, um: Mark system call tables readonly") was
+supposed to mark the sys_call_table in UML as RO by adding the const,
+but it doesn't have the desired effect as it's nevertheless being placed
+into the data section since __cacheline_aligned enforces sys_call_table
+being placed into .data..cacheline_aligned instead. We need to use
+the ____cacheline_aligned version instead to fix this issue.
 
-The memory leak was introduced by afa82fab5e13 ("gpio / ACPI: Move event
-handling registration to gpiolib irqchip helpers") that moved the
-release of acpi interrupt resources to gpiochip_irqchip_remove, but by
-then the resources are no longer accessible as the acpi_gpio_chip has
-already been freed by acpi_gpiochip_remove.
+Before:
 
-Note that this also fixes a few potential sleep-while-atomics, which has
-been around since 1425052097b5 ("gpio: add IRQ chip helpers in gpiolib")
-when the call to gpiochip_irqchip_remove while holding a spinlock was
-added (a couple of irq-domain paths can end up grabbing mutexes).
+$ nm -v arch/x86/um/sys_call_table_64.o | grep -1 "sys_call_table"
+                 U sys_writev
+0000000000000000 D sys_call_table
+0000000000000000 D syscall_table_size
 
-Fixes: afa82fab5e13 ("gpio / ACPI: Move event handling registration to
-gpiolib irqchip helpers")
-Fixes: 1425052097b5 ("gpio: add IRQ chip helpers in gpiolib")
+After:
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+$ nm -v arch/x86/um/sys_call_table_64.o | grep -1 "sys_call_table"
+                 U sys_writev
+0000000000000000 R sys_call_table
+0000000000000000 D syscall_table_size
+
+Fixes: a074335a370e ("x86, um: Mark system call tables readonly")
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpiolib.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/um/sys_call_table_32.c |    2 +-
+ arch/x86/um/sys_call_table_64.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -316,11 +316,12 @@ void gpiochip_remove(struct gpio_chip *c
- 	unsigned long	flags;
- 	unsigned	id;
+--- a/arch/x86/um/sys_call_table_32.c
++++ b/arch/x86/um/sys_call_table_32.c
+@@ -34,7 +34,7 @@ typedef asmlinkage void (*sys_call_ptr_t
  
-+	gpiochip_irqchip_remove(chip);
-+
- 	acpi_gpiochip_remove(chip);
+ extern asmlinkage void sys_ni_syscall(void);
  
- 	spin_lock_irqsave(&gpio_lock, flags);
+-const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
++const sys_call_ptr_t sys_call_table[] ____cacheline_aligned = {
+ 	/*
+ 	 * Smells like a compiler bug -- it doesn't work
+ 	 * when the & below is removed.
+--- a/arch/x86/um/sys_call_table_64.c
++++ b/arch/x86/um/sys_call_table_64.c
+@@ -46,7 +46,7 @@ typedef void (*sys_call_ptr_t)(void);
  
--	gpiochip_irqchip_remove(chip);
- 	gpiochip_remove_pin_ranges(chip);
- 	of_gpiochip_remove(chip);
+ extern void sys_ni_syscall(void);
  
+-const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
++const sys_call_ptr_t sys_call_table[] ____cacheline_aligned = {
+ 	/*
+ 	 * Smells like a compiler bug -- it doesn't work
+ 	 * when the & below is removed.
 
 
