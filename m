@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423AbbAYSJc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:09:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
+	id S1757690AbbAYTKl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:10:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316AbbAYSIl (ORCPT
+	with ESMTP id S1755283AbbAYSJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:41 -0500
+	Sun, 25 Jan 2015 13:09:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Amit Virdi <amit.virdi@st.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 27/50] usb: dwc3: gadget: Fix TRB preparation during SG
+Subject: [PATCH 3.14 59/98] usb: dwc3: gadget: Fix TRB preparation during SG
 Date: Sun, 25 Jan 2015 10:07:17 -0800
-Message-Id: <20150125180704.077699397@linuxfoundation.org>
+Message-Id: <20150125180715.408502462@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -57,7 +57,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/usb/dwc3/gadget.c
 +++ b/drivers/usb/dwc3/gadget.c
-@@ -907,8 +907,7 @@ static void dwc3_prepare_trbs(struct dwc
+@@ -887,8 +887,7 @@ static void dwc3_prepare_trbs(struct dwc
  
  				if (i == (request->num_mapped_sgs - 1) ||
  						sg_is_last(s)) {
