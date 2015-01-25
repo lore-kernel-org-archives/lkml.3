@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890AbbAYSQg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:16:36 -0500
-Received: from www.osadl.org ([62.245.132.105]:42046 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754066AbbAYSQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:16:34 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH v2] net: hyperv: else branch not necessary
-Date: Sun, 25 Jan 2015 19:08:37 +0100
-Message-Id: <1422209317-18975-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1759438AbbAYTVn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:21:43 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:57336 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754924AbbAYSJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 13:09:06 -0500
+Date: Sun, 25 Jan 2015 20:08:55 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: arm@kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 0/4] ARM: Conexant Digicolor CX92755 SoC support
+Message-ID: <20150125180855.GA3148@tarshish>
+References: <cover.1421219953.git.baruch@tkos.co.il>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1421219953.git.baruch@tkos.co.il>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the if completes with a unconditional goto the else branch
-is not needed here.
+Hi ARM SoC maintainers,
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
+On Wed, Jan 14, 2015 at 10:40:29AM +0200, Baruch Siach wrote:
+> This series adds initial support for the Conexant CX92755 SoC. The CX92755 is
+> one of the Digicolor series of SoCs, all sharing many of the same peripherals.
+> The code was tested on the CX92755 evaluation kit, AKA Equinox.
+> 
+> Uses attempting to try this code will most likely also want the UART/console
+> driver available from https://patchwork.kernel.org/patch/5515861/.
 
-v2: added missing subsystem string in subject line - patch unchanged
+Any chance of having this series merged for 3.20? Arnd has acked this already.
 
-All paths of execution that did not exit through the if branch will 
-go through the else branch so no need for an explicit else here
+Thanks,
+baruch
 
-Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=y
-CONFIG_HYPERV=m, CONFIG_HYPERV_NET=m
+> v3:
+>    * Remove earlyprintk from dts bootargs (Arnd Bergmann)
+> 
+>    * Move aliases from chip .dtsi to board .dts (Arnd Bergmann)
+> 
+>    * Add 'cpus' node (Mark Rutland)
+> 
+>    * Add commit log messages to all patches (Arnd Bergmann)
+> 
+>    * Add Arnd's ack
+> 
+>    * Split arch/arm stuff from the irq and timer drivers
+> 
+> v2:
+>    http://marc.info/?t=142074613900007&r=1&w=2
+> 
+>    * Remove .map_io assignment, debug_ll is enabled by default (Arnd Bergmann)
+> 
+>    * Migrate the irq driver to generic irq chip, simplifying the code somewhat
+>      (Arnd Bergmann)
+> 
+>    * Change the timer dt binding, so that the 'reg' property points to the
+>      first "Agent Communication" register. This should improve the chance of
+>      reusing this binding for other SoCs in this series.
+> 
+>    * Add the CONTROL() and COUNT() macros to the timer driver to make the code
+>      clearer.
+> 
+>    * Move arch/arm Kconfig changes from the clocksource driver patch to the
+>      base arch support patch to reduce dependency between them
+> 
+> v1:
+>    http://thread.gmane.org/gmane.linux.kernel/1855027
+> 
+> Baruch Siach (4):
+>   ARM: initial support for Conexant Digicolor CX92755 SoC
+>   ARM: digicolor: add low level debug support
+>   ARM: digicolor: add minimal device tree description
+>   ARM: devicetree: document supported Conexant Digicolor SoC
+> 
+>  .../devicetree/bindings/arm/digicolor.txt          |   6 ++
+>  arch/arm/Kconfig                                   |   2 +
+>  arch/arm/Kconfig.debug                             |  12 ++-
+>  arch/arm/boot/dts/Makefile                         |   1 +
+>  arch/arm/boot/dts/conexant_equinox.dts             |  74 ++++++++++++++
+>  arch/arm/boot/dts/cx92755.dtsi                     | 107 +++++++++++++++++++++
+>  arch/arm/include/debug/digicolor.S                 |  35 +++++++
+>  arch/arm/mach-digicolor/Kconfig                    |   5 +
+>  arch/arm/mach-digicolor/Makefile                   |   1 +
+>  arch/arm/mach-digicolor/digicolor.c                |  18 ++++
+>  10 files changed, 259 insertions(+), 2 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/digicolor.txt
+>  create mode 100644 arch/arm/boot/dts/conexant_equinox.dts
+>  create mode 100644 arch/arm/boot/dts/cx92755.dtsi
+>  create mode 100644 arch/arm/include/debug/digicolor.S
+>  create mode 100644 arch/arm/mach-digicolor/Kconfig
+>  create mode 100644 arch/arm/mach-digicolor/Makefile
+>  create mode 100644 arch/arm/mach-digicolor/digicolor.c
 
-Patch is against 3.19.0-rc5 -next-20150123
-
- drivers/net/hyperv/rndis_filter.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 7bd8387..efb84a9 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -833,10 +833,10 @@ int rndis_filter_set_packet_filter(struct rndis_device *dev, u32 new_filter)
- 		 * send completion for it.
- 		 */
- 		goto exit;
--	} else {
--		set_complete = &request->response_msg.msg.set_complete;
--		status = set_complete->status;
--	}
-+	} 
-+
-+	set_complete = &request->response_msg.msg.set_complete;
-+	status = set_complete->status;
- 
- cleanup:
- 	if (request)
 -- 
-1.7.10.4
-
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
