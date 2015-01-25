@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744AbbAYTIh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:08:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
+	id S1757130AbbAYSU7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:20:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324AbbAYSJZ (ORCPT
+	with ESMTP id S1756163AbbAYSKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:25 -0500
+	Sun, 25 Jan 2015 13:10:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Alexander Y. Fomichev" <git.user@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Miquel van Smoorenburg <mikevs@xs4all.net>
-Subject: [PATCH 3.14 94/98] net: prevent of emerging cross-namespace symlinks
-Date: Sun, 25 Jan 2015 10:07:52 -0800
-Message-Id: <20150125180716.969346298@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.18 151/183] USB: console: fix uninitialised ldisc semaphore
+Date: Sun, 25 Jan 2015 10:07:53 -0800
+Message-Id: <20150125180816.740452480@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,138 +24,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Alexander Y. Fomichev" <git.user@gmail.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 4c75431ac3520631f1d9e74aa88407e6374dbbc4 upstream.
+commit d269d4434c72ed0da3a9b1230c30da82c4918c63 upstream.
 
-Code manipulating sysfs symlinks on adjacent net_devices(s)
-currently doesn't take into account that devices potentially
-belong to different namespaces.
+The USB console currently allocates a temporary fake tty which is used
+to pass terminal settings to the underlying serial driver.
 
-This patch trying to fix an issue as follows:
-- check for net_ns before creating / deleting symlink.
-  for now only netdev_adjacent_rename_links and
-  __netdev_adjacent_dev_remove are affected, afaics
-  __netdev_adjacent_dev_insert implies both net_devs
-  belong to the same namespace.
-- Drop all existing symlinks to / from all adj_devs before
-  switching namespace and recreate them just after.
+The tty struct is not fully initialised, something which can lead to a
+lockdep warning (or worse) if a serial driver tries to acquire a
+line-discipline reference:
 
-Signed-off-by: Alexander Y. Fomichev <git.user@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Miquel van Smoorenburg <mikevs@xs4all.net>
+	usbserial: USB Serial support registered for pl2303
+	pl2303 1-2.1:1.0: pl2303 converter detected
+	usb 1-2.1: pl2303 converter now attached to ttyUSB0
+	INFO: trying to register non-static key.
+	the code is fine but needs lockdep annotation.
+	turning off the locking correctness validator.
+	CPU: 0 PID: 68 Comm: udevd Tainted: G        W      3.18.0-rc5 #10
+	[<c0016f04>] (unwind_backtrace) from [<c0013978>] (show_stack+0x20/0x24)
+	[<c0013978>] (show_stack) from [<c0449794>] (dump_stack+0x24/0x28)
+	[<c0449794>] (dump_stack) from [<c006f730>] (__lock_acquire+0x1e50/0x2004)
+	[<c006f730>] (__lock_acquire) from [<c0070128>] (lock_acquire+0xe4/0x18c)
+	[<c0070128>] (lock_acquire) from [<c027c6f8>] (ldsem_down_read_trylock+0x78/0x90)
+	[<c027c6f8>] (ldsem_down_read_trylock) from [<c027a1cc>] (tty_ldisc_ref+0x24/0x58)
+	[<c027a1cc>] (tty_ldisc_ref) from [<c0340760>] (usb_serial_handle_dcd_change+0x48/0xe8)
+	[<c0340760>] (usb_serial_handle_dcd_change) from [<bf000484>] (pl2303_read_int_callback+0x210/0x220 [pl2303])
+	[<bf000484>] (pl2303_read_int_callback [pl2303]) from [<c031624c>] (__usb_hcd_giveback_urb+0x80/0x140)
+	[<c031624c>] (__usb_hcd_giveback_urb) from [<c0316fc0>] (usb_giveback_urb_bh+0x98/0xd4)
+	[<c0316fc0>] (usb_giveback_urb_bh) from [<c0042e44>] (tasklet_hi_action+0x9c/0x108)
+	[<c0042e44>] (tasklet_hi_action) from [<c0042380>] (__do_softirq+0x148/0x42c)
+	[<c0042380>] (__do_softirq) from [<c00429cc>] (irq_exit+0xd8/0x114)
+	[<c00429cc>] (irq_exit) from [<c007ae58>] (__handle_domain_irq+0x84/0xdc)
+	[<c007ae58>] (__handle_domain_irq) from [<c000879c>] (omap_intc_handle_irq+0xd8/0xe0)
+	[<c000879c>] (omap_intc_handle_irq) from [<c0014544>] (__irq_svc+0x44/0x7c)
+	Exception stack(0xdf4e7f08 to 0xdf4e7f50)
+	7f00:                   debc0b80 df4e7f5c 00000000 00000000 debc0b80 be8da96c
+	7f20: 00000000 00000128 c000fc84 df4e6000 00000000 df4e7f94 00000004 df4e7f50
+	7f40: c038ebc0 c038d74c 600f0013 ffffffff
+	[<c0014544>] (__irq_svc) from [<c038d74c>] (___sys_sendmsg.part.29+0x0/0x2e0)
+	[<c038d74c>] (___sys_sendmsg.part.29) from [<c038ec08>] (SyS_sendmsg+0x18/0x1c)
+	[<c038ec08>] (SyS_sendmsg) from [<c000fa00>] (ret_fast_syscall+0x0/0x48)
+	console [ttyUSB0] enabled
+
+Fixes: 36697529b5bb ("tty: Replace ldisc locking with ldisc_sem")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/dev.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 60 insertions(+), 1 deletion(-)
+ drivers/usb/serial/console.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -4791,7 +4791,8 @@ static void __netdev_adjacent_dev_remove
- 	if (adj->master)
- 		sysfs_remove_link(&(dev->dev.kobj), "master");
- 
--	if (netdev_adjacent_is_neigh_list(dev, dev_list))
-+	if (netdev_adjacent_is_neigh_list(dev, dev_list) &&
-+	    net_eq(dev_net(dev),dev_net(adj_dev)))
- 		netdev_adjacent_sysfs_del(dev, adj_dev->name, dev_list);
- 
- 	list_del_rcu(&adj->list);
-@@ -5061,11 +5062,65 @@ void netdev_upper_dev_unlink(struct net_
- }
- EXPORT_SYMBOL(netdev_upper_dev_unlink);
- 
-+void netdev_adjacent_add_links(struct net_device *dev)
-+{
-+	struct netdev_adjacent *iter;
-+
-+	struct net *net = dev_net(dev);
-+
-+	list_for_each_entry(iter, &dev->adj_list.upper, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
-+		netdev_adjacent_sysfs_add(iter->dev, dev,
-+					  &iter->dev->adj_list.lower);
-+		netdev_adjacent_sysfs_add(dev, iter->dev,
-+					  &dev->adj_list.upper);
-+	}
-+
-+	list_for_each_entry(iter, &dev->adj_list.lower, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
-+		netdev_adjacent_sysfs_add(iter->dev, dev,
-+					  &iter->dev->adj_list.upper);
-+		netdev_adjacent_sysfs_add(dev, iter->dev,
-+					  &dev->adj_list.lower);
-+	}
-+}
-+
-+void netdev_adjacent_del_links(struct net_device *dev)
-+{
-+	struct netdev_adjacent *iter;
-+
-+	struct net *net = dev_net(dev);
-+
-+	list_for_each_entry(iter, &dev->adj_list.upper, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
-+		netdev_adjacent_sysfs_del(iter->dev, dev->name,
-+					  &iter->dev->adj_list.lower);
-+		netdev_adjacent_sysfs_del(dev, iter->dev->name,
-+					  &dev->adj_list.upper);
-+	}
-+
-+	list_for_each_entry(iter, &dev->adj_list.lower, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
-+		netdev_adjacent_sysfs_del(iter->dev, dev->name,
-+					  &iter->dev->adj_list.upper);
-+		netdev_adjacent_sysfs_del(dev, iter->dev->name,
-+					  &dev->adj_list.lower);
-+	}
-+}
-+
- void netdev_adjacent_rename_links(struct net_device *dev, char *oldname)
- {
- 	struct netdev_adjacent *iter;
- 
-+	struct net *net = dev_net(dev);
-+
- 	list_for_each_entry(iter, &dev->adj_list.upper, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
- 		netdev_adjacent_sysfs_del(iter->dev, oldname,
- 					  &iter->dev->adj_list.lower);
- 		netdev_adjacent_sysfs_add(iter->dev, dev,
-@@ -5073,6 +5128,8 @@ void netdev_adjacent_rename_links(struct
- 	}
- 
- 	list_for_each_entry(iter, &dev->adj_list.lower, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
- 		netdev_adjacent_sysfs_del(iter->dev, oldname,
- 					  &iter->dev->adj_list.upper);
- 		netdev_adjacent_sysfs_add(iter->dev, dev,
-@@ -6679,6 +6736,7 @@ int dev_change_net_namespace(struct net_
- 
- 	/* Send a netdev-removed uevent to the old namespace */
- 	kobject_uevent(&dev->dev.kobj, KOBJ_REMOVE);
-+	netdev_adjacent_del_links(dev);
- 
- 	/* Actually switch the network namespace */
- 	dev_net_set(dev, net);
-@@ -6693,6 +6751,7 @@ int dev_change_net_namespace(struct net_
- 
- 	/* Send a netdev-add uevent to the new namespace */
- 	kobject_uevent(&dev->dev.kobj, KOBJ_ADD);
-+	netdev_adjacent_add_links(dev);
- 
- 	/* Fixup kobjects */
- 	err = device_rename(&dev->dev, dev->name);
+--- a/drivers/usb/serial/console.c
++++ b/drivers/usb/serial/console.c
+@@ -140,6 +140,7 @@ static int usb_console_setup(struct cons
+ 			tty_port_tty_set(&port->port, tty);
+ 			tty->driver = usb_serial_tty_driver;
+ 			tty->index = co->index;
++			init_ldsem(&tty->ldisc_sem);
+ 			if (tty_init_termios(tty)) {
+ 				retval = -ENOMEM;
+ 				goto free_tty;
 
 
