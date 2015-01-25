@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351AbbAYS3i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:29:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57941 "EHLO
+	id S1759144AbbAYTRg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:17:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756020AbbAYSK1 (ORCPT
+	with ESMTP id S1755129AbbAYSJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:27 -0500
+	Sun, 25 Jan 2015 13:09:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dylan Rajaratnam <dylan.rajaratnam@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.18 110/183] [media] img-ir/hw: Always read data to clear buffer
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 54/98] ftrace/jprobes/x86: Fix conflict between jprobes and function graph tracing
 Date: Sun, 25 Jan 2015 10:07:12 -0800
-Message-Id: <20150125180814.976977380@linuxfoundation.org>
+Message-Id: <20150125180715.200699878@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,58 +25,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dylan Rajaratnam <dylan.rajaratnam@imgtec.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit ea0de4ec5489da0fe738b274effac4f950e93d76 upstream.
+commit 237d28db036e411f22c03cfd5b0f6dc2aa9bf3bc upstream.
 
-A problem was found on Polaris where if the unit it booted via the power
-button on the infrared remote then the next button press on the remote
-would return the key code used to power on the unit.
+If the function graph tracer traces a jprobe callback, the system will
+crash. This can easily be demonstrated by compiling the jprobe
+sample module that is in the kernel tree, loading it and running the
+function graph tracer.
 
-The sequence is:
- - The polaris powered off but with the powerdown controller (PDC) block
-   still powered.
- - Press power key on remote, IR block receives the key.
- - Kernel starts, IR code is in IMG_IR_DATA_x but neither IMG_IR_RXDVAL
-   or IMG_IR_RXDVALD2 are set.
- - Wait any amount of time.
- - Press any key.
- - IMG_IR_RXDVAL or IMG_IR_RXDVALD2 is set but IMG_IR_DATA_x is
-   unchanged since the powerup key data was never read.
+ # modprobe jprobe_example.ko
+ # echo function_graph > /sys/kernel/debug/tracing/current_tracer
+ # ls
 
-This is worked around by always reading the IMG_IR_DATA_x in
-img_ir_set_decoder(), rather than only when the IMG_IR_RXDVAL or
-IMG_IR_RXDVALD2 bit is set.
+The first two commands end up in a nice crash after the first fork.
+(do_fork has a jprobe attached to it, so "ls" just triggers that fork)
 
-Signed-off-by: Dylan Rajaratnam <dylan.rajaratnam@imgtec.com>
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+The problem is caused by the jprobe_return() that all jprobe callbacks
+must end with. The way jprobes works is that the function a jprobe
+is attached to has a breakpoint placed at the start of it (or it uses
+ftrace if fentry is supported). The breakpoint handler (or ftrace callback)
+will copy the stack frame and change the ip address to return to the
+jprobe handler instead of the function. The jprobe handler must end
+with jprobe_return() which swaps the stack and does an int3 (breakpoint).
+This breakpoint handler will then put back the saved stack frame,
+simulate the instruction at the beginning of the function it added
+a breakpoint to, and then continue on.
+
+For function tracing to work, it hijakes the return address from the
+stack frame, and replaces it with a hook function that will trace
+the end of the call. This hook function will restore the return
+address of the function call.
+
+If the function tracer traces the jprobe handler, the hook function
+for that handler will not be called, and its saved return address
+will be used for the next function. This will result in a kernel crash.
+
+To solve this, pause function tracing before the jprobe handler is called
+and unpause it before it returns back to the function it probed.
+
+Some other updates:
+
+Used a variable "saved_sp" to hold kcb->jprobe_saved_sp. This makes the
+code look a bit cleaner and easier to understand (various tries to fix
+this bug required this change).
+
+Note, if fentry is being used, jprobes will change the ip address before
+the function graph tracer runs and it will not be able to trace the
+function that the jprobe is probing.
+
+Link: http://lkml.kernel.org/r/20150114154329.552437962@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/rc/img-ir/img-ir-hw.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kernel/kprobes/core.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/media/rc/img-ir/img-ir-hw.c
-+++ b/drivers/media/rc/img-ir/img-ir-hw.c
-@@ -541,10 +541,12 @@ static void img_ir_set_decoder(struct im
- 	if (ir_status & (IMG_IR_RXDVAL | IMG_IR_RXDVALD2)) {
- 		ir_status &= ~(IMG_IR_RXDVAL | IMG_IR_RXDVALD2);
- 		img_ir_write(priv, IMG_IR_STATUS, ir_status);
--		img_ir_read(priv, IMG_IR_DATA_LW);
--		img_ir_read(priv, IMG_IR_DATA_UP);
- 	}
- 
-+	/* always read data to clear buffer if IR wakes the device */
-+	img_ir_read(priv, IMG_IR_DATA_LW);
-+	img_ir_read(priv, IMG_IR_DATA_UP);
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1017,6 +1017,15 @@ int __kprobes setjmp_pre_handler(struct
+ 	regs->flags &= ~X86_EFLAGS_IF;
+ 	trace_hardirqs_off();
+ 	regs->ip = (unsigned long)(jp->entry);
 +
- 	/* stop the end timer and switch back to normal mode */
- 	del_timer_sync(&hw->end_timer);
- 	hw->mode = IMG_IR_M_NORMAL;
++	/*
++	 * jprobes use jprobe_return() which skips the normal return
++	 * path of the function, and this messes up the accounting of the
++	 * function graph tracer to get messed up.
++	 *
++	 * Pause function graph tracing while performing the jprobe function.
++	 */
++	pause_graph_tracing();
+ 	return 1;
+ }
+ 
+@@ -1042,24 +1051,25 @@ int __kprobes longjmp_break_handler(stru
+ 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+ 	u8 *addr = (u8 *) (regs->ip - 1);
+ 	struct jprobe *jp = container_of(p, struct jprobe, kp);
++	void *saved_sp = kcb->jprobe_saved_sp;
+ 
+ 	if ((addr > (u8 *) jprobe_return) &&
+ 	    (addr < (u8 *) jprobe_return_end)) {
+-		if (stack_addr(regs) != kcb->jprobe_saved_sp) {
++		if (stack_addr(regs) != saved_sp) {
+ 			struct pt_regs *saved_regs = &kcb->jprobe_saved_regs;
+ 			printk(KERN_ERR
+ 			       "current sp %p does not match saved sp %p\n",
+-			       stack_addr(regs), kcb->jprobe_saved_sp);
++			       stack_addr(regs), saved_sp);
+ 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
+ 			show_regs(saved_regs);
+ 			printk(KERN_ERR "Current registers\n");
+ 			show_regs(regs);
+ 			BUG();
+ 		}
++		/* It's OK to start function graph tracing again */
++		unpause_graph_tracing();
+ 		*regs = kcb->jprobe_saved_regs;
+-		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+-		       kcb->jprobes_stack,
+-		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
++		memcpy(saved_sp, kcb->jprobes_stack, MIN_STACK_SIZE(saved_sp));
+ 		preempt_enable_no_resched();
+ 		return 1;
+ 	}
 
 
