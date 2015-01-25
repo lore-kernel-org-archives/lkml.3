@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940AbbAYSXP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:23:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57941 "EHLO
+	id S1756803AbbAYSXM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:23:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756124AbbAYSKi (ORCPT
+	with ESMTP id S1756132AbbAYSKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:38 -0500
+	Sun, 25 Jan 2015 13:10:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lance Gropper <lance.gropper@qosserver.com>,
-        Stefan Priebe <s.priebe@profihost.ag>, Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Roland Dreier <roland@purestorage.com>,
+        Christoph Hellwig <hch@lst.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.18 180/183] target: Drop arbitrary maximum I/O size limit
-Date: Sun, 25 Jan 2015 10:08:22 -0800
-Message-Id: <20150125180817.971750758@linuxfoundation.org>
+Subject: [PATCH 3.18 181/183] vhost-scsi: Add missing virtio-scsi -> TCM attribute conversion
+Date: Sun, 25 Jan 2015 10:08:23 -0800
+Message-Id: <20150125180818.013078546@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -34,157 +32,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 046ba64285a4389ae5e9a7dfa253c6bff3d7c341 upstream.
+commit 46243860806bdc2756f3ce8ac86b4d7c616bcd6c upstream.
 
-This patch drops the arbitrary maximum I/O size limit in sbc_parse_cdb(),
-which currently for fabric_max_sectors is hardcoded to 8192 (4 MB for 512
-byte sector devices), and for hw_max_sectors is a backend driver dependent
-value.
+While looking at hch's recent conversion to drop the MSG_*_TAG
+definitions, I noticed a long standing bug in vhost-scsi where
+the VIRTIO_SCSI_S_* attribute definitions where incorrectly
+being passed directly into target_submit_cmd_map_sgls().
 
-This limit is problematic because Linux initiators have only recently
-started to honor block limits MAXIMUM TRANSFER LENGTH, and other non-Linux
-based initiators (eg: MSFT Fibre Channel) can also generate I/Os larger
-than 4 MB in size.
+This patch adds the missing virtio-scsi to TCM/SAM task attribute
+conversion.
 
-Currently when this happens, the following message will appear on the
-target resulting in I/Os being returned with non recoverable status:
-
-  SCSI OP 28h with too big sectors 16384 exceeds fabric_max_sectors: 8192
-
-Instead, drop both [fabric,hw]_max_sector checks in sbc_parse_cdb(),
-and convert the existing hw_max_sectors into a purely informational
-attribute used to represent the granuality that backend driver and/or
-subsystem code is splitting I/Os upon.
-
-Also, update FILEIO with an explicit FD_MAX_BYTES check in fd_execute_rw()
-to deal with the one special iovec limitiation case.
-
-v2 changes:
-  - Drop hw_max_sectors check in sbc_parse_cdb()
-
-Reported-by: Lance Gropper <lance.gropper@qosserver.com>
-Reported-by: Stefan Priebe <s.priebe@profihost.ag>
 Cc: Christoph Hellwig <hch@lst.de>
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Roland Dreier <roland@purestorage.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/target/target_core_device.c |    8 ++++----
- drivers/target/target_core_file.c   |   11 ++++++++++-
- drivers/target/target_core_iblock.c |    2 +-
- drivers/target/target_core_sbc.c    |   15 ---------------
- drivers/target/target_core_spc.c    |    5 +----
- 5 files changed, 16 insertions(+), 25 deletions(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1169,10 +1169,10 @@ int se_dev_set_optimal_sectors(struct se
- 				" changed for TCM/pSCSI\n", dev);
- 		return -EINVAL;
- 	}
--	if (optimal_sectors > dev->dev_attrib.fabric_max_sectors) {
-+	if (optimal_sectors > dev->dev_attrib.hw_max_sectors) {
- 		pr_err("dev[%p]: Passed optimal_sectors %u cannot be"
--			" greater than fabric_max_sectors: %u\n", dev,
--			optimal_sectors, dev->dev_attrib.fabric_max_sectors);
-+			" greater than hw_max_sectors: %u\n", dev,
-+			optimal_sectors, dev->dev_attrib.hw_max_sectors);
- 		return -EINVAL;
- 	}
+---
+ drivers/vhost/scsi.c |   24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
+
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -909,6 +909,23 @@ vhost_scsi_map_iov_to_prot(struct tcm_vh
+ 	return 0;
+ }
  
-@@ -1572,7 +1572,6 @@ struct se_device *target_alloc_device(st
- 				DA_UNMAP_GRANULARITY_ALIGNMENT_DEFAULT;
- 	dev->dev_attrib.max_write_same_len = DA_MAX_WRITE_SAME_LEN;
- 	dev->dev_attrib.fabric_max_sectors = DA_FABRIC_MAX_SECTORS;
--	dev->dev_attrib.optimal_sectors = DA_FABRIC_MAX_SECTORS;
- 
- 	xcopy_lun = &dev->xcopy_lun;
- 	xcopy_lun->lun_se_dev = dev;
-@@ -1613,6 +1612,7 @@ int target_configure_device(struct se_de
- 	dev->dev_attrib.hw_max_sectors =
- 		se_dev_align_max_sectors(dev->dev_attrib.hw_max_sectors,
- 					 dev->dev_attrib.hw_block_size);
-+	dev->dev_attrib.optimal_sectors = dev->dev_attrib.hw_max_sectors;
- 
- 	dev->dev_index = scsi_get_new_index(SCSI_DEVICE_INDEX);
- 	dev->creation_time = get_jiffies_64();
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -620,7 +620,16 @@ fd_execute_rw(struct se_cmd *cmd, struct
- 	struct fd_prot fd_prot;
- 	sense_reason_t rc;
- 	int ret = 0;
--
-+	/*
-+	 * We are currently limited by the number of iovecs (2048) per
-+	 * single vfs_[writev,readv] call.
-+	 */
-+	if (cmd->data_length > FD_MAX_BYTES) {
-+		pr_err("FILEIO: Not able to process I/O of %u bytes due to"
-+		       "FD_MAX_BYTES: %u iovec count limitiation\n",
-+			cmd->data_length, FD_MAX_BYTES);
-+		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
++static int vhost_scsi_to_tcm_attr(int attr)
++{
++	switch (attr) {
++	case VIRTIO_SCSI_S_SIMPLE:
++		return MSG_SIMPLE_TAG;
++	case VIRTIO_SCSI_S_ORDERED:
++		return MSG_ORDERED_TAG;
++	case VIRTIO_SCSI_S_HEAD:
++		return MSG_HEAD_TAG;
++	case VIRTIO_SCSI_S_ACA:
++		return MSG_ACA_TAG;
++	default:
++		break;
 +	}
- 	/*
- 	 * Call vectorized fileio functions to map struct scatterlist
- 	 * physical memory addresses to struct iovec virtual memory.
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -123,7 +123,7 @@ static int iblock_configure_device(struc
- 	q = bdev_get_queue(bd);
- 
- 	dev->dev_attrib.hw_block_size = bdev_logical_block_size(bd);
--	dev->dev_attrib.hw_max_sectors = UINT_MAX;
-+	dev->dev_attrib.hw_max_sectors = queue_max_hw_sectors(q);
- 	dev->dev_attrib.hw_queue_depth = q->nr_requests;
- 
- 	/*
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -953,21 +953,6 @@ sbc_parse_cdb(struct se_cmd *cmd, struct
- 
- 	if (cmd->se_cmd_flags & SCF_SCSI_DATA_CDB) {
- 		unsigned long long end_lba;
--
--		if (sectors > dev->dev_attrib.fabric_max_sectors) {
--			printk_ratelimited(KERN_ERR "SCSI OP %02xh with too"
--				" big sectors %u exceeds fabric_max_sectors:"
--				" %u\n", cdb[0], sectors,
--				dev->dev_attrib.fabric_max_sectors);
--			return TCM_INVALID_CDB_FIELD;
--		}
--		if (sectors > dev->dev_attrib.hw_max_sectors) {
--			printk_ratelimited(KERN_ERR "SCSI OP %02xh with too"
--				" big sectors %u exceeds backend hw_max_sectors:"
--				" %u\n", cdb[0], sectors,
--				dev->dev_attrib.hw_max_sectors);
--			return TCM_INVALID_CDB_FIELD;
--		}
- check_lba:
- 		end_lba = dev->transport->get_blocks(dev) + 1;
- 		if (cmd->t_task_lba + sectors > end_lba) {
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -505,7 +505,6 @@ static sense_reason_t
- spc_emulate_evpd_b0(struct se_cmd *cmd, unsigned char *buf)
++	return MSG_SIMPLE_TAG;
++}
++
+ static void tcm_vhost_submission_work(struct work_struct *work)
  {
- 	struct se_device *dev = cmd->se_dev;
--	u32 max_sectors;
- 	int have_tp = 0;
- 	int opt, min;
- 
-@@ -539,9 +538,7 @@ spc_emulate_evpd_b0(struct se_cmd *cmd,
- 	/*
- 	 * Set MAXIMUM TRANSFER LENGTH
- 	 */
--	max_sectors = min(dev->dev_attrib.fabric_max_sectors,
--			  dev->dev_attrib.hw_max_sectors);
--	put_unaligned_be32(max_sectors, &buf[8]);
-+	put_unaligned_be32(dev->dev_attrib.hw_max_sectors, &buf[8]);
- 
- 	/*
- 	 * Set OPTIMAL TRANSFER LENGTH
+ 	struct tcm_vhost_cmd *cmd =
+@@ -934,9 +951,10 @@ static void tcm_vhost_submission_work(st
+ 	rc = target_submit_cmd_map_sgls(se_cmd, tv_nexus->tvn_se_sess,
+ 			cmd->tvc_cdb, &cmd->tvc_sense_buf[0],
+ 			cmd->tvc_lun, cmd->tvc_exp_data_len,
+-			cmd->tvc_task_attr, cmd->tvc_data_direction,
+-			TARGET_SCF_ACK_KREF, sg_ptr, cmd->tvc_sgl_count,
+-			NULL, 0, sg_prot_ptr, cmd->tvc_prot_sgl_count);
++			vhost_scsi_to_tcm_attr(cmd->tvc_task_attr),
++			cmd->tvc_data_direction, TARGET_SCF_ACK_KREF,
++			sg_ptr, cmd->tvc_sgl_count, NULL, 0,
++			sg_prot_ptr, cmd->tvc_prot_sgl_count);
+ 	if (rc < 0) {
+ 		transport_send_check_condition_and_sense(se_cmd,
+ 				TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE, 0);
 
 
