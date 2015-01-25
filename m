@@ -1,234 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbbAYCnL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 21:43:11 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:54320 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394AbbAYCnI (ORCPT
+	id S1752561AbbAYCnj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 21:43:39 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:59649 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453AbbAYCng convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 21:43:08 -0500
-Date: Sun, 25 Jan 2015 04:43:00 +0200
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Andri Yngvason <andri.yngvason@marel.com>
-Cc: Wolfgang Grandegger <wg@grandegger.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/5] can: kvaser_usb: Consolidate and unify state
- change handling
-Message-ID: <20150125024300.GA6028@Darwish.PC>
-References: <20150120214409.GA16828@linux>
- <20150120214537.GB16828@linux>
- <20150121103319.14511.57709@shannon>
- <e5439ed067931dc01bda70592eb6ed52@grandegger.com>
- <20150121144323.GA17070@linux>
- <20150121150015.31351.6605@shannon>
- <20150121153647.GB17070@linux>
- <49707d45a389a1acb9ccec4295d05762@grandegger.com>
- <20150123060734.GA7949@Darwish.PC>
- <20150123103213.6205.54618@shannon>
+	Sat, 24 Jan 2015 21:43:36 -0500
+Message-ID: <54C4583A.5040505@ahsoftware.de>
+Date: Sun, 25 Jan 2015 03:43:06 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123103213.6205.54618@shannon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>,
+        linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] modsign: use shred to overwrite the private key before
+ deleting it
+References: <54C2F4F8.20809@draigBrady.com> <1422096327-4483-1-git-send-email-holler@ahsoftware.de> <54C383E0.9060408@ahsoftware.de> <54C38B6D.1060806@ahsoftware.de> <54C3901D.8040406@ahsoftware.de> <54C45153.2050703@draigBrady.com>
+In-Reply-To: <54C45153.2050703@draigBrady.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:32:13AM +0000, Andri Yngvason wrote:
-> Quoting Ahmed S. Darwish (2015-01-23 06:07:34)
-> > On Wed, Jan 21, 2015 at 05:13:45PM +0100, Wolfgang Grandegger wrote:
-> > > On Wed, 21 Jan 2015 10:36:47 -0500, "Ahmed S. Darwish"
-> > > <darwish.07@gmail.com> wrote:
-> > > > On Wed, Jan 21, 2015 at 03:00:15PM +0000, Andri Yngvason wrote:
-> > > >> Quoting Ahmed S. Darwish (2015-01-21 14:43:23)
-> > > >> > Hi!
-> > > > 
-> > > > ...
-> > > > 
-> > > >> > <-- Unplug the cable -->
-> > > >> > 
-> > > >> >  (000.009106)  can0  20000080   [8]  00 00 00 00 00 00 08 00  
-> > > >> >  ERRORFRAME
-> > > >> >         bus-error
-> > > >> >         error-counter-tx-rx{{8}{0}}
-> > > >> >  (000.001872)  can0  20000080   [8]  00 00 00 00 00 00 10 00  
-> > > 
-> > > For a bus-errors I would also expcect some more information in the
-> > > data[2..3] fields. But these are always zero.
-> > > 
-> > 
-> > M16C error factors made it possible to report things like
-> > CAN_ERR_PROT_FORM/STUFF/BIT0/BIT1/TX in data[2], and
-> > CAN_ERR_PROT_LOC_ACK/CRC_DEL in data[3].
-> > 
-> > Unfortunately such error factors are only reported in Leaf, but
-> > not in USBCan-II due to the wire format change in the error event:
-> > 
-> >         struct leaf_msg_error_event {
-> >                 u8 tid;
-> >                 u8 flags;
-> >                 __le16 time[3];
-> >                 u8 channel;
-> >                 u8 padding;
-> >                 u8 tx_errors_count;
-> >                 u8 rx_errors_count;
-> >                 u8 status;
-> >                 u8 error_factor;
-> >         } __packed;
-> > 
-> >         struct usbcan_msg_error_event {
-> >                 u8 tid;
-> >                 u8 padding;
-> >                 u8 tx_errors_count_ch0;
-> >                 u8 rx_errors_count_ch0;
-> >                 u8 tx_errors_count_ch1;
-> >                 u8 rx_errors_count_ch1;
-> >                 u8 status_ch0;
-> >                 u8 status_ch1;
-> >                 __le16 time;
-> >         } __packed;
-> > 
-> > I speculate that the wire format was changed due to controller
-> > bugs in the USBCan-II, which was slightly mentioned in their
-> > data sheets here:
-> > 
-> >         http://www.kvaser.com/canlib-webhelp/page_hardware_specific_can_controllers.html
-> > 
-> > So it seems there's really no way for filling such bus error
-> > info given the very limited amount of data exported :-(
-> >
-> We experienced similar problems with FlexCAN.
+Am 25.01.2015 um 03:13 schrieb Pádraig Brady:
+> On 24/01/15 12:29, Alexander Holler wrote:
+>> Am 24.01.2015 um 13:09 schrieb Alexander Holler:
+>>> Am 24.01.2015 um 12:37 schrieb Alexander Holler:
+>>>> Am 24.01.2015 um 11:45 schrieb Alexander Holler:
+>>>>
+>>>>> It uses shred, in the hope it will somedays learn how to shred stuff on
+>>>>> FLASH based devices securely too, once that has become possible.
+>>>>
+>>>> BTW: This is a good example where technology failed to keep the needs of
+>>>> users in mind.
+>>>
+>>> Failed completely.
+>>>
+>>> Since ever it's a problem for people to securely delete files on storage.
+>>>
+>>> Also it should be very simple to securely erase files on block based
+>>> devices, people have to try cruel ways in the hope to get securely rid
+>>> of files nobody else should be able to see ever again.
+>>>
+>>> It's almost unbelievable how completely the IT industry (including the
+>>> field I'm working myself: SW) failed in regard to that since 30 years or
+>>> even more.
+>>
+>> And it isn't such that this is a new requirement. Humans are doing such
+>> since thousands of years. They use fire to get rid of paper documents
+>> and even the old egypts were able to destroyed stuff on stones by using
+>> simple steps. Just the IT failed completely.
+>>
+>> Really unbelievable.
+>>
+>> So, sorry if anyone got bored by this mail, but I think that really has
+>> to be said and repeated.
+>
+> Well not failed completely, just used a different method (encryption).
+>
+> As for "shredding", that improves in effectiveness the lower you go.
+> I.E. it's effective for the whole file system (SSD range), or whole device.
 
-Hmm, I'll have a look there then...
+That's the usual broken way to go by adding another layer. And if you 
+encrypt your whole device, it won't help if you want to delete one file. 
+As long as the encrypted device is mounted and the blocks aren't 
+overwritten, the stuff is still there. So your solution would end up with:
 
-Although my initial instincts imply that the FlexCAN driver has
-access to the raw CAN registers, something I'm unable to do here.
-But maybe there's some black magic I'm missing :-)
+- mount encrypted device
+- build kernel and secret key
+- install kernel and secret key
+- unmount encrypted device
 
-[...]
+That's almost the same as shredding a whole device just to securely 
+delete one file, with the added complication that the encryption 
+requires an authentication, which usually is very uncomfortable to do, 
+at least if the authentication is somewhat secure.
 
-> > 
-> > I've dumped _every_ message I receive from the firmware while
-> > disconnecting the CAN bus, waiting a while, and connecting it again.
-> > I really received _nothing_ from the firmware when the CAN bus was
-> > reconnected and the data packets were flowing again. Not even a
-> > single CHIP_STATE_EVENT, even after waiting for a long time.
-> > 
-> > So it's basically:
-> > ...
-> > ERR EVENT, txerr=128, rxerr=0
-> > ERR EVENT, txerr=128, rxerr=0
-> > ERR EVENT, txerr=128, rxerr=0
-> > ...
-> > 
-> > then complete silence, except the data frames. I've even tried with
-> > different versions of the firmware, but the same behaviour persisted.
-> > 
-> > > > So, What can the driver do given the above?
-> > > 
-> > > Little if the notification does not come.
-> > > 
-> > 
-> > We can poll the state by sending CMD_GET_CHIP_STATE to the firmware,
-> > and it will hopefully reply with a CHIP_STATE_EVENT response
-> > containing the new txerr and rxerr values that we can use for
-> > reverse state transitions.
-> >
-> > But do we _really_ want to go through the path? I feel that it will
-> > open some cans of worms w.r.t. concurrent access to both the netdev
-> > and USB stacks from a single driver.
-> >
-> Honestly, I don't know.
-> >
-> > A possible solution can be setting up a kernel thread that queries
-> > for a CHIP_STATE_EVENT every second?
-> > 
-> Have you considered polling in kvaser_usb_tx_acknowledge? You could do something
-> like:
-> if(unlikely(dev->can.state != CAN_STATE_ERROR_ACTIVE))
-> {
->     request_state();
-> }
-> 
+Or what do you have in mind?
 
-OK, I have four important updates on this issue:
-
-a) My initial testing was done on high-speed channel, at a bitrate
-   of 50K. After setting the bus to a more reasonable bitrate 500K
-   or 1M, I was _consistently_ able to receive CHIP_STATE_EVENTs
-   when plugging the CAN connector again after an unplug.
-
-b) The error counters on this device do not get reset on plugging
-   after an unplug. I've setup a kernel thread [2] that queries
-   the chip state event every second, and the error counters stays
-   the same all the time. [1]
-
-c) There's a single case when the erro counters do indeed get
-   reversed, and it happens only when introducing some noise in
-   the bus after the re-plug. In that case, the new error events
-   get raised with new error counters starting from 0/1 again.
-
-d) I've discovered a bug that forbids the CAN state from
-   returning to ERROR_ACTIVE in case of the error counters
-   numbers getting decreased. But independent from that bug, the
-   verbose debugging messages clearly imply that we only get the
-   error counters decreased in the case mentioned at `c)' above.
-
-So from [1] and [2], it's now clear that the device do not reset
-these counters back in the re-plug case. I'll give a check to
-flexcan as advised, but unfortunately I don't really think there's
-much I can do about this.
-
-[1]
-
-[  877.207082] CAN_ERROR_: channel=0, txerr=88, rxerr=0
-[  877.207090] CAN_ERROR_: channel=0, txerr=136, rxerr=0
-[  877.207094] CAN_ERROR_: channel=0, txerr=144, rxerr=0
-[  877.207098] CAN_ERROR_: channel=0, txerr=152, rxerr=0
-[  877.207100] CAN_ERROR_: channel=0, txerr=160, rxerr=0
-[  877.207102] CAN_ERROR_: channel=0, txerr=168, rxerr=0
-[  877.208075] CAN_ERROR_: channel=0, txerr=200, rxerr=0 
-
-(( The above error event, staying the same at txerr=200 keeps
-   flooding the bus until the CAN cable is re-plugged ))
-
-[  878.225116] CHIP_STATE: channel=0, txerr=200, rxerr=0
-[  878.225143] CHIP_STATE: channel=1, txerr=0, rxerr=0
-[  879.265167] CHIP_STATE: channel=0, txerr=200, rxerr=0
-[  879.267152] CHIP_STATE: channel=1, txerr=0, rxerr=0
-[  879.265167] CHIP_STATE: channel=0, txerr=200, rxerr=0
-[  879.267152] CHIP_STATE: channel=1, txerr=0, rxerr=0
-
-(( The same counters get repeated every second ))
-
-[2] State was polled using:
-
-static int kvaser_usb_poll_chip_state(void *vpriv) {
-      struct kvaser_usb_net_priv *priv = vpriv;
-
-      while (!kthread_should_stop()) {
-              kvaser_usb_simple_msg_async(priv, CMD_GET_CHIP_STATE);
-              ssleep(1);
-      }
-
-      return 0;
-}
-
-> I don't think that anything beyond that would be worth pursuing.
-> 
-
-I agree, but given the new input, it seems that our problem
-extends to the error counters themselves not getting decreased
-on re-plug. So, even polling will not solve the issue: we'll
-get the same txerr/rxerr values again and again :-(
-
-> Best regards,
-> Andri
+Sorry, but deleting a file such that it isn't readable anymore by anyone 
+shouldn't be a complicated sequence of geek-stuff and all filesystem and 
+storage designers should be ashamed that they haven't managed it in 
+around 30 years to accomplish that simple goal. (imho) ;)
 
 Regards,
-Darwish
+
+Alexander Holler
 
