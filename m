@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427AbbAYUc5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 15:32:57 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45940 "EHLO
+	id S932385AbbAYUcw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 15:32:52 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:45942 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887AbbAYUbe (ORCPT
+	with ESMTP id S1755368AbbAYUbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 15:31:34 -0500
 From: Guenter Roeck <linux@roeck-us.net>
@@ -13,9 +13,9 @@ Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
         David Woodhouse <dwmw2@infradead.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/6] power/reset: st-poweroff: Fix misleading Kconfig description
-Date: Sun, 25 Jan 2015 12:30:44 -0800
-Message-Id: <1422217845-18901-6-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 6/6] power/reset: restart-poweroff: Remove arm dependencies
+Date: Sun, 25 Jan 2015 12:30:45 -0800
+Message-Id: <1422217845-18901-7-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422217845-18901-1-git-send-email-linux@roeck-us.net>
 References: <1422217845-18901-1-git-send-email-linux@roeck-us.net>
@@ -25,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54C552A5.0049,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020204.54C552A6.0090,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 32
+X-CTCH-SenderID-TotalMessages: 34
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -51,32 +51,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The st-poweroff driver does not really power off the system
-but resets it, so Kconfig should not claim that the driver
-would handle power-off.
+This driver is now arm specific anymore, so there is no need to include
+an arm specific include file. Also drop unnecessary depencency on ARM
+from Kconfig.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/power/reset/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/power/reset/Kconfig            | 1 -
+ drivers/power/reset/restart-poweroff.c | 1 -
+ 2 files changed, 2 deletions(-)
 
 diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index 4cb5744..bb81e2a 100644
+index bb81e2a..27f6646 100644
 --- a/drivers/power/reset/Kconfig
 +++ b/drivers/power/reset/Kconfig
-@@ -110,10 +110,10 @@ config POWER_RESET_RESTART
- 	  user presses a key. u-boot then boots into Linux.
+@@ -103,7 +103,6 @@ config POWER_RESET_QNAP
  
- config POWER_RESET_ST
--	bool "ST restart power-off driver"
-+	bool "ST restart driver"
- 	depends on ARCH_STI
+ config POWER_RESET_RESTART
+ 	bool "Restart power-off driver"
+-	depends on ARM
  	help
--	  Power off and reset support for STMicroelectronics boards.
-+	  Reset support for STMicroelectronics boards.
+ 	  Some boards don't actually have the ability to power off.
+ 	  Instead they restart, and u-boot holds the SoC until the
+diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
+index f46f2c2..41b22c4 100644
+--- a/drivers/power/reset/restart-poweroff.c
++++ b/drivers/power/reset/restart-poweroff.c
+@@ -16,7 +16,6 @@
+ #include <linux/of_platform.h>
+ #include <linux/module.h>
+ #include <linux/reboot.h>
+-#include <asm/system_misc.h>
  
- config POWER_RESET_VERSATILE
- 	bool "ARM Versatile family reboot driver"
+ static void restart_poweroff_do_poweroff(void)
+ {
 -- 
 2.1.0
 
