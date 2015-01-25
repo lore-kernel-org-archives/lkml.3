@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757515AbbAYSbq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:31:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57776 "EHLO
+	id S1759199AbbAYTRq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:17:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011AbbAYSK1 (ORCPT
+	with ESMTP id S1754290AbbAYSJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:27 -0500
+	Sun, 25 Jan 2015 13:09:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.18 106/183] [media] smiapp: Take mutex during PLL update in sensor initialisation
+Subject: [PATCH 3.14 50/98] [media] sound: Update au0828 quirks table
 Date: Sun, 25 Jan 2015 10:07:08 -0800
-Message-Id: <20150125180814.811313496@linuxfoundation.org>
+Message-Id: <20150125180715.034809725@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,37 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sakari Ailus <sakari.ailus@linux.intel.com>
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 
-commit f85698cd296f08218a7750f321e94607da128600 upstream.
+commit 678fa12fb8e75c6dc1e781a02e3ddbbba7e1a904 upstream.
 
-The mutex does not serialise anything in this case but avoids a lockdep
-warning from the control framework.
+The au0828 quirks table is currently not in sync with the au0828
+media driver.
 
-Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Syncronize it and put them on the same order as found at au0828
+driver, as all the au0828 devices with analog TV need the
+same quirks.
+
 Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/smiapp/smiapp-core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/usb/quirks-table.h |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/media/i2c/smiapp/smiapp-core.c
-+++ b/drivers/media/i2c/smiapp/smiapp-core.c
-@@ -2677,7 +2677,9 @@ static int smiapp_registered(struct v4l2
- 		pll->flags |= SMIAPP_PLL_FLAG_NO_OP_CLOCKS;
- 	pll->scale_n = sensor->limits[SMIAPP_LIMIT_SCALER_N_MIN];
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -2827,14 +2827,22 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+ }
  
-+	mutex_lock(&sensor->mutex);
- 	rval = smiapp_update_mode(sensor);
-+	mutex_unlock(&sensor->mutex);
- 	if (rval) {
- 		dev_err(&client->dev, "update mode failed\n");
- 		goto out_nvm_release;
+ AU0828_DEVICE(0x2040, 0x7200, "Hauppauge", "HVR-950Q"),
++AU0828_DEVICE(0x2040, 0x7240, "Hauppauge", "HVR-850"),
+ AU0828_DEVICE(0x2040, 0x7210, "Hauppauge", "HVR-950Q"),
+ AU0828_DEVICE(0x2040, 0x7217, "Hauppauge", "HVR-950Q"),
+ AU0828_DEVICE(0x2040, 0x721b, "Hauppauge", "HVR-950Q"),
+ AU0828_DEVICE(0x2040, 0x721e, "Hauppauge", "HVR-950Q"),
+ AU0828_DEVICE(0x2040, 0x721f, "Hauppauge", "HVR-950Q"),
+-AU0828_DEVICE(0x2040, 0x7240, "Hauppauge", "HVR-850"),
+ AU0828_DEVICE(0x2040, 0x7280, "Hauppauge", "HVR-950Q"),
+ AU0828_DEVICE(0x0fd9, 0x0008, "Hauppauge", "HVR-950Q"),
++AU0828_DEVICE(0x2040, 0x7201, "Hauppauge", "HVR-950Q-MXL"),
++AU0828_DEVICE(0x2040, 0x7211, "Hauppauge", "HVR-950Q-MXL"),
++AU0828_DEVICE(0x2040, 0x7281, "Hauppauge", "HVR-950Q-MXL"),
++AU0828_DEVICE(0x05e1, 0x0480, "Hauppauge", "Woodbury"),
++AU0828_DEVICE(0x2040, 0x8200, "Hauppauge", "Woodbury"),
++AU0828_DEVICE(0x2040, 0x7260, "Hauppauge", "HVR-950Q"),
++AU0828_DEVICE(0x2040, 0x7213, "Hauppauge", "HVR-950Q"),
++AU0828_DEVICE(0x2040, 0x7270, "Hauppauge", "HVR-950Q"),
+ 
+ /* Digidesign Mbox */
+ {
 
 
