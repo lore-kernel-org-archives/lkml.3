@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343AbbAYSxp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:53:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57912 "EHLO
+	id S932540AbbAYSxt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:53:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360AbbAYSJw (ORCPT
+	with ESMTP id S1755592AbbAYSJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Jiri Benc <jbenc@redhat.com>,
+        Jiri Benc <jbenc@redhat.com>, Stefan Assmann <sassmann@redhat.com>,
+        Sunil Choudhary <schoudha@redhat.com>,
+        Govindarajulu Varadarajan <_govind@gmx.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 024/183] team: avoid possible underflow of count_pending value for notify_peers and mcast_rejoin
-Date: Sun, 25 Jan 2015 10:05:46 -0800
-Message-Id: <20150125180811.220058099@linuxfoundation.org>
+Subject: [PATCH 3.18 025/183] enic: fix rx skb checksum
+Date: Sun, 25 Jan 2015 10:05:47 -0800
+Message-Id: <20150125180811.261108579@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -29,94 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Govindarajulu Varadarajan <_govind@gmx.com>
 
-[ Upstream commit b0d11b42785b70e19bc6a3122eead3f7969a7589 ]
+[ Upstream commit 17e96834fd35997ca7cdfbf15413bcd5a36ad448 ]
 
-This patch is fixing a race condition that may cause setting
-count_pending to -1, which results in unwanted big bulk of arp messages
-(in case of "notify peers").
+Hardware always provides compliment of IP pseudo checksum. Stack expects
+whole packet checksum without pseudo checksum if CHECKSUM_COMPLETE is set.
 
-Consider following scenario:
+This causes checksum error in nf & ovs.
 
-count_pending == 2
-   CPU0                                           CPU1
-					team_notify_peers_work
-					  atomic_dec_and_test (dec count_pending to 1)
-					  schedule_delayed_work
- team_notify_peers
-   atomic_add (adding 1 to count_pending)
-					team_notify_peers_work
-					  atomic_dec_and_test (dec count_pending to 1)
-					  schedule_delayed_work
-					team_notify_peers_work
-					  atomic_dec_and_test (dec count_pending to 0)
-   schedule_delayed_work
-					team_notify_peers_work
-					  atomic_dec_and_test (dec count_pending to -1)
+kernel: qg-19546f09-f2: hw csum failure
+kernel: CPU: 9 PID: 0 Comm: swapper/9 Tainted: GF          O--------------   3.10.0-123.8.1.el7.x86_64 #1
+kernel: Hardware name: Cisco Systems Inc UCSB-B200-M3/UCSB-B200-M3, BIOS B200M3.2.2.3.0.080820141339 08/08/2014
+kernel: ffff881218f40000 df68243feb35e3a8 ffff881237a43ab8 ffffffff815e237b
+kernel: ffff881237a43ad0 ffffffff814cd4ca ffff8829ec71eb00 ffff881237a43af0
+kernel: ffffffff814c6232 0000000000000286 ffff8829ec71eb00 ffff881237a43b00
+kernel: Call Trace:
+kernel: <IRQ>  [<ffffffff815e237b>] dump_stack+0x19/0x1b
+kernel: [<ffffffff814cd4ca>] netdev_rx_csum_fault+0x3a/0x40
+kernel: [<ffffffff814c6232>] __skb_checksum_complete_head+0x62/0x70
+kernel: [<ffffffff814c6251>] __skb_checksum_complete+0x11/0x20
+kernel: [<ffffffff8155a20c>] nf_ip_checksum+0xcc/0x100
+kernel: [<ffffffffa049edc7>] icmp_error+0x1f7/0x35c [nf_conntrack_ipv4]
+kernel: [<ffffffff814cf419>] ? netif_rx+0xb9/0x1d0
+kernel: [<ffffffffa040eb7b>] ? internal_dev_recv+0xdb/0x130 [openvswitch]
+kernel: [<ffffffffa04c8330>] nf_conntrack_in+0xf0/0xa80 [nf_conntrack]
+kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
+kernel: [<ffffffffa049e302>] ipv4_conntrack_in+0x22/0x30 [nf_conntrack_ipv4]
+kernel: [<ffffffff815005ca>] nf_iterate+0xaa/0xc0
+kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
+kernel: [<ffffffff81500664>] nf_hook_slow+0x84/0x140
+kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
+kernel: [<ffffffff81509dd4>] ip_rcv+0x344/0x380
 
-Fix this race by using atomic_dec_if_positive - that will prevent
-count_pending running under 0.
+Hardware verifies IP & tcp/udp header checksum but does not provide payload
+checksum, use CHECKSUM_UNNECESSARY. Set it only if its valid IP tcp/udp packet.
 
-Fixes: fc423ff00df3a1955441 ("team: add peer notification")
-Fixes: 492b200efdd20b8fcfd  ("team: add support for sending multicast rejoins")
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Cc: Jiri Benc <jbenc@redhat.com>
+Cc: Stefan Assmann <sassmann@redhat.com>
+Reported-by: Sunil Choudhary <schoudha@redhat.com>
+Signed-off-by: Govindarajulu Varadarajan <_govind@gmx.com>
+Reviewed-by: Jiri Benc <jbenc@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/team/team.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/cisco/enic/enic_main.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -629,6 +629,7 @@ static int team_change_mode(struct team
- static void team_notify_peers_work(struct work_struct *work)
- {
- 	struct team *team;
-+	int val;
+--- a/drivers/net/ethernet/cisco/enic/enic_main.c
++++ b/drivers/net/ethernet/cisco/enic/enic_main.c
+@@ -1059,10 +1059,14 @@ static void enic_rq_indicate_buf(struct
+ 				     PKT_HASH_TYPE_L4 : PKT_HASH_TYPE_L3);
+ 		}
  
- 	team = container_of(work, struct team, notify_peers.dw.work);
+-		if ((netdev->features & NETIF_F_RXCSUM) && !csum_not_calc) {
+-			skb->csum = htons(checksum);
+-			skb->ip_summed = CHECKSUM_COMPLETE;
+-		}
++		/* Hardware does not provide whole packet checksum. It only
++		 * provides pseudo checksum. Since hw validates the packet
++		 * checksum but not provide us the checksum value. use
++		 * CHECSUM_UNNECESSARY.
++		 */
++		if ((netdev->features & NETIF_F_RXCSUM) && tcp_udp_csum_ok &&
++		    ipv4_csum_ok)
++			skb->ip_summed = CHECKSUM_UNNECESSARY;
  
-@@ -636,9 +637,14 @@ static void team_notify_peers_work(struc
- 		schedule_delayed_work(&team->notify_peers.dw, 0);
- 		return;
- 	}
-+	val = atomic_dec_if_positive(&team->notify_peers.count_pending);
-+	if (val < 0) {
-+		rtnl_unlock();
-+		return;
-+	}
- 	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, team->dev);
- 	rtnl_unlock();
--	if (!atomic_dec_and_test(&team->notify_peers.count_pending))
-+	if (val)
- 		schedule_delayed_work(&team->notify_peers.dw,
- 				      msecs_to_jiffies(team->notify_peers.interval));
- }
-@@ -669,6 +675,7 @@ static void team_notify_peers_fini(struc
- static void team_mcast_rejoin_work(struct work_struct *work)
- {
- 	struct team *team;
-+	int val;
- 
- 	team = container_of(work, struct team, mcast_rejoin.dw.work);
- 
-@@ -676,9 +683,14 @@ static void team_mcast_rejoin_work(struc
- 		schedule_delayed_work(&team->mcast_rejoin.dw, 0);
- 		return;
- 	}
-+	val = atomic_dec_if_positive(&team->mcast_rejoin.count_pending);
-+	if (val < 0) {
-+		rtnl_unlock();
-+		return;
-+	}
- 	call_netdevice_notifiers(NETDEV_RESEND_IGMP, team->dev);
- 	rtnl_unlock();
--	if (!atomic_dec_and_test(&team->mcast_rejoin.count_pending))
-+	if (val)
- 		schedule_delayed_work(&team->mcast_rejoin.dw,
- 				      msecs_to_jiffies(team->mcast_rejoin.interval));
- }
+ 		if (vlan_stripped)
+ 			__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), vlan_tci);
 
 
