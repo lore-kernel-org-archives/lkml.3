@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759574AbbAYTYj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:24:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
+	id S1754528AbbAYSIv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:08:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57179 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854AbbAYSJC (ORCPT
+	with ESMTP id S1753958AbbAYSIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:02 -0500
+	Sun, 25 Jan 2015 13:08:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        Pan Jacob jun <jacob.jun.pan@intel.com>, LKP <lkp@01.org>,
-        Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH 3.14 33/98] tick/powerclamp: Remove tick_nohz_idle abuse
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>
+Subject: [PATCH 3.10 01/50] netlink: Always copy on mmap TX.
 Date: Sun, 25 Jan 2015 10:06:51 -0800
-Message-Id: <20150125180714.308459776@linuxfoundation.org>
+Message-Id: <20150125180702.677130456@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -31,90 +25,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: David Miller <davem@davemloft.net>
 
-commit a5fd9733a30d18d7ac23f17080e7e07bb3205b69 upstream.
+[ Upstream commit 4682a0358639b29cf69437ed909c6221f8c89847 ]
 
-commit 4dbd27711cd9 "tick: export nohz tick idle symbols for module
-use" was merged via the thermal tree without an explicit ack from the
-relevant maintainers.
+Checking the file f_count and the nlk->mapped count is not completely
+sufficient to prevent the mmap'd area contents from changing from
+under us during netlink mmap sendmsg() operations.
 
-The exports are abused by the intel powerclamp driver which implements
-a fake idle state from a sched FIFO task. This causes all kinds of
-wreckage in the NOHZ core code which rightfully assumes that
-tick_nohz_idle_enter/exit() are only called from the idle task itself.
+Be careful to sample the header's length field only once, because this
+could change from under us as well.
 
-Recent changes in the NOHZ core lead to a failure of the powerclamp
-driver and now people try to hack completely broken and backwards
-workarounds into the NOHZ core code. This is completely unacceptable
-and just papers over the real problem. There are way more subtle
-issues lurking around the corner.
-
-The real solution is to fix the powerclamp driver by rewriting it with
-a sane concept, but that's beyond the scope of this.
-
-So the only solution for now is to remove the calls into the core NOHZ
-code from the powerclamp trainwreck along with the exports.
-
-Fixes: d6d71ee4a14a "PM: Introduce Intel PowerClamp Driver"
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Frederic Weisbecker <frederic@kernel.org>
-Cc: Pan Jacob jun <jacob.jun.pan@intel.com>
-Cc: LKP <lkp@01.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412181110110.17382@nanos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: 5fd96123ee19 ("netlink: implement memory mapped sendmsg()")
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/thermal/intel_powerclamp.c |    2 --
- kernel/time/tick-sched.c           |    2 --
- 2 files changed, 4 deletions(-)
+ net/netlink/af_netlink.c |   52 ++++++++++++++---------------------------------
+ 1 file changed, 16 insertions(+), 36 deletions(-)
 
---- a/drivers/thermal/intel_powerclamp.c
-+++ b/drivers/thermal/intel_powerclamp.c
-@@ -435,7 +435,6 @@ static int clamp_thread(void *arg)
- 		 * allowed. thus jiffies are updated properly.
- 		 */
- 		preempt_disable();
--		tick_nohz_idle_enter();
- 		/* mwait until target jiffies is reached */
- 		while (time_before(jiffies, target_jiffies)) {
- 			unsigned long ecx = 1;
-@@ -451,7 +450,6 @@ static int clamp_thread(void *arg)
- 			start_critical_timings();
- 			atomic_inc(&idle_wakeup_counter);
- 		}
--		tick_nohz_idle_exit();
- 		preempt_enable();
- 	}
- 	del_timer_sync(&wakeup_timer);
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -807,7 +807,6 @@ void tick_nohz_idle_enter(void)
- 
- 	local_irq_enable();
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -374,14 +374,14 @@ out:
+ 	return err;
  }
--EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
  
- /**
-  * tick_nohz_irq_exit - update next tick event from interrupt exit
-@@ -934,7 +933,6 @@ void tick_nohz_idle_exit(void)
- 
- 	local_irq_enable();
- }
--EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
- 
- static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+-static void netlink_frame_flush_dcache(const struct nl_mmap_hdr *hdr)
++static void netlink_frame_flush_dcache(const struct nl_mmap_hdr *hdr, unsigned int nm_len)
  {
+ #if ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE == 1
+ 	struct page *p_start, *p_end;
+ 
+ 	/* First page is flushed through netlink_{get,set}_status */
+ 	p_start = pgvec_to_page(hdr + PAGE_SIZE);
+-	p_end   = pgvec_to_page((void *)hdr + NL_MMAP_HDRLEN + hdr->nm_len - 1);
++	p_end   = pgvec_to_page((void *)hdr + NL_MMAP_HDRLEN + nm_len - 1);
+ 	while (p_start <= p_end) {
+ 		flush_dcache_page(p_start);
+ 		p_start++;
+@@ -563,24 +563,16 @@ static int netlink_mmap_sendmsg(struct s
+ 	struct nl_mmap_hdr *hdr;
+ 	struct sk_buff *skb;
+ 	unsigned int maxlen;
+-	bool excl = true;
+ 	int err = 0, len = 0;
+ 
+-	/* Netlink messages are validated by the receiver before processing.
+-	 * In order to avoid userspace changing the contents of the message
+-	 * after validation, the socket and the ring may only be used by a
+-	 * single process, otherwise we fall back to copying.
+-	 */
+-	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
+-	    atomic_read(&nlk->mapped) > 1)
+-		excl = false;
+-
+ 	mutex_lock(&nlk->pg_vec_lock);
+ 
+ 	ring   = &nlk->tx_ring;
+ 	maxlen = ring->frame_size - NL_MMAP_HDRLEN;
+ 
+ 	do {
++		unsigned int nm_len;
++
+ 		hdr = netlink_current_frame(ring, NL_MMAP_STATUS_VALID);
+ 		if (hdr == NULL) {
+ 			if (!(msg->msg_flags & MSG_DONTWAIT) &&
+@@ -588,35 +580,23 @@ static int netlink_mmap_sendmsg(struct s
+ 				schedule();
+ 			continue;
+ 		}
+-		if (hdr->nm_len > maxlen) {
++
++		nm_len = ACCESS_ONCE(hdr->nm_len);
++		if (nm_len > maxlen) {
+ 			err = -EINVAL;
+ 			goto out;
+ 		}
+ 
+-		netlink_frame_flush_dcache(hdr);
++		netlink_frame_flush_dcache(hdr, nm_len);
+ 
+-		if (likely(dst_portid == 0 && dst_group == 0 && excl)) {
+-			skb = alloc_skb_head(GFP_KERNEL);
+-			if (skb == NULL) {
+-				err = -ENOBUFS;
+-				goto out;
+-			}
+-			sock_hold(sk);
+-			netlink_ring_setup_skb(skb, sk, ring, hdr);
+-			NETLINK_CB(skb).flags |= NETLINK_SKB_TX;
+-			__skb_put(skb, hdr->nm_len);
+-			netlink_set_status(hdr, NL_MMAP_STATUS_RESERVED);
+-			atomic_inc(&ring->pending);
+-		} else {
+-			skb = alloc_skb(hdr->nm_len, GFP_KERNEL);
+-			if (skb == NULL) {
+-				err = -ENOBUFS;
+-				goto out;
+-			}
+-			__skb_put(skb, hdr->nm_len);
+-			memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, hdr->nm_len);
+-			netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
++		skb = alloc_skb(nm_len, GFP_KERNEL);
++		if (skb == NULL) {
++			err = -ENOBUFS;
++			goto out;
+ 		}
++		__skb_put(skb, nm_len);
++		memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, nm_len);
++		netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
+ 
+ 		netlink_increment_head(ring);
+ 
+@@ -662,7 +642,7 @@ static void netlink_queue_mmaped_skb(str
+ 	hdr->nm_pid	= NETLINK_CB(skb).creds.pid;
+ 	hdr->nm_uid	= from_kuid(sk_user_ns(sk), NETLINK_CB(skb).creds.uid);
+ 	hdr->nm_gid	= from_kgid(sk_user_ns(sk), NETLINK_CB(skb).creds.gid);
+-	netlink_frame_flush_dcache(hdr);
++	netlink_frame_flush_dcache(hdr, hdr->nm_len);
+ 	netlink_set_status(hdr, NL_MMAP_STATUS_VALID);
+ 
+ 	NETLINK_CB(skb).flags |= NETLINK_SKB_DELIVERED;
 
 
