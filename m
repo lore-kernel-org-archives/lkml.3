@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759407AbbAYTVj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:21:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57516 "EHLO
+	id S1757247AbbAYSo2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:44:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57896 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286AbbAYSJG (ORCPT
+	with ESMTP id S1755838AbbAYSKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:06 -0500
+	Sun, 25 Jan 2015 13:10:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Michael Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 41/98] clk: Dont try to use a struct clk* after it could have been freed
-Date: Sun, 25 Jan 2015 10:06:59 -0800
-Message-Id: <20150125180714.666344887@linuxfoundation.org>
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.18 098/183] serial: fix parisc boot hang
+Date: Sun, 25 Jan 2015 10:07:00 -0800
+Message-Id: <20150125180814.421106886@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,47 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 10cdfe54dab034311c8e2fad9ba2dffbe616caa9 upstream.
+commit 68ed7e1c3d236e9e1e60ed6cae22f2c1c4ba2952 upstream.
 
-As __clk_release could call kfree on clk and then we wouldn't have a safe way
-of getting the module that owns the clock.
+This is a partial revert of 2f2dafe (serial: serial_core.c: printk
+replacement) which gets us booting again.  The real problem seems to be
+the _emit path in early boot.  However, until we can root cause it, we
+need at least to get boot working.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Fixes: fcb0ee6a3d33 ("clk: Implement clk_unregister")
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Michael Turquette <mturquette@linaro.org>
+Fixes: 2f2dafe77df2c78e189a9fa6b1879dffd06ae5a1
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/clk.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/tty/serial/serial_core.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2233,14 +2233,17 @@ int __clk_get(struct clk *clk)
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -2102,7 +2102,9 @@ uart_report_port(struct uart_driver *drv
+ 		break;
+ 	}
  
- void __clk_put(struct clk *clk)
- {
-+	struct module *owner;
-+
- 	if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
- 		return;
- 
- 	clk_prepare_lock();
-+	owner = clk->owner;
- 	kref_put(&clk->ref, __clk_release);
- 	clk_prepare_unlock();
- 
--	module_put(clk->owner);
-+	module_put(owner);
- }
- 
- /***        clk rate change notifiers        ***/
+-	dev_info(port->dev, "%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
++	printk(KERN_INFO "%s%s%s%d at %s (irq = %d, base_baud = %d) is a %s\n",
++	       port->dev ? dev_name(port->dev) : "",
++	       port->dev ? ": " : "",
+ 	       drv->dev_name,
+ 	       drv->tty_driver->name_base + port->line,
+ 	       address, port->irq, port->uartclk / 16, uart_type(port));
 
 
