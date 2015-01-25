@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488AbbAYTGz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:06:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
+	id S932251AbbAYS3O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:29:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358AbbAYSJ1 (ORCPT
+	with ESMTP id S1756037AbbAYSK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:27 -0500
+	Sun, 25 Jan 2015 13:10:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Powell <zlinuxman@wowway.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.14 98/98] s390/3215: fix tty output containing tabs
-Date: Sun, 25 Jan 2015 10:07:56 -0800
-Message-Id: <20150125180717.137415198@linuxfoundation.org>
+        Olivier Sobrie <olivier@sobrie.be>,
+        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.18 155/183] can: kvaser_usb: Dont free packets when tight on URBs
+Date: Sun, 25 Jan 2015 10:07:57 -0800
+Message-Id: <20150125180816.913256222@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,73 +26,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
 
-commit e512d56c799517f33b301d81e9a5e0ebf30c2d1e upstream.
+commit b442723fcec445fb0ae1104888dd22cd285e0a91 upstream.
 
-git commit 37f81fa1f63ad38e16125526bb2769ae0ea8d332
-"n_tty: do O_ONLCR translation as a single write"
-surfaced a bug in the 3215 device driver. In combination this
-broke tab expansion for tty ouput.
+Flooding the Kvaser CAN to USB dongle with multiple reads and
+writes in high frequency caused seemingly-random panics in the
+kernel.
 
-The cause is an asymmetry in the behaviour of tty3215_ops->write
-vs tty3215_ops->put_char. The put_char function scans for '\t'
-but the write function does not.
+On further inspection, it seems the driver erroneously freed the
+to-be-transmitted packet upon getting tight on URBs and returning
+NETDEV_TX_BUSY, leading to invalid memory writes and double frees
+at a later point in time.
 
-As the driver has logic for the '\t' expansion remove XTABS
-from c_oflag of the initial termios as well.
+Note:
 
-Reported-by: Stephen Powell <zlinuxman@wowway.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
+is a driver bug in and out of itself: it means that our start/stop
+queue flow control is broken.
+
+This patch only fixes the (buggy) error handling code; the root
+cause shall be fixed in a later commit.
+
+Acked-by: Olivier Sobrie <olivier@sobrie.be>
+Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/char/con3215.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ drivers/net/can/usb/kvaser_usb.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/s390/char/con3215.c
-+++ b/drivers/s390/char/con3215.c
-@@ -1029,12 +1029,26 @@ static int tty3215_write(struct tty_stru
- 			 const unsigned char *buf, int count)
- {
- 	struct raw3215_info *raw;
-+	int i, written;
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -1294,12 +1294,14 @@ static netdev_tx_t kvaser_usb_start_xmit
+ 	if (!urb) {
+ 		netdev_err(netdev, "No memory left for URBs\n");
+ 		stats->tx_dropped++;
+-		goto nourbmem;
++		dev_kfree_skb(skb);
++		return NETDEV_TX_OK;
+ 	}
  
- 	if (!tty)
- 		return 0;
- 	raw = (struct raw3215_info *) tty->driver_data;
--	raw3215_write(raw, buf, count);
--	return count;
-+	written = count;
-+	while (count > 0) {
-+		for (i = 0; i < count; i++)
-+			if (buf[i] == '\t' || buf[i] == '\n')
-+				break;
-+		raw3215_write(raw, buf, i);
-+		count -= i;
-+		buf += i;
-+		if (count > 0) {
-+			raw3215_putchar(raw, *buf);
-+			count--;
-+			buf++;
-+		}
-+	}
-+	return written;
+ 	buf = kmalloc(sizeof(struct kvaser_msg), GFP_ATOMIC);
+ 	if (!buf) {
+ 		stats->tx_dropped++;
++		dev_kfree_skb(skb);
+ 		goto nobufmem;
+ 	}
+ 
+@@ -1334,6 +1336,7 @@ static netdev_tx_t kvaser_usb_start_xmit
+ 		}
+ 	}
+ 
++	/* This should never happen; it implies a flow control bug */
+ 	if (!context) {
+ 		netdev_warn(netdev, "cannot find free context\n");
+ 		ret =  NETDEV_TX_BUSY;
+@@ -1364,9 +1367,6 @@ static netdev_tx_t kvaser_usb_start_xmit
+ 	if (unlikely(err)) {
+ 		can_free_echo_skb(netdev, context->echo_index);
+ 
+-		skb = NULL; /* set to NULL to avoid double free in
+-			     * dev_kfree_skb(skb) */
+-
+ 		atomic_dec(&priv->active_tx_urbs);
+ 		usb_unanchor_urb(urb);
+ 
+@@ -1388,8 +1388,6 @@ releasebuf:
+ 	kfree(buf);
+ nobufmem:
+ 	usb_free_urb(urb);
+-nourbmem:
+-	dev_kfree_skb(skb);
+ 	return ret;
  }
  
- /*
-@@ -1182,7 +1196,7 @@ static int __init tty3215_init(void)
- 	driver->subtype = SYSTEM_TYPE_TTY;
- 	driver->init_termios = tty_std_termios;
- 	driver->init_termios.c_iflag = IGNBRK | IGNPAR;
--	driver->init_termios.c_oflag = ONLCR | XTABS;
-+	driver->init_termios.c_oflag = ONLCR;
- 	driver->init_termios.c_lflag = ISIG;
- 	driver->flags = TTY_DRIVER_REAL_RAW;
- 	tty_set_operations(driver, &tty3215_ops);
 
 
