@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759622AbbAYTYv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:24:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
+	id S1758426AbbAYSrN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:47:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754815AbbAYSJB (ORCPT
+	with ESMTP id S1754348AbbAYSKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:01 -0500
+	Sun, 25 Jan 2015 13:10:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arik Nemtsov <arikx.nemtsov@intel.com>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 30/98] cfg80211: avoid mem leak on driver hint set
-Date: Sun, 25 Jan 2015 10:06:48 -0800
-Message-Id: <20150125180714.177278756@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.18 087/183] clk: Really fix deadlock with mmap_sem
+Date: Sun, 25 Jan 2015 10:06:49 -0800
+Message-Id: <20150125180813.963008758@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,48 +27,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Arik Nemtsov <arik@wizery.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 34f05f543f02350e920bddb7660ffdd4697aaf60 upstream.
+commit 89f7e9de59bf3e3cda2e00de12c66db22675a7cf upstream.
 
-In the already-set and intersect case of a driver-hint, the previous
-wiphy regdomain was not freed before being reset with a copy of the
-cfg80211 regdomain.
+Commit 6314b6796e3c (clk: Don't hold prepare_lock across debugfs
+creation, 2014-09-04) forgot to update one place where we hold
+the prepare_lock while creating debugfs directories. This means
+we still have the chance of a deadlock that the commit was trying
+to fix. Actually fix it by moving the debugfs creation outside
+the prepare_lock.
 
-Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
-Acked-by: Luis R. Rodriguez <mcgrof@suse.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Fixes: 6314b6796e3c "clk: Don't hold prepare_lock across debugfs creation"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Michael Turquette <mturquette@linaro.org>
+[mturquette@linaro.org: removed lockdep_assert]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/reg.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/clk/clk.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -1547,7 +1547,7 @@ static enum reg_request_treatment
- reg_process_hint_driver(struct wiphy *wiphy,
- 			struct regulatory_request *driver_request)
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -240,7 +240,6 @@ static const struct file_operations clk_
+ 	.release	= single_release,
+ };
+ 
+-/* caller must hold prepare_lock */
+ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
  {
--	const struct ieee80211_regdomain *regd;
-+	const struct ieee80211_regdomain *regd, *tmp;
- 	enum reg_request_treatment treatment;
+ 	struct dentry *d;
+@@ -1944,7 +1943,6 @@ int __clk_init(struct device *dev, struc
+ 	else
+ 		clk->rate = 0;
  
- 	treatment = __reg_process_hint_driver(driver_request);
-@@ -1566,7 +1566,10 @@ reg_process_hint_driver(struct wiphy *wi
- 			kfree(driver_request);
- 			return REG_REQ_IGNORE;
- 		}
+-	clk_debug_register(clk);
+ 	/*
+ 	 * walk the list of orphan clocks and reparent any that are children of
+ 	 * this clock
+@@ -1979,6 +1977,9 @@ int __clk_init(struct device *dev, struc
+ out:
+ 	clk_prepare_unlock();
+ 
++	if (!ret)
++		clk_debug_register(clk);
 +
-+		tmp = get_wiphy_regdom(wiphy);
- 		rcu_assign_pointer(wiphy->regd, regd);
-+		rcu_free_regdom(tmp);
- 	}
- 
+ 	return ret;
+ }
  
 
 
