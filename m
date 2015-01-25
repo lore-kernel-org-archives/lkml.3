@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251AbbAYS3O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:29:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
+	id S932227AbbAYS3L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:29:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756037AbbAYSK2 (ORCPT
+	with ESMTP id S1756039AbbAYSK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:10:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Sobrie <olivier@sobrie.be>,
         "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
         Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.18 155/183] can: kvaser_usb: Dont free packets when tight on URBs
-Date: Sun, 25 Jan 2015 10:07:57 -0800
-Message-Id: <20150125180816.913256222@linuxfoundation.org>
+Subject: [PATCH 3.18 156/183] can: kvaser_usb: Reset all URB tx contexts upon channel close
+Date: Sun, 25 Jan 2015 10:07:58 -0800
+Message-Id: <20150125180816.953983522@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -32,79 +31,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
 
-commit b442723fcec445fb0ae1104888dd22cd285e0a91 upstream.
+commit 889b77f7fd2bcc922493d73a4c51d8a851505815 upstream.
 
 Flooding the Kvaser CAN to USB dongle with multiple reads and
-writes in high frequency caused seemingly-random panics in the
-kernel.
+writes in very high frequency (*), closing the CAN channel while
+all the transmissions are on (#), opening the device again (@),
+then sending a small number of packets would make the driver
+enter an almost infinite loop of:
 
-On further inspection, it seems the driver erroneously freed the
-to-be-transmitted packet upon getting tight on URBs and returning
-NETDEV_TX_BUSY, leading to invalid memory writes and double frees
-at a later point in time.
+[....]
+[15959.853988] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853990] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853991] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853993] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853994] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853995] kvaser_usb 4-3:1.0 can0: cannot find free context
+[....]
 
-Note:
+_dragging the whole system down_ in the process due to the
+excessive logging output.
 
-Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
-is a driver bug in and out of itself: it means that our start/stop
-queue flow control is broken.
+Initially, this has caused random panics in the kernel due to a
+buggy error recovery path.  That got fixed in an earlier commit.(%)
+This patch aims at solving the root cause. -->
 
-This patch only fixes the (buggy) error handling code; the root
-cause shall be fixed in a later commit.
+16 tx URBs and contexts are allocated per CAN channel per USB
+device. Such URBs are protected by:
 
-Acked-by: Olivier Sobrie <olivier@sobrie.be>
+a) A simple atomic counter, up to a value of MAX_TX_URBS (16)
+b) A flag in each URB context, stating if it's free
+c) The fact that ndo_start_xmit calls are themselves protected
+   by the networking layers higher above
+
+After grabbing one of the tx URBs, if the driver noticed that all
+of them are now taken, it stops the netif transmission queue.
+Such queue is worken up again only if an acknowedgment was received
+from the firmware on one of our earlier-sent frames.
+
+Meanwhile, upon channel close (#), the driver sends a CMD_STOP_CHIP
+to the firmware, effectively closing all further communication.  In
+the high traffic case, the atomic counter remains at MAX_TX_URBS,
+and all the URB contexts remain marked as active.  While opening
+the channel again (@), it cannot send any further frames since no
+more free tx URB contexts are available.
+
+Reset all tx URB contexts upon CAN channel close.
+
+(*) 50 parallel instances of `cangen0 -g 0 -ix`
+(#) `ifconfig can0 down`
+(@) `ifconfig can0 up`
+(%) "can: kvaser_usb: Don't free packets when tight on URBs"
+
 Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/kvaser_usb.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/net/can/usb/kvaser_usb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/drivers/net/can/usb/kvaser_usb.c
 +++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1294,12 +1294,14 @@ static netdev_tx_t kvaser_usb_start_xmit
- 	if (!urb) {
- 		netdev_err(netdev, "No memory left for URBs\n");
- 		stats->tx_dropped++;
--		goto nourbmem;
-+		dev_kfree_skb(skb);
-+		return NETDEV_TX_OK;
- 	}
+@@ -1246,6 +1246,9 @@ static int kvaser_usb_close(struct net_d
+ 	if (err)
+ 		netdev_warn(netdev, "Cannot stop device, error %d\n", err);
  
- 	buf = kmalloc(sizeof(struct kvaser_msg), GFP_ATOMIC);
- 	if (!buf) {
- 		stats->tx_dropped++;
-+		dev_kfree_skb(skb);
- 		goto nobufmem;
- 	}
- 
-@@ -1334,6 +1336,7 @@ static netdev_tx_t kvaser_usb_start_xmit
- 		}
- 	}
- 
-+	/* This should never happen; it implies a flow control bug */
- 	if (!context) {
- 		netdev_warn(netdev, "cannot find free context\n");
- 		ret =  NETDEV_TX_BUSY;
-@@ -1364,9 +1367,6 @@ static netdev_tx_t kvaser_usb_start_xmit
- 	if (unlikely(err)) {
- 		can_free_echo_skb(netdev, context->echo_index);
- 
--		skb = NULL; /* set to NULL to avoid double free in
--			     * dev_kfree_skb(skb) */
--
- 		atomic_dec(&priv->active_tx_urbs);
- 		usb_unanchor_urb(urb);
- 
-@@ -1388,8 +1388,6 @@ releasebuf:
- 	kfree(buf);
- nobufmem:
- 	usb_free_urb(urb);
--nourbmem:
--	dev_kfree_skb(skb);
- 	return ret;
- }
++	/* reset tx contexts */
++	kvaser_usb_unlink_tx_urbs(priv);
++
+ 	priv->can.state = CAN_STATE_STOPPED;
+ 	close_candev(priv->netdev);
  
 
 
