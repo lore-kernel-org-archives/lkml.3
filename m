@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758683AbbAYS4Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:56:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
+	id S1758677AbbAYSzm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:55:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616AbbAYSJs (ORCPT
+	with ESMTP id S1755620AbbAYSJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:48 -0500
+	Sun, 25 Jan 2015 13:09:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Ian Munsie <imunsie@au1.ibm.com>,
         Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.18 053/183] cxl: Add timeout to process element commands
-Date: Sun, 25 Jan 2015 10:06:15 -0800
-Message-Id: <20150125180812.472760052@linuxfoundation.org>
+Subject: [PATCH 3.18 054/183] cxl: Unmap MMIO regions when detaching a context
+Date: Sun, 25 Jan 2015 10:06:16 -0800
+Message-Id: <20150125180812.515208418@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -31,44 +31,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-commit a98e6e9f4e0224d85b4d951edc44af16dfe6094a upstream.
+commit b123429e6a9e8d03aacf888d23262835f0081448 upstream.
 
-In the event that something goes wrong in the hardware and it is unable
-to complete a process element comment we would end up polling forever,
-effectively making the associated process unkillable.
+If we need to force detach a context (e.g. due to EEH or simply force
+unbinding the driver) we should prevent the userspace contexts from
+being able to access the Problem State Area MMIO region further, which
+they may have mapped with mmap().
 
-This patch adds a timeout to the process element command code path, so
-that we will give up if the hardware does not respond in a reasonable
-time.
+This patch unmaps any mapped MMIO regions when detaching a userspace
+context.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/cxl/native.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/misc/cxl/context.c |   11 ++++++++++-
+ drivers/misc/cxl/cxl.h     |    7 ++++++-
+ drivers/misc/cxl/file.c    |    6 +++++-
+ 3 files changed, 21 insertions(+), 3 deletions(-)
 
---- a/drivers/misc/cxl/native.c
-+++ b/drivers/misc/cxl/native.c
-@@ -277,6 +277,7 @@ static int do_process_element_cmd(struct
- 				  u64 cmd, u64 pe_state)
+--- a/drivers/misc/cxl/context.c
++++ b/drivers/misc/cxl/context.c
+@@ -34,7 +34,8 @@ struct cxl_context *cxl_context_alloc(vo
+ /*
+  * Initialises a CXL context.
+  */
+-int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master)
++int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master,
++		     struct address_space *mapping)
  {
- 	u64 state;
-+	unsigned long timeout = jiffies + (HZ * CXL_TIMEOUT);
+ 	int i;
  
- 	WARN_ON(!ctx->afu->enabled);
+@@ -42,6 +43,8 @@ int cxl_context_init(struct cxl_context
+ 	ctx->afu = afu;
+ 	ctx->master = master;
+ 	ctx->pid = NULL; /* Set in start work ioctl */
++	mutex_init(&ctx->mapping_lock);
++	ctx->mapping = mapping;
  
-@@ -286,6 +287,10 @@ static int do_process_element_cmd(struct
- 	smp_mb();
- 	cxl_p1n_write(ctx->afu, CXL_PSL_LLCMD_An, cmd | ctx->pe);
- 	while (1) {
-+		if (time_after_eq(jiffies, timeout)) {
-+			dev_warn(&ctx->afu->dev, "WARNING: Process Element Command timed out!\n");
-+			return -EBUSY;
-+		}
- 		state = be64_to_cpup(ctx->afu->sw_command_status);
- 		if (state == ~0ULL) {
- 			pr_err("cxl: Error adding process element to AFU\n");
+ 	/*
+ 	 * Allocate the segment table before we put it in the IDR so that we
+@@ -147,6 +150,12 @@ static void __detach_context(struct cxl_
+ 	afu_release_irqs(ctx);
+ 	flush_work(&ctx->fault_work); /* Only needed for dedicated process */
+ 	wake_up_all(&ctx->wq);
++
++	/* Release Problem State Area mapping */
++	mutex_lock(&ctx->mapping_lock);
++	if (ctx->mapping)
++		unmap_mapping_range(ctx->mapping, 0, 0, 1);
++	mutex_unlock(&ctx->mapping_lock);
+ }
+ 
+ /*
+--- a/drivers/misc/cxl/cxl.h
++++ b/drivers/misc/cxl/cxl.h
+@@ -390,6 +390,10 @@ struct cxl_context {
+ 	phys_addr_t psn_phys;
+ 	u64 psn_size;
+ 
++	/* Used to unmap any mmaps when force detaching */
++	struct address_space *mapping;
++	struct mutex mapping_lock;
++
+ 	spinlock_t sste_lock; /* Protects segment table entries */
+ 	struct cxl_sste *sstp;
+ 	u64 sstp0, sstp1;
+@@ -592,7 +596,8 @@ int cxl_alloc_sst(struct cxl_context *ct
+ void init_cxl_native(void);
+ 
+ struct cxl_context *cxl_context_alloc(void);
+-int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master);
++int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master,
++		     struct address_space *mapping);
+ void cxl_context_free(struct cxl_context *ctx);
+ int cxl_context_iomap(struct cxl_context *ctx, struct vm_area_struct *vma);
+ 
+--- a/drivers/misc/cxl/file.c
++++ b/drivers/misc/cxl/file.c
+@@ -77,7 +77,7 @@ static int __afu_open(struct inode *inod
+ 		goto err_put_afu;
+ 	}
+ 
+-	if ((rc = cxl_context_init(ctx, afu, master)))
++	if ((rc = cxl_context_init(ctx, afu, master, inode->i_mapping)))
+ 		goto err_put_afu;
+ 
+ 	pr_devel("afu_open pe: %i\n", ctx->pe);
+@@ -113,6 +113,10 @@ static int afu_release(struct inode *ino
+ 		 __func__, ctx->pe);
+ 	cxl_context_detach(ctx);
+ 
++	mutex_lock(&ctx->mapping_lock);
++	ctx->mapping = NULL;
++	mutex_unlock(&ctx->mapping_lock);
++
+ 	put_device(&ctx->afu->dev);
+ 
+ 	/*
 
 
