@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341AbbAYQKH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 11:10:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:58638 "EHLO
+	id S1753980AbbAYQKZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 11:10:25 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:58647 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751227AbbAYQKE (ORCPT
+	with ESMTP id S1751244AbbAYQKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 11:10:04 -0500
-Date: Sun, 25 Jan 2015 17:06:25 +0100
+	Sun, 25 Jan 2015 11:10:05 -0500
+Date: Sun, 25 Jan 2015 17:08:33 +0100
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>, Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH v2 6/9] ARM: dts: sunxi: Add usb3_vbus regulator to
- common regulators dtsi
-Message-ID: <20150125160625.GH8470@lukather>
-References: <1422188530-1794-1-git-send-email-wens@csie.org>
- <1422188530-1794-7-git-send-email-wens@csie.org>
+To: Vishnu Patekar <vishnupatekar0510@gmail.com>
+Cc: dmitry.torokhov@gmail.com, hdegoede@redhat.com,
+        ijc+devicetree@hellion.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        linux-input@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v5 0/4] ARM:sunxi:ps2 Added support for A10/A20 ps2
+ controller
+Message-ID: <20150125160833.GI8470@lukather>
+References: <1422193209-17787-1-git-send-email-vishnupatekar0510@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2oox5VnwalALFvA7"
+	protocol="application/pgp-signature"; boundary="hABqaeELJqnDDeDE"
 Content-Disposition: inline
-In-Reply-To: <1422188530-1794-7-git-send-email-wens@csie.org>
+In-Reply-To: <1422193209-17787-1-git-send-email-vishnupatekar0510@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---2oox5VnwalALFvA7
+--hABqaeELJqnDDeDE
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, Jan 25, 2015 at 08:22:07PM +0800, Chen-Yu Tsai wrote:
-> Some SoCs have a total of 4 possible USB controllers. One such example
-> is the A80, which has one USB3 dual role device and 3 EHCI/OHCI pairs.
+On Sun, Jan 25, 2015 at 07:10:05PM +0530, Vishnu Patekar wrote:
+> This adds  PS2 controller support for Allwinner A10, A20 SOCs.=20
 >=20
-> Add a common VBUS regulator for the last host controller.
->=20
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> ---
->  arch/arm/boot/dts/sunxi-common-regulators.dtsi | 10 ++++++++++
->  1 file changed, 10 insertions(+)
->=20
-> diff --git a/arch/arm/boot/dts/sunxi-common-regulators.dtsi b/arch/arm/bo=
-ot/dts/sunxi-common-regulators.dtsi
-> index e02baa66b33c..97fe8d73c4f7 100644
-> --- a/arch/arm/boot/dts/sunxi-common-regulators.dtsi
-> +++ b/arch/arm/boot/dts/sunxi-common-regulators.dtsi
-> @@ -130,6 +130,16 @@
->  		status =3D "disabled";
->  	};
-> =20
-> +	reg_usb3_vbus: usb3-vbus {
-> +		compatible =3D "regulator-fixed";
-> +		pinctrl-names =3D "default";
-> +		regulator-name =3D "usb3-vbus";
-> +		regulator-min-microvolt =3D <5000000>;
-> +		regulator-max-microvolt =3D <5000000>;
-> +		enable-active-high;
-> +		status =3D "disabled";
-> +	};
-> +
+> I've tested PS2 keyboard on A20 Olimex-Lime2 board.=20
+> Hans had tested previous patch on A10 as well.
 
-If the A80 is the only user so far, maybe that would make more sense
-to have it in the A80 dtsi? Especially since this regulator doesn't
-really do anything else than reg_vcc5v0.
+Applied 3 and 4.
+
+Thanks!
+Maxime
 
 --=20
 Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---2oox5VnwalALFvA7
+--hABqaeELJqnDDeDE
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUxRSBAAoJEBx+YmzsjxAgIhsP/3al6+9rvBl+KBN1vuxlFCQo
-dH84folpyRVRxongNZM5gvnYWELlf8+Nup70BSSwJvGYvHGHLYk1uP8kiPLkJWku
-vlnB/uliy0Taywf/H/hf8l+UajSBXwtmRIYY9QRB6y4xt3J5El85UpS7TxcJtljF
-mqTo0p6PHX/4PPgf3RTDWYsOtY7jL9M9vycPUWXkZQNOSYD30au9I/2wfeFsQEZ/
-yXFzUwFsgqBrEU75hXyfUKqo8RQn3rHiiw/FNZzEYzexHya4oCICeNDNAr7Et9WY
-KJFNQ6w9860qq6lkv1W4w4/uMjloMwnSNSC/lHBdGKaJVLS0cMbfNqnR5Q4N18of
-9v+2bJ2a3lNWyFY9+xDWI+996e3+Sk1mjC6Gzhv6jGj9XlJgXyknHCxzFzwatKHk
-O6+g8K529V4W4O2wdDcHRgGmc9H3N3mEz4qxArFBNzjri6Tcz9DH6OuwP133LiqZ
-MOFD4ytuMyhT/Y6JQbtqjKoRY8nJIR2scQ1atbmnqPY++TRtjhz3oMSRg8AtxYS6
-l1rfIkLlRjNtUgJCtAd6Nigg6Vmjo6eUdgx+RH8Y+QgE0eXPy+egPC7LmXMp3PXp
-oF/PZLcgrzBthCBIwhPjVxo7RWwMBV4Af7RSqikiiAPfx26XOJV/nAuQUZdi0HLH
-Gp5JhU6MVCLvgkSi+UJr
-=PrD2
+iQIcBAEBAgAGBQJUxRUBAAoJEBx+YmzsjxAgo0IQAKxd+Hk/lITuZgikC2wzj+Ve
+0gw6Z4ohfNGNWeOLjfecMPiJdUJYh0xF+MicmzV6bZzgKiY3pH2l64J2wBwji7d8
+Jds/Omb5KYk54uMiRMiSokhEL5VOm3HLBgP80zZe+8igLe5GFkLZztDSq+LZoCur
+Qu8TIAFe76o1sHnkKW9YYPpnmYh3y+YLMFbeL4FPZCf1ToUT3Iu5zrd49Cz+C/KF
+oAAjATFEcJba88r7ZrNO7XV68Pjf1vNbj2Q8Oj6K5Aq98TocGvpxT3c7KTpbr9wn
+1V5AQwkd8nZPbn71LlhdNAPbXkdzITyX1ecGA3giXpjMuktq3PiQYHOl8+eMDFw6
+3dWU+1kkLc/ouUBcw6PRcBggs4miWEwHq1151bWAHyBZoCt0Rfz2Z/7sXeqk+1Rq
+qhHeipzNcgNdv8Mn84HSkUc6/TwULWqoJ7rRtV5Ke6/fQuTkd7KWh4jOqBVVCJ2l
+pxz4vh/gROWr9yvergOwKsHFE/iZGZJE5UHphqB81SvHnDTTWQp/E1ZYSh7cU/vp
+ccMvLW7mwQkhhP7C+uPPwEvjZQhIVu17hzz9D2F4Nzi+9lADz8R9YCWgrVkCndYE
+ihKRGGrdVgEDRpc4jaSzJpFbgKjHo50pj/CXrlq0SNmD0kFVvO3Mo0hoPE/z+hUP
+QlmrXTnR1T0FFgLaSXRZ
+=ik7W
 -----END PGP SIGNATURE-----
 
---2oox5VnwalALFvA7--
+--hABqaeELJqnDDeDE--
