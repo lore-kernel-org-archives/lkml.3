@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478AbbAYSLN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S1757568AbbAYScb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:32:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57892 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754534AbbAYSIx (ORCPT
+	with ESMTP id S1755987AbbAYSK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:53 -0500
+	Sun, 25 Jan 2015 13:10:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerry Hoemann <jerry.hoemann@hp.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ken Helias <kenhelias@firemail.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.10 48/50] fsnotify: next_i is freed during fsnotify_unmount_inodes.
+        Johan Hovold <johan@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.18 136/183] gpio: fix memory leak and sleep-while-atomic
 Date: Sun, 25 Jan 2015 10:07:38 -0800
-Message-Id: <20150125180705.345166785@linuxfoundation.org>
+Message-Id: <20150125180816.089114188@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -29,112 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jerry Hoemann <jerry.hoemann@hp.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 6424babfd68dd8a83d9c60a5242d27038856599f upstream.
+commit 00acc3dc248063f982cfacfbe5e78c0d6797ffef upstream.
 
-During file system stress testing on 3.10 and 3.12 based kernels, the
-umount command occasionally hung in fsnotify_unmount_inodes in the
-section of code:
+Fix memory leak and sleep-while-atomic in gpiochip_remove.
 
-                spin_lock(&inode->i_lock);
-                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
-                        spin_unlock(&inode->i_lock);
-                        continue;
-                }
+The memory leak was introduced by afa82fab5e13 ("gpio / ACPI: Move event
+handling registration to gpiolib irqchip helpers") that moved the
+release of acpi interrupt resources to gpiochip_irqchip_remove, but by
+then the resources are no longer accessible as the acpi_gpio_chip has
+already been freed by acpi_gpiochip_remove.
 
-As this section of code holds the global inode_sb_list_lock, eventually
-the system hangs trying to acquire the lock.
+Note that this also fixes a few potential sleep-while-atomics, which has
+been around since 1425052097b5 ("gpio: add IRQ chip helpers in gpiolib")
+when the call to gpiochip_irqchip_remove while holding a spinlock was
+added (a couple of irq-domain paths can end up grabbing mutexes).
 
-Multiple crash dumps showed:
+Fixes: afa82fab5e13 ("gpio / ACPI: Move event handling registration to
+gpiolib irqchip helpers")
+Fixes: 1425052097b5 ("gpio: add IRQ chip helpers in gpiolib")
 
-The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
-back at itself.  As this is not the value of list upon entry to the
-function, the kernel never exits the loop.
-
-To help narrow down problem, the call to list_del_init in
-inode_sb_list_del was changed to list_del.  This poisons the pointers in
-the i_sb_list and causes a kernel to panic if it transverse a freed
-inode.
-
-Subsequent stress testing paniced in fsnotify_unmount_inodes at the
-bottom of the list_for_each_entry_safe loop showing next_i had become
-free.
-
-We believe the root cause of the problem is that next_i is being freed
-during the window of time that the list_for_each_entry_safe loop
-temporarily releases inode_sb_list_lock to call fsnotify and
-fsnotify_inode_delete.
-
-The code in fsnotify_unmount_inodes attempts to prevent the freeing of
-inode and next_i by calling __iget.  However, the code doesn't do the
-__iget call on next_i
-
-	if i_count == 0 or
-	if i_state & (I_FREEING | I_WILL_FREE)
-
-The patch addresses this issue by advancing next_i in the above two cases
-until we either find a next_i which we can __iget or we reach the end of
-the list.  This makes the handling of next_i more closely match the
-handling of the variable "inode."
-
-The time to reproduce the hang is highly variable (from hours to days.) We
-ran the stress test on a 3.10 kernel with the proposed patch for a week
-without failure.
-
-During list_for_each_entry_safe, next_i is becoming free causing
-the loop to never terminate.  Advance next_i in those cases where
-__iget is not done.
-
-Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Ken Helias <kenhelias@firemail.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/inode_mark.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/gpio/gpiolib.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/notify/inode_mark.c
-+++ b/fs/notify/inode_mark.c
-@@ -288,20 +288,25 @@ void fsnotify_unmount_inodes(struct list
- 		spin_unlock(&inode->i_lock);
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -316,11 +316,12 @@ void gpiochip_remove(struct gpio_chip *c
+ 	unsigned long	flags;
+ 	unsigned	id;
  
- 		/* In case the dropping of a reference would nuke next_i. */
--		if ((&next_i->i_sb_list != list) &&
--		    atomic_read(&next_i->i_count)) {
-+		while (&next_i->i_sb_list != list) {
- 			spin_lock(&next_i->i_lock);
--			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
-+			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE)) &&
-+						atomic_read(&next_i->i_count)) {
- 				__iget(next_i);
- 				need_iput = next_i;
-+				spin_unlock(&next_i->i_lock);
-+				break;
- 			}
- 			spin_unlock(&next_i->i_lock);
-+			next_i = list_entry(next_i->i_sb_list.next,
-+						struct inode, i_sb_list);
- 		}
++	gpiochip_irqchip_remove(chip);
++
+ 	acpi_gpiochip_remove(chip);
  
- 		/*
--		 * We can safely drop inode_sb_list_lock here because we hold
--		 * references on both inode and next_i.  Also no new inodes
--		 * will be added since the umount has begun.
-+		 * We can safely drop inode_sb_list_lock here because either
-+		 * we actually hold references on both inode and next_i or
-+		 * end of list.  Also no new inodes will be added since the
-+		 * umount has begun.
- 		 */
- 		spin_unlock(&inode_sb_list_lock);
+ 	spin_lock_irqsave(&gpio_lock, flags);
+ 
+-	gpiochip_irqchip_remove(chip);
+ 	gpiochip_remove_pin_ranges(chip);
+ 	of_gpiochip_remove(chip);
  
 
 
