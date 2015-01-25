@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbbAYQKZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 11:10:25 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:58647 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751244AbbAYQKF (ORCPT
+	id S1754047AbbAYQL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 11:11:56 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:40279 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbbAYQLx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 11:10:05 -0500
-Date: Sun, 25 Jan 2015 17:08:33 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vishnu Patekar <vishnupatekar0510@gmail.com>
-Cc: dmitry.torokhov@gmail.com, hdegoede@redhat.com,
-        ijc+devicetree@hellion.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] ARM:sunxi:ps2 Added support for A10/A20 ps2
- controller
-Message-ID: <20150125160833.GI8470@lukather>
-References: <1422193209-17787-1-git-send-email-vishnupatekar0510@gmail.com>
+	Sun, 25 Jan 2015 11:11:53 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hABqaeELJqnDDeDE"
-Content-Disposition: inline
-In-Reply-To: <1422193209-17787-1-git-send-email-vishnupatekar0510@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAF6AEGuLu+KYwBX59T4-SThPDJCYwKDU6_qWf7d80Dae6FAmbQ@mail.gmail.com>
+References: <alpine.DEB.2.02.1501191226010.2973@galak-ubuntu.qualcomm.com>
+ <20150122011521.GA31815@quad.lixom.net> <D177DF12-0F31-49CF-B98B-9FAC23AAB24C@codeaurora.org>
+ <CAOesGMipp=Odc-cWvrba0e1pd1X7O+PKNH+WoM3fG4xX2GRFuA@mail.gmail.com>
+ <DBE63F76-D4CB-49D5-90C6-642CFCA7687F@codeaurora.org> <CAOesGMht4VaNgwr5rOyher081Vk7w_HKTMeOm677rEAkOcCPAg@mail.gmail.com>
+ <CAF6AEGuLu+KYwBX59T4-SThPDJCYwKDU6_qWf7d80Dae6FAmbQ@mail.gmail.com>
+From: Sean Paul <seanpaul@chromium.org>
+Date: Sun, 25 Jan 2015 11:11:28 -0500
+Message-ID: <CAOw6vbJpfp-ViGXcS7vwm-1SWQmq=LhGkN=PmhKO9ky1qUJ2mA@mail.gmail.com>
+Subject: Re: [GIT PULL] qcom SoC changes for v3.20
+To: Rob Clark <robdclark@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, Kumar Gala <galak@codeaurora.org>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Vikram Mulukutla <markivx@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Lina Iyer <lina.iyer@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thierry Reding <treding@nvidia.com>, daeinki <inki.dae@samsung.com>,
+        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        gustavo@padovan.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 25, 2015 at 11:03 AM, Rob Clark <robdclark@gmail.com> wrote:
+> On Fri, Jan 23, 2015 at 1:43 PM, Olof Johansson <olof@lixom.net> wrote:
+>>>> I'd be OK with merging this, send a request and tag. Would that let
+>>>> the DRM folks make progress too?
+>>>
+>>> Will do, I don’t think it will address the DRM folks needs as they need access to make firmware calls from the DRM driver.
+>>>
+>>>> If you need a common place for this, drivers/firmware seems like a
+>>>> better home than drivers/soc.
+>>>
+>>> Agreed, what’s you take than on moving to use firmware_ops as defined in arch/arm and extended it or just leaving this as a qcom specific firmware interface?
+>>
+>> Are there any other SoCs out there with similar requirements on
+>> firmware interfaces? I think most of them so far have been fairly
+>> simple compared to the complexity of the qualcomm firmware.
+>
+> I think the question is probably "how do downstream HDCP
+> implementations work on these other SoCs"..   so far, I think qcom is
+> the first to try to upstream HDCP support, but I know there have to be
+> at least a few downstream implementations lurking out there.
+>
 
---hABqaeELJqnDDeDE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This isn't a concern on exynos, fwiw.
 
-On Sun, Jan 25, 2015 at 07:10:05PM +0530, Vishnu Patekar wrote:
-> This adds  PS2 controller support for Allwinner A10, A20 SOCs.=20
->=20
-> I've tested PS2 keyboard on A20 Olimex-Lime2 board.=20
-> Hans had tested previous patch on A10 as well.
+> And I'm sure as some others come out of the woodwork there will be
+> some things to refactor.. like possibly shared helpers for
+> implementing the state machine, etc.
+>
 
-Applied 3 and 4.
+Shared helpers would be useful to have once there's another hdcp
+implementation upstream. I haven't looked at our downstream hdcp
+implementation in a while, so it's difficult to say how much could be
+factored out. It's on my TODO stack... somewhere.
 
-Thanks!
-Maxime
+Sean
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
 
---hABqaeELJqnDDeDE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUxRUBAAoJEBx+YmzsjxAgo0IQAKxd+Hk/lITuZgikC2wzj+Ve
-0gw6Z4ohfNGNWeOLjfecMPiJdUJYh0xF+MicmzV6bZzgKiY3pH2l64J2wBwji7d8
-Jds/Omb5KYk54uMiRMiSokhEL5VOm3HLBgP80zZe+8igLe5GFkLZztDSq+LZoCur
-Qu8TIAFe76o1sHnkKW9YYPpnmYh3y+YLMFbeL4FPZCf1ToUT3Iu5zrd49Cz+C/KF
-oAAjATFEcJba88r7ZrNO7XV68Pjf1vNbj2Q8Oj6K5Aq98TocGvpxT3c7KTpbr9wn
-1V5AQwkd8nZPbn71LlhdNAPbXkdzITyX1ecGA3giXpjMuktq3PiQYHOl8+eMDFw6
-3dWU+1kkLc/ouUBcw6PRcBggs4miWEwHq1151bWAHyBZoCt0Rfz2Z/7sXeqk+1Rq
-qhHeipzNcgNdv8Mn84HSkUc6/TwULWqoJ7rRtV5Ke6/fQuTkd7KWh4jOqBVVCJ2l
-pxz4vh/gROWr9yvergOwKsHFE/iZGZJE5UHphqB81SvHnDTTWQp/E1ZYSh7cU/vp
-ccMvLW7mwQkhhP7C+uPPwEvjZQhIVu17hzz9D2F4Nzi+9lADz8R9YCWgrVkCndYE
-ihKRGGrdVgEDRpc4jaSzJpFbgKjHo50pj/CXrlq0SNmD0kFVvO3Mo0hoPE/z+hUP
-QlmrXTnR1T0FFgLaSXRZ
-=ik7W
------END PGP SIGNATURE-----
-
---hABqaeELJqnDDeDE--
+> BR,
+> -R
+>
+>> Would it make sense to use firmware_ops for the common pieces and have
+>> direct smc calls for the rest? I'm not sure that would buy us all that
+>> much. Hm.
+>>
+>> Well, at least it's an internal implementation detail. If we move it
+>> now and find a better way to do it down the road it can be refactored.
