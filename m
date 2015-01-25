@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758288AbbAYSpb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:45:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
+	id S1759465AbbAYTVt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:21:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807AbbAYSKH (ORCPT
+	with ESMTP id S1754915AbbAYSJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:07 -0500
+	Sun, 25 Jan 2015 13:09:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jisheng Zhang <jszhang@marvell.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: [PATCH 3.18 094/183] ARM: dts: berlin: fix io clk and add missing core clk for BG2Q sdhci2 host
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, jazz@deti74.ru,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 38/98] scsi: blacklist RSOC for Microsoft iSCSI target devices
 Date: Sun, 25 Jan 2015 10:06:56 -0800
-Message-Id: <20150125180814.253733564@linuxfoundation.org>
+Message-Id: <20150125180714.520624044@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,37 +26,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jisheng Zhang <jszhang@marvell.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit 96ed6046d3bf1113de3bdbd6dbb7f40e6d0ae0ef upstream.
+commit 198a956a11b15b564ac06d1411881e215b587408 upstream.
 
-On BG2Q, the sdhci2 host uses nfcecc for "io" clk and nfc for "core" clk.
-The shdci2 can't work without this patch due to the "core" clk is gated.
+The Microsoft iSCSI target does not support REPORT SUPPORTED OPERATION
+CODES. Blacklist these devices so we don't attempt to send the command.
 
-Fixes: 0d859a6a9d14 ("ARM: dts: berlin: add the SDHCI nodes for the BG2Q")
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Tested-by: Mike Christie <michaelc@cs.wisc.edu>
+Reported-by: jazz@deti74.ru
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/berlin2q.dtsi |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_devinfo.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -83,7 +83,8 @@
- 			compatible = "mrvl,pxav3-mmc";
- 			reg = <0xab1000 0x200>;
- 			interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&chip CLKID_SDIO1XIN>;
-+			clocks = <&chip CLKID_NFC_ECC>, <&chip CLKID_NFC>;
-+			clock-names = "io", "core";
- 			status = "disabled";
- 		};
- 
+--- a/drivers/scsi/scsi_devinfo.c
++++ b/drivers/scsi/scsi_devinfo.c
+@@ -211,6 +211,7 @@ static struct {
+ 	{"Medion", "Flash XL  MMC/SD", "2.6D", BLIST_FORCELUN},
+ 	{"MegaRAID", "LD", NULL, BLIST_FORCELUN},
+ 	{"MICROP", "4110", NULL, BLIST_NOTQ},
++	{"MSFT", "Virtual HD", NULL, BLIST_NO_RSOC},
+ 	{"MYLEX", "DACARMRB", "*", BLIST_REPORTLUN2},
+ 	{"nCipher", "Fastness Crypto", NULL, BLIST_FORCELUN},
+ 	{"NAKAMICH", "MJ-4.8S", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
 
 
