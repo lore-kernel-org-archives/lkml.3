@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848AbbAYSKL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:10:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
+	id S1756954AbbAYSiJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:38:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361AbbAYSIn (ORCPT
+	with ESMTP id S1755924AbbAYSKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:43 -0500
+	Sun, 25 Jan 2015 13:10:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 33/50] can: kvaser_usb: Reset all URB tx contexts upon channel close
+        Simon Guinot <simon.guinot@sequanux.org>,
+        Johan Hovold <johan@kernel.org>, Bryan Wu <cooloney@gmail.com>
+Subject: [PATCH 3.18 121/183] leds: netxbig: fix oops at probe time
 Date: Sun, 25 Jan 2015 10:07:23 -0800
-Message-Id: <20150125180704.520152941@linuxfoundation.org>
+Message-Id: <20150125180815.435783487@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,82 +25,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
+From: Simon Guinot <simon.guinot@sequanux.org>
 
-commit 889b77f7fd2bcc922493d73a4c51d8a851505815 upstream.
+commit 0c86ac2c50647451d6a70dc900f8bb0ee3d485d9 upstream.
 
-Flooding the Kvaser CAN to USB dongle with multiple reads and
-writes in very high frequency (*), closing the CAN channel while
-all the transmissions are on (#), opening the device again (@),
-then sending a small number of packets would make the driver
-enter an almost infinite loop of:
+This patch fixes a NULL pointer dereference on led_dat->mode_val. Due to
+this bug, a kernel oops can be observed at probe time on the LaCie 2Big
+and 5Big v2 boards:
 
-[....]
-[15959.853988] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853990] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853991] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853993] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853994] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853995] kvaser_usb 4-3:1.0 can0: cannot find free context
-[....]
+Unable to handle kernel NULL pointer dereference at virtual address 00000008
+[...]
+[<c03f244c>] (netxbig_led_probe) from [<c02c8c6c>] (platform_drv_probe+0x4c/0x9c)
+[<c02c8c6c>] (platform_drv_probe) from [<c02c72d0>] (driver_probe_device+0x98/0x25c)
+[<c02c72d0>] (driver_probe_device) from [<c02c7520>] (__driver_attach+0x8c/0x90)
+[<c02c7520>] (__driver_attach) from [<c02c5c24>] (bus_for_each_dev+0x68/0x94)
+[<c02c5c24>] (bus_for_each_dev) from [<c02c6408>] (bus_add_driver+0x124/0x1dc)
+[<c02c6408>] (bus_add_driver) from [<c02c7ac0>] (driver_register+0x78/0xf8)
+[<c02c7ac0>] (driver_register) from [<c000888c>] (do_one_initcall+0x80/0x1cc)
+[<c000888c>] (do_one_initcall) from [<c0733618>] (kernel_init_freeable+0xe4/0x1b4)
+[<c0733618>] (kernel_init_freeable) from [<c058db9c>] (kernel_init+0xc/0xec)
+[<c058db9c>] (kernel_init) from [<c0009850>] (ret_from_fork+0x14/0x24)
+[...]
 
-_dragging the whole system down_ in the process due to the
-excessive logging output.
+This bug was introduced by commit 588a6a99286ae30afb1339d8bc2163517b1b7dd1
+("leds: netxbig: fix attribute-creation race").
 
-Initially, this has caused random panics in the kernel due to a
-buggy error recovery path.  That got fixed in an earlier commit.(%)
-This patch aims at solving the root cause. -->
-
-16 tx URBs and contexts are allocated per CAN channel per USB
-device. Such URBs are protected by:
-
-a) A simple atomic counter, up to a value of MAX_TX_URBS (16)
-b) A flag in each URB context, stating if it's free
-c) The fact that ndo_start_xmit calls are themselves protected
-   by the networking layers higher above
-
-After grabbing one of the tx URBs, if the driver noticed that all
-of them are now taken, it stops the netif transmission queue.
-Such queue is worken up again only if an acknowedgment was received
-from the firmware on one of our earlier-sent frames.
-
-Meanwhile, upon channel close (#), the driver sends a CMD_STOP_CHIP
-to the firmware, effectively closing all further communication.  In
-the high traffic case, the atomic counter remains at MAX_TX_URBS,
-and all the URB contexts remain marked as active.  While opening
-the channel again (@), it cannot send any further frames since no
-more free tx URB contexts are available.
-
-Reset all tx URB contexts upon CAN channel close.
-
-(*) 50 parallel instances of `cangen0 -g 0 -ix`
-(#) `ifconfig can0 down`
-(@) `ifconfig can0 up`
-(%) "can: kvaser_usb: Don't free packets when tight on URBs"
-
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
+Acked-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Bryan Wu <cooloney@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/net/can/usb/kvaser_usb.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1238,6 +1238,9 @@ static int kvaser_usb_close(struct net_d
- 	if (err)
- 		netdev_warn(netdev, "Cannot stop device, error %d\n", err);
+diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
+index 26515c27ea8c..25e419752a7b 100644
+--- a/drivers/leds/leds-netxbig.c
++++ b/drivers/leds/leds-netxbig.c
+@@ -330,18 +330,18 @@ create_netxbig_led(struct platform_device *pdev,
+ 	led_dat->sata = 0;
+ 	led_dat->cdev.brightness = LED_OFF;
+ 	led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+-	/*
+-	 * If available, expose the SATA activity blink capability through
+-	 * a "sata" sysfs attribute.
+-	 */
+-	if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE)
+-		led_dat->cdev.groups = netxbig_led_groups;
+ 	led_dat->mode_addr = template->mode_addr;
+ 	led_dat->mode_val = template->mode_val;
+ 	led_dat->bright_addr = template->bright_addr;
+ 	led_dat->bright_max = (1 << pdata->gpio_ext->num_data) - 1;
+ 	led_dat->timer = pdata->timer;
+ 	led_dat->num_timer = pdata->num_timer;
++	/*
++	 * If available, expose the SATA activity blink capability through
++	 * a "sata" sysfs attribute.
++	 */
++	if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE)
++		led_dat->cdev.groups = netxbig_led_groups;
  
-+	/* reset tx contexts */
-+	kvaser_usb_unlink_tx_urbs(priv);
-+
- 	priv->can.state = CAN_STATE_STOPPED;
- 	close_candev(priv->netdev);
- 
+ 	return led_classdev_register(&pdev->dev, &led_dat->cdev);
+ }
 
 
