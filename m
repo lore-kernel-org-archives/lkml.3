@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450AbbAYSvf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:51:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58005 "EHLO
+	id S1759111AbbAYT11 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:27:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755683AbbAYSJy (ORCPT
+	with ESMTP id S1754315AbbAYSI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:54 -0500
+	Sun, 25 Jan 2015 13:08:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.18 061/183] rtlwifi: rtl8192ce: Set fw_ready flag
+        Nils Holland <nholland@tisys.org>,
+        Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>,
+        Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 05/98] tg3: tg3_disable_ints using uninitialized mailbox value to disable interrupts
 Date: Sun, 25 Jan 2015 10:06:23 -0800
-Message-Id: <20150125180812.836304300@linuxfoundation.org>
+Message-Id: <20150125180713.093778825@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,41 +28,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Prashant Sreedharan <prashant@broadcom.com>
 
-commit 9a1dce3a059111a7289680f4b8c0ec4f8736b6ee upstream.
+[ Upstream commit 05b0aa579397b734f127af58e401a30784a1e315 ]
 
-The setting of this flag was missed in previous modifications.
+During driver load in tg3_init_one, if the driver detects DMA activity before
+intializing the chip tg3_halt is called. As part of tg3_halt interrupts are
+disabled using routine tg3_disable_ints. This routine was using mailbox value
+which was not initialized (default value is 0). As a result driver was writing
+0x00000001 to pci config space register 0, which is the vendor id / device id.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This driver bug was exposed because of the commit a7877b17a667 (PCI: Check only
+the Vendor ID to identify Configuration Request Retry). Also this issue is only
+seen in older generation chipsets like 5722 because config space write to offset
+0 from driver is possible. The newer generation chips ignore writes to offset 0.
+Also without commit a7877b17a667, for these older chips when a GRC reset is
+issued the Bootcode would reprogram the vendor id/device id, which is the reason
+this bug was masked earlier.
+
+Fixed by initializing the interrupt mailbox registers before calling tg3_halt.
+
+Please queue for -stable.
+
+Reported-by: Nils Holland <nholland@tisys.org>
+Reported-by: Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>
+Signed-off-by: Prashant Sreedharan <prashant@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/broadcom/tg3.c |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -955,6 +955,7 @@ int rtl92ce_hw_init(struct ieee80211_hw
- 	local_save_flags(flags);
- 	local_irq_enable();
- 
-+	rtlhal->fw_ready = false;
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 	rtstatus = _rtl92ce_init_mac(hw);
- 	if (!rtstatus) {
-@@ -971,6 +972,7 @@ int rtl92ce_hw_init(struct ieee80211_hw
- 		goto exit;
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -17731,23 +17731,6 @@ static int tg3_init_one(struct pci_dev *
+ 		goto err_out_apeunmap;
  	}
  
-+	rtlhal->fw_ready = true;
- 	rtlhal->last_hmeboxnum = 0;
- 	rtl92c_phy_mac_config(hw);
- 	/* because last function modify RCR, so we update
+-	/*
+-	 * Reset chip in case UNDI or EFI driver did not shutdown
+-	 * DMA self test will enable WDMAC and we'll see (spurious)
+-	 * pending DMA on the PCI bus at that point.
+-	 */
+-	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
+-	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
+-		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
+-		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
+-	}
+-
+-	err = tg3_test_dma(tp);
+-	if (err) {
+-		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
+-		goto err_out_apeunmap;
+-	}
+-
+ 	intmbx = MAILBOX_INTERRUPT_0 + TG3_64BIT_REG_LOW;
+ 	rcvmbx = MAILBOX_RCVRET_CON_IDX_0 + TG3_64BIT_REG_LOW;
+ 	sndmbx = MAILBOX_SNDHOST_PROD_IDX_0 + TG3_64BIT_REG_LOW;
+@@ -17792,6 +17775,23 @@ static int tg3_init_one(struct pci_dev *
+ 			sndmbx += 0xc;
+ 	}
+ 
++	/*
++	 * Reset chip in case UNDI or EFI driver did not shutdown
++	 * DMA self test will enable WDMAC and we'll see (spurious)
++	 * pending DMA on the PCI bus at that point.
++	 */
++	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
++	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
++		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
++		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
++	}
++
++	err = tg3_test_dma(tp);
++	if (err) {
++		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
++		goto err_out_apeunmap;
++	}
++
+ 	tg3_init_coal(tp);
+ 
+ 	pci_set_drvdata(pdev, dev);
 
 
