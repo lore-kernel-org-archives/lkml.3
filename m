@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759357AbbAYTTo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:19:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
+	id S1759343AbbAYTTk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:19:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754966AbbAYSJI (ORCPT
+	with ESMTP id S1754988AbbAYSJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yegor Yefremov <yegorslists@googlemail.com>,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 44/98] net: ethernet: cpsw: fix hangs with interrupts
-Date: Sun, 25 Jan 2015 10:07:02 -0800
-Message-Id: <20150125180714.780486528@linuxfoundation.org>
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.14 45/98] video/logo: prevent use of logos after they have been freed
+Date: Sun, 25 Jan 2015 10:07:03 -0800
+Message-Id: <20150125180714.823554924@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
 References: <20150125180712.859646324@linuxfoundation.org>
@@ -30,119 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 
-commit 7ce67a38f799d1fb332f672b117efbadedaa5352 upstream.
+commit 92b004d1aa9f367c372511ca0330f58216b25703 upstream.
 
-The CPSW IP implements pulse-signaled interrupts. Due to
-that we must write a correct, pre-defined value to the
-CPDMA_MACEOIVECTOR register so the controller generates
-a pulse on the correct IRQ line to signal the End Of
-Interrupt.
+If the probe of an fb driver has been deferred due to missing
+dependencies, and the probe is later ran when a module is loaded, the
+fbdev framework will try to find a logo to use.
 
-The way the driver is written today, all four IRQ lines
-are requested using the same IRQ handler and, because of
-that, we could fall into situations where a TX IRQ fires
-but we tell the controller that we ended an RX IRQ (or
-vice-versa). This situation triggers an IRQ storm on the
-reserved IRQ 127 of INTC which will in turn call ack_bad_irq()
-which will, then, print a ton of:
+However, the logos are __initdata, and have already been freed. This
+causes sometimes page faults, if the logo memory is not mapped,
+sometimes other random crashes as the logo data is invalid, and
+sometimes nothing, if the fbdev decides to reject the logo (e.g. the
+random value depicting the logo's height is too big).
 
-	unexpected IRQ trap at vector 00
+This patch adds a late_initcall function to mark the logos as freed. In
+reality the logos are freed later, and fbdev probe may be ran between
+this late_initcall and the freeing of the logos. In that case we will
+miss drawing the logo, even if it would be possible.
 
-In order to fix the problem, we are moving all calls to
-cpdma_ctlr_eoi() inside the IRQ handler and making sure
-we *always* write the correct value to the CPDMA_MACEOIVECTOR
-register. Note that the algorithm assumes that IRQ numbers and
-value-to-be-written-to-EOI are proportional, meaning that a
-write of value 0 would trigger an EOI pulse for the RX_THRESHOLD
-Interrupt and that's the IRQ number sitting in the 0-th index
-of our irqs_table array.
-
-This, however, is safe at least for current implementations of
-CPSW so we will refrain from making the check smarter (and, as
-a side-effect, slower) until we actually have a platform where
-IRQ lines are swapped.
-
-This patch has been tested for several days with AM335x- and
-AM437x-based platforms. AM57x was left out because there are
-still pending patches to enable ethernet in mainline for that
-platform. A read of the TRM confirms the statement on previous
-paragraph.
-
-Reported-by: Yegor Yefremov <yegorslists@googlemail.com>
-Fixes: 510a1e7 (drivers: net: davinci_cpdma: acknowledge interrupt properly)
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ti/cpsw.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/video/logo/logo.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -716,6 +716,14 @@ static void cpsw_rx_handler(void *token,
- static irqreturn_t cpsw_interrupt(int irq, void *dev_id)
- {
- 	struct cpsw_priv *priv = dev_id;
-+	int value = irq - priv->irqs_table[0];
+--- a/drivers/video/logo/logo.c
++++ b/drivers/video/logo/logo.c
+@@ -21,6 +21,21 @@ static bool nologo;
+ module_param(nologo, bool, 0);
+ MODULE_PARM_DESC(nologo, "Disables startup logo");
+ 
++/*
++ * Logos are located in the initdata, and will be freed in kernel_init.
++ * Use late_init to mark the logos as freed to prevent any further use.
++ */
 +
-+	/* NOTICE: Ending IRQ here. The trick with the 'value' variable above
-+	 * is to make sure we will always write the correct value to the EOI
-+	 * register. Namely 0 for RX_THRESH Interrupt, 1 for RX Interrupt, 2
-+	 * for TX Interrupt and 3 for MISC Interrupt.
-+	 */
-+	cpdma_ctlr_eoi(priv->dma, value);
++static bool logos_freed;
++
++static int __init fb_logo_late_init(void)
++{
++	logos_freed = true;
++	return 0;
++}
++
++late_initcall(fb_logo_late_init);
++
+ /* logo's are marked __initdata. Use __init_refok to tell
+  * modpost that it is intended that this function uses data
+  * marked __initdata.
+@@ -29,7 +44,7 @@ const struct linux_logo * __init_refok f
+ {
+ 	const struct linux_logo *logo = NULL;
  
- 	cpsw_intr_disable(priv);
- 	if (priv->irq_enabled == true) {
-@@ -745,8 +753,6 @@ static int cpsw_poll(struct napi_struct
- 	int			num_tx, num_rx;
+-	if (nologo)
++	if (nologo || logos_freed)
+ 		return NULL;
  
- 	num_tx = cpdma_chan_process(priv->txch, 128);
--	if (num_tx)
--		cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
- 
- 	num_rx = cpdma_chan_process(priv->rxch, budget);
- 	if (num_rx < budget) {
-@@ -754,7 +760,6 @@ static int cpsw_poll(struct napi_struct
- 
- 		napi_complete(napi);
- 		cpsw_intr_enable(priv);
--		cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
- 		prim_cpsw = cpsw_get_slave_priv(priv, 0);
- 		if (prim_cpsw->irq_enabled == false) {
- 			prim_cpsw->irq_enabled = true;
-@@ -1265,8 +1270,6 @@ static int cpsw_ndo_open(struct net_devi
- 	napi_enable(&priv->napi);
- 	cpdma_ctlr_start(priv->dma);
- 	cpsw_intr_enable(priv);
--	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
--	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
- 
- 	if (priv->data.dual_emac)
- 		priv->slaves[priv->emac_port].open_stat = true;
-@@ -1512,9 +1515,6 @@ static void cpsw_ndo_tx_timeout(struct n
- 	cpdma_chan_start(priv->txch);
- 	cpdma_ctlr_int_ctrl(priv->dma, true);
- 	cpsw_intr_enable(priv);
--	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
--	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
--
- }
- 
- static int cpsw_ndo_set_mac_address(struct net_device *ndev, void *p)
-@@ -1560,9 +1560,6 @@ static void cpsw_ndo_poll_controller(str
- 	cpsw_interrupt(ndev->irq, priv);
- 	cpdma_ctlr_int_ctrl(priv->dma, true);
- 	cpsw_intr_enable(priv);
--	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
--	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
--
- }
- #endif
- 
+ 	if (depth >= 1) {
 
 
