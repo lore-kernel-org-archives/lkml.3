@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759608AbbAYTYr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:24:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
+	id S1758524AbbAYSr2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:47:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754825AbbAYSJC (ORCPT
+	with ESMTP id S1754354AbbAYSKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:02 -0500
+	Sun, 25 Jan 2015 13:10:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 31/98] cfg80211: Fix 160 MHz channels with 80+80 and 160 MHz drivers
-Date: Sun, 25 Jan 2015 10:06:49 -0800
-Message-Id: <20150125180714.218138763@linuxfoundation.org>
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Michael Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.18 088/183] clk: Dont try to use a struct clk* after it could have been freed
+Date: Sun, 25 Jan 2015 10:06:50 -0800
+Message-Id: <20150125180814.009968774@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,60 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jouni Malinen <jouni@qca.qualcomm.com>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-commit 08f6f147773b23b765b94633a8eaa82e7defcf4c upstream.
+commit 10cdfe54dab034311c8e2fad9ba2dffbe616caa9 upstream.
 
-The VHT supported channel width field is a two bit integer, not a
-bitfield. cfg80211_chandef_usable() was interpreting it incorrectly and
-ended up rejecting 160 MHz channel width if the driver indicated support
-for both 160 and 80+80 MHz channels.
+As __clk_release could call kfree on clk and then we wouldn't have a safe way
+of getting the module that owns the clock.
 
-Fixes: 3d9d1d6656a73 ("nl80211/cfg80211: support VHT channel configuration")
-       (however, no real drivers had 160 MHz support it until 3.16)
-Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Fixes: fcb0ee6a3d33 ("clk: Implement clk_unregister")
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Michael Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/chan.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/clk/clk.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/wireless/chan.c
-+++ b/net/wireless/chan.c
-@@ -516,7 +516,7 @@ bool cfg80211_chandef_usable(struct wiph
- {
- 	struct ieee80211_sta_ht_cap *ht_cap;
- 	struct ieee80211_sta_vht_cap *vht_cap;
--	u32 width, control_freq;
-+	u32 width, control_freq, cap;
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -2274,14 +2274,17 @@ int __clk_get(struct clk *clk)
  
- 	if (WARN_ON(!cfg80211_chandef_valid(chandef)))
- 		return false;
-@@ -554,7 +554,8 @@ bool cfg80211_chandef_usable(struct wiph
- 			return false;
- 		break;
- 	case NL80211_CHAN_WIDTH_80P80:
--		if (!(vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ))
-+		cap = vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK;
-+		if (cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)
- 			return false;
- 	case NL80211_CHAN_WIDTH_80:
- 		if (!vht_cap->vht_supported)
-@@ -565,7 +566,9 @@ bool cfg80211_chandef_usable(struct wiph
- 	case NL80211_CHAN_WIDTH_160:
- 		if (!vht_cap->vht_supported)
- 			return false;
--		if (!(vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160MHZ))
-+		cap = vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK;
-+		if (cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160MHZ &&
-+		    cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)
- 			return false;
- 		prohibited_flags |= IEEE80211_CHAN_NO_160MHZ;
- 		width = 160;
+ void __clk_put(struct clk *clk)
+ {
++	struct module *owner;
++
+ 	if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
+ 		return;
+ 
+ 	clk_prepare_lock();
++	owner = clk->owner;
+ 	kref_put(&clk->ref, __clk_release);
+ 	clk_prepare_unlock();
+ 
+-	module_put(clk->owner);
++	module_put(owner);
+ }
+ 
+ /***        clk rate change notifiers        ***/
 
 
