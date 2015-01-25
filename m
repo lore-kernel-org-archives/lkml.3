@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757166AbbAYSVI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:21:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57941 "EHLO
+	id S932744AbbAYTIh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:08:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161AbbAYSKl (ORCPT
+	with ESMTP id S1755324AbbAYSJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:41 -0500
+	Sun, 25 Jan 2015 13:09:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Songjun Wu <songjun.wu@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.18 150/183] usb: gadget: udc: atmel: fix possible oops when unloading module
+        "Alexander Y. Fomichev" <git.user@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Miquel van Smoorenburg <mikevs@xs4all.net>
+Subject: [PATCH 3.14 94/98] net: prevent of emerging cross-namespace symlinks
 Date: Sun, 25 Jan 2015 10:07:52 -0800
-Message-Id: <20150125180816.700698989@linuxfoundation.org>
+Message-Id: <20150125180716.969346298@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,102 +26,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Songjun Wu <songjun.wu@atmel.com>
+From: "Alexander Y. Fomichev" <git.user@gmail.com>
 
-commit 5fb694f96e7c19e66b1c55124b98812e32e3efa5 upstream.
+commit 4c75431ac3520631f1d9e74aa88407e6374dbbc4 upstream.
 
-When unloading the module 'g_hid.ko', the urb request will be dequeued and the
-completion routine will be excuted. If there is no urb packet, the urb request
-will not be added to the endpoint queue and the completion routine pointer in
-urb request is NULL.
+Code manipulating sysfs symlinks on adjacent net_devices(s)
+currently doesn't take into account that devices potentially
+belong to different namespaces.
 
-Accessing to this NULL function pointer will cause the Oops issue reported
-below.
+This patch trying to fix an issue as follows:
+- check for net_ns before creating / deleting symlink.
+  for now only netdev_adjacent_rename_links and
+  __netdev_adjacent_dev_remove are affected, afaics
+  __netdev_adjacent_dev_insert implies both net_devs
+  belong to the same namespace.
+- Drop all existing symlinks to / from all adj_devs before
+  switching namespace and recreate them just after.
 
-Add the code to check if the urb request is in the endpoint queue
-or not. If the urb request is not in the endpoint queue, a negative
-error code will be returned.
-
-Here is the Oops log:
-
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = dedf0000
-[00000000] *pgd=3ede5831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 80000007 [#1] ARM
-Modules linked in: g_hid(-) usb_f_hid libcomposite
-CPU: 0 PID: 923 Comm: rmmod Not tainted 3.18.0+ #2
-Hardware name: Atmel SAMA5 (Device Tree)
-task: df6b1100 ti: dedf6000 task.ti: dedf6000
-PC is at 0x0
-LR is at usb_gadget_giveback_request+0xc/0x10
-pc : [<00000000>]    lr : [<c02ace88>]    psr: 60000093
-sp : dedf7eb0  ip : df572634  fp : 00000000
-r10: 00000000  r9 : df52e210  r8 : 60000013
-r7 : df6a9858  r6 : df52e210  r5 : df6a9858  r4 : df572600
-r3 : 00000000  r2 : ffffff98  r1 : df572600  r0 : df6a9868
-Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c53c7d  Table: 3edf0059  DAC: 00000015
-Process rmmod (pid: 923, stack limit = 0xdedf6230)
-Stack: (0xdedf7eb0 to 0xdedf8000)
-7ea0:                                     00000000 c02adbbc df572580 deced608
-7ec0: df572600 df6a9868 df572634 c02aed3c df577c00 c01b8608 00000000 df6be27c
-7ee0: 00200200 00100100 bf0162f4 c000e544 dedf6000 00000000 00000000 bf010c00
-7f00: bf0162cc bf00159c 00000000 df572980 df52e218 00000001 df5729b8 bf0031d0
-[..]
-[<c02ace88>] (usb_gadget_giveback_request) from [<c02adbbc>] (request_complete+0x64/0x88)
-[<c02adbbc>] (request_complete) from [<c02aed3c>] (usba_ep_dequeue+0x70/0x128)
-[<c02aed3c>] (usba_ep_dequeue) from [<bf010c00>] (hidg_unbind+0x50/0x7c [usb_f_hid])
-[<bf010c00>] (hidg_unbind [usb_f_hid]) from [<bf00159c>] (remove_config.isra.6+0x98/0x9c [libcomposite])
-[<bf00159c>] (remove_config.isra.6 [libcomposite]) from [<bf0031d0>] (__composite_unbind+0x34/0x98 [libcomposite])
-[<bf0031d0>] (__composite_unbind [libcomposite]) from [<c02acee0>] (usb_gadget_remove_driver+0x50/0x78)
-[<c02acee0>] (usb_gadget_remove_driver) from [<c02ad570>] (usb_gadget_unregister_driver+0x64/0x94)
-[<c02ad570>] (usb_gadget_unregister_driver) from [<bf0160c0>] (hidg_cleanup+0x10/0x34 [g_hid])
-[<bf0160c0>] (hidg_cleanup [g_hid]) from [<c0056748>] (SyS_delete_module+0x118/0x19c)
-[<c0056748>] (SyS_delete_module) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
-Code: bad PC value
-
-Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
-[nicolas.ferre@atmel.com: reworked the commit message]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Fixes: 914a3f3b3754 ("USB: add atmel_usba_udc driver")
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Alexander Y. Fomichev <git.user@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Miquel van Smoorenburg <mikevs@xs4all.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/udc/atmel_usba_udc.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ net/core/dev.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 60 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/udc/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
-@@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4791,7 +4791,8 @@ static void __netdev_adjacent_dev_remove
+ 	if (adj->master)
+ 		sysfs_remove_link(&(dev->dev.kobj), "master");
+ 
+-	if (netdev_adjacent_is_neigh_list(dev, dev_list))
++	if (netdev_adjacent_is_neigh_list(dev, dev_list) &&
++	    net_eq(dev_net(dev),dev_net(adj_dev)))
+ 		netdev_adjacent_sysfs_del(dev, adj_dev->name, dev_list);
+ 
+ 	list_del_rcu(&adj->list);
+@@ -5061,11 +5062,65 @@ void netdev_upper_dev_unlink(struct net_
+ }
+ EXPORT_SYMBOL(netdev_upper_dev_unlink);
+ 
++void netdev_adjacent_add_links(struct net_device *dev)
++{
++	struct netdev_adjacent *iter;
++
++	struct net *net = dev_net(dev);
++
++	list_for_each_entry(iter, &dev->adj_list.upper, list) {
++		if (!net_eq(net,dev_net(iter->dev)))
++			continue;
++		netdev_adjacent_sysfs_add(iter->dev, dev,
++					  &iter->dev->adj_list.lower);
++		netdev_adjacent_sysfs_add(dev, iter->dev,
++					  &dev->adj_list.upper);
++	}
++
++	list_for_each_entry(iter, &dev->adj_list.lower, list) {
++		if (!net_eq(net,dev_net(iter->dev)))
++			continue;
++		netdev_adjacent_sysfs_add(iter->dev, dev,
++					  &iter->dev->adj_list.upper);
++		netdev_adjacent_sysfs_add(dev, iter->dev,
++					  &dev->adj_list.lower);
++	}
++}
++
++void netdev_adjacent_del_links(struct net_device *dev)
++{
++	struct netdev_adjacent *iter;
++
++	struct net *net = dev_net(dev);
++
++	list_for_each_entry(iter, &dev->adj_list.upper, list) {
++		if (!net_eq(net,dev_net(iter->dev)))
++			continue;
++		netdev_adjacent_sysfs_del(iter->dev, dev->name,
++					  &iter->dev->adj_list.lower);
++		netdev_adjacent_sysfs_del(dev, iter->dev->name,
++					  &dev->adj_list.upper);
++	}
++
++	list_for_each_entry(iter, &dev->adj_list.lower, list) {
++		if (!net_eq(net,dev_net(iter->dev)))
++			continue;
++		netdev_adjacent_sysfs_del(iter->dev, dev->name,
++					  &iter->dev->adj_list.upper);
++		netdev_adjacent_sysfs_del(dev, iter->dev->name,
++					  &dev->adj_list.lower);
++	}
++}
++
+ void netdev_adjacent_rename_links(struct net_device *dev, char *oldname)
  {
- 	struct usba_ep *ep = to_usba_ep(_ep);
- 	struct usba_udc *udc = ep->udc;
--	struct usba_request *req = to_usba_req(_req);
-+	struct usba_request *req;
- 	unsigned long flags;
- 	u32 status;
+ 	struct netdev_adjacent *iter;
  
-@@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep
- 
- 	spin_lock_irqsave(&udc->lock, flags);
- 
-+	list_for_each_entry(req, &ep->queue, queue) {
-+		if (&req->req == _req)
-+			break;
-+	}
++	struct net *net = dev_net(dev);
 +
-+	if (&req->req != _req) {
-+		spin_unlock_irqrestore(&udc->lock, flags);
-+		return -EINVAL;
-+	}
-+
- 	if (req->using_dma) {
- 		/*
- 		 * If this request is currently being transferred,
+ 	list_for_each_entry(iter, &dev->adj_list.upper, list) {
++		if (!net_eq(net,dev_net(iter->dev)))
++			continue;
+ 		netdev_adjacent_sysfs_del(iter->dev, oldname,
+ 					  &iter->dev->adj_list.lower);
+ 		netdev_adjacent_sysfs_add(iter->dev, dev,
+@@ -5073,6 +5128,8 @@ void netdev_adjacent_rename_links(struct
+ 	}
+ 
+ 	list_for_each_entry(iter, &dev->adj_list.lower, list) {
++		if (!net_eq(net,dev_net(iter->dev)))
++			continue;
+ 		netdev_adjacent_sysfs_del(iter->dev, oldname,
+ 					  &iter->dev->adj_list.upper);
+ 		netdev_adjacent_sysfs_add(iter->dev, dev,
+@@ -6679,6 +6736,7 @@ int dev_change_net_namespace(struct net_
+ 
+ 	/* Send a netdev-removed uevent to the old namespace */
+ 	kobject_uevent(&dev->dev.kobj, KOBJ_REMOVE);
++	netdev_adjacent_del_links(dev);
+ 
+ 	/* Actually switch the network namespace */
+ 	dev_net_set(dev, net);
+@@ -6693,6 +6751,7 @@ int dev_change_net_namespace(struct net_
+ 
+ 	/* Send a netdev-add uevent to the new namespace */
+ 	kobject_uevent(&dev->dev.kobj, KOBJ_ADD);
++	netdev_adjacent_add_links(dev);
+ 
+ 	/* Fixup kobjects */
+ 	err = device_rename(&dev->dev, dev->name);
 
 
