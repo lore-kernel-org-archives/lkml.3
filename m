@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208AbbAYS3J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:29:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
+	id S932189AbbAYS2k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:28:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390AbbAYSK2 (ORCPT
+	with ESMTP id S1754450AbbAYSK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:28 -0500
+	Sun, 25 Jan 2015 13:10:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Storah <Christopher.Storah@invetech.com.au>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.18 157/183] can: kvaser_usb: Dont send a RESET_CHIP for non-existing channels
-Date: Sun, 25 Jan 2015 10:07:59 -0800
-Message-Id: <20150125180817.000163083@linuxfoundation.org>
+        Yi ju Hong <sam.hung@emc.com.tw>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.18 158/183] Input: elantech - support new ICs types for version 4
+Date: Sun, 25 Jan 2015 10:08:00 -0800
+Message-Id: <20150125180817.046974729@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -31,46 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
+From: Sam hung <sam.hung@emc.com.tw>
 
-commit 5e7e6e0c9b47a45576c38b4a72d67927a5e049f7 upstream.
+commit 810aa0918b2b032684c8cad13f73d6ba37ad11c0 upstream.
 
-Recent Leaf firmware versions (>= 3.1.557) do not allow to send
-commands for non-existing channels.  If a command is sent for a
-non-existing channel, the firmware crashes.
+This change allows the driver to recognize newer Elantech touchpads.
 
-Reported-by: Christopher Storah <Christopher.Storah@invetech.com.au>
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Yi ju Hong <sam.hung@emc.com.tw>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/kvaser_usb.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/input/mouse/elantech.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1503,6 +1503,10 @@ static int kvaser_usb_init_one(struct us
- 	struct kvaser_usb_net_priv *priv;
- 	int i, err;
- 
-+	err = kvaser_usb_send_simple_msg(dev, CMD_RESET_CHIP, channel);
-+	if (err)
-+		return err;
-+
- 	netdev = alloc_candev(sizeof(*priv), MAX_TX_URBS);
- 	if (!netdev) {
- 		dev_err(&intf->dev, "Cannot alloc candev\n");
-@@ -1607,9 +1611,6 @@ static int kvaser_usb_probe(struct usb_i
- 
- 	usb_set_intfdata(intf, dev);
- 
--	for (i = 0; i < MAX_NET_DEVICES; i++)
--		kvaser_usb_send_simple_msg(dev, CMD_RESET_CHIP, i);
--
- 	err = kvaser_usb_get_software_info(dev);
- 	if (err) {
- 		dev_err(&intf->dev,
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -1520,6 +1520,8 @@ static int elantech_set_properties(struc
+ 		case 7:
+ 		case 8:
+ 		case 9:
++		case 10:
++		case 13:
+ 			etd->hw_version = 4;
+ 			break;
+ 		default:
 
 
