@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759023AbbAYTDV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:03:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
+	id S1759000AbbAYTCt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:02:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450AbbAYSJf (ORCPT
+	with ESMTP id S1755458AbbAYSJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yang <weiyang@linux.vnet.ibm.com>, Ido Shamay <idos@mellanox.com>,
-        Amir Vadai <amirv@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 002/183] net/mlx4: Cache line CQE/EQE stride fixes
-Date: Sun, 25 Jan 2015 10:05:24 -0800
-Message-Id: <20150125180810.285417125@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>
+Subject: [PATCH 3.18 003/183] netlink: Always copy on mmap TX.
+Date: Sun, 25 Jan 2015 10:05:25 -0800
+Message-Id: <20150125180810.326497940@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -30,59 +29,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ido Shamay <idos@mellanox.com>
+From: David Miller <davem@davemloft.net>
 
-[ Upstream commit c3f2511feac088030055012cc8f64ebd84c87dbc ]
+[ Upstream commit 4682a0358639b29cf69437ed909c6221f8c89847 ]
 
-This commit contains 2 fixes for the 128B CQE/EQE stride feaure.
-Wei found that mlx4_QUERY_HCA function marked the wrong capability
-in flags (64B CQE/EQE), when CQE/EQE stride feature was enabled.
-Also added small fix in initial CQE ownership bit assignment, when CQE
-is size is not default 32B.
+Checking the file f_count and the nlk->mapped count is not completely
+sufficient to prevent the mmap'd area contents from changing from
+under us during netlink mmap sendmsg() operations.
 
-Fixes: 77507aa24 (net/mlx4: Enable CQE/EQE stride support)
-Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
-Signed-off-by: Ido Shamay <idos@mellanox.com>
-Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Be careful to sample the header's length field only once, because this
+could change from under us as well.
+
+Fixes: 5fd96123ee19 ("netlink: implement memory mapped sendmsg()")
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |   11 +++++++++--
- drivers/net/ethernet/mellanox/mlx4/fw.c        |    4 ++--
- 2 files changed, 11 insertions(+), 4 deletions(-)
+ net/netlink/af_netlink.c |   52 ++++++++++++++---------------------------------
+ 1 file changed, 16 insertions(+), 36 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -1569,8 +1569,15 @@ int mlx4_en_start_port(struct net_device
- 			mlx4_en_free_affinity_hint(priv, i);
- 			goto cq_err;
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -526,14 +526,14 @@ out:
+ 	return err;
+ }
+ 
+-static void netlink_frame_flush_dcache(const struct nl_mmap_hdr *hdr)
++static void netlink_frame_flush_dcache(const struct nl_mmap_hdr *hdr, unsigned int nm_len)
+ {
+ #if ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE == 1
+ 	struct page *p_start, *p_end;
+ 
+ 	/* First page is flushed through netlink_{get,set}_status */
+ 	p_start = pgvec_to_page(hdr + PAGE_SIZE);
+-	p_end   = pgvec_to_page((void *)hdr + NL_MMAP_HDRLEN + hdr->nm_len - 1);
++	p_end   = pgvec_to_page((void *)hdr + NL_MMAP_HDRLEN + nm_len - 1);
+ 	while (p_start <= p_end) {
+ 		flush_dcache_page(p_start);
+ 		p_start++;
+@@ -715,24 +715,16 @@ static int netlink_mmap_sendmsg(struct s
+ 	struct nl_mmap_hdr *hdr;
+ 	struct sk_buff *skb;
+ 	unsigned int maxlen;
+-	bool excl = true;
+ 	int err = 0, len = 0;
+ 
+-	/* Netlink messages are validated by the receiver before processing.
+-	 * In order to avoid userspace changing the contents of the message
+-	 * after validation, the socket and the ring may only be used by a
+-	 * single process, otherwise we fall back to copying.
+-	 */
+-	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
+-	    atomic_read(&nlk->mapped) > 1)
+-		excl = false;
+-
+ 	mutex_lock(&nlk->pg_vec_lock);
+ 
+ 	ring   = &nlk->tx_ring;
+ 	maxlen = ring->frame_size - NL_MMAP_HDRLEN;
+ 
+ 	do {
++		unsigned int nm_len;
++
+ 		hdr = netlink_current_frame(ring, NL_MMAP_STATUS_VALID);
+ 		if (hdr == NULL) {
+ 			if (!(msg->msg_flags & MSG_DONTWAIT) &&
+@@ -740,35 +732,23 @@ static int netlink_mmap_sendmsg(struct s
+ 				schedule();
+ 			continue;
  		}
--		for (j = 0; j < cq->size; j++)
--			cq->buf[j].owner_sr_opcode = MLX4_CQE_OWNER_MASK;
+-		if (hdr->nm_len > maxlen) {
 +
-+		for (j = 0; j < cq->size; j++) {
-+			struct mlx4_cqe *cqe = NULL;
-+
-+			cqe = mlx4_en_get_cqe(cq->buf, j, priv->cqe_size) +
-+			      priv->cqe_factor;
-+			cqe->owner_sr_opcode = MLX4_CQE_OWNER_MASK;
-+		}
-+
- 		err = mlx4_en_set_cq_moder(priv, cq);
- 		if (err) {
- 			en_err(priv, "Failed setting cq moderation parameters\n");
---- a/drivers/net/ethernet/mellanox/mlx4/fw.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/fw.c
-@@ -1647,8 +1647,8 @@ int mlx4_QUERY_HCA(struct mlx4_dev *dev,
- 	/* CX3 is capable of extending CQEs\EQEs to strides larger than 64B */
- 	MLX4_GET(byte_field, outbox, INIT_HCA_EQE_CQE_STRIDE_OFFSET);
- 	if (byte_field) {
--		param->dev_cap_enabled |= MLX4_DEV_CAP_64B_EQE_ENABLED;
--		param->dev_cap_enabled |= MLX4_DEV_CAP_64B_CQE_ENABLED;
-+		param->dev_cap_enabled |= MLX4_DEV_CAP_EQE_STRIDE_ENABLED;
-+		param->dev_cap_enabled |= MLX4_DEV_CAP_CQE_STRIDE_ENABLED;
- 		param->cqe_size = 1 << ((byte_field &
- 					 MLX4_CQE_SIZE_MASK_STRIDE) + 5);
- 		param->eqe_size = 1 << (((byte_field &
++		nm_len = ACCESS_ONCE(hdr->nm_len);
++		if (nm_len > maxlen) {
+ 			err = -EINVAL;
+ 			goto out;
+ 		}
+ 
+-		netlink_frame_flush_dcache(hdr);
++		netlink_frame_flush_dcache(hdr, nm_len);
+ 
+-		if (likely(dst_portid == 0 && dst_group == 0 && excl)) {
+-			skb = alloc_skb_head(GFP_KERNEL);
+-			if (skb == NULL) {
+-				err = -ENOBUFS;
+-				goto out;
+-			}
+-			sock_hold(sk);
+-			netlink_ring_setup_skb(skb, sk, ring, hdr);
+-			NETLINK_CB(skb).flags |= NETLINK_SKB_TX;
+-			__skb_put(skb, hdr->nm_len);
+-			netlink_set_status(hdr, NL_MMAP_STATUS_RESERVED);
+-			atomic_inc(&ring->pending);
+-		} else {
+-			skb = alloc_skb(hdr->nm_len, GFP_KERNEL);
+-			if (skb == NULL) {
+-				err = -ENOBUFS;
+-				goto out;
+-			}
+-			__skb_put(skb, hdr->nm_len);
+-			memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, hdr->nm_len);
+-			netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
++		skb = alloc_skb(nm_len, GFP_KERNEL);
++		if (skb == NULL) {
++			err = -ENOBUFS;
++			goto out;
+ 		}
++		__skb_put(skb, nm_len);
++		memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, nm_len);
++		netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
+ 
+ 		netlink_increment_head(ring);
+ 
+@@ -814,7 +794,7 @@ static void netlink_queue_mmaped_skb(str
+ 	hdr->nm_pid	= NETLINK_CB(skb).creds.pid;
+ 	hdr->nm_uid	= from_kuid(sk_user_ns(sk), NETLINK_CB(skb).creds.uid);
+ 	hdr->nm_gid	= from_kgid(sk_user_ns(sk), NETLINK_CB(skb).creds.gid);
+-	netlink_frame_flush_dcache(hdr);
++	netlink_frame_flush_dcache(hdr, hdr->nm_len);
+ 	netlink_set_status(hdr, NL_MMAP_STATUS_VALID);
+ 
+ 	NETLINK_CB(skb).flags |= NETLINK_SKB_DELIVERED;
 
 
