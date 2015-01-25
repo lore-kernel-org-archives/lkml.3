@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932776AbbAYTI5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:08:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313AbbAYSJY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755296AbbAYSJY (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 25 Jan 2015 13:09:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57220 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292AbbAYSIk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 13:08:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Holmberg <hans.holmberg@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.14 56/98] gpiolib: of: Correct error handling in of_get_named_gpiod_flags
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 24/50] NFSv4.1: Fix client id trunking on Linux
 Date: Sun, 25 Jan 2015 10:07:14 -0800
-Message-Id: <20150125180715.284068759@linuxfoundation.org>
+Message-Id: <20150125180703.924948203@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,47 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans Holmberg <hans.holmberg@intel.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 7b8792bbdffdff3abda704f89c6a45ea97afdc62 upstream.
+commit 1fc0703af3143914a389bfa081c7acb09502ed5d upstream.
 
-of_get_named_gpiod_flags fails with -EPROBE_DEFER in cases
-where the gpio chip is available and the GPIO translation fails.
+Currently, our trunking code will check for session trunking, but will
+fail to detect client id trunking. This is a problem, because it means
+that the client will fail to recognise that the two connections represent
+shared state, even if they do not permit a shared session.
+By removing the check for the server minor id, and only checking the
+major id, we will end up doing the right thing in both cases: we close
+down the new nfs_client and fall back to using the existing one.
 
-This causes drivers to be re-probed erroneusly, and hides the
-real problem(i.e. the GPIO number being out of range).
-
-Signed-off-by: Hans Holmberg <hans.holmberg@intel.com>
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Fixes: 05f4c350ee02e ("NFS: Discover NFSv4 server trunking when mounting")
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Tested-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpiolib-of.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4client.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -44,8 +44,14 @@ static int of_gpiochip_find_and_xlate(st
- 		return false;
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -394,20 +394,14 @@ static bool nfs4_match_clientids(struct
+ }
  
- 	ret = gc->of_xlate(gc, &gg_data->gpiospec, gg_data->flags);
--	if (ret < 0)
+ /*
+- * Returns true if the server owners match
++ * Returns true if the server major ids match
+  */
+ static bool
+-nfs4_match_serverowners(struct nfs_client *a, struct nfs_client *b)
++nfs4_check_clientid_trunking(struct nfs_client *a, struct nfs_client *b)
+ {
+ 	struct nfs41_server_owner *o1 = a->cl_serverowner;
+ 	struct nfs41_server_owner *o2 = b->cl_serverowner;
+ 
+-	if (o1->minor_id != o2->minor_id) {
+-		dprintk("NFS: --> %s server owner minor IDs do not match\n",
+-			__func__);
 -		return false;
-+	if (ret < 0) {
-+		/* We've found the gpio chip, but the translation failed.
-+		 * Return true to stop looking and return the translation
-+		 * error via out_gpio
-+		 */
-+		gg_data->out_gpio = ERR_PTR(ret);
-+		return true;
-+	 }
+-	}
+-
+ 	if (o1->major_id_sz != o2->major_id_sz)
+ 		goto out_major_mismatch;
+ 	if (memcmp(o1->major_id, o2->major_id, o1->major_id_sz) != 0)
+@@ -483,7 +477,12 @@ int nfs41_walk_client_list(struct nfs_cl
+ 		if (!nfs4_match_clientids(pos, new))
+ 			continue;
  
- 	gg_data->out_gpio = gpio_to_desc(ret + gc->base);
- 	return true;
+-		if (!nfs4_match_serverowners(pos, new))
++		/*
++		 * Note that session trunking is just a special subcase of
++		 * client id trunking. In either case, we want to fall back
++		 * to using the existing nfs_client.
++		 */
++		if (!nfs4_check_clientid_trunking(pos, new))
+ 			continue;
+ 
+ 		atomic_inc(&pos->cl_count);
 
 
