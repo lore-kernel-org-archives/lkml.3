@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383AbbAYSrG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:47:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
+	id S1757669AbbAYT10 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:27:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785AbbAYSKF (ORCPT
+	with ESMTP id S1754714AbbAYSI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:05 -0500
+	Sun, 25 Jan 2015 13:08:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH 3.18 063/183] asus-nb-wmi: Add another wapf=4 quirk
+        Sven Eckelmann <sven@narfation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 07/98] batman-adv: Unify fragment size calculation
 Date: Sun, 25 Jan 2015 10:06:25 -0800
-Message-Id: <20150125180812.917987669@linuxfoundation.org>
+Message-Id: <20150125180713.173995219@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,43 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Sven Eckelmann <sven@narfation.org>
 
-commit 841e11ccdf90c29a7778a5d5d553bc716c3d477a upstream.
+[ Upstream commit 0402e444cd199389b7fe47be68a67b817e09e097 ]
 
-Wifi on this laptop does not work unless asus-nb-wmi.wapf=4 is specified on
-the kerne commandline, add a quirk for this.
+The fragmentation code was replaced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
+("batman-adv: Receive fragmented packets and merge") by an implementation which
+can handle up to 16 fragments of a packet. The packet is prepared for the split
+in fragments by the function batadv_frag_send_packet and the actual split is
+done by batadv_frag_create.
 
-BugLink: https://bugs.launchpad.net/bugs/1173681
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Both functions calculate the size of a fragment themself. But their calculation
+differs because batadv_frag_send_packet also subtracts ETH_HLEN. Therefore,
+the check in batadv_frag_send_packet "can a full fragment can be created?" may
+return true even when batadv_frag_create cannot create a full fragment.
+
+The function batadv_frag_create doesn't check the size of the skb before
+splitting it and therefore might try to create a larger fragment than the
+remaining buffer. This creates an integer underflow and an invalid len is given
+to skb_split.
+
+Signed-off-by: Sven Eckelmann <sven@narfation.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/platform/x86/asus-nb-wmi.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ net/batman-adv/fragmentation.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/platform/x86/asus-nb-wmi.c
-+++ b/drivers/platform/x86/asus-nb-wmi.c
-@@ -191,6 +191,15 @@ static const struct dmi_system_id asus_q
- 	},
- 	{
- 		.callback = dmi_matched,
-+		.ident = "ASUSTeK COMPUTER INC. X551CA",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X551CA"),
-+		},
-+		.driver_data = &quirk_asus_wapf4,
-+	},
-+	{
-+		.callback = dmi_matched,
- 		.ident = "ASUSTeK COMPUTER INC. X55A",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+--- a/net/batman-adv/fragmentation.c
++++ b/net/batman-adv/fragmentation.c
+@@ -434,7 +434,7 @@ bool batadv_frag_send_packet(struct sk_b
+ 	 * fragments larger than BATADV_FRAG_MAX_FRAG_SIZE
+ 	 */
+ 	mtu = min_t(unsigned, mtu, BATADV_FRAG_MAX_FRAG_SIZE);
+-	max_fragment_size = (mtu - header_size - ETH_HLEN);
++	max_fragment_size = mtu - header_size;
+ 	max_packet_size = max_fragment_size * BATADV_FRAG_MAX_FRAGMENTS;
+ 
+ 	/* Don't even try to fragment, if we need more than 16 fragments */
 
 
