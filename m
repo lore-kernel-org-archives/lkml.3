@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872AbbAYTMx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:12:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57571 "EHLO
+	id S1756608AbbAYSLZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57575 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755235AbbAYSJR (ORCPT
+	with ESMTP id S1755244AbbAYSJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bilal Koc <koc.bilo@googlemail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 72/98] Input: I8042 - add Acer Aspire 7738 to the nomux list
-Date: Sun, 25 Jan 2015 10:07:30 -0800
-Message-Id: <20150125180715.983894478@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.14 73/98] ARM: dts: imx25: Fix the SPI1 clocks
+Date: Sun, 25 Jan 2015 10:07:31 -0800
+Message-Id: <20150125180716.035466662@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
 References: <20150125180712.859646324@linuxfoundation.org>
@@ -29,36 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 9333caeaeae4f831054e0e127a6ed3948b604d3e upstream.
+commit 7a87e9cbc3a2f0ff0955815335e08c9862359130 upstream.
 
-When KBC is in active multiplexing mode the touchpad on this laptop does
-not work.
+>From Documentation/devicetree/bindings/clock/imx25-clock.txt:
 
-Reported-by: Bilal Koc <koc.bilo@googlemail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+	cspi1_ipg		78
+	cspi2_ipg		79
+	cspi3_ipg		80
+
+, so fix the SPI1 clocks accordingly to avoid a kernel hang when trying to
+access SPI1.
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/boot/dts/imx25.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -408,6 +408,13 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Acer Aspire 7738 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7738"),
-+		},
-+	},
-+	{
- 		/* Gericom Bellagio */
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Gericom"),
+--- a/arch/arm/boot/dts/imx25.dtsi
++++ b/arch/arm/boot/dts/imx25.dtsi
+@@ -158,7 +158,7 @@
+ 				#size-cells = <0>;
+ 				compatible = "fsl,imx25-cspi", "fsl,imx35-cspi";
+ 				reg = <0x43fa4000 0x4000>;
+-				clocks = <&clks 62>, <&clks 62>;
++				clocks = <&clks 78>, <&clks 78>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <14>;
+ 				status = "disabled";
 
 
