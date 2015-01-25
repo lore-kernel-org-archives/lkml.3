@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842AbbAYTMl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:12:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57498 "EHLO
+	id S1758292AbbAYTdS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:33:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249AbbAYSJT (ORCPT
+	with ESMTP id S1754460AbbAYSIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:19 -0500
+	Sun, 25 Jan 2015 13:08:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Len Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Nishanth Menon <nm@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.14 76/98] ARM: omap5/dra7xx: Fix frequency typos
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 3.10 44/50] x86, um: actually mark system call tables readonly
 Date: Sun, 25 Jan 2015 10:07:34 -0800
-Message-Id: <20150125180716.166320703@linuxfoundation.org>
+Message-Id: <20150125180705.100843408@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,57 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 572b24e6d85d98cdc552f07e9fb9870d9460d81b upstream.
+commit b485342bd79af363c77ef1a421c4a0aef2de9812 upstream.
 
-The switch statement of the possible list of SYSCLK1 frequencies is
-missing a 0 in 4 out of the 7 frequencies.
+Commit a074335a370e ("x86, um: Mark system call tables readonly") was
+supposed to mark the sys_call_table in UML as RO by adding the const,
+but it doesn't have the desired effect as it's nevertheless being placed
+into the data section since __cacheline_aligned enforces sys_call_table
+being placed into .data..cacheline_aligned instead. We need to use
+the ____cacheline_aligned version instead to fix this issue.
 
-Fixes: fa6d79d27614 ("ARM: OMAP: Add initialisation for the real-time counter")
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Reviewed-by: Lokesh Vutla <lokeshvutla@ti.com>
-Acked-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Before:
+
+$ nm -v arch/x86/um/sys_call_table_64.o | grep -1 "sys_call_table"
+                 U sys_writev
+0000000000000000 D sys_call_table
+0000000000000000 D syscall_table_size
+
+After:
+
+$ nm -v arch/x86/um/sys_call_table_64.o | grep -1 "sys_call_table"
+                 U sys_writev
+0000000000000000 R sys_call_table
+0000000000000000 D syscall_table_size
+
+Fixes: a074335a370e ("x86, um: Mark system call tables readonly")
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/timer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/um/sys_call_table_32.c |    2 +-
+ arch/x86/um/sys_call_table_64.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -513,11 +513,11 @@ static void __init realtime_counter_init
- 	rate = clk_get_rate(sys_clk);
- 	/* Numerator/denumerator values refer TRM Realtime Counter section */
- 	switch (rate) {
--	case 1200000:
-+	case 12000000:
- 		num = 64;
- 		den = 125;
- 		break;
--	case 1300000:
-+	case 13000000:
- 		num = 768;
- 		den = 1625;
- 		break;
-@@ -529,11 +529,11 @@ static void __init realtime_counter_init
- 		num = 192;
- 		den = 625;
- 		break;
--	case 2600000:
-+	case 26000000:
- 		num = 384;
- 		den = 1625;
- 		break;
--	case 2700000:
-+	case 27000000:
- 		num = 256;
- 		den = 1125;
- 		break;
+--- a/arch/x86/um/sys_call_table_32.c
++++ b/arch/x86/um/sys_call_table_32.c
+@@ -34,7 +34,7 @@ typedef asmlinkage void (*sys_call_ptr_t
+ 
+ extern asmlinkage void sys_ni_syscall(void);
+ 
+-const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
++const sys_call_ptr_t sys_call_table[] ____cacheline_aligned = {
+ 	/*
+ 	 * Smells like a compiler bug -- it doesn't work
+ 	 * when the & below is removed.
+--- a/arch/x86/um/sys_call_table_64.c
++++ b/arch/x86/um/sys_call_table_64.c
+@@ -46,7 +46,7 @@ typedef void (*sys_call_ptr_t)(void);
+ 
+ extern void sys_ni_syscall(void);
+ 
+-const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
++const sys_call_ptr_t sys_call_table[] ____cacheline_aligned = {
+ 	/*
+ 	 * Smells like a compiler bug -- it doesn't work
+ 	 * when the & below is removed.
 
 
