@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952AbbAYTB7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:01:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
+	id S1758921AbbAYTBM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:01:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57776 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483AbbAYSJh (ORCPT
+	with ESMTP id S1755490AbbAYSJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:37 -0500
+	Sun, 25 Jan 2015 13:09:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 008/183] net: drop the packet when fails to do software segmentation or header check
-Date: Sun, 25 Jan 2015 10:05:30 -0800
-Message-Id: <20150125180810.550782960@linuxfoundation.org>
+Subject: [PATCH 3.18 009/183] in6: fix conflict with glibc
+Date: Sun, 25 Jan 2015 10:05:31 -0800
+Message-Id: <20150125180810.596277408@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -30,34 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: stephen hemminger <stephen@networkplumber.org>
 
-[ Upstream commit af6dabc9c70ae3f307685b1f32f52d60b1bf0527 ]
+[ Upstream commit 6d08acd2d32e3e877579315dc3202d7a5f336d98 ]
 
-Commit cecda693a969816bac5e470e1d9c9c0ef5567bca ("net: keep original skb
-which only needs header checking during software GSO") keeps the original
-skb for packets that only needs header check, but it doesn't drop the
-packet if software segmentation or header check were failed.
+Resolve conflicts between glibc definition of IPV6 socket options
+and those defined in Linux headers. Looks like earlier efforts to
+solve this did not cover all the definitions.
 
-Fixes cecda693a9 ("net: keep original skb which only needs header checking during software GSO")
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+It resolves warnings during iproute2 build.
+Please consider for stable as well.
+
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/uapi/linux/in6.h         |    3 ++-
+ include/uapi/linux/libc-compat.h |    3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2680,7 +2680,7 @@ static struct sk_buff *validate_xmit_skb
+--- a/include/uapi/linux/in6.h
++++ b/include/uapi/linux/in6.h
+@@ -149,7 +149,7 @@ struct in6_flowlabel_req {
+ /*
+  *	IPV6 socket options
+  */
+-
++#if __UAPI_DEF_IPV6_OPTIONS
+ #define IPV6_ADDRFORM		1
+ #define IPV6_2292PKTINFO	2
+ #define IPV6_2292HOPOPTS	3
+@@ -196,6 +196,7 @@ struct in6_flowlabel_req {
  
- 		segs = skb_gso_segment(skb, features);
- 		if (IS_ERR(segs)) {
--			segs = NULL;
-+			goto out_kfree_skb;
- 		} else if (segs) {
- 			consume_skb(skb);
- 			skb = segs;
+ #define IPV6_IPSEC_POLICY	34
+ #define IPV6_XFRM_POLICY	35
++#endif
+ 
+ /*
+  * Multicast:
+--- a/include/uapi/linux/libc-compat.h
++++ b/include/uapi/linux/libc-compat.h
+@@ -69,6 +69,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		0
+ #define __UAPI_DEF_IPV6_MREQ		0
+ #define __UAPI_DEF_IPPROTO_V6		0
++#define __UAPI_DEF_IPV6_OPTIONS		0
+ 
+ #else
+ 
+@@ -82,6 +83,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		1
+ #define __UAPI_DEF_IPV6_MREQ		1
+ #define __UAPI_DEF_IPPROTO_V6		1
++#define __UAPI_DEF_IPV6_OPTIONS		1
+ 
+ #endif /* _NETINET_IN_H */
+ 
+@@ -103,6 +105,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		1
+ #define __UAPI_DEF_IPV6_MREQ		1
+ #define __UAPI_DEF_IPPROTO_V6		1
++#define __UAPI_DEF_IPV6_OPTIONS		1
+ 
+ /* Definitions for xattr.h */
+ #define __UAPI_DEF_XATTR		1
 
 
