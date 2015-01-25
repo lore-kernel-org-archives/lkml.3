@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759909AbbAYTa6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:30:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57362 "EHLO
+	id S1756550AbbAYSLS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543AbbAYSIx (ORCPT
+	with ESMTP id S1754540AbbAYSIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:53 -0500
+	Sun, 25 Jan 2015 13:08:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Graf <tgraf@suug.ch>, Flavio Leitner <fbl@sysclose.org>,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 10/98] net: Reset secmark when scrubbing packet
-Date: Sun, 25 Jan 2015 10:06:28 -0800
-Message-Id: <20150125180713.306411907@linuxfoundation.org>
+Subject: [PATCH 3.14 11/98] tcp: Do not apply TSO segment limit to non-TSO packets
+Date: Sun, 25 Jan 2015 10:06:29 -0800
+Message-Id: <20150125180713.353198256@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
 References: <20150125180712.859646324@linuxfoundation.org>
@@ -29,37 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-[ Upstream commit b8fb4e0648a2ab3734140342002f68fb0c7d1602 ]
+[ Upstream commit 843925f33fcc293d80acf2c5c8a78adf3344d49b ]
 
-skb_scrub_packet() is called when a packet switches between a context
-such as between underlay and overlay, between namespaces, or between
-L3 subnets.
+Thomas Jarosch reported IPsec TCP stalls when a PMTU event occurs.
 
-While we already scrub the packet mark, connection tracking entry,
-and cached destination, the security mark/context is left intact.
+In fact the problem was completely unrelated to IPsec.  The bug is
+also reproducible if you just disable TSO/GSO.
 
-It seems wrong to inherit the security context of a packet when going
-from overlay to underlay or across forwarding paths.
+The problem is that when the MSS goes down, existing queued packet
+on the TX queue that have not been transmitted yet all look like
+TSO packets and get treated as such.
 
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
-Acked-by: Flavio Leitner <fbl@sysclose.org>
+This then triggers a bug where tcp_mss_split_point tells us to
+generate a zero-sized packet on the TX queue.  Once that happens
+we're screwed because the zero-sized packet can never be removed
+by ACKs.
+
+Fixes: 1485348d242 ("tcp: Apply device TSO segment limit earlier")
+Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+
+Cheers,
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/skbuff.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/tcp_output.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -3937,6 +3937,7 @@ void skb_scrub_packet(struct sk_buff *sk
- 	skb->local_df = 0;
- 	skb_dst_drop(skb);
- 	skb->mark = 0;
-+	skb_init_secmark(skb);
- 	secpath_reset(skb);
- 	nf_reset(skb);
- 	nf_reset_trace(skb);
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1894,7 +1894,7 @@ static bool tcp_write_xmit(struct sock *
+ 		if (unlikely(!tcp_snd_wnd_test(tp, skb, mss_now)))
+ 			break;
+ 
+-		if (tso_segs == 1) {
++		if (tso_segs == 1 || !sk->sk_gso_max_segs) {
+ 			if (unlikely(!tcp_nagle_test(tp, skb, mss_now,
+ 						     (tcp_skb_is_last(sk, skb) ?
+ 						      nonagle : TCP_NAGLE_PUSH))))
+@@ -1931,7 +1931,7 @@ static bool tcp_write_xmit(struct sock *
+ 		}
+ 
+ 		limit = mss_now;
+-		if (tso_segs > 1 && !tcp_urg_mode(tp))
++		if (tso_segs > 1 && sk->sk_gso_max_segs && !tcp_urg_mode(tp))
+ 			limit = tcp_mss_split_point(sk, skb, mss_now,
+ 						    min_t(unsigned int,
+ 							  cwnd_quota,
 
 
