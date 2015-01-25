@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830AbbAYSL5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58023 "EHLO
+	id S1756874AbbAYSMI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:12:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756120AbbAYSKh (ORCPT
+	with ESMTP id S1756121AbbAYSKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:37 -0500
+	Sun, 25 Jan 2015 13:10:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-Subject: [PATCH 3.18 178/183] kbuild: Fix removal of the debian/ directory
-Date: Sun, 25 Jan 2015 10:08:20 -0800
-Message-Id: <20150125180817.890902140@linuxfoundation.org>
+        Bruce Fields <bfields@fieldses.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.18 179/183] LOCKD: Fix a race when initialising nlmsvc_timeout
+Date: Sun, 25 Jan 2015 10:08:21 -0800
+Message-Id: <20150125180817.931474406@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -28,53 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Marek <mmarek@suse.cz>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit a16c5f99a28c9945165c46da27fff8e6f26f8736 upstream.
+commit 06bed7d18c2c07b3e3eeadf4bd357f6e806618cc upstream.
 
-scripts/Makefile.clean treats absolute path specially, but
-$(objtree)/debian is no longer an absolute path since 7e1c0477 (kbuild:
-Use relative path for $(objtree). Work around this by checking if the
-path starts with $(objtree)/.
+This commit fixes a race whereby nlmclnt_init() first starts the lockd
+daemon, and then calls nlm_bind_host() with the expectation that
+nlmsvc_timeout has already been initialised. Unfortunately, there is no
+no synchronisation between lockd() and lockd_up() to guarantee that this
+is the case.
 
-Reported-and-tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Fixes: 7e1c0477 (kbuild: Use relative path for $(objtree)
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Fix is to move the initialisation of nlmsvc_timeout into lockd_create_svc
+
+Fixes: 9a1b6bf818e74 ("LOCKD: Don't call utsname()->nodename...")
+Cc: Bruce Fields <bfields@fieldses.org>
+Cc: stable@vger.kernel.org # 3.10.x
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/Makefile.clean |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ fs/lockd/svc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/scripts/Makefile.clean
-+++ b/scripts/Makefile.clean
-@@ -45,19 +45,19 @@ __clean-files	:= $(extra-y) $(extra-m) $
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -138,10 +138,6 @@ lockd(void *vrqstp)
  
- __clean-files   := $(filter-out $(no-clean-files), $(__clean-files))
+ 	dprintk("NFS locking service started (ver " LOCKD_VERSION ").\n");
  
--# as clean-files is given relative to the current directory, this adds
--# a $(obj) prefix, except for absolute paths
-+# clean-files is given relative to the current directory, unless it
-+# starts with $(objtree)/ (which means "./", so do not add "./" unless
-+# you want to delete a file from the toplevel object directory).
+-	if (!nlm_timeout)
+-		nlm_timeout = LOCKD_DFLT_TIMEO;
+-	nlmsvc_timeout = nlm_timeout * HZ;
+-
+ 	/*
+ 	 * The main request loop. We don't terminate until the last
+ 	 * NFS mount or NFS daemon has gone away.
+@@ -350,6 +346,10 @@ static struct svc_serv *lockd_create_svc
+ 		printk(KERN_WARNING
+ 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
  
- __clean-files   := $(wildcard                                               \
--                   $(addprefix $(obj)/, $(filter-out /%, $(__clean-files))) \
--		   $(filter /%, $(__clean-files)))
-+		   $(addprefix $(obj)/, $(filter-out $(objtree)/%, $(__clean-files))) \
-+		   $(filter $(objtree)/%, $(__clean-files)))
- 
--# as clean-dirs is given relative to the current directory, this adds
--# a $(obj) prefix, except for absolute paths
-+# same as clean-files
- 
- __clean-dirs    := $(wildcard                                               \
--                   $(addprefix $(obj)/, $(filter-out /%, $(clean-dirs)))    \
--		   $(filter /%, $(clean-dirs)))
-+		   $(addprefix $(obj)/, $(filter-out $(objtree)/%, $(clean-dirs)))    \
-+		   $(filter $(objtree)/%, $(clean-dirs)))
- 
- # ==========================================================================
- 
++	if (!nlm_timeout)
++		nlm_timeout = LOCKD_DFLT_TIMEO;
++	nlmsvc_timeout = nlm_timeout * HZ;
++
+ 	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
+ 	if (!serv) {
+ 		printk(KERN_WARNING "lockd_up: create service failed\n");
 
 
