@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240AbbAYSJR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:09:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S933045AbbAYTQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:16:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57575 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284AbbAYSIk (ORCPT
+	with ESMTP id S1755141AbbAYSJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:40 -0500
+	Sun, 25 Jan 2015 13:09:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 23/50] ftrace/jprobes/x86: Fix conflict between jprobes and function graph tracing
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 55/98] NFSv4.1: Fix client id trunking on Linux
 Date: Sun, 25 Jan 2015 10:07:13 -0800
-Message-Id: <20150125180703.875106151@linuxfoundation.org>
+Message-Id: <20150125180715.240789164@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,117 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 237d28db036e411f22c03cfd5b0f6dc2aa9bf3bc upstream.
+commit 1fc0703af3143914a389bfa081c7acb09502ed5d upstream.
 
-If the function graph tracer traces a jprobe callback, the system will
-crash. This can easily be demonstrated by compiling the jprobe
-sample module that is in the kernel tree, loading it and running the
-function graph tracer.
+Currently, our trunking code will check for session trunking, but will
+fail to detect client id trunking. This is a problem, because it means
+that the client will fail to recognise that the two connections represent
+shared state, even if they do not permit a shared session.
+By removing the check for the server minor id, and only checking the
+major id, we will end up doing the right thing in both cases: we close
+down the new nfs_client and fall back to using the existing one.
 
- # modprobe jprobe_example.ko
- # echo function_graph > /sys/kernel/debug/tracing/current_tracer
- # ls
-
-The first two commands end up in a nice crash after the first fork.
-(do_fork has a jprobe attached to it, so "ls" just triggers that fork)
-
-The problem is caused by the jprobe_return() that all jprobe callbacks
-must end with. The way jprobes works is that the function a jprobe
-is attached to has a breakpoint placed at the start of it (or it uses
-ftrace if fentry is supported). The breakpoint handler (or ftrace callback)
-will copy the stack frame and change the ip address to return to the
-jprobe handler instead of the function. The jprobe handler must end
-with jprobe_return() which swaps the stack and does an int3 (breakpoint).
-This breakpoint handler will then put back the saved stack frame,
-simulate the instruction at the beginning of the function it added
-a breakpoint to, and then continue on.
-
-For function tracing to work, it hijakes the return address from the
-stack frame, and replaces it with a hook function that will trace
-the end of the call. This hook function will restore the return
-address of the function call.
-
-If the function tracer traces the jprobe handler, the hook function
-for that handler will not be called, and its saved return address
-will be used for the next function. This will result in a kernel crash.
-
-To solve this, pause function tracing before the jprobe handler is called
-and unpause it before it returns back to the function it probed.
-
-Some other updates:
-
-Used a variable "saved_sp" to hold kcb->jprobe_saved_sp. This makes the
-code look a bit cleaner and easier to understand (various tries to fix
-this bug required this change).
-
-Note, if fentry is being used, jprobes will change the ip address before
-the function graph tracer runs and it will not be able to trace the
-function that the jprobe is probing.
-
-Link: http://lkml.kernel.org/r/20150114154329.552437962@goodmis.org
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Fixes: 05f4c350ee02e ("NFS: Discover NFSv4 server trunking when mounting")
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Tested-by: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/kprobes/core.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ fs/nfs/nfs4client.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -1017,6 +1017,15 @@ int __kprobes setjmp_pre_handler(struct
- 	regs->flags &= ~X86_EFLAGS_IF;
- 	trace_hardirqs_off();
- 	regs->ip = (unsigned long)(jp->entry);
-+
-+	/*
-+	 * jprobes use jprobe_return() which skips the normal return
-+	 * path of the function, and this messes up the accounting of the
-+	 * function graph tracer to get messed up.
-+	 *
-+	 * Pause function graph tracing while performing the jprobe function.
-+	 */
-+	pause_graph_tracing();
- 	return 1;
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -565,20 +565,14 @@ static bool nfs4_match_clientids(struct
  }
  
-@@ -1042,24 +1051,25 @@ int __kprobes longjmp_break_handler(stru
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
- 	u8 *addr = (u8 *) (regs->ip - 1);
- 	struct jprobe *jp = container_of(p, struct jprobe, kp);
-+	void *saved_sp = kcb->jprobe_saved_sp;
+ /*
+- * Returns true if the server owners match
++ * Returns true if the server major ids match
+  */
+ static bool
+-nfs4_match_serverowners(struct nfs_client *a, struct nfs_client *b)
++nfs4_check_clientid_trunking(struct nfs_client *a, struct nfs_client *b)
+ {
+ 	struct nfs41_server_owner *o1 = a->cl_serverowner;
+ 	struct nfs41_server_owner *o2 = b->cl_serverowner;
  
- 	if ((addr > (u8 *) jprobe_return) &&
- 	    (addr < (u8 *) jprobe_return_end)) {
--		if (stack_addr(regs) != kcb->jprobe_saved_sp) {
-+		if (stack_addr(regs) != saved_sp) {
- 			struct pt_regs *saved_regs = &kcb->jprobe_saved_regs;
- 			printk(KERN_ERR
- 			       "current sp %p does not match saved sp %p\n",
--			       stack_addr(regs), kcb->jprobe_saved_sp);
-+			       stack_addr(regs), saved_sp);
- 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
- 			show_regs(saved_regs);
- 			printk(KERN_ERR "Current registers\n");
- 			show_regs(regs);
- 			BUG();
- 		}
-+		/* It's OK to start function graph tracing again */
-+		unpause_graph_tracing();
- 		*regs = kcb->jprobe_saved_regs;
--		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
--		       kcb->jprobes_stack,
--		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
-+		memcpy(saved_sp, kcb->jprobes_stack, MIN_STACK_SIZE(saved_sp));
- 		preempt_enable_no_resched();
- 		return 1;
- 	}
+-	if (o1->minor_id != o2->minor_id) {
+-		dprintk("NFS: --> %s server owner minor IDs do not match\n",
+-			__func__);
+-		return false;
+-	}
+-
+ 	if (o1->major_id_sz != o2->major_id_sz)
+ 		goto out_major_mismatch;
+ 	if (memcmp(o1->major_id, o2->major_id, o1->major_id_sz) != 0)
+@@ -654,7 +648,12 @@ int nfs41_walk_client_list(struct nfs_cl
+ 		if (!nfs4_match_clientids(pos, new))
+ 			continue;
+ 
+-		if (!nfs4_match_serverowners(pos, new))
++		/*
++		 * Note that session trunking is just a special subcase of
++		 * client id trunking. In either case, we want to fall back
++		 * to using the existing nfs_client.
++		 */
++		if (!nfs4_check_clientid_trunking(pos, new))
+ 			continue;
+ 
+ 		atomic_inc(&pos->cl_count);
 
 
