@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556AbbAYSc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:32:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57896 "EHLO
+	id S932605AbbAYTFq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:05:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755988AbbAYSK0 (ORCPT
+	with ESMTP id S1755397AbbAYSJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:26 -0500
+	Sun, 25 Jan 2015 13:09:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.18 138/183] gpio: sysfs: fix gpio-chip device-attribute leak
+        Hannes Reinecke <hare@suse.de>, Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 82/98] tcm_loop: Fixup tag handling
 Date: Sun, 25 Jan 2015 10:07:40 -0800
-Message-Id: <20150125180816.174240421@linuxfoundation.org>
+Message-Id: <20150125180716.446379477@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,71 +25,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 121b6a79955a3a3fd7bbb9b8cb88d5b9dad6283d upstream.
+commit 6375f8908255ea7438b60bb5998e6b3e1628500d upstream.
 
-The gpio-chip device attributes were never destroyed when the device was
-removed.
+The SCSI command tag is set to the tag assigned from the block
+layer, not the SCSI-II tag message. So we need to convert
+it into the correct SCSI-II tag message based on the
+device flags, not the tag value itself.
 
-Fix by using device_create_with_groups() to create the device attributes
-of the chip class device.
-
-Note that this also fixes the attribute-creation race with userspace.
-
-Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpiolib-sysfs.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/target/loopback/tcm_loop.c |   21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
---- a/drivers/gpio/gpiolib-sysfs.c
-+++ b/drivers/gpio/gpiolib-sysfs.c
-@@ -400,16 +400,13 @@ static ssize_t chip_ngpio_show(struct de
- }
- static DEVICE_ATTR(ngpio, 0444, chip_ngpio_show, NULL);
- 
--static const struct attribute *gpiochip_attrs[] = {
-+static struct attribute *gpiochip_attrs[] = {
- 	&dev_attr_base.attr,
- 	&dev_attr_label.attr,
- 	&dev_attr_ngpio.attr,
- 	NULL,
- };
--
--static const struct attribute_group gpiochip_attr_group = {
--	.attrs = (struct attribute **) gpiochip_attrs,
--};
-+ATTRIBUTE_GROUPS(gpiochip);
- 
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -153,18 +153,11 @@ static int tcm_loop_change_queue_type(st
  /*
-  * /sys/class/gpio/export ... write-only
-@@ -750,13 +747,13 @@ int gpiochip_export(struct gpio_chip *ch
+  * Locate the SAM Task Attr from struct scsi_cmnd *
+  */
+-static int tcm_loop_sam_attr(struct scsi_cmnd *sc)
++static int tcm_loop_sam_attr(struct scsi_cmnd *sc, int tag)
+ {
+-	if (sc->device->tagged_supported) {
+-		switch (sc->tag) {
+-		case HEAD_OF_QUEUE_TAG:
+-			return MSG_HEAD_TAG;
+-		case ORDERED_QUEUE_TAG:
+-			return MSG_ORDERED_TAG;
+-		default:
+-			break;
+-		}
+-	}
++	if (sc->device->tagged_supported &&
++	    sc->device->ordered_tags && tag >= 0)
++		return MSG_ORDERED_TAG;
  
- 	/* use chip->base for the ID; it's already known to be unique */
- 	mutex_lock(&sysfs_lock);
--	dev = device_create(&gpio_class, chip->dev, MKDEV(0, 0), chip,
--				"gpiochip%d", chip->base);
--	if (!IS_ERR(dev)) {
--		status = sysfs_create_group(&dev->kobj,
--				&gpiochip_attr_group);
--	} else
-+	dev = device_create_with_groups(&gpio_class, chip->dev, MKDEV(0, 0),
-+					chip, gpiochip_groups,
-+					"gpiochip%d", chip->base);
-+	if (IS_ERR(dev))
- 		status = PTR_ERR(dev);
-+	else
-+		status = 0;
- 	chip->exported = (status == 0);
- 	mutex_unlock(&sysfs_lock);
+ 	return MSG_SIMPLE_TAG;
+ }
+@@ -214,7 +207,7 @@ static void tcm_loop_submission_work(str
+ 	}
+ 	rc = target_submit_cmd_map_sgls(se_cmd, tl_nexus->se_sess, sc->cmnd,
+ 			&tl_cmd->tl_sense_buf[0], tl_cmd->sc->device->lun,
+-			scsi_bufflen(sc), tcm_loop_sam_attr(sc),
++			scsi_bufflen(sc), tcm_loop_sam_attr(sc, tl_cmd->sc_cmd_tag),
+ 			sc->sc_data_direction, 0,
+ 			scsi_sglist(sc), scsi_sg_count(sc),
+ 			sgl_bidi, sgl_bidi_count,
+@@ -252,7 +245,7 @@ static int tcm_loop_queuecommand(struct
+ 	}
+ 
+ 	tl_cmd->sc = sc;
+-	tl_cmd->sc_cmd_tag = sc->tag;
++	tl_cmd->sc_cmd_tag = sc->request->tag;
+ 	INIT_WORK(&tl_cmd->work, tcm_loop_submission_work);
+ 	queue_work(tcm_loop_workqueue, &tl_cmd->work);
+ 	return 0;
+@@ -356,7 +349,7 @@ static int tcm_loop_abort_task(struct sc
+ 	 */
+ 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
+ 	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
+-				 sc->tag, TMR_ABORT_TASK);
++				 sc->request->tag, TMR_ABORT_TASK);
+ 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
+ }
  
 
 
