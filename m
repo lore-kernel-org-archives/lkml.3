@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291AbbAYUcD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 15:32:03 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45965 "EHLO
+	id S1755450AbbAYUbk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 15:31:40 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:45930 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755466AbbAYUb5 (ORCPT
+	with ESMTP id S1752850AbbAYUb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 15:31:57 -0500
+	Sun, 25 Jan 2015 15:31:29 -0500
 From: Guenter Roeck <linux@roeck-us.net>
 To: Sebastian Reichel <sre@kernel.org>
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: [PATCH v2 3/6] power/reset: Remove sun6i reboot driver
-Date: Sun, 25 Jan 2015 12:30:42 -0800
-Message-Id: <1422217845-18901-4-git-send-email-linux@roeck-us.net>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 4/6] power/reset: st-poweroff: Register with kernel restart handler
+Date: Sun, 25 Jan 2015 12:30:43 -0800
+Message-Id: <1422217845-18901-5-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422217845-18901-1-git-send-email-linux@roeck-us.net>
 References: <1422217845-18901-1-git-send-email-linux@roeck-us.net>
@@ -28,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54C552BC.010C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020202.54C552A0.015E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 39
+X-CTCH-SenderID-TotalMessages: 27
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -54,137 +51,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sun6i restart is now handled by its watchdog driver directly,
-so this driver is no longer needed.
+Register with kernel restart handler instead of setting arm_pm_restart
+directly. Select high priority since the restart handler is instantiated
+through devicetree, indicating that it should be used if configured.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/power/reset/Kconfig        |  6 ---
- drivers/power/reset/Makefile       |  1 -
- drivers/power/reset/sun6i-reboot.c | 85 --------------------------------------
- 3 files changed, 92 deletions(-)
- delete mode 100644 drivers/power/reset/sun6i-reboot.c
+ drivers/power/reset/st-poweroff.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index bf5acb3..4cb5744 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -109,12 +109,6 @@ config POWER_RESET_RESTART
- 	  Instead they restart, and u-boot holds the SoC until the
- 	  user presses a key. u-boot then boots into Linux.
+diff --git a/drivers/power/reset/st-poweroff.c b/drivers/power/reset/st-poweroff.c
+index a0acf25..27383de 100644
+--- a/drivers/power/reset/st-poweroff.c
++++ b/drivers/power/reset/st-poweroff.c
+@@ -15,10 +15,9 @@
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
+ #include <linux/mfd/syscon.h>
++#include <linux/reboot.h>
+ #include <linux/regmap.h>
  
--config POWER_RESET_SUN6I
--	bool "Allwinner A31 SoC reset driver"
--	depends on ARCH_SUNXI
--	help
--	  Reboot support for the Allwinner A31 SoCs.
--
- config POWER_RESET_ST
- 	bool "ST restart power-off driver"
- 	depends on ARCH_STI
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index 1631652..11de15b 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -11,7 +11,6 @@ obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
- obj-$(CONFIG_POWER_RESET_LTC2952) += ltc2952-poweroff.o
- obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
- obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
--obj-$(CONFIG_POWER_RESET_SUN6I) += sun6i-reboot.o
- obj-$(CONFIG_POWER_RESET_ST) += st-poweroff.o
- obj-$(CONFIG_POWER_RESET_VERSATILE) += arm-versatile-reboot.o
- obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
-diff --git a/drivers/power/reset/sun6i-reboot.c b/drivers/power/reset/sun6i-reboot.c
-deleted file mode 100644
-index af2cd7f..0000000
---- a/drivers/power/reset/sun6i-reboot.c
-+++ /dev/null
-@@ -1,85 +0,0 @@
--/*
-- * Allwinner A31 SoCs reset code
-- *
-- * Copyright (C) 2012-2014 Maxime Ripard
-- *
-- * Maxime Ripard <maxime.ripard@free-electrons.com>
-- *
-- * This file is licensed under the terms of the GNU General Public
-- * License version 2.  This program is licensed "as is" without any
-- * warranty of any kind, whether express or implied.
-- */
--
--#include <linux/delay.h>
--#include <linux/io.h>
--#include <linux/module.h>
--#include <linux/of_address.h>
--#include <linux/platform_device.h>
--#include <linux/reboot.h>
--
 -#include <asm/system_misc.h>
 -
--#define SUN6I_WATCHDOG1_IRQ_REG		0x00
--#define SUN6I_WATCHDOG1_CTRL_REG	0x10
--#define SUN6I_WATCHDOG1_CTRL_RESTART		BIT(0)
--#define SUN6I_WATCHDOG1_CONFIG_REG	0x14
--#define SUN6I_WATCHDOG1_CONFIG_RESTART		BIT(0)
--#define SUN6I_WATCHDOG1_CONFIG_IRQ		BIT(1)
--#define SUN6I_WATCHDOG1_MODE_REG	0x18
--#define SUN6I_WATCHDOG1_MODE_ENABLE		BIT(0)
--
--static void __iomem *wdt_base;
--
--static void sun6i_wdt_restart(enum reboot_mode mode, const char *cmd)
--{
--	if (!wdt_base)
--		return;
--
--	/* Disable interrupts */
--	writel(0, wdt_base + SUN6I_WATCHDOG1_IRQ_REG);
--
--	/* We want to disable the IRQ and just reset the whole system */
--	writel(SUN6I_WATCHDOG1_CONFIG_RESTART,
--		wdt_base + SUN6I_WATCHDOG1_CONFIG_REG);
--
--	/* Enable timer. The default and lowest interval value is 0.5s */
--	writel(SUN6I_WATCHDOG1_MODE_ENABLE,
--		wdt_base + SUN6I_WATCHDOG1_MODE_REG);
--
--	/* Restart the watchdog. */
--	writel(SUN6I_WATCHDOG1_CTRL_RESTART,
--		wdt_base + SUN6I_WATCHDOG1_CTRL_REG);
--
--	while (1) {
--		mdelay(5);
--		writel(SUN6I_WATCHDOG1_MODE_ENABLE,
--			wdt_base + SUN6I_WATCHDOG1_MODE_REG);
--	}
--}
--
--static int sun6i_reboot_probe(struct platform_device *pdev)
--{
--	wdt_base = of_iomap(pdev->dev.of_node, 0);
--	if (!wdt_base) {
--		WARN(1, "failed to map watchdog base address");
--		return -ENODEV;
--	}
--
--	arm_pm_restart = sun6i_wdt_restart;
+ struct reset_syscfg {
+ 	struct regmap *regmap;
+ 	/* syscfg used for reset */
+@@ -75,7 +74,8 @@ static struct reset_syscfg stid127_reset = {
+ 
+ static struct reset_syscfg *st_restart_syscfg;
+ 
+-static void st_restart(enum reboot_mode reboot_mode, const char *cmd)
++static int st_restart(struct notifier_block *this, unsigned long mode,
++		      void *cmd)
+ {
+ 	/* reset syscfg updated */
+ 	regmap_update_bits(st_restart_syscfg->regmap,
+@@ -88,8 +88,15 @@ static void st_restart(enum reboot_mode reboot_mode, const char *cmd)
+ 			   st_restart_syscfg->offset_rst_msk,
+ 			   st_restart_syscfg->mask_rst_msk,
+ 			   0);
++
++	return NOTIFY_DONE;
+ }
+ 
++static struct notifier_block st_restart_nb = {
++	.notifier_call = st_restart,
++	.priority = 192,
++};
++
+ static struct of_device_id st_reset_of_match[] = {
+ 	{
+ 		.compatible = "st,stih415-restart",
+@@ -126,9 +133,7 @@ static int st_reset_probe(struct platform_device *pdev)
+ 		return PTR_ERR(st_restart_syscfg->regmap);
+ 	}
+ 
+-	arm_pm_restart = st_restart;
 -
 -	return 0;
--}
--
--static struct of_device_id sun6i_reboot_of_match[] = {
--	{ .compatible = "allwinner,sun6i-a31-wdt" },
--	{}
--};
--
--static struct platform_driver sun6i_reboot_driver = {
--	.probe = sun6i_reboot_probe,
--	.driver = {
--		.name = "sun6i-reboot",
--		.of_match_table = sun6i_reboot_of_match,
--	},
--};
--module_platform_driver(sun6i_reboot_driver);
++	return register_restart_handler(&st_restart_nb);
+ }
+ 
+ static struct platform_driver st_reset_driver = {
 -- 
 2.1.0
 
