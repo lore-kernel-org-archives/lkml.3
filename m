@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068AbbAYO4a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 09:56:30 -0500
-Received: from www.osadl.org ([62.245.132.105]:41033 "EHLO www.osadl.org"
+	id S1753711AbbAYOv4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 09:51:56 -0500
+Received: from mx02.posteo.de ([89.146.194.165]:52437 "EHLO mx02.posteo.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752829AbbAYO40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 09:56:26 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH v2] hyperv: match wait_for_completion_timeout return type
-Date: Sun, 25 Jan 2015 15:48:23 +0100
-Message-Id: <1422197303-8035-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751953AbbAYOvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 09:51:55 -0500
+From: Martin Kepplinger <martink@posteo.de>
+To: mchehab@osg.samsung.com
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH v2] media: (stb0899) use sign_extend32() for sign extension
+Date: Sun, 25 Jan 2015 15:51:35 +0100
+Message-Id: <1422197495-24903-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 2.1.4
+In-Reply-To: <1422195725-23577-1-git-send-email-martink@posteo.de>
+References: <1422195725-23577-1-git-send-email-martink@posteo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-return type of wait_for_completion_timeout is unsigned long not int, this
-patch just fixes up the declarations.
-
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
 ---
+Sorry. I should have at least built my change. This is the correct version.
 
-v2: fixed subject line
 
-The return type of wait_for_completion_timeout is unsigned long not
-int. This patch fixes up the declarations only.
+ drivers/media/dvb-frontends/stb0899_algo.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=y
-CONFIG_HYPERV=m, CONFIG_HYPERV_NET=m
-
-Patch is against 3.19.0-rc5 -next-20150123
-
- drivers/net/hyperv/rndis_filter.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index ec0c40a..7bd8387 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -470,7 +470,7 @@ static int rndis_filter_query_device(struct rndis_device *dev, u32 oid,
- 	struct rndis_query_request *query;
- 	struct rndis_query_complete *query_complete;
- 	int ret = 0;
--	int t;
-+	unsigned long t;
+diff --git a/drivers/media/dvb-frontends/stb0899_algo.c b/drivers/media/dvb-frontends/stb0899_algo.c
+index 93596e0..3012f19 100644
+--- a/drivers/media/dvb-frontends/stb0899_algo.c
++++ b/drivers/media/dvb-frontends/stb0899_algo.c
+@@ -19,6 +19,7 @@
+ 	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
  
- 	if (!result)
- 		return -EINVAL;
-@@ -560,7 +560,8 @@ int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac)
- 	char macstr[2*ETH_ALEN+1];
- 	u32 extlen = sizeof(struct rndis_config_parameter_info) +
- 		2*NWADR_STRLEN + 4*ETH_ALEN;
--	int ret, t;
-+	int ret;
-+	unsigned long t;
++#include <linux/bitops.h>
+ #include "stb0899_drv.h"
+ #include "stb0899_priv.h"
+ #include "stb0899_reg.h"
+@@ -1490,9 +1491,7 @@ enum stb0899_status stb0899_dvbs2_algo(struct stb0899_state *state)
+ 		/* Store signal parameters	*/
+ 		offsetfreq = STB0899_READ_S2REG(STB0899_S2DEMOD, CRL_FREQ);
  
- 	request = get_rndis_request(rdev, RNDIS_MSG_SET,
- 		RNDIS_MESSAGE_SIZE(struct rndis_set_request) + extlen);
-@@ -634,7 +635,8 @@ int rndis_filter_set_offload_params(struct hv_device *hdev,
- 	struct ndis_offload_params *offload_params;
- 	struct rndis_set_complete *set_complete;
- 	u32 extlen = sizeof(struct ndis_offload_params);
--	int ret, t;
-+	int ret;
-+	unsigned long t;
- 	u32 vsp_version = nvdev->nvsp_version;
+-		/* sign extend 30 bit value before using it in calculations */
+-		if (offsetfreq & (1 << 29))
+-			offsetfreq |= -1 << 30;
++		offsetfreq = sign_extend32(offsetfreq, 29);
  
- 	if (vsp_version <= NVSP_PROTOCOL_VERSION_4) {
-@@ -708,7 +710,8 @@ int rndis_filter_set_rss_param(struct rndis_device *rdev, int num_queue)
- 	struct ndis_recv_scale_param *rssp;
- 	u32 *itab;
- 	u8 *keyp;
--	int i, t, ret;
-+	int i, ret;
-+	unsigned long t;
- 
- 	request = get_rndis_request(
- 			rdev, RNDIS_MSG_SET,
-@@ -792,7 +795,8 @@ int rndis_filter_set_packet_filter(struct rndis_device *dev, u32 new_filter)
- 	struct rndis_set_request *set;
- 	struct rndis_set_complete *set_complete;
- 	u32 status;
--	int ret, t;
-+	int ret;
-+	unsigned long t;
- 	struct net_device *ndev;
- 
- 	ndev = dev->net_dev->ndev;
-@@ -848,7 +852,8 @@ static int rndis_filter_init_device(struct rndis_device *dev)
- 	struct rndis_initialize_request *init;
- 	struct rndis_initialize_complete *init_complete;
- 	u32 status;
--	int ret, t;
-+	int ret;
-+	unsigned long t;
- 
- 	request = get_rndis_request(dev, RNDIS_MSG_INIT,
- 			RNDIS_MESSAGE_SIZE(struct rndis_initialize_request));
-@@ -998,7 +1003,7 @@ int rndis_filter_device_add(struct hv_device *dev,
- 	struct netvsc_device_info *device_info = additional_info;
- 	struct ndis_offload_params offloads;
- 	struct nvsp_message *init_packet;
--	int t;
-+	unsigned long t;
- 	struct ndis_recv_scale_cap rsscap;
- 	u32 rsscap_size = sizeof(struct ndis_recv_scale_cap);
- 	u32 mtu, size;
+ 		offsetfreq = offsetfreq / ((1 << 30) / 1000);
+ 		offsetfreq *= (internal->master_clk / 1000000);
 -- 
-1.7.10.4
+2.1.4
 
