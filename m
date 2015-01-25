@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbbAYNfQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 08:35:16 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:41079 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818AbbAYNfO (ORCPT
+	id S1754552AbbAYQQT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 11:16:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55016 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472AbbAYQQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 08:35:14 -0500
-Date: Sun, 25 Jan 2015 05:35:14 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Zach Brown <zab@zabbo.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Maxim Patlasov <mpatlasov@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH v2 3/4] block: loop: introduce 'use_aio' sysfs file
-Message-ID: <20150125133514.GC19445@infradead.org>
-References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
- <1421163888-21452-4-git-send-email-ming.lei@canonical.com>
+	Sun, 25 Jan 2015 11:16:13 -0500
+Date: Sun, 25 Jan 2015 21:36:59 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
+        Dexuan Cui <decui@microsoft.com>
+Subject: Re: [PATCH v3] Drivers: hv: vmbus: prevent cpu offlining on newer
+ hypervisors
+Message-ID: <20150125133659.GA21552@kroah.com>
+References: <1417431161-12845-1-git-send-email-vkuznets@redhat.com>
+ <1421081411-5759-1-git-send-email-vkuznets@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421163888-21452-4-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1421081411-5759-1-git-send-email-vkuznets@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:44:47PM +0800, Ming Lei wrote:
-> So that users can control if kernel aio is used to submit I/O.
+On Mon, Jan 12, 2015 at 05:50:11PM +0100, Vitaly Kuznetsov wrote:
+> When an SMP Hyper-V guest is running on top of 2012R2 Server and secondary
+> cpus are sent offline (with echo 0 > /sys/devices/system/cpu/cpu$cpu/online)
+> the system freeze is observed. This happens due to the fact that on newer
+> hypervisors (Win8, WS2012R2, ...) vmbus channel handlers are distributed
+> across all cpus (see init_vp_index() function in drivers/hv/channel_mgmt.c)
+> and on cpu offlining nobody reassigns them to CPU0. Prevent cpu offlining
+> when vmbus is loaded until the issue is fixed host-side.
+> 
+> This patch also disables hibernation but it is OK as it is also broken (MCE
+> error is hit on resume). Suspend still works.
+> 
+> Tested with WS2008R2 and WS2012R2.
+> 
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+> Changes since v2:
+> - repair the build when vmbus is builded as a module [Greg KH] by saving
+>   current cpu_disable pointer to previous_cpu_disable and restoring it on
+>   unload;
+> - return -ENOSYS (same as native_cpu_disable when !CONFIG_HOTPLUG_CPU) instead
+>   of -1 in hyperv_cpu_disable().
+> 
+> Changes since v1:
+> - introduce hv_cpu_hotplug_quirk() function to not spread #ifdefs [Greg KH];
+> - add pr_notice() message "hv_vmbus: CPU offlining is not supported by
+>   hypervisor".
+> ---
+>  drivers/hv/vmbus_drv.c | 36 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
 
-Why do you want a sysfs flag for this instead of a flags in ->lo_flags
-at setup time?  That's how all other loop-related ABI flags work.
-
+Doesn't apply to my char-misc-test branch at all :(
