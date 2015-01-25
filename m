@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245AbbAYSpF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:45:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57882 "EHLO
+	id S1759424AbbAYTVm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:21:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826AbbAYSKJ (ORCPT
+	with ESMTP id S1754917AbbAYSJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:09 -0500
+	Sun, 25 Jan 2015 13:09:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Chen <alex.chen@huawei.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.18 096/183] dm: fix missed error code if .end_io isnt implemented by target_type
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.14 40/98] clk: Really fix deadlock with mmap_sem
 Date: Sun, 25 Jan 2015 10:06:58 -0800
-Message-Id: <20150125180814.334232874@linuxfoundation.org>
+Message-Id: <20150125180714.619587755@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,39 +27,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: zhendong chen <alex.chen@huawei.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 5164bece1673cdf04782f8ed3fba70743700f5da upstream.
+commit 89f7e9de59bf3e3cda2e00de12c66db22675a7cf upstream.
 
-In bio-based DM's clone_endio(), when target_type doesn't implement
-.end_io (e.g. linear) r will be always be initialized 0.  So if a
-WRITE SAME bio fails WRITE SAME will not be disabled as intended.
+Commit 6314b6796e3c (clk: Don't hold prepare_lock across debugfs
+creation, 2014-09-04) forgot to update one place where we hold
+the prepare_lock while creating debugfs directories. This means
+we still have the chance of a deadlock that the commit was trying
+to fix. Actually fix it by moving the debugfs creation outside
+the prepare_lock.
 
-Fix this by initializing r to error, rather than 0, in clone_endio().
-
-Signed-off-by: Alex Chen <alex.chen@huawei.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Fixes: 7eee4ae2db ("dm: disable WRITE SAME if it fails")
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Fixes: 6314b6796e3c "clk: Don't hold prepare_lock across debugfs creation"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Michael Turquette <mturquette@linaro.org>
+[mturquette@linaro.org: removed lockdep_assert]
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/clk/clk.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -899,7 +899,7 @@ static void disable_write_same(struct ma
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -230,7 +230,6 @@ static const struct file_operations clk_
+ 	.release	= single_release,
+ };
  
- static void clone_endio(struct bio *bio, int error)
+-/* caller must hold prepare_lock */
+ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
  {
--	int r = 0;
-+	int r = error;
- 	struct dm_target_io *tio = container_of(bio, struct dm_target_io, clone);
- 	struct dm_io *io = tio->io;
- 	struct mapped_device *md = tio->io->md;
+ 	struct dentry *d;
+@@ -1902,7 +1901,6 @@ int __clk_init(struct device *dev, struc
+ 	else
+ 		clk->rate = 0;
+ 
+-	clk_debug_register(clk);
+ 	/*
+ 	 * walk the list of orphan clocks and reparent any that are children of
+ 	 * this clock
+@@ -1937,6 +1935,9 @@ int __clk_init(struct device *dev, struc
+ out:
+ 	clk_prepare_unlock();
+ 
++	if (!ret)
++		clk_debug_register(clk);
++
+ 	return ret;
+ }
+ 
 
 
