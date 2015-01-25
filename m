@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758179AbbAYSnT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:43:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57912 "EHLO
+	id S1759357AbbAYTTo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:19:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749AbbAYSKM (ORCPT
+	with ESMTP id S1754966AbbAYSJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:12 -0500
+	Sun, 25 Jan 2015 13:09:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Yegor Yefremov <yegorslists@googlemail.com>,
         Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 100/183] net: ethernet: cpsw: fix hangs with interrupts
+Subject: [PATCH 3.14 44/98] net: ethernet: cpsw: fix hangs with interrupts
 Date: Sun, 25 Jan 2015 10:07:02 -0800
-Message-Id: <20150125180814.518867020@linuxfoundation.org>
+Message-Id: <20150125180714.780486528@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -83,7 +83,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/net/ethernet/ti/cpsw.c
 +++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -757,6 +757,14 @@ requeue:
+@@ -716,6 +716,14 @@ static void cpsw_rx_handler(void *token,
  static irqreturn_t cpsw_interrupt(int irq, void *dev_id)
  {
  	struct cpsw_priv *priv = dev_id;
@@ -98,7 +98,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  
  	cpsw_intr_disable(priv);
  	if (priv->irq_enabled == true) {
-@@ -786,8 +794,6 @@ static int cpsw_poll(struct napi_struct
+@@ -745,8 +753,6 @@ static int cpsw_poll(struct napi_struct
  	int			num_tx, num_rx;
  
  	num_tx = cpdma_chan_process(priv->txch, 128);
@@ -107,7 +107,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  
  	num_rx = cpdma_chan_process(priv->rxch, budget);
  	if (num_rx < budget) {
-@@ -795,7 +801,6 @@ static int cpsw_poll(struct napi_struct
+@@ -754,7 +760,6 @@ static int cpsw_poll(struct napi_struct
  
  		napi_complete(napi);
  		cpsw_intr_enable(priv);
@@ -115,16 +115,16 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  		prim_cpsw = cpsw_get_slave_priv(priv, 0);
  		if (prim_cpsw->irq_enabled == false) {
  			prim_cpsw->irq_enabled = true;
-@@ -1310,8 +1315,6 @@ static int cpsw_ndo_open(struct net_devi
+@@ -1265,8 +1270,6 @@ static int cpsw_ndo_open(struct net_devi
  	napi_enable(&priv->napi);
  	cpdma_ctlr_start(priv->dma);
  	cpsw_intr_enable(priv);
 -	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_RX);
 -	cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
  
- 	prim_cpsw = cpsw_get_slave_priv(priv, 0);
- 	if (prim_cpsw->irq_enabled == false) {
-@@ -1578,9 +1581,6 @@ static void cpsw_ndo_tx_timeout(struct n
+ 	if (priv->data.dual_emac)
+ 		priv->slaves[priv->emac_port].open_stat = true;
+@@ -1512,9 +1515,6 @@ static void cpsw_ndo_tx_timeout(struct n
  	cpdma_chan_start(priv->txch);
  	cpdma_ctlr_int_ctrl(priv->dma, true);
  	cpsw_intr_enable(priv);
@@ -134,7 +134,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  }
  
  static int cpsw_ndo_set_mac_address(struct net_device *ndev, void *p)
-@@ -1620,9 +1620,6 @@ static void cpsw_ndo_poll_controller(str
+@@ -1560,9 +1560,6 @@ static void cpsw_ndo_poll_controller(str
  	cpsw_interrupt(ndev->irq, priv);
  	cpdma_ctlr_int_ctrl(priv->dma, true);
  	cpsw_intr_enable(priv);
