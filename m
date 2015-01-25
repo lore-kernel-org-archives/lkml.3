@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292AbbAYSd4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:33:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
+	id S932824AbbAYTMf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:12:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977AbbAYSKZ (ORCPT
+	with ESMTP id S1755224AbbAYSJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:25 -0500
+	Sun, 25 Jan 2015 13:09:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Holmberg <hans.holmberg@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.18 133/183] gpiolib: of: Correct error handling in of_get_named_gpiod_flags
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: [PATCH 3.14 77/98] ARM: shmobile: sh73a0 legacy: Set .control_parent for all irqpin instances
 Date: Sun, 25 Jan 2015 10:07:35 -0800
-Message-Id: <20150125180815.957413340@linuxfoundation.org>
+Message-Id: <20150125180716.205759252@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,47 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans Holmberg <hans.holmberg@intel.com>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-commit 7b8792bbdffdff3abda704f89c6a45ea97afdc62 upstream.
+commit b0ddb319db3d7a1943445f0de0a45c07a7f3457a upstream.
 
-of_get_named_gpiod_flags fails with -EPROBE_DEFER in cases
-where the gpio chip is available and the GPIO translation fails.
+The sh73a0 INTC can't mask interrupts properly most likely due to a
+hardware bug. Set the .control_parent flag to delegate masking to the
+parent interrupt controller, like was already done for irqpin1.
 
-This causes drivers to be re-probed erroneusly, and hides the
-real problem(i.e. the GPIO number being out of range).
+Without this, accessing the three-axis digital accelerometer ADXL345
+on kzm9g through /dev/input/event1 causes an interrupt storm, which
+requires a power-cycle to recover from.
 
-Signed-off-by: Hans Holmberg <hans.holmberg@intel.com>
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+This was inspired by a patch for arch/arm/boot/dts/sh73a0.dtsi from
+Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>.
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Fixes: 341eb5465f67437a ("ARM: shmobile: INTC External IRQ pin driver on sh73a0")
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpiolib-of.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ arch/arm/mach-shmobile/setup-sh73a0.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -45,8 +45,14 @@ static int of_gpiochip_find_and_xlate(st
- 		return false;
+--- a/arch/arm/mach-shmobile/setup-sh73a0.c
++++ b/arch/arm/mach-shmobile/setup-sh73a0.c
+@@ -617,6 +617,7 @@ static struct platform_device ipmmu_devi
  
- 	ret = gc->of_xlate(gc, &gg_data->gpiospec, gg_data->flags);
--	if (ret < 0)
--		return false;
-+	if (ret < 0) {
-+		/* We've found the gpio chip, but the translation failed.
-+		 * Return true to stop looking and return the translation
-+		 * error via out_gpio
-+		 */
-+		gg_data->out_gpio = ERR_PTR(ret);
-+		return true;
-+	 }
+ static struct renesas_intc_irqpin_config irqpin0_platform_data = {
+ 	.irq_base = irq_pin(0), /* IRQ0 -> IRQ7 */
++	.control_parent = true,
+ };
  
- 	gg_data->out_gpio = gpiochip_get_desc(gc, ret);
- 	return true;
+ static struct resource irqpin0_resources[] = {
+@@ -678,6 +679,7 @@ static struct platform_device irqpin1_de
+ 
+ static struct renesas_intc_irqpin_config irqpin2_platform_data = {
+ 	.irq_base = irq_pin(16), /* IRQ16 -> IRQ23 */
++	.control_parent = true,
+ };
+ 
+ static struct resource irqpin2_resources[] = {
+@@ -708,6 +710,7 @@ static struct platform_device irqpin2_de
+ 
+ static struct renesas_intc_irqpin_config irqpin3_platform_data = {
+ 	.irq_base = irq_pin(24), /* IRQ24 -> IRQ31 */
++	.control_parent = true,
+ };
+ 
+ static struct resource irqpin3_resources[] = {
 
 
