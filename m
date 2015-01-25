@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759907AbbAYT3r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:29:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S932434AbbAYSvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:51:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57868 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572AbbAYSIz (ORCPT
+	with ESMTP id S1755688AbbAYSJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:55 -0500
+	Sun, 25 Jan 2015 13:09:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Jiri Benc <jbenc@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 13/98] team: avoid possible underflow of count_pending value for notify_peers and mcast_rejoin
-Date: Sun, 25 Jan 2015 10:06:31 -0800
-Message-Id: <20150125180713.444462704@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.18 070/183] iscsi-target: Fail connection on short sendmsg writes
+Date: Sun, 25 Jan 2015 10:06:32 -0800
+Message-Id: <20150125180813.222247637@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,98 +26,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-[ Upstream commit b0d11b42785b70e19bc6a3122eead3f7969a7589 ]
+commit 6bf6ca7515c1df06f5c03737537f5e0eb191e29e upstream.
 
-This patch is fixing a race condition that may cause setting
-count_pending to -1, which results in unwanted big bulk of arp messages
-(in case of "notify peers").
+This patch changes iscsit_do_tx_data() to fail on short writes
+when kernel_sendmsg() returns a value different than requested
+transfer length, returning -EPIPE and thus causing a connection
+reset to occur.
 
-Consider following scenario:
+This avoids a potential bug in the original code where a short
+write would result in kernel_sendmsg() being called again with
+the original iovec base + length.
 
-count_pending == 2
-   CPU0                                           CPU1
-					team_notify_peers_work
-					  atomic_dec_and_test (dec count_pending to 1)
-					  schedule_delayed_work
- team_notify_peers
-   atomic_add (adding 1 to count_pending)
-					team_notify_peers_work
-					  atomic_dec_and_test (dec count_pending to 1)
-					  schedule_delayed_work
-					team_notify_peers_work
-					  atomic_dec_and_test (dec count_pending to 0)
-   schedule_delayed_work
-					team_notify_peers_work
-					  atomic_dec_and_test (dec count_pending to -1)
+In practice this has not been an issue because iscsit_do_tx_data()
+is only used for transferring 48 byte headers + 4 byte digests,
+along with seldom used control payloads from NOPIN + TEXT_RSP +
+REJECT with less than 32k of data.
 
-Fix this race by using atomic_dec_if_positive - that will prevent
-count_pending running under 0.
+So following Al's audit of iovec consumers, go ahead and fail
+the connection on short writes for now, and remove the bogus
+logic ahead of his proper upstream fix.
 
-Fixes: fc423ff00df3a1955441 ("team: add peer notification")
-Fixes: 492b200efdd20b8fcfd  ("team: add support for sending multicast rejoins")
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: Jiri Benc <jbenc@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/team/team.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -629,6 +629,7 @@ static int team_change_mode(struct team
- static void team_notify_peers_work(struct work_struct *work)
+---
+ drivers/target/iscsi/iscsi_target_util.c |   26 +++++++++++---------------
+ 1 file changed, 11 insertions(+), 15 deletions(-)
+
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -1358,15 +1358,15 @@ static int iscsit_do_tx_data(
+ 	struct iscsi_conn *conn,
+ 	struct iscsi_data_count *count)
  {
- 	struct team *team;
-+	int val;
+-	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
++	int ret, iov_len;
+ 	struct kvec *iov_p;
+ 	struct msghdr msg;
  
- 	team = container_of(work, struct team, notify_peers.dw.work);
+ 	if (!conn || !conn->sock || !conn->conn_ops)
+ 		return -1;
  
-@@ -636,9 +637,14 @@ static void team_notify_peers_work(struc
- 		schedule_delayed_work(&team->notify_peers.dw, 0);
- 		return;
+-	if (data <= 0) {
+-		pr_err("Data length is: %d\n", data);
++	if (count->data_length <= 0) {
++		pr_err("Data length is: %d\n", count->data_length);
+ 		return -1;
  	}
-+	val = atomic_dec_if_positive(&team->notify_peers.count_pending);
-+	if (val < 0) {
-+		rtnl_unlock();
-+		return;
-+	}
- 	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, team->dev);
- 	rtnl_unlock();
--	if (!atomic_dec_and_test(&team->notify_peers.count_pending))
-+	if (val)
- 		schedule_delayed_work(&team->notify_peers.dw,
- 				      msecs_to_jiffies(team->notify_peers.interval));
- }
-@@ -669,6 +675,7 @@ static void team_notify_peers_fini(struc
- static void team_mcast_rejoin_work(struct work_struct *work)
- {
- 	struct team *team;
-+	int val;
  
- 	team = container_of(work, struct team, mcast_rejoin.dw.work);
+@@ -1375,20 +1375,16 @@ static int iscsit_do_tx_data(
+ 	iov_p = count->iov;
+ 	iov_len = count->iov_count;
  
-@@ -676,9 +683,14 @@ static void team_mcast_rejoin_work(struc
- 		schedule_delayed_work(&team->mcast_rejoin.dw, 0);
- 		return;
+-	while (total_tx < data) {
+-		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
+-					(data - total_tx));
+-		if (tx_loop <= 0) {
+-			pr_debug("tx_loop: %d total_tx %d\n",
+-				tx_loop, total_tx);
+-			return tx_loop;
+-		}
+-		total_tx += tx_loop;
+-		pr_debug("tx_loop: %d, total_tx: %d, data: %d\n",
+-					tx_loop, total_tx, data);
++	ret = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
++			     count->data_length);
++	if (ret != count->data_length) {
++		pr_err("Unexpected ret: %d send data %d\n",
++		       ret, count->data_length);
++		return -EPIPE;
  	}
-+	val = atomic_dec_if_positive(&team->mcast_rejoin.count_pending);
-+	if (val < 0) {
-+		rtnl_unlock();
-+		return;
-+	}
- 	call_netdevice_notifiers(NETDEV_RESEND_IGMP, team->dev);
- 	rtnl_unlock();
--	if (!atomic_dec_and_test(&team->mcast_rejoin.count_pending))
-+	if (val)
- 		schedule_delayed_work(&team->mcast_rejoin.dw,
- 				      msecs_to_jiffies(team->mcast_rejoin.interval));
++	pr_debug("ret: %d, sent data: %d\n", ret, count->data_length);
+ 
+-	return total_tx;
++	return ret;
  }
+ 
+ int rx_data(
 
 
