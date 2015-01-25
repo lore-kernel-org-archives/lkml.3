@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759166AbbAYTRk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:17:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
+	id S1754687AbbAYSI5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:08:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755106AbbAYSJL (ORCPT
+	with ESMTP id S1754252AbbAYSIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:11 -0500
+	Sun, 25 Jan 2015 13:08:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 3.14 52/98] vfio-pci: Fix the check on pci device type in vfio_pci_probe()
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.10 20/50] [media] smiapp: Take mutex during PLL update in sensor initialisation
 Date: Sun, 25 Jan 2015 10:07:10 -0800
-Message-Id: <20150125180715.117118997@linuxfoundation.org>
+Message-Id: <20150125180703.697125676@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,45 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
+From: Sakari Ailus <sakari.ailus@linux.intel.com>
 
-commit 7c2e211f3c95b91912a92a8c6736343690042e2e upstream.
+commit f85698cd296f08218a7750f321e94607da128600 upstream.
 
-Current vfio-pci just supports normal pci device, so vfio_pci_probe() will
-return if the pci device is not a normal device. While current code makes a
-mistake. PCI_HEADER_TYPE is the offset in configuration space of the device
-type, but we use this value to mask the type value.
+The mutex does not serialise anything in this case but avoids a lockdep
+warning from the control framework.
 
-This patch fixs this by do the check directly on the pci_dev->hdr_type.
-
-Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vfio/pci/vfio_pci.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/media/i2c/smiapp/smiapp-core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -810,13 +810,11 @@ static const struct vfio_device_ops vfio
+--- a/drivers/media/i2c/smiapp/smiapp-core.c
++++ b/drivers/media/i2c/smiapp/smiapp-core.c
+@@ -2629,7 +2629,9 @@ static int smiapp_registered(struct v4l2
+ 		pll->flags |= SMIAPP_PLL_FLAG_OP_PIX_CLOCK_PER_LANE;
+ 	pll->scale_n = sensor->limits[SMIAPP_LIMIT_SCALER_N_MIN];
  
- static int vfio_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
--	u8 type;
- 	struct vfio_pci_device *vdev;
- 	struct iommu_group *group;
- 	int ret;
- 
--	pci_read_config_byte(pdev, PCI_HEADER_TYPE, &type);
--	if ((type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL)
-+	if (pdev->hdr_type != PCI_HEADER_TYPE_NORMAL)
- 		return -EINVAL;
- 
- 	group = iommu_group_get(&pdev->dev);
++	mutex_lock(&sensor->mutex);
+ 	rval = smiapp_update_mode(sensor);
++	mutex_unlock(&sensor->mutex);
+ 	if (rval) {
+ 		dev_err(&client->dev, "update mode failed\n");
+ 		goto out_nvm_release;
 
 
