@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759210AbbAYTRw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:17:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57516 "EHLO
+	id S1754946AbbAYSJF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:09:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110AbbAYSJL (ORCPT
+	with ESMTP id S1754286AbbAYSIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:11 -0500
+	Sun, 25 Jan 2015 13:08:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 53/98] drivers: net: cpsw: fix multicast flush in dual emac mode
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.10 21/50] [media] uvcvideo: Fix destruction order in uvc_delete()
 Date: Sun, 25 Jan 2015 10:07:11 -0800
-Message-Id: <20150125180715.161310537@linuxfoundation.org>
+Message-Id: <20150125180703.754799885@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,102 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 25906052d953d3fbdb7e19480b9de5e6bb949f3f upstream.
+commit 2228d80dd05a4fc5a410fde847677b8fb3eb23d7 upstream.
 
-Since ALE table is a common resource for both the interfaces in Dual EMAC
-mode and while bringing up the second interface in cpsw_ndo_set_rx_mode()
-all the multicast entries added by the first interface is flushed out and
-only second interface multicast addresses are added. Fixing this by
-flushing multicast addresses based on dual EMAC port vlans which will not
-affect the other emac port multicast addresses.
+We've got a bug report at disconnecting a Webcam, where the kernel
+spews warnings like below:
+  WARNING: CPU: 0 PID: 8385 at ../fs/sysfs/group.c:219 sysfs_remove_group+0x87/0x90()
+  sysfs group c0b2350c not found for kobject 'event3'
+  CPU: 0 PID: 8385 Comm: queue2:src Not tainted 3.16.2-1.gdcee397-default #1
+  Hardware name: ASUSTeK Computer INC. A7N8X-E/A7N8X-E, BIOS ASUS A7N8X-E Deluxe ACPI BIOS Rev 1013  11/12/2004
+    c08d0705 ddc75cbc c0718c5b ddc75ccc c024b654 c08c6d44 ddc75ce8 000020c1
+    c08d0705 000000db c03d1ec7 c03d1ec7 00000009 00000000 c0b2350c d62c9064
+    ddc75cd4 c024b6a3 00000009 ddc75ccc c08c6d44 ddc75ce8 ddc75cfc c03d1ec7
+  Call Trace:
+    [<c0205ba6>] try_stack_unwind+0x156/0x170
+    [<c02046f3>] dump_trace+0x53/0x180
+    [<c0205c06>] show_trace_log_lvl+0x46/0x50
+    [<c0204871>] show_stack_log_lvl+0x51/0xe0
+    [<c0205c67>] show_stack+0x27/0x50
+    [<c0718c5b>] dump_stack+0x3e/0x4e
+    [<c024b654>] warn_slowpath_common+0x84/0xa0
+    [<c024b6a3>] warn_slowpath_fmt+0x33/0x40
+    [<c03d1ec7>] sysfs_remove_group+0x87/0x90
+    [<c05a2c54>] device_del+0x34/0x180
+    [<c05e3989>] evdev_disconnect+0x19/0x50
+    [<c05e06fa>] __input_unregister_device+0x9a/0x140
+    [<c05e0845>] input_unregister_device+0x45/0x80
+    [<f854b1d6>] uvc_delete+0x26/0x110 [uvcvideo]
+    [<f84d66f8>] v4l2_device_release+0x98/0xc0 [videodev]
+    [<c05a25bb>] device_release+0x2b/0x90
+    [<c04ad8bf>] kobject_cleanup+0x6f/0x1a0
+    [<f84d5453>] v4l2_release+0x43/0x70 [videodev]
+    [<c0372f31>] __fput+0xb1/0x1b0
+    [<c02650c1>] task_work_run+0x91/0xb0
+    [<c024d845>] do_exit+0x265/0x910
+    [<c024df64>] do_group_exit+0x34/0xa0
+    [<c025a76f>] get_signal_to_deliver+0x17f/0x590
+    [<c0201b6a>] do_signal+0x3a/0x960
+    [<c02024f7>] do_notify_resume+0x67/0x90
+    [<c071ebb5>] work_notifysig+0x30/0x3b
+    [<b7739e60>] 0xb7739e5f
+   ---[ end trace b1e56095a485b631 ]---
 
-Fixes: d9ba8f9 (driver: net: ethernet: cpsw: dual emac interface implementation)
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The cause is that uvc_status_cleanup() is called after usb_put_*() in
+uvc_delete().  usb_put_*() removes the sysfs parent and eventually
+removes the children recursively, so the later device_del() can't find
+its sysfs.  The fix is simply rearrange the call orders in
+uvc_delete() so that the child is removed before the parent.
+
+Bugzilla: https://bugzilla.suse.com/show_bug.cgi?id=897736
+Reported-and-tested-by: Martin Pluskal <mpluskal@suse.com>
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ti/cpsw.c     |   11 +++++++++--
- drivers/net/ethernet/ti/cpsw_ale.c |   10 +++++++++-
- drivers/net/ethernet/ti/cpsw_ale.h |    2 +-
- 3 files changed, 19 insertions(+), 4 deletions(-)
+ drivers/media/usb/uvc/uvc_driver.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -596,7 +596,7 @@ static void cpsw_set_promiscious(struct
- 
- 			/* Clear all mcast from ALE */
- 			cpsw_ale_flush_multicast(ale, ALE_ALL_PORTS <<
--						 priv->host_port);
-+						 priv->host_port, -1);
- 
- 			/* Flood All Unicast Packets to Host port */
- 			cpsw_ale_control_set(ale, 0, ALE_P0_UNI_FLOOD, 1);
-@@ -620,6 +620,12 @@ static void cpsw_set_promiscious(struct
- static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -1603,12 +1603,12 @@ static void uvc_delete(struct uvc_device
  {
- 	struct cpsw_priv *priv = netdev_priv(ndev);
-+	int vid;
+ 	struct list_head *p, *n;
+ 
+-	usb_put_intf(dev->intf);
+-	usb_put_dev(dev->udev);
+-
+ 	uvc_status_cleanup(dev);
+ 	uvc_ctrl_cleanup_device(dev);
+ 
++	usb_put_intf(dev->intf);
++	usb_put_dev(dev->udev);
 +
-+	if (priv->data.dual_emac)
-+		vid = priv->slaves[priv->emac_port].port_vlan;
-+	else
-+		vid = priv->data.default_vlan;
- 
- 	if (ndev->flags & IFF_PROMISC) {
- 		/* Enable promiscuous mode */
-@@ -631,7 +637,8 @@ static void cpsw_ndo_set_rx_mode(struct
- 	}
- 
- 	/* Clear all mcast from ALE */
--	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port);
-+	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port,
-+				 vid);
- 
- 	if (!netdev_mc_empty(ndev)) {
- 		struct netdev_hw_addr *ha;
---- a/drivers/net/ethernet/ti/cpsw_ale.c
-+++ b/drivers/net/ethernet/ti/cpsw_ale.c
-@@ -236,7 +236,7 @@ static void cpsw_ale_flush_mcast(struct
- 		cpsw_ale_set_entry_type(ale_entry, ALE_TYPE_FREE);
- }
- 
--int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
-+int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid)
- {
- 	u32 ale_entry[ALE_ENTRY_WORDS];
- 	int ret, idx;
-@@ -247,6 +247,14 @@ int cpsw_ale_flush_multicast(struct cpsw
- 		if (ret != ALE_TYPE_ADDR && ret != ALE_TYPE_VLAN_ADDR)
- 			continue;
- 
-+		/* if vid passed is -1 then remove all multicast entry from
-+		 * the table irrespective of vlan id, if a valid vlan id is
-+		 * passed then remove only multicast added to that vlan id.
-+		 * if vlan id doesn't match then move on to next entry.
-+		 */
-+		if (vid != -1 && cpsw_ale_get_vlan_id(ale_entry) != vid)
-+			continue;
-+
- 		if (cpsw_ale_get_mcast(ale_entry)) {
- 			u8 addr[6];
- 
---- a/drivers/net/ethernet/ti/cpsw_ale.h
-+++ b/drivers/net/ethernet/ti/cpsw_ale.h
-@@ -88,7 +88,7 @@ void cpsw_ale_stop(struct cpsw_ale *ale)
- 
- int cpsw_ale_set_ageout(struct cpsw_ale *ale, int ageout);
- int cpsw_ale_flush(struct cpsw_ale *ale, int port_mask);
--int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask);
-+int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid);
- int cpsw_ale_add_ucast(struct cpsw_ale *ale, u8 *addr, int port,
- 		       int flags, u16 vid);
- int cpsw_ale_del_ucast(struct cpsw_ale *ale, u8 *addr, int port,
+ 	if (dev->vdev.dev)
+ 		v4l2_device_unregister(&dev->vdev);
+ #ifdef CONFIG_MEDIA_CONTROLLER
 
 
