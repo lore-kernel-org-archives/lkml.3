@@ -1,389 +1,419 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbbAYXdO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 18:33:14 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:45198 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524AbbAYXdL (ORCPT
+	id S1752233AbbAYXot (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 18:44:49 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:24890 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036AbbAYXoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 18:33:11 -0500
-Message-ID: <54C57D28.60501@gmail.com>
-Date: Mon, 26 Jan 2015 02:32:56 +0300
-From: Yury <yury.norov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-CC: linux-kernel@vger.kernel.org, heukelum@mailshack.com,
-        mita@miraclelinux.com, Andrew Morton <akpm@linux-foundation.org>,
-        rusty@rustcorp.com.au
-Subject: Re: [PATCH] lib: find_*_bit reimplementation
-References: <1421702706-10404-1-git-send-email-yury.norov@gmail.com> <87y4otknuu.fsf@rasmusvillemoes.dk>
-In-Reply-To: <87y4otknuu.fsf@rasmusvillemoes.dk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Sun, 25 Jan 2015 18:44:46 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-9c-54c57fe2e122
+Message-id: <54C57FE2.3070908@samsung.com>
+Date: Mon, 26 Jan 2015 08:44:34 +0900
+From: Beomho Seo <beomho.seo@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+MIME-version: 1.0
+To: Sebastian Reichel <sre@kernel.org>, Jaewon Kim <jaewon02.kim@samsung.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, Inki Dae <inki.dae@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 4/6] power: max77843_battery: Add Max77843 fuel gauge
+ device driver
+References: <1421989367-32721-1-git-send-email-jaewon02.kim@samsung.com>
+ <1421989367-32721-5-git-send-email-jaewon02.kim@samsung.com>
+ <20150125135340.GC2719@earth.universe>
+In-reply-to: <20150125135340.GC2719@earth.universe>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkSPdx/dEQg+bJjBZTHz5hs7j+5Tmr
+	xfwj51gt+t8sZLU492olo8Wk+xNYLHY0HGG1uP/1KKPF5V1z2Cw+9x5htFh6/SKTxYTpa1ks
+	WvceYbc4vbvEgc9jzbw1jB6X+3qZPFYu/8LmsWlVJ5vHnWt72Dz6tqxi9Pi8SS6APYrLJiU1
+	J7MstUjfLoEro2f3BbaCW0EVP36uYm1gbHbuYuTkkBAwkdh6YR4ThC0mceHeerYuRi4OIYGl
+	jBLHzl9nhSk6cOE3C4gtJDCdUaLhfB2E/ZpR4spr7i5GDg5eAS2JeU9sQMIsAqoSM1ZOYAex
+	2QQ0Jd5PuQLWKioQITH/2GtmEJtXQFDix+R7LCCtIgK+Eg2v6kHCzAJLmSU6p8iD2MICkRKT
+	j19ngThnA6PEhdV3wXo5BYwlJr47xwzSyyygJ3H/ohZEr7zE5jVvmUHqJQQmckg0Ny1ngrhH
+	QOLb5ENguyQEZCU2HWCG+EpS4uCKGywTGMVmIbloFsLUWUimLmBkXsUomlqQXFCclF5kolec
+	mFtcmpeul5yfu4kRGMen/z2bsIPx3gHrQ4wCHIxKPLwdK4+ECLEmlhVX5h5iNAU6YiKzlGhy
+	PjBZ5JXEGxqbGVmYmpgaG5lbmimJ876W+hksJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVHl
+	l++BWaKXApUldxuFzH9kcvnq/Pa80HvHX197rzJNM8Xv+Jypi+67aC50nrbwh/NzUeMy9i8S
+	5ybYxAjwO05eYrXeaNUvmcMrDh3W8f648noGu/31eqk+7QszszNjBe9lHzn4wTdogUas1cTM
+	0CAOwbNtUy/3vK7M02j1q9D5MvnP8hss5y2VWIozEg21mIuKEwHI3zTK3gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jQd1H9UdDDBZdN7aY+vAJm8X1L89Z
+	LeYfOcdq0f9mIavFuVcrGS0m3Z/AYrGj4Qirxf2vRxktLu+aw2bxufcIo8XS6xeZLCZMX8ti
+	0br3CLvF6d0lDnwea+atYfS43NfL5LFy+Rc2j02rOtk87lzbw+bRt2UVo8fnTXIB7FENjDYZ
+	qYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QDcrKZQl5pQC
+	hQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlrGDN6dl9gK7gVVPHj5yrWBsZm5y5GTg4J
+	AROJAxd+s0DYYhIX7q1nA7GFBKYzSjScr4OwXzNKXHnN3cXIwcEroCUx74kNSJhFQFVixsoJ
+	7CA2m4CmxPspV8DGiApESMw/9poZxOYVEJT4MfkeC0iriICvRMOrepAws8BSZonOKfIgtrBA
+	pMTk49eBSriANm1glLiw+i5YL6eAscTEd+eYQXqZBfQk7l/UguiVl9i85i3zBEaBWUg2zEKo
+	moWkagEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4CTxTHoH46oGi0OMAhyMSjy8HSuP
+	hAixJpYVV+YeYpTgYFYS4Y2sOBoixJuSWFmVWpQfX1Sak1p8iNEU6P+JzFKiyfnABJZXEm9o
+	bGJmZGlkbmhhZGyuJM6rZN8WIiSQnliSmp2aWpBaBNPHxMEp1cCotoT9lty1/4yv8zM552bY
+	365w4rTrTvjA/PSo7O5Czus/N7m42Wx+03FT8VmcTsT+E19uvfSemfHTqW6nQ2WvuXCyUHwS
+	+5mLZnvEf1zY27Fk6jd3p6JD0r+Ppk09kqp1wFztbTZfwvelHv8mhzDIeuyVOfat+Lv51nvS
+	jAt6uufNvJmgMJtLiaU4I9FQi7moOBEAb228+CgDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.01.2015 03:45, Rasmus Villemoes wrote:
-> On Mon, Jan 19 2015, Yury Norov <yury.norov@gmail.com> wrote:
->
->> New implementation takes less space, and, I hope, easier to understand.
+Hi,
+
+Thanks for your review.
+
+I'll fix patch as your advice.
+
+Thanks,
+Beomho Seo
+
+On 01/25/2015 10:53 PM, Sebastian Reichel wrote:
+> Hi,
+> 
+> On Fri, Jan 23, 2015 at 02:02:45PM +0900, Jaewon Kim wrote:
+>> From: Beomho Seo <beomho.seo@samsung.com>
 >>
->> Signed-off-by: Yury Norov <yury.norov@gmail.com>
+>> This patch adds device driver of max77843 fuel gauge.
+>> The driver support for battery fuel gauge in Maxim Max77843.
+>> It is fuel-gauge systems for lithuum-ion batteries in handled and
+>> portable devices.
+>>
+>> Cc: Sebastian Reichel <sre@kernel.org>
+>> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
 >> ---
->>  lib/find_next_bit.c | 265 +++++++++++++++-------------------------------------
->>  1 file changed, 73 insertions(+), 192 deletions(-)
+>>  drivers/power/Kconfig            |    9 ++
+>>  drivers/power/Makefile           |    1 +
+>>  drivers/power/max77843_battery.c |  283 ++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 293 insertions(+)
+>>  create mode 100644 drivers/power/max77843_battery.c
 >>
-> That diffstat is certainly nice. Do you also have numbers for the
-> size of the generated code, and do you know if there is a
-> measurable performance difference? Have you tested whether the new and
-> old code give the same results, also in corner cases?
-Hello, Rasmus. Thank you for your time.
-
-> Do you also have numbers for the size of the generated code
-
-Before text section is 817 bytes, after - 533.
-Comparing to this version, I have the patch modified now, and numbers may little differ.
-
-> Have you tested whether the new and old code give the same results, also in corner cases?
-
-I tested new version together with old one, and if new did return different value,
-it was printed to system log. I didn't measure performance because I don't expect
-significant gain here. But now I think it's good idea to write tests for performance and
-corner cases. Maybe someone already did it... Brief googling didn't help. Anyway, with
-new version of patch I will show my measures.
->
-> Some remarks inline below.
->
->> diff --git a/lib/find_next_bit.c b/lib/find_next_bit.c
->> index 0cbfc0b..a5c915f 100644
->> --- a/lib/find_next_bit.c
->> +++ b/lib/find_next_bit.c
->> @@ -11,10 +11,39 @@
+>> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+>> index a054a28..0039bbb 100644
+>> --- a/drivers/power/Kconfig
+>> +++ b/drivers/power/Kconfig
+>> @@ -212,6 +212,15 @@ config BATTERY_MAX17042
+>>  	  with MAX17042. This driver also supports max17047/50 chips which are
+>>  	  improved version of max17042.
 >>  
->>  #include <linux/bitops.h>
->>  #include <linux/export.h>
->> +#include <linux/kernel.h>
->>  #include <asm/types.h>
->>  #include <asm/byteorder.h>
->>  
->> -#define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)
->> +#define HIGH_BITS_MASK(nr)		(ULONG_MAX << (nr))
->> +#define MIN(a, b)			((a) < (b) ? (a) : (b))
+>> +config BATTERY_MAX77843
+>> +	tristate "Maxim MAX77843 Fuel Gauge"
+>> +	depends on MFD_MAX77843
+>> +	help
+>> +	  This add support for battery fuel gauge in Maxim MAX77843.
+> 
+> add -> adds
+> 
+>> +	  It is fuel-gauge systems for lithuum-ion (Li+) batteries in handled and
+>> +	  portable devices. The MAX17040 is configured to operate with a single
+>> +	  lithium cell.
+> 
+> It is a fuel-gauge for a lithium-ion batteries with a single
+> cell and can be found in portable devices.
+> 
 >> +
-> Please don't duplicate min/max macros. kernel.h already provides everything you need.
-Ok.
->
->> +#if !defined(find_next_bit) || !defined(find_next_zero_bit)
->> +static unsigned long _find_next_bit(const unsigned long *addr,
->> +		unsigned long end, unsigned long start, unsigned long flags)
-> Having two parameters called end and start appearing in that
-> order is slightly confusing. Why not keep the name 'size' for
-> end, or maybe 'nbits' to make the unit clear. Also, I think flags
-> should just be a bool and maybe renamed to something more meaningful.
-You're right, Something like this:
- static unsigned long _find_next_bit(const unsigned long *addr,
-                        unsigned long nbits, unsigned long start_bit, bool set)
-looks better.
->
+>>  config BATTERY_Z2
+>>  	tristate "Z2 battery driver"
+>>  	depends on I2C && MACH_ZIPIT2
+>> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+>> index 212c6a2..ae0d795 100644
+>> --- a/drivers/power/Makefile
+>> +++ b/drivers/power/Makefile
+>> @@ -33,6 +33,7 @@ obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
+>>  obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o
+>>  obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
+>>  obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
+>> +obj-$(CONFIG_BATTERY_MAX77843)	+= max77843_battery.o
+>>  obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
+>>  obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
+>>  obj-$(CONFIG_BATTERY_TWL4030_MADC)	+= twl4030_madc_battery.o
+>> diff --git a/drivers/power/max77843_battery.c b/drivers/power/max77843_battery.c
+>> new file mode 100644
+>> index 0000000..a08dd0c
+>> --- /dev/null
+>> +++ b/drivers/power/max77843_battery.c
+>> @@ -0,0 +1,283 @@
+>> +/*
+>> + * Fuel gauge driver for Maxim MAX77843
+>> + *
+>> + * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
+>> + * Author: Beomho Seo <beomho.seo@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published bythe Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/power_supply.h>
+>> +#include <linux/mfd/max77843-private.h>
+>> +
+>> +struct max77843_battery {
+>> +	struct device		*dev;
+>> +	struct max77843		*max77843;
+>> +	struct i2c_client	*client;
+>> +	struct regmap		*regmap;
+>> +	struct power_supply	psy;
+>> +};
+>> +
+>> +static int max77843_battery_get_capacity(struct max77843_battery *battery)
 >> +{
->> +	unsigned long tmp = flags ? addr[start / BITS_PER_LONG]
->> +			: ~addr[start / BITS_PER_LONG];
+>> +	struct regmap *regmap = battery->regmap;
+>> +	int ret, val;
+>> +	u8 reg_data[2];
 >> +
->> +	/* Handle 1st word. */
->> +	if (!IS_ALIGNED(start, BITS_PER_LONG)) {
->> +		tmp &= HIGH_BITS_MASK(start % BITS_PER_LONG);
->> +		start = round_down(start, BITS_PER_LONG);
+>> +	ret = regmap_bulk_read(regmap, MAX77843_FG_REG_SOCREP, reg_data, 2);
+>> +	if (ret) {
+>> +		dev_err(battery->dev, "Failed to read fuelgauge register\n");
+>> +		return ret;
 >> +	}
 >> +
->> +	do {
->> +		if (tmp)
->> +			return MIN(start + __ffs(tmp), end);
->> +
->> +		start += BITS_PER_LONG;
->> +		if (start >= end)
->> +			return end;
->> +
->> +		tmp = flags ? addr[start / BITS_PER_LONG]
->> +			: ~addr[start / BITS_PER_LONG];
->> +	} while (1);
+>> +	val =  ((reg_data[1] * 100) + (reg_data[0] * 100 / 256)) / 100;
+> 
+> so
+> 
+> val = reg_data[1]?
+> 
+>> +	return val;
 >> +}
->> +#endif
->>  
->>  #ifndef find_next_bit
->>  /*
->> @@ -23,86 +52,16 @@
->>  unsigned long find_next_bit(const unsigned long *addr, unsigned long size,
->>  			    unsigned long offset)
->>  {
->> -	const unsigned long *p = addr + BITOP_WORD(offset);
->> -	unsigned long result = offset & ~(BITS_PER_LONG-1);
->> -	unsigned long tmp;
->> -
->> -	if (offset >= size)
->> -		return size;
-> The previous versions handled this, but your code will always access
-> the word at addr[start/BITS_PER_LONG]. Are you sure no caller ever
-> passes start >= size?
-You're right. Fixed.
->
->> -	size -= result;
->> -	offset %= BITS_PER_LONG;
->> -	if (offset) {
->> -		tmp = *(p++);
->> -		tmp &= (~0UL << offset);
->> -		if (size < BITS_PER_LONG)
->> -			goto found_first;
->> -		if (tmp)
->> -			goto found_middle;
->> -		size -= BITS_PER_LONG;
->> -		result += BITS_PER_LONG;
->> -	}
->> -	while (size & ~(BITS_PER_LONG-1)) {
->> -		if ((tmp = *(p++)))
->> -			goto found_middle;
->> -		result += BITS_PER_LONG;
->> -		size -= BITS_PER_LONG;
->> -	}
->> -	if (!size)
->> -		return result;
->> -	tmp = *p;
->> -
->> -found_first:
->> -	tmp &= (~0UL >> (BITS_PER_LONG - size));
->> -	if (tmp == 0UL)		/* Are any bits set? */
->> -		return result + size;	/* Nope. */
->> -found_middle:
->> -	return result + __ffs(tmp);
->> +	return _find_next_bit(addr, size, offset, 1);
->>  }
->>  EXPORT_SYMBOL(find_next_bit);
->>  #endif
->>  
->>  #ifndef find_next_zero_bit
->> -/*
->> - * This implementation of find_{first,next}_zero_bit was stolen from
->> - * Linus' asm-alpha/bitops.h.
->> - */
->>  unsigned long find_next_zero_bit(const unsigned long *addr, unsigned long size,
->>  				 unsigned long offset)
->>  {
->> -	const unsigned long *p = addr + BITOP_WORD(offset);
->> -	unsigned long result = offset & ~(BITS_PER_LONG-1);
->> -	unsigned long tmp;
->> -
->> -	if (offset >= size)
->> -		return size;
->> -	size -= result;
->> -	offset %= BITS_PER_LONG;
->> -	if (offset) {
->> -		tmp = *(p++);
->> -		tmp |= ~0UL >> (BITS_PER_LONG - offset);
->> -		if (size < BITS_PER_LONG)
->> -			goto found_first;
->> -		if (~tmp)
->> -			goto found_middle;
->> -		size -= BITS_PER_LONG;
->> -		result += BITS_PER_LONG;
->> -	}
->> -	while (size & ~(BITS_PER_LONG-1)) {
->> -		if (~(tmp = *(p++)))
->> -			goto found_middle;
->> -		result += BITS_PER_LONG;
->> -		size -= BITS_PER_LONG;
->> -	}
->> -	if (!size)
->> -		return result;
->> -	tmp = *p;
->> -
->> -found_first:
->> -	tmp |= ~0UL << size;
->> -	if (tmp == ~0UL)	/* Are any bits zero? */
->> -		return result + size;	/* Nope. */
->> -found_middle:
->> -	return result + ffz(tmp);
->> +	return _find_next_bit(addr, size, offset, 0);
->>  }
->>  EXPORT_SYMBOL(find_next_zero_bit);
->>  #endif
->> @@ -113,24 +72,14 @@ EXPORT_SYMBOL(find_next_zero_bit);
->>   */
->>  unsigned long find_first_bit(const unsigned long *addr, unsigned long size)
->>  {
->> -	const unsigned long *p = addr;
->> -	unsigned long result = 0;
->> -	unsigned long tmp;
->> +	unsigned int idx;
->>  
->> -	while (size & ~(BITS_PER_LONG-1)) {
->> -		if ((tmp = *(p++)))
->> -			goto found;
->> -		result += BITS_PER_LONG;
->> -		size -= BITS_PER_LONG;
->> +	for (idx = 0; idx * BITS_PER_LONG < size; idx++) {
->> +		if (addr[idx])
->> +			return idx * BITS_PER_LONG + __ffs(addr[idx]);
->>  	}
-> I'm afraid this is wrong. It doesn't take garbage bits in the last
-> (partial) word into account. You either need to loop over the full
-> words and handle the last separately, masking off the garbage bits, or
-> wrap min(, size) around the above expression, just as you've done in
-> _find_next_bit. I think I prefer the latter.
-Yes. Done.
->
-> Does anyone use insane size bitmaps with 2^32 bits or more? If so,
-> you'd have to watch out for overflow and use unsigned long for idx.
-Yes.
->
->> -	if (!size)
->> -		return result;
->>  
->> -	tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
->> -	if (tmp == 0UL)		/* Are any bits set? */
->> -		return result + size;	/* Nope. */
->> -found:
->> -	return result + __ffs(tmp);
->> +	return size;
->>  }
->>  EXPORT_SYMBOL(find_first_bit);
->>  #endif
->> @@ -141,24 +90,14 @@ EXPORT_SYMBOL(find_first_bit);
->>   */
->>  unsigned long find_first_zero_bit(const unsigned long *addr, unsigned long size)
->>  {
->> -	const unsigned long *p = addr;
->> -	unsigned long result = 0;
->> -	unsigned long tmp;
->> +	unsigned int idx;
->>  
->> -	while (size & ~(BITS_PER_LONG-1)) {
->> -		if (~(tmp = *(p++)))
->> -			goto found;
->> -		result += BITS_PER_LONG;
->> -		size -= BITS_PER_LONG;
->> +	for (idx = 0; idx * BITS_PER_LONG < size; idx++) {
->> +		if (addr[idx] != ULONG_MAX)
->> +			return idx * BITS_PER_LONG + ffz(addr[idx]);
->>  	}
-> The same of course applies here.
->
->> -	if (!size)
->> -		return result;
->>  
->> -	tmp = (*p) | (~0UL << size);
->> -	if (tmp == ~0UL)	/* Are any bits zero? */
->> -		return result + size;	/* Nope. */
->> -found:
->> -	return result + ffz(tmp);
->> +	return size;
->>  }
->>  EXPORT_SYMBOL(find_first_zero_bit);
->>  #endif
->> @@ -166,18 +105,6 @@ EXPORT_SYMBOL(find_first_zero_bit);
->>  #ifdef __BIG_ENDIAN
->>  
->>  /* include/linux/byteorder does not support "unsigned long" type */
->> -static inline unsigned long ext2_swabp(const unsigned long * x)
->> -{
->> -#if BITS_PER_LONG == 64
->> -	return (unsigned long) __swab64p((u64 *) x);
->> -#elif BITS_PER_LONG == 32
->> -	return (unsigned long) __swab32p((u32 *) x);
->> -#else
->> -#error BITS_PER_LONG not defined
->> -#endif
->> -}
->> -
->> -/* include/linux/byteorder doesn't support "unsigned long" type */
->>  static inline unsigned long ext2_swab(const unsigned long y)
->>  {
->>  #if BITS_PER_LONG == 64
->> @@ -189,48 +116,40 @@ static inline unsigned long ext2_swab(const unsigned long y)
->>  #endif
->>  }
->>  
->> -#ifndef find_next_zero_bit_le
->> -unsigned long find_next_zero_bit_le(const void *addr, unsigned
->> -		long size, unsigned long offset)
->> +#if !defined(find_next_bit_le) || !defined(find_next_zero_bit_le)
->> +static unsigned long _find_next_bit_le(const unsigned long *addr,
->> +		unsigned long end, unsigned long start, unsigned long flags)
->>  {
->> -	const unsigned long *p = addr;
->> -	unsigned long result = offset & ~(BITS_PER_LONG - 1);
->> -	unsigned long tmp;
->> -
->> -	if (offset >= size)
->> -		return size;
->> -	p += BITOP_WORD(offset);
->> -	size -= result;
->> -	offset &= (BITS_PER_LONG - 1UL);
->> -	if (offset) {
->> -		tmp = ext2_swabp(p++);
->> -		tmp |= (~0UL >> (BITS_PER_LONG - offset));
->> -		if (size < BITS_PER_LONG)
->> -			goto found_first;
->> -		if (~tmp)
->> -			goto found_middle;
->> -		size -= BITS_PER_LONG;
->> -		result += BITS_PER_LONG;
->> +	unsigned long tmp = flags ? addr[start / BITS_PER_LONG]
->> +			: ~addr[start / BITS_PER_LONG];
 >> +
->> +	/* Handle 1st word. */
->> +	if (!IS_ALIGNED(start, BITS_PER_LONG)) {
->> +		tmp &= ext2_swab(HIGH_BITS_MASK(start
->> +					% BITS_PER_LONG));
-> Nit: There's no reason to break that line.
->
->> +		start = round_down(start, BITS_PER_LONG);
->>  	}
->>  
->> -	while (size & ~(BITS_PER_LONG - 1)) {
->> -		if (~(tmp = *(p++)))
->> -			goto found_middle_swap;
->> -		result += BITS_PER_LONG;
->> -		size -= BITS_PER_LONG;
->> -	}
->> -	if (!size)
->> -		return result;
->> -	tmp = ext2_swabp(p);
->> -found_first:
->> -	tmp |= ~0UL << size;
->> -	if (tmp == ~0UL)	/* Are any bits zero? */
->> -		return result + size; /* Nope. Skip ffz */
->> -found_middle:
->> -	return result + ffz(tmp);
->> +	do {
->> +		if (tmp)
->> +			return MIN(start +
->> +				__ffs(ext2_swab(tmp)), end);
-> Again, no reason to break the line.
-The reason is limitation of 80 bytes per line, but anyway, I did it bad way
->   
->> -found_middle_swap:
->> -	return result + ffz(ext2_swab(tmp));
->> +		start += BITS_PER_LONG;
->> +		if (start >= end)
->> +			return end;
->> +
->> +		tmp = flags ? addr[start / BITS_PER_LONG]
->> +			: ~addr[start / BITS_PER_LONG];
->> +	} while (1);
->> +}
->> +#endif
->> +
->> +#ifndef find_next_zero_bit_le
->> +unsigned long find_next_zero_bit_le(const void *addr, unsigned
->> +		long size, unsigned long offset)
+>> +static int max77843_battery_get_energy_prop(struct max77843_battery *battery,
+>> +		enum power_supply_property psp)
 >> +{
->> +	return _find_next_bit_le(addr, size, offset, o);
-> I'm assuming you only compile-tested this on little-endian. The o
-> wants to be a 0.
-Yes, shame on me. I think I'd bring up SPARK or big-endian ARM environment
-on my QEMU before uploading new version.
->
-> Rasmus
->
+>> +	struct regmap *regmap = battery->regmap;
+>> +	unsigned int reg;
+>> +	int ret, val;
+>> +	u8 reg_data[2];
+>> +
+>> +	switch (psp) {
+>> +	case POWER_SUPPLY_PROP_ENERGY_FULL:
+>> +		reg = MAX77843_FG_REG_FULLCAP;
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_ENERGY_NOW:
+>> +		reg = MAX77843_FG_REG_REMCAP_REP;
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_ENERGY_AVG:
+>> +		reg = MAX77843_FG_REG_REMCAP_AV;
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	ret = regmap_bulk_read(regmap, reg, reg_data, 2);
+>> +	if (ret) {
+>> +		dev_err(battery->dev, "Failed to read fuelgauge register\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	val = (reg_data[1] << 8) | reg_data[0];
+>> +
+>> +	return val;
+>> +}
+>> +
+>> +static int max77843_battery_get_current_prop(struct max77843_battery *battery,
+>> +		enum power_supply_property psp)
+>> +{
+>> +	struct regmap *regmap = battery->regmap;
+>> +	unsigned int reg;
+>> +	int ret, val;
+>> +	u8 reg_data[2];
+>> +
+>> +	switch (psp) {
+>> +	case POWER_SUPPLY_PROP_CURRENT_NOW:
+>> +		reg = MAX77843_FG_REG_CURRENT;
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_CURRENT_AVG:
+>> +		reg = MAX77843_FG_REG_AVG_CURRENT;
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	ret = regmap_bulk_read(regmap, reg, reg_data, 2);
+>> +	if (ret) {
+>> +		dev_err(battery->dev, "Failed to read fuelgauge register\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	val = (reg_data[1] << 8) | reg_data[0];
+>> +	if (val & 0x8000) {
+>> +		/* Negative */
+>> +		val = ~val & 0xffff;
+>> +		val++;
+>> +		val *= -1;
+>> +	}
+>> +	/* Unit of current is mA */
+>> +	val =  val * 15625 / 100000;
+>> +
+>> +	return val;
+>> +}
+>> +
+>> +static int max77843_battery_get_voltage_prop(struct max77843_battery *battery,
+>> +		enum power_supply_property psp)
+>> +{
+>> +	struct regmap *regmap = battery->regmap;
+>> +	unsigned int reg;
+>> +	int ret, val;
+>> +	u8 reg_data[2];
+>> +
+>> +	switch (psp) {
+>> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+>> +		reg = MAX77843_FG_REG_VCELL;
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
+>> +		reg = MAX77843_FG_REG_AVG_VCELL;
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
+>> +		reg = MAX77843_FG_REG_OCV;
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	ret = regmap_bulk_read(regmap, reg, reg_data, 2);
+>> +	if (ret) {
+>> +		dev_err(battery->dev, "Failed to read fuelgauge register\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	val = ((reg_data[1] << 4) + (reg_data[0] >> 4)) * 125;
+>> +	val /= 100;
+>> +
+>> +	return val;
+>> +}
+>> +
+>> +static const char *model_name = "MAX77843";
+>> +static const char *manufacturer = "Maxim Integrated";
+>> +
+>> +static int max77843_battery_get_property(struct power_supply *psy,
+>> +		enum power_supply_property psp,
+>> +		union power_supply_propval *val)
+>> +{
+>> +	struct max77843_battery *battery = container_of(psy,
+>> +				struct max77843_battery, psy);
+>> +	switch (psp) {
+>> +	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+>> +	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
+>> +	case POWER_SUPPLY_PROP_VOLTAGE_OCV:
+>> +		val->intval = max77843_battery_get_voltage_prop(battery, psp);
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_CURRENT_NOW:
+>> +	case POWER_SUPPLY_PROP_CURRENT_AVG:
+>> +		val->intval = max77843_battery_get_current_prop(battery, psp);
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_ENERGY_FULL:
+>> +	case POWER_SUPPLY_PROP_ENERGY_NOW:
+>> +	case POWER_SUPPLY_PROP_ENERGY_AVG:
+>> +		val->intval = max77843_battery_get_energy_prop(battery, psp);
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_CAPACITY:
+>> +		val->intval = max77843_battery_get_capacity(battery);
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_MODEL_NAME:
+>> +		val->strval =  model_name;
+>> +		break;
+>> +	case POWER_SUPPLY_PROP_MANUFACTURER:
+>> +		val->strval = manufacturer;
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static enum power_supply_property max77843_battery_props[] = {
+>> +	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+>> +	POWER_SUPPLY_PROP_VOLTAGE_AVG,
+>> +	POWER_SUPPLY_PROP_VOLTAGE_OCV,
+>> +	POWER_SUPPLY_PROP_CURRENT_NOW,
+>> +	POWER_SUPPLY_PROP_CURRENT_AVG,
+>> +	POWER_SUPPLY_PROP_ENERGY_FULL,
+>> +	POWER_SUPPLY_PROP_ENERGY_NOW,
+>> +	POWER_SUPPLY_PROP_ENERGY_AVG,
+>> +	POWER_SUPPLY_PROP_CAPACITY,
+>> +	POWER_SUPPLY_PROP_MODEL_NAME,
+>> +	POWER_SUPPLY_PROP_MANUFACTURER,
+>> +};
+>> +
+>> +static const struct regmap_config max77843_fuel_regmap_config = {
+>> +	.reg_bits	= 8,
+>> +	.val_bits	= 8,
+>> +	.max_register	= MAX77843_FG_END,
+>> +};
+> 
+> You always read 2 bytes, so it seems the device uses 16 bit sized
+> values?
+> 
+>> +static int max77843_battery_probe(struct platform_device *pdev)
+>> +{
+>> +	struct max77843 *max77843 = dev_get_drvdata(pdev->dev.parent);
+>> +	struct max77843_battery *battery;
+>> +	int ret;
+>> +
+>> +	battery = devm_kzalloc(&pdev->dev, sizeof(*battery), GFP_KERNEL);
+>> +	if (!battery)
+>> +		return -ENOMEM;
+>> +
+>> +	battery->dev = &pdev->dev;
+>> +	battery->max77843 = max77843;
+>> +
+>> +	battery->client = i2c_new_dummy(max77843->i2c->adapter, I2C_ADDR_FG);
+>> +	if (!battery->client) {
+>> +		dev_err(&pdev->dev, "Failed to get dummy i2c client.\n");
+>> +		return PTR_ERR(battery->client);
+>> +	}
+>> +	i2c_set_clientdata(battery->client, max77843);
+>> +
+>> +	battery->regmap = devm_regmap_init_i2c(battery->client,
+>> +			&max77843_fuel_regmap_config);
+>> +	if (IS_ERR(battery->regmap)) {
+>> +		ret = PTR_ERR(battery->regmap);
+>> +		goto err_i2c;
+>> +	}
+>> +
+>> +	platform_set_drvdata(pdev, battery);
+>> +
+>> +	battery->psy.name	= "max77843-fuelgauge";
+>> +	battery->psy.type	= POWER_SUPPLY_TYPE_BATTERY;
+>> +	battery->psy.get_property	= max77843_battery_get_property;
+>> +	battery->psy.properties		= max77843_battery_props;
+>> +	battery->psy.num_properties	= ARRAY_SIZE(max77843_battery_props);
+>> +
+>> +	ret = power_supply_register(&pdev->dev, &battery->psy);
+>> +	if (ret) {
+>> +		dev_err(&pdev->dev, "Failed  to register power supply\n");
+>> +		goto err_i2c;
+>> +	}
+>> +
+>> +	return 0;
+>> +
+>> +err_i2c:
+>> +	i2c_unregister_device(battery->client);
+> 
+> This is missing in max77843_battery_remove()
+> 
+>> +
+>> +	return ret;
+>> +}
+>> +
+>> +static int max77843_battery_remove(struct platform_device *pdev)
+>> +{
+>> +	struct max77843_battery *battery = platform_get_drvdata(pdev);
+>> +
+>> +	power_supply_unregister(&battery->psy);
+>> +
+>> +	return 0;
+>> +}
+> 
+>> [...]
+> 
+> -- Sebastian
+> 
 
