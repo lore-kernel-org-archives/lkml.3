@@ -1,105 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147AbbAYSVE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:21:04 -0500
-Received: from mail-bl2on0115.outbound.protection.outlook.com ([65.55.169.115]:1643
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756152AbbAYSKl convert rfc822-to-8bit (ORCPT
+	id S1755652AbbAYSOW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:14:22 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:52333 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754078AbbAYSOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:41 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] hyperv: else branch not necessary
-Thread-Topic: [PATCH] hyperv: else branch not necessary
-Thread-Index: AQHQOHyOzavHQ6z7yUONYyjG34zuHpzRIz1Q
-Date: Sun, 25 Jan 2015 18:10:37 +0000
-Message-ID: <BY2PR0301MB07114B03CF5BB30D44267412A0340@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1422175610-1924-1-git-send-email-der.herr@hofr.at>
-In-Reply-To: <1422175610-1924-1-git-send-email-der.herr@hofr.at>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:fd:548:a62e:74ba:769d]
-authentication-results: hofr.at; dkim=none (message not signed)
- header.d=none;hofr.at; dmarc=none action=none header.from=microsoft.com;
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR0301MB0774;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0774;
-x-forefront-prvs: 046753C63C
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(13464003)(87936001)(62966003)(54606007)(50986999)(76176999)(2656002)(92566002)(19580395003)(106116001)(2900100001)(2950100001)(77156002)(86362001)(102836002)(110136001)(122556002)(19580405001)(76576001)(33656002)(99286002)(54356999)(54206007)(46102003)(74316001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0774;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 25 Jan 2015 18:10:37.3414
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0774
+	Sun, 25 Jan 2015 13:14:19 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] power/reset: arm-versatile: Register with kernel restart handler
+Date: Sun, 25 Jan 2015 10:13:37 -0800
+Message-Id: <1422209622-31994-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 2.1.0
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54C5327B.0062,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 26
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Register with kernel restart handler instead of setting arm_pm_restart
+directly. Select high priority since the restart handler is instantiated
+through devicetree, indicating that it should be used if configured.
 
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/power/reset/arm-versatile-reboot.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-> -----Original Message-----
-> From: Nicholas Mc Guire [mailto:der.herr@hofr.at]
-> Sent: Sunday, January 25, 2015 12:47 AM
-> To: KY Srinivasan
-> Cc: Haiyang Zhang; devel@linuxdriverproject.org; netdev@vger.kernel.org;
-> linux-kernel@vger.kernel.org; Nicholas Mc Guire
-> Subject: [PATCH] hyperv: else branch not necessary
-
-Make the subject line clear as to  what subsystem this patch is for.
-
-K. Y
-> 
-> As the if completes with a unconditional goto the else branch is not needed
-> here.
-> 
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> ---
-> 
-> All paths of execution that did not exit through the if branch will go through
-> the else branch so no need for an explicit else here
-> 
-> Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=y
-> CONFIG_HYPERV=m, CONFIG_HYPERV_NET=m
-> 
-> Patch is against 3.19.0-rc5 -next-20150123
-> 
->  drivers/net/hyperv/rndis_filter.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/net/hyperv/rndis_filter.c
-> b/drivers/net/hyperv/rndis_filter.c
-> index 7bd8387..efb84a9 100644
-> --- a/drivers/net/hyperv/rndis_filter.c
-> +++ b/drivers/net/hyperv/rndis_filter.c
-> @@ -833,10 +833,10 @@ int rndis_filter_set_packet_filter(struct
-> rndis_device *dev, u32 new_filter)
->  		 * send completion for it.
->  		 */
->  		goto exit;
-> -	} else {
-> -		set_complete = &request-
-> >response_msg.msg.set_complete;
-> -		status = set_complete->status;
-> -	}
-> +	}
-> +
-> +	set_complete = &request->response_msg.msg.set_complete;
-> +	status = set_complete->status;
-> 
->  cleanup:
->  	if (request)
-> --
-> 1.7.10.4
+diff --git a/drivers/power/reset/arm-versatile-reboot.c b/drivers/power/reset/arm-versatile-reboot.c
+index 5b08bff..e533812 100644
+--- a/drivers/power/reset/arm-versatile-reboot.c
++++ b/drivers/power/reset/arm-versatile-reboot.c
+@@ -13,7 +13,6 @@
+ #include <linux/reboot.h>
+ #include <linux/regmap.h>
+ #include <linux/of.h>
+-#include <asm/system_misc.h>
+ 
+ #define REALVIEW_SYS_LOCK_OFFSET	0x20
+ #define REALVIEW_SYS_LOCK_VAL		0xA05F
+@@ -57,7 +56,8 @@ static const struct of_device_id versatile_reboot_of_match[] = {
+ 	},
+ };
+ 
+-static void versatile_reboot(enum reboot_mode mode, const char *cmd)
++static int versatile_reboot(struct notifier_block *this, unsigned long mode,
++			    void *cmd)
+ {
+ 	/* Unlock the reset register */
+ 	regmap_write(syscon_regmap, REALVIEW_SYS_LOCK_OFFSET,
+@@ -87,12 +87,20 @@ static void versatile_reboot(enum reboot_mode mode, const char *cmd)
+ 		break;
+ 	}
+ 	dsb();
++
++	return NOTIFY_DONE;
+ }
+ 
++static struct notifier_block versatile_reboot_nb = {
++	.notifier_call = versatile_reboot,
++	.priority = 192,
++};
++
+ static int __init versatile_reboot_probe(void)
+ {
+ 	const struct of_device_id *reboot_id;
+ 	struct device_node *np;
++	int err;
+ 
+ 	np = of_find_matching_node_and_match(NULL, versatile_reboot_of_match,
+ 						 &reboot_id);
+@@ -104,7 +112,10 @@ static int __init versatile_reboot_probe(void)
+ 	if (IS_ERR(syscon_regmap))
+ 		return PTR_ERR(syscon_regmap);
+ 
+-	arm_pm_restart = versatile_reboot;
++	err = register_restart_handler(&versatile_reboot_nb);
++	if (err)
++		return err;
++
+ 	pr_info("versatile reboot driver registered\n");
+ 	return 0;
+ }
+-- 
+2.1.0
 
