@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280AbbAYSIi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:08:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57185 "EHLO
+	id S1756769AbbAYSqj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:46:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976AbbAYSIe (ORCPT
+	with ESMTP id S1755788AbbAYSKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:34 -0500
+	Sun, 25 Jan 2015 13:10:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>, Thomas Graf <tgraf@suug.ch>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 02/50] netlink: Dont reorder loads/stores before marking mmap netlink frame as available
+        Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
+        Doug Anderson <dianders@chromium.org>
+Subject: [PATCH 3.18 090/183] clk: rockchip: fix rk3288 cpuclk core dividers
 Date: Sun, 25 Jan 2015 10:06:52 -0800
-Message-Id: <20150125180702.728480090@linuxfoundation.org>
+Message-Id: <20150125180814.089350198@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,54 +25,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Heiko Stuebner <heiko@sntech.de>
 
-[ Upstream commit a18e6a186f53af06937a2c268c72443336f4ab56 ]
+commit 9880d4277f6aab6b21404c824f9d9c652ba518ac upstream.
 
-Each mmap Netlink frame contains a status field which indicates
-whether the frame is unused, reserved, contains data or needs to
-be skipped. Both loads and stores may not be reordeded and must
-complete before the status field is changed and another CPU might
-pick up the frame for use. Use an smp_mb() to cover needs of both
-types of callers to netlink_set_status(), callers which have been
-reading data frame from the frame, and callers which have been
-filling or releasing and thus writing to the frame.
+Commit 0e5bdb3f9fa5 (clk: rockchip: switch to using the new cpuclk type
+for armclk) didn't take into account that the divider used on rk3288
+are of the (n+1) type.
 
-- Example code path requiring a smp_rmb():
-  memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, hdr->nm_len);
-  netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
+The rk3066 and rk3188 socs use more complex divider types making it
+necessary for the list-elements to be the real register-values to write.
 
-- Example code path requiring a smp_wmb():
-  hdr->nm_uid	= from_kuid(sk_user_ns(sk), NETLINK_CB(skb).creds.uid);
-  hdr->nm_gid	= from_kgid(sk_user_ns(sk), NETLINK_CB(skb).creds.gid);
-  netlink_frame_flush_dcache(hdr);
-  netlink_set_status(hdr, NL_MMAP_STATUS_VALID);
+Therefore reduce divider values in the table accordingly so that they
+really are the values that should be written to the registers and match
+the dividers actually specified for the rk3288.
 
-Fixes: f9c228 ("netlink: implement memory mapped recvmsg()")
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Sonny Rao <sonnyrao@chromium.org>
+Fixes: 0e5bdb3f9fa5 ("clk: rockchip: switch to using the new cpuclk type for armclk")
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/netlink/af_netlink.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -399,9 +399,9 @@ static enum nl_mmap_status netlink_get_s
- static void netlink_set_status(struct nl_mmap_hdr *hdr,
- 			       enum nl_mmap_status status)
- {
-+	smp_mb();
- 	hdr->nm_status = status;
- 	flush_dcache_page(pgvec_to_page(hdr));
--	smp_wmb();
- }
+---
+ drivers/clk/rockchip/clk-rk3288.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+--- a/drivers/clk/rockchip/clk-rk3288.c
++++ b/drivers/clk/rockchip/clk-rk3288.c
+@@ -142,20 +142,20 @@ struct rockchip_pll_rate_table rk3288_pl
+ 	}
  
- static struct nl_mmap_hdr *
+ static struct rockchip_cpuclk_rate_table rk3288_cpuclk_rates[] __initdata = {
+-	RK3288_CPUCLK_RATE(1800000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE(1704000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE(1608000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE(1512000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE(1416000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE(1200000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE(1008000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE( 816000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE( 696000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE( 600000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE( 408000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE( 312000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE( 216000000, 2, 4, 2, 4, 4),
+-	RK3288_CPUCLK_RATE( 126000000, 2, 4, 2, 4, 4),
++	RK3288_CPUCLK_RATE(1800000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE(1704000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE(1608000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE(1512000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE(1416000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE(1200000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE(1008000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE( 816000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE( 696000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE( 600000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE( 408000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE( 312000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE( 216000000, 1, 3, 1, 3, 3),
++	RK3288_CPUCLK_RATE( 126000000, 1, 3, 1, 3, 3),
+ };
+ 
+ static const struct rockchip_cpuclk_reg_data rk3288_cpuclk_data = {
 
 
