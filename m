@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177AbbAYT3E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:29:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
+	id S1758617AbbAYSvR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:51:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654AbbAYSI4 (ORCPT
+	with ESMTP id S1755702AbbAYSJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:56 -0500
+	Sun, 25 Jan 2015 13:09:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.14 17/98] drm/ttm: Avoid memory allocation from shrinker functions.
-Date: Sun, 25 Jan 2015 10:06:35 -0800
-Message-Id: <20150125180713.625181736@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.18 074/183] iser-target: Fix connected_handler + teardown flow race
+Date: Sun, 25 Jan 2015 10:06:36 -0800
+Message-Id: <20150125180813.394650542@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,236 +25,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 881fdaa5e4cb0d68e52acab0ad4e1820e2bfffa4 upstream.
+commit 19e2090fb246ca21b3e569ead51a6a7a1748eadd upstream.
 
-Andrew Morton wrote:
-> On Wed, 12 Nov 2014 13:08:55 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
->
-> > Andrew Morton wrote:
-> > > Poor ttm guys - this is a bit of a trap we set for them.
-> >
-> > Commit a91576d7916f6cce ("drm/ttm: Pass GFP flags in order to avoid deadlock.")
-> > changed to use sc->gfp_mask rather than GFP_KERNEL.
-> >
-> > -       pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
-> > -                       GFP_KERNEL);
-> > +       pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
-> >
-> > But this bug is caused by sc->gfp_mask containing some flags which are not
-> > in GFP_KERNEL, right? Then, I think
-> >
-> > -       pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
-> > +       pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp & GFP_KERNEL);
-> >
-> > would hide this bug.
-> >
-> > But I think we should use GFP_ATOMIC (or drop __GFP_WAIT flag)
->
-> Well no - ttm_page_pool_free() should stop calling kmalloc altogether.
-> Just do
->
-> 	struct page *pages_to_free[16];
->
-> and rework the code to free 16 pages at a time.  Easy.
+Take isert_conn pointer from cm_id->qp->qp_context. This
+will allow us to know that the cm_id context is always
+the network portal. This will make the cm_id event check
+(connection or network portal) more reliable.
 
-Well, ttm code wants to process 512 pages at a time for performance.
-Memory footprint increased by 512 * sizeof(struct page *) buffer is
-only 4096 bytes. What about using static buffer like below?
-----------
->From d3cb5393c9c8099d6b37e769f78c31af1541fe8c Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Thu, 13 Nov 2014 22:21:54 +0900
-Subject: [PATCH 3.14 17/98] drm/ttm: Avoid memory allocation from shrinker functions.
+In order to avoid a NULL dereference in cma_id->qp->qp_context
+we destroy the qp after we destroy the cm_id (and make the
+dereference safe). session stablishment/teardown sequences
+can happen in parallel, we should take into account that
+connected_handler might race with connection teardown flow.
 
-Commit a91576d7916f6cce ("drm/ttm: Pass GFP flags in order to avoid
-deadlock.") caused BUG_ON() due to sc->gfp_mask containing flags
-which are not in GFP_KERNEL.
+Also, protect isert_conn->conn_device->active_qps decrement
+within the error patch during QP creation failure and the
+normal teardown path in isert_connect_release().
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=87891
+Squashed:
 
-Changing from sc->gfp_mask to (sc->gfp_mask & GFP_KERNEL) would
-avoid the BUG_ON(), but avoiding memory allocation from shrinker
-function is better and reliable fix.
+iser-target: Decrement completion context active_qps in error flow
 
-Shrinker function is already serialized by global lock, and
-clean up function is called after shrinker function is unregistered.
-Thus, we can use static buffer when called from shrinker function
-and clean up function.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc.c     |   26 +++++++++++++++-----------
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |   25 +++++++++++++++----------
- 2 files changed, 30 insertions(+), 21 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
 
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -297,11 +297,12 @@ static void ttm_pool_update_free_locked(
-  *
-  * @pool: to free the pages from
-  * @free_all: If set to true will free all pages in pool
-- * @gfp: GFP flags.
-+ * @use_static: Safe to use static buffer
-  **/
- static int ttm_page_pool_free(struct ttm_page_pool *pool, unsigned nr_free,
--			      gfp_t gfp)
-+			      bool use_static)
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -141,12 +141,18 @@ isert_conn_setup_qp(struct isert_conn *i
+ 	ret = rdma_create_qp(cma_id, isert_conn->conn_pd, &attr);
+ 	if (ret) {
+ 		pr_err("rdma_create_qp failed for cma_id %d\n", ret);
+-		return ret;
++		goto err;
+ 	}
+ 	isert_conn->conn_qp = cma_id->qp;
+ 	pr_debug("rdma_create_qp() returned success >>>>>>>>>>>>>>>>>>>>>>>>>.\n");
+ 
+ 	return 0;
++err:
++	mutex_lock(&device_list_mutex);
++	device->cq_active_qps[min_index]--;
++	mutex_unlock(&device_list_mutex);
++
++	return ret;
+ }
+ 
+ static void
+@@ -602,7 +608,6 @@ isert_connect_request(struct rdma_cm_id
+ 	spin_lock_init(&isert_conn->conn_lock);
+ 	INIT_LIST_HEAD(&isert_conn->conn_fr_pool);
+ 
+-	cma_id->context = isert_conn;
+ 	isert_conn->conn_cm_id = cma_id;
+ 
+ 	isert_conn->login_buf = kzalloc(ISCSI_DEF_MAX_RECV_SEG_LEN +
+@@ -734,18 +739,20 @@ isert_connect_release(struct isert_conn
+ 	if (device && device->use_fastreg)
+ 		isert_conn_free_fastreg_pool(isert_conn);
+ 
++	isert_free_rx_descriptors(isert_conn);
++	rdma_destroy_id(isert_conn->conn_cm_id);
++
+ 	if (isert_conn->conn_qp) {
+ 		cq_index = ((struct isert_cq_desc *)
+ 			isert_conn->conn_qp->recv_cq->cq_context)->cq_index;
+ 		pr_debug("isert_connect_release: cq_index: %d\n", cq_index);
++		mutex_lock(&device_list_mutex);
+ 		isert_conn->conn_device->cq_active_qps[cq_index]--;
++		mutex_unlock(&device_list_mutex);
+ 
+-		rdma_destroy_qp(isert_conn->conn_cm_id);
++		ib_destroy_qp(isert_conn->conn_qp);
+ 	}
+ 
+-	isert_free_rx_descriptors(isert_conn);
+-	rdma_destroy_id(isert_conn->conn_cm_id);
+-
+ 	ib_dereg_mr(isert_conn->conn_mr);
+ 	ib_dealloc_pd(isert_conn->conn_pd);
+ 
+@@ -768,7 +775,7 @@ isert_connect_release(struct isert_conn
+ static void
+ isert_connected_handler(struct rdma_cm_id *cma_id)
  {
-+	static struct page *static_buf[NUM_PAGES_TO_ALLOC];
- 	unsigned long irq_flags;
- 	struct page *p;
- 	struct page **pages_to_free;
-@@ -311,7 +312,11 @@ static int ttm_page_pool_free(struct ttm
- 	if (NUM_PAGES_TO_ALLOC < nr_free)
- 		npages_to_free = NUM_PAGES_TO_ALLOC;
+-	struct isert_conn *isert_conn = cma_id->context;
++	struct isert_conn *isert_conn = cma_id->qp->qp_context;
  
--	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
-+	if (use_static)
-+		pages_to_free = static_buf;
-+	else
-+		pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
-+					GFP_KERNEL);
- 	if (!pages_to_free) {
- 		pr_err("Failed to allocate memory for pool free operation\n");
- 		return 0;
-@@ -374,7 +379,8 @@ restart:
- 	if (freed_pages)
- 		ttm_pages_put(pages_to_free, freed_pages);
- out:
--	kfree(pages_to_free);
-+	if (pages_to_free != static_buf)
-+		kfree(pages_to_free);
- 	return nr_free;
- }
+ 	pr_info("conn %p\n", isert_conn);
  
-@@ -383,8 +389,6 @@ out:
-  *
-  * XXX: (dchinner) Deadlock warning!
-  *
-- * We need to pass sc->gfp_mask to ttm_page_pool_free().
-- *
-  * This code is crying out for a shrinker per pool....
-  */
- static unsigned long
-@@ -407,8 +411,8 @@ ttm_pool_shrink_scan(struct shrinker *sh
- 		if (shrink_pages == 0)
- 			break;
- 		pool = &_manager->pools[(i + pool_offset)%NUM_POOLS];
--		shrink_pages = ttm_page_pool_free(pool, nr_free,
--						  sc->gfp_mask);
-+		/* OK to use static buffer since global mutex is held. */
-+		shrink_pages = ttm_page_pool_free(pool, nr_free, true);
- 		freed += nr_free - shrink_pages;
- 	}
- 	mutex_unlock(&lock);
-@@ -710,7 +714,7 @@ static void ttm_put_pages(struct page **
- 	}
- 	spin_unlock_irqrestore(&pool->lock, irq_flags);
- 	if (npages)
--		ttm_page_pool_free(pool, npages, GFP_KERNEL);
-+		ttm_page_pool_free(pool, npages, false);
- }
- 
- /*
-@@ -849,9 +853,9 @@ void ttm_page_alloc_fini(void)
- 	pr_info("Finalizing pool allocator\n");
- 	ttm_pool_mm_shrink_fini(_manager);
- 
-+	/* OK to use static buffer since global mutex is no longer used. */
- 	for (i = 0; i < NUM_POOLS; ++i)
--		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES,
--				   GFP_KERNEL);
-+		ttm_page_pool_free(&_manager->pools[i], FREE_ALL_PAGES, true);
- 
- 	kobject_put(&_manager->kobj);
- 	_manager = NULL;
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -411,11 +411,12 @@ static void ttm_dma_page_put(struct dma_
-  *
-  * @pool: to free the pages from
-  * @nr_free: If set to true will free all pages in pool
-- * @gfp: GFP flags.
-+ * @use_static: Safe to use static buffer
-  **/
- static unsigned ttm_dma_page_pool_free(struct dma_pool *pool, unsigned nr_free,
--				       gfp_t gfp)
-+				       bool use_static)
+@@ -846,16 +853,16 @@ isert_conn_terminate(struct isert_conn *
+ static int
+ isert_disconnected_handler(struct rdma_cm_id *cma_id)
  {
-+	static struct page *static_buf[NUM_PAGES_TO_ALLOC];
- 	unsigned long irq_flags;
- 	struct dma_page *dma_p, *tmp;
- 	struct page **pages_to_free;
-@@ -432,7 +433,11 @@ static unsigned ttm_dma_page_pool_free(s
- 			 npages_to_free, nr_free);
++	struct iscsi_np *np = cma_id->context;
++	struct isert_np *isert_np = np->np_context;
+ 	struct isert_conn *isert_conn;
+ 
+-	if (!cma_id->qp) {
+-		struct isert_np *isert_np = cma_id->context;
+-
++	if (isert_np->np_cm_id == cma_id) {
+ 		isert_np->np_cm_id = NULL;
+ 		return -1;
  	}
- #endif
--	pages_to_free = kmalloc(npages_to_free * sizeof(struct page *), gfp);
-+	if (use_static)
-+		pages_to_free = static_buf;
-+	else
-+		pages_to_free = kmalloc(npages_to_free * sizeof(struct page *),
-+					GFP_KERNEL);
  
- 	if (!pages_to_free) {
- 		pr_err("%s: Failed to allocate memory for pool free operation\n",
-@@ -502,7 +507,8 @@ restart:
- 	if (freed_pages)
- 		ttm_dma_pages_put(pool, &d_pages, pages_to_free, freed_pages);
- out:
--	kfree(pages_to_free);
-+	if (pages_to_free != static_buf)
-+		kfree(pages_to_free);
- 	return nr_free;
+-	isert_conn = (struct isert_conn *)cma_id->context;
++	isert_conn = cma_id->qp->qp_context;
+ 
+ 	mutex_lock(&isert_conn->conn_mutex);
+ 	isert_conn_terminate(isert_conn);
+@@ -870,7 +877,7 @@ isert_disconnected_handler(struct rdma_c
+ static void
+ isert_connect_error(struct rdma_cm_id *cma_id)
+ {
+-	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
++	struct isert_conn *isert_conn = cma_id->qp->qp_context;
+ 
+ 	isert_put_conn(isert_conn);
  }
- 
-@@ -531,7 +537,8 @@ static void ttm_dma_free_pool(struct dev
- 		if (pool->type != type)
- 			continue;
- 		/* Takes a spinlock.. */
--		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES, GFP_KERNEL);
-+		/* OK to use static buffer since global mutex is held. */
-+		ttm_dma_page_pool_free(pool, FREE_ALL_PAGES, true);
- 		WARN_ON(((pool->npages_in_use + pool->npages_free) != 0));
- 		/* This code path is called after _all_ references to the
- 		 * struct device has been dropped - so nobody should be
-@@ -984,7 +991,7 @@ void ttm_dma_unpopulate(struct ttm_dma_t
- 
- 	/* shrink pool if necessary (only on !is_cached pools)*/
- 	if (npages)
--		ttm_dma_page_pool_free(pool, npages, GFP_KERNEL);
-+		ttm_dma_page_pool_free(pool, npages, false);
- 	ttm->state = tt_unpopulated;
- }
- EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-@@ -994,8 +1001,6 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
-  *
-  * XXX: (dchinner) Deadlock warning!
-  *
-- * We need to pass sc->gfp_mask to ttm_dma_page_pool_free().
-- *
-  * I'm getting sadder as I hear more pathetical whimpers about needing per-pool
-  * shrinkers
-  */
-@@ -1028,8 +1033,8 @@ ttm_dma_pool_shrink_scan(struct shrinker
- 		if (++idx < pool_offset)
- 			continue;
- 		nr_free = shrink_pages;
--		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free,
--						      sc->gfp_mask);
-+		/* OK to use static buffer since global mutex is held. */
-+		shrink_pages = ttm_dma_page_pool_free(p->pool, nr_free, true);
- 		freed += nr_free - shrink_pages;
- 
- 		pr_debug("%s: (%s:%d) Asked to shrink %d, have %d more to go\n",
 
 
