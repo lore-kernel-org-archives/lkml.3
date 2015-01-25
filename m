@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730AbbAYSLl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
+	id S1757380AbbAYScU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:32:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370AbbAYSJ2 (ORCPT
+	with ESMTP id S1756003AbbAYSK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:28 -0500
+	Sun, 25 Jan 2015 13:10:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Slava Shwartsman <valyushash@gmail.com>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 85/98] iscsi,iser-target: Initiate termination only once
+        Amit Virdi <amit.virdi@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.18 141/183] usb: dwc3: gadget: Fix TRB preparation during SG
 Date: Sun, 25 Jan 2015 10:07:43 -0800
-Message-Id: <20150125180716.601126930@linuxfoundation.org>
+Message-Id: <20150125180816.302390330@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,222 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Amit Virdi <amit.virdi@st.com>
 
-commit 954f23722b5753305be490330cf2680b7a25f4a3 upstream.
+commit ec512fb8e5611fed1df2895f90317ce6797d6b32 upstream.
 
-Since commit 0fc4ea701fcf ("Target/iser: Don't put isert_conn inside
-disconnected handler") we put the conn kref in isert_wait_conn, so we
-need .wait_conn to be invoked also in the error path.
+When scatter gather (SG) is used, multiple TRBs are prepared from one DWC3
+request (dwc3_request). So while preparing TRBs, the 'last' flag should be set
+only when it is the last TRB being prepared from the last dwc3_request entry.
 
-Introduce call to isert_conn_terminate (called under lock)
-which transitions the connection state to TERMINATING and calls
-rdma_disconnect. If the state is already teminating, just bail
-out back (temination started).
+The current implementation uses list_is_last to check if the dwc3_request is the
+last entry from the request_list. However, list_is_last returns false for the
+last entry too. This is because, while preparing the first TRB from a request,
+the function dwc3_prepare_one_trb modifies the request's next and prev pointers
+while moving the URB to req_queued. Hence, list_is_last always returns false no
+matter what.
 
-Also, make sure to destroy the connection when getting a connect
-error event if didn't get to connected (state UP). Same for the
-handling of REJECTED and UNREACHABLE cma events.
+The correct way is not to access the modified pointers of dwc3_request but to
+use list_empty macro instead.
 
-Squashed:
-
-iscsi-target: Add call to wait_conn in establishment error flow
-
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: e5ba5ec833aa (usb: dwc3: gadget: fix scatter gather implementation)
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/infiniband/ulp/isert/ib_isert.c   |   84 ++++++++++++++++++------------
- drivers/infiniband/ulp/isert/ib_isert.h   |    1 
- drivers/target/iscsi/iscsi_target_login.c |    3 +
- 3 files changed, 54 insertions(+), 34 deletions(-)
+ drivers/usb/dwc3/gadget.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -692,6 +692,33 @@ isert_put_conn(struct isert_conn *isert_
- 	kref_put(&isert_conn->conn_kref, isert_release_conn_kref);
- }
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -882,8 +882,7 @@ static void dwc3_prepare_trbs(struct dwc
  
-+/**
-+ * isert_conn_terminate() - Initiate connection termination
-+ * @isert_conn: isert connection struct
-+ *
-+ * Notes:
-+ * In case the connection state is UP, move state
-+ * to TEMINATING and start teardown sequence (rdma_disconnect).
-+ *
-+ * This routine must be called with conn_mutex held. Thus it is
-+ * safe to call multiple times.
-+ */
-+static void
-+isert_conn_terminate(struct isert_conn *isert_conn)
-+{
-+	int err;
-+
-+	if (isert_conn->state == ISER_CONN_UP) {
-+		isert_conn->state = ISER_CONN_TERMINATING;
-+		pr_info("Terminating conn %p state %d\n",
-+			   isert_conn, isert_conn->state);
-+		err = rdma_disconnect(isert_conn->conn_cm_id);
-+		if (err)
-+			pr_warn("Failed rdma_disconnect isert_conn %p\n",
-+				   isert_conn);
-+	}
-+}
-+
- static void
- isert_disconnect_work(struct work_struct *work)
- {
-@@ -700,33 +727,15 @@ isert_disconnect_work(struct work_struct
- 
- 	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
- 	mutex_lock(&isert_conn->conn_mutex);
--	if (isert_conn->state == ISER_CONN_UP)
--		isert_conn->state = ISER_CONN_TERMINATING;
--
--	if (isert_conn->post_recv_buf_count == 0 &&
--	    atomic_read(&isert_conn->post_send_buf_count) == 0) {
--		mutex_unlock(&isert_conn->conn_mutex);
--		goto wake_up;
--	}
--	if (!isert_conn->conn_cm_id) {
--		mutex_unlock(&isert_conn->conn_mutex);
--		isert_put_conn(isert_conn);
--		return;
--	}
--
--	if (isert_conn->disconnect) {
--		/* Send DREQ/DREP towards our initiator */
--		rdma_disconnect(isert_conn->conn_cm_id);
--	}
--
-+	isert_conn_terminate(isert_conn);
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
--wake_up:
-+	pr_info("conn %p completing conn_wait\n", isert_conn);
- 	complete(&isert_conn->conn_wait);
- }
- 
- static int
--isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
-+isert_disconnected_handler(struct rdma_cm_id *cma_id)
- {
- 	struct isert_conn *isert_conn;
- 
-@@ -739,18 +748,24 @@ isert_disconnected_handler(struct rdma_c
- 
- 	isert_conn = (struct isert_conn *)cma_id->context;
- 
--	isert_conn->disconnect = disconnect;
- 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
- 	schedule_work(&isert_conn->conn_logout_work);
- 
- 	return 0;
- }
- 
-+static void
-+isert_connect_error(struct rdma_cm_id *cma_id)
-+{
-+	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
-+
-+	isert_put_conn(isert_conn);
-+}
-+
- static int
- isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- {
- 	int ret = 0;
--	bool disconnect = false;
- 
- 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
- 		 event->event, event->status, cma_id->context, cma_id);
-@@ -768,11 +783,14 @@ isert_cma_handler(struct rdma_cm_id *cma
- 	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
- 	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
- 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
--		disconnect = true;
- 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
--		ret = isert_disconnected_handler(cma_id, disconnect);
-+		ret = isert_disconnected_handler(cma_id);
- 		break;
-+	case RDMA_CM_EVENT_REJECTED:       /* FALLTHRU */
-+	case RDMA_CM_EVENT_UNREACHABLE:    /* FALLTHRU */
- 	case RDMA_CM_EVENT_CONNECT_ERROR:
-+		isert_connect_error(cma_id);
-+		break;
- 	default:
- 		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
- 		break;
-@@ -1799,7 +1817,7 @@ isert_cq_rx_comp_err(struct isert_conn *
- 		msleep(3000);
- 
- 	mutex_lock(&isert_conn->conn_mutex);
--	isert_conn->state = ISER_CONN_DOWN;
-+	isert_conn_terminate(isert_conn);
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
- 	iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
-@@ -2798,10 +2816,6 @@ static void isert_wait_conn(struct iscsi
- 	pr_debug("isert_wait_conn: Starting \n");
- 
- 	mutex_lock(&isert_conn->conn_mutex);
--	if (isert_conn->conn_cm_id) {
--		pr_debug("Calling rdma_disconnect from isert_wait_conn\n");
--		rdma_disconnect(isert_conn->conn_cm_id);
--	}
- 	/*
- 	 * Only wait for conn_wait_comp_err if the isert_conn made it
- 	 * into full feature phase..
-@@ -2810,13 +2824,17 @@ static void isert_wait_conn(struct iscsi
- 		mutex_unlock(&isert_conn->conn_mutex);
- 		return;
- 	}
--	if (isert_conn->state == ISER_CONN_UP)
--		isert_conn->state = ISER_CONN_TERMINATING;
-+	isert_conn_terminate(isert_conn);
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
- 	wait_for_completion(&isert_conn->conn_wait_comp_err);
--
- 	wait_for_completion(&isert_conn->conn_wait);
-+
-+	mutex_lock(&isert_conn->conn_mutex);
-+	isert_conn->state = ISER_CONN_DOWN;
-+	mutex_unlock(&isert_conn->conn_mutex);
-+
-+	pr_info("Destroying conn %p\n", isert_conn);
- 	isert_put_conn(isert_conn);
- }
- 
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -127,7 +127,6 @@ struct isert_conn {
- #define ISERT_COMP_BATCH_COUNT	8
- 	int			conn_comp_batch;
- 	struct llist_head	conn_comp_llist;
--	bool                    disconnect;
- };
- 
- #define ISERT_MAX_CQ 64
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -1186,6 +1186,9 @@ old_sess_out:
- 		conn->sock = NULL;
- 	}
- 
-+	if (conn->conn_transport->iscsit_wait_conn)
-+		conn->conn_transport->iscsit_wait_conn(conn);
-+
- 	if (conn->conn_transport->iscsit_free_conn)
- 		conn->conn_transport->iscsit_free_conn(conn);
- 
+ 				if (i == (request->num_mapped_sgs - 1) ||
+ 						sg_is_last(s)) {
+-					if (list_is_last(&req->list,
+-							&dep->request_list))
++					if (list_empty(&dep->request_list))
+ 						last_one = true;
+ 					chain = false;
+ 				}
 
 
