@@ -1,144 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285AbbAYCMx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 21:12:53 -0500
-Received: from regular1.263xmail.com ([211.150.99.131]:47475 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202AbbAYCMu (ORCPT
+	id S1752532AbbAYCNp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 21:13:45 -0500
+Received: from mail2.vodafone.ie ([213.233.128.44]:23118 "EHLO
+	mail2.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403AbbAYCNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 21:12:50 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-SENDER-IP: 107.152.154.13
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <5a6248575d1f2eefe2fd624d0ce9d827>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <wxt@rock-chips.com>
-To: Heiko Stuebner <heiko@sntech.de>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>, Caesar Wang <wxt@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6] thermal: rockchip: make temperature reporting much more accurate
-Date: Sun, 25 Jan 2015 10:11:11 +0800
-Message-Id: <1422151871-14347-2-git-send-email-wxt@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422151871-14347-1-git-send-email-wxt@rock-chips.com>
-References: <1422151871-14347-1-git-send-email-wxt@rock-chips.com>
+	Sat, 24 Jan 2015 21:13:42 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApkFADRQxFRtTtkF/2dsb2JhbABagwaEK8Zdgk8CgQ1DAQEBAQF9hA0BBSMPAUYQCw0LAgIFFgsCAgkDAgECAUUGAQwBBwEBiCwBvViFaY4YAQEBBwEBAQEBHYEhjgYBAQZJB4JogUEBBJ5Zi3IigjKBPD6BNAgXgSABAQE
+Message-ID: <54C45153.2050703@draigBrady.com>
+Date: Sun, 25 Jan 2015 02:13:39 +0000
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] modsign: use shred to overwrite the private key before
+ deleting it
+References: <54C2F4F8.20809@draigBrady.com> <1422096327-4483-1-git-send-email-holler@ahsoftware.de> <54C383E0.9060408@ahsoftware.de> <54C38B6D.1060806@ahsoftware.de> <54C3901D.8040406@ahsoftware.de>
+In-Reply-To: <54C3901D.8040406@ahsoftware.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In general, the kernel should report temperature readings exactly as
-reported by the hardware. The cpu / gpu thermal driver works in 5 degree
-increments,but we ought to do more accurate. The temperature will do
-linear interpolation between the entries in the table.
+On 24/01/15 12:29, Alexander Holler wrote:
+> Am 24.01.2015 um 13:09 schrieb Alexander Holler:
+>> Am 24.01.2015 um 12:37 schrieb Alexander Holler:
+>>> Am 24.01.2015 um 11:45 schrieb Alexander Holler:
+>>>
+>>>> It uses shred, in the hope it will somedays learn how to shred stuff on
+>>>> FLASH based devices securely too, once that has become possible.
+>>>
+>>> BTW: This is a good example where technology failed to keep the needs of
+>>> users in mind.
+>>
+>> Failed completely.
+>>
+>> Since ever it's a problem for people to securely delete files on storage.
+>>
+>> Also it should be very simple to securely erase files on block based
+>> devices, people have to try cruel ways in the hope to get securely rid
+>> of files nobody else should be able to see ever again.
+>>
+>> It's almost unbelievable how completely the IT industry (including the
+>> field I'm working myself: SW) failed in regard to that since 30 years or
+>> even more.
+> 
+> And it isn't such that this is a new requirement. Humans are doing such 
+> since thousands of years. They use fire to get rid of paper documents 
+> and even the old egypts were able to destroyed stuff on stones by using 
+> simple steps. Just the IT failed completely.
+> 
+> Really unbelievable.
+> 
+> So, sorry if anyone got bored by this mail, but I think that really has 
+> to be said and repeated.
 
-Test= $md5sum /dev/zero &
-$while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
-sleep .5; done
+Well not failed completely, just used a different method (encryption).
 
-e.g. We can get the result as follows:
-    /sys/class/thermal/thermal_zone1/temp:39994
-    /sys/class/thermal/thermal_zone2/temp:39086
-    /sys/class/thermal/thermal_zone1/temp:39994
-    /sys/class/thermal/thermal_zone2/temp:39540
-    /sys/class/thermal/thermal_zone1/temp:39540
-    /sys/class/thermal/thermal_zone2/temp:39540
-    /sys/class/thermal/thermal_zone1/temp:39540
-    /sys/class/thermal/thermal_zone2/temp:39994
+As for "shredding", that improves in effectiveness the lower you go.
+I.E. it's effective for the whole file system (SSD range), or whole device.
 
-Signed-off-by: Caesar Wang <wxt@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
-
----
-
-Changes in v6:
-It's not really need,so delete the follows:
-else if (code == TSADCV2_DATA_MASK)
-
-Changes in v5:
-Fixed some style.
-
-Changes in v4:
-"return -EAGAIN" instead of "return rk_tsadcv2_code_to_temp(code)"
-
-Changes in v3:
-Suggested-by Daniel Kurtz,
-the check doesn't reject "code == 0xfff"
-Fixed in rk_tsadcv2_code_to_temp(u32 code)
-
-Changes in v2:
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
- drivers/thermal/rockchip_thermal.c | 36 +++++++++++++++++++++++-------------
- 1 file changed, 23 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
-index 1bcddfc..19553e9 100644
---- a/drivers/thermal/rockchip_thermal.c
-+++ b/drivers/thermal/rockchip_thermal.c
-@@ -193,19 +193,20 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
- 
- static long rk_tsadcv2_code_to_temp(u32 code)
- {
--	int high, low, mid;
--
--	low = 0;
--	high = ARRAY_SIZE(v2_code_table) - 1;
--	mid = (high + low) / 2;
--
--	if (code > v2_code_table[low].code || code < v2_code_table[high].code)
--		return 125000; /* No code available, return max temperature */
-+	unsigned int low = 0;
-+	unsigned int high = ARRAY_SIZE(v2_code_table) - 1;
-+	unsigned int mid = (low + high) / 2;
-+	unsigned int num;
-+	unsigned long denom;
-+
-+	/* Invalid code, return -EAGAIN */
-+	if (code > TSADCV2_DATA_MASK)
-+		return -EAGAIN;
- 
--	while (low <= high) {
--		if (code >= v2_code_table[mid].code && code <
--		    v2_code_table[mid - 1].code)
--			return v2_code_table[mid].temp;
-+	while (low <= high && mid) {
-+		if (code >= v2_code_table[mid].code &&
-+		    code < v2_code_table[mid - 1].code)
-+			break;
- 		else if (code < v2_code_table[mid].code)
- 			low = mid + 1;
- 		else
-@@ -213,7 +214,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
- 		mid = (low + high) / 2;
- 	}
- 
--	return 125000;
-+	/*
-+	 * The 5C granularity provided by the table is too much. Let's
-+	 * assume that the relationship between sensor readings and
-+	 * temperature between 2 table entries is linear and interpolate
-+	 * to produce less granular result.
-+	 */
-+	num = v2_code_table[mid].temp - v2_code_table[mid - 1].temp;
-+	num *= v2_code_table[mid - 1].code - code;
-+	denom = v2_code_table[mid - 1].code - v2_code_table[mid].code;
-+	return v2_code_table[mid - 1].temp + (num / denom);
- }
- 
- /**
--- 
-1.9.1
-
-
+Pádraig.
