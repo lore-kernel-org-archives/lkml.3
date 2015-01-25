@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477AbbAYSJg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:09:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
+	id S1756639AbbAYSL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754319AbbAYSIl (ORCPT
+	with ESMTP id S1755288AbbAYSJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:41 -0500
+	Sun, 25 Jan 2015 13:09:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Amit Virdi <amit.virdi@st.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 28/50] usb: dwc3: gadget: Stop TRB preparation after limit is reached
+Subject: [PATCH 3.14 60/98] usb: dwc3: gadget: Stop TRB preparation after limit is reached
 Date: Sun, 25 Jan 2015 10:07:18 -0800
-Message-Id: <20150125180704.139923336@linuxfoundation.org>
+Message-Id: <20150125180715.448916623@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -57,7 +57,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/usb/dwc3/gadget.c
 +++ b/drivers/usb/dwc3/gadget.c
-@@ -925,6 +925,9 @@ static void dwc3_prepare_trbs(struct dwc
+@@ -905,6 +905,9 @@ static void dwc3_prepare_trbs(struct dwc
  				if (last_one)
  					break;
  			}
