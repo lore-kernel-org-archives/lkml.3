@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966AbbAYTOQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:14:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
+	id S1755942AbbAYSKU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:10:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215AbbAYSJQ (ORCPT
+	with ESMTP id S1754368AbbAYSIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:16 -0500
+	Sun, 25 Jan 2015 13:08:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Sobrie <olivier@sobrie.be>,
-        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.14 68/98] can: kvaser_usb: Dont free packets when tight on URBs
-Date: Sun, 25 Jan 2015 10:07:26 -0800
-Message-Id: <20150125180715.789687130@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.10 37/50] ARM: dts: imx25: Fix the SPI1 clocks
+Date: Sun, 25 Jan 2015 10:07:27 -0800
+Message-Id: <20150125180704.750511429@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,85 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit b442723fcec445fb0ae1104888dd22cd285e0a91 upstream.
+commit 7a87e9cbc3a2f0ff0955815335e08c9862359130 upstream.
 
-Flooding the Kvaser CAN to USB dongle with multiple reads and
-writes in high frequency caused seemingly-random panics in the
-kernel.
+>From Documentation/devicetree/bindings/clock/imx25-clock.txt:
 
-On further inspection, it seems the driver erroneously freed the
-to-be-transmitted packet upon getting tight on URBs and returning
-NETDEV_TX_BUSY, leading to invalid memory writes and double frees
-at a later point in time.
+	cspi1_ipg		78
+	cspi2_ipg		79
+	cspi3_ipg		80
 
-Note:
+, so fix the SPI1 clocks accordingly to avoid a kernel hang when trying to
+access SPI1.
 
-Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
-is a driver bug in and out of itself: it means that our start/stop
-queue flow control is broken.
-
-This patch only fixes the (buggy) error handling code; the root
-cause shall be fixed in a later commit.
-
-Acked-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/kvaser_usb.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ arch/arm/boot/dts/imx25.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1285,12 +1285,14 @@ static netdev_tx_t kvaser_usb_start_xmit
- 	if (!urb) {
- 		netdev_err(netdev, "No memory left for URBs\n");
- 		stats->tx_dropped++;
--		goto nourbmem;
-+		dev_kfree_skb(skb);
-+		return NETDEV_TX_OK;
- 	}
- 
- 	buf = kmalloc(sizeof(struct kvaser_msg), GFP_ATOMIC);
- 	if (!buf) {
- 		stats->tx_dropped++;
-+		dev_kfree_skb(skb);
- 		goto nobufmem;
- 	}
- 
-@@ -1325,6 +1327,7 @@ static netdev_tx_t kvaser_usb_start_xmit
- 		}
- 	}
- 
-+	/* This should never happen; it implies a flow control bug */
- 	if (!context) {
- 		netdev_warn(netdev, "cannot find free context\n");
- 		ret =  NETDEV_TX_BUSY;
-@@ -1355,9 +1358,6 @@ static netdev_tx_t kvaser_usb_start_xmit
- 	if (unlikely(err)) {
- 		can_free_echo_skb(netdev, context->echo_index);
- 
--		skb = NULL; /* set to NULL to avoid double free in
--			     * dev_kfree_skb(skb) */
--
- 		atomic_dec(&priv->active_tx_urbs);
- 		usb_unanchor_urb(urb);
- 
-@@ -1379,8 +1379,6 @@ releasebuf:
- 	kfree(buf);
- nobufmem:
- 	usb_free_urb(urb);
--nourbmem:
--	dev_kfree_skb(skb);
- 	return ret;
- }
- 
+--- a/arch/arm/boot/dts/imx25.dtsi
++++ b/arch/arm/boot/dts/imx25.dtsi
+@@ -141,7 +141,7 @@
+ 				#size-cells = <0>;
+ 				compatible = "fsl,imx25-cspi", "fsl,imx35-cspi";
+ 				reg = <0x43fa4000 0x4000>;
+-				clocks = <&clks 62>, <&clks 62>;
++				clocks = <&clks 78>, <&clks 78>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <14>;
+ 				status = "disabled";
 
 
