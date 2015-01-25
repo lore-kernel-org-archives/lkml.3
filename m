@@ -1,271 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbbAYDV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jan 2015 22:21:57 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:61680 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397AbbAYDVy (ORCPT
+	id S1752349AbbAYDbA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jan 2015 22:31:00 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:63399 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397AbbAYDa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jan 2015 22:21:54 -0500
-Date: Sun, 25 Jan 2015 05:21:47 +0200
+	Sat, 24 Jan 2015 22:30:57 -0500
+Date: Sun, 25 Jan 2015 05:30:50 +0200
 From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Andri Yngvason <andri.yngvason@marel.com>
-Cc: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/5] can: kvaser_usb: Consolidate and unify state
- change handling
-Message-ID: <20150125032147.GB6621@Darwish.PC>
-References: <20141223154654.GB6460@vivalin-002>
- <20150120214409.GA16828@linux>
- <20150120214537.GB16828@linux>
- <20150121162025.2933.13836@shannon>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
+        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.or, dh.herrmann@gmail.com, tixxdz@opendz.org,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Mack <daniel@zonque.org>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+Message-ID: <20150125033050.GC6621@Darwish.PC>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+ <20150123062820.GB7949@Darwish.PC>
+ <20150123131946.GA26302@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150121162025.2933.13836@shannon>
+In-Reply-To: <20150123131946.GA26302@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-On Wed, Jan 21, 2015 at 04:20:25PM +0000, Andri Yngvason wrote:
-> Quoting Ahmed S. Darwish (2015-01-20 21:45:37)
-> > From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+On Fri, Jan 23, 2015 at 09:19:46PM +0800, Greg Kroah-Hartman wrote:
+> On Fri, Jan 23, 2015 at 08:28:20AM +0200, Ahmed S. Darwish wrote:
+> > On Fri, Jan 16, 2015 at 11:16:05AM -0800, Greg Kroah-Hartman wrote:
+> > > From: Daniel Mack <daniel@zonque.org>
+> > > 
+> > > kdbus is a system for low-latency, low-overhead, easy to use
+> > > interprocess communication (IPC).
+> > > 
+> > > The interface to all functions in this driver is implemented via ioctls
+> > > on files exposed through a filesystem called 'kdbusfs'. The default
+> > > mount point of kdbusfs is /sys/fs/kdbus.
 > > 
-> > Replace most of the can interface's state and error counters
-> > handling with the new can-dev can_change_state() mechanism.
+> > Pardon my ignorance, but we've always been told that adding
+> > new ioctl()s to the kernel is a very big no-no.  But given
+> > the seniority of the folks stewarding this kdbus effort,
+> > there must be a good rationale ;-)
 > > 
-> > Suggested-by: Andri Yngvason <andri.yngvason@marel.com>
-> > Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-> > ---
-> >  drivers/net/can/usb/kvaser_usb.c | 114 +++++++++++++++++++--------------------
-> >  1 file changed, 55 insertions(+), 59 deletions(-)
-> > 
-> > diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
-> > index 971c5f9..0386d3f 100644
-> > --- a/drivers/net/can/usb/kvaser_usb.c
-> > +++ b/drivers/net/can/usb/kvaser_usb.c
-> > @@ -620,40 +620,43 @@ static void kvaser_usb_unlink_tx_urbs(struct kvaser_usb_net_priv *priv)
-> >  }
-> >  
-> >  static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *priv,
-> > -                                                const struct kvaser_usb_error_summary *es)
-> > +                                                const struct kvaser_usb_error_summary *es,
-> > +                                                struct can_frame *cf)
-> >  {
-> >         struct net_device_stats *stats;
-> > -       enum can_state new_state;
-> > -
-> > -       stats = &priv->netdev->stats;
-> > -       new_state = priv->can.state;
-> > +       enum can_state cur_state, new_state, tx_state, rx_state;
-> >  
-> >         netdev_dbg(priv->netdev, "Error status: 0x%02x\n", es->status);
-> >  
-> > -       if (es->status & M16C_STATE_BUS_OFF) {
-> > -               priv->can.can_stats.bus_off++;
-> > +       stats = &priv->netdev->stats;
-> > +       new_state = cur_state = priv->can.state;
-> > +
-> > +       if (es->status & M16C_STATE_BUS_OFF)
-> >                 new_state = CAN_STATE_BUS_OFF;
-> > -       } else if (es->status & M16C_STATE_BUS_PASSIVE) {
-> > -               if (priv->can.state != CAN_STATE_ERROR_PASSIVE)
-> > -                       priv->can.can_stats.error_passive++;
-> > +       else if (es->status & M16C_STATE_BUS_PASSIVE)
-> >                 new_state = CAN_STATE_ERROR_PASSIVE;
-> > -       }
-> >  
-> >         if (es->status == M16C_STATE_BUS_ERROR) {
-> > -               if ((priv->can.state < CAN_STATE_ERROR_WARNING) &&
-> > -                   ((es->txerr >= 96) || (es->rxerr >= 96))) {
-> > -                       priv->can.can_stats.error_warning++;
-> > +               if ((cur_state < CAN_STATE_ERROR_WARNING) &&
-> > +                   ((es->txerr >= 96) || (es->rxerr >= 96)))
-> >                         new_state = CAN_STATE_ERROR_WARNING;
-> > -               } else if (priv->can.state > CAN_STATE_ERROR_ACTIVE) {
-> > +               else if (cur_state > CAN_STATE_ERROR_ACTIVE)
-> >                         new_state = CAN_STATE_ERROR_ACTIVE;
-> > -               }
-> >         }
-> >  
-> >         if (!es->status)
-> >                 new_state = CAN_STATE_ERROR_ACTIVE;
-> >  
-> > +       if (new_state != cur_state) {
-> > +               tx_state = (es->txerr >= es->rxerr) ? new_state : 0;
-> > +               rx_state = (es->txerr <= es->rxerr) ? new_state : 0;
-> > +
-> > +               can_change_state(priv->netdev, cf, tx_state, rx_state);
->
-> This (below) is redundant. It doesn't harm but at this point can_change_state
-> has set priv->can.state to new_state.
->
-> > +               new_state = priv->can.state;
-> > +       }
-> > +
-
-Correct; I will remove it.
-
-> >         if (priv->can.restart_ms &&
-> > -           (priv->can.state >= CAN_STATE_BUS_OFF) &&
-> > +           (cur_state >= CAN_STATE_BUS_OFF) &&
-> >             (new_state < CAN_STATE_BUS_OFF)) {
-> >                 priv->can.can_stats.restarts++;
-> >         }
-> > @@ -665,18 +668,17 @@ static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *pri
-> >  
-> >         priv->bec.txerr = es->txerr;
-> >         priv->bec.rxerr = es->rxerr;
-> > -       priv->can.state = new_state;
-> >  }
-> >  
-> >  static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
-> >                                 const struct kvaser_msg *msg)
-> >  {
-> > -       struct can_frame *cf;
-> > +       struct can_frame *cf, tmp_cf = { .can_id = CAN_ERR_FLAG, .can_dlc = CAN_ERR_DLC };
-> >         struct sk_buff *skb;
-> >         struct net_device_stats *stats;
-> >         struct kvaser_usb_net_priv *priv;
-> >         struct kvaser_usb_error_summary es = { };
-> > -       enum can_state old_state;
-> > +       enum can_state old_state, new_state;
-> >  
-> >         switch (msg->id) {
-> >         case CMD_CAN_ERROR_EVENT:
-> > @@ -721,60 +723,54 @@ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
-> >         }
-> >  
-> >         /* Update all of the can interface's state and error counters before
-> > -        * trying any skb allocation that can actually fail with -ENOMEM.
-> > +        * trying any memory allocation that can actually fail with -ENOMEM.
-> > +        *
-> > +        * We send a temporary stack-allocated error can frame to
-> > +        * can_change_state() for the very same reason.
-> > +        *
-> > +        * TODO: Split can_change_state() responsibility between updating the
-> > +        * can interface's state and counters, and the setting up of can error
-> > +        * frame ID and data to userspace. Remove stack allocation afterwards.
-> >          */
-> >         old_state = priv->can.state;
-> > -       kvaser_usb_rx_error_update_can_state(priv, &es);
-> > +       kvaser_usb_rx_error_update_can_state(priv, &es, &tmp_cf);
-> > +       new_state = priv->can.state;
-> >  
-> >         skb = alloc_can_err_skb(priv->netdev, &cf);
-> >         if (!skb) {
-> >                 stats->rx_dropped++;
-> >                 return;
-> >         }
-> > +       memcpy(cf, &tmp_cf, sizeof(*cf));
-> >  
-> > -       if (es.status & M16C_STATE_BUS_OFF) {
-> > -               cf->can_id |= CAN_ERR_BUSOFF;
-> > -
-> > -               if (!priv->can.restart_ms)
-> > -                       kvaser_usb_simple_msg_async(priv, CMD_STOP_CHIP);
-> > -               netif_carrier_off(priv->netdev);
-> > -       } else if (es.status & M16C_STATE_BUS_PASSIVE) {
-> > -               if (old_state != CAN_STATE_ERROR_PASSIVE) {
-> > -                       cf->can_id |= CAN_ERR_CRTL;
-> > -
-> > -                       if (es.txerr || es.rxerr)
-> > -                               cf->data[1] = (es.txerr > es.rxerr)
-> > -                                               ? CAN_ERR_CRTL_TX_PASSIVE
-> > -                                               : CAN_ERR_CRTL_RX_PASSIVE;
-> > -                       else
-> > -                               cf->data[1] = CAN_ERR_CRTL_TX_PASSIVE |
-> > -                                             CAN_ERR_CRTL_RX_PASSIVE;
-> > +       if (new_state != old_state) {
-> > +               if (es.status & M16C_STATE_BUS_OFF) {
-> > +                       if (!priv->can.restart_ms)
-> > +                               kvaser_usb_simple_msg_async(priv, CMD_STOP_CHIP);
-> > +                       netif_carrier_off(priv->netdev);
-> > +               }
-> > +
->
-> This block [below] is wrong. The usage of PROT_ACTIVE is based on a misunderstanding.
-> It's used in some drivers to signify back-to-error-active but its original
-> meaning is something completely different, AFAIK.
-> This is handled in can_change_state() using a new CTRL message; namely:
-> CAN_ERR_CTRL_ACTIVE. The newest version of can-utils is up to date with this.
->
-> > +               if (es.status == M16C_STATE_BUS_ERROR) {
-> > +                       if ((old_state >= CAN_STATE_ERROR_WARNING) ||
-> > +                           (es.txerr < 96 && es.rxerr < 96)) {
-> > +                               if (old_state > CAN_STATE_ERROR_ACTIVE) {
-> > +                                       cf->can_id |= CAN_ERR_PROT;
-> > +                                       cf->data[2] = CAN_ERR_PROT_ACTIVE;
-> > +                               }
-> > +                       }
-> >                 }
-
-So I would just make the new_state equals CAN_STATE_ERROR_ACTIVE,
-and then can_change_state() will do the right thing? Excellent!!
-This means the entire block above can be removed ;-)
-
-[ On another note, the block's if conditions above are faulty and
-  fixed in patch #3. This patch (#2) used can_change_state()
-  without changing any of that faulty logic to ease any future
-  bisection. ]
-
-> > -       }
-> >  
-> > -       if (es.status == M16C_STATE_BUS_ERROR) {
-> > -               if ((old_state < CAN_STATE_ERROR_WARNING) &&
-> > -                   ((es.txerr >= 96) || (es.rxerr >= 96))) {
-> > -                       cf->can_id |= CAN_ERR_CRTL;
-> > -                       cf->data[1] = (es.txerr > es.rxerr)
-> > -                                       ? CAN_ERR_CRTL_TX_WARNING
-> > -                                       : CAN_ERR_CRTL_RX_WARNING;
-> > -               } else if (old_state > CAN_STATE_ERROR_ACTIVE) {
->
-> This is also redundant, and wrong:
->
-> > +               if (!es.status) {
-> >                         cf->can_id |= CAN_ERR_PROT;
-> >                         cf->data[2] = CAN_ERR_PROT_ACTIVE;
-> >                 }
-> > -       }
-
-As in the above; extra code to be removed, yay! ;-)
-
-> >  
-> > -       if (!es.status) {
-> > -               cf->can_id |= CAN_ERR_PROT;
-> > -               cf->data[2] = CAN_ERR_PROT_ACTIVE;
-> > -       }
-> > -
-> > -       if (priv->can.restart_ms &&
-> > -           (old_state >= CAN_STATE_BUS_OFF) &&
-> > -           (priv->can.state < CAN_STATE_BUS_OFF)) {
-> > -               cf->can_id |= CAN_ERR_RESTARTED;
-> > -               netif_carrier_on(priv->netdev);
-> > +               if (priv->can.restart_ms &&
-> > +                   (old_state >= CAN_STATE_BUS_OFF) &&
-> > +                   (new_state < CAN_STATE_BUS_OFF)) {
-> > +                       cf->can_id |= CAN_ERR_RESTARTED;
-> > +                       netif_carrier_on(priv->netdev);
-> > +               }
-> >         }
-> >  
-> >         if (es.error_factor) {
-> > -- 
-> > 1.9.1
+> > So, can the rationale behind introducing new ioctl()s be
+> > further explained? It would be even better if it's included
+> > in the documentation patch itself.
 > 
-> Looking over the patch again, I've noticed that there
-> are a few things that are not quite right.
+> The main reason to use an ioctl is that you want to atomically set
+> and/or get something "complex" through the user/kernel boundary.  For
+> simple device attributes, sysfs works great, for configuring devices,
+> configfs works great, but for data streams / structures / etc. an ioctl
+> is the correct thing to use.
+> 
+> Examples of new ioctls being added to the kernel are all over the
+> place, look at all of the special-purpose ioctls the filesystems keep
+> creating (they aren't adding new syscalls), look at the monstrosity that
+> is the DRM layer, look at other complex things like openvswitch, or
+> "simpler" device-specific interfaces like the MEI one, or even more
+> complex ones like the MMC interface.  These are all valid uses of ioctls
+> as they are device/filesystem specific ways to interact with the kernel.
+> 
+> The thing is, almost no one pays attention to these new ioctls as they
+> are domain-specific interfaces, with open userspace programs talking to
+> them, and they work well.  ioctl is a powerful and useful interface, and
+> if we were to suddenly require no new ioctls, and require everything to
+> be a syscall, we would do nothing except make apis more complex (hint,
+> you now have to do extra validation on your file descriptor passed to
+> you to determine if it really is what you can properly operate your
+> ioctl on), and cause no real benefit at all.
+> 
+> Yes, people abuse ioctls at times, but really, they are needed.
+> 
+> And remember, I was one of the people who long ago thought we should not
+> be adding more ioctls, but I have seen the folly of my ways, and chalk
+> it up to youthful ignorance :)
 > 
 
-The state-handlig code has become much simpler since your
-reveiw and Kleine-Budde's one. Thanks a lot for all the effort.
+Exactly, and that's why I wondered about the sudden change
+of heart ;-)
+
+Thanks for taking the time to write this.
 
 Regards,
 Darwish
