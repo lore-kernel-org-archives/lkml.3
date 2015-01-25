@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbbAYKML (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 05:12:11 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:47631 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620AbbAYKMI (ORCPT
+	id S1752896AbbAYKNq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 05:13:46 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:50515 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620AbbAYKNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 05:12:08 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kevin Cernekee <cernekee@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] sh: Eliminate unused irq_reg_{readl,writel} accessors
-Date: Sun, 25 Jan 2015 11:11:51 +0100
-Message-Id: <1422180711-18976-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	Sun, 25 Jan 2015 05:13:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.11.1501241851090.5526@nanos>
+References: <1415342669-30640-1-git-send-email-cernekee@gmail.com>
+	<1415342669-30640-2-git-send-email-cernekee@gmail.com>
+	<CAMuHMdW+L8YbE8Z8jrtnm8xWk63sRGaFdM7TPM6MmrDg9XwHuQ@mail.gmail.com>
+	<20141114163843.GH29662@linux-mips.org>
+	<20141114170525.GL3698@titan.lakedaemon.net>
+	<CAMuHMdXMsxhcD9C079YPc6Toxdo0e23oqM_9KeSG=NrFa4auRQ@mail.gmail.com>
+	<CAMuHMdUpxURV4ztpa3x0TORsSWtxiKxe6_EDO5QsO_vhedip0A@mail.gmail.com>
+	<alpine.DEB.2.11.1501241851090.5526@nanos>
+Date: Sun, 25 Jan 2015 11:13:42 +0100
+X-Google-Sender-Auth: IpMSbe7qTV1H6obYQGgV3A5b1xE
+Message-ID: <CAMuHMdWQWVv+RJhhae59b+GEv_Gfgn0UQpWgFQ2Q7y+KGjTrEg@mail.gmail.com>
+Subject: Re: [PATCH V4 01/14] sh: Eliminate unused irq_reg_{readl,writel} accessors
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>, Ralf Baechle <ralf@linux-mips.org>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Florian Fainelli <f.fainelli@gmail.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Maxime Bizon <mbizon@freebox.fr>, Jonas Gorski <jogo@openwrt.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Cernekee <cernekee@gmail.com>
+On Sat, Jan 24, 2015 at 6:51 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 19 Jan 2015, Geert Uytterhoeven wrote:
+>> Will you still do so, or shall I forward the patch to Andrew Morton?
+>
+> akpm please.
 
-Defining these macros way down in arch/sh/.../irq.c doesn't cause
-kernel/irq/generic-chip.c to use them.  As far as I can tell this code
-has no effect.
+Forwarded with build failure descriptions added.
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-Tested-by: Geert Uytterhoeven <geert+renesas@glider.be> (cpp/asm comparison)
+Gr{oetje,eeting}s,
 
-As of commit 332fd7c4fef5f3b1 ("genirq: Generic chip: Change
-irq_reg_{readl,writel} arguments") they cause build errors in
-se7722_defconfig:
+                        Geert
 
-    In file included from arch/sh/boards/mach-se/7722/irq.c:18:0:
-    include/linux/irq.h:847:91: error: conflicting types for 'iowrite16'
-    include/asm-generic/iomap.h:35:13: note: previous declaration of 'iowrite16' was here
-    include/linux/irq.h:856:90: error: conflicting types for 'ioread16'
-    include/asm-generic/iomap.h:29:21: note: previous declaration of 'ioread16' was here
-    arch/sh/boards/mach-se/7722/irq.c: In function 'se7722_irq_demux':
-    arch/sh/boards/mach-se/7722/irq.c:43:2: error: too few arguments to function 'ioread16'
-    include/linux/irq.h:856:90: note: declared here
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-and se7343_defconfig:
-
-    In file included from arch/sh/boards/mach-se/7343/irq.c:21:0:
-    include/linux/irq.h:847:91: error: conflicting types for 'iowrite16'
-    include/asm-generic/iomap.h:35:13: note: previous declaration of 'iowrite16' was here
-    include/linux/irq.h:856:90: error: conflicting types for 'ioread16'
-    include/asm-generic/iomap.h:29:21: note: previous declaration of 'ioread16' was here
-    arch/sh/boards/mach-se/7343/irq.c: In function 'se7343_irq_demux':
-    arch/sh/boards/mach-se/7343/irq.c:44:2: error: too few arguments to function 'ioread16'
-    include/linux/irq.h:856:90: note: declared here
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Fixes: 332fd7c4fef5f3b1 ("genirq: Generic chip: Change irq_reg_{readl,writel} arguments")
----
-Fixes se7722_defconfig and se7343_defconfig
-http://kisskb.ellerman.id.au/kisskb/buildresult/12350978/
-http://kisskb.ellerman.id.au/kisskb/buildresult/12350973/
----
- arch/sh/boards/mach-se/7343/irq.c | 3 ---
- arch/sh/boards/mach-se/7722/irq.c | 3 ---
- 2 files changed, 6 deletions(-)
-
-diff --git a/arch/sh/boards/mach-se/7343/irq.c b/arch/sh/boards/mach-se/7343/irq.c
-index 7646bf0486c2c9b1..1087dba9b0152317 100644
---- a/arch/sh/boards/mach-se/7343/irq.c
-+++ b/arch/sh/boards/mach-se/7343/irq.c
-@@ -14,9 +14,6 @@
- #define DRV_NAME "SE7343-FPGA"
- #define pr_fmt(fmt) DRV_NAME ": " fmt
- 
--#define irq_reg_readl	ioread16
--#define irq_reg_writel	iowrite16
--
- #include <linux/init.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-diff --git a/arch/sh/boards/mach-se/7722/irq.c b/arch/sh/boards/mach-se/7722/irq.c
-index f5e2af1bf040ff93..00e699232621dccf 100644
---- a/arch/sh/boards/mach-se/7722/irq.c
-+++ b/arch/sh/boards/mach-se/7722/irq.c
-@@ -11,9 +11,6 @@
- #define DRV_NAME "SE7722-FPGA"
- #define pr_fmt(fmt) DRV_NAME ": " fmt
- 
--#define irq_reg_readl	ioread16
--#define irq_reg_writel	iowrite16
--
- #include <linux/init.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
--- 
-1.9.1
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
