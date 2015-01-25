@@ -1,72 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259AbbAYUbn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 15:31:43 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45947 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569AbbAYUbh (ORCPT
+	id S932342AbbAYUcK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 15:32:10 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:60760 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293AbbAYUcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 15:31:37 -0500
-Message-ID: <54C552A6.7050201@roeck-us.net>
-Date: Sun, 25 Jan 2015 12:31:34 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Sebastian Reichel <sre@kernel.org>
-CC: linux-pm@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] power/reset: arm-versatile: Register with kernel
- restart handler
-References: <1422209622-31994-1-git-send-email-linux@roeck-us.net> <20150125184017.GA29704@earth.universe> <54C53EE4.4070109@roeck-us.net> <20150125200626.GA6536@earth.universe> <54C54EDB.4030406@roeck-us.net>
-In-Reply-To: <54C54EDB.4030406@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54C552A8.014B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 35
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Sun, 25 Jan 2015 15:32:05 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>, linux-omap@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Benoit Parrot <bparrot@ti.com>,
+        Darren Etheridge <detheridge@ti.com>, Felipe Balbi <balbi@ti.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v2] ARM: AM43xx: hwmod: add VPFE hwmod entries
+Date: Sun, 25 Jan 2015 20:31:55 +0000
+Message-Id: <1422217915-24231-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2015 12:15 PM, Guenter Roeck wrote:
-> Hi Sebastian,
->
-> On 01/25/2015 12:06 PM, Sebastian Reichel wrote:
->>
->> Maybe update the battery/master branch?
->>
->
-> I thought I did. Tip is "99a7956 power: ds2782_battery: Simplify the PM hooks"
->
-> Does that look correct ?
->
-Never mind, that was -next. I just resent the series, rebased on top of battery/master.
+From: Benoit Parrot <bparrot@ti.com>
 
-Guenter
+this patch adds VPFE HWMOD data for AM43xx.
+
+Signed-off-by: Benoit Parrot <bparrot@ti.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ Hi Paul,
+ 
+ You were right, the hardware team has confirmed that, the VPFE master port is
+ connected to L3 and the VPFE slave port is connected to L4. The L3 port cannot
+ serve as a register target because it is initiator only.
+ 
+ I have created links referring to dss l3/l4 hwmod and tested it, lemme know
+ if I have missed something.
+ 
+ arch/arm/mach-omap2/omap_hwmod_43xx_data.c | 72 ++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/prcm43xx.h             |  3 +-
+ 2 files changed, 74 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+index 5c6c841..3787824 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
+@@ -514,6 +514,44 @@ static struct omap_hwmod am43xx_dss_rfbi_hwmod = {
+ 	},
+ };
+ 
++static struct omap_hwmod_class_sysconfig am43xx_vpfe_sysc = {
++	.rev_offs       = 0x0,
++	.sysc_offs      = 0x104,
++	.sysc_flags     = SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE,
++	.idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++				MSTANDBY_FORCE | MSTANDBY_SMART | MSTANDBY_NO),
++	.sysc_fields    = &omap_hwmod_sysc_type2,
++};
++
++static struct omap_hwmod_class am43xx_vpfe_hwmod_class = {
++	.name           = "vpfe",
++	.sysc           = &am43xx_vpfe_sysc,
++};
++
++static struct omap_hwmod am43xx_vpfe0_hwmod = {
++	.name           = "vpfe0",
++	.class          = &am43xx_vpfe_hwmod_class,
++	.clkdm_name     = "l3s_clkdm",
++	.prcm           = {
++		.omap4  = {
++			.modulemode     = MODULEMODE_SWCTRL,
++			.clkctrl_offs   = AM43XX_CM_PER_VPFE0_CLKCTRL_OFFSET,
++		},
++	},
++};
++
++static struct omap_hwmod am43xx_vpfe1_hwmod = {
++	.name           = "vpfe1",
++	.class          = &am43xx_vpfe_hwmod_class,
++	.clkdm_name     = "l3s_clkdm",
++	.prcm           = {
++		.omap4  = {
++			.modulemode     = MODULEMODE_SWCTRL,
++			.clkctrl_offs   = AM43XX_CM_PER_VPFE1_CLKCTRL_OFFSET,
++		},
++	},
++};
++
+ /* Interfaces */
+ static struct omap_hwmod_ocp_if am43xx_l3_main__l4_hs = {
+ 	.master		= &am33xx_l3_main_hwmod,
+@@ -788,6 +826,36 @@ static struct omap_hwmod_ocp_if am43xx_l4_ls__dss_rfbi = {
+ 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+ };
+ 
++static struct omap_hwmod_ocp_if am43xx_l3__vpfe0 = {
++	.master         = &am43xx_vpfe0_hwmod,
++	.slave          = &am33xx_l3_main_hwmod,
++	.clk            = "l3_gclk",
++	.flags          = OCPIF_SWSUP_IDLE,
++	.user           = OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if am43xx_l3__vpfe1 = {
++	.master         = &am43xx_vpfe1_hwmod,
++	.slave          = &am33xx_l3_main_hwmod,
++	.clk            = "l3_gclk",
++	.flags          = OCPIF_SWSUP_IDLE,
++	.user           = OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if am43xx_l4_ls__vpfe0 = {
++	.master         = &am33xx_l4_ls_hwmod,
++	.slave          = &am43xx_vpfe0_hwmod,
++	.clk            = "l4ls_gclk",
++	.user           = OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod_ocp_if am43xx_l4_ls__vpfe1 = {
++	.master         = &am33xx_l4_ls_hwmod,
++	.slave          = &am43xx_vpfe1_hwmod,
++	.clk            = "l4ls_gclk",
++	.user           = OCP_USER_MPU | OCP_USER_SDMA,
++};
++
+ static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata = {
+ 	&am33xx_l4_wkup__synctimer,
+ 	&am43xx_l4_ls__timer8,
+@@ -887,6 +955,10 @@ static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata = {
+ 	&am43xx_l4_ls__dss,
+ 	&am43xx_l4_ls__dss_dispc,
+ 	&am43xx_l4_ls__dss_rfbi,
++	&am43xx_l3__vpfe0,
++	&am43xx_l3__vpfe1,
++	&am43xx_l4_ls__vpfe0,
++	&am43xx_l4_ls__vpfe1,
+ 	NULL,
+ };
+ 
+diff --git a/arch/arm/mach-omap2/prcm43xx.h b/arch/arm/mach-omap2/prcm43xx.h
+index ad7b3e9..8aa4c2c 100644
+--- a/arch/arm/mach-omap2/prcm43xx.h
++++ b/arch/arm/mach-omap2/prcm43xx.h
+@@ -143,5 +143,6 @@
+ #define AM43XX_CM_PER_USB_OTG_SS1_CLKCTRL_OFFSET        0x0268
+ #define AM43XX_CM_PER_USBPHYOCP2SCP1_CLKCTRL_OFFSET	0x05C0
+ #define AM43XX_CM_PER_DSS_CLKCTRL_OFFSET		0x0a20
+-
++#define AM43XX_CM_PER_VPFE0_CLKCTRL_OFFSET		0x0068
++#define AM43XX_CM_PER_VPFE1_CLKCTRL_OFFSET		0x0070
+ #endif
+-- 
+2.1.0
 
