@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbbAYIPY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 03:15:24 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:35574 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903AbbAYIPS (ORCPT
+	id S1753138AbbAYIPj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 03:15:39 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:60543 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950AbbAYIPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 03:15:18 -0500
+	Sun, 25 Jan 2015 03:15:23 -0500
 From: Sneeker Yeh <sneeker.yeh@gmail.com>
 X-Google-Original-From: Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -22,9 +22,9 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 Cc: Andy Green <andy.green@linaro.org>,
         Jassi Brar <jaswinder.singh@linaro.org>,
         Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
-Subject: [PATCH v3 4/5] usb: dwc3: Add quirk for Synopsis device disconnection errata
-Date: Sun, 25 Jan 2015 16:13:27 +0800
-Message-Id: <1422173608-24355-5-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+Subject: [PATCH v3 5/5] usb: dwc3: add Fujitsu Specific Glue layer
+Date: Sun, 25 Jan 2015 16:13:28 +0800
+Message-Id: <1422173608-24355-6-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1422173608-24355-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
 References: <1422173608-24355-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
@@ -32,138 +32,301 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Synopsis Designware USB3 IP earlier than v3.00a which is configured in silicon
-with DWC_USB3_SUSPEND_ON_DISCONNECT_EN=1, would need a specific quirk to prevent
-xhci host controller from dying when device is disconnected.
-
-Since DWC_USB3_SUSPEND_ON_DISCONNECT_EN is an IP configuration whose state
-cannot be checked from software in runtime, it has to be enabled via platform
-data or device tree.
+This patch adds support for Synopsis DesignWare USB3 IP Core found
+on Fujitsu Socs.
 
 Signed-off-by: Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
 ---
- Documentation/devicetree/bindings/usb/dwc3.txt |   17 +++++++++++++++++
- drivers/usb/dwc3/core.c                        |    6 ++++++
- drivers/usb/dwc3/core.h                        |    4 ++++
- drivers/usb/dwc3/host.c                        |    4 ++++
- drivers/usb/dwc3/platform_data.h               |    8 ++++++++
- 5 files changed, 39 insertions(+)
+ .../devicetree/bindings/usb/fujitsu-dwc3.txt       |   33 ++++
+ drivers/usb/dwc3/Kconfig                           |   11 ++
+ drivers/usb/dwc3/Makefile                          |    1 +
+ drivers/usb/dwc3/dwc3-mb86s70.c                    |  206 ++++++++++++++++++++
+ 4 files changed, 251 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/fujitsu-dwc3.txt
+ create mode 100644 drivers/usb/dwc3/dwc3-mb86s70.c
 
-diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
-index cd7f045..1b78b29 100644
---- a/Documentation/devicetree/bindings/usb/dwc3.txt
-+++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-@@ -37,6 +37,23 @@ Optional properties:
-  - snps,is-utmi-l1-suspend: true when DWC3 asserts output signal
- 			utmi_l1_suspend_n, false when asserts utmi_sleep_n
-  - snps,hird-threshold: HIRD threshold
-+ - snps,has_suspend_on_disconnect: true when IP is configured in silicon with
-+			DWC_USB3_SUSPEND_ON_DISCONNECT_EN=1, it can inject a
-+			specific quirk to prevent xhci host controller from
-+			dying when usb device is disconnected from root hub.
-+			Since DWC_USB3_SUSPEND_ON_DISCONNECT_EN is an IP
-+			configuration whose state cannot be checked from
-+			software in runtime, it has to be enabled via platform
-+			data or device tree.
+diff --git a/Documentation/devicetree/bindings/usb/fujitsu-dwc3.txt b/Documentation/devicetree/bindings/usb/fujitsu-dwc3.txt
+new file mode 100644
+index 0000000..be091eb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/fujitsu-dwc3.txt
+@@ -0,0 +1,33 @@
++FUJITSU GLUE COMPONENTS
 +
-+			xhci host dying symptom here is caused by that
-+			DWC_USB3_SUSPEND_ON_DISCONNECT_EN=1
-+			configuration makes IP auto-suspended after PORTCSC is
-+			cleared when usb device detached, then an asynchronous
-+			disconnection procedure might fail using endpoint
-+			command that suspened IP won't have any response to.
++MB86S7x DWC3 GLUE
++- compatible:	Should be "fujitsu,mb86s70-dwc3"
++- clocks:	from common clock binding, handle to usb clock.
++- clock-names:	Should contain the following:
++  "core"	Master/Core clock needs to run at a minimum of 125 MHz to
++		support a 4 Gbps IN or 4 Gbps OUT
++		transfer at a given time.
 +
-+			this issue is fixed when IP version >= 3.00a.
- 
- This is usually a subnode to DWC3 glue to which it is connected.
- 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 25ddc39..fbceab1 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -838,6 +838,9 @@ static int dwc3_probe(struct platform_device *pdev)
- 				"snps,tx_de_emphasis_quirk");
- 		of_property_read_u8(node, "snps,tx_de_emphasis",
- 				&tx_de_emphasis);
++Sub-nodes:
++The dwc3 core should be added as subnode to MB86S7x dwc3 glue.
++- dwc3 :
++   The binding details of dwc3 can be found in:
++   Documentation/devicetree/bindings/usb/dwc3.txt
 +
-+		dwc->suspend_on_disconnect_quirk = of_property_read_bool(node,
-+				"snps,has_suspend_on_disconnect");
- 	} else if (pdata) {
- 		dwc->maximum_speed = pdata->maximum_speed;
- 		dwc->has_lpm_erratum = pdata->has_lpm_erratum;
-@@ -864,6 +867,9 @@ static int dwc3_probe(struct platform_device *pdev)
- 		dwc->tx_de_emphasis_quirk = pdata->tx_de_emphasis_quirk;
- 		if (pdata->tx_de_emphasis)
- 			tx_de_emphasis = pdata->tx_de_emphasis;
++Example device nodes:
 +
-+		dwc->suspend_on_disconnect_quirk =
-+			pdata->has_suspend_on_disconnect;
- 	}
- 
- 	/* default to superspeed if no maximum_speed passed */
-diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index 46f9f9a..c730190 100644
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -692,6 +692,9 @@ struct dwc3_scratchpad_array {
-  * @resize_fifos: tells us it's ok to reconfigure our TxFIFO sizes.
-  * @setup_packet_pending: true when there's a Setup Packet in FIFO. Workaround
-  * @start_config_issued: true when StartConfig command has been issued
-+ * @suspend_on_disconnect_quirk: set if core was configured with
-+ *			DWC_USB3_SUSPEND_ON_DISCONNECT_EN=1. Note that there's
-+ *			now way for software to detect this in runtime.
-  * @three_stage_setup: set if we perform a three phase setup
-  * @disable_scramble_quirk: set if we enable the disable scramble quirk
-  * @u2exit_lfps_quirk: set if we enable u2exit lfps quirk
-@@ -818,6 +821,7 @@ struct dwc3 {
- 	unsigned		resize_fifos:1;
- 	unsigned		setup_packet_pending:1;
- 	unsigned		start_config_issued:1;
-+	unsigned		suspend_on_disconnect_quirk:1;
- 	unsigned		three_stage_setup:1;
- 
- 	unsigned		disable_scramble_quirk:1;
-diff --git a/drivers/usb/dwc3/host.c b/drivers/usb/dwc3/host.c
-index 12bfd3c..9c42074 100644
---- a/drivers/usb/dwc3/host.c
-+++ b/drivers/usb/dwc3/host.c
-@@ -53,6 +53,10 @@ int dwc3_host_init(struct dwc3 *dwc)
- 	pdata.usb3_lpm_capable = 1;
- #endif
- 
-+	if ((dwc->revision < DWC3_REVISION_300A) &&
-+	    dwc->suspend_on_disconnect_quirk)
-+		pdata.delay_portcsc_clear = 1;
++	usb3host: mb86s70_usb3host {
++		compatible = "fujitsu,mb86s70-dwc3";
++		clocks = <&clk_alw_1_1>;
++		clock-names = "core";
++		#address-cells = <2>;
++		#size-cells = <1>;
++		ranges;
 +
- 	ret = platform_device_add_data(xhci, &pdata, sizeof(pdata));
- 	if (ret) {
- 		dev_err(dwc->dev, "couldn't add platform data to xHCI device\n");
-diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
-index a3a3b6d..ebc8eb4 100644
---- a/drivers/usb/dwc3/platform_data.h
-+++ b/drivers/usb/dwc3/platform_data.h
-@@ -20,6 +20,13 @@
- #include <linux/usb/ch9.h>
- #include <linux/usb/otg.h>
++		dwc3@32200000 {
++			compatible = "synopsys,dwc3";
++			reg = <0 0x32300000 0x100000>;
++			interrupts = <0 412 0x4>,
++				<0 414 0x4>;
++		};
++	};
+diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+index 58b5b2c..3390d42 100644
+--- a/drivers/usb/dwc3/Kconfig
++++ b/drivers/usb/dwc3/Kconfig
+@@ -61,6 +61,17 @@ config USB_DWC3_EXYNOS
+ 	  Recent Exynos5 SoCs ship with one DesignWare Core USB3 IP inside,
+ 	  say 'Y' or 'M' if you have one such device.
  
++config USB_DWC3_MB86S70
++	tristate "MB86S70 Designware USB3 Platform code"
++	default USB_DWC3
++	help
++	  MB86S7X SOC ship with DesignWare Core USB3 IP inside,
++	  this implementation also integrated Fujitsu USB PHY inside
++	  this Core USB3 IP.
++
++	  say 'Y' or 'M' if you have one such device.
++
++
+ config USB_DWC3_PCI
+ 	tristate "PCIe-based Platforms"
+ 	depends on PCI
+diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
+index bb34fbc..05d1de2 100644
+--- a/drivers/usb/dwc3/Makefile
++++ b/drivers/usb/dwc3/Makefile
+@@ -38,3 +38,4 @@ obj-$(CONFIG_USB_DWC3_PCI)		+= dwc3-pci.o
+ obj-$(CONFIG_USB_DWC3_KEYSTONE)		+= dwc3-keystone.o
+ obj-$(CONFIG_USB_DWC3_QCOM)		+= dwc3-qcom.o
+ obj-$(CONFIG_USB_DWC3_ST)		+= dwc3-st.o
++obj-$(CONFIG_USB_DWC3_MB86S70)		+= dwc3-mb86s70.o
+diff --git a/drivers/usb/dwc3/dwc3-mb86s70.c b/drivers/usb/dwc3/dwc3-mb86s70.c
+new file mode 100644
+index 0000000..301be76
+--- /dev/null
++++ b/drivers/usb/dwc3/dwc3-mb86s70.c
+@@ -0,0 +1,206 @@
 +/**
-+ * struct dwc3_platform_data - platform data of dwc3 controller
-+ * @has_suspend_on_disconnect: true if core was configured with
-+ *			DWC_USB3_SUSPEND_ON_DISCONNECT_EN=1. Note that there's
-+ *			now way for software to detect this in runtime.
++ * dwc3-mb86s70.c - Fujitsu mb86s70 DWC3 Specific Glue layer
++ *
++ * Copyright (c) 2013 - 2014 FUJITSU SEMICONDUCTOR LIMITED
++ *		http://jp.fujitsu.com/group/fsl
++ *
++ * Authors: Alice Chan <Alice.Chan@tw.fujitsu.com>
++ *	    Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
++ * based on dwc3-exynos.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + */
 +
- struct dwc3_platform_data {
- 	enum usb_device_speed maximum_speed;
- 	enum usb_dr_mode dr_mode;
-@@ -32,6 +39,7 @@ struct dwc3_platform_data {
- 
- 	unsigned disable_scramble_quirk:1;
- 	unsigned has_lpm_erratum:1;
-+	unsigned has_suspend_on_disconnect:1;
- 	unsigned u2exit_lfps_quirk:1;
- 	unsigned u2ss_inp3_quirk:1;
- 	unsigned req_p1p2p3_quirk:1;
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/dma-mapping.h>
++#include <linux/interrupt.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/pm_runtime.h>
++#include <linux/clk.h>
++
++struct dwc3_mb86s70 {
++	struct device	*dev;
++	struct clk	*clks[5];
++	u8		clk_cnt;
++};
++
++static int dwc3_mb86s70_clk_control(struct device *dev, bool on)
++{
++	struct dwc3_mb86s70 *priv = dev_get_drvdata(dev);
++	int ret, i = priv->clk_cnt;
++
++	if (!on)
++		goto clock_off;
++
++	for (i = 0; i < priv->clk_cnt; i++) {
++		ret = clk_prepare_enable(priv->clks[i]);
++		if (ret) {
++			dev_err(dev, "failed to enable clock[%d]\n", i);
++			on = ret;
++			goto clock_off;
++		}
++	}
++
++	return 0;
++
++clock_off:
++	for (; i > 0;)
++		clk_disable_unprepare(priv->clks[--i]);
++
++	return on;
++}
++
++static int dwc3_mb86s70_remove_child(struct device *dev, void *unused)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++
++	of_device_unregister(pdev);
++
++	return 0;
++}
++
++static int dwc3_mb86s70_probe(struct platform_device *pdev)
++{
++	struct dwc3_mb86s70	*priv;
++	struct device		*dev = &pdev->dev;
++	struct device_node	*node = dev->of_node;
++	int			ret, i;
++	struct clk		*clk;
++
++	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	platform_set_drvdata(pdev, priv);
++	priv->dev = dev;
++
++	dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
++
++	for (i = 0; i < ARRAY_SIZE(priv->clks); i++) {
++		clk = of_clk_get(dev->of_node, i);
++		if (IS_ERR(clk))
++			break;
++		priv->clks[i] = clk;
++	}
++	priv->clk_cnt = i;
++	if (!i) {
++		dev_err(dev, "clock not found\n");
++		ret = PTR_ERR(clk);
++		goto err;
++	}
++
++	ret = dwc3_mb86s70_clk_control(dev, true);
++	if (ret)
++		goto err_clk;
++
++	pm_runtime_set_active(dev);
++	pm_runtime_enable(dev);
++	ret = pm_runtime_get(dev);
++	if (ret < 0) {
++		dev_err(dev, "get_sync failed with err %d\n", ret);
++		ret = -ENODEV;
++		goto err_pm;
++	}
++
++	if (node) {
++		ret = of_platform_populate(node, NULL, NULL, dev);
++		if (!ret)
++			return 0;
++		dev_err(dev, "failed to add dwc3 core\n");
++	}
++	dev_err(dev, "no device node, failed to add dwc3 core\n");
++	ret = -ENODEV;
++
++	pm_runtime_put_sync(dev);
++err_pm:
++	pm_runtime_disable(dev);
++err_clk:
++	for (i = 0; i < priv->clk_cnt; i++)
++		clk_put(priv->clks[i]);
++err:
++
++	return ret;
++}
++
++static int dwc3_mb86s70_remove(struct platform_device *pdev)
++{
++	struct dwc3_mb86s70 *priv = dev_get_drvdata(&pdev->dev);
++	int i;
++
++	device_for_each_child(&pdev->dev, NULL, dwc3_mb86s70_remove_child);
++
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
++	dwc3_mb86s70_clk_control(&pdev->dev, false);
++
++	for (i = 0; i < priv->clk_cnt ; i++)
++		clk_put(priv->clks[i]);
++
++	return 0;
++}
++
++static const struct of_device_id mb86s70_dwc3_match[] = {
++	{ .compatible = "fujitsu,mb86s70-dwc3" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, mb86s70_dwc3_match);
++
++#ifdef CONFIG_PM_SLEEP
++static int dwc3_mb86s70_suspend(struct device *dev)
++{
++	dwc3_mb86s70_clk_control(dev, false);
++
++	return 0;
++}
++
++static int dwc3_mb86s70_resume(struct device *dev)
++{
++	int ret;
++
++	ret = dwc3_mb86s70_clk_control(dev, true);
++	if (ret)
++		return ret;
++
++	/* runtime set active to reflect active state. */
++	pm_runtime_disable(dev);
++	pm_runtime_set_active(dev);
++	pm_runtime_enable(dev);
++
++	return 0;
++}
++
++static const struct dev_pm_ops dwc3_mb86s70_dev_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(dwc3_mb86s70_suspend, dwc3_mb86s70_resume)
++};
++
++#define DEV_PM_OPS	(&dwc3_mb86s70_dev_pm_ops)
++#else
++#define DEV_PM_OPS	NULL
++#endif /* CONFIG_PM_SLEEP */
++
++static struct platform_driver dwc3_mb86s70_driver = {
++	.probe		= dwc3_mb86s70_probe,
++	.remove		= dwc3_mb86s70_remove,
++	.driver		= {
++		.name	= "mb86s70-dwc3",
++		.of_match_table = of_match_ptr(mb86s70_dwc3_match),
++		.pm	= DEV_PM_OPS,
++	},
++};
++
++module_platform_driver(dwc3_mb86s70_driver);
++
++MODULE_ALIAS("platform:mb86s70-dwc3");
++MODULE_AUTHOR("Alice Chan <Alice.Chan@tw.fujitsu.com>");
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("DesignWare USB3 mb86s70 Glue Layer");
 -- 
 1.7.9.5
 
