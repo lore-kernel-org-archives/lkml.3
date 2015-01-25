@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705AbbAYTL1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:11:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
+	id S1756516AbbAYSLP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276AbbAYSJV (ORCPT
+	with ESMTP id S1754533AbbAYSIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:21 -0500
+	Sun, 25 Jan 2015 13:08:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bruce Fields <bfields@fieldses.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 81/98] LOCKD: Fix a race when initialising nlmsvc_timeout
-Date: Sun, 25 Jan 2015 10:07:39 -0800
-Message-Id: <20150125180716.406363496@linuxfoundation.org>
+        Stephen Powell <zlinuxman@wowway.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.10 50/50] s390/3215: fix tty output containing tabs
+Date: Sun, 25 Jan 2015 10:07:40 -0800
+Message-Id: <20150125180705.453976868@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,55 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 06bed7d18c2c07b3e3eeadf4bd357f6e806618cc upstream.
+commit e512d56c799517f33b301d81e9a5e0ebf30c2d1e upstream.
 
-This commit fixes a race whereby nlmclnt_init() first starts the lockd
-daemon, and then calls nlm_bind_host() with the expectation that
-nlmsvc_timeout has already been initialised. Unfortunately, there is no
-no synchronisation between lockd() and lockd_up() to guarantee that this
-is the case.
+git commit 37f81fa1f63ad38e16125526bb2769ae0ea8d332
+"n_tty: do O_ONLCR translation as a single write"
+surfaced a bug in the 3215 device driver. In combination this
+broke tab expansion for tty ouput.
 
-Fix is to move the initialisation of nlmsvc_timeout into lockd_create_svc
+The cause is an asymmetry in the behaviour of tty3215_ops->write
+vs tty3215_ops->put_char. The put_char function scans for '\t'
+but the write function does not.
 
-Fixes: 9a1b6bf818e74 ("LOCKD: Don't call utsname()->nodename...")
-Cc: Bruce Fields <bfields@fieldses.org>
-Cc: stable@vger.kernel.org # 3.10.x
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+As the driver has logic for the '\t' expansion remove XTABS
+from c_oflag of the initial termios as well.
+
+Reported-by: Stephen Powell <zlinuxman@wowway.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/svc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/s390/char/con3215.c |   20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -137,10 +137,6 @@ lockd(void *vrqstp)
+--- a/drivers/s390/char/con3215.c
++++ b/drivers/s390/char/con3215.c
+@@ -1029,12 +1029,26 @@ static int tty3215_write(struct tty_stru
+ 			 const unsigned char *buf, int count)
+ {
+ 	struct raw3215_info *raw;
++	int i, written;
  
- 	dprintk("NFS locking service started (ver " LOCKD_VERSION ").\n");
+ 	if (!tty)
+ 		return 0;
+ 	raw = (struct raw3215_info *) tty->driver_data;
+-	raw3215_write(raw, buf, count);
+-	return count;
++	written = count;
++	while (count > 0) {
++		for (i = 0; i < count; i++)
++			if (buf[i] == '\t' || buf[i] == '\n')
++				break;
++		raw3215_write(raw, buf, i);
++		count -= i;
++		buf += i;
++		if (count > 0) {
++			raw3215_putchar(raw, *buf);
++			count--;
++			buf++;
++		}
++	}
++	return written;
+ }
  
--	if (!nlm_timeout)
--		nlm_timeout = LOCKD_DFLT_TIMEO;
--	nlmsvc_timeout = nlm_timeout * HZ;
--
- 	/*
- 	 * The main request loop. We don't terminate until the last
- 	 * NFS mount or NFS daemon has gone away.
-@@ -346,6 +342,10 @@ static struct svc_serv *lockd_create_svc
- 		printk(KERN_WARNING
- 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
- 
-+	if (!nlm_timeout)
-+		nlm_timeout = LOCKD_DFLT_TIMEO;
-+	nlmsvc_timeout = nlm_timeout * HZ;
-+
- 	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
- 	if (!serv) {
- 		printk(KERN_WARNING "lockd_up: create service failed\n");
+ /*
+@@ -1182,7 +1196,7 @@ static int __init tty3215_init(void)
+ 	driver->subtype = SYSTEM_TYPE_TTY;
+ 	driver->init_termios = tty_std_termios;
+ 	driver->init_termios.c_iflag = IGNBRK | IGNPAR;
+-	driver->init_termios.c_oflag = ONLCR | XTABS;
++	driver->init_termios.c_oflag = ONLCR;
+ 	driver->init_termios.c_lflag = ISIG;
+ 	driver->flags = TTY_DRIVER_REAL_RAW;
+ 	tty_set_operations(driver, &tty3215_ops);
 
 
