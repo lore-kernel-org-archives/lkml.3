@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141AbbAYSls (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:41:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57871 "EHLO
+	id S1759907AbbAYT3r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:29:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861AbbAYSKN (ORCPT
+	with ESMTP id S1754572AbbAYSIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:13 -0500
+	Sun, 25 Jan 2015 13:08:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.18 069/183] genirq: Prevent proc race against freeing of irq descriptors
+        Jiri Pirko <jiri@resnulli.us>, Jiri Benc <jbenc@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 13/98] team: avoid possible underflow of count_pending value for notify_peers and mcast_rejoin
 Date: Sun, 25 Jan 2015 10:06:31 -0800
-Message-Id: <20150125180813.182305300@linuxfoundation.org>
+Message-Id: <20150125180713.444462704@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,231 +25,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Jiri Pirko <jiri@resnulli.us>
 
-commit c291ee622165cb2c8d4e7af63fffd499354a23be upstream.
+[ Upstream commit b0d11b42785b70e19bc6a3122eead3f7969a7589 ]
 
-Since the rework of the sparse interrupt code to actually free the
-unused interrupt descriptors there exists a race between the /proc
-interfaces to the irq subsystem and the code which frees the interrupt
-descriptor.
+This patch is fixing a race condition that may cause setting
+count_pending to -1, which results in unwanted big bulk of arp messages
+(in case of "notify peers").
 
-CPU0				CPU1
-				show_interrupts()
-				  desc = irq_to_desc(X);
-free_desc(desc)
-  remove_from_radix_tree();
-  kfree(desc);
-				  raw_spinlock_irq(&desc->lock);
+Consider following scenario:
 
-/proc/interrupts is the only interface which can actively corrupt
-kernel memory via the lock access. /proc/stat can only read from freed
-memory. Extremly hard to trigger, but possible.
+count_pending == 2
+   CPU0                                           CPU1
+					team_notify_peers_work
+					  atomic_dec_and_test (dec count_pending to 1)
+					  schedule_delayed_work
+ team_notify_peers
+   atomic_add (adding 1 to count_pending)
+					team_notify_peers_work
+					  atomic_dec_and_test (dec count_pending to 1)
+					  schedule_delayed_work
+					team_notify_peers_work
+					  atomic_dec_and_test (dec count_pending to 0)
+   schedule_delayed_work
+					team_notify_peers_work
+					  atomic_dec_and_test (dec count_pending to -1)
 
-The interfaces in /proc/irq/N/ are not affected by this because the
-removal of the proc file is serialized in procfs against concurrent
-readers/writers. The removal happens before the descriptor is freed.
+Fix this race by using atomic_dec_if_positive - that will prevent
+count_pending running under 0.
 
-For architectures which have CONFIG_SPARSE_IRQ=n this is a non issue
-as the descriptor is never freed. It's merely cleared out with the irq
-descriptor lock held. So any concurrent proc access will either see
-the old correct value or the cleared out ones.
-
-Protect the lookup and access to the irq descriptor in
-show_interrupts() with the sparse_irq_lock.
-
-Provide kstat_irqs_usr() which is protecting the lookup and access
-with sparse_irq_lock and switch /proc/stat to use it.
-
-Document the existing kstat_irqs interfaces so it's clear that the
-caller needs to take care about protection. The users of these
-interfaces are either not affected due to SPARSE_IRQ=n or already
-protected against removal.
-
-Fixes: 1f5a5b87f78f "genirq: Implement a sane sparse_irq allocator"
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: fc423ff00df3a1955441 ("team: add peer notification")
+Fixes: 492b200efdd20b8fcfd  ("team: add support for sending multicast rejoins")
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/proc/stat.c              |    2 -
- include/linux/kernel_stat.h |    1 
- kernel/irq/internals.h      |    4 +++
- kernel/irq/irqdesc.c        |   52 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/irq/proc.c           |   22 +++++++++++++++++-
- 5 files changed, 79 insertions(+), 2 deletions(-)
+ drivers/net/team/team.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -159,7 +159,7 @@ static int show_stat(struct seq_file *p,
- 
- 	/* sum again ? it could be updated? */
- 	for_each_irq_nr(j)
--		seq_put_decimal_ull(p, ' ', kstat_irqs(j));
-+		seq_put_decimal_ull(p, ' ', kstat_irqs_usr(j));
- 
- 	seq_printf(p,
- 		"\nctxt %llu\n"
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -68,6 +68,7 @@ static inline unsigned int kstat_softirq
-  * Number of interrupts per specific IRQ source, since bootup
-  */
- extern unsigned int kstat_irqs(unsigned int irq);
-+extern unsigned int kstat_irqs_usr(unsigned int irq);
- 
- /*
-  * Number of interrupts per cpu, since bootup
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -78,8 +78,12 @@ extern void unmask_threaded_irq(struct i
- 
- #ifdef CONFIG_SPARSE_IRQ
- static inline void irq_mark_irq(unsigned int irq) { }
-+extern void irq_lock_sparse(void);
-+extern void irq_unlock_sparse(void);
- #else
- extern void irq_mark_irq(unsigned int irq);
-+static inline void irq_lock_sparse(void) { }
-+static inline void irq_unlock_sparse(void) { }
- #endif
- 
- extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -132,6 +132,16 @@ static void free_masks(struct irq_desc *
- static inline void free_masks(struct irq_desc *desc) { }
- #endif
- 
-+void irq_lock_sparse(void)
-+{
-+	mutex_lock(&sparse_irq_lock);
-+}
-+
-+void irq_unlock_sparse(void)
-+{
-+	mutex_unlock(&sparse_irq_lock);
-+}
-+
- static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -629,6 +629,7 @@ static int team_change_mode(struct team
+ static void team_notify_peers_work(struct work_struct *work)
  {
- 	struct irq_desc *desc;
-@@ -168,6 +178,12 @@ static void free_desc(unsigned int irq)
+ 	struct team *team;
++	int val;
  
- 	unregister_irq_proc(irq, desc);
+ 	team = container_of(work, struct team, notify_peers.dw.work);
  
-+	/*
-+	 * sparse_irq_lock protects also show_interrupts() and
-+	 * kstat_irq_usr(). Once we deleted the descriptor from the
-+	 * sparse tree we can free it. Access in proc will fail to
-+	 * lookup the descriptor.
-+	 */
- 	mutex_lock(&sparse_irq_lock);
- 	delete_irq_desc(irq);
- 	mutex_unlock(&sparse_irq_lock);
-@@ -574,6 +590,15 @@ void kstat_incr_irq_this_cpu(unsigned in
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- }
- 
-+/**
-+ * kstat_irqs_cpu - Get the statistics for an interrupt on a cpu
-+ * @irq:	The interrupt number
-+ * @cpu:	The cpu number
-+ *
-+ * Returns the sum of interrupt counts on @cpu since boot for
-+ * @irq. The caller must ensure that the interrupt is not removed
-+ * concurrently.
-+ */
- unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -582,6 +607,14 @@ unsigned int kstat_irqs_cpu(unsigned int
- 			*per_cpu_ptr(desc->kstat_irqs, cpu) : 0;
- }
- 
-+/**
-+ * kstat_irqs - Get the statistics for an interrupt
-+ * @irq:	The interrupt number
-+ *
-+ * Returns the sum of interrupt counts on all cpus since boot for
-+ * @irq. The caller must ensure that the interrupt is not removed
-+ * concurrently.
-+ */
- unsigned int kstat_irqs(unsigned int irq)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -594,3 +627,22 @@ unsigned int kstat_irqs(unsigned int irq
- 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
- 	return sum;
- }
-+
-+/**
-+ * kstat_irqs_usr - Get the statistics for an interrupt
-+ * @irq:	The interrupt number
-+ *
-+ * Returns the sum of interrupt counts on all cpus since boot for
-+ * @irq. Contrary to kstat_irqs() this can be called from any
-+ * preemptible context. It's protected against concurrent removal of
-+ * an interrupt descriptor when sparse irqs are enabled.
-+ */
-+unsigned int kstat_irqs_usr(unsigned int irq)
-+{
-+	int sum;
-+
-+	irq_lock_sparse();
-+	sum = kstat_irqs(irq);
-+	irq_unlock_sparse();
-+	return sum;
-+}
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -15,6 +15,23 @@
- 
- #include "internals.h"
- 
-+/*
-+ * Access rules:
-+ *
-+ * procfs protects read/write of /proc/irq/N/ files against a
-+ * concurrent free of the interrupt descriptor. remove_proc_entry()
-+ * immediately prevents new read/writes to happen and waits for
-+ * already running read/write functions to complete.
-+ *
-+ * We remove the proc entries first and then delete the interrupt
-+ * descriptor from the radix tree and free it. So it is guaranteed
-+ * that irq_to_desc(N) is valid as long as the read/writes are
-+ * permitted by procfs.
-+ *
-+ * The read from /proc/interrupts is a different problem because there
-+ * is no protection. So the lookup and the access to irqdesc
-+ * information must be protected by sparse_irq_lock.
-+ */
- static struct proc_dir_entry *root_irq_dir;
- 
- #ifdef CONFIG_SMP
-@@ -437,9 +454,10 @@ int show_interrupts(struct seq_file *p,
- 		seq_putc(p, '\n');
+@@ -636,9 +637,14 @@ static void team_notify_peers_work(struc
+ 		schedule_delayed_work(&team->notify_peers.dw, 0);
+ 		return;
  	}
- 
-+	irq_lock_sparse();
- 	desc = irq_to_desc(i);
- 	if (!desc)
--		return 0;
-+		goto outsparse;
- 
- 	raw_spin_lock_irqsave(&desc->lock, flags);
- 	for_each_online_cpu(j)
-@@ -479,6 +497,8 @@ int show_interrupts(struct seq_file *p,
- 	seq_putc(p, '\n');
- out:
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+outsparse:
-+	irq_unlock_sparse();
- 	return 0;
++	val = atomic_dec_if_positive(&team->notify_peers.count_pending);
++	if (val < 0) {
++		rtnl_unlock();
++		return;
++	}
+ 	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, team->dev);
+ 	rtnl_unlock();
+-	if (!atomic_dec_and_test(&team->notify_peers.count_pending))
++	if (val)
+ 		schedule_delayed_work(&team->notify_peers.dw,
+ 				      msecs_to_jiffies(team->notify_peers.interval));
  }
- #endif
+@@ -669,6 +675,7 @@ static void team_notify_peers_fini(struc
+ static void team_mcast_rejoin_work(struct work_struct *work)
+ {
+ 	struct team *team;
++	int val;
+ 
+ 	team = container_of(work, struct team, mcast_rejoin.dw.work);
+ 
+@@ -676,9 +683,14 @@ static void team_mcast_rejoin_work(struc
+ 		schedule_delayed_work(&team->mcast_rejoin.dw, 0);
+ 		return;
+ 	}
++	val = atomic_dec_if_positive(&team->mcast_rejoin.count_pending);
++	if (val < 0) {
++		rtnl_unlock();
++		return;
++	}
+ 	call_netdevice_notifiers(NETDEV_RESEND_IGMP, team->dev);
+ 	rtnl_unlock();
+-	if (!atomic_dec_and_test(&team->mcast_rejoin.count_pending))
++	if (val)
+ 		schedule_delayed_work(&team->mcast_rejoin.dw,
+ 				      msecs_to_jiffies(team->mcast_rejoin.interval));
+ }
 
 
