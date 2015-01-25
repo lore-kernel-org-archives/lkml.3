@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685AbbAYTOL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:14:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57558 "EHLO
+	id S1756201AbbAYSKp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:10:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222AbbAYSJQ (ORCPT
+	with ESMTP id S1754422AbbAYSIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:16 -0500
+	Sun, 25 Jan 2015 13:08:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Storah <Christopher.Storah@invetech.com.au>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.14 70/98] can: kvaser_usb: Dont send a RESET_CHIP for non-existing channels
-Date: Sun, 25 Jan 2015 10:07:28 -0800
-Message-Id: <20150125180715.886039956@linuxfoundation.org>
+        Gary Bisson <bisson.gary@gmail.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.10 39/50] ARM: clk-imx6q: fix video divider for rev T0 1.0
+Date: Sun, 25 Jan 2015 10:07:29 -0800
+Message-Id: <20150125180704.845118059@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,50 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
+From: Gary Bisson <bisson.gary@gmail.com>
 
-commit 5e7e6e0c9b47a45576c38b4a72d67927a5e049f7 upstream.
+commit 81ef447950bf0955aca46f4a7617d8ce435cf0ce upstream.
 
-Recent Leaf firmware versions (>= 3.1.557) do not allow to send
-commands for non-existing channels.  If a command is sent for a
-non-existing channel, the firmware crashes.
+The post dividers do not work on i.MX6Q rev T0 1.0 so they must be fixed
+to 1. As the table index was wrong, a divider a of 4 could still be
+requested which implied the clock not to be set properly. This is the
+root cause of the HDMI not working at high resolution on rev T0 1.0 of
+the SoC.
 
-Reported-by: Christopher Storah <Christopher.Storah@invetech.com.au>
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Gary Bisson <bisson.gary@gmail.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/kvaser_usb.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/arm/mach-imx/clk-imx6q.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1493,6 +1493,10 @@ static int kvaser_usb_init_one(struct us
- 	struct kvaser_usb_net_priv *priv;
- 	int i, err;
+--- a/arch/arm/mach-imx/clk-imx6q.c
++++ b/arch/arm/mach-imx/clk-imx6q.c
+@@ -301,7 +301,7 @@ int __init mx6q_clocks_init(void)
+ 		post_div_table[1].div = 1;
+ 		post_div_table[2].div = 1;
+ 		video_div_table[1].div = 1;
+-		video_div_table[2].div = 1;
++		video_div_table[3].div = 1;
+ 	}
  
-+	err = kvaser_usb_send_simple_msg(dev, CMD_RESET_CHIP, channel);
-+	if (err)
-+		return err;
-+
- 	netdev = alloc_candev(sizeof(*priv), MAX_TX_URBS);
- 	if (!netdev) {
- 		dev_err(&intf->dev, "Cannot alloc candev\n");
-@@ -1596,9 +1600,6 @@ static int kvaser_usb_probe(struct usb_i
- 
- 	usb_set_intfdata(intf, dev);
- 
--	for (i = 0; i < MAX_NET_DEVICES; i++)
--		kvaser_usb_send_simple_msg(dev, CMD_RESET_CHIP, i);
--
- 	err = kvaser_usb_get_software_info(dev);
- 	if (err) {
- 		dev_err(&intf->dev,
+ 	/*                   type                               name         parent_name  base     div_mask */
 
 
