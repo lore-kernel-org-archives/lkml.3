@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933172AbbAYTeG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:34:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57190 "EHLO
+	id S1758300AbbAYSqQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:46:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754139AbbAYSIf (ORCPT
+	with ESMTP id S1755805AbbAYSKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:35 -0500
+	Sun, 25 Jan 2015 13:10:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nils Holland <nholland@tisys.org>,
-        Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>,
-        Prashant Sreedharan <prashant@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 03/50] tg3: tg3_disable_ints using uninitialized mailbox value to disable interrupts
-Date: Sun, 25 Jan 2015 10:06:53 -0800
-Message-Id: <20150125180702.775194851@linuxfoundation.org>
+        Jisheng Zhang <jszhang@marvell.com>,
+        Michael Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.18 092/183] clk: berlin: bg2q: remove non-exist "smemc" gate clock
+Date: Sun, 25 Jan 2015 10:06:54 -0800
+Message-Id: <20150125180814.172523775@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -28,91 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Prashant Sreedharan <prashant@broadcom.com>
+From: Jisheng Zhang <jszhang@marvell.com>
 
-[ Upstream commit 05b0aa579397b734f127af58e401a30784a1e315 ]
+commit b71e8ecd57c8aae5b1815782c47b74ffe3efc09a upstream.
 
-During driver load in tg3_init_one, if the driver detects DMA activity before
-intializing the chip tg3_halt is called. As part of tg3_halt interrupts are
-disabled using routine tg3_disable_ints. This routine was using mailbox value
-which was not initialized (default value is 0). As a result driver was writing
-0x00000001 to pci config space register 0, which is the vendor id / device id.
+The "smemc" clock is removed on BG2Q SoCs. In fact, bit19 of clkenable
+register is for nfc. Current code use bit19 for non-exist "smemc"
+incorrectly, this prevents eMMC from working due to the sdhci's
+"core" clk is still gated.
 
-This driver bug was exposed because of the commit a7877b17a667 (PCI: Check only
-the Vendor ID to identify Configuration Request Retry). Also this issue is only
-seen in older generation chipsets like 5722 because config space write to offset
-0 from driver is possible. The newer generation chips ignore writes to offset 0.
-Also without commit a7877b17a667, for these older chips when a GRC reset is
-issued the Bootcode would reprogram the vendor id/device id, which is the reason
-this bug was masked earlier.
-
-Fixed by initializing the interrupt mailbox registers before calling tg3_halt.
-
-Please queue for -stable.
-
-Reported-by: Nils Holland <nholland@tisys.org>
-Reported-by: Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>
-Signed-off-by: Prashant Sreedharan <prashant@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Signed-off-by: Michael Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/tg3.c |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -17389,23 +17389,6 @@ static int tg3_init_one(struct pci_dev *
- 		goto err_out_apeunmap;
- 	}
+---
+ drivers/clk/berlin/bg2q.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/drivers/clk/berlin/bg2q.c
++++ b/drivers/clk/berlin/bg2q.c
+@@ -285,7 +285,6 @@ static const struct berlin2_gate_data bg
+ 	{ "pbridge",	"perif",	15, CLK_IGNORE_UNUSED },
+ 	{ "sdio",	"perif",	16, CLK_IGNORE_UNUSED },
+ 	{ "nfc",	"perif",	18 },
+-	{ "smemc",	"perif",	19 },
+ 	{ "pcie",	"perif",	22 },
+ };
  
--	/*
--	 * Reset chip in case UNDI or EFI driver did not shutdown
--	 * DMA self test will enable WDMAC and we'll see (spurious)
--	 * pending DMA on the PCI bus at that point.
--	 */
--	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
--	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
--		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
--		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
--	}
--
--	err = tg3_test_dma(tp);
--	if (err) {
--		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
--		goto err_out_apeunmap;
--	}
--
- 	intmbx = MAILBOX_INTERRUPT_0 + TG3_64BIT_REG_LOW;
- 	rcvmbx = MAILBOX_RCVRET_CON_IDX_0 + TG3_64BIT_REG_LOW;
- 	sndmbx = MAILBOX_SNDHOST_PROD_IDX_0 + TG3_64BIT_REG_LOW;
-@@ -17450,6 +17433,23 @@ static int tg3_init_one(struct pci_dev *
- 			sndmbx += 0xc;
- 	}
- 
-+	/*
-+	 * Reset chip in case UNDI or EFI driver did not shutdown
-+	 * DMA self test will enable WDMAC and we'll see (spurious)
-+	 * pending DMA on the PCI bus at that point.
-+	 */
-+	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
-+	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
-+		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
-+		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
-+	}
-+
-+	err = tg3_test_dma(tp);
-+	if (err) {
-+		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
-+		goto err_out_apeunmap;
-+	}
-+
- 	tg3_init_coal(tp);
- 
- 	pci_set_drvdata(pdev, dev);
 
 
