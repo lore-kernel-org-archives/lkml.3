@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954AbbAYSiJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:38:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57908 "EHLO
+	id S1757546AbbAYTJq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:09:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924AbbAYSKS (ORCPT
+	with ESMTP id S1755308AbbAYSJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:18 -0500
+	Sun, 25 Jan 2015 13:09:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Guinot <simon.guinot@sequanux.org>,
-        Johan Hovold <johan@kernel.org>, Bryan Wu <cooloney@gmail.com>
-Subject: [PATCH 3.18 121/183] leds: netxbig: fix oops at probe time
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 65/98] USB: console: fix potential use after free
 Date: Sun, 25 Jan 2015 10:07:23 -0800
-Message-Id: <20150125180815.435783487@linuxfoundation.org>
+Message-Id: <20150125180715.672695800@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,68 +24,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Simon Guinot <simon.guinot@sequanux.org>
+From: Johan Hovold <johan@kernel.org>
 
-commit 0c86ac2c50647451d6a70dc900f8bb0ee3d485d9 upstream.
+commit 32a4bf2e81ec378e5925d4e069e0677a6c86a6ad upstream.
 
-This patch fixes a NULL pointer dereference on led_dat->mode_val. Due to
-this bug, a kernel oops can be observed at probe time on the LaCie 2Big
-and 5Big v2 boards:
+Use tty kref to release the fake tty in usb_console_setup to avoid use
+after free if the underlying serial driver has acquired a reference.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000008
-[...]
-[<c03f244c>] (netxbig_led_probe) from [<c02c8c6c>] (platform_drv_probe+0x4c/0x9c)
-[<c02c8c6c>] (platform_drv_probe) from [<c02c72d0>] (driver_probe_device+0x98/0x25c)
-[<c02c72d0>] (driver_probe_device) from [<c02c7520>] (__driver_attach+0x8c/0x90)
-[<c02c7520>] (__driver_attach) from [<c02c5c24>] (bus_for_each_dev+0x68/0x94)
-[<c02c5c24>] (bus_for_each_dev) from [<c02c6408>] (bus_add_driver+0x124/0x1dc)
-[<c02c6408>] (bus_add_driver) from [<c02c7ac0>] (driver_register+0x78/0xf8)
-[<c02c7ac0>] (driver_register) from [<c000888c>] (do_one_initcall+0x80/0x1cc)
-[<c000888c>] (do_one_initcall) from [<c0733618>] (kernel_init_freeable+0xe4/0x1b4)
-[<c0733618>] (kernel_init_freeable) from [<c058db9c>] (kernel_init+0xc/0xec)
-[<c058db9c>] (kernel_init) from [<c0009850>] (ret_from_fork+0x14/0x24)
-[...]
+Note that using the tty destructor release_one_tty requires some more
+state to be initialised.
 
-This bug was introduced by commit 588a6a99286ae30afb1339d8bc2163517b1b7dd1
-("leds: netxbig: fix attribute-creation race").
-
-Signed-off-by: Simon Guinot <simon.guinot@sequanux.org>
-Acked-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Bryan Wu <cooloney@gmail.com>
+Fixes: 4a90f09b20f4 ("tty: usb-serial krefs")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-diff --git a/drivers/leds/leds-netxbig.c b/drivers/leds/leds-netxbig.c
-index 26515c27ea8c..25e419752a7b 100644
---- a/drivers/leds/leds-netxbig.c
-+++ b/drivers/leds/leds-netxbig.c
-@@ -330,18 +330,18 @@ create_netxbig_led(struct platform_device *pdev,
- 	led_dat->sata = 0;
- 	led_dat->cdev.brightness = LED_OFF;
- 	led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
--	/*
--	 * If available, expose the SATA activity blink capability through
--	 * a "sata" sysfs attribute.
--	 */
--	if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE)
--		led_dat->cdev.groups = netxbig_led_groups;
- 	led_dat->mode_addr = template->mode_addr;
- 	led_dat->mode_val = template->mode_val;
- 	led_dat->bright_addr = template->bright_addr;
- 	led_dat->bright_max = (1 << pdata->gpio_ext->num_data) - 1;
- 	led_dat->timer = pdata->timer;
- 	led_dat->num_timer = pdata->num_timer;
-+	/*
-+	 * If available, expose the SATA activity blink capability through
-+	 * a "sata" sysfs attribute.
-+	 */
-+	if (led_dat->mode_val[NETXBIG_LED_SATA] != NETXBIG_LED_INVALID_MODE)
-+		led_dat->cdev.groups = netxbig_led_groups;
+---
+ drivers/usb/serial/console.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+--- a/drivers/usb/serial/console.c
++++ b/drivers/usb/serial/console.c
+@@ -46,6 +46,8 @@ static struct console usbcons;
+  * ------------------------------------------------------------
+  */
  
- 	return led_classdev_register(&pdev->dev, &led_dat->cdev);
- }
++static const struct tty_operations usb_console_fake_tty_ops = {
++};
+ 
+ /*
+  * The parsing of the command line works exactly like the
+@@ -137,14 +139,17 @@ static int usb_console_setup(struct cons
+ 				goto reset_open_count;
+ 			}
+ 			kref_init(&tty->kref);
+-			tty_port_tty_set(&port->port, tty);
+ 			tty->driver = usb_serial_tty_driver;
+ 			tty->index = co->index;
+ 			init_ldsem(&tty->ldisc_sem);
++			INIT_LIST_HEAD(&tty->tty_files);
++			kref_get(&tty->driver->kref);
++			tty->ops = &usb_console_fake_tty_ops;
+ 			if (tty_init_termios(tty)) {
+ 				retval = -ENOMEM;
+-				goto free_tty;
++				goto put_tty;
+ 			}
++			tty_port_tty_set(&port->port, tty);
+ 		}
+ 
+ 		/* only call the device specific open if this
+@@ -162,7 +167,7 @@ static int usb_console_setup(struct cons
+ 			serial->type->set_termios(tty, port, &dummy);
+ 
+ 			tty_port_tty_set(&port->port, NULL);
+-			kfree(tty);
++			tty_kref_put(tty);
+ 		}
+ 		set_bit(ASYNCB_INITIALIZED, &port->port.flags);
+ 	}
+@@ -178,8 +183,8 @@ static int usb_console_setup(struct cons
+ 
+  fail:
+ 	tty_port_tty_set(&port->port, NULL);
+- free_tty:
+-	kfree(tty);
++ put_tty:
++	tty_kref_put(tty);
+  reset_open_count:
+ 	port->port.count = 0;
+ 	usb_autopm_put_interface(serial->interface);
 
 
