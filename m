@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759892AbbAYT3p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:29:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
+	id S932418AbbAYSv2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:51:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581AbbAYSIz (ORCPT
+	with ESMTP id S1755696AbbAYSJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:55 -0500
+	Sun, 25 Jan 2015 13:09:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Benc <jbenc@redhat.com>, Stefan Assmann <sassmann@redhat.com>,
-        Sunil Choudhary <schoudha@redhat.com>,
-        Govindarajulu Varadarajan <_govind@gmx.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 14/98] enic: fix rx skb checksum
-Date: Sun, 25 Jan 2015 10:06:32 -0800
-Message-Id: <20150125180713.490293109@linuxfoundation.org>
+        Slava Shwartsman <valyushash@gmail.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.18 071/183] iscsi,iser-target: Initiate termination only once
+Date: Sun, 25 Jan 2015 10:06:33 -0800
+Message-Id: <20150125180813.262358424@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,77 +26,221 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Govindarajulu Varadarajan <_govind@gmx.com>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-[ Upstream commit 17e96834fd35997ca7cdfbf15413bcd5a36ad448 ]
+commit 954f23722b5753305be490330cf2680b7a25f4a3 upstream.
 
-Hardware always provides compliment of IP pseudo checksum. Stack expects
-whole packet checksum without pseudo checksum if CHECKSUM_COMPLETE is set.
+Since commit 0fc4ea701fcf ("Target/iser: Don't put isert_conn inside
+disconnected handler") we put the conn kref in isert_wait_conn, so we
+need .wait_conn to be invoked also in the error path.
 
-This causes checksum error in nf & ovs.
+Introduce call to isert_conn_terminate (called under lock)
+which transitions the connection state to TERMINATING and calls
+rdma_disconnect. If the state is already teminating, just bail
+out back (temination started).
 
-kernel: qg-19546f09-f2: hw csum failure
-kernel: CPU: 9 PID: 0 Comm: swapper/9 Tainted: GF          O--------------   3.10.0-123.8.1.el7.x86_64 #1
-kernel: Hardware name: Cisco Systems Inc UCSB-B200-M3/UCSB-B200-M3, BIOS B200M3.2.2.3.0.080820141339 08/08/2014
-kernel: ffff881218f40000 df68243feb35e3a8 ffff881237a43ab8 ffffffff815e237b
-kernel: ffff881237a43ad0 ffffffff814cd4ca ffff8829ec71eb00 ffff881237a43af0
-kernel: ffffffff814c6232 0000000000000286 ffff8829ec71eb00 ffff881237a43b00
-kernel: Call Trace:
-kernel: <IRQ>  [<ffffffff815e237b>] dump_stack+0x19/0x1b
-kernel: [<ffffffff814cd4ca>] netdev_rx_csum_fault+0x3a/0x40
-kernel: [<ffffffff814c6232>] __skb_checksum_complete_head+0x62/0x70
-kernel: [<ffffffff814c6251>] __skb_checksum_complete+0x11/0x20
-kernel: [<ffffffff8155a20c>] nf_ip_checksum+0xcc/0x100
-kernel: [<ffffffffa049edc7>] icmp_error+0x1f7/0x35c [nf_conntrack_ipv4]
-kernel: [<ffffffff814cf419>] ? netif_rx+0xb9/0x1d0
-kernel: [<ffffffffa040eb7b>] ? internal_dev_recv+0xdb/0x130 [openvswitch]
-kernel: [<ffffffffa04c8330>] nf_conntrack_in+0xf0/0xa80 [nf_conntrack]
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffffa049e302>] ipv4_conntrack_in+0x22/0x30 [nf_conntrack_ipv4]
-kernel: [<ffffffff815005ca>] nf_iterate+0xaa/0xc0
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffff81500664>] nf_hook_slow+0x84/0x140
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffff81509dd4>] ip_rcv+0x344/0x380
+Also, make sure to destroy the connection when getting a connect
+error event if didn't get to connected (state UP). Same for the
+handling of REJECTED and UNREACHABLE cma events.
 
-Hardware verifies IP & tcp/udp header checksum but does not provide payload
-checksum, use CHECKSUM_UNNECESSARY. Set it only if its valid IP tcp/udp packet.
+Squashed:
 
-Cc: Jiri Benc <jbenc@redhat.com>
-Cc: Stefan Assmann <sassmann@redhat.com>
-Reported-by: Sunil Choudhary <schoudha@redhat.com>
-Signed-off-by: Govindarajulu Varadarajan <_govind@gmx.com>
-Reviewed-by: Jiri Benc <jbenc@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+iscsi-target: Add call to wait_conn in establishment error flow
+
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/cisco/enic/enic_main.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/cisco/enic/enic_main.c
-+++ b/drivers/net/ethernet/cisco/enic/enic_main.c
-@@ -1044,10 +1044,14 @@ static void enic_rq_indicate_buf(struct
- 				     PKT_HASH_TYPE_L4 : PKT_HASH_TYPE_L3);
- 		}
+---
+ drivers/infiniband/ulp/isert/ib_isert.c   |   84 ++++++++++++++++++------------
+ drivers/infiniband/ulp/isert/ib_isert.h   |    1 
+ drivers/target/iscsi/iscsi_target_login.c |    3 +
+ 3 files changed, 54 insertions(+), 34 deletions(-)
+
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -777,6 +777,33 @@ isert_put_conn(struct isert_conn *isert_
+ 	kref_put(&isert_conn->conn_kref, isert_release_conn_kref);
+ }
  
--		if ((netdev->features & NETIF_F_RXCSUM) && !csum_not_calc) {
--			skb->csum = htons(checksum);
--			skb->ip_summed = CHECKSUM_COMPLETE;
--		}
-+		/* Hardware does not provide whole packet checksum. It only
-+		 * provides pseudo checksum. Since hw validates the packet
-+		 * checksum but not provide us the checksum value. use
-+		 * CHECSUM_UNNECESSARY.
-+		 */
-+		if ((netdev->features & NETIF_F_RXCSUM) && tcp_udp_csum_ok &&
-+		    ipv4_csum_ok)
-+			skb->ip_summed = CHECKSUM_UNNECESSARY;
++/**
++ * isert_conn_terminate() - Initiate connection termination
++ * @isert_conn: isert connection struct
++ *
++ * Notes:
++ * In case the connection state is UP, move state
++ * to TEMINATING and start teardown sequence (rdma_disconnect).
++ *
++ * This routine must be called with conn_mutex held. Thus it is
++ * safe to call multiple times.
++ */
++static void
++isert_conn_terminate(struct isert_conn *isert_conn)
++{
++	int err;
++
++	if (isert_conn->state == ISER_CONN_UP) {
++		isert_conn->state = ISER_CONN_TERMINATING;
++		pr_info("Terminating conn %p state %d\n",
++			   isert_conn, isert_conn->state);
++		err = rdma_disconnect(isert_conn->conn_cm_id);
++		if (err)
++			pr_warn("Failed rdma_disconnect isert_conn %p\n",
++				   isert_conn);
++	}
++}
++
+ static void
+ isert_disconnect_work(struct work_struct *work)
+ {
+@@ -785,33 +812,15 @@ isert_disconnect_work(struct work_struct
  
- 		if (vlan_stripped)
- 			__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), vlan_tci);
+ 	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	if (isert_conn->state == ISER_CONN_UP)
+-		isert_conn->state = ISER_CONN_TERMINATING;
+-
+-	if (isert_conn->post_recv_buf_count == 0 &&
+-	    atomic_read(&isert_conn->post_send_buf_count) == 0) {
+-		mutex_unlock(&isert_conn->conn_mutex);
+-		goto wake_up;
+-	}
+-	if (!isert_conn->conn_cm_id) {
+-		mutex_unlock(&isert_conn->conn_mutex);
+-		isert_put_conn(isert_conn);
+-		return;
+-	}
+-
+-	if (isert_conn->disconnect) {
+-		/* Send DREQ/DREP towards our initiator */
+-		rdma_disconnect(isert_conn->conn_cm_id);
+-	}
+-
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+-wake_up:
++	pr_info("conn %p completing conn_wait\n", isert_conn);
+ 	complete(&isert_conn->conn_wait);
+ }
+ 
+ static int
+-isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
++isert_disconnected_handler(struct rdma_cm_id *cma_id)
+ {
+ 	struct isert_conn *isert_conn;
+ 
+@@ -824,18 +833,24 @@ isert_disconnected_handler(struct rdma_c
+ 
+ 	isert_conn = (struct isert_conn *)cma_id->context;
+ 
+-	isert_conn->disconnect = disconnect;
+ 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
+ 	schedule_work(&isert_conn->conn_logout_work);
+ 
+ 	return 0;
+ }
+ 
++static void
++isert_connect_error(struct rdma_cm_id *cma_id)
++{
++	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
++
++	isert_put_conn(isert_conn);
++}
++
+ static int
+ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ {
+ 	int ret = 0;
+-	bool disconnect = false;
+ 
+ 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
+ 		 event->event, event->status, cma_id->context, cma_id);
+@@ -853,11 +868,14 @@ isert_cma_handler(struct rdma_cm_id *cma
+ 	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
+ 	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
+ 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
+-		disconnect = true;
+ 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
+-		ret = isert_disconnected_handler(cma_id, disconnect);
++		ret = isert_disconnected_handler(cma_id);
+ 		break;
++	case RDMA_CM_EVENT_REJECTED:       /* FALLTHRU */
++	case RDMA_CM_EVENT_UNREACHABLE:    /* FALLTHRU */
+ 	case RDMA_CM_EVENT_CONNECT_ERROR:
++		isert_connect_error(cma_id);
++		break;
+ 	default:
+ 		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
+ 		break;
+@@ -2046,7 +2064,7 @@ isert_cq_rx_comp_err(struct isert_conn *
+ 		msleep(3000);
+ 
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	isert_conn->state = ISER_CONN_DOWN;
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ 	iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
+@@ -3219,10 +3237,6 @@ static void isert_wait_conn(struct iscsi
+ 	pr_debug("isert_wait_conn: Starting \n");
+ 
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	if (isert_conn->conn_cm_id && !isert_conn->disconnect) {
+-		pr_debug("Calling rdma_disconnect from isert_wait_conn\n");
+-		rdma_disconnect(isert_conn->conn_cm_id);
+-	}
+ 	/*
+ 	 * Only wait for conn_wait_comp_err if the isert_conn made it
+ 	 * into full feature phase..
+@@ -3231,13 +3245,17 @@ static void isert_wait_conn(struct iscsi
+ 		mutex_unlock(&isert_conn->conn_mutex);
+ 		return;
+ 	}
+-	if (isert_conn->state == ISER_CONN_UP)
+-		isert_conn->state = ISER_CONN_TERMINATING;
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ 	wait_for_completion(&isert_conn->conn_wait_comp_err);
+-
+ 	wait_for_completion(&isert_conn->conn_wait);
++
++	mutex_lock(&isert_conn->conn_mutex);
++	isert_conn->state = ISER_CONN_DOWN;
++	mutex_unlock(&isert_conn->conn_mutex);
++
++	pr_info("Destroying conn %p\n", isert_conn);
+ 	isert_put_conn(isert_conn);
+ }
+ 
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -150,7 +150,6 @@ struct isert_conn {
+ #define ISERT_COMP_BATCH_COUNT	8
+ 	int			conn_comp_batch;
+ 	struct llist_head	conn_comp_llist;
+-	bool                    disconnect;
+ };
+ 
+ #define ISERT_MAX_CQ 64
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -1204,6 +1204,9 @@ old_sess_out:
+ 		conn->sock = NULL;
+ 	}
+ 
++	if (conn->conn_transport->iscsit_wait_conn)
++		conn->conn_transport->iscsit_wait_conn(conn);
++
+ 	if (conn->conn_transport->iscsit_free_conn)
+ 		conn->conn_transport->iscsit_free_conn(conn);
+ 
 
 
