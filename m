@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710AbbAYSLi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
+	id S1756889AbbAYSMN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:12:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380AbbAYSJ2 (ORCPT
+	with ESMTP id S1756170AbbAYSKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:28 -0500
+	Sun, 25 Jan 2015 13:10:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 86/98] iser-target: Fix flush + disconnect completion handling
+        Amit Virdi <amit.virdi@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.18 142/183] usb: dwc3: gadget: Stop TRB preparation after limit is reached
 Date: Sun, 25 Jan 2015 10:07:44 -0800
-Message-Id: <20150125180716.641376861@linuxfoundation.org>
+Message-Id: <20150125180816.343457535@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,169 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Amit Virdi <amit.virdi@st.com>
 
-commit 128e9cc84566a84146baea2335b3824288eed817 upstream.
+commit 39e60635a01520e8c8ed3946a28c2b98e6a46f79 upstream.
 
-ISER_CONN_UP state is not sufficient to know if
-we should wait for completion of flush errors and
-disconnected_handler event.
+DWC3 gadget sets up a pool of 32 TRBs for each EP during initialization. This
+means, the max TRBs that can be submitted for an EP is fixed to 32. Since the
+request queue for an EP is a linked list, any number of requests can be queued
+to it by the gadget layer.  However, the dwc3 driver must not submit TRBs more
+than the pool it has created for. This limit wasn't respected when SG was used
+resulting in submitting more than the max TRBs, eventually leading to
+non-transfer of the TRBs submitted over the max limit.
 
-Instead, split it to 2 states:
-- ISER_CONN_UP: Got to CM connected phase, This state
-indicates that we need to wait for a CM disconnect
-event before going to teardown.
+Root cause:
+When SG is used, there are two loops iterating to prepare TRBs:
+ - Outer loop over the request_list
+ - Inner loop over the SG list
+The code was missing break to get out of the outer loop.
 
-- ISER_CONN_FULL_FEATURE: Got to full feature phase
-after we posted login response, This state indicates
-that we posted recv buffers and we need to wait for
-flush completions before going to teardown.
-
-Also avoid deffering disconnected handler to a work,
-and handle it within disconnected handler.
-More work here is needed to handle DEVICE_REMOVAL event
-correctly (cleanup all resources).
-
-Squashed:
-
-iser-target: Don't deffer disconnected handler to a work
-
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: eeb720fb21d6 (usb: dwc3: gadget: add support for SG lists)
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   52 ++++++++++++++++++--------------
- drivers/infiniband/ulp/isert/ib_isert.h |    2 -
- 2 files changed, 31 insertions(+), 23 deletions(-)
+ drivers/usb/dwc3/gadget.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -671,6 +671,9 @@ isert_connected_handler(struct rdma_cm_i
- {
- 	struct isert_conn *isert_conn = cma_id->context;
- 
-+	pr_info("conn %p\n", isert_conn);
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -900,6 +900,9 @@ static void dwc3_prepare_trbs(struct dwc
+ 				if (last_one)
+ 					break;
+ 			}
 +
-+	isert_conn->state = ISER_CONN_UP;
- 	kref_get(&isert_conn->conn_kref);
- }
- 
-@@ -697,8 +700,9 @@ isert_put_conn(struct isert_conn *isert_
-  * @isert_conn: isert connection struct
-  *
-  * Notes:
-- * In case the connection state is UP, move state
-+ * In case the connection state is FULL_FEATURE, move state
-  * to TEMINATING and start teardown sequence (rdma_disconnect).
-+ * In case the connection state is UP, complete flush as well.
-  *
-  * This routine must be called with conn_mutex held. Thus it is
-  * safe to call multiple times.
-@@ -708,32 +712,31 @@ isert_conn_terminate(struct isert_conn *
- {
- 	int err;
- 
--	if (isert_conn->state == ISER_CONN_UP) {
--		isert_conn->state = ISER_CONN_TERMINATING;
-+	switch (isert_conn->state) {
-+	case ISER_CONN_TERMINATING:
-+		break;
-+	case ISER_CONN_UP:
-+		/*
-+		 * No flush completions will occur as we didn't
-+		 * get to ISER_CONN_FULL_FEATURE yet, complete
-+		 * to allow teardown progress.
-+		 */
-+		complete(&isert_conn->conn_wait_comp_err);
-+	case ISER_CONN_FULL_FEATURE: /* FALLTHRU */
- 		pr_info("Terminating conn %p state %d\n",
- 			   isert_conn, isert_conn->state);
-+		isert_conn->state = ISER_CONN_TERMINATING;
- 		err = rdma_disconnect(isert_conn->conn_cm_id);
- 		if (err)
- 			pr_warn("Failed rdma_disconnect isert_conn %p\n",
- 				   isert_conn);
-+		break;
-+	default:
-+		pr_warn("conn %p teminating in state %d\n",
-+			   isert_conn, isert_conn->state);
- 	}
- }
- 
--static void
--isert_disconnect_work(struct work_struct *work)
--{
--	struct isert_conn *isert_conn = container_of(work,
--				struct isert_conn, conn_logout_work);
--
--	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
--	mutex_lock(&isert_conn->conn_mutex);
--	isert_conn_terminate(isert_conn);
--	mutex_unlock(&isert_conn->conn_mutex);
--
--	pr_info("conn %p completing conn_wait\n", isert_conn);
--	complete(&isert_conn->conn_wait);
--}
--
- static int
- isert_disconnected_handler(struct rdma_cm_id *cma_id)
- {
-@@ -748,8 +751,12 @@ isert_disconnected_handler(struct rdma_c
- 
- 	isert_conn = (struct isert_conn *)cma_id->context;
- 
--	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
--	schedule_work(&isert_conn->conn_logout_work);
-+	mutex_lock(&isert_conn->conn_mutex);
-+	isert_conn_terminate(isert_conn);
-+	mutex_unlock(&isert_conn->conn_mutex);
-+
-+	pr_info("conn %p completing conn_wait\n", isert_conn);
-+	complete(&isert_conn->conn_wait);
- 
- 	return 0;
- }
-@@ -924,7 +931,7 @@ isert_init_send_wr(struct isert_conn *is
- 	 * bit for every ISERT_COMP_BATCH_COUNT number of ib_post_send() calls.
- 	 */
- 	mutex_lock(&isert_conn->conn_mutex);
--	if (coalesce && isert_conn->state == ISER_CONN_UP &&
-+	if (coalesce && isert_conn->state == ISER_CONN_FULL_FEATURE &&
- 	    ++isert_conn->conn_comp_batch < ISERT_COMP_BATCH_COUNT) {
- 		tx_desc->llnode_active = true;
- 		llist_add(&tx_desc->comp_llnode, &isert_conn->conn_comp_llist);
-@@ -1021,7 +1028,8 @@ isert_put_login_tx(struct iscsi_conn *co
- 			if (ret)
- 				return ret;
- 
--			isert_conn->state = ISER_CONN_UP;
-+			/* Now we are in FULL_FEATURE phase */
-+			isert_conn->state = ISER_CONN_FULL_FEATURE;
- 			goto post_send;
- 		}
- 
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -23,6 +23,7 @@ enum iser_ib_op_code {
- enum iser_conn_state {
- 	ISER_CONN_INIT,
- 	ISER_CONN_UP,
-+	ISER_CONN_FULL_FEATURE,
- 	ISER_CONN_TERMINATING,
- 	ISER_CONN_DOWN,
- };
-@@ -115,7 +116,6 @@ struct isert_conn {
- 	struct ib_mr		*conn_mr;
- 	struct ib_qp		*conn_qp;
- 	struct isert_device	*conn_device;
--	struct work_struct	conn_logout_work;
- 	struct mutex		conn_mutex;
- 	struct completion	conn_wait;
- 	struct completion	conn_wait_comp_err;
++			if (last_one)
++				break;
+ 		} else {
+ 			dma = req->request.dma;
+ 			length = req->request.length;
 
 
