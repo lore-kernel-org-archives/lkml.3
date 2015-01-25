@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483AbbAYTBL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:01:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57780 "EHLO
+	id S1758779AbbAYS6P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:58:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755496AbbAYSJi (ORCPT
+	with ESMTP id S1755539AbbAYSJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:38 -0500
+	Sun, 25 Jan 2015 13:09:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maor Gottlieb <maorg@mellanox.com>, Matan Barak <matanb@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 020/183] net/mlx4_core: Correcly update the mtts offset in the MR re-reg flow
-Date: Sun, 25 Jan 2015 10:05:42 -0800
-Message-Id: <20150125180811.053924219@linuxfoundation.org>
+Subject: [PATCH 3.18 021/183] tcp: Do not apply TSO segment limit to non-TSO packets
+Date: Sun, 25 Jan 2015 10:05:43 -0800
+Message-Id: <20150125180811.092750599@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -30,55 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maor Gottlieb <maorg@mellanox.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-[ Upstream commit a51e0df4c1e06afd7aba84496c14238e6b363caa ]
+[ Upstream commit 843925f33fcc293d80acf2c5c8a78adf3344d49b ]
 
-Previously, mlx4_mt_rereg_write filled the MPT's entity_size with the
-old MTT's page shift, which could result in using an incorrect offset.
-Fix the initialization to be after we calculate the new MTT offset.
+Thomas Jarosch reported IPsec TCP stalls when a PMTU event occurs.
 
-In addition, assign mtt order to -1 after calling mlx4_mtt_cleanup. This
-is necessary in order to mark the MTT as invalid and avoid freeing it later.
+In fact the problem was completely unrelated to IPsec.  The bug is
+also reproducible if you just disable TSO/GSO.
 
-Fixes: e630664 ('mlx4_core: Add helper functions to support MR re-registration')
-Signed-off-by: Maor Gottlieb <maorg@mellanox.com>
-Signed-off-by: Matan Barak <matanb@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+The problem is that when the MSS goes down, existing queued packet
+on the TX queue that have not been transmitted yet all look like
+TSO packets and get treated as such.
+
+This then triggers a bug where tcp_mss_split_point tells us to
+generate a zero-sized packet on the TX queue.  Once that happens
+we're screwed because the zero-sized packet can never be removed
+by ACKs.
+
+Fixes: 1485348d242 ("tcp: Apply device TSO segment limit earlier")
+Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+
+Cheers,
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/mr.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ net/ipv4/tcp_output.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/mr.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/mr.c
-@@ -590,6 +590,7 @@ EXPORT_SYMBOL_GPL(mlx4_mr_free);
- void mlx4_mr_rereg_mem_cleanup(struct mlx4_dev *dev, struct mlx4_mr *mr)
- {
- 	mlx4_mtt_cleanup(dev, &mr->mtt);
-+	mr->mtt.order = -1;
- }
- EXPORT_SYMBOL_GPL(mlx4_mr_rereg_mem_cleanup);
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1984,7 +1984,7 @@ static bool tcp_write_xmit(struct sock *
+ 		if (unlikely(!tcp_snd_wnd_test(tp, skb, mss_now)))
+ 			break;
  
-@@ -599,14 +600,14 @@ int mlx4_mr_rereg_mem_write(struct mlx4_
- {
- 	int err;
+-		if (tso_segs == 1) {
++		if (tso_segs == 1 || !sk->sk_gso_max_segs) {
+ 			if (unlikely(!tcp_nagle_test(tp, skb, mss_now,
+ 						     (tcp_skb_is_last(sk, skb) ?
+ 						      nonagle : TCP_NAGLE_PUSH))))
+@@ -2020,7 +2020,7 @@ static bool tcp_write_xmit(struct sock *
+ 		}
  
--	mpt_entry->start       = cpu_to_be64(iova);
--	mpt_entry->length      = cpu_to_be64(size);
--	mpt_entry->entity_size = cpu_to_be32(page_shift);
--
- 	err = mlx4_mtt_init(dev, npages, page_shift, &mr->mtt);
- 	if (err)
- 		return err;
- 
-+	mpt_entry->start       = cpu_to_be64(mr->iova);
-+	mpt_entry->length      = cpu_to_be64(mr->size);
-+	mpt_entry->entity_size = cpu_to_be32(mr->mtt.page_shift);
-+
- 	mpt_entry->pd_flags &= cpu_to_be32(MLX4_MPT_PD_MASK |
- 					   MLX4_MPT_PD_FLAG_EN_INV);
- 	mpt_entry->flags    &= cpu_to_be32(MLX4_MPT_FLAG_FREE |
+ 		limit = mss_now;
+-		if (tso_segs > 1 && !tcp_urg_mode(tp))
++		if (tso_segs > 1 && sk->sk_gso_max_segs && !tcp_urg_mode(tp))
+ 			limit = tcp_mss_split_point(sk, skb, mss_now,
+ 						    min_t(unsigned int,
+ 							  cwnd_quota,
 
 
