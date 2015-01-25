@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287AbbAYSK5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:10:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
+	id S1756292AbbAYSd4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:33:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463AbbAYSIs (ORCPT
+	with ESMTP id S1755977AbbAYSKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:48 -0500
+	Sun, 25 Jan 2015 13:10:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bruce Fields <bfields@fieldses.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 45/50] LOCKD: Fix a race when initialising nlmsvc_timeout
+        Hans Holmberg <hans.holmberg@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.18 133/183] gpiolib: of: Correct error handling in of_get_named_gpiod_flags
 Date: Sun, 25 Jan 2015 10:07:35 -0800
-Message-Id: <20150125180705.167267043@linuxfoundation.org>
+Message-Id: <20150125180815.957413340@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,55 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Hans Holmberg <hans.holmberg@intel.com>
 
-commit 06bed7d18c2c07b3e3eeadf4bd357f6e806618cc upstream.
+commit 7b8792bbdffdff3abda704f89c6a45ea97afdc62 upstream.
 
-This commit fixes a race whereby nlmclnt_init() first starts the lockd
-daemon, and then calls nlm_bind_host() with the expectation that
-nlmsvc_timeout has already been initialised. Unfortunately, there is no
-no synchronisation between lockd() and lockd_up() to guarantee that this
-is the case.
+of_get_named_gpiod_flags fails with -EPROBE_DEFER in cases
+where the gpio chip is available and the GPIO translation fails.
 
-Fix is to move the initialisation of nlmsvc_timeout into lockd_create_svc
+This causes drivers to be re-probed erroneusly, and hides the
+real problem(i.e. the GPIO number being out of range).
 
-Fixes: 9a1b6bf818e74 ("LOCKD: Don't call utsname()->nodename...")
-Cc: Bruce Fields <bfields@fieldses.org>
-Cc: stable@vger.kernel.org # 3.10.x
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Hans Holmberg <hans.holmberg@intel.com>
+Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/svc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpio/gpiolib-of.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/fs/lockd/svc.c
-+++ b/fs/lockd/svc.c
-@@ -137,10 +137,6 @@ lockd(void *vrqstp)
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -45,8 +45,14 @@ static int of_gpiochip_find_and_xlate(st
+ 		return false;
  
- 	dprintk("NFS locking service started (ver " LOCKD_VERSION ").\n");
+ 	ret = gc->of_xlate(gc, &gg_data->gpiospec, gg_data->flags);
+-	if (ret < 0)
+-		return false;
++	if (ret < 0) {
++		/* We've found the gpio chip, but the translation failed.
++		 * Return true to stop looking and return the translation
++		 * error via out_gpio
++		 */
++		gg_data->out_gpio = ERR_PTR(ret);
++		return true;
++	 }
  
--	if (!nlm_timeout)
--		nlm_timeout = LOCKD_DFLT_TIMEO;
--	nlmsvc_timeout = nlm_timeout * HZ;
--
- 	/*
- 	 * The main request loop. We don't terminate until the last
- 	 * NFS mount or NFS daemon has gone away.
-@@ -346,6 +342,10 @@ static struct svc_serv *lockd_create_svc
- 		printk(KERN_WARNING
- 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
- 
-+	if (!nlm_timeout)
-+		nlm_timeout = LOCKD_DFLT_TIMEO;
-+	nlmsvc_timeout = nlm_timeout * HZ;
-+
- 	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
- 	if (!serv) {
- 		printk(KERN_WARNING "lockd_up: create service failed\n");
+ 	gg_data->out_gpio = gpiochip_get_desc(gc, ret);
+ 	return true;
 
 
