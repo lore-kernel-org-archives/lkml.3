@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758442AbbAYSrP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:47:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57941 "EHLO
+	id S1759622AbbAYTYv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:24:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776AbbAYSKC (ORCPT
+	with ESMTP id S1754815AbbAYSJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:02 -0500
+	Sun, 25 Jan 2015 13:09:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH 3.18 086/183] clk: samsung: Fix double add of syscore ops after driver rebind
+        Arik Nemtsov <arikx.nemtsov@intel.com>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 30/98] cfg80211: avoid mem leak on driver hint set
 Date: Sun, 25 Jan 2015 10:06:48 -0800
-Message-Id: <20150125180813.922651609@linuxfoundation.org>
+Message-Id: <20150125180714.177278756@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,64 +26,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Arik Nemtsov <arik@wizery.com>
 
-commit c31844ffdbd4e73a16c66e9d7df8ec290ab4b159 upstream.
+commit 34f05f543f02350e920bddb7660ffdd4697aaf60 upstream.
 
-During driver unbind the syscore ops were not unregistered which lead to
-double add on syscore list:
+In the already-set and intersect case of a driver-hint, the previous
+wiphy regdomain was not freed before being reset with a copy of the
+cfg80211 regdomain.
 
-$ echo "3810000.audss-clock-controller" > /sys/bus/platform/drivers/exynos-audss-clk/unbind
-$ echo "3810000.audss-clock-controller" > /sys/bus/platform/drivers/exynos-audss-clk/bind
-[ 1463.044061] ------------[ cut here ]------------
-[ 1463.047255] WARNING: CPU: 0 PID: 1 at lib/list_debug.c:36 __list_add+0x8c/0xc0()
-[ 1463.054613] list_add double add: new=c06e52c0, prev=c06e52c0, next=c06d5f84.
-[ 1463.061625] Modules linked in:
-[ 1463.064623] CPU: 0 PID: 1 Comm: bash Tainted: G        W      3.18.0-rc5-next-20141121-00005-ga8fab06eab42-dirty #1022
-[ 1463.075338] [<c0014e2c>] (unwind_backtrace) from [<c0011d80>] (show_stack+0x10/0x14)
-[ 1463.083046] [<c0011d80>] (show_stack) from [<c048bb70>] (dump_stack+0x70/0xbc)
-[ 1463.090236] [<c048bb70>] (dump_stack) from [<c00233d4>] (warn_slowpath_common+0x74/0xb0)
-[ 1463.098295] [<c00233d4>] (warn_slowpath_common) from [<c00234a4>] (warn_slowpath_fmt+0x30/0x40)
-[ 1463.106962] [<c00234a4>] (warn_slowpath_fmt) from [<c020fe80>] (__list_add+0x8c/0xc0)
-[ 1463.114760] [<c020fe80>] (__list_add) from [<c0282094>] (register_syscore_ops+0x30/0x3c)
-[ 1463.122819] [<c0282094>] (register_syscore_ops) from [<c0392f20>] (exynos_audss_clk_probe+0x36c/0x460)
-[ 1463.132091] [<c0392f20>] (exynos_audss_clk_probe) from [<c0283084>] (platform_drv_probe+0x48/0xa4)
-[ 1463.141013] [<c0283084>] (platform_drv_probe) from [<c0281a14>] (driver_probe_device+0x13c/0x37c)
-[ 1463.149852] [<c0281a14>] (driver_probe_device) from [<c0280560>] (bind_store+0x90/0xe0)
-[ 1463.157822] [<c0280560>] (bind_store) from [<c027fd10>] (drv_attr_store+0x20/0x2c)
-[ 1463.165363] [<c027fd10>] (drv_attr_store) from [<c0143898>] (sysfs_kf_write+0x4c/0x50)
-[ 1463.173252] [<c0143898>] (sysfs_kf_write) from [<c0142c80>] (kernfs_fop_write+0xbc/0x198)
-[ 1463.181395] [<c0142c80>] (kernfs_fop_write) from [<c00e2be0>] (vfs_write+0xa0/0x1a8)
-[ 1463.189104] [<c00e2be0>] (vfs_write) from [<c00e2f00>] (SyS_write+0x40/0x8c)
-[ 1463.196122] [<c00e2f00>] (SyS_write) from [<c000f2a0>] (ret_fast_syscall+0x0/0x48)
-[ 1463.203655] ---[ end trace 08f6710c9bc8d8f3 ]---
-[ 1463.208244] exynos-audss-clk 3810000.audss-clock-controller: setup completed
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 1241ef94ccc3 ("clk: samsung: register audio subsystem clocks using common clock framework")
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
+Acked-by: Luis R. Rodriguez <mcgrof@suse.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/samsung/clk-exynos-audss.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/wireless/reg.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -210,6 +210,10 @@ static int exynos_audss_clk_remove(struc
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -1547,7 +1547,7 @@ static enum reg_request_treatment
+ reg_process_hint_driver(struct wiphy *wiphy,
+ 			struct regulatory_request *driver_request)
  {
- 	int i;
+-	const struct ieee80211_regdomain *regd;
++	const struct ieee80211_regdomain *regd, *tmp;
+ 	enum reg_request_treatment treatment;
  
-+#ifdef CONFIG_PM_SLEEP
-+	unregister_syscore_ops(&exynos_audss_clk_syscore_ops);
-+#endif
+ 	treatment = __reg_process_hint_driver(driver_request);
+@@ -1566,7 +1566,10 @@ reg_process_hint_driver(struct wiphy *wi
+ 			kfree(driver_request);
+ 			return REG_REQ_IGNORE;
+ 		}
 +
- 	of_clk_del_provider(pdev->dev.of_node);
++		tmp = get_wiphy_regdom(wiphy);
+ 		rcu_assign_pointer(wiphy->regd, regd);
++		rcu_free_regdom(tmp);
+ 	}
  
- 	for (i = 0; i < clk_data.clk_num; i++) {
+ 
 
 
