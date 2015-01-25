@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758506AbbAYSrZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:47:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57908 "EHLO
+	id S1758490AbbAYSrX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:47:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754AbbAYSKB (ORCPT
+	with ESMTP id S1755760AbbAYSKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:10:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>,
         Tomas Henzl <thenzl@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.18 081/183] Revert "[SCSI] mpt2sas: Remove phys on topology change."
-Date: Sun, 25 Jan 2015 10:06:43 -0800
-Message-Id: <20150125180813.702657026@linuxfoundation.org>
+Subject: [PATCH 3.18 082/183] Revert "[SCSI] mpt3sas: Remove phys on topology change"
+Date: Sun, 25 Jan 2015 10:06:44 -0800
+Message-Id: <20150125180813.749816096@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -31,12 +31,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 
-commit 81a89c2d891b78695aa7e4cc0d5a7427785ae078 upstream.
+commit 2311ce4d9c91ed63a46e18f0378f3e406e7e888e upstream.
 
-This reverts commit 3520f9c779bed098ca76dd3fb6377264301d57ed
-("mpt2sas: Remove phys on topology change")
+This reverts commit 963ba22b90a955363644cd397b20226928eab976
+("mpt3sas: Remove phys on topology change")
 
-Reverting the previous mpt2sas drives patch changes,
+Reverting the previous mpt3sas drives patch changes,
 since we will observe below issue
 
 Issue:
@@ -52,24 +52,24 @@ Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_transport.c |    5 +----
+ drivers/scsi/mpt3sas/mpt3sas_transport.c |    5 +----
  1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -1006,12 +1006,9 @@ mpt2sas_transport_update_links(struct MP
- 		    &mpt2sas_phy->remote_identify);
+--- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
+@@ -1003,12 +1003,9 @@ mpt3sas_transport_update_links(struct MP
+ 		    &mpt3sas_phy->remote_identify);
  		_transport_add_phy_to_an_existing_port(ioc, sas_node,
- 		    mpt2sas_phy, mpt2sas_phy->remote_identify.sas_address);
+ 		    mpt3sas_phy, mpt3sas_phy->remote_identify.sas_address);
 -	} else {
 +	} else
- 		memset(&mpt2sas_phy->remote_identify, 0 , sizeof(struct
+ 		memset(&mpt3sas_phy->remote_identify, 0 , sizeof(struct
  		    sas_identify));
 -		_transport_del_phy_from_an_existing_port(ioc, sas_node,
--		    mpt2sas_phy);
+-		    mpt3sas_phy);
 -	}
  
- 	if (mpt2sas_phy->phy)
- 		mpt2sas_phy->phy->negotiated_linkrate =
+ 	if (mpt3sas_phy->phy)
+ 		mpt3sas_phy->phy->negotiated_linkrate =
 
 
