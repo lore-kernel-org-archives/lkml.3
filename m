@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906AbbAYSiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:38:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57896 "EHLO
+	id S1757108AbbAYTJi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:09:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918AbbAYSKR (ORCPT
+	with ESMTP id S1755309AbbAYSJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:17 -0500
+	Sun, 25 Jan 2015 13:09:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 120/183] drivers: net: cpsw: fix multicast flush in dual emac mode
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 64/98] USB: console: fix uninitialised ldisc semaphore
 Date: Sun, 25 Jan 2015 10:07:22 -0800
-Message-Id: <20150125180815.397533774@linuxfoundation.org>
+Message-Id: <20150125180715.634425453@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,102 +24,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 25906052d953d3fbdb7e19480b9de5e6bb949f3f upstream.
+commit d269d4434c72ed0da3a9b1230c30da82c4918c63 upstream.
 
-Since ALE table is a common resource for both the interfaces in Dual EMAC
-mode and while bringing up the second interface in cpsw_ndo_set_rx_mode()
-all the multicast entries added by the first interface is flushed out and
-only second interface multicast addresses are added. Fixing this by
-flushing multicast addresses based on dual EMAC port vlans which will not
-affect the other emac port multicast addresses.
+The USB console currently allocates a temporary fake tty which is used
+to pass terminal settings to the underlying serial driver.
 
-Fixes: d9ba8f9 (driver: net: ethernet: cpsw: dual emac interface implementation)
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The tty struct is not fully initialised, something which can lead to a
+lockdep warning (or worse) if a serial driver tries to acquire a
+line-discipline reference:
+
+	usbserial: USB Serial support registered for pl2303
+	pl2303 1-2.1:1.0: pl2303 converter detected
+	usb 1-2.1: pl2303 converter now attached to ttyUSB0
+	INFO: trying to register non-static key.
+	the code is fine but needs lockdep annotation.
+	turning off the locking correctness validator.
+	CPU: 0 PID: 68 Comm: udevd Tainted: G        W      3.18.0-rc5 #10
+	[<c0016f04>] (unwind_backtrace) from [<c0013978>] (show_stack+0x20/0x24)
+	[<c0013978>] (show_stack) from [<c0449794>] (dump_stack+0x24/0x28)
+	[<c0449794>] (dump_stack) from [<c006f730>] (__lock_acquire+0x1e50/0x2004)
+	[<c006f730>] (__lock_acquire) from [<c0070128>] (lock_acquire+0xe4/0x18c)
+	[<c0070128>] (lock_acquire) from [<c027c6f8>] (ldsem_down_read_trylock+0x78/0x90)
+	[<c027c6f8>] (ldsem_down_read_trylock) from [<c027a1cc>] (tty_ldisc_ref+0x24/0x58)
+	[<c027a1cc>] (tty_ldisc_ref) from [<c0340760>] (usb_serial_handle_dcd_change+0x48/0xe8)
+	[<c0340760>] (usb_serial_handle_dcd_change) from [<bf000484>] (pl2303_read_int_callback+0x210/0x220 [pl2303])
+	[<bf000484>] (pl2303_read_int_callback [pl2303]) from [<c031624c>] (__usb_hcd_giveback_urb+0x80/0x140)
+	[<c031624c>] (__usb_hcd_giveback_urb) from [<c0316fc0>] (usb_giveback_urb_bh+0x98/0xd4)
+	[<c0316fc0>] (usb_giveback_urb_bh) from [<c0042e44>] (tasklet_hi_action+0x9c/0x108)
+	[<c0042e44>] (tasklet_hi_action) from [<c0042380>] (__do_softirq+0x148/0x42c)
+	[<c0042380>] (__do_softirq) from [<c00429cc>] (irq_exit+0xd8/0x114)
+	[<c00429cc>] (irq_exit) from [<c007ae58>] (__handle_domain_irq+0x84/0xdc)
+	[<c007ae58>] (__handle_domain_irq) from [<c000879c>] (omap_intc_handle_irq+0xd8/0xe0)
+	[<c000879c>] (omap_intc_handle_irq) from [<c0014544>] (__irq_svc+0x44/0x7c)
+	Exception stack(0xdf4e7f08 to 0xdf4e7f50)
+	7f00:                   debc0b80 df4e7f5c 00000000 00000000 debc0b80 be8da96c
+	7f20: 00000000 00000128 c000fc84 df4e6000 00000000 df4e7f94 00000004 df4e7f50
+	7f40: c038ebc0 c038d74c 600f0013 ffffffff
+	[<c0014544>] (__irq_svc) from [<c038d74c>] (___sys_sendmsg.part.29+0x0/0x2e0)
+	[<c038d74c>] (___sys_sendmsg.part.29) from [<c038ec08>] (SyS_sendmsg+0x18/0x1c)
+	[<c038ec08>] (SyS_sendmsg) from [<c000fa00>] (ret_fast_syscall+0x0/0x48)
+	console [ttyUSB0] enabled
+
+Fixes: 36697529b5bb ("tty: Replace ldisc locking with ldisc_sem")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ti/cpsw.c     |   11 +++++++++--
- drivers/net/ethernet/ti/cpsw_ale.c |   10 +++++++++-
- drivers/net/ethernet/ti/cpsw_ale.h |    2 +-
- 3 files changed, 19 insertions(+), 4 deletions(-)
+ drivers/usb/serial/console.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -610,7 +610,7 @@ static void cpsw_set_promiscious(struct
- 
- 			/* Clear all mcast from ALE */
- 			cpsw_ale_flush_multicast(ale, ALE_ALL_PORTS <<
--						 priv->host_port);
-+						 priv->host_port, -1);
- 
- 			/* Flood All Unicast Packets to Host port */
- 			cpsw_ale_control_set(ale, 0, ALE_P0_UNI_FLOOD, 1);
-@@ -634,6 +634,12 @@ static void cpsw_set_promiscious(struct
- static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
- {
- 	struct cpsw_priv *priv = netdev_priv(ndev);
-+	int vid;
-+
-+	if (priv->data.dual_emac)
-+		vid = priv->slaves[priv->emac_port].port_vlan;
-+	else
-+		vid = priv->data.default_vlan;
- 
- 	if (ndev->flags & IFF_PROMISC) {
- 		/* Enable promiscuous mode */
-@@ -649,7 +655,8 @@ static void cpsw_ndo_set_rx_mode(struct
- 	cpsw_ale_set_allmulti(priv->ale, priv->ndev->flags & IFF_ALLMULTI);
- 
- 	/* Clear all mcast from ALE */
--	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port);
-+	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port,
-+				 vid);
- 
- 	if (!netdev_mc_empty(ndev)) {
- 		struct netdev_hw_addr *ha;
---- a/drivers/net/ethernet/ti/cpsw_ale.c
-+++ b/drivers/net/ethernet/ti/cpsw_ale.c
-@@ -234,7 +234,7 @@ static void cpsw_ale_flush_mcast(struct
- 		cpsw_ale_set_entry_type(ale_entry, ALE_TYPE_FREE);
- }
- 
--int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
-+int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid)
- {
- 	u32 ale_entry[ALE_ENTRY_WORDS];
- 	int ret, idx;
-@@ -245,6 +245,14 @@ int cpsw_ale_flush_multicast(struct cpsw
- 		if (ret != ALE_TYPE_ADDR && ret != ALE_TYPE_VLAN_ADDR)
- 			continue;
- 
-+		/* if vid passed is -1 then remove all multicast entry from
-+		 * the table irrespective of vlan id, if a valid vlan id is
-+		 * passed then remove only multicast added to that vlan id.
-+		 * if vlan id doesn't match then move on to next entry.
-+		 */
-+		if (vid != -1 && cpsw_ale_get_vlan_id(ale_entry) != vid)
-+			continue;
-+
- 		if (cpsw_ale_get_mcast(ale_entry)) {
- 			u8 addr[6];
- 
---- a/drivers/net/ethernet/ti/cpsw_ale.h
-+++ b/drivers/net/ethernet/ti/cpsw_ale.h
-@@ -92,7 +92,7 @@ void cpsw_ale_stop(struct cpsw_ale *ale)
- 
- int cpsw_ale_set_ageout(struct cpsw_ale *ale, int ageout);
- int cpsw_ale_flush(struct cpsw_ale *ale, int port_mask);
--int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask);
-+int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid);
- int cpsw_ale_add_ucast(struct cpsw_ale *ale, u8 *addr, int port,
- 		       int flags, u16 vid);
- int cpsw_ale_del_ucast(struct cpsw_ale *ale, u8 *addr, int port,
+--- a/drivers/usb/serial/console.c
++++ b/drivers/usb/serial/console.c
+@@ -140,6 +140,7 @@ static int usb_console_setup(struct cons
+ 			tty_port_tty_set(&port->port, tty);
+ 			tty->driver = usb_serial_tty_driver;
+ 			tty->index = co->index;
++			init_ldsem(&tty->ldisc_sem);
+ 			if (tty_init_termios(tty)) {
+ 				retval = -ENOMEM;
+ 				goto free_tty;
 
 
