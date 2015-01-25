@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759713AbbAYT2U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:28:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57415 "EHLO
+	id S932556AbbAYSxv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:53:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670AbbAYSI5 (ORCPT
+	with ESMTP id S1754267AbbAYSJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:57 -0500
+	Sun, 25 Jan 2015 13:09:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>
-Subject: [PATCH 3.14 02/98] netlink: Always copy on mmap TX.
-Date: Sun, 25 Jan 2015 10:06:20 -0800
-Message-Id: <20150125180712.966918908@linuxfoundation.org>
+        Arik Nemtsov <arikx.nemtsov@intel.com>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.18 059/183] cfg80211: avoid mem leak on driver hint set
+Date: Sun, 25 Jan 2015 10:06:21 -0800
+Message-Id: <20150125180812.747492119@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,131 +26,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Miller <davem@davemloft.net>
+From: Arik Nemtsov <arik@wizery.com>
 
-[ Upstream commit 4682a0358639b29cf69437ed909c6221f8c89847 ]
+commit 34f05f543f02350e920bddb7660ffdd4697aaf60 upstream.
 
-Checking the file f_count and the nlk->mapped count is not completely
-sufficient to prevent the mmap'd area contents from changing from
-under us during netlink mmap sendmsg() operations.
+In the already-set and intersect case of a driver-hint, the previous
+wiphy regdomain was not freed before being reset with a copy of the
+cfg80211 regdomain.
 
-Be careful to sample the header's length field only once, because this
-could change from under us as well.
-
-Fixes: 5fd96123ee19 ("netlink: implement memory mapped sendmsg()")
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
+Acked-by: Luis R. Rodriguez <mcgrof@suse.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/netlink/af_netlink.c |   52 ++++++++++++++---------------------------------
- 1 file changed, 16 insertions(+), 36 deletions(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -510,14 +510,14 @@ out:
- 	return err;
- }
- 
--static void netlink_frame_flush_dcache(const struct nl_mmap_hdr *hdr)
-+static void netlink_frame_flush_dcache(const struct nl_mmap_hdr *hdr, unsigned int nm_len)
+---
+ net/wireless/reg.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -1760,7 +1760,7 @@ static enum reg_request_treatment
+ reg_process_hint_driver(struct wiphy *wiphy,
+ 			struct regulatory_request *driver_request)
  {
- #if ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE == 1
- 	struct page *p_start, *p_end;
+-	const struct ieee80211_regdomain *regd;
++	const struct ieee80211_regdomain *regd, *tmp;
+ 	enum reg_request_treatment treatment;
  
- 	/* First page is flushed through netlink_{get,set}_status */
- 	p_start = pgvec_to_page(hdr + PAGE_SIZE);
--	p_end   = pgvec_to_page((void *)hdr + NL_MMAP_HDRLEN + hdr->nm_len - 1);
-+	p_end   = pgvec_to_page((void *)hdr + NL_MMAP_HDRLEN + nm_len - 1);
- 	while (p_start <= p_end) {
- 		flush_dcache_page(p_start);
- 		p_start++;
-@@ -699,24 +699,16 @@ static int netlink_mmap_sendmsg(struct s
- 	struct nl_mmap_hdr *hdr;
- 	struct sk_buff *skb;
- 	unsigned int maxlen;
--	bool excl = true;
- 	int err = 0, len = 0;
- 
--	/* Netlink messages are validated by the receiver before processing.
--	 * In order to avoid userspace changing the contents of the message
--	 * after validation, the socket and the ring may only be used by a
--	 * single process, otherwise we fall back to copying.
--	 */
--	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
--	    atomic_read(&nlk->mapped) > 1)
--		excl = false;
--
- 	mutex_lock(&nlk->pg_vec_lock);
- 
- 	ring   = &nlk->tx_ring;
- 	maxlen = ring->frame_size - NL_MMAP_HDRLEN;
- 
- 	do {
-+		unsigned int nm_len;
+ 	treatment = __reg_process_hint_driver(driver_request);
+@@ -1780,7 +1780,10 @@ reg_process_hint_driver(struct wiphy *wi
+ 			reg_free_request(driver_request);
+ 			return REG_REQ_IGNORE;
+ 		}
 +
- 		hdr = netlink_current_frame(ring, NL_MMAP_STATUS_VALID);
- 		if (hdr == NULL) {
- 			if (!(msg->msg_flags & MSG_DONTWAIT) &&
-@@ -724,35 +716,23 @@ static int netlink_mmap_sendmsg(struct s
- 				schedule();
- 			continue;
- 		}
--		if (hdr->nm_len > maxlen) {
-+
-+		nm_len = ACCESS_ONCE(hdr->nm_len);
-+		if (nm_len > maxlen) {
- 			err = -EINVAL;
- 			goto out;
- 		}
++		tmp = get_wiphy_regdom(wiphy);
+ 		rcu_assign_pointer(wiphy->regd, regd);
++		rcu_free_regdom(tmp);
+ 	}
  
--		netlink_frame_flush_dcache(hdr);
-+		netlink_frame_flush_dcache(hdr, nm_len);
  
--		if (likely(dst_portid == 0 && dst_group == 0 && excl)) {
--			skb = alloc_skb_head(GFP_KERNEL);
--			if (skb == NULL) {
--				err = -ENOBUFS;
--				goto out;
--			}
--			sock_hold(sk);
--			netlink_ring_setup_skb(skb, sk, ring, hdr);
--			NETLINK_CB(skb).flags |= NETLINK_SKB_TX;
--			__skb_put(skb, hdr->nm_len);
--			netlink_set_status(hdr, NL_MMAP_STATUS_RESERVED);
--			atomic_inc(&ring->pending);
--		} else {
--			skb = alloc_skb(hdr->nm_len, GFP_KERNEL);
--			if (skb == NULL) {
--				err = -ENOBUFS;
--				goto out;
--			}
--			__skb_put(skb, hdr->nm_len);
--			memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, hdr->nm_len);
--			netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
-+		skb = alloc_skb(nm_len, GFP_KERNEL);
-+		if (skb == NULL) {
-+			err = -ENOBUFS;
-+			goto out;
- 		}
-+		__skb_put(skb, nm_len);
-+		memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, nm_len);
-+		netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
- 
- 		netlink_increment_head(ring);
- 
-@@ -798,7 +778,7 @@ static void netlink_queue_mmaped_skb(str
- 	hdr->nm_pid	= NETLINK_CB(skb).creds.pid;
- 	hdr->nm_uid	= from_kuid(sk_user_ns(sk), NETLINK_CB(skb).creds.uid);
- 	hdr->nm_gid	= from_kgid(sk_user_ns(sk), NETLINK_CB(skb).creds.gid);
--	netlink_frame_flush_dcache(hdr);
-+	netlink_frame_flush_dcache(hdr, hdr->nm_len);
- 	netlink_set_status(hdr, NL_MMAP_STATUS_VALID);
- 
- 	NETLINK_CB(skb).flags |= NETLINK_SKB_DELIVERED;
 
 
