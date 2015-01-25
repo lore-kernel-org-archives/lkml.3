@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614AbbAYSdw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:33:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58031 "EHLO
+	id S932810AbbAYTLt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:11:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755981AbbAYSKZ (ORCPT
+	with ESMTP id S1755254AbbAYSJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:25 -0500
+	Sun, 25 Jan 2015 13:09:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.18 134/183] gpio: crystalcove: use handle_nested_irq
+        Dan Carpenter <dan.carpenter@oracle.com>, Alain Knaff <alain@knaff.lu>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 78/98] decompress_bunzip2: off by one in get_next_block()
 Date: Sun, 25 Jan 2015 10:07:36 -0800
-Message-Id: <20150125180816.002694536@linuxfoundation.org>
+Message-Id: <20150125180716.244062231@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,70 +27,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit e733a2fb8cbcff0747108cb529ffb4e4a00465ac upstream.
+commit b5c8afe5be51078a979d86ae5ae78c4ac948063d upstream.
 
-The CrystalCove GPIO chip has can_sleep set so its demultiplexed irqs
-will have IRQ_NESTED_THREAD flag set, thus we should use the nested
-version handle_nested_irq in CrystalCove's irq handler instead of
-handle_generic_irq, or the following warning will be hit and the
-functionality is lost:
+"origPtr" is used as an offset into the bd->dbuf[] array.  That array is
+allocated in start_bunzip() and has "bd->dbufSize" number of elements so
+the test here should be >= instead of >.
 
-[ 4089.639554] Hardware name: ASUSTeK COMPUTER INC. T100TA/T100TA, BIOS T100TA.313 08/13/2014
-[ 4089.639564]  00000002 00000000 c24fbdf4 c16e0257 c24fbe38 c24fbe28 c105390c c18ec480
-[ 4089.639596]  c24fbe54 00000048 c18f8e3b 00000295 c10a60fc 00000295 c10a60fc f4464540
-[ 4089.639626]  f446459c c278ad40 c24fbe40 c1053974 00000009 c24fbe38 c18ec480 c24fbe54
-[ 4089.639656] Call Trace:
-[ 4089.639685]  [<c16e0257>] dump_stack+0x41/0x52
-[ 4089.639707]  [<c105390c>] warn_slowpath_common+0x8c/0xc0
-[ 4089.639727]  [<c10a60fc>] ? irq_nested_primary_handler+0x2c/0x30
-[ 4089.639744]  [<c10a60fc>] ? irq_nested_primary_handler+0x2c/0x30
-[ 4089.639763]  [<c1053974>] warn_slowpath_fmt+0x34/0x40
-[ 4089.639781]  [<c10a60fc>] irq_nested_primary_handler+0x2c/0x30
-[ 4089.639800]  [<c10a5c56>] handle_irq_event_percpu+0x76/0x190
-[ 4089.639818]  [<c1461570>] ? regmap_format_10_14_write+0x30/0x30
-[ 4089.639836]  [<c1464f4c>] ? _regmap_bus_raw_write+0x4c/0x70
-[ 4089.639854]  [<c10a5da1>] handle_irq_event+0x31/0x50
-[ 4089.639872]  [<c10a83eb>] handle_simple_irq+0x4b/0x70
-[ 4089.639889]  [<c10a5384>] generic_handle_irq+0x24/0x40
-[ 4089.639908]  [<c1366d87>] crystalcove_gpio_irq_handler+0xa7/0xc0
-[ 4089.639927]  [<c10a85a7>] handle_nested_irq+0x77/0x190
-[ 4089.639947]  [<c1469801>] regmap_irq_thread+0x1b1/0x360
-[ 4089.639966]  [<c10a6ae8>] irq_thread_fn+0x18/0x30
-[ 4089.639983]  [<c10a6906>] irq_thread+0xf6/0x110
-[ 4089.640001]  [<c10a6ad0>] ? irq_finalize_oneshot.part.30+0x1b0/0x1b0
-[ 4089.640019]  [<c10a6b50>] ? irq_forced_thread_fn+0x50/0x50
-[ 4089.640037]  [<c10a6810>] ? irq_thread_check_affinity+0xc0/0xc0
-[ 4089.640054]  [<c106f389>] kthread+0xa9/0xc0
-[ 4089.640074]  [<c16e6401>] ret_from_kernel_thread+0x21/0x30
-[ 4089.640091]  [<c106f2e0>] ? kthread_create_on_node+0x110/0x110
-[ 4089.640105] ---[ end trace dca7946ad31eba7d ]---
+Later we check "origPtr" again before using it as an offset so I don't
+know if this bug can be triggered in real life.
 
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=90521
-Reported-and-tested-by: Brian Loften <bloften80@gmail.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Fixes: bc22c17e12c1 ('bzip2/lzma: library support for gzip, bzip2 and lzma decompression')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Alain Knaff <alain@knaff.lu>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-crystalcove.c |    2 +-
+ lib/decompress_bunzip2.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpio/gpio-crystalcove.c
-+++ b/drivers/gpio/gpio-crystalcove.c
-@@ -272,7 +272,7 @@ static irqreturn_t crystalcove_gpio_irq_
- 	for (gpio = 0; gpio < CRYSTALCOVE_GPIO_NUM; gpio++) {
- 		if (pending & BIT(gpio)) {
- 			virq = irq_find_mapping(cg->chip.irqdomain, gpio);
--			generic_handle_irq(virq);
-+			handle_nested_irq(virq);
- 		}
- 	}
- 
+--- a/lib/decompress_bunzip2.c
++++ b/lib/decompress_bunzip2.c
+@@ -184,7 +184,7 @@ static int INIT get_next_block(struct bu
+ 	if (get_bits(bd, 1))
+ 		return RETVAL_OBSOLETE_INPUT;
+ 	origPtr = get_bits(bd, 24);
+-	if (origPtr > dbufSize)
++	if (origPtr >= dbufSize)
+ 		return RETVAL_DATA_ERROR;
+ 	/* mapping table: if some byte values are never used (encoding things
+ 	   like ascii text), the compression code removes the gaps to have fewer
 
 
