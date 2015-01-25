@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbbAYSuo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:50:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58031 "EHLO
+	id S1757399AbbAYSum (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:50:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704AbbAYSJ5 (ORCPT
+	with ESMTP id S1755708AbbAYSJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Slava Shwartsman <valyushash@gmail.com>,
         Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.18 075/183] iser-target: Handle ADDR_CHANGE event for listener cm_id
-Date: Sun, 25 Jan 2015 10:06:37 -0800
-Message-Id: <20150125180813.434019464@linuxfoundation.org>
+Subject: [PATCH 3.18 076/183] iser-target: Fix implicit termination of connections
+Date: Sun, 25 Jan 2015 10:06:38 -0800
+Message-Id: <20150125180813.482470724@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -32,20 +32,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sagi Grimberg <sagig@mellanox.com>
 
-commit ca6c1d82d12d8013fb75ce015900d62b9754623c upstream.
+commit b02efbfc9a051b41e71fe8f94ddf967260e024a6 upstream.
 
-The np listener cm_id will also get ADDR_CHANGE event
-upcall (in case it is bound to a specific IP). Handle
-it correctly by creating a new cm_id and implicitly
-destroy the old one.
+In situations such as bond failover, The new session establishment
+implicitly invokes the termination of the old connection.
 
-Since this is the second event a listener np cm_id may
-encounter, we move the np cm_id event handling to a
-routine.
+So, we don't want to wait for the old connection wait_conn to completely
+terminate before we accept the new connection and post a login response.
 
-Squashed:
+The solution is to deffer the comp_wait completion and the conn_put to
+a work so wait_conn will effectively be non-blocking (flush errors are
+assumed to come very fast).
 
-iser-target: Move cma_id setup to a function
+We allocate isert_release_wq with WQ_UNBOUND and WQ_UNBOUND_MAX_ACTIVE
+to spread the concurrency of release works.
 
 Reported-by: Slava Shwartsman <valyushash@gmail.com>
 Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
@@ -53,201 +53,102 @@ Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |  107 ++++++++++++++++++++++----------
+ drivers/infiniband/ulp/isert/ib_isert.c |   42 +++++++++++++++++++++++++-------
  drivers/infiniband/ulp/isert/ib_isert.h |    1 
- 2 files changed, 77 insertions(+), 31 deletions(-)
+ 2 files changed, 35 insertions(+), 8 deletions(-)
 
 --- a/drivers/infiniband/ulp/isert/ib_isert.c
 +++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -58,6 +58,7 @@ static int
- isert_rdma_post_recvl(struct isert_conn *isert_conn);
- static int
- isert_rdma_accept(struct isert_conn *isert_conn);
-+struct rdma_cm_id *isert_setup_id(struct isert_np *isert_np);
+@@ -41,6 +41,7 @@ static DEFINE_MUTEX(device_list_mutex);
+ static LIST_HEAD(device_list);
+ static struct workqueue_struct *isert_rx_wq;
+ static struct workqueue_struct *isert_comp_wq;
++static struct workqueue_struct *isert_release_wq;
  
  static void
- isert_qp_event_callback(struct ib_event *e, void *context)
-@@ -573,8 +574,8 @@ err:
- static int
- isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- {
--	struct iscsi_np *np = cma_id->context;
--	struct isert_np *isert_np = np->np_context;
-+	struct isert_np *isert_np = cma_id->context;
-+	struct iscsi_np *np = isert_np->np;
- 	struct isert_conn *isert_conn;
- 	struct isert_device *device;
- 	struct ib_device *ib_dev = cma_id->device;
-@@ -851,17 +852,41 @@ isert_conn_terminate(struct isert_conn *
+ isert_unmap_cmd(struct isert_cmd *isert_cmd, struct isert_conn *isert_conn);
+@@ -3326,6 +3327,24 @@ isert_free_np(struct iscsi_np *np)
+ 	kfree(isert_np);
  }
  
- static int
--isert_disconnected_handler(struct rdma_cm_id *cma_id)
-+isert_np_cma_handler(struct isert_np *isert_np,
-+		     enum rdma_cm_event_type event)
- {
--	struct iscsi_np *np = cma_id->context;
--	struct isert_np *isert_np = np->np_context;
--	struct isert_conn *isert_conn;
-+	pr_debug("isert np %p, handling event %d\n", isert_np, event);
- 
--	if (isert_np->np_cm_id == cma_id) {
-+	switch (event) {
-+	case RDMA_CM_EVENT_DEVICE_REMOVAL:
- 		isert_np->np_cm_id = NULL;
--		return -1;
-+		break;
-+	case RDMA_CM_EVENT_ADDR_CHANGE:
-+		isert_np->np_cm_id = isert_setup_id(isert_np);
-+		if (IS_ERR(isert_np->np_cm_id)) {
-+			pr_err("isert np %p setup id failed: %ld\n",
-+				 isert_np, PTR_ERR(isert_np->np_cm_id));
-+			isert_np->np_cm_id = NULL;
-+		}
-+		break;
-+	default:
-+		pr_err("isert np %p Unexpected event %d\n",
-+			  isert_np, event);
- 	}
- 
-+	return -1;
++static void isert_release_work(struct work_struct *work)
++{
++	struct isert_conn *isert_conn = container_of(work,
++						     struct isert_conn,
++						     release_work);
++
++	pr_info("Starting release conn %p\n", isert_conn);
++
++	wait_for_completion(&isert_conn->conn_wait);
++
++	mutex_lock(&isert_conn->conn_mutex);
++	isert_conn->state = ISER_CONN_DOWN;
++	mutex_unlock(&isert_conn->conn_mutex);
++
++	pr_info("Destroying conn %p\n", isert_conn);
++	isert_put_conn(isert_conn);
 +}
 +
-+static int
-+isert_disconnected_handler(struct rdma_cm_id *cma_id,
-+			   enum rdma_cm_event_type event)
-+{
-+	struct isert_np *isert_np = cma_id->context;
-+	struct isert_conn *isert_conn;
-+
-+	if (isert_np->np_cm_id == cma_id)
-+		return isert_np_cma_handler(cma_id->context, event);
-+
- 	isert_conn = cma_id->qp->qp_context;
+ static void isert_wait_conn(struct iscsi_conn *conn)
+ {
+ 	struct isert_conn *isert_conn = conn->context;
+@@ -3345,14 +3364,9 @@ static void isert_wait_conn(struct iscsi
+ 	mutex_unlock(&isert_conn->conn_mutex);
  
- 	mutex_lock(&isert_conn->conn_mutex);
-@@ -904,7 +929,7 @@ isert_cma_handler(struct rdma_cm_id *cma
- 	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
- 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
- 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
--		ret = isert_disconnected_handler(cma_id);
-+		ret = isert_disconnected_handler(cma_id, event->event);
- 		break;
- 	case RDMA_CM_EVENT_REJECTED:       /* FALLTHRU */
- 	case RDMA_CM_EVENT_UNREACHABLE:    /* FALLTHRU */
-@@ -3065,13 +3090,51 @@ isert_response_queue(struct iscsi_conn *
- 	return ret;
+ 	wait_for_completion(&isert_conn->conn_wait_comp_err);
+-	wait_for_completion(&isert_conn->conn_wait);
+-
+-	mutex_lock(&isert_conn->conn_mutex);
+-	isert_conn->state = ISER_CONN_DOWN;
+-	mutex_unlock(&isert_conn->conn_mutex);
+ 
+-	pr_info("Destroying conn %p\n", isert_conn);
+-	isert_put_conn(isert_conn);
++	INIT_WORK(&isert_conn->release_work, isert_release_work);
++	queue_work(isert_release_wq, &isert_conn->release_work);
  }
  
-+struct rdma_cm_id *
-+isert_setup_id(struct isert_np *isert_np)
-+{
-+	struct iscsi_np *np = isert_np->np;
-+	struct rdma_cm_id *id;
-+	struct sockaddr *sa;
-+	int ret;
-+
-+	sa = (struct sockaddr *)&np->np_sockaddr;
-+	pr_debug("ksockaddr: %p, sa: %p\n", &np->np_sockaddr, sa);
-+
-+	id = rdma_create_id(isert_cma_handler, isert_np,
-+			    RDMA_PS_TCP, IB_QPT_RC);
-+	if (IS_ERR(id)) {
-+		pr_err("rdma_create_id() failed: %ld\n", PTR_ERR(id));
-+		ret = PTR_ERR(id);
-+		goto out;
-+	}
-+	pr_debug("id %p context %p\n", id, id->context);
-+
-+	ret = rdma_bind_addr(id, sa);
-+	if (ret) {
-+		pr_err("rdma_bind_addr() failed: %d\n", ret);
-+		goto out_id;
-+	}
-+
-+	ret = rdma_listen(id, ISERT_RDMA_LISTEN_BACKLOG);
-+	if (ret) {
-+		pr_err("rdma_listen() failed: %d\n", ret);
-+		goto out_id;
-+	}
-+
-+	return id;
-+out_id:
-+	rdma_destroy_id(id);
-+out:
-+	return ERR_PTR(ret);
-+}
-+
- static int
- isert_setup_np(struct iscsi_np *np,
- 	       struct __kernel_sockaddr_storage *ksockaddr)
- {
- 	struct isert_np *isert_np;
- 	struct rdma_cm_id *isert_lid;
--	struct sockaddr *sa;
- 	int ret;
- 
- 	isert_np = kzalloc(sizeof(struct isert_np), GFP_KERNEL);
-@@ -3083,9 +3146,8 @@ isert_setup_np(struct iscsi_np *np,
- 	mutex_init(&isert_np->np_accept_mutex);
- 	INIT_LIST_HEAD(&isert_np->np_accept_list);
- 	init_completion(&isert_np->np_login_comp);
-+	isert_np->np = np;
- 
--	sa = (struct sockaddr *)ksockaddr;
--	pr_debug("ksockaddr: %p, sa: %p\n", ksockaddr, sa);
- 	/*
- 	 * Setup the np->np_sockaddr from the passed sockaddr setup
- 	 * in iscsi_target_configfs.c code..
-@@ -3093,37 +3155,20 @@ isert_setup_np(struct iscsi_np *np,
- 	memcpy(&np->np_sockaddr, ksockaddr,
- 	       sizeof(struct __kernel_sockaddr_storage));
- 
--	isert_lid = rdma_create_id(isert_cma_handler, np, RDMA_PS_TCP,
--				IB_QPT_RC);
-+	isert_lid = isert_setup_id(isert_np);
- 	if (IS_ERR(isert_lid)) {
--		pr_err("rdma_create_id() for isert_listen_handler failed: %ld\n",
--		       PTR_ERR(isert_lid));
- 		ret = PTR_ERR(isert_lid);
- 		goto out;
+ static void isert_free_conn(struct iscsi_conn *conn)
+@@ -3400,10 +3414,21 @@ static int __init isert_init(void)
+ 		goto destroy_rx_wq;
  	}
  
--	ret = rdma_bind_addr(isert_lid, sa);
--	if (ret) {
--		pr_err("rdma_bind_addr() for isert_lid failed: %d\n", ret);
--		goto out_lid;
--	}
--
--	ret = rdma_listen(isert_lid, ISERT_RDMA_LISTEN_BACKLOG);
--	if (ret) {
--		pr_err("rdma_listen() for isert_lid failed: %d\n", ret);
--		goto out_lid;
--	}
--
- 	isert_np->np_cm_id = isert_lid;
- 	np->np_context = isert_np;
--	pr_debug("Setup isert_lid->context: %p\n", isert_lid->context);
- 
++	isert_release_wq = alloc_workqueue("isert_release_wq", WQ_UNBOUND,
++					WQ_UNBOUND_MAX_ACTIVE);
++	if (!isert_release_wq) {
++		pr_err("Unable to allocate isert_release_wq\n");
++		ret = -ENOMEM;
++		goto destroy_comp_wq;
++	}
++
+ 	iscsit_register_transport(&iser_target_transport);
+-	pr_debug("iSER_TARGET[0] - Loaded iser_target_transport\n");
++	pr_info("iSER_TARGET[0] - Loaded iser_target_transport\n");
++
  	return 0;
  
--out_lid:
--	rdma_destroy_id(isert_lid);
- out:
- 	kfree(isert_np);
-+
++destroy_comp_wq:
++	destroy_workqueue(isert_comp_wq);
+ destroy_rx_wq:
+ 	destroy_workqueue(isert_rx_wq);
  	return ret;
- }
- 
+@@ -3412,6 +3437,7 @@ destroy_rx_wq:
+ static void __exit isert_exit(void)
+ {
+ 	flush_scheduled_work();
++	destroy_workqueue(isert_release_wq);
+ 	destroy_workqueue(isert_comp_wq);
+ 	destroy_workqueue(isert_rx_wq);
+ 	iscsit_unregister_transport(&iser_target_transport);
 --- a/drivers/infiniband/ulp/isert/ib_isert.h
 +++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -183,6 +183,7 @@ struct isert_device {
- };
- 
- struct isert_np {
-+	struct iscsi_np         *np;
- 	struct semaphore	np_sem;
- 	struct rdma_cm_id	*np_cm_id;
- 	struct mutex		np_accept_mutex;
+@@ -149,6 +149,7 @@ struct isert_conn {
+ 	int			conn_fr_pool_size;
+ 	/* lock to protect fastreg pool */
+ 	spinlock_t		conn_lock;
++	struct work_struct	release_work;
+ #define ISERT_COMP_BATCH_COUNT	8
+ 	int			conn_comp_batch;
+ 	struct llist_head	conn_comp_llist;
 
 
