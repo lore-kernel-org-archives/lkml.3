@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759561AbbAYTXv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:23:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57484 "EHLO
+	id S1758318AbbAYSqf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:46:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58023 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873AbbAYSJD (ORCPT
+	with ESMTP id S1755789AbbAYSKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:03 -0500
+	Sun, 25 Jan 2015 13:10:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 34/98] genirq: Prevent proc race against freeing of irq descriptors
-Date: Sun, 25 Jan 2015 10:06:52 -0800
-Message-Id: <20150125180714.355153726@linuxfoundation.org>
+        Heiko Stuebner <heiko@sntech.de>, FUKAUMI Naoki <naobsd@gmail.com>
+Subject: [PATCH 3.18 091/183] clk: rockchip: fix rk3066 pll lock bit location
+Date: Sun, 25 Jan 2015 10:06:53 -0800
+Message-Id: <20150125180814.130009971@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,233 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Heiko Stuebner <heiko@sntech.de>
 
-commit c291ee622165cb2c8d4e7af63fffd499354a23be upstream.
+commit 12551f0239b50c88352e3292dd7703382addbf5e upstream.
 
-Since the rework of the sparse interrupt code to actually free the
-unused interrupt descriptors there exists a race between the /proc
-interfaces to the irq subsystem and the code which frees the interrupt
-descriptor.
+The bit locations indicating the locking status of the plls on rk3066 are
+shifted by one to the right when compared to the rk3188, bits [7:4] instead
+of [8:5] on the rk3188, thus indicating the locking state of the wrong pll
+or a completely different information in case of the gpll.
 
-CPU0				CPU1
-				show_interrupts()
-				  desc = irq_to_desc(X);
-free_desc(desc)
-  remove_from_radix_tree();
-  kfree(desc);
-				  raw_spinlock_irq(&desc->lock);
+The recently introduced pll init code exposed that problem on some rk3066
+boards when it tried to bring the boot-pll value in line with the value
+from the rate table.
 
-/proc/interrupts is the only interface which can actively corrupt
-kernel memory via the lock access. /proc/stat can only read from freed
-memory. Extremly hard to trigger, but possible.
+Fix this by defining separate pll definitions for rk3066 with the correct
+locking indices.
 
-The interfaces in /proc/irq/N/ are not affected by this because the
-removal of the proc file is serialized in procfs against concurrent
-readers/writers. The removal happens before the descriptor is freed.
-
-For architectures which have CONFIG_SPARSE_IRQ=n this is a non issue
-as the descriptor is never freed. It's merely cleared out with the irq
-descriptor lock held. So any concurrent proc access will either see
-the old correct value or the cleared out ones.
-
-Protect the lookup and access to the irq descriptor in
-show_interrupts() with the sparse_irq_lock.
-
-Provide kstat_irqs_usr() which is protecting the lookup and access
-with sparse_irq_lock and switch /proc/stat to use it.
-
-Document the existing kstat_irqs interfaces so it's clear that the
-caller needs to take care about protection. The users of these
-interfaces are either not affected due to SPARSE_IRQ=n or already
-protected against removal.
-
-Fixes: 1f5a5b87f78f "genirq: Implement a sane sparse_irq allocator"
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Fixes: 2c14736c75db ("clk: rockchip: add clock driver for rk3188 and rk3066 clocks")
+Tested-by: FUKAUMI Naoki <naobsd@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- fs/proc/stat.c              |    2 -
- include/linux/kernel_stat.h |    1 
- kernel/irq/internals.h      |    8 ++++++
- kernel/irq/irqdesc.c        |   52 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/irq/proc.c           |   22 +++++++++++++++++-
- 5 files changed, 83 insertions(+), 2 deletions(-)
 
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -159,7 +159,7 @@ static int show_stat(struct seq_file *p,
+---
+ drivers/clk/rockchip/clk-rk3188.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+--- a/drivers/clk/rockchip/clk-rk3188.c
++++ b/drivers/clk/rockchip/clk-rk3188.c
+@@ -210,6 +210,17 @@ PNAME(mux_sclk_hsadc_p)		= { "hsadc_src"
+ PNAME(mux_mac_p)		= { "gpll", "dpll" };
+ PNAME(mux_sclk_macref_p)	= { "mac_src", "ext_rmii" };
  
- 	/* sum again ? it could be updated? */
- 	for_each_irq_nr(j)
--		seq_put_decimal_ull(p, ' ', kstat_irqs(j));
-+		seq_put_decimal_ull(p, ' ', kstat_irqs_usr(j));
- 
- 	seq_printf(p,
- 		"\nctxt %llu\n"
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -74,6 +74,7 @@ static inline unsigned int kstat_softirq
-  * Number of interrupts per specific IRQ source, since bootup
-  */
- extern unsigned int kstat_irqs(unsigned int irq);
-+extern unsigned int kstat_irqs_usr(unsigned int irq);
- 
- /*
-  * Number of interrupts per cpu, since bootup
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -74,6 +74,14 @@ extern void irq_percpu_disable(struct ir
- extern void mask_irq(struct irq_desc *desc);
- extern void unmask_irq(struct irq_desc *desc);
- 
-+#ifdef CONFIG_SPARSE_IRQ
-+extern void irq_lock_sparse(void);
-+extern void irq_unlock_sparse(void);
-+#else
-+static inline void irq_lock_sparse(void) { }
-+static inline void irq_unlock_sparse(void) { }
-+#endif
++static struct rockchip_pll_clock rk3066_pll_clks[] __initdata = {
++	[apll] = PLL(pll_rk3066, PLL_APLL, "apll", mux_pll_p, 0, RK2928_PLL_CON(0),
++		     RK2928_MODE_CON, 0, 5, rk3188_pll_rates),
++	[dpll] = PLL(pll_rk3066, PLL_DPLL, "dpll", mux_pll_p, 0, RK2928_PLL_CON(4),
++		     RK2928_MODE_CON, 4, 4, NULL),
++	[cpll] = PLL(pll_rk3066, PLL_CPLL, "cpll", mux_pll_p, 0, RK2928_PLL_CON(8),
++		     RK2928_MODE_CON, 8, 6, rk3188_pll_rates),
++	[gpll] = PLL(pll_rk3066, PLL_GPLL, "gpll", mux_pll_p, 0, RK2928_PLL_CON(12),
++		     RK2928_MODE_CON, 12, 7, rk3188_pll_rates),
++};
 +
- extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
- 
- irqreturn_t handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action);
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -131,6 +131,16 @@ static void free_masks(struct irq_desc *
- static inline void free_masks(struct irq_desc *desc) { }
- #endif
- 
-+void irq_lock_sparse(void)
-+{
-+	mutex_lock(&sparse_irq_lock);
-+}
-+
-+void irq_unlock_sparse(void)
-+{
-+	mutex_unlock(&sparse_irq_lock);
-+}
-+
- static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
+ static struct rockchip_pll_clock rk3188_pll_clks[] __initdata = {
+ 	[apll] = PLL(pll_rk3066, PLL_APLL, "apll", mux_pll_p, 0, RK2928_PLL_CON(0),
+ 		     RK2928_MODE_CON, 0, 6, rk3188_pll_rates),
+@@ -742,8 +753,8 @@ static void __init rk3188_common_clk_ini
+ static void __init rk3066a_clk_init(struct device_node *np)
  {
- 	struct irq_desc *desc;
-@@ -167,6 +177,12 @@ static void free_desc(unsigned int irq)
- 
- 	unregister_irq_proc(irq, desc);
- 
-+	/*
-+	 * sparse_irq_lock protects also show_interrupts() and
-+	 * kstat_irq_usr(). Once we deleted the descriptor from the
-+	 * sparse tree we can free it. Access in proc will fail to
-+	 * lookup the descriptor.
-+	 */
- 	mutex_lock(&sparse_irq_lock);
- 	delete_irq_desc(irq);
- 	mutex_unlock(&sparse_irq_lock);
-@@ -489,6 +505,15 @@ void dynamic_irq_cleanup(unsigned int ir
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- }
- 
-+/**
-+ * kstat_irqs_cpu - Get the statistics for an interrupt on a cpu
-+ * @irq:	The interrupt number
-+ * @cpu:	The cpu number
-+ *
-+ * Returns the sum of interrupt counts on @cpu since boot for
-+ * @irq. The caller must ensure that the interrupt is not removed
-+ * concurrently.
-+ */
- unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -497,6 +522,14 @@ unsigned int kstat_irqs_cpu(unsigned int
- 			*per_cpu_ptr(desc->kstat_irqs, cpu) : 0;
- }
- 
-+/**
-+ * kstat_irqs - Get the statistics for an interrupt
-+ * @irq:	The interrupt number
-+ *
-+ * Returns the sum of interrupt counts on all cpus since boot for
-+ * @irq. The caller must ensure that the interrupt is not removed
-+ * concurrently.
-+ */
- unsigned int kstat_irqs(unsigned int irq)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -509,3 +542,22 @@ unsigned int kstat_irqs(unsigned int irq
- 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
- 	return sum;
- }
-+
-+/**
-+ * kstat_irqs_usr - Get the statistics for an interrupt
-+ * @irq:	The interrupt number
-+ *
-+ * Returns the sum of interrupt counts on all cpus since boot for
-+ * @irq. Contrary to kstat_irqs() this can be called from any
-+ * preemptible context. It's protected against concurrent removal of
-+ * an interrupt descriptor when sparse irqs are enabled.
-+ */
-+unsigned int kstat_irqs_usr(unsigned int irq)
-+{
-+	int sum;
-+
-+	irq_lock_sparse();
-+	sum = kstat_irqs(irq);
-+	irq_unlock_sparse();
-+	return sum;
-+}
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -15,6 +15,23 @@
- 
- #include "internals.h"
- 
-+/*
-+ * Access rules:
-+ *
-+ * procfs protects read/write of /proc/irq/N/ files against a
-+ * concurrent free of the interrupt descriptor. remove_proc_entry()
-+ * immediately prevents new read/writes to happen and waits for
-+ * already running read/write functions to complete.
-+ *
-+ * We remove the proc entries first and then delete the interrupt
-+ * descriptor from the radix tree and free it. So it is guaranteed
-+ * that irq_to_desc(N) is valid as long as the read/writes are
-+ * permitted by procfs.
-+ *
-+ * The read from /proc/interrupts is a different problem because there
-+ * is no protection. So the lookup and the access to irqdesc
-+ * information must be protected by sparse_irq_lock.
-+ */
- static struct proc_dir_entry *root_irq_dir;
- 
- #ifdef CONFIG_SMP
-@@ -437,9 +454,10 @@ int show_interrupts(struct seq_file *p,
- 		seq_putc(p, '\n');
- 	}
- 
-+	irq_lock_sparse();
- 	desc = irq_to_desc(i);
- 	if (!desc)
--		return 0;
-+		goto outsparse;
- 
- 	raw_spin_lock_irqsave(&desc->lock, flags);
- 	for_each_online_cpu(j)
-@@ -479,6 +497,8 @@ int show_interrupts(struct seq_file *p,
- 	seq_putc(p, '\n');
- out:
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+outsparse:
-+	irq_unlock_sparse();
- 	return 0;
- }
- #endif
+ 	rk3188_common_clk_init(np);
+-	rockchip_clk_register_plls(rk3188_pll_clks,
+-				   ARRAY_SIZE(rk3188_pll_clks),
++	rockchip_clk_register_plls(rk3066_pll_clks,
++				   ARRAY_SIZE(rk3066_pll_clks),
+ 				   RK3066_GRF_SOC_STATUS);
+ 	rockchip_clk_register_branches(rk3066a_clk_branches,
+ 				  ARRAY_SIZE(rk3066a_clk_branches));
 
 
