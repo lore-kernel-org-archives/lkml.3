@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758408AbbAYSrL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:47:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57868 "EHLO
+	id S1759574AbbAYTYj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:24:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755784AbbAYSKF (ORCPT
+	with ESMTP id S1754854AbbAYSJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:05 -0500
+	Sun, 25 Jan 2015 13:09:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Hao <haokexin@gmail.com>, Scott Wood <scottwood@freescale.com>,
-        Michael Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.18 089/183] Revert "clk: ppc-corenet: Fix Section mismatch warning"
+        Thomas Gleixner <tglx@linutronix.de>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Frederic Weisbecker <frederic@kernel.org>,
+        Pan Jacob jun <jacob.jun.pan@intel.com>, LKP <lkp@01.org>,
+        Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH 3.14 33/98] tick/powerclamp: Remove tick_nohz_idle abuse
 Date: Sun, 25 Jan 2015 10:06:51 -0800
-Message-Id: <20150125180814.050239814@linuxfoundation.org>
+Message-Id: <20150125180714.308459776@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,41 +31,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 176a107b868781c8d6868454aea7d07e0b82d6b8 upstream.
+commit a5fd9733a30d18d7ac23f17080e7e07bb3205b69 upstream.
 
-This reverts commit da788acb28386aa896224e784954bb73c99ff26c.
+commit 4dbd27711cd9 "tick: export nohz tick idle symbols for module
+use" was merged via the thermal tree without an explicit ack from the
+relevant maintainers.
 
-That commit tried to fix the section mismatch warning by moving the
-ppc_corenet_clk_driver struct to init section. This is definitely wrong
-because the kernel would free the memories occupied by this struct
-after boot while this driver is still registered in the driver core.
-The kernel would panic when accessing this driver struct.
+The exports are abused by the intel powerclamp driver which implements
+a fake idle state from a sched FIFO task. This causes all kinds of
+wreckage in the NOHZ core code which rightfully assumes that
+tick_nohz_idle_enter/exit() are only called from the idle task itself.
 
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Acked-by: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Michael Turquette <mturquette@linaro.org>
+Recent changes in the NOHZ core lead to a failure of the powerclamp
+driver and now people try to hack completely broken and backwards
+workarounds into the NOHZ core code. This is completely unacceptable
+and just papers over the real problem. There are way more subtle
+issues lurking around the corner.
+
+The real solution is to fix the powerclamp driver by rewriting it with
+a sane concept, but that's beyond the scope of this.
+
+So the only solution for now is to remove the calls into the core NOHZ
+code from the powerclamp trainwreck along with the exports.
+
+Fixes: d6d71ee4a14a "PM: Introduce Intel PowerClamp Driver"
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Frederic Weisbecker <frederic@kernel.org>
+Cc: Pan Jacob jun <jacob.jun.pan@intel.com>
+Cc: LKP <lkp@01.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412181110110.17382@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/clk-ppc-corenet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/thermal/intel_powerclamp.c |    2 --
+ kernel/time/tick-sched.c           |    2 --
+ 2 files changed, 4 deletions(-)
 
---- a/drivers/clk/clk-ppc-corenet.c
-+++ b/drivers/clk/clk-ppc-corenet.c
-@@ -291,7 +291,7 @@ static const struct of_device_id ppc_clk
- 	{}
- };
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -435,7 +435,6 @@ static int clamp_thread(void *arg)
+ 		 * allowed. thus jiffies are updated properly.
+ 		 */
+ 		preempt_disable();
+-		tick_nohz_idle_enter();
+ 		/* mwait until target jiffies is reached */
+ 		while (time_before(jiffies, target_jiffies)) {
+ 			unsigned long ecx = 1;
+@@ -451,7 +450,6 @@ static int clamp_thread(void *arg)
+ 			start_critical_timings();
+ 			atomic_inc(&idle_wakeup_counter);
+ 		}
+-		tick_nohz_idle_exit();
+ 		preempt_enable();
+ 	}
+ 	del_timer_sync(&wakeup_timer);
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -807,7 +807,6 @@ void tick_nohz_idle_enter(void)
  
--static struct platform_driver ppc_corenet_clk_driver __initdata = {
-+static struct platform_driver ppc_corenet_clk_driver = {
- 	.driver = {
- 		.name = "ppc_corenet_clock",
- 		.owner = THIS_MODULE,
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+ 
+ /**
+  * tick_nohz_irq_exit - update next tick event from interrupt exit
+@@ -934,7 +933,6 @@ void tick_nohz_idle_exit(void)
+ 
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
+ 
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+ {
 
 
