@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605AbbAYTFq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:05:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
+	id S1756669AbbAYSLb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755397AbbAYSJa (ORCPT
+	with ESMTP id S1754292AbbAYSJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:30 -0500
+	Sun, 25 Jan 2015 13:09:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>, Sagi Grimberg <sagig@mellanox.com>,
+        Hannes Reinecke <hare@suse.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 82/98] tcm_loop: Fixup tag handling
-Date: Sun, 25 Jan 2015 10:07:40 -0800
-Message-Id: <20150125180716.446379477@linuxfoundation.org>
+Subject: [PATCH 3.14 83/98] tcm_loop: Fix wrong I_T nexus association
+Date: Sun, 25 Jan 2015 10:07:41 -0800
+Message-Id: <20150125180716.494657587@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
 References: <20150125180712.859646324@linuxfoundation.org>
@@ -31,73 +31,223 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hannes Reinecke <hare@suse.de>
 
-commit 6375f8908255ea7438b60bb5998e6b3e1628500d upstream.
+commit 506787a2c7daed45f0a213674ca706cbc83a9089 upstream.
 
-The SCSI command tag is set to the tag assigned from the block
-layer, not the SCSI-II tag message. So we need to convert
-it into the correct SCSI-II tag message based on the
-device flags, not the tag value itself.
+tcm_loop has the I_T nexus associated with the HBA. This causes
+commands to become misdirected if the HBA has more than one
+target portal group; any command is then being sent to the
+first target portal group instead of the correct one.
+
+The nexus needs to be associated with the target portal group
+instead.
 
 Signed-off-by: Hannes Reinecke <hare@suse.de>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/loopback/tcm_loop.c |   21 +++++++--------------
- 1 file changed, 7 insertions(+), 14 deletions(-)
+ drivers/target/loopback/tcm_loop.c |   66 ++++++++++++-------------------------
+ drivers/target/loopback/tcm_loop.h |    7 ---
+ 2 files changed, 24 insertions(+), 49 deletions(-)
 
 --- a/drivers/target/loopback/tcm_loop.c
 +++ b/drivers/target/loopback/tcm_loop.c
-@@ -153,18 +153,11 @@ static int tcm_loop_change_queue_type(st
- /*
-  * Locate the SAM Task Attr from struct scsi_cmnd *
+@@ -190,7 +190,7 @@ static void tcm_loop_submission_work(str
+ 		set_host_byte(sc, DID_TRANSPORT_DISRUPTED);
+ 		goto out_done;
+ 	}
+-	tl_nexus = tl_hba->tl_nexus;
++	tl_nexus = tl_tpg->tl_nexus;
+ 	if (!tl_nexus) {
+ 		scmd_printk(KERN_ERR, sc, "TCM_Loop I_T Nexus"
+ 				" does not exist\n");
+@@ -256,16 +256,26 @@ static int tcm_loop_queuecommand(struct
+  * to struct scsi_device
   */
--static int tcm_loop_sam_attr(struct scsi_cmnd *sc)
-+static int tcm_loop_sam_attr(struct scsi_cmnd *sc, int tag)
+ static int tcm_loop_issue_tmr(struct tcm_loop_tpg *tl_tpg,
+-			      struct tcm_loop_nexus *tl_nexus,
+ 			      int lun, int task, enum tcm_tmreq_table tmr)
  {
--	if (sc->device->tagged_supported) {
--		switch (sc->tag) {
--		case HEAD_OF_QUEUE_TAG:
--			return MSG_HEAD_TAG;
--		case ORDERED_QUEUE_TAG:
--			return MSG_ORDERED_TAG;
--		default:
--			break;
--		}
--	}
-+	if (sc->device->tagged_supported &&
-+	    sc->device->ordered_tags && tag >= 0)
-+		return MSG_ORDERED_TAG;
+ 	struct se_cmd *se_cmd = NULL;
+ 	struct se_session *se_sess;
+ 	struct se_portal_group *se_tpg;
++	struct tcm_loop_nexus *tl_nexus;
+ 	struct tcm_loop_cmd *tl_cmd = NULL;
+ 	struct tcm_loop_tmr *tl_tmr = NULL;
+ 	int ret = TMR_FUNCTION_FAILED, rc;
  
- 	return MSG_SIMPLE_TAG;
- }
-@@ -214,7 +207,7 @@ static void tcm_loop_submission_work(str
- 	}
- 	rc = target_submit_cmd_map_sgls(se_cmd, tl_nexus->se_sess, sc->cmnd,
- 			&tl_cmd->tl_sense_buf[0], tl_cmd->sc->device->lun,
--			scsi_bufflen(sc), tcm_loop_sam_attr(sc),
-+			scsi_bufflen(sc), tcm_loop_sam_attr(sc, tl_cmd->sc_cmd_tag),
- 			sc->sc_data_direction, 0,
- 			scsi_sglist(sc), scsi_sg_count(sc),
- 			sgl_bidi, sgl_bidi_count,
-@@ -252,7 +245,7 @@ static int tcm_loop_queuecommand(struct
- 	}
++	/*
++	 * Locate the tl_nexus and se_sess pointers
++	 */
++	tl_nexus = tl_tpg->tl_nexus;
++	if (!tl_nexus) {
++		pr_err("Unable to perform device reset without"
++				" active I_T Nexus\n");
++		return ret;
++	}
++
+ 	tl_cmd = kmem_cache_zalloc(tcm_loop_cmd_cache, GFP_KERNEL);
+ 	if (!tl_cmd) {
+ 		pr_err("Unable to allocate memory for tl_cmd\n");
+@@ -281,7 +291,7 @@ static int tcm_loop_issue_tmr(struct tcm
  
- 	tl_cmd->sc = sc;
--	tl_cmd->sc_cmd_tag = sc->tag;
-+	tl_cmd->sc_cmd_tag = sc->request->tag;
- 	INIT_WORK(&tl_cmd->work, tcm_loop_submission_work);
- 	queue_work(tcm_loop_workqueue, &tl_cmd->work);
- 	return 0;
-@@ -356,7 +349,7 @@ static int tcm_loop_abort_task(struct sc
+ 	se_cmd = &tl_cmd->tl_se_cmd;
+ 	se_tpg = &tl_tpg->tl_se_tpg;
+-	se_sess = tl_nexus->se_sess;
++	se_sess = tl_tpg->tl_nexus->se_sess;
+ 	/*
+ 	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
  	 */
+@@ -326,7 +336,6 @@ release:
+ static int tcm_loop_abort_task(struct scsi_cmnd *sc)
+ {
+ 	struct tcm_loop_hba *tl_hba;
+-	struct tcm_loop_nexus *tl_nexus;
+ 	struct tcm_loop_tpg *tl_tpg;
+ 	int ret = FAILED;
+ 
+@@ -334,21 +343,8 @@ static int tcm_loop_abort_task(struct sc
+ 	 * Locate the tcm_loop_hba_t pointer
+ 	 */
+ 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
+-	/*
+-	 * Locate the tl_nexus and se_sess pointers
+-	 */
+-	tl_nexus = tl_hba->tl_nexus;
+-	if (!tl_nexus) {
+-		pr_err("Unable to perform device reset without"
+-				" active I_T Nexus\n");
+-		return FAILED;
+-	}
+-
+-	/*
+-	 * Locate the tl_tpg pointer from TargetID in sc->device->id
+-	 */
  	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
- 	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
--				 sc->tag, TMR_ABORT_TASK);
-+				 sc->request->tag, TMR_ABORT_TASK);
+-	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
++	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
+ 				 sc->request->tag, TMR_ABORT_TASK);
  	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
  }
+@@ -360,7 +356,6 @@ static int tcm_loop_abort_task(struct sc
+ static int tcm_loop_device_reset(struct scsi_cmnd *sc)
+ {
+ 	struct tcm_loop_hba *tl_hba;
+-	struct tcm_loop_nexus *tl_nexus;
+ 	struct tcm_loop_tpg *tl_tpg;
+ 	int ret = FAILED;
  
+@@ -368,20 +363,9 @@ static int tcm_loop_device_reset(struct
+ 	 * Locate the tcm_loop_hba_t pointer
+ 	 */
+ 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
+-	/*
+-	 * Locate the tl_nexus and se_sess pointers
+-	 */
+-	tl_nexus = tl_hba->tl_nexus;
+-	if (!tl_nexus) {
+-		pr_err("Unable to perform device reset without"
+-				" active I_T Nexus\n");
+-		return FAILED;
+-	}
+-	/*
+-	 * Locate the tl_tpg pointer from TargetID in sc->device->id
+-	 */
+ 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
+-	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
++
++	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
+ 				 0, TMR_LUN_RESET);
+ 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
+ }
+@@ -988,8 +972,8 @@ static int tcm_loop_make_nexus(
+ 	struct tcm_loop_nexus *tl_nexus;
+ 	int ret = -ENOMEM;
+ 
+-	if (tl_tpg->tl_hba->tl_nexus) {
+-		pr_debug("tl_tpg->tl_hba->tl_nexus already exists\n");
++	if (tl_tpg->tl_nexus) {
++		pr_debug("tl_tpg->tl_nexus already exists\n");
+ 		return -EEXIST;
+ 	}
+ 	se_tpg = &tl_tpg->tl_se_tpg;
+@@ -1024,7 +1008,7 @@ static int tcm_loop_make_nexus(
+ 	 */
+ 	__transport_register_session(se_tpg, tl_nexus->se_sess->se_node_acl,
+ 			tl_nexus->se_sess, tl_nexus);
+-	tl_tpg->tl_hba->tl_nexus = tl_nexus;
++	tl_tpg->tl_nexus = tl_nexus;
+ 	pr_debug("TCM_Loop_ConfigFS: Established I_T Nexus to emulated"
+ 		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
+ 		name);
+@@ -1040,12 +1024,8 @@ static int tcm_loop_drop_nexus(
+ {
+ 	struct se_session *se_sess;
+ 	struct tcm_loop_nexus *tl_nexus;
+-	struct tcm_loop_hba *tl_hba = tpg->tl_hba;
+ 
+-	if (!tl_hba)
+-		return -ENODEV;
+-
+-	tl_nexus = tl_hba->tl_nexus;
++	tl_nexus = tpg->tl_nexus;
+ 	if (!tl_nexus)
+ 		return -ENODEV;
+ 
+@@ -1061,13 +1041,13 @@ static int tcm_loop_drop_nexus(
+ 	}
+ 
+ 	pr_debug("TCM_Loop_ConfigFS: Removing I_T Nexus to emulated"
+-		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
++		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tpg->tl_hba),
+ 		tl_nexus->se_sess->se_node_acl->initiatorname);
+ 	/*
+ 	 * Release the SCSI I_T Nexus to the emulated SAS Target Port
+ 	 */
+ 	transport_deregister_session(tl_nexus->se_sess);
+-	tpg->tl_hba->tl_nexus = NULL;
++	tpg->tl_nexus = NULL;
+ 	kfree(tl_nexus);
+ 	return 0;
+ }
+@@ -1083,7 +1063,7 @@ static ssize_t tcm_loop_tpg_show_nexus(
+ 	struct tcm_loop_nexus *tl_nexus;
+ 	ssize_t ret;
+ 
+-	tl_nexus = tl_tpg->tl_hba->tl_nexus;
++	tl_nexus = tl_tpg->tl_nexus;
+ 	if (!tl_nexus)
+ 		return -ENODEV;
+ 
+--- a/drivers/target/loopback/tcm_loop.h
++++ b/drivers/target/loopback/tcm_loop.h
+@@ -27,11 +27,6 @@ struct tcm_loop_tmr {
+ };
+ 
+ struct tcm_loop_nexus {
+-	int it_nexus_active;
+-	/*
+-	 * Pointer to Linux/SCSI HBA from linux/include/scsi_host.h
+-	 */
+-	struct scsi_host *sh;
+ 	/*
+ 	 * Pointer to TCM session for I_T Nexus
+ 	 */
+@@ -51,6 +46,7 @@ struct tcm_loop_tpg {
+ 	atomic_t tl_tpg_port_count;
+ 	struct se_portal_group tl_se_tpg;
+ 	struct tcm_loop_hba *tl_hba;
++	struct tcm_loop_nexus *tl_nexus;
+ };
+ 
+ struct tcm_loop_hba {
+@@ -59,7 +55,6 @@ struct tcm_loop_hba {
+ 	struct se_hba_s *se_hba;
+ 	struct se_lun *tl_hba_lun;
+ 	struct se_port *tl_hba_lun_sep;
+-	struct tcm_loop_nexus *tl_nexus;
+ 	struct device dev;
+ 	struct Scsi_Host *sh;
+ 	struct tcm_loop_tpg tl_hba_tpgs[TL_TPGS_PER_HBA];
 
 
