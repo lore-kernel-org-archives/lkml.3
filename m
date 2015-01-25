@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618AbbAYTKf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:10:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57415 "EHLO
+	id S1755779AbbAYSKC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:10:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299AbbAYSJX (ORCPT
+	with ESMTP id S1754348AbbAYSIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:23 -0500
+	Sun, 25 Jan 2015 13:08:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Peterson <david.peterson@cel.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 62/98] USB: cp210x: add IDs for CEL USB sticks and MeshWorks devices
-Date: Sun, 25 Jan 2015 10:07:20 -0800
-Message-Id: <20150125180715.535853613@linuxfoundation.org>
+        Richard <richjunk@pacbell.net>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 31/50] USB: keyspan: fix null-deref at probe
+Date: Sun, 25 Jan 2015 10:07:21 -0800
+Message-Id: <20150125180704.420389429@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,40 +24,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Peterson <david.peterson@cel.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 1ae78a4870989a354028cb17dabf819b595e70e3 upstream.
+commit b5122236bba8d7ef62153da5b55cc65d0944c61e upstream.
 
-Added virtual com port VID/PID entries for CEL USB sticks and MeshWorks
-devices.
+Fix null-pointer dereference during probe if the interface-status
+completion handler is called before the individual ports have been set
+up.
 
-Signed-off-by: David Peterson <david.peterson@cel.com>
+Fixes: f79b2d0fe81e ("USB: keyspan: fix NULL-pointer dereferences and
+memory leaks")
+Reported-by: Richard <richjunk@pacbell.net>
+Tested-by: Richard <richjunk@pacbell.net>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/keyspan.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -120,10 +120,12 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
--	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL MeshConnect USB Stick */
-+	{ USB_DEVICE(0x10C4, 0x8856) },	/* CEL EM357 ZigBee USB Stick - LR */
-+	{ USB_DEVICE(0x10C4, 0x8857) },	/* CEL EM357 ZigBee USB Stick */
- 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
-+	{ USB_DEVICE(0x10C4, 0x8977) },	/* CEL MeshWorks DevKit Device */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -418,6 +418,8 @@ static void	usa26_instat_callback(struct
+ 	}
+ 	port = serial->port[msg->port];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -428,7 +430,7 @@ static void	usa26_instat_callback(struct
+ 
+ 	if (old_dcd_state != p_priv->dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+@@ -543,6 +545,8 @@ static void	usa28_instat_callback(struct
+ 	}
+ 	port = serial->port[msg->port];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -553,7 +557,7 @@ static void	usa28_instat_callback(struct
+ 
+ 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 		/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+@@ -630,6 +634,8 @@ static void	usa49_instat_callback(struct
+ 	}
+ 	port = serial->port[msg->portNumber];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -640,7 +646,7 @@ static void	usa49_instat_callback(struct
+ 
+ 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+@@ -878,6 +884,8 @@ static void	usa90_instat_callback(struct
+ 
+ 	port = serial->port[0];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -888,7 +896,7 @@ static void	usa90_instat_callback(struct
+ 
+ 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+@@ -949,6 +957,8 @@ static void	usa67_instat_callback(struct
+ 
+ 	port = serial->port[msg->port];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -957,7 +967,7 @@ static void	usa67_instat_callback(struct
+ 
+ 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
 
 
