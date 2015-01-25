@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110AbbAYTQv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:16:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57484 "EHLO
+	id S1758615AbbAYSt3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:49:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57892 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152AbbAYSJM (ORCPT
+	with ESMTP id S1755740AbbAYSKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:12 -0500
+	Sun, 25 Jan 2015 13:10:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        lu hua <huax.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.14 22/98] drm/i915: Dont complain about stolen conflicts on gen3
-Date: Sun, 25 Jan 2015 10:06:40 -0800
-Message-Id: <20150125180713.836834613@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.18 079/183] iscsi,iser-target: Expose supported protection ops according to t10_pi
+Date: Sun, 25 Jan 2015 10:06:41 -0800
+Message-Id: <20150125180813.615073362@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,56 +25,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 0b6d24c01932db99fc95304235e751e7f7625c41 upstream.
+commit 23a548ee656c8ba6da8cb2412070edcd62e2ac5d upstream.
 
-Apparently stuff works that way on those machines.
+iSER will report supported protection operations based on
+the tpg attribute t10_pi settings and HCA PI offload capabilities.
+If the HCA does not support PI offload or tpg attribute t10_pi is
+not set, we fall to SW PI mode.
 
-I agree with Chris' concern that this is a bit risky but imo worth a
-shot in -next just for fun. Afaics all these machines have the pci
-resources allocated like that by the BIOS, so I suspect that it's all
-ok.
+In order to do that, we move iscsit_get_sup_prot_ops after connection
+tpg assignment.
 
-This regression goes back to
-
-commit eaba1b8f3379b5d100bd146b9a41d28348bdfd09
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Jul 4 12:28:35 2013 +0100
-
-    drm/i915: Verify that our stolen memory doesn't conflict
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76983
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71031
-Tested-by: lu hua <huax.lu@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_stolen.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/infiniband/ulp/isert/ib_isert.c   |   14 +++++++++++---
+ drivers/infiniband/ulp/isert/ib_isert.h   |    1 +
+ drivers/target/iscsi/iscsi_target_login.c |    7 ++++---
+ 3 files changed, 16 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_stolen.c
-+++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
-@@ -137,7 +137,11 @@ static unsigned long i915_stolen_to_phys
- 		r = devm_request_mem_region(dev->dev, base + 1,
- 					    dev_priv->gtt.stolen_size - 1,
- 					    "Graphics Stolen Memory");
--		if (r == NULL) {
-+		/*
-+		 * GEN3 firmware likes to smash pci bridges into the stolen
-+		 * range. Apparently this works.
-+		 */
-+		if (r == NULL && !IS_GEN3(dev)) {
- 			DRM_ERROR("conflict detected with stolen region: [0x%08x - 0x%08x]\n",
- 				  base, base + (uint32_t)dev_priv->gtt.stolen_size);
- 			base = 0;
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -64,7 +64,7 @@ struct rdma_cm_id *isert_setup_id(struct
+ static inline bool
+ isert_prot_cmd(struct isert_conn *conn, struct se_cmd *cmd)
+ {
+-	return (conn->conn_device->pi_capable &&
++	return (conn->pi_support &&
+ 		cmd->prot_op != TARGET_PROT_NORMAL);
+ }
+ 
+@@ -2324,8 +2324,16 @@ isert_get_sup_prot_ops(struct iscsi_conn
+ 	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+ 	struct isert_device *device = isert_conn->conn_device;
+ 
+-	if (device->pi_capable)
+-		return TARGET_PROT_ALL;
++	if (conn->tpg->tpg_attrib.t10_pi) {
++		if (device->pi_capable) {
++			pr_info("conn %p PI offload enabled\n", isert_conn);
++			isert_conn->pi_support = true;
++			return TARGET_PROT_ALL;
++		}
++	}
++
++	pr_info("conn %p PI offload disabled\n", isert_conn);
++	isert_conn->pi_support = false;
+ 
+ 	return TARGET_PROT_NORMAL;
+ }
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -128,6 +128,7 @@ struct isert_conn {
+ 	atomic_t		post_send_buf_count;
+ 	u32			responder_resources;
+ 	u32			initiator_depth;
++	bool			pi_support;
+ 	u32			max_sge;
+ 	char			*login_buf;
+ 	char			*login_req_buf;
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -281,7 +281,6 @@ static int iscsi_login_zero_tsih_s1(
+ {
+ 	struct iscsi_session *sess = NULL;
+ 	struct iscsi_login_req *pdu = (struct iscsi_login_req *)buf;
+-	enum target_prot_op sup_pro_ops;
+ 	int ret;
+ 
+ 	sess = kzalloc(sizeof(struct iscsi_session), GFP_KERNEL);
+@@ -343,9 +342,8 @@ static int iscsi_login_zero_tsih_s1(
+ 		kfree(sess);
+ 		return -ENOMEM;
+ 	}
+-	sup_pro_ops = conn->conn_transport->iscsit_get_sup_prot_ops(conn);
+ 
+-	sess->se_sess = transport_init_session(sup_pro_ops);
++	sess->se_sess = transport_init_session(TARGET_PROT_NORMAL);
+ 	if (IS_ERR(sess->se_sess)) {
+ 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
+ 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
+@@ -1367,6 +1365,9 @@ static int __iscsi_target_login_thread(s
+ 	}
+ 	login->zero_tsih = zero_tsih;
+ 
++	conn->sess->se_sess->sup_prot_ops =
++		conn->conn_transport->iscsit_get_sup_prot_ops(conn);
++
+ 	tpg = conn->tpg;
+ 	if (!tpg) {
+ 		pr_err("Unable to locate struct iscsi_conn->tpg\n");
 
 
