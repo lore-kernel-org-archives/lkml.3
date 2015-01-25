@@ -1,105 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929AbbAYVQP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 16:16:15 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:38295 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483AbbAYVQN (ORCPT
+	id S1755178AbbAYVRd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 16:17:33 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:35578 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbbAYVR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 16:16:13 -0500
-Message-ID: <54C55D1A.9010706@linaro.org>
-Date: Sun, 25 Jan 2015 22:16:10 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 25 Jan 2015 16:17:29 -0500
+Message-ID: <54C55D67.8060503@hurleysoftware.com>
+Date: Sun, 25 Jan 2015 16:17:27 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-CC: tglx@linutronix.de, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
-Subject: Re: [PATCH V2] clockevents: rockchip: Add rockchip timer for rk3288
-References: <1422178979-12382-1-git-send-email-daniel.lezcano@linaro.org> <2285293.ZBcGIuxxDo@diego>
-In-Reply-To: <2285293.ZBcGIuxxDo@diego>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] tty: serial: men_z135_uart: Fix driver for changes
+ in hardware
+References: <1421649881-2275-1-git-send-email-johannes.thumshirn@men.de>
+In-Reply-To: <1421649881-2275-1-git-send-email-johannes.thumshirn@men.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2015 09:52 PM, Heiko Stübner wrote:
-> Hi Daniel,
->
-> one big request and some more style nitpicks :-)
->
-> With the nitpicks fixed
-> Reviewed-by: Heiko Stuebner <heiko@sntech.de>
->
->
-> Before applying this patch could you drop the rk3288.dtsi change please?
-> Instead I'd like to add the following patch separately to _my_ devicetree
-> branch for 3.20.
->
-> I already wasn't fast enough to prevent the ethernet controller changes
-> going through the network tree and would like to prevent a third tree sending
-> changes for the same dts area to Linus - merge conflicts and all.
->
->
-> I don't think that neither the nitpicks nor dropping the dtsi segment need
-> another submission though.
+On 01/19/2015 01:44 AM, Johannes Thumshirn wrote:
+> 16z135 IP Core has changed so the driver needs to be updated to respect
+> these changes. The following changes have been made:
+> 
+> * Don't invert the 16z135 modem status register when reading.
+> * Add module parameter to configure the (baud rate dependent) RX timeout.
+>   Character timeout in seconds = (timeout_reg * baud_reg * 4)/freq_reg.
+> * Enable the handling of UART core's automatic flow control feature.
+>   When AFE is active disable generation of modem status IRQs.
+> * Rework the handling of IRQs to be conform with newer FPGA versions and
+>   take precautions not to miss an interrupt because of the destructive read
+>   of the IIR register.
+> * Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not
+>   stat_reg[7:0]
+> * Correct calling of uart_handle_{dcd,cts}_change()
+> * Reset CLOCAL when CRTSCTS is set
 
-Hi Heiko,
-
-I removed the dtsi change, fixed the spaces indentation and pushed in my 
-tree the driver [1]
-
-Thanks the review
-
-   -- Daniel
-
-[1] http://git.linaro.org/people/daniel.lezcano/linux.git clockevents/3.20
-
-
-> ----- 8< -----------
-> From: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Date: Sun, 25 Jan 2015 10:42:59 +0100
-> Subject: [PATCH] ARM: dts: rockchip: Add rockchip timer node for rk3288
->
-> The rk3288 board uses the architected timers and these ones are shutdown when
-> the cpu is powered down. There is a need of a broadcast timer in this case to
-> ensure proper wakeup when the cpus are in sleep mode and a timer expires.
->
-> Add the timer node for the broadcast timer.
->
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> ---
->   arch/arm/boot/dts/rk3288.dtsi | 8 ++++++++
->   1 file changed, 8 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> index c7235fa..37847c1 100644
-> --- a/arch/arm/boot/dts/rk3288.dtsi
-> +++ b/arch/arm/boot/dts/rk3288.dtsi
-> @@ -149,6 +149,14 @@
->   		clock-frequency = <24000000>;
->   	};
->
-> +	timer: timer@ff810000 {
-> +		compatible = "rockchip,rk3288-timer";
-> +		reg = <0xff810000 0x20>;
-> +		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
-> +		clocks = <&xin24m>, <&cru PCLK_TIMER>;
-> +		clock-names = "timer", "pclk";
-> +	};
-> +
->   	display-subsystem {
->   		compatible = "rockchip,display-subsystem";
->   		ports = <&vopl_out>, <&vopb_out>;
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
 
