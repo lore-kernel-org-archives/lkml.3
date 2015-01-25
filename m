@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520AbbAYTJn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:09:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57551 "EHLO
+	id S1755522AbbAYSJj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:09:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755310AbbAYSJY (ORCPT
+	with ESMTP id S1754350AbbAYSIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:24 -0500
+	Sun, 25 Jan 2015 13:08:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard <richjunk@pacbell.net>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 63/98] USB: keyspan: fix null-deref at probe
-Date: Sun, 25 Jan 2015 10:07:21 -0800
-Message-Id: <20150125180715.587917997@linuxfoundation.org>
+        Olivier Sobrie <olivier@sobrie.be>,
+        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 32/50] can: kvaser_usb: Dont free packets when tight on URBs
+Date: Sun, 25 Jan 2015 10:07:22 -0800
+Message-Id: <20150125180704.475709726@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,120 +26,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
 
-commit b5122236bba8d7ef62153da5b55cc65d0944c61e upstream.
+commit b442723fcec445fb0ae1104888dd22cd285e0a91 upstream.
 
-Fix null-pointer dereference during probe if the interface-status
-completion handler is called before the individual ports have been set
-up.
+Flooding the Kvaser CAN to USB dongle with multiple reads and
+writes in high frequency caused seemingly-random panics in the
+kernel.
 
-Fixes: f79b2d0fe81e ("USB: keyspan: fix NULL-pointer dereferences and
-memory leaks")
-Reported-by: Richard <richjunk@pacbell.net>
-Tested-by: Richard <richjunk@pacbell.net>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+On further inspection, it seems the driver erroneously freed the
+to-be-transmitted packet upon getting tight on URBs and returning
+NETDEV_TX_BUSY, leading to invalid memory writes and double frees
+at a later point in time.
+
+Note:
+
+Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
+is a driver bug in and out of itself: it means that our start/stop
+queue flow control is broken.
+
+This patch only fixes the (buggy) error handling code; the root
+cause shall be fixed in a later commit.
+
+Acked-by: Olivier Sobrie <olivier@sobrie.be>
+Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/keyspan.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/net/can/usb/kvaser_usb.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -421,6 +421,8 @@ static void	usa26_instat_callback(struct
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -1286,12 +1286,14 @@ static netdev_tx_t kvaser_usb_start_xmit
+ 	if (!urb) {
+ 		netdev_err(netdev, "No memory left for URBs\n");
+ 		stats->tx_dropped++;
+-		goto nourbmem;
++		dev_kfree_skb(skb);
++		return NETDEV_TX_OK;
  	}
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
  
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -431,7 +433,7 @@ static void	usa26_instat_callback(struct
- 
- 	if (old_dcd_state != p_priv->dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -541,6 +543,8 @@ static void	usa28_instat_callback(struct
+ 	buf = kmalloc(sizeof(struct kvaser_msg), GFP_ATOMIC);
+ 	if (!buf) {
+ 		stats->tx_dropped++;
++		dev_kfree_skb(skb);
+ 		goto nobufmem;
  	}
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
  
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -551,7 +555,7 @@ static void	usa28_instat_callback(struct
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 		/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -624,6 +628,8 @@ static void	usa49_instat_callback(struct
+@@ -1326,6 +1328,7 @@ static netdev_tx_t kvaser_usb_start_xmit
+ 		}
  	}
- 	port = serial->port[msg->portNumber];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
  
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -634,7 +640,7 @@ static void	usa49_instat_callback(struct
++	/* This should never happen; it implies a flow control bug */
+ 	if (!context) {
+ 		netdev_warn(netdev, "cannot find free context\n");
+ 		ret =  NETDEV_TX_BUSY;
+@@ -1356,9 +1359,6 @@ static netdev_tx_t kvaser_usb_start_xmit
+ 	if (unlikely(err)) {
+ 		can_free_echo_skb(netdev, context->echo_index);
  
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
+-		skb = NULL; /* set to NULL to avoid double free in
+-			     * dev_kfree_skb(skb) */
 -
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -872,6 +878,8 @@ static void	usa90_instat_callback(struct
+ 		atomic_dec(&priv->active_tx_urbs);
+ 		usb_unanchor_urb(urb);
  
- 	port = serial->port[0];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
+@@ -1380,8 +1380,6 @@ releasebuf:
+ 	kfree(buf);
+ nobufmem:
+ 	usb_free_urb(urb);
+-nourbmem:
+-	dev_kfree_skb(skb);
+ 	return ret;
+ }
  
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -882,7 +890,7 @@ static void	usa90_instat_callback(struct
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -943,6 +951,8 @@ static void	usa67_instat_callback(struct
- 
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -951,7 +961,7 @@ static void	usa67_instat_callback(struct
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
 
 
