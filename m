@@ -1,91 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbbAYM6N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 07:58:13 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:47042 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883AbbAYM6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 07:58:11 -0500
-Message-ID: <54C4E84E.7090901@ahsoftware.de>
-Date: Sun, 25 Jan 2015 13:57:50 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1753435AbbAYM7N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 07:59:13 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41798 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308AbbAYM7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 07:59:11 -0500
+Date: Sun, 25 Jan 2015 13:59:05 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Todd Brandt <todd.e.brandt@linux.intel.com>
+Cc: linux-pm@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, todd.e.brandt@intel.com,
+        jacob.jun.pan@linux.intel.com, sameo@linux.intel.com,
+        lee.jones@linaro.org, dbaryshkov@gmail.com, dwmw2@infradead.org,
+        david.woodhouse@intel.com
+Subject: Re: [PATCH v2 2/3] mfd/axp20x: add support for fuel gauge cell
+Message-ID: <20150125125905.GB2719@earth.universe>
+References: <cover.1421957474.git.todd.e.brandt@linux.intel.com>
+ <0d1c6b3e06c3195a87d72ca5ec8456748af463ca.1421957474.git.todd.e.brandt@linux.intel.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigbrady.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2] modsign: use shred to overwrite the private key before
- deleting it
-References: <54C2F4F8.20809@draigBrady.com>	<1422096327-4483-1-git-send-email-holler@ahsoftware.de>	<54C383E0.9060408@ahsoftware.de>	<54C38B6D.1060806@ahsoftware.de>	<54C3901D.8040406@ahsoftware.de>	<54C45153.2050703@draigBrady.com>	<54C4583A.5040505@ahsoftware.de>	<54C4C65A.2020403@ahsoftware.de>	<54C4CC05.9090602@ahsoftware.de>	<54C4D6BA.4080308@ahsoftware.de> <CAFLxGvzZOfhwW5hp1GDhTHLU5Z=9ozkOQgvatqhwDT982hfYcA@mail.gmail.com> <54C4E080.4020507@ahsoftware.de> <54C4E181.4080004@nod.at>
-In-Reply-To: <54C4E181.4080004@nod.at>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="+g7M9IMkV8truYOl"
+Content-Disposition: inline
+In-Reply-To: <0d1c6b3e06c3195a87d72ca5ec8456748af463ca.1421957474.git.todd.e.brandt@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.01.2015 um 13:28 schrieb Richard Weinberger:
-> Am 25.01.2015 um 13:24 schrieb Alexander Holler:
->> Am 25.01.2015 um 13:08 schrieb Richard Weinberger:
->>> On Sun, Jan 25, 2015 at 12:42 PM, Alexander Holler <holler@ahsoftware.de> wrote:
->>>> Now, after I ended up into flaming a lot (sorry again, but this topic made
->>>> me angry for so long and I had to spent too much time to get rid of unwanted
->>>> content and answering other peoples question in regard to that topic), I
->>>> should offer something more useful.
->>>>
->>>> So I've written down in some short words, how I think it could be done:
->>>>
->>>> First offer a syscall named sunlink() (or whatever name) which fails if it
->>>> can't overwrite or securely trim the contents of a file before deleting it.
->>>>
->>>> That could be done like this:
->>>>
->>>> (1) If it's a SSD or MMC without offering "Secure Trim" fail.
->>>> (2) If it's a plain FLASH or conventional harddisk where writing a block
->>>> means that block will be overwritten or if it's a SSD or MMC with "Secure
->>>> Trim) go on with
->>>> (3) Identify the blocks which contain the file contents (should be doable by
->>>> using the same mechanisms used to read and write a file)
->>>> (4) Mark the file as deleted
->>>> (5) Overwrite or securely trim blocks which can be deleted completely
->>>> (6) Build new blocks for blocks which can only partly deleted because they
->>>> contain information still used by the FS or other files
->>>> (7) Instruct the FS to us the new blocks instead of the old ones
->>>> (8) Overwrite or securely trim the old blocks which previously contained
->>>> partly information of other stuff.
->>>>
->>>> Afterwards use that new syscall in shred.
->>>>
->>>> Of course, this is just a totally simplified instruction in regard to how
->>>> complicated filesystems have become, but I think there isn't any black magic
->>>> involved in offering the user a simple way to really delete files.
->>>
->>> Or add support for the "s" chattr to major filesystems.
->>>
->> And change the manpage for the 's' attribute to change the "overwriting with zero" with some other wording.
->>
->> But thanks for the hint. I wasn't aware of that bit (maybe because it's still useless on most filesystems).
->>
->> But the above silly instruction might still help in implementing support for the 's' attribute.
->>
->> Also I wonder what happens if you delete a file with such an attribute on e.g. an SSD. I assume the user just gets a false positive that the file is deleted, which isn't much
->> different to what nowadays happens and doesn't therefor really help.
->
-> The implementation will be challenging. Especially for modern filesytems like btrfs or f2fs which are copy-on-write based.
 
-Sure. I didn't thought it's easy. A quick workaround for modern SSDs and 
-similiar would be to call secure trim on all free blocks whenever shred 
-is called. Would be a rather ugly workaround, but a least something 
-which might be achieved in a short time frame instead of some bigger 
-project like it's necessary to implement that erase as it should work 
-from the beginning. Especially because that fundamental design goal of 
-safelydeleting file wasn't a design goal from the beginning, which is 
-the real failure.
+--+g7M9IMkV8truYOl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
+On Thu, Jan 22, 2015 at 12:52:06PM -0800, Todd Brandt wrote:
+> Register definitions and platform data structure
+> for fuel gauge cell devices.
+>=20
+> Signed-off-by: Todd Brandt <todd.e.brandt@linux.intel.com>
+> ---
+>  include/linux/mfd/axp20x.h | 43 ++++++++++++++++++++++++++++++++++++++++=
++--
+>  1 file changed, 41 insertions(+), 2 deletions(-)
+>=20
+> v2: same as v1 and is already accepted, re-included for continuity
+>=20
+> diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp20x.h
+> index 81589d1..dfabd6d 100644
+> --- a/include/linux/mfd/axp20x.h
+> +++ b/include/linux/mfd/axp20x.h
+> @@ -124,10 +124,27 @@ enum {
+>  #define AXP288_PMIC_ADC_H               0x56
+>  #define AXP288_PMIC_ADC_L               0x57
+>  #define AXP288_ADC_TS_PIN_CTRL          0x84
+> -
+>  #define AXP288_PMIC_ADC_EN              0x84
+> -#define AXP288_FG_TUNE5			0xed
+> =20
+> +/* Fuel Gauge */
+> +#define AXP288_FG_RDC1_REG          0xba
+> +#define AXP288_FG_RDC0_REG          0xbb
+> +#define AXP288_FG_OCVH_REG          0xbc
+> +#define AXP288_FG_OCVL_REG          0xbd
+> +#define AXP288_FG_OCV_CURVE_REG     0xc0
+> +#define AXP288_FG_DES_CAP1_REG      0xe0
+> +#define AXP288_FG_DES_CAP0_REG      0xe1
+> +#define AXP288_FG_CC_MTR1_REG       0xe2
+> +#define AXP288_FG_CC_MTR0_REG       0xe3
+> +#define AXP288_FG_OCV_CAP_REG       0xe4
+> +#define AXP288_FG_CC_CAP_REG        0xe5
+> +#define AXP288_FG_LOW_CAP_REG       0xe6
+> +#define AXP288_FG_TUNE0             0xe8
+> +#define AXP288_FG_TUNE1             0xe9
+> +#define AXP288_FG_TUNE2             0xea
+> +#define AXP288_FG_TUNE3             0xeb
+> +#define AXP288_FG_TUNE4             0xec
+> +#define AXP288_FG_TUNE5             0xed
+> =20
+>  /* Regulators IDs */
+>  enum {
+> @@ -236,4 +253,26 @@ struct axp20x_dev {
+>  	const struct regmap_irq_chip	*regmap_irq_chip;
+>  };
+> =20
+> +#define BATTID_LEN				64
+> +#define OCV_CURVE_SIZE			32
+> +#define MAX_THERM_CURVE_SIZE	25
+> +#define PD_DEF_MIN_TEMP			0
+> +#define PD_DEF_MAX_TEMP			55
+> +
+> +struct axp20x_fg_pdata {
+> +	char battid[BATTID_LEN + 1];
+> +	int design_cap;
+> +	int min_volt;
+> +	int max_volt;
+> +	int max_temp;
+> +	int min_temp;
+> +	int cap1;
+> +	int cap0;
+> +	int rdc1;
+> +	int rdc0;
+> +	int ocv_curve[OCV_CURVE_SIZE];
+> +	int tcsz;
+> +	int thermistor_curve[MAX_THERM_CURVE_SIZE][2];
+> +};
 
-Alexander Holler
+Acked-By: Sebastian Reichel <sre@kernel.org>
+
+-- Sebastian
+
+--+g7M9IMkV8truYOl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUxOiZAAoJENju1/PIO/qaYnIP/0elT4jd6qjLNb8aOWD1A5Gg
+OJ6svuzpu5AUpEWmkuXoIMuQcyuYRytWaTmI09wl91Tv6gtVDSDOk5CaI84WMZ4w
+s9xWu8oIr/ewDnjSISikTkQJQEJKIBs6DAoU6rH4oaEaMwKjPd/pRzkZFNRQk0GV
+kp68rgH1bZ7Lwl1zyZEjEVzxYHF/eNXr3tb0pCOzgVH7R88Luy11v9XneWtH6Gwb
+61KsSQRGSwCJh762VHU9Lhh1X+1sJ3bBvaKLGGS0mrkB653icyK7TCvIfxFDRsf+
+VzC1VRwVWEy118GvLV9aB82RV2aijd2y9fDQDMiNqX3VkDYg5oLJzWHIwe+dOdk2
+vsK8pqC22pTsjoBicCjbfdOWYPM9syNQCBXqIJebUA336s/6MegbItu9D3oXdn6P
+93mcZokU0X+lDM9+lqArvFhG1Z5JG3HwB19VauING4rF5Nd+nnZV0GgXksW/T9oI
+iREQ0rdGKJNr59JXGCLwf12e30Qi+L5iyMw4H+K0JOBI1705+YepCd8XysUXTPN4
+txTnXl4Tu1iZAUGMy82KBso70k+F/XW7o70KvR5I08s+Ge2Ax95+s0jh1NDLE4Xi
+SSvvhgayl08BeeaoRu5Rkk6ndG0ckG303wHC0nJaQ0E9mw0UBX6qpYQ7S+PsrWxK
+iyMRHOlF4u9RlnbgN6IC
+=hmYb
+-----END PGP SIGNATURE-----
+
+--+g7M9IMkV8truYOl--
