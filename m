@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370AbbAYTGv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:06:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
+	id S1756730AbbAYSLl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755367AbbAYSJ1 (ORCPT
+	with ESMTP id S1755370AbbAYSJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:27 -0500
+	Sun, 25 Jan 2015 13:09:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
+        Slava Shwartsman <valyushash@gmail.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 84/98] vhost-scsi: Add missing virtio-scsi -> TCM attribute conversion
-Date: Sun, 25 Jan 2015 10:07:42 -0800
-Message-Id: <20150125180716.537282972@linuxfoundation.org>
+Subject: [PATCH 3.14 85/98] iscsi,iser-target: Initiate termination only once
+Date: Sun, 25 Jan 2015 10:07:43 -0800
+Message-Id: <20150125180716.601126930@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
 References: <20150125180712.859646324@linuxfoundation.org>
@@ -30,68 +30,218 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 46243860806bdc2756f3ce8ac86b4d7c616bcd6c upstream.
+commit 954f23722b5753305be490330cf2680b7a25f4a3 upstream.
 
-While looking at hch's recent conversion to drop the MSG_*_TAG
-definitions, I noticed a long standing bug in vhost-scsi where
-the VIRTIO_SCSI_S_* attribute definitions where incorrectly
-being passed directly into target_submit_cmd_map_sgls().
+Since commit 0fc4ea701fcf ("Target/iser: Don't put isert_conn inside
+disconnected handler") we put the conn kref in isert_wait_conn, so we
+need .wait_conn to be invoked also in the error path.
 
-This patch adds the missing virtio-scsi to TCM/SAM task attribute
-conversion.
+Introduce call to isert_conn_terminate (called under lock)
+which transitions the connection state to TERMINATING and calls
+rdma_disconnect. If the state is already teminating, just bail
+out back (temination started).
 
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
+Also, make sure to destroy the connection when getting a connect
+error event if didn't get to connected (state UP). Same for the
+handling of REJECTED and UNREACHABLE cma events.
+
+Squashed:
+
+iscsi-target: Add call to wait_conn in establishment error flow
+
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
 ---
- drivers/vhost/scsi.c |   24 +++++++++++++++++++++---
- 1 file changed, 21 insertions(+), 3 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c   |   84 ++++++++++++++++++------------
+ drivers/infiniband/ulp/isert/ib_isert.h   |    1 
+ drivers/target/iscsi/iscsi_target_login.c |    3 +
+ 3 files changed, 54 insertions(+), 34 deletions(-)
 
---- a/drivers/vhost/scsi.c
-+++ b/drivers/vhost/scsi.c
-@@ -861,6 +861,23 @@ vhost_scsi_map_iov_to_sgl(struct tcm_vho
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -692,6 +692,33 @@ isert_put_conn(struct isert_conn *isert_
+ 	kref_put(&isert_conn->conn_kref, isert_release_conn_kref);
+ }
+ 
++/**
++ * isert_conn_terminate() - Initiate connection termination
++ * @isert_conn: isert connection struct
++ *
++ * Notes:
++ * In case the connection state is UP, move state
++ * to TEMINATING and start teardown sequence (rdma_disconnect).
++ *
++ * This routine must be called with conn_mutex held. Thus it is
++ * safe to call multiple times.
++ */
++static void
++isert_conn_terminate(struct isert_conn *isert_conn)
++{
++	int err;
++
++	if (isert_conn->state == ISER_CONN_UP) {
++		isert_conn->state = ISER_CONN_TERMINATING;
++		pr_info("Terminating conn %p state %d\n",
++			   isert_conn, isert_conn->state);
++		err = rdma_disconnect(isert_conn->conn_cm_id);
++		if (err)
++			pr_warn("Failed rdma_disconnect isert_conn %p\n",
++				   isert_conn);
++	}
++}
++
+ static void
+ isert_disconnect_work(struct work_struct *work)
+ {
+@@ -700,33 +727,15 @@ isert_disconnect_work(struct work_struct
+ 
+ 	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	if (isert_conn->state == ISER_CONN_UP)
+-		isert_conn->state = ISER_CONN_TERMINATING;
+-
+-	if (isert_conn->post_recv_buf_count == 0 &&
+-	    atomic_read(&isert_conn->post_send_buf_count) == 0) {
+-		mutex_unlock(&isert_conn->conn_mutex);
+-		goto wake_up;
+-	}
+-	if (!isert_conn->conn_cm_id) {
+-		mutex_unlock(&isert_conn->conn_mutex);
+-		isert_put_conn(isert_conn);
+-		return;
+-	}
+-
+-	if (isert_conn->disconnect) {
+-		/* Send DREQ/DREP towards our initiator */
+-		rdma_disconnect(isert_conn->conn_cm_id);
+-	}
+-
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+-wake_up:
++	pr_info("conn %p completing conn_wait\n", isert_conn);
+ 	complete(&isert_conn->conn_wait);
+ }
+ 
+ static int
+-isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
++isert_disconnected_handler(struct rdma_cm_id *cma_id)
+ {
+ 	struct isert_conn *isert_conn;
+ 
+@@ -739,18 +748,24 @@ isert_disconnected_handler(struct rdma_c
+ 
+ 	isert_conn = (struct isert_conn *)cma_id->context;
+ 
+-	isert_conn->disconnect = disconnect;
+ 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
+ 	schedule_work(&isert_conn->conn_logout_work);
+ 
  	return 0;
  }
  
-+static int vhost_scsi_to_tcm_attr(int attr)
++static void
++isert_connect_error(struct rdma_cm_id *cma_id)
 +{
-+	switch (attr) {
-+	case VIRTIO_SCSI_S_SIMPLE:
-+		return MSG_SIMPLE_TAG;
-+	case VIRTIO_SCSI_S_ORDERED:
-+		return MSG_ORDERED_TAG;
-+	case VIRTIO_SCSI_S_HEAD:
-+		return MSG_HEAD_TAG;
-+	case VIRTIO_SCSI_S_ACA:
-+		return MSG_ACA_TAG;
-+	default:
-+		break;
-+	}
-+	return MSG_SIMPLE_TAG;
++	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
++
++	isert_put_conn(isert_conn);
 +}
 +
- static void tcm_vhost_submission_work(struct work_struct *work)
+ static int
+ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
  {
- 	struct tcm_vhost_cmd *cmd =
-@@ -887,9 +904,10 @@ static void tcm_vhost_submission_work(st
- 	rc = target_submit_cmd_map_sgls(se_cmd, tv_nexus->tvn_se_sess,
- 			cmd->tvc_cdb, &cmd->tvc_sense_buf[0],
- 			cmd->tvc_lun, cmd->tvc_exp_data_len,
--			cmd->tvc_task_attr, cmd->tvc_data_direction,
--			TARGET_SCF_ACK_KREF, sg_ptr, cmd->tvc_sgl_count,
--			sg_bidi_ptr, sg_no_bidi, NULL, 0);
-+			vhost_scsi_to_tcm_attr(cmd->tvc_task_attr),
-+			cmd->tvc_data_direction, TARGET_SCF_ACK_KREF,
-+			sg_ptr, cmd->tvc_sgl_count, sg_bidi_ptr, sg_no_bidi,
-+			NULL, 0);
- 	if (rc < 0) {
- 		transport_send_check_condition_and_sense(se_cmd,
- 				TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE, 0);
+ 	int ret = 0;
+-	bool disconnect = false;
+ 
+ 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
+ 		 event->event, event->status, cma_id->context, cma_id);
+@@ -768,11 +783,14 @@ isert_cma_handler(struct rdma_cm_id *cma
+ 	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
+ 	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
+ 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
+-		disconnect = true;
+ 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
+-		ret = isert_disconnected_handler(cma_id, disconnect);
++		ret = isert_disconnected_handler(cma_id);
+ 		break;
++	case RDMA_CM_EVENT_REJECTED:       /* FALLTHRU */
++	case RDMA_CM_EVENT_UNREACHABLE:    /* FALLTHRU */
+ 	case RDMA_CM_EVENT_CONNECT_ERROR:
++		isert_connect_error(cma_id);
++		break;
+ 	default:
+ 		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
+ 		break;
+@@ -1799,7 +1817,7 @@ isert_cq_rx_comp_err(struct isert_conn *
+ 		msleep(3000);
+ 
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	isert_conn->state = ISER_CONN_DOWN;
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ 	iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
+@@ -2798,10 +2816,6 @@ static void isert_wait_conn(struct iscsi
+ 	pr_debug("isert_wait_conn: Starting \n");
+ 
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	if (isert_conn->conn_cm_id) {
+-		pr_debug("Calling rdma_disconnect from isert_wait_conn\n");
+-		rdma_disconnect(isert_conn->conn_cm_id);
+-	}
+ 	/*
+ 	 * Only wait for conn_wait_comp_err if the isert_conn made it
+ 	 * into full feature phase..
+@@ -2810,13 +2824,17 @@ static void isert_wait_conn(struct iscsi
+ 		mutex_unlock(&isert_conn->conn_mutex);
+ 		return;
+ 	}
+-	if (isert_conn->state == ISER_CONN_UP)
+-		isert_conn->state = ISER_CONN_TERMINATING;
++	isert_conn_terminate(isert_conn);
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ 	wait_for_completion(&isert_conn->conn_wait_comp_err);
+-
+ 	wait_for_completion(&isert_conn->conn_wait);
++
++	mutex_lock(&isert_conn->conn_mutex);
++	isert_conn->state = ISER_CONN_DOWN;
++	mutex_unlock(&isert_conn->conn_mutex);
++
++	pr_info("Destroying conn %p\n", isert_conn);
+ 	isert_put_conn(isert_conn);
+ }
+ 
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -127,7 +127,6 @@ struct isert_conn {
+ #define ISERT_COMP_BATCH_COUNT	8
+ 	int			conn_comp_batch;
+ 	struct llist_head	conn_comp_llist;
+-	bool                    disconnect;
+ };
+ 
+ #define ISERT_MAX_CQ 64
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -1186,6 +1186,9 @@ old_sess_out:
+ 		conn->sock = NULL;
+ 	}
+ 
++	if (conn->conn_transport->iscsit_wait_conn)
++		conn->conn_transport->iscsit_wait_conn(conn);
++
+ 	if (conn->conn_transport->iscsit_free_conn)
+ 		conn->conn_transport->iscsit_free_conn(conn);
+ 
 
 
