@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070AbbAYSKb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:10:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
+	id S1757785AbbAYSgL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:36:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430AbbAYSIq (ORCPT
+	with ESMTP id S1755940AbbAYSKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:46 -0500
+	Sun, 25 Jan 2015 13:10:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Len Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Nishanth Menon <nm@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.10 40/50] ARM: omap5/dra7xx: Fix frequency typos
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.18 128/183] uas: Add US_FL_NO_REPORT_OPCODES for JMicron JMS566 with usb-id 0bc2:a013
 Date: Sun, 25 Jan 2015 10:07:30 -0800
-Message-Id: <20150125180704.895471541@linuxfoundation.org>
+Message-Id: <20150125180815.725665757@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,57 +24,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 572b24e6d85d98cdc552f07e9fb9870d9460d81b upstream.
+commit c6fa3945c8b5baf62f2e849104ecd6f3a1e5e407 upstream.
 
-The switch statement of the possible list of SYSCLK1 frequencies is
-missing a 0 in 4 out of the 7 frequencies.
+Like the JMicron JMS567 enclosures with the JMS566 choke on report-opcodes,
+so avoid it.
 
-Fixes: fa6d79d27614 ("ARM: OMAP: Add initialisation for the real-time counter")
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Reviewed-by: Lokesh Vutla <lokeshvutla@ti.com>
-Acked-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Tested-and-reported-by: Takeo Nakayama <javhera@gmx.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/arm/mach-omap2/timer.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -503,11 +503,11 @@ static void __init realtime_counter_init
- 	rate = clk_get_rate(sys_clk);
- 	/* Numerator/denumerator values refer TRM Realtime Counter section */
- 	switch (rate) {
--	case 1200000:
-+	case 12000000:
- 		num = 64;
- 		den = 125;
- 		break;
--	case 1300000:
-+	case 13000000:
- 		num = 768;
- 		den = 1625;
- 		break;
-@@ -515,11 +515,11 @@ static void __init realtime_counter_init
- 		num = 8;
- 		den = 25;
- 		break;
--	case 2600000:
-+	case 26000000:
- 		num = 384;
- 		den = 1625;
- 		break;
--	case 2700000:
-+	case 27000000:
- 		num = 256;
- 		den = 1125;
- 		break;
+diff --git a/drivers/usb/storage/unusual_uas.h b/drivers/usb/storage/unusual_uas.h
+index 2918376a1979..2f0a3d35269a 100644
+--- a/drivers/usb/storage/unusual_uas.h
++++ b/drivers/usb/storage/unusual_uas.h
+@@ -111,6 +111,13 @@ UNUSUAL_DEV(0x2109, 0x0711, 0x0000, 0x9999,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_NO_ATA_1X),
+ 
++/* Reported-by: Takeo Nakayama <javhera@gmx.com> */
++UNUSUAL_DEV(0x357d, 0x7788, 0x0000, 0x9999,
++		"JMicron",
++		"JMS566",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_NO_REPORT_OPCODES),
++
+ /* Reported-by: Hans de Goede <hdegoede@redhat.com> */
+ UNUSUAL_DEV(0x4971, 0x1012, 0x0000, 0x9999,
+ 		"Hitachi",
 
 
