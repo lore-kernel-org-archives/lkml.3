@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677AbbAYSzm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:55:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57780 "EHLO
+	id S1758662AbbAYSzj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:55:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620AbbAYSJt (ORCPT
+	with ESMTP id S1755627AbbAYSJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Munsie <imunsie@au1.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.18 054/183] cxl: Unmap MMIO regions when detaching a context
-Date: Sun, 25 Jan 2015 10:06:16 -0800
-Message-Id: <20150125180812.515208418@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.18 055/183] xhci: Check if slot is already in default state before moving it there
+Date: Sun, 25 Jan 2015 10:06:17 -0800
+Message-Id: <20150125180812.556069498@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -29,106 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit b123429e6a9e8d03aacf888d23262835f0081448 upstream.
+commit f161ead70fa6a62e432dff6e9dab8e3cfbeabea6 upstream.
 
-If we need to force detach a context (e.g. due to EEH or simply force
-unbinding the driver) we should prevent the userspace contexts from
-being able to access the Problem State Area MMIO region further, which
-they may have mapped with mmap().
+Solves xhci error cases with debug messages:
+xhci_hcd 0000:00:14.0: Setup ERROR: setup context command for slot 1.
+usb 1-6: hub failed to enable device, error -22
 
-This patch unmaps any mapped MMIO regions when detaching a userspace
-context.
+xhci will give a context state error if we try to set a slot in default
+state to the same default state with a special address device command.
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Turns out this happends in several cases:
+- retry reading the device rescriptor in hub_port_init()
+- usb_reset_device() is called for a slot in default state
+- in resume path, usb_port_resume() calls hub_port_init()
+
+The default state is usually reached from most states with a reset device
+command without any context state errors, but using the address device
+command with BSA bit set (block set address) only works from the enabled
+state and will otherwise cause context error.
+
+solve this by checking if we are already in the default state before issuing
+a address device BSA=1 command.
+
+Fixes: 48fc7dbd52c0 ("usb: xhci: change enumeration scheme to 'new scheme'")
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/cxl/context.c |   11 ++++++++++-
- drivers/misc/cxl/cxl.h     |    7 ++++++-
- drivers/misc/cxl/file.c    |    6 +++++-
- 3 files changed, 21 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/misc/cxl/context.c
-+++ b/drivers/misc/cxl/context.c
-@@ -34,7 +34,8 @@ struct cxl_context *cxl_context_alloc(vo
- /*
-  * Initialises a CXL context.
-  */
--int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master)
-+int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master,
-+		     struct address_space *mapping)
- {
- 	int i;
- 
-@@ -42,6 +43,8 @@ int cxl_context_init(struct cxl_context
- 	ctx->afu = afu;
- 	ctx->master = master;
- 	ctx->pid = NULL; /* Set in start work ioctl */
-+	mutex_init(&ctx->mapping_lock);
-+	ctx->mapping = mapping;
- 
- 	/*
- 	 * Allocate the segment table before we put it in the IDR so that we
-@@ -147,6 +150,12 @@ static void __detach_context(struct cxl_
- 	afu_release_irqs(ctx);
- 	flush_work(&ctx->fault_work); /* Only needed for dedicated process */
- 	wake_up_all(&ctx->wq);
-+
-+	/* Release Problem State Area mapping */
-+	mutex_lock(&ctx->mapping_lock);
-+	if (ctx->mapping)
-+		unmap_mapping_range(ctx->mapping, 0, 0, 1);
-+	mutex_unlock(&ctx->mapping_lock);
- }
- 
- /*
---- a/drivers/misc/cxl/cxl.h
-+++ b/drivers/misc/cxl/cxl.h
-@@ -390,6 +390,10 @@ struct cxl_context {
- 	phys_addr_t psn_phys;
- 	u64 psn_size;
- 
-+	/* Used to unmap any mmaps when force detaching */
-+	struct address_space *mapping;
-+	struct mutex mapping_lock;
-+
- 	spinlock_t sste_lock; /* Protects segment table entries */
- 	struct cxl_sste *sstp;
- 	u64 sstp0, sstp1;
-@@ -592,7 +596,8 @@ int cxl_alloc_sst(struct cxl_context *ct
- void init_cxl_native(void);
- 
- struct cxl_context *cxl_context_alloc(void);
--int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master);
-+int cxl_context_init(struct cxl_context *ctx, struct cxl_afu *afu, bool master,
-+		     struct address_space *mapping);
- void cxl_context_free(struct cxl_context *ctx);
- int cxl_context_iomap(struct cxl_context *ctx, struct vm_area_struct *vma);
- 
---- a/drivers/misc/cxl/file.c
-+++ b/drivers/misc/cxl/file.c
-@@ -77,7 +77,7 @@ static int __afu_open(struct inode *inod
- 		goto err_put_afu;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3803,6 +3803,15 @@ static int xhci_setup_device(struct usb_
+ 		return -EINVAL;
  	}
  
--	if ((rc = cxl_context_init(ctx, afu, master)))
-+	if ((rc = cxl_context_init(ctx, afu, master, inode->i_mapping)))
- 		goto err_put_afu;
- 
- 	pr_devel("afu_open pe: %i\n", ctx->pe);
-@@ -113,6 +113,10 @@ static int afu_release(struct inode *ino
- 		 __func__, ctx->pe);
- 	cxl_context_detach(ctx);
- 
-+	mutex_lock(&ctx->mapping_lock);
-+	ctx->mapping = NULL;
-+	mutex_unlock(&ctx->mapping_lock);
++	if (setup == SETUP_CONTEXT_ONLY) {
++		slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->out_ctx);
++		if (GET_SLOT_STATE(le32_to_cpu(slot_ctx->dev_state)) ==
++		    SLOT_STATE_DEFAULT) {
++			xhci_dbg(xhci, "Slot already in default state\n");
++			return 0;
++		}
++	}
 +
- 	put_device(&ctx->afu->dev);
- 
- 	/*
+ 	command = xhci_alloc_command(xhci, false, false, GFP_KERNEL);
+ 	if (!command)
+ 		return -ENOMEM;
 
 
