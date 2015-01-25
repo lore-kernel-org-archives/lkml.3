@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292AbbAYTdS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:33:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S1756287AbbAYSK5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:10:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754460AbbAYSIs (ORCPT
+	with ESMTP id S1754463AbbAYSIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:08:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 3.10 44/50] x86, um: actually mark system call tables readonly
-Date: Sun, 25 Jan 2015 10:07:34 -0800
-Message-Id: <20150125180705.100843408@linuxfoundation.org>
+        Bruce Fields <bfields@fieldses.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 45/50] LOCKD: Fix a race when initialising nlmsvc_timeout
+Date: Sun, 25 Jan 2015 10:07:35 -0800
+Message-Id: <20150125180705.167267043@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
 References: <20150125180702.521559311@linuxfoundation.org>
@@ -31,64 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit b485342bd79af363c77ef1a421c4a0aef2de9812 upstream.
+commit 06bed7d18c2c07b3e3eeadf4bd357f6e806618cc upstream.
 
-Commit a074335a370e ("x86, um: Mark system call tables readonly") was
-supposed to mark the sys_call_table in UML as RO by adding the const,
-but it doesn't have the desired effect as it's nevertheless being placed
-into the data section since __cacheline_aligned enforces sys_call_table
-being placed into .data..cacheline_aligned instead. We need to use
-the ____cacheline_aligned version instead to fix this issue.
+This commit fixes a race whereby nlmclnt_init() first starts the lockd
+daemon, and then calls nlm_bind_host() with the expectation that
+nlmsvc_timeout has already been initialised. Unfortunately, there is no
+no synchronisation between lockd() and lockd_up() to guarantee that this
+is the case.
 
-Before:
+Fix is to move the initialisation of nlmsvc_timeout into lockd_create_svc
 
-$ nm -v arch/x86/um/sys_call_table_64.o | grep -1 "sys_call_table"
-                 U sys_writev
-0000000000000000 D sys_call_table
-0000000000000000 D syscall_table_size
-
-After:
-
-$ nm -v arch/x86/um/sys_call_table_64.o | grep -1 "sys_call_table"
-                 U sys_writev
-0000000000000000 R sys_call_table
-0000000000000000 D syscall_table_size
-
-Fixes: a074335a370e ("x86, um: Mark system call tables readonly")
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Fixes: 9a1b6bf818e74 ("LOCKD: Don't call utsname()->nodename...")
+Cc: Bruce Fields <bfields@fieldses.org>
+Cc: stable@vger.kernel.org # 3.10.x
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/um/sys_call_table_32.c |    2 +-
- arch/x86/um/sys_call_table_64.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/lockd/svc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/x86/um/sys_call_table_32.c
-+++ b/arch/x86/um/sys_call_table_32.c
-@@ -34,7 +34,7 @@ typedef asmlinkage void (*sys_call_ptr_t
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -137,10 +137,6 @@ lockd(void *vrqstp)
  
- extern asmlinkage void sys_ni_syscall(void);
+ 	dprintk("NFS locking service started (ver " LOCKD_VERSION ").\n");
  
--const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
-+const sys_call_ptr_t sys_call_table[] ____cacheline_aligned = {
+-	if (!nlm_timeout)
+-		nlm_timeout = LOCKD_DFLT_TIMEO;
+-	nlmsvc_timeout = nlm_timeout * HZ;
+-
  	/*
- 	 * Smells like a compiler bug -- it doesn't work
- 	 * when the & below is removed.
---- a/arch/x86/um/sys_call_table_64.c
-+++ b/arch/x86/um/sys_call_table_64.c
-@@ -46,7 +46,7 @@ typedef void (*sys_call_ptr_t)(void);
+ 	 * The main request loop. We don't terminate until the last
+ 	 * NFS mount or NFS daemon has gone away.
+@@ -346,6 +342,10 @@ static struct svc_serv *lockd_create_svc
+ 		printk(KERN_WARNING
+ 			"lockd_up: no pid, %d users??\n", nlmsvc_users);
  
- extern void sys_ni_syscall(void);
- 
--const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
-+const sys_call_ptr_t sys_call_table[] ____cacheline_aligned = {
- 	/*
- 	 * Smells like a compiler bug -- it doesn't work
- 	 * when the & below is removed.
++	if (!nlm_timeout)
++		nlm_timeout = LOCKD_DFLT_TIMEO;
++	nlmsvc_timeout = nlm_timeout * HZ;
++
+ 	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
+ 	if (!serv) {
+ 		printk(KERN_WARNING "lockd_up: create service failed\n");
 
 
