@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759111AbbAYT11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:27:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S1758602AbbAYSt1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:49:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315AbbAYSI6 (ORCPT
+	with ESMTP id S1755752AbbAYSKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:58 -0500
+	Sun, 25 Jan 2015 13:10:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nils Holland <nholland@tisys.org>,
-        Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>,
-        Prashant Sreedharan <prashant@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 05/98] tg3: tg3_disable_ints using uninitialized mailbox value to disable interrupts
-Date: Sun, 25 Jan 2015 10:06:23 -0800
-Message-Id: <20150125180713.093778825@linuxfoundation.org>
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Eric Biggers <ebiggers3@gmail.com>, Kalle Valo <kvalo@codeaurora.org>
+Subject: [PATCH 3.18 062/183] rtlwifi: Fix error when accessing unmapped memory in skb
+Date: Sun, 25 Jan 2015 10:06:24 -0800
+Message-Id: <20150125180812.877505995@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -28,91 +25,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Prashant Sreedharan <prashant@broadcom.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-[ Upstream commit 05b0aa579397b734f127af58e401a30784a1e315 ]
+commit e9538cf4f90713eca71b1d6a74b4eae1d445c664 upstream.
 
-During driver load in tg3_init_one, if the driver detects DMA activity before
-intializing the chip tg3_halt is called. As part of tg3_halt interrupts are
-disabled using routine tg3_disable_ints. This routine was using mailbox value
-which was not initialized (default value is 0). As a result driver was writing
-0x00000001 to pci config space register 0, which is the vendor id / device id.
+These drivers use 9100-byte receive buffers, thus allocating an skb requires
+an O(3) memory allocation. Under heavy memory loads and fragmentation, such
+a request can fail. Previous versions of the driver have dropped the packet
+and reused the old buffer; however, the new version introduced a bug in that
+it released the old buffer before trying to allocate a new one. The previous
+method is implemented here. The skb is unmapped before any attempt is made to
+allocate another.
 
-This driver bug was exposed because of the commit a7877b17a667 (PCI: Check only
-the Vendor ID to identify Configuration Request Retry). Also this issue is only
-seen in older generation chipsets like 5722 because config space write to offset
-0 from driver is possible. The newer generation chips ignore writes to offset 0.
-Also without commit a7877b17a667, for these older chips when a GRC reset is
-issued the Bootcode would reprogram the vendor id/device id, which is the reason
-this bug was masked earlier.
-
-Fixed by initializing the interrupt mailbox registers before calling tg3_halt.
-
-Please queue for -stable.
-
-Reported-by: Nils Holland <nholland@tisys.org>
-Reported-by: Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>
-Signed-off-by: Prashant Sreedharan <prashant@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Eric Biggers <ebiggers3@gmail.com>
+Cc: Eric Biggers <ebiggers3@gmail.com>
+Signed-off-by: Kalle Valo <kvalo@codeaurora.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/tg3.c |   34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -17731,23 +17731,6 @@ static int tg3_init_one(struct pci_dev *
- 		goto err_out_apeunmap;
- 	}
+---
+ drivers/net/wireless/rtlwifi/pci.c |   32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
+
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -666,7 +666,8 @@ tx_status_ok:
+ }
  
--	/*
--	 * Reset chip in case UNDI or EFI driver did not shutdown
--	 * DMA self test will enable WDMAC and we'll see (spurious)
--	 * pending DMA on the PCI bus at that point.
--	 */
--	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
--	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
--		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
--		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
--	}
--
--	err = tg3_test_dma(tp);
--	if (err) {
--		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
--		goto err_out_apeunmap;
--	}
--
- 	intmbx = MAILBOX_INTERRUPT_0 + TG3_64BIT_REG_LOW;
- 	rcvmbx = MAILBOX_RCVRET_CON_IDX_0 + TG3_64BIT_REG_LOW;
- 	sndmbx = MAILBOX_SNDHOST_PROD_IDX_0 + TG3_64BIT_REG_LOW;
-@@ -17792,6 +17775,23 @@ static int tg3_init_one(struct pci_dev *
- 			sndmbx += 0xc;
- 	}
+ static int _rtl_pci_init_one_rxdesc(struct ieee80211_hw *hw,
+-				    u8 *entry, int rxring_idx, int desc_idx)
++				    struct sk_buff *new_skb, u8 *entry,
++				    int rxring_idx, int desc_idx)
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+@@ -674,11 +675,15 @@ static int _rtl_pci_init_one_rxdesc(stru
+ 	u8 tmp_one = 1;
+ 	struct sk_buff *skb;
  
-+	/*
-+	 * Reset chip in case UNDI or EFI driver did not shutdown
-+	 * DMA self test will enable WDMAC and we'll see (spurious)
-+	 * pending DMA on the PCI bus at that point.
-+	 */
-+	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
-+	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
-+		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
-+		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
++	if (likely(new_skb)) {
++		skb = new_skb;
++		goto remap;
 +	}
-+
-+	err = tg3_test_dma(tp);
-+	if (err) {
-+		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
-+		goto err_out_apeunmap;
-+	}
-+
- 	tg3_init_coal(tp);
+ 	skb = dev_alloc_skb(rtlpci->rxbuffersize);
+ 	if (!skb)
+ 		return 0;
+-	rtlpci->rx_ring[rxring_idx].rx_buf[desc_idx] = skb;
  
- 	pci_set_drvdata(pdev, dev);
++remap:
+ 	/* just set skb->cb to mapping addr for pci_unmap_single use */
+ 	*((dma_addr_t *)skb->cb) =
+ 		pci_map_single(rtlpci->pdev, skb_tail_pointer(skb),
+@@ -686,6 +691,7 @@ static int _rtl_pci_init_one_rxdesc(stru
+ 	bufferaddress = *((dma_addr_t *)skb->cb);
+ 	if (pci_dma_mapping_error(rtlpci->pdev, bufferaddress))
+ 		return 0;
++	rtlpci->rx_ring[rxring_idx].rx_buf[desc_idx] = skb;
+ 	if (rtlpriv->use_new_trx_flow) {
+ 		rtlpriv->cfg->ops->set_desc(hw, (u8 *)entry, false,
+ 					    HW_DESC_RX_PREPARE,
+@@ -781,6 +787,7 @@ static void _rtl_pci_rx_interrupt(struct
+ 		/*rx pkt */
+ 		struct sk_buff *skb = rtlpci->rx_ring[rxring_idx].rx_buf[
+ 				      rtlpci->rx_ring[rxring_idx].idx];
++		struct sk_buff *new_skb;
+ 
+ 		if (rtlpriv->use_new_trx_flow) {
+ 			rx_remained_cnt =
+@@ -807,6 +814,13 @@ static void _rtl_pci_rx_interrupt(struct
+ 		pci_unmap_single(rtlpci->pdev, *((dma_addr_t *)skb->cb),
+ 				 rtlpci->rxbuffersize, PCI_DMA_FROMDEVICE);
+ 
++		/* get a new skb - if fail, old one will be reused */
++		new_skb = dev_alloc_skb(rtlpci->rxbuffersize);
++		if (unlikely(!new_skb)) {
++			pr_err("Allocation of new skb failed in %s\n",
++			       __func__);
++			goto no_new;
++		}
+ 		if (rtlpriv->use_new_trx_flow) {
+ 			buffer_desc =
+ 			  &rtlpci->rx_ring[rxring_idx].buffer_desc
+@@ -911,14 +925,16 @@ static void _rtl_pci_rx_interrupt(struct
+ 			schedule_work(&rtlpriv->works.lps_change_work);
+ 		}
+ end:
++		skb = new_skb;
++no_new:
+ 		if (rtlpriv->use_new_trx_flow) {
+-			_rtl_pci_init_one_rxdesc(hw, (u8 *)buffer_desc,
++			_rtl_pci_init_one_rxdesc(hw, skb, (u8 *)buffer_desc,
+ 						 rxring_idx,
+-					       rtlpci->rx_ring[rxring_idx].idx);
++						 rtlpci->rx_ring[rxring_idx].idx);
+ 		} else {
+-			_rtl_pci_init_one_rxdesc(hw, (u8 *)pdesc, rxring_idx,
++			_rtl_pci_init_one_rxdesc(hw, skb, (u8 *)pdesc,
++						 rxring_idx,
+ 						 rtlpci->rx_ring[rxring_idx].idx);
+-
+ 			if (rtlpci->rx_ring[rxring_idx].idx ==
+ 			    rtlpci->rxringcount - 1)
+ 				rtlpriv->cfg->ops->set_desc(hw, (u8 *)pdesc,
+@@ -1307,7 +1323,7 @@ static int _rtl_pci_init_rx_ring(struct
+ 		rtlpci->rx_ring[rxring_idx].idx = 0;
+ 		for (i = 0; i < rtlpci->rxringcount; i++) {
+ 			entry = &rtlpci->rx_ring[rxring_idx].buffer_desc[i];
+-			if (!_rtl_pci_init_one_rxdesc(hw, (u8 *)entry,
++			if (!_rtl_pci_init_one_rxdesc(hw, NULL, (u8 *)entry,
+ 						      rxring_idx, i))
+ 				return -ENOMEM;
+ 		}
+@@ -1332,7 +1348,7 @@ static int _rtl_pci_init_rx_ring(struct
+ 
+ 		for (i = 0; i < rtlpci->rxringcount; i++) {
+ 			entry = &rtlpci->rx_ring[rxring_idx].desc[i];
+-			if (!_rtl_pci_init_one_rxdesc(hw, (u8 *)entry,
++			if (!_rtl_pci_init_one_rxdesc(hw, NULL, (u8 *)entry,
+ 						      rxring_idx, i))
+ 				return -ENOMEM;
+ 		}
 
 
