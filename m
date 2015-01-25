@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757768AbbAYSgJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:36:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57868 "EHLO
+	id S1756116AbbAYSKg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:10:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57319 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368AbbAYSKU (ORCPT
+	with ESMTP id S1754437AbbAYSIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:20 -0500
+	Sun, 25 Jan 2015 13:08:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.18 129/183] uas: Add US_FL_NO_ATA_1X for 2 more Seagate disk enclosures
-Date: Sun, 25 Jan 2015 10:07:31 -0800
-Message-Id: <20150125180815.772969773@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Alain Knaff <alain@knaff.lu>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 42/50] decompress_bunzip2: off by one in get_next_block()
+Date: Sun, 25 Jan 2015 10:07:32 -0800
+Message-Id: <20150125180704.994315210@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,53 +27,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 3ca8c717429b90f621aed28af029da4c3da378bc upstream.
+commit b5c8afe5be51078a979d86ae5ae78c4ac948063d upstream.
 
-Just like all previous UAS capable Seagate disk enclosures, these need the
-US_FL_NO_ATA_1X to not crash when udev probes them.
+"origPtr" is used as an offset into the bd->dbuf[] array.  That array is
+allocated in start_bunzip() and has "bd->dbufSize" number of elements so
+the test here should be >= instead of >.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Later we check "origPtr" again before using it as an offset so I don't
+know if this bug can be triggered in real life.
+
+Fixes: bc22c17e12c1 ('bzip2/lzma: library support for gzip, bzip2 and lzma decompression')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Alain Knaff <alain@knaff.lu>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_uas.h |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ lib/decompress_bunzip2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -75,6 +75,13 @@ UNUSUAL_DEV(0x0bc2, 0xa013, 0x0000, 0x99
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_ATA_1X),
- 
-+/* Reported-by: Hans de Goede <hdegoede@redhat.com> */
-+UNUSUAL_DEV(0x0bc2, 0xa0a4, 0x0000, 0x9999,
-+		"Seagate",
-+		"Backup Plus Desk",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_ATA_1X),
-+
- /* https://bbs.archlinux.org/viewtopic.php?id=183190 */
- UNUSUAL_DEV(0x0bc2, 0xab20, 0x0000, 0x9999,
- 		"Seagate",
-@@ -89,6 +96,13 @@ UNUSUAL_DEV(0x0bc2, 0xab21, 0x0000, 0x99
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_ATA_1X),
- 
-+/* Reported-by: G. Richard Bellamy <rbellamy@pteradigm.com> */
-+UNUSUAL_DEV(0x0bc2, 0xab2a, 0x0000, 0x9999,
-+		"Seagate",
-+		"BUP Fast HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_ATA_1X),
-+
- /* Reported-by: Claudio Bizzarri <claudio.bizzarri@gmail.com> */
- UNUSUAL_DEV(0x152d, 0x0567, 0x0000, 0x9999,
- 		"JMicron",
+--- a/lib/decompress_bunzip2.c
++++ b/lib/decompress_bunzip2.c
+@@ -184,7 +184,7 @@ static int INIT get_next_block(struct bu
+ 	if (get_bits(bd, 1))
+ 		return RETVAL_OBSOLETE_INPUT;
+ 	origPtr = get_bits(bd, 24);
+-	if (origPtr > dbufSize)
++	if (origPtr >= dbufSize)
+ 		return RETVAL_DATA_ERROR;
+ 	/* mapping table: if some byte values are never used (encoding things
+ 	   like ascii text), the compression code removes the gaps to have fewer
 
 
