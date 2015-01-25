@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035AbbAYSjv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:39:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58023 "EHLO
+	id S1757879AbbAYTPB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:15:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57548 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885AbbAYSKP (ORCPT
+	with ESMTP id S1755203AbbAYSJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:15 -0500
+	Sun, 25 Jan 2015 13:09:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 3.18 113/183] vfio-pci: Fix the check on pci device type in vfio_pci_probe()
+        Johan Hovold <johan@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.14 57/98] gpio: fix memory and reference leaks in gpiochip_add error path
 Date: Sun, 25 Jan 2015 10:07:15 -0800
-Message-Id: <20150125180815.115354521@linuxfoundation.org>
+Message-Id: <20150125180715.329686973@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,45 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 7c2e211f3c95b91912a92a8c6736343690042e2e upstream.
+commit 5539b3c938d64a60cb1fc442ac3ce9263d52de0c upstream.
 
-Current vfio-pci just supports normal pci device, so vfio_pci_probe() will
-return if the pci device is not a normal device. While current code makes a
-mistake. PCI_HEADER_TYPE is the offset in configuration space of the device
-type, but we use this value to mask the type value.
+Memory allocated and references taken by of_gpiochip_add and
+acpi_gpiochip_add were never released on errors in gpiochip_add (e.g.
+failure to find free gpio range).
 
-This patch fixs this by do the check directly on the pci_dev->hdr_type.
+Fixes: 391c970c0dd1 ("of/gpio: add default of_xlate function if device
+has a node pointer")
+Fixes: 664e3e5ac64c ("gpio / ACPI: register to ACPI events
+automatically")
 
-Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vfio/pci/vfio_pci.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/gpio/gpiolib.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -839,13 +839,11 @@ static const struct vfio_device_ops vfio
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1222,6 +1222,9 @@ int gpiochip_add(struct gpio_chip *chip)
  
- static int vfio_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
--	u8 type;
- 	struct vfio_pci_device *vdev;
- 	struct iommu_group *group;
- 	int ret;
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
  
--	pci_read_config_byte(pdev, PCI_HEADER_TYPE, &type);
--	if ((type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL)
-+	if (pdev->hdr_type != PCI_HEADER_TYPE_NORMAL)
- 		return -EINVAL;
++	if (status)
++		goto fail;
++
+ #ifdef CONFIG_PINCTRL
+ 	INIT_LIST_HEAD(&chip->pin_ranges);
+ #endif
+@@ -1229,12 +1232,12 @@ int gpiochip_add(struct gpio_chip *chip)
+ 	of_gpiochip_add(chip);
+ 	acpi_gpiochip_add(chip);
  
- 	group = iommu_group_get(&pdev->dev);
+-	if (status)
+-		goto fail;
+-
+ 	status = gpiochip_export(chip);
+-	if (status)
++	if (status) {
++		acpi_gpiochip_remove(chip);
++		of_gpiochip_remove(chip);
+ 		goto fail;
++	}
+ 
+ 	pr_debug("%s: registered GPIOs %d to %d on device: %s\n", __func__,
+ 		chip->base, chip->base + chip->ngpio - 1,
 
 
