@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158AbbAYQPk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 11:15:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54741 "EHLO
+	id S1755113AbbAYQWG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 11:22:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54745 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062AbbAYQPh (ORCPT
+	with ESMTP id S1754066AbbAYQPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 11:15:37 -0500
-Date: Sun, 25 Jan 2015 19:51:23 +0800
+Date: Sun, 25 Jan 2015 19:52:37 +0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Lorenzo Stoakes <lstoakes@gmail.com>
-Cc: devel@driverdev.osuosl.org, gdonald@gmail.com, tapaswenipathak@gmail.com,
-        yejiayily@gmail.com, mcgrof@do-not-panic.com,
-        linux-kernel@vger.kernel.org, rmfrfs@gmail.com, joe@perches.com
-Subject: Re: [PATCH RESEND 2 1/4] staging: rtl8192u: fix comments
-Message-ID: <20150125115123.GA12175@kroah.com>
-References: <1421577420-10115-1-git-send-email-lstoakes@gmail.com>
+To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: rtl8192u: r8192U_core: Fix compile issue when
+ CONFIG_WIRELESS_EXT is not defined
+Message-ID: <20150125115237.GA12221@kroah.com>
+References: <1422126702-27357-1-git-send-email-mopsfelder@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1421577420-10115-1-git-send-email-lstoakes@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1422126702-27357-1-git-send-email-mopsfelder@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 10:36:57AM +0000, Lorenzo Stoakes wrote:
-> This patch fixes errors raised by checkpatch.pl relating to use of C99 comments
-> in r8192U_dm.c, and cleans up existing ANSI C comments.
+On Sat, Jan 24, 2015 at 05:11:42PM -0200, Murilo Opsfelder Araujo wrote:
+> This patch gets rid of the following error when compiling r8192U_core.c
+> and CONFIG_WIRELESS_EXT is not defined:
 > 
-> Signed-off-by: Lorenzo Stoakes <lstoakes@gmail.com>
+> drivers/staging/rtl8192u/r8192U_core.c: In function ‘rtl8192_usb_probe’:
+> drivers/staging/rtl8192u/r8192U_core.c:4697:5: error: ‘struct net_device’ has no member named ‘wireless_handlers’
+>   dev->wireless_handlers = (struct iw_handler_def *) &r8192_wx_handlers_def;
+>      ^
+> 
+> Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
 > ---
->  drivers/staging/rtl8192u/r8192U_dm.c | 811 ++++++++++++++++++-----------------
->  1 file changed, 420 insertions(+), 391 deletions(-)
+>  drivers/staging/rtl8192u/r8192U_core.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+> index e031a25..396a11f 100644
+> --- a/drivers/staging/rtl8192u/r8192U_core.c
+> +++ b/drivers/staging/rtl8192u/r8192U_core.c
+> @@ -4694,7 +4694,9 @@ static int rtl8192_usb_probe(struct usb_interface *intf,
+>  
+>  	dev->netdev_ops = &rtl8192_netdev_ops;
+>  
+> +#ifdef CONFIG_WIRELESS_EXT
+>  	dev->wireless_handlers = (struct iw_handler_def *) &r8192_wx_handlers_def;
+> +#endif
 
-This patch fails to apply to my staging-testing branch of staging.git,
-so I can't apply it :(
+It's almost never correct to put a #ifdef in a .c file, so what is going
+on here?  How do other drivers handle this in a more "proper" way?
 
-Please refresh your series and resend.
+Is this something new?  Should this driver just depend on this Kconfig
+option?
 
-thanks,
+I can't take this as-is, sorry.
 
 greg k-h
