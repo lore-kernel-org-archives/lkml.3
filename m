@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360AbbAYSLD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
+	id S1757581AbbAYScd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:32:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532AbbAYSIw (ORCPT
+	with ESMTP id S1755986AbbAYSK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:52 -0500
+	Sun, 25 Jan 2015 13:10:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.10 49/50] s390/3215: fix hanging console issue
+        Johan Hovold <johan@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.18 137/183] gpio: fix sleep-while-atomic in gpiochip_remove
 Date: Sun, 25 Jan 2015 10:07:39 -0800
-Message-Id: <20150125180705.387910682@linuxfoundation.org>
+Message-Id: <20150125180816.130616375@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,76 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 26d766c60f4ea08cd14f0f3435a6db3d6cc2ae96 upstream.
+commit 6798acaa0138d8b12f1c54402ebcb66fea3deb03 upstream.
 
-The ccw_device_start in raw3215_start_io can fail. raw3215_try_io
-does not check if the request could be started and removes any
-pending timer. This can leave the system in a hanging state.
-Check for pending request after raw3215_start_io and start a
-timer if necessary.
+Move direct and indirect calls to gpiochip_remove_pin_ranges outside of
+spin lock as they can end up taking a mutex in pinctrl_remove_gpio_range.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Note that the pin ranges are already added outside of the lock.
+
+Fixes: 9ef0d6f7628b ("gpiolib: call pin removal in chip removal function")
+Fixes: f23f1516b675 ("gpiolib: provide provision to register pin ranges")
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/char/con3215.c |   32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
+ drivers/gpio/gpiolib.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/s390/char/con3215.c
-+++ b/drivers/s390/char/con3215.c
-@@ -288,12 +288,16 @@ static void raw3215_timeout(unsigned lon
- 	unsigned long flags;
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -319,12 +319,10 @@ void gpiochip_remove(struct gpio_chip *c
+ 	gpiochip_irqchip_remove(chip);
  
- 	spin_lock_irqsave(get_ccwdev_lock(raw->cdev), flags);
--	if (raw->flags & RAW3215_TIMER_RUNS) {
--		del_timer(&raw->timer);
--		raw->flags &= ~RAW3215_TIMER_RUNS;
--		if (!(raw->port.flags & ASYNC_SUSPENDED)) {
--			raw3215_mk_write_req(raw);
--			raw3215_start_io(raw);
-+	raw->flags &= ~RAW3215_TIMER_RUNS;
-+	if (!(raw->port.flags & ASYNC_SUSPENDED)) {
-+		raw3215_mk_write_req(raw);
-+		raw3215_start_io(raw);
-+		if ((raw->queued_read || raw->queued_write) &&
-+		    !(raw->flags & RAW3215_WORKING) &&
-+		    !(raw->flags & RAW3215_TIMER_RUNS)) {
-+			raw->timer.expires = RAW3215_TIMEOUT + jiffies;
-+			add_timer(&raw->timer);
-+			raw->flags |= RAW3215_TIMER_RUNS;
- 		}
- 	}
- 	spin_unlock_irqrestore(get_ccwdev_lock(raw->cdev), flags);
-@@ -317,17 +321,15 @@ static inline void raw3215_try_io(struct
- 		    (raw->flags & RAW3215_FLUSHING)) {
- 			/* execute write requests bigger than minimum size */
- 			raw3215_start_io(raw);
--			if (raw->flags & RAW3215_TIMER_RUNS) {
--				del_timer(&raw->timer);
--				raw->flags &= ~RAW3215_TIMER_RUNS;
--			}
--		} else if (!(raw->flags & RAW3215_TIMER_RUNS)) {
--			/* delay small writes */
--			raw->timer.expires = RAW3215_TIMEOUT + jiffies;
--			add_timer(&raw->timer);
--			raw->flags |= RAW3215_TIMER_RUNS;
- 		}
- 	}
-+	if ((raw->queued_read || raw->queued_write) &&
-+	    !(raw->flags & RAW3215_WORKING) &&
-+	    !(raw->flags & RAW3215_TIMER_RUNS)) {
-+		raw->timer.expires = RAW3215_TIMEOUT + jiffies;
-+		add_timer(&raw->timer);
-+		raw->flags |= RAW3215_TIMER_RUNS;
-+	}
- }
+ 	acpi_gpiochip_remove(chip);
+-
+-	spin_lock_irqsave(&gpio_lock, flags);
+-
+ 	gpiochip_remove_pin_ranges(chip);
+ 	of_gpiochip_remove(chip);
  
- /*
++	spin_lock_irqsave(&gpio_lock, flags);
+ 	for (id = 0; id < chip->ngpio; id++) {
+ 		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+ 			dev_crit(chip->dev, "REMOVING GPIOCHIP WITH GPIOS STILL REQUESTED\n");
 
 
