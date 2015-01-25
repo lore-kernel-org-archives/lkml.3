@@ -1,142 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706AbbAYNcN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 08:32:13 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:34826 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607AbbAYNcK (ORCPT
+	id S1753804AbbAYNeg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 08:34:36 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:40635 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226AbbAYNee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 08:32:10 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Murali Karicheri <m-karicheri2@ti.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
-        iommu@lists.linux-foundation.org,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Will Deacon <will.deacon@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to of_iommu_configure()
-Date: Sun, 25 Jan 2015 15:32:42 +0200
-Message-ID: <4711364.TTK5TCBdiy@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1422052359-12384-2-git-send-email-m-karicheri2@ti.com>
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-2-git-send-email-m-karicheri2@ti.com>
+	Sun, 25 Jan 2015 08:34:34 -0500
+Date: Sun, 25 Jan 2015 05:34:33 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Zach Brown <zab@zabbo.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, Omar Sandoval <osandov@osandov.com>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] fd/direct-io: introduce should_dirty for kernel
+ aio
+Message-ID: <20150125133433.GB19445@infradead.org>
+References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+ <1421163888-21452-3-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421163888-21452-3-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Murali,
+On Tue, Jan 13, 2015 at 11:44:46PM +0800, Ming Lei wrote:
+>  
+> -	if (dio->is_async && dio->rw == READ)
+> +	if (dio->is_async && dio->rw == READ && dio->should_dirty)
+>  		bio_set_pages_dirty(bio);
+>  
+>  	if (sdio->submit_io)
+> @@ -463,13 +464,14 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+>  	if (!uptodate)
+>  		dio->io_error = -EIO;
+>  
+> -	if (dio->is_async && dio->rw == READ) {
+> +	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
 
-Thank you for the patch.
+I'd rather have a ->should_dirrty flag that means we need to call
+bio_check_pages_dirty, And set that either if we have a kernel
+iovec/bvec or dio->is_async && dio->rw == READ.
 
-On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
-> Function of_iommu_configure() is called from of_dma_configure() to
-> setup iommu ops using DT property. This API is currently used for
-> platform devices for which DMA configuration (including iommu ops)
-> may come from device's parent. To extend this functionality for PCI
-> devices, this API need to take a parent node ptr as an argument
-> instead of assuming device's parent. This is needed since for PCI, the
-> dma configuration may be defined in the DT node of the root bus bridge's
-> parent device. Currently only dma-range is used for PCI and iommu is not
-> supported. So return error if the device is PCI.
-> 
-> Cc: Joerg Roedel <joro@8bytes.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
->  drivers/iommu/of_iommu.c |   10 ++++++++--
->  drivers/of/platform.c    |    2 +-
->  include/linux/of_iommu.h |    6 ++++--
->  3 files changed, 13 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
-> index af1dc6a..439235b 100644
-> --- a/drivers/iommu/of_iommu.c
-> +++ b/drivers/iommu/of_iommu.c
-> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct device_node
-> *np) return ops;
->  }
-> 
-> -struct iommu_ops *of_iommu_configure(struct device *dev)
-> +struct iommu_ops *of_iommu_configure(struct device *dev,
-> +				     struct device_node *iommu_np)
->  {
->  	struct of_phandle_args iommu_spec;
->  	struct device_node *np;
->  	struct iommu_ops *ops = NULL;
->  	int idx = 0;
-> 
-> +	if (dev_is_pci(dev)) {
-> +		dev_err(dev, "iommu is currently not supported for PCI\n");
-> +		return NULL;
-> +	}
-> +
->  	/*
->  	 * We don't currently walk up the tree looking for a parent IOMMU.
->  	 * See the `Notes:' section of
->  	 * Documentation/devicetree/bindings/iommu/iommu.txt
->  	 */
+But why would we even set this if writing from an iovec?
 
-Wouldn't it be better to fix this rather than passing the device node pointer 
-to the function ? The solution would be more generic.
+>  		bio_check_pages_dirty(bio);	/* transfers ownership */
+>  	} else {
+>  		bio_for_each_segment_all(bvec, bio, i) {
+>  			struct page *page = bvec->bv_page;
+>  
+> -			if (dio->rw == READ && !PageCompound(page))
+> +			if (dio->rw == READ && !PageCompound(page) &&
+> +					dio->should_dirty)
+>  				set_page_dirty_lock(page);
 
-> -	while (!of_parse_phandle_with_args(dev->of_node, "iommus",
-> +	while (!of_parse_phandle_with_args(iommu_np, "iommus",
->  					   "#iommu-cells", idx,
->  					   &iommu_spec)) {
->  		np = iommu_spec.np;
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index a54ec10..7675b79 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -196,7 +196,7 @@ static void of_dma_configure(struct device *dev)
->  	dev_dbg(dev, "device is%sdma coherent\n",
->  		coherent ? " " : " not ");
-> 
-> -	iommu = of_iommu_configure(dev);
-> +	iommu = of_iommu_configure(dev, dev->of_node);
->  	dev_dbg(dev, "device is%sbehind an iommu\n",
->  		iommu ? " " : " not ");
-> 
-> diff --git a/include/linux/of_iommu.h b/include/linux/of_iommu.h
-> index 16c7554..a97e5bd 100644
-> --- a/include/linux/of_iommu.h
-> +++ b/include/linux/of_iommu.h
-> @@ -12,7 +12,8 @@ extern int of_get_dma_window(struct device_node *dn, const
-> char *prefix, size_t *size);
-> 
->  extern void of_iommu_init(void);
-> -extern struct iommu_ops *of_iommu_configure(struct device *dev);
-> +extern struct iommu_ops *of_iommu_configure(struct device *dev,
-> +					struct device_node *iommu_np);
-> 
->  #else
-> 
-> @@ -24,7 +25,8 @@ static inline int of_get_dma_window(struct device_node
-> *dn, const char *prefix, }
-> 
->  static inline void of_iommu_init(void) { }
-> -static inline struct iommu_ops *of_iommu_configure(struct device *dev)
-> +static inline struct iommu_ops *of_iommu_configure(struct device *dev,
-> +					 struct device_node *iommu_np)
->  {
->  	return NULL;
->  }
-
--- 
-Regards,
-
-Laurent Pinchart
+And this unk could also use some explanation.
 
