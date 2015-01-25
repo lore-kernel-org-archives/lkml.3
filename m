@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160AbbAYSiL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:38:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
+	id S932105AbbAYTbd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:31:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755922AbbAYSKS (ORCPT
+	with ESMTP id S1754503AbbAYSIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:18 -0500
+	Sun, 25 Jan 2015 13:08:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: [PATCH 3.18 103/183] video/fbdev: fix defios fsync
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 15/50] iscsi-target: Fail connection on short sendmsg writes
 Date: Sun, 25 Jan 2015 10:07:05 -0800
-Message-Id: <20150125180814.694268189@linuxfoundation.org>
+Message-Id: <20150125180703.415850914@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,41 +26,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 30ea9c5218651bc11cbdba7820be78f04e2d83bc upstream.
+commit 6bf6ca7515c1df06f5c03737537f5e0eb191e29e upstream.
 
-fb_deferred_io_fsync() returns the value of schedule_delayed_work() as
-an error code, but schedule_delayed_work() does not return an error. It
-returns true/false depending on whether the work was already queued.
+This patch changes iscsit_do_tx_data() to fail on short writes
+when kernel_sendmsg() returns a value different than requested
+transfer length, returning -EPIPE and thus causing a connection
+reset to occur.
 
-Fix this by ignoring the return value of schedule_delayed_work().
+This avoids a potential bug in the original code where a short
+write would result in kernel_sendmsg() being called again with
+the original iovec base + length.
 
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+In practice this has not been an issue because iscsit_do_tx_data()
+is only used for transferring 48 byte headers + 4 byte digests,
+along with seldom used control payloads from NOPIN + TEXT_RSP +
+REJECT with less than 32k of data.
+
+So following Al's audit of iovec consumers, go ahead and fail
+the connection on short writes for now, and remove the bogus
+logic ahead of his proper upstream fix.
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/fbdev/core/fb_defio.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/target/iscsi/iscsi_target_util.c |   26 +++++++++++---------------
+ 1 file changed, 11 insertions(+), 15 deletions(-)
 
---- a/drivers/video/fbdev/core/fb_defio.c
-+++ b/drivers/video/fbdev/core/fb_defio.c
-@@ -83,9 +83,10 @@ int fb_deferred_io_fsync(struct file *fi
- 	cancel_delayed_work_sync(&info->deferred_work);
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -1349,15 +1349,15 @@ static int iscsit_do_tx_data(
+ 	struct iscsi_conn *conn,
+ 	struct iscsi_data_count *count)
+ {
+-	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
++	int ret, iov_len;
+ 	struct kvec *iov_p;
+ 	struct msghdr msg;
  
- 	/* Run it immediately */
--	err = schedule_delayed_work(&info->deferred_work, 0);
-+	schedule_delayed_work(&info->deferred_work, 0);
- 	mutex_unlock(&inode->i_mutex);
--	return err;
-+
-+	return 0;
+ 	if (!conn || !conn->sock || !conn->conn_ops)
+ 		return -1;
+ 
+-	if (data <= 0) {
+-		pr_err("Data length is: %d\n", data);
++	if (count->data_length <= 0) {
++		pr_err("Data length is: %d\n", count->data_length);
+ 		return -1;
+ 	}
+ 
+@@ -1366,20 +1366,16 @@ static int iscsit_do_tx_data(
+ 	iov_p = count->iov;
+ 	iov_len = count->iov_count;
+ 
+-	while (total_tx < data) {
+-		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
+-					(data - total_tx));
+-		if (tx_loop <= 0) {
+-			pr_debug("tx_loop: %d total_tx %d\n",
+-				tx_loop, total_tx);
+-			return tx_loop;
+-		}
+-		total_tx += tx_loop;
+-		pr_debug("tx_loop: %d, total_tx: %d, data: %d\n",
+-					tx_loop, total_tx, data);
++	ret = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
++			     count->data_length);
++	if (ret != count->data_length) {
++		pr_err("Unexpected ret: %d send data %d\n",
++		       ret, count->data_length);
++		return -EPIPE;
+ 	}
++	pr_debug("ret: %d, sent data: %d\n", ret, count->data_length);
+ 
+-	return total_tx;
++	return ret;
  }
- EXPORT_SYMBOL_GPL(fb_deferred_io_fsync);
  
+ int rx_data(
 
 
