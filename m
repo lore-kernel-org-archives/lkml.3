@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774AbbAYS6K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:58:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57852 "EHLO
+	id S1758800AbbAYS6S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:58:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57859 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541AbbAYSJn (ORCPT
+	with ESMTP id S1755543AbbAYSJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.18 039/183] drm/radeon: properly filter DP1.2 4k modes on non-DP1.2 hw
-Date: Sun, 25 Jan 2015 10:06:01 -0800
-Message-Id: <20150125180811.872018366@linuxfoundation.org>
+        lu hua <huax.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.18 040/183] drm/i915: Dont complain about stolen conflicts on gen3
+Date: Sun, 25 Jan 2015 10:06:02 -0800
+Message-Id: <20150125180811.919888352@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -28,38 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 410cce2a6b82299b46ff316c6384e789ce275ecb upstream.
+commit 0b6d24c01932db99fc95304235e751e7f7625c41 upstream.
 
-The check was already in place in the dp mode_valid check, but
-radeon_dp_get_dp_link_clock() never returned the high clock
-mode_valid was checking for because that function clipped the
-clock based on the hw capabilities.  Add an explicit check
-in the mode_valid function.
+Apparently stuff works that way on those machines.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=87172
+I agree with Chris' concern that this is a bit risky but imo worth a
+shot in -next just for fun. Afaics all these machines have the pci
+resources allocated like that by the BIOS, so I suspect that it's all
+ok.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This regression goes back to
+
+commit eaba1b8f3379b5d100bd146b9a41d28348bdfd09
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Jul 4 12:28:35 2013 +0100
+
+    drm/i915: Verify that our stolen memory doesn't conflict
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76983
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71031
+Tested-by: lu hua <huax.lu@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/i915_gem_stolen.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -492,6 +492,10 @@ int radeon_dp_mode_valid_helper(struct d
- 	struct radeon_connector_atom_dig *dig_connector;
- 	int dp_clock;
- 
-+	if ((mode->clock > 340000) &&
-+	    (!radeon_connector_is_dp12_capable(connector)))
-+		return MODE_CLOCK_HIGH;
-+
- 	if (!radeon_connector->con_priv)
- 		return MODE_CLOCK_HIGH;
- 	dig_connector = radeon_connector->con_priv;
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -137,7 +137,11 @@ static unsigned long i915_stolen_to_phys
+ 		r = devm_request_mem_region(dev->dev, base + 1,
+ 					    dev_priv->gtt.stolen_size - 1,
+ 					    "Graphics Stolen Memory");
+-		if (r == NULL) {
++		/*
++		 * GEN3 firmware likes to smash pci bridges into the stolen
++		 * range. Apparently this works.
++		 */
++		if (r == NULL && !IS_GEN3(dev)) {
+ 			DRM_ERROR("conflict detected with stolen region: [0x%08x - 0x%08x]\n",
+ 				  base, base + (uint32_t)dev_priv->gtt.stolen_size);
+ 			base = 0;
 
 
