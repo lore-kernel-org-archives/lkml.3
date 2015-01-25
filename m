@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759695AbbAYT2S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:28:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57420 "EHLO
+	id S1758103AbbAYSlp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:41:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698AbbAYSI5 (ORCPT
+	with ESMTP id S1755864AbbAYSKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:57 -0500
+	Sun, 25 Jan 2015 13:10:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>, Thomas Graf <tgraf@suug.ch>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 03/98] netlink: Dont reorder loads/stores before marking mmap netlink frame as available
-Date: Sun, 25 Jan 2015 10:06:21 -0800
-Message-Id: <20150125180713.013558138@linuxfoundation.org>
+        Jouni Malinen <jouni@qca.qualcomm.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.18 060/183] cfg80211: Fix 160 MHz channels with 80+80 and 160 MHz drivers
+Date: Sun, 25 Jan 2015 10:06:22 -0800
+Message-Id: <20150125180812.790394522@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,54 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Jouni Malinen <jouni@qca.qualcomm.com>
 
-[ Upstream commit a18e6a186f53af06937a2c268c72443336f4ab56 ]
+commit 08f6f147773b23b765b94633a8eaa82e7defcf4c upstream.
 
-Each mmap Netlink frame contains a status field which indicates
-whether the frame is unused, reserved, contains data or needs to
-be skipped. Both loads and stores may not be reordeded and must
-complete before the status field is changed and another CPU might
-pick up the frame for use. Use an smp_mb() to cover needs of both
-types of callers to netlink_set_status(), callers which have been
-reading data frame from the frame, and callers which have been
-filling or releasing and thus writing to the frame.
+The VHT supported channel width field is a two bit integer, not a
+bitfield. cfg80211_chandef_usable() was interpreting it incorrectly and
+ended up rejecting 160 MHz channel width if the driver indicated support
+for both 160 and 80+80 MHz channels.
 
-- Example code path requiring a smp_rmb():
-  memcpy(skb->data, (void *)hdr + NL_MMAP_HDRLEN, hdr->nm_len);
-  netlink_set_status(hdr, NL_MMAP_STATUS_UNUSED);
-
-- Example code path requiring a smp_wmb():
-  hdr->nm_uid	= from_kuid(sk_user_ns(sk), NETLINK_CB(skb).creds.uid);
-  hdr->nm_gid	= from_kgid(sk_user_ns(sk), NETLINK_CB(skb).creds.gid);
-  netlink_frame_flush_dcache(hdr);
-  netlink_set_status(hdr, NL_MMAP_STATUS_VALID);
-
-Fixes: f9c228 ("netlink: implement memory mapped recvmsg()")
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 3d9d1d6656a73 ("nl80211/cfg80211: support VHT channel configuration")
+       (however, no real drivers had 160 MHz support it until 3.16)
+Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/netlink/af_netlink.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -535,9 +535,9 @@ static enum nl_mmap_status netlink_get_s
- static void netlink_set_status(struct nl_mmap_hdr *hdr,
- 			       enum nl_mmap_status status)
+---
+ net/wireless/chan.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+--- a/net/wireless/chan.c
++++ b/net/wireless/chan.c
+@@ -602,7 +602,7 @@ bool cfg80211_chandef_usable(struct wiph
  {
-+	smp_mb();
- 	hdr->nm_status = status;
- 	flush_dcache_page(pgvec_to_page(hdr));
--	smp_wmb();
- }
+ 	struct ieee80211_sta_ht_cap *ht_cap;
+ 	struct ieee80211_sta_vht_cap *vht_cap;
+-	u32 width, control_freq;
++	u32 width, control_freq, cap;
  
- static struct nl_mmap_hdr *
+ 	if (WARN_ON(!cfg80211_chandef_valid(chandef)))
+ 		return false;
+@@ -642,7 +642,8 @@ bool cfg80211_chandef_usable(struct wiph
+ 			return false;
+ 		break;
+ 	case NL80211_CHAN_WIDTH_80P80:
+-		if (!(vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ))
++		cap = vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK;
++		if (cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)
+ 			return false;
+ 	case NL80211_CHAN_WIDTH_80:
+ 		if (!vht_cap->vht_supported)
+@@ -653,7 +654,9 @@ bool cfg80211_chandef_usable(struct wiph
+ 	case NL80211_CHAN_WIDTH_160:
+ 		if (!vht_cap->vht_supported)
+ 			return false;
+-		if (!(vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160MHZ))
++		cap = vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK;
++		if (cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160MHZ &&
++		    cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)
+ 			return false;
+ 		prohibited_flags |= IEEE80211_CHAN_NO_160MHZ;
+ 		width = 160;
 
 
