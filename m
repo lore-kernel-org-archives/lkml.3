@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530AbbAYScW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:32:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
+	id S1757543AbbAYScZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:32:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57908 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991AbbAYSK0 (ORCPT
+	with ESMTP id S1755993AbbAYSK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:10:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.18 139/183] gpio: sysfs: fix gpio device-attribute leak
-Date: Sun, 25 Jan 2015 10:07:41 -0800
-Message-Id: <20150125180816.214434395@linuxfoundation.org>
+        Arseny Solokha <asolokha@kb.kras.ru>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.18 140/183] OHCI: add a quirk for ULi M5237 blocking on reset
+Date: Sun, 25 Jan 2015 10:07:42 -0800
+Message-Id: <20150125180816.261501737@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -29,109 +29,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Arseny Solokha <asolokha@kb.kras.ru>
 
-commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
+commit 56abcab833fafcfaeb2f5b25e0364c1dec45f53e upstream.
 
-The gpio device attributes were never destroyed when the gpio was
-unexported (or on export failures).
+Commit 8dccddbc2368 ("OHCI: final fix for NVIDIA problems (I hope)")
+introduced into 3.1.9 broke boot on e.g. Freescale P2020DS development
+board. The code path that was previously specific to NVIDIA controllers
+had then become taken for all chips.
 
-Use device_create_with_groups() to create the default device attributes
-of the gpio class device. Note that this also fixes the
-attribute-creation race with userspace for these attributes.
+However, the M5237 installed on the board wedges solid when accessing
+its base+OHCI_FMINTERVAL register, making it impossible to boot any
+kernel newer than 3.1.8 on this particular and apparently other similar
+machines.
 
-Remove contingent attributes in export error path and on unexport.
+Don't readl() and writel() base+OHCI_FMINTERVAL on PCI ID 10b9:5237.
 
-Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+The patch is suitable for the -next tree as well as all maintained
+kernels up to 3.2 inclusive.
+
+Signed-off-by: Arseny Solokha <asolokha@kb.kras.ru>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpiolib-sysfs.c |   28 +++++++++++++---------------
- 1 file changed, 13 insertions(+), 15 deletions(-)
+ drivers/usb/host/pci-quirks.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/drivers/gpio/gpiolib-sysfs.c
-+++ b/drivers/gpio/gpiolib-sysfs.c
-@@ -128,7 +128,7 @@ static ssize_t gpio_value_store(struct d
- 	return status;
- }
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -571,7 +571,8 @@ static void quirk_usb_handoff_ohci(struc
+ {
+ 	void __iomem *base;
+ 	u32 control;
+-	u32 fminterval;
++	u32 fminterval = 0;
++	bool no_fminterval = false;
+ 	int cnt;
  
--static const DEVICE_ATTR(value, 0644,
-+static DEVICE_ATTR(value, 0644,
- 		gpio_value_show, gpio_value_store);
+ 	if (!mmio_resource_enabled(pdev, 0))
+@@ -581,6 +582,13 @@ static void quirk_usb_handoff_ohci(struc
+ 	if (base == NULL)
+ 		return;
  
- static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
-@@ -353,18 +353,15 @@ static ssize_t gpio_active_low_store(str
- 	return status ? : size;
- }
++	/*
++	 * ULi M5237 OHCI controller locks the whole system when accessing
++	 * the OHCI_FMINTERVAL offset.
++	 */
++	if (pdev->vendor == PCI_VENDOR_ID_AL && pdev->device == 0x5237)
++		no_fminterval = true;
++
+ 	control = readl(base + OHCI_CONTROL);
  
--static const DEVICE_ATTR(active_low, 0644,
-+static DEVICE_ATTR(active_low, 0644,
- 		gpio_active_low_show, gpio_active_low_store);
- 
--static const struct attribute *gpio_attrs[] = {
-+static struct attribute *gpio_attrs[] = {
- 	&dev_attr_value.attr,
- 	&dev_attr_active_low.attr,
- 	NULL,
- };
--
--static const struct attribute_group gpio_attr_group = {
--	.attrs = (struct attribute **) gpio_attrs,
--};
-+ATTRIBUTE_GROUPS(gpio);
- 
- /*
-  * /sys/class/gpio/gpiochipN/
-@@ -561,18 +558,15 @@ int gpiod_export(struct gpio_desc *desc,
- 	if (desc->chip->names && desc->chip->names[offset])
- 		ioname = desc->chip->names[offset];
- 
--	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
--			    desc, ioname ? ioname : "gpio%u",
--			    desc_to_gpio(desc));
-+	dev = device_create_with_groups(&gpio_class, desc->chip->dev,
-+					MKDEV(0, 0), desc, gpio_groups,
-+					ioname ? ioname : "gpio%u",
-+					desc_to_gpio(desc));
- 	if (IS_ERR(dev)) {
- 		status = PTR_ERR(dev);
- 		goto fail_unlock;
+ /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
+@@ -619,7 +627,9 @@ static void quirk_usb_handoff_ohci(struc
  	}
  
--	status = sysfs_create_group(&dev->kobj, &gpio_attr_group);
--	if (status)
--		goto fail_unregister_device;
--
- 	if (direction_may_change) {
- 		status = device_create_file(dev, &dev_attr_direction);
- 		if (status)
-@@ -583,13 +577,15 @@ int gpiod_export(struct gpio_desc *desc,
- 				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
- 		status = device_create_file(dev, &dev_attr_edge);
- 		if (status)
--			goto fail_unregister_device;
-+			goto fail_remove_attr_direction;
+ 	/* software reset of the controller, preserving HcFmInterval */
+-	fminterval = readl(base + OHCI_FMINTERVAL);
++	if (!no_fminterval)
++		fminterval = readl(base + OHCI_FMINTERVAL);
++
+ 	writel(OHCI_HCR, base + OHCI_CMDSTATUS);
+ 
+ 	/* reset requires max 10 us delay */
+@@ -628,7 +638,9 @@ static void quirk_usb_handoff_ohci(struc
+ 			break;
+ 		udelay(1);
  	}
+-	writel(fminterval, base + OHCI_FMINTERVAL);
++
++	if (!no_fminterval)
++		writel(fminterval, base + OHCI_FMINTERVAL);
  
- 	set_bit(FLAG_EXPORT, &desc->flags);
- 	mutex_unlock(&sysfs_lock);
- 	return 0;
- 
-+fail_remove_attr_direction:
-+	device_remove_file(dev, &dev_attr_direction);
- fail_unregister_device:
- 	device_unregister(dev);
- fail_unlock:
-@@ -723,6 +719,8 @@ void gpiod_unexport(struct gpio_desc *de
- 	mutex_unlock(&sysfs_lock);
- 
- 	if (dev) {
-+		device_remove_file(dev, &dev_attr_edge);
-+		device_remove_file(dev, &dev_attr_direction);
- 		device_unregister(dev);
- 		put_device(dev);
- 	}
+ 	/* Now the controller is safely in SUSPEND and nothing can wake it up */
+ 	iounmap(base);
 
 
