@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302AbbAYS3Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:29:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57780 "EHLO
+	id S932659AbbAYTIG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:08:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029AbbAYSK1 (ORCPT
+	with ESMTP id S1755342AbbAYSJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:27 -0500
+	Sun, 25 Jan 2015 13:09:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.18 152/183] USB: console: fix potential use after free
+        Jerry Hoemann <jerry.hoemann@hp.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ken Helias <kenhelias@firemail.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.14 96/98] fsnotify: next_i is freed during fsnotify_unmount_inodes.
 Date: Sun, 25 Jan 2015 10:07:54 -0800
-Message-Id: <20150125180816.780531105@linuxfoundation.org>
+Message-Id: <20150125180717.057498861@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,78 +29,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Jerry Hoemann <jerry.hoemann@hp.com>
 
-commit 32a4bf2e81ec378e5925d4e069e0677a6c86a6ad upstream.
+commit 6424babfd68dd8a83d9c60a5242d27038856599f upstream.
 
-Use tty kref to release the fake tty in usb_console_setup to avoid use
-after free if the underlying serial driver has acquired a reference.
+During file system stress testing on 3.10 and 3.12 based kernels, the
+umount command occasionally hung in fsnotify_unmount_inodes in the
+section of code:
 
-Note that using the tty destructor release_one_tty requires some more
-state to be initialised.
+                spin_lock(&inode->i_lock);
+                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
+                        spin_unlock(&inode->i_lock);
+                        continue;
+                }
 
-Fixes: 4a90f09b20f4 ("tty: usb-serial krefs")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+As this section of code holds the global inode_sb_list_lock, eventually
+the system hangs trying to acquire the lock.
+
+Multiple crash dumps showed:
+
+The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
+back at itself.  As this is not the value of list upon entry to the
+function, the kernel never exits the loop.
+
+To help narrow down problem, the call to list_del_init in
+inode_sb_list_del was changed to list_del.  This poisons the pointers in
+the i_sb_list and causes a kernel to panic if it transverse a freed
+inode.
+
+Subsequent stress testing paniced in fsnotify_unmount_inodes at the
+bottom of the list_for_each_entry_safe loop showing next_i had become
+free.
+
+We believe the root cause of the problem is that next_i is being freed
+during the window of time that the list_for_each_entry_safe loop
+temporarily releases inode_sb_list_lock to call fsnotify and
+fsnotify_inode_delete.
+
+The code in fsnotify_unmount_inodes attempts to prevent the freeing of
+inode and next_i by calling __iget.  However, the code doesn't do the
+__iget call on next_i
+
+	if i_count == 0 or
+	if i_state & (I_FREEING | I_WILL_FREE)
+
+The patch addresses this issue by advancing next_i in the above two cases
+until we either find a next_i which we can __iget or we reach the end of
+the list.  This makes the handling of next_i more closely match the
+handling of the variable "inode."
+
+The time to reproduce the hang is highly variable (from hours to days.) We
+ran the stress test on a 3.10 kernel with the proposed patch for a week
+without failure.
+
+During list_for_each_entry_safe, next_i is becoming free causing
+the loop to never terminate.  Advance next_i in those cases where
+__iget is not done.
+
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Ken Helias <kenhelias@firemail.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/console.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ fs/notify/inode_mark.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/console.c
-+++ b/drivers/usb/serial/console.c
-@@ -46,6 +46,8 @@ static struct console usbcons;
-  * ------------------------------------------------------------
-  */
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -288,20 +288,25 @@ void fsnotify_unmount_inodes(struct list
+ 		spin_unlock(&inode->i_lock);
  
-+static const struct tty_operations usb_console_fake_tty_ops = {
-+};
- 
- /*
-  * The parsing of the command line works exactly like the
-@@ -137,14 +139,17 @@ static int usb_console_setup(struct cons
- 				goto reset_open_count;
+ 		/* In case the dropping of a reference would nuke next_i. */
+-		if ((&next_i->i_sb_list != list) &&
+-		    atomic_read(&next_i->i_count)) {
++		while (&next_i->i_sb_list != list) {
+ 			spin_lock(&next_i->i_lock);
+-			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
++			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE)) &&
++						atomic_read(&next_i->i_count)) {
+ 				__iget(next_i);
+ 				need_iput = next_i;
++				spin_unlock(&next_i->i_lock);
++				break;
  			}
- 			kref_init(&tty->kref);
--			tty_port_tty_set(&port->port, tty);
- 			tty->driver = usb_serial_tty_driver;
- 			tty->index = co->index;
- 			init_ldsem(&tty->ldisc_sem);
-+			INIT_LIST_HEAD(&tty->tty_files);
-+			kref_get(&tty->driver->kref);
-+			tty->ops = &usb_console_fake_tty_ops;
- 			if (tty_init_termios(tty)) {
- 				retval = -ENOMEM;
--				goto free_tty;
-+				goto put_tty;
- 			}
-+			tty_port_tty_set(&port->port, tty);
+ 			spin_unlock(&next_i->i_lock);
++			next_i = list_entry(next_i->i_sb_list.next,
++						struct inode, i_sb_list);
  		}
  
- 		/* only call the device specific open if this
-@@ -162,7 +167,7 @@ static int usb_console_setup(struct cons
- 			serial->type->set_termios(tty, port, &dummy);
+ 		/*
+-		 * We can safely drop inode_sb_list_lock here because we hold
+-		 * references on both inode and next_i.  Also no new inodes
+-		 * will be added since the umount has begun.
++		 * We can safely drop inode_sb_list_lock here because either
++		 * we actually hold references on both inode and next_i or
++		 * end of list.  Also no new inodes will be added since the
++		 * umount has begun.
+ 		 */
+ 		spin_unlock(&inode_sb_list_lock);
  
- 			tty_port_tty_set(&port->port, NULL);
--			kfree(tty);
-+			tty_kref_put(tty);
- 		}
- 		set_bit(ASYNCB_INITIALIZED, &port->port.flags);
- 	}
-@@ -178,8 +183,8 @@ static int usb_console_setup(struct cons
- 
-  fail:
- 	tty_port_tty_set(&port->port, NULL);
-- free_tty:
--	kfree(tty);
-+ put_tty:
-+	tty_kref_put(tty);
-  reset_open_count:
- 	port->port.count = 0;
- 	usb_autopm_put_interface(serial->interface);
 
 
