@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbbAYXyo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 18:54:44 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:33556 "EHLO
+	id S1752727AbbAYXz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 18:55:59 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:60571 "EHLO
 	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbbAYXym (ORCPT
+	with ESMTP id S1751400AbbAYXz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 18:54:42 -0500
-Date: Mon, 26 Jan 2015 10:54:30 +1100
+	Sun, 25 Jan 2015 18:55:57 -0500
+Date: Mon, 26 Jan 2015 10:55:50 +1100
 From: Herbert Xu <herbert@gondor.apana.org.au>
 To: Stephan Mueller <smueller@chronox.de>
 Cc: Daniel Borkmann <dborkman@redhat.com>,
@@ -15,7 +15,7 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
         linux-api@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>
 Subject: Re: [PATCH v11 1/2] crypto: AF_ALG: add AEAD support
-Message-ID: <20150125235430.GA18212@gondor.apana.org.au>
+Message-ID: <20150125235550.GB18212@gondor.apana.org.au>
 References: <1923793.K38mGRD6eo@tachyon.chronox.de>
  <6238416.vGUni1CI4i@tachyon.chronox.de>
 MIME-Version: 1.0
@@ -29,17 +29,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Jan 21, 2015 at 02:19:17AM +0100, Stephan Mueller wrote:
 >
-> +static void aead_data_wakeup(struct sock *sk)
-> +{
-> +	struct alg_sock *ask = alg_sk(sk);
-> +	struct aead_ctx *ctx = ask->private;
-> +	struct socket_wq *wq;
+> +		/* use the existing memory in an allocated page */
+> +		if (ctx->merge) {
+> +			sg = sgl->sg + sgl->cur - 1;
+> +			len = min_t(unsigned long, len,
+> +				    PAGE_SIZE - sg->offset - sg->length);
+> +			err = memcpy_from_msg(page_address(sg_page(sg)) +
+> +					      sg->offset + sg->length,
+> +					      msg, len);
+> +			if (err)
+> +				goto unlock;
 > +
-> +	if (ctx->more)
-> +		return;
+> +			sg->length += len;
+> +			ctx->merge = (sg->offset + sg->length) &
+> +				     (PAGE_SIZE - 1);
+> +
+> +			ctx->used += len;
+> +			copied += len;
+> +			size -= len;
 
-You should also check for ctx->used here.  This can be called after
-a zero-sized write.
+Need to add a continue here to recheck size != 0.
 
 Cheers,
 -- 
