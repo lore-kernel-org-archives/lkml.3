@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758750AbbAYS5l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:57:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57896 "EHLO
+	id S1758663AbbAYS5i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:57:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555AbbAYSJo (ORCPT
+	with ESMTP id S1755560AbbAYSJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:09:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Imre Deak <imre.deak@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.18 042/183] drm/i915: Only warn the first time we attempt to mmio whilst suspended
-Date: Sun, 25 Jan 2015 10:06:04 -0800
-Message-Id: <20150125180812.002264160@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.18 043/183] drm/i915: resume MST after reading back hw state
+Date: Sun, 25 Jan 2015 10:06:05 -0800
+Message-Id: <20150125180812.041841391@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -31,46 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 2b387059817fd100cddc5a97118d63e3f3fade74 upstream.
+commit e7d6f7d708290da1b7c92f533444b042c79412e0 upstream.
 
-In all likelihood we will do a few hundred errnoneous register
-operations if we do a single invalid register access whilst the device
-is suspended. As each instance causes a WARN, this floods the system
-logs and can make the system unresponsive.
+Otherwise the MST resume paths can hit DPMS paths
+which hit state checker paths, which hit WARN_ON,
+because the state checker is inconsistent with the
+hw.
 
-The warning was first introduced in
-commit b2ec142cb0101f298f8e091c7d75b1ec5b809b65
-Author: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Date:   Fri Feb 21 13:52:25 2014 -0300
+This fixes a bunch of WARN_ON's on resume after
+undocking.
 
-    drm/i915: call assert_device_not_suspended at gen6_force_wake_work
-
-and despite the claims the WARN is still encountered in the wild today.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Cc: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_uncore.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_uncore.c
-+++ b/drivers/gpu/drm/i915/intel_uncore.c
-@@ -43,8 +43,8 @@
- static void
- assert_device_not_suspended(struct drm_i915_private *dev_priv)
- {
--	WARN(HAS_RUNTIME_PM(dev_priv->dev) && dev_priv->pm.suspended,
--	     "Device suspended\n");
-+	WARN_ONCE(HAS_RUNTIME_PM(dev_priv->dev) && dev_priv->pm.suspended,
-+		  "Device suspended\n");
- }
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -692,11 +692,12 @@ static int __i915_drm_thaw(struct drm_de
+ 			spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
+ 		}
  
- static void __gen6_gt_wait_for_thread_c0(struct drm_i915_private *dev_priv)
+-		intel_dp_mst_resume(dev);
+ 		drm_modeset_lock_all(dev);
+ 		intel_modeset_setup_hw_state(dev, true);
+ 		drm_modeset_unlock_all(dev);
+ 
++		intel_dp_mst_resume(dev);
++
+ 		/*
+ 		 * ... but also need to make sure that hotplug processing
+ 		 * doesn't cause havoc. Like in the driver load code we don't
 
 
