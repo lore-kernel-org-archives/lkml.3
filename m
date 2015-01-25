@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375AbbAYSJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:09:28 -0500
+	id S932844AbbAYTMo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:12:44 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754308AbbAYSIl (ORCPT
+	with ESMTP id S1755178AbbAYSJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:41 -0500
+	Sun, 25 Jan 2015 13:09:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Arseny Solokha <asolokha@kb.kras.ru>,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 26/50] OHCI: add a quirk for ULi M5237 blocking on reset
+Subject: [PATCH 3.14 58/98] OHCI: add a quirk for ULi M5237 blocking on reset
 Date: Sun, 25 Jan 2015 10:07:16 -0800
-Message-Id: <20150125180704.025989020@linuxfoundation.org>
+Message-Id: <20150125180715.369217142@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-References: <20150125180702.521559311@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
@@ -59,7 +59,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/usb/host/pci-quirks.c
 +++ b/drivers/usb/host/pci-quirks.c
-@@ -470,7 +470,8 @@ static void quirk_usb_handoff_ohci(struc
+@@ -571,7 +571,8 @@ static void quirk_usb_handoff_ohci(struc
  {
  	void __iomem *base;
  	u32 control;
@@ -69,7 +69,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  	int cnt;
  
  	if (!mmio_resource_enabled(pdev, 0))
-@@ -480,6 +481,13 @@ static void quirk_usb_handoff_ohci(struc
+@@ -581,6 +582,13 @@ static void quirk_usb_handoff_ohci(struc
  	if (base == NULL)
  		return;
  
@@ -83,7 +83,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  	control = readl(base + OHCI_CONTROL);
  
  /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
-@@ -518,7 +526,9 @@ static void quirk_usb_handoff_ohci(struc
+@@ -619,7 +627,9 @@ static void quirk_usb_handoff_ohci(struc
  	}
  
  	/* software reset of the controller, preserving HcFmInterval */
@@ -94,7 +94,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
  	writel(OHCI_HCR, base + OHCI_CMDSTATUS);
  
  	/* reset requires max 10 us delay */
-@@ -527,7 +537,9 @@ static void quirk_usb_handoff_ohci(struc
+@@ -628,7 +638,9 @@ static void quirk_usb_handoff_ohci(struc
  			break;
  		udelay(1);
  	}
