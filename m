@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921AbbAYTBM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:01:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57776 "EHLO
+	id S932588AbbAYTF1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:05:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755490AbbAYSJi (ORCPT
+	with ESMTP id S1755402AbbAYSJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:38 -0500
+	Sun, 25 Jan 2015 13:09:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Nils Holland <nholland@tisys.org>,
+        Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>,
+        Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 009/183] in6: fix conflict with glibc
-Date: Sun, 25 Jan 2015 10:05:31 -0800
-Message-Id: <20150125180810.596277408@linuxfoundation.org>
+Subject: [PATCH 3.18 010/183] tg3: tg3_disable_ints using uninitialized mailbox value to disable interrupts
+Date: Sun, 25 Jan 2015 10:05:32 -0800
+Message-Id: <20150125180810.640671993@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -30,70 +32,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Prashant Sreedharan <prashant@broadcom.com>
 
-[ Upstream commit 6d08acd2d32e3e877579315dc3202d7a5f336d98 ]
+[ Upstream commit 05b0aa579397b734f127af58e401a30784a1e315 ]
 
-Resolve conflicts between glibc definition of IPV6 socket options
-and those defined in Linux headers. Looks like earlier efforts to
-solve this did not cover all the definitions.
+During driver load in tg3_init_one, if the driver detects DMA activity before
+intializing the chip tg3_halt is called. As part of tg3_halt interrupts are
+disabled using routine tg3_disable_ints. This routine was using mailbox value
+which was not initialized (default value is 0). As a result driver was writing
+0x00000001 to pci config space register 0, which is the vendor id / device id.
 
-It resolves warnings during iproute2 build.
-Please consider for stable as well.
+This driver bug was exposed because of the commit a7877b17a667 (PCI: Check only
+the Vendor ID to identify Configuration Request Retry). Also this issue is only
+seen in older generation chipsets like 5722 because config space write to offset
+0 from driver is possible. The newer generation chips ignore writes to offset 0.
+Also without commit a7877b17a667, for these older chips when a GRC reset is
+issued the Bootcode would reprogram the vendor id/device id, which is the reason
+this bug was masked earlier.
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Fixed by initializing the interrupt mailbox registers before calling tg3_halt.
+
+Please queue for -stable.
+
+Reported-by: Nils Holland <nholland@tisys.org>
+Reported-by: Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>
+Signed-off-by: Prashant Sreedharan <prashant@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/uapi/linux/in6.h         |    3 ++-
- include/uapi/linux/libc-compat.h |    3 +++
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/include/uapi/linux/in6.h
-+++ b/include/uapi/linux/in6.h
-@@ -149,7 +149,7 @@ struct in6_flowlabel_req {
- /*
-  *	IPV6 socket options
-  */
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -17789,23 +17789,6 @@ static int tg3_init_one(struct pci_dev *
+ 		goto err_out_apeunmap;
+ 	}
+ 
+-	/*
+-	 * Reset chip in case UNDI or EFI driver did not shutdown
+-	 * DMA self test will enable WDMAC and we'll see (spurious)
+-	 * pending DMA on the PCI bus at that point.
+-	 */
+-	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
+-	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
+-		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
+-		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
+-	}
 -
-+#if __UAPI_DEF_IPV6_OPTIONS
- #define IPV6_ADDRFORM		1
- #define IPV6_2292PKTINFO	2
- #define IPV6_2292HOPOPTS	3
-@@ -196,6 +196,7 @@ struct in6_flowlabel_req {
+-	err = tg3_test_dma(tp);
+-	if (err) {
+-		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
+-		goto err_out_apeunmap;
+-	}
+-
+ 	intmbx = MAILBOX_INTERRUPT_0 + TG3_64BIT_REG_LOW;
+ 	rcvmbx = MAILBOX_RCVRET_CON_IDX_0 + TG3_64BIT_REG_LOW;
+ 	sndmbx = MAILBOX_SNDHOST_PROD_IDX_0 + TG3_64BIT_REG_LOW;
+@@ -17850,6 +17833,23 @@ static int tg3_init_one(struct pci_dev *
+ 			sndmbx += 0xc;
+ 	}
  
- #define IPV6_IPSEC_POLICY	34
- #define IPV6_XFRM_POLICY	35
-+#endif
++	/*
++	 * Reset chip in case UNDI or EFI driver did not shutdown
++	 * DMA self test will enable WDMAC and we'll see (spurious)
++	 * pending DMA on the PCI bus at that point.
++	 */
++	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
++	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
++		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
++		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
++	}
++
++	err = tg3_test_dma(tp);
++	if (err) {
++		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
++		goto err_out_apeunmap;
++	}
++
+ 	tg3_init_coal(tp);
  
- /*
-  * Multicast:
---- a/include/uapi/linux/libc-compat.h
-+++ b/include/uapi/linux/libc-compat.h
-@@ -69,6 +69,7 @@
- #define __UAPI_DEF_SOCKADDR_IN6		0
- #define __UAPI_DEF_IPV6_MREQ		0
- #define __UAPI_DEF_IPPROTO_V6		0
-+#define __UAPI_DEF_IPV6_OPTIONS		0
- 
- #else
- 
-@@ -82,6 +83,7 @@
- #define __UAPI_DEF_SOCKADDR_IN6		1
- #define __UAPI_DEF_IPV6_MREQ		1
- #define __UAPI_DEF_IPPROTO_V6		1
-+#define __UAPI_DEF_IPV6_OPTIONS		1
- 
- #endif /* _NETINET_IN_H */
- 
-@@ -103,6 +105,7 @@
- #define __UAPI_DEF_SOCKADDR_IN6		1
- #define __UAPI_DEF_IPV6_MREQ		1
- #define __UAPI_DEF_IPPROTO_V6		1
-+#define __UAPI_DEF_IPV6_OPTIONS		1
- 
- /* Definitions for xattr.h */
- #define __UAPI_DEF_XATTR		1
+ 	pci_set_drvdata(pdev, dev);
 
 
