@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077AbbAYSlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:41:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57698 "EHLO
+	id S1755240AbbAYSJR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:09:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870AbbAYSKO (ORCPT
+	with ESMTP id S1754284AbbAYSIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:14 -0500
+	Sun, 25 Jan 2015 13:08:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Sifan Naeem <sifan.naeem@imgtec.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.18 111/183] [media] img-ir/hw: Fix potential deadlock stopping timer
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 23/50] ftrace/jprobes/x86: Fix conflict between jprobes and function graph tracing
 Date: Sun, 25 Jan 2015 10:07:13 -0800
-Message-Id: <20150125180815.017585893@linuxfoundation.org>
+Message-Id: <20150125180703.875106151@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,155 +25,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit ac03086067a5524ae9e020ba5712a208c67b2736 upstream.
+commit 237d28db036e411f22c03cfd5b0f6dc2aa9bf3bc upstream.
 
-The end timer is used for switching back from repeat code timings when
-no repeat codes have been received for a certain amount of time. When
-the protocol is changed, the end timer is deleted synchronously with
-del_timer_sync(), however this takes place while holding the main spin
-lock, and the timer handler also needs to acquire the spin lock.
+If the function graph tracer traces a jprobe callback, the system will
+crash. This can easily be demonstrated by compiling the jprobe
+sample module that is in the kernel tree, loading it and running the
+function graph tracer.
 
-This opens the possibility of a deadlock on an SMP system if the
-protocol is changed just as the repeat timer is expiring. One CPU could
-end up in img_ir_set_decoder() holding the lock and waiting for the end
-timer to complete, while the other CPU is stuck in the timer handler
-spinning on the lock held by the first CPU.
+ # modprobe jprobe_example.ko
+ # echo function_graph > /sys/kernel/debug/tracing/current_tracer
+ # ls
 
-Lockdep also spots a possible lock inversion in the same code, since
-img_ir_set_decoder() acquires the img-ir lock before the timer lock, but
-the timer handler will try and acquire them the other way around:
+The first two commands end up in a nice crash after the first fork.
+(do_fork has a jprobe attached to it, so "ls" just triggers that fork)
 
-=========================================================
-[ INFO: possible irq lock inversion dependency detected ]
-3.18.0-rc5+ #957 Not tainted
----------------------------------------------------------
-swapper/0/0 just changed the state of lock:
- (((&hw->end_timer))){+.-...}, at: [<4006ae5c>] _call_timer_fn+0x0/0xfc
-but this lock was taken by another, HARDIRQ-safe lock in the past:
- (&(&priv->lock)->rlock#2){-.....}
+The problem is caused by the jprobe_return() that all jprobe callbacks
+must end with. The way jprobes works is that the function a jprobe
+is attached to has a breakpoint placed at the start of it (or it uses
+ftrace if fentry is supported). The breakpoint handler (or ftrace callback)
+will copy the stack frame and change the ip address to return to the
+jprobe handler instead of the function. The jprobe handler must end
+with jprobe_return() which swaps the stack and does an int3 (breakpoint).
+This breakpoint handler will then put back the saved stack frame,
+simulate the instruction at the beginning of the function it added
+a breakpoint to, and then continue on.
 
-and interrupts could create inverse lock ordering between them.
+For function tracing to work, it hijakes the return address from the
+stack frame, and replaces it with a hook function that will trace
+the end of the call. This hook function will restore the return
+address of the function call.
 
-other info that might help us debug this:
- Possible interrupt unsafe locking scenario:
+If the function tracer traces the jprobe handler, the hook function
+for that handler will not be called, and its saved return address
+will be used for the next function. This will result in a kernel crash.
 
-       CPU0                    CPU1
-       ----                    ----
-  lock(((&hw->end_timer)));
-                               local_irq_disable();
-                               lock(&(&priv->lock)->rlock#2);
-                               lock(((&hw->end_timer)));
-  <Interrupt>
-    lock(&(&priv->lock)->rlock#2);
+To solve this, pause function tracing before the jprobe handler is called
+and unpause it before it returns back to the function it probed.
 
- *** DEADLOCK ***
+Some other updates:
 
-This is fixed by releasing the main spin lock while performing the
-del_timer_sync() call. The timer is prevented from restarting before the
-lock is reacquired by a new "stopping" flag which img_ir_handle_data()
-checks before updating the timer.
+Used a variable "saved_sp" to hold kcb->jprobe_saved_sp. This makes the
+code look a bit cleaner and easier to understand (various tries to fix
+this bug required this change).
 
----------------------------------------------------------
-swapper/0/0 just changed the state of lock:
- (((&hw->end_timer))){+.-...}, at: [<4006ae5c>] _call_timer_fn+0x0/0xfc
-but this lock was taken by another, HARDIRQ-safe lock in the past:
- (&(&priv->lock)->rlock#2){-.....}
-and interrupts could create inverse lock ordering between them.
-other info that might help us debug this:
- Possible interrupt unsafe locking scenario:
-       CPU0                    CPU1
-       ----                    ----
-  lock(((&hw->end_timer)));
-                               local_irq_disable();
-                               lock(&(&priv->lock)->rlock#2);
-                               lock(((&hw->end_timer)));
-  <Interrupt>
-    lock(&(&priv->lock)->rlock#2);
- *** DEADLOCK ***
-This is fixed by releasing the main spin lock while performing the
-del_timer_sync() call. The timer is prevented from restarting before the
-lock is reacquired by a new "stopping" flag which img_ir_handle_data()
-checks before updating the timer.
+Note, if fentry is being used, jprobes will change the ip address before
+the function graph tracer runs and it will not be able to trace the
+function that the jprobe is probing.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Sifan Naeem <sifan.naeem@imgtec.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Link: http://lkml.kernel.org/r/20150114154329.552437962@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/rc/img-ir/img-ir-hw.c |   22 +++++++++++++++++++---
- drivers/media/rc/img-ir/img-ir-hw.h |    3 +++
- 2 files changed, 22 insertions(+), 3 deletions(-)
+ arch/x86/kernel/kprobes/core.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/media/rc/img-ir/img-ir-hw.c
-+++ b/drivers/media/rc/img-ir/img-ir-hw.c
-@@ -530,6 +530,22 @@ static void img_ir_set_decoder(struct im
- 	u32 ir_status, irq_en;
- 	spin_lock_irq(&priv->lock);
- 
-+	/*
-+	 * First record that the protocol is being stopped so that the end timer
-+	 * isn't restarted while we're trying to stop it.
-+	 */
-+	hw->stopping = true;
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1017,6 +1017,15 @@ int __kprobes setjmp_pre_handler(struct
+ 	regs->flags &= ~X86_EFLAGS_IF;
+ 	trace_hardirqs_off();
+ 	regs->ip = (unsigned long)(jp->entry);
 +
 +	/*
-+	 * Release the lock to stop the end timer, since the end timer handler
-+	 * acquires the lock and we don't want to deadlock waiting for it.
++	 * jprobes use jprobe_return() which skips the normal return
++	 * path of the function, and this messes up the accounting of the
++	 * function graph tracer to get messed up.
++	 *
++	 * Pause function graph tracing while performing the jprobe function.
 +	 */
-+	spin_unlock_irq(&priv->lock);
-+	del_timer_sync(&hw->end_timer);
-+	spin_lock_irq(&priv->lock);
-+
-+	hw->stopping = false;
-+
- 	/* switch off and disable interrupts */
- 	img_ir_write(priv, IMG_IR_CONTROL, 0);
- 	irq_en = img_ir_read(priv, IMG_IR_IRQ_ENABLE);
-@@ -547,8 +563,7 @@ static void img_ir_set_decoder(struct im
- 	img_ir_read(priv, IMG_IR_DATA_LW);
- 	img_ir_read(priv, IMG_IR_DATA_UP);
++	pause_graph_tracing();
+ 	return 1;
+ }
  
--	/* stop the end timer and switch back to normal mode */
--	del_timer_sync(&hw->end_timer);
-+	/* switch back to normal mode */
- 	hw->mode = IMG_IR_M_NORMAL;
+@@ -1042,24 +1051,25 @@ int __kprobes longjmp_break_handler(stru
+ 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+ 	u8 *addr = (u8 *) (regs->ip - 1);
+ 	struct jprobe *jp = container_of(p, struct jprobe, kp);
++	void *saved_sp = kcb->jprobe_saved_sp;
  
- 	/* clear the wakeup scancode filter */
-@@ -819,7 +834,8 @@ static void img_ir_handle_data(struct im
+ 	if ((addr > (u8 *) jprobe_return) &&
+ 	    (addr < (u8 *) jprobe_return_end)) {
+-		if (stack_addr(regs) != kcb->jprobe_saved_sp) {
++		if (stack_addr(regs) != saved_sp) {
+ 			struct pt_regs *saved_regs = &kcb->jprobe_saved_regs;
+ 			printk(KERN_ERR
+ 			       "current sp %p does not match saved sp %p\n",
+-			       stack_addr(regs), kcb->jprobe_saved_sp);
++			       stack_addr(regs), saved_sp);
+ 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
+ 			show_regs(saved_regs);
+ 			printk(KERN_ERR "Current registers\n");
+ 			show_regs(regs);
+ 			BUG();
+ 		}
++		/* It's OK to start function graph tracing again */
++		unpause_graph_tracing();
+ 		*regs = kcb->jprobe_saved_regs;
+-		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+-		       kcb->jprobes_stack,
+-		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
++		memcpy(saved_sp, kcb->jprobes_stack, MIN_STACK_SIZE(saved_sp));
+ 		preempt_enable_no_resched();
+ 		return 1;
  	}
- 
- 
--	if (dec->repeat) {
-+	/* we mustn't update the end timer while trying to stop it */
-+	if (dec->repeat && !hw->stopping) {
- 		unsigned long interval;
- 
- 		img_ir_begin_repeat(priv);
---- a/drivers/media/rc/img-ir/img-ir-hw.h
-+++ b/drivers/media/rc/img-ir/img-ir-hw.h
-@@ -214,6 +214,8 @@ enum img_ir_mode {
-  * @flags:		IMG_IR_F_*.
-  * @filters:		HW filters (derived from scancode filters).
-  * @mode:		Current decode mode.
-+ * @stopping:		Indicates that decoder is being taken down and timers
-+ *			should not be restarted.
-  * @suspend_irqen:	Saved IRQ enable mask over suspend.
-  */
- struct img_ir_priv_hw {
-@@ -229,6 +231,7 @@ struct img_ir_priv_hw {
- 	struct img_ir_filter		filters[RC_FILTER_MAX];
- 
- 	enum img_ir_mode		mode;
-+	bool				stopping;
- 	u32				suspend_irqen;
- };
- 
 
 
