@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758725AbbAYS4q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:56:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57941 "EHLO
+	id S1757404AbbAYSxy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:53:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600AbbAYSJr (ORCPT
+	with ESMTP id S1755658AbbAYSJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:47 -0500
+	Sun, 25 Jan 2015 13:09:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anthony Liguori <aliguori@amazon.com>, Imre Palik <imrep@amazon.de>,
-        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <edumazet@google.com>, Oded Gabbay <oded.gabbay@amd.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 022/183] xen-netback: fixing the propagation of the transmit shaper timeout
-Date: Sun, 25 Jan 2015 10:05:44 -0800
-Message-Id: <20150125180811.132909254@linuxfoundation.org>
+Subject: [PATCH 3.18 023/183] alx: fix alx_poll()
+Date: Sun, 25 Jan 2015 10:05:45 -0800
+Message-Id: <20150125180811.183747994@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -30,34 +29,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Palik, Imre" <imrep@amazon.de>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 07ff890daeda31cf23173865edf50bcb03e100c3 ]
+[ Upstream commit 7a05dc64e2e4c611d89007b125b20c0d2a4d31a5 ]
 
-Since e9ce7cb6b107 ("xen-netback: Factor queue-specific data into queue struct"),
-the transimt shaper timeout is always set to 0.  The value the user sets via
-xenbus is never propagated to the transmit shaper.
+Commit d75b1ade567f ("net: less interrupt masking in NAPI") uncovered
+wrong alx_poll() behavior.
 
-This patch fixes the issue.
+A NAPI poll() handler is supposed to return exactly the budget when/if
+napi_complete() has not been called.
 
-Cc: Anthony Liguori <aliguori@amazon.com>
-Signed-off-by: Imre Palik <imrep@amazon.de>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+It is also supposed to return number of frames that were received, so
+that netdev_budget can have a meaning.
+
+Also, in case of TX pressure, we still have to dequeue received
+packets : alx_clean_rx_irq() has to be called even if
+alx_clean_tx_irq(alx) returns false, otherwise device is half duplex.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: d75b1ade567f ("net: less interrupt masking in NAPI")
+Reported-by: Oded Gabbay <oded.gabbay@amd.com>
+Bisected-by: Oded Gabbay <oded.gabbay@amd.com>
+Tested-by: Oded Gabbay <oded.gabbay@amd.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/xenbus.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/atheros/alx/main.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
---- a/drivers/net/xen-netback/xenbus.c
-+++ b/drivers/net/xen-netback/xenbus.c
-@@ -736,6 +736,7 @@ static void connect(struct backend_info
+--- a/drivers/net/ethernet/atheros/alx/main.c
++++ b/drivers/net/ethernet/atheros/alx/main.c
+@@ -184,15 +184,16 @@ static void alx_schedule_reset(struct al
+ 	schedule_work(&alx->reset_wk);
+ }
+ 
+-static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
++static int alx_clean_rx_irq(struct alx_priv *alx, int budget)
+ {
+ 	struct alx_rx_queue *rxq = &alx->rxq;
+ 	struct alx_rrd *rrd;
+ 	struct alx_buffer *rxb;
+ 	struct sk_buff *skb;
+ 	u16 length, rfd_cleaned = 0;
++	int work = 0;
+ 
+-	while (budget > 0) {
++	while (work < budget) {
+ 		rrd = &rxq->rrd[rxq->rrd_read_idx];
+ 		if (!(rrd->word3 & cpu_to_le32(1 << RRD_UPDATED_SHIFT)))
+ 			break;
+@@ -203,7 +204,7 @@ static bool alx_clean_rx_irq(struct alx_
+ 		    ALX_GET_FIELD(le32_to_cpu(rrd->word0),
+ 				  RRD_NOR) != 1) {
+ 			alx_schedule_reset(alx);
+-			return 0;
++			return work;
  		}
  
- 		queue->remaining_credit = credit_bytes;
-+		queue->credit_usec = credit_usec;
+ 		rxb = &rxq->bufs[rxq->read_idx];
+@@ -243,7 +244,7 @@ static bool alx_clean_rx_irq(struct alx_
+ 		}
  
- 		err = connect_rings(be, queue);
- 		if (err) {
+ 		napi_gro_receive(&alx->napi, skb);
+-		budget--;
++		work++;
+ 
+ next_pkt:
+ 		if (++rxq->read_idx == alx->rx_ringsz)
+@@ -258,21 +259,22 @@ next_pkt:
+ 	if (rfd_cleaned)
+ 		alx_refill_rx_ring(alx, GFP_ATOMIC);
+ 
+-	return budget > 0;
++	return work;
+ }
+ 
+ static int alx_poll(struct napi_struct *napi, int budget)
+ {
+ 	struct alx_priv *alx = container_of(napi, struct alx_priv, napi);
+ 	struct alx_hw *hw = &alx->hw;
+-	bool complete = true;
+ 	unsigned long flags;
++	bool tx_complete;
++	int work;
+ 
+-	complete = alx_clean_tx_irq(alx) &&
+-		   alx_clean_rx_irq(alx, budget);
++	tx_complete = alx_clean_tx_irq(alx);
++	work = alx_clean_rx_irq(alx, budget);
+ 
+-	if (!complete)
+-		return 1;
++	if (!tx_complete || work == budget)
++		return budget;
+ 
+ 	napi_complete(&alx->napi);
+ 
+@@ -284,7 +286,7 @@ static int alx_poll(struct napi_struct *
+ 
+ 	alx_post_write(hw);
+ 
+-	return 0;
++	return work;
+ }
+ 
+ static irqreturn_t alx_intr_handle(struct alx_priv *alx, u32 intr)
 
 
