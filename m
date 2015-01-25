@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757992AbbAYSjo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:39:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58031 "EHLO
+	id S1755692AbbAYSJy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:09:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754373AbbAYSKP (ORCPT
+	with ESMTP id S1754341AbbAYSIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:15 -0500
+	Sun, 25 Jan 2015 13:08:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tim Kryger <tim.kryger@gmail.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.18 116/183] mmc: sdhci: Set SDHCI_POWER_ON with external vmmc
-Date: Sun, 25 Jan 2015 10:07:18 -0800
-Message-Id: <20150125180815.236559138@linuxfoundation.org>
+        Preston Fick <pffick@gmail.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 29/50] USB: cp210x: fix ID for production CEL MeshConnect USB Stick
+Date: Sun, 25 Jan 2015 10:07:19 -0800
+Message-Id: <20150125180704.223171970@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,46 +24,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tim Kryger <tim.kryger@gmail.com>
+From: Preston Fick <pffick@gmail.com>
 
-commit 3cbc6123a93dc91b99b58f7ea37d267fe93e1cad upstream.
+commit 90441b4dbe90ba0c38111ea89fa093a8c9627801 upstream.
 
-Host controllers lacking the required internal vmmc regulator may still
-follow the spec with regard to the LSB of SDHCI_POWER_CONTROL.  Set the
-SDHCI_POWER_ON bit when vmmc is enabled to encourage the controller to
-to drive CMD, DAT, SDCLK.
+Fixing typo for MeshConnect IDs. The original PID (0x8875) is not in
+production and is not needed. Instead it has been changed to the
+official production PID (0x8857).
 
-This fixes a regression observed on some Qualcomm and Nvidia boards
-caused by 5222161 mmc: sdhci: Improve external VDD regulator support.
-
-Fixes: 52221610dd84 (mmc: sdhci: Improve external VDD regulator support)
-Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
-Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Preston Fick <pffick@gmail.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/cp210x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1239,6 +1239,12 @@ static void sdhci_set_power(struct sdhci
- 		spin_unlock_irq(&host->lock);
- 		mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
- 		spin_lock_irq(&host->lock);
-+
-+		if (mode != MMC_POWER_OFF)
-+			sdhci_writeb(host, SDHCI_POWER_ON, SDHCI_POWER_CONTROL);
-+		else
-+			sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
-+
- 		return;
- 	}
- 
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -120,7 +120,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+-	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
++	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL MeshConnect USB Stick */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
 
 
