@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131AbbAYSlv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:41:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57941 "EHLO
+	id S1758078AbbAYTag (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:30:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755858AbbAYSKN (ORCPT
+	with ESMTP id S1754555AbbAYSIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:13 -0500
+	Sun, 25 Jan 2015 13:08:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Gurtovoy <maxg@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.18 068/183] IB/iser: Fix possible SQ overflow
+        Eric Dumazet <edumazet@google.com>, Oded Gabbay <oded.gabbay@amd.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 12/98] alx: fix alx_poll()
 Date: Sun, 25 Jan 2015 10:06:30 -0800
-Message-Id: <20150125180813.134156726@linuxfoundation.org>
+Message-Id: <20150125180713.404394888@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,83 +25,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Max Gurtovoy <maxg@mellanox.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 6ec9d4d2310e8fc54fc638e4454271d1fcaefa95 upstream.
+[ Upstream commit 7a05dc64e2e4c611d89007b125b20c0d2a4d31a5 ]
 
-Fix a regression was introduced in commit 6df5a128f0fd ("IB/iser:
-Suppress scsi command send completions").
+Commit d75b1ade567f ("net: less interrupt masking in NAPI") uncovered
+wrong alx_poll() behavior.
 
-The sig_count was wrongly set to be static variable, thus it is
-possible that we won't reach to (sig_count % ISER_SIGNAL_BATCH) == 0
-condition (due to races) and the send queue will be overflowed.
+A NAPI poll() handler is supposed to return exactly the budget when/if
+napi_complete() has not been called.
 
-Instead keep sig_count per connection. We don't need it to be atomic
-as we are safe under the iscsi session frwd_lock taken by libiscsi on
-the queuecommand path.
+It is also supposed to return number of frames that were received, so
+that netdev_budget can have a meaning.
 
-Fixes: 6df5a128f0fd ("IB/iser: Suppress scsi command send completions")
-Signed-off-by: Max Gurtovoy <maxg@mellanox.com>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Also, in case of TX pressure, we still have to dequeue received
+packets : alx_clean_rx_irq() has to be called even if
+alx_clean_tx_irq(alx) returns false, otherwise device is half duplex.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: d75b1ade567f ("net: less interrupt masking in NAPI")
+Reported-by: Oded Gabbay <oded.gabbay@amd.com>
+Bisected-by: Oded Gabbay <oded.gabbay@amd.com>
+Tested-by: Oded Gabbay <oded.gabbay@amd.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/infiniband/ulp/iser/iscsi_iser.h     |    2 ++
- drivers/infiniband/ulp/iser/iser_initiator.c |    6 +++---
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/atheros/alx/main.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
---- a/drivers/infiniband/ulp/iser/iscsi_iser.h
-+++ b/drivers/infiniband/ulp/iser/iscsi_iser.h
-@@ -432,6 +432,7 @@ struct fast_reg_descriptor {
-  * @cma_id:              rdma_cm connection maneger handle
-  * @qp:                  Connection Queue-pair
-  * @post_recv_buf_count: post receive counter
-+ * @sig_count:           send work request signal count
-  * @rx_wr:               receive work request for batch posts
-  * @device:              reference to iser device
-  * @comp:                iser completion context
-@@ -452,6 +453,7 @@ struct ib_conn {
- 	struct rdma_cm_id           *cma_id;
- 	struct ib_qp	            *qp;
- 	int                          post_recv_buf_count;
-+	u8                           sig_count;
- 	struct ib_recv_wr	     rx_wr[ISER_MIN_POSTED_RX];
- 	struct iser_device          *device;
- 	struct iser_comp	    *comp;
---- a/drivers/infiniband/ulp/iser/iser_initiator.c
-+++ b/drivers/infiniband/ulp/iser/iser_initiator.c
-@@ -369,7 +369,7 @@ static int iser_post_rx_bufs(struct iscs
- 	return 0;
+--- a/drivers/net/ethernet/atheros/alx/main.c
++++ b/drivers/net/ethernet/atheros/alx/main.c
+@@ -184,15 +184,16 @@ static void alx_schedule_reset(struct al
+ 	schedule_work(&alx->reset_wk);
  }
  
--static inline bool iser_signal_comp(int sig_count)
-+static inline bool iser_signal_comp(u8 sig_count)
+-static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
++static int alx_clean_rx_irq(struct alx_priv *alx, int budget)
  {
- 	return ((sig_count % ISER_SIGNAL_CMD_COUNT) == 0);
+ 	struct alx_rx_queue *rxq = &alx->rxq;
+ 	struct alx_rrd *rrd;
+ 	struct alx_buffer *rxb;
+ 	struct sk_buff *skb;
+ 	u16 length, rfd_cleaned = 0;
++	int work = 0;
+ 
+-	while (budget > 0) {
++	while (work < budget) {
+ 		rrd = &rxq->rrd[rxq->rrd_read_idx];
+ 		if (!(rrd->word3 & cpu_to_le32(1 << RRD_UPDATED_SHIFT)))
+ 			break;
+@@ -203,7 +204,7 @@ static bool alx_clean_rx_irq(struct alx_
+ 		    ALX_GET_FIELD(le32_to_cpu(rrd->word0),
+ 				  RRD_NOR) != 1) {
+ 			alx_schedule_reset(alx);
+-			return 0;
++			return work;
+ 		}
+ 
+ 		rxb = &rxq->bufs[rxq->read_idx];
+@@ -243,7 +244,7 @@ static bool alx_clean_rx_irq(struct alx_
+ 		}
+ 
+ 		napi_gro_receive(&alx->napi, skb);
+-		budget--;
++		work++;
+ 
+ next_pkt:
+ 		if (++rxq->read_idx == alx->rx_ringsz)
+@@ -258,21 +259,22 @@ next_pkt:
+ 	if (rfd_cleaned)
+ 		alx_refill_rx_ring(alx, GFP_ATOMIC);
+ 
+-	return budget > 0;
++	return work;
  }
-@@ -388,7 +388,7 @@ int iser_send_command(struct iscsi_conn
- 	struct iscsi_scsi_req *hdr = (struct iscsi_scsi_req *)task->hdr;
- 	struct scsi_cmnd *sc  =  task->sc;
- 	struct iser_tx_desc *tx_desc = &iser_task->desc;
--	static unsigned sig_count;
-+	u8 sig_count = ++iser_conn->ib_conn.sig_count;
  
- 	edtl = ntohl(hdr->data_length);
+ static int alx_poll(struct napi_struct *napi, int budget)
+ {
+ 	struct alx_priv *alx = container_of(napi, struct alx_priv, napi);
+ 	struct alx_hw *hw = &alx->hw;
+-	bool complete = true;
+ 	unsigned long flags;
++	bool tx_complete;
++	int work;
  
-@@ -435,7 +435,7 @@ int iser_send_command(struct iscsi_conn
- 	iser_task->status = ISER_TASK_STATUS_STARTED;
+-	complete = alx_clean_tx_irq(alx) &&
+-		   alx_clean_rx_irq(alx, budget);
++	tx_complete = alx_clean_tx_irq(alx);
++	work = alx_clean_rx_irq(alx, budget);
  
- 	err = iser_post_send(&iser_conn->ib_conn, tx_desc,
--			     iser_signal_comp(++sig_count));
-+			     iser_signal_comp(sig_count));
- 	if (!err)
- 		return 0;
+-	if (!complete)
+-		return 1;
++	if (!tx_complete || work == budget)
++		return budget;
  
+ 	napi_complete(&alx->napi);
+ 
+@@ -284,7 +286,7 @@ static int alx_poll(struct napi_struct *
+ 
+ 	alx_post_write(hw);
+ 
+-	return 0;
++	return work;
+ }
+ 
+ static irqreturn_t alx_intr_handle(struct alx_priv *alx, u32 intr)
 
 
