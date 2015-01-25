@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758318AbbAYSqf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:46:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58023 "EHLO
+	id S1759546AbbAYTXt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:23:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789AbbAYSKG (ORCPT
+	with ESMTP id S1754875AbbAYSJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:06 -0500
+	Sun, 25 Jan 2015 13:09:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Stuebner <heiko@sntech.de>, FUKAUMI Naoki <naobsd@gmail.com>
-Subject: [PATCH 3.18 091/183] clk: rockchip: fix rk3066 pll lock bit location
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 35/98] iscsi-target: Fail connection on short sendmsg writes
 Date: Sun, 25 Jan 2015 10:06:53 -0800
-Message-Id: <20150125180814.130009971@linuxfoundation.org>
+Message-Id: <20150125180714.394627982@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,66 +26,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Heiko Stuebner <heiko@sntech.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 12551f0239b50c88352e3292dd7703382addbf5e upstream.
+commit 6bf6ca7515c1df06f5c03737537f5e0eb191e29e upstream.
 
-The bit locations indicating the locking status of the plls on rk3066 are
-shifted by one to the right when compared to the rk3188, bits [7:4] instead
-of [8:5] on the rk3188, thus indicating the locking state of the wrong pll
-or a completely different information in case of the gpll.
+This patch changes iscsit_do_tx_data() to fail on short writes
+when kernel_sendmsg() returns a value different than requested
+transfer length, returning -EPIPE and thus causing a connection
+reset to occur.
 
-The recently introduced pll init code exposed that problem on some rk3066
-boards when it tried to bring the boot-pll value in line with the value
-from the rate table.
+This avoids a potential bug in the original code where a short
+write would result in kernel_sendmsg() being called again with
+the original iovec base + length.
 
-Fix this by defining separate pll definitions for rk3066 with the correct
-locking indices.
+In practice this has not been an issue because iscsit_do_tx_data()
+is only used for transferring 48 byte headers + 4 byte digests,
+along with seldom used control payloads from NOPIN + TEXT_RSP +
+REJECT with less than 32k of data.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Fixes: 2c14736c75db ("clk: rockchip: add clock driver for rk3188 and rk3066 clocks")
-Tested-by: FUKAUMI Naoki <naobsd@gmail.com>
+So following Al's audit of iovec consumers, go ahead and fail
+the connection on short writes for now, and remove the bogus
+logic ahead of his proper upstream fix.
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/clk/rockchip/clk-rk3188.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/target/iscsi/iscsi_target_util.c |   26 +++++++++++---------------
+ 1 file changed, 11 insertions(+), 15 deletions(-)
 
---- a/drivers/clk/rockchip/clk-rk3188.c
-+++ b/drivers/clk/rockchip/clk-rk3188.c
-@@ -210,6 +210,17 @@ PNAME(mux_sclk_hsadc_p)		= { "hsadc_src"
- PNAME(mux_mac_p)		= { "gpll", "dpll" };
- PNAME(mux_sclk_macref_p)	= { "mac_src", "ext_rmii" };
- 
-+static struct rockchip_pll_clock rk3066_pll_clks[] __initdata = {
-+	[apll] = PLL(pll_rk3066, PLL_APLL, "apll", mux_pll_p, 0, RK2928_PLL_CON(0),
-+		     RK2928_MODE_CON, 0, 5, rk3188_pll_rates),
-+	[dpll] = PLL(pll_rk3066, PLL_DPLL, "dpll", mux_pll_p, 0, RK2928_PLL_CON(4),
-+		     RK2928_MODE_CON, 4, 4, NULL),
-+	[cpll] = PLL(pll_rk3066, PLL_CPLL, "cpll", mux_pll_p, 0, RK2928_PLL_CON(8),
-+		     RK2928_MODE_CON, 8, 6, rk3188_pll_rates),
-+	[gpll] = PLL(pll_rk3066, PLL_GPLL, "gpll", mux_pll_p, 0, RK2928_PLL_CON(12),
-+		     RK2928_MODE_CON, 12, 7, rk3188_pll_rates),
-+};
-+
- static struct rockchip_pll_clock rk3188_pll_clks[] __initdata = {
- 	[apll] = PLL(pll_rk3066, PLL_APLL, "apll", mux_pll_p, 0, RK2928_PLL_CON(0),
- 		     RK2928_MODE_CON, 0, 6, rk3188_pll_rates),
-@@ -742,8 +753,8 @@ static void __init rk3188_common_clk_ini
- static void __init rk3066a_clk_init(struct device_node *np)
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -1356,15 +1356,15 @@ static int iscsit_do_tx_data(
+ 	struct iscsi_conn *conn,
+ 	struct iscsi_data_count *count)
  {
- 	rk3188_common_clk_init(np);
--	rockchip_clk_register_plls(rk3188_pll_clks,
--				   ARRAY_SIZE(rk3188_pll_clks),
-+	rockchip_clk_register_plls(rk3066_pll_clks,
-+				   ARRAY_SIZE(rk3066_pll_clks),
- 				   RK3066_GRF_SOC_STATUS);
- 	rockchip_clk_register_branches(rk3066a_clk_branches,
- 				  ARRAY_SIZE(rk3066a_clk_branches));
+-	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
++	int ret, iov_len;
+ 	struct kvec *iov_p;
+ 	struct msghdr msg;
+ 
+ 	if (!conn || !conn->sock || !conn->conn_ops)
+ 		return -1;
+ 
+-	if (data <= 0) {
+-		pr_err("Data length is: %d\n", data);
++	if (count->data_length <= 0) {
++		pr_err("Data length is: %d\n", count->data_length);
+ 		return -1;
+ 	}
+ 
+@@ -1373,20 +1373,16 @@ static int iscsit_do_tx_data(
+ 	iov_p = count->iov;
+ 	iov_len = count->iov_count;
+ 
+-	while (total_tx < data) {
+-		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
+-					(data - total_tx));
+-		if (tx_loop <= 0) {
+-			pr_debug("tx_loop: %d total_tx %d\n",
+-				tx_loop, total_tx);
+-			return tx_loop;
+-		}
+-		total_tx += tx_loop;
+-		pr_debug("tx_loop: %d, total_tx: %d, data: %d\n",
+-					tx_loop, total_tx, data);
++	ret = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
++			     count->data_length);
++	if (ret != count->data_length) {
++		pr_err("Unexpected ret: %d send data %d\n",
++		       ret, count->data_length);
++		return -EPIPE;
+ 	}
++	pr_debug("ret: %d, sent data: %d\n", ret, count->data_length);
+ 
+-	return total_tx;
++	return ret;
+ }
+ 
+ int rx_data(
 
 
