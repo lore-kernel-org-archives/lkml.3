@@ -1,61 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbbAYWH1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 17:07:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59467 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbbAYWH0 (ORCPT
+	id S1751639AbbAYWQr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 17:16:47 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38033 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbbAYWQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 17:07:26 -0500
-Date: Sun, 25 Jan 2015 14:07:23 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Esben Haabendal <esben.haabendal@gmail.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        Stefan Roese <sr@denx.de>
-Subject: Re: Backport of spi-fsl-spi bugfix to 3.14.y
-Message-ID: <20150125220723.GD29924@kroah.com>
-References: <1420472564.803.9.camel@gmail.com>
- <20150105154834.GV11764@sirena.org.uk>
- <CAOR3GqUBWyfUvNG-8JiPVkis6b_25Eq_REtcp=kLN3CUoqsG6g@mail.gmail.com>
- <20150123124529.GU21293@sirena.org.uk>
- <20150125173853.GA6467@kroah.com>
- <20150125201254.GX21293@sirena.org.uk>
+	Sun, 25 Jan 2015 17:16:44 -0500
+Date: Sun, 25 Jan 2015 22:16:43 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: Detect API misuse of i_op->lookup
+Message-ID: <20150125221643.GK29656@ZenIV.linux.org.uk>
+References: <1422223060-8561-1-git-send-email-richard@nod.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150125201254.GX21293@sirena.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1422223060-8561-1-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 25, 2015 at 08:12:54PM +0000, Mark Brown wrote:
-> On Sun, Jan 25, 2015 at 09:38:53AM -0800, Greg Kroah-Hartman wrote:
-> > On Fri, Jan 23, 2015 at 12:45:29PM +0000, Mark Brown wrote:
-> 
-> > > So, I now see this has actually been merged into stable without getting
-> > > to the bottom of why it's helping anything...  this is a bit worrying
-> > > since it's adding new functionality and not really a bug fix.  It'd have
-> > > been good to at least get a followup here.
-> 
-> > Do you want me to revert something from the stable tree?  If so, has it
-> > also been reverted upstream?
-> 
-> The patch just isn't an obvious -stable patch - it's adding new
-> functionality, not fixing a bug, and I was surprised to discover it had
-> been added as a result.  It's fine as new functionality and therefore
-> hasn't been reverted upstream.
-> 
-> We can probably leave it there, though if this is OK that's a bit of a
-> change, but if this new functionality is a good fix then we're probably
-> leaving other systems unfixed which isn't good, I would be very much
-> happier if we understood what had changed here.  If new functionality is
-> OK there's a probably a bunch of other changes we should be pulling
-> back.
+On Sun, Jan 25, 2015 at 10:57:40PM +0100, Richard Weinberger wrote:
+> Hunting down a refcount issue in an out-of-tree filesystem uncovered
+> that its lookup function directly returned the dentry which was passed to it.
+> Add a BUG_ON() to detect such misuse in future.
 
-New functionality shouldn't be added, but sometimes things slip in due
-to the volume of patches and how people word-smith changelog entries :(
-
-greg k-h
-
+In principle, it's not a bug.  You *must* grab a reference to dentry before
+returning it, but you can very well decide to return the one you've got -
+any place where have ->lookup() return NULL has every right to become
+return dget(dentry).
