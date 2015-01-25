@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047AbbAYQL4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 11:11:56 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:40279 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbbAYQLx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 11:11:53 -0500
+	id S1753314AbbAYQlP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 11:41:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56754 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752431AbbAYQlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 11:41:12 -0500
+Date: Sun, 25 Jan 2015 17:41:00 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 1/5] tools lib fs: Add helper to find mounted file systems
+Message-ID: <20150125164059.GC31987@krava.brq.redhat.com>
+References: <20150124181330.195149364@goodmis.org>
+ <20150124181448.499062732@goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <CAF6AEGuLu+KYwBX59T4-SThPDJCYwKDU6_qWf7d80Dae6FAmbQ@mail.gmail.com>
-References: <alpine.DEB.2.02.1501191226010.2973@galak-ubuntu.qualcomm.com>
- <20150122011521.GA31815@quad.lixom.net> <D177DF12-0F31-49CF-B98B-9FAC23AAB24C@codeaurora.org>
- <CAOesGMipp=Odc-cWvrba0e1pd1X7O+PKNH+WoM3fG4xX2GRFuA@mail.gmail.com>
- <DBE63F76-D4CB-49D5-90C6-642CFCA7687F@codeaurora.org> <CAOesGMht4VaNgwr5rOyher081Vk7w_HKTMeOm677rEAkOcCPAg@mail.gmail.com>
- <CAF6AEGuLu+KYwBX59T4-SThPDJCYwKDU6_qWf7d80Dae6FAmbQ@mail.gmail.com>
-From: Sean Paul <seanpaul@chromium.org>
-Date: Sun, 25 Jan 2015 11:11:28 -0500
-Message-ID: <CAOw6vbJpfp-ViGXcS7vwm-1SWQmq=LhGkN=PmhKO9ky1qUJ2mA@mail.gmail.com>
-Subject: Re: [GIT PULL] qcom SoC changes for v3.20
-To: Rob Clark <robdclark@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>, Kumar Gala <galak@codeaurora.org>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Vikram Mulukutla <markivx@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>, Lina Iyer <lina.iyer@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thierry Reding <treding@nvidia.com>, daeinki <inki.dae@samsung.com>,
-        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        gustavo@padovan.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150124181448.499062732@goodmis.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 25, 2015 at 11:03 AM, Rob Clark <robdclark@gmail.com> wrote:
-> On Fri, Jan 23, 2015 at 1:43 PM, Olof Johansson <olof@lixom.net> wrote:
->>>> I'd be OK with merging this, send a request and tag. Would that let
->>>> the DRM folks make progress too?
->>>
->>> Will do, I don’t think it will address the DRM folks needs as they need access to make firmware calls from the DRM driver.
->>>
->>>> If you need a common place for this, drivers/firmware seems like a
->>>> better home than drivers/soc.
->>>
->>> Agreed, what’s you take than on moving to use firmware_ops as defined in arch/arm and extended it or just leaving this as a qcom specific firmware interface?
->>
->> Are there any other SoCs out there with similar requirements on
->> firmware interfaces? I think most of them so far have been fairly
->> simple compared to the complexity of the qualcomm firmware.
->
-> I think the question is probably "how do downstream HDCP
-> implementations work on these other SoCs"..   so far, I think qcom is
-> the first to try to upstream HDCP support, but I know there have to be
-> at least a few downstream implementations lurking out there.
->
+On Sat, Jan 24, 2015 at 01:13:31PM -0500, Steven Rostedt wrote:
 
-This isn't a concern on exynos, fwiw.
+SNIP
 
-> And I'm sure as some others come out of the woodwork there will be
-> some things to refactor.. like possibly shared helpers for
-> implementing the state machine, etc.
->
+>  /* find the path to the mounted debugfs */
+>  const char *debugfs_find_mountpoint(void)
+>  {
+> -	const char * const *ptr;
+> -	char type[100];
+> -	FILE *fp;
+> -
+>  	if (debugfs_found)
+>  		return (const char *)debugfs_mountpoint;
+>  
+> -	ptr = debugfs_known_mountpoints;
+> -	while (*ptr) {
+> -		if (debugfs_valid_mountpoint(*ptr) == 0) {
+> -			debugfs_found = true;
+> -			strcpy(debugfs_mountpoint, *ptr);
+> -			return debugfs_mountpoint;
+> -		}
+> -		ptr++;
+> -	}
+> -
+> -	/* give up and parse /proc/mounts */
+> -	fp = fopen("/proc/mounts", "r");
+> -	if (fp == NULL)
+> -		return NULL;
+> -
+> -	while (fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
+> -		      debugfs_mountpoint, type) == 2) {
+> -		if (strcmp(type, "debugfs") == 0)
+> -			break;
+> -	}
+> -	fclose(fp);
+> -
+> -	if (strcmp(type, "debugfs") != 0)
+> -		return NULL;
+> -
+> -	debugfs_found = true;
+> -
+> -	return debugfs_mountpoint;
+> +	return find_mountpoint("debugfs", (long) DEBUGFS_MAGIC,
+> +			       debugfs_mountpoint, PATH_MAX + 1,
+> +			       debugfs_known_mountpoints);
+>  }
 
-Shared helpers would be useful to have once there's another hdcp
-implementation upstream. I haven't looked at our downstream hdcp
-implementation in a while, so it's difficult to say how much could be
-factored out. It's on my TODO stack... somewhere.
+debugfs_found is no longer set 'true' by debugfs_find_mountpoint
 
-Sean
-
-
-> BR,
-> -R
->
->> Would it make sense to use firmware_ops for the common pieces and have
->> direct smc calls for the rest? I'm not sure that would buy us all that
->> much. Hm.
->>
->> Well, at least it's an internal implementation detail. If we move it
->> now and find a better way to do it down the road it can be refactored.
+jirka
