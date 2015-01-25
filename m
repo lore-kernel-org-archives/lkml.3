@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604AbbAYTMq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:12:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
+	id S1757714AbbAYSen (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:34:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301AbbAYSJS (ORCPT
+	with ESMTP id S1755976AbbAYSKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:18 -0500
+	Sun, 25 Jan 2015 13:10:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gary Bisson <bisson.gary@gmail.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 3.14 75/98] ARM: clk-imx6q: fix video divider for rev T0 1.0
-Date: Sun, 25 Jan 2015 10:07:33 -0800
-Message-Id: <20150125180716.126234954@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.18 132/183] pinctrl: lantiq: remove bogus of_gpio_chip_add
+Date: Sun, 25 Jan 2015 10:07:34 -0800
+Message-Id: <20150125180815.911309662@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,39 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Gary Bisson <bisson.gary@gmail.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 81ef447950bf0955aca46f4a7617d8ce435cf0ce upstream.
+commit 41f632fe177bc4822c2e8236fe7c291e6e9eb6f8 upstream.
 
-The post dividers do not work on i.MX6Q rev T0 1.0 so they must be fixed
-to 1. As the table index was wrong, a divider a of 4 could still be
-requested which implied the clock not to be set properly. This is the
-root cause of the HDMI not working at high resolution on rev T0 1.0 of
-the SoC.
+Remove bogus call to of_gpiochip_add (and of_gpio_chip remove in error
+path) which is also called when adding the gpio chip.
 
-Signed-off-by: Gary Bisson <bisson.gary@gmail.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+This prevents adding the same pinctrl range twice.
+
+Fixes: 3f8c50c9b110 ("OF: pinctrl: MIPS: lantiq: implement lantiq/xway
+pinctrl support")
+
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/clk-imx6q.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pinctrl/pinctrl-xway.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/arch/arm/mach-imx/clk-imx6q.c
-+++ b/arch/arm/mach-imx/clk-imx6q.c
-@@ -161,7 +161,7 @@ static void __init imx6q_clocks_init(str
- 		post_div_table[1].div = 1;
- 		post_div_table[2].div = 1;
- 		video_div_table[1].div = 1;
--		video_div_table[2].div = 1;
-+		video_div_table[3].div = 1;
- 	}
+--- a/drivers/pinctrl/pinctrl-xway.c
++++ b/drivers/pinctrl/pinctrl-xway.c
+@@ -798,10 +798,8 @@ static int pinmux_xway_probe(struct plat
  
- 	/*                   type                               name         parent_name  base     div_mask */
+ 	/* load the gpio chip */
+ 	xway_chip.dev = &pdev->dev;
+-	of_gpiochip_add(&xway_chip);
+ 	ret = gpiochip_add(&xway_chip);
+ 	if (ret) {
+-		of_gpiochip_remove(&xway_chip);
+ 		dev_err(&pdev->dev, "Failed to register gpio chip\n");
+ 		return ret;
+ 	}
 
 
