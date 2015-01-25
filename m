@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbbAYNah (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 08:30:37 -0500
-Received: from guitar.tcltek.co.il ([192.115.133.116]:57322 "EHLO
-	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719AbbAYNab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 08:30:31 -0500
-From: Baruch Siach <baruch@tkos.co.il>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>
-Subject: [PATCH 2/2] tools/liblockdep: don't include host headers
-Date: Sun, 25 Jan 2015 15:30:23 +0200
-Message-Id: <8278d003356dba5a3e778c18e94ccef4176fc1ca.1422192349.git.baruch@tkos.co.il>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <d6ba76fc891265ddb1b4e0fec6c76aac8168ba01.1422192349.git.baruch@tkos.co.il>
-References: <d6ba76fc891265ddb1b4e0fec6c76aac8168ba01.1422192349.git.baruch@tkos.co.il>
+	id S1753476AbbAYNa6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 08:30:58 -0500
+Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:44328 "EHLO
+	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753226AbbAYNad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 08:30:33 -0500
+Date: Sun, 25 Jan 2015 14:30:24 +0100
+From: Sylvain Rochet <sylvain.rochet@finsecur.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>, nicolas.ferre@atmel.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, peda@axentia.se,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20150125133024.GA27125@gradator.net>
+References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
+ <1421741825-18226-9-git-send-email-wenyou.yang@atmel.com>
+ <20150123191719.GA29601@gradator.net>
+ <20150123231738.GB32318@piout.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150123231738.GB32318@piout.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 172.16.8.13
+X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
+Subject: Re: [PATCH 08/12] pm: at91: rename file name: pm_slowclock.S
+ -->pm_suspend.S
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding host headers to include path may cause unexpected surprises when cross
-compiling. Remove /usr/local/include from the default include path.
+Hello Alexandre,
 
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
----
- tools/lib/lockdep/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index 52f9279c6c13..4b866c54f624 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -104,7 +104,7 @@ N		=
- 
- export Q VERBOSE
- 
--INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include -I../../include $(CONFIG_INCLUDES)
-+INCLUDES = -I. -I./uinclude -I./include -I../../include $(CONFIG_INCLUDES)
- 
- # Set compile option CFLAGS if not set elsewhere
- CFLAGS ?= -g -DCONFIG_LOCKDEP -DCONFIG_STACKTRACE -DCONFIG_PROVE_LOCKING -DBITS_PER_LONG=__WORDSIZE -DLIBLOCKDEP_VERSION='"$(LIBLOCKDEP_VERSION)"' -rdynamic -O0 -g
--- 
-2.1.4
+On Sat, Jan 24, 2015 at 12:17:38AM +0100, Alexandre Belloni wrote:
+> 
+> This is a rework, what is part of linux-3.10-at91 and not yet present in
+> mainline should be part of a following series. I would prefer not mixing
+> reworks and "new" functionalities (they have been present in the atmel
+> tree for a while but never mainlined).
 
+I agree, I just didn't know a new series will follow, maybe I missed 
+this point.
+
+Maybe I am a bit too picky (or boring: if I am, please told me), but 
+this series by itself adds regression to all users of >= 9x5 boards 
+(sama5, …) because it merges MEM target and MEM+SLOW_CLOCK target, which 
+used to be too different target states, not selectable at runtime indeed 
+but this is still in practice two different target states. Note that I 
+am not saying that MEM target and MEM+SLOW_CLOCK target should not be 
+merged, they should, absolutely ;-). For >= 9x5 boards (sama5, …), MEM 
+target works and MEM+SLOW_CLOCK target does not work, MEM and 
+MEM+SLOW_CLOCK merge breaks MEM target for those boards.
+
+There is however a good news !, at91_pm_verify_clocks() used to be 
+called for MEM target without considering if it was MEM (~STANDBY) or 
+MEM+SLOW_CLOCK. It means that all MEM target users can with very good 
+chance go to a deeper sleep state without issue because 
+at91_pm_verify_clocks() successfully checked on those boards and is why 
+we can merge MEM and MEM+SLOW_CLOCK without adding a regression.
+
+Care should be taken to pull-request at the same time both the rework 
+and the above cited following series about slow clock support for all 
+known boards so we don't break MEM target for a release cycle.
+
+
+> I would say that PM on 9x5, n12 and sama5 in mainline is clearly not 
+> well tested and is lagging behind the atmel tree.
+
+Well, at the current mainline state, everything works fine for me except 
+slow clock mode, I thoroughly checked everything else.
+
+
+Sylvain
