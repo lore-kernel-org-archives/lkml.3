@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750AbbAYSLo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57411 "EHLO
+	id S1756907AbbAYSYx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:24:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57892 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384AbbAYSJ3 (ORCPT
+	with ESMTP id S1756093AbbAYSKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:29 -0500
+	Sun, 25 Jan 2015 13:10:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Slava Shwartsman <valyushash@gmail.com>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 89/98] iser-target: Handle ADDR_CHANGE event for listener cm_id
+        Reinhard Speyerer <rspmn@arcor.de>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.18 145/183] USB: qcserial/option: make AT URCs work for Sierra Wireless MC73xx
 Date: Sun, 25 Jan 2015 10:07:47 -0800
-Message-Id: <20150125180716.769805884@linuxfoundation.org>
+Message-Id: <20150125180816.469536296@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,228 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Reinhard Speyerer <rspmn@arcor.de>
 
-commit ca6c1d82d12d8013fb75ce015900d62b9754623c upstream.
+commit d80c0d14183516f184a5ac88e11008ee4c7d2a2e upstream.
 
-The np listener cm_id will also get ADDR_CHANGE event
-upcall (in case it is bound to a specific IP). Handle
-it correctly by creating a new cm_id and implicitly
-destroy the old one.
+As has been discussed in the thread starting with
+https://lkml.kernel.org/g/549748e9.d+SiJzqu50f1r4lSAL043YSc@arcor.de
+Sierra Wireless MC73xx devices with USB VID/PID 0x1199:0x68c0 require the
+option_send_setup() code to be used on the USB interface for the AT port
+to make unsolicited response codes work correctly. Move these devices from
+the qcserial driver where they have been added by commit
+70a3615fc07c2330ed7c1e922f3c44f4a67c0762 ("usb: qcserial: add Sierra Wireless
+MC73xx") to the option driver and add a MC73xx-specific blacklist
+to ensure that
+1. the sendsetup code is not used for the DIAG/DM and NMEA interfaces
+2. the option driver does not attach to the QMI/network interfaces
 
-Since this is the second event a listener np cm_id may
-encounter, we move the np cm_id event handling to a
-routine.
-
-Squashed:
-
-iser-target: Move cma_id setup to a function
-
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Reinhard Speyerer <rspmn@arcor.de>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |  107 ++++++++++++++++++++++----------
- drivers/infiniband/ulp/isert/ib_isert.h |    1 
- 2 files changed, 77 insertions(+), 31 deletions(-)
+ drivers/usb/serial/option.c   |   11 ++++++++++-
+ drivers/usb/serial/qcserial.c |    1 -
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -56,6 +56,7 @@ static int
- isert_rdma_post_recvl(struct isert_conn *isert_conn);
- static int
- isert_rdma_accept(struct isert_conn *isert_conn);
-+struct rdma_cm_id *isert_setup_id(struct isert_np *isert_np);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -234,6 +234,8 @@ static void option_instat_callback(struc
  
- static void
- isert_qp_event_callback(struct ib_event *e, void *context)
-@@ -499,8 +500,8 @@ err:
- static int
- isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- {
--	struct iscsi_np *np = cma_id->context;
--	struct isert_np *isert_np = np->np_context;
-+	struct isert_np *isert_np = cma_id->context;
-+	struct iscsi_np *np = isert_np->np;
- 	struct isert_conn *isert_conn;
- 	struct isert_device *device;
- 	struct ib_device *ib_dev = cma_id->device;
-@@ -766,17 +767,41 @@ isert_conn_terminate(struct isert_conn *
- }
+ #define QUALCOMM_VENDOR_ID			0x05C6
  
- static int
--isert_disconnected_handler(struct rdma_cm_id *cma_id)
-+isert_np_cma_handler(struct isert_np *isert_np,
-+		     enum rdma_cm_event_type event)
- {
--	struct iscsi_np *np = cma_id->context;
--	struct isert_np *isert_np = np->np_context;
--	struct isert_conn *isert_conn;
-+	pr_debug("isert np %p, handling event %d\n", isert_np, event);
- 
--	if (isert_np->np_cm_id == cma_id) {
-+	switch (event) {
-+	case RDMA_CM_EVENT_DEVICE_REMOVAL:
- 		isert_np->np_cm_id = NULL;
--		return -1;
-+		break;
-+	case RDMA_CM_EVENT_ADDR_CHANGE:
-+		isert_np->np_cm_id = isert_setup_id(isert_np);
-+		if (IS_ERR(isert_np->np_cm_id)) {
-+			pr_err("isert np %p setup id failed: %ld\n",
-+				 isert_np, PTR_ERR(isert_np->np_cm_id));
-+			isert_np->np_cm_id = NULL;
-+		}
-+		break;
-+	default:
-+		pr_err("isert np %p Unexpected event %d\n",
-+			  isert_np, event);
- 	}
- 
-+	return -1;
-+}
++#define SIERRA_VENDOR_ID			0x1199
 +
-+static int
-+isert_disconnected_handler(struct rdma_cm_id *cma_id,
-+			   enum rdma_cm_event_type event)
-+{
-+	struct isert_np *isert_np = cma_id->context;
-+	struct isert_conn *isert_conn;
-+
-+	if (isert_np->np_cm_id == cma_id)
-+		return isert_np_cma_handler(cma_id->context, event);
-+
- 	isert_conn = cma_id->qp->qp_context;
- 
- 	mutex_lock(&isert_conn->conn_mutex);
-@@ -819,7 +844,7 @@ isert_cma_handler(struct rdma_cm_id *cma
- 	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
- 	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
- 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
--		ret = isert_disconnected_handler(cma_id);
-+		ret = isert_disconnected_handler(cma_id, event->event);
- 		break;
- 	case RDMA_CM_EVENT_REJECTED:       /* FALLTHRU */
- 	case RDMA_CM_EVENT_UNREACHABLE:    /* FALLTHRU */
-@@ -2643,13 +2668,51 @@ isert_response_queue(struct iscsi_conn *
- 	return ret;
- }
- 
-+struct rdma_cm_id *
-+isert_setup_id(struct isert_np *isert_np)
-+{
-+	struct iscsi_np *np = isert_np->np;
-+	struct rdma_cm_id *id;
-+	struct sockaddr *sa;
-+	int ret;
-+
-+	sa = (struct sockaddr *)&np->np_sockaddr;
-+	pr_debug("ksockaddr: %p, sa: %p\n", &np->np_sockaddr, sa);
-+
-+	id = rdma_create_id(isert_cma_handler, isert_np,
-+			    RDMA_PS_TCP, IB_QPT_RC);
-+	if (IS_ERR(id)) {
-+		pr_err("rdma_create_id() failed: %ld\n", PTR_ERR(id));
-+		ret = PTR_ERR(id);
-+		goto out;
-+	}
-+	pr_debug("id %p context %p\n", id, id->context);
-+
-+	ret = rdma_bind_addr(id, sa);
-+	if (ret) {
-+		pr_err("rdma_bind_addr() failed: %d\n", ret);
-+		goto out_id;
-+	}
-+
-+	ret = rdma_listen(id, ISERT_RDMA_LISTEN_BACKLOG);
-+	if (ret) {
-+		pr_err("rdma_listen() failed: %d\n", ret);
-+		goto out_id;
-+	}
-+
-+	return id;
-+out_id:
-+	rdma_destroy_id(id);
-+out:
-+	return ERR_PTR(ret);
-+}
-+
- static int
- isert_setup_np(struct iscsi_np *np,
- 	       struct __kernel_sockaddr_storage *ksockaddr)
- {
- 	struct isert_np *isert_np;
- 	struct rdma_cm_id *isert_lid;
--	struct sockaddr *sa;
- 	int ret;
- 
- 	isert_np = kzalloc(sizeof(struct isert_np), GFP_KERNEL);
-@@ -2661,9 +2724,8 @@ isert_setup_np(struct iscsi_np *np,
- 	mutex_init(&isert_np->np_accept_mutex);
- 	INIT_LIST_HEAD(&isert_np->np_accept_list);
- 	init_completion(&isert_np->np_login_comp);
-+	isert_np->np = np;
- 
--	sa = (struct sockaddr *)ksockaddr;
--	pr_debug("ksockaddr: %p, sa: %p\n", ksockaddr, sa);
- 	/*
- 	 * Setup the np->np_sockaddr from the passed sockaddr setup
- 	 * in iscsi_target_configfs.c code..
-@@ -2671,37 +2733,20 @@ isert_setup_np(struct iscsi_np *np,
- 	memcpy(&np->np_sockaddr, ksockaddr,
- 	       sizeof(struct __kernel_sockaddr_storage));
- 
--	isert_lid = rdma_create_id(isert_cma_handler, np, RDMA_PS_TCP,
--				IB_QPT_RC);
-+	isert_lid = isert_setup_id(isert_np);
- 	if (IS_ERR(isert_lid)) {
--		pr_err("rdma_create_id() for isert_listen_handler failed: %ld\n",
--		       PTR_ERR(isert_lid));
- 		ret = PTR_ERR(isert_lid);
- 		goto out;
- 	}
- 
--	ret = rdma_bind_addr(isert_lid, sa);
--	if (ret) {
--		pr_err("rdma_bind_addr() for isert_lid failed: %d\n", ret);
--		goto out_lid;
--	}
--
--	ret = rdma_listen(isert_lid, ISERT_RDMA_LISTEN_BACKLOG);
--	if (ret) {
--		pr_err("rdma_listen() for isert_lid failed: %d\n", ret);
--		goto out_lid;
--	}
--
- 	isert_np->np_cm_id = isert_lid;
- 	np->np_context = isert_np;
--	pr_debug("Setup isert_lid->context: %p\n", isert_lid->context);
- 
- 	return 0;
- 
--out_lid:
--	rdma_destroy_id(isert_lid);
- out:
- 	kfree(isert_np);
-+
- 	return ret;
- }
- 
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -159,6 +159,7 @@ struct isert_device {
+ #define CMOTECH_VENDOR_ID			0x16d8
+ #define CMOTECH_PRODUCT_6001			0x6001
+ #define CMOTECH_PRODUCT_CMU_300			0x6002
+@@ -512,7 +514,7 @@ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_RESERVED_IF = 2
  };
  
- struct isert_np {
-+	struct iscsi_np         *np;
- 	struct semaphore	np_sem;
- 	struct rdma_cm_id	*np_cm_id;
- 	struct mutex		np_accept_mutex;
+-#define MAX_BL_NUM  8
++#define MAX_BL_NUM  11
+ struct option_blacklist_info {
+ 	/* bitfield of interface numbers for OPTION_BLACKLIST_SENDSETUP */
+ 	const unsigned long sendsetup;
+@@ -601,6 +603,11 @@ static const struct option_blacklist_inf
+ 	.reserved = BIT(1) | BIT(5),
+ };
+ 
++static const struct option_blacklist_info sierra_mc73xx_blacklist = {
++	.sendsetup = BIT(0) | BIT(2),
++	.reserved = BIT(8) | BIT(10) | BIT(11),
++};
++
+ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -1098,6 +1105,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
++	{ USB_DEVICE_INTERFACE_CLASS(SIERRA_VENDOR_ID, 0x68c0, 0xff),
++	  .driver_info = (kernel_ulong_t)&sierra_mc73xx_blacklist }, /* MC73xx */
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6001) },
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_CMU_300) },
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6003),
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -142,7 +142,6 @@ static const struct usb_device_id id_tab
+ 	{DEVICE_SWI(0x0f3d, 0x68a2)},	/* Sierra Wireless MC7700 */
+ 	{DEVICE_SWI(0x114f, 0x68a2)},	/* Sierra Wireless MC7750 */
+ 	{DEVICE_SWI(0x1199, 0x68a2)},	/* Sierra Wireless MC7710 */
+-	{DEVICE_SWI(0x1199, 0x68c0)},	/* Sierra Wireless MC73xx */
+ 	{DEVICE_SWI(0x1199, 0x901c)},	/* Sierra Wireless EM7700 */
+ 	{DEVICE_SWI(0x1199, 0x901f)},	/* Sierra Wireless EM7355 */
+ 	{DEVICE_SWI(0x1199, 0x9040)},	/* Sierra Wireless Modem */
 
 
