@@ -1,44 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbbAYHfn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 02:35:43 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60538 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbbAYHfl (ORCPT
+	id S1752743AbbAYIPG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 03:15:06 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:38391 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbbAYIPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 02:35:41 -0500
-Date: Sat, 24 Jan 2015 23:35:40 -0800 (PST)
-Message-Id: <20150124.233540.192666118515975126.davem@davemloft.net>
-To: linux@rasmusvillemoes.dk
-Cc: jcliburn@gmail.com, chris.snook@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] atheros/atlx: Simplify bit manipulations
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1422011212-30095-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1422011212-30095-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 24 Jan 2015 23:35:41 -0800 (PST)
+	Sun, 25 Jan 2015 03:15:03 -0500
+From: Sneeker Yeh <sneeker.yeh@gmail.com>
+X-Google-Original-From: Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>, Huang Rui <ray.huang@amd.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Cc: Andy Green <andy.green@linaro.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
+Subject: [PATCH v3 0/5] Add support for Fujitsu USB host controller
+Date: Sun, 25 Jan 2015 16:13:23 +0800
+Message-Id: <1422173608-24355-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Date: Fri, 23 Jan 2015 12:06:52 +0100
+These patches add support for XHCI compliant Host controller found
+on Fujitsu Socs, and are based on http://lwn.net/Articles/629162/
+The first patch is to add Fujitsu glue layer of Synopsis DesignWare USB3 driver
+and last four patch is about quirk implementation of errata in Synopsis
+DesignWare USB3 IP.
 
-> The code 'if (foo & X) foo &= ~X;' is semantically equivalent to
-> simply 'foo &= ~X;', but gcc generates about four instructions for the
-> former, one for the latter. Similarly, if X consists of a single bit,
-> 'if (!(foo & X)) X |= X;' can be replaced by 'foo |= X;'.
-> 
-> In the atl2 case, gcc does know how to merge the new adjacent
-> operations, so altogether this gives a nice little code size
-> reduction of about 80 bytes.
-> 
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Patch 1 introduces a quirk with device disconnection management necessary
+Synopsys Designware USB3 IP with versions < 3.00a and hardware configuration
+DWC_USB3_SUSPEND_ON_DISCONNECT_EN=1. It solves a problem where without the
+quirk, that host controller will die after a usb device is disconnected from
+port of root hub.
 
-I agree with the feedback given that these open-coded sequences should
-be replaced with the appropriate PCI helpers instead of edited
-further.
+Patch 2 is to set Synopsis quirk in xhci platform driver based on xhci platform
+data.
+
+Patch 3 is to add a revison number 2.90a and 3.00a of Synopsis DesignWare USB3
+IP core driver.
+
+Patch 4 introduces using a quirk based on a errata of Synopsis
+DesignWare USB3 IP which is versions < 3.00a and has hardware configuration
+DWC_USB3_SUSPEND_ON_DISCONNECT_EN=1, which cannot be read from software. As a
+result this quirk has to be enabled via platform data or device tree.
+
+Patch 5 introduces Fujitsu Specific Glue layer in Synopsis DesignWare USB3 IP
+driver. 
+
+Successfully tested on Fujitsu mb86s7x board.
+
+Changes since v2 (RFC):
+[https://lkml.org/lkml/2014/12/15/929]
+ - based on Felipe's comment, re-order patches to avoid breaking bisectability,
+ - based on Felipe's comment, add comment to structure's member, and sort it
+   alphabetically,
+ - based on Felipe's comment, add another v2.90 revision number in dwc3 IP.
+
+Changes since v1 (RFC):
+[https://lkml.org/lkml/2014/12/15/929]
+ - based on Arnd's comment, remove entire unnecessary Fujitsu EHCI/OHCI glue,
+ - based on Felipe's comment, fix mis-using of runtime-pm API and setting dma
+   mask, remove unnecessary comment, and refactor suspend/resume handler in
+   Fujitsu Specific Glue layer in dwc3,
+ - based on Felipe's comment, add more commit log and comments in Synopsis
+   quirk implementation, and separate it into four patches.
+
+Sneeker Yeh (5):
+  xhci: add a quirk for device disconnection errata for Synopsis
+    Designware USB3     core
+  xhci: Platform: Set Synopsis device disconnection quirk based on
+    platform data
+  usb: dwc3: add revision number DWC3_REVISION_290A and
+    DWC3_REVISION_300A
+  usb: dwc3: Add quirk for Synopsis device disconnection errata
+  usb: dwc3: add Fujitsu Specific Glue layer
+
+ Documentation/devicetree/bindings/usb/dwc3.txt     |   17 ++
+ .../devicetree/bindings/usb/fujitsu-dwc3.txt       |   33 ++++
+ drivers/usb/dwc3/Kconfig                           |   11 ++
+ drivers/usb/dwc3/Makefile                          |    1 +
+ drivers/usb/dwc3/core.c                            |    6 +
+ drivers/usb/dwc3/core.h                            |    6 +
+ drivers/usb/dwc3/dwc3-mb86s70.c                    |  206 ++++++++++++++++++++
+ drivers/usb/dwc3/host.c                            |    4 +
+ drivers/usb/dwc3/platform_data.h                   |    8 +
+ drivers/usb/host/xhci-hub.c                        |    4 +
+ drivers/usb/host/xhci-plat.c                       |    3 +
+ drivers/usb/host/xhci.c                            |   29 +++
+ drivers/usb/host/xhci.h                            |   24 +++
+ include/linux/usb/xhci_pdriver.h                   |    4 +
+ 14 files changed, 356 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/fujitsu-dwc3.txt
+ create mode 100644 drivers/usb/dwc3/dwc3-mb86s70.c
+
+-- 
+1.7.9.5
+
