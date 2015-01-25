@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416AbbAYQVc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 11:21:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54763 "EHLO
+	id S1754263AbbAYQV3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 11:21:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54765 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059AbbAYQPj (ORCPT
+	with ESMTP id S1754124AbbAYQPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 11:15:39 -0500
-Date: Sun, 25 Jan 2015 20:01:22 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Surya Seetharaman <surya.seetharaman9@gmail.com>,
-        Keerthimai Janarthanan <keerthimaipb@gmail.com>,
-        Tina Johnson <tinajohnson.1234@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Fabio Falzoi <fabio.falzoi84@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: rts5208: use msecs_to_jiffies for timeouts
-Message-ID: <20150125120122.GA14049@kroah.com>
-References: <1421997353-12781-1-git-send-email-der.herr@hofr.at>
+Date: Sun, 25 Jan 2015 20:01:30 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Asaf Vertz <asaf.vertz@tandemg.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: wlan-ng: hfa384x_usb: fix sparse endianness
+ warnings
+Message-ID: <20150125120130.GB14049@kroah.com>
+References: <20150118071139.GA2248@ubuntu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421997353-12781-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <20150118071139.GA2248@ubuntu>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 08:15:53AM +0100, Nicholas Mc Guire wrote:
-> This is only an API consolidation and should make things more readable
+On Sun, Jan 18, 2015 at 09:11:39AM +0200, Asaf Vertz wrote:
+> Fixed the following warnings (reported by sparse):
+> drivers/staging/wlan-ng/hfa384x_usb.c:3828:36: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:3229:16: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:3430:18: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:3349:51: warning: restricted __le16 degrades to integer
+> drivers/staging/wlan-ng/hfa384x_usb.c:3357:37: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:3358:37: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:3393:36: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:3102:28: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:3004:28: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:1308:37: warning: cast to restricted __le16
+> drivers/staging/wlan-ng/hfa384x_usb.c:2713:25: warning: incorrect type in assignment (different base types)
+> drivers/staging/wlan-ng/hfa384x_usb.c:2713:25:    expected unsigned short [unsigned] [usertype] type
+> drivers/staging/wlan-ng/hfa384x_usb.c:2713:25:    got restricted __le16 [usertype] <noident>
 > 
-> Converting milliseconds to jiffies by val * HZ / 1000 is technically
-> not wrong but msecs_to_jiffies(val) is the cleaner solution and handles
-> corner cases correctly.
-> 
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
 > ---
-> 
-> v2: typo in patch subject fixed - no change in actual patch
-> 
-> This patch was only compile tested with x86_64_defconfig + CONFIG_STAGING=y, 
-> CONFIG_RTS5208=m
-> 
-> Patch is against 3.19.0-rc5 -next-20150122
-> 
->  drivers/staging/rts5208/rtsx_transport.c |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+>  drivers/staging/wlan-ng/hfa384x.h     |    4 ++--
+>  drivers/staging/wlan-ng/hfa384x_usb.c |    2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
 
 Applied, thanks.
 
