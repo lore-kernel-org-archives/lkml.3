@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103AbbAYSlp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:41:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58005 "EHLO
+	id S1759679AbbAYT2P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:28:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755864AbbAYSKN (ORCPT
+	with ESMTP id S1754252AbbAYSI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:13 -0500
+	Sun, 25 Jan 2015 13:08:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.18 060/183] cfg80211: Fix 160 MHz channels with 80+80 and 160 MHz drivers
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 04/98] in6: fix conflict with glibc
 Date: Sun, 25 Jan 2015 10:06:22 -0800
-Message-Id: <20150125180812.790394522@linuxfoundation.org>
+Message-Id: <20150125180713.054146289@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,60 +26,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jouni Malinen <jouni@qca.qualcomm.com>
+From: stephen hemminger <stephen@networkplumber.org>
 
-commit 08f6f147773b23b765b94633a8eaa82e7defcf4c upstream.
+[ Upstream commit 6d08acd2d32e3e877579315dc3202d7a5f336d98 ]
 
-The VHT supported channel width field is a two bit integer, not a
-bitfield. cfg80211_chandef_usable() was interpreting it incorrectly and
-ended up rejecting 160 MHz channel width if the driver indicated support
-for both 160 and 80+80 MHz channels.
+Resolve conflicts between glibc definition of IPV6 socket options
+and those defined in Linux headers. Looks like earlier efforts to
+solve this did not cover all the definitions.
 
-Fixes: 3d9d1d6656a73 ("nl80211/cfg80211: support VHT channel configuration")
-       (however, no real drivers had 160 MHz support it until 3.16)
-Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+It resolves warnings during iproute2 build.
+Please consider for stable as well.
+
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/wireless/chan.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ include/uapi/linux/in6.h         |    3 ++-
+ include/uapi/linux/libc-compat.h |    3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/wireless/chan.c
-+++ b/net/wireless/chan.c
-@@ -602,7 +602,7 @@ bool cfg80211_chandef_usable(struct wiph
- {
- 	struct ieee80211_sta_ht_cap *ht_cap;
- 	struct ieee80211_sta_vht_cap *vht_cap;
--	u32 width, control_freq;
-+	u32 width, control_freq, cap;
+--- a/include/uapi/linux/in6.h
++++ b/include/uapi/linux/in6.h
+@@ -149,7 +149,7 @@ struct in6_flowlabel_req {
+ /*
+  *	IPV6 socket options
+  */
+-
++#if __UAPI_DEF_IPV6_OPTIONS
+ #define IPV6_ADDRFORM		1
+ #define IPV6_2292PKTINFO	2
+ #define IPV6_2292HOPOPTS	3
+@@ -192,6 +192,7 @@ struct in6_flowlabel_req {
  
- 	if (WARN_ON(!cfg80211_chandef_valid(chandef)))
- 		return false;
-@@ -642,7 +642,8 @@ bool cfg80211_chandef_usable(struct wiph
- 			return false;
- 		break;
- 	case NL80211_CHAN_WIDTH_80P80:
--		if (!(vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ))
-+		cap = vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK;
-+		if (cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)
- 			return false;
- 	case NL80211_CHAN_WIDTH_80:
- 		if (!vht_cap->vht_supported)
-@@ -653,7 +654,9 @@ bool cfg80211_chandef_usable(struct wiph
- 	case NL80211_CHAN_WIDTH_160:
- 		if (!vht_cap->vht_supported)
- 			return false;
--		if (!(vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160MHZ))
-+		cap = vht_cap->cap & IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK;
-+		if (cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160MHZ &&
-+		    cap != IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_160_80PLUS80MHZ)
- 			return false;
- 		prohibited_flags |= IEEE80211_CHAN_NO_160MHZ;
- 		width = 160;
+ #define IPV6_IPSEC_POLICY	34
+ #define IPV6_XFRM_POLICY	35
++#endif
+ 
+ /*
+  * Multicast:
+--- a/include/uapi/linux/libc-compat.h
++++ b/include/uapi/linux/libc-compat.h
+@@ -69,6 +69,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		0
+ #define __UAPI_DEF_IPV6_MREQ		0
+ #define __UAPI_DEF_IPPROTO_V6		0
++#define __UAPI_DEF_IPV6_OPTIONS		0
+ 
+ #else
+ 
+@@ -82,6 +83,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		1
+ #define __UAPI_DEF_IPV6_MREQ		1
+ #define __UAPI_DEF_IPPROTO_V6		1
++#define __UAPI_DEF_IPV6_OPTIONS		1
+ 
+ #endif /* _NETINET_IN_H */
+ 
+@@ -103,6 +105,7 @@
+ #define __UAPI_DEF_SOCKADDR_IN6		1
+ #define __UAPI_DEF_IPV6_MREQ		1
+ #define __UAPI_DEF_IPPROTO_V6		1
++#define __UAPI_DEF_IPV6_OPTIONS		1
+ 
+ /* Definitions for xattr.h */
+ #define __UAPI_DEF_XATTR		1
 
 
