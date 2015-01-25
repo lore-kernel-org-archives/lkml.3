@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759481AbbAYTXO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:23:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
+	id S933158AbbAYTeB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:34:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890AbbAYSJE (ORCPT
+	with ESMTP id S1754160AbbAYSIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:04 -0500
+	Sun, 25 Jan 2015 13:08:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>,
-        Tomas Henzl <thenzl@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 37/98] Revert "[SCSI] mpt3sas: Remove phys on topology change"
+        Eric Dumazet <edumazet@google.com>, Oded Gabbay <oded.gabbay@amd.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 05/50] alx: fix alx_poll()
 Date: Sun, 25 Jan 2015 10:06:55 -0800
-Message-Id: <20150125180714.479027430@linuxfoundation.org>
+Message-Id: <20150125180702.880700020@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,51 +25,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 2311ce4d9c91ed63a46e18f0378f3e406e7e888e upstream.
+[ Upstream commit 7a05dc64e2e4c611d89007b125b20c0d2a4d31a5 ]
 
-This reverts commit 963ba22b90a955363644cd397b20226928eab976
-("mpt3sas: Remove phys on topology change")
+Commit d75b1ade567f ("net: less interrupt masking in NAPI") uncovered
+wrong alx_poll() behavior.
 
-Reverting the previous mpt3sas drives patch changes,
-since we will observe below issue
+A NAPI poll() handler is supposed to return exactly the budget when/if
+napi_complete() has not been called.
 
-Issue:
-Drives connected Enclosure/Expander will unregister with
-SCSI Transport Layer, if any one remove and add expander
-cable with in DMD (Device Missing Delay) time period or
-even any one power-off and power-on the Enclosure with in
-the DMD period.
+It is also supposed to return number of frames that were received, so
+that netdev_budget can have a meaning.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Reviewed-by: Tomas Henzl <thenzl@redhat.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Also, in case of TX pressure, we still have to dequeue received
+packets : alx_clean_rx_irq() has to be called even if
+alx_clean_tx_irq(alx) returns false, otherwise device is half duplex.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: d75b1ade567f ("net: less interrupt masking in NAPI")
+Reported-by: Oded Gabbay <oded.gabbay@amd.com>
+Bisected-by: Oded Gabbay <oded.gabbay@amd.com>
+Tested-by: Oded Gabbay <oded.gabbay@amd.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/scsi/mpt3sas/mpt3sas_transport.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/net/ethernet/atheros/alx/main.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
---- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
-@@ -1003,12 +1003,9 @@ mpt3sas_transport_update_links(struct MP
- 		    &mpt3sas_phy->remote_identify);
- 		_transport_add_phy_to_an_existing_port(ioc, sas_node,
- 		    mpt3sas_phy, mpt3sas_phy->remote_identify.sas_address);
--	} else {
-+	} else
- 		memset(&mpt3sas_phy->remote_identify, 0 , sizeof(struct
- 		    sas_identify));
--		_transport_del_phy_from_an_existing_port(ioc, sas_node,
--		    mpt3sas_phy);
--	}
+--- a/drivers/net/ethernet/atheros/alx/main.c
++++ b/drivers/net/ethernet/atheros/alx/main.c
+@@ -184,15 +184,16 @@ static void alx_schedule_reset(struct al
+ 	schedule_work(&alx->reset_wk);
+ }
  
- 	if (mpt3sas_phy->phy)
- 		mpt3sas_phy->phy->negotiated_linkrate =
+-static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
++static int alx_clean_rx_irq(struct alx_priv *alx, int budget)
+ {
+ 	struct alx_rx_queue *rxq = &alx->rxq;
+ 	struct alx_rrd *rrd;
+ 	struct alx_buffer *rxb;
+ 	struct sk_buff *skb;
+ 	u16 length, rfd_cleaned = 0;
++	int work = 0;
+ 
+-	while (budget > 0) {
++	while (work < budget) {
+ 		rrd = &rxq->rrd[rxq->rrd_read_idx];
+ 		if (!(rrd->word3 & cpu_to_le32(1 << RRD_UPDATED_SHIFT)))
+ 			break;
+@@ -203,7 +204,7 @@ static bool alx_clean_rx_irq(struct alx_
+ 		    ALX_GET_FIELD(le32_to_cpu(rrd->word0),
+ 				  RRD_NOR) != 1) {
+ 			alx_schedule_reset(alx);
+-			return 0;
++			return work;
+ 		}
+ 
+ 		rxb = &rxq->bufs[rxq->read_idx];
+@@ -243,7 +244,7 @@ static bool alx_clean_rx_irq(struct alx_
+ 		}
+ 
+ 		napi_gro_receive(&alx->napi, skb);
+-		budget--;
++		work++;
+ 
+ next_pkt:
+ 		if (++rxq->read_idx == alx->rx_ringsz)
+@@ -258,21 +259,22 @@ next_pkt:
+ 	if (rfd_cleaned)
+ 		alx_refill_rx_ring(alx, GFP_ATOMIC);
+ 
+-	return budget > 0;
++	return work;
+ }
+ 
+ static int alx_poll(struct napi_struct *napi, int budget)
+ {
+ 	struct alx_priv *alx = container_of(napi, struct alx_priv, napi);
+ 	struct alx_hw *hw = &alx->hw;
+-	bool complete = true;
+ 	unsigned long flags;
++	bool tx_complete;
++	int work;
+ 
+-	complete = alx_clean_tx_irq(alx) &&
+-		   alx_clean_rx_irq(alx, budget);
++	tx_complete = alx_clean_tx_irq(alx);
++	work = alx_clean_rx_irq(alx, budget);
+ 
+-	if (!complete)
+-		return 1;
++	if (!tx_complete || work == budget)
++		return budget;
+ 
+ 	napi_complete(&alx->napi);
+ 
+@@ -284,7 +286,7 @@ static int alx_poll(struct napi_struct *
+ 
+ 	alx_post_write(hw);
+ 
+-	return 0;
++	return work;
+ }
+ 
+ static irqreturn_t alx_intr_handle(struct alx_priv *alx, u32 intr)
 
 
