@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018AbbAYSjt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:39:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
+	id S1755375AbbAYSJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:09:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890AbbAYSKP (ORCPT
+	with ESMTP id S1754308AbbAYSIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:15 -0500
+	Sun, 25 Jan 2015 13:08:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linda Walsh <suse@tlinx.org>, NeilBrown <neilb@suse.de>,
-        Jeff Layton <jlayton@primarydata.com>
-Subject: [PATCH 3.18 114/183] locks: fix NULL-deref in generic_delete_lease
+        Arseny Solokha <asolokha@kb.kras.ru>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.10 26/50] OHCI: add a quirk for ULi M5237 blocking on reset
 Date: Sun, 25 Jan 2015 10:07:16 -0800
-Message-Id: <20150125180815.150914668@linuxfoundation.org>
+Message-Id: <20150125180704.025989020@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,44 +25,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Arseny Solokha <asolokha@kb.kras.ru>
 
-commit 52d304eb4eaced9ad04b64ba7cd6ceb5153bbf18 upstream.
+commit 56abcab833fafcfaeb2f5b25e0364c1dec45f53e upstream.
 
-commit 0efaa7e82f02fe69c05ad28e905f31fc86e6f08e
-  locks: generic_delete_lease doesn't need a file_lock at all
+Commit 8dccddbc2368 ("OHCI: final fix for NVIDIA problems (I hope)")
+introduced into 3.1.9 broke boot on e.g. Freescale P2020DS development
+board. The code path that was previously specific to NVIDIA controllers
+had then become taken for all chips.
 
-moves the call to fl->fl_lmops->lm_change() to a place in the
-code where fl might be a non-lease lock.
-When that happens, fl_lmops is NULL and an Oops ensures.
+However, the M5237 installed on the board wedges solid when accessing
+its base+OHCI_FMINTERVAL register, making it impossible to boot any
+kernel newer than 3.1.8 on this particular and apparently other similar
+machines.
 
-So add an extra test to restore correct functioning.
+Don't readl() and writel() base+OHCI_FMINTERVAL on PCI ID 10b9:5237.
 
-Reported-by: Linda Walsh <suse@tlinx.org>
-Link: https://bugzilla.suse.com/show_bug.cgi?id=912569
-Fixes: 0efaa7e82f02fe69c05ad28e905f31fc86e6f08e
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+The patch is suitable for the -next tree as well as all maintained
+kernels up to 3.2 inclusive.
+
+Signed-off-by: Arseny Solokha <asolokha@kb.kras.ru>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/locks.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/pci-quirks.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1702,7 +1702,7 @@ static int generic_delete_lease(struct f
- 			break;
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -470,7 +470,8 @@ static void quirk_usb_handoff_ohci(struc
+ {
+ 	void __iomem *base;
+ 	u32 control;
+-	u32 fminterval;
++	u32 fminterval = 0;
++	bool no_fminterval = false;
+ 	int cnt;
+ 
+ 	if (!mmio_resource_enabled(pdev, 0))
+@@ -480,6 +481,13 @@ static void quirk_usb_handoff_ohci(struc
+ 	if (base == NULL)
+ 		return;
+ 
++	/*
++	 * ULi M5237 OHCI controller locks the whole system when accessing
++	 * the OHCI_FMINTERVAL offset.
++	 */
++	if (pdev->vendor == PCI_VENDOR_ID_AL && pdev->device == 0x5237)
++		no_fminterval = true;
++
+ 	control = readl(base + OHCI_CONTROL);
+ 
+ /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
+@@ -518,7 +526,9 @@ static void quirk_usb_handoff_ohci(struc
  	}
- 	trace_generic_delete_lease(inode, fl);
--	if (fl)
-+	if (fl && IS_LEASE(fl))
- 		error = fl->fl_lmops->lm_change(before, F_UNLCK, &dispose);
- 	spin_unlock(&inode->i_lock);
- 	locks_dispose_list(&dispose);
+ 
+ 	/* software reset of the controller, preserving HcFmInterval */
+-	fminterval = readl(base + OHCI_FMINTERVAL);
++	if (!no_fminterval)
++		fminterval = readl(base + OHCI_FMINTERVAL);
++
+ 	writel(OHCI_HCR, base + OHCI_CMDSTATUS);
+ 
+ 	/* reset requires max 10 us delay */
+@@ -527,7 +537,9 @@ static void quirk_usb_handoff_ohci(struc
+ 			break;
+ 		udelay(1);
+ 	}
+-	writel(fminterval, base + OHCI_FMINTERVAL);
++
++	if (!no_fminterval)
++		writel(fminterval, base + OHCI_FMINTERVAL);
+ 
+ 	/* Now the controller is safely in SUSPEND and nothing can wake it up */
+ 	iounmap(base);
 
 
