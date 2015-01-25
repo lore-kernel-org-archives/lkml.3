@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbbAYOjq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 09:39:46 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:35637 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531AbbAYOjp (ORCPT
+	id S1753782AbbAYOmX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 09:42:23 -0500
+Received: from [198.137.202.9] ([198.137.202.9]:57055 "EHLO
+	bombadil.infradead.org" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751953AbbAYOmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 09:39:45 -0500
-Message-ID: <54C5002C.4050600@linaro.org>
-Date: Sun, 25 Jan 2015 15:39:40 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 25 Jan 2015 09:42:19 -0500
+Date: Sun, 25 Jan 2015 06:41:46 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Keith Busch <keith.busch@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <willy@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org, Yan Liu <yan@purestorage.com>
+Subject: Re: [PATCH 1/1] NVMe: Do not take nsid while a passthrough IO
+ command is being issued via a block device file descriptor
+Message-ID: <20150125144146.GA23199@infradead.org>
+References: <1421971328-5065-1-git-send-email-yan@purestorage.com>
+ <20150123075708.GA17232@infradead.org>
+ <alpine.LNX.2.00.1501231451380.15481@localhost.lm.intel.com>
+ <20150123172745.GA28005@infradead.org>
+ <alpine.LNX.2.00.1501231737070.15481@localhost.lm.intel.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Sudeep Holla <Sudeep.Holla@arm.com>,
-        lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] : cpuidle-big.little fix when mcpm is not available
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1501231737070.15481@localhost.lm.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On Fri, Jan 23, 2015 at 05:50:33PM +0000, Keith Busch wrote:
+> No argument against removing the hidden attribute handling, but there
+> are unadvertised NSID's that have special meaning. Like NSID 0xffffffff
+> means to apply a command to all namespaces. Vendor specific commands
+> may have other special NSID meanings as well.
 
-This pull request has a single patch which is a fix for the 
-cpuidle-big.little driver. If the mcpm backend is not available because 
-the CCI is not defined in the DT, the cpuidle driver will 
-unconditionally assume it is and call the mcpm functions leading to a 
-kernel WARNING.
+What is the practical use of those?  Just because something is
+theoretically possible we don't really need to support it.
 
-Sudeep Holla fixed that by checking at the init time the mcpm is 
-available before initializing the deeper idle states.
-
-Thanks
-   -- Daniel
-
-The following changes since commit ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc:
-
-   Linux 3.19-rc5 (2015-01-18 18:02:20 +1200)
-
-are available in the git repository at:
-
-   http://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.20
-
-for you to fetch changes up to 194fe6f28e2819d3f50fbed24c3b72f21501dbfa:
-
-   drivers: cpuidle: Don't initialize big.LITTLE driver if MCPM is 
-unavailable (2015-01-23 15:05:48 +0100)
-
-----------------------------------------------------------------
-Sudeep Holla (1):
-       drivers: cpuidle: Don't initialize big.LITTLE driver if MCPM is 
-unavailable
-
-  drivers/cpuidle/cpuidle-big_little.c | 4 ++++
-  1 file changed, 4 insertions(+)
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+(and yes, it's a really bad design - I wish the NVME designers had spent a
+little more time with existing designs instead of applying the full NIH
+mantra)
