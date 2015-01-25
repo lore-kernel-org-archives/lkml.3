@@ -1,158 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342AbbAYUcK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 15:32:10 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:60760 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932293AbbAYUcF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 15:32:05 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>, linux-omap@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Benoit Parrot <bparrot@ti.com>,
-        Darren Etheridge <detheridge@ti.com>, Felipe Balbi <balbi@ti.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v2] ARM: AM43xx: hwmod: add VPFE hwmod entries
-Date: Sun, 25 Jan 2015 20:31:55 +0000
-Message-Id: <1422217915-24231-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	id S1751686AbbAYUrm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 15:47:42 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:42861 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717AbbAYUrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 15:47:40 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: tglx@linutronix.de, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
+Subject: Re: [PATCH V2] clockevents: rockchip: Add rockchip timer for rk3288
+Date: Sun, 25 Jan 2015 21:52:39 +0100
+Message-ID: <2285293.ZBcGIuxxDo@diego>
+User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1422178979-12382-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1422178979-12382-1-git-send-email-daniel.lezcano@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benoit Parrot <bparrot@ti.com>
+Hi Daniel,
 
-this patch adds VPFE HWMOD data for AM43xx.
+one big request and some more style nitpicks :-)
 
-Signed-off-by: Benoit Parrot <bparrot@ti.com>
-Signed-off-by: Darren Etheridge <detheridge@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+With the nitpicks fixed
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+
+
+Before applying this patch could you drop the rk3288.dtsi change please?
+Instead I'd like to add the following patch separately to _my_ devicetree
+branch for 3.20.
+
+I already wasn't fast enough to prevent the ethernet controller changes
+going through the network tree and would like to prevent a third tree sending
+changes for the same dts area to Linus - merge conflicts and all.
+
+
+I don't think that neither the nitpicks nor dropping the dtsi segment need
+another submission though.
+
+
+Heiko
+
+
+----- 8< -----------
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+Date: Sun, 25 Jan 2015 10:42:59 +0100
+Subject: [PATCH] ARM: dts: rockchip: Add rockchip timer node for rk3288
+
+The rk3288 board uses the architected timers and these ones are shutdown when
+the cpu is powered down. There is a need of a broadcast timer in this case to
+ensure proper wakeup when the cpus are in sleep mode and a timer expires.
+
+Add the timer node for the broadcast timer.
+
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 ---
- Hi Paul,
- 
- You were right, the hardware team has confirmed that, the VPFE master port is
- connected to L3 and the VPFE slave port is connected to L4. The L3 port cannot
- serve as a register target because it is initiator only.
- 
- I have created links referring to dss l3/l4 hwmod and tested it, lemme know
- if I have missed something.
- 
- arch/arm/mach-omap2/omap_hwmod_43xx_data.c | 72 ++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/prcm43xx.h             |  3 +-
- 2 files changed, 74 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/rk3288.dtsi | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
-index 5c6c841..3787824 100644
---- a/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_43xx_data.c
-@@ -514,6 +514,44 @@ static struct omap_hwmod am43xx_dss_rfbi_hwmod = {
- 	},
- };
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index c7235fa..37847c1 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -149,6 +149,14 @@
+ 		clock-frequency = <24000000>;
+ 	};
  
-+static struct omap_hwmod_class_sysconfig am43xx_vpfe_sysc = {
-+	.rev_offs       = 0x0,
-+	.sysc_offs      = 0x104,
-+	.sysc_flags     = SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE,
-+	.idlemodes      = (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-+				MSTANDBY_FORCE | MSTANDBY_SMART | MSTANDBY_NO),
-+	.sysc_fields    = &omap_hwmod_sysc_type2,
-+};
++	timer: timer@ff810000 {
++		compatible = "rockchip,rk3288-timer";
++		reg = <0xff810000 0x20>;
++		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&xin24m>, <&cru PCLK_TIMER>;
++		clock-names = "timer", "pclk";
++	};
 +
-+static struct omap_hwmod_class am43xx_vpfe_hwmod_class = {
-+	.name           = "vpfe",
-+	.sysc           = &am43xx_vpfe_sysc,
-+};
-+
-+static struct omap_hwmod am43xx_vpfe0_hwmod = {
-+	.name           = "vpfe0",
-+	.class          = &am43xx_vpfe_hwmod_class,
-+	.clkdm_name     = "l3s_clkdm",
-+	.prcm           = {
-+		.omap4  = {
-+			.modulemode     = MODULEMODE_SWCTRL,
-+			.clkctrl_offs   = AM43XX_CM_PER_VPFE0_CLKCTRL_OFFSET,
-+		},
-+	},
-+};
-+
-+static struct omap_hwmod am43xx_vpfe1_hwmod = {
-+	.name           = "vpfe1",
-+	.class          = &am43xx_vpfe_hwmod_class,
-+	.clkdm_name     = "l3s_clkdm",
-+	.prcm           = {
-+		.omap4  = {
-+			.modulemode     = MODULEMODE_SWCTRL,
-+			.clkctrl_offs   = AM43XX_CM_PER_VPFE1_CLKCTRL_OFFSET,
-+		},
-+	},
-+};
-+
- /* Interfaces */
- static struct omap_hwmod_ocp_if am43xx_l3_main__l4_hs = {
- 	.master		= &am33xx_l3_main_hwmod,
-@@ -788,6 +826,36 @@ static struct omap_hwmod_ocp_if am43xx_l4_ls__dss_rfbi = {
- 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
- };
- 
-+static struct omap_hwmod_ocp_if am43xx_l3__vpfe0 = {
-+	.master         = &am43xx_vpfe0_hwmod,
-+	.slave          = &am33xx_l3_main_hwmod,
-+	.clk            = "l3_gclk",
-+	.flags          = OCPIF_SWSUP_IDLE,
-+	.user           = OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod_ocp_if am43xx_l3__vpfe1 = {
-+	.master         = &am43xx_vpfe1_hwmod,
-+	.slave          = &am33xx_l3_main_hwmod,
-+	.clk            = "l3_gclk",
-+	.flags          = OCPIF_SWSUP_IDLE,
-+	.user           = OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod_ocp_if am43xx_l4_ls__vpfe0 = {
-+	.master         = &am33xx_l4_ls_hwmod,
-+	.slave          = &am43xx_vpfe0_hwmod,
-+	.clk            = "l4ls_gclk",
-+	.user           = OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
-+static struct omap_hwmod_ocp_if am43xx_l4_ls__vpfe1 = {
-+	.master         = &am33xx_l4_ls_hwmod,
-+	.slave          = &am43xx_vpfe1_hwmod,
-+	.clk            = "l4ls_gclk",
-+	.user           = OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
- static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata = {
- 	&am33xx_l4_wkup__synctimer,
- 	&am43xx_l4_ls__timer8,
-@@ -887,6 +955,10 @@ static struct omap_hwmod_ocp_if *am43xx_hwmod_ocp_ifs[] __initdata = {
- 	&am43xx_l4_ls__dss,
- 	&am43xx_l4_ls__dss_dispc,
- 	&am43xx_l4_ls__dss_rfbi,
-+	&am43xx_l3__vpfe0,
-+	&am43xx_l3__vpfe1,
-+	&am43xx_l4_ls__vpfe0,
-+	&am43xx_l4_ls__vpfe1,
- 	NULL,
- };
- 
-diff --git a/arch/arm/mach-omap2/prcm43xx.h b/arch/arm/mach-omap2/prcm43xx.h
-index ad7b3e9..8aa4c2c 100644
---- a/arch/arm/mach-omap2/prcm43xx.h
-+++ b/arch/arm/mach-omap2/prcm43xx.h
-@@ -143,5 +143,6 @@
- #define AM43XX_CM_PER_USB_OTG_SS1_CLKCTRL_OFFSET        0x0268
- #define AM43XX_CM_PER_USBPHYOCP2SCP1_CLKCTRL_OFFSET	0x05C0
- #define AM43XX_CM_PER_DSS_CLKCTRL_OFFSET		0x0a20
--
-+#define AM43XX_CM_PER_VPFE0_CLKCTRL_OFFSET		0x0068
-+#define AM43XX_CM_PER_VPFE1_CLKCTRL_OFFSET		0x0070
- #endif
+ 	display-subsystem {
+ 		compatible = "rockchip,display-subsystem";
+ 		ports = <&vopl_out>, <&vopb_out>;
 -- 
-2.1.0
+2.1.1
+
+------- 8< -----------
+
+Am Sonntag, 25. Januar 2015, 10:42:59 schrieb Daniel Lezcano:
+
+[...]
+
+> diff --git a/drivers/clocksource/rockchip_timer.c
+> b/drivers/clocksource/rockchip_timer.c new file mode 100644
+> index 0000000..5ea290d
+> --- /dev/null
+> +++ b/drivers/clocksource/rockchip_timer.c
+> @@ -0,0 +1,180 @@
+> +/*
+> + * Rockchip timer support
+> + *
+> + * Copyright (C) Daniel Lezcano <daniel.lezcano@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#include <linux/clk.h>
+> +#include <linux/clockchips.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +
+> +#define TIMER_NAME "rk_timer"
+> +
+> +#define TIMER_LOAD_COUNT0               0x00
+> +#define TIMER_LOAD_COUNT1               0x04
+> +#define TIMER_CONTROL_REG               0x10
+> +#define TIMER_INT_STATUS                0x18
+> +
+> +#define TIMER_DISABLE                   0x0
+> +#define TIMER_ENABLE                    0x1
+> +#define TIMER_MODE_FREE_RUNNING         (0 << 1)
+> +#define TIMER_MODE_USER_DEFINED_COUNT   (1 << 1)
+> +#define TIMER_INT_UNMASK                (1 << 2)
+
+the above constants are aligned using spaces
+I guess either simply use 1 space, or align using tabs?
+
+[...]
+
+> +static void __init rk_timer_init(struct device_node *np)
+> +{
+> +	struct clock_event_device *ce = &bc_timer.ce;
+> +	struct clk *timer_clk;
+> +	struct clk *pclk;
+> +	int ret, irq;
+> +
+> +	bc_timer.base = of_iomap(np, 0);
+> +	if (!bc_timer.base) {
+> +		pr_err("Failed to get base address for '%s'\n", TIMER_NAME);
+> +		return;
+> +	}
+> +
+> +        pclk = of_clk_get_by_name(np, "pclk");
+> +        if (IS_ERR(pclk)) {
+
+the above 2 lines are indented using spaces instead of tabs
+
+> +		pr_err("Failed to get pclk for '%s'\n", TIMER_NAME);
+> +		return;
+> +	}
+> +
+> +	if (clk_prepare_enable(pclk)) {
+> +		pr_err("Failed to enable pclk for '%s'\n", TIMER_NAME);
+> +		return;
+> +	}
+> +
+> +        timer_clk = of_clk_get_by_name(np, "timer");
+> +        if (IS_ERR(timer_clk)) {
+
+same here
+
 
