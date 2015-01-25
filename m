@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759546AbbAYTXt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:23:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S933172AbbAYTeG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:34:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875AbbAYSJD (ORCPT
+	with ESMTP id S1754139AbbAYSIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:03 -0500
+	Sun, 25 Jan 2015 13:08:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 35/98] iscsi-target: Fail connection on short sendmsg writes
+        Nils Holland <nholland@tisys.org>,
+        Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>,
+        Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 03/50] tg3: tg3_disable_ints using uninitialized mailbox value to disable interrupts
 Date: Sun, 25 Jan 2015 10:06:53 -0800
-Message-Id: <20150125180714.394627982@linuxfoundation.org>
+Message-Id: <20150125180702.775194851@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,90 +28,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Prashant Sreedharan <prashant@broadcom.com>
 
-commit 6bf6ca7515c1df06f5c03737537f5e0eb191e29e upstream.
+[ Upstream commit 05b0aa579397b734f127af58e401a30784a1e315 ]
 
-This patch changes iscsit_do_tx_data() to fail on short writes
-when kernel_sendmsg() returns a value different than requested
-transfer length, returning -EPIPE and thus causing a connection
-reset to occur.
+During driver load in tg3_init_one, if the driver detects DMA activity before
+intializing the chip tg3_halt is called. As part of tg3_halt interrupts are
+disabled using routine tg3_disable_ints. This routine was using mailbox value
+which was not initialized (default value is 0). As a result driver was writing
+0x00000001 to pci config space register 0, which is the vendor id / device id.
 
-This avoids a potential bug in the original code where a short
-write would result in kernel_sendmsg() being called again with
-the original iovec base + length.
+This driver bug was exposed because of the commit a7877b17a667 (PCI: Check only
+the Vendor ID to identify Configuration Request Retry). Also this issue is only
+seen in older generation chipsets like 5722 because config space write to offset
+0 from driver is possible. The newer generation chips ignore writes to offset 0.
+Also without commit a7877b17a667, for these older chips when a GRC reset is
+issued the Bootcode would reprogram the vendor id/device id, which is the reason
+this bug was masked earlier.
 
-In practice this has not been an issue because iscsit_do_tx_data()
-is only used for transferring 48 byte headers + 4 byte digests,
-along with seldom used control payloads from NOPIN + TEXT_RSP +
-REJECT with less than 32k of data.
+Fixed by initializing the interrupt mailbox registers before calling tg3_halt.
 
-So following Al's audit of iovec consumers, go ahead and fail
-the connection on short writes for now, and remove the bogus
-logic ahead of his proper upstream fix.
+Please queue for -stable.
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Nils Holland <nholland@tisys.org>
+Reported-by: Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>
+Signed-off-by: Prashant Sreedharan <prashant@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/target/iscsi/iscsi_target_util.c |   26 +++++++++++---------------
- 1 file changed, 11 insertions(+), 15 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1356,15 +1356,15 @@ static int iscsit_do_tx_data(
- 	struct iscsi_conn *conn,
- 	struct iscsi_data_count *count)
- {
--	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
-+	int ret, iov_len;
- 	struct kvec *iov_p;
- 	struct msghdr msg;
- 
- 	if (!conn || !conn->sock || !conn->conn_ops)
- 		return -1;
- 
--	if (data <= 0) {
--		pr_err("Data length is: %d\n", data);
-+	if (count->data_length <= 0) {
-+		pr_err("Data length is: %d\n", count->data_length);
- 		return -1;
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -17389,23 +17389,6 @@ static int tg3_init_one(struct pci_dev *
+ 		goto err_out_apeunmap;
  	}
  
-@@ -1373,20 +1373,16 @@ static int iscsit_do_tx_data(
- 	iov_p = count->iov;
- 	iov_len = count->iov_count;
- 
--	while (total_tx < data) {
--		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
--					(data - total_tx));
--		if (tx_loop <= 0) {
--			pr_debug("tx_loop: %d total_tx %d\n",
--				tx_loop, total_tx);
--			return tx_loop;
--		}
--		total_tx += tx_loop;
--		pr_debug("tx_loop: %d, total_tx: %d, data: %d\n",
--					tx_loop, total_tx, data);
-+	ret = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
-+			     count->data_length);
-+	if (ret != count->data_length) {
-+		pr_err("Unexpected ret: %d send data %d\n",
-+		       ret, count->data_length);
-+		return -EPIPE;
+-	/*
+-	 * Reset chip in case UNDI or EFI driver did not shutdown
+-	 * DMA self test will enable WDMAC and we'll see (spurious)
+-	 * pending DMA on the PCI bus at that point.
+-	 */
+-	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
+-	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
+-		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
+-		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
+-	}
+-
+-	err = tg3_test_dma(tp);
+-	if (err) {
+-		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
+-		goto err_out_apeunmap;
+-	}
+-
+ 	intmbx = MAILBOX_INTERRUPT_0 + TG3_64BIT_REG_LOW;
+ 	rcvmbx = MAILBOX_RCVRET_CON_IDX_0 + TG3_64BIT_REG_LOW;
+ 	sndmbx = MAILBOX_SNDHOST_PROD_IDX_0 + TG3_64BIT_REG_LOW;
+@@ -17450,6 +17433,23 @@ static int tg3_init_one(struct pci_dev *
+ 			sndmbx += 0xc;
  	}
-+	pr_debug("ret: %d, sent data: %d\n", ret, count->data_length);
  
--	return total_tx;
-+	return ret;
- }
++	/*
++	 * Reset chip in case UNDI or EFI driver did not shutdown
++	 * DMA self test will enable WDMAC and we'll see (spurious)
++	 * pending DMA on the PCI bus at that point.
++	 */
++	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
++	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
++		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
++		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
++	}
++
++	err = tg3_test_dma(tp);
++	if (err) {
++		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
++		goto err_out_apeunmap;
++	}
++
+ 	tg3_init_coal(tp);
  
- int rx_data(
+ 	pci_set_drvdata(pdev, dev);
 
 
