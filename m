@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757108AbbAYTJi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:09:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
+	id S1755848AbbAYSKL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:10:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309AbbAYSJY (ORCPT
+	with ESMTP id S1754361AbbAYSIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:24 -0500
+	Sun, 25 Jan 2015 13:08:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 64/98] USB: console: fix uninitialised ldisc semaphore
-Date: Sun, 25 Jan 2015 10:07:22 -0800
-Message-Id: <20150125180715.634425453@linuxfoundation.org>
+        "Ahmed S. Darwish" <ahmed.darwish@valeo.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 33/50] can: kvaser_usb: Reset all URB tx contexts upon channel close
+Date: Sun, 25 Jan 2015 10:07:23 -0800
+Message-Id: <20150125180704.520152941@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,70 +25,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: "Ahmed S. Darwish" <ahmed.darwish@valeo.com>
 
-commit d269d4434c72ed0da3a9b1230c30da82c4918c63 upstream.
+commit 889b77f7fd2bcc922493d73a4c51d8a851505815 upstream.
 
-The USB console currently allocates a temporary fake tty which is used
-to pass terminal settings to the underlying serial driver.
+Flooding the Kvaser CAN to USB dongle with multiple reads and
+writes in very high frequency (*), closing the CAN channel while
+all the transmissions are on (#), opening the device again (@),
+then sending a small number of packets would make the driver
+enter an almost infinite loop of:
 
-The tty struct is not fully initialised, something which can lead to a
-lockdep warning (or worse) if a serial driver tries to acquire a
-line-discipline reference:
+[....]
+[15959.853988] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853990] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853991] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853993] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853994] kvaser_usb 4-3:1.0 can0: cannot find free context
+[15959.853995] kvaser_usb 4-3:1.0 can0: cannot find free context
+[....]
 
-	usbserial: USB Serial support registered for pl2303
-	pl2303 1-2.1:1.0: pl2303 converter detected
-	usb 1-2.1: pl2303 converter now attached to ttyUSB0
-	INFO: trying to register non-static key.
-	the code is fine but needs lockdep annotation.
-	turning off the locking correctness validator.
-	CPU: 0 PID: 68 Comm: udevd Tainted: G        W      3.18.0-rc5 #10
-	[<c0016f04>] (unwind_backtrace) from [<c0013978>] (show_stack+0x20/0x24)
-	[<c0013978>] (show_stack) from [<c0449794>] (dump_stack+0x24/0x28)
-	[<c0449794>] (dump_stack) from [<c006f730>] (__lock_acquire+0x1e50/0x2004)
-	[<c006f730>] (__lock_acquire) from [<c0070128>] (lock_acquire+0xe4/0x18c)
-	[<c0070128>] (lock_acquire) from [<c027c6f8>] (ldsem_down_read_trylock+0x78/0x90)
-	[<c027c6f8>] (ldsem_down_read_trylock) from [<c027a1cc>] (tty_ldisc_ref+0x24/0x58)
-	[<c027a1cc>] (tty_ldisc_ref) from [<c0340760>] (usb_serial_handle_dcd_change+0x48/0xe8)
-	[<c0340760>] (usb_serial_handle_dcd_change) from [<bf000484>] (pl2303_read_int_callback+0x210/0x220 [pl2303])
-	[<bf000484>] (pl2303_read_int_callback [pl2303]) from [<c031624c>] (__usb_hcd_giveback_urb+0x80/0x140)
-	[<c031624c>] (__usb_hcd_giveback_urb) from [<c0316fc0>] (usb_giveback_urb_bh+0x98/0xd4)
-	[<c0316fc0>] (usb_giveback_urb_bh) from [<c0042e44>] (tasklet_hi_action+0x9c/0x108)
-	[<c0042e44>] (tasklet_hi_action) from [<c0042380>] (__do_softirq+0x148/0x42c)
-	[<c0042380>] (__do_softirq) from [<c00429cc>] (irq_exit+0xd8/0x114)
-	[<c00429cc>] (irq_exit) from [<c007ae58>] (__handle_domain_irq+0x84/0xdc)
-	[<c007ae58>] (__handle_domain_irq) from [<c000879c>] (omap_intc_handle_irq+0xd8/0xe0)
-	[<c000879c>] (omap_intc_handle_irq) from [<c0014544>] (__irq_svc+0x44/0x7c)
-	Exception stack(0xdf4e7f08 to 0xdf4e7f50)
-	7f00:                   debc0b80 df4e7f5c 00000000 00000000 debc0b80 be8da96c
-	7f20: 00000000 00000128 c000fc84 df4e6000 00000000 df4e7f94 00000004 df4e7f50
-	7f40: c038ebc0 c038d74c 600f0013 ffffffff
-	[<c0014544>] (__irq_svc) from [<c038d74c>] (___sys_sendmsg.part.29+0x0/0x2e0)
-	[<c038d74c>] (___sys_sendmsg.part.29) from [<c038ec08>] (SyS_sendmsg+0x18/0x1c)
-	[<c038ec08>] (SyS_sendmsg) from [<c000fa00>] (ret_fast_syscall+0x0/0x48)
-	console [ttyUSB0] enabled
+_dragging the whole system down_ in the process due to the
+excessive logging output.
 
-Fixes: 36697529b5bb ("tty: Replace ldisc locking with ldisc_sem")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Initially, this has caused random panics in the kernel due to a
+buggy error recovery path.  That got fixed in an earlier commit.(%)
+This patch aims at solving the root cause. -->
+
+16 tx URBs and contexts are allocated per CAN channel per USB
+device. Such URBs are protected by:
+
+a) A simple atomic counter, up to a value of MAX_TX_URBS (16)
+b) A flag in each URB context, stating if it's free
+c) The fact that ndo_start_xmit calls are themselves protected
+   by the networking layers higher above
+
+After grabbing one of the tx URBs, if the driver noticed that all
+of them are now taken, it stops the netif transmission queue.
+Such queue is worken up again only if an acknowedgment was received
+from the firmware on one of our earlier-sent frames.
+
+Meanwhile, upon channel close (#), the driver sends a CMD_STOP_CHIP
+to the firmware, effectively closing all further communication.  In
+the high traffic case, the atomic counter remains at MAX_TX_URBS,
+and all the URB contexts remain marked as active.  While opening
+the channel again (@), it cannot send any further frames since no
+more free tx URB contexts are available.
+
+Reset all tx URB contexts upon CAN channel close.
+
+(*) 50 parallel instances of `cangen0 -g 0 -ix`
+(#) `ifconfig can0 down`
+(@) `ifconfig can0 up`
+(%) "can: kvaser_usb: Don't free packets when tight on URBs"
+
+Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/console.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/can/usb/kvaser_usb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/serial/console.c
-+++ b/drivers/usb/serial/console.c
-@@ -140,6 +140,7 @@ static int usb_console_setup(struct cons
- 			tty_port_tty_set(&port->port, tty);
- 			tty->driver = usb_serial_tty_driver;
- 			tty->index = co->index;
-+			init_ldsem(&tty->ldisc_sem);
- 			if (tty_init_termios(tty)) {
- 				retval = -ENOMEM;
- 				goto free_tty;
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -1238,6 +1238,9 @@ static int kvaser_usb_close(struct net_d
+ 	if (err)
+ 		netdev_warn(netdev, "Cannot stop device, error %d\n", err);
+ 
++	/* reset tx contexts */
++	kvaser_usb_unlink_tx_urbs(priv);
++
+ 	priv->can.state = CAN_STATE_STOPPED;
+ 	close_candev(priv->netdev);
+ 
 
 
