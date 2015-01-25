@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845AbbAYSMA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:12:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58027 "EHLO
+	id S1756830AbbAYSL5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:11:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58023 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446AbbAYSKh (ORCPT
+	with ESMTP id S1756120AbbAYSKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jan 2015 13:10:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 3.18 177/183] x86, um: actually mark system call tables readonly
-Date: Sun, 25 Jan 2015 10:08:19 -0800
-Message-Id: <20150125180817.853552427@linuxfoundation.org>
+        Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 3.18 178/183] kbuild: Fix removal of the debian/ directory
+Date: Sun, 25 Jan 2015 10:08:20 -0800
+Message-Id: <20150125180817.890902140@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -31,64 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Michal Marek <mmarek@suse.cz>
 
-commit b485342bd79af363c77ef1a421c4a0aef2de9812 upstream.
+commit a16c5f99a28c9945165c46da27fff8e6f26f8736 upstream.
 
-Commit a074335a370e ("x86, um: Mark system call tables readonly") was
-supposed to mark the sys_call_table in UML as RO by adding the const,
-but it doesn't have the desired effect as it's nevertheless being placed
-into the data section since __cacheline_aligned enforces sys_call_table
-being placed into .data..cacheline_aligned instead. We need to use
-the ____cacheline_aligned version instead to fix this issue.
+scripts/Makefile.clean treats absolute path specially, but
+$(objtree)/debian is no longer an absolute path since 7e1c0477 (kbuild:
+Use relative path for $(objtree). Work around this by checking if the
+path starts with $(objtree)/.
 
-Before:
-
-$ nm -v arch/x86/um/sys_call_table_64.o | grep -1 "sys_call_table"
-                 U sys_writev
-0000000000000000 D sys_call_table
-0000000000000000 D syscall_table_size
-
-After:
-
-$ nm -v arch/x86/um/sys_call_table_64.o | grep -1 "sys_call_table"
-                 U sys_writev
-0000000000000000 R sys_call_table
-0000000000000000 D syscall_table_size
-
-Fixes: a074335a370e ("x86, um: Mark system call tables readonly")
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Reported-and-tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Fixes: 7e1c0477 (kbuild: Use relative path for $(objtree)
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/um/sys_call_table_32.c |    2 +-
- arch/x86/um/sys_call_table_64.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ scripts/Makefile.clean |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/arch/x86/um/sys_call_table_32.c
-+++ b/arch/x86/um/sys_call_table_32.c
-@@ -34,7 +34,7 @@ typedef asmlinkage void (*sys_call_ptr_t
+--- a/scripts/Makefile.clean
++++ b/scripts/Makefile.clean
+@@ -45,19 +45,19 @@ __clean-files	:= $(extra-y) $(extra-m) $
  
- extern asmlinkage void sys_ni_syscall(void);
+ __clean-files   := $(filter-out $(no-clean-files), $(__clean-files))
  
--const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
-+const sys_call_ptr_t sys_call_table[] ____cacheline_aligned = {
- 	/*
- 	 * Smells like a compiler bug -- it doesn't work
- 	 * when the & below is removed.
---- a/arch/x86/um/sys_call_table_64.c
-+++ b/arch/x86/um/sys_call_table_64.c
-@@ -46,7 +46,7 @@ typedef void (*sys_call_ptr_t)(void);
+-# as clean-files is given relative to the current directory, this adds
+-# a $(obj) prefix, except for absolute paths
++# clean-files is given relative to the current directory, unless it
++# starts with $(objtree)/ (which means "./", so do not add "./" unless
++# you want to delete a file from the toplevel object directory).
  
- extern void sys_ni_syscall(void);
+ __clean-files   := $(wildcard                                               \
+-                   $(addprefix $(obj)/, $(filter-out /%, $(__clean-files))) \
+-		   $(filter /%, $(__clean-files)))
++		   $(addprefix $(obj)/, $(filter-out $(objtree)/%, $(__clean-files))) \
++		   $(filter $(objtree)/%, $(__clean-files)))
  
--const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
-+const sys_call_ptr_t sys_call_table[] ____cacheline_aligned = {
- 	/*
- 	 * Smells like a compiler bug -- it doesn't work
- 	 * when the & below is removed.
+-# as clean-dirs is given relative to the current directory, this adds
+-# a $(obj) prefix, except for absolute paths
++# same as clean-files
+ 
+ __clean-dirs    := $(wildcard                                               \
+-                   $(addprefix $(obj)/, $(filter-out /%, $(clean-dirs)))    \
+-		   $(filter /%, $(clean-dirs)))
++		   $(addprefix $(obj)/, $(filter-out $(objtree)/%, $(clean-dirs)))    \
++		   $(filter $(objtree)/%, $(clean-dirs)))
+ 
+ # ==========================================================================
+ 
 
 
