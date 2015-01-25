@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787AbbAYSWw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:22:52 -0500
-Received: from mail-by2on0123.outbound.protection.outlook.com ([207.46.100.123]:49376
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755756AbbAYSWt convert rfc822-to-8bit (ORCPT
+	id S932673AbbAYTII (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:08:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57564 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755332AbbAYSJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:22:49 -0500
-X-Greylist: delayed 893 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Jan 2015 13:22:49 EST
-From: KY Srinivasan <kys@microsoft.com>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-CC: Haiyang Zhang <haiyangz@microsoft.com>, Jiri Kosina <jkosina@suse.cz>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3 v2] hyperv: hid-hyperv.c: match
- wait_for_completion_timeout return type
-Thread-Topic: [PATCH 3/3 v2] hyperv: hid-hyperv.c: match
- wait_for_completion_timeout return type
-Thread-Index: AQHQOK78pesA0zj0PEGzmebwQYJEiZzRIMnQ
-Date: Sun, 25 Jan 2015 18:07:53 +0000
-Message-ID: <BY2PR0301MB07116F48FBCAC922CD8A33E3A0340@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1422197267-8001-1-git-send-email-der.herr@hofr.at>
-In-Reply-To: <1422197267-8001-1-git-send-email-der.herr@hofr.at>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:fd:548:a62e:74ba:769d]
-authentication-results: hofr.at; dkim=none (message not signed)
- header.d=none;hofr.at; dmarc=none action=none header.from=microsoft.com;
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR0301MB0773;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0773;
-x-forefront-prvs: 046753C63C
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(51704005)(377454003)(46102003)(54206007)(62966003)(54606007)(76576001)(106116001)(19580405001)(76176999)(50986999)(54356999)(19580395003)(74316001)(99286002)(86362001)(87936001)(110136001)(92566002)(102836002)(33656002)(2656002)(77156002)(2950100001)(2900100001)(122556002)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0773;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 25 Jan 2015 13:09:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexander Fomichev <git.user@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Miquel van Smoorenburg <mikevs@xs4all.net>
+Subject: [PATCH 3.14 95/98] net: fix creation adjacent device symlinks
+Date: Sun, 25 Jan 2015 10:07:53 -0800
+Message-Id: <20150125180717.009640454@linuxfoundation.org>
+X-Mailer: git-send-email 2.2.2
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 25 Jan 2015 18:07:53.8863
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0773
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-> -----Original Message-----
-> From: Nicholas Mc Guire [mailto:der.herr@hofr.at]
-> Sent: Sunday, January 25, 2015 6:48 AM
-> To: KY Srinivasan
-> Cc: Haiyang Zhang; Jiri Kosina; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org; Nicholas Mc Guire
-> Subject: [PATCH 3/3 v2] hyperv: hid-hyperv.c: match
-> wait_for_completion_timeout return type
-> 
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+From: "Alexander Y. Fomichev" <git.user@gmail.com>
 
-Thank you.
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+commit 7ce64c79c4decdeb1afe0bf2f6ef834b382871d1 upstream.
 
-> ---
-> 
-> v2: fixed subject line
-> 
-> The return type of wait_for_completion_timeout is unsigned long not int.
-> This patch fixes up the declarations only.
-> 
-> Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=y
-> CONFIG_HYPERV=m, CONFIG_HID_HYPERV_MOUSE=m
-> 
-> Patch is against 3.19.0-rc5 -next-20150123
-> 
->  drivers/hid/hid-hyperv.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c index
-> 31fad64..6039f07 100644
-> --- a/drivers/hid/hid-hyperv.c
-> +++ b/drivers/hid/hid-hyperv.c
-> @@ -381,7 +381,7 @@ static void mousevsc_on_channel_callback(void
-> *context)  static int mousevsc_connect_to_vsp(struct hv_device *device)  {
->  	int ret = 0;
-> -	int t;
-> +	unsigned long t;
->  	struct mousevsc_dev *input_dev = hv_get_drvdata(device);
->  	struct mousevsc_prt_msg *request;
->  	struct mousevsc_prt_msg *response;
-> --
-> 1.7.10.4
+__netdev_adjacent_dev_insert may add adjust device of different net
+namespace, without proper check it leads to emergence of broken
+sysfs links from/to devices in another namespace.
+Fix: rewrite netdev_adjacent_is_neigh_list macro as a function,
+     move net_eq check into netdev_adjacent_is_neigh_list.
+     (thanks David)
+     related to: 4c75431ac3520631f1d9e74aa88407e6374dbbc4
+
+Signed-off-by: Alexander Fomichev <git.user@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Miquel van Smoorenburg <mikevs@xs4all.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/core/dev.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -4705,9 +4705,14 @@ static void netdev_adjacent_sysfs_del(st
+ 	sysfs_remove_link(&(dev->dev.kobj), linkname);
+ }
+ 
+-#define netdev_adjacent_is_neigh_list(dev, dev_list) \
+-		(dev_list == &dev->adj_list.upper || \
+-		 dev_list == &dev->adj_list.lower)
++static inline bool netdev_adjacent_is_neigh_list(struct net_device *dev,
++						 struct net_device *adj_dev,
++						 struct list_head *dev_list)
++{
++	return (dev_list == &dev->adj_list.upper ||
++		dev_list == &dev->adj_list.lower) &&
++		net_eq(dev_net(dev), dev_net(adj_dev));
++}
+ 
+ static int __netdev_adjacent_dev_insert(struct net_device *dev,
+ 					struct net_device *adj_dev,
+@@ -4737,7 +4742,7 @@ static int __netdev_adjacent_dev_insert(
+ 	pr_debug("dev_hold for %s, because of link added from %s to %s\n",
+ 		 adj_dev->name, dev->name, adj_dev->name);
+ 
+-	if (netdev_adjacent_is_neigh_list(dev, dev_list)) {
++	if (netdev_adjacent_is_neigh_list(dev, adj_dev, dev_list)) {
+ 		ret = netdev_adjacent_sysfs_add(dev, adj_dev, dev_list);
+ 		if (ret)
+ 			goto free_adj;
+@@ -4758,7 +4763,7 @@ static int __netdev_adjacent_dev_insert(
+ 	return 0;
+ 
+ remove_symlinks:
+-	if (netdev_adjacent_is_neigh_list(dev, dev_list))
++	if (netdev_adjacent_is_neigh_list(dev, adj_dev, dev_list))
+ 		netdev_adjacent_sysfs_del(dev, adj_dev->name, dev_list);
+ free_adj:
+ 	kfree(adj);
+@@ -4791,8 +4796,7 @@ static void __netdev_adjacent_dev_remove
+ 	if (adj->master)
+ 		sysfs_remove_link(&(dev->dev.kobj), "master");
+ 
+-	if (netdev_adjacent_is_neigh_list(dev, dev_list) &&
+-	    net_eq(dev_net(dev),dev_net(adj_dev)))
++	if (netdev_adjacent_is_neigh_list(dev, adj_dev, dev_list))
+ 		netdev_adjacent_sysfs_del(dev, adj_dev->name, dev_list);
+ 
+ 	list_del_rcu(&adj->list);
+
 
