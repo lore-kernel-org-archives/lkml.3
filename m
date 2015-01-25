@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759400AbbAYTVL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:21:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57484 "EHLO
+	id S1758165AbbAYSnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:43:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313AbbAYSJG (ORCPT
+	with ESMTP id S1754361AbbAYSKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:06 -0500
+	Sun, 25 Jan 2015 13:10:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.14 42/98] parisc: fix out-of-register compiler error in ldcw inline assembler function
-Date: Sun, 25 Jan 2015 10:07:00 -0800
-Message-Id: <20150125180714.700151255@linuxfoundation.org>
+        Long Li <longli@microsoft.com>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.18 099/183] storvsc: ring buffer failures may result in I/O freeze
+Date: Sun, 25 Jan 2015 10:07:01 -0800
+Message-Id: <20150125180814.466813760@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,51 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Long Li <longli@microsoft.com>
 
-commit 45db07382a5c78b0c43b3b0002b63757fb60e873 upstream.
+commit e86fb5e8ab95f10ec5f2e9430119d5d35020c951 upstream.
 
-The __ldcw macro has a problem when its argument needs to be reloaded from
-memory. The output memory operand and the input register operand both need to
-be reloaded using a register in class R1_REGS when generating 64-bit code.
-This fails because there's only a single register in the class. Instead, use a
-memory clobber. This also makes the __ldcw macro a compiler memory barrier.
+When ring buffer returns an error indicating retry, storvsc may not
+return a proper error code to SCSI when bounce buffer is not used.
+This has introduced I/O freeze on RAID running atop storvsc devices.
+This patch fixes it by always returning a proper error code.
 
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Long Li <longli@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/ldcw.h |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/scsi/storvsc_drv.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/arch/parisc/include/asm/ldcw.h
-+++ b/arch/parisc/include/asm/ldcw.h
-@@ -33,11 +33,18 @@
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1688,13 +1688,12 @@ static int storvsc_queuecommand(struct S
+ 	if (ret == -EAGAIN) {
+ 		/* no more space */
  
- #endif /*!CONFIG_PA20*/
+-		if (cmd_request->bounce_sgl_count) {
++		if (cmd_request->bounce_sgl_count)
+ 			destroy_bounce_buffer(cmd_request->bounce_sgl,
+ 					cmd_request->bounce_sgl_count);
  
--/* LDCW, the only atomic read-write operation PA-RISC has. *sigh*.  */
-+/* LDCW, the only atomic read-write operation PA-RISC has. *sigh*.
-+   We don't explicitly expose that "*a" may be written as reload
-+   fails to find a register in class R1_REGS when "a" needs to be
-+   reloaded when generating 64-bit PIC code.  Instead, we clobber
-+   memory to indicate to the compiler that the assembly code reads
-+   or writes to items other than those listed in the input and output
-+   operands.  This may pessimize the code somewhat but __ldcw is
-+   usually used within code blocks surrounded by memory barriors.  */
- #define __ldcw(a) ({						\
- 	unsigned __ret;						\
--	__asm__ __volatile__(__LDCW " 0(%2),%0"			\
--		: "=r" (__ret), "+m" (*(a)) : "r" (a));		\
-+	__asm__ __volatile__(__LDCW " 0(%1),%0"			\
-+		: "=r" (__ret) : "r" (a) : "memory");		\
- 	__ret;							\
- })
+-			ret = SCSI_MLQUEUE_DEVICE_BUSY;
+-			goto queue_error;
+-		}
++		ret = SCSI_MLQUEUE_DEVICE_BUSY;
++		goto queue_error;
+ 	}
  
+ 	return 0;
 
 
