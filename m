@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbbAYVg6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 16:36:58 -0500
-Received: from omr2.cc.vt.edu ([198.82.141.100]:37891 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150AbbAYVg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 16:36:56 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Christoph Lameter <cl@linux.com>, Guenter Roeck <linux@roeck-us.net>,
-        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol: remove unnecessary soft limit tree node test'
-In-Reply-To: Your message of "Sat, 24 Jan 2015 02:16:23 -0500."
-             <20150124071623.GA17705@phnom.home.cmpxchg.org>
-From: Valdis.Kletnieks@vt.edu
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050802.GB22751@roeck-us.net> <20150123141817.GA22926@phnom.home.cmpxchg.org> <alpine.DEB.2.11.1501231419420.11767@gentwo.org> <54C2B01D.4070303@roeck-us.net> <alpine.DEB.2.11.1501231508020.7871@gentwo.org>
-            <20150124071623.GA17705@phnom.home.cmpxchg.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1422221788_1948P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1753384AbbAYVhX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 16:37:23 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:53910 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752909AbbAYVhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 16:37:19 -0500
+Message-ID: <54C56202.3000109@roeck-us.net>
+Date: Sun, 25 Jan 2015 13:37:06 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 00/98] 3.14.30-stable review
+References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Sun, 25 Jan 2015 16:36:28 -0500
-Message-ID: <109548.1422221788@turing-police.cc.vt.edu>
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Suspect
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 512
+X-CTCH-RefID: str=0001.0A020206.54C5620E.009D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 13
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 13
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1422221788_1948P
-Content-Type: text/plain; charset=us-ascii
+On 01/25/2015 10:06 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.30 release.
+> There are 98 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Tue Jan 27 18:06:36 UTC 2015.
+> Anything received after that time might be too late.
 
-On Sat, 24 Jan 2015 02:16:23 -0500, Johannes Weiner said:
+Build results:
+	total: 137 pass: 137 fail: 0
+Qemu tests:
+	total: 30 pass: 30 fail: 0
 
-> I would generally agree, but this code, which implements a userspace
-> interface, is already grotesquely inefficient and heavyhanded.  It's
-> also superseded in the next release, so we can just keep this simple
-> at this point.
+Details are available at http://server.roeck-us.net:8010/builders.
 
-Wait, what?  Userspace interface that's superceded in the next release?
+Guenter
 
-I *hope* this was intended as "Yes,it's ugly in v4 of the patch, v5 is
-a lot cleaner..."
 
---==_Exmh_1422221788_1948P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVMVh3AdmEQWDXROgAQK4QA//U6I3P9Vgzh6/W+tJaeSg4+BCFAJsyhUM
-caCo+oiRsuhTNxreAEXmTi26Gx1HvvtJ3A/LbBUwXEWhlcrK2xcp0xUlg7sUT+kA
-ufCh5qs5NLTbl1hWRb2lfC3ksqhChJo2HKnkWJHDAUzMITXXZz+9paJikNtvlMt9
-OnGMHI5EGmm4VSwXoMpwz94mzXs/grL4EC61Y2pPgpbU9HaGyJ5dfbGxZ7qBdnrN
-nrwyP4rpyxqLapyoq4Kd5k8ck/cdJCbnqPpR6cy0FQHdbBDQv0L7O4JtdPeuUm4p
-VO9xayBSqnWl1zUa7VladqgGQdsBdJ5lYdrC9mHPntUm8G2cyAlMsWAm7dN+iEh4
-BkVvfp9E805C5U1gMpg6+63LjMDcTYEeH7nVv5U04jJpx3GiHnwR2lB6iTJfDyFA
-F0053x8dOp3TUZt2ovlzlkXB9IjXM48xyxrZV4+8ACEluaycSSxro/yejMv3Vrza
-z3FjQ4Sp5z2TX1btmPn6DOkD1SeM0exflclMOCz3WfiD4cM4WrUakRNcuOdEaDbT
-J1hpuPZ1FiJr3Uin14B6fKiFDWq+g7D/Fwb4UBSk2S880SqWep2jwS1g4J1Tndc1
-2CXNahHWvdzeYEWqZvPRcijAaiu9VsotnMuCB6PfUbsDxWOt0pbmBbQr4ZOeMzeb
-8WmTQBYs85Q=
-=vhDK
------END PGP SIGNATURE-----
-
---==_Exmh_1422221788_1948P--
