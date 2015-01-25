@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608AbbAYSLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:11:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57575 "EHLO
+	id S1756169AbbAYSKl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:10:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244AbbAYSJR (ORCPT
+	with ESMTP id S1754433AbbAYSIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:17 -0500
+	Sun, 25 Jan 2015 13:08:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 3.14 73/98] ARM: dts: imx25: Fix the SPI1 clocks
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: [PATCH 3.10 41/50] ARM: shmobile: sh73a0 legacy: Set .control_parent for all irqpin instances
 Date: Sun, 25 Jan 2015 10:07:31 -0800
-Message-Id: <20150125180716.035466662@linuxfoundation.org>
+Message-Id: <20150125180704.946070019@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
+References: <20150125180702.521559311@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,41 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-commit 7a87e9cbc3a2f0ff0955815335e08c9862359130 upstream.
+commit b0ddb319db3d7a1943445f0de0a45c07a7f3457a upstream.
 
->From Documentation/devicetree/bindings/clock/imx25-clock.txt:
+The sh73a0 INTC can't mask interrupts properly most likely due to a
+hardware bug. Set the .control_parent flag to delegate masking to the
+parent interrupt controller, like was already done for irqpin1.
 
-	cspi1_ipg		78
-	cspi2_ipg		79
-	cspi3_ipg		80
+Without this, accessing the three-axis digital accelerometer ADXL345
+on kzm9g through /dev/input/event1 causes an interrupt storm, which
+requires a power-cycle to recover from.
 
-, so fix the SPI1 clocks accordingly to avoid a kernel hang when trying to
-access SPI1.
+This was inspired by a patch for arch/arm/boot/dts/sh73a0.dtsi from
+Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Fixes: 341eb5465f67437a ("ARM: shmobile: INTC External IRQ pin driver on sh73a0")
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/imx25.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-shmobile/setup-sh73a0.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/boot/dts/imx25.dtsi
-+++ b/arch/arm/boot/dts/imx25.dtsi
-@@ -158,7 +158,7 @@
- 				#size-cells = <0>;
- 				compatible = "fsl,imx25-cspi", "fsl,imx35-cspi";
- 				reg = <0x43fa4000 0x4000>;
--				clocks = <&clks 62>, <&clks 62>;
-+				clocks = <&clks 78>, <&clks 78>;
- 				clock-names = "ipg", "per";
- 				interrupts = <14>;
- 				status = "disabled";
+--- a/arch/arm/mach-shmobile/setup-sh73a0.c
++++ b/arch/arm/mach-shmobile/setup-sh73a0.c
+@@ -814,6 +814,7 @@ static struct platform_device ipmmu_devi
+ 
+ static struct renesas_intc_irqpin_config irqpin0_platform_data = {
+ 	.irq_base = irq_pin(0), /* IRQ0 -> IRQ7 */
++	.control_parent = true,
+ };
+ 
+ static struct resource irqpin0_resources[] = {
+@@ -875,6 +876,7 @@ static struct platform_device irqpin1_de
+ 
+ static struct renesas_intc_irqpin_config irqpin2_platform_data = {
+ 	.irq_base = irq_pin(16), /* IRQ16 -> IRQ23 */
++	.control_parent = true,
+ };
+ 
+ static struct resource irqpin2_resources[] = {
+@@ -905,6 +907,7 @@ static struct platform_device irqpin2_de
+ 
+ static struct renesas_intc_irqpin_config irqpin3_platform_data = {
+ 	.irq_base = irq_pin(24), /* IRQ24 -> IRQ31 */
++	.control_parent = true,
+ };
+ 
+ static struct resource irqpin3_resources[] = {
 
 
