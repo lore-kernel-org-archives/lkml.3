@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758663AbbAYS5i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:57:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57901 "EHLO
+	id S1758737AbbAYS4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:56:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560AbbAYSJo (ORCPT
+	with ESMTP id S1755574AbbAYSJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:44 -0500
+	Sun, 25 Jan 2015 13:09:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.18 043/183] drm/i915: resume MST after reading back hw state
-Date: Sun, 25 Jan 2015 10:06:05 -0800
-Message-Id: <20150125180812.041841391@linuxfoundation.org>
+        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.18 045/183] drm/nv4c/mc: disable msi
+Date: Sun, 25 Jan 2015 10:06:07 -0800
+Message-Id: <20150125180812.125993203@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -30,42 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit e7d6f7d708290da1b7c92f533444b042c79412e0 upstream.
+commit 4761703bd04bbdf56396d264903cc5a1fdcb3c01 upstream.
 
-Otherwise the MST resume paths can hit DPMS paths
-which hit state checker paths, which hit WARN_ON,
-because the state checker is inconsistent with the
-hw.
+Several users have, over time, reported issues with MSI on these IGPs.
+They're old, rarely available, and MSI doesn't provide such huge
+advantages on them. Just disable.
 
-This fixes a bunch of WARN_ON's on resume after
-undocking.
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=87361
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=74492
+Fixes: fa8c9ac72fe ("drm/nv4c/mc: nv4x igp's have a different msi rearm register")
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/subdev/mc/nv4c.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -692,11 +692,12 @@ static int __i915_drm_thaw(struct drm_de
- 			spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
- 		}
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv4c.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv4c.c
+@@ -24,13 +24,6 @@
  
--		intel_dp_mst_resume(dev);
- 		drm_modeset_lock_all(dev);
- 		intel_modeset_setup_hw_state(dev, true);
- 		drm_modeset_unlock_all(dev);
+ #include "nv04.h"
  
-+		intel_dp_mst_resume(dev);
-+
- 		/*
- 		 * ... but also need to make sure that hotplug processing
- 		 * doesn't cause havoc. Like in the driver load code we don't
+-static void
+-nv4c_mc_msi_rearm(struct nouveau_mc *pmc)
+-{
+-	struct nv04_mc_priv *priv = (void *)pmc;
+-	nv_wr08(priv, 0x088050, 0xff);
+-}
+-
+ struct nouveau_oclass *
+ nv4c_mc_oclass = &(struct nouveau_mc_oclass) {
+ 	.base.handle = NV_SUBDEV(MC, 0x4c),
+@@ -41,5 +34,4 @@ nv4c_mc_oclass = &(struct nouveau_mc_ocl
+ 		.fini = _nouveau_mc_fini,
+ 	},
+ 	.intr = nv04_mc_intr,
+-	.msi_rearm = nv4c_mc_msi_rearm,
+ }.base;
 
 
