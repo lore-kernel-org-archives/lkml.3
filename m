@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049AbbAYTIw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:08:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57198 "EHLO
+	id S1757166AbbAYSVI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:21:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57941 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755317AbbAYSJZ (ORCPT
+	with ESMTP id S1756161AbbAYSKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:25 -0500
+	Sun, 25 Jan 2015 13:10:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.14 93/98] netfilter: ipset: small potential read beyond the end of buffer
-Date: Sun, 25 Jan 2015 10:07:51 -0800
-Message-Id: <20150125180716.928934614@linuxfoundation.org>
+        Songjun Wu <songjun.wu@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.18 150/183] usb: gadget: udc: atmel: fix possible oops when unloading module
+Date: Sun, 25 Jan 2015 10:07:52 -0800
+Message-Id: <20150125180816.700698989@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,41 +25,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Songjun Wu <songjun.wu@atmel.com>
 
-commit 2196937e12b1b4ba139806d132647e1651d655df upstream.
+commit 5fb694f96e7c19e66b1c55124b98812e32e3efa5 upstream.
 
-We could be reading 8 bytes into a 4 byte buffer here.  It seems
-harmless but adding a check is the right thing to do and it silences a
-static checker warning.
+When unloading the module 'g_hid.ko', the urb request will be dequeued and the
+completion routine will be excuted. If there is no urb packet, the urb request
+will not be added to the endpoint queue and the completion routine pointer in
+urb request is NULL.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Accessing to this NULL function pointer will cause the Oops issue reported
+below.
+
+Add the code to check if the urb request is in the endpoint queue
+or not. If the urb request is not in the endpoint queue, a negative
+error code will be returned.
+
+Here is the Oops log:
+
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+pgd = dedf0000
+[00000000] *pgd=3ede5831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 80000007 [#1] ARM
+Modules linked in: g_hid(-) usb_f_hid libcomposite
+CPU: 0 PID: 923 Comm: rmmod Not tainted 3.18.0+ #2
+Hardware name: Atmel SAMA5 (Device Tree)
+task: df6b1100 ti: dedf6000 task.ti: dedf6000
+PC is at 0x0
+LR is at usb_gadget_giveback_request+0xc/0x10
+pc : [<00000000>]    lr : [<c02ace88>]    psr: 60000093
+sp : dedf7eb0  ip : df572634  fp : 00000000
+r10: 00000000  r9 : df52e210  r8 : 60000013
+r7 : df6a9858  r6 : df52e210  r5 : df6a9858  r4 : df572600
+r3 : 00000000  r2 : ffffff98  r1 : df572600  r0 : df6a9868
+Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c53c7d  Table: 3edf0059  DAC: 00000015
+Process rmmod (pid: 923, stack limit = 0xdedf6230)
+Stack: (0xdedf7eb0 to 0xdedf8000)
+7ea0:                                     00000000 c02adbbc df572580 deced608
+7ec0: df572600 df6a9868 df572634 c02aed3c df577c00 c01b8608 00000000 df6be27c
+7ee0: 00200200 00100100 bf0162f4 c000e544 dedf6000 00000000 00000000 bf010c00
+7f00: bf0162cc bf00159c 00000000 df572980 df52e218 00000001 df5729b8 bf0031d0
+[..]
+[<c02ace88>] (usb_gadget_giveback_request) from [<c02adbbc>] (request_complete+0x64/0x88)
+[<c02adbbc>] (request_complete) from [<c02aed3c>] (usba_ep_dequeue+0x70/0x128)
+[<c02aed3c>] (usba_ep_dequeue) from [<bf010c00>] (hidg_unbind+0x50/0x7c [usb_f_hid])
+[<bf010c00>] (hidg_unbind [usb_f_hid]) from [<bf00159c>] (remove_config.isra.6+0x98/0x9c [libcomposite])
+[<bf00159c>] (remove_config.isra.6 [libcomposite]) from [<bf0031d0>] (__composite_unbind+0x34/0x98 [libcomposite])
+[<bf0031d0>] (__composite_unbind [libcomposite]) from [<c02acee0>] (usb_gadget_remove_driver+0x50/0x78)
+[<c02acee0>] (usb_gadget_remove_driver) from [<c02ad570>] (usb_gadget_unregister_driver+0x64/0x94)
+[<c02ad570>] (usb_gadget_unregister_driver) from [<bf0160c0>] (hidg_cleanup+0x10/0x34 [g_hid])
+[<bf0160c0>] (hidg_cleanup [g_hid]) from [<c0056748>] (SyS_delete_module+0x118/0x19c)
+[<c0056748>] (SyS_delete_module) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
+Code: bad PC value
+
+Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
+[nicolas.ferre@atmel.com: reworked the commit message]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Fixes: 914a3f3b3754 ("USB: add atmel_usba_udc driver")
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipset/ip_set_core.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/gadget/udc/atmel_usba_udc.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/net/netfilter/ipset/ip_set_core.c
-+++ b/net/netfilter/ipset/ip_set_core.c
-@@ -1839,6 +1839,12 @@ ip_set_sockfn_get(struct sock *sk, int o
- 	if (*op < IP_SET_OP_VERSION) {
- 		/* Check the version at the beginning of operations */
- 		struct ip_set_req_version *req_version = data;
+--- a/drivers/usb/gadget/udc/atmel_usba_udc.c
++++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
+@@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep
+ {
+ 	struct usba_ep *ep = to_usba_ep(_ep);
+ 	struct usba_udc *udc = ep->udc;
+-	struct usba_request *req = to_usba_req(_req);
++	struct usba_request *req;
+ 	unsigned long flags;
+ 	u32 status;
+ 
+@@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep
+ 
+ 	spin_lock_irqsave(&udc->lock, flags);
+ 
++	list_for_each_entry(req, &ep->queue, queue) {
++		if (&req->req == _req)
++			break;
++	}
 +
-+		if (*len < sizeof(struct ip_set_req_version)) {
-+			ret = -EINVAL;
-+			goto done;
-+		}
++	if (&req->req != _req) {
++		spin_unlock_irqrestore(&udc->lock, flags);
++		return -EINVAL;
++	}
 +
- 		if (req_version->version != IPSET_PROTOCOL) {
- 			ret = -EPROTO;
- 			goto done;
+ 	if (req->using_dma) {
+ 		/*
+ 		 * If this request is currently being transferred,
 
 
