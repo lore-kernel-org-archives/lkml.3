@@ -1,219 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769AbbAYVMp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 16:12:45 -0500
-Received: from mail.nuclearfallout.net ([208.146.45.251]:41608 "EHLO
-	mail.nuclearfallout.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754519AbbAYVMn (ORCPT
+	id S1755488AbbAYVXj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 16:23:39 -0500
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:34205 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685AbbAYVXh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 16:12:43 -0500
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Jan 2015 16:12:43 EST
-Message-ID: <54C55AB6.7060207@nuclearfallout.net>
-Date: Sun, 25 Jan 2015 13:05:58 -0800
-From: John <jw@nuclearfallout.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Sun, 25 Jan 2015 16:23:37 -0500
+Date: Sun, 25 Jan 2015 22:06:04 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: [Patch] sunrpc: NULL utsname dereference on NFS umount during
+ namespace cleanup
+Message-ID: <20150125220604.090121ae@neptune.home>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i686-pc-linux-gnu)
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: stable@vger.kernel.org, David Vrabel <david.vrabel@citrix.com>,
-        Wei Liu <wei.liu2@citrix.com>, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3.18 007/183] xen-netback: support frontends without feature-rx-notify
- again
-References: <20150125180810.160428929@linuxfoundation.org> <20150125180810.508350174@linuxfoundation.org>
-In-Reply-To: <20150125180810.508350174@linuxfoundation.org>
-Content-Type: text/plain; charset=iso-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+On a system running home-brown container (mntns, utsns, pidns, netns)
+with NFS mount-point bind-mounted into the container I hit the following
+trace if nfs filesystem is first umount()ed in init ns and then later
+umounted from container when the container exists.
 
-No objections. I've been using it in production and have not seen any 
-problems.
+[51397.767310] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+[51397.770671] IP: [<ffffffff81828173>] rpc_new_client+0x193/0x2b0
+[51397.773967] PGD 0 
+[51397.777218] Oops: 0000 [#1] SMP 
+[51397.780490] Modules linked in:
+[51397.783751] CPU: 0 PID: 1711 Comm: image-starter Not tainted 3.19.0-rc2-kvm+ #7
+[51397.787123] Hardware name: Gigabyte Technology Co., Ltd. GA-A75M-UD2H/GA-A75M-UD2H, BIOS F6 09/28/2012
+[51397.790606] task: ffff8800c9fcbac0 ti: ffff8801fe754000 task.ti: ffff8801fe754000
+[51397.794149] RIP: 0010:[<ffffffff81828173>]  [<ffffffff81828173>] rpc_new_client+0x193/0x2b0
+[51397.797798] RSP: 0018:ffff8801fe757908  EFLAGS: 00010246
+[51397.801444] RAX: 0000000000000000 RBX: ffff88009dafb240 RCX: 0000000000000180
+[51397.805174] RDX: 000000000000bae0 RSI: 0000000000001770 RDI: ffff88009dafb308
+[51397.808913] RBP: ffff8801fe757948 R08: ffff88009daf92d8 R09: ffff88009dafb458
+[51397.812673] R10: ffff88009dafb458 R11: ffff88020ec15bc0 R12: ffff8801fe757a40
+[51397.816456] R13: ffffffff81b9d800 R14: ffff8800c6e31030 R15: 0000000000000000
+[51397.820270] FS:  00007f335a3a1700(0000) GS:ffff88020ec00000(0000) knlGS:00000000f7287700
+[51397.824168] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[51397.828066] CR2: 0000000000000008 CR3: 00000001fc54d000 CR4: 00000000000007f0
+[51397.832017] Stack:
+[51397.835924]  000000000000000a ffffffff81b9d770 ffffffff81826450 ffff8801fe757a40
+[51397.840023]  ffff8801fe757a40 ffff8800cf08d500 ffffffff81826450 ffffffff820f4728
+[51397.844130]  ffff8801fe757978 ffffffff81828815 ffff8801fe757978 ffffffff8182aad8
+[51397.848224] Call Trace:
+[51397.852221]  [<ffffffff81826450>] ? call_start+0x20/0x20
+[51397.856273]  [<ffffffff81826450>] ? call_start+0x20/0x20
+[51397.860295]  [<ffffffff81828815>] rpc_create_xprt+0x15/0xb0
+[51397.864324]  [<ffffffff8182aad8>] ? xprt_create_transport+0x108/0x1b0
+[51397.868428]  [<ffffffff81828971>] rpc_create+0xc1/0x190
+[51397.872574]  [<ffffffff81111c86>] ? internal_add_timer+0x66/0x80
+[51397.876733]  [<ffffffff81113a99>] ? mod_timer+0x109/0x1e0
+[51397.880877]  [<ffffffff8183a19e>] rpcb_create+0x6e/0x90
+[51397.884999]  [<ffffffff8183a71a>] rpcb_getport_async+0x15a/0x330
+[51397.889118]  [<ffffffff8182f1da>] ? rpc_malloc+0x3a/0x70
+[51397.893240]  [<ffffffff811af8d2>] ? __kmalloc+0xc2/0x170
+[51397.897354]  [<ffffffff81826830>] ? call_reserveresult+0x110/0x110
+[51397.901490]  [<ffffffff81826450>] ? call_start+0x20/0x20
+[51397.905606]  [<ffffffff81826450>] ? call_start+0x20/0x20
+[51397.909662]  [<ffffffff8182648e>] call_bind+0x3e/0x40
+[51397.913709]  [<ffffffff8182fa99>] __rpc_execute+0x79/0x330
+[51397.917778]  [<ffffffff818327bd>] rpc_execute+0x5d/0xa0
+[51397.921871]  [<ffffffff818286cb>] rpc_run_task+0x6b/0x90
+[51397.925989]  [<ffffffff8182872e>] rpc_call_sync+0x3e/0xa0
+[51397.930108]  [<ffffffff8127fe29>] nsm_mon_unmon+0xb9/0xd0
+[51397.934191]  [<ffffffff8110e2a0>] ? call_rcu_bh+0x20/0x20
+[51397.938235]  [<ffffffff8128018c>] nsm_unmonitor+0x8c/0x140
+[51397.942309]  [<ffffffff8127bc43>] nlm_destroy_host_locked+0x63/0xa0
+[51397.946442]  [<ffffffff8127c03c>] nlmclnt_release_host+0x7c/0x130
+[51397.950591]  [<ffffffff81279645>] nlmclnt_done+0x15/0x30
+[51397.954773]  [<ffffffff81241862>] nfs_destroy_server+0x12/0x20
+[51397.958934]  [<ffffffff81242372>] nfs_free_server+0x22/0xa0
+[51397.963053]  [<ffffffff8124cadd>] nfs_kill_super+0x1d/0x30
+[51397.967158]  [<ffffffff811c2e2c>] deactivate_locked_super+0x4c/0x70
+[51397.971286]  [<ffffffff811c33f9>] deactivate_super+0x49/0x70
+[51397.975398]  [<ffffffff811ddafe>] cleanup_mnt+0x3e/0x90
+[51397.979499]  [<ffffffff811ddb9d>] __cleanup_mnt+0xd/0x10
+[51397.983598]  [<ffffffff810e04cc>] task_work_run+0xbc/0xe0
+[51397.987697]  [<ffffffff810c8f95>] do_exit+0x295/0xaf0
+[51397.991812]  [<ffffffff811c2239>] ? ____fput+0x9/0x10
+[51397.995937]  [<ffffffff810e04b4>] ? task_work_run+0xa4/0xe0
+[51398.000070]  [<ffffffff810c986a>] do_group_exit+0x3a/0xa0
+[51398.004201]  [<ffffffff810c98df>] SyS_exit_group+0xf/0x10
+[51398.008315]  [<ffffffff8185e8d2>] system_call_fastpath+0x12/0x17
+[51398.012438] Code: 43 78 48 8d bb c8 00 00 00 48 89 7b 70 48 8b 30 e8 63 2d 01 00 c7 03 01 00 00 00 65 48 8b 04 25 00 aa 00 00 48 8b 80 c0 09 00 00 <4c> 8b 68 08 49 83 c5 45 4
+[51398.022378] RIP  [<ffffffff81828173>] rpc_new_client+0x193/0x2b0
+[51398.026732]  RSP <ffff8801fe757908>
+[51398.031025] CR2: 0000000000000008
+[51398.035326] ---[ end trace b701b037bc457620 ]---
+[51398.058223] Fixing recursive fault but reboot is needed!
 
--John
 
-On 1/25/2015 10:05 AM, Greg Kroah-Hartman wrote:
-> 3.18-stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: David Vrabel <david.vrabel@citrix.com>
->
-> [ Upstram commit 26c0e102585d5a4d311f5d6eb7f524d288e7f6b7 ]
->
-> Commit bc96f648df1bbc2729abbb84513cf4f64273a1f1 (xen-netback: make
-> feature-rx-notify mandatory) incorrectly assumed that there were no
-> frontends in use that did not support this feature.  But the frontend
-> driver in MiniOS does not and since this is used by (qemu) stubdoms,
-> these stopped working.
->
-> Netback sort of works as-is in this mode except:
->
-> - If there are no Rx requests and the internal Rx queue fills, only
->    the drain timeout will wake the thread.  The default drain timeout
->    of 10 s would give unacceptable pauses.
->
-> - If an Rx stall was detected and the internal Rx queue is drained,
->    then the Rx thread would never wake.
->
-> Handle these two cases (when feature-rx-notify is disabled) by:
->
-> - Reducing the drain timeout to 30 ms.
->
-> - Disabling Rx stall detection.
->
-> Reported-by: John <jw@nuclearfallout.net>
-> Tested-by: John <jw@nuclearfallout.net>
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Reviewed-by: Wei Liu <wei.liu2@citrix.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->   drivers/net/xen-netback/common.h    |    4 +++-
->   drivers/net/xen-netback/interface.c |    4 +++-
->   drivers/net/xen-netback/netback.c   |   27 ++++++++++++++-------------
->   drivers/net/xen-netback/xenbus.c    |   12 +++++++++---
->   4 files changed, 29 insertions(+), 18 deletions(-)
->
-> --- a/drivers/net/xen-netback/common.h
-> +++ b/drivers/net/xen-netback/common.h
-> @@ -230,6 +230,8 @@ struct xenvif {
->   	 */
->   	bool disabled;
->   	unsigned long status;
-> +	unsigned long drain_timeout;
-> +	unsigned long stall_timeout;
->   
->   	/* Queues */
->   	struct xenvif_queue *queues;
-> @@ -328,7 +330,7 @@ irqreturn_t xenvif_interrupt(int irq, vo
->   extern bool separate_tx_rx_irq;
->   
->   extern unsigned int rx_drain_timeout_msecs;
-> -extern unsigned int rx_drain_timeout_jiffies;
-> +extern unsigned int rx_stall_timeout_msecs;
->   extern unsigned int xenvif_max_queues;
->   
->   #ifdef CONFIG_DEBUG_FS
-> --- a/drivers/net/xen-netback/interface.c
-> +++ b/drivers/net/xen-netback/interface.c
-> @@ -166,7 +166,7 @@ static int xenvif_start_xmit(struct sk_b
->   		goto drop;
->   
->   	cb = XENVIF_RX_CB(skb);
-> -	cb->expires = jiffies + rx_drain_timeout_jiffies;
-> +	cb->expires = jiffies + vif->drain_timeout;
->   
->   	xenvif_rx_queue_tail(queue, skb);
->   	xenvif_kick_thread(queue);
-> @@ -414,6 +414,8 @@ struct xenvif *xenvif_alloc(struct devic
->   	vif->ip_csum = 1;
->   	vif->dev = dev;
->   	vif->disabled = false;
-> +	vif->drain_timeout = msecs_to_jiffies(rx_drain_timeout_msecs);
-> +	vif->stall_timeout = msecs_to_jiffies(rx_stall_timeout_msecs);
->   
->   	/* Start out with no queues. */
->   	vif->queues = NULL;
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -60,14 +60,12 @@ module_param(separate_tx_rx_irq, bool, 0
->    */
->   unsigned int rx_drain_timeout_msecs = 10000;
->   module_param(rx_drain_timeout_msecs, uint, 0444);
-> -unsigned int rx_drain_timeout_jiffies;
->   
->   /* The length of time before the frontend is considered unresponsive
->    * because it isn't providing Rx slots.
->    */
-> -static unsigned int rx_stall_timeout_msecs = 60000;
-> +unsigned int rx_stall_timeout_msecs = 60000;
->   module_param(rx_stall_timeout_msecs, uint, 0444);
-> -static unsigned int rx_stall_timeout_jiffies;
->   
->   unsigned int xenvif_max_queues;
->   module_param_named(max_queues, xenvif_max_queues, uint, 0644);
-> @@ -2022,7 +2020,7 @@ static bool xenvif_rx_queue_stalled(stru
->   	return !queue->stalled
->   		&& prod - cons < XEN_NETBK_RX_SLOTS_MAX
->   		&& time_after(jiffies,
-> -			      queue->last_rx_time + rx_stall_timeout_jiffies);
-> +			      queue->last_rx_time + queue->vif->stall_timeout);
->   }
->   
->   static bool xenvif_rx_queue_ready(struct xenvif_queue *queue)
-> @@ -2040,8 +2038,9 @@ static bool xenvif_have_rx_work(struct x
->   {
->   	return (!skb_queue_empty(&queue->rx_queue)
->   		&& xenvif_rx_ring_slots_available(queue, XEN_NETBK_RX_SLOTS_MAX))
-> -		|| xenvif_rx_queue_stalled(queue)
-> -		|| xenvif_rx_queue_ready(queue)
-> +		|| (queue->vif->stall_timeout &&
-> +		    (xenvif_rx_queue_stalled(queue)
-> +		     || xenvif_rx_queue_ready(queue)))
->   		|| kthread_should_stop()
->   		|| queue->vif->disabled;
->   }
-> @@ -2094,6 +2093,9 @@ int xenvif_kthread_guest_rx(void *data)
->   	struct xenvif_queue *queue = data;
->   	struct xenvif *vif = queue->vif;
->   
-> +	if (!vif->stall_timeout)
-> +		xenvif_queue_carrier_on(queue);
-> +
->   	for (;;) {
->   		xenvif_wait_for_rx_work(queue);
->   
-> @@ -2120,10 +2122,12 @@ int xenvif_kthread_guest_rx(void *data)
->   		 * while it's probably not responsive, drop the
->   		 * carrier so packets are dropped earlier.
->   		 */
-> -		if (xenvif_rx_queue_stalled(queue))
-> -			xenvif_queue_carrier_off(queue);
-> -		else if (xenvif_rx_queue_ready(queue))
-> -			xenvif_queue_carrier_on(queue);
-> +		if (vif->stall_timeout) {
-> +			if (xenvif_rx_queue_stalled(queue))
-> +				xenvif_queue_carrier_off(queue);
-> +			else if (xenvif_rx_queue_ready(queue))
-> +				xenvif_queue_carrier_on(queue);
-> +		}
->   
->   		/* Queued packets may have foreign pages from other
->   		 * domains.  These cannot be queued indefinitely as
-> @@ -2194,9 +2198,6 @@ static int __init netback_init(void)
->   	if (rc)
->   		goto failed_init;
->   
-> -	rx_drain_timeout_jiffies = msecs_to_jiffies(rx_drain_timeout_msecs);
-> -	rx_stall_timeout_jiffies = msecs_to_jiffies(rx_stall_timeout_msecs);
-> -
->   #ifdef CONFIG_DEBUG_FS
->   	xen_netback_dbg_root = debugfs_create_dir("xen-netback", NULL);
->   	if (IS_ERR_OR_NULL(xen_netback_dbg_root))
-> --- a/drivers/net/xen-netback/xenbus.c
-> +++ b/drivers/net/xen-netback/xenbus.c
-> @@ -886,9 +886,15 @@ static int read_xenbus_vif_flags(struct
->   		return -EOPNOTSUPP;
->   
->   	if (xenbus_scanf(XBT_NIL, dev->otherend,
-> -			 "feature-rx-notify", "%d", &val) < 0 || val == 0) {
-> -		xenbus_dev_fatal(dev, -EINVAL, "feature-rx-notify is mandatory");
-> -		return -EINVAL;
-> +			 "feature-rx-notify", "%d", &val) < 0)
-> +		val = 0;
-> +	if (!val) {
-> +		/* - Reduce drain timeout to poll more frequently for
-> +		 *   Rx requests.
-> +		 * - Disable Rx stall detection.
-> +		 */
-> +		be->vif->drain_timeout = msecs_to_jiffies(30);
-> +		be->vif->stall_timeout = 0;
->   	}
->   
->   	if (xenbus_scanf(XBT_NIL, dev->otherend, "feature-sg",
->
->
+The code executed in rpc_new_client() tries to dereference the
+struct new_utsname * returned by utsname() which has already been
+released at this time.
 
+Cc: <stable@vger.kernel.org> # 3.18
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+---
+I've seen this trace on 3.18.x as well as 3.19-rc.
+
+
+This patch fixes the NULL dereference but I'm not sure this is the
+right fix.
+Should init uts_ns be referred to or what is the impact of using a random
+string to satisfy rpc_clnt_set_nodename()?
+
+Thanks,
+Bruno
+---
+diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+index 05da12a..0246e94 100644
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -365,6 +365,7 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args,
+ 	const struct rpc_version *version;
+ 	struct rpc_clnt *clnt = NULL;
+ 	const struct rpc_timeout *timeout;
++	const struct new_utsname *uts_name;
+ 	int err;
+ 
+ 	/* sanity check the name before trying to print it */
+@@ -421,7 +422,8 @@ static struct rpc_clnt * rpc_new_client(const struct rpc_create_args *args,
+ 	atomic_set(&clnt->cl_count, 1);
+ 
+ 	/* save the nodename */
+-	rpc_clnt_set_nodename(clnt, utsname()->nodename);
++	uts_name = utsname();
++	rpc_clnt_set_nodename(clnt, uts_name ? uts_name->nodename : "");
+ 
+ 	err = rpc_client_register(clnt, args->authflavor, args->client_name);
+ 	if (err)
