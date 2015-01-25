@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526AbbAYSxl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:53:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57948 "EHLO
+	id S1757269AbbAYSxE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:53:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57776 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662AbbAYSJw (ORCPT
+	with ESMTP id S1755664AbbAYSJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:52 -0500
+	Sun, 25 Jan 2015 13:09:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>, Sinclair Yeh <syeh@vmware.com>
-Subject: [PATCH 3.18 026/183] drm/vmwgfx: Dont use memory accounting for kernel-side fence objects
-Date: Sun, 25 Jan 2015 10:05:48 -0800
-Message-Id: <20150125180811.300133649@linuxfoundation.org>
+        Jakob Bornecrantz <jakob@vmware.com>
+Subject: [PATCH 3.18 027/183] drm/vmwgfx: Fix error printout on signals pending
+Date: Sun, 25 Jan 2015 10:05:49 -0800
+Message-Id: <20150125180811.350464916@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -31,78 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 1f563a6a46544602183e7493b6ef69769d3d76d9 upstream.
+commit e338c4c2b620ba4e75fd3576f8142eb93be12ce3 upstream.
 
-Kernel side fence objects are used when unbinding resources and may thus be
-created as part of a memory reclaim operation. This might trigger recursive
-memory reclaims and result in the kernel running out of stack space.
-
-So a simple way out is to avoid accounting of these fence objects.
-In principle this is OK since while user-space can trigger the creation of
-such objects, it can't really hold on to them. However, their lifetime is
-quite long, so some form of accounting should perhaps be implemented in the
-future.
-
-Fixes kernel crashes when running, for example viewperf11 ensight-04 test 3
-with low system memory settings.
+The function vmw_master_check() might return -ERESTARTSYS if there is a
+signal pending, indicating that the IOCTL should be rerun, potentially from
+user-space. At that point we shouldn't print out an error message since that
+is not an error condition. In short, avoid bloating the kernel log when a
+process refuses to die on SIGTERM.
 
 Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
 Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
-Reviewed-by: Sinclair Yeh <syeh@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_fence.c |   22 ++--------------------
- 1 file changed, 2 insertions(+), 20 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
-@@ -545,35 +545,19 @@ void vmw_fence_obj_flush(struct vmw_fenc
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -1063,8 +1063,12 @@ static long vmw_generic_ioctl(struct fil
  
- static void vmw_fence_destroy(struct vmw_fence_obj *fence)
- {
--	struct vmw_fence_manager *fman = fman_from_fence(fence);
--
- 	fence_free(&fence->base);
--
--	/*
--	 * Free kernel space accounting.
--	 */
--	ttm_mem_global_free(vmw_mem_glob(fman->dev_priv),
--			    fman->fence_size);
- }
+ 	vmaster = vmw_master_check(dev, file_priv, flags);
+ 	if (unlikely(IS_ERR(vmaster))) {
+-		DRM_INFO("IOCTL ERROR %d\n", nr);
+-		return PTR_ERR(vmaster);
++		ret = PTR_ERR(vmaster);
++
++		if (ret != -ERESTARTSYS)
++			DRM_INFO("IOCTL ERROR Command %d, Error %ld.\n",
++				 nr, ret);
++		return ret;
+ 	}
  
- int vmw_fence_create(struct vmw_fence_manager *fman,
- 		     uint32_t seqno,
- 		     struct vmw_fence_obj **p_fence)
- {
--	struct ttm_mem_global *mem_glob = vmw_mem_glob(fman->dev_priv);
- 	struct vmw_fence_obj *fence;
- 	int ret;
- 
--	ret = ttm_mem_global_alloc(mem_glob, fman->fence_size,
--				   false, false);
--	if (unlikely(ret != 0))
--		return ret;
--
- 	fence = kzalloc(sizeof(*fence), GFP_KERNEL);
--	if (unlikely(fence == NULL)) {
--		ret = -ENOMEM;
--		goto out_no_object;
--	}
-+	if (unlikely(fence == NULL))
-+		return -ENOMEM;
- 
- 	ret = vmw_fence_obj_init(fman, fence, seqno,
- 				 vmw_fence_destroy);
-@@ -585,8 +569,6 @@ int vmw_fence_create(struct vmw_fence_ma
- 
- out_err_init:
- 	kfree(fence);
--out_no_object:
--	ttm_mem_global_free(mem_glob, fman->fence_size);
- 	return ret;
- }
- 
+ 	ret = ioctl_func(filp, cmd, arg);
 
 
