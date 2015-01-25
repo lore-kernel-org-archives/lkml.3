@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078AbbAYTag (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 14:30:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57212 "EHLO
+	id S1757141AbbAYSls (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 13:41:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57871 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555AbbAYSIy (ORCPT
+	with ESMTP id S1755861AbbAYSKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:08:54 -0500
+	Sun, 25 Jan 2015 13:10:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Oded Gabbay <oded.gabbay@amd.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 12/98] alx: fix alx_poll()
-Date: Sun, 25 Jan 2015 10:06:30 -0800
-Message-Id: <20150125180713.404394888@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.18 069/183] genirq: Prevent proc race against freeing of irq descriptors
+Date: Sun, 25 Jan 2015 10:06:31 -0800
+Message-Id: <20150125180813.182305300@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
-References: <20150125180712.859646324@linuxfoundation.org>
+In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
+References: <20150125180810.160428929@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,114 +24,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-[ Upstream commit 7a05dc64e2e4c611d89007b125b20c0d2a4d31a5 ]
+commit c291ee622165cb2c8d4e7af63fffd499354a23be upstream.
 
-Commit d75b1ade567f ("net: less interrupt masking in NAPI") uncovered
-wrong alx_poll() behavior.
+Since the rework of the sparse interrupt code to actually free the
+unused interrupt descriptors there exists a race between the /proc
+interfaces to the irq subsystem and the code which frees the interrupt
+descriptor.
 
-A NAPI poll() handler is supposed to return exactly the budget when/if
-napi_complete() has not been called.
+CPU0				CPU1
+				show_interrupts()
+				  desc = irq_to_desc(X);
+free_desc(desc)
+  remove_from_radix_tree();
+  kfree(desc);
+				  raw_spinlock_irq(&desc->lock);
 
-It is also supposed to return number of frames that were received, so
-that netdev_budget can have a meaning.
+/proc/interrupts is the only interface which can actively corrupt
+kernel memory via the lock access. /proc/stat can only read from freed
+memory. Extremly hard to trigger, but possible.
 
-Also, in case of TX pressure, we still have to dequeue received
-packets : alx_clean_rx_irq() has to be called even if
-alx_clean_tx_irq(alx) returns false, otherwise device is half duplex.
+The interfaces in /proc/irq/N/ are not affected by this because the
+removal of the proc file is serialized in procfs against concurrent
+readers/writers. The removal happens before the descriptor is freed.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: d75b1ade567f ("net: less interrupt masking in NAPI")
-Reported-by: Oded Gabbay <oded.gabbay@amd.com>
-Bisected-by: Oded Gabbay <oded.gabbay@amd.com>
-Tested-by: Oded Gabbay <oded.gabbay@amd.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+For architectures which have CONFIG_SPARSE_IRQ=n this is a non issue
+as the descriptor is never freed. It's merely cleared out with the irq
+descriptor lock held. So any concurrent proc access will either see
+the old correct value or the cleared out ones.
+
+Protect the lookup and access to the irq descriptor in
+show_interrupts() with the sparse_irq_lock.
+
+Provide kstat_irqs_usr() which is protecting the lookup and access
+with sparse_irq_lock and switch /proc/stat to use it.
+
+Document the existing kstat_irqs interfaces so it's clear that the
+caller needs to take care about protection. The users of these
+interfaces are either not affected due to SPARSE_IRQ=n or already
+protected against removal.
+
+Fixes: 1f5a5b87f78f "genirq: Implement a sane sparse_irq allocator"
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/atheros/alx/main.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
 
---- a/drivers/net/ethernet/atheros/alx/main.c
-+++ b/drivers/net/ethernet/atheros/alx/main.c
-@@ -184,15 +184,16 @@ static void alx_schedule_reset(struct al
- 	schedule_work(&alx->reset_wk);
- }
+---
+ fs/proc/stat.c              |    2 -
+ include/linux/kernel_stat.h |    1 
+ kernel/irq/internals.h      |    4 +++
+ kernel/irq/irqdesc.c        |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/irq/proc.c           |   22 +++++++++++++++++-
+ 5 files changed, 79 insertions(+), 2 deletions(-)
+
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -159,7 +159,7 @@ static int show_stat(struct seq_file *p,
  
--static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
-+static int alx_clean_rx_irq(struct alx_priv *alx, int budget)
+ 	/* sum again ? it could be updated? */
+ 	for_each_irq_nr(j)
+-		seq_put_decimal_ull(p, ' ', kstat_irqs(j));
++		seq_put_decimal_ull(p, ' ', kstat_irqs_usr(j));
+ 
+ 	seq_printf(p,
+ 		"\nctxt %llu\n"
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -68,6 +68,7 @@ static inline unsigned int kstat_softirq
+  * Number of interrupts per specific IRQ source, since bootup
+  */
+ extern unsigned int kstat_irqs(unsigned int irq);
++extern unsigned int kstat_irqs_usr(unsigned int irq);
+ 
+ /*
+  * Number of interrupts per cpu, since bootup
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -78,8 +78,12 @@ extern void unmask_threaded_irq(struct i
+ 
+ #ifdef CONFIG_SPARSE_IRQ
+ static inline void irq_mark_irq(unsigned int irq) { }
++extern void irq_lock_sparse(void);
++extern void irq_unlock_sparse(void);
+ #else
+ extern void irq_mark_irq(unsigned int irq);
++static inline void irq_lock_sparse(void) { }
++static inline void irq_unlock_sparse(void) { }
+ #endif
+ 
+ extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -132,6 +132,16 @@ static void free_masks(struct irq_desc *
+ static inline void free_masks(struct irq_desc *desc) { }
+ #endif
+ 
++void irq_lock_sparse(void)
++{
++	mutex_lock(&sparse_irq_lock);
++}
++
++void irq_unlock_sparse(void)
++{
++	mutex_unlock(&sparse_irq_lock);
++}
++
+ static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
  {
- 	struct alx_rx_queue *rxq = &alx->rxq;
- 	struct alx_rrd *rrd;
- 	struct alx_buffer *rxb;
- 	struct sk_buff *skb;
- 	u16 length, rfd_cleaned = 0;
-+	int work = 0;
+ 	struct irq_desc *desc;
+@@ -168,6 +178,12 @@ static void free_desc(unsigned int irq)
  
--	while (budget > 0) {
-+	while (work < budget) {
- 		rrd = &rxq->rrd[rxq->rrd_read_idx];
- 		if (!(rrd->word3 & cpu_to_le32(1 << RRD_UPDATED_SHIFT)))
- 			break;
-@@ -203,7 +204,7 @@ static bool alx_clean_rx_irq(struct alx_
- 		    ALX_GET_FIELD(le32_to_cpu(rrd->word0),
- 				  RRD_NOR) != 1) {
- 			alx_schedule_reset(alx);
--			return 0;
-+			return work;
- 		}
+ 	unregister_irq_proc(irq, desc);
  
- 		rxb = &rxq->bufs[rxq->read_idx];
-@@ -243,7 +244,7 @@ static bool alx_clean_rx_irq(struct alx_
- 		}
- 
- 		napi_gro_receive(&alx->napi, skb);
--		budget--;
-+		work++;
- 
- next_pkt:
- 		if (++rxq->read_idx == alx->rx_ringsz)
-@@ -258,21 +259,22 @@ next_pkt:
- 	if (rfd_cleaned)
- 		alx_refill_rx_ring(alx, GFP_ATOMIC);
- 
--	return budget > 0;
-+	return work;
++	/*
++	 * sparse_irq_lock protects also show_interrupts() and
++	 * kstat_irq_usr(). Once we deleted the descriptor from the
++	 * sparse tree we can free it. Access in proc will fail to
++	 * lookup the descriptor.
++	 */
+ 	mutex_lock(&sparse_irq_lock);
+ 	delete_irq_desc(irq);
+ 	mutex_unlock(&sparse_irq_lock);
+@@ -574,6 +590,15 @@ void kstat_incr_irq_this_cpu(unsigned in
+ 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
  }
  
- static int alx_poll(struct napi_struct *napi, int budget)
++/**
++ * kstat_irqs_cpu - Get the statistics for an interrupt on a cpu
++ * @irq:	The interrupt number
++ * @cpu:	The cpu number
++ *
++ * Returns the sum of interrupt counts on @cpu since boot for
++ * @irq. The caller must ensure that the interrupt is not removed
++ * concurrently.
++ */
+ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
  {
- 	struct alx_priv *alx = container_of(napi, struct alx_priv, napi);
- 	struct alx_hw *hw = &alx->hw;
--	bool complete = true;
- 	unsigned long flags;
-+	bool tx_complete;
-+	int work;
- 
--	complete = alx_clean_tx_irq(alx) &&
--		   alx_clean_rx_irq(alx, budget);
-+	tx_complete = alx_clean_tx_irq(alx);
-+	work = alx_clean_rx_irq(alx, budget);
- 
--	if (!complete)
--		return 1;
-+	if (!tx_complete || work == budget)
-+		return budget;
- 
- 	napi_complete(&alx->napi);
- 
-@@ -284,7 +286,7 @@ static int alx_poll(struct napi_struct *
- 
- 	alx_post_write(hw);
- 
--	return 0;
-+	return work;
+ 	struct irq_desc *desc = irq_to_desc(irq);
+@@ -582,6 +607,14 @@ unsigned int kstat_irqs_cpu(unsigned int
+ 			*per_cpu_ptr(desc->kstat_irqs, cpu) : 0;
  }
  
- static irqreturn_t alx_intr_handle(struct alx_priv *alx, u32 intr)
++/**
++ * kstat_irqs - Get the statistics for an interrupt
++ * @irq:	The interrupt number
++ *
++ * Returns the sum of interrupt counts on all cpus since boot for
++ * @irq. The caller must ensure that the interrupt is not removed
++ * concurrently.
++ */
+ unsigned int kstat_irqs(unsigned int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+@@ -594,3 +627,22 @@ unsigned int kstat_irqs(unsigned int irq
+ 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
+ 	return sum;
+ }
++
++/**
++ * kstat_irqs_usr - Get the statistics for an interrupt
++ * @irq:	The interrupt number
++ *
++ * Returns the sum of interrupt counts on all cpus since boot for
++ * @irq. Contrary to kstat_irqs() this can be called from any
++ * preemptible context. It's protected against concurrent removal of
++ * an interrupt descriptor when sparse irqs are enabled.
++ */
++unsigned int kstat_irqs_usr(unsigned int irq)
++{
++	int sum;
++
++	irq_lock_sparse();
++	sum = kstat_irqs(irq);
++	irq_unlock_sparse();
++	return sum;
++}
+--- a/kernel/irq/proc.c
++++ b/kernel/irq/proc.c
+@@ -15,6 +15,23 @@
+ 
+ #include "internals.h"
+ 
++/*
++ * Access rules:
++ *
++ * procfs protects read/write of /proc/irq/N/ files against a
++ * concurrent free of the interrupt descriptor. remove_proc_entry()
++ * immediately prevents new read/writes to happen and waits for
++ * already running read/write functions to complete.
++ *
++ * We remove the proc entries first and then delete the interrupt
++ * descriptor from the radix tree and free it. So it is guaranteed
++ * that irq_to_desc(N) is valid as long as the read/writes are
++ * permitted by procfs.
++ *
++ * The read from /proc/interrupts is a different problem because there
++ * is no protection. So the lookup and the access to irqdesc
++ * information must be protected by sparse_irq_lock.
++ */
+ static struct proc_dir_entry *root_irq_dir;
+ 
+ #ifdef CONFIG_SMP
+@@ -437,9 +454,10 @@ int show_interrupts(struct seq_file *p,
+ 		seq_putc(p, '\n');
+ 	}
+ 
++	irq_lock_sparse();
+ 	desc = irq_to_desc(i);
+ 	if (!desc)
+-		return 0;
++		goto outsparse;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+ 	for_each_online_cpu(j)
+@@ -479,6 +497,8 @@ int show_interrupts(struct seq_file *p,
+ 	seq_putc(p, '\n');
+ out:
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
++outsparse:
++	irq_unlock_sparse();
+ 	return 0;
+ }
+ #endif
 
 
