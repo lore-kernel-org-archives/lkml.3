@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbbAYQPa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 11:15:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54661 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbbAYQPY (ORCPT
+	id S1753158AbbAYLnV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 06:43:21 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:44794 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610AbbAYLnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 11:15:24 -0500
-Date: Sun, 25 Jan 2015 19:41:24 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mohamed Lotfy Hammad <mohamed.lotfy.hammad@gmail.com>
-Cc: devel@driverdev.osuosl.org, gclement@baobob.org, tvboxspy@gmail.com,
-        linux-kernel@vger.kernel.org, forest@alittletooquiet.net,
-        joe@perches.com, silvagustavosilva@gmail.com, fred.chou.nd@gmail.com
-Subject: Re: [PATCH] staging: vt6655: mac.h: fix space prohibited before that
- ','
-Message-ID: <20150125114124.GA23094@kroah.com>
-References: <20150119123025.GA24976@lotfy1893-Ubuntu>
+	Sun, 25 Jan 2015 06:43:19 -0500
+Message-ID: <54C4D6BA.4080308@ahsoftware.de>
+Date: Sun, 25 Jan 2015 12:42:50 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150119123025.GA24976@lotfy1893-Ubuntu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>,
+        linux-kernel@vger.kernel.org
+CC: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] modsign: use shred to overwrite the private key before
+ deleting it
+References: <54C2F4F8.20809@draigBrady.com> <1422096327-4483-1-git-send-email-holler@ahsoftware.de> <54C383E0.9060408@ahsoftware.de> <54C38B6D.1060806@ahsoftware.de> <54C3901D.8040406@ahsoftware.de> <54C45153.2050703@draigBrady.com> <54C4583A.5040505@ahsoftware.de> <54C4C65A.2020403@ahsoftware.de> <54C4CC05.9090602@ahsoftware.de>
+In-Reply-To: <54C4CC05.9090602@ahsoftware.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 02:30:25PM +0200, Mohamed Lotfy Hammad wrote:
-> This patch fixes the following checkpatch.pl error:
-> fix space prohibited before that ','
-> 
-> Signed-off-by: Mohamed Lotfy Hammad <mohamed.lotfy.hammad@gmail.com>
-> Reviewed-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-> ---
->  drivers/staging/vt6655/mac.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/vt6655/mac.h b/drivers/staging/vt6655/mac.h
-> index e1e7e10..4985c63 100644
-> --- a/drivers/staging/vt6655/mac.h
-> +++ b/drivers/staging/vt6655/mac.h
-> @@ -888,7 +888,7 @@ do {									\
->  	VNSvOutPortB(dwIoBase + MAC_REG_PAGE1SEL, 1)
->  
->  #define MACvReadMIBCounter(dwIoBase, pdwCounter)			\
-> -	VNSvInPortD(dwIoBase + MAC_REG_MIBCNTR , pdwCounter)
-> +	VNSvInPortD(dwIoBase + MAC_REG_MIBCNTR, pdwCounter)
->  
->  #define MACvPwrEvntDisable(dwIoBase)					\
->  	VNSvOutPortW(dwIoBase + MAC_REG_WAKEUPEN0, 0x0000)
+Now, after I ended up into flaming a lot (sorry again, but this topic 
+made me angry for so long and I had to spent too much time to get rid of 
+unwanted content and answering other peoples question in regard to that 
+topic), I should offer something more useful.
 
-Doesn't apply to my staging-next branch of staging.git :(
+So I've written down in some short words, how I think it could be done:
+
+First offer a syscall named sunlink() (or whatever name) which fails if 
+it can't overwrite or securely trim the contents of a file before 
+deleting it.
+
+That could be done like this:
+
+(1) If it's a SSD or MMC without offering "Secure Trim" fail.
+(2) If it's a plain FLASH or conventional harddisk where writing a block 
+means that block will be overwritten or if it's a SSD or MMC with 
+"Secure Trim) go on with
+(3) Identify the blocks which contain the file contents (should be 
+doable by using the same mechanisms used to read and write a file)
+(4) Mark the file as deleted
+(5) Overwrite or securely trim blocks which can be deleted completely
+(6) Build new blocks for blocks which can only partly deleted because 
+they contain information still used by the FS or other files
+(7) Instruct the FS to us the new blocks instead of the old ones
+(8) Overwrite or securely trim the old blocks which previously contained 
+partly information of other stuff.
+
+Afterwards use that new syscall in shred.
+
+Of course, this is just a totally simplified instruction in regard to 
+how complicated filesystems have become, but I think there isn't any 
+black magic involved in offering the user a simple way to really delete 
+files.
+
+Regards,
+
+Alexander Holler
