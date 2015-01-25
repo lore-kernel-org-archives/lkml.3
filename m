@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288AbbAYVXX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 16:23:23 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:43019 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751684AbbAYVXW convert rfc822-to-8bit (ORCPT
+	id S1751974AbbAYVb4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 16:31:56 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:53177 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbbAYVbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 16:23:22 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: tglx@linutronix.de, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
-Subject: Re: [PATCH V2] clockevents: rockchip: Add rockchip timer for rk3288
-Date: Sun, 25 Jan 2015 22:28:21 +0100
-Message-ID: <1728434.WELQfpY90C@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <54C55D1A.9010706@linaro.org>
-References: <1422178979-12382-1-git-send-email-daniel.lezcano@linaro.org> <2285293.ZBcGIuxxDo@diego> <54C55D1A.9010706@linaro.org>
+	Sun, 25 Jan 2015 16:31:52 -0500
+Date: Sun, 25 Jan 2015 13:31:49 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Hans Holmberg <hans.holmberg@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 3.10 25/50] gpiolib: of: Correct error handling in
+ of_get_named_gpiod_flags
+Message-ID: <20150125213149.GA3313@roeck-us.net>
+References: <20150125180702.521559311@linuxfoundation.org>
+ <20150125180703.970882239@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150125180703.970882239@linuxfoundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54C560C8.0063,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-Am Sonntag, 25. Januar 2015, 22:16:10 schrieb Daniel Lezcano:
-> On 01/25/2015 09:52 PM, Heiko Stübner wrote:
-> > one big request and some more style nitpicks :-)
-> > 
-> > With the nitpicks fixed
-> > Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-> > 
-> > 
-> > Before applying this patch could you drop the rk3288.dtsi change please?
-> > Instead I'd like to add the following patch separately to _my_ devicetree
-> > branch for 3.20.
-> > 
-> > I already wasn't fast enough to prevent the ethernet controller changes
-> > going through the network tree and would like to prevent a third tree
-> > sending changes for the same dts area to Linus - merge conflicts and all.
-> > 
-> > 
-> > I don't think that neither the nitpicks nor dropping the dtsi segment need
-> > another submission though.
+On Sun, Jan 25, 2015 at 10:07:15AM -0800, Greg Kroah-Hartman wrote:
+> 3.10-stable review patch.  If anyone has any objections, please let me know.
 > 
-> Hi Heiko,
+> ------------------
 > 
-> I removed the dtsi change, fixed the spaces indentation and pushed in my
-> tree the driver [1]
+> From: Hans Holmberg <hans.holmberg@intel.com>
+> 
+> commit 7b8792bbdffdff3abda704f89c6a45ea97afdc62 upstream.
+> 
+> of_get_named_gpiod_flags fails with -EPROBE_DEFER in cases
+> where the gpio chip is available and the GPIO translation fails.
+> 
+> This causes drivers to be re-probed erroneusly, and hides the
+> real problem(i.e. the GPIO number being out of range).
+> 
+> Signed-off-by: Hans Holmberg <hans.holmberg@intel.com>
+> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
 
-and I pushed the corresponding dt change to [2] and am going to send the
-pull request to arm-soc in the next days.
+This patch is causing several build failures.
 
+Error log:
+drivers/gpio/gpiolib-of.c: In function 'of_gpiochip_find_and_xlate':
+drivers/gpio/gpiolib-of.c:50:3: error: implicit declaration of function 'ERR_PTR'
 
-Heiko
+since "#include <linux/err.h>" is missing in drivers/gpio/gpiolib-of.c
+in the 3.10 kernel.
 
-
-[2] https://git.kernel.org/cgit/linux/kernel/git/mmind/linux-rockchip.git/log/?h=v3.20-armsoc/dts
+Guenter
