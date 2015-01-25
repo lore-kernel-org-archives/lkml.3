@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273AbbAYSp1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:45:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58031 "EHLO
+	id S1759481AbbAYTXO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:23:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809AbbAYSKH (ORCPT
+	with ESMTP id S1754890AbbAYSJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:10:07 -0500
+	Sun, 25 Jan 2015 13:09:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Bo Shen <voice.shen@atmel.com>,
-        Michael Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.18 093/183] clk: at91: keep slow clk enabled to prevent system hang
+        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>,
+        Tomas Henzl <thenzl@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 37/98] Revert "[SCSI] mpt3sas: Remove phys on topology change"
 Date: Sun, 25 Jan 2015 10:06:55 -0800
-Message-Id: <20150125180814.211837208@linuxfoundation.org>
+Message-Id: <20150125180714.479027430@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
-References: <20150125180810.160428929@linuxfoundation.org>
+In-Reply-To: <20150125180712.859646324@linuxfoundation.org>
+References: <20150125180712.859646324@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,85 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 
-commit dca1a4b5ff6e2c25adeff366eb06270dadeab3db upstream.
+commit 2311ce4d9c91ed63a46e18f0378f3e406e7e888e upstream.
 
-All slow clk users are not properly claiming it (get + prepare + enable)
-before using it.
-If all users properly claiming this clock release it, the clock is
-disabled, but faulty users still depends on it, and the system hangs.
+This reverts commit 963ba22b90a955363644cd397b20226928eab976
+("mpt3sas: Remove phys on topology change")
 
-This fix prevents the slow clock from being disabled, and should solve the
-hanging issue, but offending drivers should be patched to properly claim
-this clock.
+Reverting the previous mpt3sas drives patch changes,
+since we will observe below issue
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Reported-by: Bo Shen <voice.shen@atmel.com>
-Signed-off-by: Michael Turquette <mturquette@linaro.org>
+Issue:
+Drives connected Enclosure/Expander will unregister with
+SCSI Transport Layer, if any one remove and add expander
+cable with in DMD (Device Missing Delay) time period or
+even any one power-off and power-on the Enclosure with in
+the DMD period.
+
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/at91/clk-slow.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/scsi/mpt3sas/mpt3sas_transport.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/clk/at91/clk-slow.c
-+++ b/drivers/clk/at91/clk-slow.c
-@@ -70,6 +70,7 @@ struct clk_sam9x5_slow {
+--- a/drivers/scsi/mpt3sas/mpt3sas_transport.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_transport.c
+@@ -1003,12 +1003,9 @@ mpt3sas_transport_update_links(struct MP
+ 		    &mpt3sas_phy->remote_identify);
+ 		_transport_add_phy_to_an_existing_port(ioc, sas_node,
+ 		    mpt3sas_phy, mpt3sas_phy->remote_identify.sas_address);
+-	} else {
++	} else
+ 		memset(&mpt3sas_phy->remote_identify, 0 , sizeof(struct
+ 		    sas_identify));
+-		_transport_del_phy_from_an_existing_port(ioc, sas_node,
+-		    mpt3sas_phy);
+-	}
  
- #define to_clk_sam9x5_slow(hw) container_of(hw, struct clk_sam9x5_slow, hw)
- 
-+static struct clk *slow_clk;
- 
- static int clk_slow_osc_prepare(struct clk_hw *hw)
- {
-@@ -357,6 +358,8 @@ at91_clk_register_sam9x5_slow(void __iom
- 	clk = clk_register(NULL, &slowck->hw);
- 	if (IS_ERR(clk))
- 		kfree(slowck);
-+	else
-+		slow_clk = clk;
- 
- 	return clk;
- }
-@@ -433,6 +436,8 @@ at91_clk_register_sam9260_slow(struct at
- 	clk = clk_register(NULL, &slowck->hw);
- 	if (IS_ERR(clk))
- 		kfree(slowck);
-+	else
-+		slow_clk = clk;
- 
- 	return clk;
- }
-@@ -465,3 +470,25 @@ void __init of_at91sam9260_clk_slow_setu
- 
- 	of_clk_add_provider(np, of_clk_src_simple_get, clk);
- }
-+
-+/*
-+ * FIXME: All slow clk users are not properly claiming it (get + prepare +
-+ * enable) before using it.
-+ * If all users properly claiming this clock decide that they don't need it
-+ * anymore (or are removed), it is disabled while faulty users are still
-+ * requiring it, and the system hangs.
-+ * Prevent this clock from being disabled until all users are properly
-+ * requesting it.
-+ * Once this is done we should remove this function and the slow_clk variable.
-+ */
-+static int __init of_at91_clk_slow_retain(void)
-+{
-+	if (!slow_clk)
-+		return 0;
-+
-+	__clk_get(slow_clk);
-+	clk_prepare_enable(slow_clk);
-+
-+	return 0;
-+}
-+arch_initcall(of_at91_clk_slow_retain);
+ 	if (mpt3sas_phy->phy)
+ 		mpt3sas_phy->phy->negotiated_linkrate =
 
 
