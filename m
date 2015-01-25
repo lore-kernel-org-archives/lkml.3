@@ -1,207 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbbAYRlZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 12:41:25 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62027 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbbAYRlT (ORCPT
+	id S1754208AbbAYRp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 12:45:26 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37468 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753976AbbAYRpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 12:41:19 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        navin patidar <navin.patidar@gmail.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jeff Oczek <jeffoczek@gmail.com>,
-        Tapasweni Pathak <tapaswenipathak@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] staging: rtl8188eu: core: rtw_wlan_util: Remove some unused functions
-Date: Sun, 25 Jan 2015 18:44:30 +0100
-Message-Id: <1422207870-10616-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 25 Jan 2015 12:45:22 -0500
+X-Sasl-enc: 2GFvYukDBX4/mcLe6dlySzCt+79hhxG86z0cyzr8SW+A 1422207922
+Date: Sun, 25 Jan 2015 09:45:16 -0800
+From: Greg KH <greg@kroah.com>
+To: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Cc: stable@vger.kernel.org, Chris Ball <chris@printf.net>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tyler Baker <tyler.baker@linaro.org>
+Subject: Re: [PATCH] mmc: sdhci: Don't signal the sdio irq if it's not setup
+Message-ID: <20150125174516.GC6467@kroah.com>
+References: <1421705229-20260-1-git-send-email-sjoerd.simons@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421705229-20260-1-git-send-email-sjoerd.simons@collabora.co.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-CAM_empty_entry() get_bsstype() rtw_get_oper_choffset()
-rtw_get_oper_bw() is_ap_in_wep() should_forbid_n_rate()
+On Mon, Jan 19, 2015 at 11:07:09PM +0100, Sjoerd Simons wrote:
+> With 3.14.29 (and older kernels) some of my I.mx6 Sabrelite boards were
+> crashing with the following oops:
+> 
+>   sdhci: Secure Digital Host Controller Interface driver
+>   sdhci: Copyright(c) Pierre Ossman
+>   sdhci-pltfm: SDHCI platform and OF driver helper
+>   sdhci-esdhc-imx 2198000.usdhc: could not get ultra high speed state, work on normal mode
+>   mmc0: no vqmmc regulator found
+>   mmc0: SDHCI controller on 2198000.usdhc [2198000.usdhc] using ADMA
+>   Unable to handle kernel NULL pointer dereference at virtual address 00000000
+>   pgd = c0004000
+>   [00000000] *pgd=00000000
+>   Internal error: Oops: 5 [#1] SMP ARM
+>   Modules linked in:
+>   CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.29 #1
+>   task: c08a7120 ti: c089c000 task.ti: c089c000
+>   PC is at wake_up_process+0x8/0x40
+>   LR is at sdhci_irq+0x748/0x9c4
+> 
+> Full boot log can be found at:
+>   http://storage.kernelci.org/stable/v3.14.29/arm-multi_v7_defconfig/lab-collabora/boot-imx6q-sabrelite.html
+> 
+> This happens if the sdhci interrupt status contains SDHCI_INT_CARD_INT,
+> while the sdio irq was never setup.  This patch fixes that in a minimal
+> way by checking if the sdio irq was setup.
+> 
+> In more recent kernels this bug went away due to refactoring done by
+> Russel King. So an alternative (potentially better?) fix for this patch
+> is to cherrypick the following patches from a recent kernel:
+> 
+> 18258f7239a6 - genirq: Provide synchronize_hardirq()
+> bf3b5ec66bd0 - mmc: sdio_irq: rework sdio irq handling
+> 41005003bcaf - mmc: sdhci: clean up interrupt handling
+> 781e989cf593 - mmc: sdhci: convert to new SDIO IRQ handling
+> 
+> Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+> ---
+>  drivers/mmc/host/sdhci.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-This was partially found by using a static code analysis program called cppcheck.
+I don't understand, either take 4 patches, or this single-line patches?
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/rtl8188eu/core/rtw_wlan_util.c   |   90 ----------------------
- drivers/staging/rtl8188eu/include/rtw_mlme_ext.h |    6 --
- 2 files changed, 96 deletions(-)
+And what kernel version(s) do you want this applied to?
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-index 33ccbbb..49229de 100644
---- a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-@@ -326,21 +326,11 @@ inline void rtw_set_oper_ch(struct adapter *adapter, u8 ch)
- 	adapter->mlmeextpriv.oper_channel = ch;
- }
- 
--inline u8 rtw_get_oper_bw(struct adapter *adapter)
--{
--	return adapter->mlmeextpriv.oper_bwmode;
--}
--
- inline void rtw_set_oper_bw(struct adapter *adapter, u8 bw)
- {
- 	adapter->mlmeextpriv.oper_bwmode = bw;
- }
- 
--inline u8 rtw_get_oper_choffset(struct adapter *adapter)
--{
--	return adapter->mlmeextpriv.oper_ch_offset;
--}
--
- inline void rtw_set_oper_choffset(struct adapter *adapter, u8 offset)
- {
- 	adapter->mlmeextpriv.oper_ch_offset = offset;
-@@ -395,16 +385,6 @@ void set_channel_bwmode(struct adapter *padapter, unsigned char channel, unsigne
- 	SetBWMode(padapter, bwmode, channel_offset);
- }
- 
--int get_bsstype(unsigned short capability)
--{
--	if (capability & BIT(0))
--		return WIFI_FW_AP_STATE;
--	else if (capability & BIT(1))
--		return WIFI_FW_ADHOC_STATE;
--	else
--		return 0;
--}
--
- __inline u8 *get_my_bssid(struct wlan_bssid_ex *pnetwork)
- {
- 	return pnetwork->MacAddress;
-@@ -469,11 +449,6 @@ unsigned int decide_wait_for_beacon_timeout(unsigned int bcn_interval)
- 		return bcn_interval << 2;
- }
- 
--void CAM_empty_entry(struct adapter *Adapter, u8 ucIndex)
--{
--	rtw_hal_set_hwreg(Adapter, HW_VAR_CAM_EMPTY_ENTRY, (u8 *)(&ucIndex));
--}
--
- void invalidate_cam_all(struct adapter *padapter)
- {
- 	rtw_hal_set_hwreg(padapter, HW_VAR_CAM_INVALID_ALL, NULL);
-@@ -1157,71 +1132,6 @@ unsigned int is_ap_in_tkip(struct adapter *padapter)
- 	}
- }
- 
--unsigned int should_forbid_n_rate(struct adapter *padapter)
--{
--	u32 i;
--	struct ndis_802_11_var_ie *pIE;
--	struct mlme_priv	*pmlmepriv = &padapter->mlmepriv;
--	struct wlan_bssid_ex  *cur_network = &pmlmepriv->cur_network.network;
--
--	if (rtw_get_capability((struct wlan_bssid_ex *)cur_network) & WLAN_CAPABILITY_PRIVACY) {
--		for (i = sizeof(struct ndis_802_11_fixed_ie); i < cur_network->IELength;) {
--			pIE = (struct ndis_802_11_var_ie *)(cur_network->IEs + i);
--
--			switch (pIE->ElementID) {
--			case _VENDOR_SPECIFIC_IE_:
--				if (!memcmp(pIE->data, RTW_WPA_OUI, 4) &&
--				    ((!memcmp((pIE->data + 12), WPA_CIPHER_SUITE_CCMP, 4)) ||
--				    (!memcmp((pIE->data + 16), WPA_CIPHER_SUITE_CCMP, 4))))
--					return false;
--				break;
--			case _RSN_IE_2_:
--				if  ((!memcmp((pIE->data + 8), RSN_CIPHER_SUITE_CCMP, 4))  ||
--				       (!memcmp((pIE->data + 12), RSN_CIPHER_SUITE_CCMP, 4)))
--					return false;
--			default:
--				break;
--			}
--
--			i += (pIE->Length + 2);
--		}
--
--		return true;
--	} else {
--		return false;
--	}
--}
--
--unsigned int is_ap_in_wep(struct adapter *padapter)
--{
--	u32 i;
--	struct ndis_802_11_var_ie *pIE;
--	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
--	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
--	struct wlan_bssid_ex		*cur_network = &(pmlmeinfo->network);
--
--	if (rtw_get_capability((struct wlan_bssid_ex *)cur_network) & WLAN_CAPABILITY_PRIVACY) {
--		for (i = sizeof(struct ndis_802_11_fixed_ie); i < pmlmeinfo->network.IELength;) {
--			pIE = (struct ndis_802_11_var_ie *)(pmlmeinfo->network.IEs + i);
--
--			switch (pIE->ElementID) {
--			case _VENDOR_SPECIFIC_IE_:
--				if (!memcmp(pIE->data, RTW_WPA_OUI, 4))
--					return false;
--				break;
--			case _RSN_IE_2_:
--				return false;
--			default:
--				break;
--			}
--			i += (pIE->Length + 2);
--		}
--		return true;
--	} else {
--		return false;
--	}
--}
--
- static int wifirate2_ratetbl_inx(unsigned char rate)
- {
- 	int	inx = 0;
-diff --git a/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h b/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
-index d699ca1..1aac00b 100644
---- a/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
-@@ -467,9 +467,7 @@ void Set_MSR(struct adapter *padapter, u8 type);
- 
- u8 rtw_get_oper_ch(struct adapter *adapter);
- void rtw_set_oper_ch(struct adapter *adapter, u8 ch);
--u8 rtw_get_oper_bw(struct adapter *adapter);
- void rtw_set_oper_bw(struct adapter *adapter, u8 bw);
--u8 rtw_get_oper_choffset(struct adapter *adapter);
- void rtw_set_oper_choffset(struct adapter *adapter, u8 offset);
- 
- void set_channel_bwmode(struct adapter *padapter, unsigned char channel,
-@@ -484,7 +482,6 @@ void write_cam(struct adapter *padapter, u8 entry, u16 ctrl, u8 *mac, u8 *key);
- void clear_cam_entry(struct adapter *padapter, u8 entry);
- 
- void invalidate_cam_all(struct adapter *padapter);
--void CAM_empty_entry(struct adapter *Adapter, u8 ucIndex);
- 
- int allocate_fw_sta_entry(struct adapter *padapter);
- void flush_all_cam_entry(struct adapter *padapter);
-@@ -495,7 +492,6 @@ u8 collect_bss_info(struct adapter *padapter, struct recv_frame *precv_frame,
- void update_network(struct wlan_bssid_ex *dst, struct wlan_bssid_ex *src,
- 		    struct adapter *adapter, bool update_ie);
- 
--int get_bsstype(unsigned short capability);
- u8 *get_my_bssid(struct wlan_bssid_ex *pnetwork);
- u16 get_beacon_interval(struct wlan_bssid_ex *bss);
- 
-@@ -540,8 +536,6 @@ unsigned int receive_disconnect(struct adapter *padapter,
- unsigned char get_highest_rate_idx(u32 mask);
- int support_short_GI(struct adapter *padapter, struct HT_caps_element *caps);
- unsigned int is_ap_in_tkip(struct adapter *padapter);
--unsigned int is_ap_in_wep(struct adapter *padapter);
--unsigned int should_forbid_n_rate(struct adapter *padapter);
- 
- void report_join_res(struct adapter *padapter, int res);
- void report_survey_event(struct adapter *padapter,
--- 
-1.7.10.4
+confused,
 
+greg k-h
