@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466AbbAYSvk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 13:51:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57871 "EHLO
+	id S1757483AbbAYTBL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 14:01:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755673AbbAYSJy (ORCPT
+	with ESMTP id S1755496AbbAYSJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 13:09:54 -0500
+	Sun, 25 Jan 2015 13:09:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tom Herbert <therbert@google.com>,
-        Joe Stringer <joestringer@nicira.com>,
-        Eric Dumazet <edumazet@google.com>, Hayes Wang <hayeswang@realtek.com>,
-        Jesse Gross <jesse@nicira.com>,
+        Maor Gottlieb <maorg@mellanox.com>, Matan Barak <matanb@mellanox.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 019/183] net: Generalize ndo_gso_check to ndo_features_check
-Date: Sun, 25 Jan 2015 10:05:41 -0800
-Message-Id: <20150125180811.012612799@linuxfoundation.org>
+Subject: [PATCH 3.18 020/183] net/mlx4_core: Correcly update the mtts offset in the MR re-reg flow
+Date: Sun, 25 Jan 2015 10:05:42 -0800
+Message-Id: <20150125180811.053924219@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150125180810.160428929@linuxfoundation.org>
 References: <20150125180810.160428929@linuxfoundation.org>
@@ -32,285 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Gross <jesse@nicira.com>
+From: Maor Gottlieb <maorg@mellanox.com>
 
-[ Upstream commit 5f35227ea34bb616c436d9da47fc325866c428f3 ]
+[ Upstream commit a51e0df4c1e06afd7aba84496c14238e6b363caa ]
 
-GSO isn't the only offload feature with restrictions that
-potentially can't be expressed with the current features mechanism.
-Checksum is another although it's a general issue that could in
-theory apply to anything. Even if it may be possible to
-implement these restrictions in other ways, it can result in
-duplicate code or inefficient per-packet behavior.
+Previously, mlx4_mt_rereg_write filled the MPT's entity_size with the
+old MTT's page shift, which could result in using an incorrect offset.
+Fix the initialization to be after we calculate the new MTT offset.
 
-This generalizes ndo_gso_check so that drivers can remove any
-features that don't make sense for a given packet, similar to
-netif_skb_features(). It also converts existing driver
-restrictions to the new format, completing the work that was
-done to support tunnel protocols since the issues apply to
-checksums as well.
+In addition, assign mtt order to -1 after calling mlx4_mtt_cleanup. This
+is necessary in order to mark the MTT as invalid and avoid freeing it later.
 
-By actually removing features from the set that are used to do
-offloading, it solves another problem with the existing
-interface. In these cases, GSO would run with the original set
-of features and not do anything because it appears that
-segmentation is not required.
-
-CC: Tom Herbert <therbert@google.com>
-CC: Joe Stringer <joestringer@nicira.com>
-CC: Eric Dumazet <edumazet@google.com>
-CC: Hayes Wang <hayeswang@realtek.com>
-Signed-off-by: Jesse Gross <jesse@nicira.com>
-Acked-by:  Tom Herbert <therbert@google.com>
-Fixes: 04ffcb255f22 ("net: Add ndo_gso_check")
-Tested-by: Hayes Wang <hayeswang@realtek.com>
+Fixes: e630664 ('mlx4_core: Add helper functions to support MR re-registration')
+Signed-off-by: Maor Gottlieb <maorg@mellanox.com>
+Signed-off-by: Matan Barak <matanb@mellanox.com>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/emulex/benet/be_main.c      |    8 ++++--
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c   |   10 ++++----
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    8 ++++--
- include/linux/netdevice.h                        |   20 +++++++++-------
- include/net/vxlan.h                              |   28 +++++++++++++++++++----
- net/core/dev.c                                   |   23 +++++++++++-------
- 6 files changed, 65 insertions(+), 32 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/mr.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -4427,9 +4427,11 @@ static void be_del_vxlan_port(struct net
- 		 be16_to_cpu(port));
- }
- 
--static bool be_gso_check(struct sk_buff *skb, struct net_device *dev)
-+static netdev_features_t be_features_check(struct sk_buff *skb,
-+					   struct net_device *dev,
-+					   netdev_features_t features)
+--- a/drivers/net/ethernet/mellanox/mlx4/mr.c
++++ b/drivers/net/ethernet/mellanox/mlx4/mr.c
+@@ -590,6 +590,7 @@ EXPORT_SYMBOL_GPL(mlx4_mr_free);
+ void mlx4_mr_rereg_mem_cleanup(struct mlx4_dev *dev, struct mlx4_mr *mr)
  {
--	return vxlan_gso_check(skb);
-+	return vxlan_features_check(skb, features);
+ 	mlx4_mtt_cleanup(dev, &mr->mtt);
++	mr->mtt.order = -1;
  }
- #endif
+ EXPORT_SYMBOL_GPL(mlx4_mr_rereg_mem_cleanup);
  
-@@ -4460,7 +4462,7 @@ static const struct net_device_ops be_ne
- #ifdef CONFIG_BE2NET_VXLAN
- 	.ndo_add_vxlan_port	= be_add_vxlan_port,
- 	.ndo_del_vxlan_port	= be_del_vxlan_port,
--	.ndo_gso_check		= be_gso_check,
-+	.ndo_features_check	= be_features_check,
- #endif
- };
- 
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -2363,9 +2363,11 @@ static void mlx4_en_del_vxlan_port(struc
- 	queue_work(priv->mdev->workqueue, &priv->vxlan_del_task);
- }
- 
--static bool mlx4_en_gso_check(struct sk_buff *skb, struct net_device *dev)
-+static netdev_features_t mlx4_en_features_check(struct sk_buff *skb,
-+						struct net_device *dev,
-+						netdev_features_t features)
+@@ -599,14 +600,14 @@ int mlx4_mr_rereg_mem_write(struct mlx4_
  {
--	return vxlan_gso_check(skb);
-+	return vxlan_features_check(skb, features);
- }
- #endif
+ 	int err;
  
-@@ -2398,7 +2400,7 @@ static const struct net_device_ops mlx4_
- #ifdef CONFIG_MLX4_EN_VXLAN
- 	.ndo_add_vxlan_port	= mlx4_en_add_vxlan_port,
- 	.ndo_del_vxlan_port	= mlx4_en_del_vxlan_port,
--	.ndo_gso_check		= mlx4_en_gso_check,
-+	.ndo_features_check	= mlx4_en_features_check,
- #endif
- };
- 
-@@ -2432,7 +2434,7 @@ static const struct net_device_ops mlx4_
- #ifdef CONFIG_MLX4_EN_VXLAN
- 	.ndo_add_vxlan_port	= mlx4_en_add_vxlan_port,
- 	.ndo_del_vxlan_port	= mlx4_en_del_vxlan_port,
--	.ndo_gso_check		= mlx4_en_gso_check,
-+	.ndo_features_check	= mlx4_en_features_check,
- #endif
- };
- 
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -504,9 +504,11 @@ static void qlcnic_del_vxlan_port(struct
- 	adapter->flags |= QLCNIC_DEL_VXLAN_PORT;
- }
- 
--static bool qlcnic_gso_check(struct sk_buff *skb, struct net_device *dev)
-+static netdev_features_t qlcnic_features_check(struct sk_buff *skb,
-+					       struct net_device *dev,
-+					       netdev_features_t features)
- {
--	return vxlan_gso_check(skb);
-+	return vxlan_features_check(skb, features);
- }
- #endif
- 
-@@ -531,7 +533,7 @@ static const struct net_device_ops qlcni
- #ifdef CONFIG_QLCNIC_VXLAN
- 	.ndo_add_vxlan_port	= qlcnic_add_vxlan_port,
- 	.ndo_del_vxlan_port	= qlcnic_del_vxlan_port,
--	.ndo_gso_check		= qlcnic_gso_check,
-+	.ndo_features_check	= qlcnic_features_check,
- #endif
- #ifdef CONFIG_NET_POLL_CONTROLLER
- 	.ndo_poll_controller = qlcnic_poll_controller,
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -998,12 +998,15 @@ typedef u16 (*select_queue_fallback_t)(s
-  *	Callback to use for xmit over the accelerated station. This
-  *	is used in place of ndo_start_xmit on accelerated net
-  *	devices.
-- * bool	(*ndo_gso_check) (struct sk_buff *skb,
-- *			  struct net_device *dev);
-+ * netdev_features_t (*ndo_features_check) (struct sk_buff *skb,
-+ *					    struct net_device *dev
-+ *					    netdev_features_t features);
-  *	Called by core transmit path to determine if device is capable of
-- *	performing GSO on a packet. The device returns true if it is
-- *	able to GSO the packet, false otherwise. If the return value is
-- *	false the stack will do software GSO.
-+ *	performing offload operations on a given packet. This is to give
-+ *	the device an opportunity to implement any restrictions that cannot
-+ *	be otherwise expressed by feature flags. The check is called with
-+ *	the set of features that the stack has calculated and it returns
-+ *	those the driver believes to be appropriate.
-  */
- struct net_device_ops {
- 	int			(*ndo_init)(struct net_device *dev);
-@@ -1153,8 +1156,9 @@ struct net_device_ops {
- 							struct net_device *dev,
- 							void *priv);
- 	int			(*ndo_get_lock_subclass)(struct net_device *dev);
--	bool			(*ndo_gso_check) (struct sk_buff *skb,
--						  struct net_device *dev);
-+	netdev_features_t	(*ndo_features_check) (struct sk_buff *skb,
-+						       struct net_device *dev,
-+						       netdev_features_t features);
- };
- 
- /**
-@@ -3584,8 +3588,6 @@ static inline bool netif_needs_gso(struc
- 				   netdev_features_t features)
- {
- 	return skb_is_gso(skb) && (!skb_gso_ok(skb, features) ||
--		(dev->netdev_ops->ndo_gso_check &&
--		 !dev->netdev_ops->ndo_gso_check(skb, dev)) ||
- 		unlikely((skb->ip_summed != CHECKSUM_PARTIAL) &&
- 			 (skb->ip_summed != CHECKSUM_UNNECESSARY)));
- }
---- a/include/net/vxlan.h
-+++ b/include/net/vxlan.h
-@@ -1,6 +1,9 @@
- #ifndef __NET_VXLAN_H
- #define __NET_VXLAN_H 1
- 
-+#include <linux/ip.h>
-+#include <linux/ipv6.h>
-+#include <linux/if_vlan.h>
- #include <linux/skbuff.h>
- #include <linux/netdevice.h>
- #include <linux/udp.h>
-@@ -51,16 +54,33 @@ int vxlan_xmit_skb(struct vxlan_sock *vs
- 		   __be32 src, __be32 dst, __u8 tos, __u8 ttl, __be16 df,
- 		   __be16 src_port, __be16 dst_port, __be32 vni, bool xnet);
- 
--static inline bool vxlan_gso_check(struct sk_buff *skb)
-+static inline netdev_features_t vxlan_features_check(struct sk_buff *skb,
-+						     netdev_features_t features)
- {
--	if ((skb_shinfo(skb)->gso_type & SKB_GSO_UDP_TUNNEL) &&
-+	u8 l4_hdr = 0;
-+
-+	if (!skb->encapsulation)
-+		return features;
-+
-+	switch (vlan_get_protocol(skb)) {
-+	case htons(ETH_P_IP):
-+		l4_hdr = ip_hdr(skb)->protocol;
-+		break;
-+	case htons(ETH_P_IPV6):
-+		l4_hdr = ipv6_hdr(skb)->nexthdr;
-+		break;
-+	default:
-+		return features;;
-+	}
-+
-+	if ((l4_hdr == IPPROTO_UDP) &&
- 	    (skb->inner_protocol_type != ENCAP_TYPE_ETHER ||
- 	     skb->inner_protocol != htons(ETH_P_TEB) ||
- 	     (skb_inner_mac_header(skb) - skb_transport_header(skb) !=
- 	      sizeof(struct udphdr) + sizeof(struct vxlanhdr))))
--		return false;
-+		return features & ~(NETIF_F_ALL_CSUM | NETIF_F_GSO_MASK);
- 
--	return true;
-+	return features;
- }
- 
- /* IP header + UDP + VXLAN + Ethernet header */
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2566,7 +2566,7 @@ static netdev_features_t harmonize_featu
- 
- netdev_features_t netif_skb_features(struct sk_buff *skb)
- {
--	const struct net_device *dev = skb->dev;
-+	struct net_device *dev = skb->dev;
- 	netdev_features_t features = dev->features;
- 	u16 gso_segs = skb_shinfo(skb)->gso_segs;
- 	__be16 protocol = skb->protocol;
-@@ -2574,13 +2574,20 @@ netdev_features_t netif_skb_features(str
- 	if (gso_segs > dev->gso_max_segs || gso_segs < dev->gso_min_segs)
- 		features &= ~NETIF_F_GSO_MASK;
- 
-+	/* If encapsulation offload request, verify we are testing
-+	 * hardware encapsulation features instead of standard
-+	 * features for the netdev
-+	 */
-+	if (skb->encapsulation)
-+		features &= dev->hw_enc_features;
-+
- 	if (!vlan_tx_tag_present(skb)) {
- 		if (unlikely(protocol == htons(ETH_P_8021Q) ||
- 			     protocol == htons(ETH_P_8021AD))) {
- 			struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
- 			protocol = veh->h_vlan_encapsulated_proto;
- 		} else {
--			return harmonize_features(skb, features);
-+			goto finalize;
- 		}
- 	}
- 
-@@ -2598,6 +2605,11 @@ netdev_features_t netif_skb_features(str
- 						     NETIF_F_HW_VLAN_CTAG_TX |
- 						     NETIF_F_HW_VLAN_STAG_TX);
- 
-+finalize:
-+	if (dev->netdev_ops->ndo_features_check)
-+		features &= dev->netdev_ops->ndo_features_check(skb, dev,
-+								features);
-+
- 	return harmonize_features(skb, features);
- }
- EXPORT_SYMBOL(netif_skb_features);
-@@ -2672,13 +2684,6 @@ static struct sk_buff *validate_xmit_skb
- 	if (unlikely(!skb))
- 		goto out_null;
- 
--	/* If encapsulation offload request, verify we are testing
--	 * hardware encapsulation features instead of standard
--	 * features for the netdev
--	 */
--	if (skb->encapsulation)
--		features &= dev->hw_enc_features;
+-	mpt_entry->start       = cpu_to_be64(iova);
+-	mpt_entry->length      = cpu_to_be64(size);
+-	mpt_entry->entity_size = cpu_to_be32(page_shift);
 -
- 	if (netif_needs_gso(dev, skb, features)) {
- 		struct sk_buff *segs;
+ 	err = mlx4_mtt_init(dev, npages, page_shift, &mr->mtt);
+ 	if (err)
+ 		return err;
  
++	mpt_entry->start       = cpu_to_be64(mr->iova);
++	mpt_entry->length      = cpu_to_be64(mr->size);
++	mpt_entry->entity_size = cpu_to_be32(mr->mtt.page_shift);
++
+ 	mpt_entry->pd_flags &= cpu_to_be32(MLX4_MPT_PD_MASK |
+ 					   MLX4_MPT_PD_FLAG_EN_INV);
+ 	mpt_entry->flags    &= cpu_to_be32(MLX4_MPT_FLAG_FREE |
 
 
