@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059AbbAZOYw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 09:24:52 -0500
-Received: from www.linutronix.de ([62.245.132.108]:47267 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764AbbAZOYv (ORCPT
+	id S1755264AbbAZO0k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:26:40 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49231 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224AbbAZO0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 09:24:51 -0500
-Date: Mon, 26 Jan 2015 15:24:27 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v3]PM/Sleep: Timer quiesce in freeze state
-In-Reply-To: <2137807.aqSxQQCuJ3@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.11.1501261523370.5526@nanos>
-References: <54866625.8010406@linux.intel.com> <54C5FE6A.9010300@linux.intel.com> <alpine.DEB.2.11.1501260946390.5526@nanos> <2137807.aqSxQQCuJ3@vostro.rjw.lan>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 26 Jan 2015 09:26:33 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: iamjoonsoo.kim@lge.com, m.szyprowski@samsung.com,
+        akpm@linux-foundation.org, lauraa@codeaurora.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH v2 0/3] mm: cma: debugfs access to CMA
+Date: Mon, 26 Jan 2015 09:26:02 -0500
+Message-Id: <1422282365-20015-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015, Rafael J. Wysocki wrote:
-> On Monday, January 26, 2015 10:40:24 AM Thomas Gleixner wrote:
-> > The only remaining issue might be a NMI calling into
-> > ktime_get_mono_fast_ns() before timekeeping is resumed. Its probably a
-> > non issue on x86/tsc, but it might be a problem on other platforms
-> > which turn off devices, clocks, It's not rocket science to prevent
-> > that.
-> 
-> I don't see any users of ktime_get_mono_fast_ns() at all, unless some non-trivial
-> macros are involved.  At least grepping for it only returns the definition,
-> declarations and the line in trace.c.
+I've noticed that there is no interfaces exposed by CMA which would let me
+fuzz what's going on in there.
 
-You can trace in NMI and perf is going to use ktime_get_mono_fast_ns()
-eventually as well.
+This small patch set exposes some information out to userspace, plus adds
+the ability to trigger allocation and freeing from userspace.
 
-Thanks,
+Changes from v1:
+ - Make allocation and free hooks per-cma.
+ - Remove additional debug prints.
 
-	tglx
+Sasha Levin (3):
+  mm: cma: debugfs interface
+  mm: cma: allocation trigger
+  mm: cma: release trigger
+
+ mm/Kconfig     |    6 ++
+ mm/Makefile    |    1 +
+ mm/cma.c       |   19 ++----
+ mm/cma.h       |   20 +++++++
+ mm/cma_debug.c |  175 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 206 insertions(+), 15 deletions(-)
+ create mode 100644 mm/cma.h
+ create mode 100644 mm/cma_debug.c
+
+-- 
+1.7.10.4
+
