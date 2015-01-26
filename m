@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587AbbAZSf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:35:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43593 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433AbbAZSf1 (ORCPT
+	id S1756352AbbAZSi1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:38:27 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:47843 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753422AbbAZSiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:35:27 -0500
-Date: Mon, 26 Jan 2015 10:35:26 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux@roeck-us.net,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.18 000/183] 3.18.4-stable review
-Message-ID: <20150126183526.GB6772@kroah.com>
-References: <20150125180810.160428929@linuxfoundation.org>
- <54C67C98.6020905@osg.samsung.com>
+	Mon, 26 Jan 2015 13:38:24 -0500
+Date: Mon, 26 Jan 2015 13:38:23 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Christoph Hellwig <hch@infradead.org>
+cc: Tejun Heo <tj@kernel.org>, Bart Van Assche <bvanassche@acm.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Hannes Reinecke <hare@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: sysfs methods can race with ->remove
+In-Reply-To: <20150126171950.GA9015@infradead.org>
+Message-ID: <Pine.LNX.4.44L0.1501261335000.1257-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C67C98.6020905@osg.samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 10:42:48AM -0700, Shuah Khan wrote:
-> On 01/25/2015 11:05 AM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.18.4 release.
-> > There are 183 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
+On Mon, 26 Jan 2015, Christoph Hellwig wrote:
+
+> On Thu, Jan 15, 2015 at 02:40:31PM -0500, Tejun Heo wrote:
+> > > If a method is registered by the driver, then the driver will
+> > > unregister it when the ->remove routine runs.  I don't know for
+> > > certain, but I would expect that the sysfs/kernfs core will make sure
+> > > that any existing method calls complete before unregister returns.  
+> > > This would prevent races.
 > > 
-> > Responses should be made by Tue Jan 27 18:07:34 UTC 2015.
-> > Anything received after that time might be too late.
-> > 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.18.4-rc1.gz
-> > and the diffstat can be found below.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> > 
+> > Yes, attribute deletions are blocked till the on-going sysfs
+> > read/write operations are finished and further rw accesses are failed.
 > 
-> Compiled and booted on my test system. No dmesg regressions.
+> Btw, where do we do that?  I did a walk through the code starting
+> from device_del, but must have missed the obvious.
 
-Thanks for testing all 3 of these and letting me know.
+It happens in fs/kernfs/dir.c:kernfs_drain().  That routine is called 
+when a sysfs file is removed, and it waits until all ongoing read/write 
+operations are finished.
 
-greg k-h
+> > > The sriov_numvfs_store method does have the same problem, and so does 
+> > > the reset_store method (by way of pci_reset_function -> 
+> > > pci_dev_save_and_disable -> pci_reset_notify).
+> > > 
+> > > Tejun, is my analysis correct?  How should we fix these races?
+> > 
+> > I'm not really following what the actual problem case is, so SCSI
+> > subsystem store methods are derefing dev->driver without synchronizing
+> > against detach events?  If that's the case, the solution would be
+> > synchronizing against attach/detach events?  Sorry if I'm being
+> > totally idiotic.  I'm having a bit of hard time jumping right in.  :)
+> 
+> No problem.  That's the basic situation we are talking about.  I have
+> a serie fixing some long standing issues in the device model integration
+> in SCSI, and pointed out a possible issue in that area.
+> 
+> So what is the proper lock to take to prevent ->remove from beeing
+> called while in such a method?  A mentioned about I tried to peel
+> through all the layers of the onion^H^H^H^H^Hdriver core, but so far
+> couldn't find anything obvious.
+
+The proper lock is dev->mutex, as I mentioned in an earlier email 
+(http://marc.info/?l=linux-scsi&m=142176669519982&w=2).  That lock is 
+held whenever a ->remove method is called.
+
+Alan Stern
+
