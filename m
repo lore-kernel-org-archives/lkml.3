@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368AbbAZPOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 10:14:24 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:46248 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756340AbbAZPOW (ORCPT
+	id S1756405AbbAZPOf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 10:14:35 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:46303 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756382AbbAZPOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 10:14:22 -0500
-Date: Mon, 26 Jan 2015 18:13:59 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm] slab: update_memcg_params: explicitly check that old
- array != NULL
-Message-ID: <20150126151359.GD6507@mwanda>
-References: <20150126085638.GA6507@mwanda>
- <1422266479-29098-1-git-send-email-vdavydov@parallels.com>
- <20150126101902.GC6507@mwanda>
- <20150126104534.GA28978@esperanza>
+	Mon, 26 Jan 2015 10:14:30 -0500
+Date: Mon, 26 Jan 2015 18:14:26 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Stable <stable@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Peter Feiner <pfeiner@google.com>
+Subject: Re: [PATCH] proc/pagemap: walk page tables under pte lock
+Message-ID: <20150126151426.GU7377@moon>
+References: <20150126145214.11053.5670.stgit@buzz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150126104534.GA28978@esperanza>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20150126145214.11053.5670.stgit@buzz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 01:45:34PM +0300, Vladimir Davydov wrote:
-> On Mon, Jan 26, 2015 at 01:23:05PM +0300, Dan Carpenter wrote:
-> > On Mon, Jan 26, 2015 at 01:01:19PM +0300, Vladimir Davydov wrote:
-> > > This warning is false-positive, because @old equals NULL iff
-> > > @memcg_nr_cache_ids equals 0.
-> > 
-> > I don't see how it could be a false positive.  The "old" pointer is
-> > dereferenced inside the call to memset() so unless memset is a macro the
-> > compiler isn't going to optimize the dereference away.
+On Mon, Jan 26, 2015 at 05:52:14PM +0300, Konstantin Khlebnikov wrote:
+> Lockless access to pte in pagemap_pte_range() might race with page migration
+> and trigger BUG_ON(!PageLocked()) in migration_entry_to_page():
 > 
-> old->entries is not dereferenced: memcg_cache_array->entries is not a
-> pointer - it is embedded to the memcg_cache_array struct.
+> CPU A (pagemap)                           CPU B (migration)
+>                                           lock_page()
+>                                           try_to_unmap(page, TTU_MIGRATION...)
+>                                                make_migration_entry()
+>                                                set_pte_at()
+> <read *pte>
+> pte_to_pagemap_entry()
+>                                           remove_migration_ptes()
+>                                           unlock_page()
+>     if(is_migration_entry())
+>         migration_entry_to_page()
+>             BUG_ON(!PageLocked(page))
+> 
+> Also lockless read might be non-atomic if pte is larger than wordsize.
+> Other pte walkers (smaps, numa_maps, clear_refs) already lock ptes.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+> Reported-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> Fixes: 052fb0d635df ("proc: report file/anon bit in /proc/pid/pagemap")
+> Cc: Stable <stable@vger.kernel.org> (v3.5+)
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
-Ah.  Ok.  Thanks.
-
-regards,
-dan carpenter
-
+Thank you!
