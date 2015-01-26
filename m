@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbbAZNri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:47:38 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51899 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbbAZNrg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:47:36 -0500
-Date: Mon, 26 Jan 2015 08:47:27 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>, Sun Paul <paulrbk@gmail.com>,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tuexen@fh-muenster.de
-Subject: Re: Fwd: Question on SCTP ABORT chunk is generated when the
- association_max_retrans is reached
-Message-ID: <20150126134727.GC31293@hmsreliant.think-freely.org>
-References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com>
- <CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>
- <54C23581.9060809@redhat.com>
- <54C27137.5010405@gmail.com>
- <54C2807E.8080607@redhat.com>
- <54C2935F.2000105@gmail.com>
+	id S1755103AbbAZNr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:47:59 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:57392 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750793AbbAZNr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 08:47:57 -0500
+Date: Mon, 26 Jan 2015 15:47:51 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 2/2] clocksource: driver for Conexant Digicolor SoC
+ timer
+Message-ID: <20150126134751.GE3148@tarshish>
+References: <cover.1422272518.git.baruch@tkos.co.il>
+ <ad84f7155286c45401ff7f6bc6506407cc3beb61.1422272518.git.baruch@tkos.co.il>
+ <54C644AF.9030208@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C2935F.2000105@gmail.com>
+In-Reply-To: <54C644AF.9030208@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 01:30:55PM -0500, Vlad Yasevich wrote:
-> On 01/23/2015 12:10 PM, Daniel Borkmann wrote:
-> > On 01/23/2015 05:05 PM, Vlad Yasevich wrote:
-> >> On 01/23/2015 06:50 AM, Daniel Borkmann wrote:
-> >>> On 01/23/2015 11:25 AM, Sun Paul wrote:
-> >>> ...
-> >>>> I would like to check the behave in LKSCTP.
-> >>>>
-> >>>> we are running DIAMETER message over SCTP, and we have set the
-> >>>> parameter "net.sctp.association_max_retrans = 4" in the LinuxOS.
-> >>>>
-> >>>> We noticed that when remote peer have retry to send the same request
-> >>>> for 4 times, the LKSCTP will initiate an ABORT chunk with reason
-> >>>> "association exceeded its max_retrans count".
-> >>>>
-> >>>> We would like to know whether this is the correct behavior? is there
-> >>>> any other option that we can alter in order to avoid the ABORT chunk
-> >>>> being sent?
-> >>>
-> >>> I don't recall the RFC saying to send an ABORT, but let me double
-> >>> check in the mean time.
-> >>
-> >> The RFC is silent on the matter.  The abort got added in 3.8 so
-> >> it's been there for a while.
-> > 
-> > I see, commit de4594a51c90 ("sctp: send abort chunk when max_retrans
-> > exceeded") added the behaviour.
-> > 
-> >>> Hmm, untested, but could you try something like that?
-> >>>
-> >>> diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
-> >>> index fef2acd..5ce198d 100644
-> >>> --- a/net/sctp/sm_sideeffect.c
-> >>> +++ b/net/sctp/sm_sideeffect.c
-> >>> @@ -584,7 +584,8 @@ static void sctp_cmd_assoc_failed(sctp_cmd_seq_t *commands,
-> >>>           sctp_add_cmd_sf(commands, SCTP_CMD_EVENT_ULP,
-> >>>                   SCTP_ULPEVENT(event));
-> >>>
-> >>> -    if (asoc->overall_error_count >= asoc->max_retrans) {
-> >>> +    if (asoc->overall_error_count >= asoc->max_retrans &&
-> >>> +        error != SCTP_ERROR_NO_ERROR) {
-> >>>           abort = sctp_make_violation_max_retrans(asoc, chunk);
-> >>>           if (abort)
-> >>>               sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
-> >>
-> >> This would pretty much stop all ABORTs due to excessive rtx.  Might
-> >> as well take the code out :).
-> >>
-> >> I was a bit concerned about this ABORT when it went in.
-> > 
-> > So effectively, if I understand the argument from the commit, the
-> > assumption is that the ABORT would never reach the peer anyway, but
-> > is a way for tcpdump users to see on the wire that rtx limit has
-> > been exceeded and since there's not mentioned anything in the RFC
-> > about this, it doesn't break it. Hm.
-> > 
-> 
-> Additionally I seem to recall BSD sending this type of ABORT for pretty
-> much the same reason.
-> 
-> -vlad
-> 
-IIRC, BSD is where this patch came from initially.
-Neil
+Hi Daniel,
 
-> > Sun Paul, what exactly broke in your scenario? Can you be more explicit?
-> > 
-> > Thanks,
-> > Daniel
+On Mon, Jan 26, 2015 at 02:44:15PM +0100, Daniel Lezcano wrote:
+> >diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> >index 94d90b24b56b..a993c108be67 100644
+> >--- a/drivers/clocksource/Makefile
+> >+++ b/drivers/clocksource/Makefile
+> >@@ -10,6 +10,7 @@ obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
+> >  obj-$(CONFIG_EM_TIMER_STI)	+= em_sti.o
+> >  obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
+> >  obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
+> >+obj-$(CONFIG_ARCH_DIGICOLOR)	+= timer-digicolor.o
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Ah, one minor change I forgot to mention in the last review (sorry about
+> that).
 > 
+> Don't depend on the ARCH, add and select a TIMER_DIGICOLOR (or whatever the
+> name you prefer) in the mach-digicolor/Kconfig and use it here.
+
+OK. I'll make the change. I'm just curious: what is the advantage of having a 
+separate config symbol for the timer?
+
+baruch
+
+-- 
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
