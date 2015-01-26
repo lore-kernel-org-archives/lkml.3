@@ -1,163 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701AbbAZSoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:44:16 -0500
-Received: from mail-bn1bon0073.outbound.protection.outlook.com ([157.56.111.73]:40384
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753521AbbAZSoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:44:12 -0500
-Date: Mon, 26 Jan 2015 10:44:03 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
-CC: <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        <devicetree@vger.kernel.org>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Ola Jeppson <ola@adapteva.com>
-Subject: Re: [PATCH v3] ARM: zynq: DT: Add USB to device tree
-References: <1417536431-27759-1-git-send-email-soren.brinkmann@xilinx.com>
- <d78fedd84f354d80985187f851cb3cd1@BN1AFFO11FD055.protection.gbl>
- <54C5F89A.3090901@suse.de> <54C5F965.90100@monstr.eu>
- <54C5FBC3.7030903@suse.de> <54C60A56.7010403@suse.de>
- <c65880cef67945ebaf61306febc1349b@BN1BFFO11FD010.protection.gbl>
- <54C6698F.5020301@suse.de>
- <8f367d9b85924f8e9cc9cb6fdff9a054@BN1BFFO11FD040.protection.gbl>
+	id S1756682AbbAZSqZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:46:25 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43466 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422AbbAZSqU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 13:46:20 -0500
+Date: Mon, 26 Jan 2015 18:45:54 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: LKP <lkp@01.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [perf] WARNING: CPU: 0 PID: 1457 at kernel/events/core.c:890
+ add_event_to_ctx()
+Message-ID: <20150126184554.GM23313@leverpostej>
+References: <20150125043428.GA6109@wfg-t540p.sh.intel.com>
+ <20150125155633.GA22257@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <8f367d9b85924f8e9cc9cb6fdff9a054@BN1BFFO11FD040.protection.gbl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21286.001
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <bb50396a16ab4042bdb554f72bde0bf7@BL2FFO11FD023.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; adapteva.com; dkim=none (message
- not signed) header.d=none;
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(51704005)(377454003)(377424004)(479174004)(164054003)(86362001)(92566002)(87936001)(19580395003)(46102003)(50466002)(85182001)(50986999)(76176999)(6806004)(108616004)(74316001)(92726002)(53416004)(110136001)(47776003)(104016003)(85202003)(2950100001)(83506001)(106466001)(93886004)(54356999)(62966003)(77156002)(23676002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB021;H:xsj-pvapsmtpgw01;FPR:;SPF:None;MLV:sfv;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB021;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB021;
-X-Forefront-PRVS: 0468FE4A2B
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB021;
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 26 Jan 2015 18:44:10.7628
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB021
+In-Reply-To: <20150125155633.GA22257@leverpostej>
+Thread-Topic: [perf] WARNING: CPU: 0 PID: 1457 at kernel/events/core.c:890
+ add_event_to_ctx()
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-26 at 08:23AM -0800, Sören Brinkmann wrote:
-> On Mon, 2015-01-26 at 05:21PM +0100, Andreas Färber wrote:
-> > Am 26.01.2015 um 16:50 schrieb Sören Brinkmann:
-> > > On Mon, 2015-01-26 at 10:35AM +0100, Andreas Färber wrote:
-> > >> Am 26.01.2015 um 09:33 schrieb Andreas Färber:
-> > >>> Am 26.01.2015 um 09:23 schrieb Michal Simek:
-> > >>>> On 01/26/2015 09:19 AM, Andreas Färber wrote:
-> > >>>>> And if I apply it to my -next based tree, adding corresponding nodes to
-> > >>>>> zynq-parallella.dts, I get repeatedly:
-> > >>>>>
-> > >>>>> [  +0,012242] ci_hdrc ci_hdrc.0: no of_node; not parsing pinctrl DT
-> > >>>>> [  +0,000157] ci_hdrc ci_hdrc.0: ChipIdea HDRC found, lpm: 0; cap:
-> > >>>>> f090e100 op: f090e140
-> > >>>>> [  +0,000081] platform ci_hdrc.0: Driver ci_hdrc requests probe deferral
-> > >>>>> [  +0,005360] ci_hdrc ci_hdrc.1: no of_node; not parsing pinctrl DT
-> > >>>>> [  +0,000120] ci_hdrc ci_hdrc.1: ChipIdea HDRC found, lpm: 0; cap:
-> > >>>>> f0910100 op: f0910140
-> > >>>>> [  +0,001810] platform ci_hdrc.1: Driver ci_hdrc requests probe deferral
-> > >>>>>
-> > >>>>> Am I missing any other patches or config options?
-> > >>>>> (I do notice that the pinctrl v3 patch that got merged has a trivial bug
-> > >>>>> for usb0, for which I'll send a patch later on.)
-> > >>>>
-> > >>>> Why is it deferred? Is it because of pinmuxing stuff?
-> > >>>
-> > >>> No, happened without as well.
-> > >>>
-> > >>> Looking at a different place in dmesg, I spot this:
-> > >>>
-> > >>> [  +0,003988] usb_phy_generic phy0: GPIO lookup for consumer reset-gpios
-> > >>> [  +0,000012] usb_phy_generic phy0: using device tree for GPIO lookup
-> > >>> [  +0,000015] of_get_named_gpiod_flags: can't parse 'reset-gpios-gpios'
-> > >>> property
-> > >>>  of node '/phy0[0]'
-> > >>> [  +0,000013] of_get_named_gpiod_flags: can't parse 'reset-gpios-gpio'
-> > >>> property
-> > >>> of node '/phy0[0]'
-> > >>> [  +0,000010] usb_phy_generic phy0: using lookup tables for GPIO lookup
-> > >>> [  +0,000153] usb_phy_generic phy0: lookup for GPIO reset-gpios failed
-> > >>> [  +0,000012] usb_phy_generic phy0: Error requesting RESET GPIO
-> > >>> [  +0,004360] usb_phy_generic: probe of phy0 failed with error -2
-> > >>> [  +0,004991] usb_phy_generic phy1: GPIO lookup for consumer reset-gpios
-> > >>> [  +0,000012] usb_phy_generic phy1: using device tree for GPIO lookup
-> > >>> [  +0,000013] of_get_named_gpiod_flags: can't parse 'reset-gpios-gpios'
-> > >>> property
-> > >>>  of node '/phy1[0]'
-> > >>> [  +0,000013] of_get_named_gpiod_flags: can't parse 'reset-gpios-gpio'
-> > >>> property of node '/phy1[0]'
-> > >>> [  +0,000010] usb_phy_generic phy1: using lookup tables for GPIO lookup
-> > >>> [  +0,000012] usb_phy_generic phy1: lookup for GPIO reset-gpios failed
-> > >>> [  +0,000011] usb_phy_generic phy1: Error requesting RESET GPIO
-> > >>> [  +0,004337] usb_phy_generic: probe of phy1 failed with error -2
-> > >>>
-> > >>> So, I guess the chipidea driver is deferring because the phys want a
-> > >>> property that neither me nor you are specifying? Would that be the two
-> > >>> MDIO pins 52 and 53 that would need to be specified?
-> > >>
-> > >> Erm, scratch that last question - wrong PHY. Trying it resolved the
-> > >> above phy errors but not the original problem. And so does an empty one:
-> > >>
-> > >> @@ -99,11 +100,13 @@
-> > >>
-> > >>         usb_phy0: phy0 {
-> > >>                 compatible = "usb-nop-xceiv";
-> > >> +               reset-gpios = <>;
-> > >>                 #phy-cells = <0>;
-> > >>         };
-> > >>
-> > >>         usb_phy1: phy1 {
-> > >>                 compatible = "usb-nop-xceiv";
-> > >> +               reset-gpios = <>;
-> > >>                 #phy-cells = <0>;
-> > >>         };
-> > >>  };
-> > >>
-> > >> In my manuals and notes I can't find any GPIO being used as reset for
-> > >> the USB PHYs. Any thoughts appreciated.
-> > > 
-> > > Such a connection is optional. The platform might rely on its reset
-> > > circuit, though it might not work for warm reboots.
-> > > I haven't looked at parallela docs, but if there is a schematic
-> > > available, that should tell you if/what is connected to the PHY reset
-> > > pin.
-> > 
-> > I do have the schematic, and the way I read it, only the on-board reset
-> > button resets the PHYs.
-> > 
-> > Yet it looks as if usb-nop-xceiv insists on a reset-gpios above, no?
-> > Does it work on your boards with linux-next?
+On Sun, Jan 25, 2015 at 03:56:33PM +0000, Mark Rutland wrote:
+> On Sun, Jan 25, 2015 at 04:34:28AM +0000, Fengguang Wu wrote:
+> > Greetings,
 > 
-> I haven't re-tested it since I submitted the patches, but at that time
-> it worked. But I also didn't test USB with the pinctrl patches together.
-> I'll do some testing later today.
+> Hi Fengguang,
+> 
+> Thanks very much for the report.
+> 
+> > 0day kernel testing robot got the below dmesg and the first bad commit is
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/peterz/queue.git perf/core
+> > 
+> > commit d26bb7f73a2881f2412c340a27438b185f0cc3dc
+> > Author:     Mark Rutland <mark.rutland@arm.com>
+> > AuthorDate: Wed Jan 7 15:01:54 2015 +0000
+> > Commit:     Peter Zijlstra <peterz@infradead.org>
+> > CommitDate: Fri Jan 23 15:17:56 2015 +0100
+> > 
+> >     perf: decouple unthrottling and rotating
+> 
+> [...]
+> 
+> What seems to be happening is:
+> 
+> * An event is created in the context of task A on CPU0. As the task's hw
+>   context is empty of events, we call perf_pmu_ctx_activate. This adds
+>   the cpuctx of the relevant HW PMU to the active_ctx_list. Note that we
+>   checked the task's ctx for emptiness, then added the PMU's hw context.
+> 
+> * An event is created (as a result of a clone()) in the context of task
+>   B on CPU0, and we do the same thing, finding the ctx empty of events
+>   we add the HW PMU's cpuctx to the active_ctx_list. As it's already in
+>   there, the WARN_ON(!list_empty(&cpuctx->active_ctx_list)) explodes.
+> 
+> So I guess what we actually want to do is to turn the active_ctx list
+> into a list of perf_event_contexts rather than perf_event_cpu_contexts,
+> and add/remove from the list when a context is scheduled in/out (or
+> updated empty<->nonempty). That way we remove chances for erroneous
+> add/remove, and we don't need to treat task and CPU contexts separately
+> in perf_event_task_tick.
+> 
+> I managed to get the reproducer running on a box at home, so I'll spin a
+> potential fix against that for a while, and send that out if I don't see
+> explosions.
 
-So, just did a test. I took all the pinctrl stuff and this patch and ran
-it on a zc702. I plugged in a thumb drive and that worked just fine. So,
-basically this patch could go in, despite missing pinctrl properties.
+The below patch is a fix up to the broken patch above. I've given it
+some testing with Fengguang's reproducer and some custom tests, and as
+far as I can tell everything is working as expected.
 
-Michal: How do you wanna handle this? Could you create a branch that has
-all the DT updates I can base stuff on, please? We could either take the
-pinctrl patches and this patch and add another one adding the pinctrl
-properties to the USB nodes. Or leave this patch out for now and revise
-it on top of the pinctrl patches.
+With Fengguang's reproducer I see some failures in netlink, but I
+believe that's an unrelated issue that trinity is tickling.
 
-	Thanks,
-	Sören
+Peter, does the below patch look OK to you?
+
+Thanks,
+Mark.
+
+---->8----
+>From c88d36594f956666ea1936abde7a05414bf56032 Mon Sep 17 00:00:00 2001
+From: Mark Rutland <mark.rutland@arm.com>
+Date: Mon, 26 Jan 2015 18:01:41 +0000
+Subject: [PATCH] Perf: fix broken rotation/unthrolling fix
+
+Commit d26bb7f73a2881f2 ("perf: decouple unthrottling and rotating")
+bodged its attempted cleanup of the rotation_list usage. The PMU cpu
+contexts were added to the active_ctx_list whenever an event was added
+to any context, and hence could be added repeatedly, corrupting the list.
+
+Additionally, as contexts were added to the active_ctx_list whevener the
+first event was added to them in list_add_event, they could be accounted
+for on the wrong CPU (if they were not active at the time). Thus a
+context could be accounted as active on one CPU while it ran on another.
+
+This patch fixes the issue by updating the active_ctx_list when events
+are scheduled in/out, ensuring that the active_ctx_list stays in sync
+with the HW state. By maintaining a list of perf_event_contexts rather
+than perf_event_cpu_contexts, we don't need separate paths to handle the
+cpu and task contexts, which makes the code a little simpler.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+---
+ include/linux/perf_event.h |  2 +-
+ kernel/events/core.c       | 51 ++++++++++++++++------------------------------
+ 2 files changed, 19 insertions(+), 34 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index b21e2a1..4eb5f9c 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -489,6 +489,7 @@ struct perf_event_context {
+ 	 */
+ 	struct mutex			mutex;
+ 
++	struct list_head		active_ctx_list;
+ 	struct list_head		pinned_groups;
+ 	struct list_head		flexible_groups;
+ 	struct list_head		event_list;
+@@ -539,7 +540,6 @@ struct perf_cpu_context {
+ 	int				exclusive;
+ 	struct hrtimer			hrtimer;
+ 	ktime_t				hrtimer_interval;
+-	struct list_head		active_ctx_list;
+ 	struct pmu			*unique_pmu;
+ 	struct perf_cgroup		*cgrp;
+ };
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1d02140..05a8da5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -875,30 +875,29 @@ void perf_pmu_enable(struct pmu *pmu)
+ static DEFINE_PER_CPU(struct list_head, active_ctx_list);
+ 
+ /*
+- * perf_pmu_ctx_activate(), perf_pmu_ctx_deactivate(), and
+- * perf_even_task_tick() are fully serialized because they're strictly cpu
+- * affine and perf_pmu_ctx{activate,deactivate} are called with IRQs disabled,
+- * while perf_event_task_tick is called from IRQ context.
++ * perf_event_ctx_activate(), perf_event_ctx_deactivate(), and
++ * perf_event_task_tick() are fully serialized because they're strictly cpu
++ * affine and perf_event_ctx{activate,deactivate} are called with IRQs
++ * disabled, while perf_event_task_tick is called from IRQ context.
+  */
+-static void perf_pmu_ctx_activate(struct pmu *pmu)
++static void perf_event_ctx_activate(struct perf_event_context *ctx)
+ {
+-	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+ 	struct list_head *head = this_cpu_ptr(&active_ctx_list);
+ 
+ 	WARN_ON(!irqs_disabled());
+ 
+-	WARN_ON(!list_empty(&cpuctx->active_ctx_list));
++	WARN_ON(!list_empty(&ctx->active_ctx_list));
+ 
+-	list_add(&cpuctx->active_ctx_list, head);
++	list_add(&ctx->active_ctx_list, head);
+ }
+ 
+-static void perf_pmu_ctx_deactivate(struct pmu *pmu)
++static void perf_event_ctx_deactivate(struct perf_event_context *ctx)
+ {
+-	struct perf_cpu_context *cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+-
+ 	WARN_ON(!irqs_disabled());
+ 
+-	list_del_init(&cpuctx->active_ctx_list);
++	WARN_ON(list_empty(&ctx->active_ctx_list));
++
++	list_del_init(&ctx->active_ctx_list);
+ }
+ 
+ static void get_ctx(struct perf_event_context *ctx)
+@@ -1243,8 +1242,6 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 		ctx->nr_cgroups++;
+ 
+ 	list_add_rcu(&event->event_entry, &ctx->event_list);
+-	if (!ctx->nr_events)
+-		perf_pmu_ctx_activate(ctx->pmu);
+ 	ctx->nr_events++;
+ 	if (event->attr.inherit_stat)
+ 		ctx->nr_stat++;
+@@ -1415,8 +1412,6 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 		ctx->nr_stat--;
+ 
+ 	list_del_rcu(&event->event_entry);
+-	if (!ctx->nr_events)
+-		perf_pmu_ctx_deactivate(ctx->pmu);
+ 
+ 	if (event->group_leader == event)
+ 		list_del_init(&event->group_entry);
+@@ -1570,7 +1565,8 @@ event_sched_out(struct perf_event *event,
+ 
+ 	if (!is_software_event(event))
+ 		cpuctx->active_oncpu--;
+-	ctx->nr_active--;
++	if (!--ctx->nr_active)
++		perf_event_ctx_deactivate(ctx);
+ 	if (event->attr.freq && event->attr.sample_freq)
+ 		ctx->nr_freq--;
+ 	if (event->attr.exclusive || !cpuctx->active_oncpu)
+@@ -1894,7 +1890,8 @@ event_sched_in(struct perf_event *event,
+ 
+ 	if (!is_software_event(event))
+ 		cpuctx->active_oncpu++;
+-	ctx->nr_active++;
++	if (!ctx->nr_active++)
++		perf_event_ctx_activate(ctx);
+ 	if (event->attr.freq && event->attr.sample_freq)
+ 		ctx->nr_freq++;
+ 
+@@ -3035,11 +3032,6 @@ static void rotate_ctx(struct perf_event_context *ctx)
+ 		list_rotate_left(&ctx->flexible_groups);
+ }
+ 
+-/*
+- * perf_pmu_ctx_activate() and perf_rotate_context() are fully serialized
+- * because they're strictly cpu affine and rotate_start is called with IRQs
+- * disabled, while rotate_context is called from IRQ context.
+- */
+ static int perf_rotate_context(struct perf_cpu_context *cpuctx)
+ {
+ 	struct perf_event_context *ctx = NULL;
+@@ -3093,8 +3085,7 @@ bool perf_event_can_stop_tick(void)
+ void perf_event_task_tick(void)
+ {
+ 	struct list_head *head = this_cpu_ptr(&active_ctx_list);
+-	struct perf_cpu_context *cpuctx, *tmp;
+-	struct perf_event_context *ctx;
++	struct perf_event_context *ctx, *tmp;
+ 	int throttled;
+ 
+ 	WARN_ON(!irqs_disabled());
+@@ -3102,14 +3093,8 @@ void perf_event_task_tick(void)
+ 	__this_cpu_inc(perf_throttled_seq);
+ 	throttled = __this_cpu_xchg(perf_throttled_count, 0);
+ 
+-	list_for_each_entry_safe(cpuctx, tmp, head, active_ctx_list) {
+-		ctx = &cpuctx->ctx;
++	list_for_each_entry_safe(ctx, tmp, head, active_ctx_list)
+ 		perf_adjust_freq_unthr_context(ctx, throttled);
+-
+-		ctx = cpuctx->task_ctx;
+-		if (ctx)
+-			perf_adjust_freq_unthr_context(ctx, throttled);
+-	}
+ }
+ 
+ static int event_enable_on_exec(struct perf_event *event,
+@@ -3268,6 +3253,7 @@ static void __perf_event_init_context(struct perf_event_context *ctx)
+ {
+ 	raw_spin_lock_init(&ctx->lock);
+ 	mutex_init(&ctx->mutex);
++	INIT_LIST_HEAD(&ctx->active_ctx_list);
+ 	INIT_LIST_HEAD(&ctx->pinned_groups);
+ 	INIT_LIST_HEAD(&ctx->flexible_groups);
+ 	INIT_LIST_HEAD(&ctx->event_list);
+@@ -6980,7 +6966,6 @@ skip_type:
+ 
+ 		__perf_cpu_hrtimer_init(cpuctx, cpu);
+ 
+-		INIT_LIST_HEAD(&cpuctx->active_ctx_list);
+ 		cpuctx->unique_pmu = pmu;
+ 	}
+ 
+-- 
+1.9.1
+
