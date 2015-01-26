@@ -1,183 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270AbbAZKjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:39:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48826 "EHLO mx1.redhat.com"
+	id S1755328AbbAZKjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:39:17 -0500
+Received: from mga11.intel.com ([192.55.52.93]:8096 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679AbbAZKjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:39:06 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
-        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
-        Dexuan Cui <decui@microsoft.com>
-Subject: Re: [PATCH v3] Drivers: hv: vmbus: prevent cpu offlining on newer hypervisors
-References: <1417431161-12845-1-git-send-email-vkuznets@redhat.com>
-	<1421081411-5759-1-git-send-email-vkuznets@redhat.com>
-	<20150125133659.GA21552@kroah.com>
-Date: Mon, 26 Jan 2015 11:38:54 +0100
-In-Reply-To: <20150125133659.GA21552@kroah.com> (Greg Kroah-Hartman's message
-	of "Sun, 25 Jan 2015 21:36:59 +0800")
-Message-ID: <87k309g729.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755277AbbAZKjL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:39:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,468,1418112000"; 
+   d="scan'208";a="667550899"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Pavel Machek <pavel@ucw.cz>, "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
+ PM/Trace: get rid of synchronous resume limit during PM trace)
+Thread-Topic: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
+ PM/Trace: get rid of synchronous resume limit during PM trace)
+Thread-Index: AQHQOVI4WhHuql6TR0OwGyzNDtsW5ZzSNSqA
+Date: Mon, 26 Jan 2015 10:39:04 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01F1AD6A@SHSMSX101.ccr.corp.intel.com>
+References: <54C5CB77.4000109@linux.intel.com> <20150126102352.GA1758@amd>
+In-Reply-To: <20150126102352.GA1758@amd>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain
+Hello Pavel,
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> -----Original Message-----
+> From: Pavel Machek [mailto:pavel@ucw.cz]
+> Sent: Monday, January 26, 2015 6:24 PM
+> To: Fu, Zhonghui
+> Cc: Rafael J. Wysocki; Brown, Len; Greg Kroah-Hartman;
+> linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Liu, Chuansheng
+> Subject: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
+> PM/Trace: get rid of synchronous resume limit during PM trace)
+> 
+> On Mon 2015-01-26 13:07:03, Fu, Zhonghui wrote:
+> > >From f9c841d1f943d81b5ab0aac7483e794a7f966296 Mon Sep 17 00:00:00
+> 2001
+> > From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
+> > Date: Mon, 26 Jan 2015 11:27:08 +0800
+> > Subject: [PATCH] PM/Trace: get rid of synchronous resume limit during PM
+> trace
+> >
+> > There are some kind of dependency between devices in some
+> > hardware platforms. So, asynchronous resuming devices may
+> > hang system due to wrong resume order. As a result, should
+> > not fore synchronously resuming devices during tracing
+> > PM events.
+> >
+> > Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
+> > ---
+> >  drivers/base/power/main.c    |    3 +--
+> >  include/linux/resume-trace.h |    7 -------
+> >  2 files changed, 1 insertions(+), 9 deletions(-)
+> >
+> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> > index 9717d5f..5df148b 100644
+> > --- a/drivers/base/power/main.c
+> > +++ b/drivers/base/power/main.c
+> > @@ -517,8 +517,7 @@ static int device_resume_noirq(struct device *dev,
+> pm_message_t state, bool asyn
+> >
+> >  static bool is_async(struct device *dev)
+> >  {
+> > -	return dev->power.async_suspend && pm_async_enabled
+> > -		&& !pm_trace_is_enabled();
+> > +	return dev->power.async_suspend && pm_async_enabled;
+> >  }
+> >
+> 
+> Actually... whoever did the original patch was evil person. Changing
+> behaviour when tracing is requested is evil, evil, evil. Git blame
+> tells me
+> 
+> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> 
+> went to the dark side.
 
-> On Mon, Jan 12, 2015 at 05:50:11PM +0100, Vitaly Kuznetsov wrote:
->> When an SMP Hyper-V guest is running on top of 2012R2 Server and secondary
->> cpus are sent offline (with echo 0 > /sys/devices/system/cpu/cpu$cpu/online)
->> the system freeze is observed. This happens due to the fact that on newer
->> hypervisors (Win8, WS2012R2, ...) vmbus channel handlers are distributed
->> across all cpus (see init_vp_index() function in drivers/hv/channel_mgmt.c)
->> and on cpu offlining nobody reassigns them to CPU0. Prevent cpu offlining
->> when vmbus is loaded until the issue is fixed host-side.
->> 
->> This patch also disables hibernation but it is OK as it is also broken (MCE
->> error is hit on resume). Suspend still works.
->> 
->> Tested with WS2008R2 and WS2012R2.
->> 
->> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
->> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
->> ---
->> Changes since v2:
->> - repair the build when vmbus is builded as a module [Greg KH] by saving
->>   current cpu_disable pointer to previous_cpu_disable and restoring it on
->>   unload;
->> - return -ENOSYS (same as native_cpu_disable when !CONFIG_HOTPLUG_CPU) instead
->>   of -1 in hyperv_cpu_disable().
->> 
->> Changes since v1:
->> - introduce hv_cpu_hotplug_quirk() function to not spread #ifdefs [Greg KH];
->> - add pr_notice() message "hv_vmbus: CPU offlining is not supported by
->>   hypervisor".
->> ---
->>  drivers/hv/vmbus_drv.c | 36 ++++++++++++++++++++++++++++++++++++
->>  1 file changed, 36 insertions(+)
->
-> Doesn't apply to my char-misc-test branch at all :(
+Although I didn't get where is something wrong, but the is_async() is not created by my commit,
+it is from commit (PM: Start asynchronous resume threads upfront), I just moved it ahead.
 
-Another mid-air collision with K.Y's "Drivers: hv: vmbus: Implement a
-clockevent device", please use the attached version. No functional
-changes are required, I just fixed the merge conflict (includes).
-
-Othere than that (and sorry for meddling), would it it be better if
-you switch to 'pull requests' workflow with K.Y? There is a lot of
-ongoing work in hyperv nowdays and such collisions seem otherwise
-inevitable ...
-
--- 
-  Vitaly
-
-
---=-=-=
-Content-Type: text/x-patch
-Content-Disposition: inline;
- filename=0001-Drivers-hv-vmbus-prevent-cpu-offlining-on-newer-hype.patch
-
->From 95f9b0ff3f73c3bbe8aa9c525414097c2c26a3ef Mon Sep 17 00:00:00 2001
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-Date: Mon, 12 Jan 2015 17:50:11 +0100
-Subject: [PATCH] Drivers: hv: vmbus: prevent cpu offlining on newer
- hypervisors
-
-When an SMP Hyper-V guest is running on top of 2012R2 Server and secondary
-cpus are sent offline (with echo 0 > /sys/devices/system/cpu/cpu$cpu/online)
-the system freeze is observed. This happens due to the fact that on newer
-hypervisors (Win8, WS2012R2, ...) vmbus channel handlers are distributed
-across all cpus (see init_vp_index() function in drivers/hv/channel_mgmt.c)
-and on cpu offlining nobody reassigns them to CPU0. Prevent cpu offlining
-when vmbus is loaded until the issue is fixed host-side.
-
-This patch also disables hibernation but it is OK as it is also broken (MCE
-error is hit on resume). Suspend still works.
-
-Tested with WS2008R2 and WS2012R2.
-
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/vmbus_drv.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
-
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 35e3f42..90c3400 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -33,6 +33,7 @@
- #include <linux/hyperv.h>
- #include <linux/kernel_stat.h>
- #include <linux/clockchips.h>
-+#include <linux/cpu.h>
- #include <asm/hyperv.h>
- #include <asm/hypervisor.h>
- #include <asm/mshyperv.h>
-@@ -704,6 +705,39 @@ static void vmbus_isr(void)
- 	}
- }
- 
-+#ifdef CONFIG_HOTPLUG_CPU
-+static int hyperv_cpu_disable(void)
-+{
-+	return -ENOSYS;
-+}
-+
-+static void hv_cpu_hotplug_quirk(bool vmbus_loaded)
-+{
-+	static void *previous_cpu_disable;
-+
-+	/*
-+	 * Offlining a CPU when running on newer hypervisors (WS2012R2, Win8,
-+	 * ...) is not supported at this moment as channel interrupts are
-+	 * distributed across all of them.
-+	 */
-+
-+	if ((vmbus_proto_version == VERSION_WS2008) ||
-+	    (vmbus_proto_version == VERSION_WIN7))
-+		return;
-+
-+	if (vmbus_loaded) {
-+		previous_cpu_disable = smp_ops.cpu_disable;
-+		smp_ops.cpu_disable = hyperv_cpu_disable;
-+		pr_notice("CPU offlining is not supported by hypervisor\n");
-+	} else if (previous_cpu_disable)
-+		smp_ops.cpu_disable = previous_cpu_disable;
-+}
-+#else
-+static void hv_cpu_hotplug_quirk(bool vmbus_loaded)
-+{
-+}
-+#endif
-+
- /*
-  * vmbus_bus_init -Main vmbus driver initialization routine.
-  *
-@@ -744,6 +778,7 @@ static int vmbus_bus_init(int irq)
- 	if (ret)
- 		goto err_alloc;
- 
-+	hv_cpu_hotplug_quirk(true);
- 	vmbus_request_offers();
- 
- 	return 0;
-@@ -997,6 +1032,7 @@ static void __exit vmbus_exit(void)
- 	bus_unregister(&hv_bus);
- 	hv_cleanup();
- 	acpi_bus_unregister_driver(&vmbus_acpi_driver);
-+	hv_cpu_hotplug_quirk(false);
- }
- 
- 
--- 
-1.9.3
-
-
---=-=-=--
+And like other phases, I added it into resum/suspend_noirq()...
