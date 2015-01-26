@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269AbbAZJ4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 04:56:48 -0500
-Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:46903 "EHLO
-	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337AbbAZJ4A (ORCPT
+	id S1754473AbbAZJ6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:58:05 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:48649 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083AbbAZJ6B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 04:56:00 -0500
-Date: Mon, 26 Jan 2015 10:55:54 +0100
-From: Sylvain Rochet <sylvain.rochet@finsecur.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, peda@axentia.se
-Message-ID: <20150126095554.GA18807@gradator.net>
-References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
+	Mon, 26 Jan 2015 04:58:01 -0500
+Date: Mon, 26 Jan 2015 09:57:57 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: [RFC PATCH v3 2/2] arm: kernel: fix pci_mmap_page_range() offset
+ calculation
+Message-ID: <20150126095757.GB23384@e102568-lin.cambridge.arm.com>
+References: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
+ <1415877558-8906-3-git-send-email-lorenzo.pieralisi@arm.com>
+ <20150123235911.GG13072@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <20150123235911.GG13072@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 26 Jan 2015 09:57:58.0311 (UTC) FILETIME=[90310B70:01D0394E]
+X-MC-Unique: 115012609575900301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 172.16.8.13
-X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
-Subject: Re: [PATCH v2 00/12] AT91 pm cleanup for 3.20
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wenyou,
+On Fri, Jan 23, 2015 at 11:59:11PM +0000, Bjorn Helgaas wrote:
+> On Thu, Nov 13, 2014 at 11:19:16AM +0000, Lorenzo Pieralisi wrote:
+> > The pci_mmap_page_range() API should be written to expect offset
+> > values representing PCI memory resource addresses as seen by user
+> > space, through the pci_resource_to_user() API.
+> > 
+> > ARM relies on the standard implementation of pci_resource_to_user()
+> > which actually is an identity map and exports to user space
+> > PCI memory resources as they are stored in PCI devices resources
+> > structures, which represent CPU physical addresses (fixed-up using
+> > BUS to CPU address conversions) not PCI bus addresses.
+> > 
+> > Therefore, on ARM platforms where the mapping between CPU and BUS
+> > address is not a 1:1 the current pci_mmap_page_range() implementation is
+> > erroneous, in that an additional shift is applied to an already fixed-up
+> > offset passed from userspace.
+> > 
+> > Hence, this patch removes the mem_offset from the pgoff calculation
+> > since the offset as passed from user space already represents the CPU
+> > physical address corresponding to the resource to be mapped, ie no
+> > additional offset should be applied.
+> > 
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> 
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-On Mon, Jan 26, 2015 at 05:36:45PM +0800, Wenyou Yang wrote:
-> Hi Nicolas,
-> 
-> This version is rebased on the branch: at91-3.20-cleanup of the repository
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git
-> 
-> It is purpose to clean up the PM code, includes the patches from Peter Rosin and Sylvain Rochet.
-> 
-> Since verifying the USB clock and USB PLL disabling before suspending to memory,
-> it aslo depends on the following patch serials from Sylvain:
-> 	[PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
-> 	[PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
-> 
-> Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
-> The suspend to standby mode uses the same sram function as the suspend to memory mode.
-> Remove some unused code.
-> 
-> Alexandr & Sylvain, Thank you very much for so many feedbacks.
-> 
-> Changes in v2:
->  - Rebase on the at91-3.20-cleanup branch
->  - Recover the verify clock condition, only for suspend to memory.
->  - Collect ACK from Alexandre
->  - Add the macro for PM mode
+Thank you, I will ask Russell to merge it.
 
-Did you fix the slow_clock == NULL condition with the change suggested 
-by Alexandre ?
+Lorenzo
 
-Sylvain
