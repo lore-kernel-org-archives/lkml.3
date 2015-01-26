@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078AbbAZLuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:50:24 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43026 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849AbbAZLuV (ORCPT
+	id S1754159AbbAZLuv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:50:51 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34538 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152AbbAZLuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:50:21 -0500
-Date: Mon, 26 Jan 2015 11:49:56 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
-        "Patrice.VILCHEZ@atmel.com" <Patrice.VILCHEZ@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "peda@axentia.se" <peda@axentia.se>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 6/7] pm: at91: add achieve the mpddrc peripheral ID and
- the DDR clock ID support
-Message-ID: <20150126114956.GE23313@leverpostej>
-References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
- <1422266896-24666-1-git-send-email-wenyou.yang@atmel.com>
+	Mon, 26 Jan 2015 06:50:50 -0500
+Date: Mon, 26 Jan 2015 11:50:46 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20150126115046.GA21293@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="0Zc0bQF+fxzVVQOT"
 Content-Disposition: inline
-In-Reply-To: <1422266896-24666-1-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] regulator fixes for v3.19
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 10:08:16AM +0000, Wenyou Yang wrote:
-> The patch achieves the mpddr controller peripheral ID
-> and the DDR clock ID from the dts file.
-> 
-> They will be used in the future to disable the mpddr controller'c clock
-> the and DDR clock to decrease the power consumption during suspending.
-> 
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> ---
->  arch/arm/mach-at91/generic.h |    2 ++
->  arch/arm/mach-at91/setup.c   |   24 ++++++++++++++++++++++++
->  2 files changed, 26 insertions(+)
-> 
-> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-> index 41796bf..3c72a3e 100644
-> --- a/arch/arm/mach-at91/generic.h
-> +++ b/arch/arm/mach-at91/generic.h
-> @@ -47,6 +47,8 @@ void __init at91_sam9x5_pm_init(void) { }
->  struct at91_pm_struct {
->  	unsigned long uhp_udp_mask;
->  	int memctrl;
-> +	u32 mpddrc_id[2];
-> +	u32 ddrck_id;
->  };
->  
->  #endif /* _AT91_GENERIC_H */
-> diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-> index 7924663..a306f95 100644
-> --- a/arch/arm/mach-at91/setup.c
-> +++ b/arch/arm/mach-at91/setup.c
-> @@ -363,6 +363,27 @@ void __init at91_ioremap_matrix(u32 base_addr)
->  		panic(pr_fmt("Impossible to ioremap at91_matrix_base\n"));
->  }
->  
-> +static u32 at91_of_get_ddr_id(struct device_node *np, char *name)
-> +{
-> +	struct of_phandle_args clkspec;
-> +	u32 id;
-> +	int index;
-> +	int rc;
-> +
-> +	index = of_property_match_string(np, "clock-names", name);
-> +	rc = of_parse_phandle_with_args(np, "clocks", "#clock-cells", index, &clkspec);
-> +	if (rc)
-> +		return 0;
-> +
-> +	rc = of_property_read_u32(clkspec.np, "reg", &id);
-> +	if (rc)
-> +		return 0;
-> +
-> +	of_node_put(clkspec.np);
-> +
-> +	return id;
-> +}
 
-This doesn't look right to me. This assumes the format of the clock
-provider node, which invalidates the point of having the abstraction in
-the first place.
+--0Zc0bQF+fxzVVQOT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> +
->  struct at91_ramc_of_data {
->  	u8 ramc_type;
->  };
-> @@ -400,6 +421,9 @@ static void at91_dt_ramc(void)
->  		of_data = of_id->data;
->  		at91_pm_data.memctrl = of_data->ramc_type;
->  
-> +		at91_pm_data.mpddrc_id[idx] = at91_of_get_ddr_id(np, "mpddr");
-> +		at91_pm_data.ddrck_id = at91_of_get_ddr_id(np, "ddrck");
-> +
+The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d186115:
 
-Why do you need these here?
+  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
 
-Surely the logic for poking any clocks should live in the relevant
-clock controller drivers?
+are available in the git repository at:
 
-Mark.
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.19-rc6
+
+for you to fetch changes up to 113620bb89a580d72a1dd78e677c0c8aac45cf0c:
+
+  Merge remote-tracking branch 'regulator/fix/s2mps11' into regulator-linus (2015-01-16 12:05:35 +0000)
+
+----------------------------------------------------------------
+regulator: Fixes for v3.19
+
+One correctness fix here for the s2mps11 driver which would have
+resulted in some of the regulators being completely broken together with
+a fix for locking in regualtor_put() (which is fortunately rarely called
+at all in practical systems).
+
+----------------------------------------------------------------
+Ashay Jaiswal (1):
+      regulator: core: fix race condition in regulator_put()
+
+Jonghwa Lee (1):
+      regulator: s2mps11: Fix wrong calculation of register offset
+
+Mark Brown (2):
+      Merge remote-tracking branch 'regulator/fix/core' into regulator-linus
+      Merge remote-tracking branch 'regulator/fix/s2mps11' into regulator-linus
+
+ drivers/regulator/core.c            |  4 +++-
+ drivers/regulator/s2mps11.c         | 42 +++++++++++++++++++++++++++++++++----
+ include/linux/mfd/samsung/s2mps13.h |  2 ++
+ 3 files changed, 43 insertions(+), 5 deletions(-)
+
+--0Zc0bQF+fxzVVQOT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUxioVAAoJECTWi3JdVIfQLpgH/ieAJymcwUWt2xCF7XS8vNG2
+nhTvmLzsFL9ji6LnVjgKcO3NAd+4XEyNqVXw/BsYSiyA6r5sGis6/BvSRf9f0bu7
+NzMfG47rgJoG3hRhQzki+rwyFcPsmd/DymJXNqcQZPTKmbOhzAdrc7yFbroeSfh9
+O2NzJJYa9b2uAoCb38uN9/J7n592o0LJf2nFgP1J9hzCipmJTIzCDHhv91ZiEUrk
+119nt2Rk8unCcwNv7q0khaNuCnMW2byQfsrB5JpL6Tdm/gEnAVlEEeqTcL3gBFLZ
+0Lm1DOXhMwthqngx1JtE6SwaSdlLcKBMcyKEA511HFCPHIWB7vY603NB14nTECc=
+=01wQ
+-----END PGP SIGNATURE-----
+
+--0Zc0bQF+fxzVVQOT--
