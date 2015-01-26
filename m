@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbbAZL0h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:26:37 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56901 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134AbbAZL0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:26:35 -0500
-Date: Mon, 26 Jan 2015 12:26:29 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Yingjoe Chen =?utf-8?B?KOmZs+iLsea0sik=?= 
-	<Yingjoe.Chen@mediatek.com>,
-        Henry Chen <henryc.chen@mediatek.com>,
-        YH Chen =?utf-8?B?KOmZs+aYseixqik=?= <yh.chen@mediatek.com>,
-        Flora Fu <flora.fu@mediatek.com>
-Subject: Re: [PATCH 7/7] mfd: Add support for the MediaTek MT6397 PMIC
-Message-ID: <20150126112629.GP12209@pengutronix.de>
-References: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
- <1422022202-7526-8-git-send-email-s.hauer@pengutronix.de>
- <20150123161440.GA11745@x1>
- <20150126105222.GM12209@pengutronix.de>
- <20150126111119.GE11745@x1>
+	id S1754635AbbAZL1l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:27:41 -0500
+Received: from sauhun.de ([89.238.76.85]:55785 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752040AbbAZL1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 06:27:37 -0500
+Date: Mon, 26 Jan 2015 12:27:11 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: jdelvare@suse.de, arnd@arndb.de, maxime.ripard@free-electrons.com,
+        dianders@chromium.org, u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
+        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
+        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, mika.westerberg@linux.intel.com,
+        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
+        christian.ruppert@abilis.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH V4 0/2] i2c-designware: Add Intel Baytrail pmic i2c bus
+ support
+Message-ID: <20150126112711.GA1052@katana>
+References: <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+ <1421313137-1613-1-git-send-email-david.e.box@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
 Content-Disposition: inline
-In-Reply-To: <20150126111119.GE11745@x1>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:22:02 up 102 days, 22:35, 144 users,  load average: 0.06, 0.31,
- 0.27
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1421313137-1613-1-git-send-email-david.e.box@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 11:11:19AM +0000, Lee Jones wrote:
-> On Mon, 26 Jan 2015, Sascha Hauer wrote:
-> > On Fri, Jan 23, 2015 at 04:14:40PM +0000, Lee Jones wrote:
-> > > On Fri, 23 Jan 2015, Sascha Hauer wrote:
-> > > > +	struct mt6397_chip *mt6397 = irq_get_chip_data(data->irq);
-> > > > +	int shift = mt6397_irq_shift(data->hwirq);
-> > > > +	int reg = mt6397_irq_reg(data->hwirq);
-> > > > +	int reg_ofs = MT6397_INT_CON0 + reg * 2;
-> > > > +
-> > > > +	mt6397->irq_masks_cur[reg] &= ~(1 << shift);
-> > > 
-> > > s/(1 << shift)/BIT(shift)/
-> > 
-> > Is it mentioned somewhere that these BIT macros shall be used? There are
-> > quadrillions of examples for both styles in the kernel and personally I
-> > think 1 << x is more readable.
-> 
-> I haven't seen a hard and fast 'rule' per say.  I think it's left up
-> to the Maintainer of any given subsystem. ;)
 
-Ok, I know your opinion already, I hope Samuel has the same ;).
-I'll change it to BIT().
+--PNTmBPCT7hxwcZjr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Maybe I'll even change my personal opinion since I noticed that 1 << x
-doesn't work for 64bit registers. Here 1UL << x must be used, but this
-could easily be forgotten.
+On Thu, Jan 15, 2015 at 01:12:15AM -0800, David E. Box wrote:
+> V4:	- Added bus lock to i2c_dw_init() as suggested by Jarrko Nikula
+> 	  <jarkko.nikula@linux.intel.com>. Addresses infrequent hang that was
+> 	  seen occuring during probe.
+> 	- Added label in i2c_dw_xfer() to bypass unnecessary lock release when
+> 	  acquire fails. Suggested by Mika.
+> 	- Changed make to build driver as composite addition to
+> 	  i2c-designware-platform. Driver can be module or built-in following
+> 	  the platform driver selection. Tested as both.
+> 	- Added EPROBE_DEFER return to baytrail definition of i2c_dw_eval_lock()
+> 	  to defer probe if iosf_mbi driver (required for acquring bus lock) is
+> 	  not available.
 
-Sascha
+Applied to for-next, thanks!
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+--PNTmBPCT7hxwcZjr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUxiSPAAoJEBQN5MwUoCm2gOUP/07PyelWHyBnWyXRazX9Adcy
+36ebjcYDu6xKhSDzkpoU2pADSq/mYPwPnAcTZmwa0Y9NgHQJ0h8JTlFeqd79ivW9
+W0XAvJgEkeHVHIKa5VAWsJLrn2hnuIraDBRxFh6Li/UIbJxk5PJSynXswchZFqKp
+2MH5/H2z9bmfCIvLkWBNnQYBKpCw3bRdwykQ+QRNHaIB4fMDbo30IJYkjGaLbw9V
+x3geeIc8VYBUlhbIBPA1LXmsqDAIvLJhi+utlKh/NdpEFpAGBvtVn1mwm2eP8d1/
+Y5sSCrFAqZTD9UtjyGbZmYooolR3Mz7AHaULRV9EPoKGdwnzLKCh75XRJzb8gNyL
+Mr/OGDftmXvL5fhjawU3JXseB2UCJcL6bZpF6OX+yTiWNWBM6FRreIHmYnIfGy09
+ps3/VpPORtzc4Vg5SuTtW4C79+NIpy7hnz8EFrJblMAb10216dLPXrFgM/w3E3rc
+FEP4SBi7axTfpPCarrSrkvgdY+IT07cGjSAIjVuUa02Eu0Zfnwtu8t0ZEGHb8sui
+p47401GOWbeMmdTErRde01/Wy3XHI2tkmWcngYuR95LXQhlNmWWSeHYJX05pP/E3
+g/CaRvKoWVNLASegxy1TJkc7ZvjYuJI9RXudGdQmSBqBhBmJ0M/nQOCnqhmtW/K3
+RJIaUKYALCLbi1JvIBcr
+=bfAl
+-----END PGP SIGNATURE-----
+
+--PNTmBPCT7hxwcZjr--
