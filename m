@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728AbbAZVrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:47:04 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41815 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749AbbAZVrA (ORCPT
+	id S1756875AbbAZVsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:48:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45647 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464AbbAZVsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:47:00 -0500
-Date: Mon, 26 Jan 2015 21:46:58 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
-Message-ID: <20150126214658.GQ29656@ZenIV.linux.org.uk>
-References: <20150126150913.653681560@goodmis.org>
- <20150126193049.GN29656@ZenIV.linux.org.uk>
- <20150126154259.5e650d32@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126154259.5e650d32@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Jan 2015 16:48:05 -0500
+Date: Mon, 26 Jan 2015 13:48:03 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/5] compat: Declare compat_sys_sigpending and
+ compat_sys_sigprocmask prototypes
+Message-Id: <20150126134803.99158a48850283da3d67d6cf@linux-foundation.org>
+In-Reply-To: <1420819048-3515-2-git-send-email-catalin.marinas@arm.com>
+References: <1420819048-3515-1-git-send-email-catalin.marinas@arm.com>
+	<1420819048-3515-2-git-send-email-catalin.marinas@arm.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 03:42:59PM -0500, Steven Rostedt wrote:
-> On Mon, 26 Jan 2015 19:30:49 +0000
-> Al Viro <viro@ZenIV.linux.org.uk> wrote:
-> 
-> > You are still fighting an inconvenient API, but now it's not debugfs one -
-> > it's your copy thereof.  Why not give your instances/ an inode_operations
-> > of its own?  One with ->mkdir() and ->rmdir(), leaving all other directories
-> > as-is.  That way you don't need the secondary methods at all.  And sure,
-> > debugfs_create_dir() grabs ->i_mutex on parent, making you drop that in
-> > your ->mkdir() if you want to call it.  But now you are not talking to it -
-> > just to your own code, where you are free to change the calling conventions,
-> > making it caller's responsibility to get that ->i_mutex.  The same goes for
-> > the rmdir side...
-> 
-> The vfs layer grabs the i_mutex, which needs to be dropped.
+On Fri,  9 Jan 2015 15:57:24 +0000 Catalin Marinas <catalin.marinas@arm.com> wrote:
 
-What for?  Just keep it through your instance_mkdir/instance_rmdir and be
-done with that.  Sure, it means that you need variants of file/directory
-creation/removal primitives that would assume that parent is already locked
-by caller (and would leave unlocking to the caller as well).  So add them...
+> __ARCH_WANT_SYS_SIGPENDING or __ARCH_WANT_SYS_SIGPROGMASK may be defined
+> for compat support but the corresponding prototypes are missing from
+> linux/compat.h.
+> 
+> ...
+>
+> --- a/include/linux/compat.h
+> +++ b/include/linux/compat.h
+> @@ -689,6 +689,15 @@ asmlinkage long compat_sys_sendfile64(int out_fd, int in_fd,
+>  asmlinkage long compat_sys_sigaltstack(const compat_stack_t __user *uss_ptr,
+>  				       compat_stack_t __user *uoss_ptr);
+>  
+> +#ifdef __ARCH_WANT_SYS_SIGPENDING
+> +asmlinkage long compat_sys_sigpending(compat_old_sigset_t __user *set);
+> +#endif
+> +
+> +#ifdef __ARCH_WANT_SYS_SIGPROCMASK
+> +asmlinkage long compat_sys_sigprocmask(int how, compat_old_sigset_t __user *nset,
+> +				       compat_old_sigset_t __user *oset);
+> +#endif
+> +
+
+ack, please merge and submit.
