@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924AbbAZNgc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:36:32 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43139 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869AbbAZNg3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:36:29 -0500
-Date: Mon, 26 Jan 2015 13:36:02 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stefan Agner <stefan@agner.ch>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND v3 2/3] irqchip: vf610-mscm: dt-bindings: add MSCM
- bindings
-Message-ID: <20150126133602.GG23313@leverpostej>
-References: <1421309046-22452-1-git-send-email-stefan@agner.ch>
- <1421309046-22452-3-git-send-email-stefan@agner.ch>
+	id S1755172AbbAZNkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:40:18 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:49198 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751244AbbAZNkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 08:40:14 -0500
+Date: Mon, 26 Jan 2015 08:37:12 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Christoph Lameter <cl@linux.com>, Guenter Roeck <linux@roeck-us.net>,
+        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, mhocko@suse.cz
+Subject: Re: mmotm 2015-01-22-15-04: qemu failure due to 'mm: memcontrol:
+ remove unnecessary soft limit tree node test'
+Message-ID: <20150126133712.GB9738@cmpxchg.org>
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
+ <20150123050802.GB22751@roeck-us.net>
+ <20150123141817.GA22926@phnom.home.cmpxchg.org>
+ <alpine.DEB.2.11.1501231419420.11767@gentwo.org>
+ <54C2B01D.4070303@roeck-us.net>
+ <alpine.DEB.2.11.1501231508020.7871@gentwo.org>
+ <20150124071623.GA17705@phnom.home.cmpxchg.org>
+ <109548.1422221788@turing-police.cc.vt.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421309046-22452-3-git-send-email-stefan@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <109548.1422221788@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 08:04:05AM +0000, Stefan Agner wrote:
-> Add binding documentation for Miscellaneous System Control Module
-> found in Freescale Vybrid SoC's.
+On Sun, Jan 25, 2015 at 04:36:28PM -0500, Valdis.Kletnieks@vt.edu wrote:
+> On Sat, 24 Jan 2015 02:16:23 -0500, Johannes Weiner said:
 > 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
->  .../bindings/arm/freescale/fsl,vf610-mscm.txt         | 19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+> > I would generally agree, but this code, which implements a userspace
+> > interface, is already grotesquely inefficient and heavyhanded.  It's
+> > also superseded in the next release, so we can just keep this simple
+> > at this point.
 > 
-> diff --git a/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt b/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
-> new file mode 100644
-> index 0000000..e051b88
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
-> @@ -0,0 +1,19 @@
-> +Freescale Vybrid Miscellaneous System Control Module
-> +
-> +The MSCM IP contains Access Control and TrustZone Security hardware,
-> +CPU Configuration registers and Interrupt Router control.
-> +
-> +Required properties:
-> +- compatible : "fsl,vf610-mscm", "syscon"
+> Wait, what?  Userspace interface that's superceded in the next release?
 
-I'm a little concerned by this also being a syscon. What other devices
-need to refer to this block as a syscon?
+The existing interface and its implementation are going to remain in
+place, obviously, we can't break userspace.  But the semantics are
+ill-defined and the implementation bad to a point where we decided to
+fix both by adding a second interface and encouraging users to switch.
 
-> +- interrupt-controller : Identifies the node as an interrupt controller
-> +- #interrupt-cells : Two cells, interrupt number and flags (IRQ type)
+Now if a user were to report that these off-node allocations are
+actually creating problems in real life I would fix it.  But I'm
+fairly certain that remote access costs are overshadowed by the
+reclaim stalls this mechanism creates.
 
-What numbers and flags are valid?
-
-Mark.
-
-> +- reg : the register range of the MSCM module
-> +
-> +Example:
-> +	mscm: mscm@40001000 {
-> +		compatible = "fsl,vf610-mscm", "syscon";
-> +		interrupt-controller;
-> +		#interrupt-cells = <2>;
-> +		interrupt-parent = <&intc>;
-> +		reg = <0x40001000 0x1000>;
-> +	}
-> -- 
-> 2.2.1
-> 
-> 
+So what I was trying to say above is that I don't see a point in
+complicating the v1 implementation for a questionable minor
+optimization when v2 is already being added to address much more
+severe shortcomings in v1.
