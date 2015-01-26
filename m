@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221AbbAZWq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 17:46:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46003 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756659AbbAZWqz (ORCPT
+	id S1757244AbbAZWrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 17:47:23 -0500
+Received: from mail-bn1bon0138.outbound.protection.outlook.com ([157.56.111.138]:29092
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757224AbbAZWrU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 17:46:55 -0500
-Date: Mon, 26 Jan 2015 14:46:54 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devel <devel@driverdev.osuosl.org>, isdn@linux-pingi.de,
-        netdev <netdev@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: make allyesconfig i386 build failure with next-20150122 (caused
- by fb_agm1264k-fl driver)
-Message-ID: <20150126224654.GA17166@kroah.com>
-References: <CA+r1ZhhXF+hicy7JKo3jAbgSbO4KOLm6BwPosTKNb+E_Cb4yPQ@mail.gmail.com>
- <20150126215959.GA9853@roeck-us.net>
+	Mon, 26 Jan 2015 17:47:20 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Nicholas Mc Guire <der.herr@hofr.at>, KY Srinivasan <kys@microsoft.com>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2] net: hyperv: else branch not necessary
+Thread-Topic: [PATCH v2] net: hyperv: else branch not necessary
+Thread-Index: AQHQOMsMfFDVAhk12kKnTs5nk2uyyZzTAjRQ
+Date: Mon, 26 Jan 2015 22:47:18 +0000
+Message-ID: <BN1PR0301MB0770F37DD16FE4D9AF368083CA350@BN1PR0301MB0770.namprd03.prod.outlook.com>
+References: <1422209317-18975-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <1422209317-18975-1-git-send-email-der.herr@hofr.at>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [96.237.174.38]
+authentication-results: hofr.at; dkim=none (message not signed)
+ header.d=none;hofr.at; dmarc=none action=none header.from=microsoft.com;
+x-dmarcaction-test: None
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BN1PR0301MB0707;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0707;
+x-forefront-prvs: 0468FE4A2B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(377454003)(13464003)(40100003)(102836002)(2900100001)(99286002)(2656002)(87936001)(86362001)(1511001)(2950100001)(62966003)(122556002)(77156002)(66066001)(2421001)(76576001)(106116001)(33656002)(19580395003)(76176999)(50986999)(54606007)(46102003)(92566002)(74316001)(54356999)(54206007)(19580405001)(86612001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0707;H:BN1PR0301MB0770.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126215959.GA9853@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-MS-Exchange-CrossTenant-originalarrivaltime: 26 Jan 2015 22:47:18.1689
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0707
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 01:59:59PM -0800, Guenter Roeck wrote:
-> On Thu, Jan 22, 2015 at 12:10:33PM -0700, Jim Davis wrote:
-> > make ARCH=i386 allyesconfig fails with
-> > 
-> > drivers/staging/built-in.o: In function `reset':
-> > (.text+0x2ae89d): multiple definition of `reset'
-> > drivers/isdn/built-in.o:(.text+0x185dc2): first defined here
-> > make[1]: *** [drivers/built-in.o] Error 1
-> 
-> Culprit:
-> 
-> commit b2ebd4be6fa1d2329b63531b044f9e25474981cb
-> Author: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Date:   Wed Dec 31 10:11:10 2014 +0100
-> 
->     staging: fbtft: add fb_agm1264k-fl driver
-> 
-> A global function named 'reset' isn't really a good idea.
-> 
-> Not that the global function with the same name in the isdn code
-> is better ;-).
 
-Agreed, the fbtft code is now fixed.  Patches to fix the isdn code would
-be gladly accepted as well :)
 
-thanks,
+> -----Original Message-----
+> From: Nicholas Mc Guire [mailto:der.herr@hofr.at]
+> Sent: Sunday, January 25, 2015 1:09 PM
+> To: KY Srinivasan
+> Cc: Haiyang Zhang; devel@linuxdriverproject.org; netdev@vger.kernel.org;
+> linux-kernel@vger.kernel.org; Nicholas Mc Guire
+> Subject: [PATCH v2] net: hyperv: else branch not necessary
+> 
+> As the if completes with a unconditional goto the else branch
+> is not needed here.
+> 
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 
-greg k-h
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Thank you!
+
+> ---
+> 
+> v2: added missing subsystem string in subject line - patch unchanged
+> 
+> All paths of execution that did not exit through the if branch will
+> go through the else branch so no need for an explicit else here
+> 
+> Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=y
+> CONFIG_HYPERV=m, CONFIG_HYPERV_NET=m
+> 
+> Patch is against 3.19.0-rc5 -next-20150123
+> 
+>  drivers/net/hyperv/rndis_filter.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/hyperv/rndis_filter.c
+> b/drivers/net/hyperv/rndis_filter.c
+> index 7bd8387..efb84a9 100644
+> --- a/drivers/net/hyperv/rndis_filter.c
+> +++ b/drivers/net/hyperv/rndis_filter.c
+> @@ -833,10 +833,10 @@ int rndis_filter_set_packet_filter(struct
+> rndis_device *dev, u32 new_filter)
+>  		 * send completion for it.
+>  		 */
+>  		goto exit;
+> -	} else {
+> -		set_complete = &request->response_msg.msg.set_complete;
+> -		status = set_complete->status;
+> -	}
+> +	}
+> +
+> +	set_complete = &request->response_msg.msg.set_complete;
+> +	status = set_complete->status;
+> 
+>  cleanup:
+>  	if (request)
+> --
+> 1.7.10.4
+
