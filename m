@@ -1,101 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbbAZMqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:46:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56616 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363AbbAZMqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:46:19 -0500
-Date: Mon, 26 Jan 2015 12:46:46 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 3.14 40/98] clk: Really fix deadlock with mmap_sem
-Message-ID: <20150126124646.GC2413@charon>
-References: <20150125180712.859646324@linuxfoundation.org>
- <20150125180714.619587755@linuxfoundation.org>
+	id S1755161AbbAZMsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:48:08 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:53857 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753490AbbAZMsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:48:05 -0500
+Date: Mon, 26 Jan 2015 14:47:31 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Calvin Owens <calvinowens@fb.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        linux-kernel@vger.kernel.org, kernel-team@fb.com,
+        Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org
+Subject: Re: [RFC][PATCH v2] procfs: Always expose /proc/<pid>/map_files/ and
+ make it readable
+Message-ID: <20150126124731.GA26916@node.dhcp.inet.fi>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+ <20150114152501.GB9820@node.dhcp.inet.fi>
+ <20150114153323.GF2253@moon>
+ <20150114204653.GA26698@mail.thefacebook.com>
+ <20150114211613.GH2253@moon>
+ <20150122024554.GB23762@mail.thefacebook.com>
+ <20150124031544.GA1992748@mail.thefacebook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150125180714.619587755@linuxfoundation.org>
+In-Reply-To: <20150124031544.GA1992748@mail.thefacebook.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 25, 2015 at 10:06:58AM -0800, Greg Kroah-Hartman wrote:
-> 3.14-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jan 23, 2015 at 07:15:44PM -0800, Calvin Owens wrote:
+> Currently, /proc/<pid>/map_files/ is restricted to CAP_SYS_ADMIN, and
+> is only exposed if CONFIG_CHECKPOINT_RESTORE is set. This interface
+> is very useful for enumerating the files mapped into a process when
+> the more verbose information in /proc/<pid>/maps is not needed.
 > 
+> This patch moves the folder out from behind CHECKPOINT_RESTORE, and
+> removes the CAP_SYS_ADMIN restrictions. Following the links requires
+> the ability to ptrace the process in question, so this doesn't allow
+> an attacker to do anything they couldn't already do before.
+> 
+> Signed-off-by: Calvin Owens <calvinowens@fb.com>
 
-This patch was tagged for stable 3.18 only.  Also, since commit
-6314b6796e3c doesn't seem to be in 3.14, I believe shouldn't be in
-this stable kernel.
+Cc +linux-api@
 
-Cheers,
---
-Luís
-
-> ------------------
-> 
-> From: Stephen Boyd <sboyd@codeaurora.org>
-> 
-> commit 89f7e9de59bf3e3cda2e00de12c66db22675a7cf upstream.
-> 
-> Commit 6314b6796e3c (clk: Don't hold prepare_lock across debugfs
-> creation, 2014-09-04) forgot to update one place where we hold
-> the prepare_lock while creating debugfs directories. This means
-> we still have the chance of a deadlock that the commit was trying
-> to fix. Actually fix it by moving the debugfs creation outside
-> the prepare_lock.
-> 
-> Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Fixes: 6314b6796e3c "clk: Don't hold prepare_lock across debugfs creation"
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Michael Turquette <mturquette@linaro.org>
-> [mturquette@linaro.org: removed lockdep_assert]
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
 > ---
->  drivers/clk/clk.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+> Changes in v2: 	Removed the follow_link() stub that returned -EPERM if
+> 		the caller didn't have CAP_SYS_ADMIN, since the caller
+> 		in my chroot() scenario gets -EACCES anyway.
 > 
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -230,7 +230,6 @@ static const struct file_operations clk_
->  	.release	= single_release,
->  };
->  
-> -/* caller must hold prepare_lock */
->  static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
->  {
->  	struct dentry *d;
-> @@ -1902,7 +1901,6 @@ int __clk_init(struct device *dev, struc
->  	else
->  		clk->rate = 0;
->  
-> -	clk_debug_register(clk);
->  	/*
->  	 * walk the list of orphan clocks and reparent any that are children of
->  	 * this clock
-> @@ -1937,6 +1935,9 @@ int __clk_init(struct device *dev, struc
->  out:
->  	clk_prepare_unlock();
->  
-> +	if (!ret)
-> +		clk_debug_register(clk);
-> +
->  	return ret;
+>  fs/proc/base.c | 18 ------------------
+>  1 file changed, 18 deletions(-)
+> 
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 3f3d7ae..67b15ac 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -1632,8 +1632,6 @@ end_instantiate:
+>  	return dir_emit(ctx, name, len, 1, DT_UNKNOWN);
 >  }
 >  
-> 
+> -#ifdef CONFIG_CHECKPOINT_RESTORE
+> -
+>  /*
+>   * dname_to_vma_addr - maps a dentry name into two unsigned longs
+>   * which represent vma start and end addresses.
+> @@ -1660,11 +1658,6 @@ static int map_files_d_revalidate(struct dentry *dentry, unsigned int flags)
+>  	if (flags & LOOKUP_RCU)
+>  		return -ECHILD;
+>  
+> -	if (!capable(CAP_SYS_ADMIN)) {
+> -		status = -EPERM;
+> -		goto out_notask;
+> -	}
+> -
+>  	inode = dentry->d_inode;
+>  	task = get_proc_task(inode);
+>  	if (!task)
+> @@ -1792,10 +1785,6 @@ static struct dentry *proc_map_files_lookup(struct inode *dir,
+>  	int result;
+>  	struct mm_struct *mm;
+>  
+> -	result = -EPERM;
+> -	if (!capable(CAP_SYS_ADMIN))
+> -		goto out;
+> -
+>  	result = -ENOENT;
+>  	task = get_proc_task(dir);
+>  	if (!task)
+> @@ -1849,10 +1838,6 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
+>  	struct map_files_info *p;
+>  	int ret;
+>  
+> -	ret = -EPERM;
+> -	if (!capable(CAP_SYS_ADMIN))
+> -		goto out;
+> -
+>  	ret = -ENOENT;
+>  	task = get_proc_task(file_inode(file));
+>  	if (!task)
+> @@ -2040,7 +2025,6 @@ static const struct file_operations proc_timers_operations = {
+>  	.llseek		= seq_lseek,
+>  	.release	= seq_release_private,
+>  };
+> -#endif /* CONFIG_CHECKPOINT_RESTORE */
+>  
+>  static int proc_pident_instantiate(struct inode *dir,
+>  	struct dentry *dentry, struct task_struct *task, const void *ptr)
+> @@ -2537,9 +2521,7 @@ static const struct inode_operations proc_task_inode_operations;
+>  static const struct pid_entry tgid_base_stuff[] = {
+>  	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
+>  	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
+> -#ifdef CONFIG_CHECKPOINT_RESTORE
+>  	DIR("map_files",  S_IRUSR|S_IXUSR, proc_map_files_inode_operations, proc_map_files_operations),
+> -#endif
+>  	DIR("fdinfo",     S_IRUSR|S_IXUSR, proc_fdinfo_inode_operations, proc_fdinfo_operations),
+>  	DIR("ns",	  S_IRUSR|S_IXUGO, proc_ns_dir_inode_operations, proc_ns_dir_operations),
+>  #ifdef CONFIG_NET
+> -- 
+> 1.8.1
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+ Kirill A. Shutemov
