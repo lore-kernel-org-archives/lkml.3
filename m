@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481AbbAZRnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:43:43 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:34392 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887AbbAZRnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:43:40 -0500
-Message-ID: <54C67CCA.7060306@osg.samsung.com>
-Date: Mon, 26 Jan 2015 10:43:38 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756574AbbAZRpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:45:13 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:54328 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756217AbbAZRpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 12:45:08 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/50] 3.10.66-stable review
-References: <20150125180702.521559311@linuxfoundation.org>
-In-Reply-To: <20150125180702.521559311@linuxfoundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPDyKFp=5epMggHu0+u_LU7ETujcoeP2xOpB7iD6JF2bs8BnEA@mail.gmail.com>
+References: <1422271175-19445-1-git-send-email-addy.ke@rock-chips.com>
+	<1422271175-19445-2-git-send-email-addy.ke@rock-chips.com>
+	<CAPDyKFp=5epMggHu0+u_LU7ETujcoeP2xOpB7iD6JF2bs8BnEA@mail.gmail.com>
+Date: Mon, 26 Jan 2015 09:45:07 -0800
+X-Google-Sender-Auth: cIIGk7qfcTGxfbNxY3drYE5mhFQ
+Message-ID: <CAD=FV=X9x0gW5TyLi4ERm8nxixQB__Y=5bRAtOax-_w+T33rCg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mmc: core: use card pointer as the first parameter of execute_tuning()
+From: Doug Anderson <dianders@chromium.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        =?UTF-8?Q?Pawe=C5=82_Moll?= <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Alexandru Stan <amstan@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        Han Jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2015 11:06 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.66 release.
-> There are 50 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Tue Jan 27 18:06:25 UTC 2015.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.66-rc1.gz
-> and the diffstat can be found below.
-> 
-> thanks,
-> 
-> greg k-h
-> 
+Ulf,
 
-Compiled and booted on my test system. No dmesg regressions.
+On Mon, Jan 26, 2015 at 7:15 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 26 January 2015 at 12:19, Addy Ke <addy.ke@rock-chips.com> wrote:
+>> We need to take the card pointer in execute_tuning() for mmc_send_status(),
+>
+> mmc_send_status() is an mmc core function, not intended for host's to call.
+>
+>> but mmc->card is NULL in tuning state. So we need change the first parameter
+>> of execute_tuning() to card pointer(struct mmc_card * card).
+>
+> So, why do we need this?
 
--- Shuah
+I asked Addy to post upstream against mmc_send_tuning(), but I guess
+he didn't (he posted against Alex's NAKed patch instead).
 
+...when I talked to him about it, Addy was asserting that when tuning
+fails it is important (at least on dw_mmc on rk3288) that we wait for
+the card to stop being busy and that the way to detect was using
+mmc_send_status().
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+That would mean that against upstream you'd need to change
+mmc_send_tuning() to take in the card as well (or move the "host->card
+= card" assignment to before UHS init, which seems less desirable?)
+
+What do you think about that?  Is there a better solution?
+
+-Doug
