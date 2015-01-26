@@ -1,68 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138AbbAZRT7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:19:59 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:34570 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbbAZRT4 (ORCPT
+	id S1756419AbbAZRUa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:20:30 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:36834 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808AbbAZRUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:19:56 -0500
-Date: Mon, 26 Jan 2015 09:19:50 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Bart Van Assche <bvanassche@acm.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Hannes Reinecke <hare@suse.de>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: sysfs methods can race with ->remove
-Message-ID: <20150126171950.GA9015@infradead.org>
-References: <20150115160612.GA31446@infradead.org>
- <Pine.LNX.4.44L0.1501151255060.1064-100000@iolanthe.rowland.org>
- <20150115194031.GE28195@htj.dyndns.org>
+	Mon, 26 Jan 2015 12:20:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115194031.GE28195@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1417345161-18548-1-git-send-email-arjun024@gmail.com>
+References: <1417345161-18548-1-git-send-email-arjun024@gmail.com>
+From: Arjun Sreedharan <arjun024@gmail.com>
+Date: Mon, 26 Jan 2015 22:49:56 +0530
+Message-ID: <CAJFMrCE8S6oUqYoWHpKoU-T3ukquU3wUnStdVEdt+J4ytQZe9g@mail.gmail.com>
+Subject: Re: [PATCH] mn10300: remove redundant hex()
+To: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 02:40:31PM -0500, Tejun Heo wrote:
-> > If a method is registered by the driver, then the driver will
-> > unregister it when the ->remove routine runs.  I don't know for
-> > certain, but I would expect that the sysfs/kernfs core will make sure
-> > that any existing method calls complete before unregister returns.  
-> > This would prevent races.
-> 
-> Yes, attribute deletions are blocked till the on-going sysfs
-> read/write operations are finished and further rw accesses are failed.
+Ping !!
 
-Btw, where do we do that?  I did a walk through the code starting
-from device_del, but must have missed the obvious.
-
-> > The sriov_numvfs_store method does have the same problem, and so does 
-> > the reset_store method (by way of pci_reset_function -> 
-> > pci_dev_save_and_disable -> pci_reset_notify).
-> > 
-> > Tejun, is my analysis correct?  How should we fix these races?
-> 
-> I'm not really following what the actual problem case is, so SCSI
-> subsystem store methods are derefing dev->driver without synchronizing
-> against detach events?  If that's the case, the solution would be
-> synchronizing against attach/detach events?  Sorry if I'm being
-> totally idiotic.  I'm having a bit of hard time jumping right in.  :)
-
-No problem.  That's the basic situation we are talking about.  I have
-a serie fixing some long standing issues in the device model integration
-in SCSI, and pointed out a possible issue in that area.
-
-So what is the proper lock to take to prevent ->remove from beeing
-called while in such a method?  A mentioned about I tried to peel
-through all the layers of the onion^H^H^H^H^Hdriver core, but so far
-couldn't find anything obvious.
+On 30 November 2014 at 16:29, Arjun Sreedharan <arjun024@gmail.com> wrote:
+> replace rendundant hex() with kernel's hex_to_bin()
+>
+> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+> ---
+>  arch/mn10300/kernel/gdb-stub.c | 61 ++++++++++++++++--------------------------
+>  1 file changed, 23 insertions(+), 38 deletions(-)
+>
+> diff --git a/arch/mn10300/kernel/gdb-stub.c b/arch/mn10300/kernel/gdb-stub.c
+> index a128c57..06adf39 100644
+> --- a/arch/mn10300/kernel/gdb-stub.c
+> +++ b/arch/mn10300/kernel/gdb-stub.c
+> @@ -176,27 +176,12 @@ static struct gdbstub_bkpt gdbstub_bkpts[256];
+>  static void getpacket(char *buffer);
+>  static int putpacket(char *buffer);
+>  static int computeSignal(enum exception_code excep);
+> -static int hex(unsigned char ch);
+>  static int hexToInt(char **ptr, int *intValue);
+>  static unsigned char *mem2hex(const void *mem, char *buf, int count,
+>                               int may_fault);
+>  static const char *hex2mem(const char *buf, void *_mem, int count,
+>                            int may_fault);
+>
+> -/*
+> - * Convert ch from a hex digit to an int
+> - */
+> -static int hex(unsigned char ch)
+> -{
+> -       if (ch >= 'a' && ch <= 'f')
+> -               return ch - 'a' + 10;
+> -       if (ch >= '0' && ch <= '9')
+> -               return ch - '0';
+> -       if (ch >= 'A' && ch <= 'F')
+> -               return ch - 'A' + 10;
+> -       return -1;
+> -}
+> -
+>  #ifdef CONFIG_GDBSTUB_DEBUGGING
+>
+>  void debug_to_serial(const char *p, int n)
+> @@ -283,12 +268,12 @@ static void getpacket(char *buffer)
+>                 ret = gdbstub_io_rx_char(&ch, 0);
+>                 if (ret < 0)
+>                         error = ret;
+> -               xmitcsum = hex(ch) << 4;
+> +               xmitcsum = hex_to_bin(ch) << 4;
+>
+>                 ret = gdbstub_io_rx_char(&ch, 0);
+>                 if (ret < 0)
+>                         error = ret;
+> -               xmitcsum |= hex(ch);
+> +               xmitcsum |= hex_to_bin(ch);
+>
+>                 if (error) {
+>                         if (error == -EIO)
+> @@ -391,7 +376,7 @@ static int hexToInt(char **ptr, int *intValue)
+>         *intValue = 0;
+>
+>         while (**ptr) {
+> -               hexValue = hex(**ptr);
+> +               hexValue = hex_to_bin(**ptr);
+>                 if (hexValue < 0)
+>                         break;
+>
+> @@ -857,8 +842,8 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
+>         } ch;
+>
+>         if ((u32) mem & 1 && count >= 1) {
+> -               ch.b[0]  = hex(*buf++) << 4;
+> -               ch.b[0] |= hex(*buf++);
+> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[0] |= hex_to_bin(*buf++);
+>                 if (gdbstub_write_byte(ch.val, mem) != 0)
+>                         return 0;
+>                 mem++;
+> @@ -866,10 +851,10 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
+>         }
+>
+>         if ((u32) mem & 3 && count >= 2) {
+> -               ch.b[0]  = hex(*buf++) << 4;
+> -               ch.b[0] |= hex(*buf++);
+> -               ch.b[1]  = hex(*buf++) << 4;
+> -               ch.b[1] |= hex(*buf++);
+> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[0] |= hex_to_bin(*buf++);
+> +               ch.b[1]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[1] |= hex_to_bin(*buf++);
+>                 if (gdbstub_write_word(ch.val, mem) != 0)
+>                         return 0;
+>                 mem += 2;
+> @@ -877,14 +862,14 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
+>         }
+>
+>         while (count >= 4) {
+> -               ch.b[0]  = hex(*buf++) << 4;
+> -               ch.b[0] |= hex(*buf++);
+> -               ch.b[1]  = hex(*buf++) << 4;
+> -               ch.b[1] |= hex(*buf++);
+> -               ch.b[2]  = hex(*buf++) << 4;
+> -               ch.b[2] |= hex(*buf++);
+> -               ch.b[3]  = hex(*buf++) << 4;
+> -               ch.b[3] |= hex(*buf++);
+> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[0] |= hex_to_bin(*buf++);
+> +               ch.b[1]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[1] |= hex_to_bin(*buf++);
+> +               ch.b[2]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[2] |= hex_to_bin(*buf++);
+> +               ch.b[3]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[3] |= hex_to_bin(*buf++);
+>                 if (gdbstub_write_dword(ch.val, mem) != 0)
+>                         return 0;
+>                 mem += 4;
+> @@ -892,10 +877,10 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
+>         }
+>
+>         if (count >= 2) {
+> -               ch.b[0]  = hex(*buf++) << 4;
+> -               ch.b[0] |= hex(*buf++);
+> -               ch.b[1]  = hex(*buf++) << 4;
+> -               ch.b[1] |= hex(*buf++);
+> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[0] |= hex_to_bin(*buf++);
+> +               ch.b[1]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[1] |= hex_to_bin(*buf++);
+>                 if (gdbstub_write_word(ch.val, mem) != 0)
+>                         return 0;
+>                 mem += 2;
+> @@ -903,8 +888,8 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
+>         }
+>
+>         if (count >= 1) {
+> -               ch.b[0]  = hex(*buf++) << 4;
+> -               ch.b[0] |= hex(*buf++);
+> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
+> +               ch.b[0] |= hex_to_bin(*buf++);
+>                 if (gdbstub_write_byte(ch.val, mem) != 0)
+>                         return 0;
+>         }
+> --
+> 1.7.11.7
+>
