@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757842AbbAZX4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:56:22 -0500
-Received: from 8bytes.org ([81.169.241.247]:50845 "EHLO theia.8bytes.org"
+	id S1757860AbbAZX4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:56:25 -0500
+Received: from 8bytes.org ([81.169.241.247]:50847 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757382AbbAZXvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757312AbbAZXvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Jan 2015 18:51:50 -0500
 From: Joerg Roedel <joro@8bytes.org>
 To: iommu@lists.linux-foundation.org
@@ -20,9 +20,9 @@ Cc: Will Deacon <will.deacon@arm.com>, Kukjin Kim <kgene@kernel.org>,
         linux-samsung-soc@vger.kernel.org, linux-rockchip@lists.infradead.org,
         linux-tegra@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
         jroedel@suse.de
-Subject: [PATCH 09/15] iommu/tegra-gart: Make use of domain_alloc and domain_free
-Date: Tue, 27 Jan 2015 00:51:39 +0100
-Message-Id: <1422316305-19216-10-git-send-email-joro@8bytes.org>
+Subject: [PATCH 10/15] iommu/msm: Make use of domain_alloc and domain_free
+Date: Tue, 27 Jan 2015 00:51:40 +0100
+Message-Id: <1422316305-19216-11-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422316305-19216-1-git-send-email-joro@8bytes.org>
 References: <1422316305-19216-1-git-send-email-joro@8bytes.org>
@@ -37,153 +37,179 @@ replacement for domain_init/domain_destroy.
 
 Signed-off-by: Joerg Roedel <jroedel@suse.de>
 ---
- drivers/iommu/tegra-gart.c | 67 +++++++++++++++++++++++++++++++---------------
- 1 file changed, 46 insertions(+), 21 deletions(-)
+ drivers/iommu/msm_iommu.c | 73 +++++++++++++++++++++++------------------------
+ 1 file changed, 36 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/iommu/tegra-gart.c b/drivers/iommu/tegra-gart.c
-index f722a0c..34ca333 100644
---- a/drivers/iommu/tegra-gart.c
-+++ b/drivers/iommu/tegra-gart.c
-@@ -63,11 +63,21 @@ struct gart_device {
- 	struct device		*dev;
+diff --git a/drivers/iommu/msm_iommu.c b/drivers/iommu/msm_iommu.c
+index e1b0537..f023c7a 100644
+--- a/drivers/iommu/msm_iommu.c
++++ b/drivers/iommu/msm_iommu.c
+@@ -52,8 +52,14 @@ DEFINE_SPINLOCK(msm_iommu_lock);
+ struct msm_priv {
+ 	unsigned long *pgtable;
+ 	struct list_head list_attached;
++	struct iommu_domain domain;
  };
  
-+struct gart_domain {
-+	struct iommu_domain domain;		/* generic domain handle */
-+	struct gart_device *gart;		/* link to gart device   */
-+};
-+
- static struct gart_device *gart_handle; /* unique for a system */
- 
- #define GART_PTE(_pfn)						\
- 	(GART_ENTRY_PHYS_ADDR_VALID | ((_pfn) << PAGE_SHIFT))
- 
-+static struct gart_domain *to_gart_domain(struct iommu_domain *dom)
++static struct msm_priv *to_msm_priv(struct iommu_domain *dom)
 +{
-+	return container_of(dom, struct gart_domain, domain);
++	return container_of(dom, struct msm_priv, domain);
 +}
 +
- /*
-  * Any interaction between any block on PPSB and a block on APB or AHB
-  * must have these read-back to ensure the APB/AHB bus transaction is
-@@ -156,6 +166,7 @@ static inline bool gart_iova_range_valid(struct gart_device *gart,
- static int gart_iommu_attach_dev(struct iommu_domain *domain,
- 				 struct device *dev)
+ static int __enable_clocks(struct msm_iommu_drvdata *drvdata)
  {
-+	struct gart_domain *gart_domain = to_gart_domain(domain);
- 	struct gart_device *gart;
- 	struct gart_client *client, *c;
- 	int err = 0;
-@@ -163,7 +174,7 @@ static int gart_iommu_attach_dev(struct iommu_domain *domain,
- 	gart = gart_handle;
- 	if (!gart)
- 		return -EINVAL;
--	domain->priv = gart;
-+	gart_domain->gart = gart;
+ 	int ret;
+@@ -79,7 +85,7 @@ static void __disable_clocks(struct msm_iommu_drvdata *drvdata)
  
- 	domain->geometry.aperture_start = gart->iovmm_base;
- 	domain->geometry.aperture_end   = gart->iovmm_base +
-@@ -198,7 +209,8 @@ fail:
- static void gart_iommu_detach_dev(struct iommu_domain *domain,
- 				  struct device *dev)
+ static int __flush_iotlb(struct iommu_domain *domain)
  {
--	struct gart_device *gart = domain->priv;
-+	struct gart_domain *gart_domain = to_gart_domain(domain);
-+	struct gart_device *gart = gart_domain->gart;
- 	struct gart_client *c;
- 
- 	spin_lock(&gart->client_lock);
-@@ -216,33 +228,44 @@ out:
- 	spin_unlock(&gart->client_lock);
+-	struct msm_priv *priv = domain->priv;
++	struct msm_priv *priv = to_msm_priv(domain);
+ 	struct msm_iommu_drvdata *iommu_drvdata;
+ 	struct msm_iommu_ctx_drvdata *ctx_drvdata;
+ 	int ret = 0;
+@@ -209,10 +215,14 @@ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
+ 	SET_M(base, ctx, 1);
  }
  
--static int gart_iommu_domain_init(struct iommu_domain *domain)
-+static struct iommu_domain *gart_iommu_domain_alloc(enum iommu_domain_type type)
+-static int msm_iommu_domain_init(struct iommu_domain *domain)
++static struct iommu_domain *msm_iommu_domain_alloc(enum iommu_domain_type type)
  {
--	return 0;
-+	struct gart_domain *gart_domain;
-+
+-	struct msm_priv *priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	struct msm_priv *priv;
+ 
 +	if (type != IOMMU_DOMAIN_UNMANAGED)
 +		return NULL;
 +
-+	gart_domain = kzalloc(sizeof(*gart_domain), GFP_KERNEL);
-+	if (!gart_domain)
-+		return NULL;
-+
-+	return &gart_domain->domain;
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+ 		goto fail_nomem;
+ 
+@@ -224,20 +234,19 @@ static int msm_iommu_domain_init(struct iommu_domain *domain)
+ 		goto fail_nomem;
+ 
+ 	memset(priv->pgtable, 0, SZ_16K);
+-	domain->priv = priv;
+ 
+-	domain->geometry.aperture_start = 0;
+-	domain->geometry.aperture_end   = (1ULL << 32) - 1;
+-	domain->geometry.force_aperture = true;
++	priv->domain.geometry.aperture_start = 0;
++	priv->domain.geometry.aperture_end   = (1ULL << 32) - 1;
++	priv->domain.geometry.force_aperture = true;
+ 
+-	return 0;
++	return &priv->domain;
+ 
+ fail_nomem:
+ 	kfree(priv);
+-	return -ENOMEM;
++	return NULL;
  }
  
--static void gart_iommu_domain_destroy(struct iommu_domain *domain)
-+static void gart_iommu_domain_free(struct iommu_domain *domain)
+-static void msm_iommu_domain_destroy(struct iommu_domain *domain)
++static void msm_iommu_domain_free(struct iommu_domain *domain)
  {
--	struct gart_device *gart = domain->priv;
--
--	if (!gart)
--		return;
-+	struct gart_domain *gart_domain = to_gart_domain(domain);
-+	struct gart_device *gart = gart_domain->gart;
+ 	struct msm_priv *priv;
+ 	unsigned long flags;
+@@ -245,20 +254,17 @@ static void msm_iommu_domain_destroy(struct iommu_domain *domain)
+ 	int i;
  
--	spin_lock(&gart->client_lock);
--	if (!list_empty(&gart->client)) {
--		struct gart_client *c;
-+	if (gart) {
-+		spin_lock(&gart->client_lock);
-+		if (!list_empty(&gart->client)) {
-+			struct gart_client *c;
- 
--		list_for_each_entry(c, &gart->client, list)
--			gart_iommu_detach_dev(domain, c->dev);
-+			list_for_each_entry(c, &gart->client, list)
-+				gart_iommu_detach_dev(domain, c->dev);
-+		}
-+		spin_unlock(&gart->client_lock);
- 	}
--	spin_unlock(&gart->client_lock);
+ 	spin_lock_irqsave(&msm_iommu_lock, flags);
+-	priv = domain->priv;
 -	domain->priv = NULL;
-+
-+	kfree(gart_domain);
- }
++	priv = to_msm_priv(domain);
  
- static int gart_iommu_map(struct iommu_domain *domain, unsigned long iova,
- 			  phys_addr_t pa, size_t bytes, int prot)
- {
--	struct gart_device *gart = domain->priv;
-+	struct gart_domain *gart_domain = to_gart_domain(domain);
-+	struct gart_device *gart = gart_domain->gart;
- 	unsigned long flags;
- 	unsigned long pfn;
+-	if (priv) {
+-		fl_table = priv->pgtable;
++	fl_table = priv->pgtable;
  
-@@ -265,7 +288,8 @@ static int gart_iommu_map(struct iommu_domain *domain, unsigned long iova,
- static size_t gart_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
- 			       size_t bytes)
- {
--	struct gart_device *gart = domain->priv;
-+	struct gart_domain *gart_domain = to_gart_domain(domain);
-+	struct gart_device *gart = gart_domain->gart;
- 	unsigned long flags;
+-		for (i = 0; i < NUM_FL_PTE; i++)
+-			if ((fl_table[i] & 0x03) == FL_TYPE_TABLE)
+-				free_page((unsigned long) __va(((fl_table[i]) &
+-								FL_BASE_MASK)));
++	for (i = 0; i < NUM_FL_PTE; i++)
++		if ((fl_table[i] & 0x03) == FL_TYPE_TABLE)
++			free_page((unsigned long) __va(((fl_table[i]) &
++							FL_BASE_MASK)));
  
- 	if (!gart_iova_range_valid(gart, iova, bytes))
-@@ -281,7 +305,8 @@ static size_t gart_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
- static phys_addr_t gart_iommu_iova_to_phys(struct iommu_domain *domain,
- 					   dma_addr_t iova)
- {
--	struct gart_device *gart = domain->priv;
-+	struct gart_domain *gart_domain = to_gart_domain(domain);
-+	struct gart_device *gart = gart_domain->gart;
- 	unsigned long pte;
- 	phys_addr_t pa;
- 	unsigned long flags;
-@@ -310,8 +335,8 @@ static bool gart_iommu_capable(enum iommu_cap cap)
+-		free_pages((unsigned long)priv->pgtable, get_order(SZ_16K));
+-		priv->pgtable = NULL;
+-	}
++	free_pages((unsigned long)priv->pgtable, get_order(SZ_16K));
++	priv->pgtable = NULL;
  
- static const struct iommu_ops gart_iommu_ops = {
- 	.capable	= gart_iommu_capable,
--	.domain_init	= gart_iommu_domain_init,
--	.domain_destroy	= gart_iommu_domain_destroy,
-+	.domain_alloc	= gart_iommu_domain_alloc,
-+	.domain_free	= gart_iommu_domain_free,
- 	.attach_dev	= gart_iommu_attach_dev,
- 	.detach_dev	= gart_iommu_detach_dev,
- 	.map		= gart_iommu_map,
+ 	kfree(priv);
+ 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
+@@ -276,9 +282,9 @@ static int msm_iommu_attach_dev(struct iommu_domain *domain, struct device *dev)
+ 
+ 	spin_lock_irqsave(&msm_iommu_lock, flags);
+ 
+-	priv = domain->priv;
++	priv = to_msm_priv(domain);
+ 
+-	if (!priv || !dev) {
++	if (!dev) {
+ 		ret = -EINVAL;
+ 		goto fail;
+ 	}
+@@ -330,9 +336,9 @@ static void msm_iommu_detach_dev(struct iommu_domain *domain,
+ 	int ret;
+ 
+ 	spin_lock_irqsave(&msm_iommu_lock, flags);
+-	priv = domain->priv;
++	priv = to_msm_priv(domain);
+ 
+-	if (!priv || !dev)
++	if (!dev)
+ 		goto fail;
+ 
+ 	iommu_drvdata = dev_get_drvdata(dev->parent);
+@@ -382,11 +388,7 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+ 		goto fail;
+ 	}
+ 
+-	priv = domain->priv;
+-	if (!priv) {
+-		ret = -EINVAL;
+-		goto fail;
+-	}
++	priv = to_msm_priv(domain);
+ 
+ 	fl_table = priv->pgtable;
+ 
+@@ -484,10 +486,7 @@ static size_t msm_iommu_unmap(struct iommu_domain *domain, unsigned long va,
+ 
+ 	spin_lock_irqsave(&msm_iommu_lock, flags);
+ 
+-	priv = domain->priv;
+-
+-	if (!priv)
+-		goto fail;
++	priv = to_msm_priv(domain);
+ 
+ 	fl_table = priv->pgtable;
+ 
+@@ -566,7 +565,7 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
+ 
+ 	spin_lock_irqsave(&msm_iommu_lock, flags);
+ 
+-	priv = domain->priv;
++	priv = to_msm_priv(domain);
+ 	if (list_empty(&priv->list_attached))
+ 		goto fail;
+ 
+@@ -674,8 +673,8 @@ fail:
+ 
+ static const struct iommu_ops msm_iommu_ops = {
+ 	.capable = msm_iommu_capable,
+-	.domain_init = msm_iommu_domain_init,
+-	.domain_destroy = msm_iommu_domain_destroy,
++	.domain_alloc = msm_iommu_domain_alloc,
++	.domain_free = msm_iommu_domain_free,
+ 	.attach_dev = msm_iommu_attach_dev,
+ 	.detach_dev = msm_iommu_detach_dev,
+ 	.map = msm_iommu_map,
 -- 
 1.8.4.5
 
