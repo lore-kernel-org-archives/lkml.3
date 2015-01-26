@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001AbbAZN31 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:29:27 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:48236 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771AbbAZN2z (ORCPT
+	id S1754859AbbAZN3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:29:04 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42043 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbbAZN25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:28:55 -0500
+	Mon, 26 Jan 2015 08:28:57 -0500
 From: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
 To: linux-kernel@vger.kernel.org, ard.biesheuvel@linaro.org
 Cc: dmidecode-devel@nongnu.org, grant.likely@linaro.org,
         leif.lindholm@linaro.org, matt.fleming@intel.com,
         Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
-Subject: [Patch v2 1/2] firmware: dmi_scan: add symbol to get SMBIOS entry area
-Date: Mon, 26 Jan 2015 15:28:37 +0200
-Message-Id: <1422278918-31477-2-git-send-email-ivan.khoronzhuk@linaro.org>
+Subject: [Patch v2 2/2] firmware: dmi-sysfs: add SMBIOS entry point area attribute
+Date: Mon, 26 Jan 2015 15:28:38 +0200
+Message-Id: <1422278918-31477-3-git-send-email-ivan.khoronzhuk@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422278918-31477-1-git-send-email-ivan.khoronzhuk@linaro.org>
 References: <1422278918-31477-1-git-send-email-ivan.khoronzhuk@linaro.org>
@@ -23,98 +23,85 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 There are situations when code needs to access SMBIOS entry table
-area. For example, to pass it via sysfs to userspace when it's not
-allowed to get SMBIOS info via /dev/mem.
+area, but cannot use /dev/mem for this. As the table format is
+consistent only for a version, and can be changed, use binary
+attribute to give access to raw SMBIOS entry table area.
 
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
 ---
- drivers/firmware/dmi_scan.c | 26 ++++++++++++++++++++++++++
- include/linux/dmi.h         |  3 +++
- 2 files changed, 29 insertions(+)
+ drivers/firmware/dmi-sysfs.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 420c8d8..d94c6b7 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -113,6 +113,8 @@ static void dmi_table(u8 *buf, int len, int num,
- 	}
- }
+diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
+index e0f1cb3..61b6a38 100644
+--- a/drivers/firmware/dmi-sysfs.c
++++ b/drivers/firmware/dmi-sysfs.c
+@@ -29,6 +29,8 @@
+ #define MAX_ENTRY_TYPE 255 /* Most of these aren't used, but we consider
+ 			      the top entry type is only 8 bits */
  
-+static unsigned char smbios_header[32];
-+static int smbios_header_size;
- static phys_addr_t dmi_base;
- static u16 dmi_len;
- static u16 dmi_num;
-@@ -474,6 +476,8 @@ static int __init dmi_present(const u8 *buf)
- 	if (memcmp(buf, "_SM_", 4) == 0 &&
- 	    buf[5] < 32 && dmi_checksum(buf, buf[5])) {
- 		smbios_ver = get_unaligned_be16(buf + 6);
-+		smbios_header_size = buf[5];
-+		memcpy(smbios_header, buf, smbios_header_size);
- 
- 		/* Some BIOS report weird SMBIOS version, fix that up */
- 		switch (smbios_ver) {
-@@ -505,6 +509,8 @@ static int __init dmi_present(const u8 *buf)
- 				pr_info("SMBIOS %d.%d present.\n",
- 				       dmi_ver >> 8, dmi_ver & 0xFF);
- 			} else {
-+				smbios_header_size = 15;
-+				memcpy(smbios_header, buf, smbios_header_size);
- 				dmi_ver = (buf[14] & 0xF0) << 4 |
- 					   (buf[14] & 0x0F);
- 				pr_info("Legacy DMI %d.%d present.\n",
-@@ -531,6 +537,8 @@ static int __init dmi_smbios3_present(const u8 *buf)
- 		dmi_ver &= 0xFFFFFF;
- 		dmi_len = get_unaligned_le32(buf + 12);
- 		dmi_base = get_unaligned_le64(buf + 16);
-+		smbios_header_size = buf[6];
-+		memcpy(smbios_header, buf, smbios_header_size);
- 
- 		/*
- 		 * The 64-bit SMBIOS 3.0 entry point no longer has a field
-@@ -944,3 +952,21 @@ void dmi_memdev_name(u16 handle, const char **bank, const char **device)
- 	}
- }
- EXPORT_SYMBOL_GPL(dmi_memdev_name);
++static const u8 *smbios_raw_header;
 +
-+/**
-+ * dmi_get_smbios_entry_area - copy SMBIOS entry point area to array.
-+ * @size - pointer to assign actual size of SMBIOS entry point area.
-+ *
-+ * returns NULL if table is not available, otherwise returns pointer on
-+ * SMBIOS entry point area array.
-+ */
-+const u8 *dmi_get_smbios_entry_area(int *size)
+ struct dmi_sysfs_entry {
+ 	struct dmi_header dh;
+ 	struct kobject kobj;
+@@ -646,9 +648,37 @@ static void cleanup_entry_list(void)
+ 	}
+ }
+ 
++static ssize_t smbios_entry_area_raw_read(struct file *filp,
++					  struct kobject *kobj,
++					  struct bin_attribute *bin_attr,
++					  char *buf, loff_t pos, size_t count)
 +{
-+	if (!smbios_header_size || !dmi_available)
-+		return NULL;
++	ssize_t size;
 +
-+	*size = smbios_header_size;
++	size = bin_attr->size;
 +
-+	return smbios_header;
++	if (size > pos)
++		size -= pos;
++	else
++		return 0;
++
++	if (count < size)
++		size = count;
++
++	memcpy(buf, &smbios_raw_header[pos], size);
++
++	return size;
 +}
-+EXPORT_SYMBOL_GPL(dmi_get_smbios_entry_area);
-diff --git a/include/linux/dmi.h b/include/linux/dmi.h
-index f820f0a..8e1a28d 100644
---- a/include/linux/dmi.h
-+++ b/include/linux/dmi.h
-@@ -109,6 +109,7 @@ extern int dmi_walk(void (*decode)(const struct dmi_header *, void *),
- 	void *private_data);
- extern bool dmi_match(enum dmi_field f, const char *str);
- extern void dmi_memdev_name(u16 handle, const char **bank, const char **device);
-+const u8 *dmi_get_smbios_entry_area(int *size);
++
++static struct bin_attribute smbios_raw_area_attr = {
++	.read = smbios_entry_area_raw_read,
++	.attr = {.name = "smbios_raw_header", .mode = 0400},
++};
++
+ static int __init dmi_sysfs_init(void)
+ {
+ 	int error = -ENOMEM;
++	int size;
+ 	int val;
  
- #else
+ 	/* Set up our directory */
+@@ -669,6 +699,18 @@ static int __init dmi_sysfs_init(void)
+ 		goto err;
+ 	}
  
-@@ -140,6 +141,8 @@ static inline void dmi_memdev_name(u16 handle, const char **bank,
- 		const char **device) { }
- static inline const struct dmi_system_id *
- 	dmi_first_match(const struct dmi_system_id *list) { return NULL; }
-+static inline const u8 *dmi_get_smbios_entry_area(int *size)
-+	{ return NULL; }
++	smbios_raw_header = dmi_get_smbios_entry_area(&size);
++	if (!smbios_raw_header) {
++		pr_debug("dmi-sysfs: SMBIOS raw data is not available.\n");
++		error = -ENODATA;
++		goto err;
++	}
++
++	/* Create the raw binary file to access the entry area */
++	smbios_raw_area_attr.size = size;
++	if (sysfs_create_bin_file(dmi_kobj, &smbios_raw_area_attr))
++		goto err;
++
+ 	pr_debug("dmi-sysfs: loaded.\n");
  
- #endif
- 
+ 	return 0;
 -- 
 1.9.1
 
