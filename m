@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbbAZKNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:13:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34482 "EHLO mx1.redhat.com"
+	id S1754783AbbAZKNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:13:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42326 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754553AbbAZKNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:13:35 -0500
+	id S1753320AbbAZKNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:13:42 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,23 +19,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/36] tools build: Add detected config support
-Date: Mon, 26 Jan 2015 11:12:02 +0100
-Message-Id: <1422267156-13873-3-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 03/36] tools build: Add subdir support
+Date: Mon, 26 Jan 2015 11:12:03 +0100
+Message-Id: <1422267156-13873-4-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 References: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to include detected configuration makefile
-into the build process. This will allow the Build objects
-to be configurable based on the config data, like:
-
-  perf-$(CONFIG_KRAVA) += krava.o
-
-The configuration is stored in '.config-detected' file,
-which is generated for each compilation.
+Add support to make directory any time we build objects
+out of the tree (O=/tmp/krava) and the output directory
+does not exist.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Tested-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
@@ -52,39 +47,37 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/build/Makefile.build | 3 +++
- tools/perf/config/Makefile | 4 ++++
- 2 files changed, 7 insertions(+)
+ tools/build/Makefile.build | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
 diff --git a/tools/build/Makefile.build b/tools/build/Makefile.build
-index ae203f21cc86..35174d920476 100644
+index 35174d920476..692e1b154200 100644
 --- a/tools/build/Makefile.build
 +++ b/tools/build/Makefile.build
-@@ -22,6 +22,9 @@ build-dir := $(srctree)/tools/build
- # Generic definitions
- include $(build-dir)/Build.include
+@@ -37,6 +37,11 @@ subdir-obj-y :=
+ build-file := $(dir)/Build
+ include $(build-file)
  
-+# do not force detected configuration
-+-include .config-detected
++# Create directory unless it exists
++quiet_cmd_mkdir = MKDIR    $(dir $@)
++      cmd_mkdir = mkdir -p $(dir $@)
++     rule_mkdir = $(if $(wildcard $(dir $@)),,@$(call echo-cmd,mkdir) $(cmd_mkdir))
 +
- # Init all relevant variables used in build files so
- # 1) they have correct type
- # 2) they do not inherit any value from the environment
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 648e31ff4021..bd60ca04d5da 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -11,6 +11,10 @@ ifneq ($(obj-perf),)
- obj-perf := $(abspath $(obj-perf))/
- endif
+ # Compile command
+ quiet_cmd_cc_o_c = CC       $@
+       cmd_cc_o_c = $(CC) $(c_flags) -c -o $@ $<
+@@ -49,9 +54,11 @@ quiet_cmd_ld_multi = LD       $@
  
-+$(shell echo -n > .config-detected)
-+detected     = $(shell echo "$(1)=y"       >> .config-detected)
-+detected_var = $(shell echo "$(1)=$($(1))" >> .config-detected)
-+
- LIB_INCLUDE := $(srctree)/tools/lib/
- CFLAGS := $(EXTRA_CFLAGS) $(EXTRA_WARNINGS)
+ # Build rules
+ $(OUTPUT)%.o: %.c FORCE
++	$(call rule_mkdir)
+ 	$(call if_changed_dep,cc_o_c)
  
+ $(OUTPUT)%.o: %.S FORCE
++	$(call rule_mkdir)
+ 	$(call if_changed_dep,cc_o_c)
+ 
+ # Gather build data:
 -- 
 1.9.3
 
