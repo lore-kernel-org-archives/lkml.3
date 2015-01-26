@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903AbbAZXnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:43:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46576 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326AbbAZXnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:43:49 -0500
-Date: Mon, 26 Jan 2015 15:43:46 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Calvin Owens <calvinowens@fb.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-team@fb.com,
-        Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [RFC][PATCH v2] procfs: Always expose /proc/<pid>/map_files/
- and make it readable
-Message-Id: <20150126154346.c63c512e5821e9e0ea31f759@linux-foundation.org>
-In-Reply-To: <20150126210054.GG651@moon>
-References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
-	<20150114152501.GB9820@node.dhcp.inet.fi>
-	<20150114153323.GF2253@moon>
-	<20150114204653.GA26698@mail.thefacebook.com>
-	<20150114211613.GH2253@moon>
-	<20150122024554.GB23762@mail.thefacebook.com>
-	<20150124031544.GA1992748@mail.thefacebook.com>
-	<20150126124731.GA26916@node.dhcp.inet.fi>
-	<20150126210054.GG651@moon>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757206AbbAZXqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:46:08 -0500
+Received: from ozlabs.org ([103.22.144.67]:38715 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753431AbbAZXqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 18:46:05 -0500
+Date: Tue, 27 Jan 2015 10:45:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: linux-next: manual merge of the arm64 tree with Linus' tree
+Message-ID: <20150127104558.003abf61@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/zacKz=pAtT62+HJVu9U8EM1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015 00:00:54 +0300 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+--Sig_/zacKz=pAtT62+HJVu9U8EM1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, Jan 26, 2015 at 02:47:31PM +0200, Kirill A. Shutemov wrote:
-> > On Fri, Jan 23, 2015 at 07:15:44PM -0800, Calvin Owens wrote:
-> > > Currently, /proc/<pid>/map_files/ is restricted to CAP_SYS_ADMIN, and
-> > > is only exposed if CONFIG_CHECKPOINT_RESTORE is set. This interface
-> > > is very useful for enumerating the files mapped into a process when
-> > > the more verbose information in /proc/<pid>/maps is not needed.
+Hi Catalin,
 
-This is the main (actually only) justification for the patch, and it it
-far too thin.  What does "not needed" mean.  Why can't people just use
-/proc/pid/maps?
+Today's linux-next merge of the arm64 tree got a conflict in
+arch/arm64/mm/dump.c between commit 284be28565ef ("arm64: dump: Fix
+implicit inclusion of definition for PCI_IOBASE") from Linus' tree and
+commit 764011ca8247 ("arm64: mm: dump: add missing includes") from the
+arm64 tree.
 
-> > > This patch moves the folder out from behind CHECKPOINT_RESTORE, and
-> > > removes the CAP_SYS_ADMIN restrictions. Following the links requires
-> > > the ability to ptrace the process in question, so this doesn't allow
-> > > an attacker to do anything they couldn't already do before.
-> > > 
-> > > Signed-off-by: Calvin Owens <calvinowens@fb.com>
-> > 
-> > Cc +linux-api@
-> 
-> Looks good to me, thanks! Though I would really appreciate if someone
-> from security camp take a look as well.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-hm, who's that.  Kees comes to mind.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-And reviewers' task would be a heck of a lot easier if they knew what
-/proc/pid/map_files actually does.  This:
+diff --cc arch/arm64/mm/dump.c
+index d54dc9ac4b70,bbc5a29ecaaf..000000000000
+--- a/arch/arm64/mm/dump.c
++++ b/arch/arm64/mm/dump.c
+@@@ -14,8 -14,9 +14,10 @@@
+   * of the License.
+   */
+  #include <linux/debugfs.h>
++ #include <linux/errno.h>
+  #include <linux/fs.h>
++ #include <linux/init.h>
+ +#include <linux/io.h>
+  #include <linux/mm.h>
+  #include <linux/sched.h>
+  #include <linux/seq_file.h>
 
-akpm3:/usr/src/25> grep -r map_files Documentation 
-akpm3:/usr/src/25> 
+--Sig_/zacKz=pAtT62+HJVu9U8EM1
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-does not help.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-The 640708a2cff7f81 changelog says:
+iQIcBAEBCAAGBQJUxtG7AAoJEMDTa8Ir7ZwVclsP/RvJ24Jo0LcdQNz+rTk39srG
+xPf5iQ/yr9CzcHWm2l0/NU33HRLiN0re9Tqu0tNma7cfMcLvhcIcwzOzxTMFvRCW
+HWsVn7V2ZLQ6XRau8ysYr2NBKStBD7CDEKHPpoYERrjHttwQ+QU21TFalBXIc2bX
+XZHhSymPW+eaEeg4301A6+ZSOYdl5nltVlfl7EXr29tmAEhy5lHklrZFWmonj0uD
+45cULoSEZD1hskb6IrUgsEzsxL2y9ojkmfeZ/bBAcmqe+JI5ED7lMJc4kLI+I0Ub
+Z6kRUAhwTvUbUt8mRgMaVrq3fk4ViPK1S1vwZVc1b1SuzBUKGEMh3B3dynLXl8nq
+0ZAWFXi5P2J/9Q3Eoe2KBoxEWwUXPhKn6Jh01RYl3tmNma2EFK2eos7wxkkdFB/l
+4UYjfOtiYiEwrzliajkJ2hqUR3ZzBAITOsr/u5h4bCvGXZ3dAFA0AnXc2FvG6Pf2
+/dQ9dhzpzpIaWCEH/SB953Y8zHCSryv14UUiR/VknpqlVqXkEfIGloR5a1OGLGdA
+EyUfFNvVRHy6A11FVflXpTdLRPUlc97vLydMCPKxDkHRBFw2dtW3BhUqNtJDdeDP
+ThSz67biroPko3EZHGYv1Bb57vbVS6ZI+0kMPLI3COkJq3z0wkdJcmunXGdDBpqV
+QCvAmnRVuvMv2HGOpQyK
+=hW7z
+-----END PGP SIGNATURE-----
 
-:     This one behaves similarly to the /proc/<pid>/fd/ one - it contains
-:     symlinks one for each mapping with file, the name of a symlink is
-:     "vma->vm_start-vma->vm_end", the target is the file.  Opening a symlink
-:     results in a file that point exactly to the same inode as them vma's one.
-:     
-:     For example the ls -l of some arbitrary /proc/<pid>/map_files/
-:     
-:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
-:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
-:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
-:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
-:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
-
-afacit this info is also available in /proc/pid/maps, so things
-shouldn't get worse if the /proc/pid/map_files permissions are at least
-as restrictive as the /proc/pid/maps permissions.  Is that the case? 
-(Please add to changelog).
-
-
-There's one other problem here: we're assuming that the map_files
-implementation doesn't have bugs.  If it does have bugs then relaxing
-permissions like this will create new vulnerabilities.  And the
-map_files implementation is surprisingly complex.  Is it bug-free?
+--Sig_/zacKz=pAtT62+HJVu9U8EM1--
