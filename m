@@ -1,153 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735AbbAZTJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 14:09:52 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:42209 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694AbbAZTJu (ORCPT
+	id S1754777AbbAZTKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 14:10:32 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43502 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755466AbbAZTK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 14:09:50 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Subject: [PATCH] ARM: /proc/cpuinfo: DT: Add support for Revision
-Date: Mon, 26 Jan 2015 20:09:45 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <201412041857.49341@pali> <CAL_JsqJ9i0jwaL1cyeomQG=bhhcnEgdGWYOqkcwidyk5xOUukg@mail.gmail.com>
-In-Reply-To: <CAL_JsqJ9i0jwaL1cyeomQG=bhhcnEgdGWYOqkcwidyk5xOUukg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3152027.NJWSLrD9o8";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201501262009.45854@pali>
+	Mon, 26 Jan 2015 14:10:28 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] genirq: MSI: Fix freeing of unallocated MSI
+Date: Mon, 26 Jan 2015 19:10:19 +0000
+Message-Id: <1422299419-6051-1-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3152027.NJWSLrD9o8
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+While debugging an unrelated issue with the GICv3 ITS driver, the
+following trace triggered:
 
-Ok, here is patch which set Revision field (global variable system_rev) in =
-/proc/cpuinfo from DT=20
-revision property:
+WARNING: CPU: 1 PID: 1 at kernel/irq/irqdomain.c:1121 irq_domain_free_irqs+0x160/0x17c()
+NULL pointer, cannot free irq
+Modules linked in:
+CPU: 1 PID: 1 Comm: swapper/0 Tainted: G        W      3.19.0-rc6+ #3690
+Hardware name: FVP Base (DT)
+Call trace:
+[<ffffffc000089398>] dump_backtrace+0x0/0x13c
+[<ffffffc0000894e4>] show_stack+0x10/0x1c
+[<ffffffc00066d134>] dump_stack+0x74/0x94
+[<ffffffc0000a92f8>] warn_slowpath_common+0x9c/0xd4
+[<ffffffc0000a938c>] warn_slowpath_fmt+0x5c/0x80
+[<ffffffc0000ee04c>] irq_domain_free_irqs+0x15c/0x17c
+[<ffffffc0000ef918>] msi_domain_free_irqs+0x58/0x74
+[<ffffffc000386f58>] free_msi_irqs+0xb4/0x1c0
 
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index 11c54de..9946c1b 100644
-=2D-- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -19,6 +19,7 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/smp.h>
-+#include <linux/libfdt_env.h>
-=20
- #include <asm/cputype.h>
- #include <asm/setup.h>
-@@ -26,6 +27,7 @@
- #include <asm/smp_plat.h>
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
-+#include <asm/system_info.h>
-=20
-=20
- #ifdef CONFIG_SMP
-@@ -204,6 +206,8 @@ static const void * __init arch_get_next_mach(const cha=
-r *const **match)
- const struct machine_desc * __init setup_machine_fdt(unsigned int dt_phys)
- {
- 	const struct machine_desc *mdesc, *mdesc_best =3D NULL;
-+	unsigned long dt_root;
-+	const u32 *prop;
-=20
- #ifdef CONFIG_ARCH_MULTIPLATFORM
- 	DT_MACHINE_START(GENERIC_DT, "Generic DT based system")
-@@ -215,17 +219,16 @@ const struct machine_desc * __init setup_machine_fdt(=
-unsigned int dt_phys)
- 	if (!dt_phys || !early_init_dt_verify(phys_to_virt(dt_phys)))
- 		return NULL;
-=20
-+	dt_root =3D of_get_flat_dt_root();
- 	mdesc =3D of_flat_dt_match_machine(mdesc_best, arch_get_next_mach);
-=20
- 	if (!mdesc) {
- 		const char *prop;
- 		int size;
-=2D		unsigned long dt_root;
-=20
- 		early_print("\nError: unrecognized/unsupported "
- 			    "device tree compatible list:\n[ ");
-=20
-=2D		dt_root =3D of_get_flat_dt_root();
- 		prop =3D of_get_flat_dt_prop(dt_root, "compatible", &size);
- 		while (size > 0) {
- 			early_print("'%s' ", prop);
-@@ -246,5 +249,10 @@ const struct machine_desc * __init setup_machine_fdt(u=
-nsigned int dt_phys)
- 	/* Change machine number to match the mdesc we're using */
- 	__machine_arch_type =3D mdesc->nr;
-=20
-+	/* Set system revision from DT */
-+	prop =3D of_get_flat_dt_prop(dt_root, "revision", NULL);
-+	if (prop)
-+		system_rev =3D fdt32_to_cpu(*prop);
-+
- 	return mdesc;
+    // The msi_prepare callback fails here
+
+[<ffffffc0003872c0>] pci_enable_msix+0x25c/0x3d4
+[<ffffffc00038746c>] pci_enable_msix_range+0x34/0x80
+[<ffffffc0003924ac>] vp_try_to_find_vqs+0xec/0x528
+[<ffffffc000392954>] vp_find_vqs+0x6c/0xa8
+[<ffffffc0003ee2a8>] init_vq+0x120/0x248
+[<ffffffc0003eefb0>] virtblk_probe+0xb0/0x6bc
+[<ffffffc00038fc34>] virtio_dev_probe+0x17c/0x214
+[<ffffffc0003d4a04>] driver_probe_device+0x7c/0x23c
+[<ffffffc0003d4cb0>] __driver_attach+0x98/0xa0
+[<ffffffc0003d2c60>] bus_for_each_dev+0x60/0xb4
+[<ffffffc0003d455c>] driver_attach+0x1c/0x28
+[<ffffffc0003d41b0>] bus_add_driver+0x150/0x208
+[<ffffffc0003d54c0>] driver_register+0x64/0x130
+[<ffffffc00038f9e8>] register_virtio_driver+0x24/0x68
+[<ffffffc00091320c>] init+0x70/0xac
+[<ffffffc0000828f0>] do_one_initcall+0x94/0x1d0
+[<ffffffc0008e9b00>] kernel_init_freeable+0x144/0x1e4
+[<ffffffc00066a434>] kernel_init+0xc/0xd8
+---[ end trace f9ee562a77cc7bae ]---
+
+The ITS msi_prepare callback having failed, we end-up trying to
+free MSIs that have never been allocated. Oddly enough, the kernel
+is pretty upset about it.
+
+It turns out that this behaviour was expected before the MSI domain
+was introduced (and dealt with in arch_teardown_msi_irqs).
+
+The obvious fix is to detect this early enough and bail out.
+
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ kernel/irq/msi.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/irq/msi.c b/kernel/irq/msi.c
+index 3e18163..474de5c 100644
+--- a/kernel/irq/msi.c
++++ b/kernel/irq/msi.c
+@@ -310,8 +310,15 @@ void msi_domain_free_irqs(struct irq_domain *domain, struct device *dev)
+ 	struct msi_desc *desc;
+ 
+ 	for_each_msi_entry(desc, dev) {
+-		irq_domain_free_irqs(desc->irq, desc->nvec_used);
+-		desc->irq = 0;
++		/*
++		 * We might have failed to allocate an MSI early
++		 * enough that there is no IRQ associated to this
++		 * entry. If that's the case, don't do anything.
++		 */
++		if (desc->irq) {
++			irq_domain_free_irqs(desc->irq, desc->nvec_used);
++			desc->irq = 0;
++		}
+ 	}
  }
+ 
+-- 
+2.1.4
 
-
-And here is patch which convert ATAG revision into DT revision property and=
- append it into DT in=20
-decompress code:
-
-diff --git a/arch/arm/boot/compressed/atags_to_fdt.c b/arch/arm/boot/compre=
-ssed/atags_to_fdt.c
-index 9448aa0..e7e1cc9 100644
-=2D-- a/arch/arm/boot/compressed/atags_to_fdt.c
-+++ b/arch/arm/boot/compressed/atags_to_fdt.c
-@@ -171,6 +171,8 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_=
-space)
- 					cpu_to_fdt32(atag->u.mem.size);
- 			}
-=20
-+		} else if (atag->hdr.tag =3D=3D ATAG_REVISION) {
-+			setprop_cell(fdt, "/", "revision", atag->u.revision.rev);
- 		} else if (atag->hdr.tag =3D=3D ATAG_INITRD2) {
- 			uint32_t initrd_start, initrd_size;
- 			initrd_start =3D atag->u.initrd.start;
-
-
-I tested it on DT booted Nokia N900 and it is working, in /proc/cpuinfo is =
-revision from ATAG.
-
-I do not know which DT property to use for storing HW Revision, so if "/rev=
-ision" is not correct one,=20
-let me know what to use instead. Also you can add my Signed-off-by for both=
- patches.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart3152027.NJWSLrD9o8
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlTGkPkACgkQi/DJPQPkQ1IHbQCfcRK+I47cYyW2jBZbk623mWL8
-kegAoKIzg7kV8HJOHGr7Jgy8mmdNJa2z
-=tz4i
------END PGP SIGNATURE-----
-
---nextPart3152027.NJWSLrD9o8--
