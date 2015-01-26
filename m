@@ -1,255 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824AbbAZL5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:57:52 -0500
-Received: from guitar.tcltek.co.il ([192.115.133.116]:57381 "EHLO
-	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753994AbbAZL5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:57:45 -0500
-From: Baruch Siach <baruch@tkos.co.il>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Baruch Siach <baruch@tkos.co.il>
-Subject: [PATCH v5 2/2] clocksource: driver for Conexant Digicolor SoC timer
-Date: Mon, 26 Jan 2015 13:57:16 +0200
-Message-Id: <ad84f7155286c45401ff7f6bc6506407cc3beb61.1422272518.git.baruch@tkos.co.il>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <cover.1422272518.git.baruch@tkos.co.il>
-References: <cover.1422272518.git.baruch@tkos.co.il>
+	id S1753219AbbAZL7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:59:14 -0500
+Received: from relay.parallels.com ([195.214.232.42]:42666 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202AbbAZL7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 06:59:12 -0500
+Message-ID: <1422273513.6345.29.camel@tkhai>
+Subject: Re: [RFC] sched, x86: Prevent resched interrupts if task in kernel
+ mode and !CONFIG_PREEMPT
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 26 Jan 2015 14:58:33 +0300
+In-Reply-To: <CALCETrWFZ94LxPA2X1OROVAbcossdUgFEWATbfbR3ogqNxARsw@mail.gmail.com>
+References: <1422028412.6345.6.camel@tkhai>
+	 <20150123160746.GD23123@twins.programming.kicks-ass.net>
+	 <CALCETrVEsNj8dvqd-mNqb5tKNQOwQEgtMRUeTtJSS8-EmntAiA@mail.gmail.com>
+	 <1422032989.6345.26.camel@tkhai>
+	 <CALCETrWFZ94LxPA2X1OROVAbcossdUgFEWATbfbR3ogqNxARsw@mail.gmail.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add clocksource driver to the Conexant CX92755 SoC, part of the Digicolor SoCs
-series. Hardware provides 8 timers, A to H. Timer A is dedicated to a future
-watchdog driver so we don't use it here. Use timer B for sched_clock, and timer
-C for clock_event.
+В Пт, 23/01/2015 в 18:36 -0800, Andy Lutomirski пишет:
+> On Fri, Jan 23, 2015 at 9:09 AM, Kirill Tkhai <ktkhai@parallels.com> wrote:
+> > В Пт, 23/01/2015 в 08:24 -0800, Andy Lutomirski пишет:
+> >> On Fri, Jan 23, 2015 at 8:07 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >> > On Fri, Jan 23, 2015 at 06:53:32PM +0300, Kirill Tkhai wrote:
+> >> >> ---
+> >> >>  arch/x86/kernel/entry_64.S |   10 ++++++++++
+> >> >>  1 file changed, 10 insertions(+)
+> >> >>
+> >> >> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> >> >> index c653dc4..a046ba8 100644
+> >> >> --- a/arch/x86/kernel/entry_64.S
+> >> >> +++ b/arch/x86/kernel/entry_64.S
+> >> >> @@ -409,6 +409,13 @@ GLOBAL(system_call_after_swapgs)
+> >> >>       movq_cfi rax,(ORIG_RAX-ARGOFFSET)
+> >> >>       movq  %rcx,RIP-ARGOFFSET(%rsp)
+> >> >>       CFI_REL_OFFSET rip,RIP-ARGOFFSET
+> >> >> +#if !defined(CONFIG_PREEMPT) || !defined(SMP)
+> >> >> +     /*
+> >> >> +      * Tell resched_curr() do not send useless interrupts to us.
+> >> >> +      * Kernel isn't preemptible till sysret_careful() anyway.
+> >> >> +      */
+> >> >> +     LOCK ; bts $TIF_POLLING_NRFLAG,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+> >> >> +#endif
+> >>
+> >> That's kind of expensive.  What's the !SMP part for?
+> >
+> > smp_send_reschedule() is NOP on UP. There is no problem.
+> 
+> Shouldn't it be #if !defined(CONFIG_PREEMPT) && defined(CONFIG_SMP) then?
 
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
----
- drivers/clocksource/Makefile          |   1 +
- drivers/clocksource/timer-digicolor.c | 199 ++++++++++++++++++++++++++++++++++
- 2 files changed, 200 insertions(+)
- create mode 100644 drivers/clocksource/timer-digicolor.c
+Definitely, thanks.
 
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 94d90b24b56b..a993c108be67 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
- obj-$(CONFIG_EM_TIMER_STI)	+= em_sti.o
- obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
- obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
-+obj-$(CONFIG_ARCH_DIGICOLOR)	+= timer-digicolor.o
- obj-$(CONFIG_DW_APB_TIMER)	+= dw_apb_timer.o
- obj-$(CONFIG_DW_APB_TIMER_OF)	+= dw_apb_timer_of.o
- obj-$(CONFIG_CLKSRC_NOMADIK_MTU)	+= nomadik-mtu.o
-diff --git a/drivers/clocksource/timer-digicolor.c b/drivers/clocksource/timer-digicolor.c
-new file mode 100644
-index 000000000000..7f8388cfa810
---- /dev/null
-+++ b/drivers/clocksource/timer-digicolor.c
-@@ -0,0 +1,199 @@
-+/*
-+ * Conexant Digicolor timer driver
-+ *
-+ * Author: Baruch Siach <baruch@tkos.co.il>
-+ *
-+ * Copyright (C) 2014 Paradox Innovation Ltd.
-+ *
-+ * Based on:
-+ *	Allwinner SoCs hstimer driver
-+ *
-+ * Copyright (C) 2013 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+/*
-+ * Conexant Digicolor SoCs have 8 configurable timers, named from "Timer A" to
-+ * "Timer H". Timer A is the only one with watchdog support, so it is dedicated
-+ * to the watchdog driver. This driver uses Timer B for sched_clock(), and
-+ * Timer C for clockevents.
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/clk.h>
-+#include <linux/clockchips.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/irqreturn.h>
-+#include <linux/sched_clock.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+
-+enum {
-+	TIMER_A,
-+	TIMER_B,
-+	TIMER_C,
-+	TIMER_D,
-+	TIMER_E,
-+	TIMER_F,
-+	TIMER_G,
-+	TIMER_H,
-+};
-+
-+#define CONTROL(t)	((t)*8)
-+#define COUNT(t)	((t)*8 + 4)
-+
-+#define CONTROL_DISABLE		0
-+#define CONTROL_ENABLE		BIT(0)
-+#define CONTROL_MODE(m)		((m) << 4)
-+#define CONTROL_MODE_ONESHOT	CONTROL_MODE(1)
-+#define CONTROL_MODE_PERIODIC	CONTROL_MODE(2)
-+
-+struct digicolor_timer {
-+	struct clock_event_device ce;
-+	void __iomem *base;
-+	u32 ticks_per_jiffy;
-+	int timer_id; /* one of TIMER_* */
-+};
-+
-+struct digicolor_timer *dc_timer(struct clock_event_device *ce)
-+{
-+	return container_of(ce, struct digicolor_timer, ce);
-+}
-+
-+static inline void dc_timer_disable(struct clock_event_device *ce)
-+{
-+	struct digicolor_timer *dt = dc_timer(ce);
-+	writeb(CONTROL_DISABLE, dt->base + CONTROL(dt->timer_id));
-+}
-+
-+static inline void dc_timer_enable(struct clock_event_device *ce, u32 mode)
-+{
-+	struct digicolor_timer *dt = dc_timer(ce);
-+	writeb(CONTROL_ENABLE | mode, dt->base + CONTROL(dt->timer_id));
-+}
-+
-+static inline void dc_timer_set_count(struct clock_event_device *ce,
-+				      unsigned long count)
-+{
-+	struct digicolor_timer *dt = dc_timer(ce);
-+	writel(count, dt->base + COUNT(dt->timer_id));
-+}
-+
-+static void digicolor_clkevt_mode(enum clock_event_mode mode,
-+				  struct clock_event_device *ce)
-+{
-+	struct digicolor_timer *dt = dc_timer(ce);
-+
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		dc_timer_disable(ce);
-+		dc_timer_set_count(ce, dt->ticks_per_jiffy);
-+		dc_timer_enable(ce, CONTROL_MODE_PERIODIC);
-+		break;
-+	case CLOCK_EVT_MODE_ONESHOT:
-+		dc_timer_disable(ce);
-+		dc_timer_enable(ce, CONTROL_MODE_ONESHOT);
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+	default:
-+		dc_timer_disable(ce);
-+		break;
-+	}
-+}
-+
-+static int digicolor_clkevt_next_event(unsigned long evt,
-+				       struct clock_event_device *ce)
-+{
-+	dc_timer_disable(ce);
-+	dc_timer_set_count(ce, evt);
-+	dc_timer_enable(ce, CONTROL_MODE_ONESHOT);
-+
-+	return 0;
-+}
-+
-+static struct digicolor_timer dc_timer_dev = {
-+	.ce = {
-+		.name = "digicolor_tick",
-+		.rating = 340,
-+		.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
-+		.set_mode = digicolor_clkevt_mode,
-+		.set_next_event = digicolor_clkevt_next_event,
-+	},
-+	.timer_id = TIMER_C,
-+};
-+
-+static irqreturn_t digicolor_timer_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *evt = dev_id;
-+
-+	evt->event_handler(evt);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static u64 digicolor_timer_sched_read(void)
-+{
-+	return ~readl(dc_timer_dev.base + COUNT(TIMER_B));
-+}
-+
-+static void __init digicolor_timer_init(struct device_node *node)
-+{
-+	unsigned long rate;
-+	struct clk *clk;
-+	int ret, irq;
-+
-+	/*
-+	 * timer registers are shared with the watchdog timer;
-+	 * don't map exclusively
-+	 */
-+	dc_timer_dev.base = of_iomap(node, 0);
-+	if (!dc_timer_dev.base) {
-+		pr_err("Can't map registers");
-+		return;
-+	}
-+
-+	irq = irq_of_parse_and_map(node, dc_timer_dev.timer_id);
-+	if (irq <= 0) {
-+		pr_err("Can't parse IRQ");
-+		return;
-+	}
-+
-+	clk = of_clk_get(node, 0);
-+	if (IS_ERR(clk)) {
-+		pr_err("Can't get timer clock");
-+		return;
-+	}
-+	clk_prepare_enable(clk);
-+	rate = clk_get_rate(clk);
-+	dc_timer_dev.ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
-+
-+	writeb(CONTROL_DISABLE, dc_timer_dev.base + CONTROL(TIMER_B));
-+	writel(UINT_MAX, dc_timer_dev.base + COUNT(TIMER_B));
-+	writeb(CONTROL_ENABLE, dc_timer_dev.base + CONTROL(TIMER_B));
-+
-+	sched_clock_register(digicolor_timer_sched_read, 32, rate);
-+	clocksource_mmio_init(dc_timer_dev.base + COUNT(TIMER_B), node->name,
-+			      rate, 340, 32, clocksource_mmio_readl_down);
-+
-+	ret = request_irq(irq, digicolor_timer_interrupt,
-+			  IRQF_TIMER | IRQF_IRQPOLL, "digicolor_timerC",
-+			  &dc_timer_dev.ce);
-+	if (ret)
-+		pr_warn("request of timer irq %d failed (%d)\n", irq, ret);
-+
-+	dc_timer_dev.ce.cpumask = cpu_possible_mask;
-+	dc_timer_dev.ce.irq = irq;
-+
-+	clockevents_config_and_register(&dc_timer_dev.ce, rate, 0, 0xffffffff);
-+}
-+CLOCKSOURCE_OF_DECLARE(conexant_digicolor, "cnxt,cx92755-timer",
-+		       digicolor_timer_init);
--- 
-2.1.4
+> 
+> >
+> >>
+> >> >>       testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+> >> >>       jnz tracesys
+> >> >>  system_call_fastpath:
+> >> >> @@ -427,6 +434,9 @@ GLOBAL(system_call_after_swapgs)
+> >> >>   * Has incomplete stack frame and undefined top of stack.
+> >> >>   */
+> >> >>  ret_from_sys_call:
+> >> >> +#if !defined(CONFIG_PREEMPT) || !defined(SMP)
+> >> >> +     LOCK ; btr $TIF_POLLING_NRFLAG,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+> >> >> +#endif
+> >>
+> >> If only it were this simple.  There are lots of ways out of syscalls,
+> >> and this is only one of them :(  If we did this, I'd rather do it
+> >> through the do_notify_resume mechanism or something.
+> >
+> > Yes, syscall is the only thing I did as an example.
+> >
+> >> I don't see any way to do this without at least one atomic op or
+> >> smp_mb per syscall, and that's kind of expensive.
+> >
+> > JFI, doesn't x86 set_bit() lock a small area of memory? I thought
+> > it's not very expensive on this arch (some bus optimizations or
+> > something like this).
+> 
+> An entire syscall on x86 is well under 200 cycles.  lock addl is >20
+> cycles for me, and I don't see why the atomic bitops would be faster.
+> (Oddly, mfence is slower than lock addl, which is really odd, since
+> lock addl implies mfence.)  So this overhead may actually matter.
+
+Yeah, it's really big overhead.
+
+> >
+> >> Would it make sense to try to use context tracking instead?  On
+> >> systems that use context tracking, syscalls are already expensive, and
+> >> we're already keeping track of which CPUs are in user mode.
+> >
+> > I'll look at context_tracking, but I'm not sure some smp synchronization
+> > there.
+> 
+> It could be combinable with existing synchronization there.
+
+I'll look at this. Thanks!
+
+Kirill
 
