@@ -1,101 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452AbbAZNVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:21:37 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61069 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754886AbbAZNVb (ORCPT
+	id S1754865AbbAZNoX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:44:23 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:34990 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887AbbAZNoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:21:31 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-Cc: len.brown@intel.com, pavel@ucw.cz,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM/Trace: get rid of synchronous resume limit during PM trace
+	Mon, 26 Jan 2015 08:44:19 -0500
+Message-ID: <54C644AF.9030208@linaro.org>
 Date: Mon, 26 Jan 2015 14:44:15 +0100
-Message-ID: <2226940.FhLLx52rcO@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54C5F3FF.6030600@linux.intel.com>
-References: <54C5CB77.4000109@linux.intel.com> <54C5F3FF.6030600@linux.intel.com>
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Baruch Siach <baruch@tkos.co.il>, Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 2/2] clocksource: driver for Conexant Digicolor SoC
+ timer
+References: <cover.1422272518.git.baruch@tkos.co.il> <ad84f7155286c45401ff7f6bc6506407cc3beb61.1422272518.git.baruch@tkos.co.il>
+In-Reply-To: <ad84f7155286c45401ff7f6bc6506407cc3beb61.1422272518.git.baruch@tkos.co.il>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 26, 2015 03:59:59 PM Fu, Zhonghui wrote:
-> 
-> This is a incorrect patch , please ignore it.
+On 01/26/2015 12:57 PM, Baruch Siach wrote:
+> Add clocksource driver to the Conexant CX92755 SoC, part of the Digicolor SoCs
+> series. Hardware provides 8 timers, A to H. Timer A is dedicated to a future
+> watchdog driver so we don't use it here. Use timer B for sched_clock, and timer
+> C for clock_event.
+>
+> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+> ---
+>   drivers/clocksource/Makefile          |   1 +
+>   drivers/clocksource/timer-digicolor.c | 199 ++++++++++++++++++++++++++++++++++
+>   2 files changed, 200 insertions(+)
+>   create mode 100644 drivers/clocksource/timer-digicolor.c
+>
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 94d90b24b56b..a993c108be67 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -10,6 +10,7 @@ obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
+>   obj-$(CONFIG_EM_TIMER_STI)	+= em_sti.o
+>   obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
+>   obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
+> +obj-$(CONFIG_ARCH_DIGICOLOR)	+= timer-digicolor.o
 
-Of course it is incorrect.
+Ah, one minor change I forgot to mention in the last review (sorry about 
+that).
 
-If it "fixes" anything for you, this means you need to reorder devices in dpm_list
-on the given system.
+Don't depend on the ARCH, add and select a TIMER_DIGICOLOR (or whatever 
+the name you prefer) in the mach-digicolor/Kconfig and use it here.
 
-> On 2015/1/26 13:07, Fu, Zhonghui wrote:
-> > From f9c841d1f943d81b5ab0aac7483e794a7f966296 Mon Sep 17 00:00:00 2001
-> > From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> > Date: Mon, 26 Jan 2015 11:27:08 +0800
-> > Subject: [PATCH] PM/Trace: get rid of synchronous resume limit during PM trace
-> >
-> > There are some kind of dependency between devices in some
-> > hardware platforms. So, asynchronous resuming devices may
-> > hang system due to wrong resume order. As a result, should
-> > not fore synchronously resuming devices during tracing
-> > PM events.
-> >
-> > Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> > ---
-> >  drivers/base/power/main.c    |    3 +--
-> >  include/linux/resume-trace.h |    7 -------
-> >  2 files changed, 1 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> > index 9717d5f..5df148b 100644
-> > --- a/drivers/base/power/main.c
-> > +++ b/drivers/base/power/main.c
-> > @@ -517,8 +517,7 @@ static int device_resume_noirq(struct device *dev, pm_message_t state, bool asyn
-> >  
-> >  static bool is_async(struct device *dev)
-> >  {
-> > -	return dev->power.async_suspend && pm_async_enabled
-> > -		&& !pm_trace_is_enabled();
-> > +	return dev->power.async_suspend && pm_async_enabled;
-> >  }
-> >  
-> >  static void async_resume_noirq(void *data, async_cookie_t cookie)
-> > diff --git a/include/linux/resume-trace.h b/include/linux/resume-trace.h
-> > index f31db23..fd0866e 100644
-> > --- a/include/linux/resume-trace.h
-> > +++ b/include/linux/resume-trace.h
-> > @@ -7,11 +7,6 @@
-> >  
-> >  extern int pm_trace_enabled;
-> >  
-> > -static inline int pm_trace_is_enabled(void)
-> > -{
-> > -       return pm_trace_enabled;
-> > -}
-> > -
-> >  struct device;
-> >  extern void set_trace_device(struct device *);
-> >  extern void generate_resume_trace(const void *tracedata, unsigned int user);
-> > @@ -24,8 +19,6 @@ extern int show_trace_dev_match(char *buf, size_t size);
-> >  
-> >  #else
-> >  
-> > -static inline int pm_trace_is_enabled(void) { return 0; }
-> > -
-> >  #define TRACE_DEVICE(dev) do { } while (0)
-> >  #define TRACE_RESUME(dev) do { } while (0)
-> >  
-> > -- 1.7.1
-> >
-> 
+Other than that, it looks good for me.
+
+Thanks
+
+   -- Daniel
+
+>   obj-$(CONFIG_DW_APB_TIMER)	+= dw_apb_timer.o
+>   obj-$(CONFIG_DW_APB_TIMER_OF)	+= dw_apb_timer_of.o
+>   obj-$(CONFIG_CLKSRC_NOMADIK_MTU)	+= nomadik-mtu.o
+> diff --git a/drivers/clocksource/timer-digicolor.c b/drivers/clocksource/timer-digicolor.c
+> new file mode 100644
+> index 000000000000..7f8388cfa810
+> --- /dev/null
+> +++ b/drivers/clocksource/timer-digicolor.c
+> @@ -0,0 +1,199 @@
+> +/*
+> + * Conexant Digicolor timer driver
+> + *
+> + * Author: Baruch Siach <baruch@tkos.co.il>
+> + *
+> + * Copyright (C) 2014 Paradox Innovation Ltd.
+> + *
+> + * Based on:
+> + *	Allwinner SoCs hstimer driver
+> + *
+> + * Copyright (C) 2013 Maxime Ripard
+> + *
+> + * Maxime Ripard <maxime.ripard@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +/*
+> + * Conexant Digicolor SoCs have 8 configurable timers, named from "Timer A" to
+> + * "Timer H". Timer A is the only one with watchdog support, so it is dedicated
+> + * to the watchdog driver. This driver uses Timer B for sched_clock(), and
+> + * Timer C for clockevents.
+> + */
+> +
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+> +#include <linux/clk.h>
+> +#include <linux/clockchips.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqreturn.h>
+> +#include <linux/sched_clock.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +
+> +enum {
+> +	TIMER_A,
+> +	TIMER_B,
+> +	TIMER_C,
+> +	TIMER_D,
+> +	TIMER_E,
+> +	TIMER_F,
+> +	TIMER_G,
+> +	TIMER_H,
+> +};
+> +
+> +#define CONTROL(t)	((t)*8)
+> +#define COUNT(t)	((t)*8 + 4)
+> +
+> +#define CONTROL_DISABLE		0
+> +#define CONTROL_ENABLE		BIT(0)
+> +#define CONTROL_MODE(m)		((m) << 4)
+> +#define CONTROL_MODE_ONESHOT	CONTROL_MODE(1)
+> +#define CONTROL_MODE_PERIODIC	CONTROL_MODE(2)
+> +
+> +struct digicolor_timer {
+> +	struct clock_event_device ce;
+> +	void __iomem *base;
+> +	u32 ticks_per_jiffy;
+> +	int timer_id; /* one of TIMER_* */
+> +};
+> +
+> +struct digicolor_timer *dc_timer(struct clock_event_device *ce)
+> +{
+> +	return container_of(ce, struct digicolor_timer, ce);
+> +}
+> +
+> +static inline void dc_timer_disable(struct clock_event_device *ce)
+> +{
+> +	struct digicolor_timer *dt = dc_timer(ce);
+> +	writeb(CONTROL_DISABLE, dt->base + CONTROL(dt->timer_id));
+> +}
+> +
+> +static inline void dc_timer_enable(struct clock_event_device *ce, u32 mode)
+> +{
+> +	struct digicolor_timer *dt = dc_timer(ce);
+> +	writeb(CONTROL_ENABLE | mode, dt->base + CONTROL(dt->timer_id));
+> +}
+> +
+> +static inline void dc_timer_set_count(struct clock_event_device *ce,
+> +				      unsigned long count)
+> +{
+> +	struct digicolor_timer *dt = dc_timer(ce);
+> +	writel(count, dt->base + COUNT(dt->timer_id));
+> +}
+> +
+> +static void digicolor_clkevt_mode(enum clock_event_mode mode,
+> +				  struct clock_event_device *ce)
+> +{
+> +	struct digicolor_timer *dt = dc_timer(ce);
+> +
+> +	switch (mode) {
+> +	case CLOCK_EVT_MODE_PERIODIC:
+> +		dc_timer_disable(ce);
+> +		dc_timer_set_count(ce, dt->ticks_per_jiffy);
+> +		dc_timer_enable(ce, CONTROL_MODE_PERIODIC);
+> +		break;
+> +	case CLOCK_EVT_MODE_ONESHOT:
+> +		dc_timer_disable(ce);
+> +		dc_timer_enable(ce, CONTROL_MODE_ONESHOT);
+> +		break;
+> +	case CLOCK_EVT_MODE_UNUSED:
+> +	case CLOCK_EVT_MODE_SHUTDOWN:
+> +	default:
+> +		dc_timer_disable(ce);
+> +		break;
+> +	}
+> +}
+> +
+> +static int digicolor_clkevt_next_event(unsigned long evt,
+> +				       struct clock_event_device *ce)
+> +{
+> +	dc_timer_disable(ce);
+> +	dc_timer_set_count(ce, evt);
+> +	dc_timer_enable(ce, CONTROL_MODE_ONESHOT);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct digicolor_timer dc_timer_dev = {
+> +	.ce = {
+> +		.name = "digicolor_tick",
+> +		.rating = 340,
+> +		.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
+> +		.set_mode = digicolor_clkevt_mode,
+> +		.set_next_event = digicolor_clkevt_next_event,
+> +	},
+> +	.timer_id = TIMER_C,
+> +};
+> +
+> +static irqreturn_t digicolor_timer_interrupt(int irq, void *dev_id)
+> +{
+> +	struct clock_event_device *evt = dev_id;
+> +
+> +	evt->event_handler(evt);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static u64 digicolor_timer_sched_read(void)
+> +{
+> +	return ~readl(dc_timer_dev.base + COUNT(TIMER_B));
+> +}
+> +
+> +static void __init digicolor_timer_init(struct device_node *node)
+> +{
+> +	unsigned long rate;
+> +	struct clk *clk;
+> +	int ret, irq;
+> +
+> +	/*
+> +	 * timer registers are shared with the watchdog timer;
+> +	 * don't map exclusively
+> +	 */
+> +	dc_timer_dev.base = of_iomap(node, 0);
+> +	if (!dc_timer_dev.base) {
+> +		pr_err("Can't map registers");
+> +		return;
+> +	}
+> +
+> +	irq = irq_of_parse_and_map(node, dc_timer_dev.timer_id);
+> +	if (irq <= 0) {
+> +		pr_err("Can't parse IRQ");
+> +		return;
+> +	}
+> +
+> +	clk = of_clk_get(node, 0);
+> +	if (IS_ERR(clk)) {
+> +		pr_err("Can't get timer clock");
+> +		return;
+> +	}
+> +	clk_prepare_enable(clk);
+> +	rate = clk_get_rate(clk);
+> +	dc_timer_dev.ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
+> +
+> +	writeb(CONTROL_DISABLE, dc_timer_dev.base + CONTROL(TIMER_B));
+> +	writel(UINT_MAX, dc_timer_dev.base + COUNT(TIMER_B));
+> +	writeb(CONTROL_ENABLE, dc_timer_dev.base + CONTROL(TIMER_B));
+> +
+> +	sched_clock_register(digicolor_timer_sched_read, 32, rate);
+> +	clocksource_mmio_init(dc_timer_dev.base + COUNT(TIMER_B), node->name,
+> +			      rate, 340, 32, clocksource_mmio_readl_down);
+> +
+> +	ret = request_irq(irq, digicolor_timer_interrupt,
+> +			  IRQF_TIMER | IRQF_IRQPOLL, "digicolor_timerC",
+> +			  &dc_timer_dev.ce);
+> +	if (ret)
+> +		pr_warn("request of timer irq %d failed (%d)\n", irq, ret);
+> +
+> +	dc_timer_dev.ce.cpumask = cpu_possible_mask;
+> +	dc_timer_dev.ce.irq = irq;
+> +
+> +	clockevents_config_and_register(&dc_timer_dev.ce, rate, 0, 0xffffffff);
+> +}
+> +CLOCKSOURCE_OF_DECLARE(conexant_digicolor, "cnxt,cx92755-timer",
+> +		       digicolor_timer_init);
+>
+
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
