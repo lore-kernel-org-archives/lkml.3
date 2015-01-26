@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbbAZMRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:17:36 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38851 "EHLO bear.ext.ti.com"
+	id S1755495AbbAZMRi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:17:38 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38850 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755017AbbAZMPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753925AbbAZMPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Jan 2015 07:15:55 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <tony@atomide.com>, <myungjoo.ham@samsung.com>,
@@ -12,9 +12,9 @@ To: <balbi@ti.com>, <tony@atomide.com>, <myungjoo.ham@samsung.com>,
 CC: <george.cherian@ti.com>, <nsekhar@ti.com>, <devicetree@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2 3/7] ARM: dts: dra7-evm: Add extcon nodes for USB
-Date: Mon, 26 Jan 2015 14:15:28 +0200
-Message-ID: <1422274532-9488-4-git-send-email-rogerq@ti.com>
+Subject: [PATCH v2 4/7] ARM: dts: dra72-evm: Add extcon nodes for USB
+Date: Mon, 26 Jan 2015 14:15:29 +0200
+Message-ID: <1422274532-9488-5-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1422274532-9488-1-git-send-email-rogerq@ti.com>
 References: <1422274532-9488-1-git-send-email-rogerq@ti.com>
@@ -36,17 +36,26 @@ Signed-off-by: Roger Quadros <rogerq@ti.com>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 Acked-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/boot/dts/dra7-evm.dts | 31 +++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/dra72-evm.dts | 31 +++++++++++++++++++++++++++++++
  1 file changed, 31 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-index ad4118f..746cddb 100644
---- a/arch/arm/boot/dts/dra7-evm.dts
-+++ b/arch/arm/boot/dts/dra7-evm.dts
-@@ -26,6 +26,16 @@
+diff --git a/arch/arm/boot/dts/dra72-evm.dts b/arch/arm/boot/dts/dra72-evm.dts
+index 89085d0..ce8e243 100644
+--- a/arch/arm/boot/dts/dra72-evm.dts
++++ b/arch/arm/boot/dts/dra72-evm.dts
+@@ -8,6 +8,7 @@
+ /dts-v1/;
+ 
+ #include "dra72x.dtsi"
++#include <dt-bindings/gpio/gpio.h>
+ 
+ / {
+ 	model = "TI DRA722";
+@@ -24,6 +25,16 @@
+ 		regulator-min-microvolt = <3300000>;
  		regulator-max-microvolt = <3300000>;
  	};
- 
++
 +	extcon_usb1: extcon_usb1 {
 +		compatible = "linux,extcon-usb-gpio";
 +		id-gpio = <&pcf_gpio_21 1 GPIO_ACTIVE_HIGH>;
@@ -56,12 +65,11 @@ index ad4118f..746cddb 100644
 +		compatible = "linux,extcon-usb-gpio";
 +		id-gpio = <&pcf_gpio_21 2 GPIO_ACTIVE_HIGH>;
 +	};
-+
- 	vtt_fixed: fixedregulator-vtt {
- 		compatible = "regulator-fixed";
- 		regulator-name = "vtt_fixed";
-@@ -391,6 +401,19 @@
- 			};
+ };
+ 
+ &dra7_pmx_core {
+@@ -243,6 +254,18 @@
+ 			ti,palmas-long-press-seconds = <6>;
  		};
  	};
 +
@@ -76,12 +84,11 @@ index ad4118f..746cddb 100644
 +		interrupt-controller;
 +		#interrupt-cells = <2>;
 +	};
-+
  };
  
- &i2c2 {
-@@ -520,6 +543,14 @@
- 	};
+ &uart1 {
+@@ -345,6 +368,14 @@
+ 	phy-supply = <&ldo4_reg>;
  };
  
 +&omap_dwc3_1 {
