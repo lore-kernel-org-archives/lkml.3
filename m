@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316AbbAZX1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:27:30 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:47823 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205AbbAZX1Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:27:24 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>
-Cc: Heiko Stuebner <heiko@sntech.de>, Lunxue Dai <lunxue.dai@rock-chips.com>,
-        Jisheng Zhang <jszhang@marvell.com>, Dinh Nguyen <dinguyen@altera.com>,
-        Doug Anderson <dianders@chromium.org>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] watchdog: dw_wdt: Try to get a 30 second watchdog by default
-Date: Mon, 26 Jan 2015 15:27:16 -0800
-Message-Id: <1422314836-30516-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <1422314836-30516-1-git-send-email-dianders@chromium.org>
-References: <1422314836-30516-1-git-send-email-dianders@chromium.org>
+	id S1757333AbbAZX1u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:27:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50550 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757098AbbAZX1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 18:27:47 -0500
+Message-ID: <54C6CD64.10208@redhat.com>
+Date: Mon, 26 Jan 2015 18:27:32 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: question about save_xstate_sig() - WHY DOES THIS WORK?
+References: <54C2A245.4010307@redhat.com> <20150124202021.GA1285@redhat.com>
+In-Reply-To: <20150124202021.GA1285@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_wdt_set_top() function takes in a value in seconds.  In
-dw_wdt_open() we were calling it with a value that's supposed to
-represent the maximum value programmed into the "top" register with a
-comment saying that we were trying to set the watchdog to its maximum
-value.  Instead we ended up setting the watchdog to ~15 seconds.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Let's fix this.  However, setting things to the "max" gives me an 86
-second watchdog in the system I'm looking at.  86 seconds feels a
-little too long.  We'll explicitly choose 30 seconds as a more
-reasonable value.
+On 01/24/2015 03:20 PM, Oleg Nesterov wrote:
+> Let me abuse this thread to ask more questions.
+> 
+> Peter, could you help?
+> 
+> On 01/23, Rik van Riel wrote:
+>> 
+>> Not only is this broken with my new code, but it looks like it
+>> may be broken with the current code, too...
+> 
+> As I already mentioned, at least math_error()->save_init_fpu()
+> looks buggy. And unlazy_fpu() doesn't look right too.
+> 
+> Note that save_init_fpu() is calles after conditional_sti(), so
+> unless I missed something the task can be preempted and we can
+> actually hit WARN_ON_ONCE(!__thread_has_fpu()) if !use_eager_fpu()
+> && .fpu_counter == 0.
+> 
+> Worse, the unconditional __save_init_fpu() is obviously wrong in
+> this case.
+> 
+> I already have a patch which (like the patch from Rik) turns it
+> into
+> 
+> static inline void save_init_fpu(struct task_struct *tsk) { 
+> preempt_disable(); if (__thread_has_fpu(tsk)) { if
+> (use_eager_fpu()) { __save_fpu(tsk); } else { 
+> __save_init_fpu(tsk); __thread_fpu_end(tsk); } } preempt_enable(); 
+> }
 
-NOTE: Ideally this driver should be transitioned to be a real watchdog
-driver.  Then we could use "watchdog_init_timeout" and let the timeout
-be specified in a number of ways (device tree, module parameter, etc).
-This patch should be considered a bit of a stopgap solution.
+> Now the questions:
+> 
+> - This doesn't hurt, but does it really need __thread_fpu_end?
+> 
+> Perhaps this is because we do not check the error code returned by
+> __save_init_fpu? although I am not sure I understand the comment 
+> above fpu_save_init correctly...
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
----
-Changes in v2: None
+Looking at the code some more, I do not see any call site of
+save_init_fpu() that actually needs or wants __thread_fpu_end(),
+with or without eager fpu mode.
 
- drivers/watchdog/dw_wdt.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+It looks like we can get rid of that.
 
-diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-index 2c24882..3a5155d 100644
---- a/drivers/watchdog/dw_wdt.c
-+++ b/drivers/watchdog/dw_wdt.c
-@@ -51,6 +51,8 @@
- /* The maximum TOP (timeout period) value that can be set in the watchdog. */
- #define DW_WDT_MAX_TOP		15
- 
-+#define DW_WDT_DEFAULT_SECONDS	30
-+
- static bool nowayout = WATCHDOG_NOWAYOUT;
- module_param(nowayout, bool, 0);
- MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
-@@ -174,9 +176,9 @@ static int dw_wdt_open(struct inode *inode, struct file *filp)
- 	if (!dw_wdt_is_enabled()) {
- 		/*
- 		 * The watchdog is not currently enabled. Set the timeout to
--		 * the maximum and then start it.
-+		 * something reasonable and then start it.
- 		 */
--		dw_wdt_set_top(DW_WDT_MAX_TOP);
-+		dw_wdt_set_top(DW_WDT_DEFAULT_SECONDS);
- 		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
- 		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
- 	}
--- 
-2.2.0.rc0.207.ga3a616c
+> - What about do_bounds() ? Should not it use save_init_fpu()
+> rather than fpu_save_init() ?
 
+I suppose do_bounds() probably should save the fpu context while
+not preemptible, but that may also mean moving conditional_sti()
+until after save_init_fpu() or __save_init_fpu() has been called.
+
+> - Why unlazy_fpu() always does __save_init_fpu() even if
+> use_eager_fpu?
+> 
+> and note that in this case __thread_fpu_end() is wrong if
+> use_eager_fpu, but fortunately the only possible caller of
+> unlazy_fpu() is coredump. fpu_copy() checks use_eager_fpu().
+> 
+> - Is unlazy_fpu()->__save_init_fpu() safe wrt __kernel_fpu_begin()
+> from irq?
+> 
+> I mean, is it safe if __save_init_fpu() path is interrupted by
+> another __save_init_fpu() + restore_fpu_checking() from
+> __kernel_fpu_begin/end?
+
+I got lost in the core dump code trying to figure out whether this is
+safe or broken. I'll need some more time to look through that code...
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUxs1kAAoJEM553pKExN6DacoH/jlSeftktuzKNN1lc8f1o1Uw
+3f4i/SLjleHa00xayaG2RMrYpRtMAVMHqgG+3ltmF9cHZj3LUrYl8p5QlQTO+jMS
+53B/U/GCHrBWyziQgUHvGmw6WyVSDlTEej0gb91WW0pKEvuUrDdCTTwhNFqp649b
+jRw5F+LGIvYB99ICI5hLEMzbbKhMOpyiG4c3qmU41xsfnEWly50YdFKfetXm79E0
+MF1xN4trwqv7JOoBGfKwH8aUGe/n6B9e/QHAu7JMIuryjZK/cSug/4lH0QR0xMni
+NUzqKaE8xCDW5LQMLAg+7ZYhvdR/o3EbV4Lk90RCBF1KTTSFKorhUavwZLu/M3M=
+=QlMj
+-----END PGP SIGNATURE-----
