@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230AbbAZWAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 17:00:13 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:44905 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835AbbAZWAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 17:00:11 -0500
-Date: Mon, 26 Jan 2015 13:59:59 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel <devel@driverdev.osuosl.org>, isdn@linux-pingi.de,
-        netdev <netdev@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: make allyesconfig i386 build failure with next-20150122 (caused
- by fb_agm1264k-fl driver)
-Message-ID: <20150126215959.GA9853@roeck-us.net>
-References: <CA+r1ZhhXF+hicy7JKo3jAbgSbO4KOLm6BwPosTKNb+E_Cb4yPQ@mail.gmail.com>
+	id S1756912AbbAZWC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 17:02:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60663 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752749AbbAZWC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 17:02:26 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, eparis@redhat.com,
+        jeff.layton@primarydata.com
+cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Overlayfs, *notify() and file locking...
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+r1ZhhXF+hicy7JKo3jAbgSbO4KOLm6BwPosTKNb+E_Cb4yPQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54C6B8EA.0275,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <22063.1422309732.1@warthog.procyon.org.uk>
+Date: Mon, 26 Jan 2015 22:02:12 +0000
+Message-ID: <22064.1422309732@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 12:10:33PM -0700, Jim Davis wrote:
-> make ARCH=i386 allyesconfig fails with
-> 
-> drivers/staging/built-in.o: In function `reset':
-> (.text+0x2ae89d): multiple definition of `reset'
-> drivers/isdn/built-in.o:(.text+0x185dc2): first defined here
-> make[1]: *** [drivers/built-in.o] Error 1
+Having looked briefly at *notify() and file locking with an eye to doing some
+changes there to provide support LSMs and procfs for overlayfs/unionmount type
+things, I'm wondering how we're going to manage these two facilities.
 
-Culprit:
+The problem with both of these (afaict) is that they attach things to the
+inode(s) to be watched.  Now, take overlayfs for an example:
 
-commit b2ebd4be6fa1d2329b63531b044f9e25474981cb
-Author: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Date:   Wed Dec 31 10:11:10 2014 +0100
+Say you have a file that is pristine and on the lower layer.  You open it read
+only and lock it.  Someone else then opens it for writing.  Even if there's a
+mandatory lock on it, it will be copied up, and the copy will have no locks on
+it.  Now, we can get round that - sort of - by duplicating, sharing or moving
+the locking records between the inodes (though they may well exist on widely
+different media).
 
-    staging: fbtft: add fb_agm1264k-fl driver
+This is probably manageable, provided there isn't one or more servers involved
+(imagine if you've got one layer on NFS and another on CIFS, for example).
+Further more, if there are leases, we have to manage those trans-copyup also.
 
-A global function named 'reset' isn't really a good idea.
+Note that moving the lock may not be possible if the R/O file is still open
+and still locked.  The R/O file still refers to the R/O copy, even after the
+copy up.
 
-Not that the global function with the same name in the isdn code
-is better ;-).
+The situation is slightly complicated in the case of overlayfs in that there's
+a third inode - the overlay inode - around, though that's probably bypassed by
+file->f_inode pointing to one of the other layers.  Note that to get proc and
+LSMs working, I need to make file->f_path point to the overlay/union layer
+whilst file->f_inode points to the upper/lower layer inode.
 
-Guenter
+The situation is more complicated in the case of unionmount if we go there as
+there *is* no top inode to hang things off until we try to write to the union
+layer.
+
+Two further complications are that if a lock is placed on a lower inode, that
+lower inode may be shared with other overlays - and so must (a) be copied,
+moved or duplicated to the right overlay; and (b) must still interact
+correctly with any locks from other overlays.
+
+Yet a further complication is how should locks interact between a file shared
+between namespaces?  F_GETLK can return information about a locker
+(eg. l_pid).
+
+To summarise the problems:
+
+ (1) Locks may need to migrate between layers on copy up.
+
+ (2) Locks taken on source layers must still interact even after copy up.
+
+ (3) The top layer may get in the way.
+
+ (4) Layers may be remote and have remote locks (eg. NFS).
+
+ (5) There are also leases.
+
+ (6) There may be multiple overlays sharing files and locks must be copied up
+     to the right place.
+
+ (7) Mandatory locks vs copyup.
+
+ (8) f_path needs to point to the overlay layer while f_inode points to the
+     lower layer to fix proc and LSMs.
+
+
+Now, the problem with file notifications is very similar.  These again hang
+off the inode, but the inode they need to be hung off may change:
+
+ (1) Watches may need to migrate between layers.
+
+ (2) Watches on the source layer need to be duplicated to all overlays on copy
+     up.
+
+ (2b) Watches probably theoretically ought to remain watching the copied up
+      files even after a restart.  This is probably just too impractical,
+      though.
+
+ (3) The top layer may get in the way and watches should probably go on the
+     appropriate lower layer.
+
+ (4) The layers may be remote and have remote watches (eg. CIFS).
+
+ (5) f_path needs to point to the overlay layer while f_inode points to the
+     lower layer to fix proc and LSMs.
+
+
+Note that for both overlayfs and unionmount, directories are 'real' on the top
+layer, so watches (and locks if that's possible) may be easier to handle
+there, though in another sense, they're harder since they're the union of
+several directories' worth of contents and *all* the contributory directories
+need to be watched as two unions need not be fabricated from the same set of
+directories in the same order.
+
+David
