@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923AbbAZUnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 15:43:35 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:53325 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895AbbAZUnb (ORCPT
+	id S932181AbbAZUoP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 15:44:15 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:51957 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160AbbAZUoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 15:43:31 -0500
-Date: Mon, 26 Jan 2015 23:43:18 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 2/3] slab: zap kmem_cache_shrink return value
-Message-ID: <20150126204318.GB3317@esperanza>
-References: <cover.1422275084.git.vdavydov@parallels.com>
- <b89d28384f8ec7865c3fefc2f025955d55798b78.1422275084.git.vdavydov@parallels.com>
- <alpine.DEB.2.11.1501260949150.15849@gentwo.org>
- <20150126170418.GC28978@esperanza>
- <alpine.DEB.2.11.1501261226250.16638@gentwo.org>
- <20150126194838.GB2660@esperanza>
- <alpine.DEB.2.11.1501261353480.16786@gentwo.org>
- <20150126201602.GA3317@esperanza>
- <alpine.DEB.2.11.1501261427310.17468@gentwo.org>
+	Mon, 26 Jan 2015 15:44:12 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Date: Mon, 26 Jan 2015 21:44:09 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
+Cc: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <201501262016.52079@pali> <20150126203751.GK26493@n2100.arm.linux.org.uk>
+In-Reply-To: <20150126203751.GK26493@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501261427310.17468@gentwo.org>
+Content-Type: multipart/signed;
+  boundary="nextPart1752650.yApU9X6Kkt";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201501262144.09223@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 02:28:33PM -0600, Christoph Lameter wrote:
-> On Mon, 26 Jan 2015, Vladimir Davydov wrote:
-> 
-> > Right, but I just don't see why a subsystem using a kmem_cache would
-> > need to check whether there are any objects left in the cache. I mean,
-> > it should somehow keep track of the objects it's allocated anyway, e.g.
-> > by linking them in a list. That means it must already have a way to
-> > check if it is safe to destroy its cache or not.
-> 
-> The acpi subsystem did that at some point.
-> 
-> > Suppose we leave the return value as is. A subsystem, right before going
-> > to destroy a cache, calls kmem_cache_shrink, which returns 1 (slab is
-> > not empty). What is it supposed to do then?
-> 
-> That is up to the subsystem. If it has a means of tracking down the
-> missing object then it can deal with it. If not then it cannot shutdown
-> the cache and do a proper recovery action.
+--nextPart1752650.yApU9X6Kkt
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, we could make kmem_cache_destroy return EBUSY for the purpose.
-However, since it spits warnings on failure, which is reasonable, we
-have this check in kmem_cache_shrink...
+On Monday 26 January 2015 21:37:51 Russell King - ARM Linux=20
+wrote:
+> On Mon, Jan 26, 2015 at 08:16:52PM +0100, Pali Roh=C3=A1r wrote:
+> > This patch will cause that decompressor store full ATAG
+> > structure into
+>=20
+> > DT tree ("/atags"):
+> How about something a little more radical.
+>=20
+> Rather than trying to squeeze various ATAGs into DT, why don't
+> we add a standard ATAG to contain the DT and pass that
+> through into the kernel. This is IMHO how we _should_ have
+> done the ATAG compatibility from the start.
+>=20
+> That means we could get rid of most of the libfdt in the
+> decompressor, and instead resolve the differences in the
+> kernel.
 
-Anyways, I see your point now, thank you for pointing it out. I will fix
-SLUB's __kmem_cache_shrink retval instead of removing it altogether in
-the next iteration.
+This sounds good. Now when I patched decompressor myself with=20
+Revision property support, I wanted to ask same question: Why to=20
+convert some part from ATAGs to DT instead to pass both ATAGs and=20
+DT to kernel?
 
-Thanks,
-Vladimir
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1752650.yApU9X6Kkt
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlTGpxkACgkQi/DJPQPkQ1LeMgCgvVcDi8yWo0q6eOaExsVRrzYC
+SAwAoJ33BWBshXvfiTOhVMyq6wMKfWCN
+=8oTz
+-----END PGP SIGNATURE-----
+
+--nextPart1752650.yApU9X6Kkt--
