@@ -1,92 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103AbbAZKu0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:50:26 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34091 "EHLO
+	id S1754664AbbAZKwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:52:32 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34124 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754597AbbAZKuX (ORCPT
+	with ESMTP id S1751885AbbAZKw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:50:23 -0500
-Message-ID: <54C61BE4.8070105@pengutronix.de>
-Date: Mon, 26 Jan 2015 11:50:12 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
+	Mon, 26 Jan 2015 05:52:28 -0500
+Date: Mon, 26 Jan 2015 11:52:22 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Yingjoe Chen =?utf-8?B?KOmZs+iLsea0sik=?= 
+	<Yingjoe.Chen@mediatek.com>,
+        Henry Chen <henryc.chen@mediatek.com>,
+        YH Chen =?utf-8?B?KOmZs+aYseixqik=?= <yh.chen@mediatek.com>,
+        Flora Fu <flora.fu@mediatek.com>
+Subject: Re: [PATCH 7/7] mfd: Add support for the MediaTek MT6397 PMIC
+Message-ID: <20150126105222.GM12209@pengutronix.de>
+References: <1422022202-7526-1-git-send-email-s.hauer@pengutronix.de>
+ <1422022202-7526-8-git-send-email-s.hauer@pengutronix.de>
+ <20150123161440.GA11745@x1>
 MIME-Version: 1.0
-To: Andri Yngvason <andri.yngvason@marel.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 5/7] can: kvaser_usb: Update interface state before
- exiting on OOM
-References: <20141223154654.GB6460@vivalin-002> <20150126051755.GA3014@Darwish.PC> <20150126052039.GB3014@Darwish.PC> <20150126052254.GC3014@Darwish.PC> <20150126052406.GD3014@Darwish.PC> <20150126052543.GE3014@Darwish.PC> <20150126052719.GF3014@Darwish.PC> <20150126102843.17894.84372@shannon>
-In-Reply-To: <20150126102843.17894.84372@shannon>
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="HhotTsnSxVTEcMWmE346UJcbg8uGaeSrP"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150123161440.GA11745@x1>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:28:51 up 102 days, 20:42, 132 users,  load average: 0.07, 0.07,
+ 0.08
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
 X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---HhotTsnSxVTEcMWmE346UJcbg8uGaeSrP
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jan 23, 2015 at 04:14:40PM +0000, Lee Jones wrote:
+> On Fri, 23 Jan 2015, Sascha Hauer wrote:
+> 
+> > From: Flora Fu <flora.fu@mediatek.com>
+> > 
+> > This adds support for the MediaTek MT6397 PMIC. This is a
+> > multifunction device with the following sub modules:
+> > 
+> > - Regulator
+> > - RTC
+> > - Audio codec
+> > - GPIO
+> > - Clock
+> > 
+> > It is interfaced to the host controller using SPI interface by a proprietary
+> > hardware called PMIC wrapper or pwrap. MT6397 MFD is a child device of the
+> > pwrap.
+> > 
+> > Signed-off-by: Flora Fu, MediaTek
+> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Cc: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  Documentation/devicetree/bindings/mfd/mt6397.txt |  70 +++++
+> 
+> This should be submitted seperately, as per:
+> 
+>   Documentation/devicetree/bindings/submitting-patches.txt
 
-On 01/26/2015 11:28 AM, Andri Yngvason wrote:
-> Quoting Ahmed S. Darwish (2015-01-26 05:27:19)
->> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
->>
->> Update all of the can interface's state and error counters before
->> trying any skb allocation that can actually fail with -ENOMEM.
->>
->> Suggested-by: Marc Kleine-Budde <mkl@pengutronix.de>
->> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
->> ---
->>  drivers/net/can/usb/kvaser_usb.c |  181 ++++++++++++++++++++++-------=
----------
->>  1 files changed, 105 insertions(+), 76 deletions(-)
-[..]
+I didn't know this document yet, thanks for noting. I thought it is still
+acceptable to combine patches adding both code and the binding docs.
 
-> Looks good to me.
+> 
+> >  drivers/mfd/Kconfig                              |  10 +
+> >  drivers/mfd/Makefile                             |   1 +
+> >  drivers/mfd/mt6397-core.c                        | 251 ++++++++++++++++
+> >  include/linux/mfd/mt6397/core.h                  |  76 +++++
+> >  include/linux/mfd/mt6397/registers.h             | 362 +++++++++++++++++++++++
+> >  6 files changed, 770 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/mt6397.txt
+> >  create mode 100644 drivers/mfd/mt6397-core.c
+> >  create mode 100644 include/linux/mfd/mt6397/core.h
+> >  create mode 100644 include/linux/mfd/mt6397/registers.h
+> > 
+> > diff --git a/Documentation/devicetree/bindings/mfd/mt6397.txt b/Documentation/devicetree/bindings/mfd/mt6397.txt
+> > new file mode 100644
+> > index 0000000..25b40a6
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mfd/mt6397.txt
+> > @@ -0,0 +1,70 @@
+> > +MediaTek MT6397 Multifunction Device Driver
+> > +
+> > +MT6397 is a multifunction device with the following sub modules:
+> > +- Regulator
+> > +- RTC
+> > +- Audio codec
+> > +- GPIO
+> > +- Clock
+> > +
+> > +It is interfaced to host controller using SPI interface by a proprietary hardware
+> > +called PMIC wrapper or pwrap. MT6397 MFD is a child device of pwrap.
+> > +See the following for pwarp node definitions:
+> > +Documentation/devicetree/bindings/soc/pwrap.txt
+> > +
+> > +This document describes the binding for mfd device and its sub module.
+> 
+> Nit: s/mfd/MFD/
+> 
+> > +Required properties:
+> > +compatible: "mediatek,mt6397"
+> > +
+> > +Optional subnodes:
+> > +
+> > +- rtc:
+> > +	Required properties:
+> > +		- compatible: "mediatek,mt6397-rtc",
+> > +- regulators
+> > +	Required properties:
+> > +		- compatible: "mediatek,mt6397-regulator",
+> > +	see Documentation/devicetree/bindings/regulator/mt6397-regulator.txt
+> > +- codec
+> > +	Required properties:
+> > +		- compatible: "mediatek,mt6397-codec",
+> > +- clk
+> > +	Required properties:
+> > +		- compatible: "mediatek,mt6397-clk",
+> 
+> Nit: Titles with or without ':', as long as it's consistent.
+> 
+> Drop the comma at the end of each compatible line.
+> 
+> > +Example:
+> > +	pwrap: pwrap@1000f000 {
+> > +		compatible = "mediatek,mt8135-pwrap";
+> > +
+> > +		...
+> > +
+> > +		pmic {
+> > +			compatible = "mediatek,mt6397";
+> > +
+> > +			codec: mt6397codec {
+> > +				compatible = "mediatek,mt6397-codec";
+> > +			};
+> > +
+> > +			mt6397regulator: mt6397regulator {
+> 
+> s/mt6397regulator/regulator/
 
-Can I add your Acked-by to 5-7?
+Dropped the label completely since consumers will point to the
+individual regulators, not this node.
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+> > diff --git a/drivers/mfd/mt6397-core.c b/drivers/mfd/mt6397-core.c
+> > new file mode 100644
+> > index 0000000..9710fca
+> > --- /dev/null
+> > +++ b/drivers/mfd/mt6397-core.c
+> > @@ -0,0 +1,251 @@
+> > +/*
+> > + * Copyright (c) 2014 MediaTek Inc.
+> > + * Author: Flora Fu, MediaTek
+> 
+> Email address?
 
+She does not work for MediaTek anymore. Her Email address is no longer
+valid, so I removed it but kept her credits in the driver.
 
---HhotTsnSxVTEcMWmE346UJcbg8uGaeSrP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> > +{
+> > +	return irq >> 4;
+> > +}
+> > +
+> > +static void mt6397_irq_lock(struct irq_data *data)
+> > +{
+> > +	struct mt6397_chip *mt6397 = irq_get_chip_data(data->irq);
+> > +
+> > +	mutex_lock(&mt6397->irqlock);
+> > +}
+> > +
+> > +static void mt6397_irq_sync_unlock(struct irq_data *data)
+> > +{
+> > +	int i;
+> > +	struct mt6397_chip *mt6397 = irq_get_chip_data(data->irq);
+> > +
+> > +	regmap_write(mt6397->regmap, MT6397_INT_CON0, mt6397->irq_masks_cur[0]);
+> > +	regmap_write(mt6397->regmap, MT6397_INT_CON1, mt6397->irq_masks_cur[1]);
+> > +
+> > +	mutex_unlock(&mt6397->irqlock);
+> > +}
+> > +
+> > +static void mt6397_irq_mask(struct irq_data *data)
+> > +{
+> > +	struct mt6397_chip *mt6397 = irq_get_chip_data(data->irq);
+> > +	int shift = mt6397_irq_shift(data->hwirq);
+> > +	int reg = mt6397_irq_reg(data->hwirq);
+> > +	int reg_ofs = MT6397_INT_CON0 + reg * 2;
+> > +
+> > +	mt6397->irq_masks_cur[reg] &= ~(1 << shift);
+> 
+> s/(1 << shift)/BIT(shift)/
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Is it mentioned somewhere that these BIT macros shall be used? There are
+quadrillions of examples for both styles in the kernel and personally I
+think 1 << x is more readable.
 
-iQIcBAEBCgAGBQJUxhvpAAoJECte4hHFiupURm0P/RoHDtCC3lfTVSjW5MlHe/Z/
-CyU/xuqwaJar1TON+/D8EQXqVLL3bV2CWoj0FQpfKjKuTxylrqenRxwj+YD3dEIt
-NErjVVNiQc3445tPJVFc0bJoqpmFB+20XemYUMKSC4aNbWHgVfHFdda3kkTVynyL
-mnnokF26pdDGi54IuYZ3IyNkkNR6tVmr6iTxVgBU6LF5/2bgRnfcGglAJxk5CaA3
-vkjmECWMFdxVxQENym2i56PgYrYm9k/HvvF+yMg8+gEXrI5Vxoyd3sfUhjI8kmT8
-1ZfVVpTQTnr/XpAVy9INpS0yymVFTJmJkQdjg9oniUt/XyRtnkC1Xrhcr2EIL1HS
-Unk4Uu2C+goq76DhrQ2enVxwBm5DG3T69qt9FDlHZIWaXwqErSRAsaBzpVqBU2uM
-zfGS3TbztOT0MgQKWQhtIY9bHqCjDrqfR8Il4anww9TVzKBPF1lSafJEaLiThTKN
-i+ZZnInltxYTR8Ql/Kt1rk9kJplF9eVhd1m4TLdlIpUgA3FlrcwrZCZb/Wg1asFG
-AAlsaiy7qc2qn3xO0Y4AF4DY+MyLn+d/giZX6fLeHwLjTCfxWiAqPRNcWK0vpd50
-zDkbGsU1yyAxXobAmW4vx2jFH9935xa9HIGH6UregWvk+OueeqE3cRgEfEx9oeTj
-Tl9A9SNaqxGjnC7/gFc3
-=0KwO
------END PGP SIGNATURE-----
+> > +	for (i = 0; i < MT6397_IRQ_GROUP_NR; i++) {
+> > +		ret = regmap_read(mt6397->regmap,
+> > +			MT6397_INT_STATUS0 + i * 2, &irq_reg[i]);
+> > +		if (ret > 0) {
+> 
+> Can regmap_read() return <0?
 
---HhotTsnSxVTEcMWmE346UJcbg8uGaeSrP--
+Yes, but not > 0 ;). Fixed.
+
+> 
+> > +			dev_err(mt6397->dev,
+> > +				"failed to read interrupt status [0x%x]\n",
+> > +				MT6397_INT_STATUS0 + i * 2);
+> > +			return IRQ_NONE;
+> > +		}
+> > +	}
+> > +
+> > +	for (i = 0; i < MT6397_IRQ_NR; i++) {
+> > +		int shift = mt6397_irq_shift(i);
+> > +		int reg = mt6397_irq_reg(i);
+> > +		int reg_ofs = MT6397_INT_STATUS0 + reg * 2;
+> > +
+> > +		if (irq_reg[reg] & (1 << shift)) {
+> > +			cur_irq = irq_find_mapping(mt6397->irq_domain, i);
+> > +			if (cur_irq)
+> > +				handle_nested_irq(cur_irq);
+> > +
+> > +			/* write 1 to status bit to clear the event.  */
+> 
+> There are very few comments in the driver and _this_ is where it was
+> felt appropriate to do so?  If you put "MT6397_INT_STATUS0 + reg * 2"
+> directly into the call, the line will speak for itself.
+
+I refactored the code a bit, like write status reg once after handling
+all interrupts and not after each interrupt. I also removed this comment
+since it only states the obvious.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
