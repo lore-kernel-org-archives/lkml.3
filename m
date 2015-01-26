@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262AbbAZNlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:41:22 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43156 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752292AbbAZNlT (ORCPT
+	id S1755425AbbAZNSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:18:21 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58137 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751208AbbAZNST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:41:19 -0500
-Date: Mon, 26 Jan 2015 13:40:53 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stefan Agner <stefan@agner.ch>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Mon, 26 Jan 2015 08:18:19 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND v3 0/3] irqchip: vf610-mscm: add support for MSCM
- interrupt router
-Message-ID: <20150126134053.GH23313@leverpostej>
-References: <1421309046-22452-1-git-send-email-stefan@agner.ch>
- <alpine.DEB.2.11.1501261115300.5526@nanos>
- <36990c90fa3d2ee0849227f31cbafb54@agner.ch>
+Subject: Re: Change behaviour when tracing ... nasty trap (was Re: [PATCH] PM/Trace: get rid of synchronous resume limit during PM trace)
+Date: Mon, 26 Jan 2015 14:41:02 +0100
+Message-ID: <2718950.eck1siDzqK@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150126110516.GA2028@amd>
+References: <54C5CB77.4000109@linux.intel.com> <27240C0AC20F114CBF8149A2696CBE4A01F1AD6A@SHSMSX101.ccr.corp.intel.com> <20150126110516.GA2028@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <36990c90fa3d2ee0849227f31cbafb54@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-
-> > What about the DT bindings? I'm relucant to pick that up w/o acks from
-> > the DT folks.
+On Monday, January 26, 2015 12:05:16 PM Pavel Machek wrote:
+> On Mon 2015-01-26 10:39:04, Liu, Chuansheng wrote:
+> > Hello Pavel,
+> > 
+> > > > There are some kind of dependency between devices in some
+> > > > hardware platforms. So, asynchronous resuming devices may
+> > > > hang system due to wrong resume order. As a result, should
+> > > > not fore synchronously resuming devices during tracing
+> > > > PM events.
+> > > >
+> > > > Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
+> > > > ---
+> > > >  drivers/base/power/main.c    |    3 +--
+> > > >  include/linux/resume-trace.h |    7 -------
+> > > >  2 files changed, 1 insertions(+), 9 deletions(-)
+> > > >
+> > > > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> > > > index 9717d5f..5df148b 100644
+> > > > --- a/drivers/base/power/main.c
+> > > > +++ b/drivers/base/power/main.c
+> > > > @@ -517,8 +517,7 @@ static int device_resume_noirq(struct device *dev,
+> > > pm_message_t state, bool asyn
+> > > >
+> > > >  static bool is_async(struct device *dev)
+> > > >  {
+> > > > -	return dev->power.async_suspend && pm_async_enabled
+> > > > -		&& !pm_trace_is_enabled();
+> > > > +	return dev->power.async_suspend && pm_async_enabled;
+> > > >  }
+> > > >
+> > > 
+> > > Actually... whoever did the original patch was evil person. Changing
+> > > behaviour when tracing is requested is evil, evil, evil. Git blame
+> > > tells me
+> > > 
+> > > Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> > > 
+> > > went to the dark side.
+> > 
+> > Although I didn't get where is something wrong, but the is_async() is not created by my commit,
+> > it is from commit (PM: Start asynchronous resume threads upfront), I just moved it ahead.
+> > 
+> > And like other phases, I added it into resum/suspend_noirq()...
 > 
-> The bindings are straight forward interrupt-controller bindings, since
-> it uses the hierarchic irq domain stuff. The only uncommon thing is that
-> I also added "syscon" as compatible, since the module has functionality
-> which might be required by other drivers (e.g. register to generate
-> CPU2CPU interrupt or processor personality information).
+> I see, blame blamed wrong person. It looks like Rafael is evil:
+> 
+> commit 97df8c12995c5bac73e3bfeea4c5be155c1f4401
+> Author: Rafael J. Wysocki <rjw@sisk.pl>
+> Date:   Sat Jan 23 22:25:31 2010 +0100
+> 
+>     PM: Start asynchronous resume threads upfront
 
-I'd expect the CPU2CPU interrupt handling to be part of the interrupt
-controller driver, so I don't see why that would require "syscon".
+This only means we won't use asyc suspend/resume at all when the RTC-based
+resume debug is enabled, because it wouldn't make sense (the RTC-based
+debug requires strict ordering of callbacks between devices or we may find
+that device A hanged the resume while actually device B that was running in
+parallel with A did that).
 
-What exactly do you mean by "processor personality information"?
+And I shouldn't even need to explain this ...  Sad.
 
-Mark.
+Rafael
+
