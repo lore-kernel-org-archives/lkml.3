@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841AbbAZVVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:21:30 -0500
-Received: from mail05.syd.iprimus.net.au ([210.50.30.229]:63949 "EHLO
-	mail05.syd.iprimus.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166AbbAZVV2 (ORCPT
+	id S1756949AbbAZVVj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:21:39 -0500
+Received: from or-71-0-52-80.sta.embarqhsd.net ([71.0.52.80]:53676 "EHLO
+	asgard.dharty.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054AbbAZVVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:21:28 -0500
-X-Greylist: delayed 656 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jan 2015 16:21:28 EST
-DomainKey-Signature: s=iprimus-dk; d=iprimus.com.au; c=simple; q=dns;
-  h=X-IronPort-AV:Received:Received:Date:Message-ID:From:
-   Subject:MIME-Version:Content-Type:
-   Content-Transfer-Encoding;
-  b=YClWMaeHvUTUxhUrCazJKn1jVhRShvq7C4NdjM09IwTAJzhk3vN4C789
-   pbldZwRLpD6FYWs/79rCgAd9TkIHln6UP0NACUwsDbFw0C6zqwOo818bU
-   Vx9UfjsAQUcCxHZMioGlTdW71rq1QSvzanjz70nucnTnROuZltRLvwaTB
-   s=;
-X-IronPort-AV: E=Sophos;i="5.09,470,1418043600"; 
-   d="scan'208";a="215508780"
-Date: Tue, 27 Jan 2015 02:40:20 +0530
-Message-ID: <542C662C00074A08@cpms02.int.iprimus.net.au>
-From: wdhowarth@iprimus.com.au
-Subject: Upgrade your account immediately
+	Mon, 26 Jan 2015 16:21:36 -0500
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jan 2015 16:21:35 EST
+Message-ID: <54C6ADA0.6080606@dharty.com>
+Date: Mon, 26 Jan 2015 13:12:00 -0800
+From: catchall <catchall@dharty.com>
+Reply-To: v4l@dharty.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Hauppage HVR-2250 - No Free Sequences
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your mailbox has exceeded the storage limit 2.GB
-Established by the administrator is currently 2.30 GB, it can not
-send or receive new messages until you re-validate your e-mail
+http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/86259/match=hauppage+hvr+2250+no+free+sequences
 
-Click the link below to validate your e-mail
+Just wanted to add that Kyle is not alone in this.
 
-http://upgradeweb-admin.jimdo.com
+I have also recently started having issues unable to get a tuner lock.  
+I see my logs filled with lines like:
 
-thank you
-system administrator
-sdfg
+2015-01-26T12:30:44.387796-08:00 mediapc kernel: [95256.808510] 
+saa7164_cmd_send() No free sequences
+2015-01-26T12:30:44.387799-08:00 mediapc kernel: [95256.808512] 
+saa7164_api_i2c_write() error, ret(1) = 0xc
+2015-01-26T12:30:44.387801-08:00 mediapc kernel: [95256.808515] 
+s5h1411_writereg: writereg error 0x19 0xf7 0x0001, ret == -5)
+
+I have tried different combinations of the firmware at 
+http://www.steventoth.net/linux/hvr22xx/ with no luck.
+
+Regards,
+
+David
 
