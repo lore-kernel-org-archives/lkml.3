@@ -1,185 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355AbbAZOPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 09:15:12 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37293 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751910AbbAZOPI convert rfc822-to-8bit (ORCPT
+	id S1753902AbbAZOPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:15:35 -0500
+Received: from outbound-smtp06.blacknight.com ([81.17.249.39]:53215 "EHLO
+	outbound-smtp06.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753480AbbAZOPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 09:15:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,469,1418112000"; 
-   d="scan'208";a="642656572"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: "'Arnaldo Carvalho de Melo'" <acme@kernel.org>
-CC: "jolsa@redhat.com" <jolsa@redhat.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V6 1/1] perf tool: perf diff support for different
- binaries
-Thread-Topic: [PATCH V6 1/1] perf tool: perf diff support for different
- binaries
-Thread-Index: AQHQKcCYJ7KOEpNzNUyoh7SK6Z35IZzPtuNg
-Date: Mon, 26 Jan 2015 14:15:01 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077016A5F6F@SHSMSX103.ccr.corp.intel.com>
-References: <1417534758-26416-1-git-send-email-kan.liang@intel.com>
- <20150106145356.GA10675@kernel.org>
-In-Reply-To: <20150106145356.GA10675@kernel.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 26 Jan 2015 09:15:31 -0500
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        dvhart@infradead.org, andy.shevchenko@gmail.com,
+        boon.leong.ong@intel.com, linux-kernel@vger.kernel.org
+Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Subject: [PATCH v3 0/1] x86: Add IMR support to Quark/Galileo
+Date: Mon, 26 Jan 2015 14:15:26 +0000
+Message-Id: <1422281727-32610-1-git-send-email-pure.logic@nexus-software.ie>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset adds support for Isolated Memory Regions to the kernel.
 
+Quark SoC X1000 contains a set of registers called Isolated Memory Regions.
+IMRs provide fine grained memory access control to various system agents
+within the SoC such as CPU SMM/non-SMM mode, PCIe virtual channels, CPU
+snoop cycles, eSRAM flush cycles and the RMU. In simple terms, IMRs provide
+a mechanism to protect memory regions from unwarranted access by system
+agents that should not have access to that memory.
 
-> 
-> Em Tue, Dec 02, 2014 at 10:39:18AM -0500, kan.liang@intel.com escreveu:
-> > From: Kan Liang <kan.liang@intel.com>
-> >
-> > Currently, the perf diff only works with same binaries. That's because
-> > it compares the symbol start address. It doesn't work if the perf.data
-> > comes from different binaries. This patch matches the function names.
-> 
-> Sorry Kan, I saw these patches, its just that it the above statement looked
-> completely strange to me, i.e. of course it should look at the dso name,
-> then at the symbol name, comparing via addresses makes no sense to me,
-> so I kept leaving this patch to look after processing other patches and doing
-> other things, then the year end holidays, etc.
-> 
-> So now I'm looking at old code, from 2009:
-> 
->   commit 604c5c92972dcb4b98be34775452d09a5d4ec248
->   Author: Arnaldo Carvalho de Melo <acme@redhat.com>
->   Date:   Wed Dec 16 14:09:53 2009 -0200
-> 
->     perf diff: Change the default sort order to "dso,symbol"
-> 
->     This is a more intuitive / more meaningful default:
-> 
->     $ perf diff | head -8
->          9.02%     +1.00%  libc-2.10.1.so               [.] _IO_vfprintf_internal
->          2.91%     -1.00%  [kernel]                     [k] __kmalloc
->          2.85%     -1.00%  [kernel]                     [k] ext4_htree_store_dirent
->          1.99%     -1.00%  [kernel]                     [k] _atomic_dec_and_lock
->          2.44%             [kernel]
->     $
-> 
->     Suggested-by: Ingo Molnar <mingo@elte.hu>
-> 
-> and I see:
-> 
-> static void perf_session__match_hists(struct perf_session *old_session,
->                                       struct perf_session *new_session) {
->         struct rb_node *nd;
-> 
->         perf_session__resort_by_name(old_session);
-> 
->         for (nd = rb_first(&new_session->hists); nd; nd = rb_next(nd)) {
->                 struct hist_entry *pos = rb_entry(nd, struct hist_entry, rb_node);
->                 pos->pair = perf_session__find_hist_entry_by_name(old_session,
-> pos);
->         }
-> }
-> 
-> Ok, it will process all samples, store everything in hist_entries, etc, then
-> traverse all entries in the most recent perf.data file and look for a pair, _by
-> name_:
-> 
-> static struct hist_entry *
-> perf_session__find_hist_entry_by_name(struct perf_session *self,
->                                       struct hist_entry *he) {
->         struct rb_node *n = self->hists.rb_node;
-> 
->         while (n) {
->                 struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node);
->                 int cmp = strcmp(he->map->dso->name, iter->map->dso->name);
-> 
->                 if (cmp > 0)
->                         n = n->rb_left;
->                 else if (cmp < 0)
->                         n = n->rb_right;
->                 else {
->                         cmp = strcmp(he->sym->name, iter->sym->name);
->                         if (cmp > 0)
->                                 n = n->rb_left;
->                         else if (cmp < 0)
->                                 n = n->rb_right;
->                         else
->                                 return iter;
->                 }
->         }
-> 
->         return NULL;
-> }
-> 
-> See? Resort the old session by "dso,symbol_name", then go on pairing
-> them.
-> 
-> So at some point this got broken :-\
-> 
+IMRs support a lock bit. Once a lock bit is set for an individual IMR it is
+not possible to tear down that IMR without performing a cold boot of the
+system. IMRs support reporting of violations. The SoC system can be
+configured to reboot immediately when an IMR violation has taken place.
+Immediate reboot of the system on IMR violation is recommended and is
+currently how Quark BIOS configures the system.
 
+An example of IMRs in use is given with Arduino compatiable Galileo boards
+which ship with an IMR around the ACPI runtime services memory. If a DMA
+read/write cycle were to occur to this region of memory this would trigger
+the IMR violation mechansim.
 
-Hi Arnaldo,
+As part of the IMR init code all unlocked IMRs are removed to ensure the
+EFI memory map and IMR memory map are consistent. This is necessary since at
+various stages during the boot of Quark systems firmware and second stage
+bootloader will place unlocked IMRs around various assets in memory, with
+the expectation that subsequent phases of boot will tear-down unlocked/stale
+IMRs before proceeding. The kernel needs to tear-down unlocked IMRs placed
+around the boot params structure and compressed kernel in memory. Without
+doing so DMA addresses given out by the kernel to DMA capable hardware runs
+the risk of triggering an IMR fault when DMA happens to those addresses.
+As a result any unlocked IMR must be torn down by the kernel early in the
+boot process to sanitize the memory map. 
 
-I tried the 2009 version perf diff. The code still only work for the same binaries.
+As an additional protection to the run-time kernel from unwarranted memory
+transactions an IMR is placed around the kernel's .text and .rodata
+sections. 
 
-Although it compared by name, it used a global list of dsos. 
-That means the binaries which has same name can only be loaded once. It's OK
-for same binaries. But for different binaries, it's a problem. For example, we have
-an old binary and an updated binary. They very likely have same name and most
-of the function. So only dsos from old binary will be loaded. When processing the
-data from updated binary, perf still use the symbol information from old binary. 
-That's wrong for different binaries.
+Changes since v2:
+ - Move IMR code to arch/x86/platform/intel-quark/imr.c
+   Thomas Gleixner/Darren Hart
+ - #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+    Andy Shevchenko
+ - ret = iosf_mbi_read()
+    Style made consistent in imr_write
+    Andy Shevchenko
+ - reg++/IMR_NUM_REGS
+    Offset used for lock bit in imr_write
+    Andy Shevchenko
+ - debugfs s->private pointer used
+    Andy Shevchenko
+ - debugfs
+    Conditional compilation defines removed
+    Andy Shevchenko
+ - debugfs
+    Failure to hook debugfs treated as non-fatal
+    Andy Shevchenko
+ - phys_addr_t
+    Updated API to use phys_addr_t in place of unsigned long for base param
+    Andy Shevchenko
+ - printk
+    "KiB" instead of "k"
+    Andy Shevchenko
+ - imr_enabled
+    -> static inline imr_is_enabled
+    Ong, Boon Leong/Andy Shevchenko
+ - imr_write
+    trap final ret from iosf_mbi_write for lock bit in imr_write - bugfix
+    Ong, Boon Leong
+ - imr_fixup_size
+    -> static inline imr_fixup_size
+    Ong, Boon Leong
+ - imr_address_overlap
+    -> imr_address_overlap
+    Ong, Boon Leong
+ - imr_add_range
+    End address in imr_add_range calculated after imr_fixup_size()
+    Ong, Boon Leong
+ - imr_del_range
+    Pass i in place of reg in imr_del_range() - bugfix
+    Ong, Boon Leong
+ - Add test case
+    imr_del_range(-1, addr, size)
+    Ong, Boon Leong/Andy Shevchenko
+ - Added text "aligned to 1 KiB" removed reference to "4 k"
+    Ong, Boon Leong
+ - imr_is_enabled
+    Definition of enabled updated to be negation of disabled
+    Bryan O'Donoghue
+ - imr_add_range
+    Add check for adding an IMR in the disabled state
+    Bryan O'Donoghue
+ - Add test case IMR @ invalid address, @0 with rmask/wmask=CPU, @ 0 size 0x800
+    Bryan O'Donoghue
+ - Add WARN() to failed IMR test in print routine
+    Bryan O'Donoghue
+ - Update license to Dual BSD/GPL
+    Reflect licensing in Intel reference code
+    Bryan O'Donoghue
 
-Then about two weeks later, the patch as below to use IP to replace symbol name.
+Changes since v1:
+ - Galileo platform code
+    Removed completely. Policy to tear-down unlocked IMRs and setup IMR
+    around kernel .text and .rodata as part of IMR init code.
+    Darren Hart/Ong, Boon Leong
+ - imr_add/imr_del
+    Renamed to imr_add_range and imr_del_range respectively.
+    Andy Shevchenko
+ - x86_match_cpu
+    Used in place of DMI strings specific to Galileo.
+    Andy Shevchenko/Ong, Boon Leong
+ - Expanded git log definitions of IMRs
+    Addition of more descriptive text to deliniate between different IMR
+    types.
+    Ong, Boon Leong
+ - struct imr
+    Renamed to struct imr_regs
+    Andy Shevchenko/Darren Hart
+ - imr_read/imr_write
+    Flow reworked flow of register indexing
+    Andy Shevchenko
+ - debugfs hooks changed
+    Andy Shevchenko
+ - imr_enabled
+    Definition of an enabled IMR updated to include read/write mask values
+    present in IMR. Address @ zero and read/write mask in conjunction will
+    be the definition of a disabled IMR on X1000 to be consistent with
+    firmware both old and current which also defines a disabled IMR this
+    way.
+    Darren Hart/Ong, Boon Leong
+ - Overlapping
+    Comment added to code to explain the design decision not to allow IMR
+    overlaps.
+    Darren Hart/Ong, Boon Leong
+ - CONFIG_DEBUG_IMR_SELFTEST
+    Automated IMR self test moved from removed Galileo platform code and
+    added to IMR init code. Option exists in the kernel hacking section.
+    Darren Hart
+ - IMR self test
+    Expanded to over more scenarios
+    Bryan O'Donoghue
+ - Remove reference to IMR_ENABLE bit
+    Undocumented bit with respect to Quark X1000
+    Ong, Boon Leong
+ - Expanded kernel IMR to encompass .text and .rodata
+    IMR protecting both .text and .rodata as in the same way as .text and
+    .rodata are marked read-only in the relevant page-table entries.
+    Bryan O'Donoghue
+ - Overlap bounds checking
+    Moved range checking of overlap into a function
+    Andy Shevchenko
+ 
+Bryan O'Donoghue (1):
+  x86: Add Isolated Memory Regions for Quark X1000
+ 
+ arch/x86/Kconfig                       |  15 +
+ arch/x86/Kconfig.debug                 |  12 +
+ arch/x86/include/asm/imr.h             |  60 +++
+ arch/x86/kernel/Makefile               |   1 +
+ arch/x86/platform/Makefile             |   1 +
+ arch/x86/platform/intel-quark/Makefile |   1 +
+ arch/x86/platform/intel-quark/imr.c    | 713 +++++++++++++++++++++++++++++++++
+ drivers/platform/x86/Kconfig           |  25 ++
+ 8 files changed, 828 insertions(+)
+ create mode 100644 arch/x86/include/asm/imr.h
+ create mode 100644 arch/x86/platform/intel-quark/Makefile
+ create mode 100644 arch/x86/platform/intel-quark/imr.c
 
-author	Arnaldo Carvalho de Melo <acme@redhat.com>	2009-12-29 00:48:36 (GMT)
-committer	Ingo Molnar <mingo@elte.hu>	2009-12-30 11:00:00 (GMT)
-commit	9c443dfdd31eddea6cbe6ee0ca469fbcc4e1dc3b (patch)
-tree	6e217aaf89b941fbbc7b905046d5350392d642db /tools/perf
-parent	cdbae31408cf39372402076cf2e189ec693daa71 (diff)
-perf diff: Fix support for all --sort combinations
-
-
-The global dsos is discarded from a patch in 2010. Since the previous patch has already
-use the IP to compare. So it still doesn't work for different binaries
-
-author	Zhang, Yanmin <yanmin_zhang@linux.intel.com>	2010-04-19 05:32:50 (GMT)
-committer	Avi Kivity <avi@redhat.com>	2010-04-19 09:37:24 (GMT)
-commit	a1645ce12adb6c9cc9e19d7695466204e3f017fe (patch)
-tree	5d31aaaf534997e6e9cebc07f38eca35f76986cf /tools/perf
-parent	ff9d07a0e7ce756a183e7c2e483aec452ee6b574 (diff)
-perf: 'perf kvm' tool for monitoring guest performance from host
-
-
-So I think perf diff never works for different binaries.  My patch should not be a bug fix,
-but a feature enhancement as I mentioned in the description. 
-
-What do you think?
-
-Thanks,
-Kan
-
-
-> I.e. this is not changing an existing correct behaviour, but fixing a bug, i.e.
-> the changeset comment confused me :-\
-> 
-> Now I'm trying to figure out _when_ this got broken, what was the
-> reasoning for that code to have changed in a way that made it not match
-> by dso_name, symbol_name.
-> 
-> Also please, when providing code to be built to reproduce your results,
-> make it self contained,  i.e. in the case below, I had to replace "noinline"
-> with "__attribute__((noinline))".
-> 
-> - Arnaldo
-> 
+-- 
+1.9.1
 
