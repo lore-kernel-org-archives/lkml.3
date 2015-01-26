@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052AbbAZKX7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:23:59 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60168 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbbAZKXy (ORCPT
+	id S1756079AbbAZKYm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:24:42 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:55504 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755539AbbAZKYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:23:54 -0500
-Date: Mon, 26 Jan 2015 11:23:52 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, len.brown@intel.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        chuansheng.liu@intel.com
-Subject: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
- PM/Trace: get rid of synchronous resume limit during PM trace)
-Message-ID: <20150126102352.GA1758@amd>
-References: <54C5CB77.4000109@linux.intel.com>
+	Mon, 26 Jan 2015 05:24:38 -0500
+Date: Mon, 26 Jan 2015 12:24:33 +0200
+From: Mariam Mohamed Fawzy <maryammohamed61@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, maryammohamed61@gmail.com,
+        thomas.petazzoni@free-electrons.com, notro@tronnes.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] fix space required after that ','
+Message-ID: <aa2201187c1e773b097042ff99d88b1bd6240469.1422267260.git.maryammohamed61@gmail.com>
+References: <cover.1422267260.git.maryammohamed61@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C5CB77.4000109@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <cover.1422267260.git.maryammohamed61@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2015-01-26 13:07:03, Fu, Zhonghui wrote:
-> >From f9c841d1f943d81b5ab0aac7483e794a7f966296 Mon Sep 17 00:00:00 2001
-> From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> Date: Mon, 26 Jan 2015 11:27:08 +0800
-> Subject: [PATCH] PM/Trace: get rid of synchronous resume limit during PM trace
-> 
-> There are some kind of dependency between devices in some
-> hardware platforms. So, asynchronous resuming devices may
-> hang system due to wrong resume order. As a result, should
-> not fore synchronously resuming devices during tracing
-> PM events.
-> 
-> Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> ---
->  drivers/base/power/main.c    |    3 +--
->  include/linux/resume-trace.h |    7 -------
->  2 files changed, 1 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index 9717d5f..5df148b 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -517,8 +517,7 @@ static int device_resume_noirq(struct device *dev, pm_message_t state, bool asyn
->  
->  static bool is_async(struct device *dev)
->  {
-> -	return dev->power.async_suspend && pm_async_enabled
-> -		&& !pm_trace_is_enabled();
-> +	return dev->power.async_suspend && pm_async_enabled;
->  }
->
+This patch fixes the following in checkpatch.pl error:
+space required after that ','
 
-Actually... whoever did the original patch was evil person. Changing
-behaviour when tracing is requested is evil, evil, evil. Git blame
-tells me
+Signed-off-by: Mariam Mohamed Fawzy <maryammohamed61@gmail.com>
+---
+ drivers/staging/fbtft/fb_bd663474.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-
-went to the dark side.
-
-									Pavel
-
+diff --git a/drivers/staging/fbtft/fb_bd663474.c b/drivers/staging/fbtft/fb_bd663474.c
+index 1df19d7..17a2162 100644
+--- a/drivers/staging/fbtft/fb_bd663474.c
++++ b/drivers/staging/fbtft/fb_bd663474.c
+@@ -47,7 +47,7 @@ static int init_display(struct fbtft_par *par)
+ 	/* Initialization sequence from Lib_UTFT */
+ 
+ 	/* oscillator start */
+-	write_reg(par, 0x000,0x0001);	/*oscillator 0: stop, 1: operation */
++	write_reg(par, 0x000, 0x0001);	/*oscillator 0: stop, 1: operation */
+ 	mdelay(10);
+ 
+ 	/* Power settings */
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.1
+
