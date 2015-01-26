@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbbAZOu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 09:50:29 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43251 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134AbbAZOu0 (ORCPT
+	id S1755343AbbAZOuj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:50:39 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:51650 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131AbbAZOud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 09:50:26 -0500
-Date: Mon, 26 Jan 2015 14:50:01 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] HID: i2c-hid: Add support for GPIO interrupts
-Message-ID: <20150126145000.GJ23313@leverpostej>
-References: <1422282573-18215-1-git-send-email-mika.westerberg@linux.intel.com>
- <1422282573-18215-2-git-send-email-mika.westerberg@linux.intel.com>
- <20150126143723.GI23313@leverpostej>
- <20150126144729.GG1451@lahna.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126144729.GG1451@lahna.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Jan 2015 09:50:33 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hans.verkuil@cisco.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] media: am437x: fix sparse warnings
+Date: Mon, 26 Jan 2015 14:50:15 +0000
+Message-Id: <1422283815-1795-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 02:47:29PM +0000, Mika Westerberg wrote:
-> On Mon, Jan 26, 2015 at 02:37:24PM +0000, Mark Rutland wrote:
-> > On Mon, Jan 26, 2015 at 02:29:33PM +0000, Mika Westerberg wrote:
-> > > The HID over I2C specification allows to have the interrupt for a HID
-> > > device to be GPIO instead of directly connected to the IO-APIC.
-> > > 
-> > > Add support for this so that when the driver does not find proper interrupt
-> > > number from the I2C client structure we check if the device has property
-> > > named "gpios". This is then assumed to be the GPIO that serves as an
-> > > interrupt for the device.
-> > > 
-> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > ---
-> > >  .../devicetree/bindings/hid/hid-over-i2c.txt       |  5 +-
-> > >  drivers/hid/i2c-hid/i2c-hid.c                      | 70 ++++++++++++++++------
-> > >  2 files changed, 56 insertions(+), 19 deletions(-)
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/hid/hid-over-i2c.txt b/Documentation/devicetree/bindings/hid/hid-over-i2c.txt
-> > > index 488edcb264c4..8f4a99dad3b9 100644
-> > > --- a/Documentation/devicetree/bindings/hid/hid-over-i2c.txt
-> > > +++ b/Documentation/devicetree/bindings/hid/hid-over-i2c.txt
-> > > @@ -15,7 +15,10 @@ Required properties:
-> > >  - reg: i2c slave address
-> > >  - hid-descr-addr: HID descriptor address
-> > >  - interrupt-parent: the phandle for the interrupt controller
-> > > -- interrupts: interrupt line
-> > > +- interrupts: interrupt line if the device uses IO-APIC interrupts
-> > > +
-> > > +Optional properties:
-> > > +- gpios: GPIO used as an interrupt if the device uses GPIO interrupts
-> > 
-> > Elsewhere we've said that for a GPIO acting as an interrupt line, GPIO
-> > controller should be marked as an interrupt-controller, and the GPIO
-> > described as an interrupt line. That also gets you the appropriate
-> > configuration for the GPIO as an interrupt.
-> > 
-> > Does this GPIO serve any other purpose than an ersatz interrupt line?
-> 
-> It is just an interrupt.
-> 
-> > If not, it should probably be described as an interrupt. From the PoV of
-> > this device, it's just an interrupt controller hooked up to the
-> > interrupt pin.
-> 
-> What I'm trying to do is to get a GPIO that is described in ACPI (as
-> GpioInt() in _CRS) to be supported in this driver using gpiolib like
-> this:
-> 
-> 	desc = gpiod_get(&client->dev, NULL);
-> 
-> This calls to find "gpios" property which ends up finding the GpioInt()
-> in _CRS.
+This patch fixes following spare warnings:
 
-I understand what you are trying to do, but I disagree on the principle.
-If it's logically an interrupt, it should be described as an interrupt.
+drivers/media/platform/am437x/am437x-vpfe.c:66:28: warning: symbol 'vpfe_standards' was not declared. Should it be static?
+drivers/media/platform/am437x/am437x-vpfe.c:2202:57: warning: incorrect type in argument 2 (different address spaces)
+drivers/media/platform/am437x/am437x-vpfe.c:2202:57:    expected void [noderef] <asn:1>*params
+drivers/media/platform/am437x/am437x-vpfe.c:2202:57:    got void *param
+include/linux/spinlock.h:364:9: warning: context imbalance in 'vpfe_start_streaming' - unexpected unlock
 
-If ACPI lacks the ability to describe things in that fashion, it's yet
-another reason that we shouldn't be pretending that DT and ACPI are the
-same thing.
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/media/platform/am437x/am437x-vpfe.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Mark.
+diff --git a/drivers/media/platform/am437x/am437x-vpfe.c b/drivers/media/platform/am437x/am437x-vpfe.c
+index e01ac22..349bd06 100644
+--- a/drivers/media/platform/am437x/am437x-vpfe.c
++++ b/drivers/media/platform/am437x/am437x-vpfe.c
+@@ -63,7 +63,7 @@ struct vpfe_standard {
+ 	int frame_format;
+ };
+ 
+-const struct vpfe_standard vpfe_standards[] = {
++static const struct vpfe_standard vpfe_standards[] = {
+ 	{V4L2_STD_525_60, 720, 480, {11, 10}, 1},
+ 	{V4L2_STD_625_50, 720, 576, {54, 59}, 1},
+ };
+@@ -2024,7 +2024,6 @@ err:
+ 		list_del(&buf->list);
+ 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_QUEUED);
+ 	}
+-	spin_unlock_irqrestore(&vpfe->dma_queue_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -2199,7 +2198,7 @@ static long vpfe_ioctl_default(struct file *file, void *priv,
+ 
+ 	switch (cmd) {
+ 	case VIDIOC_AM437X_CCDC_CFG:
+-		ret = vpfe_ccdc_set_params(&vpfe->ccdc, param);
++		ret = vpfe_ccdc_set_params(&vpfe->ccdc, (void __user *)param);
+ 		if (ret) {
+ 			vpfe_dbg(2, vpfe,
+ 				"Error setting parameters in CCDC\n");
+-- 
+1.9.1
+
