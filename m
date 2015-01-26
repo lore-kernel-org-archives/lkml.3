@@ -1,302 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbbAZIiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 03:38:46 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:41711 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751932AbbAZIim (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 03:38:42 -0500
-Date: Mon, 26 Jan 2015 17:38:37 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Semen Protsenko <semen.protsenko@globallogic.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        adi-buildroot-devel@lists.sourceforge.net, linux-am33-list@redhat.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-m68k@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-mtd@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 0/4] defconfigs: cleanup obsolete MTD configs
-Message-ID: <20150126083837.GA16590@verge.net.au>
-References: <1422117213-3130-1-git-send-email-semen.protsenko@globallogic.com>
+	id S1752288AbbAZIoe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 03:44:34 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50708 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401AbbAZIoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 03:44:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,467,1418112000"; 
+   d="scan'208";a="656430298"
+Message-ID: <54C5FE6A.9010300@linux.intel.com>
+Date: Mon, 26 Jan 2015 16:44:26 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422117213-3130-1-git-send-email-semen.protsenko@globallogic.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Peter Zijlstra <peterz@infradead.org>, "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v3]PM/Sleep: Timer quiesce in freeze state
+References: <54866625.8010406@linux.intel.com> <54B5B724.4020108@linux.intel.com> <5541724.ryTEJUkIdN@vostro.rjw.lan> <alpine.DEB.2.11.1501221021580.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501221021580.5526@nanos>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 24, 2015 at 06:33:29PM +0200, Semen Protsenko wrote:
-> This patch series removes next obsolete MTD configs from all defconfig files:
->   - CONFIG_MTD_CHAR
->   - CONFIG_MTD_CONCAT
->   - CONFIG_MTD_DEBUG
->   - CONFIG_MTD_DEBUG_VERBOSE
->   - CONFIG_MTD_PARTITIONS
-> 
-> All those configs were removed from drivers/mtd/Kconfig earlier, but their usage
-> in defconfig files was remain unnoticed. There are at least two obvious reasons
-> to get rid of those configs:
->   1. Their usage may cause to build warnings
->   2. Their usage may confuse someone who is grepping defconfig files to get
->      the clue what MTD configuration may look like.
-> 
-> This series is harmless for all those defconfigs and will not break anything.
+Hi Thomas,
 
-FYI, there is a plan to remove arch/arm/configs/mackerel_defconfig in v3.21.
+Thanks for the comments, my feedback below:
+
+On 2015/1/22 18:15, Thomas Gleixner wrote:
+> On Tue, 9 Dec 2014, Li, Aubrey wrote:
+>> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+>> index 2e4cb67..d118e0b 100644
+>> --- a/include/linux/clockchips.h
+>> +++ b/include/linux/clockchips.h
+>> @@ -18,6 +18,9 @@ enum clock_event_nofitiers {
+>>  	CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
+>>  	CLOCK_EVT_NOTIFY_SUSPEND,
+>>  	CLOCK_EVT_NOTIFY_RESUME,
+>> +	CLOCK_EVT_NOTIFY_FREEZE_PREPARE,
+>> +	CLOCK_EVT_NOTIFY_FREEZE,
+>> +	CLOCK_EVT_NOTIFY_UNFREEZE,
+> 
+> Can we please stop adding more crap to that notifier thing? I rather
+> see that go away than being expanded.
+
+Are you referring to FREEZE_PREPARE or remove all of FREEZE staff at all?
+
+What's the disadvantage of adding more notifier?
 
 > 
+>> @@ -95,6 +98,7 @@ enum clock_event_mode {
+>>   */
+>>  struct clock_event_device {
+>>  	void			(*event_handler)(struct clock_event_device *);
+>> +	void			(*real_handler)(struct clock_event_device *);
 > 
-> Semen Protsenko (4):
->   defconfigs: remove CONFIG_MTD_CONCAT
->   defconfigs: remove CONFIG_MTD_PARTITIONS
->   defconfigs: remove CONFIG_MTD_CHAR
->   defconfigs: remove CONFIG_MTD_DEBUG*
+> This is really not the place to put this. We have the hotpath
+> functions together at the beginning of the struct and not some random
+> stuff used once in a while. Think about cache lines.
+
+okay, will move to the tail.
+
 > 
->  arch/arm/configs/acs5k_defconfig                   |    3 ---
->  arch/arm/configs/acs5k_tiny_defconfig              |    3 ---
->  arch/arm/configs/am200epdkit_defconfig             |    1 -
->  arch/arm/configs/assabet_defconfig                 |    2 --
->  arch/arm/configs/badge4_defconfig                  |    3 ---
->  arch/arm/configs/bockw_defconfig                   |    1 -
->  arch/arm/configs/cerfcube_defconfig                |    2 --
->  arch/arm/configs/cm_x2xx_defconfig                 |    1 -
->  arch/arm/configs/cm_x300_defconfig                 |    2 --
->  arch/arm/configs/cns3420vb_defconfig               |    2 --
->  arch/arm/configs/colibri_pxa270_defconfig          |    2 --
->  arch/arm/configs/collie_defconfig                  |    2 --
->  arch/arm/configs/corgi_defconfig                   |    2 --
->  arch/arm/configs/davinci_all_defconfig             |    2 --
->  arch/arm/configs/em_x270_defconfig                 |    1 -
->  arch/arm/configs/ezx_defconfig                     |    1 -
->  arch/arm/configs/h5000_defconfig                   |    1 -
->  arch/arm/configs/hackkit_defconfig                 |    3 ---
->  arch/arm/configs/imote2_defconfig                  |    1 -
->  arch/arm/configs/iop13xx_defconfig                 |    1 -
->  arch/arm/configs/iop32x_defconfig                  |    2 --
->  arch/arm/configs/iop33x_defconfig                  |    2 --
->  arch/arm/configs/ixp4xx_defconfig                  |    2 --
->  arch/arm/configs/ks8695_defconfig                  |    2 --
->  arch/arm/configs/lart_defconfig                    |    4 ----
->  arch/arm/configs/lpc32xx_defconfig                 |    1 -
->  arch/arm/configs/lpd270_defconfig                  |    2 --
->  arch/arm/configs/lubbock_defconfig                 |    2 --
->  arch/arm/configs/mackerel_defconfig                |    3 ---
->  arch/arm/configs/magician_defconfig                |    2 --
->  arch/arm/configs/mainstone_defconfig               |    2 --
->  arch/arm/configs/mini2440_defconfig                |    3 ---
->  arch/arm/configs/mv78xx0_defconfig                 |    2 --
->  arch/arm/configs/neponset_defconfig                |    2 --
->  arch/arm/configs/netx_defconfig                    |    2 --
->  arch/arm/configs/nuc910_defconfig                  |    3 ---
->  arch/arm/configs/nuc950_defconfig                  |    3 ---
->  arch/arm/configs/nuc960_defconfig                  |    3 ---
->  arch/arm/configs/omap1_defconfig                   |    4 ----
->  arch/arm/configs/orion5x_defconfig                 |    1 -
->  arch/arm/configs/pcm027_defconfig                  |    2 --
->  arch/arm/configs/pleb_defconfig                    |    2 --
->  arch/arm/configs/pxa255-idp_defconfig              |    2 --
->  arch/arm/configs/pxa3xx_defconfig                  |    2 --
->  arch/arm/configs/raumfeld_defconfig                |    3 ---
->  arch/arm/configs/realview-smp_defconfig            |    3 ---
->  arch/arm/configs/realview_defconfig                |    3 ---
->  arch/arm/configs/s3c2410_defconfig                 |    1 -
->  arch/arm/configs/shannon_defconfig                 |    2 --
->  arch/arm/configs/simpad_defconfig                  |    3 ---
->  arch/arm/configs/spear13xx_defconfig               |    1 -
->  arch/arm/configs/spear3xx_defconfig                |    1 -
->  arch/arm/configs/spear6xx_defconfig                |    1 -
->  arch/arm/configs/spitz_defconfig                   |    2 --
->  arch/arm/configs/tct_hammer_defconfig              |    2 --
->  arch/arm/configs/trizeps4_defconfig                |    2 --
->  arch/arm/configs/viper_defconfig                   |    1 -
->  arch/arm/configs/xcep_defconfig                    |    1 -
->  arch/arm/configs/zeus_defconfig                    |    1 -
->  arch/avr32/configs/atngw100_defconfig              |    1 -
->  arch/avr32/configs/atngw100_evklcd100_defconfig    |    1 -
->  arch/avr32/configs/atngw100_evklcd101_defconfig    |    1 -
->  arch/avr32/configs/atngw100_mrmt_defconfig         |    1 -
->  arch/avr32/configs/atngw100mkii_defconfig          |    1 -
->  .../avr32/configs/atngw100mkii_evklcd100_defconfig |    1 -
->  .../avr32/configs/atngw100mkii_evklcd101_defconfig |    1 -
->  arch/avr32/configs/atstk1002_defconfig             |    1 -
->  arch/avr32/configs/atstk1003_defconfig             |    1 -
->  arch/avr32/configs/atstk1004_defconfig             |    1 -
->  arch/avr32/configs/atstk1006_defconfig             |    1 -
->  arch/avr32/configs/favr-32_defconfig               |    1 -
->  arch/avr32/configs/hammerhead_defconfig            |    1 -
->  arch/avr32/configs/merisc_defconfig                |    2 --
->  arch/avr32/configs/mimc200_defconfig               |    1 -
->  arch/blackfin/configs/BF518F-EZBRD_defconfig       |    1 -
->  arch/blackfin/configs/BF527-TLL6527M_defconfig     |    1 -
->  arch/blackfin/configs/BF533-EZKIT_defconfig        |    1 -
->  arch/blackfin/configs/BF533-STAMP_defconfig        |    1 -
->  arch/blackfin/configs/BF537-STAMP_defconfig        |    1 -
->  arch/blackfin/configs/BF538-EZKIT_defconfig        |    1 -
->  arch/blackfin/configs/BF561-ACVILON_defconfig      |    1 -
->  arch/blackfin/configs/BF561-EZKIT-SMP_defconfig    |    1 -
->  arch/blackfin/configs/BF561-EZKIT_defconfig        |    1 -
->  arch/blackfin/configs/CM-BF527_defconfig           |    1 -
->  arch/blackfin/configs/CM-BF533_defconfig           |    1 -
->  arch/blackfin/configs/CM-BF537E_defconfig          |    1 -
->  arch/blackfin/configs/CM-BF537U_defconfig          |    1 -
->  arch/blackfin/configs/CM-BF548_defconfig           |    1 -
->  arch/blackfin/configs/CM-BF561_defconfig           |    1 -
->  arch/blackfin/configs/DNP5370_defconfig            |    3 ---
->  arch/blackfin/configs/IP0X_defconfig               |    1 -
->  arch/blackfin/configs/PNAV-10_defconfig            |    1 -
->  arch/blackfin/configs/SRV1_defconfig               |    1 -
->  arch/blackfin/configs/TCM-BF518_defconfig          |    1 -
->  arch/blackfin/configs/TCM-BF537_defconfig          |    1 -
->  arch/m32r/configs/m32700ut.smp_defconfig           |    1 -
->  arch/m32r/configs/m32700ut.up_defconfig            |    1 -
->  arch/m32r/configs/mappi.smp_defconfig              |    2 --
->  arch/m32r/configs/mappi.up_defconfig               |    2 --
->  arch/m32r/configs/mappi3.smp_defconfig             |    2 --
->  arch/m32r/configs/usrv_defconfig                   |    3 ---
->  arch/m68k/configs/m5208evb_defconfig               |    1 -
->  arch/m68k/configs/m5249evb_defconfig               |    1 -
->  arch/m68k/configs/m5272c3_defconfig                |    1 -
->  arch/m68k/configs/m5275evb_defconfig               |    1 -
->  arch/m68k/configs/m5307c3_defconfig                |    1 -
->  arch/m68k/configs/m5407c3_defconfig                |    1 -
->  arch/m68k/configs/m5475evb_defconfig               |    1 -
->  arch/microblaze/configs/nommu_defconfig            |    1 -
->  arch/mips/configs/ar7_defconfig                    |    1 -
->  arch/mips/configs/cobalt_defconfig                 |    1 -
->  arch/mips/configs/fuloong2e_defconfig              |    1 -
->  arch/mips/configs/gpr_defconfig                    |    1 -
->  arch/mips/configs/jmr3927_defconfig                |    1 -
->  arch/mips/configs/lasat_defconfig                  |    1 -
->  arch/mips/configs/markeins_defconfig               |    1 -
->  arch/mips/configs/msp71xx_defconfig                |    1 -
->  arch/mips/configs/mtx1_defconfig                   |    1 -
->  arch/mips/configs/nlm_xlp_defconfig                |    1 -
->  arch/mips/configs/pnx8335_stb225_defconfig         |    1 -
->  arch/mips/configs/rb532_defconfig                  |    1 -
->  arch/mips/configs/rbtx49xx_defconfig               |    1 -
->  arch/mn10300/configs/asb2303_defconfig             |    3 ---
->  arch/mn10300/configs/asb2364_defconfig             |    3 ---
->  arch/powerpc/configs/40x/acadia_defconfig          |    1 -
->  arch/powerpc/configs/40x/ep405_defconfig           |    1 -
->  arch/powerpc/configs/40x/kilauea_defconfig         |    1 -
->  arch/powerpc/configs/40x/makalu_defconfig          |    1 -
->  arch/powerpc/configs/40x/obs600_defconfig          |    1 -
->  arch/powerpc/configs/40x/walnut_defconfig          |    1 -
->  arch/powerpc/configs/44x/arches_defconfig          |    1 -
->  arch/powerpc/configs/44x/bluestone_defconfig       |    1 -
->  arch/powerpc/configs/44x/canyonlands_defconfig     |    1 -
->  arch/powerpc/configs/44x/currituck_defconfig       |    1 -
->  arch/powerpc/configs/44x/ebony_defconfig           |    1 -
->  arch/powerpc/configs/44x/eiger_defconfig           |    2 --
->  arch/powerpc/configs/44x/icon_defconfig            |    1 -
->  arch/powerpc/configs/44x/iss476-smp_defconfig      |    1 -
->  arch/powerpc/configs/44x/katmai_defconfig          |    1 -
->  arch/powerpc/configs/44x/rainier_defconfig         |    1 -
->  arch/powerpc/configs/44x/redwood_defconfig         |    2 --
->  arch/powerpc/configs/44x/sequoia_defconfig         |    1 -
->  arch/powerpc/configs/44x/taishan_defconfig         |    1 -
->  arch/powerpc/configs/44x/warp_defconfig            |    1 -
->  arch/powerpc/configs/52xx/cm5200_defconfig         |    1 -
->  arch/powerpc/configs/52xx/motionpro_defconfig      |    2 --
->  arch/powerpc/configs/52xx/pcm030_defconfig         |    1 -
->  arch/powerpc/configs/52xx/tqm5200_defconfig        |    2 --
->  arch/powerpc/configs/83xx/asp8347_defconfig        |    1 -
->  arch/powerpc/configs/83xx/kmeter1_defconfig        |    1 -
->  arch/powerpc/configs/83xx/mpc8313_rdb_defconfig    |    1 -
->  arch/powerpc/configs/83xx/mpc8315_rdb_defconfig    |    1 -
->  arch/powerpc/configs/83xx/mpc834x_itx_defconfig    |    1 -
->  arch/powerpc/configs/83xx/mpc834x_itxgp_defconfig  |    1 -
->  arch/powerpc/configs/83xx/mpc836x_mds_defconfig    |    1 -
->  arch/powerpc/configs/83xx/mpc836x_rdk_defconfig    |    1 -
->  arch/powerpc/configs/83xx/sbc834x_defconfig        |    2 --
->  arch/powerpc/configs/85xx/ge_imp3a_defconfig       |    1 -
->  arch/powerpc/configs/85xx/ksi8560_defconfig        |    2 --
->  arch/powerpc/configs/85xx/ppa8548_defconfig        |    2 --
->  arch/powerpc/configs/85xx/sbc8548_defconfig        |    1 -
->  arch/powerpc/configs/85xx/socrates_defconfig       |    2 --
->  arch/powerpc/configs/85xx/tqm8540_defconfig        |    2 --
->  arch/powerpc/configs/85xx/tqm8541_defconfig        |    2 --
->  arch/powerpc/configs/85xx/tqm8548_defconfig        |    1 -
->  arch/powerpc/configs/85xx/tqm8555_defconfig        |    2 --
->  arch/powerpc/configs/85xx/tqm8560_defconfig        |    2 --
->  arch/powerpc/configs/85xx/xes_mpc85xx_defconfig    |    1 -
->  arch/powerpc/configs/86xx/gef_ppc9a_defconfig      |    2 --
->  arch/powerpc/configs/86xx/gef_sbc310_defconfig     |    2 --
->  arch/powerpc/configs/86xx/gef_sbc610_defconfig     |    2 --
->  arch/powerpc/configs/86xx/mpc8610_hpcd_defconfig   |    1 -
->  arch/powerpc/configs/86xx/sbc8641d_defconfig       |    2 --
->  arch/powerpc/configs/adder875_defconfig            |    1 -
->  arch/powerpc/configs/c2k_defconfig                 |    2 --
->  arch/powerpc/configs/corenet32_smp_defconfig       |    1 -
->  arch/powerpc/configs/ep8248e_defconfig             |    1 -
->  arch/powerpc/configs/ep88xc_defconfig              |    1 -
->  arch/powerpc/configs/linkstation_defconfig         |    2 --
->  arch/powerpc/configs/mgcoge_defconfig              |    1 -
->  arch/powerpc/configs/mpc5200_defconfig             |    1 -
->  arch/powerpc/configs/mpc8272_ads_defconfig         |    1 -
->  arch/powerpc/configs/mpc83xx_defconfig             |    1 -
->  arch/powerpc/configs/mpc85xx_defconfig             |    1 -
->  arch/powerpc/configs/mpc85xx_smp_defconfig         |    1 -
->  arch/powerpc/configs/mpc885_ads_defconfig          |    1 -
->  arch/powerpc/configs/ppc40x_defconfig              |    1 -
->  arch/powerpc/configs/ppc44x_defconfig              |    1 -
->  arch/powerpc/configs/pq2fads_defconfig             |    1 -
->  arch/powerpc/configs/storcenter_defconfig          |    1 -
->  arch/powerpc/configs/tqm8xx_defconfig              |    2 --
->  arch/sh/configs/ap325rxa_defconfig                 |    3 ---
->  arch/sh/configs/apsh4a3a_defconfig                 |    3 ---
->  arch/sh/configs/ecovec24_defconfig                 |    3 ---
->  arch/sh/configs/edosk7760_defconfig                |    4 ----
->  arch/sh/configs/espt_defconfig                     |    2 --
->  arch/sh/configs/kfr2r09_defconfig                  |    2 --
->  arch/sh/configs/magicpanelr2_defconfig             |    2 --
->  arch/sh/configs/migor_defconfig                    |    3 ---
->  arch/sh/configs/polaris_defconfig                  |    2 --
->  arch/sh/configs/r7780mp_defconfig                  |    1 -
->  arch/sh/configs/rsk7201_defconfig                  |    3 ---
->  arch/sh/configs/rsk7203_defconfig                  |    3 ---
->  arch/sh/configs/rts7751r2dplus_defconfig           |    3 ---
->  arch/sh/configs/sdk7786_defconfig                  |    1 -
->  arch/sh/configs/se7206_defconfig                   |    3 ---
->  arch/sh/configs/se7343_defconfig                   |    3 ---
->  arch/sh/configs/se7619_defconfig                   |    3 ---
->  arch/sh/configs/se7705_defconfig                   |    2 --
->  arch/sh/configs/se7712_defconfig                   |    3 ---
->  arch/sh/configs/se7721_defconfig                   |    3 ---
->  arch/sh/configs/se7724_defconfig                   |    3 ---
->  arch/sh/configs/se7750_defconfig                   |    2 --
->  arch/sh/configs/se7751_defconfig                   |    1 -
->  arch/sh/configs/se7780_defconfig                   |    2 --
->  arch/sh/configs/secureedge5410_defconfig           |    2 --
->  arch/sh/configs/sh7710voipgw_defconfig             |    2 --
->  arch/sh/configs/sh7757lcr_defconfig                |    1 -
->  arch/sh/configs/sh7763rdp_defconfig                |    1 -
->  arch/sh/configs/sh7785lcr_32bit_defconfig          |    3 ---
->  arch/sh/configs/sh7785lcr_defconfig                |    3 ---
->  arch/sh/configs/shmin_defconfig                    |    1 -
->  arch/sh/configs/titan_defconfig                    |    2 --
->  arch/sh/configs/ul2_defconfig                      |    3 ---
->  arch/sh/configs/urquell_defconfig                  |    3 ---
->  arch/unicore32/configs/unicore32_defconfig         |    2 --
->  226 files changed, 364 deletions(-)
+> A proper explanation why you need this at all is missing.
 > 
-> -- 
-> 1.7.9.5
+Thanks, will add some comments here.
+
+>>  /*
+>> + * cpu idle freeze function
+>> + */
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> How is that comment helpful?
 > 
+> Not at all. But its simpler to add pointless comments than to document
+> the important and non obvious stuff, right?
+
+okay.
+
+> 
+>> +static void cpu_idle_freeze(void)
+>> +{
+>> +	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>> +	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+>> +
+>> +	/*
+>> +	 * suspend tick, the last CPU suspend timekeeping
+>> +	 */
+>> +	clockevents_notify(CLOCK_EVT_NOTIFY_FREEZE, NULL);
+>> +	/*
+>> +	 * idle loop here if idle_should_freeze()
+>> +	 */
+>> +	while (idle_should_freeze()) {
+>> +		int next_state;
+>> +		/*
+>> +		 * interrupt must be disabled before cpu enters idle
+>> +		 */
+>> +		local_irq_disable();
+>> +
+>> +		next_state = cpuidle_select(drv, dev);
+>> +		if (next_state < 0) {
+>> +			arch_cpu_idle();
+>> +			continue;
+>> +		}
+>> +		/*
+>> +		 * cpuidle_enter will return with interrupt enabled
+>> +		 */
+>> +		cpuidle_enter(drv, dev, next_state);
+> 
+> How is that supposed to work?
+> 
+> If timekeeping is not yet unfrozen, then any interrupt handling code
+> which calls anything time related is going to hit lala land.
+> 
+> You must guarantee that timekeeping is unfrozen before any interrupt
+> is handled. If you cannot guarantee that, you cannot freeze
+> timekeeping ever.
+> 
+> The cpu local tick device is less critical, but it happens to work by
+> chance, not by design.
+
+There are two way to guarantee this: the first way is, disable interrupt
+before timekeeping frozen and enable interrupt after timekeeping is
+unfrozen. However, we need to handle wakeup handler before unfreeze
+timekeeping to wake freeze task up from wait queue.
+
+So we have to go the other way, the other way is, we ignore time related
+calls during freeze, like what I added in irq_enter below.
+
+Or, we need to re-implement freeze wait and wake up mechanism?
+> 
+>>  void irq_enter(void)
+>>  {
+>>  	rcu_irq_enter();
+>> -	if (is_idle_task(current) && !in_interrupt()) {
+>> +	if (is_idle_task(current) && !in_interrupt() && !in_freeze()) {
+>>  		/*
+>>  		 * Prevent raise_softirq from needlessly waking up ksoftirqd
+>>  		 * here, as softirq will be serviced on return from interrupt.
+>> @@ -364,7 +365,7 @@ static inline void tick_irq_exit(void)
+>>  
+>>  	/* Make sure that timer wheel updates are propagated */
+>>  	if ((idle_cpu(cpu) && !need_resched()) || tick_nohz_full_cpu(cpu)) {
+>> -		if (!in_interrupt())
+>> +		if (!in_interrupt() && !in_freeze())
+>>  			tick_nohz_irq_exit();
+> 
+> We keep adding conditional over conditionals to the irq_enter/exit
+> hotpath. Can we please find some more intelligent solution for this?
+
+I need more time to consider this, will get back to you if I have an idea.
+
+> 
+>> @@ -375,15 +386,21 @@ void tick_shutdown(unsigned int *cpup)
+>>  void tick_suspend(void)
+>>  {
+>>  	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+>> +	struct clock_event_device *dev = td->evtdev;
+>>  
+>> +	dev->real_handler = dev->event_handler;
+>> +	dev->event_handler = clockevents_handle_noop;
+> 
+> Lacks a proper explanation. What's the point of this exercise?
+
+Yeah, will add comments in the next version.
+
+> 
+>> +void tick_freeze_prepare(void)
+>> +{
+>> +	tick_freeze_target_depth = num_online_cpus();
+> 
+> So we have a 'notifier' callback just to store the number of online
+> cpus? That's beyond silly. What's wrong with having a frozen counter
+> and comparing that to num_online_cpus()?
+> 
+It looks like a notifier is unpopular, I was trying to avoid a global
+variable across different kernel modules. But yes, I can change. May I
+know the disadvantage of notifier callback?
+
+>> +void tick_freeze(void)
+>> +{
+>> +	/*
+>> +	 * This is serialized against a concurrent wakeup
+>> +	 * via clockevents_lock
+>> +	 */
+>> +	tick_freeze_target_depth--;
+>> +	tick_suspend();
+>> +
+>> +	/*
+>> +	 * the last tick_suspend CPU suspends timekeeping
+>> +	 */
+>> +	if (!tick_freeze_target_depth)
+>> +		timekeeping_freeze();
+>> +}
+>> +
+>> +void tick_unfreeze(void)
+>> +{
+>> +	/*
+>> +	 * the first wakeup CPU resumes timekeeping
+>> +	 */
+>> +	if (timekeeping_suspended) {
+>> +		timekeeping_unfreeze();
+>> +		touch_softlockup_watchdog();
+>> +		tick_resume();
+>> +		hrtimers_resume();
+>> +	} else {
+>> +		tick_resume();
+>> +	}
+>> +}
+> 
+> This is really horrible. We now have basically the same code for
+> freeze/unfreeze and suspend/resume just in different files and with
+> slightly different functionality.
+
+Let me try to see if I can re-org these functions. Besides the
+reduplicated code, do you see anything broken of the implementation?
+
+
+> And we have that just because you want to (ab)use clockevents_lock for
+> serialization.
+
+The V2 patch was using stop machine mechanism according to Peter's
+suggestion. This V3 patch, IIRC, clockevents_lock was your suggestion.
+Do you have any better idea now?
+
+Thanks,
+-Aubrey
+> 
+> Thanks,
+> 
+> 	tglx
+
