@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbbAZJzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 04:55:48 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57407 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749AbbAZJzp (ORCPT
+	id S1754269AbbAZJ4s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:56:48 -0500
+Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:46903 "EHLO
+	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337AbbAZJ4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 04:55:45 -0500
-Message-ID: <54C60F13.5040104@pengutronix.de>
-Date: Mon, 26 Jan 2015 10:55:31 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
+	Mon, 26 Jan 2015 04:56:00 -0500
+Date: Mon, 26 Jan 2015 10:55:54 +0100
+From: Sylvain Rochet <sylvain.rochet@finsecur.com>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, peda@axentia.se
+Message-ID: <20150126095554.GA18807@gradator.net>
+References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Andri Yngvason <andri.yngvason@marel.com>
-CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 0/7] can: kvaser_usb: Leaf bugfixes and USBCan-II support
-References: <20141223154654.GB6460@vivalin-002> <20150126051755.GA3014@Darwish.PC>
-In-Reply-To: <20150126051755.GA3014@Darwish.PC>
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="OgiWu4PWPcHviuUHdTiJ3iKTenCI7BwD6"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 172.16.8.13
+X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
+Subject: Re: [PATCH v2 00/12] AT91 pm cleanup for 3.20
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---OgiWu4PWPcHviuUHdTiJ3iKTenCI7BwD6
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Hello Wenyou,
 
-On 01/26/2015 06:17 AM, Ahmed S. Darwish wrote:
-> Hi!
->=20
-> This is an updated patch series for the Kvaser CAN/USB devices:
->=20
-> 1- Extra patches are now added to the series. Most importantly
-> patch #1 which fixes a critical `sleep in atomic context' bug
-> in the current upstream driver. Patch #2 fixes a corruption in
-> the kernel logs, also affecting current upstream driver. Patch
-> #4 was originally USBCan-II only, but since it's a generic fix,
-> it's now retrofitted to the Leaf-only upstream driver first.
->=20
-> 2- The series has been re-organized so that patches #1 -> #4
-> inclusive can go to linux-can/origin, while the rest can move
-> to -next.
+On Mon, Jan 26, 2015 at 05:36:45PM +0800, Wenyou Yang wrote:
+> Hi Nicolas,
+> 
+> This version is rebased on the branch: at91-3.20-cleanup of the repository
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git
+> 
+> It is purpose to clean up the PM code, includes the patches from Peter Rosin and Sylvain Rochet.
+> 
+> Since verifying the USB clock and USB PLL disabling before suspending to memory,
+> it aslo depends on the following patch serials from Sylvain:
+> 	[PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
+> 	[PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
+> 
+> Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
+> The suspend to standby mode uses the same sram function as the suspend to memory mode.
+> Remove some unused code.
+> 
+> Alexandr & Sylvain, Thank you very much for so many feedbacks.
+> 
+> Changes in v2:
+>  - Rebase on the at91-3.20-cleanup branch
+>  - Recover the verify clock condition, only for suspend to memory.
+>  - Collect ACK from Alexandre
+>  - Add the macro for PM mode
 
-Applied 1-4 to can/master, I'm adding stable on Cc before sending a
-pull-request to David.
+Did you fix the slow_clock == NULL condition with the change suggested 
+by Alexandre ?
 
-Thanks,
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---OgiWu4PWPcHviuUHdTiJ3iKTenCI7BwD6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCgAGBQJUxg8WAAoJECte4hHFiupUJVwP/1nce41HvqiZB0ISlwYTzELI
-EjWwnlBF+ePEZTyuYmyqriPlrZaE8TamLQxYwcVmdw4y01BoRZVSAG1jovqqtgYd
-1oOeJMG5lCniJGPLmaxatQvsxyj+/WeB0OciwcoR9GYlyFfybJQa8q/dCtMzNosy
-fy45Y6neoHsQyegHHqMNV8p5avm/KA1LIpKIafq7iVA+fV7au5ijFAR89SZGoC6D
-pXBiRfyCC7NwcLstRej9k/MxSWxGviWspW/J2Y4Y5yjFOfAOMrxItX7ZVIaRuRpP
-its4yDDr8TzRFcpcwTiHzkPY8D8+DXf1JwgaPoV4m2EnLXLNHTRHLkI6lxb5pXmm
-9REf3yrbNTSqHay83fkL9pHotRG3NwCSqwiJqG2TqLoPiAGKZnyJl1CpynZL4uSp
-n4IAk2yIyyt/NcHSGPFifRvLmgW6ZWeMO/gq59AqkBoz+FS0dHbq8dsJUEEmoqTa
-pOIjJxW4GaHPQoTywFgwykxBZGiJEdt5IH7sn8lfAsB/G2yrvTXiet+G5QsqUQkI
-YVtit+ck0irhf+s1V3nBWlUtxBNIbUu1nyFLKRtNYwTw5Kg6UCuXXE5X33F3WhXU
-wVD6F+Sai/IKYVcPdsDoigRWBqBv1pgU3i0nMLMgOCRlx5MwK90Uj3FTxjviNe1O
-ROPRdJeeiB+ApdqUe4dV
-=o3CA
------END PGP SIGNATURE-----
-
---OgiWu4PWPcHviuUHdTiJ3iKTenCI7BwD6--
+Sylvain
