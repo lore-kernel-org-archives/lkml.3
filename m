@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142AbbAZUzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 15:55:19 -0500
-Received: from smtp1.ore.mailhop.org ([54.68.34.165]:47442 "EHLO
-	smtp1.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240AbbAZUzR (ORCPT
+	id S1756961AbbAZUyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 15:54:31 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:62497 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756170AbbAZUy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 15:55:17 -0500
-X-Mail-Handler: DuoCircle Outbound SMTP
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/QEu0rRNiwlAF4EeYyOXVi
-Date: Mon, 26 Jan 2015 12:51:55 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Marek Belisko <marek@goldelico.com>
-Cc: bcousson@baylibre.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, hns@goldelico.com, neilb@suse.de
-Subject: Re: [PATCH 00/13] ARM: dts: omap3-gta04: Various DT fixes
-Message-ID: <20150126205155.GG28663@atomide.com>
-References: <1421959099-28319-1-git-send-email-marek@goldelico.com>
+	Mon, 26 Jan 2015 15:54:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421959099-28319-1-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.11.1501262040380.2052@localhost.localdomain>
+References: <alpine.DEB.2.11.1501262034380.1945@localhost.localdomain>
+	<alpine.DEB.2.11.1501262040380.2052@localhost.localdomain>
+Date: Mon, 26 Jan 2015 21:54:28 +0100
+Message-ID: <CAFLxGvzhaK-m4+QuBwGkdm4mQptSg7+e9DZtkhZEKpBn5gNJjw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] fbcon: expose cursor blink interval via sysfs
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-fbdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marek Belisko <marek@goldelico.com> [150122 12:41]:
-> This series contains fixes for gta04 devicetree. I collected patches
-> from H. Nikolaus Schaller + NeilBrown and myself. Patches contains mostly fixes
-> + adding new nodes and comments. All changes tested on gta04a4 board.
-> 
-> H. Nikolaus Schaller (5):
->   ARM: dts: omap3-gta04: Fix backup-battery charging in devicetree file.
->   ARM: dts: omap3-gta04: Fix audio node malformatting
->   ARM: dts: omap3-gta04: Enable mcbps2 necessary for audio
->   ARM: dts: omap3-gta04: Enable twl audio vibra support
->   ARM: dts: omap3-gta04: Enable power-off using twl4030
-> 
-> Marek Belisko (2):
->   ARM: dts: omap3-gta04: Fix a GPIO line for bma180 node
->   ARM: dts: omap3-gta04: Add ramp value for twl4030 audio
-> 
-> NeilBrown (6):
->   ARM: dts: omap3-gta04: add comments about gpios
->   ARM: dts: omap3-gta04: enable power-off for wifi card.
->   ARM: dts: omap3-gta04: add gyroscope
->   ARM: dts: omap3-gta04: only power DSS when necessary.
->   ARM: dts: omap3-gta04: uart4 is not connected, so mark it "disabled"
+On Mon, Jan 26, 2015 at 9:41 PM, Scot Doyle <lkml14@scotdoyle.com> wrote:
+> The fbcon cursor, when set to blink, is hardcoded to toggle display state
+> five times per second. Expose this setting via
+> /sys/class/graphics/fbcon/cursor_blink_ms
+>
+> Values written to the interface set the approximate time interval in
+> milliseconds between cursor toggles, from 1 to 32767. Since the interval
+> is stored internally as a number of jiffies, the millisecond value read
+> from the interface may not exactly match the entered value.
+>
+> An outstanding blink timer is reset after a new value is entered.
+>
+> If the cursor blink is disabled, either via the 'cursor_blink' boolean
+> setting or some other mechanism, the 'cursor_blink_ms' setting may still
+> be modified. The new value will be used if the blink is reactivated.
 
-Applying all except the uart4 "disabled" patch into omap-for-v3.20/dt
-thanks.
+Out of curiosity, why do you need this new setting?
+Your patch describes what it does but does not describe the "why".
 
-Tony
-
->   ARM: dts: omap3-gta04: Disable keypad
-> 
->  arch/arm/boot/dts/omap3-gta04.dtsi | 54 +++++++++++++++++++++++++++-----------
->  1 file changed, 39 insertions(+), 15 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
+-- 
+Thanks,
+//richard
