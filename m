@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbbAZFSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 00:18:09 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49640 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbbAZFSE (ORCPT
+	id S1752773AbbAZFUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 00:20:49 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:56345 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbbAZFUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 00:18:04 -0500
-Date: Mon, 26 Jan 2015 07:17:55 +0200
+	Mon, 26 Jan 2015 00:20:44 -0500
+Date: Mon, 26 Jan 2015 07:20:39 +0200
 From: "Ahmed S. Darwish" <darwish.07@gmail.com>
 To: Olivier Sobrie <olivier@sobrie.be>,
         Oliver Hartkopp <socketcan@hartkopp.net>,
@@ -16,177 +16,113 @@ To: Olivier Sobrie <olivier@sobrie.be>,
         Andri Yngvason <andri.yngvason@marel.com>
 Cc: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v6 0/7] can: kvaser_usb: Leaf bugfixes and USBCan-II support
-Message-ID: <20150126051755.GA3014@Darwish.PC>
+Subject: [PATCH v6 1/7] can: kvaser_usb: Do not sleep in atomic context
+Message-ID: <20150126052039.GB3014@Darwish.PC>
 References: <20141223154654.GB6460@vivalin-002>
+ <20150126051755.GA3014@Darwish.PC>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141223154654.GB6460@vivalin-002>
+In-Reply-To: <20150126051755.GA3014@Darwish.PC>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 
-This is an updated patch series for the Kvaser CAN/USB devices:
+Upon receiving a hardware event with the BUS_RESET flag set,
+the driver kills all of its anchored URBs and resets all of
+its transmit URB contexts.
 
-1- Extra patches are now added to the series. Most importantly
-patch #1 which fixes a critical `sleep in atomic context' bug
-in the current upstream driver. Patch #2 fixes a corruption in
-the kernel logs, also affecting current upstream driver. Patch
-#4 was originally USBCan-II only, but since it's a generic fix,
-it's now retrofitted to the Leaf-only upstream driver first.
+Unfortunately it does so under the context of URB completion
+handler `kvaser_usb_read_bulk_callback()', which is often
+called in an atomic context.
 
-2- The series has been re-organized so that patches #1 -> #4
-inclusive can go to linux-can/origin, while the rest can move
-to -next.
+While the device is flooded with many received error packets,
+usb_kill_urb() typically sleeps/reschedules till the transfer
+request of each killed URB in question completes, leading to
+the sleep in atomic bug. [3]
 
-3- There are some important updates regarding the USBCan-II
-error counters, and how really erratic their heaviour is. All
-the new details are covered at the bottom of this URL:
+In v2 submission of the original driver patch [1], it was
+stated that the URBs kill and tx contexts reset was needed
+since we don't receive any tx acknowledgments later and thus
+such resources will be locked down forever. Fortunately this
+is no longer needed since an earlier bugfix in this patch
+series is now applied: all tx URB contexts are reset upon CAN
+channel close. [2]
 
-	http://article.gmane.org/gmane.linux.can/7481
+Moreover, a BUS_RESET is now treated _exactly_ like a BUS_OFF
+event, which is the recommended handling method advised by
+the device manufacturer.
 
-4- Attached below is the new candump traces. Now
-`back-to-error-active' states appear _if_ the hardware was
-kind enough and decreased the error counters appropriately.
-The earlier code did not recognize the error counters going
-down, thus the `back-to-error-active' transitions did not
-appear.
+[1] http://article.gmane.org/gmane.linux.network/239442
+    http://www.webcitation.org/6Vr2yagAQ
 
-###########################################################
+[2] can: kvaser_usb: Reset all URB tx contexts upon channel close
+    889b77f7fd2bcc922493d73a4c51d8a851505815
 
-* Bus-off scenario (with transitions active -> passive -> back-to-active):
+[3] Stacktrace:
 
- (000.000000)  can0  20000080   [8]  00 00 00 00 00 00 30 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{48}{0}}
- (000.000011)  can0  20000084   [8]  00 20 00 00 00 00 88 00   ERRORFRAME
-	controller-problem{tx-error-passive}
-	bus-error
-	error-counter-tx-rx{{136}{0}}
- (000.000001)  can0  20000080   [8]  00 00 00 00 00 00 88 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{136}{0}}
- (000.000987)  can0  20000080   [8]  00 00 00 00 00 00 98 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{152}{0}}
- (000.002011)  can0  20000084   [8]  00 40 00 00 00 00 30 00   ERRORFRAME
-	controller-problem{back-to-error-active}
-	bus-error
-	error-counter-tx-rx{{48}{0}}
- (000.000004)  can0  20000084   [8]  00 20 00 00 00 00 78 00   ERRORFRAME
-	controller-problem{tx-error-passive}
-	bus-error
-	error-counter-tx-rx{{120}{0}}
- (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 88 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{136}{0}}
- (000.000005)  can0  20000080   [8]  00 00 00 00 00 00 90 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{144}{0}}
- (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 98 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{152}{0}}
- (000.000001)  can0  20000080   [8]  00 00 00 00 00 00 A0 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{160}{0}}
- (000.000966)  can0  20000080   [8]  00 00 00 00 00 00 A8 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{168}{0}}
- (000.002998)  can0  20000084   [8]  00 40 00 00 00 00 30 00   ERRORFRAME
-	controller-problem{back-to-error-active}
-	bus-error
-	error-counter-tx-rx{{48}{0}}
- (000.000004)  can0  20000084   [8]  00 20 00 00 00 00 80 00   ERRORFRAME
-	controller-problem{tx-error-passive}
-	bus-error
-	error-counter-tx-rx{{128}{0}}
- (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 88 00   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{136}{0}}
- (001.031035)  can0  200000C0   [8]  00 00 00 00 00 00 00 29   ERRORFRAME
-	bus-off
-	bus-error
-	error-counter-tx-rx{{0}{41}}
+ <IRQ>  [<ffffffff8158de87>] dump_stack+0x45/0x57
+ [<ffffffff8158b60c>] __schedule_bug+0x41/0x4f
+ [<ffffffff815904b1>] __schedule+0x5f1/0x700
+ [<ffffffff8159360a>] ? _raw_spin_unlock_irqrestore+0xa/0x10
+ [<ffffffff81590684>] schedule+0x24/0x70
+ [<ffffffff8147d0a5>] usb_kill_urb+0x65/0xa0
+ [<ffffffff81077970>] ? prepare_to_wait_event+0x110/0x110
+ [<ffffffff8147d7d8>] usb_kill_anchored_urbs+0x48/0x80
+ [<ffffffffa01f4028>] kvaser_usb_unlink_tx_urbs+0x18/0x50 [kvaser_usb]
+ [<ffffffffa01f45d0>] kvaser_usb_rx_error+0xc0/0x400 [kvaser_usb]
+ [<ffffffff8108b14a>] ? vprintk_default+0x1a/0x20
+ [<ffffffffa01f5241>] kvaser_usb_read_bulk_callback+0x4c1/0x5f0 [kvaser_usb]
+ [<ffffffff8147a73e>] __usb_hcd_giveback_urb+0x5e/0xc0
+ [<ffffffff8147a8a1>] usb_hcd_giveback_urb+0x41/0x110
+ [<ffffffffa0008748>] finish_urb+0x98/0x180 [ohci_hcd]
+ [<ffffffff810cd1a7>] ? acct_account_cputime+0x17/0x20
+ [<ffffffff81069f65>] ? local_clock+0x15/0x30
+ [<ffffffffa000a36b>] ohci_work+0x1fb/0x5a0 [ohci_hcd]
+ [<ffffffff814fbb31>] ? process_backlog+0xb1/0x130
+ [<ffffffffa000cd5b>] ohci_irq+0xeb/0x270 [ohci_hcd]
+ [<ffffffff81479fc1>] usb_hcd_irq+0x21/0x30
+ [<ffffffff8108bfd3>] handle_irq_event_percpu+0x43/0x120
+ [<ffffffff8108c0ed>] handle_irq_event+0x3d/0x60
+ [<ffffffff8108ec84>] handle_fasteoi_irq+0x74/0x110
+ [<ffffffff81004dfd>] handle_irq+0x1d/0x30
+ [<ffffffff81004727>] do_IRQ+0x57/0x100
+ [<ffffffff8159482a>] common_interrupt+0x6a/0x6a
 
-###########################################################
+Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+---
+ drivers/net/can/usb/kvaser_usb.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-Regular sending, unpluggng CAN connector, then plugging again:
+diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
+index c32cd61..978a25e 100644
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -662,11 +662,6 @@ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+ 	priv = dev->nets[channel];
+ 	stats = &priv->netdev->stats;
+ 
+-	if (status & M16C_STATE_BUS_RESET) {
+-		kvaser_usb_unlink_tx_urbs(priv);
+-		return;
+-	}
+-
+ 	skb = alloc_can_err_skb(priv->netdev, &cf);
+ 	if (!skb) {
+ 		stats->rx_dropped++;
+@@ -677,7 +672,7 @@ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+ 
+ 	netdev_dbg(priv->netdev, "Error status: 0x%02x\n", status);
+ 
+-	if (status & M16C_STATE_BUS_OFF) {
++	if (status & (M16C_STATE_BUS_OFF | M16C_STATE_BUS_RESET)) {
+ 		cf->can_id |= CAN_ERR_BUSOFF;
+ 
+ 		priv->can.can_stats.bus_off++;
+-- 
+1.7.7.6
 
-(with transitions active -> warning -> passive)
 
-[ As stated earlier, the counters don't get decreased upon CAN
-replug, even if they were constantly polled. ]
-
- (000.011001)  can0  2A1   [1]  E5
- (000.010001)  can0  50E   [8]  E6 05 00 00 00 00 00 00
- (000.009999)  can0  009   [1]  E7
- (000.011000)  can0  6E2   [8]  E8 05 00 00 00 00 00 00
- (000.009999)  can0  314   [2]  E9 05
- (000.010001)  can0  708   [6]  EA 05 00 00 00 00
- (000.010991)  can0  20000080   [8]  00 00 00 00 00 00 00 09   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{9}}
- (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 00 0A   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{10}}
- (000.000007)  can0  20000080   [8]  00 00 00 00 00 00 00 2E   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{46}}
- (000.000003)  can0  20000080   [8]  00 00 00 00 00 00 00 37   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{55}}
- (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 00 40   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{64}}
- (000.000993)  can0  20000080   [8]  00 00 00 00 00 00 00 49   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{73}}
- (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 00 52   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{82}}
- (000.000001)  can0  20000080   [8]  00 00 00 00 00 00 00 5B   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{91}}
- (000.000028)  can0  20000084   [8]  00 04 00 00 00 00 00 6C   ERRORFRAME
-	controller-problem{rx-error-warning}
-	bus-error
-	error-counter-tx-rx{{0}{108}}
- (000.000955)  can0  20000080   [8]  00 00 00 00 00 00 00 7F   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{127}}
- (000.000008)  can0  20000084   [8]  00 10 00 00 00 00 00 87   ERRORFRAME
-	controller-problem{rx-error-passive}
-	bus-error
-	error-counter-tx-rx{{0}{135}}
- (000.000001)  can0  20000080   [8]  00 00 00 00 00 00 00 87   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{135}}
- (000.000004)  can0  20000080   [8]  00 00 00 00 00 00 00 87   ERRORFRAME
-	bus-error
-	error-counter-tx-rx{{0}{135}}
-
-((( Then a continous flood, exactly similar to the above packet, appears )))
-
- (000.500004)  can0  2ED   [4]  EB 05 00 00
- (000.000006)  can0  0DD   [5]  EC 05 00 00 00
- (000.000002)  can0  1D3   [1]  ED
- (000.000988)  can0  20D   [8]  EE 05 00 00 00 00 00 00
- (000.000006)  can0  04B   [8]  EF 05 00 00 00 00 00 00
- (000.000002)  can0  320   [8]  F0 05 00 00 00 00 00 00
- (000.000002)  can0  023   [8]  F1 05 00 00 00 00 00 00
- (000.000989)  can0  21D   [8]  F2 05 00 00 00 00 00 00
- (000.000005)  can0  17D   [8]  F3 05 00 00 00 00 00 00
- (000.000002)  can0  6DC   [8]  F4 05 00 00 00 00 00 00
- (000.000993)  can0  62D   [8]  F5 05 00 00 00 00 00 00
- (000.000006)  can0  18B   [6]  F6 05 00 00 00 00
- (000.000001)  can0  7EB   [8]  F7 05 00 00 00 00 00 00
- (000.000001)  can0  014   [8]  F8 05 00 00 00 00 00 00
- (000.000994)  can0  52F   [8]  F9 05 00 00 00 00 00 00
-
---
-Regards,
-Darwish
