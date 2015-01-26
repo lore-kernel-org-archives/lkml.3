@@ -1,54 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727AbbAZPUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 10:20:35 -0500
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:53647 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493AbbAZPUd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 10:20:33 -0500
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: linux-scsi@vger.kernel.org
-Cc: james.smart@emulex.com, JBottomley@parallels.com,
-        linux-kernel@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH] scsi/lpfc: use remove handler as shutdown handler
-Date: Mon, 26 Jan 2015 13:18:58 -0200
-Message-Id: <1422285538-487-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10.4
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012615-0029-0000-0000-000002A0E506
+	id S1755537AbbAZPT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 10:19:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41492 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752698AbbAZPT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 10:19:26 -0500
+Date: Mon, 26 Jan 2015 16:19:06 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
+        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
+        hughd@google.com, hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com
+Subject: Re: [PATCH v2] mm: incorporate read-only pages into transparent huge
+ pages
+Message-ID: <20150126151906.GS11755@redhat.com>
+References: <1422113880-4712-1-git-send-email-ebru.akagunduz@gmail.com>
+ <54C5EE66.4060700@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C5EE66.4060700@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without a shutdown handler, some cards behave very badly after a kexec.
-During probe, pending DMA writes will corrupt kernel memory, for
-example.
+Hi,
 
-Using the remove handler guarantees we will use a well tested path.
+On Mon, Jan 26, 2015 at 08:36:06AM +0100, Vlastimil Babka wrote:
+> >  - Add fast path optimistic check to
+> >    __collapse_huge_page_isolate()
+> 
+> My interpretation is that the optimistic check is in khugepaged_scan_pmd() while
+> in __collapse_huge_page_isolate() it's protected by lock, as Andrea suggested?
 
-With this patch I applied, I managed to use kexec multiple times and
-probe and SCSI scan worked every time.
+Correct, __collapse_huge_page_isolate is the "accurate" check that was
+missing in v1. The optimistic check was the one in khugepaged_scan_pmd
+and it was already present.
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
----
- drivers/scsi/lpfc/lpfc_init.c |    1 +
- 1 file changed, 1 insertion(+)
+> > @@ -2168,9 +2168,6 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+> >  		VM_BUG_ON_PAGE(!PageAnon(page), page);
+> >  		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
+> >  
+> > -		/* cannot use mapcount: can't collapse if there's a gup pin */
+> > -		if (page_count(page) != 1)
+> > -			goto out;
+> >  		/*
+> >  		 * We can do it before isolate_lru_page because the
+> >  		 * page can't be freed from under us. NOTE: PG_lock
+> > @@ -2179,6 +2176,31 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+> >  		 */
+> >  		if (!trylock_page(page))
+> >  			goto out;
+> > +
+> > +		/*
+> > +		 * cannot use mapcount: can't collapse if there's a gup pin.
+> > +		 * The page must only be referenced by the scanned process
+> > +		 * and page swap cache.
+> > +		 */
+> > +		if (page_count(page) != 1 + !!PageSwapCache(page)) {
+> > +			unlock_page(page);
+> > +			goto out;
+> > +		}
+> > +		if (!pte_write(pteval)) {
+> > +			if (++ro > khugepaged_max_ptes_none) {
+> > +				unlock_page(page);
+> > +				goto out;
+> 
+> So just for completeness, as I said later for v1 I think this can leave us with
+> read-only VMA: consider ro == 256 and none == 256, referenced can still be >0
+> (up to 256). I think that the check for referenced that follows this for loop
+> should also check if (ro + none < HPAGE_PMD_NR).
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index 0b2c53a..8aa804a 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -11248,6 +11248,7 @@ static struct pci_driver lpfc_driver = {
- 	.id_table	= lpfc_id_table,
- 	.probe		= lpfc_pci_probe_one,
- 	.remove		= lpfc_pci_remove_one,
-+	.shutdown	= lpfc_pci_remove_one,
- 	.suspend        = lpfc_pci_suspend_one,
- 	.resume		= lpfc_pci_resume_one,
- 	.err_handler    = &lpfc_err_handler,
--- 
-1.7.10.4
+The moment "ro" becomes 256 or "none" becomes 256, we immediately goto out.
 
+	if (likely(referenced))
+		return 1;
+out:
+	release_pte_pages(pte, _pte);
+	return 0;
+
+"out" is past the referenced check and we fail the collapse
+immediately.
+
+If ro is < 255 then "none" is also < 255 (if pte_write is true, then
+pte_none cannot be true).
+
+Overall I don't see how we could collapse in readonly vma and where
+the bug is for this case, but I may be overlooking something obvious.
+
+> > +			}
+> > +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
+> > +				unlock_page(page);
+> > +				goto out;
+> > +			}
+> > +			/*
+> > +			 * Page is not in the swap cache, and page count is
+> > +			 * one (see above). It can be collapsed into a THP.
+> > +			 */
+> 
+> I would still put the VM_BUG_ON(page_count(page) != 1) here as I suggested
+> previously. Even more so that I think it would have been able to catch the
+> problem that Andrea pointed out in v1.
+
+This is subtle, but we can't do VM_BUG_ON because it's ok if the VM
+comes before us in another CPU, and takes a pin on the page to isolate
+the page.
+
+In short if you changed the current upstream code like below:
+
+		/* cannot use mapcount: can't collapse if there's a gup pin */
+		if (page_count(page) != 1)
+			goto out;
+		VM_BUG_ON(page_count(page) != 1);
+		trylock...
+
+the VM_BUG_ON could fire as a false positive. It's not even related to
+the trylock_page, it's related to the LRU lock and isolate_lru_page
+that the VM could run on a different CPU and it's not a bug.
+
+The VM is free to pin the page. We only need to be sure there are no
+GUP-pins after we blocked all variants of GUP and the check is enough
+for that.
+
+Thanks,
+Andrea
