@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422AbbAZXvx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:51:53 -0500
-Received: from 8bytes.org ([81.169.241.247]:50748 "EHLO theia.8bytes.org"
+	id S1757443AbbAZXvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:51:55 -0500
+Received: from 8bytes.org ([81.169.241.247]:50760 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756835AbbAZXvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757172AbbAZXvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Jan 2015 18:51:48 -0500
 From: Joerg Roedel <joro@8bytes.org>
 To: iommu@lists.linux-foundation.org
@@ -20,83 +20,110 @@ Cc: Will Deacon <will.deacon@arm.com>, Kukjin Kim <kgene@kernel.org>,
         linux-samsung-soc@vger.kernel.org, linux-rockchip@lists.infradead.org,
         linux-tegra@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
         jroedel@suse.de
-Subject: [PATCH 00/15] iommu: Move domain allocation into drivers
-Date: Tue, 27 Jan 2015 00:51:30 +0100
-Message-Id: <1422316305-19216-1-git-send-email-joro@8bytes.org>
+Subject: [PATCH 01/15] iommu: Introduce domain_alloc and domain_free iommu_ops
+Date: Tue, 27 Jan 2015 00:51:31 +0100
+Message-Id: <1422316305-19216-2-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1422316305-19216-1-git-send-email-joro@8bytes.org>
+References: <1422316305-19216-1-git-send-email-joro@8bytes.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joerg Roedel <jroedel@suse.de>
 
-Hi,
+These new call-backs defer the allocation and destruction of
+'struct iommu_domain' to the iommu driver. This allows
+drivers to embed this struct into their private domain
+structures and to get rid of the domain_init and
+domain_destroy call-backs when all drivers have been
+converted.
 
-here is patch-set to replace the existing domain_init and
-domain_destroy iommu-ops with the new domain_alloc and
-domain_free callbacks
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+---
+ drivers/iommu/iommu.c | 29 +++++++++++++++++++++--------
+ include/linux/iommu.h |  5 +++++
+ 2 files changed, 26 insertions(+), 8 deletions(-)
 
-The new callbacks move the allocation of iommu domains into
-the iommu driver, allowing them to put a generic
-iommu_domain struct into their own domain struct. This makes
-domain handling in the drivers more cache efficient and
-prepares the introduction of default domains in another
-patch-set.
-
-While at it, this patch-set also introduces domain types.
-These are internal to the iommu core code for now, there are
-three of them:
-
-	* DMA-API domains
-	* Identity mapped domains
-	* Domains unmanaged by the iommu-core, used for
-	  iommu-api so that the users can create their own
-	  mappings
-
-The patches have been compile tested for x86, ARM and PPC
-and runtime tested on x86 (Intel VT-d and AMD IOMMU).
-
-Please review.
-
-Thanks,
-
-	Joerg
-
-Joerg Roedel (15):
-  iommu: Introduce domain_alloc and domain_free iommu_ops
-  iommu: Introduce iommu domain types
-  iommu/amd: Make use of domain_alloc and domain_free
-  iommu/vt-d: Make use of domain_alloc and domain_free
-  iommu/omap: Make use of domain_alloc and domain_free
-  iommu/arm-smmu: Make use of domain_alloc and domain_free
-  iommu/exynos: Make use of domain_alloc and domain_free
-  iommu/tegra-smmu: Make use of domain_alloc and domain_free
-  iommu/tegra-gart: Make use of domain_alloc and domain_free
-  iommu/msm: Make use of domain_alloc and domain_free
-  iommu/shmobile: Make use of domain_alloc and domain_free
-  iommu/ipmmu-vmsa: Make use of domain_alloc and domain_free
-  iommu/rockchip: Make use of domain_alloc and domain_free
-  iommu/fsl: Make use of domain_alloc and domain_free
-  iommu: Remove domain_init and domain_free iommu_ops
-
- drivers/iommu/amd_iommu.c       | 84 +++++++++++++++++++++------------------
- drivers/iommu/amd_iommu_types.h |  7 ++--
- drivers/iommu/arm-smmu.c        | 46 +++++++++++++---------
- drivers/iommu/exynos-iommu.c    | 87 ++++++++++++++++++++++-------------------
- drivers/iommu/fsl_pamu_domain.c | 60 +++++++++++++++-------------
- drivers/iommu/fsl_pamu_domain.h |  2 +-
- drivers/iommu/intel-iommu.c     | 48 +++++++++++++----------
- drivers/iommu/iommu.c           | 20 ++--------
- drivers/iommu/ipmmu-vmsa.c      | 43 +++++++++++---------
- drivers/iommu/msm_iommu.c       | 73 +++++++++++++++++-----------------
- drivers/iommu/omap-iommu.c      | 49 +++++++++++++----------
- drivers/iommu/rockchip-iommu.c  | 40 +++++++++++--------
- drivers/iommu/shmobile-iommu.c  | 40 +++++++++++--------
- drivers/iommu/tegra-gart.c      | 67 +++++++++++++++++++++----------
- drivers/iommu/tegra-smmu.c      | 41 ++++++++++---------
- include/linux/iommu.h           | 17 ++++++--
- 16 files changed, 407 insertions(+), 317 deletions(-)
-
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index f7718d7..684efc0 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -900,26 +900,34 @@ EXPORT_SYMBOL_GPL(iommu_set_fault_handler);
+ 
+ struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
+ {
++	const struct iommu_ops *ops;
+ 	struct iommu_domain *domain;
+-	int ret;
+ 
+ 	if (bus == NULL || bus->iommu_ops == NULL)
+ 		return NULL;
+ 
+-	domain = kzalloc(sizeof(*domain), GFP_KERNEL);
++	ops = bus->iommu_ops;
++
++	if (ops->domain_alloc)
++		domain = ops->domain_alloc();
++	else
++		domain = kzalloc(sizeof(*domain), GFP_KERNEL);
++
+ 	if (!domain)
+ 		return NULL;
+ 
+ 	domain->ops = bus->iommu_ops;
+ 
+-	ret = domain->ops->domain_init(domain);
+-	if (ret)
++	if (ops->domain_init && domain->ops->domain_init(domain))
+ 		goto out_free;
+ 
+ 	return domain;
+ 
+ out_free:
+-	kfree(domain);
++	if (ops->domain_free)
++		ops->domain_free(domain);
++	else
++		kfree(domain);
+ 
+ 	return NULL;
+ }
+@@ -927,10 +935,15 @@ EXPORT_SYMBOL_GPL(iommu_domain_alloc);
+ 
+ void iommu_domain_free(struct iommu_domain *domain)
+ {
+-	if (likely(domain->ops->domain_destroy != NULL))
+-		domain->ops->domain_destroy(domain);
++	const struct iommu_ops *ops = domain->ops;
+ 
+-	kfree(domain);
++	if (likely(ops->domain_destroy != NULL))
++		ops->domain_destroy(domain);
++
++	if (ops->domain_free)
++		ops->domain_free(domain);
++	else
++		kfree(domain);
+ }
+ EXPORT_SYMBOL_GPL(iommu_domain_free);
+ 
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index 38daa45..69d1d12 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -115,6 +115,11 @@ struct iommu_ops {
+ 	bool (*capable)(enum iommu_cap);
+ 	int (*domain_init)(struct iommu_domain *domain);
+ 	void (*domain_destroy)(struct iommu_domain *domain);
++
++	/* Domain allocation and freeing by the iommu driver */
++	struct iommu_domain *(*domain_alloc)(void);
++	void (*domain_free)(struct iommu_domain *);
++
+ 	int (*attach_dev)(struct iommu_domain *domain, struct device *dev);
+ 	void (*detach_dev)(struct iommu_domain *domain, struct device *dev);
+ 	int (*map)(struct iommu_domain *domain, unsigned long iova,
 -- 
 1.8.4.5
 
