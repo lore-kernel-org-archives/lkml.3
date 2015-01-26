@@ -1,130 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537AbbAZPT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 10:19:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41492 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752698AbbAZPT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 10:19:26 -0500
-Date: Mon, 26 Jan 2015 16:19:06 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
-        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
-        hughd@google.com, hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com
-Subject: Re: [PATCH v2] mm: incorporate read-only pages into transparent huge
- pages
-Message-ID: <20150126151906.GS11755@redhat.com>
-References: <1422113880-4712-1-git-send-email-ebru.akagunduz@gmail.com>
- <54C5EE66.4060700@suse.cz>
+	id S1755534AbbAZPWd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 10:22:33 -0500
+Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:45368 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751771AbbAZPWa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 10:22:30 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3622:3865:3870:5007:6120:6261:7875:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cake09_6cc88943a1450
+X-Filterd-Recvd-Size: 1692
+Date: Mon, 26 Jan 2015 10:22:26 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
+        Dominik Vogt <vogt@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
+Message-ID: <20150126102226.6f76b2ab@gandalf.local.home>
+In-Reply-To: <20150126150319.GF4968@osiris>
+References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
+	<1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
+	<20150126093701.699763dc@gandalf.local.home>
+	<20150126150319.GF4968@osiris>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C5EE66.4060700@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 26 Jan 2015 16:03:19 +0100
+Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
 
-On Mon, Jan 26, 2015 at 08:36:06AM +0100, Vlastimil Babka wrote:
-> >  - Add fast path optimistic check to
-> >    __collapse_huge_page_isolate()
+> Actually they should be mutually exclusive. I just merged them "just in case".
 > 
-> My interpretation is that the optimistic check is in khugepaged_scan_pmd() while
-> in __collapse_huge_page_isolate() it's protected by lock, as Andrea suggested?
-
-Correct, __collapse_huge_page_isolate is the "accurate" check that was
-missing in v1. The optimistic check was the one in khugepaged_scan_pmd
-and it was already present.
-
-> > @@ -2168,9 +2168,6 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
-> >  		VM_BUG_ON_PAGE(!PageAnon(page), page);
-> >  		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
-> >  
-> > -		/* cannot use mapcount: can't collapse if there's a gup pin */
-> > -		if (page_count(page) != 1)
-> > -			goto out;
-> >  		/*
-> >  		 * We can do it before isolate_lru_page because the
-> >  		 * page can't be freed from under us. NOTE: PG_lock
-> > @@ -2179,6 +2176,31 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
-> >  		 */
-> >  		if (!trylock_page(page))
-> >  			goto out;
-> > +
-> > +		/*
-> > +		 * cannot use mapcount: can't collapse if there's a gup pin.
-> > +		 * The page must only be referenced by the scanned process
-> > +		 * and page swap cache.
-> > +		 */
-> > +		if (page_count(page) != 1 + !!PageSwapCache(page)) {
-> > +			unlock_page(page);
-> > +			goto out;
-> > +		}
-> > +		if (!pte_write(pteval)) {
-> > +			if (++ro > khugepaged_max_ptes_none) {
-> > +				unlock_page(page);
-> > +				goto out;
+> So something like this
 > 
-> So just for completeness, as I said later for v1 I think this can leave us with
-> read-only VMA: consider ro == 256 and none == 256, referenced can still be >0
-> (up to 256). I think that the check for referenced that follows this for loop
-> should also check if (ro + none < HPAGE_PMD_NR).
-
-The moment "ro" becomes 256 or "none" becomes 256, we immediately goto out.
-
-	if (likely(referenced))
-		return 1;
-out:
-	release_pte_pages(pte, _pte);
-	return 0;
-
-"out" is past the referenced check and we fail the collapse
-immediately.
-
-If ro is < 255 then "none" is also < 255 (if pte_write is true, then
-pte_none cannot be true).
-
-Overall I don't see how we could collapse in readonly vma and where
-the bug is for this case, but I may be overlooking something obvious.
-
-> > +			}
-> > +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
-> > +				unlock_page(page);
-> > +				goto out;
-> > +			}
-> > +			/*
-> > +			 * Page is not in the swap cache, and page count is
-> > +			 * one (see above). It can be collapsed into a THP.
-> > +			 */
+> #ifdef CC_USING_HOTPATCH
+> #define notrace __attribute__((hotpatch(0,0)))
+> #else
+> #define notrace __attribute__((no_instrument_function))
+> #endif
 > 
-> I would still put the VM_BUG_ON(page_count(page) != 1) here as I suggested
-> previously. Even more so that I think it would have been able to catch the
-> problem that Andrea pointed out in v1.
+> will work as well (just tested).
 
-This is subtle, but we can't do VM_BUG_ON because it's ok if the VM
-comes before us in another CPU, and takes a pin on the page to isolate
-the page.
+I think the above change looks cleaner.
 
-In short if you changed the current upstream code like below:
-
-		/* cannot use mapcount: can't collapse if there's a gup pin */
-		if (page_count(page) != 1)
-			goto out;
-		VM_BUG_ON(page_count(page) != 1);
-		trylock...
-
-the VM_BUG_ON could fire as a false positive. It's not even related to
-the trylock_page, it's related to the LRU lock and isolate_lru_page
-that the VM could run on a different CPU and it's not a bug.
-
-The VM is free to pin the page. We only need to be sure there are no
-GUP-pins after we blocked all variants of GUP and the check is enough
-for that.
-
-Thanks,
-Andrea
+-- Steve
