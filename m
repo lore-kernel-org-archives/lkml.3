@@ -1,88 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114AbbAZKYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:24:53 -0500
-Received: from mga03.intel.com ([134.134.136.65]:59311 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754201AbbAZKYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:24:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,468,1418112000"; 
-   d="scan'208";a="667545371"
-From: "Baluta, Teodora" <teodora.baluta@intel.com>
-To: "floe@butterbrot.org" <floe@butterbrot.org>
-CC: "s.nawrocki@samsung.com" <s.nawrocki@samsung.com>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "hverkuil@xs4all.nl" <hverkuil@xs4all.nl>
-Subject: Re: [RFC PATCH 0/3] Introduce IIO interface for fingerprint sensors
-Thread-Topic: [RFC PATCH 0/3] Introduce IIO interface for fingerprint sensors
-Thread-Index: AQHQD8JdQ+QdbPbvv0iTNHDhYqBWSZyAQyGAgAV+ygCAD+Q9AIAMNCWAgB5BKgCAAZkAAIAMMOIggABTZgCABExTgA==
-Date: Mon, 26 Jan 2015 10:24:44 +0000
-Message-ID: <1422267881.2662.39.camel@bebop>
-References: <1417698017-13835-1-git-send-email-teodora.baluta@intel.com>
-	 <5481153B.4070609@kernel.org> <1418047828.18463.10.camel@bebop>
-	 <54930604.1020607@metafoo.de> <549D42BD.1050901@kernel.org>
-	 <1421255642.31900.4.camel@bebop> <54B7FAF2.8080207@samsung.com>
-	 <A2E3DE9C026DE6469D89C3A4C6C219390A89FE37@IRSMSX107.ger.corp.intel.com>
-	 <54C27AE4.4020702@butterbrot.org>
-In-Reply-To: <54C27AE4.4020702@butterbrot.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.104.145]
+	id S1756295AbbAZK2M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:28:12 -0500
+Received: from mail-am1on0062.outbound.protection.outlook.com ([157.56.112.62]:63360
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755570AbbAZK2J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:28:09 -0500
+X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jan 2015 05:28:08 EST
 Content-Type: text/plain; charset="utf-8"
-Content-ID: <CA469D584A0FC04AA09A044CD159FCE3@intel.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        "Wolfgang Grandegger" <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+From: Andri Yngvason <andri.yngvason@marel.com>
+In-Reply-To: <20150126052915.GG3014@Darwish.PC>
+CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <20141223154654.GB6460@vivalin-002>
+ <20150126051755.GA3014@Darwish.PC> <20150126052039.GB3014@Darwish.PC>
+ <20150126052254.GC3014@Darwish.PC> <20150126052406.GD3014@Darwish.PC>
+ <20150126052543.GE3014@Darwish.PC> <20150126052719.GF3014@Darwish.PC>
+ <20150126052915.GG3014@Darwish.PC>
+Message-ID: <20150126102643.17894.20176@shannon>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v6 6/7] can: kvaser_usb: Consolidate and unify state change
+ handling
+Date: Mon, 26 Jan 2015 10:26:43 +0000
+X-Originating-IP: [10.100.11.118]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 212.30.206.5)
+ smtp.mailfrom=Andri.Yngvason@marel.com; gmail.com; dkim=none (message not
+ signed) header.d=none;gmail.com; dmarc=permerror action=none
+ header.from=marel.com;
+X-Forefront-Antispam-Report: CIP:212.30.206.5;CTRY:IS;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(51704005)(377424004)(50466002)(46102003)(57986006)(76506005)(16796002)(86362001)(71226002)(87936001)(54356999)(76176999)(50986999)(47776003)(33716001)(23676002)(88526003)(93886004)(77156002)(19580395003)(92566002)(77096005)(106466001)(6806004)(2950100001)(62966003)(19580405001)(69266003);DIR:OUT;SFP:1101;SCL:1;SRVR:DB3PR05MB249;H:smtp.marel.com;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:DB3PR05MB249;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DB3PR05MB249;
+X-Forefront-PRVS: 0468FE4A2B
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR05MB249;
+X-OriginatorOrg: marel.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 26 Jan 2015 10:26:44.5792
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: e5f498be-7303-45fd-a594-9e3fd22a77d7
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=e5f498be-7303-45fd-a594-9e3fd22a77d7;Ip=[212.30.206.5]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DB3PR05MB249
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0QAOwCx016207
 
-Hi Florian,
-
-Thanks for the reply!
-
-On Vi, 2015-01-23 at 17:46 +0100, Florian Echtler wrote:
-> Hello Teodora,
+Quoting Ahmed S. Darwish (2015-01-26 05:29:15)
+> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 > 
-> On 23.01.2015 14:05, Baluta, Teodora wrote:
-> > The fingerprint sensor acts more like a scanner device, so the
-> > closest type is the V4L2_CAP_VIDEO_CAPTURE. However, this is not a
-> > perfect match because the driver only sends an image, once, when
-> > triggered. Would it be a better alternative to define a new
-> > capability type? Or it would be acceptable to simply have a video
-> > device with no frame buffer or frame rate and the user space
-> > application to read from the character device /dev/videoX?
-> Sorry if I jump in here right in the middle of this discussion, but some
-> time ago, I wrote a fingerprint sensor driver for the Siemens ID Mouse
-> (still part of the kernel AFAICT) which acts as a misc device and just
-> creates a character device node that can be used to directly read a PGM
-> file.
-
-I agree that it would be the simplest approach if you want a USB
-fingerprint driver in kernel space, but I was looking for a way to
-support fingerprint devices regardless of bus (there's also fingerprint
-devices that use SPI) and provide a common interface for user space
-applications.
-
-The actual driver for UPEK's TouchChip sensor is just a proof of concept
-on how the interface would work, rather than the final goal. There's
-already a library that enables USB-only fingerprint devices (libfprint).
+> Replace most of the can interface's state and error counters
+> handling with the new can-dev can_change_state() mechanism.
 > 
-> Maybe this would be a slightly simpler approach than pulling in all the
-> streaming-optimized features of V4L2?
+> Suggested-by: Andri Yngvason <andri.yngvason@marel.com>
+> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+> ---
+>  drivers/net/can/usb/kvaser_usb.c |  113 ++++++++++++++++---------------------
+>  1 files changed, 49 insertions(+), 64 deletions(-)
+> 
+> diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
+> index f57ce55..ddc2954 100644
+> --- a/drivers/net/can/usb/kvaser_usb.c
+> +++ b/drivers/net/can/usb/kvaser_usb.c
+> @@ -620,39 +620,44 @@ static void kvaser_usb_unlink_tx_urbs(struct kvaser_usb_net_priv *priv)
+>  }
+>  
+>  static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *priv,
+> -                                                const struct kvaser_usb_error_summary *es)
+> +                                                const struct kvaser_usb_error_summary *es,
+> +                                                struct can_frame *cf)
+>  {
+>         struct net_device_stats *stats;
+> -       enum can_state new_state;
+> -
+> -       stats = &priv->netdev->stats;
+> -       new_state = priv->can.state;
+> +       enum can_state cur_state, new_state, tx_state, rx_state;
+>  
+>         netdev_dbg(priv->netdev, "Error status: 0x%02x\n", es->status);
+>  
+> -       if (es->status & (M16C_STATE_BUS_OFF | M16C_STATE_BUS_RESET)) {
+> -               priv->can.can_stats.bus_off++;
+> +       stats = &priv->netdev->stats;
+> +       new_state = cur_state = priv->can.state;
+> +
+> +       if (es->status & (M16C_STATE_BUS_OFF | M16C_STATE_BUS_RESET))
+>                 new_state = CAN_STATE_BUS_OFF;
+> -       } else if (es->status & M16C_STATE_BUS_PASSIVE) {
+> -               if (priv->can.state != CAN_STATE_ERROR_PASSIVE)
+> -                       priv->can.can_stats.error_passive++;
+> +       else if (es->status & M16C_STATE_BUS_PASSIVE)
+>                 new_state = CAN_STATE_ERROR_PASSIVE;
+> -       } else if (es->status & M16C_STATE_BUS_ERROR) {
+> -               if ((priv->can.state < CAN_STATE_ERROR_WARNING) &&
+> -                   ((es->txerr >= 96) || (es->rxerr >= 96))) {
+> -                       priv->can.can_stats.error_warning++;
+> +       else if (es->status & M16C_STATE_BUS_ERROR) {
+> +               if ((es->txerr >= 256) || (es->rxerr >= 256))
+> +                       new_state = CAN_STATE_BUS_OFF;
+> +               else if ((es->txerr >= 128) || (es->rxerr >= 128))
+> +                       new_state = CAN_STATE_ERROR_PASSIVE;
+> +               else if ((es->txerr >= 96) || (es->rxerr >= 96))
+>                         new_state = CAN_STATE_ERROR_WARNING;
+> -               } else if ((priv->can.state > CAN_STATE_ERROR_ACTIVE) &&
+> -                          ((es->txerr < 96) && (es->rxerr < 96))) {
+> +               else if (cur_state > CAN_STATE_ERROR_ACTIVE)
+>                         new_state = CAN_STATE_ERROR_ACTIVE;
+> -               }
+>         }
+>  
+>         if (!es->status)
+>                 new_state = CAN_STATE_ERROR_ACTIVE;
+>  
+> +       if (new_state != cur_state) {
+> +               tx_state = (es->txerr >= es->rxerr) ? new_state : 0;
+> +               rx_state = (es->txerr <= es->rxerr) ? new_state : 0;
+> +
+> +               can_change_state(priv->netdev, cf, tx_state, rx_state);
+> +       }
+> +
+>         if (priv->can.restart_ms &&
+> -           (priv->can.state >= CAN_STATE_BUS_OFF) &&
+> +           (cur_state >= CAN_STATE_BUS_OFF) &&
+>             (new_state < CAN_STATE_BUS_OFF)) {
+>                 priv->can.can_stats.restarts++;
+>         }
+> @@ -664,18 +669,17 @@ static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *pri
+>  
+>         priv->bec.txerr = es->txerr;
+>         priv->bec.rxerr = es->rxerr;
+> -       priv->can.state = new_state;
+>  }
+>  
+>  static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+>                                 const struct kvaser_msg *msg)
+>  {
+> -       struct can_frame *cf;
+> +       struct can_frame *cf, tmp_cf = { .can_id = CAN_ERR_FLAG, .can_dlc = CAN_ERR_DLC };
+>         struct sk_buff *skb;
+>         struct net_device_stats *stats;
+>         struct kvaser_usb_net_priv *priv;
+>         struct kvaser_usb_error_summary es = { };
+> -       enum can_state old_state;
+> +       enum can_state old_state, new_state;
+>  
+>         switch (msg->id) {
+>         case CMD_CAN_ERROR_EVENT:
+> @@ -715,59 +719,40 @@ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+>         stats = &priv->netdev->stats;
+>  
+>         /* Update all of the can interface's state and error counters before
+> -        * trying any skb allocation that can actually fail with -ENOMEM.
+> +        * trying any memory allocation that can actually fail with -ENOMEM.
+> +        *
+> +        * We send a temporary stack-allocated error can frame to
+> +        * can_change_state() for the very same reason.
+> +        *
+> +        * TODO: Split can_change_state() responsibility between updating the
+> +        * can interface's state and counters, and the setting up of can error
+> +        * frame ID and data to userspace. Remove stack allocation afterwards.
+>          */
+>         old_state = priv->can.state;
+> -       kvaser_usb_rx_error_update_can_state(priv, &es);
+> +       kvaser_usb_rx_error_update_can_state(priv, &es, &tmp_cf);
+> +       new_state = priv->can.state;
+>  
+>         skb = alloc_can_err_skb(priv->netdev, &cf);
+>         if (!skb) {
+>                 stats->rx_dropped++;
+>                 return;
+>         }
+> -
+> -       if (es.status & (M16C_STATE_BUS_OFF | M16C_STATE_BUS_RESET)) {
+> -               cf->can_id |= CAN_ERR_BUSOFF;
+> -
+> -               if (!priv->can.restart_ms)
+> -                       kvaser_usb_simple_msg_async(priv, CMD_STOP_CHIP);
+> -               netif_carrier_off(priv->netdev);
+> -       } else if (es.status & M16C_STATE_BUS_PASSIVE) {
+> -               if (old_state != CAN_STATE_ERROR_PASSIVE) {
+> -                       cf->can_id |= CAN_ERR_CRTL;
+> -
+> -                       if (es.txerr || es.rxerr)
+> -                               cf->data[1] = (es.txerr > es.rxerr)
+> -                                               ? CAN_ERR_CRTL_TX_PASSIVE
+> -                                               : CAN_ERR_CRTL_RX_PASSIVE;
+> -                       else
+> -                               cf->data[1] = CAN_ERR_CRTL_TX_PASSIVE |
+> -                                             CAN_ERR_CRTL_RX_PASSIVE;
+> -               }
+> -       } else if (es.status & M16C_STATE_BUS_ERROR) {
+> -               if ((old_state < CAN_STATE_ERROR_WARNING) &&
+> -                   ((es.txerr >= 96) || (es.rxerr >= 96))) {
+> -                       cf->can_id |= CAN_ERR_CRTL;
+> -                       cf->data[1] = (es.txerr > es.rxerr)
+> -                                       ? CAN_ERR_CRTL_TX_WARNING
+> -                                       : CAN_ERR_CRTL_RX_WARNING;
+> -               } else if ((old_state > CAN_STATE_ERROR_ACTIVE) &&
+> -                          ((es.txerr < 96) && (es.rxerr < 96))) {
+> -                       cf->can_id |= CAN_ERR_PROT;
+> -                       cf->data[2] = CAN_ERR_PROT_ACTIVE;
+> +       memcpy(cf, &tmp_cf, sizeof(*cf));
+> +
+> +       if (new_state != old_state) {
+> +               if (es.status &
+> +                   (M16C_STATE_BUS_OFF | M16C_STATE_BUS_RESET)) {
+> +                       if (!priv->can.restart_ms)
+> +                               kvaser_usb_simple_msg_async(priv, CMD_STOP_CHIP);
+> +                       netif_carrier_off(priv->netdev);
+>                 }
+> -       }
+> -
+> -       if (!es.status) {
+> -               cf->can_id |= CAN_ERR_PROT;
+> -               cf->data[2] = CAN_ERR_PROT_ACTIVE;
+> -       }
+>  
+> -       if (priv->can.restart_ms &&
+> -           (old_state >= CAN_STATE_BUS_OFF) &&
+> -           (priv->can.state < CAN_STATE_BUS_OFF)) {
+> -               cf->can_id |= CAN_ERR_RESTARTED;
+> -               netif_carrier_on(priv->netdev);
+> +               if (priv->can.restart_ms &&
+> +                   (old_state >= CAN_STATE_BUS_OFF) &&
+> +                   (new_state < CAN_STATE_BUS_OFF)) {
+> +                       cf->can_id |= CAN_ERR_RESTARTED;
+> +                       netif_carrier_on(priv->netdev);
+> +               }
+>         }
+>  
+>         if (es.error_factor) {
+> -- 
+> 1.7.7.6
 
-I agree that for a fingerprint device, the V4L2 subsystem offers too
-much (the initial RFC is for IIO).
+ACK, for real this time. ;)
 
-Thanks,
-Teodora
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--
+Andri
