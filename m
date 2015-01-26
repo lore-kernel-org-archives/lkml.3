@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635AbbAZL1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:27:41 -0500
-Received: from sauhun.de ([89.238.76.85]:55785 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752040AbbAZL1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:27:37 -0500
-Date: Mon, 26 Jan 2015 12:27:11 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: jdelvare@suse.de, arnd@arndb.de, maxime.ripard@free-electrons.com,
-        dianders@chromium.org, u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
-        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
-        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, mika.westerberg@linux.intel.com,
-        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
-        christian.ruppert@abilis.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V4 0/2] i2c-designware: Add Intel Baytrail pmic i2c bus
- support
-Message-ID: <20150126112711.GA1052@katana>
-References: <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
- <1421313137-1613-1-git-send-email-david.e.box@linux.intel.com>
+	id S1753607AbbAZLbB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:31:01 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:17548 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbbAZLa7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 06:30:59 -0500
+Message-ID: <54C62570.5050600@imgtec.com>
+Date: Mon, 26 Jan 2015 11:30:56 +0000
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
-Content-Disposition: inline
-In-Reply-To: <1421313137-1613-1-git-send-email-david.e.box@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lars-Peter Clausen <lars@metafoo.de>, <tiwai@suse.de>, <perex@perex.cz>
+CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 4/4] sound: jz4740: Enable codec clock during dai_probe
+References: <1422267511-6649-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1422267511-6649-5-git-send-email-Zubair.Kakakhel@imgtec.com> <54C61980.9030205@metafoo.de>
+In-Reply-To: <54C61980.9030205@metafoo.de>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 26/01/15 10:40, Lars-Peter Clausen wrote:
+> On 01/26/2015 11:18 AM, Zubair Lutfullah Kakakhel wrote:
+>> As we are moving away from platform to DT, we cant rely on the board
+>> file to do this now. So enable it here.
+> 
+> I don't understand this changelog. The board file never did this. The driver enables the clock in the startup() callback.
 
-On Thu, Jan 15, 2015 at 01:12:15AM -0800, David E. Box wrote:
-> V4:	- Added bus lock to i2c_dw_init() as suggested by Jarrko Nikula
-> 	  <jarkko.nikula@linux.intel.com>. Addresses infrequent hang that was
-> 	  seen occuring during probe.
-> 	- Added label in i2c_dw_xfer() to bypass unnecessary lock release when
-> 	  acquire fails. Suggested by Mika.
-> 	- Changed make to build driver as composite addition to
-> 	  i2c-designware-platform. Driver can be module or built-in following
-> 	  the platform driver selection. Tested as both.
-> 	- Added EPROBE_DEFER return to baytrail definition of i2c_dw_eval_lock()
-> 	  to defer probe if iosf_mbi driver (required for acquring bus lock) is
-> 	  not available.
+My bad.
 
-Applied to for-next, thanks!
+I couldn't get the ci20 audio to work without this change.
 
+I double checked. The clock is indeed enabled.
 
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+But the rate needs to be set for the ci20.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+clk_set_rate(i2s->clk_i2s, 12000000);
 
-iQIcBAEBAgAGBQJUxiSPAAoJEBQN5MwUoCm2gOUP/07PyelWHyBnWyXRazX9Adcy
-36ebjcYDu6xKhSDzkpoU2pADSq/mYPwPnAcTZmwa0Y9NgHQJ0h8JTlFeqd79ivW9
-W0XAvJgEkeHVHIKa5VAWsJLrn2hnuIraDBRxFh6Li/UIbJxk5PJSynXswchZFqKp
-2MH5/H2z9bmfCIvLkWBNnQYBKpCw3bRdwykQ+QRNHaIB4fMDbo30IJYkjGaLbw9V
-x3geeIc8VYBUlhbIBPA1LXmsqDAIvLJhi+utlKh/NdpEFpAGBvtVn1mwm2eP8d1/
-Y5sSCrFAqZTD9UtjyGbZmYooolR3Mz7AHaULRV9EPoKGdwnzLKCh75XRJzb8gNyL
-Mr/OGDftmXvL5fhjawU3JXseB2UCJcL6bZpF6OX+yTiWNWBM6FRreIHmYnIfGy09
-ps3/VpPORtzc4Vg5SuTtW4C79+NIpy7hnz8EFrJblMAb10216dLPXrFgM/w3E3rc
-FEP4SBi7axTfpPCarrSrkvgdY+IT07cGjSAIjVuUa02Eu0Zfnwtu8t0ZEGHb8sui
-p47401GOWbeMmdTErRde01/Wy3XHI2tkmWcngYuR95LXQhlNmWWSeHYJX05pP/E3
-g/CaRvKoWVNLASegxy1TJkc7ZvjYuJI9RXudGdQmSBqBhBmJ0M/nQOCnqhmtW/K3
-RJIaUKYALCLbi1JvIBcr
-=bfAl
------END PGP SIGNATURE-----
+Where should I put it? I couldn’t trace how the rate is set for the jz4740..
 
---PNTmBPCT7hxwcZjr--
+ZubairLK
+
+> 
+>>
+>> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+>> ---
+>>   sound/soc/jz4740/jz4740-i2s.c | 4 ++++
+>>   1 file changed, 4 insertions(+)
+>>
+>> diff --git a/sound/soc/jz4740/jz4740-i2s.c b/sound/soc/jz4740/jz4740-i2s.c
+>> index 3c309fc..a7e4a7b 100644
+>> --- a/sound/soc/jz4740/jz4740-i2s.c
+>> +++ b/sound/soc/jz4740/jz4740-i2s.c
+>> @@ -376,6 +376,10 @@ static int jz4740_i2s_dai_probe(struct snd_soc_dai *dai)
+>>           JZ_AIC_CONF_I2S |
+>>           JZ_AIC_CONF_INTERNAL_CODEC;
+>>
+>> +    /* enable codec sysclk */
+>> +    clk_set_rate(i2s->clk_i2s, 12000000);
+>> +    clk_prepare_enable(i2s->clk_i2s);
+>> +
+>>       jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, JZ_AIC_CONF_RESET);
+>>       jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
+>>
+>>
+> 
