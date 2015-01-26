@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686AbbAZKox (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:44:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39837 "EHLO
+	id S1755865AbbAZKpj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:45:39 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39869 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952AbbAZKoo (ORCPT
+	with ESMTP id S1755814AbbAZKpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:44:44 -0500
-Date: Mon, 26 Jan 2015 02:44:33 -0800
-From: tip-bot for Tony Lindgren <tipbot@zytor.com>
-Message-ID: <tip-c7f2a2ac377626897ad68e63d24d85ee21f47bb1@git.kernel.org>
-Cc: jason@lakedaemon.net, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        balbi@ti.com, tony@atomide.com, hpa@zytor.com, mingo@kernel.org
-Reply-To: mingo@kernel.org, tony@atomide.com, hpa@zytor.com, balbi@ti.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, jason@lakedaemon.net
-In-Reply-To: <1421187806-6804-3-git-send-email-tony@atomide.com>
-References: <1421187806-6804-3-git-send-email-tony@atomide.com>
+	Mon, 26 Jan 2015 05:45:30 -0500
+Date: Mon, 26 Jan 2015 02:44:53 -0800
+From: tip-bot for Baruch Siach <tipbot@zytor.com>
+Message-ID: <tip-f848526f3768a80cb3fbcf503306e2c29a80a83c@git.kernel.org>
+Cc: hpa@zytor.com, jason@lakedaemon.net, linux-kernel@vger.kernel.org,
+        sergei.shtylyov@cogentembedded.com, arnd@arndb.de, baruch@tkos.co.il,
+        mingo@kernel.org, tglx@linutronix.de, mark.rutland@arm.com
+Reply-To: sergei.shtylyov@cogentembedded.com, arnd@arndb.de, hpa@zytor.com,
+        jason@lakedaemon.net, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        tglx@linutronix.de, mark.rutland@arm.com, baruch@tkos.co.il
+In-Reply-To: <505a65c8861e5210d94227bc0eec89cab0593fca.1421317616.git.baruch@tkos.co.il>
+References: <505a65c8861e5210d94227bc0eec89cab0593fca.1421317616.git.baruch@tkos.co.il>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] irqchip: omap-intc:
-  Remove unused legacy interface for omap2
-Git-Commit-ID: c7f2a2ac377626897ad68e63d24d85ee21f47bb1
+Subject: [tip:irq/core] irqchip: Devicetree:
+  document Conexant Digicolor irq binding
+Git-Commit-ID: f848526f3768a80cb3fbcf503306e2c29a80a83c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,56 +34,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c7f2a2ac377626897ad68e63d24d85ee21f47bb1
-Gitweb:     http://git.kernel.org/tip/c7f2a2ac377626897ad68e63d24d85ee21f47bb1
-Author:     Tony Lindgren <tony@atomide.com>
-AuthorDate: Tue, 13 Jan 2015 14:23:26 -0800
+Commit-ID:  f848526f3768a80cb3fbcf503306e2c29a80a83c
+Gitweb:     http://git.kernel.org/tip/f848526f3768a80cb3fbcf503306e2c29a80a83c
+Author:     Baruch Siach <baruch@tkos.co.il>
+AuthorDate: Thu, 15 Jan 2015 12:33:59 +0200
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 26 Jan 2015 11:38:23 +0100
 
-irqchip: omap-intc: Remove unused legacy interface for omap2
+irqchip: Devicetree: document Conexant Digicolor irq binding
 
-Nowadays omap2 is booting in device tree only mode so there is no
-need to keep the legacy interface around for omap2_init_irq().
-
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
 Cc: Jason Cooper <jason@lakedaemon.net>
-Link: http://lkml.kernel.org/r/1421187806-6804-3-git-send-email-tony@atomide.com
+Link: http://lkml.kernel.org/r/505a65c8861e5210d94227bc0eec89cab0593fca.1421317616.git.baruch@tkos.co.il
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/irqchip/irq-omap-intc.c       | 8 --------
- include/linux/irqchip/irq-omap-intc.h | 1 -
- 2 files changed, 9 deletions(-)
+ .../bindings/interrupt-controller/digicolor-ic.txt  | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/drivers/irqchip/irq-omap-intc.c b/drivers/irqchip/irq-omap-intc.c
-index b444d0e..a569c6d 100644
---- a/drivers/irqchip/irq-omap-intc.c
-+++ b/drivers/irqchip/irq-omap-intc.c
-@@ -364,14 +364,6 @@ out:
- 		omap_ack_irq(NULL);
- }
- 
--void __init omap2_init_irq(void)
--{
--	omap_nr_irqs = 96;
--	omap_nr_pending = 3;
--	omap_init_irq(OMAP24XX_IC_BASE, NULL);
--	set_handle_irq(omap_intc_handle_irq);
--}
--
- void __init omap3_init_irq(void)
- {
- 	omap_nr_irqs = 96;
-diff --git a/include/linux/irqchip/irq-omap-intc.h b/include/linux/irqchip/irq-omap-intc.h
-index bda426a..2e3d1af 100644
---- a/include/linux/irqchip/irq-omap-intc.h
-+++ b/include/linux/irqchip/irq-omap-intc.h
-@@ -18,7 +18,6 @@
- #ifndef __INCLUDE_LINUX_IRQCHIP_IRQ_OMAP_INTC_H
- #define __INCLUDE_LINUX_IRQCHIP_IRQ_OMAP_INTC_H
- 
--void omap2_init_irq(void);
- void omap3_init_irq(void);
- 
- int omap_irq_pending(void);
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/digicolor-ic.txt b/Documentation/devicetree/bindings/interrupt-controller/digicolor-ic.txt
+new file mode 100644
+index 0000000..42d41ec
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/digicolor-ic.txt
+@@ -0,0 +1,21 @@
++Conexant Digicolor Interrupt Controller
++
++Required properties:
++
++- compatible : should be "cnxt,cx92755-ic"
++- reg : Specifies base physical address and size of the interrupt controller
++  registers (IC) area
++- interrupt-controller : Identifies the node as an interrupt controller
++- #interrupt-cells : Specifies the number of cells needed to encode an
++  interrupt source. The value shall be 1.
++- syscon: A phandle to the syscon node describing UC registers
++
++Example:
++
++	intc: interrupt-controller@f0000040 {
++		compatible = "cnxt,cx92755-ic";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		reg = <0xf0000040 0x40>;
++		syscon = <&uc_regs>;
++	};
