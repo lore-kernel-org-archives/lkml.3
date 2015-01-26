@@ -1,66 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884AbbAZI6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 03:58:46 -0500
-Received: from mga03.intel.com ([134.134.136.65]:63948 "EHLO mga03.intel.com"
+	id S1753382AbbAZI7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 03:59:00 -0500
+Received: from mga14.intel.com ([192.55.52.115]:64928 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623AbbAZI6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 03:58:43 -0500
+	id S1751900AbbAZI6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 03:58:53 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.09,467,1418112000"; 
-   d="scan'208";a="656434578"
+   d="scan'208";a="675890801"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH 0/2] ACPICA: 201501xx fast path patches.
-Date: Mon, 26 Jan 2015 16:58:34 +0800
-Message-Id: <cover.1422261662.git.lv.zheng@intel.com>
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-pci@vger.kernel.org, linux-ia64@vger.kernel.org
+Subject: [RFC PATCH 1/2] ACPI: Introduce acpi_unload_parent_table() usages in Linux kernel.
+Date: Mon, 26 Jan 2015 16:58:48 +0800
+Message-Id: <3e56be94135c911d80f52df1ea7f32c71f50d8fd.1422261662.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1422261662.git.lv.zheng@intel.com>
+References: <cover.1422261662.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains ACPICA 201501xx release patches.
-They can be directly merged to the Linux kernel before the ACPICA 201501xx
-release.
+ACPICA has implemented acpi_unload_parent_table() which can exactly replace
+the acpi_get_id()/acpi_unload_table_id() implemented in Linux kernel.  The
+acpi_unload_parent_table() has been unit tested in ACPICA simulation
+environment.
 
-For PATCH 1, I rebased it on top of recent linux-next branch. Since we may
-need to wait for the confirmation from Octavian, I marked it as RFC.
+This patch can also help to reduce the source code differences between
+Linux and ACPICA.
 
-For PATCH 2, build tests are passed against the following configurations:
-1. ia64/i386/x86_64 defconfig
-2. ia64/i386/x86_64 allyesconfig
-3. ia64/i386/x86_64 allnoconfig
-4. ia64/i386/x86_64 defconfig & CONFIG_ACPI=n
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-pci@vger.kernel.org
+Cc: linux-ia64@vger.kernel.org
+---
+ drivers/acpi/acpica/nsxfobj.c     |   44 -----------------------------------
+ drivers/acpi/acpica/tbxface.c     |   46 -------------------------------------
+ drivers/pci/hotplug/sgi_hotplug.c |   13 ++++++-----
+ include/acpi/acpixf.h             |    6 -----
+ 4 files changed, 7 insertions(+), 102 deletions(-)
 
-Lv Zheng (2):
-  ACPI: Introduce acpi_unload_parent_table() usages in Linux kernel.
-  ACPICA: Resources: Provide common part for struct
-    acpi_resource_address structures.
-
- arch/ia64/kernel/acpi-ext.c       |    6 ++--
- arch/ia64/pci/pci.c               |   14 ++++-----
- arch/x86/pci/acpi.c               |   26 ++++++++--------
- arch/x86/pci/mmconfig-shared.c    |    6 ++--
- drivers/acpi/acpi_memhotplug.c    |    8 ++---
- drivers/acpi/acpica/nsxfobj.c     |   44 ---------------------------
- drivers/acpi/acpica/rsaddr.c      |    9 +++---
- drivers/acpi/acpica/rsdumpinfo.c  |   59 +++++++++++++++++++------------------
- drivers/acpi/acpica/rsxface.c     |   10 +++----
- drivers/acpi/acpica/tbxface.c     |   46 -----------------------------
- drivers/acpi/pci_root.c           |    6 ++--
- drivers/acpi/resource.c           |   24 +++++++--------
- drivers/char/hpet.c               |    4 +--
- drivers/hv/vmbus_drv.c            |    4 +--
- drivers/pci/hotplug/sgi_hotplug.c |   13 ++++----
- drivers/pnp/pnpacpi/rsparser.c    |   16 +++++-----
- drivers/xen/xen-acpi-memhotplug.c |    8 ++---
- include/acpi/acpixf.h             |    6 ----
- include/acpi/acrestyp.h           |   40 +++++++++++++++----------
- 19 files changed, 132 insertions(+), 217 deletions(-)
-
+diff --git a/drivers/acpi/acpica/nsxfobj.c b/drivers/acpi/acpica/nsxfobj.c
+index dae9401..51a8329 100644
+--- a/drivers/acpi/acpica/nsxfobj.c
++++ b/drivers/acpi/acpica/nsxfobj.c
+@@ -53,50 +53,6 @@ ACPI_MODULE_NAME("nsxfobj")
+ 
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_get_id
+- *
+- * PARAMETERS:  Handle          - Handle of object whose id is desired
+- *              ret_id          - Where the id will be placed
+- *
+- * RETURN:      Status
+- *
+- * DESCRIPTION: This routine returns the owner id associated with a handle
+- *
+- ******************************************************************************/
+-acpi_status acpi_get_id(acpi_handle handle, acpi_owner_id * ret_id)
+-{
+-	struct acpi_namespace_node *node;
+-	acpi_status status;
+-
+-	/* Parameter Validation */
+-
+-	if (!ret_id) {
+-		return (AE_BAD_PARAMETER);
+-	}
+-
+-	status = acpi_ut_acquire_mutex(ACPI_MTX_NAMESPACE);
+-	if (ACPI_FAILURE(status)) {
+-		return (status);
+-	}
+-
+-	/* Convert and validate the handle */
+-
+-	node = acpi_ns_validate_handle(handle);
+-	if (!node) {
+-		(void)acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+-		return (AE_BAD_PARAMETER);
+-	}
+-
+-	*ret_id = node->owner_id;
+-
+-	status = acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+-	return (status);
+-}
+-
+-ACPI_EXPORT_SYMBOL(acpi_get_id)
+-
+-/*******************************************************************************
+- *
+  * FUNCTION:    acpi_get_type
+  *
+  * PARAMETERS:  handle          - Handle of object whose type is desired
+diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
+index 9520ae1..0f9dd80 100644
+--- a/drivers/acpi/acpica/tbxface.c
++++ b/drivers/acpi/acpica/tbxface.c
+@@ -265,52 +265,6 @@ ACPI_EXPORT_SYMBOL(acpi_get_table_header)
+ 
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_unload_table_id
+- *
+- * PARAMETERS:  id            - Owner ID of the table to be removed.
+- *
+- * RETURN:      Status
+- *
+- * DESCRIPTION: This routine is used to force the unload of a table (by id)
+- *
+- ******************************************************************************/
+-acpi_status acpi_unload_table_id(acpi_owner_id id)
+-{
+-	int i;
+-	acpi_status status = AE_NOT_EXIST;
+-
+-	ACPI_FUNCTION_TRACE(acpi_unload_table_id);
+-
+-	status = acpi_ut_acquire_mutex(ACPI_MTX_INTERPRETER);
+-	if (ACPI_FAILURE(status)) {
+-		return_ACPI_STATUS(status);
+-	}
+-
+-	/* Find table in the global table list */
+-	for (i = 0; i < acpi_gbl_root_table_list.current_table_count; ++i) {
+-		if (id != acpi_gbl_root_table_list.tables[i].owner_id) {
+-			continue;
+-		}
+-		/*
+-		 * Delete all namespace objects owned by this table. Note that these
+-		 * objects can appear anywhere in the namespace by virtue of the AML
+-		 * "Scope" operator. Thus, we need to track ownership by an ID, not
+-		 * simply a position within the hierarchy
+-		 */
+-		acpi_tb_delete_namespace_by_owner(i);
+-		status = acpi_tb_release_owner_id(i);
+-		acpi_tb_set_table_loaded_flag(i, FALSE);
+-		break;
+-	}
+-
+-	(void)acpi_ut_release_mutex(ACPI_MTX_INTERPRETER);
+-	return_ACPI_STATUS(status);
+-}
+-
+-ACPI_EXPORT_SYMBOL(acpi_unload_table_id)
+-
+-/*******************************************************************************
+- *
+  * FUNCTION:    acpi_get_table_with_size
+  *
+  * PARAMETERS:  signature           - ACPI signature of needed table
+diff --git a/drivers/pci/hotplug/sgi_hotplug.c b/drivers/pci/hotplug/sgi_hotplug.c
+index bada2099..c32fb78 100644
+--- a/drivers/pci/hotplug/sgi_hotplug.c
++++ b/drivers/pci/hotplug/sgi_hotplug.c
+@@ -475,7 +475,7 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
+ 	struct slot *slot = bss_hotplug_slot->private;
+ 	struct pci_dev *dev, *temp;
+ 	int rc;
+-	acpi_owner_id ssdt_id = 0;
++	acpi_handle ssdt_hdl = NULL;
+ 
+ 	/* Acquire update access to the bus */
+ 	mutex_lock(&sn_hotplug_mutex);
+@@ -522,7 +522,7 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
+ 			if (ACPI_SUCCESS(ret) &&
+ 			    (adr>>16) == (slot->device_num + 1)) {
+ 				/* retain the owner id */
+-				acpi_get_id(chandle, &ssdt_id);
++				ssdt_hdl = chandle;
+ 
+ 				ret = acpi_bus_get_device(chandle,
+ 							  &device);
+@@ -547,12 +547,13 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
+ 	pci_unlock_rescan_remove();
+ 
+ 	/* Remove the SSDT for the slot from the ACPI namespace */
+-	if (SN_ACPI_BASE_SUPPORT() && ssdt_id) {
++	if (SN_ACPI_BASE_SUPPORT() && ssdt_hdl) {
+ 		acpi_status ret;
+-		ret = acpi_unload_table_id(ssdt_id);
++		ret = acpi_unload_parent_table(ssdt_hdl);
+ 		if (ACPI_FAILURE(ret)) {
+-			printk(KERN_ERR "%s: acpi_unload_table_id failed (0x%x) for id %d\n",
+-			       __func__, ret, ssdt_id);
++			acpi_handle_err(ssdt_hdl,
++					"%s: acpi_unload_parent_table failed (0x%x)\n",
++					__func__, ret);
+ 			/* try to continue on */
+ 		}
+ 	}
+diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+index 5ba7846..5dd21bc 100644
+--- a/include/acpi/acpixf.h
++++ b/include/acpi/acpixf.h
+@@ -891,12 +891,6 @@ ACPI_APP_DEPENDENT_RETURN_VOID(ACPI_PRINTF_LIKE(1)
+ ACPI_GLOBAL(u8, acpi_gbl_permanent_mmap);
+ 
+ ACPI_EXTERNAL_RETURN_STATUS(acpi_status
+-			    acpi_get_id(acpi_handle object,
+-					acpi_owner_id * out_type))
+-
+-ACPI_EXTERNAL_RETURN_STATUS(acpi_status acpi_unload_table_id(acpi_owner_id id))
+-
+-ACPI_EXTERNAL_RETURN_STATUS(acpi_status
+ 			    acpi_get_table_with_size(acpi_string signature,
+ 						     u32 instance,
+ 						     struct acpi_table_header
 -- 
 1.7.10
 
