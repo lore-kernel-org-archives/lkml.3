@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925AbbAZLtt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:49:49 -0500
-Received: from 8bytes.org ([81.169.241.247]:45922 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750793AbbAZLtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:49:47 -0500
-Date: Mon, 26 Jan 2015 12:49:45 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
-Subject: Re: [PATCH 1/3] swiotlb: Warn on allocation failure in
- swiotlb_alloc_coherent
-Message-ID: <20150126114945.GD30345@8bytes.org>
-References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
- <1420555874-11506-2-git-send-email-joro@8bytes.org>
- <20150123170425.GI22635@pd.tnic>
+	id S1754078AbbAZLuY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:50:24 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43026 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849AbbAZLuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 06:50:21 -0500
+Date: Mon, 26 Jan 2015 11:49:56 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
+        "Patrice.VILCHEZ@atmel.com" <Patrice.VILCHEZ@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "peda@axentia.se" <peda@axentia.se>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/7] pm: at91: add achieve the mpddrc peripheral ID and
+ the DDR clock ID support
+Message-ID: <20150126114956.GE23313@leverpostej>
+References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
+ <1422266896-24666-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150123170425.GI22635@pd.tnic>
+In-Reply-To: <1422266896-24666-1-git-send-email-wenyou.yang@atmel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 06:04:25PM +0100, Borislav Petkov wrote:
-> On Tue, Jan 06, 2015 at 03:51:12PM +0100, Joerg Roedel wrote:
-> > +
-> > +err_warn:
-> > +	pr_warn("swiotlb: coherent allocation failed for device %s size=%zu\n",
-> > +		dev_name(hwdev), size);
-> > +	dump_stack();
+On Mon, Jan 26, 2015 at 10:08:16AM +0000, Wenyou Yang wrote:
+> The patch achieves the mpddr controller peripheral ID
+> and the DDR clock ID from the dts file.
 > 
-> Are we really sure we want to be that noisy about it? What happens if
-> that fails, we can't do DMA anymore or should we free some precious DMA
-> memory, as a compromise?
+> They will be used in the future to disable the mpddr controller'c clock
+> the and DDR clock to decrease the power consumption during suspending.
+> 
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> ---
+>  arch/arm/mach-at91/generic.h |    2 ++
+>  arch/arm/mach-at91/setup.c   |   24 ++++++++++++++++++++++++
+>  2 files changed, 26 insertions(+)
+> 
+> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+> index 41796bf..3c72a3e 100644
+> --- a/arch/arm/mach-at91/generic.h
+> +++ b/arch/arm/mach-at91/generic.h
+> @@ -47,6 +47,8 @@ void __init at91_sam9x5_pm_init(void) { }
+>  struct at91_pm_struct {
+>  	unsigned long uhp_udp_mask;
+>  	int memctrl;
+> +	u32 mpddrc_id[2];
+> +	u32 ddrck_id;
+>  };
+>  
+>  #endif /* _AT91_GENERIC_H */
+> diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+> index 7924663..a306f95 100644
+> --- a/arch/arm/mach-at91/setup.c
+> +++ b/arch/arm/mach-at91/setup.c
+> @@ -363,6 +363,27 @@ void __init at91_ioremap_matrix(u32 base_addr)
+>  		panic(pr_fmt("Impossible to ioremap at91_matrix_base\n"));
+>  }
+>  
+> +static u32 at91_of_get_ddr_id(struct device_node *np, char *name)
+> +{
+> +	struct of_phandle_args clkspec;
+> +	u32 id;
+> +	int index;
+> +	int rc;
+> +
+> +	index = of_property_match_string(np, "clock-names", name);
+> +	rc = of_parse_phandle_with_args(np, "clocks", "#clock-cells", index, &clkspec);
+> +	if (rc)
+> +		return 0;
+> +
+> +	rc = of_property_read_u32(clkspec.np, "reg", &id);
+> +	if (rc)
+> +		return 0;
+> +
+> +	of_node_put(clkspec.np);
+> +
+> +	return id;
+> +}
 
-Hmm, I don't think there is a way to request drivers to free DMA memory.
-What this patch does is to keep the same noisiness as before, just not
-from the page allocator but from the very end of the DMA allocation
-process, when everything failed.
-We can of course discuss whether this is too noisy and put some kind of
-ratelimit around.
+This doesn't look right to me. This assumes the format of the clock
+provider node, which invalidates the point of having the abstraction in
+the first place.
 
+> +
+>  struct at91_ramc_of_data {
+>  	u8 ramc_type;
+>  };
+> @@ -400,6 +421,9 @@ static void at91_dt_ramc(void)
+>  		of_data = of_id->data;
+>  		at91_pm_data.memctrl = of_data->ramc_type;
+>  
+> +		at91_pm_data.mpddrc_id[idx] = at91_of_get_ddr_id(np, "mpddr");
+> +		at91_pm_data.ddrck_id = at91_of_get_ddr_id(np, "ddrck");
+> +
 
-	Joerg
+Why do you need these here?
 
+Surely the logic for poking any clocks should live in the relevant
+clock controller drivers?
+
+Mark.
