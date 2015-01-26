@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019AbbAZVau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:30:50 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:40384 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890AbbAZVas (ORCPT
+	id S1757191AbbAZVdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:33:13 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:60233 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756848AbbAZVdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:30:48 -0500
+	Mon, 26 Jan 2015 16:33:11 -0500
+Date: Mon, 26 Jan 2015 21:32:40 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Johannes Stezenbach <js@sig21.net>, arnd@arndb.de, ebiederm@xmission.com,
+        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
+Subject: Re: [PATCH v3 00/13] Add kdbus implementation
+Message-ID: <20150126213240.63d07005@lxorguk.ukuu.org.uk>
+In-Reply-To: <20150120011359.GE865@kroah.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+	<20150119180642.GA27957@sig21.net>
+	<20150119183806.GA8479@kroah.com>
+	<20150119201906.GA337@sig21.net>
+	<20150119203155.GA15441@kroah.com>
+	<20150119233812.GA1874@sig21.net>
+	<20150120011359.GE865@kroah.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA5RdtLyRiYerG=u--bRZQ87qU0EGf7kGPMiQs9_KB3hRw@mail.gmail.com>
-References: <CA+5PVA7rVy6Li_1haj1QmGG0D6avLB5Xej=2YGt6K-11kKHR5A@mail.gmail.com>
-	<CA+5PVA4bs6CYU8MHn1JqBjnb-5wYJT2Tjqa65=v2uSPL8c7dYw@mail.gmail.com>
-	<CA+55aFxbY21vBbPs5qCFPT1HSBbaeS+Z2Fr9So1r3rXrMWe_ZQ@mail.gmail.com>
-	<CA+5PVA5RdtLyRiYerG=u--bRZQ87qU0EGf7kGPMiQs9_KB3hRw@mail.gmail.com>
-Date: Mon, 26 Jan 2015 13:30:47 -0800
-X-Google-Sender-Auth: JC113fG5nyz5xGiwbq1ur7eS1Ss
-Message-ID: <CA+55aFwa1-pudNus+r=5EghpGkm33h--GZNND5UHt=ZKvP15Xw@mail.gmail.com>
-Subject: Re: patch-2.7.3 no longer applies relative symbolic link patches
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Junio C Hamano <gitster@pobox.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        twaugh@redhat.com, Git Mailing List <git@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 1:07 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->
-> Or did I miss a way that git-apply can take a git patch and apply it
-> to a tree that isn't a git repo?
+On Tue, 20 Jan 2015 09:13:59 +0800
+> That's because people have not done anything really needing performance
+> on the desktop over D-Bus in the past due to how slow the current
+> implementation is. 
 
-Exactly. "git apply" works as a straight "patch" replacement outside
-of a git repository. It doesn't actually need a git tree to work.
+The desktop is a performance critical environment, even though certain
+desktop developers think 2GB is a bit small to run an application and
+5000 dbus transactions to start something is "ok"
 
-(Of course, "git apply" is _not_ a "patch" replacement in the general
-sense. It only applies context diffs - preferentially git style ones -
- so no old-style patches etc need apply. And it's not
-replacement-compatible in a syntax sense either, in that while many of
-the options are the same, not all are etc etc).
-
-                               Linus
+Alan
