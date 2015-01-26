@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952AbbAZLFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:05:36 -0500
-Received: from mail.linn.co.uk ([195.59.102.251]:55741 "EHLO mail.linn.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752075AbbAZLFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:05:34 -0500
-Message-ID: <54C61F7B.1000407@linn.co.uk>
-Date: Mon, 26 Jan 2015 11:05:31 +0000
-From: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1753731AbbAZLK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:10:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56186 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbbAZLKZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 06:10:25 -0500
+Date: Mon, 26 Jan 2015 11:10:50 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        david.vrabel@citrix.com, stable@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH 2/2] swiotlb-xen: pass dev_addr to
+ swiotlb_tbl_unmap_single
+Message-ID: <20150126111050.GA2413@charon>
+References: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com>
+ <1416589220-7720-2-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1422269607.27469.5.camel@citrix.com>
 MIME-Version: 1.0
-To: Stathis Voukelatos <stathisv70@gmail.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
-References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk> <1817503.588aons8oi@radagast>
-In-Reply-To: <1817503.588aons8oi@radagast>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.2.10.219]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1422269607.27469.5.camel@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 26, 2015 at 10:53:27AM +0000, Ian Campbell wrote:
+> On Fri, 2014-11-21 at 17:00 +0000, Stefano Stabellini wrote:
+> > Need to pass the pointer within the swiotlb internal buffer to the
+> > swiotlb library, that in the case of xen_unmap_single is dev_addr, not
+> > paddr.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > CC: konrad.wilk@oracle.com
+> > CC: stable@vger.kernel.org
+> 
+> This went into mainline as 2c3fc8d26dd0 "swiotlb-xen: pass dev_addr to
+> swiotlb_tbl_unmap_single" but was reverted in dbdd74763f1f.
+> 
+> However it seems that 2c3fc8d26dd0 has made it into at least some stable
+> kernel trees:
+>         v3.18.3 as 2129c43d41e9
+>         v3.16.7-ckt4 as 94ab279b0c9a
+>         v3.14.29 as 3394691d34fc
+>         v3.10.65 as 81cb80b578c5
+> so it should be reverted there too. This is causing issues in the field
+> such as https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=776237.
+> 
+> v3.17, v3.15, v3.13.11-ckt14, v3.12.x, v3.11.x appear clean, I stopped
+> going backwards at v3.10.
+> 
 
-On 23/01/15 18:12, James Hogan wrote:
->> diff --git a/drivers/net/pkt-sniffer/Kconfig 
->> b/drivers/net/pkt-sniffer/Kconfig
->> new file mode 100644
->> index 0000000..26b4f98
->> --- /dev/null
->> +++ b/drivers/net/pkt-sniffer/Kconfig
->> @@ -0,0 +1,23 @@
->> +menuconfig PKT_SNIFFER
->> +    tristate "Linn packet sniffer support"
-> Should the kconfig symbol have linn in the name, or should the prompt
-> not have lin in the name?
+Thanks a lot, Ian.  I'll queue commit dbdd74763f1f for the next 3.16
+kernel release.
 
-No it should not actually, as this option enables the core (framework) 
-driver.
-Anybody could add a backend using the framework. Will change the text.
+Cheers,
+--
+Luís
 
->> +
->> +config PKT_SNIFFER_ETHER
->> +    tristate "Ethernet packet sniffer"
->> +    depends on MIPS
-> worth adding || COMPILE_TEST to get compile coverage on x86 allmodconfig
-> builds, or does it have hard dependencies on the MIPS arch?
->
-
-No hard dependencies on MIPS arch. Will change as you suggest.
-Will implement your other recommendations too in the next version
-of the patchset.
-
-Thank you,
-Stathis
-
+> Cheers,
+> Ian.
+> 
+> > ---
+> >  drivers/xen/swiotlb-xen.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+> > index 810ad41..5ea1e3c 100644
+> > --- a/drivers/xen/swiotlb-xen.c
+> > +++ b/drivers/xen/swiotlb-xen.c
+> > @@ -451,7 +451,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
+> >  
+> >  	/* NOTE: We use dev_addr here, not paddr! */
+> >  	if (is_xen_swiotlb_buffer(dev_addr)) {
+> > -		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
+> > +		swiotlb_tbl_unmap_single(hwdev, dev_addr, size, dir);
+> >  		return;
+> >  	}
+> >  
+> 
+> 
