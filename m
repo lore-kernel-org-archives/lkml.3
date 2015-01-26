@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbbAZKFC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:05:02 -0500
-Received: from mail.linn.co.uk ([195.59.102.251]:59780 "EHLO mail.linn.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754118AbbAZKE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:04:59 -0500
-X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jan 2015 05:04:58 EST
-Message-ID: <54C60DB8.1060900@linn.co.uk>
-Date: Mon, 26 Jan 2015 09:49:44 +0000
-From: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1754106AbbAZJuo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:50:44 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:49772 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910AbbAZJun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 04:50:43 -0500
+Message-ID: <54C60DEF.7090709@linaro.org>
+Date: Mon, 26 Jan 2015 10:50:39 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>,
-        Stathis Voukelatos <stathisv70@gmail.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "abrestic@chromium.org" <abrestic@chromium.org>
-Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
-References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk> <54C22E68.1080601@redhat.com>
-In-Reply-To: <54C22E68.1080601@redhat.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.2.10.219]
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: heiko@sntech.de, devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-rockchip@lists.infradead.org
+Subject: Re: [PATCH V2] clockevents: rockchip: Add rockchip timer for rk3288
+References: <1422178979-12382-1-git-send-email-daniel.lezcano@linaro.org> <alpine.DEB.2.11.1501261041580.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501261041580.5526@nanos>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/26/2015 10:43 AM, Thomas Gleixner wrote:
+> On Sun, 25 Jan 2015, Daniel Lezcano wrote:
+>> +static inline void rk_timer_set_mode(enum clock_event_mode mode,
+>> +				     struct clock_event_device *ce)
+>> +{
+>> +	switch (mode) {
+>> +	case CLOCK_EVT_MODE_PERIODIC:
+>> +		rk_timer_disable(ce);
+>> +		rk_timer_update_counter(rk_timer(ce)->freq / HZ - 1, ce);
+>> +		rk_timer_enable(ce, TIMER_MODE_FREE_RUNNING);
+>
+> Missing break. You disable the timer again right away ...
 
-On 23/01/15 11:20, Daniel Borkmann wrote:
-> On 01/23/2015 11:07 AM, Stathis Voukelatos wrote:
->> This patch adds support the Ethernet Packet Sniffer H/W module
->> developed by Linn Products Ltd and found in the IMG Pistachio SoC.
->> The module allows Ethernet packets to be parsed, matched against
->> a user-defined pattern and timestamped. It sits between a 100M
->> Ethernet MAC and PHY and is completely passive with respect to
->> Ethernet frames.
->>
->> Matched packet bytes and timestamp values are returned through a
->> FIFO. Timestamps are provided to the module through an externally
->> generated Gray-encoded counter.
->>
->> The command pattern for packet matching is stored in module RAM
->> and consists of a sequence of 16-bit entries. Each entry includes
->> an 8-bit command code and and 8-bit data value. Valid command
->> codes are:
->> 0 - Don't care
->> 1 - Match: packet data must match command string byte
->> 2 - Copy: packet data will be copied to FIFO
->> 3 - Match/Stamp: if packet data matches string byte, a timestamp
->>                    is copied into the FIFO
->> 4 - Copy/Done: packet data will be copied into the FIFO.
->>                  This command terminates the command string.
->>
->> The driver consists of two modules:
->> - Core: it provides an API to user space using the Generic Netlink
->>           framework. Specific backend implementations, like the
->>           Ethernet Packet Sniffer, register one or more channels
->>           with the Core. For each channel a Genl family is created.
->>           User space can access a channel by sending Genl messages
->>           to the Genl family associated with the channel. Packet
->>           matching events are multicast.
->>
->> - Ethernet Packet Sniffer backend: provides the driver for the
->>           Linn Ethernet Packet Sniffer H/W modules.
->>
->> The split between a core and backend modules allows software-only
->> implementations to be added for platforms where no H/W support
->> is available.
->>
->> Based on 3.19-rc5
->>
->> Signed-off-by: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
-> Please have a look at packet sockets, they offer already all the
-> functionality (if not more) your driver interface to the user space
-> resembles, are transparent to the underlying hardware, and easily
-> can cope with 100Mbit.
->
-> If I understand this correctly, you are effectively introducing a
-> parallel API *next* to packet sockets to user space that we have to
-> maintain forever ...
->
-> Thanks !
->
+Oops :)
 
-Hello Daniel. Thank you for your feedback.
-Packet sockets could also be used for the driver interface to
-user space, however I think that both approaches would require the same
-amount of maintenance. We need to maintain a protocol consisting of
-a set of messages or commands that user space can use to communicate
-with the driver in order to configure the H/W and retrieve results.
-We could use packet sockets to send those messages  too, but I thought
-netlink already provides a message exchange framework that we could
-make use of.
+Thanks for spotting this. I figured out why when I tested the timer, 
+that worked: it ends up in any case in the noop ONESHOT/RESUME's break.
+
+Fixed.
+
+>> +	case CLOCK_EVT_MODE_ONESHOT:
+>> +	case CLOCK_EVT_MODE_RESUME:
+>> +		break;
+>> +	case CLOCK_EVT_MODE_UNUSED:
+>> +	case CLOCK_EVT_MODE_SHUTDOWN:
+>> +		rk_timer_disable(ce);
+>> +		break;
+>> +	}
+>> +}
+>> +
+>> +static irqreturn_t rk_timer_interrupt(int irq, void *dev_id)
+>> +{
+>> +	struct clock_event_device *ce = dev_id;
+>> +
+>> +	rk_timer_interrupt_clear(ce);
+>> +
+>> +	if (ce->mode == CLOCK_EVT_MODE_ONESHOT) {
+>> +		rk_timer_disable(ce);
+>> +	}
+>
+> No need for the braces here.
+
+Thanks ! Fixed.
+
+   -- Daniel
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
