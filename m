@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494AbbAZQRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:17:20 -0500
-Received: from xavier.telenet-ops.be ([195.130.132.52]:34091 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756217AbbAZQQh (ORCPT
+	id S1756437AbbAZQRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:17:15 -0500
+Received: from michel.telenet-ops.be ([195.130.137.88]:43386 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756246AbbAZQQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Jan 2015 11:16:37 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -23,9 +23,9 @@ Cc: Olof Johansson <olof@lixom.net>, Simon Horman <horms+renesas@verge.net.au>,
         linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v4 1/5] drivers: bus: Sort Kconfig entries alphabetically
-Date: Mon, 26 Jan 2015 17:16:13 +0100
-Message-Id: <1422288977-20353-2-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH v4 2/5] drivers: bus: Sort Makefile entries alphabetically
+Date: Mon, 26 Jan 2015 17:16:14 +0100
+Message-Id: <1422288977-20353-3-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
 References: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
@@ -45,79 +45,37 @@ v3:
 v2:
   - New.
 ---
- drivers/bus/Kconfig | 44 ++++++++++++++++++++++----------------------
- 1 file changed, 22 insertions(+), 22 deletions(-)
+ drivers/bus/Makefile | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-index b99729e368608bda..626960819e6df16c 100644
---- a/drivers/bus/Kconfig
-+++ b/drivers/bus/Kconfig
-@@ -4,6 +4,21 @@
+diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
+index 2973c18cbcc27816..3cfaf2c7f25ac4f0 100644
+--- a/drivers/bus/Makefile
++++ b/drivers/bus/Makefile
+@@ -2,16 +2,16 @@
+ # Makefile for the bus drivers.
+ #
  
- menu "Bus devices"
- 
-+config ARM_CCI
-+	bool "ARM CCI driver support"
-+	depends on ARM && OF && CPU_V7
-+	help
-+	  Driver supporting the CCI cache coherent interconnect for ARM
-+	  platforms.
++# Interconnect bus drivers for ARM platforms
++obj-$(CONFIG_ARM_CCI)		+= arm-cci.o
++obj-$(CONFIG_ARM_CCN)		+= arm-ccn.o
 +
-+config ARM_CCN
-+	bool "ARM CCN driver support"
-+	depends on ARM || ARM64
-+	depends on PERF_EVENTS
-+	help
-+	  PMU (perf) driver supporting the ARM CCN (Cache Coherent Network)
-+	  interconnect.
-+
- config BRCMSTB_GISB_ARB
- 	bool "Broadcom STB GISB bus arbiter"
- 	depends on ARM || MIPS
-@@ -27,15 +42,6 @@ config MVEBU_MBUS
- 	  Driver needed for the MBus configuration on Marvell EBU SoCs
- 	  (Kirkwood, Dove, Orion5x, MV78XX0 and Armada 370/XP).
+ obj-$(CONFIG_BRCMSTB_GISB_ARB)	+= brcmstb_gisb.o
+-obj-$(CONFIG_IMX_WEIM)	+= imx-weim.o
+-obj-$(CONFIG_MVEBU_MBUS) += mvebu-mbus.o
+-obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
++obj-$(CONFIG_IMX_WEIM)		+= imx-weim.o
++obj-$(CONFIG_MVEBU_MBUS) 	+= mvebu-mbus.o
  
--config OMAP_OCP2SCP
--	tristate "OMAP OCP2SCP DRIVER"
--	depends on ARCH_OMAP2PLUS
--	help
--	  Driver to enable ocp2scp module which transforms ocp interface
--	  protocol to scp protocol. In OMAP4, USB PHY is connected via
--	  OCP2SCP and in OMAP5, both USB PHY and SATA PHY is connected via
--	  OCP2SCP.
+ # Interconnect bus driver for OMAP SoCs.
+ obj-$(CONFIG_OMAP_INTERCONNECT)	+= omap_l3_smx.o omap_l3_noc.o
+ 
+-# Interconnect bus drivers for ARM platforms
+-obj-$(CONFIG_ARM_CCI)		+= arm-cci.o
+-obj-$(CONFIG_ARM_CCN)		+= arm-ccn.o
 -
- config OMAP_INTERCONNECT
- 	tristate "OMAP INTERCONNECT DRIVER"
- 	depends on ARCH_OMAP2PLUS
-@@ -43,20 +49,14 @@ config OMAP_INTERCONNECT
- 	help
- 	  Driver to enable OMAP interconnect error handling driver.
- 
--config ARM_CCI
--	bool "ARM CCI driver support"
--	depends on ARM && OF && CPU_V7
--	help
--	  Driver supporting the CCI cache coherent interconnect for ARM
--	  platforms.
--
--config ARM_CCN
--	bool "ARM CCN driver support"
--	depends on ARM || ARM64
--	depends on PERF_EVENTS
-+config OMAP_OCP2SCP
-+	tristate "OMAP OCP2SCP DRIVER"
-+	depends on ARCH_OMAP2PLUS
- 	help
--	  PMU (perf) driver supporting the ARM CCN (Cache Coherent Network)
--	  interconnect.
-+	  Driver to enable ocp2scp module which transforms ocp interface
-+	  protocol to scp protocol. In OMAP4, USB PHY is connected via
-+	  OCP2SCP and in OMAP5, both USB PHY and SATA PHY is connected via
-+	  OCP2SCP.
- 
- config VEXPRESS_CONFIG
- 	bool "Versatile Express configuration bus"
++obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
+ obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o
 -- 
 1.9.1
 
