@@ -1,116 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411AbbAZKPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:15:21 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:36188 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635AbbAZKPN (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Mon, 26 Jan 2015 05:15:13 -0500
-Message-ID: <1422267302.24914.15.camel@stgolabs.net>
-Subject: [PATCH] drivers/staging: use current->state helpers
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <dave@stgolabs.net>,
-        driverdev-devel@linuxdriverproject.org
-Date: Mon, 26 Jan 2015 02:15:02 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755620AbbAZKSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:18:17 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:57371 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755386AbbAZKPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:15:18 -0500
+Date: Mon, 26 Jan 2015 12:15:11 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 2/2] clocksource: driver for Conexant Digicolor SoC
+ timer
+Message-ID: <20150126101511.GC3148@tarshish>
+References: <cover.1422256855.git.baruch@tkos.co.il>
+ <d2d06d04f8ee8acb62e7748b42c3177229de478a.1422256855.git.baruch@tkos.co.il>
+ <54C60C4F.50507@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C60C4F.50507@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call __set_current_state() instead of assigning the new state directly.
-These interfaces also aid CONFIG_DEBUG_ATOMIC_SLEEP environments,
-keeping track of who changed the state.
+Hi Daniel,
 
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
----
- drivers/staging/comedi/drivers/me_daq.c   | 2 +-
- drivers/staging/dgnc/dgnc_utils.c         | 2 +-
- drivers/staging/panel/panel.c             | 2 +-
- drivers/staging/speakup/selection.c       | 2 +-
- drivers/staging/unisys/include/timskmod.h | 4 ++--
- 5 files changed, 6 insertions(+), 6 deletions(-)
+On Mon, Jan 26, 2015 at 10:43:43AM +0100, Daniel Lezcano wrote:
+[...]
+> >+static struct dc_dev_t {
+> >+	void __iomem *timer_base;
+> >+	u32 ticks_per_jiffy;
+> >+} dc_dev;
+> 
+> Hi Baruch,
+> 
+> your code is valid but I think there is a misunderstanding when we talked
+> about the encapsulation.
+> 
+> I was expecting something like:
+> 
+> static struct digicolor_timer {
+> 	void __iomem *base;
+> 	u32 ticks_per_jiffy;
+> 	int channel;
+> 	struct clock_event_device ce;
+> };
+> 
+> struct digicolor_timer *dg_timer(struct clock_event_device *ce)
+> {
+> 	return container_of(ce, struct digicolor_timer, ce);
+> }
+> 
+> So the timer could be accessed directly from the clock_event_device
+> structure. The exception is the 'sched_read' and the init function where you
+> will have to address directly the global variable.
+> 
+> Perhaps, that would be nice if you take the opportunity to encapsulate the
+> enable/disable functions.
+> 
+> static inline void dg_timer_disable(struct clock_event_device *ce)
+> {
+> 	struct digital_timer *dt = dg_timer(ce);
+> 	writeb(CONTROL_DISABLE, dt->base + CONTROL(dt->channel));	
+> }
+> 
+> static inline void dg_timer_enable(struct clock_event_device *ce, int mode)
+> {
+> 	struct digital_timer *dt = dg_timer(ce);
+> 	writeb(CONTROL_ENABLE | mode, dt->base, CONTROL(dt->channel));
+> }
+> 
+> >+
+> >+static void digicolor_clkevt_mode(enum clock_event_mode mode,
+> >+				  struct clock_event_device *clk)
+> 
+> IMO, 'clk' argument name is confusing. I would suggest to use 'ce' or
+> whatever.
+> 
+> >+{
+> >+	switch (mode) {
+> >+	case CLOCK_EVT_MODE_PERIODIC:
+> >+		writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_C));
+> >+		writel(dc_dev.ticks_per_jiffy,
+> >+		       dc_dev.timer_base + COUNT(TIMER_C));
+> >+		writeb(CONTROL_ENABLE | CONTROL_MODE_PERIODIC,
+> >+		       dc_dev.timer_base + CONTROL(TIMER_C));
+> 
+> Becomes:
+> 
+> 		dg_timer_disable(ce);
+> 		dg_timer_enable(ce, CONTROL_MODE_PERIODIC);
+> 
+> ...
+> 
+> >+		break;
+> >+	case CLOCK_EVT_MODE_ONESHOT:
+> >+		writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_C));
+> >+		writeb(CONTROL_ENABLE | CONTROL_MODE_ONESHOT,
+> >+		       dc_dev.timer_base + CONTROL(TIMER_C));
+> 
+> 
+> Becomes:
+> 		dg_timer_disable(ce);
+> 		dg_timer_enable(ce, CONTROL_MODE_ONESHOT);
+> 	
+> 
+> >+		break;
+> >+	case CLOCK_EVT_MODE_UNUSED:
+> >+	case CLOCK_EVT_MODE_SHUTDOWN:
+> >+	default:
+> >+		writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_C));
+> 
+> Becomes:
+> 		dg_timer_disable(ce);
+> 
+> >+		break;
+> >+	}
+> >+}
+> >+
+> >+static int digicolor_clkevt_next_event(unsigned long evt,
+> >+				       struct clock_event_device *unused)
+> >+{
+> >+	writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_C));
+> >+	writel(evt, dc_dev.timer_base + COUNT(TIMER_C));
+> >+	writeb(CONTROL_ENABLE | CONTROL_MODE_ONESHOT,
+> >+	       dc_dev.timer_base + CONTROL(TIMER_C));
+> 
+> Becomes:
+> 	dg_timer_disable(ce);
+> 	writel(evt, dg_timer(ce)->base + COUNT(dg_timer(ce)->base));
+> 	dg_timer_enable(ce, CONTROL_MODE_ONESHOT);
+> >+	return 0;
+> >+}
+> >+
+> >+static struct clock_event_device digicolor_clockevent = {
+> >+	.name = "digicolor_tick",
+> >+	.rating = 340,
+> >+	.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
+> >+	.set_mode = digicolor_clkevt_mode,
+> >+	.set_next_event = digicolor_clkevt_next_event,
+> >+};
+> 
+> 
+> struct digicolor_timer dg_timer = {
+> 	
+> 	.ce = {
+> 		.name = "digicolor_tick",
+> 		.rating = 340,
+> 		.features = CLOCK_EVT_FEAT_PERIODIC |
+> 				CLOCK_EVT_FEAT_ONESHOT,
+> 		.set_mode = digicolor_clkevt_mode,
+> 		.set_next_event = digicolor_clkevt_next_event,
+> 	},
+> 	.channel = TIMER_C,
+> };
+> 
+> What do you think ?
 
-diff --git a/drivers/staging/comedi/drivers/me_daq.c b/drivers/staging/comedi/drivers/me_daq.c
-index bffc161..92e2352 100644
---- a/drivers/staging/comedi/drivers/me_daq.c
-+++ b/drivers/staging/comedi/drivers/me_daq.c
-@@ -174,7 +174,7 @@ struct me_private_data {
- 
- static inline void sleep(unsigned sec)
- {
--	current->state = TASK_INTERRUPTIBLE;
-+	__set_current_state(TASK_INTERRUPTIBLE);
- 	schedule_timeout(sec * HZ);
- }
- 
-diff --git a/drivers/staging/dgnc/dgnc_utils.c b/drivers/staging/dgnc/dgnc_utils.c
-index 61efc13..80b5133 100644
---- a/drivers/staging/dgnc/dgnc_utils.c
-+++ b/drivers/staging/dgnc/dgnc_utils.c
-@@ -12,7 +12,7 @@
-  */
- int dgnc_ms_sleep(ulong ms)
- {
--	current->state = TASK_INTERRUPTIBLE;
-+	__set_current_state(TASK_INTERRUPTIBLE);
- 	schedule_timeout((ms * HZ) / 1000);
- 	return signal_pending(current);
- }
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 9c68ccf..6ed35b6 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -780,7 +780,7 @@ static void long_sleep(int ms)
- 	if (in_interrupt()) {
- 		mdelay(ms);
- 	} else {
--		current->state = TASK_INTERRUPTIBLE;
-+		__set_current_state(TASK_INTERRUPTIBLE);
- 		schedule_timeout((ms * HZ + 999) / 1000);
- 	}
- }
-diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
-index 507fc9a..a031570 100644
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -157,7 +157,7 @@ static void __speakup_paste_selection(struct work_struct *work)
- 		pasted += count;
- 	}
- 	remove_wait_queue(&vc->paste_wait, &wait);
--	current->state = TASK_RUNNING;
-+	__set_current_state(TASK_RUNNING);
- 
- 	tty_buffer_unlock_exclusive(&vc->port);
- 	tty_ldisc_deref(ld);
-diff --git a/drivers/staging/unisys/include/timskmod.h b/drivers/staging/unisys/include/timskmod.h
-index cff7983..4019a0d 100644
---- a/drivers/staging/unisys/include/timskmod.h
-+++ b/drivers/staging/unisys/include/timskmod.h
-@@ -133,7 +133,7 @@
-  *  x - the number of seconds to sleep.
-  */
- #define SLEEP(x)					     \
--	do { current->state = TASK_INTERRUPTIBLE;	     \
-+	do { __set_current_state(TASK_INTERRUPTIBLE);        \
- 		schedule_timeout((x)*HZ);		     \
- 	} while (0)
- 
-@@ -141,7 +141,7 @@
-  *  x - the number of jiffies to sleep.
-  */
- #define SLEEPJIFFIES(x)						    \
--	do { current->state = TASK_INTERRUPTIBLE;		    \
-+	do { __set_current_state(TASK_INTERRUPTIBLE);		    \
- 		schedule_timeout(x);				    \
- 	} while (0)
- 
+OK. I'll give it a try.
+
+Thanks for your prompt response and thorough review.
+
+baruch
+
 -- 
-2.1.2
-
-
-
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
