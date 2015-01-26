@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611AbbAZM5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:57:34 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:44246 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536AbbAZM52 (ORCPT
+	id S1754628AbbAZNAZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:00:25 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:44019 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829AbbAZNAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:57:28 -0500
-Message-ID: <54C639B5.7050106@cogentembedded.com>
-Date: Mon, 26 Jan 2015 15:57:25 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Mon, 26 Jan 2015 08:00:23 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: cleanup/soc for 3.20 #3 (bis)
+Date: Mon, 26 Jan 2015 14:00:30 +0100
+Message-ID: <1422277230-25211-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20150123230609.GV20896@quad.lixom.net>
+References: <20150123230609.GV20896@quad.lixom.net>
+Organization: atmel
 MIME-Version: 1.0
-To: Wenyou Yang <wenyou.yang@atmel.com>, nicolas.ferre@atmel.com,
-        linux@arm.linux.org.uk
-CC: sylvain.rochet@finsecur.com, linux-kernel@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, peda@axentia.se,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 04/12] pm: at91: move the copying the sram function
- to the sram initializationi phase
-References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com> <1422265201-23110-1-git-send-email-wenyou.yang@atmel.com>
-In-Reply-To: <1422265201-23110-1-git-send-email-wenyou.yang@atmel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 1/26/2015 12:40 PM, Wenyou Yang wrote:
+Arnd, Olof, Kevin,
 
-> To decrease the suspend time, move the copying the sram function
-> to the sram initialization phase, instead of every time go to suspend.
+This is the rework of my previous pull-request with modifications advised by
+Olof.
+This is a batch of cleanup/soc modifications that you may also stack on top of
+your "soc" branch as the previous one. It stabilizes a little bit our cleanup
+action before going further.
+Another one may be proposed before the merge-window opens.
 
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->   arch/arm/mach-at91/pm.c |    7 +++----
->   1 file changed, 3 insertions(+), 4 deletions(-)
+Thanks, best regards,
 
-> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-> index 5dd4e41..409185e 100644
-> --- a/arch/arm/mach-at91/pm.c
-> +++ b/arch/arm/mach-at91/pm.c
-> @@ -161,10 +161,6 @@ static int at91_pm_enter(suspend_state_t state)
->   			 * turning off the main oscillator; reverse on wakeup.
->   			 */
->   			if (slow_clock) {
-> -#ifdef CONFIG_AT91_SLOW_CLOCK
-> -				/* copy slow_clock handler to SRAM, and call it */
-> -				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
-> -#endif
->   				slow_clock(at91_pmc_base, at91_ramc_base[0],
->   					   at91_ramc_base[1],
->   					   at91_pm_data.memctrl);
-> @@ -272,6 +268,9 @@ static void __init at91_pm_sram_init(void)
->   	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
->   	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
->
-> +	/* Copy slow_clock handler to SRAM, and call it */
+The following changes since commit 29ee506d0d56f6d39cc237de2512f9cb5629cbf7:
 
-    You're not calling it here.
+  ARM: at91: move at91rm9200_idle() to clk/at91/pmc.c (2015-01-16 18:08:42 +0100)
 
-> +	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
-> +
->   put_node:
->   	of_node_put(node);
->   }
+are available in the git repository at:
 
-WBR, Sergei
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup3
 
+for you to fetch changes up to 9726b6892beeaa736610370429a23a481d1b133e:
+
+  ARM: at91: pm: remove warning to remove SOC_AT91SAM9263 usage (2015-01-26 13:44:19 +0100)
+
+----------------------------------------------------------------
+Third batch of cleanup/soc for 3.20:
+- several fixes and adjustments following the last cleanup batch
+- removal of some unused Kconfig options
+- slight PM and pm_idle rework to ease future rework
+- removal of unneeded mach/system_rev.h
+
+----------------------------------------------------------------
+Alexandre Belloni (6):
+      ARM: at91: mark const init data with __initconst instead of __initdata
+      ARM: at91: fix sam9n12 and sam9x5 arm_pm_idle
+      ARM: at91: sam9: set arm_pm_idle from sam9_dt_device_init
+      ARM: at91: stop using HAVE_AT91_DBGUx
+      ARM: at91: remove unused mach/system_rev.h
+      ARM: at91: pm: remove warning to remove SOC_AT91SAM9263 usage
+
+Nicolas Ferre (3):
+      ARM: at91: fix Kconfig.debug by adding DEBUG_AT91_UART option
+      ARM: at91: fix PM initialization for newer SoCs
+      ARM: at91: fix ordering of SRAM and PM initialization
+
+ arch/arm/Kconfig.debug                       | 16 +++++++++-----
+ arch/arm/mach-at91/Kconfig                   | 19 ----------------
+ arch/arm/mach-at91/at91sam9260.c             |  6 -----
+ arch/arm/mach-at91/at91sam9261.c             |  6 -----
+ arch/arm/mach-at91/at91sam9263.c             |  6 -----
+ arch/arm/mach-at91/at91sam9g45.c             |  5 -----
+ arch/arm/mach-at91/at91sam9rl.c              |  6 -----
+ arch/arm/mach-at91/board-dt-rm9200.c         |  6 ++---
+ arch/arm/mach-at91/board-dt-sam9.c           | 33 +++++++++++++++++++++++++---
+ arch/arm/mach-at91/board-dt-sama5.c          |  2 +-
+ arch/arm/mach-at91/generic.h                 |  2 ++
+ arch/arm/mach-at91/include/mach/system_rev.h | 27 -----------------------
+ arch/arm/mach-at91/pm.c                      |  7 ++++++
+ arch/arm/mach-at91/pm_slowclock.S            |  9 --------
+ 14 files changed, 54 insertions(+), 96 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/system_rev.h
+
+-- 
+Nicolas Ferre
