@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874AbbAZKUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:20:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59671 "EHLO mx1.redhat.com"
+	id S1754890AbbAZKON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:14:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46576 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755291AbbAZKPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:15:01 -0500
+	id S1752812AbbAZKOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:14:09 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,17 +19,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 18/36] perf build: Add zlib objects building
-Date: Mon, 26 Jan 2015 11:12:18 +0100
-Message-Id: <1422267156-13873-19-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 19/36] perf build: Add perf.o object building
+Date: Mon, 26 Jan 2015 11:12:19 +0100
+Message-Id: <1422267156-13873-20-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 References: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the zlib objects building under build framework
-to be included in the libperf build object.
+Move the perf object building under build framework
+to be included in the perf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Tested-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
@@ -46,50 +46,73 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile.perf   | 4 ----
- tools/perf/config/Makefile | 1 +
- tools/perf/util/Build      | 1 +
- 3 files changed, 2 insertions(+), 4 deletions(-)
+ tools/perf/Build         |  3 +++
+ tools/perf/Makefile.perf | 16 +++++-----------
+ 2 files changed, 8 insertions(+), 11 deletions(-)
 
+diff --git a/tools/perf/Build b/tools/perf/Build
+index 133ec649e5a2..976e03849f6d 100644
+--- a/tools/perf/Build
++++ b/tools/perf/Build
+@@ -25,12 +25,15 @@ perf-$(CONFIG_LIBELF) += builtin-probe.o
+ perf-y += bench/
+ perf-y += tests/
+ 
++perf-y += perf.o
++
+ paths += -DPERF_HTML_PATH="BUILD_STR($(htmldir_SQ))"
+ paths += -DPERF_INFO_PATH="BUILD_STR($(infodir_SQ))"
+ paths += -DPERF_MAN_PATH="BUILD_STR($(mandir_SQ))"
+ 
+ CFLAGS_builtin-help.o      += $(paths)
+ CFLAGS_builtin-timechart.o += $(paths)
++CFLAGS_perf.o              += -DPERF_HTML_PATH="BUILD_STR($(htmldir_SQ))" -include $(OUTPUT)PERF-VERSION-FILE
+ 
+ libperf-y += util/
+ libperf-y += arch/
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 0584e99b713d..2a109fdb4a1f 100644
+index 2a109fdb4a1f..c68ff5fa8504 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -349,10 +349,6 @@ install-gtk: $(OUTPUT)libperf-gtk.so
- 		$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
- endif
+@@ -376,16 +376,11 @@ PERF_IN := $(OUTPUT)perf-in.o
+ export srctree OUTPUT RM CC LD AR CFLAGS V BISON FLEX
+ build := -f $(srctree)/tools/build/Makefile.build dir=. obj
  
--ifndef NO_ZLIB
--  LIB_OBJS += $(OUTPUT)util/zlib.o
--endif
+-$(PERF_IN): $(OUTPUT)common-cmds.h FORCE
++$(PERF_IN): $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h FORCE
+ 	@$(MAKE) $(build)=perf
+ 
+-$(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -include $(OUTPUT)PERF-VERSION-FILE \
+-		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+-		$(CFLAGS) -c $(filter %.c,$^) -o $@
 -
- ifdef ASCIIDOC8
-   export ASCIIDOC8
- endif
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index ed42f41111ba..a3bdaff9ee81 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -634,6 +634,7 @@ ifndef NO_ZLIB
-   ifeq ($(feature-zlib), 1)
-     CFLAGS += -DHAVE_ZLIB_SUPPORT
-     EXTLIBS += -lz
-+    $(call detected,CONFIG_ZLIB)
-   else
-     NO_ZLIB := 1
-   endif
-diff --git a/tools/perf/util/Build b/tools/perf/util/Build
-index f69843218228..459918872f07 100644
---- a/tools/perf/util/Build
-+++ b/tools/perf/util/Build
-@@ -91,6 +91,7 @@ libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
- libperf-y += scripting-engines/
+-$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS) $(PERF_IN)
+-	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
++$(OUTPUT)perf: $(BUILTIN_OBJS) $(PERFLIBS) $(PERF_IN)
++	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) \
+                $(BUILTIN_OBJS) $(PERF_IN) $(LIBS) -o $@
  
- libperf-$(CONFIG_PERF_REGS) += perf_regs.o
-+libperf-$(CONFIG_ZLIB) += zlib.o
+ $(GTK_IN): FORCE
+@@ -403,8 +398,7 @@ $(SCRIPTS) : % : %.sh
+ 	$(QUIET_GEN)$(INSTALL) '$@.sh' '$(OUTPUT)$@'
  
- CFLAGS_config.o   += -DETC_PERFCONFIG="BUILD_STR($(ETC_PERFCONFIG_SQ))"
- CFLAGS_exec_cmd.o += -DPERF_EXEC_PATH="BUILD_STR($(perfexecdir_SQ))" -DPREFIX="BUILD_STR($(prefix_SQ))"
+ # These can record PERF_VERSION
+-$(OUTPUT)perf.o perf.spec \
+-	$(SCRIPTS) \
++perf.spec $(SCRIPTS) \
+ 	: $(OUTPUT)PERF-VERSION-FILE
+ 
+ .SUFFIXES:
+@@ -659,7 +653,7 @@ config-clean:
+ 	@$(MAKE) -C config/feature-checks clean >/dev/null
+ 
+ clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
+-	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS)
++	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(LANG_BINDINGS)
+ 	@find . -name '*.o' -delete -o -name '\.*.cmd' -delete -o -name '\.*.d' -delete
+ 	@$(RM) .config-detected
+ 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
 -- 
 1.9.3
 
