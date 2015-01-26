@@ -1,234 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508AbbAZM4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:56:33 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:56028 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138AbbAZMzq (ORCPT
+	id S1755611AbbAZM5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:57:34 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:44246 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755536AbbAZM52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:55:46 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 3/3] slub: make dead caches discard free slabs immediately
-Date: Mon, 26 Jan 2015 15:55:29 +0300
-Message-ID: <42d95683e3c7f4bb00be4d777e2b334e8981d552.1422275084.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1422275084.git.vdavydov@parallels.com>
-References: <cover.1422275084.git.vdavydov@parallels.com>
+	Mon, 26 Jan 2015 07:57:28 -0500
+Message-ID: <54C639B5.7050106@cogentembedded.com>
+Date: Mon, 26 Jan 2015 15:57:25 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wenyou Yang <wenyou.yang@atmel.com>, nicolas.ferre@atmel.com,
+        linux@arm.linux.org.uk
+CC: sylvain.rochet@finsecur.com, linux-kernel@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, peda@axentia.se,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 04/12] pm: at91: move the copying the sram function
+ to the sram initializationi phase
+References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com> <1422265201-23110-1-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1422265201-23110-1-git-send-email-wenyou.yang@atmel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To speed up further allocations SLUB may store empty slabs in per
-cpu/node partial lists instead of freeing them immediately. This
-prevents per memcg caches destruction, because kmem caches created for a
-memory cgroup are only destroyed after the last page charged to the
-cgroup is freed.
+Hello.
 
-To fix this issue, this patch resurrects approach first proposed in [1].
-It forbids SLUB to cache empty slabs after the memory cgroup that the
-cache belongs to was destroyed. It is achieved by setting kmem_cache's
-cpu_partial and min_partial constants to 0 and tuning put_cpu_partial()
-so that it would drop frozen empty slabs immediately if cpu_partial = 0.
+On 1/26/2015 12:40 PM, Wenyou Yang wrote:
 
-The runtime overhead is minimal. From all the hot functions, we only
-touch relatively cold put_cpu_partial(): we make it call
-unfreeze_partials() after freezing a slab that belongs to an offline
-memory cgroup. Since slab freezing exists to avoid moving slabs from/to
-a partial list on free/alloc, and there can't be allocations from dead
-caches, it shouldn't cause any overhead. We do have to disable
-preemption for put_cpu_partial() to achieve that though.
+> To decrease the suspend time, move the copying the sram function
+> to the sram initialization phase, instead of every time go to suspend.
 
-The original patch was accepted well and even merged to the mm tree.
-However, I decided to withdraw it due to changes happening to the memcg
-core at that time. I had an idea of introducing per-memcg shrinkers for
-kmem caches, but now, as memcg has finally settled down, I do not see it
-as an option, because SLUB shrinker would be too costly to call since
-SLUB does not keep free slabs on a separate list. Besides, we currently
-do not even call per-memcg shrinkers for offline memcgs. Overall, it
-would introduce much more complexity to both SLUB and memcg than this
-small patch.
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>   arch/arm/mach-at91/pm.c |    7 +++----
+>   1 file changed, 3 insertions(+), 4 deletions(-)
 
-Regarding to SLAB, there's no problem with it, because it shrinks
-per-cpu/node caches periodically. Thanks to list_lru reparenting, we no
-longer keep entries for offline cgroups in per-memcg arrays (such as
-memcg_cache_params->memcg_caches), so we do not have to bother if a
-per-memcg cache will be shrunk a bit later than it could be.
+> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+> index 5dd4e41..409185e 100644
+> --- a/arch/arm/mach-at91/pm.c
+> +++ b/arch/arm/mach-at91/pm.c
+> @@ -161,10 +161,6 @@ static int at91_pm_enter(suspend_state_t state)
+>   			 * turning off the main oscillator; reverse on wakeup.
+>   			 */
+>   			if (slow_clock) {
+> -#ifdef CONFIG_AT91_SLOW_CLOCK
+> -				/* copy slow_clock handler to SRAM, and call it */
+> -				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+> -#endif
+>   				slow_clock(at91_pmc_base, at91_ramc_base[0],
+>   					   at91_ramc_base[1],
+>   					   at91_pm_data.memctrl);
+> @@ -272,6 +268,9 @@ static void __init at91_pm_sram_init(void)
+>   	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
+>   	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
+>
+> +	/* Copy slow_clock handler to SRAM, and call it */
 
-[1] http://thread.gmane.org/gmane.linux.kernel.mm/118649/focus=118650
+    You're not calling it here.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slab.c        |    2 +-
- mm/slab.h        |    2 +-
- mm/slab_common.c |   15 +++++++++++++--
- mm/slob.c        |    2 +-
- mm/slub.c        |   25 ++++++++++++++++++++-----
- 5 files changed, 36 insertions(+), 10 deletions(-)
+> +	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+> +
+>   put_node:
+>   	of_node_put(node);
+>   }
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 279c44d6d8e1..f0514df07b85 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2400,7 +2400,7 @@ static int __cache_shrink(struct kmem_cache *cachep)
- 	return (ret ? 1 : 0);
- }
- 
--void __kmem_cache_shrink(struct kmem_cache *cachep)
-+void __kmem_cache_shrink(struct kmem_cache *cachep, bool deactivate)
- {
- 	__cache_shrink(cachep);
- }
-diff --git a/mm/slab.h b/mm/slab.h
-index c036e520d2cf..041260197984 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -138,7 +138,7 @@ static inline unsigned long kmem_cache_flags(unsigned long object_size,
- #define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
- 
- int __kmem_cache_shutdown(struct kmem_cache *);
--void __kmem_cache_shrink(struct kmem_cache *);
-+void __kmem_cache_shrink(struct kmem_cache *, bool);
- void slab_kmem_cache_release(struct kmem_cache *);
- 
- struct seq_file;
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 6803639fdff0..472ab7fcffd4 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -549,10 +549,13 @@ void memcg_deactivate_kmem_caches(struct mem_cgroup *memcg)
- {
- 	int idx;
- 	struct memcg_cache_array *arr;
--	struct kmem_cache *s;
-+	struct kmem_cache *s, *c;
- 
- 	idx = memcg_cache_id(memcg);
- 
-+	get_online_cpus();
-+	get_online_mems();
-+
- 	mutex_lock(&slab_mutex);
- 	list_for_each_entry(s, &slab_caches, list) {
- 		if (!is_root_cache(s))
-@@ -560,9 +563,17 @@ void memcg_deactivate_kmem_caches(struct mem_cgroup *memcg)
- 
- 		arr = rcu_dereference_protected(s->memcg_params.memcg_caches,
- 						lockdep_is_held(&slab_mutex));
-+		c = arr->entries[idx];
-+		if (!c)
-+			continue;
-+
-+		__kmem_cache_shrink(c, true);
- 		arr->entries[idx] = NULL;
- 	}
- 	mutex_unlock(&slab_mutex);
-+
-+	put_online_mems();
-+	put_online_cpus();
- }
- 
- void memcg_destroy_kmem_caches(struct mem_cgroup *memcg)
-@@ -646,7 +657,7 @@ void kmem_cache_shrink(struct kmem_cache *cachep)
- {
- 	get_online_cpus();
- 	get_online_mems();
--	__kmem_cache_shrink(cachep);
-+	__kmem_cache_shrink(cachep, false);
- 	put_online_mems();
- 	put_online_cpus();
- }
-diff --git a/mm/slob.c b/mm/slob.c
-index 043a14b6ccbe..e63ff9d926dc 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -618,7 +618,7 @@ int __kmem_cache_shutdown(struct kmem_cache *c)
- 	return 0;
- }
- 
--void __kmem_cache_shrink(struct kmem_cache *c)
-+void __kmem_cache_shrink(struct kmem_cache *c, bool deactivate)
- {
- }
- 
-diff --git a/mm/slub.c b/mm/slub.c
-index c09d93dde40e..6f57824af019 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2007,6 +2007,7 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 	int pages;
- 	int pobjects;
- 
-+	preempt_disable();
- 	do {
- 		pages = 0;
- 		pobjects = 0;
-@@ -2040,6 +2041,14 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 
- 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
- 								!= oldpage);
-+	if (unlikely(!s->cpu_partial)) {
-+		unsigned long flags;
-+
-+		local_irq_save(flags);
-+		unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
-+		local_irq_restore(flags);
-+	}
-+	preempt_enable();
- #endif
- }
- 
-@@ -3368,7 +3377,7 @@ EXPORT_SYMBOL(kfree);
-  * being allocated from last increasing the chance that the last objects
-  * are freed in them.
-  */
--void __kmem_cache_shrink(struct kmem_cache *s)
-+void __kmem_cache_shrink(struct kmem_cache *s, bool deactivate)
- {
- 	int node;
- 	int i;
-@@ -3381,6 +3390,15 @@ void __kmem_cache_shrink(struct kmem_cache *s)
- 		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
- 	unsigned long flags;
- 
-+	if (deactivate) {
-+		/*
-+		 * Disable empty slabs caching. Used to avoid pinning offline
-+		 * memory cgroups by freeable kmem pages.
-+		 */
-+		s->cpu_partial = 0;
-+		s->min_partial = 0;
-+	}
-+
- 	if (!slabs_by_inuse) {
- 		/*
- 		 * Do not abort if we failed to allocate a temporary array.
-@@ -3392,9 +3410,6 @@ void __kmem_cache_shrink(struct kmem_cache *s)
- 
- 	flush_all(s);
- 	for_each_kmem_cache_node(s, node, n) {
--		if (!n->nr_partial)
--			continue;
--
- 		for (i = 0; i < objects; i++)
- 			INIT_LIST_HEAD(slabs_by_inuse + i);
- 
-@@ -3438,7 +3453,7 @@ static int slab_mem_going_offline_callback(void *arg)
- 
- 	mutex_lock(&slab_mutex);
- 	list_for_each_entry(s, &slab_caches, list)
--		__kmem_cache_shrink(s);
-+		__kmem_cache_shrink(s, false);
- 	mutex_unlock(&slab_mutex);
- 
- 	return 0;
--- 
-1.7.10.4
+WBR, Sergei
 
