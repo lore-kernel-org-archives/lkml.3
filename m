@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbbAZNmC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:42:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45660 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751910AbbAZNl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:41:57 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: devel@linuxdriverproject.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Drivers: hv: vmbus: fix crashes on hv_vmbus load/unload path
-References: <1421866929-20167-1-git-send-email-vkuznets@redhat.com>
-Date: Mon, 26 Jan 2015 14:41:50 +0100
-In-Reply-To: <1421866929-20167-1-git-send-email-vkuznets@redhat.com> (Vitaly
-	Kuznetsov's message of "Wed, 21 Jan 2015 20:02:06 +0100")
-Message-ID: <87y4opek0x.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755325AbbAZNnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:43:10 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53898 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480AbbAZNnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 08:43:07 -0500
+Date: Mon, 26 Jan 2015 14:43:04 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        trivial@kernel.org
+Subject: Re: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
+ PM/Trace: get rid of synchronous resume limit during PM trace)
+Message-ID: <20150126134304.GA7889@amd>
+References: <54C5CB77.4000109@linux.intel.com>
+ <27240C0AC20F114CBF8149A2696CBE4A01F1AD6A@SHSMSX101.ccr.corp.intel.com>
+ <20150126110516.GA2028@amd>
+ <2718950.eck1siDzqK@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2718950.eck1siDzqK@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vitaly Kuznetsov <vkuznets@redhat.com> writes:
+Document pm_tracing actually affecting suspend in non-trivial way.
 
-> It is possible (since 93e5bd06a953: "Drivers: hv: Make the vmbus driver
-> unloadable") to unload hv_vmbus driver if no other devices are connected.
-> 1aec169673d7: "x86: Hyperv: Cleanup the irq mess" fixed doulble interrupt
-> gate setup. However, if we try to unload hv_vmbus and then load it back
-> crashes in different places of vmbus driver occur on both unload and second
-> load paths. Address those I saw in my testing.
 
-It seems that newly introduced clockevent device (Drivers: hv: vmbus:
-Implement a clockevent device) makes it impossible to unload hv_vmbus
-module:
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-# rmmod hv_vmbus
-rmmod hv_vmbus
-rmmod: ERROR: Module hv_vmbus is in use
+---
 
-I'll try investigating before sending v2 without PATCH 2/3.
+On Mon 2015-01-26 14:41:02, Rafael J. Wysocki wrote:
+> On Monday, January 26, 2015 12:05:16 PM Pavel Machek wrote:
+> > On Mon 2015-01-26 10:39:04, Liu, Chuansheng wrote:
 
->
-> Not everything is fixed though. MCE was hit once on Generation2 instance and
-> I neither understand what caused it nor do I know the way to reproduce it.
-> Anyway, here is the log:
->
-> [  204.846255] mce: [Hardware Error]: CPU 0: Machine Check Exception: 4 Bank 0: b2000000c0020001
-> [  204.846675] mce: [Hardware Error]: TSC 6b5cd64bc8 
-> [  204.846675] mce: [Hardware Error]: PROCESSOR 0:306e4 TIME 1421944123 SOCKET 0 APIC 0 microcode ffffffff
-> [  204.846675] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [  204.846675] mce: [Hardware Error]: Machine check: Processor context corrupt
-> [  204.846675] Kernel panic - not syncing: Fatal Machine check
-> [  204.846675] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
-> [  204.846675] Rebooting in 30 seconds..
-> [  204.846675] ACPI MEMORY or I/O RESET_REG.
->
-> Vitaly Kuznetsov (3):
->   Drivers: hv: vmbus: avoid double kfree for device_obj
->   Drivers: hv: vmbus: introduce vmbus_acpi_remove
->   Drivers: hv: vmbus: teardown hv_vmbus_con workqueue and
->     vmbus_connection pages on shutdown
->
->  drivers/hv/channel_mgmt.c |  1 -
->  drivers/hv/connection.c   | 17 ++++++++++++-----
->  drivers/hv/hyperv_vmbus.h |  1 +
->  drivers/hv/vmbus_drv.c    | 16 ++++++++++++++++
->  4 files changed, 29 insertions(+), 6 deletions(-)
+> > > > > @@ -517,8 +517,7 @@ static int device_resume_noirq(struct device *dev,
+> > > > pm_message_t state, bool asyn
+> > > > >
+> > > > >  static bool is_async(struct device *dev)
+> > > > >  {
+> > > > > -	return dev->power.async_suspend && pm_async_enabled
+> > > > > -		&& !pm_trace_is_enabled();
+> > > > > +	return dev->power.async_suspend && pm_async_enabled;
+> > > > >  }
+> > > > >
+> > > > 
+> > > > Actually... whoever did the original patch was evil person. Changing
+> > > > behaviour when tracing is requested is evil, evil, evil. Git blame
+> > > > tells me
+> > > > 
+> > > > Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> > > > 
+> > > > went to the dark side.
+> > > 
+> > > Although I didn't get where is something wrong, but the is_async() is not created by my commit,
+> > > it is from commit (PM: Start asynchronous resume threads upfront), I just moved it ahead.
+> > > 
+> > > And like other phases, I added it into resum/suspend_noirq()...
+> > 
+> > I see, blame blamed wrong person. It looks like Rafael is evil:
+> > 
+> > commit 97df8c12995c5bac73e3bfeea4c5be155c1f4401
+> > Author: Rafael J. Wysocki <rjw@sisk.pl>
+> > Date:   Sat Jan 23 22:25:31 2010 +0100
+> > 
+> >     PM: Start asynchronous resume threads upfront
+> 
+> This only means we won't use asyc suspend/resume at all when the RTC-based
+> resume debug is enabled, because it wouldn't make sense (the RTC-based
+> debug requires strict ordering of callbacks between devices or we may find
+> that device A hanged the resume while actually device B that was running in
+> parallel with A did that).
+> 
+> And I shouldn't even need to explain this ...  Sad.
+
+Well, I forgot that pm_trace_is_enabled() is the simple, RTC based
+one, and believe it would be worth a comment...
+
+diff --git a/Documentation/power/s2ram.txt b/Documentation/power/s2ram.txt
+index 1bdfa04..4685aee 100644
+--- a/Documentation/power/s2ram.txt
++++ b/Documentation/power/s2ram.txt
+@@ -69,6 +69,10 @@ Reason for this is that the RTC is the only reliably available piece of
+ hardware during resume operations where a value can be set that will
+ survive a reboot.
+ 
++pm_trace is not compatible with asynchronous suspend, so it turns
++asynchronous suspend off (which may work around timing or
++ordering-sensitive bugs).
++
+ Consequence is that after a resume (even if it is successful) your system
+ clock will have a value corresponding to the magic number instead of the
+ correct date/time! It is therefore advisable to use a program like ntp-date
+
 
 -- 
-  Vitaly
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
