@@ -1,145 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233AbbAZXP4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:15:56 -0500
-Received: from mx1.scotdoyle.com ([23.226.141.211]:36633 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358AbbAZXPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:15:54 -0500
-Date: Mon, 26 Jan 2015 23:14:06 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 2/2] fbcon: expose cursor blink interval via sysfs
-In-Reply-To: <alpine.DEB.2.11.1501262305150.2783@localhost.localdomain>
-Message-ID: <alpine.DEB.2.11.1501262312060.2861@localhost.localdomain>
-References: <alpine.DEB.2.11.1501262305150.2783@localhost.localdomain>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757209AbbAZXPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:15:08 -0500
+Received: from mga01.intel.com ([192.55.52.88]:6384 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755890AbbAZXPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 18:15:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,471,1418112000"; 
+   d="scan'208";a="676269170"
+Message-ID: <1422314099.5801.1.camel@theros.lm.intel.com>
+Subject: Re: [PATCH v2 0/2] add support for new persistent memory
+ instructions
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <h.peter.anvin@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 26 Jan 2015 16:14:59 -0700
+In-Reply-To: <20150126223954.GJ1656@pd.tnic>
+References: <1422045628-16225-1-git-send-email-ross.zwisler@linux.intel.com>
+	 <54C2D34D.7010709@intel.com> <20150124111430.GA10084@pd.tnic>
+	 <1422302369.13382.3.camel@theros.lm.intel.com>
+	 <20150126213457.GI1656@pd.tnic>
+	 <1422309007.14456.1.camel@theros.lm.intel.com>
+	 <20150126223954.GJ1656@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20.rez) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fbcon toggles cursor display state every 200 milliseconds when blinking.
-Since users prefer different toggle intervals, expose the interval via
-/sys/class/graphics/fbcon/cursor_blink_ms so that it may be customized.
+On Mon, 2015-01-26 at 23:39 +0100, Borislav Petkov wrote:
+> On Mon, Jan 26, 2015 at 02:50:07PM -0700, Ross Zwisler wrote:
+> > We can use MFENCE, but I don't think we need to. With SFENCE we will
+> > be ordered with respect to stores, and the flushes and pcommit will be
+> > ordered with respect to one another. I think you can sprinkle in loads
+> > anywhere you want in that flow and everything will work.
+> 
+> 
+> Ok, maybe we should hold down that sequence and this somewhere as a
+> this-is-how-you-should-do-pcommit-properly explanation or so... or do
+> you have an actual patch adding write_and_commit_buffer()?
 
-Values written to the interface set the approximate time interval in
-milliseconds between cursor toggles, from 1 to 32767. Since the interval
-is stored internally as a number of jiffies, the millisecond value read
-from the interface may not exactly match the entered value.
-
-An outstanding blink timer is reset after a new value is entered.
-
-If the cursor blink is disabled, either via the 'cursor_blink' boolean
-setting or some other mechanism, the 'cursor_blink_ms' setting may still
-be modified. The new value will be used if the blink is reactivated.
-
-Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
----
- drivers/video/console/fbcon.c | 79 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 79 insertions(+)
-
-diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
-index 7a2030b..19620d2 100644
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -3495,11 +3495,90 @@ err:
- 	return count;
- }
- 
-+static ssize_t show_cursor_blink_ms(struct device *device,
-+				    struct device_attribute *attr, char *buf)
-+{
-+	struct fb_info *info;
-+	struct fbcon_ops *ops;
-+	int idx, ms = -1;
-+
-+	if (fbcon_has_exited) {
-+		pr_err("%s: framebuffer console exited", __func__);
-+		return 0;
-+	}
-+
-+	console_lock();
-+	idx = con2fb_map[fg_console];
-+
-+	if (idx == -1 || registered_fb[idx] == NULL) {
-+		pr_err("%s: no console to framebuffer mapping", __func__);
-+		goto err;
-+	}
-+
-+	info = registered_fb[idx];
-+
-+	if ((ops = info->fbcon_par) == NULL) {
-+		pr_err("%s: framebuffer has no device info", __func__);
-+		goto err;
-+	}
-+
-+	ms = jiffies_to_msecs(ops->blink_jiffies);
-+
-+err:
-+	console_unlock();
-+	return snprintf(buf, PAGE_SIZE, "%d\n", ms);
-+}
-+
-+static ssize_t store_cursor_blink_ms(struct device *device,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	struct fb_info *info;
-+	struct fbcon_ops *ops;
-+	int idx;
-+	short ms;
-+
-+	if (fbcon_has_exited) {
-+		pr_err("%s: framebuffer console exited", __func__);
-+		return count;
-+	}
-+
-+	console_lock();
-+	idx = con2fb_map[fg_console];
-+
-+	if (idx == -1 || registered_fb[idx] == NULL) {
-+		pr_err("%s: no console to framebuffer mapping", __func__);
-+		goto err;
-+	}
-+
-+	info = registered_fb[idx];
-+
-+	if ((ops = info->fbcon_par) == NULL) {
-+		pr_err("%s: framebuffer has no device info", __func__);
-+		goto err;
-+	}
-+
-+	if (!kstrtos16(buf, 0, &ms)) {
-+		ops->blink_jiffies = max_t(int, msecs_to_jiffies(ms), 1);
-+		if (info->queue.func == fb_flashcursor &&
-+		    ops->flags & FBCON_FLAGS_CURSOR_TIMER) {
-+			fbcon_del_cursor_timer(info);
-+			fbcon_add_cursor_timer(info);
-+		}
-+	}
-+
-+err:
-+	console_unlock();
-+	return count;
-+}
-+
- static struct device_attribute device_attrs[] = {
- 	__ATTR(rotate, S_IRUGO|S_IWUSR, show_rotate, store_rotate),
- 	__ATTR(rotate_all, S_IWUSR, NULL, store_rotate_all),
- 	__ATTR(cursor_blink, S_IRUGO|S_IWUSR, show_cursor_blink,
- 	       store_cursor_blink),
-+	__ATTR(cursor_blink_ms, S_IRUGO|S_IWUSR, show_cursor_blink_ms,
-+	       store_cursor_blink_ms),
- };
- 
- static int fbcon_init_device(void)
--- 
-2.1.4
+I don't have a patch to add and use this yet.  I'll add the flow to the
+commit messages for both pcommit and clwb.
 
