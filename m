@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468AbbAZQRS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:17:18 -0500
-Received: from xavier.telenet-ops.be ([195.130.132.52]:34096 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756198AbbAZQQh (ORCPT
+	id S1756332AbbAZQQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:16:42 -0500
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:44660 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756200AbbAZQQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:16:37 -0500
+	Mon, 26 Jan 2015 11:16:33 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -23,9 +23,9 @@ Cc: Olof Johansson <olof@lixom.net>, Simon Horman <horms+renesas@verge.net.au>,
         linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v4 4/5] drivers: bus: Add Renesas Bus State Controller (BSC) DT Bindings
-Date: Mon, 26 Jan 2015 17:16:16 +0100
-Message-Id: <1422288977-20353-5-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH v4 5/5] drivers: bus: Add Simple Power-Managed Bus Driver
+Date: Mon, 26 Jan 2015 17:16:17 +0100
+Message-Id: <1422288977-20353-6-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
 References: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
@@ -33,69 +33,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bindings for the BSC extend the bindings for "simple-pm-bus".
+Add a driver for transparent busses that don't need a real driver, but
+where the bus controller is part of a PM domain, or under the control of
+a functional clock.  Typically, the bus controller's PM domain and/or
+clock must be enabled for child devices connected to the bus (either
+on-SoC or externally) to function.
+
+Hence the sole purpose of this driver is to enable its clock and PM
+domain (if exist(s)), which are specified in the DT and managed from
+platform and PM domain code, and to probe for child devices.
+
+Due to the child-parent relationship with devices connected to the bus,
+PM domain and clock state transitions are handled in the correct order.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Tested-by: Ulrich Hecht <ulrich.hecht+renesas@gmail.com>
 ---
 v4:
-  - New, extracted from simple-pm-bus.txt in v3.
----
- .../devicetree/bindings/bus/renesas,bsc.txt        | 46 ++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/bus/renesas,bsc.txt
+  - Bind against the generic "simple-pm-bus" instead of "renesas,bsc",
+  - Explicitly call of_platform_populate() after pm_runtime_enable() to
+    enforce ordering, instead of depending on claimed compatibility with
+    "simple-bus",
 
-diff --git a/Documentation/devicetree/bindings/bus/renesas,bsc.txt b/Documentation/devicetree/bindings/bus/renesas,bsc.txt
+v3:
+  - Add Tested-by,
+
+v2:
+  - Rename from "Renesas Bus State Controller Driver" (renesas-bsc) to
+    "Simple Power-Managed Bus Driver" (simple-pm-bus),
+  - Change module license to GPL v2,
+  - Change email address to geert+renesas@glider.be.
+---
+ drivers/bus/Kconfig         | 13 ++++++++++
+ drivers/bus/Makefile        |  1 +
+ drivers/bus/simple-pm-bus.c | 58 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 72 insertions(+)
+ create mode 100644 drivers/bus/simple-pm-bus.c
+
+diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
+index 626960819e6df16c..7e9c2674af81d6e9 100644
+--- a/drivers/bus/Kconfig
++++ b/drivers/bus/Kconfig
+@@ -58,6 +58,19 @@ config OMAP_OCP2SCP
+ 	  OCP2SCP and in OMAP5, both USB PHY and SATA PHY is connected via
+ 	  OCP2SCP.
+ 
++config SIMPLE_PM_BUS
++	bool "Simple Power-Managed Bus Driver"
++	depends on OF && PM
++	depends on ARCH_SHMOBILE || COMPILE_TEST
++	help
++	  Driver for transparent busses that don't need a real driver, but
++	  where the bus controller is part of a PM domain, or under the control
++	  of a functional clock, and thus relies on runtime PM for managing
++	  this PM domain and/or clock.
++	  An example of such a bus controller is the Renesas Bus State
++	  Controller (BSC, sometimes called "LBSC within Bus Bridge", or
++	  "External Bus Interface") as found on several Renesas ARM SoCs.
++
+ config VEXPRESS_CONFIG
+ 	bool "Versatile Express configuration bus"
+ 	default y if ARCH_VEXPRESS
+diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
+index 3cfaf2c7f25ac4f0..e023a2bec664d900 100644
+--- a/drivers/bus/Makefile
++++ b/drivers/bus/Makefile
+@@ -14,4 +14,5 @@ obj-$(CONFIG_MVEBU_MBUS) 	+= mvebu-mbus.o
+ obj-$(CONFIG_OMAP_INTERCONNECT)	+= omap_l3_smx.o omap_l3_noc.o
+ 
+ obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
++obj-$(CONFIG_SIMPLE_PM_BUS)	+= simple-pm-bus.o
+ obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o
+diff --git a/drivers/bus/simple-pm-bus.c b/drivers/bus/simple-pm-bus.c
 new file mode 100644
-index 0000000000000000..90e94726943772c4
+index 0000000000000000..c5eb46cbf388b507
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/bus/renesas,bsc.txt
-@@ -0,0 +1,46 @@
-+Renesas Bus State Controller (BSC)
-+==================================
++++ b/drivers/bus/simple-pm-bus.c
+@@ -0,0 +1,58 @@
++/*
++ * Simple Power-Managed Bus Driver
++ *
++ * Copyright (C) 2014-2015 Glider bvba
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
 +
-+The Renesas Bus State Controller (BSC, sometimes called "LBSC within Bus
-+Bridge", or "External Bus Interface") can be found in several Renesas ARM SoCs.
-+It provides an external bus for connecting multiple external devices to the
-+SoC, driving several chip select lines, for e.g. NOR FLASH, Ethernet and USB.
-+
-+While the BSC is a fairly simple memory-mapped bus, it may be part of a PM
-+domain, and may have a gateable functional clock.
-+Before a device connected to the BSC can be accessed, the PM domain
-+containing the BSC must be powered on, and the functional clock
-+driving the BSC must be enabled.
-+
-+The bindings for the BSC extend the bindings for "simple-pm-bus".
-+
-+
-+Required properties
-+  - compatible: Must contain an SoC-specific value, and "renesas,bsc" and
-+		"simple-pm-bus" as fallbacks.
-+                SoC-specific values can be:
-+		"renesas,bsc-r8a73a4" for R-Mobile APE6 (r8a73a4)
-+		"renesas,bsc-sh73a0" for SH-Mobile AG5 (sh73a0)
-+  - #address-cells, #size-cells, ranges: Must describe the mapping between
-+		parent address and child address spaces.
-+  - reg: Must contain the base address and length to access the bus controller.
-+
-+Optional properties:
-+  - interrupts: Must contain a reference to the BSC interrupt, if available.
-+  - clocks: Must contain a reference to the functional clock, if available.
-+  - power-domains: Must contain a reference to the PM domain, if available.
++#include <linux/module.h>
++#include <linux/of_platform.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
 +
 +
-+Example:
++static int simple_pm_bus_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
 +
-+	bsc: bus@fec10000 {
-+		compatible = "renesas,bsc-sh73a0", "renesas,bsc",
-+			     "simple-pm-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges = <0 0 0x20000000>;
-+		reg = <0xfec10000 0x400>;
-+		interrupts = <0 39 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&zb_clk>;
-+		power-domains = <&pd_a4s>;
-+	};
++	dev_dbg(&pdev->dev, "%s\n", __func__);
++
++	pm_runtime_enable(&pdev->dev);
++
++	if (np)
++		of_platform_populate(np, NULL, NULL, &pdev->dev);
++
++	return 0;
++}
++
++static int simple_pm_bus_remove(struct platform_device *pdev)
++{
++	dev_dbg(&pdev->dev, "%s\n", __func__);
++
++	pm_runtime_disable(&pdev->dev);
++	return 0;
++}
++
++static const struct of_device_id simple_pm_bus_of_match[] = {
++	{ .compatible = "simple-pm-bus", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, simple_pm_bus_of_match);
++
++static struct platform_driver simple_pm_bus_driver = {
++	.probe = simple_pm_bus_probe,
++	.remove = simple_pm_bus_remove,
++	.driver = {
++		.name = "simple-pm-bus",
++		.of_match_table = simple_pm_bus_of_match,
++	},
++};
++
++module_platform_driver(simple_pm_bus_driver);
++
++MODULE_DESCRIPTION("Simple Power-Managed Bus Driver");
++MODULE_AUTHOR("Geert Uytterhoeven <geert+renesas@glider.be>");
++MODULE_LICENSE("GPL v2");
 -- 
 1.9.1
 
