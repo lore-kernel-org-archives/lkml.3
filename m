@@ -1,106 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612AbbAZKHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:07:37 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34135 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529AbbAZKHd (ORCPT
+	id S1754716AbbAZKLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:11:18 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:52919 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919AbbAZKLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:07:33 -0500
-Message-ID: <54C611DA.8050500@pengutronix.de>
-Date: Mon, 26 Jan 2015 11:07:22 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
+	Mon, 26 Jan 2015 05:11:14 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <wenyou.yang@atmel.com>,
+        <Patrice.VILCHEZ@atmel.com>
+Subject: [PATCH 5/7] pm: at91: add disable/enable the L1/L2 cache while suspend/resume
+Date: Mon, 26 Jan 2015 18:07:57 +0800
+Message-ID: <1422266877-24628-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
+References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Andri Yngvason <andri.yngvason@marel.com>
-CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 0/7] can: kvaser_usb: Leaf bugfixes and USBCan-II support
-References: <20141223154654.GB6460@vivalin-002> <20150126051755.GA3014@Darwish.PC>
-In-Reply-To: <20150126051755.GA3014@Darwish.PC>
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="IhcF0iCl1oeMF2mbQfi54CMViQpiSU1HD"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---IhcF0iCl1oeMF2mbQfi54CMViQpiSU1HD
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+For the sama5, disable L1 D-cache and L2 cache before the cpu go to wfi,
+after wakeing up, enable L1 D-cache and L2 cache.
 
-On 01/26/2015 06:17 AM, Ahmed S. Darwish wrote:
-> Hi!
->=20
-> This is an updated patch series for the Kvaser CAN/USB devices:
->=20
-> 1- Extra patches are now added to the series. Most importantly
-> patch #1 which fixes a critical `sleep in atomic context' bug
-> in the current upstream driver. Patch #2 fixes a corruption in
-> the kernel logs, also affecting current upstream driver. Patch
-> #4 was originally USBCan-II only, but since it's a generic fix,
-> it's now retrofitted to the Leaf-only upstream driver first.
->=20
-> 2- The series has been re-organized so that patches #1 -> #4
-> inclusive can go to linux-can/origin, while the rest can move
-> to -next.
->=20
-> 3- There are some important updates regarding the USBCan-II
-> error counters, and how really erratic their heaviour is. All
-> the new details are covered at the bottom of this URL:
->=20
-> 	http://article.gmane.org/gmane.linux.can/7481
->=20
-> 4- Attached below is the new candump traces. Now
-> `back-to-error-active' states appear _if_ the hardware was
-> kind enough and decreased the error counters appropriately.
-> The earlier code did not recognize the error counters going
-> down, thus the `back-to-error-active' transitions did not
-> appear.
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+---
+ arch/arm/mach-at91/pm.c         |    9 ++++
+ arch/arm/mach-at91/pm_suspend.S |  107 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 116 insertions(+)
 
-For patches 5-7 I'm waiting for an Acked by Andri.
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index f75dc32..50cde92 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -35,6 +35,9 @@
+ #include "generic.h"
+ #include "pm.h"
+ 
++void __weak at91_disable_l1_l2_cache(void) {}
++void __weak at91_enable_l1_l2_cache(void) {}
++
+ struct at91_pm_struct at91_pm_data;
+ 
+ static int at91_pm_valid_state(suspend_state_t state)
+@@ -142,8 +145,14 @@ static void at91_pm_suspend(suspend_state_t state)
+ 	pm_data |= (state == PM_SUSPEND_MEM) ?
+ 				AT91_PM_MODE(AT91_PM_SLOW_CLOCK) : 0;
+ 
++	/* Disable L1 D-cache and L2 cache */
++	at91_disable_l1_l2_cache();
++
+ 	at91_suspend_sram_fn(at91_pmc_base, at91_ramc_base[0],
+ 				at91_ramc_base[1], pm_data);
++
++	/* Enable L1 D-cache and L2 cache */
++	at91_enable_l1_l2_cache();
+ }
+ 
+ static int at91_pm_enter(suspend_state_t state)
+diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
+index 88cf228..e6e7f7a 100644
+--- a/arch/arm/mach-at91/pm_suspend.S
++++ b/arch/arm/mach-at91/pm_suspend.S
+@@ -15,6 +15,7 @@
+ #include <linux/clk/at91_pmc.h>
+ #include <mach/hardware.h>
+ #include <mach/at91_ramc.h>
++#include <asm/hardware/cache-l2x0.h>
+ 
+ #include "pm.h"
+ 
+@@ -329,3 +330,109 @@ ram_restored:
+ 
+ ENTRY(at91_pm_suspend_in_sram_sz)
+ 	.word .-at91_pm_suspend_in_sram
++
++/*---------------------------------------*/
++
++#if defined(CONFIG_CPU_V7)
++
++/*
++ * void at91_disable_l1_l2_cache(void)
++ *
++ * This function code disables, cleans & invalidates the L1 D-cache
++ * and cleans, invalidates & disable the L2 cache.
++ */
++ENTRY(at91_disable_l1_l2_cache)
++	stmfd	sp!, {r4 - r12, lr}
++
++	/*
++	 * Flush all data from the L1 D-cache before disabling
++	 * SCTLR.C bit.
++	 */
++	bl	v7_flush_dcache_all
++
++	/*
++	 * Clear the SCTLR.C bit to prevent further data cache
++	 * allocation. Clearing SCTLR.C would make all the data accesses
++	 * strongly ordered and would not hit the cache.
++	 */
++	mrc	p15, 0, r0, c1, c0, 0
++	bic	r0, r0, #(1 << 2)	@ Disable the C bit
++	mcr	p15, 0, r0, c1, c0, 0
++	isb
++
++	/*
++	 * Invalidate L1 D-cache. Even though only invalidate is
++	 * necessary exported flush API is used here. Doing clean
++	 * on already clean cache would be almost NOP.
++	 */
++	bl	v7_flush_dcache_all
++
++	/*
++	 * Clean and invalidate the L2 cache.
++	 * Common cache-l2x0.c functions can't be used here since it
++	 * uses spinlocks. We are out of coherency here with data cache
++	 * disabled. The spinlock implementation uses exclusive load/store
++	 * instruction which can fail without data cache being enabled.
++	 * Because of this, CPU can lead to deadlock.
++	 */
++	ldr	r1, at91_l2cc_base_addr
++	ldr	r2, [r1]
++	cmp	r2, #0
++	beq	skip_l2disable
++	mov	r0, #0xff
++	str	r0, [r2, #L2X0_CLEAN_INV_WAY]
++wait:
++	ldr	r0, [r2, #L2X0_CLEAN_INV_WAY]
++	mov	r1, #0xff
++	ands	r0, r0, r1
++	bne	wait
++
++	mov	r0, #0
++	str	r0, [r2, #L2X0_CTRL]
++
++l2x_sync:
++	ldr	r0, [r2, #L2X0_CACHE_SYNC]
++	bic	r0, r0, #0x1
++	str	r0, [r2, #L2X0_CACHE_SYNC]
++sync:
++	ldr	r0, [r2, #L2X0_CACHE_SYNC]
++	ands	r0, r0, #0x1
++	bne	sync
++
++skip_l2disable:
++	ldmfd	sp!, {r4 - r12, pc}
++ENDPROC(at91_disable_l1_l2_cache)
++
++/*
++ * void at91_enable_l1_l2_cache(void)
++ *
++ * This function code enables the L1 D-cache and the L2 cache.
++ */
++ENTRY(at91_enable_l1_l2_cache)
++	stmfd	sp!, {r4 - r12, lr}
++
++	/* Enable the L2 cache */
++	ldr	r1, at91_l2cc_base_addr
++	ldr	r2, [r1]
++	cmp	r2, #0
++	beq	skip_l2en
++	ldr	r0, [r2, #L2X0_CTRL]
++	ands	r0, r0, #L2X0_CTRL_EN
++	bne	skip_l2en	@ Skip if already enabled
++	mov	r0, #L2X0_CTRL_EN
++	str	r0, [r2, #L2X0_CTRL]
++skip_l2en:
++
++	/* Enable the L1 D-cache */
++	mrc	p15, 0, r0, c1, c0, 0
++	tst	r0, #(1 << 2)		@ Check C bit enabled?
++	orreq	r0, r0, #(1 << 2)	@ Enable the C bit
++	mcreq	p15, 0, r0, c1, c0, 0
++	isb
++
++	ldmfd	sp!, {r4 - r12, pc}
++ENDPROC(at91_enable_l1_l2_cache)
++
++at91_l2cc_base_addr:
++	.word	at91_l2cc_base
++#endif
+-- 
+1.7.9.5
 
-=2E..and we have to wait until Patches 1-4 will show up on net-next/maste=
-r.
-
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---IhcF0iCl1oeMF2mbQfi54CMViQpiSU1HD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCgAGBQJUxhHdAAoJECte4hHFiupUOdUQAKv/8q2FPc1dSy1NTyKH5DOQ
-Oj9cy6lkZzhbLxGP4fhAlbSrxvVFwEF4iOrlzoUJYH0l7ckh3cp97vYvUR3mCiPy
-WuqkVJecB5pef/00PkA0GtITWLXZe6XbdaTEqhEUkcNA9OElgrRQtfLQs3ukYThV
-UQd/VcPBxC/rmQet5kpb27GgPsz+w3auGn3W6Zgoz2zjhpCgEjOFhDl/TSUOeTDs
-ira2uiztJXBnnAD1jFWj9udmRY8wQE9VLcXFDM7jRD2fElL8wA7N5Z6P3T4QfIHB
-ILnISjjl720MOpkFxM2mX/T4ZOyXKr1bFh8LOkwKpKvBsfEAXPcpSnCrs0qWl99F
-FqrONeM5Fi/fB6aV7NJst4rOQxEImCvZAgqxcgbtGlXrzN2Y6rwdJ70Xo/naore2
-C4OsLEM1JZUrqMybqhthqhqCQGyk1ibnoJBOmntiPaHNtuToPWE5IghuEDdibT2t
-H3qH9r+Z1/lX3kqJZx1v3uQpTJ2HrkAnpzfSdcx3M3oB4QQNMfJciWUUcJs1EPEi
-20H4hX5XEzq+KKKXR14ky5CFBk0IBhHB0CRYD8yJte4KAF4XqknWkiFe9596sX/A
-V/uUPdPAfDAxYmiVcC6M9A7poCihzdN+8QmCDyHy6uZizgC5MMdxCp4RjOuwOjEo
-0Kos9VqJO1A4IynMQcSs
-=/6es
------END PGP SIGNATURE-----
-
---IhcF0iCl1oeMF2mbQfi54CMViQpiSU1HD--
