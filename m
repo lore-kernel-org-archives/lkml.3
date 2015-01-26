@@ -1,208 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbbAZBd1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 20:33:27 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:39774 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424AbbAZBdT (ORCPT
+	id S1751595AbbAZBrg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 20:47:36 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:9195 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbbAZBrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 20:33:19 -0500
-Date: Mon, 26 Jan 2015 10:33:10 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
-Message-ID: <20150126013309.GA26895@blaptop>
-References: <1421992707-32658-1-git-send-email-minchan@kernel.org>
- <20150123142435.GA2320@swordfish>
- <54C25F25.9070609@redhat.com>
- <20150123154707.GA1046@swordfish>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123154707.GA1046@swordfish>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 25 Jan 2015 20:47:33 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-04-54c59cad4a94
+Message-id: <54C59CAC.8020509@samsung.com>
+Date: Mon, 26 Jan 2015 10:47:24 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: Javier Martinez Canillas <javier@dowhile0.org>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: Add sd0_rst pinctrl node to exynos5420
+References: <1422023038-11842-1-git-send-email-jh80.chung@samsung.com>
+ <CABxcv=mJhHTBKes38+6kHi5o3RmBHHN6sVqBUDRc-YyNvkdESQ@mail.gmail.com>
+ <1422028075.15395.92.camel@collabora.co.uk>
+ <CABxcv=kARp8xLYCqf8dfdKd9ehs1u=qTEjkn1iujhN77ZjPdTA@mail.gmail.com>
+In-reply-to: <CABxcv=kARp8xLYCqf8dfdKd9ehs1u=qTEjkn1iujhN77ZjPdTA@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsWyRsSkRHftnKMhBku28FjMP3KO1eLa7xls
+	Fv2PXzNbXN41h81ixvl9TBbTj79ldWDz+Pv8OovH39mtzB6bVnWyeXzeJBfAEsVlk5Kak1mW
+	WqRvl8CVsWzvQsaCZewVn2dvY21gvMzaxcjJISFgInFy6y52CFtM4sK99WxdjFwcQgJLGSXe
+	3X7HBFN0cG8DG4gtJDCdUeLieUEI+zWjxONl7iA2r4CWxNlN+5hBbBYBVYkPNx6BLWAT0JHY
+	/u042BxRgTCJiTcfs0LUC0r8mHyPBcQWEUiWuP9lJthiZoFrjBIHrj4AGyQs4CpxeNIbFoiL
+	mpgkTi25D5bgFAiW2Nz6FMjmAOpQl5gyJRckzCwgL7F5zVtmiKP3sUts+FwCcZCAxLfJh1hA
+	yiUEZCU2HYAqkZQ4uOIGywRGsVlITpqFMHQWkqELGJlXMYqmFiQXFCelF5noFSfmFpfmpesl
+	5+duYgTG1+l/zybsYLx3wPoQowAHoxIPb0Pz0RAh1sSy4srcQ4ymQEdMZJYSTc4HRnFeSbyh
+	sZmRhamJqbGRuaWZkjjva6mfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYPX6WJa080T/j
+	bJxOltjXTIXmICWDIi6P5Q842I9Kbz/mOolT5+OSDSvNnnuzHA5SV0k7cGPZozNeyh+r1lsU
+	m25SqWq4lX/1t7Vy0etz3rOEDvi/Co5xCxQXuT/18GenKjuptOiuPSud2m/6t51yMV4aqOSz
+	5d/Sm4cEinP2fNA+GT8xunSWEktxRqKhFnNRcSIAIfRPMKoCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t9jQd01c46GGDz4bGox/8g5Votrv2ew
+	WfQ/fs1scXnXHDaLGef3MVlMP/6W1YHN4+/z6ywef2e3MntsWtXJ5vF5k1wAS1QDo01GamJK
+	apFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0HYlhbLEnFKgUEBi
+	cbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8ayvQsZC5axV3yevY21gfEyaxcjJ4eEgInE
+	wb0NbBC2mMSFe+vBbCGB6YwSF88LQtivGSUeL3MHsXkFtCTObtrHDGKzCKhKfLjxCGwOm4CO
+	xPZvx5lAbFGBMImJNx+zQtQLSvyYfI8FxBYRSJa4/2Um0HwuDmaBa4wSB64+ABskLOAqcXjS
+	GxaQhJBAE5PEqSX3wRKcAsESm1ufAtkcQB3qElOm5IKEmQXkJTavecs8gVFgFpIdsxCqZiGp
+	WsDIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOH6fSe9gXNVgcYhRgINRiYdXo/FoiBBr
+	YllxZe4hRgkOZiUR3vIpQCHelMTKqtSi/Pii0pzU4kOMpsAQmMgsJZqcD0wteSXxhsYmZkaW
+	RuaGFkbG5krivEr2bSFCAumJJanZqakFqUUwfUwcnFINjCv9Vdsn5sY2Fek/ZKy0cQ+JcX17
+	K/qi14JXpxYq7N4UxPK/wNs8aZeFZuma6VzVgc6vt0q+85Iv7puhJ9E3z+TYNrd0t3MzDkbE
+	HZ+gZbPNUEIkese6lg69fmc520e1ut2rZZuZK6p8KsKPFkzK7jzNqnV7Dvfk6K2PUw7s0rR9
+	cTp264MNSizFGYmGWsxFxYkAPDygD/UCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On Sat, Jan 24, 2015 at 12:47:07AM +0900, Sergey Senozhatsky wrote:
-> On (01/23/15 15:48), Jerome Marchand wrote:
-> > Date: Fri, 23 Jan 2015 15:48:05 +0100
-> > From: Jerome Marchand <jmarchan@redhat.com>
-> > To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, Minchan Kim
-> >  <minchan@kernel.org>
-> > CC: Andrew Morton <akpm@linux-foundation.org>,
-> >  linux-kernel@vger.kernel.org, linux-mm@kvack.org, Nitin Gupta
-> >  <ngupta@vflare.org>
-> > Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
-> > User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
-> >  Thunderbird/31.3.0
-> > 
-> > On 01/23/2015 03:24 PM, Sergey Senozhatsky wrote:
-> > > On (01/23/15 14:58), Minchan Kim wrote:
-> > >> We don't need to call zram_meta_free, zcomp_destroy and zs_free
-> > >> under init_lock. What we need to prevent race with init_lock
-> > >> in reset is setting NULL into zram->meta (ie, init_done).
-> > >> This patch does it.
-> > >>
-> > >> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > >> ---
-> > >>  drivers/block/zram/zram_drv.c | 28 ++++++++++++++++------------
-> > >>  1 file changed, 16 insertions(+), 12 deletions(-)
-> > >>
-> > >> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > >> index 9250b3f54a8f..0299d82275e7 100644
-> > >> --- a/drivers/block/zram/zram_drv.c
-> > >> +++ b/drivers/block/zram/zram_drv.c
-> > >> @@ -708,6 +708,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> > >>  {
-> > >>  	size_t index;
-> > >>  	struct zram_meta *meta;
-> > >> +	struct zcomp *comp;
-> > >>  
-> > >>  	down_write(&zram->init_lock);
-> > >>  
-> > >> @@ -719,20 +720,10 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> > >>  	}
-> > >>  
-> > >>  	meta = zram->meta;
-> > >> -	/* Free all pages that are still in this zram device */
-> > >> -	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> > >> -		unsigned long handle = meta->table[index].handle;
-> > >> -		if (!handle)
-> > >> -			continue;
-> > >> -
-> > >> -		zs_free(meta->mem_pool, handle);
-> > >> -	}
-> > >> -
-> > >> -	zcomp_destroy(zram->comp);
-> > > 
-> > > I'm not so sure about moving zcomp destruction. if we would have detached it
-> > > from zram, then yes. otherwise, think of zram ->destoy vs ->init race.
-> > > 
-> > > suppose,
-> > > CPU1 waits for down_write() init lock in disksize_store() with new comp already allocated;
-> > > CPU0 detaches ->meta and releases write init lock;
-> > > CPU1 grabs the lock and does zram->comp = comp;
-> > > CPU0 reaches the point of zcomp_destroy(zram->comp);
-> > 
-> > I don't see your point: this patch does not call
-> > zcomp_destroy(zram->comp) anymore, but zram_destroy(comp), where comp is
-> > the old zram->comp.
+On 01/24/2015 12:59 AM, Javier Martinez Canillas wrote:
+> Hello Sjoerd,
 > 
+> On Fri, Jan 23, 2015 at 4:47 PM, Sjoerd Simons
+> <sjoerd.simons@collabora.co.uk> wrote:
+>>>
+>>> If this pin is used by the Odroid XU3 board, shouldn't be defined in
+>>> the exynos5422-odroidxu3.dts instead?
+>>
+>> It's not just used by the XU3 though, it's also hooked up on the peach
+>> pi chromebook for example and i would expect it to be hooked up on most
+>> board with an eMMC
+>>
+>> This change is consistent with most of the special purpose GPIO pins
+>> defined in that file, so i don't see the problem with including it in
+>> that pinctrl file
 > 
-> oh... yes. sorry! my bad.
-> 
-> 
-> 
-> anyway, on a second thought, do we even want to destoy meta out of init_lock?
-> 
-> I mean, it will let you init new device quicker. but... assume, you have
-> 30G zram (or any other bad-enough number). on CPU0 you reset device -- iterate
-> over 30G meta->table, etc. out of init_lock.
-> on CPU1 you concurrently re-init device and request again 30G.
-> 
-> how bad that can be?
-> 
-> 
-> 
-> diskstore called on already initialised device is also not so perfect.
-> we first will try to allocate ->meta (vmalloc pages for another 30G),
-> then allocate comp, then down_write() init lock to find out that device
-> is initialised and we need to release allocated memory.
-> 
-> 
-> 
-> may be we better keep ->meta destruction under init_lock and additionally
-> move ->meta and ->comp allocation under init_lock in disksize_store()?
-> 
-> like the following one:
-> 
-> ---
-> 
->  drivers/block/zram/zram_drv.c | 25 +++++++++++++------------
->  1 file changed, 13 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 9250b3f..827ab21 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -765,9 +765,18 @@ static ssize_t disksize_store(struct device *dev,
->  		return -EINVAL;
->  
->  	disksize = PAGE_ALIGN(disksize);
-> +	down_write(&zram->init_lock);
-> +	if (init_done(zram)) {
-> +		up_write(&zram->init_lock);
-> +		pr_info("Cannot change disksize for initialized device\n");
-> +		return -EBUSY;
-> +	}
-> +
->  	meta = zram_meta_alloc(zram->disk->first_minor, disksize);
-> -	if (!meta)
-> -		return -ENOMEM;
-> +	if (!meta) {
-> +		err = -ENOMEM;
-> +		goto out_unlock;
-> +	}
->  
->  	comp = zcomp_create(zram->compressor, zram->max_comp_streams);
->  	if (IS_ERR(comp)) {
-> @@ -777,13 +786,6 @@ static ssize_t disksize_store(struct device *dev,
->  		goto out_free_meta;
->  	}
->  
-> -	down_write(&zram->init_lock);
-> -	if (init_done(zram)) {
-> -		pr_info("Cannot change disksize for initialized device\n");
-> -		err = -EBUSY;
-> -		goto out_destroy_comp;
-> -	}
-> -
->  	zram->meta = meta;
->  	zram->comp = comp;
->  	zram->disksize = disksize;
-> @@ -799,11 +801,10 @@ static ssize_t disksize_store(struct device *dev,
->  
->  	return len;
->  
-> -out_destroy_comp:
-> -	up_write(&zram->init_lock);
-> -	zcomp_destroy(comp);
->  out_free_meta:
->  	zram_meta_free(meta);
-> +out_unlock:
-> +	up_write(&zram->init_lock);
->  	return err;
->  }
->  
+> In that case I completely agree that it should be defined in the .dtsi
+> but that is not what the commit message said though :-)
 
-The init_lock is really troublesome. We can't do call zram_meta_alloc
-under init_lock due to lockdep report. Please keep in mind.
-The zram_rw_page is one of the function under reclaim path and hold it
-as read_lock while here holds it as write_lock.
-It's a false positive so that we might could make shut lockdep up
-by annotation but I don't want it but want to work with lockdep rather
-than disable. As well, there are other pathes to use init_lock to
-protect other data where would be victims of lockdep.
+I will resend the patch with obvious commit message.
+Thanks for review.
 
-I didn't tell the motivation of this patch because it made you busy
-guys wasted. Let me tell it now. It was another lockdep report by
-kmem_cache_destroy for zsmalloc compaction about init_lock. That's why
-the patchset was one of the patch in compaction.
+Best Regards,
+Jaehoon Chung
 
-Yes, the ideal is to remove horrible init_lock of zram in this phase and
-make code more simple and clear but I don't want to stuck zsmalloc
-compaction by the work. Having said that, I feel it's time to revisit
-to remove init_lock.
-At least, I will think over to find a solution to kill init_lock.
-
-Thanks!
-
+> 
+> Best regards,
+> Javier
+> 
 
