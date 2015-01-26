@@ -1,229 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473AbbAZM4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:56:10 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51925 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753759AbbAZM4F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:56:05 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-pci@vger.kernel.org, linux-ia64@vger.kernel.org
-Subject: Re: [RFC PATCH 1/2] ACPI: Introduce acpi_unload_parent_table() usages in Linux kernel.
-Date: Mon, 26 Jan 2015 14:18:47 +0100
-Message-ID: <5726958.AyKQ3E4zaU@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <3e56be94135c911d80f52df1ea7f32c71f50d8fd.1422261662.git.lv.zheng@intel.com>
-References: <cover.1422261662.git.lv.zheng@intel.com> <3e56be94135c911d80f52df1ea7f32c71f50d8fd.1422261662.git.lv.zheng@intel.com>
+	id S1754997AbbAZNVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:21:31 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38999 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754733AbbAZNV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 08:21:28 -0500
+Message-ID: <54C63F1C.6010703@ti.com>
+Date: Mon, 26 Jan 2015 15:20:28 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Pavel Machek <pavel@ucw.cz>, <pali.rohar@gmail.com>, <sre@debian.org>,
+        <sre@ring0.de>, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@kernel.org>,
+        <aaro.koskinen@iki.fi>, <ivo.g.dimitrov.75@gmail.com>,
+        <jarkko.nikula@bitmer.com>
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+References: <20150106170433.GA5408@amd> <20150118120139.GA1509@amd>
+In-Reply-To: <20150118120139.GA1509@amd>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 26, 2015 04:58:48 PM Lv Zheng wrote:
-> ACPICA has implemented acpi_unload_parent_table() which can exactly replace
-> the acpi_get_id()/acpi_unload_table_id() implemented in Linux kernel.  The
-> acpi_unload_parent_table() has been unit tested in ACPICA simulation
-> environment.
+On 01/18/2015 02:01 PM, Pavel Machek wrote:
+> Hi!
 > 
-> This patch can also help to reduce the source code differences between
-> Linux and ACPICA.
+> If you have any idea about playback problems, help would be still
+> welcome. I'll have to do bisect, otherwise, and it will not be easy.
+> 
+>> In 3.18, sound is nice and clear.
+>>
+>> In 3.19, sound is unusable. It produces nasty tone when it should be
+>> quiet, and there's at least as much noise as is sound.
+>>
+>> Unfortunately, list of mixers also changed (and there's cca 120
+>> settings), but a) it does not work with the old list and b) nothing I
+>> could figure out did make the sound usable. Some setting resulted in
+>> even more noise.
+>>
+>> Any idea what could have caused it?
+> 
+> I tried audio recording this time.
+> 
+> In 2.6.28-nokia, it is neccessary to set "Input select" na "digital
+> mic", then it works. Input select being in "playback" option makes it
+> easy to miss.
+> 
+> In 3.18 and 3.19-rc3, all I can record are zeros.
+> 
+> Does playback/recording work for you on OMAP 3430-based machines?
 
-Is this any different from the one that you sent previously?
+Same codec (tlv320aic3106) works fine on my am335x and omap-l138 boards.
+BeagleBoard-xM also fine with twl4030 codec.
 
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Octavian Purdila <octavian.purdila@intel.com>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: linux-pci@vger.kernel.org
-> Cc: linux-ia64@vger.kernel.org
-> ---
->  drivers/acpi/acpica/nsxfobj.c     |   44 -----------------------------------
->  drivers/acpi/acpica/tbxface.c     |   46 -------------------------------------
->  drivers/pci/hotplug/sgi_hotplug.c |   13 ++++++-----
->  include/acpi/acpixf.h             |    6 -----
->  4 files changed, 7 insertions(+), 102 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpica/nsxfobj.c b/drivers/acpi/acpica/nsxfobj.c
-> index dae9401..51a8329 100644
-> --- a/drivers/acpi/acpica/nsxfobj.c
-> +++ b/drivers/acpi/acpica/nsxfobj.c
-> @@ -53,50 +53,6 @@ ACPI_MODULE_NAME("nsxfobj")
->  
->  /*******************************************************************************
->   *
-> - * FUNCTION:    acpi_get_id
-> - *
-> - * PARAMETERS:  Handle          - Handle of object whose id is desired
-> - *              ret_id          - Where the id will be placed
-> - *
-> - * RETURN:      Status
-> - *
-> - * DESCRIPTION: This routine returns the owner id associated with a handle
-> - *
-> - ******************************************************************************/
-> -acpi_status acpi_get_id(acpi_handle handle, acpi_owner_id * ret_id)
-> -{
-> -	struct acpi_namespace_node *node;
-> -	acpi_status status;
-> -
-> -	/* Parameter Validation */
-> -
-> -	if (!ret_id) {
-> -		return (AE_BAD_PARAMETER);
-> -	}
-> -
-> -	status = acpi_ut_acquire_mutex(ACPI_MTX_NAMESPACE);
-> -	if (ACPI_FAILURE(status)) {
-> -		return (status);
-> -	}
-> -
-> -	/* Convert and validate the handle */
-> -
-> -	node = acpi_ns_validate_handle(handle);
-> -	if (!node) {
-> -		(void)acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
-> -		return (AE_BAD_PARAMETER);
-> -	}
-> -
-> -	*ret_id = node->owner_id;
-> -
-> -	status = acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
-> -	return (status);
-> -}
-> -
-> -ACPI_EXPORT_SYMBOL(acpi_get_id)
-> -
-> -/*******************************************************************************
-> - *
->   * FUNCTION:    acpi_get_type
->   *
->   * PARAMETERS:  handle          - Handle of object whose type is desired
-> diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
-> index 9520ae1..0f9dd80 100644
-> --- a/drivers/acpi/acpica/tbxface.c
-> +++ b/drivers/acpi/acpica/tbxface.c
-> @@ -265,52 +265,6 @@ ACPI_EXPORT_SYMBOL(acpi_get_table_header)
->  
->  /*******************************************************************************
->   *
-> - * FUNCTION:    acpi_unload_table_id
-> - *
-> - * PARAMETERS:  id            - Owner ID of the table to be removed.
-> - *
-> - * RETURN:      Status
-> - *
-> - * DESCRIPTION: This routine is used to force the unload of a table (by id)
-> - *
-> - ******************************************************************************/
-> -acpi_status acpi_unload_table_id(acpi_owner_id id)
-> -{
-> -	int i;
-> -	acpi_status status = AE_NOT_EXIST;
-> -
-> -	ACPI_FUNCTION_TRACE(acpi_unload_table_id);
-> -
-> -	status = acpi_ut_acquire_mutex(ACPI_MTX_INTERPRETER);
-> -	if (ACPI_FAILURE(status)) {
-> -		return_ACPI_STATUS(status);
-> -	}
-> -
-> -	/* Find table in the global table list */
-> -	for (i = 0; i < acpi_gbl_root_table_list.current_table_count; ++i) {
-> -		if (id != acpi_gbl_root_table_list.tables[i].owner_id) {
-> -			continue;
-> -		}
-> -		/*
-> -		 * Delete all namespace objects owned by this table. Note that these
-> -		 * objects can appear anywhere in the namespace by virtue of the AML
-> -		 * "Scope" operator. Thus, we need to track ownership by an ID, not
-> -		 * simply a position within the hierarchy
-> -		 */
-> -		acpi_tb_delete_namespace_by_owner(i);
-> -		status = acpi_tb_release_owner_id(i);
-> -		acpi_tb_set_table_loaded_flag(i, FALSE);
-> -		break;
-> -	}
-> -
-> -	(void)acpi_ut_release_mutex(ACPI_MTX_INTERPRETER);
-> -	return_ACPI_STATUS(status);
-> -}
-> -
-> -ACPI_EXPORT_SYMBOL(acpi_unload_table_id)
-> -
-> -/*******************************************************************************
-> - *
->   * FUNCTION:    acpi_get_table_with_size
->   *
->   * PARAMETERS:  signature           - ACPI signature of needed table
-> diff --git a/drivers/pci/hotplug/sgi_hotplug.c b/drivers/pci/hotplug/sgi_hotplug.c
-> index bada2099..c32fb78 100644
-> --- a/drivers/pci/hotplug/sgi_hotplug.c
-> +++ b/drivers/pci/hotplug/sgi_hotplug.c
-> @@ -475,7 +475,7 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
->  	struct slot *slot = bss_hotplug_slot->private;
->  	struct pci_dev *dev, *temp;
->  	int rc;
-> -	acpi_owner_id ssdt_id = 0;
-> +	acpi_handle ssdt_hdl = NULL;
->  
->  	/* Acquire update access to the bus */
->  	mutex_lock(&sn_hotplug_mutex);
-> @@ -522,7 +522,7 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
->  			if (ACPI_SUCCESS(ret) &&
->  			    (adr>>16) == (slot->device_num + 1)) {
->  				/* retain the owner id */
-> -				acpi_get_id(chandle, &ssdt_id);
-> +				ssdt_hdl = chandle;
->  
->  				ret = acpi_bus_get_device(chandle,
->  							  &device);
-> @@ -547,12 +547,13 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
->  	pci_unlock_rescan_remove();
->  
->  	/* Remove the SSDT for the slot from the ACPI namespace */
-> -	if (SN_ACPI_BASE_SUPPORT() && ssdt_id) {
-> +	if (SN_ACPI_BASE_SUPPORT() && ssdt_hdl) {
->  		acpi_status ret;
-> -		ret = acpi_unload_table_id(ssdt_id);
-> +		ret = acpi_unload_parent_table(ssdt_hdl);
->  		if (ACPI_FAILURE(ret)) {
-> -			printk(KERN_ERR "%s: acpi_unload_table_id failed (0x%x) for id %d\n",
-> -			       __func__, ret, ssdt_id);
-> +			acpi_handle_err(ssdt_hdl,
-> +					"%s: acpi_unload_parent_table failed (0x%x)\n",
-> +					__func__, ret);
->  			/* try to continue on */
->  		}
->  	}
-> diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-> index 5ba7846..5dd21bc 100644
-> --- a/include/acpi/acpixf.h
-> +++ b/include/acpi/acpixf.h
-> @@ -891,12 +891,6 @@ ACPI_APP_DEPENDENT_RETURN_VOID(ACPI_PRINTF_LIKE(1)
->  ACPI_GLOBAL(u8, acpi_gbl_permanent_mmap);
->  
->  ACPI_EXTERNAL_RETURN_STATUS(acpi_status
-> -			    acpi_get_id(acpi_handle object,
-> -					acpi_owner_id * out_type))
-> -
-> -ACPI_EXTERNAL_RETURN_STATUS(acpi_status acpi_unload_table_id(acpi_owner_id id))
-> -
-> -ACPI_EXTERNAL_RETURN_STATUS(acpi_status
->  			    acpi_get_table_with_size(acpi_string signature,
->  						     u32 instance,
->  						     struct acpi_table_header
-> 
+I don't have my n900 in hacking mode (it is still in use time-to-time) but
+looking at the dts file: you might want to add ai3x-micbias-vg property to the
+aic3x nodes to select the correct mic bias voltage. I can't recall what is
+appropriate for n900, but 2.6.28-nokia sources might give you the answer.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Péter
