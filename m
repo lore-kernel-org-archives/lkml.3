@@ -1,71 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbbAZL4c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:56:32 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:61871 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040AbbAZL4a (ORCPT
+	id S1754689AbbAZL4v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:56:51 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:57695 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166AbbAZL4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:56:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-Cc: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 2/4] dt: sound: jz4740: Add binding documentation for jz4740-i2s
-Date: Mon, 26 Jan 2015 12:56:23 +0100
-Message-ID: <2047908.1EOGyb8YHD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1422267511-6649-3-git-send-email-Zubair.Kakakhel@imgtec.com>
-References: <1422267511-6649-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1422267511-6649-3-git-send-email-Zubair.Kakakhel@imgtec.com>
+	Mon, 26 Jan 2015 06:56:40 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:sKqrN8Jj6NuDyDLe8K0b/UwgEBhIbIiXlwnYFHtUKMwiTyyQQkh
- r5xo29L9gwnf1Ap7Om3s0B2FJSxY6XD5GV12oc458y/vu39HNw2FkxepGzkSep94oO/7p0T
- clAtwK9Gs6AD2BGbSI+beHLrFZbc6KHaVt/dI290vl6eqoylDVIoNBvX4gGqOCZDvpsrEGF
- cvnLixuF67Ag420tp3Phw==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <3e56be94135c911d80f52df1ea7f32c71f50d8fd.1422261662.git.lv.zheng@intel.com>
+References: <cover.1422261662.git.lv.zheng@intel.com>
+	<3e56be94135c911d80f52df1ea7f32c71f50d8fd.1422261662.git.lv.zheng@intel.com>
+Date: Mon, 26 Jan 2015 13:56:38 +0200
+Message-ID: <CAE1zot+uoy5fVBgaVBNMC-L2+7-19k+3y_p6PrKb1KuF8vmuPA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] ACPI: Introduce acpi_unload_parent_table() usages
+ in Linux kernel.
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-pci@vger.kernel.org, linux-ia64@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 January 2015 10:18:29 Zubair Lutfullah Kakakhel wrote:
-> index 0000000..0e40517
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/sound/ingenic,jz4740-i2s.txt
-> @@ -0,0 +1,18 @@
-> +Ingenic JZ4740 I2S controller
-> +
-> +Required properties:
-> +- compatible : "ingenic,jz4740-i2s"
-> +- reg : I2S registers location and length
-> +- clocks : AIC and I2S PLL clock specifiers.
-> +- clock-names: "aic" and "i2s"
-> +
-> +Example:
-> +
-> +i2s: i2s@10020000 {
-> +       compatible = "ingenic,jz4740-i2s";
-> +       reg = <0x10020000 0x94>;
-> +
-> +       clocks = <&cgu JZ4740_CLK_AIC>, <&cgu JZ4740_CLK_I2SPLL>;
-> +       clock-names = "aic", "i2s";
-> +
-> +};
-> 
+On Mon, Jan 26, 2015 at 10:58 AM, Lv Zheng <lv.zheng@intel.com> wrote:
+> ACPICA has implemented acpi_unload_parent_table() which can exactly replace
+> the acpi_get_id()/acpi_unload_table_id() implemented in Linux kernel.  The
+> acpi_unload_parent_table() has been unit tested in ACPICA simulation
+> environment.
+>
+> This patch can also help to reduce the source code differences between
+> Linux and ACPICA.
+>
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Octavian Purdila <octavian.purdila@intel.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: linux-pci@vger.kernel.org
+> Cc: linux-ia64@vger.kernel.org
 
-I would argue that the binding should mandate "dmas" property already.
-The code currently does not use it, but it will need to get changed
-in order to allow the dmaengine driver for this platform to be
-converted. You should require only one argument for the channel ID,
-so something like
+I can confirm that acpi_unload_parent_table() works on my DLN2 setup.
 
-	dmas = <&dma 24>, <&dma 25>;
-	dma-names = "tx", "rx";
+Tested-by: Octavian Purdila <octavian.purdila@intel.com>
 
-would be enough for the binding. Unfortunately that also requires
-having a device node for the dma engine, but you can cheat there
-and not call of_dma_controller_register() in the first step.
 
-	Arnd
+> diff --git a/drivers/acpi/acpica/nsxfobj.c b/drivers/acpi/acpica/nsxfobj.c
+> index dae9401..51a8329 100644
+> --- a/drivers/acpi/acpica/nsxfobj.c
+> +++ b/drivers/acpi/acpica/nsxfobj.c
+> @@ -53,50 +53,6 @@ ACPI_MODULE_NAME("nsxfobj")
+>
+>  /*******************************************************************************
+>   *
+> - * FUNCTION:    acpi_get_id
+> - *
+> - * PARAMETERS:  Handle          - Handle of object whose id is desired
+> - *              ret_id          - Where the id will be placed
+> - *
+> - * RETURN:      Status
+> - *
+> - * DESCRIPTION: This routine returns the owner id associated with a handle
+> - *
+> - ******************************************************************************/
+> -acpi_status acpi_get_id(acpi_handle handle, acpi_owner_id * ret_id)
+> -{
+> -       struct acpi_namespace_node *node;
+> -       acpi_status status;
+> -
+> -       /* Parameter Validation */
+> -
+> -       if (!ret_id) {
+> -               return (AE_BAD_PARAMETER);
+> -       }
+> -
+> -       status = acpi_ut_acquire_mutex(ACPI_MTX_NAMESPACE);
+> -       if (ACPI_FAILURE(status)) {
+> -               return (status);
+> -       }
+> -
+> -       /* Convert and validate the handle */
+> -
+> -       node = acpi_ns_validate_handle(handle);
+> -       if (!node) {
+> -               (void)acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+> -               return (AE_BAD_PARAMETER);
+> -       }
+> -
+> -       *ret_id = node->owner_id;
+> -
+> -       status = acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
+> -       return (status);
+> -}
+> -
+> -ACPI_EXPORT_SYMBOL(acpi_get_id)
+> -
+> -/*******************************************************************************
+> - *
+>   * FUNCTION:    acpi_get_type
+>   *
+>   * PARAMETERS:  handle          - Handle of object whose type is desired
+> diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
+> index 9520ae1..0f9dd80 100644
+> --- a/drivers/acpi/acpica/tbxface.c
+> +++ b/drivers/acpi/acpica/tbxface.c
+> @@ -265,52 +265,6 @@ ACPI_EXPORT_SYMBOL(acpi_get_table_header)
+>
+>  /*******************************************************************************
+>   *
+> - * FUNCTION:    acpi_unload_table_id
+> - *
+> - * PARAMETERS:  id            - Owner ID of the table to be removed.
+> - *
+> - * RETURN:      Status
+> - *
+> - * DESCRIPTION: This routine is used to force the unload of a table (by id)
+> - *
+> - ******************************************************************************/
+> -acpi_status acpi_unload_table_id(acpi_owner_id id)
+> -{
+> -       int i;
+> -       acpi_status status = AE_NOT_EXIST;
+> -
+> -       ACPI_FUNCTION_TRACE(acpi_unload_table_id);
+> -
+> -       status = acpi_ut_acquire_mutex(ACPI_MTX_INTERPRETER);
+> -       if (ACPI_FAILURE(status)) {
+> -               return_ACPI_STATUS(status);
+> -       }
+> -
+> -       /* Find table in the global table list */
+> -       for (i = 0; i < acpi_gbl_root_table_list.current_table_count; ++i) {
+> -               if (id != acpi_gbl_root_table_list.tables[i].owner_id) {
+> -                       continue;
+> -               }
+> -               /*
+> -                * Delete all namespace objects owned by this table. Note that these
+> -                * objects can appear anywhere in the namespace by virtue of the AML
+> -                * "Scope" operator. Thus, we need to track ownership by an ID, not
+> -                * simply a position within the hierarchy
+> -                */
+> -               acpi_tb_delete_namespace_by_owner(i);
+> -               status = acpi_tb_release_owner_id(i);
+> -               acpi_tb_set_table_loaded_flag(i, FALSE);
+> -               break;
+> -       }
+> -
+> -       (void)acpi_ut_release_mutex(ACPI_MTX_INTERPRETER);
+> -       return_ACPI_STATUS(status);
+> -}
+> -
+> -ACPI_EXPORT_SYMBOL(acpi_unload_table_id)
+> -
+> -/*******************************************************************************
+> - *
+>   * FUNCTION:    acpi_get_table_with_size
+>   *
+>   * PARAMETERS:  signature           - ACPI signature of needed table
+> diff --git a/drivers/pci/hotplug/sgi_hotplug.c b/drivers/pci/hotplug/sgi_hotplug.c
+> index bada2099..c32fb78 100644
+> --- a/drivers/pci/hotplug/sgi_hotplug.c
+> +++ b/drivers/pci/hotplug/sgi_hotplug.c
+> @@ -475,7 +475,7 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
+>         struct slot *slot = bss_hotplug_slot->private;
+>         struct pci_dev *dev, *temp;
+>         int rc;
+> -       acpi_owner_id ssdt_id = 0;
+> +       acpi_handle ssdt_hdl = NULL;
+>
+>         /* Acquire update access to the bus */
+>         mutex_lock(&sn_hotplug_mutex);
+> @@ -522,7 +522,7 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
+>                         if (ACPI_SUCCESS(ret) &&
+>                             (adr>>16) == (slot->device_num + 1)) {
+>                                 /* retain the owner id */
+> -                               acpi_get_id(chandle, &ssdt_id);
+> +                               ssdt_hdl = chandle;
+>
+>                                 ret = acpi_bus_get_device(chandle,
+>                                                           &device);
+> @@ -547,12 +547,13 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
+>         pci_unlock_rescan_remove();
+>
+>         /* Remove the SSDT for the slot from the ACPI namespace */
+> -       if (SN_ACPI_BASE_SUPPORT() && ssdt_id) {
+> +       if (SN_ACPI_BASE_SUPPORT() && ssdt_hdl) {
+>                 acpi_status ret;
+> -               ret = acpi_unload_table_id(ssdt_id);
+> +               ret = acpi_unload_parent_table(ssdt_hdl);
+>                 if (ACPI_FAILURE(ret)) {
+> -                       printk(KERN_ERR "%s: acpi_unload_table_id failed (0x%x) for id %d\n",
+> -                              __func__, ret, ssdt_id);
+> +                       acpi_handle_err(ssdt_hdl,
+> +                                       "%s: acpi_unload_parent_table failed (0x%x)\n",
+> +                                       __func__, ret);
+>                         /* try to continue on */
+>                 }
+>         }
+> diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+> index 5ba7846..5dd21bc 100644
+> --- a/include/acpi/acpixf.h
+> +++ b/include/acpi/acpixf.h
+> @@ -891,12 +891,6 @@ ACPI_APP_DEPENDENT_RETURN_VOID(ACPI_PRINTF_LIKE(1)
+>  ACPI_GLOBAL(u8, acpi_gbl_permanent_mmap);
+>
+>  ACPI_EXTERNAL_RETURN_STATUS(acpi_status
+> -                           acpi_get_id(acpi_handle object,
+> -                                       acpi_owner_id * out_type))
+> -
+> -ACPI_EXTERNAL_RETURN_STATUS(acpi_status acpi_unload_table_id(acpi_owner_id id))
+> -
+> -ACPI_EXTERNAL_RETURN_STATUS(acpi_status
+>                             acpi_get_table_with_size(acpi_string signature,
+>                                                      u32 instance,
+>                                                      struct acpi_table_header
+> --
+> 1.7.10
+>
