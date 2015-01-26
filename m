@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbbAZMXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:23:44 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:63278 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbbAZMXm (ORCPT
+	id S1754519AbbAZMZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:25:12 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:10538 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202AbbAZMZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:23:42 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-29-54c631ccf02f
+	Mon, 26 Jan 2015 07:25:08 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-fe-54c632212083
 From: Chao Yu <chao2.yu@samsung.com>
 To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] f2fs: make truncate_inline_date static
-Date: Mon, 26 Jan 2015 20:22:55 +0800
-Message-id: <008701d03962$eafecdd0$c0fc6970$@samsung.com>
+Subject: [PATCH 2/2] f2fs: clean up {in,de}create_sleep_time
+Date: Mon, 26 Jan 2015 20:24:21 +0800
+Message-id: <008801d03963$1d637ff0$582a7fd0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdA5YYnNYACHhsWpSBijmYuBtQPzjA==
+Thread-index: AdA5TR1gSfKsuOs9S4GLupJLiI3JiA==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd0zhsdCDM4cNrW4tq+RyeLJ+lnM
-	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxo25M9kL
-	jopVtP04ytrA+FGoi5GTQ0LARGLD/zlsELaYxIV768FsIYHpjBKbHql0MXIB2T8YJXav72cB
-	SbAJqEgs7/jPBGKLCHhJTNp/AizOLOAh0djxnRXEFhawllgwcxJYDYuAqkTLkz4wm1fAUuL+
-	w49sELagxI/J96B6tSTW7zzOBGHLS2xe85YZ4iAFiR1nXzNC7NKTuLZ8IVSNuMTGI7dYJjAK
-	zEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOCQfia1g3Flg8Uh
-	RgEORiUe3obmoyFCrIllxZW5hxglOJiVRHgd1Y+FCPGmJFZWpRblxxeV5qQWH2KU5mBREudV
-	sm8LERJITyxJzU5NLUgtgskycXBKNTDuzpksl7rxzqRsFpW7bW8dt768bauUncr18tmOla5P
-	Sz/Pt1vYfp0tz2NzjWG11Y2DrqZ2p94Vh5Q3Fu5pThNk1/+TvW+1w6nJrm9fM2wurPLcLTz/
-	5Lzd/nMiMn4yibYe1UjcceXeJiV7geCSGZfVRIpu+//4p3rfe91Dsalfz++4v/29QMBlJZbi
-	jERDLeai4kQAQFG6J2UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQV1Fo2MhBo8fiFtc29fIZPFk/Sxm
+	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY920zywF
+	p0Uq2vdcY2xgfCnQxcjJISFgInHv9nd2CFtM4sK99WxdjFwcQgLTGSWmfVnOBOH8YJQ41fqP
+	CaSKTUBFYnnHfzBbRMBLYtL+EywgNrOAh0Rjx3dWEFtYwEZi94FjYHEWAVWJB5P3gW3gFbCU
+	uLv4MzOELSjxY/I9qF4tifU7jzNB2PISm9e8ZYa4SEFix9nXjBC79CQu3T/ADlEjLrHxyC2W
+	CYwCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzion0nvYFzV
+	YHGIUYCDUYmHV6PxaIgQa2JZcWXuIUYJDmYlEV5H9WMhQrwpiZVVqUX58UWlOanFhxilOViU
+	xHmV7NtChATSE0tSs1NTC1KLYLJMHJxSDYyexjeXLF+zppp/jr3C3MdhN47LvogVWr1R7ryU
+	U90dZe/22f2rNXQcnmT3vC+RuRx5fvb3kAXy87frfovcJsvhWryy6dgTubJkf7VZ5X8Or3Vj
+	YUvT4Np0JnRPotu+OtnvmvsPq37TeBO7dtVFt773DHNOWAVzNQSv+JpnOnnPsp3FZncWsuxT
+	YinOSDTUYi4qTgQAb4lnimYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. make truncate_inline_date static;
-2. remove parameter @from of truncate_inline_date as callers only pass zero.
+Use pointer parameter @wait to pass result in {in,de}create_sleep_time for
+cleanup.
 
 Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
- fs/f2fs/f2fs.h   |  1 -
- fs/f2fs/inline.c | 25 +++++++++----------------
- 2 files changed, 9 insertions(+), 17 deletions(-)
+ fs/f2fs/gc.c |  8 ++++----
+ fs/f2fs/gc.h | 28 ++++++++++++++--------------
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 1bd1752..5f47496 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1645,7 +1645,6 @@ int f2fs_read_inline_data(struct inode *, struct page *);
- int f2fs_convert_inline_page(struct dnode_of_data *, struct page *);
- int f2fs_convert_inline_inode(struct inode *);
- int f2fs_write_inline_data(struct inode *, struct page *);
--void truncate_inline_data(struct page *, u64);
- bool recover_inline_data(struct inode *, struct page *);
- struct f2fs_dir_entry *find_in_inline_dir(struct inode *, struct qstr *,
- 							struct page **);
-diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-index fa2aa2f..1484c00 100644
---- a/fs/f2fs/inline.c
-+++ b/fs/f2fs/inline.c
-@@ -50,6 +50,12 @@ void read_inline_data(struct page *page, struct page *ipage)
- 	SetPageUptodate(page);
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 67860b6..ba89e27 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -44,7 +44,7 @@ static int gc_thread_func(void *data)
+ 			break;
+ 
+ 		if (sbi->sb->s_writers.frozen >= SB_FREEZE_WRITE) {
+-			wait_ms = increase_sleep_time(gc_th, wait_ms);
++			increase_sleep_time(gc_th, &wait_ms);
+ 			continue;
+ 		}
+ 
+@@ -65,15 +65,15 @@ static int gc_thread_func(void *data)
+ 			continue;
+ 
+ 		if (!is_idle(sbi)) {
+-			wait_ms = increase_sleep_time(gc_th, wait_ms);
++			increase_sleep_time(gc_th, &wait_ms);
+ 			mutex_unlock(&sbi->gc_mutex);
+ 			continue;
+ 		}
+ 
+ 		if (has_enough_invalid_blocks(sbi))
+-			wait_ms = decrease_sleep_time(gc_th, wait_ms);
++			decrease_sleep_time(gc_th, &wait_ms);
+ 		else
+-			wait_ms = increase_sleep_time(gc_th, wait_ms);
++			increase_sleep_time(gc_th, &wait_ms);
+ 
+ 		stat_inc_bggc_count(sbi);
+ 
+diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
+index 524543a..d5ff97c 100644
+--- a/fs/f2fs/gc.h
++++ b/fs/f2fs/gc.h
+@@ -66,26 +66,26 @@ static inline block_t limit_free_user_blocks(struct f2fs_sb_info *sbi)
+ 	return (long)(reclaimable_user_blocks * LIMIT_FREE_BLOCK) / 100;
  }
  
-+static void truncate_inline_data(struct page *ipage)
-+{
-+	f2fs_wait_on_page_writeback(ipage, NODE);
-+	memset(inline_data_addr(ipage), 0, MAX_INLINE_DATA);
-+}
-+
- int f2fs_read_inline_data(struct inode *inode, struct page *page)
+-static inline long increase_sleep_time(struct f2fs_gc_kthread *gc_th, long wait)
++static inline void increase_sleep_time(struct f2fs_gc_kthread *gc_th,
++								long *wait)
  {
- 	struct page *ipage;
-@@ -125,7 +131,7 @@ no_update:
- 	set_inode_flag(F2FS_I(dn->inode), FI_APPEND_WRITE);
+-	if (wait == gc_th->no_gc_sleep_time)
+-		return wait;
++	if (*wait == gc_th->no_gc_sleep_time)
++		return;
  
- 	/* clear inline data and flag after data writeback */
--	truncate_inline_data(dn->inode_page, 0);
-+	truncate_inline_data(dn->inode_page);
- clear_out:
- 	stat_dec_inline_inode(dn->inode);
- 	f2fs_clear_inline_inode(dn->inode);
-@@ -198,19 +204,6 @@ int f2fs_write_inline_data(struct inode *inode, struct page *page)
- 	return 0;
+-	wait += gc_th->min_sleep_time;
+-	if (wait > gc_th->max_sleep_time)
+-		wait = gc_th->max_sleep_time;
+-	return wait;
++	*wait += gc_th->min_sleep_time;
++	if (*wait > gc_th->max_sleep_time)
++		*wait = gc_th->max_sleep_time;
  }
  
--void truncate_inline_data(struct page *ipage, u64 from)
--{
--	void *addr;
--
--	if (from >= MAX_INLINE_DATA)
--		return;
--
--	f2fs_wait_on_page_writeback(ipage, NODE);
--
--	addr = inline_data_addr(ipage);
--	memset(addr + from, 0, MAX_INLINE_DATA - from);
--}
--
- bool recover_inline_data(struct inode *inode, struct page *npage)
+-static inline long decrease_sleep_time(struct f2fs_gc_kthread *gc_th, long wait)
++static inline void decrease_sleep_time(struct f2fs_gc_kthread *gc_th,
++								long *wait)
  {
- 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
-@@ -252,7 +245,7 @@ process_inline:
- 	if (f2fs_has_inline_data(inode)) {
- 		ipage = get_node_page(sbi, inode->i_ino);
- 		f2fs_bug_on(sbi, IS_ERR(ipage));
--		truncate_inline_data(ipage, 0);
-+		truncate_inline_data(ipage);
- 		f2fs_clear_inline_inode(inode);
- 		update_inode(inode, ipage);
- 		f2fs_put_page(ipage, 1);
-@@ -370,7 +363,7 @@ static int f2fs_convert_inline_dir(struct inode *dir, struct page *ipage,
- 	set_page_dirty(page);
+-	if (wait == gc_th->no_gc_sleep_time)
+-		wait = gc_th->max_sleep_time;
++	if (*wait == gc_th->no_gc_sleep_time)
++		*wait = gc_th->max_sleep_time;
  
- 	/* clear inline dir and flag after data writeback */
--	truncate_inline_data(ipage, 0);
-+	truncate_inline_data(ipage);
+-	wait -= gc_th->min_sleep_time;
+-	if (wait <= gc_th->min_sleep_time)
+-		wait = gc_th->min_sleep_time;
+-	return wait;
++	*wait -= gc_th->min_sleep_time;
++	if (*wait <= gc_th->min_sleep_time)
++		*wait = gc_th->min_sleep_time;
+ }
  
- 	stat_dec_inline_dir(dir);
- 	clear_inode_flag(F2FS_I(dir), FI_INLINE_DENTRY);
+ static inline bool has_enough_invalid_blocks(struct f2fs_sb_info *sbi)
 -- 
 2.2.2
 
