@@ -1,116 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187AbbAZFM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 00:12:57 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:49572 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbbAZFMy (ORCPT
+	id S1752509AbbAZFSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 00:18:09 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:49640 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830AbbAZFSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 00:12:54 -0500
-X-AuditID: cbfee68f-f791c6d000004834-98-54c5ccd0863d
-Message-id: <54C5CCD0.7020100@samsung.com>
-Date: Mon, 26 Jan 2015 14:12:48 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        =?UTF-8?B?7J207IOB67Cw?= <sangbae90.lee@samsung.com>,
-        =?UTF-8?B?64yA7J246riw?= <inki.dae@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] extcon next for 3.20
-References: <54C5CBF1.9090104@samsung.com>
-In-reply-to: <54C5CBF1.9090104@samsung.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkUPfCmaMhBlNfmVg0L17PZjHp/gQW
-	i7NNb9gtLu+aw2Zxu3EFm8XxTwdZHNg89s9dw+7Rt2UVo8fnTXIBzFFcNimpOZllqUX6dglc
-	GY2/PzMV7OCr6Dl+kL2B8SZ3FyMnh4SAicSzllMsELaYxIV769m6GLk4hASWMko8WHOXCaao
-	60UTO4gtJLCIUWLCCwkI+zWjxPeZxl2MHBy8AloSn8+agoRZBFQljk9tYwax2YDC+1/cYAOx
-	RQXCJFZOvwK2i1dAUOLH5HtgtoiAhsTLo7dYQPYyC3xilDjxdSZYQlhAR+Li9amMIPOFgAZt
-	25MHEuYU0JZ437sJ7DRmAXWJSfMWMUPY8hKb17xlBpkjIbCNXeLAtuUsEAcJSHybfIgFZI6E
-	gKzEpgPMEG9JShxccYNlAqPYLCQnzUIydhaSsQsYmVcxiqYWJBcUJ6UXGesVJ+YWl+al6yXn
-	525iBEbV6X/P+ncw3j1gfYhRgINRiYe3ofloiBBrYllxZe4hRlOgKyYyS4km5wNjN68k3tDY
-	zMjC1MTU2Mjc0kxJnHeh1M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxd/6qKnJW2b9j0
-	m2mZkK1k8Y+XilPXrNE8qFH5JqVTW5xf9JhQyHLn54evnPyfvX/587+b5/xJ/RP/xGLVnZta
-	mw1jr1W9zb8sbng8I+eiVbZzWUjZ4etnC3raLCccYedfd5x7SvFyO76vmpWrzauK9h3xYn8z
-	VeNpxcKn1+9cED3d1/n7wlM/JZbijERDLeai4kQAMcX4XqUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jAd0LZ46GGDxfr2vRvHg9m8Wk+xNY
-	LM42vWG3uLxrDpvF7cYVbBbHPx1kcWDz2D93DbtH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl
-	56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAC1WUihLzCkFCgUkFhcr6dth
-	mhAa4qZrAdMYoesbEgTXY2SABhLWMGY0/v7MVLCDr6Ln+EH2Bsab3F2MnBwSAiYSXS+a2CFs
-	MYkL99azgdhCAosYJSa8kICwXzNKfJ9p3MXIwcEroCXx+awpSJhFQFXi+NQ2ZhCbDSi8/8UN
-	sFZRgTCJldOvsIDYvAKCEj8m3wOzRQQ0JF4evQVkc3EwC3xilDjxdSZYQlhAR+Li9amMIPOF
-	gAZt25MHEuYU0JZ437uJCcRmFlCXmDRvETOELS+xec1b5gmMArOQrJiFpGwWkrIFjMyrGEVT
-	C5ILipPScw31ihNzi0vz0vWS83M3MYJj9pnUDsaVDRaHGAU4GJV4eBuaj4YIsSaWFVfmHmKU
-	4GBWEuEtnwIU4k1JrKxKLcqPLyrNSS0+xGgKDIGJzFKiyfnAdJJXEm9obGJmZGlkbmhhZGyu
-	JM6rZN8WIiSQnliSmp2aWpBaBNPHxMEp1cBYuvv3mQVPHhs6VL247bp+j9gaVktdlTNXdx04
-	ZP9lTXn+trwSU0ZduaM9U9rMds1jdbpb//U9i8vLVreOk2dyHiddvqvGNelAX4Ftme6qIzK3
-	G1XfyJ/XeZC3Q/7+1qMcSXe8vifc8d1rZBWRIRrJMX2Db0D5ro7rhk9FeI8xXj2oXXpTWnqe
-	EktxRqKhFnNRcSIABuH39O8CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 26 Jan 2015 00:18:04 -0500
+Date: Mon, 26 Jan 2015 07:17:55 +0200
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Andri Yngvason <andri.yngvason@marel.com>
+Cc: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v6 0/7] can: kvaser_usb: Leaf bugfixes and USBCan-II support
+Message-ID: <20150126051755.GA3014@Darwish.PC>
+References: <20141223154654.GB6460@vivalin-002>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141223154654.GB6460@vivalin-002>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Greg,
+Hi!
 
-I'm so sorry about missing 'linux-kerenl mailing list' address.
-I add 'linux-kernel mailing list' again.
+This is an updated patch series for the Kvaser CAN/USB devices:
 
-Best Regards,
-Chanwoo Choi
+1- Extra patches are now added to the series. Most importantly
+patch #1 which fixes a critical `sleep in atomic context' bug
+in the current upstream driver. Patch #2 fixes a corruption in
+the kernel logs, also affecting current upstream driver. Patch
+#4 was originally USBCan-II only, but since it's a generic fix,
+it's now retrofitted to the Leaf-only upstream driver first.
 
-On 01/26/2015 02:09 PM, Chanwoo Choi wrote:
-> Dear Greg,
-> 
-> This is extcon-next full request for v3.20. I add detailed description of this
-> pull request on below. Please pull extcon with following updates.
-> 
-> This pull-request is based on Linux 3.19-rc5 (char-misc-next branch).
-> 
-> Best Regards,
-> Chanwoo Choi
-> 
-> The following changes since commit ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc:
-> 
->   Linux 3.19-rc5 (2015-01-18 18:02:20 +1200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.20
-> 
-> for you to fetch changes up to 6594890020d505ddfab24a2dcd0b68b84628ed1e:
-> 
->   extcon: max77693: Constify struct regmap_config (2015-01-26 13:47:55 +0900)
-> 
-> ----------------------------------------------------------------
-> Update extcon for v3.20
-> 
-> This patchset fix minor issue of extcon driver.
-> 
-> Detailed description for patchset:
-> - Remove duplicate header file in extcon-class.c and add 'const' keyword for
->   array in extcon-max77693.c.
-> - Release iio channel when executing *_remove() function in extcon-adc-jack.c
-> 
-> ----------------------------------------------------------------
-> Ivan T. Ivanov (1):
->       extcon: adc-jack: Release IIO channel on driver remove
-> 
-> Krzysztof Kozlowski (1):
->       extcon: max77693: Constify struct regmap_config
-> 
-> Wei Yongjun (1):
->       extcon: Remove duplicated include from extcon-class.c
-> 
->  drivers/extcon/extcon-adc-jack.c | 1 +
->  drivers/extcon/extcon-class.c    | 1 -
->  drivers/extcon/extcon-max77693.c | 2 +-
->  3 files changed, 2 insertions(+), 2 deletions(-)
-> 
+2- The series has been re-organized so that patches #1 -> #4
+inclusive can go to linux-can/origin, while the rest can move
+to -next.
 
+3- There are some important updates regarding the USBCan-II
+error counters, and how really erratic their heaviour is. All
+the new details are covered at the bottom of this URL:
+
+	http://article.gmane.org/gmane.linux.can/7481
+
+4- Attached below is the new candump traces. Now
+`back-to-error-active' states appear _if_ the hardware was
+kind enough and decreased the error counters appropriately.
+The earlier code did not recognize the error counters going
+down, thus the `back-to-error-active' transitions did not
+appear.
+
+###########################################################
+
+* Bus-off scenario (with transitions active -> passive -> back-to-active):
+
+ (000.000000)  can0  20000080   [8]  00 00 00 00 00 00 30 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{48}{0}}
+ (000.000011)  can0  20000084   [8]  00 20 00 00 00 00 88 00   ERRORFRAME
+	controller-problem{tx-error-passive}
+	bus-error
+	error-counter-tx-rx{{136}{0}}
+ (000.000001)  can0  20000080   [8]  00 00 00 00 00 00 88 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{136}{0}}
+ (000.000987)  can0  20000080   [8]  00 00 00 00 00 00 98 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{152}{0}}
+ (000.002011)  can0  20000084   [8]  00 40 00 00 00 00 30 00   ERRORFRAME
+	controller-problem{back-to-error-active}
+	bus-error
+	error-counter-tx-rx{{48}{0}}
+ (000.000004)  can0  20000084   [8]  00 20 00 00 00 00 78 00   ERRORFRAME
+	controller-problem{tx-error-passive}
+	bus-error
+	error-counter-tx-rx{{120}{0}}
+ (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 88 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{136}{0}}
+ (000.000005)  can0  20000080   [8]  00 00 00 00 00 00 90 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{144}{0}}
+ (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 98 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{152}{0}}
+ (000.000001)  can0  20000080   [8]  00 00 00 00 00 00 A0 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{160}{0}}
+ (000.000966)  can0  20000080   [8]  00 00 00 00 00 00 A8 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{168}{0}}
+ (000.002998)  can0  20000084   [8]  00 40 00 00 00 00 30 00   ERRORFRAME
+	controller-problem{back-to-error-active}
+	bus-error
+	error-counter-tx-rx{{48}{0}}
+ (000.000004)  can0  20000084   [8]  00 20 00 00 00 00 80 00   ERRORFRAME
+	controller-problem{tx-error-passive}
+	bus-error
+	error-counter-tx-rx{{128}{0}}
+ (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 88 00   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{136}{0}}
+ (001.031035)  can0  200000C0   [8]  00 00 00 00 00 00 00 29   ERRORFRAME
+	bus-off
+	bus-error
+	error-counter-tx-rx{{0}{41}}
+
+###########################################################
+
+Regular sending, unpluggng CAN connector, then plugging again:
+
+(with transitions active -> warning -> passive)
+
+[ As stated earlier, the counters don't get decreased upon CAN
+replug, even if they were constantly polled. ]
+
+ (000.011001)  can0  2A1   [1]  E5
+ (000.010001)  can0  50E   [8]  E6 05 00 00 00 00 00 00
+ (000.009999)  can0  009   [1]  E7
+ (000.011000)  can0  6E2   [8]  E8 05 00 00 00 00 00 00
+ (000.009999)  can0  314   [2]  E9 05
+ (000.010001)  can0  708   [6]  EA 05 00 00 00 00
+ (000.010991)  can0  20000080   [8]  00 00 00 00 00 00 00 09   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{9}}
+ (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 00 0A   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{10}}
+ (000.000007)  can0  20000080   [8]  00 00 00 00 00 00 00 2E   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{46}}
+ (000.000003)  can0  20000080   [8]  00 00 00 00 00 00 00 37   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{55}}
+ (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 00 40   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{64}}
+ (000.000993)  can0  20000080   [8]  00 00 00 00 00 00 00 49   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{73}}
+ (000.000002)  can0  20000080   [8]  00 00 00 00 00 00 00 52   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{82}}
+ (000.000001)  can0  20000080   [8]  00 00 00 00 00 00 00 5B   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{91}}
+ (000.000028)  can0  20000084   [8]  00 04 00 00 00 00 00 6C   ERRORFRAME
+	controller-problem{rx-error-warning}
+	bus-error
+	error-counter-tx-rx{{0}{108}}
+ (000.000955)  can0  20000080   [8]  00 00 00 00 00 00 00 7F   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{127}}
+ (000.000008)  can0  20000084   [8]  00 10 00 00 00 00 00 87   ERRORFRAME
+	controller-problem{rx-error-passive}
+	bus-error
+	error-counter-tx-rx{{0}{135}}
+ (000.000001)  can0  20000080   [8]  00 00 00 00 00 00 00 87   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{135}}
+ (000.000004)  can0  20000080   [8]  00 00 00 00 00 00 00 87   ERRORFRAME
+	bus-error
+	error-counter-tx-rx{{0}{135}}
+
+((( Then a continous flood, exactly similar to the above packet, appears )))
+
+ (000.500004)  can0  2ED   [4]  EB 05 00 00
+ (000.000006)  can0  0DD   [5]  EC 05 00 00 00
+ (000.000002)  can0  1D3   [1]  ED
+ (000.000988)  can0  20D   [8]  EE 05 00 00 00 00 00 00
+ (000.000006)  can0  04B   [8]  EF 05 00 00 00 00 00 00
+ (000.000002)  can0  320   [8]  F0 05 00 00 00 00 00 00
+ (000.000002)  can0  023   [8]  F1 05 00 00 00 00 00 00
+ (000.000989)  can0  21D   [8]  F2 05 00 00 00 00 00 00
+ (000.000005)  can0  17D   [8]  F3 05 00 00 00 00 00 00
+ (000.000002)  can0  6DC   [8]  F4 05 00 00 00 00 00 00
+ (000.000993)  can0  62D   [8]  F5 05 00 00 00 00 00 00
+ (000.000006)  can0  18B   [6]  F6 05 00 00 00 00
+ (000.000001)  can0  7EB   [8]  F7 05 00 00 00 00 00 00
+ (000.000001)  can0  014   [8]  F8 05 00 00 00 00 00 00
+ (000.000994)  can0  52F   [8]  F9 05 00 00 00 00 00 00
+
+--
+Regards,
+Darwish
