@@ -1,38 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456AbbAZS1B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:27:01 -0500
-Received: from resqmta-ch2-01v.sys.comcast.net ([69.252.207.33]:56906 "EHLO
-	resqmta-ch2-01v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755058AbbAZS07 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:26:59 -0500
-Date: Mon, 26 Jan 2015 12:26:57 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 2/3] slab: zap kmem_cache_shrink return value
-In-Reply-To: <20150126170418.GC28978@esperanza>
-Message-ID: <alpine.DEB.2.11.1501261226250.16638@gentwo.org>
-References: <cover.1422275084.git.vdavydov@parallels.com> <b89d28384f8ec7865c3fefc2f025955d55798b78.1422275084.git.vdavydov@parallels.com> <alpine.DEB.2.11.1501260949150.15849@gentwo.org> <20150126170418.GC28978@esperanza>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756100AbbAZSfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:35:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754240AbbAZSfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 13:35:05 -0500
+Date: Mon, 26 Jan 2015 19:34:15 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, eranian@gmail.com, mark.rutland@arm.com,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+Subject: Re: [RFC][PATCH 0/3] perf fixes
+Message-ID: <20150126183415.GA7810@krava.brq.redhat.com>
+References: <20150123125159.696530128@infradead.org>
+ <alpine.DEB.2.11.1501260925370.30598@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.11.1501261300570.30598@vincent-weaver-1.umelst.maine.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1501261300570.30598@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015, Vladimir Davydov wrote:
+On Mon, Jan 26, 2015 at 01:03:47PM -0500, Vince Weaver wrote:
+> On Mon, 26 Jan 2015, Vince Weaver wrote:
+> 
+> > I applied this to (just before) 3.19-rc6 and let it run on my 
+> > troublemaking Haswell machine overnight.  It is looking good!
+> 
+> spoke too soon, managed to trigger one of the new warnings you added.
+> 
+> This is
+>         WARN_ON_ONCE(event->ctx != ctx);
+> in event_sched_out()
 
-> __cache_shrink() is used not only in __kmem_cache_shrink(), but also in
-> SLAB's __kmem_cache_shutdown(), where we do need its return value to
-> check if the cache is empty.
+I trigered the same one, should be addressed by the fix Peter
+sent in earlier email
 
-It could be useful to know if a slab is empty. So maybe leave
-kmem_cache_shrink the way it is and instead fix up slub to return the
-proper value?
+jirka
 
+> 
+> [42437.159176] ------------[ cut here ]------------
+> [42437.164613] WARNING: CPU: 1 PID: 15433 at kernel/events/core.c:1525 event_sched_out.isra.72+0x25e/0x2c0()
+> [42437.175338] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp intel_rapl iosf_mbi coretemp kvm snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic snd_hda_intel crct10dif_pclmul snd_hda_controller crc32_pclmul ppdev ghash_clmulni_intel iTCO_wdt iTCO_vendor_support aesni_intel aes_x86_64 lpc_ich mfd_core evdev lrw mei_me i915 psmouse snd_hda_codec mei xhci_pci gf128mul i2c_i801 serio_raw xhci_hcd glue_helper snd_hwdep snd_pcm ablk_helper cryptd snd_timer drm_kms_helper parport_pc parport tpm_tis pcspkr snd tpm drm battery video soundcore wmi i2c_algo_bit button processor sg sr_mod sd_mod cdrom ehci_pci ehci_hcd ahci libahci e1000e libata ptp usbcore scsi_mod usb_common pps_core crc32c_intel thermal fan thermal_sys
+> [42437.248890] CPU: 1 PID: 15433 Comm: perf_fuzzer Tainted: G        W      3.19.0-rc5+ #125
+> [42437.258294] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+> [42437.266772]  ffffffff81a3f194 ffff8800c83bfbc8 ffffffff816b6741 0000000000000000
+> [42437.275427]  0000000000000000 ffff8800c83bfc08 ffffffff8106dcda 01926893541204d2
+> [42437.284054]  ffff8800c69a4800 ffff88011ea5ced0 ffff88011ea5ced4 ffff880118ce4000
+> [42437.292660] Call Trace:
+> [42437.295915]  [<ffffffff816b6741>] dump_stack+0x45/0x57
+> [42437.302023]  [<ffffffff8106dcda>] warn_slowpath_common+0x8a/0xc0
+> [42437.309080]  [<ffffffff8106ddca>] warn_slowpath_null+0x1a/0x20
+> [42437.315950]  [<ffffffff811587ee>] event_sched_out.isra.72+0x25e/0x2c0
+> [42437.323445]  [<ffffffff811588c1>] group_sched_out+0x71/0xd0
+> [42437.330045]  [<ffffffff8101d90a>] ? native_sched_clock+0x2a/0x90
+> [42437.337116]  [<ffffffff81158d2e>] ctx_sched_out+0xee/0x150
+> [42437.343610]  [<ffffffff81158dcb>] task_ctx_sched_out+0x3b/0x80
+> [42437.350461]  [<ffffffff8115a489>] __perf_install_in_context+0x79/0x1e0
+> [42437.358073]  [<ffffffff81154570>] remote_function+0x50/0x60
+> [42437.364702]  [<ffffffff810ef53e>] generic_exec_single+0x12e/0x190
+> [42437.371828]  [<ffffffff81154520>] ? task_clock_event_add+0x40/0x40
+> [42437.379083]  [<ffffffff810ef607>] smp_call_function_single+0x67/0xa0
+> [42437.386491]  [<ffffffff81153419>] task_function_call+0x49/0x60
+> [42437.393364]  [<ffffffff8115a410>] ? perf_cpu_hrtimer_handler+0x270/0x270
+> [42437.401167]  [<ffffffff811549fb>] perf_install_in_context+0x8b/0x100
+> [42437.408611]  [<ffffffff8115e082>] SYSC_perf_event_open+0x892/0xc60
+> [42437.415841]  [<ffffffff8115e89e>] SyS_perf_event_open+0xe/0x10
+> [42437.422680]  [<ffffffff816be6ad>] system_call_fastpath+0x16/0x1b
+> [42437.429728] ---[ end trace 963de0bbaca247a8 ]---
+> 
