@@ -1,45 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718AbbAZT5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 14:57:36 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33577 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054AbbAZT5b (ORCPT
+	id S1756834AbbAZT6W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 14:58:22 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:33259 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636AbbAZT6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 14:57:31 -0500
+	Mon, 26 Jan 2015 14:58:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150125123316.GA9141@kroah.com>
-References: <1421434179-3650-1-git-send-email-mandeep.sandhu@cyaninc.com>
-	<1421434179-3650-2-git-send-email-mandeep.sandhu@cyaninc.com>
-	<20150125123316.GA9141@kroah.com>
-Date: Mon, 26 Jan 2015 11:57:30 -0800
-Message-ID: <CANg1-_CHd2hG=5Rw7pp8J9VXBYLs-6jZ71YMBBOGksdbAO0Zyw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] uio: Simplify the lifetime logic of struct uio_device.
-From: Mandeep Sandhu <mandeep.sandhu@cyaninc.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: hjk@hansjkoch.de, linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20150123203145.GA6691@google.com>
+References: <20150123203145.GA6691@google.com>
+Date: Mon, 26 Jan 2015 11:58:16 -0800
+Message-ID: <CA+8MBbKnT=mE3kev8BRPq0GeTgHx8WVa6o54tJuBX_XXLpHdYQ@mail.gmail.com>
+Subject: Re: [GIT PULL] PCI fixes for v3.19
+From: Tony Luck <tony.luck@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Richard Zhu <Richard.Zhu@freescale.com>,
+        Yinghai Lu <yinghai@kernel.org>, Marek Kordik <kordikmarek@gmail.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Andreas Hartmann <andihartmann@freenet.de>, zermond@gmail.com,
+        David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>
+Content-Type: multipart/mixed; boundary=089e0141a3a232fc57050d938f76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +
->> +     ret = kobject_set_name(&idev->device.kobj, "uio%d", idev->minor);
->
-> dev_set_name()?
+--089e0141a3a232fc57050d938f76
+Content-Type: text/plain; charset=UTF-8
 
-There's another instance of use of kobject_set_name in
-uio_major_init(). Should I change that too ,or that should be done in
-a new (unrelated) patch?
+I'm seeing these new messages in v3.19-rc6 on ia64:
 
-Thanks,
--mandeep
+pci 0000:01:00.0: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]:
+no compatible bridge window
+pci 0000:01:00.1: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]:
+no compatible bridge window
+pci 0000:03:00.0: can't claim BAR 6 [mem 0xffe00000-0xffffffff pref]:
+no compatible bridge window
+pci 0000:0b:04.0: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]:
+no compatible bridge window
+pci 0000:80:13.0: can't claim BAR 0 [mem 0xa0220000-0xa0220fff]: no
+compatible bridge window
+pci 0000:80:16.0: can't claim BAR 0 [mem 0xa0200000-0xa0203fff 64bit]:
+no compatible bridge window
+pci 0000:80:16.1: can't claim BAR 0 [mem 0xa0204000-0xa0207fff 64bit]:
+no compatible bridge window
+pci 0000:80:16.2: can't claim BAR 0 [mem 0xa0208000-0xa020bfff 64bit]:
+no compatible bridge window
+pci 0000:80:16.3: can't claim BAR 0 [mem 0xa020c000-0xa020ffff 64bit]:
+no compatible bridge window
+pci 0000:80:16.4: can't claim BAR 0 [mem 0xa0210000-0xa0213fff 64bit]:
+no compatible bridge window
+pci 0000:80:16.5: can't claim BAR 0 [mem 0xa0214000-0xa0217fff 64bit]:
+no compatible bridge window
+pci 0000:80:16.6: can't claim BAR 0 [mem 0xa0218000-0xa021bfff 64bit]:
+no compatible bridge window
+pci 0000:80:16.7: can't claim BAR 0 [mem 0xa021c000-0xa021ffff 64bit]:
+no compatible bridge window
+pci 0000:80:01.0: can't claim BAR 8 [mem 0xa0100000-0xa01fffff]: no
+compatible bridge window
+pci 0000:81:00.0: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]:
+no compatible bridge window
+pci 0000:81:00.1: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]:
+no compatible bridge window
+pci 0000:80:05.0: can't claim BAR 8 [mem 0xa0000000-0xa00fffff]: no
+compatible bridge window
+pci 0000:83:00.0: can't claim BAR 6 [mem 0xffe00000-0xffffffff pref]:
+no compatible bridge window
 
+Bisection pointed to:
 
->
->
->
-> thanks,
->
-> greg k-h
+>       ia64/PCI: Clip bridge windows to fit in upstream windows
+
+and reverting commit ce821ef0333fc1 makes them go away again.
+
+How do I tell whether I really have a bunch of badly configured busses
+that we are just
+now able to detect, or there is something spurious in this patch? Contents of
+/proc/iomem (from the kernel with the reverted patch) attached.
+
+-Tony
+
+--089e0141a3a232fc57050d938f76
+Content-Type: text/plain; charset=US-ASCII; name="iomem.txt"
+Content-Disposition: attachment; filename="iomem.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i5ea0u770
+
+MDAwMDAwMDAtMDAwMDBmZmYgOiBTeXN0ZW0gUkFNCjAwMDAxMDAwLTAwMDVmZmZmIDogU3lzdGVt
+IFJBTQowMDA2MDAwMC0wMDA4N2ZmZiA6IFN5c3RlbSBSQU0KMDAwODgwMDAtMDAwOTZmZmYgOiBT
+eXN0ZW0gUkFNCjAwMDk3MDAwLTAwMDk3ZmZmIDogU3lzdGVtIFJBTQowMDA5ODAwMC0wMDA5ZmZm
+ZiA6IFN5c3RlbSBSQU0KMDAwYzAwMDAtMDAwZmZmZmYgOiByZXNlcnZlZAowMDEwMDAwMC0wMDNm
+ZmZmZiA6IFN5c3RlbSBSQU0KMDA0MDAwMDAtMDA0NzFmZmYgOiBTeXN0ZW0gUkFNCjAwNDcyMDAw
+LTAwYmZmZmZmIDogU3lzdGVtIFJBTQowMGMwMDAwMC0wMGZmZmZmZiA6IFN5c3RlbSBSQU0KMDEw
+MDAwMDAtMDNmZmZmZmYgOiBTeXN0ZW0gUkFNCjA0MDAwMDAwLTA1ZTZhZmZmIDogU3lzdGVtIFJB
+TQogIDA0MDAwMDAwLTA0YzM4NzNmIDogS2VybmVsIGNvZGUKICAwNGMzODc0MC0wNTY3NmY4NyA6
+IEtlcm5lbCBkYXRhCiAgMDU2NzZmODgtMDVlNmFmY2YgOiBLZXJuZWwgYnNzCjA1ZTZiMDAwLTNh
+MjQ3ZmZmIDogU3lzdGVtIFJBTQozYTI0ODAwMC0zYTI0OWZmZiA6IHJlc2VydmVkCjNhMjRhMDAw
+LTNhMjZkZmZmIDogcmVzZXJ2ZWQKM2EyNmUwMDAtM2E0ZTlmZmYgOiBTeXN0ZW0gUkFNCjNhNGVh
+MDAwLTNhNGViZmZmIDogQUNQSSBOb24tdm9sYXRpbGUgU3RvcmFnZQozYTRlYzAwMC0zYTRlZmZm
+ZiA6IFN5c3RlbSBSQU0KM2E0ZjAwMDAtM2E1MzdmZmYgOiByZXNlcnZlZAozYTUzODAwMC0zYTU5
+ZGZmZiA6IFN5c3RlbSBSQU0KM2E1OWUwMDAtM2E1YTFmZmYgOiBTeXN0ZW0gUkFNCjNhNWEyMDAw
+LTNhNWViZmZmIDogcmVzZXJ2ZWQKM2E1ZWMwMDAtM2E1ZjNmZmYgOiByZXNlcnZlZAozYTVmNDAw
+MC0zYTZiZGZmZiA6IHJlc2VydmVkCjNhNmJlMDAwLTNhNmJlZmZmIDogU3lzdGVtIFJBTQozYTZi
+ZjAwMC0zYTZlYmZmZiA6IFN5c3RlbSBSQU0KM2E2ZWMwMDAtM2E3M2JmZmYgOiByZXNlcnZlZAoz
+YTczYzAwMC0zYTc0M2ZmZiA6IFN5c3RlbSBSQU0KM2E3NDQwMDAtM2E3NDVmZmYgOiByZXNlcnZl
+ZAozYTc0NjAwMC0zYTc0N2ZmZiA6IFN5c3RlbSBSQU0KM2E3NDgwMDAtM2E3NDlmZmYgOiByZXNl
+cnZlZAozYTc0YTAwMC0zYTc0YmZmZiA6IFN5c3RlbSBSQU0KM2E3NGMwMDAtM2E3NGZmZmYgOiBy
+ZXNlcnZlZAozYTc1MDAwMC0zYTc1OWZmZiA6IHJlc2VydmVkCjNhNzVhMDAwLTNhNzViZmZmIDog
+cmVzZXJ2ZWQKM2E3NWMwMDAtM2E3NzNmZmYgOiByZXNlcnZlZAozYTc3NDAwMC0zYTc3NGZmZiA6
+IFN5c3RlbSBSQU0KM2E3NzUwMDAtM2E4NDVmZmYgOiBTeXN0ZW0gUkFNCjNhODQ2MDAwLTNhODQ3
+ZmZmIDogU3lzdGVtIFJBTQozYTg0ODAwMC0zYTkxM2ZmZiA6IFN5c3RlbSBSQU0KM2E5MTQwMDAt
+M2E5MThmZmYgOiBTeXN0ZW0gUkFNCjNhOTE5MDAwLTNhYjQxZmZmIDogU3lzdGVtIFJBTQozYWI0
+MjAwMC0zYWI0YWZmZiA6IFN5c3RlbSBSQU0KM2FiNGIwMDAtM2FjNGJmZmYgOiBTeXN0ZW0gUkFN
+CjNhYzRjMDAwLTNhYzU3ZmZmIDogcmVzZXJ2ZWQKM2FjNTgwMDAtM2FjNzlmZmYgOiByZXNlcnZl
+ZAozYWM3YTAwMC0zYWNhOWZmZiA6IHJlc2VydmVkCjNhY2FhMDAwLTNhZDBkZmZmIDogU3lzdGVt
+IFJBTQozYWQwZTAwMC0zYWQ1OWZmZiA6IFN5c3RlbSBSQU0KM2FkNWEwMDAtM2FkNmRmZmYgOiBy
+ZXNlcnZlZAozYWQ2ZTAwMC0zYWQ5OWZmZiA6IFN5c3RlbSBSQU0KM2FkOWEwMDAtM2FkOWJmZmYg
+OiByZXNlcnZlZAozYWQ5YzAwMC0zYWRhOWZmZiA6IHJlc2VydmVkCjNhZGFhMDAwLTNhZGFhZmZm
+IDogU3lzdGVtIFJBTQozYWRhYjAwMC0zYWRkMWZmZiA6IFN5c3RlbSBSQU0KM2FkZDIwMDAtM2Fk
+ZTVmZmYgOiByZXNlcnZlZAozYWRlNjAwMC0zYWRmYmZmZiA6IFN5c3RlbSBSQU0KM2FkZmMwMDAt
+M2FlMWJmZmYgOiByZXNlcnZlZAozYWUxYzAwMC0zYWUxZmZmZiA6IFN5c3RlbSBSQU0KM2FlMjAw
+MDAtM2FlM2RmZmYgOiByZXNlcnZlZAozYWUzZTAwMC0zYWU0MGZmZiA6IFN5c3RlbSBSQU0KM2Fl
+NDEwMDAtM2FlNWJmZmYgOiBTeXN0ZW0gUkFNCjNhZTVjMDAwLTNhZTVkZmZmIDogQUNQSSBOb24t
+dm9sYXRpbGUgU3RvcmFnZQozYWU1ZTAwMC0zYWU4MWZmZiA6IFN5c3RlbSBSQU0KM2FlODIwMDAt
+M2FlOWJmZmYgOiByZXNlcnZlZAozYWU5YzAwMC0zYWViN2ZmZiA6IHJlc2VydmVkCjNhZWI4MDAw
+LTNhZWI4ZmZmIDogU3lzdGVtIFJBTQozYWViOTAwMC0zYWViZmZmZiA6IFN5c3RlbSBSQU0KM2Fl
+YzAwMDAtM2FmZjVmZmYgOiByZXNlcnZlZAozYWZmNjAwMC0zYjAwMWZmZiA6IHJlc2VydmVkCjNi
+MDAyMDAwLTNiMDAzZmZmIDogcmVzZXJ2ZWQKM2IwMDQwMDAtM2IwMDVmZmYgOiBTeXN0ZW0gUkFN
+CjNiMDA2MDAwLTNiMDE3ZmZmIDogcmVzZXJ2ZWQKM2IwMTgwMDAtM2IwMTlmZmYgOiBTeXN0ZW0g
+UkFNCjNiMDFhMDAwLTNiMjFiZmZmIDogcmVzZXJ2ZWQKM2IyMWMwMDAtM2IyNjVmZmYgOiByZXNl
+cnZlZAozYjI2NjAwMC0zYjI3MWZmZiA6IFN5c3RlbSBSQU0KM2IyNzIwMDAtM2IyN2ZmZmYgOiBy
+ZXNlcnZlZAozYjI4MDAwMC0zYjJkZmZmZiA6IFN5c3RlbSBSQU0KM2IyZTAwMDAtM2IyZTFmZmYg
+OiByZXNlcnZlZAozYjJlMjAwMC0zYjNhM2ZmZiA6IFN5c3RlbSBSQU0KM2IzYTQwMDAtM2IzYjVm
+ZmYgOiByZXNlcnZlZAozYjNiNjAwMC0zYjNjN2ZmZiA6IFN5c3RlbSBSQU0KM2IzYzgwMDAtM2Iz
+ZDFmZmYgOiBTeXN0ZW0gUkFNCjNiM2QyMDAwLTNiOTM1ZmZmIDogU3lzdGVtIFJBTQozYjkzNjAw
+MC0zYjk1ZmZmZiA6IHJlc2VydmVkCjNiOTYwMDAwLTNiOTY0ZmZmIDogU3lzdGVtIFJBTQozYjk2
+NTAwMC0zYjk4OWZmZiA6IFN5c3RlbSBSQU0KM2I5OGEwMDAtM2I5OTFmZmYgOiByZXNlcnZlZAoz
+Yjk5MjAwMC0zYjlhN2ZmZiA6IFN5c3RlbSBSQU0KM2I5YTgwMDAtM2JiYWZmZmYgOiByZXNlcnZl
+ZAozYmJiMDAwMC0zYmJmZmZmZiA6IHJlc2VydmVkCjNiYzAwMDAwLTNiZWZmZmZmIDogcmVzZXJ2
+ZWQKM2JmMDAwMDAtM2MwZTVmZmYgOiByZXNlcnZlZAozYzBlNjAwMC0zYzBlNmZmZiA6IFN5c3Rl
+bSBSQU0KM2MwZTcwMDAtM2MxNmRmZmYgOiBTeXN0ZW0gUkFNCjNjMTZlMDAwLTNjMTc1ZmZmIDog
+cmVzZXJ2ZWQKM2MxNzYwMDAtM2MyMTdmZmYgOiBTeXN0ZW0gUkFNCjNjMjE4MDAwLTNjMjJkZmZm
+IDogcmVzZXJ2ZWQKM2MyMmUwMDAtM2M2MmRmZmYgOiBTeXN0ZW0gUkFNCjNjNjJlMDAwLTNjNmE5
+ZmZmIDogU3lzdGVtIFJBTQozYzZhYTAwMC0zYzdkZmZmZiA6IFN5c3RlbSBSQU0KM2M3ZTAwMDAt
+M2M3ZTNmZmYgOiByZXNlcnZlZAozYzdlNDAwMC0zYzg1OWZmZiA6IFN5c3RlbSBSQU0KM2M4NWEw
+MDAtM2M4ODhmZmYgOiBTeXN0ZW0gUkFNCjNjODg5MDAwLTNjODk1ZmZmIDogU3lzdGVtIFJBTQoz
+Yzg5NjAwMC0zYzhhMWZmZiA6IHJlc2VydmVkCjNjOGEyMDAwLTNjOGEyZmZmIDogU3lzdGVtIFJB
+TQozYzhhMzAwMC0zYzhiNWZmZiA6IFN5c3RlbSBSQU0KM2M4YjYwMDAtM2M4YzdmZmYgOiBTeXN0
+ZW0gUkFNCjNjOGM4MDAwLTNjOGM5ZmZmIDogU3lzdGVtIFJBTQozYzhjYTAwMC0zYzhkOWZmZiA6
+IHJlc2VydmVkCjNjOGRhMDAwLTNjOGYwZmZmIDogU3lzdGVtIFJBTQozYzhmMTAwMC0zYzhmN2Zm
+ZiA6IFN5c3RlbSBSQU0KM2M4ZjgwMDAtM2NhNGZmZmYgOiBTeXN0ZW0gUkFNCjNjYTUwMDAwLTNj
+YTUzZmZmIDogcmVzZXJ2ZWQKM2NhNTQwMDAtM2NhNTlmZmYgOiBTeXN0ZW0gUkFNCjNjYTVhMDAw
+LTNjYWIxZmZmIDogU3lzdGVtIFJBTQozY2FiMjAwMC0zY2FiM2ZmZiA6IHJlc2VydmVkCjNjYWI0
+MDAwLTNjYzg1ZmZmIDogU3lzdGVtIFJBTQozY2M4NjAwMC0zY2M4N2ZmZiA6IHJlc2VydmVkCjNj
+Yzg4MDAwLTNjZGQ5ZmZmIDogU3lzdGVtIFJBTQozY2RkYTAwMC0zY2RkYmZmZiA6IHJlc2VydmVk
+CjNjZGRjMDAwLTNjZTNiZmZmIDogU3lzdGVtIFJBTQozY2UzYzAwMC0zY2UzZGZmZiA6IHJlc2Vy
+dmVkCjNjZTNlMDAwLTNkODZiZmZmIDogU3lzdGVtIFJBTQozZDg2YzAwMC0zZDg3M2ZmZiA6IFN5
+c3RlbSBSQU0KM2Q4NzQwMDAtM2Q4YWJmZmYgOiBTeXN0ZW0gUkFNCjNkOGFjMDAwLTNkOGI1ZmZm
+IDogU3lzdGVtIFJBTQozZDhiNjAwMC0zZDhkN2ZmZiA6IFN5c3RlbSBSQU0KM2Q4ZDgwMDAtM2Q4
+ZGRmZmYgOiBTeXN0ZW0gUkFNCjNkOGRlMDAwLTNkOWVmZmZmIDogU3lzdGVtIFJBTQozZDlmMDAw
+MC0zZDlmMWZmZiA6IHJlc2VydmVkCjNkOWYyMDAwLTNkYTQxZmZmIDogU3lzdGVtIFJBTQozZGE0
+MjAwMC0zZGE0M2ZmZiA6IHJlc2VydmVkCjNkYTQ0MDAwLTNkYmY2ZmZmIDogU3lzdGVtIFJBTQoz
+ZGJmNzAwMC0zZGJmZGZmZiA6IFN5c3RlbSBSQU0KM2RiZmUwMDAtM2U4MGRmZmYgOiBTeXN0ZW0g
+UkFNCjNlODBlMDAwLTNlODBmZmZmIDogcmVzZXJ2ZWQKM2U4MTAwMDAtM2U4MWRmZmYgOiBTeXN0
+ZW0gUkFNCjNlODFlMDAwLTNlODFmZmZmIDogcmVzZXJ2ZWQKM2U4MjAwMDAtM2U4NDVmZmYgOiBT
+eXN0ZW0gUkFNCjNlODQ2MDAwLTNlOGJiZmZmIDogU3lzdGVtIFJBTQozZThiYzAwMC0zZjhkNmZm
+ZiA6IFN5c3RlbSBSQU0KM2Y4ZDcwMDAtM2ZjZDZmZmYgOiByZXNlcnZlZAozZmNkNzAwMC0zZmNl
+MGZmZiA6IFN5c3RlbSBSQU0KM2ZjZTEwMDAtM2ZkY2VmZmYgOiByZXNlcnZlZAozZmRjZjAwMC0z
+ZmRmMmZmZiA6IFN5c3RlbSBSQU0KM2ZkZjMwMDAtM2ZmZmZmZmYgOiByZXNlcnZlZAo1MDAwMDAw
+MC05ZmZmZmZmZiA6IFBDSSBCdXMgMDAwMDowMAogIDUwMDAwMDAwLTU4MGZmZmZmIDogUENJIEJ1
+cyAwMDAwOjBiCiAgICA1MDAwMDAwMC01N2ZmZmZmZiA6IDAwMDA6MGI6MDQuMAogICAgNTgwMDAw
+MDAtNTgwMGZmZmYgOiAwMDAwOjBiOjA0LjAKICA1ODEwMDAwMC01ODFmZmZmZiA6IFBDSSBCdXMg
+MDAwMDowMwogICAgNTgxMDAwMDAtNTgxMGZmZmYgOiAwMDAwOjAzOjAwLjAKICAgICAgNTgxMDAw
+MDAtNTgxMGZmZmYgOiBtcHQKICAgIDU4MTEwMDAwLTU4MTEzZmZmIDogMDAwMDowMzowMC4wCiAg
+ICAgIDU4MTEwMDAwLTU4MTEzZmZmIDogbXB0CiAgNTgyMDAwMDAtNTgyZmZmZmYgOiBQQ0kgQnVz
+IDAwMDA6MDEKICAgIDU4MjAwMDAwLTU4MjFmZmZmIDogMDAwMDowMTowMC4xCiAgICAgIDU4MjAw
+MDAwLTU4MjFmZmZmIDogaWdiCiAgICA1ODIyMDAwMC01ODIzZmZmZiA6IDAwMDA6MDE6MDAuMQog
+ICAgICA1ODIyMDAwMC01ODIzZmZmZiA6IGlnYgogICAgNTgyNDAwMDAtNTgyNWZmZmYgOiAwMDAw
+OjAxOjAwLjAKICAgICAgNTgyNDAwMDAtNTgyNWZmZmYgOiBpZ2IKICAgIDU4MjYwMDAwLTU4Mjdm
+ZmZmIDogMDAwMDowMTowMC4wCiAgICAgIDU4MjYwMDAwLTU4MjdmZmZmIDogaWdiCiAgICA1ODI4
+MDAwMC01ODI4M2ZmZiA6IDAwMDA6MDE6MDAuMQogICAgICA1ODI4MDAwMC01ODI4M2ZmZiA6IGln
+YgogICAgNTgyODQwMDAtNTgyODdmZmYgOiAwMDAwOjAxOjAwLjAKICAgICAgNTgyODQwMDAtNTgy
+ODdmZmYgOiBpZ2IKICA1ODMwMDAwMC01ODMwM2ZmZiA6IDAwMDA6MDA6MTYuMAogIDU4MzA0MDAw
+LTU4MzA3ZmZmIDogMDAwMDowMDoxNi4xCiAgNTgzMDgwMDAtNTgzMGJmZmYgOiAwMDAwOjAwOjE2
+LjIKICA1ODMwYzAwMC01ODMwZmZmZiA6IDAwMDA6MDA6MTYuMwogIDU4MzEwMDAwLTU4MzEzZmZm
+IDogMDAwMDowMDoxNi40CiAgNTgzMTQwMDAtNTgzMTdmZmYgOiAwMDAwOjAwOjE2LjUKICA1ODMx
+ODAwMC01ODMxYmZmZiA6IDAwMDA6MDA6MTYuNgogIDU4MzFjMDAwLTU4MzFmZmZmIDogMDAwMDow
+MDoxNi43CiAgNTgzMjAwMDAtNTgzMjBmZmYgOiAwMDAwOjAwOjEzLjAKICA1ODMyMTAwMC01ODMy
+MTNmZiA6IDAwMDA6MDA6MWQuNwogICAgNTgzMjEwMDAtNTgzMjEzZmYgOiBlaGNpX2hjZAogIDU4
+MzIxNDAwLTU4MzIxN2ZmIDogMDAwMDowMDoxYS43CiAgICA1ODMyMTQwMC01ODMyMTdmZiA6IGVo
+Y2lfaGNkCiAgNTgzMjE4MDAtNTgzMjE4ZmYgOiAwMDAwOjAwOjFmLjMKYTAwMDAwMDAtYTAwMGZm
+ZmYgOiBtcHQKYTAwMTAwMDAtYTAwMTNmZmYgOiBtcHQKYTAxMDAwMDAtYTAxMWZmZmYgOiBpZ2IK
+YTAxMjAwMDAtYTAxM2ZmZmYgOiBpZ2IKYTAxNDAwMDAtYTAxNWZmZmYgOiBpZ2IKYTAxNjAwMDAt
+YTAxN2ZmZmYgOiBpZ2IKYTAxODAwMDAtYTAxODNmZmYgOiBpZ2IKYTAxODQwMDAtYTAxODdmZmYg
+OiBpZ2IKZmVhMDAwMDAtZmVhMDAwMWYgOiBwbnAgMDA6MDEKZmVjMDAwMDAtZmVjZmZmZmYgOiBQ
+TlAwMDAzOjAwCiAgZmVjNDAwMDAtZmVjN2ZmZmYgOiBQTlAwMDAzOjAxCmZlZDFiMDAwLWZlZDFi
+ZmZmIDogcG5wIDAwOjAxCmZlZDFjMDAwLWZlZDhiZmZlIDogcG5wIDAwOjAxCmZlZTAwMDAwLWZl
+ZWZmZmZmIDogcG5wIDAwOjAxCmZmMDAwMDAwLWZmZmZmZmZmIDogcG5wIDAwOjAxCjEwMDAwMDAw
+MC0zZmZmZmZmZmYgOiBTeXN0ZW0gUkFNCjQ0MDAwMDAwMC00ZmFhZDVmZmYgOiBTeXN0ZW0gUkFN
+CjRmYWFkNjAwMC00ZmFmYTVmZmYgOiBTeXN0ZW0gUkFNCjRmYWZhNjAwMC00ZmIwMGJmZmYgOiBy
+ZXNlcnZlZAo0ZmIwMGMwMDAtNGZiMDVkZmZmIDogU3lzdGVtIFJBTQo0ZmIwNWUwMDAtNGZiMGI5
+ZmZmIDogU3lzdGVtIFJBTQo0ZmIwYmEwMDAtNGZiMGQxZmZmIDogU3lzdGVtIFJBTQo0ZmIwZDIw
+MDAtNGZiMGRiZmZmIDogU3lzdGVtIFJBTQogIDRmYjBkMjAxOC00ZmIwZDQxMTggOiBFRkkgTWVt
+b3J5IE1hcAogIDRmYjBkNjAxOC00ZmIwZDYwNjggOiBCb290IHBhcmFtZXRlcgo0ZmIwZGMwMDAt
+NGZiMGU3ZmZmIDogU3lzdGVtIFJBTQo0ZmIwZTgwMDAtNGZiMGU5ZmZmIDogcmVzZXJ2ZWQKNGZi
+MGVhMDAwLTRmYjBlZmZmZiA6IFN5c3RlbSBSQU0KNGZiMGYwMDAwLTRmYjExM2ZmZiA6IFN5c3Rl
+bSBSQU0KNGZiMTE0MDAwLTRmYjExNWZmZiA6IFN5c3RlbSBSQU0KNGZiMTE2MDAwLTRmYjE1M2Zm
+ZiA6IFN5c3RlbSBSQU0KNGZiMTU0MDAwLTRmYjE1NWZmZiA6IFN5c3RlbSBSQU0KNGZiMTU2MDAw
+LTRmYmZmZmZmZiA6IFN5c3RlbSBSQU0KNGZjMDAwMDAwLTRmZmZmZmZmZiA6IHJlc2VydmVkCjFm
+ZmZmZmMwMDAwMDAtMWZmZmZmYzMzZGNmNyA6IFBDSSBCdXMgMDAwMDowMCBJL08gUG9ydHMgMDAw
+MDAwMDAtMDAwMDBjZjcKMWZmZmZmYzQwMDAwMC0xZmZmZmZlM2ZmZmZmIDogUENJIEJ1cyAwMDAw
+OjAwIEkvTyBQb3J0cyAwMDAwMTAwMC0wMDAwOGZmZgoxZmZmZmZlNDAwMDAwLTFmZmZmZmZmZmZm
+ZmUgOiBQQ0kgQnVzIDAwMDA6ODAgSS9PIFBvcnRzIDAwMDA5MDAwLTAwMDBmZmZlCg==
+--089e0141a3a232fc57050d938f76--
