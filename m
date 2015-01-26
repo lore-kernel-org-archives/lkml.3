@@ -1,105 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244AbbAZWrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 17:47:23 -0500
-Received: from mail-bn1bon0138.outbound.protection.outlook.com ([157.56.111.138]:29092
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757224AbbAZWrU convert rfc822-to-8bit (ORCPT
+	id S1756849AbbAZWyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 17:54:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46014 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521AbbAZWya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 17:47:20 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Nicholas Mc Guire <der.herr@hofr.at>, KY Srinivasan <kys@microsoft.com>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] net: hyperv: else branch not necessary
-Thread-Topic: [PATCH v2] net: hyperv: else branch not necessary
-Thread-Index: AQHQOMsMfFDVAhk12kKnTs5nk2uyyZzTAjRQ
-Date: Mon, 26 Jan 2015 22:47:18 +0000
-Message-ID: <BN1PR0301MB0770F37DD16FE4D9AF368083CA350@BN1PR0301MB0770.namprd03.prod.outlook.com>
-References: <1422209317-18975-1-git-send-email-der.herr@hofr.at>
-In-Reply-To: <1422209317-18975-1-git-send-email-der.herr@hofr.at>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [96.237.174.38]
-authentication-results: hofr.at; dkim=none (message not signed)
- header.d=none;hofr.at; dmarc=none action=none header.from=microsoft.com;
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BN1PR0301MB0707;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0707;
-x-forefront-prvs: 0468FE4A2B
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(377454003)(13464003)(40100003)(102836002)(2900100001)(99286002)(2656002)(87936001)(86362001)(1511001)(2950100001)(62966003)(122556002)(77156002)(66066001)(2421001)(76576001)(106116001)(33656002)(19580395003)(76176999)(50986999)(54606007)(46102003)(92566002)(74316001)(54356999)(54206007)(19580405001)(86612001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0707;H:BN1PR0301MB0770.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 Jan 2015 17:54:30 -0500
+Date: Mon, 26 Jan 2015 14:54:29 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
+        Dexuan Cui <decui@microsoft.com>
+Subject: Re: [PATCH v3] Drivers: hv: vmbus: prevent cpu offlining on newer
+ hypervisors
+Message-ID: <20150126225429.GA17514@kroah.com>
+References: <1417431161-12845-1-git-send-email-vkuznets@redhat.com>
+ <1421081411-5759-1-git-send-email-vkuznets@redhat.com>
+ <20150125133659.GA21552@kroah.com>
+ <87k309g729.fsf@vitty.brq.redhat.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 26 Jan 2015 22:47:18.1689
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0707
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k309g729.fsf@vitty.brq.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 26, 2015 at 11:38:54AM +0100, Vitaly Kuznetsov wrote:
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> 
+> > On Mon, Jan 12, 2015 at 05:50:11PM +0100, Vitaly Kuznetsov wrote:
+> >> When an SMP Hyper-V guest is running on top of 2012R2 Server and secondary
+> >> cpus are sent offline (with echo 0 > /sys/devices/system/cpu/cpu$cpu/online)
+> >> the system freeze is observed. This happens due to the fact that on newer
+> >> hypervisors (Win8, WS2012R2, ...) vmbus channel handlers are distributed
+> >> across all cpus (see init_vp_index() function in drivers/hv/channel_mgmt.c)
+> >> and on cpu offlining nobody reassigns them to CPU0. Prevent cpu offlining
+> >> when vmbus is loaded until the issue is fixed host-side.
+> >> 
+> >> This patch also disables hibernation but it is OK as it is also broken (MCE
+> >> error is hit on resume). Suspend still works.
+> >> 
+> >> Tested with WS2008R2 and WS2012R2.
+> >> 
+> >> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> >> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> >> ---
+> >> Changes since v2:
+> >> - repair the build when vmbus is builded as a module [Greg KH] by saving
+> >>   current cpu_disable pointer to previous_cpu_disable and restoring it on
+> >>   unload;
+> >> - return -ENOSYS (same as native_cpu_disable when !CONFIG_HOTPLUG_CPU) instead
+> >>   of -1 in hyperv_cpu_disable().
+> >> 
+> >> Changes since v1:
+> >> - introduce hv_cpu_hotplug_quirk() function to not spread #ifdefs [Greg KH];
+> >> - add pr_notice() message "hv_vmbus: CPU offlining is not supported by
+> >>   hypervisor".
+> >> ---
+> >>  drivers/hv/vmbus_drv.c | 36 ++++++++++++++++++++++++++++++++++++
+> >>  1 file changed, 36 insertions(+)
+> >
+> > Doesn't apply to my char-misc-test branch at all :(
+> 
+> Another mid-air collision with K.Y's "Drivers: hv: vmbus: Implement a
+> clockevent device", please use the attached version. No functional
+> changes are required, I just fixed the merge conflict (includes).
+> 
+> Othere than that (and sorry for meddling), would it it be better if
+> you switch to 'pull requests' workflow with K.Y? There is a lot of
+> ongoing work in hyperv nowdays and such collisions seem otherwise
+> inevitable ...
 
+This is a trivial number of patches for this subsystem, so no, a git
+workflow isn't needed.  But if KY would collect the patches up and send
+them to me for all hyperv patches from now on, that would make these
+types of issues go away, KY, can you do that from now on?
 
-> -----Original Message-----
-> From: Nicholas Mc Guire [mailto:der.herr@hofr.at]
-> Sent: Sunday, January 25, 2015 1:09 PM
-> To: KY Srinivasan
-> Cc: Haiyang Zhang; devel@linuxdriverproject.org; netdev@vger.kernel.org;
-> linux-kernel@vger.kernel.org; Nicholas Mc Guire
-> Subject: [PATCH v2] net: hyperv: else branch not necessary
-> 
-> As the if completes with a unconditional goto the else branch
-> is not needed here.
-> 
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+thanks,
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Thank you!
-
-> ---
-> 
-> v2: added missing subsystem string in subject line - patch unchanged
-> 
-> All paths of execution that did not exit through the if branch will
-> go through the else branch so no need for an explicit else here
-> 
-> Patch was compile tested only for x86_64_defconfig + CONFIG_X86_VSMP=y
-> CONFIG_HYPERV=m, CONFIG_HYPERV_NET=m
-> 
-> Patch is against 3.19.0-rc5 -next-20150123
-> 
->  drivers/net/hyperv/rndis_filter.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/net/hyperv/rndis_filter.c
-> b/drivers/net/hyperv/rndis_filter.c
-> index 7bd8387..efb84a9 100644
-> --- a/drivers/net/hyperv/rndis_filter.c
-> +++ b/drivers/net/hyperv/rndis_filter.c
-> @@ -833,10 +833,10 @@ int rndis_filter_set_packet_filter(struct
-> rndis_device *dev, u32 new_filter)
->  		 * send completion for it.
->  		 */
->  		goto exit;
-> -	} else {
-> -		set_complete = &request->response_msg.msg.set_complete;
-> -		status = set_complete->status;
-> -	}
-> +	}
-> +
-> +	set_complete = &request->response_msg.msg.set_complete;
-> +	status = set_complete->status;
-> 
->  cleanup:
->  	if (request)
-> --
-> 1.7.10.4
-
+greg k-h
