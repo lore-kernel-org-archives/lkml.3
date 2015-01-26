@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886AbbAYX7R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 18:59:17 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:55445 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbbAYX7O (ORCPT
+	id S1752985AbbAZAB2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 19:01:28 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38038 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbbAZAB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 18:59:14 -0500
-Date: Mon, 26 Jan 2015 10:59:08 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [PATCH v11 1/2] crypto: AF_ALG: add AEAD support
-Message-ID: <20150125235908.GC18212@gondor.apana.org.au>
-References: <1923793.K38mGRD6eo@tachyon.chronox.de>
- <6238416.vGUni1CI4i@tachyon.chronox.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6238416.vGUni1CI4i@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 25 Jan 2015 19:01:26 -0500
+Date: Sun, 25 Jan 2015 16:01:21 -0800 (PST)
+Message-Id: <20150125.160121.1332719031463622112.davem@davemloft.net>
+To: vivien.didelot@savoirfairelinux.com
+Cc: netdev@vger.kernel.org, f.fainelli@gmail.com, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: Re: [PATCH] net: dsa: set slave MII bus PHY mask
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1421799212-2028-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1421799212-2028-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<1421799212-2028-2-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 25 Jan 2015 16:01:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 02:19:17AM +0100, Stephan Mueller wrote:
->
-> +		if (!aead_writable(sk)) {
-> +			/* user space sent too much data */
-> +			aead_put_sgl(sk);
-> +			err = -EMSGSIZE;
-> +			goto unlock;
-> +		}
-> +
-> +		/* allocate a new page */
-> +		len = min_t(unsigned long, size, aead_sndbuf(sk));
-> +		while (len) {
-> +			int plen = 0;
-> +
-> +			if (sgl->cur >= ALG_MAX_PAGES) {
-> +				err = -E2BIG;
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Tue, 20 Jan 2015 19:13:32 -0500
 
-Should reset the socket just like EMSGSIZE above.
+> When registering a mdio bus, Linux assumes than every port has a PHY and tries
+> to scan it. If a switch port has no PHY registered, DSA will fail to register
+> the slave MII bus. To fix this, set the slave MII bus PHY mask to the switch
+> PHYs mask.
+> 
+> As an example, if we use a Marvell MV88E6352 (which is a 7-port switch with no
+> registered PHYs for port 5 and port 6), with the following declared names:
+> 
+> 	static struct dsa_chip_data switch_cdata = {
+> 		[...]
+> 		.port_names[0] = "sw0",
+> 		.port_names[1] = "sw1",
+> 		.port_names[2] = "sw2",
+> 		.port_names[3] = "sw3",
+> 		.port_names[4] = "sw4",
+> 		.port_names[5] = "cpu",
+> 	};
+> 
+> DSA will fail to create the switch instance. With the PHY mask set for the
+> slave MII bus, only the PHY for ports 0-4 will be scanned and the instance will
+> be successfully created.
+> 
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Applied.
