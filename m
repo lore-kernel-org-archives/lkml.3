@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075AbbAZJkN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 04:40:13 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:46224 "EHLO
+	id S1754259AbbAZJmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:42:09 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:46906 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133AbbAZJkK (ORCPT
+	with ESMTP id S1753067AbbAZJmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 04:40:10 -0500
+	Mon, 26 Jan 2015 04:42:04 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
         <peda@axentia.se>, <wenyou.yang@atmel.com>
-Subject: [PATCH v2 02/12] pm: at91: Workaround DDRSDRC self-refresh bug with LPDDR1 memories.
-Date: Mon, 26 Jan 2015 17:38:59 +0800
-Message-ID: <1422265139-23011-1-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v2 03/12] pm: at91: pm_slowclock: remove the unused code related with SLOWDOWN_MASTER_CLOCK
+Date: Mon, 26 Jan 2015 17:39:40 +0800
+Message-ID: <1422265180-23077-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
 References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
@@ -24,120 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Rosin <peda@axentia.se>
+The SLOWDOWN_MASTER_CLOCK definition is not used, remove the redundant code.
 
-The DDRSDR controller fails miserably to put LPDDR1 memories in
-self-refresh. Force the controller to think it has DDR2 memories
-during the self-refresh period, as the DDR2 self-refresh spec is
-equivalent to LPDDR1, and is correctly implemented in the
-controller.
-
-Assume that the second controller has the same fault, but that is
-untested.
-
-Signed-off-by: Peter Rosin <peda@axentia.se>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/pm_slowclock.S  |   43 +++++++++++++++++++++++++++++++-----
- include/soc/at91/at91sam9_ddrsdr.h |    2 +-
- 2 files changed, 39 insertions(+), 6 deletions(-)
+ arch/arm/mach-at91/pm_slowclock.S |   37 -------------------------------------
+ 1 file changed, 37 deletions(-)
 
 diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index e2bfaf5..1155217 100644
+index 1155217..4e55665 100644
 --- a/arch/arm/mach-at91/pm_slowclock.S
 +++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -100,6 +100,16 @@ ddr_sr_enable:
- 	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
- 	bne	sdr_sr_enable
+@@ -11,20 +11,11 @@
+  * published by the Free Software Foundation.
+  *
+  */
+-
+ #include <linux/linkage.h>
+ #include <linux/clk/at91_pmc.h>
+ #include <mach/hardware.h>
+ #include <mach/at91_ramc.h>
  
-+	/* LPDDR1 --> force DDR2 mode during self-refresh */
-+	ldr	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
-+	str	tmp1, .saved_sam9_mdr
-+	bic	tmp1, tmp1, #~AT91_DDRSDRC_MD
-+	cmp	tmp1, #AT91_DDRSDRC_MD_LOW_POWER_DDR
-+	ldreq	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
-+	biceq	tmp1, tmp1, #AT91_DDRSDRC_MD
-+	orreq	tmp1, tmp1, #AT91_DDRSDRC_MD_DDR2
-+	streq	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
-+
- 	/* prepare for DDRAM self-refresh mode */
- 	ldr	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
- 	str	tmp1, .saved_sam9_lpr
-@@ -108,14 +118,26 @@ ddr_sr_enable:
+-/*
+- * When SLOWDOWN_MASTER_CLOCK is defined we will also slow down the Master
+- * clock during suspend by adjusting its prescalar and divisor.
+- * NOTE: This hasn't been shown to be stable on SAM9s; and on the RM9200 there
+- *       are errata regarding adjusting the prescalar and divisor.
+- */
+-#undef SLOWDOWN_MASTER_CLOCK
+-
+ pmc	.req	r0
+ sdramc	.req	r1
+ ramc1	.req	r2
+@@ -166,18 +157,6 @@ sdr_sr_done:
  
- 	/* figure out if we use the second ram controller */
- 	cmp	ramc1, #0
--	ldrne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
--	strne	tmp2, .saved_sam9_lpr1
--	bicne	tmp2, #AT91_DDRSDRC_LPCB
--	orrne	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
-+	beq	ddr_no_2nd_ctrl
-+
-+	ldr	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
-+	str	tmp2, .saved_sam9_mdr1
-+	bic	tmp2, tmp2, #~AT91_DDRSDRC_MD
-+	cmp	tmp2, #AT91_DDRSDRC_MD_LOW_POWER_DDR
-+	ldreq	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
-+	biceq	tmp2, tmp2, #AT91_DDRSDRC_MD
-+	orreq	tmp2, tmp2, #AT91_DDRSDRC_MD_DDR2
-+	streq	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
-+
-+	ldr	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
-+	str	tmp2, .saved_sam9_lpr1
-+	bic	tmp2, #AT91_DDRSDRC_LPCB
-+	orr	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
+ 	wait_mckrdy
  
- 	/* Enable DDRAM self-refresh mode */
-+	str	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
-+ddr_no_2nd_ctrl:
- 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
--	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+-#ifdef SLOWDOWN_MASTER_CLOCK
+-	/*
+-	 * Set the Master Clock PRES and MDIV fields.
+-	 *
+-	 * See AT91RM9200 errata #27 and #28 for details.
+-	 */
+-	mov	tmp1, #0
+-	str	tmp1, [pmc, #AT91_PMC_MCKR]
+-
+-	wait_mckrdy
+-#endif
+-
+ 	/* Save PLLA setting and disable it */
+ 	ldr	tmp1, [pmc, #AT91_CKGR_PLLAR]
+ 	str	tmp1, .saved_pllar
+@@ -213,22 +192,6 @@ sdr_sr_done:
+ 	wait_pllalock
+ 4:
  
- 	b	sdr_sr_done
- 
-@@ -227,12 +249,17 @@ sdr_sr_done:
+-#ifdef SLOWDOWN_MASTER_CLOCK
+-	/*
+-	 * First set PRES if it was not 0,
+-	 * than set CSS and MDIV fields.
+-	 *
+-	 * See AT91RM9200 errata #27 and #28 for details.
+-	 */
+-	ldr	tmp1, .saved_mckr
+-	tst	tmp1, #AT91_PMC_PRES
+-	beq	2f
+-	and	tmp1, tmp1, #AT91_PMC_PRES
+-	str	tmp1, [pmc, #AT91_PMC_MCKR]
+-
+-	wait_mckrdy
+-#endif
+-
+ 	/*
+ 	 * Restore master clock setting
  	 */
- 	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
- 	bne	sdr_en_restore
-+	/* Restore MDR in case of LPDDR1 */
-+	ldr	tmp1, .saved_sam9_mdr
-+	str	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
- 	/* Restore LPR on AT91 with DDRAM */
- 	ldr	tmp1, .saved_sam9_lpr
- 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
- 
- 	/* if we use the second ram controller */
- 	cmp	ramc1, #0
-+	ldrne	tmp2, .saved_sam9_mdr1
-+	strne	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
- 	ldrne	tmp2, .saved_sam9_lpr1
- 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
- 
-@@ -263,5 +290,11 @@ ram_restored:
- .saved_sam9_lpr1:
- 	.word 0
- 
-+.saved_sam9_mdr:
-+	.word 0
-+
-+.saved_sam9_mdr1:
-+	.word 0
-+
- ENTRY(at91_slow_clock_sz)
- 	.word .-at91_slow_clock
-diff --git a/include/soc/at91/at91sam9_ddrsdr.h b/include/soc/at91/at91sam9_ddrsdr.h
-index 0210797..dc10c52 100644
---- a/include/soc/at91/at91sam9_ddrsdr.h
-+++ b/include/soc/at91/at91sam9_ddrsdr.h
-@@ -92,7 +92,7 @@
- #define		AT91_DDRSDRC_UPD_MR	(3 << 20)	 /* Update load mode register and extended mode register */
- 
- #define AT91_DDRSDRC_MDR	0x20	/* Memory Device Register */
--#define		AT91_DDRSDRC_MD		(3 << 0)		/* Memory Device Type */
-+#define		AT91_DDRSDRC_MD		(7 << 0)	/* Memory Device Type */
- #define			AT91_DDRSDRC_MD_SDR		0
- #define			AT91_DDRSDRC_MD_LOW_POWER_SDR	1
- #define			AT91_DDRSDRC_MD_LOW_POWER_DDR	3
 -- 
 1.7.9.5
 
