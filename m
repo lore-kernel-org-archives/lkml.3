@@ -1,113 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754AbbAZXzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:55:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47778 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707AbbAZXy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:54:58 -0500
-Date: Mon, 26 Jan 2015 15:54:56 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, arnd@arndb.de,
-        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/7] lib: Add huge I/O map capability interfaces
-Message-Id: <20150126155456.a40df49e42b1b7f8077421f4@linux-foundation.org>
-In-Reply-To: <1422314009-31667-3-git-send-email-toshi.kani@hp.com>
-References: <1422314009-31667-1-git-send-email-toshi.kani@hp.com>
-	<1422314009-31667-3-git-send-email-toshi.kani@hp.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757799AbbAZX4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:56:00 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757322AbbAZXzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 18:55:55 -0500
+Message-ID: <54C6D408.5050704@nod.at>
+Date: Tue, 27 Jan 2015 00:55:52 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Jens Axboe <axboe@fb.com>, Christoph Hellwig <hch@infradead.org>
+CC: dedekind1@gmail.com, dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tom.leiming@gmail.com
+Subject: Re: [PATCH 2/2 v2] UBI: Block: Add blk-mq support
+References: <1420926734-16417-1-git-send-email-richard@nod.at> <1420926734-16417-2-git-send-email-richard@nod.at> <20150113162553.GA24351@infradead.org> <54B5A188.2000001@nod.at> <54B5A213.1090502@fb.com> <54B5A77C.9040405@nod.at> <54B5AA84.9010306@fb.com> <54B5AC10.6070102@nod.at> <54B5B6E4.4020400@fb.com> <54B62B2A.7010109@nod.at>
+In-Reply-To: <54B62B2A.7010109@nod.at>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015 16:13:24 -0700 Toshi Kani <toshi.kani@hp.com> wrote:
-
-> Add ioremap_pud_enabled() and ioremap_pmd_enabled(), which
-> return 1 when I/O mappings of pud/pmd are enabled on the kernel.
+Am 14.01.2015 um 09:39 schrieb Richard Weinberger:
+> Am 14.01.2015 um 01:23 schrieb Jens Axboe:
+>> Which is as I suspected, you'll do each segment to the length specified,
+>> hence you don't need to track the returned count from blk_rq_map_sg().
 > 
-> ioremap_huge_init() calls arch_ioremap_pud_supported() and
-> arch_ioremap_pmd_supported() to initialize the capabilities.
-> 
-> A new kernel option "nohgiomap" is also added, so that user can
-> disable the huge I/O map capabilities if necessary.
+> Thanks a lot for the kind explanation, Jens!
+> I'll add a comment the usage of blk_rq_map_sg() to avoid further confusion.
+> Am I allowed to add your Reviewed-by too?
 
-Why?  What's the problem with leaving it enabled?
+Ping?
+I'd like to add a Reviewed-by to this patch.
 
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2304,6 +2304,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			register save and restore. The kernel will only save
->  			legacy floating-point registers on task switch.
->  
-> +	nohgiomap	[KNL,x86] Disable huge I/O mappings.
-
-That reads like "no high iomap" to me.  "nohugeiomap" would be better.
-
-> --- a/lib/ioremap.c
-> +++ b/lib/ioremap.c
-> @@ -13,6 +13,44 @@
->  #include <asm/cacheflush.h>
->  #include <asm/pgtable.h>
->  
-> +#ifdef CONFIG_HUGE_IOMAP
-> +int __read_mostly ioremap_pud_capable;
-> +int __read_mostly ioremap_pmd_capable;
-> +int __read_mostly ioremap_huge_disabled;
-> +
-> +static int __init set_nohgiomap(char *str)
-> +{
-> +	ioremap_huge_disabled = 1;
-> +	return 0;
-> +}
-> +early_param("nohgiomap", set_nohgiomap);
-
-Why early?
-
-> +static inline void ioremap_huge_init(void)
-> +{
-> +	if (!ioremap_huge_disabled) {
-> +		if (arch_ioremap_pud_supported())
-> +			ioremap_pud_capable = 1;
-> +		if (arch_ioremap_pmd_supported())
-> +			ioremap_pmd_capable = 1;
-> +	}
-> +}
-> +
-> +static inline int ioremap_pud_enabled(void)
-> +{
-> +	return ioremap_pud_capable;
-> +}
-> +
-> +static inline int ioremap_pmd_enabled(void)
-> +{
-> +	return ioremap_pmd_capable;
-> +}
-> +
-> +#else	/* !CONFIG_HUGE_IOMAP */
-> +static inline void ioremap_huge_init(void) { }
-> +static inline int ioremap_pud_enabled(void) { return 0; }
-> +static inline int ioremap_pmd_enabled(void) { return 0; }
-> +#endif	/* CONFIG_HUGE_IOMAP */
-> +
->  static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
->  		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
->  {
-> @@ -74,6 +112,12 @@ int ioremap_page_range(unsigned long addr,
->  	unsigned long start;
->  	unsigned long next;
->  	int err;
-> +	static int ioremap_huge_init_done;
-> +
-> +	if (!ioremap_huge_init_done) {
-> +		ioremap_huge_init_done = 1;
-> +		ioremap_huge_init();
-> +	}
-
-Looks hacky.  Why can't we just get the startup ordering correct?  It
-at least needs a comment which fully explains the situation.
-
+Thanks,
+//richard
