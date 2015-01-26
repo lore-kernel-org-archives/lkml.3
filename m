@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557AbbAZKQg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:16:36 -0500
-Received: from mail.linn.co.uk ([195.59.102.251]:61953 "EHLO mail.linn.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755533AbbAZKQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:16:32 -0500
-Message-ID: <54C613F2.5090507@linn.co.uk>
-Date: Mon, 26 Jan 2015 10:16:18 +0000
-From: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1755560AbbAZKRY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:17:24 -0500
+Received: from www.linutronix.de ([62.245.132.108]:45422 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbbAZKRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:17:20 -0500
+Date: Mon, 26 Jan 2015 11:16:45 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stefan Agner <stefan@agner.ch>
+cc: jason@lakedaemon.net, marc.zyngier@arm.com, u.kleine-koenig@pengutronix.de,
+        shawn.guo@linaro.org, kernel@pengutronix.de, arnd@arndb.de,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 0/3] irqchip: vf610-mscm: add support for MSCM
+ interrupt router
+In-Reply-To: <1421309046-22452-1-git-send-email-stefan@agner.ch>
+Message-ID: <alpine.DEB.2.11.1501261115300.5526@nanos>
+References: <1421309046-22452-1-git-send-email-stefan@agner.ch>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>,
-        Stathis Voukelatos <stathisv70@gmail.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "abrestic@chromium.org" <abrestic@chromium.org>
-Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
-References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk> <20150123105114.GB23493@leverpostej>
-In-Reply-To: <20150123105114.GB23493@leverpostej>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.2.10.219]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 15 Jan 2015, Stefan Agner wrote:
 
-On 23/01/15 10:51, Mark Rutland wrote:
->
-> diff --git a/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt b/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
-> new file mode 100644
-> index 0000000..6b6e105
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
-> @@ -0,0 +1,27 @@
-> +* Linn Products Ethernet Packet Sniffer
-> +
-> +Required properties:
-> +- compatible : must be "linn,eth-sniffer"
-> +- reg : physical addresses and sizes of registers. Must contain 3 entries:
-> +          first entry: registers memory space
-> +          second entry: TX command memory
-> +          third entry: RX command memory
-> Just to check: are those memories are part of the packet sniffer device,
-> or are carveouts from other memory?
-Yes, the 3 memory areas are part of the packet sniffer module.
->> +- fifo-block-words : number of words in one data FIFO entry
->> +
->> +Example:
->> +
->> +sniffer@1814a000 {
->> +        compatible = "linn,eth-sniffer";
->> +        reg = <0x1814a000 0x100>, <0x1814a400 0x400>, <0x1814a800 0x400>;
->> +        reg-names = "regs", "tx-ram", "rx-ram";
->> +        interrupts = <GIC_SHARED 58 IRQ_TYPE_LEVEL_HIGH>;
->> +        interrupt-names = "eth-sniffer-irq";
->> +        clocks = <&system_clk>;
->> +        clock-names = "sys";
->> +        fifo-block-words = <4>;
->> +    };
-> Surely the relationship between the sniffer, MAC, and PHY should be
-> described, so we know which interface the sniffer is related to?
->
-The packet sniffer sits between the MAC and the PHY and monitors TX or RX
-packets, or both. Will add a description in the binding doc.
+> Splitted out version of the MSCM driver. My first driver based on the
+> routeable domain support and was part of the Vybrid Cortex-M4 support
+> patchset.
+> 
+> So far the MSCM interrupt router was initialized by the boot loader
+> and configured all interrupts for the Cortex-A5 CPU. There are two
+> use cases where a proper driver is necessary:
+> - To run Linux on the Cortex-M4. When the kernel is running on the
+>   non-preconfigured CPU, the interrupt router need to be configured
+>   properly.
+> - To support deeper sleep modes: LPSTOP clears the interrupt router
+>   configuration, hence a driver needs to restore the configuration
+>   on resume.
+> I created a seperate patchset for that driver which hopefully makes
+> it easier to get it into mergeable state.
+> 
+> Since I identified some registers likely to be used by other drivers
+> (e.g. CPU ID or the CPU Generate Interrupt Register) I also added
+> the "syscon" compatible string to make the registers available for
+> other drivers in case needed.
+> 
+> This resend version of this patchset is rebased on v3.19-rc4.
 
-Your other suggestions too, will be incorporated in the next version of
-the patch set.
+Has the discussion with Marc on the original V3 set been resolved?
 
-Thank you,
-Stathis
+What about the DT bindings? I'm relucant to pick that up w/o acks from
+the DT folks.
 
+Thanks,
+
+	tglx
