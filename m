@@ -1,138 +1,5867 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbbAZDLS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 22:11:18 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:52076 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbbAZDLQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 22:11:16 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Sylvain Rochet <sylvain.rochet@finsecur.com>
-CC: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peda@axentia.se" <peda@axentia.se>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 07/12] pm: at91: the standby mode uses the same sram
- function as the suspend to memory mode
-Thread-Topic: [PATCH 07/12] pm: at91: the standby mode uses the same sram
- function as the suspend to memory mode
-Thread-Index: AQHQNIoL5lQb5jmM3kewztecprU3ipzNdfQAgABcCwCAA+35AA==
-Date: Mon, 26 Jan 2015 03:08:46 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BFD3484F@penmbx01>
-References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
- <1421741825-18226-8-git-send-email-wenyou.yang@atmel.com>
- <20150123173234.GA26382@gradator.net> <20150123230200.GI19922@piout.net>
-In-Reply-To: <20150123230200.GI19922@piout.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752005AbbAZDSD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 22:18:03 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48358 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902AbbAZDR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 22:17:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,466,1418112000"; 
+   d="scan'208";a="642451588"
+Message-ID: <1422242257.24875.19.camel@intel.com>
+Subject: [LKP] [mm] WARNING: CPU: 0 PID: 117 at mm/mmap.c:2858
+ exit_mmap+0x151/0x160()
+From: Huang Ying <ying.huang@intel.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Date: Mon, 26 Jan 2015 11:17:37 +0800
+Content-Type: multipart/mixed; boundary="=-5OTMAMIc6FDpBZRSHoNh"
+X-Mailer: Evolution 3.12.9-1+b1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
 
-Thank you for review.
+--=-5OTMAMIc6FDpBZRSHoNh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-> -----Original Message-----
-> From: Alexandre Belloni [mailto:alexandre.belloni@free-electrons.com]
-> Sent: Saturday, January 24, 2015 7:02 AM
-> To: Sylvain Rochet
-> Cc: Yang, Wenyou; Ferre, Nicolas; linux@arm.linux.org.uk; linux-
-> kernel@vger.kernel.org; peda@axentia.se; linux-arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH 07/12] pm: at91: the standby mode uses the same sram
-> function as the suspend to memory mode
-> 
-> On 23/01/2015 at 18:32:34 +0100, Sylvain Rochet wrote :
-> > Hello Wenyou,
-> >
-> > On Tue, Jan 20, 2015 at 04:17:00PM +0800, Wenyou Yang wrote:
-> > >
-> > > diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c index
-> > > 691e6db..a1010f0 100644
-> > > --- a/arch/arm/mach-at91/pm.c
-> > > +++ b/arch/arm/mach-at91/pm.c
-> >   (...)
-> > >  static int at91_pm_enter(suspend_state_t state)  {
-> > >  	at91_pinctrl_gpio_suspend();
-> > >
-> > >  	switch (state) {
-> > > +	/*
-> > > +	 * Suspend-to-RAM is like STANDBY plus slow clock mode, so
-> > > +	 * drivers must suspend more deeply, the master clock switches
-> > > +	 * to the clk32k and turns off the main oscillator
-> > > +	 *
-> > > +	 * STANDBY mode has *all* drivers suspended; ignores irqs not
-> > > +	 * marked as 'wakeup' event sources; and reduces DRAM power.
-> > > +	 * But otherwise it's identical to PM_SUSPEND_ON:  cpu idle, and
-> > > +	 * nothing fancy done with main or cpu clocks.
-> > > +	 */
-> > > +	case PM_SUSPEND_MEM:
-> > > +	case PM_SUSPEND_STANDBY:
-> >    (...)
-> > > -		case PM_SUSPEND_MEM:
-> > > -			/*
-> > > -			 * Ensure that clocks are in a valid state.
-> > > -			 */
-> > > -			if (!at91_pm_verify_clocks())
-> > > -				goto error;
-> >    (...)
-> > > +		if (!at91_pm_verify_clocks())
-> > > +			goto error;
-> > >
-> >    (...)
-> > > -		case PM_SUSPEND_STANDBY:
-> > > -			/*
-> > > -			 * NOTE: the Wait-for-Interrupt instruction needs to be
-> >
-> > By doing that at91_pm_verify_clocks() is now called for both MEM and
-> > STANDBY targets.
-> >
-> > In my opinion this function is misnamed and should be called
-> > at91_pm_verify_clocks_for_slow_clock_mode(). This function actually
-> > checks if we can safely switch to slow clock mode, if some peripherals
-> > are still using the master clock, we abort the suspend because we
-> > can't suspend in good condition. Hard unclocking peripherals which ask
-> > for a soft stop, like USB controllers, is something we should avoid doing.
-> >
-> > This function checks if USB PLL and PLL B are stopped, if PCK0..PCK3
-> > are stopped too (or just using the 32k clock). If all drivers
-> > suspended correctly this is the state we expect and we can suspend in
-> > a deep state.
-> >
-> > Not this is currently not the case in linux-next, suspend/resume
-> > support to all Atmel USB drivers
-> > (ehci-atmel,ohci-at91,atmel_usba,at91_udc) are in my series:
-> >  [PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
-> >    <1421761144-11767-1-git-send-email-sylvain.rochet@finsecur.com>
-> >  [PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
-> >    <1421945805-31129-1-git-send-email-sylvain.rochet@finsecur.com>
-> >
-> > We are not going to change any clock for STANDBY target, there is no
-> > clock to check, so we don't need to call at91_pm_verify_clocks() for
-> > this target.
-> >
-> 
-> I think we should actually stop checking those clocks. In the meantime, you are
-> right and at91_pm_verify_clocks must not be called unconditionally.
+FYI, we noticed the below changes on
 
-Thanks.
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+commit f7a7b53a90f7a489c4e435d1300db121f6b42776 ("mm: account pmd page tables to the process")
 
-I will change, the at91_pm_verify_clocks is only called for suspend to memory mode, not for the standby.
 
-> 
-> --
-> Alexandre Belloni, Free Electrons
-> Embedded Linux, Kernel and Android engineering http://free-electrons.com
++-----------------------------------+------------+------------+
+|                                   | fe888c1f62 | f7a7b53a90 |
++-----------------------------------+------------+------------+
+| boot_successes                    | 102        | 6          |
+| boot_failures                     | 2          | 20         |
+| BUG:kernel_boot_hang              | 2          |            |
+| WARNING:at_mm/mmap.c:#exit_mmap() | 0          | 20         |
+| backtrace:do_execveat_common      | 0          | 20         |
+| backtrace:SyS_execve              | 0          | 20         |
+| backtrace:do_group_exit           | 0          | 20         |
+| backtrace:SyS_exit_group          | 0          | 20         |
++-----------------------------------+------------+------------+
 
-Best Regards,
-Wenyou Yang
+
+[    5.178599] NX-protecting the kernel data: 5340k
+[    5.182110] random: init urandom read with 0 bits of entropy available
+[    5.183522] ------------[ cut here ]------------
+[    5.184275] WARNING: CPU: 0 PID: 117 at mm/mmap.c:2858 exit_mmap+0x151/0x160()
+[    5.185664] CPU: 0 PID: 117 Comm: init Not tainted 3.19.0-rc5-next-20150123-gde3d2c5 #144
+[    5.186988] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[    5.187838]  00000000 00000000 d5d23d34 c16bf243 d5d23d68 c1055ae3 c186e81c 00000000
+[    5.189610]  00000075 c187dabf 00000b2a c111da01 00000b2a c111da01 00000000 d5d611c0
+[    5.191397]  0000005e d5d23d78 c1055be2 00000009 00000000 d5d23dd4 c111da01 00000000
+[    5.193161] Call Trace:
+[    5.193708]  [<c16bf243>] dump_stack+0x16/0x18
+[    5.194434]  [<c1055ae3>] warn_slowpath_common+0x83/0xb0
+[    5.195243]  [<c111da01>] ? exit_mmap+0x151/0x160
+[    5.195988]  [<c111da01>] ? exit_mmap+0x151/0x160
+[    5.196754]  [<c1055be2>] warn_slowpath_null+0x22/0x30
+[    5.197575]  [<c111da01>] exit_mmap+0x151/0x160
+[    5.198308]  [<c10533d3>] mmput+0x43/0xd0
+[    5.198990]  [<c114335d>] flush_old_exec+0x35d/0x7b0
+[    5.199800]  [<c1185fb8>] load_elf_binary+0x2a8/0xce0
+[    5.200599]  [<c1176e8e>] ? __fsnotify_parent+0xe/0x100
+[    5.201407]  [<c113dd02>] ? vfs_read+0xe2/0x100
+[    5.202137]  [<c1143b4f>] search_binary_handler+0x5f/0x110
+[    5.202964]  [<c1184979>] load_script+0x209/0x240
+[    5.203734]  [<c1070068>] ? atomic_notifier_chain_register+0xa8/0xb0
+[    5.204649]  [<c130269b>] ? __copy_from_user_ll+0xb/0xe0
+[    5.205463]  [<c1302a84>] ? _copy_from_user+0x54/0x60
+[    5.206248]  [<c10fa218>] ? put_page+0x8/0x40
+[    5.206973]  [<c1142709>] ? copy_strings+0x259/0x2b0
+[    5.207756]  [<c1075d80>] ? preempt_count_sub+0xa0/0x100
+[    5.208569]  [<c1143b4f>] search_binary_handler+0x5f/0x110
+[    5.209392]  [<c1144104>] do_execveat_common+0x504/0x690
+[    5.210205]  [<c1146585>] ? getname_flags+0x25/0x110
+[    5.210981]  [<c1144534>] SyS_execve+0x34/0x40
+[    5.211709]  [<c16c6a22>] sysenter_do_call+0x12/0x12
+[    5.212484] ---[ end trace 863af1d202a59fb4 ]---
+[    5.214592] ------------[ cut here ]------------
+
+
+
+Thanks,
+Huang, Ying
+
+
+--=-5OTMAMIc6FDpBZRSHoNh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="config-3.19.0-rc5-gf7a7b53"
+Content-Transfer-Encoding: 7bit
+
+#
+# Automatically generated file; DO NOT EDIT.
+# Linux/i386 3.19.0-rc5 Kernel Configuration
+#
+# CONFIG_64BIT is not set
+CONFIG_X86_32=y
+CONFIG_X86=y
+CONFIG_INSTRUCTION_DECODER=y
+CONFIG_PERF_EVENTS_INTEL_UNCORE=y
+CONFIG_OUTPUT_FORMAT="elf32-i386"
+CONFIG_ARCH_DEFCONFIG="arch/x86/configs/i386_defconfig"
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_MMU=y
+CONFIG_NEED_SG_DMA_LENGTH=y
+CONFIG_GENERIC_ISA_DMA=y
+CONFIG_GENERIC_BUG=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_ARCH_MAY_HAVE_PC_FDC=y
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_ARCH_HAS_CPU_RELAX=y
+CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+CONFIG_ARCH_WANT_HUGE_PMD_SHARE=y
+CONFIG_ARCH_WANT_GENERAL_HUGETLB=y
+# CONFIG_ZONE_DMA32 is not set
+# CONFIG_AUDIT_ARCH is not set
+CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-ecx -fcall-saved-edx"
+CONFIG_ARCH_SUPPORTS_UPROBES=y
+CONFIG_FIX_EARLYCON_MEM=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_IRQ_WORK=y
+CONFIG_BUILDTIME_EXTABLE_SORT=y
+
+#
+# General setup
+#
+CONFIG_BROKEN_ON_SMP=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+# CONFIG_COMPILE_TEST is not set
+CONFIG_LOCALVERSION=""
+CONFIG_LOCALVERSION_AUTO=y
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_BZIP2=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_XZ=y
+CONFIG_HAVE_KERNEL_LZO=y
+CONFIG_HAVE_KERNEL_LZ4=y
+# CONFIG_KERNEL_GZIP is not set
+# CONFIG_KERNEL_BZIP2 is not set
+# CONFIG_KERNEL_LZMA is not set
+CONFIG_KERNEL_XZ=y
+# CONFIG_KERNEL_LZO is not set
+# CONFIG_KERNEL_LZ4 is not set
+CONFIG_DEFAULT_HOSTNAME="(none)"
+CONFIG_SWAP=y
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+# CONFIG_POSIX_MQUEUE is not set
+CONFIG_CROSS_MEMORY_ATTACH=y
+CONFIG_FHANDLE=y
+# CONFIG_USELIB is not set
+# CONFIG_AUDIT is not set
+CONFIG_HAVE_ARCH_AUDITSYSCALL=y
+
+#
+# IRQ subsystem
+#
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ=y
+CONFIG_GENERIC_IRQ_CHIP=y
+CONFIG_IRQ_DOMAIN=y
+CONFIG_IRQ_DOMAIN_DEBUG=y
+CONFIG_IRQ_FORCED_THREADING=y
+CONFIG_SPARSE_IRQ=y
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_ARCH_CLOCKSOURCE_DATA=y
+CONFIG_CLOCKSOURCE_VALIDATE_LAST_CYCLE=y
+CONFIG_GENERIC_TIME_VSYSCALL=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+CONFIG_GENERIC_CMOS_UPDATE=y
+
+#
+# Timers subsystem
+#
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ_COMMON=y
+# CONFIG_HZ_PERIODIC is not set
+CONFIG_NO_HZ_IDLE=y
+# CONFIG_NO_HZ is not set
+CONFIG_HIGH_RES_TIMERS=y
+
+#
+# CPU/Task time and stats accounting
+#
+CONFIG_TICK_CPU_ACCOUNTING=y
+# CONFIG_IRQ_TIME_ACCOUNTING is not set
+CONFIG_BSD_PROCESS_ACCT=y
+CONFIG_BSD_PROCESS_ACCT_V3=y
+# CONFIG_TASKSTATS is not set
+
+#
+# RCU Subsystem
+#
+CONFIG_PREEMPT_RCU=y
+CONFIG_TASKS_RCU=y
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=32
+CONFIG_RCU_FANOUT_LEAF=16
+CONFIG_RCU_FANOUT_EXACT=y
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_RCU_BOOST=y
+CONFIG_RCU_KTHREAD_PRIO=1
+CONFIG_RCU_BOOST_DELAY=500
+CONFIG_RCU_NOCB_CPU=y
+# CONFIG_RCU_NOCB_CPU_NONE is not set
+CONFIG_RCU_NOCB_CPU_ZERO=y
+# CONFIG_RCU_NOCB_CPU_ALL is not set
+CONFIG_BUILD_BIN2C=y
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+CONFIG_LOG_BUF_SHIFT=17
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_DEBUG=y
+CONFIG_CGROUP_FREEZER=y
+# CONFIG_CGROUP_DEVICE is not set
+# CONFIG_CPUSETS is not set
+# CONFIG_CGROUP_CPUACCT is not set
+# CONFIG_MEMCG is not set
+# CONFIG_CGROUP_PERF is not set
+# CONFIG_CGROUP_SCHED is not set
+# CONFIG_BLK_CGROUP is not set
+# CONFIG_CHECKPOINT_RESTORE is not set
+CONFIG_NAMESPACES=y
+# CONFIG_UTS_NS is not set
+CONFIG_IPC_NS=y
+# CONFIG_USER_NS is not set
+# CONFIG_PID_NS is not set
+CONFIG_NET_NS=y
+# CONFIG_SCHED_AUTOGROUP is not set
+# CONFIG_SYSFS_DEPRECATED is not set
+CONFIG_RELAY=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE=""
+CONFIG_RD_GZIP=y
+CONFIG_RD_BZIP2=y
+CONFIG_RD_LZMA=y
+CONFIG_RD_XZ=y
+CONFIG_RD_LZO=y
+CONFIG_RD_LZ4=y
+CONFIG_INIT_FALLBACK=y
+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_HAVE_UID16=y
+CONFIG_SYSCTL_EXCEPTION_TRACE=y
+CONFIG_HAVE_PCSPKR_PLATFORM=y
+CONFIG_BPF=y
+# CONFIG_EXPERT is not set
+CONFIG_UID16=y
+CONFIG_SGETMASK_SYSCALL=y
+CONFIG_SYSFS_SYSCALL=y
+# CONFIG_SYSCTL_SYSCALL is not set
+CONFIG_KALLSYMS=y
+# CONFIG_KALLSYMS_ALL is not set
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_PCSPKR_PLATFORM=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+# CONFIG_BPF_SYSCALL is not set
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+CONFIG_ADVISE_SYSCALLS=y
+CONFIG_PCI_QUIRKS=y
+# CONFIG_EMBEDDED is not set
+CONFIG_HAVE_PERF_EVENTS=y
+
+#
+# Kernel Performance Events And Counters
+#
+CONFIG_PERF_EVENTS=y
+# CONFIG_DEBUG_PERF_USE_VMALLOC is not set
+CONFIG_VM_EVENT_COUNTERS=y
+CONFIG_SLUB_DEBUG=y
+# CONFIG_COMPAT_BRK is not set
+# CONFIG_SLAB is not set
+CONFIG_SLUB=y
+# CONFIG_SYSTEM_TRUSTED_KEYRING is not set
+# CONFIG_PROFILING is not set
+CONFIG_TRACEPOINTS=y
+CONFIG_HAVE_OPROFILE=y
+CONFIG_OPROFILE_NMI_TIMER=y
+CONFIG_JUMP_LABEL=y
+# CONFIG_UPROBES is not set
+# CONFIG_HAVE_64BIT_ALIGNED_ACCESS is not set
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+CONFIG_ARCH_USE_BUILTIN_BSWAP=y
+CONFIG_HAVE_IOREMAP_PROT=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_OPTPROBES=y
+CONFIG_HAVE_KPROBES_ON_FTRACE=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_HAVE_DMA_CONTIGUOUS=y
+CONFIG_GENERIC_SMP_IDLE_THREAD=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+CONFIG_HAVE_HW_BREAKPOINT=y
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
+CONFIG_HAVE_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_PERF_EVENTS_NMI=y
+CONFIG_HAVE_PERF_REGS=y
+CONFIG_HAVE_PERF_USER_STACK_DUMP=y
+CONFIG_HAVE_ARCH_JUMP_LABEL=y
+CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
+CONFIG_HAVE_ALIGNED_STRUCT_PAGE=y
+CONFIG_HAVE_CMPXCHG_LOCAL=y
+CONFIG_HAVE_CMPXCHG_DOUBLE=y
+CONFIG_ARCH_WANT_IPC_PARSE_VERSION=y
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+CONFIG_HAVE_CC_STACKPROTECTOR=y
+CONFIG_CC_STACKPROTECTOR=y
+# CONFIG_CC_STACKPROTECTOR_NONE is not set
+CONFIG_CC_STACKPROTECTOR_REGULAR=y
+# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+CONFIG_HAVE_IRQ_TIME_ACCOUNTING=y
+CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+CONFIG_MODULES_USE_ELF_REL=y
+CONFIG_CLONE_BACKWARDS=y
+CONFIG_OLD_SIGSUSPEND3=y
+CONFIG_OLD_SIGACTION=y
+
+#
+# GCOV-based kernel profiling
+#
+# CONFIG_GCOV_KERNEL is not set
+CONFIG_ARCH_HAS_GCOV_PROFILE_ALL=y
+CONFIG_HAVE_GENERIC_DMA_COHERENT=y
+CONFIG_SLABINFO=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+# CONFIG_MODULES is not set
+CONFIG_BLOCK=y
+# CONFIG_LBDAF is not set
+CONFIG_BLK_DEV_BSG=y
+CONFIG_BLK_DEV_BSGLIB=y
+# CONFIG_BLK_DEV_INTEGRITY is not set
+# CONFIG_BLK_CMDLINE_PARSER is not set
+
+#
+# Partition Types
+#
+# CONFIG_PARTITION_ADVANCED is not set
+CONFIG_MSDOS_PARTITION=y
+CONFIG_EFI_PARTITION=y
+
+#
+# IO Schedulers
+#
+CONFIG_IOSCHED_NOOP=y
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+# CONFIG_DEFAULT_DEADLINE is not set
+# CONFIG_DEFAULT_CFQ is not set
+CONFIG_DEFAULT_NOOP=y
+CONFIG_DEFAULT_IOSCHED="noop"
+CONFIG_ASN1=y
+CONFIG_UNINLINE_SPIN_UNLOCK=y
+CONFIG_ARCH_SUPPORTS_ATOMIC_RMW=y
+CONFIG_ARCH_USE_QUEUE_RWLOCK=y
+CONFIG_FREEZER=y
+
+#
+# Processor type and features
+#
+CONFIG_ZONE_DMA=y
+# CONFIG_SMP is not set
+CONFIG_X86_FEATURE_NAMES=y
+# CONFIG_X86_MPPARSE is not set
+CONFIG_X86_EXTENDED_PLATFORM=y
+# CONFIG_X86_GOLDFISH is not set
+# CONFIG_X86_INTEL_LPSS is not set
+CONFIG_IOSF_MBI=y
+# CONFIG_IOSF_MBI_DEBUG is not set
+# CONFIG_X86_RDC321X is not set
+CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+# CONFIG_X86_32_IRIS is not set
+# CONFIG_SCHED_OMIT_FRAME_POINTER is not set
+CONFIG_HYPERVISOR_GUEST=y
+CONFIG_PARAVIRT=y
+# CONFIG_PARAVIRT_DEBUG is not set
+CONFIG_XEN=y
+CONFIG_XEN_PVHVM=y
+CONFIG_XEN_MAX_DOMAIN_MEMORY=64
+CONFIG_XEN_SAVE_RESTORE=y
+CONFIG_XEN_DEBUG_FS=y
+CONFIG_KVM_GUEST=y
+# CONFIG_KVM_DEBUG_FS is not set
+CONFIG_LGUEST_GUEST=y
+# CONFIG_PARAVIRT_TIME_ACCOUNTING is not set
+CONFIG_PARAVIRT_CLOCK=y
+CONFIG_NO_BOOTMEM=y
+CONFIG_MEMTEST=y
+# CONFIG_M486 is not set
+# CONFIG_M586 is not set
+# CONFIG_M586TSC is not set
+# CONFIG_M586MMX is not set
+# CONFIG_M686 is not set
+# CONFIG_MPENTIUMII is not set
+# CONFIG_MPENTIUMIII is not set
+# CONFIG_MPENTIUMM is not set
+# CONFIG_MPENTIUM4 is not set
+# CONFIG_MK6 is not set
+# CONFIG_MK7 is not set
+# CONFIG_MK8 is not set
+# CONFIG_MCRUSOE is not set
+# CONFIG_MEFFICEON is not set
+# CONFIG_MWINCHIPC6 is not set
+# CONFIG_MWINCHIP3D is not set
+# CONFIG_MELAN is not set
+CONFIG_MGEODEGX1=y
+# CONFIG_MGEODE_LX is not set
+# CONFIG_MCYRIXIII is not set
+# CONFIG_MVIAC3_2 is not set
+# CONFIG_MVIAC7 is not set
+# CONFIG_MCORE2 is not set
+# CONFIG_MATOM is not set
+CONFIG_X86_GENERIC=y
+CONFIG_X86_INTERNODE_CACHE_SHIFT=6
+CONFIG_X86_L1_CACHE_SHIFT=6
+CONFIG_X86_PPRO_FENCE=y
+CONFIG_X86_ALIGNMENT_16=y
+CONFIG_X86_INTEL_USERCOPY=y
+CONFIG_X86_TSC=y
+CONFIG_X86_CMPXCHG64=y
+CONFIG_X86_MINIMUM_CPU_FAMILY=5
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_CPU_SUP_INTEL=y
+CONFIG_CPU_SUP_AMD=y
+CONFIG_CPU_SUP_CENTAUR=y
+CONFIG_CPU_SUP_TRANSMETA_32=y
+CONFIG_HPET_TIMER=y
+CONFIG_DMI=y
+CONFIG_SWIOTLB=y
+CONFIG_IOMMU_HELPER=y
+CONFIG_NR_CPUS=1
+# CONFIG_PREEMPT_NONE is not set
+# CONFIG_PREEMPT_VOLUNTARY is not set
+CONFIG_PREEMPT=y
+CONFIG_PREEMPT_COUNT=y
+CONFIG_X86_UP_APIC=y
+# CONFIG_X86_UP_IOAPIC is not set
+CONFIG_X86_LOCAL_APIC=y
+# CONFIG_X86_IO_APIC is not set
+CONFIG_X86_MCE=y
+# CONFIG_X86_MCE_INTEL is not set
+CONFIG_X86_MCE_AMD=y
+# CONFIG_X86_ANCIENT_MCE is not set
+CONFIG_X86_MCE_THRESHOLD=y
+CONFIG_X86_MCE_INJECT=y
+CONFIG_VM86=y
+CONFIG_X86_16BIT=y
+CONFIG_X86_ESPFIX32=y
+CONFIG_TOSHIBA=y
+# CONFIG_I8K is not set
+# CONFIG_X86_REBOOTFIXUPS is not set
+# CONFIG_MICROCODE is not set
+# CONFIG_MICROCODE_INTEL_EARLY is not set
+# CONFIG_MICROCODE_AMD_EARLY is not set
+CONFIG_X86_MSR=y
+# CONFIG_X86_CPUID is not set
+# CONFIG_NOHIGHMEM is not set
+# CONFIG_HIGHMEM4G is not set
+CONFIG_HIGHMEM64G=y
+CONFIG_PAGE_OFFSET=0xC0000000
+CONFIG_HIGHMEM=y
+CONFIG_X86_PAE=y
+CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+CONFIG_ARCH_DMA_ADDR_T_64BIT=y
+CONFIG_ARCH_FLATMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ILLEGAL_POINTER_VALUE=0
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_FLATMEM_MANUAL=y
+# CONFIG_SPARSEMEM_MANUAL is not set
+CONFIG_FLATMEM=y
+CONFIG_FLAT_NODE_MEM_MAP=y
+CONFIG_SPARSEMEM_STATIC=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_HAVE_MEMBLOCK_NODE_MAP=y
+CONFIG_ARCH_DISCARD_MEMBLOCK=y
+CONFIG_MEMORY_ISOLATION=y
+# CONFIG_HAVE_BOOTMEM_INFO_NODE is not set
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK=y
+CONFIG_COMPACTION=y
+CONFIG_MIGRATION=y
+CONFIG_PHYS_ADDR_T_64BIT=y
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_BOUNCE=y
+CONFIG_VIRT_TO_BUS=y
+CONFIG_MMU_NOTIFIER=y
+# CONFIG_KSM is not set
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_MEMORY_FAILURE=y
+# CONFIG_HWPOISON_INJECT is not set
+CONFIG_TRANSPARENT_HUGEPAGE=y
+# CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS is not set
+CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
+CONFIG_NEED_PER_CPU_KM=y
+CONFIG_CLEANCACHE=y
+CONFIG_FRONTSWAP=y
+# CONFIG_CMA is not set
+# CONFIG_ZSWAP is not set
+CONFIG_ZPOOL=y
+# CONFIG_ZBUD is not set
+# CONFIG_ZSMALLOC is not set
+CONFIG_GENERIC_EARLY_IOREMAP=y
+# CONFIG_HIGHPTE is not set
+# CONFIG_X86_CHECK_BIOS_CORRUPTION is not set
+CONFIG_X86_RESERVE_LOW=64
+# CONFIG_MATH_EMULATION is not set
+CONFIG_MTRR=y
+CONFIG_MTRR_SANITIZER=y
+CONFIG_MTRR_SANITIZER_ENABLE_DEFAULT=0
+CONFIG_MTRR_SANITIZER_SPARE_REG_NR_DEFAULT=1
+CONFIG_X86_PAT=y
+CONFIG_ARCH_USES_PG_UNCACHED=y
+CONFIG_ARCH_RANDOM=y
+CONFIG_X86_SMAP=y
+CONFIG_X86_INTEL_MPX=y
+# CONFIG_EFI is not set
+# CONFIG_SECCOMP is not set
+# CONFIG_HZ_100 is not set
+# CONFIG_HZ_250 is not set
+CONFIG_HZ_300=y
+# CONFIG_HZ_1000 is not set
+CONFIG_HZ=300
+CONFIG_SCHED_HRTICK=y
+CONFIG_KEXEC=y
+# CONFIG_CRASH_DUMP is not set
+# CONFIG_KEXEC_JUMP is not set
+CONFIG_PHYSICAL_START=0x1000000
+CONFIG_RELOCATABLE=y
+# CONFIG_RANDOMIZE_BASE is not set
+CONFIG_X86_NEED_RELOCS=y
+CONFIG_PHYSICAL_ALIGN=0x200000
+# CONFIG_COMPAT_VDSO is not set
+# CONFIG_CMDLINE_BOOL is not set
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+
+#
+# Power management and ACPI options
+#
+# CONFIG_SUSPEND is not set
+CONFIG_HIBERNATE_CALLBACKS=y
+CONFIG_HIBERNATION=y
+CONFIG_PM_STD_PARTITION=""
+CONFIG_PM_SLEEP=y
+# CONFIG_PM_AUTOSLEEP is not set
+CONFIG_PM_WAKELOCKS=y
+CONFIG_PM_WAKELOCKS_LIMIT=100
+# CONFIG_PM_WAKELOCKS_GC is not set
+CONFIG_PM=y
+CONFIG_PM_DEBUG=y
+CONFIG_PM_ADVANCED_DEBUG=y
+CONFIG_PM_SLEEP_DEBUG=y
+CONFIG_PM_TRACE=y
+CONFIG_PM_TRACE_RTC=y
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+CONFIG_ACPI=y
+CONFIG_ACPI_LEGACY_TABLES_LOOKUP=y
+CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC=y
+CONFIG_ACPI_SLEEP=y
+# CONFIG_ACPI_PROCFS_POWER is not set
+# CONFIG_ACPI_EC_DEBUGFS is not set
+CONFIG_ACPI_AC=y
+CONFIG_ACPI_BATTERY=y
+CONFIG_ACPI_BUTTON=y
+CONFIG_ACPI_FAN=y
+# CONFIG_ACPI_DOCK is not set
+CONFIG_ACPI_PROCESSOR=y
+# CONFIG_ACPI_PROCESSOR_AGGREGATOR is not set
+CONFIG_ACPI_THERMAL=y
+CONFIG_ACPI_CUSTOM_DSDT_FILE=""
+# CONFIG_ACPI_CUSTOM_DSDT is not set
+# CONFIG_ACPI_INITRD_TABLE_OVERRIDE is not set
+# CONFIG_ACPI_DEBUG is not set
+# CONFIG_ACPI_PCI_SLOT is not set
+CONFIG_X86_PM_TIMER=y
+# CONFIG_ACPI_CONTAINER is not set
+# CONFIG_ACPI_SBS is not set
+# CONFIG_ACPI_HED is not set
+# CONFIG_ACPI_CUSTOM_METHOD is not set
+# CONFIG_ACPI_REDUCED_HARDWARE_ONLY is not set
+CONFIG_HAVE_ACPI_APEI=y
+CONFIG_HAVE_ACPI_APEI_NMI=y
+# CONFIG_ACPI_APEI is not set
+# CONFIG_ACPI_EXTLOG is not set
+# CONFIG_PMIC_OPREGION is not set
+CONFIG_SFI=y
+# CONFIG_APM is not set
+
+#
+# CPU Frequency scaling
+#
+# CONFIG_CPU_FREQ is not set
+
+#
+# CPU Idle
+#
+CONFIG_CPU_IDLE=y
+# CONFIG_CPU_IDLE_GOV_LADDER is not set
+CONFIG_CPU_IDLE_GOV_MENU=y
+# CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED is not set
+# CONFIG_INTEL_IDLE is not set
+
+#
+# Bus options (PCI etc.)
+#
+CONFIG_PCI=y
+# CONFIG_PCI_GOBIOS is not set
+# CONFIG_PCI_GOMMCONFIG is not set
+# CONFIG_PCI_GODIRECT is not set
+CONFIG_PCI_GOANY=y
+CONFIG_PCI_BIOS=y
+CONFIG_PCI_DIRECT=y
+CONFIG_PCI_MMCONFIG=y
+CONFIG_PCI_XEN=y
+CONFIG_PCI_DOMAINS=y
+CONFIG_PCIEPORTBUS=y
+# CONFIG_HOTPLUG_PCI_PCIE is not set
+# CONFIG_PCIEAER is not set
+CONFIG_PCIEASPM=y
+CONFIG_PCIEASPM_DEBUG=y
+# CONFIG_PCIEASPM_DEFAULT is not set
+CONFIG_PCIEASPM_POWERSAVE=y
+# CONFIG_PCIEASPM_PERFORMANCE is not set
+CONFIG_PCIE_PME=y
+# CONFIG_PCI_MSI is not set
+# CONFIG_PCI_DEBUG is not set
+# CONFIG_PCI_REALLOC_ENABLE_AUTO is not set
+# CONFIG_PCI_STUB is not set
+# CONFIG_XEN_PCIDEV_FRONTEND is not set
+# CONFIG_HT_IRQ is not set
+CONFIG_PCI_ATS=y
+# CONFIG_PCI_IOV is not set
+CONFIG_PCI_PRI=y
+# CONFIG_PCI_PASID is not set
+CONFIG_PCI_LABEL=y
+
+#
+# PCI host controller drivers
+#
+CONFIG_ISA_DMA_API=y
+# CONFIG_ISA is not set
+CONFIG_SCx200=y
+CONFIG_SCx200HR_TIMER=y
+CONFIG_ALIX=y
+# CONFIG_NET5501 is not set
+CONFIG_GEOS=y
+CONFIG_AMD_NB=y
+# CONFIG_PCCARD is not set
+CONFIG_HOTPLUG_PCI=y
+CONFIG_HOTPLUG_PCI_COMPAQ=y
+CONFIG_HOTPLUG_PCI_COMPAQ_NVRAM=y
+# CONFIG_HOTPLUG_PCI_ACPI is not set
+# CONFIG_HOTPLUG_PCI_CPCI is not set
+# CONFIG_HOTPLUG_PCI_SHPC is not set
+CONFIG_RAPIDIO=y
+CONFIG_RAPIDIO_TSI721=y
+CONFIG_RAPIDIO_DISC_TIMEOUT=30
+# CONFIG_RAPIDIO_ENABLE_RX_TX_PORTS is not set
+CONFIG_RAPIDIO_DMA_ENGINE=y
+# CONFIG_RAPIDIO_DEBUG is not set
+CONFIG_RAPIDIO_ENUM_BASIC=y
+
+#
+# RapidIO Switch drivers
+#
+# CONFIG_RAPIDIO_TSI57X is not set
+CONFIG_RAPIDIO_CPS_XX=y
+CONFIG_RAPIDIO_TSI568=y
+CONFIG_RAPIDIO_CPS_GEN2=y
+CONFIG_X86_SYSFB=y
+
+#
+# Executable file formats / Emulations
+#
+CONFIG_BINFMT_ELF=y
+CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE=y
+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+CONFIG_BINFMT_SCRIPT=y
+CONFIG_HAVE_AOUT=y
+# CONFIG_BINFMT_AOUT is not set
+CONFIG_BINFMT_MISC=y
+CONFIG_COREDUMP=y
+CONFIG_HAVE_ATOMIC_IOMAP=y
+CONFIG_PMC_ATOM=y
+CONFIG_NET=y
+
+#
+# Networking options
+#
+# CONFIG_PACKET is not set
+CONFIG_UNIX=y
+# CONFIG_UNIX_DIAG is not set
+# CONFIG_NET_KEY is not set
+# CONFIG_INET is not set
+# CONFIG_NETWORK_SECMARK is not set
+# CONFIG_NET_PTP_CLASSIFY is not set
+# CONFIG_NETWORK_PHY_TIMESTAMPING is not set
+# CONFIG_NETFILTER is not set
+# CONFIG_ATM is not set
+# CONFIG_BRIDGE is not set
+# CONFIG_VLAN_8021Q is not set
+# CONFIG_DECNET is not set
+# CONFIG_LLC2 is not set
+# CONFIG_IPX is not set
+# CONFIG_ATALK is not set
+# CONFIG_X25 is not set
+# CONFIG_LAPB is not set
+# CONFIG_PHONET is not set
+# CONFIG_IEEE802154 is not set
+# CONFIG_NET_SCHED is not set
+# CONFIG_DCB is not set
+# CONFIG_DNS_RESOLVER is not set
+# CONFIG_BATMAN_ADV is not set
+# CONFIG_VSOCKETS is not set
+# CONFIG_NETLINK_MMAP is not set
+# CONFIG_NETLINK_DIAG is not set
+# CONFIG_NET_MPLS_GSO is not set
+# CONFIG_HSR is not set
+# CONFIG_CGROUP_NET_PRIO is not set
+# CONFIG_CGROUP_NET_CLASSID is not set
+CONFIG_NET_RX_BUSY_POLL=y
+CONFIG_BQL=y
+
+#
+# Network testing
+#
+# CONFIG_HAMRADIO is not set
+# CONFIG_CAN is not set
+# CONFIG_IRDA is not set
+# CONFIG_BT is not set
+CONFIG_WIRELESS=y
+# CONFIG_CFG80211 is not set
+# CONFIG_LIB80211 is not set
+
+#
+# CFG80211 needs to be enabled for MAC80211
+#
+# CONFIG_WIMAX is not set
+# CONFIG_RFKILL is not set
+# CONFIG_NET_9P is not set
+# CONFIG_CAIF is not set
+# CONFIG_NFC is not set
+
+#
+# Device Drivers
+#
+
+#
+# Generic Driver Options
+#
+CONFIG_UEVENT_HELPER=y
+CONFIG_UEVENT_HELPER_PATH=""
+CONFIG_DEVTMPFS=y
+# CONFIG_DEVTMPFS_MOUNT is not set
+# CONFIG_STANDALONE is not set
+# CONFIG_PREVENT_FIRMWARE_BUILD is not set
+CONFIG_FW_LOADER=y
+# CONFIG_FIRMWARE_IN_KERNEL is not set
+CONFIG_EXTRA_FIRMWARE=""
+# CONFIG_FW_LOADER_USER_HELPER_FALLBACK is not set
+CONFIG_ALLOW_DEV_COREDUMP=y
+# CONFIG_DEBUG_DRIVER is not set
+# CONFIG_DEBUG_DEVRES is not set
+# CONFIG_SYS_HYPERVISOR is not set
+# CONFIG_GENERIC_CPU_DEVICES is not set
+CONFIG_GENERIC_CPU_AUTOPROBE=y
+CONFIG_REGMAP=y
+CONFIG_REGMAP_I2C=y
+CONFIG_REGMAP_IRQ=y
+# CONFIG_DMA_SHARED_BUFFER is not set
+
+#
+# Bus devices
+#
+# CONFIG_CONNECTOR is not set
+CONFIG_MTD=y
+CONFIG_MTD_REDBOOT_PARTS=y
+CONFIG_MTD_REDBOOT_DIRECTORY_BLOCK=-1
+# CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED is not set
+CONFIG_MTD_REDBOOT_PARTS_READONLY=y
+# CONFIG_MTD_CMDLINE_PARTS is not set
+CONFIG_MTD_AR7_PARTS=y
+
+#
+# User Modules And Translation Layers
+#
+CONFIG_MTD_BLKDEVS=y
+# CONFIG_MTD_BLOCK is not set
+# CONFIG_MTD_BLOCK_RO is not set
+CONFIG_FTL=y
+CONFIG_NFTL=y
+CONFIG_NFTL_RW=y
+CONFIG_INFTL=y
+CONFIG_RFD_FTL=y
+CONFIG_SSFDC=y
+# CONFIG_SM_FTL is not set
+CONFIG_MTD_OOPS=y
+CONFIG_MTD_SWAP=y
+
+#
+# RAM/ROM/Flash chip drivers
+#
+# CONFIG_MTD_CFI is not set
+CONFIG_MTD_JEDECPROBE=y
+CONFIG_MTD_GEN_PROBE=y
+# CONFIG_MTD_CFI_ADV_OPTIONS is not set
+CONFIG_MTD_MAP_BANK_WIDTH_1=y
+CONFIG_MTD_MAP_BANK_WIDTH_2=y
+CONFIG_MTD_MAP_BANK_WIDTH_4=y
+# CONFIG_MTD_MAP_BANK_WIDTH_8 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_16 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_32 is not set
+CONFIG_MTD_CFI_I1=y
+CONFIG_MTD_CFI_I2=y
+# CONFIG_MTD_CFI_I4 is not set
+# CONFIG_MTD_CFI_I8 is not set
+# CONFIG_MTD_CFI_INTELEXT is not set
+# CONFIG_MTD_CFI_AMDSTD is not set
+CONFIG_MTD_CFI_STAA=y
+CONFIG_MTD_CFI_UTIL=y
+CONFIG_MTD_RAM=y
+# CONFIG_MTD_ROM is not set
+CONFIG_MTD_ABSENT=y
+
+#
+# Mapping drivers for chip access
+#
+# CONFIG_MTD_COMPLEX_MAPPINGS is not set
+# CONFIG_MTD_PHYSMAP is not set
+CONFIG_MTD_AMD76XROM=y
+CONFIG_MTD_ICHXROM=y
+CONFIG_MTD_ESB2ROM=y
+# CONFIG_MTD_CK804XROM is not set
+# CONFIG_MTD_SCB2_FLASH is not set
+# CONFIG_MTD_NETtel is not set
+# CONFIG_MTD_L440GX is not set
+CONFIG_MTD_INTEL_VR_NOR=y
+CONFIG_MTD_PLATRAM=y
+
+#
+# Self-contained MTD device drivers
+#
+CONFIG_MTD_PMC551=y
+CONFIG_MTD_PMC551_BUGFIX=y
+CONFIG_MTD_PMC551_DEBUG=y
+CONFIG_MTD_SLRAM=y
+CONFIG_MTD_PHRAM=y
+CONFIG_MTD_MTDRAM=y
+CONFIG_MTDRAM_TOTAL_SIZE=4096
+CONFIG_MTDRAM_ERASE_SIZE=128
+CONFIG_MTDRAM_ABS_POS=0
+CONFIG_MTD_BLOCK2MTD=y
+
+#
+# Disk-On-Chip Device Drivers
+#
+# CONFIG_MTD_DOCG3 is not set
+# CONFIG_MTD_NAND is not set
+# CONFIG_MTD_ONENAND is not set
+
+#
+# LPDDR & LPDDR2 PCM memory drivers
+#
+# CONFIG_MTD_LPDDR is not set
+CONFIG_MTD_SPI_NOR=y
+CONFIG_MTD_SPI_NOR_USE_4K_SECTORS=y
+CONFIG_MTD_UBI=y
+CONFIG_MTD_UBI_WL_THRESHOLD=4096
+CONFIG_MTD_UBI_BEB_LIMIT=20
+CONFIG_MTD_UBI_FASTMAP=y
+CONFIG_MTD_UBI_GLUEBI=y
+CONFIG_MTD_UBI_BLOCK=y
+CONFIG_ARCH_MIGHT_HAVE_PC_PARPORT=y
+# CONFIG_PARPORT is not set
+CONFIG_PNP=y
+CONFIG_PNP_DEBUG_MESSAGES=y
+
+#
+# Protocols
+#
+CONFIG_PNPACPI=y
+CONFIG_BLK_DEV=y
+# CONFIG_BLK_DEV_NULL_BLK is not set
+# CONFIG_BLK_DEV_FD is not set
+# CONFIG_BLK_DEV_PCIESSD_MTIP32XX is not set
+# CONFIG_BLK_CPQ_CISS_DA is not set
+# CONFIG_BLK_DEV_DAC960 is not set
+# CONFIG_BLK_DEV_UMEM is not set
+# CONFIG_BLK_DEV_COW_COMMON is not set
+# CONFIG_BLK_DEV_LOOP is not set
+
+#
+# DRBD disabled because PROC_FS or INET not selected
+#
+# CONFIG_BLK_DEV_NBD is not set
+# CONFIG_BLK_DEV_NVME is not set
+# CONFIG_BLK_DEV_SX8 is not set
+# CONFIG_BLK_DEV_RAM is not set
+# CONFIG_CDROM_PKTCDVD is not set
+# CONFIG_ATA_OVER_ETH is not set
+CONFIG_XEN_BLKDEV_FRONTEND=y
+# CONFIG_VIRTIO_BLK is not set
+# CONFIG_BLK_DEV_HD is not set
+# CONFIG_BLK_DEV_RSXX is not set
+
+#
+# Misc devices
+#
+# CONFIG_SENSORS_LIS3LV02D is not set
+CONFIG_AD525X_DPOT=y
+CONFIG_AD525X_DPOT_I2C=y
+CONFIG_DUMMY_IRQ=y
+CONFIG_IBM_ASM=y
+CONFIG_PHANTOM=y
+CONFIG_SGI_IOC4=y
+CONFIG_TIFM_CORE=y
+CONFIG_TIFM_7XX1=y
+CONFIG_ICS932S401=y
+CONFIG_ENCLOSURE_SERVICES=y
+CONFIG_CS5535_MFGPT=y
+CONFIG_CS5535_MFGPT_DEFAULT_IRQ=7
+CONFIG_CS5535_CLOCK_EVENT_SRC=y
+# CONFIG_HP_ILO is not set
+CONFIG_APDS9802ALS=y
+# CONFIG_ISL29003 is not set
+CONFIG_ISL29020=y
+CONFIG_SENSORS_TSL2550=y
+# CONFIG_SENSORS_BH1780 is not set
+# CONFIG_SENSORS_BH1770 is not set
+CONFIG_SENSORS_APDS990X=y
+CONFIG_HMC6352=y
+# CONFIG_DS1682 is not set
+CONFIG_VMWARE_BALLOON=y
+CONFIG_BMP085=y
+CONFIG_BMP085_I2C=y
+CONFIG_PCH_PHUB=y
+CONFIG_USB_SWITCH_FSA9480=y
+# CONFIG_SRAM is not set
+CONFIG_C2PORT=y
+# CONFIG_C2PORT_DURAMAR_2150 is not set
+
+#
+# EEPROM support
+#
+# CONFIG_EEPROM_AT24 is not set
+# CONFIG_EEPROM_LEGACY is not set
+CONFIG_EEPROM_MAX6875=y
+CONFIG_EEPROM_93CX6=y
+# CONFIG_CB710_CORE is not set
+
+#
+# Texas Instruments shared transport line discipline
+#
+# CONFIG_TI_ST is not set
+# CONFIG_SENSORS_LIS3_I2C is not set
+
+#
+# Altera FPGA firmware download module
+#
+CONFIG_ALTERA_STAPL=y
+CONFIG_INTEL_MEI=y
+# CONFIG_INTEL_MEI_ME is not set
+CONFIG_INTEL_MEI_TXE=y
+CONFIG_VMWARE_VMCI=y
+
+#
+# Intel MIC Bus Driver
+#
+
+#
+# Intel MIC Host Driver
+#
+
+#
+# Intel MIC Card Driver
+#
+CONFIG_ECHO=y
+# CONFIG_CXL_BASE is not set
+CONFIG_HAVE_IDE=y
+CONFIG_IDE=y
+
+#
+# Please see Documentation/ide/ide.txt for help/info on IDE drives
+#
+CONFIG_IDE_XFER_MODE=y
+CONFIG_IDE_TIMINGS=y
+CONFIG_IDE_ATAPI=y
+CONFIG_BLK_DEV_IDE_SATA=y
+CONFIG_IDE_GD=y
+CONFIG_IDE_GD_ATA=y
+CONFIG_IDE_GD_ATAPI=y
+CONFIG_BLK_DEV_IDECD=y
+CONFIG_BLK_DEV_IDECD_VERBOSE_ERRORS=y
+# CONFIG_BLK_DEV_IDETAPE is not set
+# CONFIG_BLK_DEV_IDEACPI is not set
+CONFIG_IDE_TASK_IOCTL=y
+CONFIG_IDE_PROC_FS=y
+
+#
+# IDE chipset support/bugfixes
+#
+# CONFIG_IDE_GENERIC is not set
+CONFIG_BLK_DEV_PLATFORM=y
+# CONFIG_BLK_DEV_CMD640 is not set
+# CONFIG_BLK_DEV_IDEPNP is not set
+CONFIG_BLK_DEV_IDEDMA_SFF=y
+
+#
+# PCI IDE chipsets support
+#
+CONFIG_BLK_DEV_IDEPCI=y
+# CONFIG_IDEPCI_PCIBUS_ORDER is not set
+# CONFIG_BLK_DEV_OFFBOARD is not set
+# CONFIG_BLK_DEV_GENERIC is not set
+# CONFIG_BLK_DEV_OPTI621 is not set
+CONFIG_BLK_DEV_RZ1000=y
+CONFIG_BLK_DEV_IDEDMA_PCI=y
+# CONFIG_BLK_DEV_AEC62XX is not set
+# CONFIG_BLK_DEV_ALI15X3 is not set
+CONFIG_BLK_DEV_AMD74XX=y
+CONFIG_BLK_DEV_ATIIXP=y
+# CONFIG_BLK_DEV_CMD64X is not set
+CONFIG_BLK_DEV_TRIFLEX=y
+# CONFIG_BLK_DEV_CS5520 is not set
+CONFIG_BLK_DEV_CS5530=y
+CONFIG_BLK_DEV_CS5535=y
+# CONFIG_BLK_DEV_CS5536 is not set
+CONFIG_BLK_DEV_HPT366=y
+CONFIG_BLK_DEV_JMICRON=y
+# CONFIG_BLK_DEV_SC1200 is not set
+# CONFIG_BLK_DEV_PIIX is not set
+# CONFIG_BLK_DEV_IT8172 is not set
+CONFIG_BLK_DEV_IT8213=y
+# CONFIG_BLK_DEV_IT821X is not set
+CONFIG_BLK_DEV_NS87415=y
+# CONFIG_BLK_DEV_PDC202XX_OLD is not set
+CONFIG_BLK_DEV_PDC202XX_NEW=y
+# CONFIG_BLK_DEV_SVWKS is not set
+# CONFIG_BLK_DEV_SIIMAGE is not set
+# CONFIG_BLK_DEV_SIS5513 is not set
+# CONFIG_BLK_DEV_SLC90E66 is not set
+CONFIG_BLK_DEV_TRM290=y
+CONFIG_BLK_DEV_VIA82CXXX=y
+CONFIG_BLK_DEV_TC86C001=y
+CONFIG_BLK_DEV_IDEDMA=y
+
+#
+# SCSI device support
+#
+CONFIG_SCSI_MOD=y
+# CONFIG_RAID_ATTRS is not set
+# CONFIG_SCSI is not set
+# CONFIG_SCSI_DMA is not set
+# CONFIG_SCSI_NETLINK is not set
+# CONFIG_ATA is not set
+CONFIG_MD=y
+CONFIG_BLK_DEV_MD=y
+CONFIG_MD_AUTODETECT=y
+# CONFIG_MD_LINEAR is not set
+CONFIG_MD_RAID0=y
+CONFIG_MD_RAID1=y
+CONFIG_MD_RAID10=y
+CONFIG_MD_RAID456=y
+CONFIG_MD_MULTIPATH=y
+CONFIG_MD_FAULTY=y
+CONFIG_BCACHE=y
+CONFIG_BCACHE_DEBUG=y
+CONFIG_BCACHE_CLOSURES_DEBUG=y
+CONFIG_BLK_DEV_DM_BUILTIN=y
+CONFIG_BLK_DEV_DM=y
+# CONFIG_DM_DEBUG is not set
+CONFIG_DM_BUFIO=y
+CONFIG_DM_BIO_PRISON=y
+CONFIG_DM_PERSISTENT_DATA=y
+# CONFIG_DM_DEBUG_BLOCK_STACK_TRACING is not set
+# CONFIG_DM_CRYPT is not set
+CONFIG_DM_SNAPSHOT=y
+# CONFIG_DM_THIN_PROVISIONING is not set
+CONFIG_DM_CACHE=y
+# CONFIG_DM_CACHE_MQ is not set
+CONFIG_DM_CACHE_CLEANER=y
+CONFIG_DM_ERA=y
+CONFIG_DM_MIRROR=y
+# CONFIG_DM_LOG_USERSPACE is not set
+CONFIG_DM_RAID=y
+# CONFIG_DM_ZERO is not set
+CONFIG_DM_MULTIPATH=y
+# CONFIG_DM_MULTIPATH_QL is not set
+# CONFIG_DM_MULTIPATH_ST is not set
+CONFIG_DM_DELAY=y
+# CONFIG_DM_UEVENT is not set
+CONFIG_DM_FLAKEY=y
+CONFIG_DM_VERITY=y
+CONFIG_DM_SWITCH=y
+# CONFIG_FUSION is not set
+
+#
+# IEEE 1394 (FireWire) support
+#
+CONFIG_FIREWIRE=y
+# CONFIG_FIREWIRE_OHCI is not set
+CONFIG_FIREWIRE_NOSY=y
+CONFIG_I2O=y
+# CONFIG_I2O_LCT_NOTIFY_ON_CHANGES is not set
+CONFIG_I2O_EXT_ADAPTEC=y
+CONFIG_I2O_EXT_ADAPTEC_DMA64=y
+CONFIG_I2O_CONFIG=y
+# CONFIG_I2O_CONFIG_OLD_IOCTL is not set
+# CONFIG_I2O_BUS is not set
+CONFIG_I2O_BLOCK=y
+# CONFIG_I2O_PROC is not set
+CONFIG_MACINTOSH_DRIVERS=y
+CONFIG_MAC_EMUMOUSEBTN=y
+# CONFIG_NETDEVICES is not set
+# CONFIG_VHOST_NET is not set
+
+#
+# Input device support
+#
+CONFIG_INPUT=y
+CONFIG_INPUT_FF_MEMLESS=y
+CONFIG_INPUT_POLLDEV=y
+CONFIG_INPUT_SPARSEKMAP=y
+# CONFIG_INPUT_MATRIXKMAP is not set
+
+#
+# Userland interfaces
+#
+CONFIG_INPUT_MOUSEDEV=y
+CONFIG_INPUT_MOUSEDEV_PSAUX=y
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
+CONFIG_INPUT_JOYDEV=y
+CONFIG_INPUT_EVDEV=y
+# CONFIG_INPUT_EVBUG is not set
+
+#
+# Input Device Drivers
+#
+CONFIG_INPUT_KEYBOARD=y
+# CONFIG_KEYBOARD_ADP5520 is not set
+# CONFIG_KEYBOARD_ADP5588 is not set
+# CONFIG_KEYBOARD_ADP5589 is not set
+CONFIG_KEYBOARD_ATKBD=y
+# CONFIG_KEYBOARD_QT1070 is not set
+# CONFIG_KEYBOARD_QT2160 is not set
+# CONFIG_KEYBOARD_LKKBD is not set
+# CONFIG_KEYBOARD_GPIO is not set
+# CONFIG_KEYBOARD_GPIO_POLLED is not set
+# CONFIG_KEYBOARD_TCA6416 is not set
+# CONFIG_KEYBOARD_TCA8418 is not set
+# CONFIG_KEYBOARD_MATRIX is not set
+# CONFIG_KEYBOARD_LM8323 is not set
+# CONFIG_KEYBOARD_LM8333 is not set
+# CONFIG_KEYBOARD_MAX7359 is not set
+# CONFIG_KEYBOARD_MCS is not set
+# CONFIG_KEYBOARD_MPR121 is not set
+# CONFIG_KEYBOARD_NEWTON is not set
+# CONFIG_KEYBOARD_OPENCORES is not set
+# CONFIG_KEYBOARD_STOWAWAY is not set
+# CONFIG_KEYBOARD_SUNKBD is not set
+# CONFIG_KEYBOARD_TWL4030 is not set
+# CONFIG_KEYBOARD_XTKBD is not set
+# CONFIG_KEYBOARD_CROS_EC is not set
+CONFIG_INPUT_LEDS=y
+# CONFIG_INPUT_MOUSE is not set
+CONFIG_INPUT_JOYSTICK=y
+# CONFIG_JOYSTICK_ANALOG is not set
+# CONFIG_JOYSTICK_A3D is not set
+# CONFIG_JOYSTICK_ADI is not set
+CONFIG_JOYSTICK_COBRA=y
+CONFIG_JOYSTICK_GF2K=y
+CONFIG_JOYSTICK_GRIP=y
+CONFIG_JOYSTICK_GRIP_MP=y
+CONFIG_JOYSTICK_GUILLEMOT=y
+CONFIG_JOYSTICK_INTERACT=y
+CONFIG_JOYSTICK_SIDEWINDER=y
+CONFIG_JOYSTICK_TMDC=y
+CONFIG_JOYSTICK_IFORCE=y
+CONFIG_JOYSTICK_IFORCE_232=y
+# CONFIG_JOYSTICK_WARRIOR is not set
+CONFIG_JOYSTICK_MAGELLAN=y
+CONFIG_JOYSTICK_SPACEORB=y
+CONFIG_JOYSTICK_SPACEBALL=y
+CONFIG_JOYSTICK_STINGER=y
+CONFIG_JOYSTICK_TWIDJOY=y
+# CONFIG_JOYSTICK_ZHENHUA is not set
+CONFIG_JOYSTICK_AS5011=y
+CONFIG_JOYSTICK_JOYDUMP=y
+# CONFIG_JOYSTICK_XPAD is not set
+# CONFIG_INPUT_TABLET is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+# CONFIG_INPUT_MISC is not set
+
+#
+# Hardware I/O ports
+#
+CONFIG_SERIO=y
+CONFIG_ARCH_MIGHT_HAVE_PC_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_SERIO_SERPORT=y
+CONFIG_SERIO_CT82C710=y
+CONFIG_SERIO_PCIPS2=y
+CONFIG_SERIO_LIBPS2=y
+CONFIG_SERIO_RAW=y
+CONFIG_SERIO_ALTERA_PS2=y
+CONFIG_SERIO_PS2MULT=y
+CONFIG_SERIO_ARC_PS2=y
+CONFIG_GAMEPORT=y
+# CONFIG_GAMEPORT_NS558 is not set
+# CONFIG_GAMEPORT_L4 is not set
+CONFIG_GAMEPORT_EMU10K1=y
+# CONFIG_GAMEPORT_FM801 is not set
+
+#
+# Character devices
+#
+CONFIG_TTY=y
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_VT_CONSOLE_SLEEP=y
+CONFIG_HW_CONSOLE=y
+CONFIG_VT_HW_CONSOLE_BINDING=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
+# CONFIG_LEGACY_PTYS is not set
+# CONFIG_SERIAL_NONSTANDARD is not set
+# CONFIG_NOZOMI is not set
+# CONFIG_N_GSM is not set
+# CONFIG_TRACE_SINK is not set
+CONFIG_DEVKMEM=y
+
+#
+# Serial drivers
+#
+CONFIG_SERIAL_EARLYCON=y
+CONFIG_SERIAL_8250=y
+# CONFIG_SERIAL_8250_DEPRECATED_OPTIONS is not set
+CONFIG_SERIAL_8250_PNP=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_SERIAL_8250_DMA=y
+CONFIG_SERIAL_8250_PCI=y
+CONFIG_SERIAL_8250_NR_UARTS=4
+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+# CONFIG_SERIAL_8250_EXTENDED is not set
+CONFIG_SERIAL_8250_DW=y
+# CONFIG_SERIAL_8250_FINTEK is not set
+
+#
+# Non-8250 serial port support
+#
+CONFIG_SERIAL_MFD_HSU=y
+CONFIG_SERIAL_MFD_HSU_CONSOLE=y
+CONFIG_SERIAL_CORE=y
+CONFIG_SERIAL_CORE_CONSOLE=y
+CONFIG_SERIAL_JSM=y
+CONFIG_SERIAL_SCCNXP=y
+CONFIG_SERIAL_SCCNXP_CONSOLE=y
+CONFIG_SERIAL_SC16IS7XX=y
+CONFIG_SERIAL_TIMBERDALE=y
+# CONFIG_SERIAL_ALTERA_JTAGUART is not set
+# CONFIG_SERIAL_ALTERA_UART is not set
+CONFIG_SERIAL_PCH_UART=y
+# CONFIG_SERIAL_PCH_UART_CONSOLE is not set
+# CONFIG_SERIAL_ARC is not set
+CONFIG_SERIAL_RP2=y
+CONFIG_SERIAL_RP2_NR_UARTS=32
+# CONFIG_SERIAL_FSL_LPUART is not set
+CONFIG_HVC_DRIVER=y
+# CONFIG_HVC_XEN is not set
+CONFIG_VIRTIO_CONSOLE=y
+# CONFIG_IPMI_HANDLER is not set
+# CONFIG_HW_RANDOM is not set
+# CONFIG_NVRAM is not set
+# CONFIG_R3964 is not set
+CONFIG_APPLICOM=y
+CONFIG_SONYPI=y
+CONFIG_MWAVE=y
+# CONFIG_SCx200_GPIO is not set
+# CONFIG_PC8736x_GPIO is not set
+CONFIG_NSC_GPIO=y
+CONFIG_RAW_DRIVER=y
+CONFIG_MAX_RAW_DEVS=256
+# CONFIG_HPET is not set
+CONFIG_HANGCHECK_TIMER=y
+CONFIG_TCG_TPM=y
+CONFIG_TCG_TIS=y
+# CONFIG_TCG_TIS_I2C_ATMEL is not set
+CONFIG_TCG_TIS_I2C_INFINEON=y
+CONFIG_TCG_TIS_I2C_NUVOTON=y
+CONFIG_TCG_NSC=y
+# CONFIG_TCG_ATMEL is not set
+# CONFIG_TCG_INFINEON is not set
+CONFIG_TCG_ST33_I2C=y
+CONFIG_TCG_XEN=y
+# CONFIG_TELCLOCK is not set
+CONFIG_DEVPORT=y
+# CONFIG_XILLYBUS is not set
+
+#
+# I2C support
+#
+CONFIG_I2C=y
+CONFIG_ACPI_I2C_OPREGION=y
+CONFIG_I2C_BOARDINFO=y
+# CONFIG_I2C_COMPAT is not set
+# CONFIG_I2C_CHARDEV is not set
+# CONFIG_I2C_MUX is not set
+CONFIG_I2C_HELPER_AUTO=y
+CONFIG_I2C_SMBUS=y
+CONFIG_I2C_ALGOBIT=y
+
+#
+# I2C Hardware Bus support
+#
+
+#
+# PC SMBus host controller drivers
+#
+CONFIG_I2C_ALI1535=y
+# CONFIG_I2C_ALI1563 is not set
+CONFIG_I2C_ALI15X3=y
+# CONFIG_I2C_AMD756 is not set
+CONFIG_I2C_AMD8111=y
+# CONFIG_I2C_I801 is not set
+CONFIG_I2C_ISCH=y
+CONFIG_I2C_ISMT=y
+# CONFIG_I2C_PIIX4 is not set
+CONFIG_I2C_NFORCE2=y
+CONFIG_I2C_NFORCE2_S4985=y
+CONFIG_I2C_SIS5595=y
+# CONFIG_I2C_SIS630 is not set
+CONFIG_I2C_SIS96X=y
+# CONFIG_I2C_VIA is not set
+CONFIG_I2C_VIAPRO=y
+
+#
+# ACPI drivers
+#
+# CONFIG_I2C_SCMI is not set
+
+#
+# I2C system bus drivers (mostly embedded / system-on-chip)
+#
+CONFIG_I2C_CBUS_GPIO=y
+# CONFIG_I2C_DESIGNWARE_PCI is not set
+# CONFIG_I2C_EG20T is not set
+# CONFIG_I2C_GPIO is not set
+CONFIG_I2C_KEMPLD=y
+CONFIG_I2C_OCORES=y
+# CONFIG_I2C_PCA_PLATFORM is not set
+# CONFIG_I2C_PXA_PCI is not set
+CONFIG_I2C_SIMTEC=y
+CONFIG_I2C_XILINX=y
+
+#
+# External I2C/SMBus adapter drivers
+#
+CONFIG_I2C_PARPORT_LIGHT=y
+# CONFIG_I2C_TAOS_EVM is not set
+
+#
+# Other I2C/SMBus bus drivers
+#
+CONFIG_I2C_CROS_EC_TUNNEL=y
+CONFIG_SCx200_ACB=y
+CONFIG_I2C_SLAVE=y
+CONFIG_I2C_SLAVE_EEPROM=y
+# CONFIG_I2C_DEBUG_CORE is not set
+# CONFIG_I2C_DEBUG_ALGO is not set
+# CONFIG_I2C_DEBUG_BUS is not set
+# CONFIG_SPI is not set
+# CONFIG_SPMI is not set
+CONFIG_HSI=y
+CONFIG_HSI_BOARDINFO=y
+
+#
+# HSI controllers
+#
+
+#
+# HSI clients
+#
+CONFIG_HSI_CHAR=y
+
+#
+# PPS support
+#
+# CONFIG_PPS is not set
+
+#
+# PPS generators support
+#
+
+#
+# PTP clock support
+#
+# CONFIG_PTP_1588_CLOCK is not set
+
+#
+# Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.
+#
+# CONFIG_PTP_1588_CLOCK_PCH is not set
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+CONFIG_GPIOLIB=y
+CONFIG_GPIO_DEVRES=y
+CONFIG_GPIO_ACPI=y
+CONFIG_GPIOLIB_IRQCHIP=y
+# CONFIG_DEBUG_GPIO is not set
+CONFIG_GPIO_SYSFS=y
+CONFIG_GPIO_DA9055=y
+CONFIG_GPIO_MAX730X=y
+
+#
+# Memory mapped GPIO drivers:
+#
+# CONFIG_GPIO_GENERIC_PLATFORM is not set
+CONFIG_GPIO_IT8761E=y
+CONFIG_GPIO_F7188X=y
+CONFIG_GPIO_SCH311X=y
+# CONFIG_GPIO_SCH is not set
+# CONFIG_GPIO_ICH is not set
+CONFIG_GPIO_VX855=y
+# CONFIG_GPIO_LYNXPOINT is not set
+
+#
+# I2C GPIO expanders:
+#
+CONFIG_GPIO_ARIZONA=y
+CONFIG_GPIO_CRYSTAL_COVE=y
+# CONFIG_GPIO_LP3943 is not set
+CONFIG_GPIO_MAX7300=y
+CONFIG_GPIO_MAX732X=y
+# CONFIG_GPIO_MAX732X_IRQ is not set
+# CONFIG_GPIO_PCA953X is not set
+# CONFIG_GPIO_PCF857X is not set
+# CONFIG_GPIO_SX150X is not set
+CONFIG_GPIO_TWL4030=y
+# CONFIG_GPIO_WM831X is not set
+# CONFIG_GPIO_WM8994 is not set
+CONFIG_GPIO_ADP5520=y
+# CONFIG_GPIO_ADP5588 is not set
+
+#
+# PCI GPIO expanders:
+#
+# CONFIG_GPIO_CS5535 is not set
+CONFIG_GPIO_BT8XX=y
+CONFIG_GPIO_AMD8111=y
+CONFIG_GPIO_INTEL_MID=y
+CONFIG_GPIO_PCH=y
+# CONFIG_GPIO_ML_IOH is not set
+# CONFIG_GPIO_RDC321X is not set
+
+#
+# SPI GPIO expanders:
+#
+# CONFIG_GPIO_MCP23S08 is not set
+
+#
+# AC97 GPIO expanders:
+#
+
+#
+# LPC GPIO expanders:
+#
+# CONFIG_GPIO_KEMPLD is not set
+
+#
+# MODULbus GPIO expanders:
+#
+CONFIG_GPIO_JANZ_TTL=y
+CONFIG_GPIO_PALMAS=y
+# CONFIG_GPIO_TPS6586X is not set
+CONFIG_GPIO_TPS65910=y
+
+#
+# USB GPIO expanders:
+#
+CONFIG_W1=y
+
+#
+# 1-wire Bus Masters
+#
+# CONFIG_W1_MASTER_MATROX is not set
+# CONFIG_W1_MASTER_DS2482 is not set
+CONFIG_W1_MASTER_DS1WM=y
+CONFIG_W1_MASTER_GPIO=y
+
+#
+# 1-wire Slaves
+#
+CONFIG_W1_SLAVE_THERM=y
+# CONFIG_W1_SLAVE_SMEM is not set
+CONFIG_W1_SLAVE_DS2408=y
+CONFIG_W1_SLAVE_DS2408_READBACK=y
+CONFIG_W1_SLAVE_DS2413=y
+# CONFIG_W1_SLAVE_DS2406 is not set
+CONFIG_W1_SLAVE_DS2423=y
+# CONFIG_W1_SLAVE_DS2431 is not set
+CONFIG_W1_SLAVE_DS2433=y
+CONFIG_W1_SLAVE_DS2433_CRC=y
+CONFIG_W1_SLAVE_DS2760=y
+CONFIG_W1_SLAVE_DS2780=y
+CONFIG_W1_SLAVE_DS2781=y
+# CONFIG_W1_SLAVE_DS28E04 is not set
+CONFIG_W1_SLAVE_BQ27000=y
+CONFIG_POWER_SUPPLY=y
+# CONFIG_POWER_SUPPLY_DEBUG is not set
+CONFIG_PDA_POWER=y
+CONFIG_WM831X_BACKUP=y
+CONFIG_WM831X_POWER=y
+# CONFIG_TEST_POWER is not set
+# CONFIG_BATTERY_88PM860X is not set
+CONFIG_BATTERY_DS2760=y
+CONFIG_BATTERY_DS2780=y
+# CONFIG_BATTERY_DS2781 is not set
+CONFIG_BATTERY_DS2782=y
+# CONFIG_BATTERY_SBS is not set
+CONFIG_BATTERY_BQ27x00=y
+CONFIG_BATTERY_BQ27X00_I2C=y
+# CONFIG_BATTERY_BQ27X00_PLATFORM is not set
+CONFIG_BATTERY_DA9030=y
+CONFIG_BATTERY_MAX17040=y
+# CONFIG_BATTERY_MAX17042 is not set
+# CONFIG_CHARGER_MAX8903 is not set
+CONFIG_CHARGER_TWL4030=y
+CONFIG_CHARGER_LP8727=y
+# CONFIG_CHARGER_GPIO is not set
+CONFIG_CHARGER_MAX14577=y
+CONFIG_CHARGER_BQ2415X=y
+CONFIG_CHARGER_BQ24190=y
+CONFIG_CHARGER_BQ24735=y
+# CONFIG_CHARGER_SMB347 is not set
+CONFIG_CHARGER_TPS65090=y
+CONFIG_POWER_RESET=y
+CONFIG_POWER_AVS=y
+# CONFIG_HWMON is not set
+CONFIG_THERMAL=y
+# CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE is not set
+# CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE is not set
+CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE=y
+CONFIG_THERMAL_GOV_FAIR_SHARE=y
+# CONFIG_THERMAL_GOV_STEP_WISE is not set
+# CONFIG_THERMAL_GOV_BANG_BANG is not set
+CONFIG_THERMAL_GOV_USER_SPACE=y
+# CONFIG_THERMAL_EMULATION is not set
+CONFIG_INTEL_POWERCLAMP=y
+CONFIG_INTEL_SOC_DTS_THERMAL=y
+# CONFIG_INT340X_THERMAL is not set
+
+#
+# Texas Instruments thermal drivers
+#
+CONFIG_WATCHDOG=y
+CONFIG_WATCHDOG_CORE=y
+CONFIG_WATCHDOG_NOWAYOUT=y
+
+#
+# Watchdog Device Drivers
+#
+CONFIG_SOFT_WATCHDOG=y
+# CONFIG_DA9055_WATCHDOG is not set
+CONFIG_MENF21BMC_WATCHDOG=y
+CONFIG_WM831X_WATCHDOG=y
+CONFIG_XILINX_WATCHDOG=y
+# CONFIG_DW_WATCHDOG is not set
+CONFIG_RN5T618_WATCHDOG=y
+# CONFIG_TWL4030_WATCHDOG is not set
+# CONFIG_ACQUIRE_WDT is not set
+CONFIG_ADVANTECH_WDT=y
+CONFIG_ALIM1535_WDT=y
+# CONFIG_ALIM7101_WDT is not set
+CONFIG_F71808E_WDT=y
+CONFIG_SP5100_TCO=y
+CONFIG_GEODE_WDT=y
+CONFIG_SBC_FITPC2_WATCHDOG=y
+# CONFIG_EUROTECH_WDT is not set
+CONFIG_IB700_WDT=y
+CONFIG_IBMASR=y
+CONFIG_WAFER_WDT=y
+CONFIG_I6300ESB_WDT=y
+# CONFIG_IE6XX_WDT is not set
+# CONFIG_ITCO_WDT is not set
+CONFIG_IT8712F_WDT=y
+# CONFIG_IT87_WDT is not set
+CONFIG_HP_WATCHDOG=y
+CONFIG_KEMPLD_WDT=y
+# CONFIG_HPWDT_NMI_DECODING is not set
+CONFIG_SC1200_WDT=y
+CONFIG_SCx200_WDT=y
+CONFIG_PC87413_WDT=y
+# CONFIG_NV_TCO is not set
+CONFIG_60XX_WDT=y
+CONFIG_SBC8360_WDT=y
+CONFIG_SBC7240_WDT=y
+# CONFIG_CPU5_WDT is not set
+CONFIG_SMSC_SCH311X_WDT=y
+CONFIG_SMSC37B787_WDT=y
+CONFIG_VIA_WDT=y
+# CONFIG_W83627HF_WDT is not set
+# CONFIG_W83877F_WDT is not set
+CONFIG_W83977F_WDT=y
+CONFIG_MACHZ_WDT=y
+CONFIG_SBC_EPX_C3_WATCHDOG=y
+CONFIG_MEN_A21_WDT=y
+CONFIG_XEN_WDT=y
+
+#
+# PCI-based Watchdog Cards
+#
+# CONFIG_PCIPCWATCHDOG is not set
+# CONFIG_WDTPCI is not set
+CONFIG_SSB_POSSIBLE=y
+
+#
+# Sonics Silicon Backplane
+#
+# CONFIG_SSB is not set
+CONFIG_BCMA_POSSIBLE=y
+
+#
+# Broadcom specific AMBA
+#
+CONFIG_BCMA=y
+CONFIG_BCMA_HOST_PCI_POSSIBLE=y
+CONFIG_BCMA_HOST_PCI=y
+# CONFIG_BCMA_HOST_SOC is not set
+CONFIG_BCMA_DRIVER_GMAC_CMN=y
+CONFIG_BCMA_DRIVER_GPIO=y
+CONFIG_BCMA_DEBUG=y
+
+#
+# Multifunction device drivers
+#
+CONFIG_MFD_CORE=y
+CONFIG_MFD_CS5535=y
+# CONFIG_MFD_AS3711 is not set
+CONFIG_PMIC_ADP5520=y
+# CONFIG_MFD_AAT2870_CORE is not set
+CONFIG_MFD_BCM590XX=y
+CONFIG_MFD_AXP20X=y
+CONFIG_MFD_CROS_EC=y
+# CONFIG_MFD_CROS_EC_I2C is not set
+CONFIG_PMIC_DA903X=y
+# CONFIG_MFD_DA9052_I2C is not set
+CONFIG_MFD_DA9055=y
+# CONFIG_MFD_DA9063 is not set
+CONFIG_MFD_MC13XXX=y
+CONFIG_MFD_MC13XXX_I2C=y
+CONFIG_HTC_PASIC3=y
+CONFIG_HTC_I2CPLD=y
+CONFIG_LPC_ICH=y
+CONFIG_LPC_SCH=y
+CONFIG_INTEL_SOC_PMIC=y
+CONFIG_MFD_JANZ_CMODIO=y
+CONFIG_MFD_KEMPLD=y
+CONFIG_MFD_88PM800=y
+CONFIG_MFD_88PM805=y
+CONFIG_MFD_88PM860X=y
+CONFIG_MFD_MAX14577=y
+# CONFIG_MFD_MAX77686 is not set
+CONFIG_MFD_MAX77693=y
+CONFIG_MFD_MAX8907=y
+# CONFIG_MFD_MAX8925 is not set
+CONFIG_MFD_MAX8997=y
+# CONFIG_MFD_MAX8998 is not set
+CONFIG_MFD_MENF21BMC=y
+# CONFIG_MFD_RETU is not set
+# CONFIG_MFD_PCF50633 is not set
+CONFIG_MFD_RDC321X=y
+# CONFIG_MFD_RTSX_PCI is not set
+# CONFIG_MFD_RC5T583 is not set
+CONFIG_MFD_RN5T618=y
+# CONFIG_MFD_SEC_CORE is not set
+CONFIG_MFD_SI476X_CORE=y
+# CONFIG_MFD_SM501 is not set
+# CONFIG_MFD_SMSC is not set
+# CONFIG_ABX500_CORE is not set
+# CONFIG_MFD_SYSCON is not set
+# CONFIG_MFD_TI_AM335X_TSCADC is not set
+CONFIG_MFD_LP3943=y
+CONFIG_MFD_LP8788=y
+CONFIG_MFD_PALMAS=y
+# CONFIG_TPS6105X is not set
+# CONFIG_TPS65010 is not set
+# CONFIG_TPS6507X is not set
+CONFIG_MFD_TPS65090=y
+# CONFIG_MFD_TPS65217 is not set
+CONFIG_MFD_TPS65218=y
+CONFIG_MFD_TPS6586X=y
+CONFIG_MFD_TPS65910=y
+# CONFIG_MFD_TPS65912 is not set
+# CONFIG_MFD_TPS65912_I2C is not set
+# CONFIG_MFD_TPS80031 is not set
+CONFIG_TWL4030_CORE=y
+CONFIG_MFD_TWL4030_AUDIO=y
+# CONFIG_TWL6040_CORE is not set
+CONFIG_MFD_WL1273_CORE=y
+# CONFIG_MFD_LM3533 is not set
+# CONFIG_MFD_TIMBERDALE is not set
+# CONFIG_MFD_TC3589X is not set
+# CONFIG_MFD_TMIO is not set
+CONFIG_MFD_VX855=y
+CONFIG_MFD_ARIZONA=y
+CONFIG_MFD_ARIZONA_I2C=y
+# CONFIG_MFD_WM5102 is not set
+# CONFIG_MFD_WM5110 is not set
+CONFIG_MFD_WM8997=y
+# CONFIG_MFD_WM8400 is not set
+CONFIG_MFD_WM831X=y
+CONFIG_MFD_WM831X_I2C=y
+# CONFIG_MFD_WM8350_I2C is not set
+CONFIG_MFD_WM8994=y
+# CONFIG_REGULATOR is not set
+# CONFIG_MEDIA_SUPPORT is not set
+
+#
+# Graphics support
+#
+CONFIG_AGP=y
+# CONFIG_AGP_ALI is not set
+CONFIG_AGP_ATI=y
+CONFIG_AGP_AMD=y
+# CONFIG_AGP_AMD64 is not set
+CONFIG_AGP_INTEL=y
+# CONFIG_AGP_NVIDIA is not set
+CONFIG_AGP_SIS=y
+# CONFIG_AGP_SWORKS is not set
+CONFIG_AGP_VIA=y
+CONFIG_AGP_EFFICEON=y
+CONFIG_INTEL_GTT=y
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=16
+# CONFIG_VGA_SWITCHEROO is not set
+
+#
+# Direct Rendering Manager
+#
+# CONFIG_DRM is not set
+
+#
+# Frame buffer Devices
+#
+# CONFIG_FB is not set
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+CONFIG_LCD_CLASS_DEVICE=y
+CONFIG_LCD_PLATFORM=y
+# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
+# CONFIG_VGASTATE is not set
+
+#
+# Console display driver support
+#
+CONFIG_VGA_CONSOLE=y
+CONFIG_VGACON_SOFT_SCROLLBACK=y
+CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=64
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_SOUND=y
+CONFIG_SOUND_OSS_CORE=y
+# CONFIG_SOUND_OSS_CORE_PRECLAIM is not set
+# CONFIG_SND is not set
+CONFIG_SOUND_PRIME=y
+CONFIG_SOUND_OSS=y
+# CONFIG_SOUND_TRACEINIT is not set
+CONFIG_SOUND_DMAP=y
+CONFIG_SOUND_VMIDI=y
+# CONFIG_SOUND_TRIX is not set
+CONFIG_SOUND_MSS=y
+CONFIG_SOUND_MPU401=y
+CONFIG_SOUND_PAS=y
+CONFIG_PAS_JOYSTICK=y
+CONFIG_SOUND_PSS=y
+# CONFIG_PSS_MIXER is not set
+# CONFIG_PSS_HAVE_BOOT is not set
+# CONFIG_SOUND_SB is not set
+CONFIG_SOUND_YM3812=y
+CONFIG_SOUND_UART6850=y
+CONFIG_SOUND_AEDSP16=y
+# CONFIG_SC6600 is not set
+
+#
+# HID support
+#
+CONFIG_HID=y
+CONFIG_HID_BATTERY_STRENGTH=y
+CONFIG_HIDRAW=y
+# CONFIG_UHID is not set
+CONFIG_HID_GENERIC=y
+
+#
+# Special HID drivers
+#
+CONFIG_HID_A4TECH=y
+# CONFIG_HID_ACRUX is not set
+CONFIG_HID_APPLE=y
+CONFIG_HID_AUREAL=y
+CONFIG_HID_BELKIN=y
+CONFIG_HID_CHERRY=y
+CONFIG_HID_CHICONY=y
+CONFIG_HID_CYPRESS=y
+CONFIG_HID_DRAGONRISE=y
+# CONFIG_DRAGONRISE_FF is not set
+# CONFIG_HID_EMS_FF is not set
+# CONFIG_HID_ELECOM is not set
+CONFIG_HID_EZKEY=y
+# CONFIG_HID_KEYTOUCH is not set
+CONFIG_HID_KYE=y
+CONFIG_HID_UCLOGIC=y
+CONFIG_HID_WALTOP=y
+CONFIG_HID_GYRATION=y
+CONFIG_HID_ICADE=y
+# CONFIG_HID_TWINHAN is not set
+CONFIG_HID_KENSINGTON=y
+CONFIG_HID_LCPOWER=y
+# CONFIG_HID_LENOVO is not set
+CONFIG_HID_LOGITECH=y
+CONFIG_HID_LOGITECH_DJ=y
+CONFIG_HID_LOGITECH_HIDPP=y
+CONFIG_LOGITECH_FF=y
+# CONFIG_LOGIRUMBLEPAD2_FF is not set
+# CONFIG_LOGIG940_FF is not set
+# CONFIG_LOGIWHEELS_FF is not set
+CONFIG_HID_MAGICMOUSE=y
+CONFIG_HID_MICROSOFT=y
+CONFIG_HID_MONTEREY=y
+# CONFIG_HID_MULTITOUCH is not set
+CONFIG_HID_ORTEK=y
+# CONFIG_HID_PANTHERLORD is not set
+CONFIG_HID_PETALYNX=y
+CONFIG_HID_PICOLCD=y
+CONFIG_HID_PICOLCD_LCD=y
+CONFIG_HID_PICOLCD_LEDS=y
+CONFIG_HID_PLANTRONICS=y
+CONFIG_HID_PRIMAX=y
+CONFIG_HID_SAITEK=y
+# CONFIG_HID_SAMSUNG is not set
+CONFIG_HID_SPEEDLINK=y
+# CONFIG_HID_STEELSERIES is not set
+CONFIG_HID_SUNPLUS=y
+CONFIG_HID_RMI=y
+# CONFIG_HID_GREENASIA is not set
+CONFIG_HID_SMARTJOYPLUS=y
+CONFIG_SMARTJOYPLUS_FF=y
+CONFIG_HID_TIVO=y
+CONFIG_HID_TOPSEED=y
+# CONFIG_HID_THINGM is not set
+CONFIG_HID_THRUSTMASTER=y
+# CONFIG_THRUSTMASTER_FF is not set
+# CONFIG_HID_WACOM is not set
+# CONFIG_HID_WIIMOTE is not set
+CONFIG_HID_XINMO=y
+CONFIG_HID_ZEROPLUS=y
+# CONFIG_ZEROPLUS_FF is not set
+# CONFIG_HID_ZYDACRON is not set
+CONFIG_HID_SENSOR_HUB=y
+
+#
+# I2C HID support
+#
+CONFIG_I2C_HID=y
+CONFIG_USB_OHCI_LITTLE_ENDIAN=y
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_ARCH_HAS_HCD=y
+# CONFIG_USB is not set
+
+#
+# USB port drivers
+#
+
+#
+# USB Physical Layer drivers
+#
+# CONFIG_USB_PHY is not set
+# CONFIG_NOP_USB_XCEIV is not set
+# CONFIG_USB_GPIO_VBUS is not set
+# CONFIG_USB_GADGET is not set
+CONFIG_UWB=y
+# CONFIG_UWB_WHCI is not set
+CONFIG_MMC=y
+CONFIG_MMC_DEBUG=y
+CONFIG_MMC_CLKGATE=y
+
+#
+# MMC/SD/SDIO Card Drivers
+#
+# CONFIG_MMC_BLOCK is not set
+# CONFIG_SDIO_UART is not set
+CONFIG_MMC_TEST=y
+
+#
+# MMC/SD/SDIO Host Controller Drivers
+#
+CONFIG_MMC_SDHCI=y
+CONFIG_MMC_SDHCI_PCI=y
+CONFIG_MMC_RICOH_MMC=y
+# CONFIG_MMC_SDHCI_ACPI is not set
+CONFIG_MMC_SDHCI_PLTFM=y
+# CONFIG_MMC_WBSD is not set
+CONFIG_MMC_TIFM_SD=y
+# CONFIG_MMC_CB710 is not set
+# CONFIG_MMC_VIA_SDMMC is not set
+CONFIG_MMC_USDHI6ROL0=y
+# CONFIG_MMC_TOSHIBA_PCI is not set
+CONFIG_MEMSTICK=y
+CONFIG_MEMSTICK_DEBUG=y
+
+#
+# MemoryStick drivers
+#
+CONFIG_MEMSTICK_UNSAFE_RESUME=y
+# CONFIG_MSPRO_BLOCK is not set
+CONFIG_MS_BLOCK=y
+
+#
+# MemoryStick Host Controller Drivers
+#
+CONFIG_MEMSTICK_TIFM_MS=y
+CONFIG_MEMSTICK_JMICRON_38X=y
+# CONFIG_MEMSTICK_R592 is not set
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+
+#
+# LED drivers
+#
+# CONFIG_LEDS_88PM860X is not set
+# CONFIG_LEDS_LM3530 is not set
+# CONFIG_LEDS_LM3642 is not set
+# CONFIG_LEDS_PCA9532 is not set
+# CONFIG_LEDS_GPIO is not set
+# CONFIG_LEDS_LP3944 is not set
+# CONFIG_LEDS_LP5521 is not set
+# CONFIG_LEDS_LP5523 is not set
+# CONFIG_LEDS_LP5562 is not set
+# CONFIG_LEDS_LP8501 is not set
+# CONFIG_LEDS_LP8788 is not set
+# CONFIG_LEDS_LP8860 is not set
+# CONFIG_LEDS_CLEVO_MAIL is not set
+# CONFIG_LEDS_PCA955X is not set
+# CONFIG_LEDS_PCA963X is not set
+# CONFIG_LEDS_WM831X_STATUS is not set
+# CONFIG_LEDS_DA903X is not set
+# CONFIG_LEDS_BD2802 is not set
+# CONFIG_LEDS_INTEL_SS4200 is not set
+# CONFIG_LEDS_LT3593 is not set
+# CONFIG_LEDS_ADP5520 is not set
+# CONFIG_LEDS_MC13783 is not set
+# CONFIG_LEDS_TCA6507 is not set
+# CONFIG_LEDS_MAX8997 is not set
+# CONFIG_LEDS_LM355x is not set
+# CONFIG_LEDS_OT200 is not set
+# CONFIG_LEDS_MENF21BMC is not set
+
+#
+# LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)
+#
+# CONFIG_LEDS_BLINKM is not set
+
+#
+# LED Triggers
+#
+CONFIG_LEDS_TRIGGERS=y
+# CONFIG_LEDS_TRIGGER_TIMER is not set
+# CONFIG_LEDS_TRIGGER_ONESHOT is not set
+# CONFIG_LEDS_TRIGGER_IDE_DISK is not set
+# CONFIG_LEDS_TRIGGER_HEARTBEAT is not set
+# CONFIG_LEDS_TRIGGER_BACKLIGHT is not set
+# CONFIG_LEDS_TRIGGER_CPU is not set
+# CONFIG_LEDS_TRIGGER_GPIO is not set
+# CONFIG_LEDS_TRIGGER_DEFAULT_ON is not set
+
+#
+# iptables trigger is under Netfilter config (LED target)
+#
+# CONFIG_LEDS_TRIGGER_TRANSIENT is not set
+# CONFIG_LEDS_TRIGGER_CAMERA is not set
+# CONFIG_ACCESSIBILITY is not set
+CONFIG_EDAC=y
+# CONFIG_EDAC_LEGACY_SYSFS is not set
+CONFIG_EDAC_DEBUG=y
+CONFIG_EDAC_DECODE_MCE=y
+CONFIG_EDAC_MCE_INJ=y
+CONFIG_EDAC_MM_EDAC=y
+# CONFIG_EDAC_AMD64 is not set
+CONFIG_EDAC_AMD76X=y
+CONFIG_EDAC_E7XXX=y
+CONFIG_EDAC_E752X=y
+CONFIG_EDAC_I82875P=y
+CONFIG_EDAC_I82975X=y
+CONFIG_EDAC_I3000=y
+CONFIG_EDAC_I3200=y
+CONFIG_EDAC_IE31200=y
+CONFIG_EDAC_X38=y
+CONFIG_EDAC_I5400=y
+# CONFIG_EDAC_I82860 is not set
+CONFIG_EDAC_R82600=y
+CONFIG_EDAC_I5000=y
+CONFIG_EDAC_I5100=y
+CONFIG_EDAC_I7300=y
+CONFIG_RTC_LIB=y
+# CONFIG_RTC_CLASS is not set
+CONFIG_DMADEVICES=y
+CONFIG_DMADEVICES_DEBUG=y
+# CONFIG_DMADEVICES_VDEBUG is not set
+
+#
+# DMA Devices
+#
+CONFIG_INTEL_MID_DMAC=y
+# CONFIG_INTEL_IOATDMA is not set
+CONFIG_DW_DMAC_CORE=y
+CONFIG_DW_DMAC=y
+CONFIG_DW_DMAC_PCI=y
+CONFIG_PCH_DMA=y
+CONFIG_DMA_ENGINE=y
+CONFIG_DMA_ACPI=y
+
+#
+# DMA Clients
+#
+# CONFIG_ASYNC_TX_DMA is not set
+# CONFIG_DMATEST is not set
+# CONFIG_AUXDISPLAY is not set
+CONFIG_UIO=y
+CONFIG_UIO_CIF=y
+# CONFIG_UIO_PDRV_GENIRQ is not set
+# CONFIG_UIO_DMEM_GENIRQ is not set
+# CONFIG_UIO_AEC is not set
+CONFIG_UIO_SERCOS3=y
+# CONFIG_UIO_PCI_GENERIC is not set
+CONFIG_UIO_NETX=y
+CONFIG_UIO_MF624=y
+CONFIG_VIRT_DRIVERS=y
+CONFIG_VIRTIO=y
+
+#
+# Virtio drivers
+#
+CONFIG_VIRTIO_PCI=y
+# CONFIG_VIRTIO_BALLOON is not set
+CONFIG_VIRTIO_MMIO=y
+# CONFIG_VIRTIO_MMIO_CMDLINE_DEVICES is not set
+
+#
+# Microsoft Hyper-V guest support
+#
+# CONFIG_HYPERV is not set
+
+#
+# Xen driver support
+#
+CONFIG_XEN_BALLOON=y
+# CONFIG_XEN_SELFBALLOONING is not set
+# CONFIG_XEN_SCRUB_PAGES is not set
+# CONFIG_XEN_DEV_EVTCHN is not set
+# CONFIG_XENFS is not set
+# CONFIG_XEN_SYS_HYPERVISOR is not set
+CONFIG_XEN_XENBUS_FRONTEND=y
+CONFIG_XEN_GNTDEV=y
+CONFIG_XEN_GRANT_DEV_ALLOC=y
+CONFIG_SWIOTLB_XEN=y
+CONFIG_XEN_TMEM=y
+CONFIG_XEN_PRIVCMD=y
+CONFIG_XEN_HAVE_PVMMU=y
+CONFIG_STAGING=y
+# CONFIG_SLICOSS is not set
+CONFIG_FT1000=y
+
+#
+# Speakup console speech
+#
+CONFIG_SPEAKUP=y
+CONFIG_SPEAKUP_SYNTH_ACNTSA=y
+# CONFIG_SPEAKUP_SYNTH_APOLLO is not set
+CONFIG_SPEAKUP_SYNTH_AUDPTR=y
+CONFIG_SPEAKUP_SYNTH_BNS=y
+CONFIG_SPEAKUP_SYNTH_DECTLK=y
+CONFIG_SPEAKUP_SYNTH_DECEXT=y
+CONFIG_SPEAKUP_SYNTH_LTLK=y
+# CONFIG_SPEAKUP_SYNTH_SOFT is not set
+CONFIG_SPEAKUP_SYNTH_SPKOUT=y
+# CONFIG_SPEAKUP_SYNTH_TXPRT is not set
+CONFIG_SPEAKUP_SYNTH_DUMMY=y
+CONFIG_TOUCHSCREEN_CLEARPAD_TM1217=y
+# CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4 is not set
+# CONFIG_STAGING_MEDIA is not set
+
+#
+# Android
+#
+# CONFIG_ASHMEM is not set
+CONFIG_ANDROID_LOGGER=y
+# CONFIG_ANDROID_TIMED_OUTPUT is not set
+CONFIG_ANDROID_LOW_MEMORY_KILLER=y
+# CONFIG_SYNC is not set
+# CONFIG_ION is not set
+# CONFIG_WIMAX_GDM72XX is not set
+# CONFIG_FIREWIRE_SERIAL is not set
+CONFIG_DGNC=y
+CONFIG_DGAP=y
+CONFIG_GS_FPGABOOT=y
+CONFIG_X86_PLATFORM_DEVICES=y
+# CONFIG_ACERHDF is not set
+# CONFIG_ASUS_LAPTOP is not set
+# CONFIG_DELL_SMO8800 is not set
+# CONFIG_FUJITSU_TABLET is not set
+# CONFIG_HP_ACCEL is not set
+# CONFIG_HP_WIRELESS is not set
+# CONFIG_THINKPAD_ACPI is not set
+# CONFIG_SENSORS_HDAPS is not set
+# CONFIG_INTEL_MENLOW is not set
+# CONFIG_EEEPC_LAPTOP is not set
+# CONFIG_ACPI_WMI is not set
+# CONFIG_TOPSTAR_LAPTOP is not set
+# CONFIG_TOSHIBA_BT_RFKILL is not set
+# CONFIG_TOSHIBA_HAPS is not set
+# CONFIG_ACPI_CMPC is not set
+# CONFIG_INTEL_IPS is not set
+CONFIG_IBM_RTL=y
+# CONFIG_SAMSUNG_Q10 is not set
+# CONFIG_INTEL_RST is not set
+# CONFIG_INTEL_SMARTCONNECT is not set
+# CONFIG_PVPANIC is not set
+# CONFIG_CHROME_PLATFORMS is not set
+
+#
+# SOC (System On Chip) specific Drivers
+#
+CONFIG_SOC_TI=y
+
+#
+# Hardware Spinlock drivers
+#
+
+#
+# Clock Source drivers
+#
+CONFIG_CLKSRC_I8253=y
+CONFIG_CLKEVT_I8253=y
+CONFIG_I8253_LOCK=y
+CONFIG_CLKBLD_I8253=y
+# CONFIG_ATMEL_PIT is not set
+# CONFIG_SH_TIMER_CMT is not set
+# CONFIG_SH_TIMER_MTU2 is not set
+# CONFIG_SH_TIMER_TMU is not set
+# CONFIG_EM_TIMER_STI is not set
+CONFIG_MAILBOX=y
+# CONFIG_PCC is not set
+CONFIG_IOMMU_SUPPORT=y
+
+#
+# Remoteproc drivers
+#
+# CONFIG_STE_MODEM_RPROC is not set
+
+#
+# Rpmsg drivers
+#
+
+#
+# SOC (System On Chip) specific Drivers
+#
+CONFIG_PM_DEVFREQ=y
+
+#
+# DEVFREQ Governors
+#
+CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND=y
+# CONFIG_DEVFREQ_GOV_PERFORMANCE is not set
+CONFIG_DEVFREQ_GOV_POWERSAVE=y
+CONFIG_DEVFREQ_GOV_USERSPACE=y
+
+#
+# DEVFREQ Drivers
+#
+CONFIG_EXTCON=y
+
+#
+# Extcon Device Drivers
+#
+CONFIG_EXTCON_GPIO=y
+CONFIG_EXTCON_MAX14577=y
+# CONFIG_EXTCON_MAX77693 is not set
+# CONFIG_EXTCON_MAX8997 is not set
+# CONFIG_EXTCON_PALMAS is not set
+# CONFIG_EXTCON_RT8973A is not set
+CONFIG_EXTCON_SM5502=y
+CONFIG_MEMORY=y
+# CONFIG_IIO is not set
+CONFIG_NTB=y
+# CONFIG_VME_BUS is not set
+# CONFIG_PWM is not set
+# CONFIG_IPACK_BUS is not set
+CONFIG_RESET_CONTROLLER=y
+CONFIG_FMC=y
+CONFIG_FMC_FAKEDEV=y
+CONFIG_FMC_TRIVIAL=y
+# CONFIG_FMC_WRITE_EEPROM is not set
+CONFIG_FMC_CHARDEV=y
+
+#
+# PHY Subsystem
+#
+CONFIG_GENERIC_PHY=y
+CONFIG_BCM_KONA_USB2_PHY=y
+CONFIG_POWERCAP=y
+CONFIG_INTEL_RAPL=y
+# CONFIG_MCB is not set
+CONFIG_RAS=y
+CONFIG_THUNDERBOLT=y
+
+#
+# Android
+#
+CONFIG_ANDROID=y
+CONFIG_ANDROID_BINDER_IPC=y
+CONFIG_ANDROID_BINDER_IPC_32BIT=y
+
+#
+# Firmware Drivers
+#
+# CONFIG_EDD is not set
+CONFIG_FIRMWARE_MEMMAP=y
+# CONFIG_DELL_RBU is not set
+CONFIG_DCDBAS=y
+# CONFIG_DMIID is not set
+CONFIG_DMI_SYSFS=y
+CONFIG_DMI_SCAN_MACHINE_NON_EFI_FALLBACK=y
+# CONFIG_ISCSI_IBFT_FIND is not set
+CONFIG_GOOGLE_FIRMWARE=y
+
+#
+# Google Firmware Drivers
+#
+CONFIG_GOOGLE_MEMCONSOLE=y
+
+#
+# File systems
+#
+CONFIG_DCACHE_WORD_ACCESS=y
+CONFIG_EXT2_FS=y
+CONFIG_EXT2_FS_XATTR=y
+# CONFIG_EXT2_FS_POSIX_ACL is not set
+# CONFIG_EXT2_FS_SECURITY is not set
+CONFIG_EXT2_FS_XIP=y
+CONFIG_EXT3_FS=y
+# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+CONFIG_EXT3_FS_XATTR=y
+CONFIG_EXT3_FS_POSIX_ACL=y
+CONFIG_EXT3_FS_SECURITY=y
+CONFIG_EXT4_FS=y
+# CONFIG_EXT4_FS_POSIX_ACL is not set
+CONFIG_EXT4_FS_SECURITY=y
+# CONFIG_EXT4_DEBUG is not set
+CONFIG_FS_XIP=y
+CONFIG_JBD=y
+# CONFIG_JBD_DEBUG is not set
+CONFIG_JBD2=y
+CONFIG_JBD2_DEBUG=y
+CONFIG_FS_MBCACHE=y
+# CONFIG_REISERFS_FS is not set
+CONFIG_JFS_FS=y
+CONFIG_JFS_POSIX_ACL=y
+# CONFIG_JFS_SECURITY is not set
+CONFIG_JFS_DEBUG=y
+# CONFIG_JFS_STATISTICS is not set
+# CONFIG_OCFS2_FS is not set
+# CONFIG_BTRFS_FS is not set
+# CONFIG_NILFS2_FS is not set
+CONFIG_FS_POSIX_ACL=y
+CONFIG_EXPORTFS=y
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+CONFIG_DNOTIFY=y
+# CONFIG_INOTIFY_USER is not set
+# CONFIG_FANOTIFY is not set
+CONFIG_QUOTA=y
+# CONFIG_QUOTA_NETLINK_INTERFACE is not set
+CONFIG_PRINT_QUOTA_WARNING=y
+# CONFIG_QUOTA_DEBUG is not set
+CONFIG_QUOTA_TREE=y
+# CONFIG_QFMT_V1 is not set
+CONFIG_QFMT_V2=y
+CONFIG_QUOTACTL=y
+CONFIG_AUTOFS4_FS=y
+CONFIG_FUSE_FS=y
+# CONFIG_CUSE is not set
+# CONFIG_OVERLAY_FS is not set
+
+#
+# Caches
+#
+# CONFIG_FSCACHE is not set
+
+#
+# CD-ROM/DVD Filesystems
+#
+# CONFIG_ISO9660_FS is not set
+CONFIG_UDF_FS=y
+CONFIG_UDF_NLS=y
+
+#
+# DOS/FAT/NT Filesystems
+#
+CONFIG_FAT_FS=y
+# CONFIG_MSDOS_FS is not set
+CONFIG_VFAT_FS=y
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
+# CONFIG_NTFS_FS is not set
+
+#
+# Pseudo filesystems
+#
+CONFIG_PROC_FS=y
+CONFIG_PROC_KCORE=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_KERNFS=y
+CONFIG_SYSFS=y
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_TMPFS_XATTR=y
+# CONFIG_HUGETLBFS is not set
+# CONFIG_HUGETLB_PAGE is not set
+CONFIG_CONFIGFS_FS=y
+# CONFIG_MISC_FILESYSTEMS is not set
+CONFIG_NETWORK_FILESYSTEMS=y
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="iso8859-1"
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_CODEPAGE_737=y
+# CONFIG_NLS_CODEPAGE_775 is not set
+CONFIG_NLS_CODEPAGE_850=y
+CONFIG_NLS_CODEPAGE_852=y
+CONFIG_NLS_CODEPAGE_855=y
+CONFIG_NLS_CODEPAGE_857=y
+# CONFIG_NLS_CODEPAGE_860 is not set
+CONFIG_NLS_CODEPAGE_861=y
+# CONFIG_NLS_CODEPAGE_862 is not set
+CONFIG_NLS_CODEPAGE_863=y
+CONFIG_NLS_CODEPAGE_864=y
+# CONFIG_NLS_CODEPAGE_865 is not set
+CONFIG_NLS_CODEPAGE_866=y
+CONFIG_NLS_CODEPAGE_869=y
+CONFIG_NLS_CODEPAGE_936=y
+CONFIG_NLS_CODEPAGE_950=y
+CONFIG_NLS_CODEPAGE_932=y
+# CONFIG_NLS_CODEPAGE_949 is not set
+# CONFIG_NLS_CODEPAGE_874 is not set
+CONFIG_NLS_ISO8859_8=y
+# CONFIG_NLS_CODEPAGE_1250 is not set
+CONFIG_NLS_CODEPAGE_1251=y
+CONFIG_NLS_ASCII=y
+# CONFIG_NLS_ISO8859_1 is not set
+# CONFIG_NLS_ISO8859_2 is not set
+CONFIG_NLS_ISO8859_3=y
+CONFIG_NLS_ISO8859_4=y
+CONFIG_NLS_ISO8859_5=y
+# CONFIG_NLS_ISO8859_6 is not set
+CONFIG_NLS_ISO8859_7=y
+CONFIG_NLS_ISO8859_9=y
+CONFIG_NLS_ISO8859_13=y
+# CONFIG_NLS_ISO8859_14 is not set
+CONFIG_NLS_ISO8859_15=y
+CONFIG_NLS_KOI8_R=y
+CONFIG_NLS_KOI8_U=y
+CONFIG_NLS_MAC_ROMAN=y
+CONFIG_NLS_MAC_CELTIC=y
+CONFIG_NLS_MAC_CENTEURO=y
+# CONFIG_NLS_MAC_CROATIAN is not set
+CONFIG_NLS_MAC_CYRILLIC=y
+CONFIG_NLS_MAC_GAELIC=y
+CONFIG_NLS_MAC_GREEK=y
+CONFIG_NLS_MAC_ICELAND=y
+# CONFIG_NLS_MAC_INUIT is not set
+CONFIG_NLS_MAC_ROMANIAN=y
+# CONFIG_NLS_MAC_TURKISH is not set
+CONFIG_NLS_UTF8=y
+
+#
+# Kernel hacking
+#
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+
+#
+# printk and dmesg options
+#
+CONFIG_PRINTK_TIME=y
+CONFIG_MESSAGE_LOGLEVEL_DEFAULT=4
+# CONFIG_BOOT_PRINTK_DELAY is not set
+CONFIG_DYNAMIC_DEBUG=y
+
+#
+# Compile-time checks and compiler options
+#
+# CONFIG_DEBUG_INFO is not set
+# CONFIG_ENABLE_WARN_DEPRECATED is not set
+CONFIG_ENABLE_MUST_CHECK=y
+CONFIG_FRAME_WARN=1024
+CONFIG_STRIP_ASM_SYMS=y
+# CONFIG_READABLE_ASM is not set
+CONFIG_UNUSED_SYMBOLS=y
+# CONFIG_PAGE_OWNER is not set
+CONFIG_DEBUG_FS=y
+CONFIG_HEADERS_CHECK=y
+CONFIG_DEBUG_SECTION_MISMATCH=y
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_FRAME_POINTER=y
+# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE=0x1
+CONFIG_DEBUG_KERNEL=y
+
+#
+# Memory Debugging
+#
+# CONFIG_PAGE_EXTENSION is not set
+# CONFIG_DEBUG_PAGEALLOC is not set
+# CONFIG_DEBUG_OBJECTS is not set
+# CONFIG_SLUB_DEBUG_ON is not set
+CONFIG_SLUB_STATS=y
+CONFIG_HAVE_DEBUG_KMEMLEAK=y
+# CONFIG_DEBUG_KMEMLEAK is not set
+# CONFIG_DEBUG_STACK_USAGE is not set
+# CONFIG_DEBUG_VM is not set
+# CONFIG_DEBUG_VIRTUAL is not set
+CONFIG_DEBUG_MEMORY_INIT=y
+# CONFIG_DEBUG_HIGHMEM is not set
+CONFIG_HAVE_DEBUG_STACKOVERFLOW=y
+# CONFIG_DEBUG_STACKOVERFLOW is not set
+CONFIG_HAVE_ARCH_KMEMCHECK=y
+# CONFIG_DEBUG_SHIRQ is not set
+
+#
+# Debug Lockups and Hangs
+#
+# CONFIG_LOCKUP_DETECTOR is not set
+# CONFIG_DETECT_HUNG_TASK is not set
+CONFIG_PANIC_ON_OOPS=y
+CONFIG_PANIC_ON_OOPS_VALUE=1
+CONFIG_PANIC_TIMEOUT=0
+CONFIG_SCHED_DEBUG=y
+# CONFIG_SCHEDSTATS is not set
+# CONFIG_SCHED_STACK_END_CHECK is not set
+# CONFIG_TIMER_STATS is not set
+CONFIG_DEBUG_PREEMPT=y
+
+#
+# Lock Debugging (spinlocks, mutexes, etc...)
+#
+# CONFIG_DEBUG_RT_MUTEXES is not set
+# CONFIG_DEBUG_SPINLOCK is not set
+# CONFIG_DEBUG_MUTEXES is not set
+# CONFIG_DEBUG_WW_MUTEX_SLOWPATH is not set
+# CONFIG_DEBUG_LOCK_ALLOC is not set
+# CONFIG_PROVE_LOCKING is not set
+# CONFIG_LOCK_STAT is not set
+CONFIG_DEBUG_ATOMIC_SLEEP=y
+# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+# CONFIG_LOCK_TORTURE_TEST is not set
+CONFIG_TRACE_IRQFLAGS=y
+CONFIG_STACKTRACE=y
+# CONFIG_DEBUG_KOBJECT is not set
+CONFIG_DEBUG_BUGVERBOSE=y
+# CONFIG_DEBUG_LIST is not set
+# CONFIG_DEBUG_PI_LIST is not set
+# CONFIG_DEBUG_SG is not set
+# CONFIG_DEBUG_NOTIFIERS is not set
+# CONFIG_DEBUG_CREDENTIALS is not set
+
+#
+# RCU Debugging
+#
+# CONFIG_SPARSE_RCU_POINTER is not set
+# CONFIG_TORTURE_TEST is not set
+# CONFIG_RCU_TORTURE_TEST is not set
+CONFIG_RCU_CPU_STALL_TIMEOUT=21
+# CONFIG_RCU_CPU_STALL_INFO is not set
+# CONFIG_RCU_TRACE is not set
+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+# CONFIG_NOTIFIER_ERROR_INJECTION is not set
+# CONFIG_FAULT_INJECTION is not set
+# CONFIG_LATENCYTOP is not set
+CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS=y
+# CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_HAVE_C_RECORDMCOUNT=y
+CONFIG_TRACER_MAX_TRACE=y
+CONFIG_TRACE_CLOCK=y
+CONFIG_RING_BUFFER=y
+CONFIG_EVENT_TRACING=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_RING_BUFFER_ALLOW_SWAP=y
+CONFIG_TRACING=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_FUNCTION_GRAPH_TRACER=y
+CONFIG_IRQSOFF_TRACER=y
+CONFIG_PREEMPT_TRACER=y
+# CONFIG_SCHED_TRACER is not set
+# CONFIG_FTRACE_SYSCALLS is not set
+CONFIG_TRACER_SNAPSHOT=y
+CONFIG_TRACER_SNAPSHOT_PER_CPU_SWAP=y
+CONFIG_BRANCH_PROFILE_NONE=y
+# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
+# CONFIG_PROFILE_ALL_BRANCHES is not set
+CONFIG_STACK_TRACER=y
+CONFIG_BLK_DEV_IO_TRACE=y
+# CONFIG_UPROBE_EVENT is not set
+# CONFIG_PROBE_EVENTS is not set
+# CONFIG_DYNAMIC_FTRACE is not set
+# CONFIG_FUNCTION_PROFILER is not set
+# CONFIG_FTRACE_STARTUP_TEST is not set
+# CONFIG_MMIOTRACE is not set
+CONFIG_TRACEPOINT_BENCHMARK=y
+# CONFIG_RING_BUFFER_BENCHMARK is not set
+# CONFIG_RING_BUFFER_STARTUP_TEST is not set
+
+#
+# Runtime Testing
+#
+# CONFIG_LKDTM is not set
+# CONFIG_TEST_LIST_SORT is not set
+# CONFIG_BACKTRACE_SELF_TEST is not set
+# CONFIG_RBTREE_TEST is not set
+# CONFIG_ATOMIC64_SELFTEST is not set
+CONFIG_ASYNC_RAID6_TEST=y
+# CONFIG_TEST_STRING_HELPERS is not set
+# CONFIG_TEST_KSTRTOX is not set
+CONFIG_TEST_RHASHTABLE=y
+# CONFIG_PROVIDE_OHCI1394_DMA_INIT is not set
+CONFIG_BUILD_DOCSRC=y
+# CONFIG_DMA_API_DEBUG is not set
+CONFIG_TEST_FIRMWARE=y
+# CONFIG_TEST_UDELAY is not set
+# CONFIG_SAMPLES is not set
+CONFIG_HAVE_ARCH_KGDB=y
+# CONFIG_KGDB is not set
+CONFIG_STRICT_DEVMEM=y
+CONFIG_X86_VERBOSE_BOOTUP=y
+CONFIG_EARLY_PRINTK=y
+# CONFIG_EARLY_PRINTK_DBGP is not set
+# CONFIG_X86_PTDUMP is not set
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_RODATA_TEST=y
+CONFIG_DOUBLEFAULT=y
+# CONFIG_DEBUG_TLBFLUSH is not set
+CONFIG_IOMMU_STRESS=y
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+CONFIG_IO_DELAY_TYPE_0X80=0
+CONFIG_IO_DELAY_TYPE_0XED=1
+CONFIG_IO_DELAY_TYPE_UDELAY=2
+CONFIG_IO_DELAY_TYPE_NONE=3
+# CONFIG_IO_DELAY_0X80 is not set
+CONFIG_IO_DELAY_0XED=y
+# CONFIG_IO_DELAY_UDELAY is not set
+# CONFIG_IO_DELAY_NONE is not set
+CONFIG_DEFAULT_IO_DELAY_TYPE=1
+# CONFIG_DEBUG_BOOT_PARAMS is not set
+# CONFIG_CPA_DEBUG is not set
+CONFIG_OPTIMIZE_INLINING=y
+# CONFIG_DEBUG_NMI_SELFTEST is not set
+# CONFIG_X86_DEBUG_STATIC_CPU_HAS is not set
+
+#
+# Security options
+#
+CONFIG_KEYS=y
+CONFIG_PERSISTENT_KEYRINGS=y
+# CONFIG_BIG_KEYS is not set
+CONFIG_TRUSTED_KEYS=y
+CONFIG_ENCRYPTED_KEYS=y
+# CONFIG_KEYS_DEBUG_PROC_KEYS is not set
+CONFIG_SECURITY_DMESG_RESTRICT=y
+# CONFIG_SECURITY is not set
+CONFIG_SECURITYFS=y
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_DEFAULT_SECURITY=""
+CONFIG_XOR_BLOCKS=y
+CONFIG_ASYNC_CORE=y
+CONFIG_ASYNC_MEMCPY=y
+CONFIG_ASYNC_XOR=y
+CONFIG_ASYNC_PQ=y
+CONFIG_ASYNC_RAID6_RECOV=y
+CONFIG_CRYPTO=y
+
+#
+# Crypto core or helper
+#
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_AEAD=y
+CONFIG_CRYPTO_AEAD2=y
+CONFIG_CRYPTO_BLKCIPHER=y
+CONFIG_CRYPTO_BLKCIPHER2=y
+CONFIG_CRYPTO_HASH=y
+CONFIG_CRYPTO_HASH2=y
+CONFIG_CRYPTO_RNG=y
+CONFIG_CRYPTO_RNG2=y
+CONFIG_CRYPTO_PCOMP2=y
+CONFIG_CRYPTO_MANAGER=y
+CONFIG_CRYPTO_MANAGER2=y
+# CONFIG_CRYPTO_USER is not set
+CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
+CONFIG_CRYPTO_GF128MUL=y
+CONFIG_CRYPTO_NULL=y
+CONFIG_CRYPTO_WORKQUEUE=y
+CONFIG_CRYPTO_CRYPTD=y
+# CONFIG_CRYPTO_MCRYPTD is not set
+# CONFIG_CRYPTO_AUTHENC is not set
+CONFIG_CRYPTO_ABLK_HELPER=y
+CONFIG_CRYPTO_GLUE_HELPER_X86=y
+
+#
+# Authenticated Encryption with Associated Data
+#
+CONFIG_CRYPTO_CCM=y
+# CONFIG_CRYPTO_GCM is not set
+CONFIG_CRYPTO_SEQIV=y
+
+#
+# Block modes
+#
+CONFIG_CRYPTO_CBC=y
+CONFIG_CRYPTO_CTR=y
+CONFIG_CRYPTO_CTS=y
+CONFIG_CRYPTO_ECB=y
+CONFIG_CRYPTO_LRW=y
+CONFIG_CRYPTO_PCBC=y
+CONFIG_CRYPTO_XTS=y
+
+#
+# Hash modes
+#
+# CONFIG_CRYPTO_CMAC is not set
+CONFIG_CRYPTO_HMAC=y
+CONFIG_CRYPTO_XCBC=y
+CONFIG_CRYPTO_VMAC=y
+
+#
+# Digest
+#
+CONFIG_CRYPTO_CRC32C=y
+CONFIG_CRYPTO_CRC32C_INTEL=y
+# CONFIG_CRYPTO_CRC32 is not set
+CONFIG_CRYPTO_CRC32_PCLMUL=y
+CONFIG_CRYPTO_CRCT10DIF=y
+CONFIG_CRYPTO_GHASH=y
+CONFIG_CRYPTO_MD4=y
+# CONFIG_CRYPTO_MD5 is not set
+CONFIG_CRYPTO_MICHAEL_MIC=y
+CONFIG_CRYPTO_RMD128=y
+CONFIG_CRYPTO_RMD160=y
+CONFIG_CRYPTO_RMD256=y
+CONFIG_CRYPTO_RMD320=y
+CONFIG_CRYPTO_SHA1=y
+CONFIG_CRYPTO_SHA256=y
+# CONFIG_CRYPTO_SHA512 is not set
+CONFIG_CRYPTO_TGR192=y
+CONFIG_CRYPTO_WP512=y
+
+#
+# Ciphers
+#
+CONFIG_CRYPTO_AES=y
+CONFIG_CRYPTO_AES_586=y
+# CONFIG_CRYPTO_AES_NI_INTEL is not set
+CONFIG_CRYPTO_ANUBIS=y
+# CONFIG_CRYPTO_ARC4 is not set
+CONFIG_CRYPTO_BLOWFISH=y
+CONFIG_CRYPTO_BLOWFISH_COMMON=y
+CONFIG_CRYPTO_CAMELLIA=y
+CONFIG_CRYPTO_CAST_COMMON=y
+# CONFIG_CRYPTO_CAST5 is not set
+CONFIG_CRYPTO_CAST6=y
+CONFIG_CRYPTO_DES=y
+CONFIG_CRYPTO_FCRYPT=y
+# CONFIG_CRYPTO_KHAZAD is not set
+CONFIG_CRYPTO_SALSA20=y
+# CONFIG_CRYPTO_SALSA20_586 is not set
+CONFIG_CRYPTO_SEED=y
+CONFIG_CRYPTO_SERPENT=y
+CONFIG_CRYPTO_SERPENT_SSE2_586=y
+CONFIG_CRYPTO_TEA=y
+# CONFIG_CRYPTO_TWOFISH is not set
+CONFIG_CRYPTO_TWOFISH_COMMON=y
+CONFIG_CRYPTO_TWOFISH_586=y
+
+#
+# Compression
+#
+# CONFIG_CRYPTO_DEFLATE is not set
+# CONFIG_CRYPTO_ZLIB is not set
+CONFIG_CRYPTO_LZO=y
+# CONFIG_CRYPTO_LZ4 is not set
+CONFIG_CRYPTO_LZ4HC=y
+
+#
+# Random Number Generation
+#
+CONFIG_CRYPTO_ANSI_CPRNG=y
+CONFIG_CRYPTO_DRBG_MENU=y
+# CONFIG_CRYPTO_DRBG_HMAC is not set
+# CONFIG_CRYPTO_DRBG_HASH is not set
+CONFIG_CRYPTO_DRBG_CTR=y
+CONFIG_CRYPTO_DRBG=y
+# CONFIG_CRYPTO_USER_API_HASH is not set
+# CONFIG_CRYPTO_USER_API_SKCIPHER is not set
+CONFIG_CRYPTO_HASH_INFO=y
+CONFIG_CRYPTO_HW=y
+CONFIG_CRYPTO_DEV_PADLOCK=y
+CONFIG_CRYPTO_DEV_PADLOCK_AES=y
+# CONFIG_CRYPTO_DEV_PADLOCK_SHA is not set
+CONFIG_CRYPTO_DEV_GEODE=y
+# CONFIG_CRYPTO_DEV_CCP is not set
+# CONFIG_CRYPTO_DEV_QAT_DH895xCC is not set
+CONFIG_ASYMMETRIC_KEY_TYPE=y
+CONFIG_ASYMMETRIC_PUBLIC_KEY_SUBTYPE=y
+CONFIG_PUBLIC_KEY_ALGO_RSA=y
+CONFIG_X509_CERTIFICATE_PARSER=y
+CONFIG_PKCS7_MESSAGE_PARSER=y
+# CONFIG_PKCS7_TEST_KEY is not set
+CONFIG_SIGNED_PE_FILE_VERIFICATION=y
+CONFIG_HAVE_KVM=y
+CONFIG_VIRTUALIZATION=y
+# CONFIG_KVM is not set
+CONFIG_LGUEST=y
+CONFIG_BINARY_PRINTF=y
+
+#
+# Library routines
+#
+CONFIG_RAID6_PQ=y
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_STRNCPY_FROM_USER=y
+CONFIG_GENERIC_STRNLEN_USER=y
+CONFIG_GENERIC_NET_UTILS=y
+CONFIG_GENERIC_FIND_FIRST_BIT=y
+CONFIG_GENERIC_PCI_IOMAP=y
+CONFIG_GENERIC_IOMAP=y
+CONFIG_GENERIC_IO=y
+CONFIG_ARCH_HAS_FAST_MULTIPLIER=y
+CONFIG_CRC_CCITT=y
+CONFIG_CRC16=y
+# CONFIG_CRC_T10DIF is not set
+CONFIG_CRC_ITU_T=y
+CONFIG_CRC32=y
+# CONFIG_CRC32_SELFTEST is not set
+CONFIG_CRC32_SLICEBY8=y
+# CONFIG_CRC32_SLICEBY4 is not set
+# CONFIG_CRC32_SARWATE is not set
+# CONFIG_CRC32_BIT is not set
+CONFIG_CRC7=y
+CONFIG_LIBCRC32C=y
+CONFIG_CRC8=y
+# CONFIG_AUDIT_ARCH_COMPAT_GENERIC is not set
+# CONFIG_RANDOM32_SELFTEST is not set
+CONFIG_ZLIB_INFLATE=y
+CONFIG_LZO_COMPRESS=y
+CONFIG_LZO_DECOMPRESS=y
+CONFIG_LZ4HC_COMPRESS=y
+CONFIG_LZ4_DECOMPRESS=y
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_X86=y
+CONFIG_XZ_DEC_POWERPC=y
+CONFIG_XZ_DEC_IA64=y
+CONFIG_XZ_DEC_ARM=y
+CONFIG_XZ_DEC_ARMTHUMB=y
+CONFIG_XZ_DEC_SPARC=y
+CONFIG_XZ_DEC_BCJ=y
+# CONFIG_XZ_DEC_TEST is not set
+CONFIG_DECOMPRESS_GZIP=y
+CONFIG_DECOMPRESS_BZIP2=y
+CONFIG_DECOMPRESS_LZMA=y
+CONFIG_DECOMPRESS_XZ=y
+CONFIG_DECOMPRESS_LZO=y
+CONFIG_DECOMPRESS_LZ4=y
+CONFIG_ASSOCIATIVE_ARRAY=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT_MAP=y
+CONFIG_HAS_DMA=y
+CONFIG_DQL=y
+CONFIG_NLATTR=y
+CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE=y
+CONFIG_AVERAGE=y
+CONFIG_CLZ_TAB=y
+CONFIG_CORDIC=y
+CONFIG_DDR=y
+CONFIG_MPILIB=y
+CONFIG_OID_REGISTRY=y
+CONFIG_ARCH_HAS_SG_CHAIN=y
+
+--=-5OTMAMIc6FDpBZRSHoNh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=".dmesg"
+Content-Transfer-Encoding: 7bit
+
+early console in setup code
+early console in decompress_kernel
+
+Decompressing Linux... Parsing ELF... No relocation needed... done.
+Booting the kernel.
+[    0.000000] Linux version 3.19.0-rc5-next-20150123-gde3d2c5 (kbuild@cairo) (gcc version 4.9.1 (Debian 4.9.1-19) ) #144 PREEMPT Sat Jan 24 09:04:32 CST 2015
+[    0.000000] e820: BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x00000000167fdfff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000167fe000-0x00000000167fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffffffff] reserved
+[    0.000000] bootconsole [earlyser0] enabled
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] SMBIOS 2.4 present.
+[    0.000000] DMI: Bochs Bochs, BIOS Bochs 01/01/2011
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+[    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+[    0.000000] e820: last_pfn = 0x167fe max_arch_pfn = 0x1000000
+[    0.000000] MTRR default type: write-back
+[    0.000000] MTRR fixed ranges enabled:
+[    0.000000]   00000-9FFFF write-back
+[    0.000000]   A0000-BFFFF uncachable
+[    0.000000]   C0000-FFFFF write-protect
+[    0.000000] MTRR variable ranges enabled:
+[    0.000000]   0 base 0080000000 mask FF80000000 uncachable
+[    0.000000]   1 disabled
+[    0.000000]   2 disabled
+[    0.000000]   3 disabled
+[    0.000000]   4 disabled
+[    0.000000]   5 disabled
+[    0.000000]   6 disabled
+[    0.000000]   7 disabled
+[    0.000000] PAT configuration [0-7]: WB  WC  UC- UC  UC  UC  UC  UC  
+[    0.000000] initial memory mapped: [mem 0x00000000-0x01ffffff]
+[    0.000000] Base memory trampoline at [c009b000] 9b000 size 16384
+[    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+[    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+[    0.000000] init_memory_mapping: [mem 0x14c00000-0x14dfffff]
+[    0.000000]  [mem 0x14c00000-0x14dfffff] page 2M
+[    0.000000] init_memory_mapping: [mem 0x00100000-0x14bfffff]
+[    0.000000]  [mem 0x00100000-0x001fffff] page 4k
+[    0.000000]  [mem 0x00200000-0x14bfffff] page 2M
+[    0.000000] init_memory_mapping: [mem 0x14e00000-0x167fdfff]
+[    0.000000]  [mem 0x14e00000-0x165fffff] page 2M
+[    0.000000]  [mem 0x16600000-0x167fdfff] page 4k
+[    0.000000] BRK [0x01ad6000, 0x01ad6fff] PGTABLE
+[    0.000000] BRK [0x01ad7000, 0x01ad7fff] PGTABLE
+[    0.000000] RAMDISK: [mem 0x14ee5000-0x167effff]
+[    0.000000] ACPI: Early table checksum verification disabled
+[    0.000000] ACPI: RSDP 0x000FD9A0 000014 (v00 BOCHS )
+[    0.000000] ACPI: RSDT 0x167FE4B0 000034 (v01 BOCHS  BXPCRSDT 00000001 BXPC 00000001)
+[    0.000000] ACPI: FACP 0x167FFF80 000074 (v01 BOCHS  BXPCFACP 00000001 BXPC 00000001)
+[    0.000000] ACPI: DSDT 0x167FE4F0 0011A9 (v01 BXPC   BXDSDT   00000001 INTL 20100528)
+[    0.000000] ACPI: FACS 0x167FFF40 000040
+[    0.000000] ACPI: SSDT 0x167FF800 000735 (v01 BOCHS  BXPCSSDT 00000001 BXPC 00000001)
+[    0.000000] ACPI: APIC 0x167FF6E0 000078 (v01 BOCHS  BXPCAPIC 00000001 BXPC 00000001)
+[    0.000000] ACPI: HPET 0x167FF6A0 000038 (v01 BOCHS  BXPCHPET 00000001 BXPC 00000001)
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] mapped APIC to         ffffc000 (        fee00000)
+[    0.000000] 0MB HIGHMEM available.
+[    0.000000] 359MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 167fe000
+[    0.000000]   low ram: 0 - 167fe000
+[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
+[    0.000000] kvm-clock: cpu 0, msr 0:167fd001, primary cpu clock
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.000000]   Normal   [mem 0x0000000001000000-0x00000000167fdfff]
+[    0.000000]   HighMem  empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000000001000-0x000000000009efff]
+[    0.000000]   node   0: [mem 0x0000000000100000-0x00000000167fdfff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000000001000-0x00000000167fdfff]
+[    0.000000] On node 0 totalpages: 92060
+[    0.000000] free_area_init_node: node 0, pgdat c19b3200, node_mem_map d4c15020
+[    0.000000]   DMA zone: 32 pages used for memmap
+[    0.000000]   DMA zone: 0 pages reserved
+[    0.000000]   DMA zone: 3998 pages, LIFO batch:0
+[    0.000000]   Normal zone: 688 pages used for memmap
+[    0.000000]   Normal zone: 88062 pages, LIFO batch:15
+[    0.000000] Using APIC driver default
+[    0.000000] ACPI: PM-Timer IO Port: 0xb008
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] mapped APIC to         ffffc000 (        fee00000)
+[    0.000000] ACPI: LAPIC (acpi_id[0x00] lapic_id[0x00] enabled)
+[    0.000000] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.000000] Using ACPI for processor (LAPIC) configuration information
+[    0.000000] ACPI: HPET id: 0x8086a201 base: 0xfed00000
+[    0.000000] KVM setup async PF for cpu 0
+[    0.000000] kvm-stealtime: cpu 0, msr 1949b00
+[    0.000000] PM: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.000000] PM: Registered nosave memory: [mem 0x0009f000-0x0009ffff]
+[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000effff]
+[    0.000000] PM: Registered nosave memory: [mem 0x000f0000-0x000fffff]
+[    0.000000] e820: [mem 0x16800000-0xfeffbfff] available for PCI devices
+[    0.000000] Booting paravirtualized kernel on KVM
+[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 91340
+[    0.000000] Kernel command line: user=lkp job=/lkp/scheduled/vm-vp-quantal-i386-64/rand_boot-1-quantal-core-i386.cgz-i386-randconfig-c0-01211823-de3d2c5b941c632685ab58613f981bf14a42676f-1.yaml ARCH=i386 BOOT_IMAGE=/kernel/i386-randconfig-c0-01211823/de3d2c5b941c632685ab58613f981bf14a42676f/vmlinuz-3.19.0-rc5-next-20150123-gde3d2c5 kconfig=i386-randconfig-c0-01211823 commit=de3d2c5b941c632685ab58613f981bf14a42676f branch=next/master root=/dev/ram0 max_uptime=3600 RESULT_ROOT=/result/vm-vp-quantal-i386/boot/1/quantal-core-i386.cgz/i386-randconfig-c0-01211823/de3d2c5b941c632685ab58613f981bf14a42676f/0 ip=::::vm-vp-quantal-i386-64::dhcp earlyprintk=ttyS0,115200 debug apic=debug sysrq_always_enabled rcupdate.rcu_cpu_stall_timeout=100 panic=-1 softlockup_panic=1 nmi_watchdog=panic oops=panic load_ramdisk=2 prompt_ramdisk=0 console=ttyS0,115200 console=tty0 vga=normal rw drbd.minor_count=8
+[    0.000000] sysrq: sysrq always enabled.
+[    0.000000] PID hash table entries: 2048 (order: 1, 8192 bytes)
+[    0.000000] Dentry cache hash table entries: 65536 (order: 6, 262144 bytes)
+[    0.000000] Inode-cache hash table entries: 32768 (order: 5, 131072 bytes)
+[    0.000000] Initializing CPU#0
+[    0.000000] xsave: enabled xstate_bv 0x7, cntxt size 0x340 using standard form
+[    0.000000] Initializing HighMem for node 0 (00000000:00000000)
+[    0.000000] Memory: 328076K/368240K available (6945K kernel code, 641K rwdata, 2448K rodata, 620K init, 360K bss, 40164K reserved, 0K cma-reserved, 0K highmem)
+[    0.000000] virtual kernel memory layout:
+[    0.000000]     fixmap  : 0xfffe2000 - 0xfffff000   ( 116 kB)
+[    0.000000]     pkmap   : 0xffc00000 - 0xffe00000   (2048 kB)
+[    0.000000]     vmalloc : 0xd6ffe000 - 0xffbfe000   ( 652 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xd67fe000   ( 359 MB)
+[    0.000000]       .init : 0xc19d0000 - 0xc1a6b000   ( 620 kB)
+[    0.000000]       .data : 0xc16c8862 - 0xc19ce500   (3095 kB)
+[    0.000000]       .text : 0xc1000000 - 0xc16c8862   (6946 kB)
+[    0.000000] Checking if this processor honours the WP bit even in supervisor mode...Ok.
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] Preemptible hierarchical RCU implementation.
+[    0.000000] NR_IRQS:16 nr_irqs:16 16
+[    0.000000] CPU 0 irqstacks, hard=d441c000 soft=d441e000
+[    0.000000] Console: colour VGA+ 80x25
+[    0.000000] console [tty0] enabled
+[    0.000000] bootconsole [earlyser0] disabled
+[    0.000000] Linux version 3.19.0-rc5-next-20150123-gde3d2c5 (kbuild@cairo) (gcc version 4.9.1 (Debian 4.9.1-19) ) #144 PREEMPT Sat Jan 24 09:04:32 CST 2015
+[    0.000000] e820: BIOS-provided physical RAM map:
+[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable
+[    0.000000] BIOS-e820: [mem 0x000000000009fc00-0x000000000009ffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000000f0000-0x00000000000fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x00000000167fdfff] usable
+[    0.000000] BIOS-e820: [mem 0x00000000167fe000-0x00000000167fffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff] reserved
+[    0.000000] BIOS-e820: [mem 0x00000000fffc0000-0x00000000ffffffff] reserved
+[    0.000000] bootconsole [earlyser0] enabled
+[    0.000000] NX (Execute Disable) protection: active
+[    0.000000] SMBIOS 2.4 present.
+[    0.000000] DMI: Bochs Bochs, BIOS Bochs 01/01/2011
+[    0.000000] Hypervisor detected: KVM
+[    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+[    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+[    0.000000] e820: last_pfn = 0x167fe max_arch_pfn = 0x1000000
+[    0.000000] MTRR default type: write-back
+[    0.000000] MTRR fixed ranges enabled:
+[    0.000000]   00000-9FFFF write-back
+[    0.000000]   A0000-BFFFF uncachable
+[    0.000000]   C0000-FFFFF write-protect
+[    0.000000] MTRR variable ranges enabled:
+[    0.000000]   0 base 0080000000 mask FF80000000 uncachable
+[    0.000000]   1 disabled
+[    0.000000]   2 disabled
+[    0.000000]   3 disabled
+[    0.000000]   4 disabled
+[    0.000000]   5 disabled
+[    0.000000]   6 disabled
+[    0.000000]   7 disabled
+[    0.000000] PAT configuration [0-7]: WB  WC  UC- UC  UC  UC  UC  UC  
+[    0.000000] initial memory mapped: [mem 0x00000000-0x01ffffff]
+[    0.000000] Base memory trampoline at [c009b000] 9b000 size 16384
+[    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+[    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+[    0.000000] init_memory_mapping: [mem 0x14c00000-0x14dfffff]
+[    0.000000]  [mem 0x14c00000-0x14dfffff] page 2M
+[    0.000000] init_memory_mapping: [mem 0x00100000-0x14bfffff]
+[    0.000000]  [mem 0x00100000-0x001fffff] page 4k
+[    0.000000]  [mem 0x00200000-0x14bfffff] page 2M
+[    0.000000] init_memory_mapping: [mem 0x14e00000-0x167fdfff]
+[    0.000000]  [mem 0x14e00000-0x165fffff] page 2M
+[    0.000000]  [mem 0x16600000-0x167fdfff] page 4k
+[    0.000000] BRK [0x01ad6000, 0x01ad6fff] PGTABLE
+[    0.000000] BRK [0x01ad7000, 0x01ad7fff] PGTABLE
+[    0.000000] RAMDISK: [mem 0x14ee5000-0x167effff]
+[    0.000000] ACPI: Early table checksum verification disabled
+[    0.000000] ACPI: RSDP 0x000FD9A0 000014 (v00 BOCHS )
+[    0.000000] ACPI: RSDT 0x167FE4B0 000034 (v01 BOCHS  BXPCRSDT 00000001 BXPC 00000001)
+[    0.000000] ACPI: FACP 0x167FFF80 000074 (v01 BOCHS  BXPCFACP 00000001 BXPC 00000001)
+[    0.000000] ACPI: DSDT 0x167FE4F0 0011A9 (v01 BXPC   BXDSDT   00000001 INTL 20100528)
+[    0.000000] ACPI: FACS 0x167FFF40 000040
+[    0.000000] ACPI: SSDT 0x167FF800 000735 (v01 BOCHS  BXPCSSDT 00000001 BXPC 00000001)
+[    0.000000] ACPI: APIC 0x167FF6E0 000078 (v01 BOCHS  BXPCAPIC 00000001 BXPC 00000001)
+[    0.000000] ACPI: HPET 0x167FF6A0 000038 (v01 BOCHS  BXPCHPET 00000001 BXPC 00000001)
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] mapped APIC to         ffffc000 (        fee00000)
+[    0.000000] 0MB HIGHMEM available.
+[    0.000000] 359MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 167fe000
+[    0.000000]   low ram: 0 - 167fe000
+[    0.000000] kvm-clock: Using msrs 4b564d01 and 4b564d00
+[    0.000000] kvm-clock: cpu 0, msr 0:167fd001, primary cpu clock
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+[    0.000000]   Normal   [mem 0x0000000001000000-0x00000000167fdfff]
+[    0.000000]   HighMem  empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000000001000-0x000000000009efff]
+[    0.000000]   node   0: [mem 0x0000000000100000-0x00000000167fdfff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000000001000-0x00000000167fdfff]
+[    0.000000] On node 0 totalpages: 92060
+[    0.000000] free_area_init_node: node 0, pgdat c19b3200, node_mem_map d4c15020
+[    0.000000]   DMA zone: 32 pages used for memmap
+[    0.000000]   DMA zone: 0 pages reserved
+[    0.000000]   DMA zone: 3998 pages, LIFO batch:0
+[    0.000000]   Normal zone: 688 pages used for memmap
+[    0.000000]   Normal zone: 88062 pages, LIFO batch:15
+[    0.000000] Using APIC driver default
+[    0.000000] ACPI: PM-Timer IO Port: 0xb008
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] mapped APIC to         ffffc000 (        fee00000)
+[    0.000000] ACPI: LAPIC (acpi_id[0x00] lapic_id[0x00] enabled)
+[    0.000000] ACPI: LAPIC_NMI (acpi_id[0xff] dfl dfl lint[0x1])
+[    0.000000] Using ACPI for processor (LAPIC) configuration information
+[    0.000000] ACPI: HPET id: 0x8086a201 base: 0xfed00000
+[    0.000000] KVM setup async PF for cpu 0
+[    0.000000] kvm-stealtime: cpu 0, msr 1949b00
+[    0.000000] PM: Registered nosave memory: [mem 0x00000000-0x00000fff]
+[    0.000000] PM: Registered nosave memory: [mem 0x0009f000-0x0009ffff]
+[    0.000000] PM: Registered nosave memory: [mem 0x000a0000-0x000effff]
+[    0.000000] PM: Registered nosave memory: [mem 0x000f0000-0x000fffff]
+[    0.000000] e820: [mem 0x16800000-0xfeffbfff] available for PCI devices
+[    0.000000] Booting paravirtualized kernel on KVM
+[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 91340
+[    0.000000] Kernel command line: user=lkp job=/lkp/scheduled/vm-vp-quantal-i386-64/rand_boot-1-quantal-core-i386.cgz-i386-randconfig-c0-01211823-de3d2c5b941c632685ab58613f981bf14a42676f-1.yaml ARCH=i386 BOOT_IMAGE=/kernel/i386-randconfig-c0-01211823/de3d2c5b941c632685ab58613f981bf14a42676f/vmlinuz-3.19.0-rc5-next-20150123-gde3d2c5 kconfig=i386-randconfig-c0-01211823 commit=de3d2c5b941c632685ab58613f981bf14a42676f branch=next/master root=/dev/ram0 max_uptime=3600 RESULT_ROOT=/result/vm-vp-quantal-i386/boot/1/quantal-core-i386.cgz/i386-randconfig-c0-01211823/de3d2c5b941c632685ab58613f981bf14a42676f/0 ip=::::vm-vp-quantal-i386-64::dhcp earlyprintk=ttyS0,115200 debug apic=debug sysrq_always_enabled rcupdate.rcu_cpu_stall_timeout=100 panic=-1 softlockup_panic=1 nmi_watchdog=panic oops=panic load_ramdisk=2 prompt_ramdisk=0 console=ttyS0,115200 console=tty0 vga=normal rw drbd.minor_count=8
+[    0.000000] sysrq: sysrq always enabled.
+[    0.000000] PID hash table entries: 2048 (order: 1, 8192 bytes)
+[    0.000000] Dentry cache hash table entries: 65536 (order: 6, 262144 bytes)
+[    0.000000] Inode-cache hash table entries: 32768 (order: 5, 131072 bytes)
+[    0.000000] Initializing CPU#0
+[    0.000000] xsave: enabled xstate_bv 0x7, cntxt size 0x340 using standard form
+[    0.000000] Initializing HighMem for node 0 (00000000:00000000)
+[    0.000000] Memory: 328076K/368240K available (6945K kernel code, 641K rwdata, 2448K rodata, 620K init, 360K bss, 40164K reserved, 0K cma-reserved, 0K highmem)
+[    0.000000] virtual kernel memory layout:
+[    0.000000]     fixmap  : 0xfffe2000 - 0xfffff000   ( 116 kB)
+[    0.000000]     pkmap   : 0xffc00000 - 0xffe00000   (2048 kB)
+[    0.000000]     vmalloc : 0xd6ffe000 - 0xffbfe000   ( 652 MB)
+[    0.000000]     lowmem  : 0xc0000000 - 0xd67fe000   ( 359 MB)
+[    0.000000]       .init : 0xc19d0000 - 0xc1a6b000   ( 620 kB)
+[    0.000000]       .data : 0xc16c8862 - 0xc19ce500   (3095 kB)
+[    0.000000]       .text : 0xc1000000 - 0xc16c8862   (6946 kB)
+[    0.000000] Checking if this processor honours the WP bit even in supervisor mode...Ok.
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] Preemptible hierarchical RCU implementation.
+[    0.000000] NR_IRQS:16 nr_irqs:16 16
+[    0.000000] CPU 0 irqstacks, hard=d441c000 soft=d441e000
+[    0.000000] Console: colour VGA+ 80x25
+[    0.000000] console [tty0] enabled
+[    0.000000] bootconsole [earlyser0] disabled
+[    0.000000] console [ttyS0] enabled
+[    0.000000] hpet clockevent registered
+[    0.000000] tsc: Detected 2693.570 MHz processor
+[    0.006666] Calibrating delay loop (skipped) preset value.. 5389.60 BogoMIPS (lpj=8978566)
+[    0.006666] pid_max: default: 32768 minimum: 301
+[    0.006666] ACPI: Core revision 20141107
+[    0.007349] ACPI: All ACPI Tables successfully acquired
+[    0.008082] ACPI: setting ELCR to 0200 (from 0c00)
+[    0.008661] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.009399] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes)
+[    0.010166] Initializing cgroup subsys freezer
+[    0.010917] Initializing cgroup subsys debug
+[    0.011700] mce: CPU supports 10 MCE banks
+[    0.012436] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+[    0.013337] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0, 1GB 0
+[    0.014231] CPU: Intel Core Processor (Haswell) (fam: 06, model: 3c, stepping: 01)
+[    0.025871] Performance Events: unsupported p6 CPU model 60 no PMU driver, software events only.
+[    0.027323] Getting VERSION: 1050014
+[    0.027973] Getting VERSION: 1050014
+[    0.028628] Getting ID: 0
+[    0.029182] Getting ID: f000000
+[    0.030016] Getting LVT0: 8700
+[    0.030617] Getting LVT1: 8400
+[    0.031265] enabled ExtINT on CPU#0
+[    0.031952] TSC deadline timer enabled
+[    0.033051] devtmpfs: initialized
+[    0.033333] xor: automatically using best checksumming function:
+[    0.063349]    avx       :   147.600 MB/sec
+[    0.064126] RTC time:  9:43:33, date: 01/24/15
+[    0.064941] NET: Registered protocol family 16
+[    0.070011] cpuidle: using governor menu
+[    0.071101] ACPI: bus type PCI registered
+[    0.071975] PCI : PCI BIOS area is rw and x. Use pci=nobios if you want it NX.
+[    0.073208] PCI: PCI BIOS revision 2.10 entry at 0xfc6d5, last bus=0
+[    0.073342] PCI: Using configuration type 1 for base access
+[    0.083532] Running resizable hashtable tests...
+[    0.084294]   Adding 2048 keys
+[    0.085219]   Traversal complete: counted=2048, nelems=2048, entries=2048
+[    0.088478]   Table expansion iteration 0...
+[    0.663347]   Verifying lookups...
+[    0.665210]   Table expansion iteration 1...
+[    0.943350]   Verifying lookups...
+[    0.944682]   Table expansion iteration 2...
+[    1.123351]   Verifying lookups...
+[    1.124416]   Table expansion iteration 3...
+[    1.236687]   Verifying lookups...
+[    1.237621]   Table shrinkage iteration 0...
+[    1.250014]   Verifying lookups...
+[    1.251082]   Table shrinkage iteration 1...
+[    1.263347]   Verifying lookups...
+[    1.264681]   Table shrinkage iteration 2...
+[    1.276681]   Verifying lookups...
+[    1.278534]   Table shrinkage iteration 3...
+[    1.290014]   Verifying lookups...
+[    1.292921]   Traversal complete: counted=2048, nelems=2048, entries=2048
+[    1.293338]   Deleting 2048 keys
+[    1.363344] raid6: mmxx1     5314 MB/s
+[    1.420009] raid6: mmxx2     5663 MB/s
+[    1.476681] raid6: sse1x1    4450 MB/s
+[    1.533344] raid6: sse1x2    5373 MB/s
+[    1.590009] raid6: sse2x1    8764 MB/s
+[    1.646675] raid6: sse2x2   10950 MB/s
+[    1.647331] raid6: using algorithm sse2x2 (10950 MB/s)
+[    1.648123] raid6: using ssse3x1 recovery algorithm
+[    1.649005] ACPI: Added _OSI(Module Device)
+[    1.649711] ACPI: Added _OSI(Processor Device)
+[    1.650005] ACPI: Added _OSI(3.0 _SCP Extensions)
+[    1.650759] ACPI: Added _OSI(Processor Aggregator Device)
+[    1.653333] ACPI: Interpreter enabled
+[    1.653350] ACPI: (supports S0 S4 S5)
+[    1.654001] ACPI: Using PIC for interrupt routing
+[    1.654773] PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+[    1.658682] ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+[    1.659606] acpi PNP0A03:00: _OSC: OS supports [ASPM ClockPM Segments]
+[    1.660010] acpi PNP0A03:00: _OSC failed (AE_NOT_FOUND); disabling ASPM
+[    1.661074] acpi PNP0A03:00: fail to add MMCONFIG information, can't access extended PCI configuration space under this bridge.
+[    1.662749] PCI host bridge to bus 0000:00
+[    1.663339] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    1.664179] pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7]
+[    1.665084] pci_bus 0000:00: root bus resource [io  0x0d00-0xffff]
+[    1.665983] pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff]
+[    1.666671] pci_bus 0000:00: root bus resource [mem 0x80000000-0xfebfffff]
+[    1.667678] pci 0000:00:00.0: [8086:1237] type 00 class 0x060000
+[    1.668822] pci 0000:00:01.0: [8086:7000] type 00 class 0x060100
+[    1.670082] pci 0000:00:01.1: [8086:7010] type 00 class 0x010180
+[    1.672904] pci 0000:00:01.1: reg 0x20: [io  0xc040-0xc04f]
+[    1.674106] pci 0000:00:01.1: legacy IDE quirk: reg 0x10: [io  0x01f0-0x01f7]
+[    1.675112] pci 0000:00:01.1: legacy IDE quirk: reg 0x14: [io  0x03f6]
+[    1.676049] pci 0000:00:01.1: legacy IDE quirk: reg 0x18: [io  0x0170-0x0177]
+[    1.676672] pci 0000:00:01.1: legacy IDE quirk: reg 0x1c: [io  0x0376]
+[    1.677744] pci 0000:00:01.3: [8086:7113] type 00 class 0x068000
+[    1.678895] pci 0000:00:01.3: quirk: [io  0xb000-0xb03f] claimed by PIIX4 ACPI
+[    1.680012] pci 0000:00:01.3: quirk: [io  0xb100-0xb10f] claimed by PIIX4 SMB
+[    1.681178] pci 0000:00:02.0: [1013:00b8] type 00 class 0x030000
+[    1.683396] pci 0000:00:02.0: reg 0x10: [mem 0xfc000000-0xfdffffff pref]
+[    1.685351] pci 0000:00:02.0: reg 0x14: [mem 0xfebf0000-0xfebf0fff]
+[    1.690484] pci 0000:00:02.0: reg 0x30: [mem 0xfebe0000-0xfebeffff pref]
+[    1.691828] pci 0000:00:03.0: [8086:100e] type 00 class 0x020000
+[    1.693340] pci 0000:00:03.0: reg 0x10: [mem 0xfeba0000-0xfebbffff]
+[    1.694975] pci 0000:00:03.0: reg 0x14: [io  0xc000-0xc03f]
+[    1.699145] pci 0000:00:03.0: reg 0x30: [mem 0xfebc0000-0xfebdffff pref]
+[    1.700166] pci 0000:00:04.0: [8086:25ab] type 00 class 0x088000
+[    1.701439] pci 0000:00:04.0: reg 0x10: [mem 0xfebf1000-0xfebf100f]
+[    1.704706] pci_bus 0000:00: on NUMA node 0
+[    1.705765] ACPI: PCI Interrupt Link [LNKA] (IRQs 5 *10 11)
+[    1.706755] ACPI: PCI Interrupt Link [LNKB] (IRQs 5 *10 11)
+[    1.707983] ACPI: PCI Interrupt Link [LNKC] (IRQs 5 10 *11)
+[    1.709212] ACPI: PCI Interrupt Link [LNKD] (IRQs 5 10 *11)
+[    1.710335] ACPI: PCI Interrupt Link [LNKS] (IRQs *9)
+[    1.711561] ACPI: Enabled 16 GPEs in block 00 to 0F
+[    1.712722] vgaarb: setting as boot device: PCI:0000:00:02.0
+[    1.713333] vgaarb: device added: PCI:0000:00:02.0,decodes=io+mem,owns=io+mem,locks=none
+[    1.713338] vgaarb: loaded
+[    1.713892] vgaarb: bridge control possible 0000:00:02.0
+[    1.715028] EDAC MC: Ver: 3.0.0
+[    1.715760] EDAC DEBUG: edac_mc_sysfs_init: device mc created
+[    1.716765] PCI: Using ACPI for IRQ routing
+[    1.717479] PCI: pci_cache_line_size set to 64 bytes
+[    1.718343] e820: reserve RAM buffer [mem 0x0009fc00-0x0009ffff]
+[    1.719237] e820: reserve RAM buffer [mem 0x167fe000-0x17ffffff]
+[    1.720717] Switched to clocksource kvm-clock
+[    1.724934] pnp: PnP ACPI init
+[    1.725584] pnp 00:00: Plug and Play ACPI device, IDs PNP0b00 (active)
+[    1.726585] pnp 00:01: Plug and Play ACPI device, IDs PNP0303 (active)
+[    1.727606] pnp 00:02: Plug and Play ACPI device, IDs PNP0f13 (active)
+[    1.728584] pnp 00:03: [dma 2]
+[    1.729188] pnp 00:03: Plug and Play ACPI device, IDs PNP0700 (active)
+[    1.730200] pnp 00:04: Plug and Play ACPI device, IDs PNP0400 (active)
+[    1.731199] pnp 00:05: Plug and Play ACPI device, IDs PNP0501 (active)
+[    1.732190] pnp 00:06: Plug and Play ACPI device, IDs PNP0501 (active)
+[    1.733298] pnp: PnP ACPI: found 7 devices
+[    1.734031] INFO_MDMA: LNW DMA Driver Version 1.1.0
+[    1.770987] pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7]
+[    1.771840] pci_bus 0000:00: resource 5 [io  0x0d00-0xffff]
+[    1.772686] pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff]
+[    1.773611] pci_bus 0000:00: resource 7 [mem 0x80000000-0xfebfffff]
+[    1.774533] NET: Registered protocol family 1
+[    1.775255] pci 0000:00:00.0: Limiting direct PCI/PCI transfers
+[    1.776143] pci 0000:00:01.0: PIIX3: Enabling Passive Release
+[    1.777024] pci 0000:00:01.0: Activating ISA DMA hang workarounds
+[    1.777937] pci 0000:00:02.0: Video device with shadowed ROM
+[    1.778804] PCI: CLS 0 bytes, default 64
+[    1.779561] Unpacking initramfs...
+[    2.294303] Freeing initrd memory: 25644K (d4ee5000 - d67f0000)
+[    2.301899] Machine check injector initialized
+[    2.303037] NatSemi SCx200 Driver
+[    2.303844] futex hash table entries: 256 (order: -1, 3072 bytes)
+[    2.307062] zpool: loaded
+[    2.307762] VFS: Disk quotas dquot_6.5.2
+[    2.308503] VFS: Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
+[    2.310091] fuse init (API version 7.23)
+[    2.311018] JFS: nTxBlock = 2763, nTxLock = 22107
+[    2.313716] async_tx: api initialized (async)
+[    2.314440] Key type asymmetric registered
+[    2.315137] Asymmetric key parser 'x509' registered
+[    2.315965] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)
+[    2.317245] io scheduler noop registered (default)
+[    2.318018] io scheduler deadline registered
+[    2.318738] io scheduler cfq registered
+[    2.319430] test_firmware: interface ready
+[    2.320369] pci_hotplug: PCI Hot Plug PCI Core version: 0.5
+[    2.321213] cpqphp: Compaq Hot Plug PCI Controller Driver version: 0.9.8
+[    2.322293] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+[    2.323565] ACPI: Power Button [PWRF]
+[    2.324416] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    2.349988] 00:05: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    2.351718] Applicom driver: $Id: ac.c,v 1.30 2000/03/22 16:03:57 dwmw2 Exp $
+[    2.352749] ac.o: No PCI boards found.
+[    2.353423] ac.o: For an ISA board you must supply memory and irq parameters.
+[    2.354428] sonypi: Sony Programmable I/O Controller Driver v1.26.
+[    2.355336] toshiba: not a supported Toshiba laptop
+[    2.356107] nsc_gpio initializing
+[    2.356749] smapi::smapi_init, ERROR invalid usSmapiID
+[    2.357548] mwave: tp3780i::tp3780I_InitializeBoardData: Error: SMAPI is not available on this machine
+[    2.359007] mwave: mwavedd::mwave_init: Error: Failed to initialize board data
+[    2.360237] mwave: mwavedd::mwave_init: Error: Failed to initialize
+[    2.361160] Linux agpgart interface v0.103
+[    2.363768] Hangcheck: starting hangcheck timer 0.9.1 (tick is 180 seconds, margin is 60 seconds).
+[    2.365225] ibmasm: IBM ASM Service Processor Driver version 1.0 loaded
+[    2.366183] dummy-irq: no IRQ given.  Use irq=N
+[    2.366964] Phantom Linux Driver, version n0.9.8, init OK
+[    2.367836] Silicon Labs C2 port support v. 0.51.0 - (C) 2007 Rodolfo Giometti
+[    2.369140] Guest personality initialized and is inactive
+[    2.370016] VMCI host device registered (name=vmci, major=10, minor=61)
+[    2.370971] Initialized host personality
+[    2.371811] Uniform Multi-Platform E-IDE driver
+[    2.372687] ide-gd driver 1.18
+[    2.373281] ide-cd driver 5.00
+[    2.373956] SSFDC read-only Flash Translation layer
+[    2.374735] mtdoops: mtd device (mtddev=name/number) must be supplied
+[    2.375685] device id = 2440
+[    2.376252] device id = 2480
+[    2.376835] device id = 24c0
+[    2.377402] device id = 24d0
+[    2.377969] device id = 25a1
+[    2.378567] device id = 2670
+[    2.379161] slram: not enough parameters.
+[    2.379851] Ramix PMC551 PCI Mezzanine Ram Driver. (C) 1999,2000 Nortel Networks.
+[    2.381129] pmc551: not detected
+[    2.381940] ftl_cs: FTL header not found.
+[    2.382921] HSI/SSI char device loaded
+[    2.383731] i8042: PNP: PS/2 Controller [PNP0303:KBD,PNP0f13:MOU] at 0x60,0x64 irq 1,12
+[    2.385535] serio: i8042 KBD port at 0x60,0x64 irq 1
+[    2.386345] serio: i8042 AUX port at 0x60,0x64 irq 12
+[    2.387318] mousedev: PS/2 mouse device common for all mice
+[    2.388456] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input1
+[    2.390230] I2O subsystem v1.325
+[    2.390845] i2o: max drivers = 8
+[    2.391490] I2O Configuration OSM v1.323
+[    2.392173] I2O Block Device OSM v1.325
+[    2.393013] i2c-parport-light: adapter type unspecified
+[    2.393876] Driver for 1-wire Dallas network protocol.
+[    2.394700] DS1WM w1 busmaster driver - (c) 2004 Szabolcs Gyurko
+[    2.395611] 1-Wire driver for the DS2760 battery monitor chip - (c) 2004-2005, Szabolcs Gyurko
+[    2.397129] advantechwdt: WDT driver for Advantech single board computer initialising
+[    2.398487] advantechwdt: initialized. timeout=60 sec (nowayout=1)
+[    2.399444] sp5100_tco: SP5100/SB800 TCO WatchDog Timer Driver v0.05
+[    2.400436] geodewdt: No timers were available
+[    2.401190] ib700wdt: WDT driver for IB700 single board computer initialising
+[    2.402213] ib700wdt: START method I/O 443 is not available
+[    2.403063] ib700wdt: probe of ib700wdt failed with error -5
+[    2.403950] wafer5823wdt: WDT driver for Wafer 5823 single board computer initialising
+[    2.405237] wafer5823wdt: I/O address 0x0443 already in use
+[    2.406086] i6300esb: Intel 6300ESB WatchDog Timer Driver v0.05
+[    2.407071] i6300esb: cannot register miscdev on minor=130 (err=-16)
+[    2.408001] i6300ESB timer: probe of 0000:00:04.0 failed with error -16
+[    2.408996] sc1200wdt: build 20020303
+[    2.409654] sc1200wdt: io parameter must be specified
+[    2.410473] pc87413_wdt: Version 1.1 at io 0x2E
+[    2.411219] pc87413_wdt: cannot register miscdev on minor=130 (err=-16)
+[    2.412158] sbc60xxwdt: I/O address 0x0443 already in use
+[    2.412988] sbc8360: failed to register misc device
+[    2.413776] sbc7240_wdt: I/O address 0x0443 already in use
+[    2.414643] smsc37b787_wdt: SMsC 37B787 watchdog component driver 1.1 initialising...
+[    2.416969] smsc37b787_wdt: Unable to register miscdev on minor 130
+[    2.417896] w83977f_wdt: driver v1.00
+[    2.418547] w83977f_wdt: cannot register miscdev on minor=130 (err=-16)
+[    2.419501] machzwd: MachZ ZF-Logic Watchdog driver initializing
+[    2.420408] machzwd: no ZF-Logic found
+[    2.421052] sbc_epx_c3: cannot register miscdev on minor=130 (err=-16)
+[    2.422009] watchdog: Software Watchdog: cannot register miscdev on minor=130 (err=-16).
+[    2.423325] watchdog: Software Watchdog: a legacy watchdog module is probably present.
+[    2.424661] softdog: Software Watchdog Timer: 0.08 initialized. soft_noboot=0 soft_margin=60 sec soft_panic=0 (nowayout=1)
+[    2.426302] md: raid0 personality registered for level 0
+[    2.427147] md: raid1 personality registered for level 1
+[    2.427965] md: raid10 personality registered for level 10
+[    2.428835] md: raid6 personality registered for level 6
+[    2.429652] md: raid5 personality registered for level 5
+[    2.430488] md: raid4 personality registered for level 4
+[    2.431301] md: multipath personality registered for level -4
+[    2.432159] md: faulty personality registered for level -5
+[    2.433137] device-mapper: ioctl: 4.30.0-ioctl (2014-12-22) initialised: dm-devel@redhat.com
+[    2.434577] device-mapper: multipath: version 1.8.0 loaded
+[    2.435421] device-mapper: multipath round-robin: version 1.0.0 loaded
+[    2.436385] device-mapper: raid: Loading target version 1.6.0
+[    2.437275] device-mapper: cache cleaner: version 1.0.0 loaded
+[    2.438175] EDAC DEBUG: i5000_init: MC:
+[    2.438861] EDAC DEBUG: i5400_init: MC:
+[    2.439535] EDAC DEBUG: i7300_init: 
+[    2.440230] EDAC DEBUG: i82875p_init: 875p pci_get_device fail
+[    2.441119] EDAC DEBUG: i82975x_init: i82975x pci_get_device fail
+[    2.442029] EDAC DEBUG: i3000_init: i3000 pci_get_device fail
+[    2.442911] EDAC DEBUG: i3200_init: i3200 pci_get_device fail
+[    2.443809] EDAC DEBUG: x38_init: x38 pci_get_device fail
+[    2.444655] lguest: switcher text too large (4384)
+[    2.445415] Driver 'mmc_test' needs updating - please use bus_type methods
+[    2.446398] sdhci: Secure Digital Host Controller Interface driver
+[    2.447319] sdhci: Copyright(c) Pierre Ossman
+[    2.448072] sdhci-pltfm: SDHCI platform and OF driver helper
+[    2.449088] dcdbas dcdbas: Dell Systems Management Base Driver (version 5.6.0-3.2)
+[    2.450388] cs5535-clockevt: Could not allocate MFGPT timer
+[    2.451249] hidraw: raw HID events driver (C) Jiri Kosina
+[    2.452366] input: Speakup as /devices/virtual/input/input3
+[    2.453308] initialized device: /dev/synth, node (MAJOR 10, MINOR 25)
+[    2.454274] speakup 3.1.6: initialized
+[    2.454944] synth name on entry is: (null)
+[    2.455692] logger: created 256K log 'log_main'
+[    2.456480] logger: created 256K log 'log_events'
+[    2.457290] logger: created 256K log 'log_radio'
+[    2.458088] logger: created 256K log 'log_system'
+[    2.458908] dgap: dgap-1.3-16, Digi International Part Number 40002347_C
+[    2.459872] dgap: For the tools package please visit http://www.digi.com
+[    2.460901] FPGA DOWNLOAD --->
+[    2.461504] FPGA image file name: xlinx_fpga_firmware.bit
+[    2.462356] GPIO INIT FAIL!!
+[    2.463019]  fake-fmc-carrier: mezzanine 0
+[    2.463743]       Manufacturer: fake-vendor
+[    2.464442]       Product name: fake-design-for-testing
+[    2.465268] fmc fake-design-for-testing-f001: Driver has no ID: matches all
+[    2.466279] fmc_trivial: probe of fake-design-for-testing-f001 failed with error -95
+[    2.467601] fmc fake-design-for-testing-f001: Driver has no ID: matches all
+[    2.468625] fmc_chardev fake-design-for-testing-f001: Created misc device "fake-design-for-testing-f001"
+[    2.494683] intel_rapl: no valid rapl domains found in package 0
+[    2.495719] Audio Excel DSP 16 init driver Copyright (C) Riccardo Facchetti 1995-98
+[    2.497022] aedsp16: I/O, IRQ and DMA are mandatory
+[    2.497801] pss: mss_io, mss_dma, mss_irq and pss_io must be set.
+[    2.498708] ad1848/cs4248 codec driver Copyright (C) by Hannu Savolainen 1993-1996
+[    2.499974] ad1848: No ISAPnP cards found, trying standard ones...
+[    2.500900] Pro Audio Spectrum driver Copyright (C) by Hannu Savolainen 1993-1996
+[    2.502159] I/O, IRQ, DMA and type are mandatory
+[    2.502906] sb: Init: Starting Probe...
+[    2.503600] sb: Init: Done
+[    2.504168] uart6850: irq and io must be set.
+[    2.504891] YM3812 and OPL-3 driver Copyright (C) by Hannu Savolainen, Rob Hooft 1993-1996
+[    2.506232] MIDI Loopback device driver
+[    2.507486] ... APIC ID:      00000000 (0)
+[    2.508198] ... APIC VERSION: 01050014
+[    2.508877] 0000000000000000000000000000000000000000000000000000000000000000
+[    2.510242] 0000000000000000000000000000000000000000000000000000000000000000
+[    2.510242] 0000000000000000000000000000000000000000000000000000000000008000
+[    2.510242] 
+[    2.513984] Using IPI Shortcut mode
+[    2.514806] Key type trusted registered
+[    2.515558] Key type encrypted registered
+[    2.516305] raid6test: testing the 4-disk case...
+[    2.517117] raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D)  OK
+[    2.518094] raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(P)  OK
+[    2.519066] raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(Q)  OK
+[    2.520065] raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(P)  OK
+[    2.521045] raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(Q)  OK
+[    2.522024] raid6test: test_disks(2, 3): faila=  2(P)  failb=  3(Q)  OK
+[    2.523013] raid6test: testing the 5-disk case...
+[    2.523812] raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D)  OK
+[    2.524789] raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D)  OK
+[    2.525766] raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(P)  OK
+[    2.526761] raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(Q)  OK
+[    2.527739] raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D)  OK
+[    2.528721] raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(P)  OK
+[    2.529703] raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(Q)  OK
+[    2.530695] raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(P)  OK
+[    2.531670] raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(Q)  OK
+[    2.532644] raid6test: test_disks(3, 4): faila=  3(P)  failb=  4(Q)  OK
+[    2.533691] raid6test: testing the 11-disk case...
+[    2.534498] raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D)  OK
+[    2.535478] raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D)  OK
+[    2.536451] raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(D)  OK
+[    2.537436] raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(D)  OK
+[    2.540244] raid6test: test_disks(0, 5): faila=  0(D)  failb=  5(D)  OK
+[    2.541228] raid6test: test_disks(0, 6): faila=  0(D)  failb=  6(D)  OK
+[    2.542202] raid6test: test_disks(0, 7): faila=  0(D)  failb=  7(D)  OK
+[    2.543176] raid6test: test_disks(0, 8): faila=  0(D)  failb=  8(D)  OK
+[    2.544167] raid6test: test_disks(0, 9): faila=  0(D)  failb=  9(P)  OK
+[    2.545141] raid6test: test_disks(0, 10): faila=  0(D)  failb= 10(Q)  OK
+[    2.546132] raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D)  OK
+[    2.547120] raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(D)  OK
+[    2.548095] raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(D)  OK
+[    2.549068] raid6test: test_disks(1, 5): faila=  1(D)  failb=  5(D)  OK
+[    2.550053] raid6test: test_disks(1, 6): faila=  1(D)  failb=  6(D)  OK
+[    2.551027] raid6test: test_disks(1, 7): faila=  1(D)  failb=  7(D)  OK
+[    2.551998] raid6test: test_disks(1, 8): faila=  1(D)  failb=  8(D)  OK
+[    2.552974] raid6test: test_disks(1, 9): faila=  1(D)  failb=  9(P)  OK
+[    2.553966] raid6test: test_disks(1, 10): faila=  1(D)  failb= 10(Q)  OK
+[    2.554960] raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(D)  OK
+[    2.555933] raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(D)  OK
+[    2.556915] raid6test: test_disks(2, 5): faila=  2(D)  failb=  5(D)  OK
+[    2.557899] raid6test: test_disks(2, 6): faila=  2(D)  failb=  6(D)  OK
+[    2.558878] raid6test: test_disks(2, 7): faila=  2(D)  failb=  7(D)  OK
+[    2.559852] raid6test: test_disks(2, 8): faila=  2(D)  failb=  8(D)  OK
+[    2.560827] raid6test: test_disks(2, 9): faila=  2(D)  failb=  9(P)  OK
+[    2.561798] raid6test: test_disks(2, 10): faila=  2(D)  failb= 10(Q)  OK
+[    2.562779] raid6test: test_disks(3, 4): faila=  3(D)  failb=  4(D)  OK
+[    2.563768] raid6test: test_disks(3, 5): faila=  3(D)  failb=  5(D)  OK
+[    2.564748] raid6test: test_disks(3, 6): faila=  3(D)  failb=  6(D)  OK
+[    2.565727] raid6test: test_disks(3, 7): faila=  3(D)  failb=  7(D)  OK
+[    2.566715] raid6test: test_disks(3, 8): faila=  3(D)  failb=  8(D)  OK
+[    2.567696] raid6test: test_disks(3, 9): faila=  3(D)  failb=  9(P)  OK
+[    2.568675] raid6test: test_disks(3, 10): faila=  3(D)  failb= 10(Q)  OK
+[    2.569664] raid6test: test_disks(4, 5): faila=  4(D)  failb=  5(D)  OK
+[    2.570653] raid6test: test_disks(4, 6): faila=  4(D)  failb=  6(D)  OK
+[    2.571632] raid6test: test_disks(4, 7): faila=  4(D)  failb=  7(D)  OK
+[    2.572619] raid6test: test_disks(4, 8): faila=  4(D)  failb=  8(D)  OK
+[    2.573612] raid6test: test_disks(4, 9): faila=  4(D)  failb=  9(P)  OK
+[    2.574587] raid6test: test_disks(4, 10): faila=  4(D)  failb= 10(Q)  OK
+[    2.575557] raid6test: test_disks(5, 6): faila=  5(D)  failb=  6(D)  OK
+[    2.576539] raid6test: test_disks(5, 7): faila=  5(D)  failb=  7(D)  OK
+[    2.577531] raid6test: test_disks(5, 8): faila=  5(D)  failb=  8(D)  OK
+[    2.578512] raid6test: test_disks(5, 9): faila=  5(D)  failb=  9(P)  OK
+[    2.579489] raid6test: test_disks(5, 10): faila=  5(D)  failb= 10(Q)  OK
+[    2.580490] raid6test: test_disks(6, 7): faila=  6(D)  failb=  7(D)  OK
+[    2.581466] raid6test: test_disks(6, 8): faila=  6(D)  failb=  8(D)  OK
+[    2.582434] raid6test: test_disks(6, 9): faila=  6(D)  failb=  9(P)  OK
+[    2.583421] raid6test: test_disks(6, 10): faila=  6(D)  failb= 10(Q)  OK
+[    2.584409] raid6test: test_disks(7, 8): faila=  7(D)  failb=  8(D)  OK
+[    2.585379] raid6test: test_disks(7, 9): faila=  7(D)  failb=  9(P)  OK
+[    2.586357] raid6test: test_disks(7, 10): faila=  7(D)  failb= 10(Q)  OK
+[    2.587355] raid6test: test_disks(8, 9): faila=  8(D)  failb=  9(P)  OK
+[    2.588341] raid6test: test_disks(8, 10): faila=  8(D)  failb= 10(Q)  OK
+[    2.589313] raid6test: test_disks(9, 10): faila=  9(P)  failb= 10(Q)  OK
+[    2.590368] raid6test: testing the 12-disk case...
+[    2.591168] raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D)  OK
+[    2.592143] raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D)  OK
+[    2.593125] raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(D)  OK
+[    2.594119] raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(D)  OK
+[    2.595094] raid6test: test_disks(0, 5): faila=  0(D)  failb=  5(D)  OK
+[    2.596071] raid6test: test_disks(0, 6): faila=  0(D)  failb=  6(D)  OK
+[    2.597055] raid6test: test_disks(0, 7): faila=  0(D)  failb=  7(D)  OK
+[    2.598026] raid6test: test_disks(0, 8): faila=  0(D)  failb=  8(D)  OK
+[    2.598999] raid6test: test_disks(0, 9): faila=  0(D)  failb=  9(D)  OK
+[    2.599976] raid6test: test_disks(0, 10): faila=  0(D)  failb= 10(P)  OK
+[    2.600977] raid6test: test_disks(0, 11): faila=  0(D)  failb= 11(Q)  OK
+[    2.601954] raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D)  OK
+[    2.602936] raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(D)  OK
+[    2.603929] raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(D)  OK
+[    2.604915] raid6test: test_disks(1, 5): faila=  1(D)  failb=  5(D)  OK
+[    2.605896] raid6test: test_disks(1, 6): faila=  1(D)  failb=  6(D)  OK
+[    2.606885] raid6test: test_disks(1, 7): faila=  1(D)  failb=  7(D)  OK
+[    2.607856] raid6test: test_disks(1, 8): faila=  1(D)  failb=  8(D)  OK
+[    2.608837] raid6test: test_disks(1, 9): faila=  1(D)  failb=  9(D)  OK
+[    2.609827] raid6test: test_disks(1, 10): faila=  1(D)  failb= 10(P)  OK
+[    2.610835] raid6test: test_disks(1, 11): faila=  1(D)  failb= 11(Q)  OK
+[    2.611822] raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(D)  OK
+[    2.612805] raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(D)  OK
+[    2.613788] raid6test: test_disks(2, 5): faila=  2(D)  failb=  5(D)  OK
+[    2.614769] raid6test: test_disks(2, 6): faila=  2(D)  failb=  6(D)  OK
+[    2.615746] raid6test: test_disks(2, 7): faila=  2(D)  failb=  7(D)  OK
+[    2.616723] raid6test: test_disks(2, 8): faila=  2(D)  failb=  8(D)  OK
+[    2.617705] raid6test: test_disks(2, 9): faila=  2(D)  failb=  9(D)  OK
+[    2.618681] raid6test: test_disks(2, 10): faila=  2(D)  failb= 10(P)  OK
+[    2.619668] raid6test: test_disks(2, 11): faila=  2(D)  failb= 11(Q)  OK
+[    2.620676] raid6test: test_disks(3, 4): faila=  3(D)  failb=  4(D)  OK
+[    2.621655] raid6test: test_disks(3, 5): faila=  3(D)  failb=  5(D)  OK
+[    2.622636] raid6test: test_disks(3, 6): faila=  3(D)  failb=  6(D)  OK
+[    2.623618] raid6test: test_disks(3, 7): faila=  3(D)  failb=  7(D)  OK
+[    2.624603] raid6test: test_disks(3, 8): faila=  3(D)  failb=  8(D)  OK
+[    2.625580] raid6test: test_disks(3, 9): faila=  3(D)  failb=  9(D)  OK
+[    2.626555] raid6test: test_disks(3, 10): faila=  3(D)  failb= 10(P)  OK
+[    2.627555] raid6test: test_disks(3, 11): faila=  3(D)  failb= 11(Q)  OK
+[    2.628544] raid6test: test_disks(4, 5): faila=  4(D)  failb=  5(D)  OK
+[    2.629530] raid6test: test_disks(4, 6): faila=  4(D)  failb=  6(D)  OK
+[    2.630523] raid6test: test_disks(4, 7): faila=  4(D)  failb=  7(D)  OK
+[    2.631492] raid6test: test_disks(4, 8): faila=  4(D)  failb=  8(D)  OK
+[    2.632473] raid6test: test_disks(4, 9): faila=  4(D)  failb=  9(D)  OK
+[    2.633461] raid6test: test_disks(4, 10): faila=  4(D)  failb= 10(P)  OK
+[    2.634448] raid6test: test_disks(4, 11): faila=  4(D)  failb= 11(Q)  OK
+[    2.635431] raid6test: test_disks(5, 6): faila=  5(D)  failb=  6(D)  OK
+[    2.636414] raid6test: test_disks(5, 7): faila=  5(D)  failb=  7(D)  OK
+[    2.637413] raid6test: test_disks(5, 8): faila=  5(D)  failb=  8(D)  OK
+[    2.638391] raid6test: test_disks(5, 9): faila=  5(D)  failb=  9(D)  OK
+[    2.639372] raid6test: test_disks(5, 10): faila=  5(D)  failb= 10(P)  OK
+[    2.640370] raid6test: test_disks(5, 11): faila=  5(D)  failb= 11(Q)  OK
+[    2.641346] raid6test: test_disks(6, 7): faila=  6(D)  failb=  7(D)  OK
+[    2.642327] raid6test: test_disks(6, 8): faila=  6(D)  failb=  8(D)  OK
+[    2.643301] raid6test: test_disks(6, 9): faila=  6(D)  failb=  9(D)  OK
+[    2.644293] raid6test: test_disks(6, 10): faila=  6(D)  failb= 10(P)  OK
+[    2.645285] raid6test: test_disks(6, 11): faila=  6(D)  failb= 11(Q)  OK
+[    2.646264] raid6test: test_disks(7, 8): faila=  7(D)  failb=  8(D)  OK
+[    2.647259] raid6test: test_disks(7, 9): faila=  7(D)  failb=  9(D)  OK
+[    2.648243] raid6test: test_disks(7, 10): faila=  7(D)  failb= 10(P)  OK
+[    2.649234] raid6test: test_disks(7, 11): faila=  7(D)  failb= 11(Q)  OK
+[    2.650234] raid6test: test_disks(8, 9): faila=  8(D)  failb=  9(D)  OK
+[    2.651216] raid6test: test_disks(8, 10): faila=  8(D)  failb= 10(P)  OK
+[    2.652201] raid6test: test_disks(8, 11): faila=  8(D)  failb= 11(Q)  OK
+[    2.653184] raid6test: test_disks(9, 10): faila=  9(D)  failb= 10(P)  OK
+[    2.654184] raid6test: test_disks(9, 11): faila=  9(D)  failb= 11(Q)  OK
+[    2.655180] raid6test: test_disks(10, 11): faila= 10(P)  failb= 11(Q)  OK
+[    2.656307] raid6test: testing the 24-disk case...
+[    2.657119] raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D)  OK
+[    2.658112] raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D)  OK
+[    2.659096] raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(D)  OK
+[    2.660096] raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(D)  OK
+[    2.661086] raid6test: test_disks(0, 5): faila=  0(D)  failb=  5(D)  OK
+[    2.662066] raid6test: test_disks(0, 6): faila=  0(D)  failb=  6(D)  OK
+[    2.663053] raid6test: test_disks(0, 7): faila=  0(D)  failb=  7(D)  OK
+[    2.664045] raid6test: test_disks(0, 8): faila=  0(D)  failb=  8(D)  OK
+[    2.665033] raid6test: test_disks(0, 9): faila=  0(D)  failb=  9(D)  OK
+[    2.666015] raid6test: test_disks(0, 10): faila=  0(D)  failb= 10(D)  OK
+[    2.667024] raid6test: test_disks(0, 11): faila=  0(D)  failb= 11(D)  OK
+[    2.668026] raid6test: test_disks(0, 12): faila=  0(D)  failb= 12(D)  OK
+[    2.669022] raid6test: test_disks(0, 13): faila=  0(D)  failb= 13(D)  OK
+[    2.670032] raid6test: test_disks(0, 14): faila=  0(D)  failb= 14(D)  OK
+[    2.671044] raid6test: test_disks(0, 15): faila=  0(D)  failb= 15(D)  OK
+[    2.672043] raid6test: test_disks(0, 16): faila=  0(D)  failb= 16(D)  OK
+[    2.673048] raid6test: test_disks(0, 17): faila=  0(D)  failb= 17(D)  OK
+[    2.674052] raid6test: test_disks(0, 18): faila=  0(D)  failb= 18(D)  OK
+[    2.675043] raid6test: test_disks(0, 19): faila=  0(D)  failb= 19(D)  OK
+[    2.676035] raid6test: test_disks(0, 20): faila=  0(D)  failb= 20(D)  OK
+[    2.677040] raid6test: test_disks(0, 21): faila=  0(D)  failb= 21(D)  OK
+[    2.678036] raid6test: test_disks(0, 22): faila=  0(D)  failb= 22(P)  OK
+[    2.679049] raid6test: test_disks(0, 23): faila=  0(D)  failb= 23(Q)  OK
+[    2.680062] raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D)  OK
+[    2.681052] raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(D)  OK
+[    2.682047] raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(D)  OK
+[    2.683036] raid6test: test_disks(1, 5): faila=  1(D)  failb=  5(D)  OK
+[    2.684030] raid6test: test_disks(1, 6): faila=  1(D)  failb=  6(D)  OK
+[    2.685029] raid6test: test_disks(1, 7): faila=  1(D)  failb=  7(D)  OK
+[    2.686019] raid6test: test_disks(1, 8): faila=  1(D)  failb=  8(D)  OK
+[    2.687026] raid6test: test_disks(1, 9): faila=  1(D)  failb=  9(D)  OK
+[    2.688019] raid6test: test_disks(1, 10): faila=  1(D)  failb= 10(D)  OK
+[    2.689018] raid6test: test_disks(1, 11): faila=  1(D)  failb= 11(D)  OK
+[    2.690020] raid6test: test_disks(1, 12): faila=  1(D)  failb= 12(D)  OK
+[    2.691028] raid6test: test_disks(1, 13): faila=  1(D)  failb= 13(D)  OK
+[    2.692027] raid6test: test_disks(1, 14): faila=  1(D)  failb= 14(D)  OK
+[    2.693031] raid6test: test_disks(1, 15): faila=  1(D)  failb= 15(D)  OK
+[    2.694056] raid6test: test_disks(1, 16): faila=  1(D)  failb= 16(D)  OK
+[    2.695067] raid6test: test_disks(1, 17): faila=  1(D)  failb= 17(D)  OK
+[    2.696079] raid6test: test_disks(1, 18): faila=  1(D)  failb= 18(D)  OK
+[    2.697152] raid6test: test_disks(1, 19): faila=  1(D)  failb= 19(D)  OK
+[    2.698182] raid6test: test_disks(1, 20): faila=  1(D)  failb= 20(D)  OK
+[    2.699212] raid6test: test_disks(1, 21): faila=  1(D)  failb= 21(D)  OK
+[    2.700264] raid6test: test_disks(1, 22): faila=  1(D)  failb= 22(P)  OK
+[    2.701283] raid6test: test_disks(1, 23): faila=  1(D)  failb= 23(Q)  OK
+[    2.702308] raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(D)  OK
+[    2.703315] raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(D)  OK
+[    2.704344] raid6test: test_disks(2, 5): faila=  2(D)  failb=  5(D)  OK
+[    2.705353] raid6test: test_disks(2, 6): faila=  2(D)  failb=  6(D)  OK
+[    2.706367] raid6test: test_disks(2, 7): faila=  2(D)  failb=  7(D)  OK
+[    2.707395] raid6test: test_disks(2, 8): faila=  2(D)  failb=  8(D)  OK
+[    2.708432] raid6test: test_disks(2, 9): faila=  2(D)  failb=  9(D)  OK
+[    2.709449] raid6test: test_disks(2, 10): faila=  2(D)  failb= 10(D)  OK
+[    2.710506] raid6test: test_disks(2, 11): faila=  2(D)  failb= 11(D)  OK
+[    2.711535] raid6test: test_disks(2, 12): faila=  2(D)  failb= 12(D)  OK
+[    2.712560] raid6test: test_disks(2, 13): faila=  2(D)  failb= 13(D)  OK
+[    2.713599] raid6test: test_disks(2, 14): faila=  2(D)  failb= 14(D)  OK
+[    2.714633] raid6test: test_disks(2, 15): faila=  2(D)  failb= 15(D)  OK
+[    2.715633] raid6test: test_disks(2, 16): faila=  2(D)  failb= 16(D)  OK
+[    2.716640] raid6test: test_disks(2, 17): faila=  2(D)  failb= 17(D)  OK
+[    2.717651] raid6test: test_disks(2, 18): faila=  2(D)  failb= 18(D)  OK
+[    2.720512] raid6test: test_disks(2, 19): faila=  2(D)  failb= 19(D)  OK
+[    2.721512] raid6test: test_disks(2, 20): faila=  2(D)  failb= 20(D)  OK
+[    2.722513] raid6test: test_disks(2, 21): faila=  2(D)  failb= 21(D)  OK
+[    2.723518] raid6test: test_disks(2, 22): faila=  2(D)  failb= 22(P)  OK
+[    2.724518] raid6test: test_disks(2, 23): faila=  2(D)  failb= 23(Q)  OK
+[    2.725540] raid6test: test_disks(3, 4): faila=  3(D)  failb=  4(D)  OK
+[    2.726530] raid6test: test_disks(3, 5): faila=  3(D)  failb=  5(D)  OK
+[    2.727541] raid6test: test_disks(3, 6): faila=  3(D)  failb=  6(D)  OK
+[    2.728536] raid6test: test_disks(3, 7): faila=  3(D)  failb=  7(D)  OK
+[    2.729530] raid6test: test_disks(3, 8): faila=  3(D)  failb=  8(D)  OK
+[    2.730541] raid6test: test_disks(3, 9): faila=  3(D)  failb=  9(D)  OK
+[    2.731538] raid6test: test_disks(3, 10): faila=  3(D)  failb= 10(D)  OK
+[    2.732544] raid6test: test_disks(3, 11): faila=  3(D)  failb= 11(D)  OK
+[    2.733554] raid6test: test_disks(3, 12): faila=  3(D)  failb= 12(D)  OK
+[    2.734563] raid6test: test_disks(3, 13): faila=  3(D)  failb= 13(D)  OK
+[    2.735568] raid6test: test_disks(3, 14): faila=  3(D)  failb= 14(D)  OK
+[    2.736569] raid6test: test_disks(3, 15): faila=  3(D)  failb= 15(D)  OK
+[    2.737583] raid6test: test_disks(3, 16): faila=  3(D)  failb= 16(D)  OK
+[    2.738586] raid6test: test_disks(3, 17): faila=  3(D)  failb= 17(D)  OK
+[    2.739576] raid6test: test_disks(3, 18): faila=  3(D)  failb= 18(D)  OK
+[    2.740584] raid6test: test_disks(3, 19): faila=  3(D)  failb= 19(D)  OK
+[    2.741581] raid6test: test_disks(3, 20): faila=  3(D)  failb= 20(D)  OK
+[    2.742582] raid6test: test_disks(3, 21): faila=  3(D)  failb= 21(D)  OK
+[    2.743583] raid6test: test_disks(3, 22): faila=  3(D)  failb= 22(P)  OK
+[    2.744584] raid6test: test_disks(3, 23): faila=  3(D)  failb= 23(Q)  OK
+[    2.745582] raid6test: test_disks(4, 5): faila=  4(D)  failb=  5(D)  OK
+[    2.746569] raid6test: test_disks(4, 6): faila=  4(D)  failb=  6(D)  OK
+[    2.747579] raid6test: test_disks(4, 7): faila=  4(D)  failb=  7(D)  OK
+[    2.748577] raid6test: test_disks(4, 8): faila=  4(D)  failb=  8(D)  OK
+[    2.749570] raid6test: test_disks(4, 9): faila=  4(D)  failb=  9(D)  OK
+[    2.750575] raid6test: test_disks(4, 10): faila=  4(D)  failb= 10(D)  OK
+[    2.751579] raid6test: test_disks(4, 11): faila=  4(D)  failb= 11(D)  OK
+[    2.752579] raid6test: test_disks(4, 12): faila=  4(D)  failb= 12(D)  OK
+[    2.753587] raid6test: test_disks(4, 13): faila=  4(D)  failb= 13(D)  OK
+[    2.754583] raid6test: test_disks(4, 14): faila=  4(D)  failb= 14(D)  OK
+[    2.755583] raid6test: test_disks(4, 15): faila=  4(D)  failb= 15(D)  OK
+[    2.756583] raid6test: test_disks(4, 16): faila=  4(D)  failb= 16(D)  OK
+[    2.757580] raid6test: test_disks(4, 17): faila=  4(D)  failb= 17(D)  OK
+[    2.758585] raid6test: test_disks(4, 18): faila=  4(D)  failb= 18(D)  OK
+[    2.759578] raid6test: test_disks(4, 19): faila=  4(D)  failb= 19(D)  OK
+[    2.760596] raid6test: test_disks(4, 20): faila=  4(D)  failb= 20(D)  OK
+[    2.761600] raid6test: test_disks(4, 21): faila=  4(D)  failb= 21(D)  OK
+[    2.762591] raid6test: test_disks(4, 22): faila=  4(D)  failb= 22(P)  OK
+[    2.763604] raid6test: test_disks(4, 23): faila=  4(D)  failb= 23(Q)  OK
+[    2.764603] raid6test: test_disks(5, 6): faila=  5(D)  failb=  6(D)  OK
+[    2.765594] raid6test: test_disks(5, 7): faila=  5(D)  failb=  7(D)  OK
+[    2.766584] raid6test: test_disks(5, 8): faila=  5(D)  failb=  8(D)  OK
+[    2.767592] raid6test: test_disks(5, 9): faila=  5(D)  failb=  9(D)  OK
+[    2.768586] raid6test: test_disks(5, 10): faila=  5(D)  failb= 10(D)  OK
+[    2.769577] raid6test: test_disks(5, 11): faila=  5(D)  failb= 11(D)  OK
+[    2.770597] raid6test: test_disks(5, 12): faila=  5(D)  failb= 12(D)  OK
+[    2.771589] raid6test: test_disks(5, 13): faila=  5(D)  failb= 13(D)  OK
+[    2.772590] raid6test: test_disks(5, 14): faila=  5(D)  failb= 14(D)  OK
+[    2.773602] raid6test: test_disks(5, 15): faila=  5(D)  failb= 15(D)  OK
+[    2.774606] raid6test: test_disks(5, 16): faila=  5(D)  failb= 16(D)  OK
+[    2.775607] raid6test: test_disks(5, 17): faila=  5(D)  failb= 17(D)  OK
+[    2.776612] raid6test: test_disks(5, 18): faila=  5(D)  failb= 18(D)  OK
+[    2.777620] raid6test: test_disks(5, 19): faila=  5(D)  failb= 19(D)  OK
+[    2.778625] raid6test: test_disks(5, 20): faila=  5(D)  failb= 20(D)  OK
+[    2.779620] raid6test: test_disks(5, 21): faila=  5(D)  failb= 21(D)  OK
+[    2.780631] raid6test: test_disks(5, 22): faila=  5(D)  failb= 22(P)  OK
+[    2.781636] raid6test: test_disks(5, 23): faila=  5(D)  failb= 23(Q)  OK
+[    2.782635] raid6test: test_disks(6, 7): faila=  6(D)  failb=  7(D)  OK
+[    2.783635] raid6test: test_disks(6, 8): faila=  6(D)  failb=  8(D)  OK
+[    2.784635] raid6test: test_disks(6, 9): faila=  6(D)  failb=  9(D)  OK
+[    2.785625] raid6test: test_disks(6, 10): faila=  6(D)  failb= 10(D)  OK
+[    2.786625] raid6test: test_disks(6, 11): faila=  6(D)  failb= 11(D)  OK
+[    2.787645] raid6test: test_disks(6, 12): faila=  6(D)  failb= 12(D)  OK
+[    2.788644] raid6test: test_disks(6, 13): faila=  6(D)  failb= 13(D)  OK
+[    2.789643] raid6test: test_disks(6, 14): faila=  6(D)  failb= 14(D)  OK
+[    2.790663] raid6test: test_disks(6, 15): faila=  6(D)  failb= 15(D)  OK
+[    2.791658] raid6test: test_disks(6, 16): faila=  6(D)  failb= 16(D)  OK
+[    2.792661] raid6test: test_disks(6, 17): faila=  6(D)  failb= 17(D)  OK
+[    2.793662] raid6test: test_disks(6, 18): faila=  6(D)  failb= 18(D)  OK
+[    2.794659] raid6test: test_disks(6, 19): faila=  6(D)  failb= 19(D)  OK
+[    2.795652] raid6test: test_disks(6, 20): faila=  6(D)  failb= 20(D)  OK
+[    2.796657] raid6test: test_disks(6, 21): faila=  6(D)  failb= 21(D)  OK
+[    2.797668] raid6test: test_disks(6, 22): faila=  6(D)  failb= 22(P)  OK
+[    2.798667] raid6test: test_disks(6, 23): faila=  6(D)  failb= 23(Q)  OK
+[    2.799659] raid6test: test_disks(7, 8): faila=  7(D)  failb=  8(D)  OK
+[    2.800670] raid6test: test_disks(7, 9): faila=  7(D)  failb=  9(D)  OK
+[    2.801662] raid6test: test_disks(7, 10): faila=  7(D)  failb= 10(D)  OK
+[    2.802655] raid6test: test_disks(7, 11): faila=  7(D)  failb= 11(D)  OK
+[    2.803669] raid6test: test_disks(7, 12): faila=  7(D)  failb= 12(D)  OK
+[    2.804667] raid6test: test_disks(7, 13): faila=  7(D)  failb= 13(D)  OK
+[    2.805665] raid6test: test_disks(7, 14): faila=  7(D)  failb= 14(D)  OK
+[    2.806663] raid6test: test_disks(7, 15): faila=  7(D)  failb= 15(D)  OK
+[    2.807686] raid6test: test_disks(7, 16): faila=  7(D)  failb= 16(D)  OK
+[    2.808686] raid6test: test_disks(7, 17): faila=  7(D)  failb= 17(D)  OK
+[    2.809684] raid6test: test_disks(7, 18): faila=  7(D)  failb= 18(D)  OK
+[    2.810699] raid6test: test_disks(7, 19): faila=  7(D)  failb= 19(D)  OK
+[    2.811695] raid6test: test_disks(7, 20): faila=  7(D)  failb= 20(D)  OK
+[    2.812699] raid6test: test_disks(7, 21): faila=  7(D)  failb= 21(D)  OK
+[    2.813704] raid6test: test_disks(7, 22): faila=  7(D)  failb= 22(P)  OK
+[    2.814700] raid6test: test_disks(7, 23): faila=  7(D)  failb= 23(Q)  OK
+[    2.815699] raid6test: test_disks(8, 9): faila=  8(D)  failb=  9(D)  OK
+[    2.816701] raid6test: test_disks(8, 10): faila=  8(D)  failb= 10(D)  OK
+[    2.817711] raid6test: test_disks(8, 11): faila=  8(D)  failb= 11(D)  OK
+[    2.818709] raid6test: test_disks(8, 12): faila=  8(D)  failb= 12(D)  OK
+[    2.819707] raid6test: test_disks(8, 13): faila=  8(D)  failb= 13(D)  OK
+[    2.820723] raid6test: test_disks(8, 14): faila=  8(D)  failb= 14(D)  OK
+[    2.821722] raid6test: test_disks(8, 15): faila=  8(D)  failb= 15(D)  OK
+[    2.822719] raid6test: test_disks(8, 16): faila=  8(D)  failb= 16(D)  OK
+[    2.823733] raid6test: test_disks(8, 17): faila=  8(D)  failb= 17(D)  OK
+[    2.824728] raid6test: test_disks(8, 18): faila=  8(D)  failb= 18(D)  OK
+[    2.825729] raid6test: test_disks(8, 19): faila=  8(D)  failb= 19(D)  OK
+[    2.826741] raid6test: test_disks(8, 20): faila=  8(D)  failb= 20(D)  OK
+[    2.827742] raid6test: test_disks(8, 21): faila=  8(D)  failb= 21(D)  OK
+[    2.828737] raid6test: test_disks(8, 22): faila=  8(D)  failb= 22(P)  OK
+[    2.829739] raid6test: test_disks(8, 23): faila=  8(D)  failb= 23(Q)  OK
+[    2.830750] raid6test: test_disks(9, 10): faila=  9(D)  failb= 10(D)  OK
+[    2.831744] raid6test: test_disks(9, 11): faila=  9(D)  failb= 11(D)  OK
+[    2.832737] raid6test: test_disks(9, 12): faila=  9(D)  failb= 12(D)  OK
+[    2.833739] raid6test: test_disks(9, 13): faila=  9(D)  failb= 13(D)  OK
+[    2.834736] raid6test: test_disks(9, 14): faila=  9(D)  failb= 14(D)  OK
+[    2.835733] raid6test: test_disks(9, 15): faila=  9(D)  failb= 15(D)  OK
+[    2.836735] raid6test: test_disks(9, 16): faila=  9(D)  failb= 16(D)  OK
+[    2.837731] raid6test: test_disks(9, 17): faila=  9(D)  failb= 17(D)  OK
+[    2.838730] raid6test: test_disks(9, 18): faila=  9(D)  failb= 18(D)  OK
+[    2.839729] raid6test: test_disks(9, 19): faila=  9(D)  failb= 19(D)  OK
+[    2.840750] raid6test: test_disks(9, 20): faila=  9(D)  failb= 20(D)  OK
+[    2.841748] raid6test: test_disks(9, 21): faila=  9(D)  failb= 21(D)  OK
+[    2.842750] raid6test: test_disks(9, 22): faila=  9(D)  failb= 22(P)  OK
+[    2.843760] raid6test: test_disks(9, 23): faila=  9(D)  failb= 23(Q)  OK
+[    2.844767] raid6test: test_disks(10, 11): faila= 10(D)  failb= 11(D)  OK
+[    2.845785] raid6test: test_disks(10, 12): faila= 10(D)  failb= 12(D)  OK
+[    2.846802] raid6test: test_disks(10, 13): faila= 10(D)  failb= 13(D)  OK
+[    2.847813] raid6test: test_disks(10, 14): faila= 10(D)  failb= 14(D)  OK
+[    2.848830] raid6test: test_disks(10, 15): faila= 10(D)  failb= 15(D)  OK
+[    2.849839] raid6test: test_disks(10, 16): faila= 10(D)  failb= 16(D)  OK
+[    2.850858] raid6test: test_disks(10, 17): faila= 10(D)  failb= 17(D)  OK
+[    2.851869] raid6test: test_disks(10, 18): faila= 10(D)  failb= 18(D)  OK
+[    2.852881] raid6test: test_disks(10, 19): faila= 10(D)  failb= 19(D)  OK
+[    2.853907] raid6test: test_disks(10, 20): faila= 10(D)  failb= 20(D)  OK
+[    2.854916] raid6test: test_disks(10, 21): faila= 10(D)  failb= 21(D)  OK
+[    2.855932] raid6test: test_disks(10, 22): faila= 10(D)  failb= 22(P)  OK
+[    2.856959] raid6test: test_disks(10, 23): faila= 10(D)  failb= 23(Q)  OK
+[    2.857975] raid6test: test_disks(11, 12): faila= 11(D)  failb= 12(D)  OK
+[    2.858979] raid6test: test_disks(11, 13): faila= 11(D)  failb= 13(D)  OK
+[    2.859979] raid6test: test_disks(11, 14): faila= 11(D)  failb= 14(D)  OK
+[    2.861011] raid6test: test_disks(11, 15): faila= 11(D)  failb= 15(D)  OK
+[    2.862024] raid6test: test_disks(11, 16): faila= 11(D)  failb= 16(D)  OK
+[    2.863038] raid6test: test_disks(11, 17): faila= 11(D)  failb= 17(D)  OK
+[    2.864061] raid6test: test_disks(11, 18): faila= 11(D)  failb= 18(D)  OK
+[    2.865073] raid6test: test_disks(11, 19): faila= 11(D)  failb= 19(D)  OK
+[    2.866088] raid6test: test_disks(11, 20): faila= 11(D)  failb= 20(D)  OK
+[    2.867095] raid6test: test_disks(11, 21): faila= 11(D)  failb= 21(D)  OK
+[    2.868107] raid6test: test_disks(11, 22): faila= 11(D)  failb= 22(P)  OK
+[    2.869112] raid6test: test_disks(11, 23): faila= 11(D)  failb= 23(Q)  OK
+[    2.870130] raid6test: test_disks(12, 13): faila= 12(D)  failb= 13(D)  OK
+[    2.871143] raid6test: test_disks(12, 14): faila= 12(D)  failb= 14(D)  OK
+[    2.872152] raid6test: test_disks(12, 15): faila= 12(D)  failb= 15(D)  OK
+[    2.873165] raid6test: test_disks(12, 16): faila= 12(D)  failb= 16(D)  OK
+[    2.874190] raid6test: test_disks(12, 17): faila= 12(D)  failb= 17(D)  OK
+[    2.875204] raid6test: test_disks(12, 18): faila= 12(D)  failb= 18(D)  OK
+[    2.876213] raid6test: test_disks(12, 19): faila= 12(D)  failb= 19(D)  OK
+[    2.877234] raid6test: test_disks(12, 20): faila= 12(D)  failb= 20(D)  OK
+[    2.878237] raid6test: test_disks(12, 21): faila= 12(D)  failb= 21(D)  OK
+[    2.879245] raid6test: test_disks(12, 22): faila= 12(D)  failb= 22(P)  OK
+[    2.880264] raid6test: test_disks(12, 23): faila= 12(D)  failb= 23(Q)  OK
+[    2.881269] raid6test: test_disks(13, 14): faila= 13(D)  failb= 14(D)  OK
+[    2.882263] raid6test: test_disks(13, 15): faila= 13(D)  failb= 15(D)  OK
+[    2.883268] raid6test: test_disks(13, 16): faila= 13(D)  failb= 16(D)  OK
+[    2.884278] raid6test: test_disks(13, 17): faila= 13(D)  failb= 17(D)  OK
+[    2.885288] raid6test: test_disks(13, 18): faila= 13(D)  failb= 18(D)  OK
+[    2.886291] raid6test: test_disks(13, 19): faila= 13(D)  failb= 19(D)  OK
+[    2.887316] raid6test: test_disks(13, 20): faila= 13(D)  failb= 20(D)  OK
+[    2.888319] raid6test: test_disks(13, 21): faila= 13(D)  failb= 21(D)  OK
+[    2.889322] raid6test: test_disks(13, 22): faila= 13(D)  failb= 22(P)  OK
+[    2.890341] raid6test: test_disks(13, 23): faila= 13(D)  failb= 23(Q)  OK
+[    2.891347] raid6test: test_disks(14, 15): faila= 14(D)  failb= 15(D)  OK
+[    2.892351] raid6test: test_disks(14, 16): faila= 14(D)  failb= 16(D)  OK
+[    2.893356] raid6test: test_disks(14, 17): faila= 14(D)  failb= 17(D)  OK
+[    2.894360] raid6test: test_disks(14, 18): faila= 14(D)  failb= 18(D)  OK
+[    2.895365] raid6test: test_disks(14, 19): faila= 14(D)  failb= 19(D)  OK
+[    2.896371] raid6test: test_disks(14, 20): faila= 14(D)  failb= 20(D)  OK
+[    2.897384] raid6test: test_disks(14, 21): faila= 14(D)  failb= 21(D)  OK
+[    2.898395] raid6test: test_disks(14, 22): faila= 14(D)  failb= 22(P)  OK
+[    2.899393] raid6test: test_disks(14, 23): faila= 14(D)  failb= 23(Q)  OK
+[    2.900422] raid6test: test_disks(15, 16): faila= 15(D)  failb= 16(D)  OK
+[    2.903232] raid6test: test_disks(15, 17): faila= 15(D)  failb= 17(D)  OK
+[    2.904251] raid6test: test_disks(15, 18): faila= 15(D)  failb= 18(D)  OK
+[    2.905258] raid6test: test_disks(15, 19): faila= 15(D)  failb= 19(D)  OK
+[    2.906266] raid6test: test_disks(15, 20): faila= 15(D)  failb= 20(D)  OK
+[    2.907281] raid6test: test_disks(15, 21): faila= 15(D)  failb= 21(D)  OK
+[    2.908295] raid6test: test_disks(15, 22): faila= 15(D)  failb= 22(P)  OK
+[    2.909304] raid6test: test_disks(15, 23): faila= 15(D)  failb= 23(Q)  OK
+[    2.910325] raid6test: test_disks(16, 17): faila= 16(D)  failb= 17(D)  OK
+[    2.911330] raid6test: test_disks(16, 18): faila= 16(D)  failb= 18(D)  OK
+[    2.912335] raid6test: test_disks(16, 19): faila= 16(D)  failb= 19(D)  OK
+[    2.913350] raid6test: test_disks(16, 20): faila= 16(D)  failb= 20(D)  OK
+[    2.914350] raid6test: test_disks(16, 21): faila= 16(D)  failb= 21(D)  OK
+[    2.915350] raid6test: test_disks(16, 22): faila= 16(D)  failb= 22(P)  OK
+[    2.916352] raid6test: test_disks(16, 23): faila= 16(D)  failb= 23(Q)  OK
+[    2.917376] raid6test: test_disks(17, 18): faila= 17(D)  failb= 18(D)  OK
+[    2.918378] raid6test: test_disks(17, 19): faila= 17(D)  failb= 19(D)  OK
+[    2.919371] raid6test: test_disks(17, 20): faila= 17(D)  failb= 20(D)  OK
+[    2.920399] raid6test: test_disks(17, 21): faila= 17(D)  failb= 21(D)  OK
+[    2.921412] raid6test: test_disks(17, 22): faila= 17(D)  failb= 22(P)  OK
+[    2.922420] raid6test: test_disks(17, 23): faila= 17(D)  failb= 23(Q)  OK
+[    2.923438] raid6test: test_disks(18, 19): faila= 18(D)  failb= 19(D)  OK
+[    2.924450] raid6test: test_disks(18, 20): faila= 18(D)  failb= 20(D)  OK
+[    2.925456] raid6test: test_disks(18, 21): faila= 18(D)  failb= 21(D)  OK
+[    2.926455] raid6test: test_disks(18, 22): faila= 18(D)  failb= 22(P)  OK
+[    2.927481] raid6test: test_disks(18, 23): faila= 18(D)  failb= 23(Q)  OK
+[    2.928497] raid6test: test_disks(19, 20): faila= 19(D)  failb= 20(D)  OK
+[    2.929510] raid6test: test_disks(19, 21): faila= 19(D)  failb= 21(D)  OK
+[    2.930535] raid6test: test_disks(19, 22): faila= 19(D)  failb= 22(P)  OK
+[    2.931530] raid6test: test_disks(19, 23): faila= 19(D)  failb= 23(Q)  OK
+[    2.932548] raid6test: test_disks(20, 21): faila= 20(D)  failb= 21(D)  OK
+[    2.933559] raid6test: test_disks(20, 22): faila= 20(D)  failb= 22(P)  OK
+[    2.934568] raid6test: test_disks(20, 23): faila= 20(D)  failb= 23(Q)  OK
+[    2.935575] raid6test: test_disks(21, 22): faila= 21(D)  failb= 22(P)  OK
+[    2.936588] raid6test: test_disks(21, 23): faila= 21(D)  failb= 23(Q)  OK
+[    2.937613] raid6test: test_disks(22, 23): faila= 22(P)  failb= 23(Q)  OK
+[    2.939036] raid6test: testing the 64-disk case...
+[    2.939921] raid6test: test_disks(0, 1): faila=  0(D)  failb=  1(D)  OK
+[    2.941003] raid6test: test_disks(0, 2): faila=  0(D)  failb=  2(D)  OK
+[    2.942073] raid6test: test_disks(0, 3): faila=  0(D)  failb=  3(D)  OK
+[    2.943135] raid6test: test_disks(0, 4): faila=  0(D)  failb=  4(D)  OK
+[    2.944213] raid6test: test_disks(0, 5): faila=  0(D)  failb=  5(D)  OK
+[    2.945284] raid6test: test_disks(0, 6): faila=  0(D)  failb=  6(D)  OK
+[    2.946358] raid6test: test_disks(0, 7): faila=  0(D)  failb=  7(D)  OK
+[    2.947447] raid6test: test_disks(0, 8): faila=  0(D)  failb=  8(D)  OK
+[    2.948525] raid6test: test_disks(0, 9): faila=  0(D)  failb=  9(D)  OK
+[    2.949595] raid6test: test_disks(0, 10): faila=  0(D)  failb= 10(D)  OK
+[    2.950680] raid6test: test_disks(0, 11): faila=  0(D)  failb= 11(D)  OK
+[    2.951766] raid6test: test_disks(0, 12): faila=  0(D)  failb= 12(D)  OK
+[    2.952836] raid6test: test_disks(0, 13): faila=  0(D)  failb= 13(D)  OK
+[    2.953925] raid6test: test_disks(0, 14): faila=  0(D)  failb= 14(D)  OK
+[    2.955006] raid6test: test_disks(0, 15): faila=  0(D)  failb= 15(D)  OK
+[    2.956077] raid6test: test_disks(0, 16): faila=  0(D)  failb= 16(D)  OK
+[    2.957162] raid6test: test_disks(0, 17): faila=  0(D)  failb= 17(D)  OK
+[    2.958246] raid6test: test_disks(0, 18): faila=  0(D)  failb= 18(D)  OK
+[    2.959326] raid6test: test_disks(0, 19): faila=  0(D)  failb= 19(D)  OK
+[    2.960407] raid6test: test_disks(0, 20): faila=  0(D)  failb= 20(D)  OK
+[    2.961494] raid6test: test_disks(0, 21): faila=  0(D)  failb= 21(D)  OK
+[    2.962557] raid6test: test_disks(0, 22): faila=  0(D)  failb= 22(D)  OK
+[    2.963643] raid6test: test_disks(0, 23): faila=  0(D)  failb= 23(D)  OK
+[    2.964719] raid6test: test_disks(0, 24): faila=  0(D)  failb= 24(D)  OK
+[    2.965785] raid6test: test_disks(0, 25): faila=  0(D)  failb= 25(D)  OK
+[    2.966868] raid6test: test_disks(0, 26): faila=  0(D)  failb= 26(D)  OK
+[    2.967951] raid6test: test_disks(0, 27): faila=  0(D)  failb= 27(D)  OK
+[    2.969030] raid6test: test_disks(0, 28): faila=  0(D)  failb= 28(D)  OK
+[    2.970122] raid6test: test_disks(0, 29): faila=  0(D)  failb= 29(D)  OK
+[    2.971200] raid6test: test_disks(0, 30): faila=  0(D)  failb= 30(D)  OK
+[    2.972267] raid6test: test_disks(0, 31): faila=  0(D)  failb= 31(D)  OK
+[    2.973350] raid6test: test_disks(0, 32): faila=  0(D)  failb= 32(D)  OK
+[    2.974431] raid6test: test_disks(0, 33): faila=  0(D)  failb= 33(D)  OK
+[    2.975512] raid6test: test_disks(0, 34): faila=  0(D)  failb= 34(D)  OK
+[    2.976594] raid6test: test_disks(0, 35): faila=  0(D)  failb= 35(D)  OK
+[    2.977679] raid6test: test_disks(0, 36): faila=  0(D)  failb= 36(D)  OK
+[    2.978762] raid6test: test_disks(0, 37): faila=  0(D)  failb= 37(D)  OK
+[    2.979833] raid6test: test_disks(0, 38): faila=  0(D)  failb= 38(D)  OK
+[    2.980927] raid6test: test_disks(0, 39): faila=  0(D)  failb= 39(D)  OK
+[    2.982007] raid6test: test_disks(0, 40): faila=  0(D)  failb= 40(D)  OK
+[    2.983065] raid6test: test_disks(0, 41): faila=  0(D)  failb= 41(D)  OK
+[    2.984158] raid6test: test_disks(0, 42): faila=  0(D)  failb= 42(D)  OK
+[    2.985236] raid6test: test_disks(0, 43): faila=  0(D)  failb= 43(D)  OK
+[    2.986314] raid6test: test_disks(0, 44): faila=  0(D)  failb= 44(D)  OK
+[    2.987408] raid6test: test_disks(0, 45): faila=  0(D)  failb= 45(D)  OK
+[    2.988490] raid6test: test_disks(0, 46): faila=  0(D)  failb= 46(D)  OK
+[    2.989569] raid6test: test_disks(0, 47): faila=  0(D)  failb= 47(D)  OK
+[    2.990670] raid6test: test_disks(0, 48): faila=  0(D)  failb= 48(D)  OK
+[    2.991755] raid6test: test_disks(0, 49): faila=  0(D)  failb= 49(D)  OK
+[    2.992836] raid6test: test_disks(0, 50): faila=  0(D)  failb= 50(D)  OK
+[    2.993932] raid6test: test_disks(0, 51): faila=  0(D)  failb= 51(D)  OK
+[    2.995010] raid6test: test_disks(0, 52): faila=  0(D)  failb= 52(D)  OK
+[    2.996081] raid6test: test_disks(0, 53): faila=  0(D)  failb= 53(D)  OK
+[    2.997174] raid6test: test_disks(0, 54): faila=  0(D)  failb= 54(D)  OK
+[    2.998251] raid6test: test_disks(0, 55): faila=  0(D)  failb= 55(D)  OK
+[    2.999328] raid6test: test_disks(0, 56): faila=  0(D)  failb= 56(D)  OK
+[    3.000417] raid6test: test_disks(0, 57): faila=  0(D)  failb= 57(D)  OK
+[    3.001490] raid6test: test_disks(0, 58): faila=  0(D)  failb= 58(D)  OK
+[    3.002581] raid6test: test_disks(0, 59): faila=  0(D)  failb= 59(D)  OK
+[    3.003678] raid6test: test_disks(0, 60): faila=  0(D)  failb= 60(D)  OK
+[    3.004758] raid6test: test_disks(0, 61): faila=  0(D)  failb= 61(D)  OK
+[    3.005824] raid6test: test_disks(0, 62): faila=  0(D)  failb= 62(P)  OK
+[    3.006922] raid6test: test_disks(0, 63): faila=  0(D)  failb= 63(Q)  OK
+[    3.007995] raid6test: test_disks(1, 2): faila=  1(D)  failb=  2(D)  OK
+[    3.009070] raid6test: test_disks(1, 3): faila=  1(D)  failb=  3(D)  OK
+[    3.010208] raid6test: test_disks(1, 4): faila=  1(D)  failb=  4(D)  OK
+[    3.011308] raid6test: test_disks(1, 5): faila=  1(D)  failb=  5(D)  OK
+[    3.012375] raid6test: test_disks(1, 6): faila=  1(D)  failb=  6(D)  OK
+[    3.013465] raid6test: test_disks(1, 7): faila=  1(D)  failb=  7(D)  OK
+[    3.014576] raid6test: test_disks(1, 8): faila=  1(D)  failb=  8(D)  OK
+[    3.015679] raid6test: test_disks(1, 9): faila=  1(D)  failb=  9(D)  OK
+[    3.016796] raid6test: test_disks(1, 10): faila=  1(D)  failb= 10(D)  OK
+[    3.017899] raid6test: test_disks(1, 11): faila=  1(D)  failb= 11(D)  OK
+[    3.019010] raid6test: test_disks(1, 12): faila=  1(D)  failb= 12(D)  OK
+[    3.020131] raid6test: test_disks(1, 13): faila=  1(D)  failb= 13(D)  OK
+[    3.021230] raid6test: test_disks(1, 14): faila=  1(D)  failb= 14(D)  OK
+[    3.022331] raid6test: test_disks(1, 15): faila=  1(D)  failb= 15(D)  OK
+[    3.023463] raid6test: test_disks(1, 16): faila=  1(D)  failb= 16(D)  OK
+[    3.024590] raid6test: test_disks(1, 17): faila=  1(D)  failb= 17(D)  OK
+[    3.025703] raid6test: test_disks(1, 18): faila=  1(D)  failb= 18(D)  OK
+[    3.026825] raid6test: test_disks(1, 19): faila=  1(D)  failb= 19(D)  OK
+[    3.027924] raid6test: test_disks(1, 20): faila=  1(D)  failb= 20(D)  OK
+[    3.029028] raid6test: test_disks(1, 21): faila=  1(D)  failb= 21(D)  OK
+[    3.030147] raid6test: test_disks(1, 22): faila=  1(D)  failb= 22(D)  OK
+[    3.031249] raid6test: test_disks(1, 23): faila=  1(D)  failb= 23(D)  OK
+[    3.032379] raid6test: test_disks(1, 24): faila=  1(D)  failb= 24(D)  OK
+[    3.033518] raid6test: test_disks(1, 25): faila=  1(D)  failb= 25(D)  OK
+[    3.034629] raid6test: test_disks(1, 26): faila=  1(D)  failb= 26(D)  OK
+[    3.035761] raid6test: test_disks(1, 27): faila=  1(D)  failb= 27(D)  OK
+[    3.036877] raid6test: test_disks(1, 28): faila=  1(D)  failb= 28(D)  OK
+[    3.037990] raid6test: test_disks(1, 29): faila=  1(D)  failb= 29(D)  OK
+[    3.039106] raid6test: test_disks(1, 30): faila=  1(D)  failb= 30(D)  OK
+[    3.040200] raid6test: test_disks(1, 31): faila=  1(D)  failb= 31(D)  OK
+[    3.041285] raid6test: test_disks(1, 32): faila=  1(D)  failb= 32(D)  OK
+[    3.042396] raid6test: test_disks(1, 33): faila=  1(D)  failb= 33(D)  OK
+[    3.043495] raid6test: test_disks(1, 34): faila=  1(D)  failb= 34(D)  OK
+[    3.044580] raid6test: test_disks(1, 35): faila=  1(D)  failb= 35(D)  OK
+[    3.045687] raid6test: test_disks(1, 36): faila=  1(D)  failb= 36(D)  OK
+[    3.046777] raid6test: test_disks(1, 37): faila=  1(D)  failb= 37(D)  OK
+[    3.047862] raid6test: test_disks(1, 38): faila=  1(D)  failb= 38(D)  OK
+[    3.048968] raid6test: test_disks(1, 39): faila=  1(D)  failb= 39(D)  OK
+[    3.050048] raid6test: test_disks(1, 40): faila=  1(D)  failb= 40(D)  OK
+[    3.051120] raid6test: test_disks(1, 41): faila=  1(D)  failb= 41(D)  OK
+[    3.052225] raid6test: test_disks(1, 42): faila=  1(D)  failb= 42(D)  OK
+[    3.053307] raid6test: test_disks(1, 43): faila=  1(D)  failb= 43(D)  OK
+[    3.054415] raid6test: test_disks(1, 44): faila=  1(D)  failb= 44(D)  OK
+[    3.055489] raid6test: test_disks(1, 45): faila=  1(D)  failb= 45(D)  OK
+[    3.056574] raid6test: test_disks(1, 46): faila=  1(D)  failb= 46(D)  OK
+[    3.057674] raid6test: test_disks(1, 47): faila=  1(D)  failb= 47(D)  OK
+[    3.058753] raid6test: test_disks(1, 48): faila=  1(D)  failb= 48(D)  OK
+[    3.059831] raid6test: test_disks(1, 49): faila=  1(D)  failb= 49(D)  OK
+[    3.060927] raid6test: test_disks(1, 50): faila=  1(D)  failb= 50(D)  OK
+[    3.062002] raid6test: test_disks(1, 51): faila=  1(D)  failb= 51(D)  OK
+[    3.063077] raid6test: test_disks(1, 52): faila=  1(D)  failb= 52(D)  OK
+[    3.064162] raid6test: test_disks(1, 53): faila=  1(D)  failb= 53(D)  OK
+[    3.065233] raid6test: test_disks(1, 54): faila=  1(D)  failb= 54(D)  OK
+[    3.066306] raid6test: test_disks(1, 55): faila=  1(D)  failb= 55(D)  OK
+[    3.067414] raid6test: test_disks(1, 56): faila=  1(D)  failb= 56(D)  OK
+[    3.068490] raid6test: test_disks(1, 57): faila=  1(D)  failb= 57(D)  OK
+[    3.069561] raid6test: test_disks(1, 58): faila=  1(D)  failb= 58(D)  OK
+[    3.070657] raid6test: test_disks(1, 59): faila=  1(D)  failb= 59(D)  OK
+[    3.071743] raid6test: test_disks(1, 60): faila=  1(D)  failb= 60(D)  OK
+[    3.072822] raid6test: test_disks(1, 61): faila=  1(D)  failb= 61(D)  OK
+[    3.073915] raid6test: test_disks(1, 62): faila=  1(D)  failb= 62(P)  OK
+[    3.075000] raid6test: test_disks(1, 63): faila=  1(D)  failb= 63(Q)  OK
+[    3.076083] raid6test: test_disks(2, 3): faila=  2(D)  failb=  3(D)  OK
+[    3.077157] raid6test: test_disks(2, 4): faila=  2(D)  failb=  4(D)  OK
+[    3.078220] raid6test: test_disks(2, 5): faila=  2(D)  failb=  5(D)  OK
+[    3.079297] raid6test: test_disks(2, 6): faila=  2(D)  failb=  6(D)  OK
+[    3.080383] raid6test: test_disks(2, 7): faila=  2(D)  failb=  7(D)  OK
+[    3.081453] raid6test: test_disks(2, 8): faila=  2(D)  failb=  8(D)  OK
+[    3.082523] raid6test: test_disks(2, 9): faila=  2(D)  failb=  9(D)  OK
+[    3.083599] raid6test: test_disks(2, 10): faila=  2(D)  failb= 10(D)  OK
+[    3.084665] raid6test: test_disks(2, 11): faila=  2(D)  failb= 11(D)  OK
+[    3.085742] raid6test: test_disks(2, 12): faila=  2(D)  failb= 12(D)  OK
+[    3.086830] raid6test: test_disks(2, 13): faila=  2(D)  failb= 13(D)  OK
+[    3.087915] raid6test: test_disks(2, 14): faila=  2(D)  failb= 14(D)  OK
+[    3.088995] raid6test: test_disks(2, 15): faila=  2(D)  failb= 15(D)  OK
+[    3.090081] raid6test: test_disks(2, 16): faila=  2(D)  failb= 16(D)  OK
+[    3.091158] raid6test: test_disks(2, 17): faila=  2(D)  failb= 17(D)  OK
+[    3.092242] raid6test: test_disks(2, 18): faila=  2(D)  failb= 18(D)  OK
+[    3.093327] raid6test: test_disks(2, 19): faila=  2(D)  failb= 19(D)  OK
+[    3.094421] raid6test: test_disks(2, 20): faila=  2(D)  failb= 20(D)  OK
+[    3.095493] raid6test: test_disks(2, 21): faila=  2(D)  failb= 21(D)  OK
+[    3.098388] raid6test: test_disks(2, 22): faila=  2(D)  failb= 22(D)  OK
+[    3.099478] raid6test: test_disks(2, 23): faila=  2(D)  failb= 23(D)  OK
+[    3.100568] raid6test: test_disks(2, 24): faila=  2(D)  failb= 24(D)  OK
+[    3.101636] raid6test: test_disks(2, 25): faila=  2(D)  failb= 25(D)  OK
+[    3.102708] raid6test: test_disks(2, 26): faila=  2(D)  failb= 26(D)  OK
+[    3.103801] raid6test: test_disks(2, 27): faila=  2(D)  failb= 27(D)  OK
+[    3.104880] raid6test: test_disks(2, 28): faila=  2(D)  failb= 28(D)  OK
+[    3.105959] raid6test: test_disks(2, 29): faila=  2(D)  failb= 29(D)  OK
+[    3.107048] raid6test: test_disks(2, 30): faila=  2(D)  failb= 30(D)  OK
+[    3.108130] raid6test: test_disks(2, 31): faila=  2(D)  failb= 31(D)  OK
+[    3.109215] raid6test: test_disks(2, 32): faila=  2(D)  failb= 32(D)  OK
+[    3.110312] raid6test: test_disks(2, 33): faila=  2(D)  failb= 33(D)  OK
+[    3.111397] raid6test: test_disks(2, 34): faila=  2(D)  failb= 34(D)  OK
+[    3.112484] raid6test: test_disks(2, 35): faila=  2(D)  failb= 35(D)  OK
+[    3.113553] raid6test: test_disks(2, 36): faila=  2(D)  failb= 36(D)  OK
+[    3.114628] raid6test: test_disks(2, 37): faila=  2(D)  failb= 37(D)  OK
+[    3.115694] raid6test: test_disks(2, 38): faila=  2(D)  failb= 38(D)  OK
+[    3.116775] raid6test: test_disks(2, 39): faila=  2(D)  failb= 39(D)  OK
+[    3.117856] raid6test: test_disks(2, 40): faila=  2(D)  failb= 40(D)  OK
+[    3.118926] raid6test: test_disks(2, 41): faila=  2(D)  failb= 41(D)  OK
+[    3.120012] raid6test: test_disks(2, 42): faila=  2(D)  failb= 42(D)  OK
+[    3.121096] raid6test: test_disks(2, 43): faila=  2(D)  failb= 43(D)  OK
+[    3.122176] raid6test: test_disks(2, 44): faila=  2(D)  failb= 44(D)  OK
+[    3.123262] raid6test: test_disks(2, 45): faila=  2(D)  failb= 45(D)  OK
+[    3.124355] raid6test: test_disks(2, 46): faila=  2(D)  failb= 46(D)  OK
+[    3.125443] raid6test: test_disks(2, 47): faila=  2(D)  failb= 47(D)  OK
+[    3.126520] raid6test: test_disks(2, 48): faila=  2(D)  failb= 48(D)  OK
+[    3.127617] raid6test: test_disks(2, 49): faila=  2(D)  failb= 49(D)  OK
+[    3.128696] raid6test: test_disks(2, 50): faila=  2(D)  failb= 50(D)  OK
+[    3.129771] raid6test: test_disks(2, 51): faila=  2(D)  failb= 51(D)  OK
+[    3.130868] raid6test: test_disks(2, 52): faila=  2(D)  failb= 52(D)  OK
+[    3.131947] raid6test: test_disks(2, 53): faila=  2(D)  failb= 53(D)  OK
+[    3.133023] raid6test: test_disks(2, 54): faila=  2(D)  failb= 54(D)  OK
+[    3.134109] raid6test: test_disks(2, 55): faila=  2(D)  failb= 55(D)  OK
+[    3.135193] raid6test: test_disks(2, 56): faila=  2(D)  failb= 56(D)  OK
+[    3.136264] raid6test: test_disks(2, 57): faila=  2(D)  failb= 57(D)  OK
+[    3.137356] raid6test: test_disks(2, 58): faila=  2(D)  failb= 58(D)  OK
+[    3.138443] raid6test: test_disks(2, 59): faila=  2(D)  failb= 59(D)  OK
+[    3.139516] raid6test: test_disks(2, 60): faila=  2(D)  failb= 60(D)  OK
+[    3.140607] raid6test: test_disks(2, 61): faila=  2(D)  failb= 61(D)  OK
+[    3.141691] raid6test: test_disks(2, 62): faila=  2(D)  failb= 62(P)  OK
+[    3.142773] raid6test: test_disks(2, 63): faila=  2(D)  failb= 63(Q)  OK
+[    3.143865] raid6test: test_disks(3, 4): faila=  3(D)  failb=  4(D)  OK
+[    3.144936] raid6test: test_disks(3, 5): faila=  3(D)  failb=  5(D)  OK
+[    3.146015] raid6test: test_disks(3, 6): faila=  3(D)  failb=  6(D)  OK
+[    3.147103] raid6test: test_disks(3, 7): faila=  3(D)  failb=  7(D)  OK
+[    3.148179] raid6test: test_disks(3, 8): faila=  3(D)  failb=  8(D)  OK
+[    3.149266] raid6test: test_disks(3, 9): faila=  3(D)  failb=  9(D)  OK
+[    3.150360] raid6test: test_disks(3, 10): faila=  3(D)  failb= 10(D)  OK
+[    3.151443] raid6test: test_disks(3, 11): faila=  3(D)  failb= 11(D)  OK
+[    3.152524] raid6test: test_disks(3, 12): faila=  3(D)  failb= 12(D)  OK
+[    3.153617] raid6test: test_disks(3, 13): faila=  3(D)  failb= 13(D)  OK
+[    3.154696] raid6test: test_disks(3, 14): faila=  3(D)  failb= 14(D)  OK
+[    3.155777] raid6test: test_disks(3, 15): faila=  3(D)  failb= 15(D)  OK
+[    3.156870] raid6test: test_disks(3, 16): faila=  3(D)  failb= 16(D)  OK
+[    3.157956] raid6test: test_disks(3, 17): faila=  3(D)  failb= 17(D)  OK
+[    3.159042] raid6test: test_disks(3, 18): faila=  3(D)  failb= 18(D)  OK
+[    3.160138] raid6test: test_disks(3, 19): faila=  3(D)  failb= 19(D)  OK
+[    3.161213] raid6test: test_disks(3, 20): faila=  3(D)  failb= 20(D)  OK
+[    3.162287] raid6test: test_disks(3, 21): faila=  3(D)  failb= 21(D)  OK
+[    3.163370] raid6test: test_disks(3, 22): faila=  3(D)  failb= 22(D)  OK
+[    3.164445] raid6test: test_disks(3, 23): faila=  3(D)  failb= 23(D)  OK
+[    3.165525] raid6test: test_disks(3, 24): faila=  3(D)  failb= 24(D)  OK
+[    3.166606] raid6test: test_disks(3, 25): faila=  3(D)  failb= 25(D)  OK
+[    3.167702] raid6test: test_disks(3, 26): faila=  3(D)  failb= 26(D)  OK
+[    3.168783] raid6test: test_disks(3, 27): faila=  3(D)  failb= 27(D)  OK
+[    3.169871] raid6test: test_disks(3, 28): faila=  3(D)  failb= 28(D)  OK
+[    3.170973] raid6test: test_disks(3, 29): faila=  3(D)  failb= 29(D)  OK
+[    3.172058] raid6test: test_disks(3, 30): faila=  3(D)  failb= 30(D)  OK
+[    3.173144] raid6test: test_disks(3, 31): faila=  3(D)  failb= 31(D)  OK
+[    3.174247] raid6test: test_disks(3, 32): faila=  3(D)  failb= 32(D)  OK
+[    3.175336] raid6test: test_disks(3, 33): faila=  3(D)  failb= 33(D)  OK
+[    3.176425] raid6test: test_disks(3, 34): faila=  3(D)  failb= 34(D)  OK
+[    3.177521] raid6test: test_disks(3, 35): faila=  3(D)  failb= 35(D)  OK
+[    3.178602] raid6test: test_disks(3, 36): faila=  3(D)  failb= 36(D)  OK
+[    3.179681] raid6test: test_disks(3, 37): faila=  3(D)  failb= 37(D)  OK
+[    3.180774] raid6test: test_disks(3, 38): faila=  3(D)  failb= 38(D)  OK
+[    3.181857] raid6test: test_disks(3, 39): faila=  3(D)  failb= 39(D)  OK
+[    3.182945] raid6test: test_disks(3, 40): faila=  3(D)  failb= 40(D)  OK
+[    3.184039] raid6test: test_disks(3, 41): faila=  3(D)  failb= 41(D)  OK
+[    3.185112] raid6test: test_disks(3, 42): faila=  3(D)  failb= 42(D)  OK
+[    3.186192] raid6test: test_disks(3, 43): faila=  3(D)  failb= 43(D)  OK
+[    3.187294] raid6test: test_disks(3, 44): faila=  3(D)  failb= 44(D)  OK
+[    3.188380] raid6test: test_disks(3, 45): faila=  3(D)  failb= 45(D)  OK
+[    3.189473] raid6test: test_disks(3, 46): faila=  3(D)  failb= 46(D)  OK
+[    3.190572] raid6test: test_disks(3, 47): faila=  3(D)  failb= 47(D)  OK
+[    3.191657] raid6test: test_disks(3, 48): faila=  3(D)  failb= 48(D)  OK
+[    3.192747] raid6test: test_disks(3, 49): faila=  3(D)  failb= 49(D)  OK
+[    3.193853] raid6test: test_disks(3, 50): faila=  3(D)  failb= 50(D)  OK
+[    3.194933] raid6test: test_disks(3, 51): faila=  3(D)  failb= 51(D)  OK
+[    3.196007] raid6test: test_disks(3, 52): faila=  3(D)  failb= 52(D)  OK
+[    3.197089] raid6test: test_disks(3, 53): faila=  3(D)  failb= 53(D)  OK
+[    3.198173] raid6test: test_disks(3, 54): faila=  3(D)  failb= 54(D)  OK
+[    3.199254] raid6test: test_disks(3, 55): faila=  3(D)  failb= 55(D)  OK
+[    3.200332] raid6test: test_disks(3, 56): faila=  3(D)  failb= 56(D)  OK
+[    3.201406] raid6test: test_disks(3, 57): faila=  3(D)  failb= 57(D)  OK
+[    3.202493] raid6test: test_disks(3, 58): faila=  3(D)  failb= 58(D)  OK
+[    3.203588] raid6test: test_disks(3, 59): faila=  3(D)  failb= 59(D)  OK
+[    3.204665] raid6test: test_disks(3, 60): faila=  3(D)  failb= 60(D)  OK
+[    3.205750] raid6test: test_disks(3, 61): faila=  3(D)  failb= 61(D)  OK
+[    3.206837] raid6test: test_disks(3, 62): faila=  3(D)  failb= 62(P)  OK
+[    3.207929] raid6test: test_disks(3, 63): faila=  3(D)  failb= 63(Q)  OK
+[    3.209012] raid6test: test_disks(4, 5): faila=  4(D)  failb=  5(D)  OK
+[    3.210092] raid6test: test_disks(4, 6): faila=  4(D)  failb=  6(D)  OK
+[    3.211166] raid6test: test_disks(4, 7): faila=  4(D)  failb=  7(D)  OK
+[    3.212237] raid6test: test_disks(4, 8): faila=  4(D)  failb=  8(D)  OK
+[    3.213314] raid6test: test_disks(4, 9): faila=  4(D)  failb=  9(D)  OK
+[    3.214396] raid6test: test_disks(4, 10): faila=  4(D)  failb= 10(D)  OK
+[    3.215476] raid6test: test_disks(4, 11): faila=  4(D)  failb= 11(D)  OK
+[    3.216547] raid6test: test_disks(4, 12): faila=  4(D)  failb= 12(D)  OK
+[    3.217639] raid6test: test_disks(4, 13): faila=  4(D)  failb= 13(D)  OK
+[    3.218713] raid6test: test_disks(4, 14): faila=  4(D)  failb= 14(D)  OK
+[    3.219797] raid6test: test_disks(4, 15): faila=  4(D)  failb= 15(D)  OK
+[    3.220895] raid6test: test_disks(4, 16): faila=  4(D)  failb= 16(D)  OK
+[    3.221973] raid6test: test_disks(4, 17): faila=  4(D)  failb= 17(D)  OK
+[    3.223058] raid6test: test_disks(4, 18): faila=  4(D)  failb= 18(D)  OK
+[    3.224151] raid6test: test_disks(4, 19): faila=  4(D)  failb= 19(D)  OK
+[    3.225256] raid6test: test_disks(4, 20): faila=  4(D)  failb= 20(D)  OK
+[    3.226334] raid6test: test_disks(4, 21): faila=  4(D)  failb= 21(D)  OK
+[    3.227432] raid6test: test_disks(4, 22): faila=  4(D)  failb= 22(D)  OK
+[    3.228494] raid6test: test_disks(4, 23): faila=  4(D)  failb= 23(D)  OK
+[    3.229573] raid6test: test_disks(4, 24): faila=  4(D)  failb= 24(D)  OK
+[    3.230673] raid6test: test_disks(4, 25): faila=  4(D)  failb= 25(D)  OK
+[    3.231752] raid6test: test_disks(4, 26): faila=  4(D)  failb= 26(D)  OK
+[    3.232828] raid6test: test_disks(4, 27): faila=  4(D)  failb= 27(D)  OK
+[    3.233924] raid6test: test_disks(4, 28): faila=  4(D)  failb= 28(D)  OK
+[    3.235002] raid6test: test_disks(4, 29): faila=  4(D)  failb= 29(D)  OK
+[    3.236075] raid6test: test_disks(4, 30): faila=  4(D)  failb= 30(D)  OK
+[    3.237173] raid6test: test_disks(4, 31): faila=  4(D)  failb= 31(D)  OK
+[    3.238254] raid6test: test_disks(4, 32): faila=  4(D)  failb= 32(D)  OK
+[    3.239341] raid6test: test_disks(4, 33): faila=  4(D)  failb= 33(D)  OK
+[    3.240439] raid6test: test_disks(4, 34): faila=  4(D)  failb= 34(D)  OK
+[    3.241519] raid6test: test_disks(4, 35): faila=  4(D)  failb= 35(D)  OK
+[    3.242597] raid6test: test_disks(4, 36): faila=  4(D)  failb= 36(D)  OK
+[    3.243684] raid6test: test_disks(4, 37): faila=  4(D)  failb= 37(D)  OK
+[    3.244762] raid6test: test_disks(4, 38): faila=  4(D)  failb= 38(D)  OK
+[    3.245836] raid6test: test_disks(4, 39): faila=  4(D)  failb= 39(D)  OK
+[    3.246929] raid6test: test_disks(4, 40): faila=  4(D)  failb= 40(D)  OK
+[    3.248000] raid6test: test_disks(4, 41): faila=  4(D)  failb= 41(D)  OK
+[    3.249074] raid6test: test_disks(4, 42): faila=  4(D)  failb= 42(D)  OK
+[    3.250158] raid6test: test_disks(4, 43): faila=  4(D)  failb= 43(D)  OK
+[    3.251239] raid6test: test_disks(4, 44): faila=  4(D)  failb= 44(D)  OK
+[    3.252327] raid6test: test_disks(4, 45): faila=  4(D)  failb= 45(D)  OK
+[    3.253427] raid6test: test_disks(4, 46): faila=  4(D)  failb= 46(D)  OK
+[    3.254524] raid6test: test_disks(4, 47): faila=  4(D)  failb= 47(D)  OK
+[    3.255607] raid6test: test_disks(4, 48): faila=  4(D)  failb= 48(D)  OK
+[    3.256698] raid6test: test_disks(4, 49): faila=  4(D)  failb= 49(D)  OK
+[    3.257783] raid6test: test_disks(4, 50): faila=  4(D)  failb= 50(D)  OK
+[    3.258868] raid6test: test_disks(4, 51): faila=  4(D)  failb= 51(D)  OK
+[    3.259937] raid6test: test_disks(4, 52): faila=  4(D)  failb= 52(D)  OK
+[    3.261035] raid6test: test_disks(4, 53): faila=  4(D)  failb= 53(D)  OK
+[    3.262143] raid6test: test_disks(4, 54): faila=  4(D)  failb= 54(D)  OK
+[    3.263220] raid6test: test_disks(4, 55): faila=  4(D)  failb= 55(D)  OK
+[    3.264361] raid6test: test_disks(4, 56): faila=  4(D)  failb= 56(D)  OK
+[    3.265529] raid6test: test_disks(4, 57): faila=  4(D)  failb= 57(D)  OK
+[    3.266645] raid6test: test_disks(4, 58): faila=  4(D)  failb= 58(D)  OK
+[    3.267774] raid6test: test_disks(4, 59): faila=  4(D)  failb= 59(D)  OK
+[    3.268936] raid6test: test_disks(4, 60): faila=  4(D)  failb= 60(D)  OK
+[    3.270058] raid6test: test_disks(4, 61): faila=  4(D)  failb= 61(D)  OK
+[    3.271174] raid6test: test_disks(4, 62): faila=  4(D)  failb= 62(P)  OK
+[    3.272325] raid6test: test_disks(4, 63): faila=  4(D)  failb= 63(Q)  OK
+[    3.273482] raid6test: test_disks(5, 6): faila=  5(D)  failb=  6(D)  OK
+[    3.274582] raid6test: test_disks(5, 7): faila=  5(D)  failb=  7(D)  OK
+[    3.275710] raid6test: test_disks(5, 8): faila=  5(D)  failb=  8(D)  OK
+[    3.276825] raid6test: test_disks(5, 9): faila=  5(D)  failb=  9(D)  OK
+[    3.277931] raid6test: test_disks(5, 10): faila=  5(D)  failb= 10(D)  OK
+[    3.279026] raid6test: test_disks(5, 11): faila=  5(D)  failb= 11(D)  OK
+[    3.280150] raid6test: test_disks(5, 12): faila=  5(D)  failb= 12(D)  OK
+[    3.281265] raid6test: test_disks(5, 13): faila=  5(D)  failb= 13(D)  OK
+[    3.282363] raid6test: test_disks(5, 14): faila=  5(D)  failb= 14(D)  OK
+[    3.283491] raid6test: test_disks(5, 15): faila=  5(D)  failb= 15(D)  OK
+[    3.284605] raid6test: test_disks(5, 16): faila=  5(D)  failb= 16(D)  OK
+[    3.285720] raid6test: test_disks(5, 17): faila=  5(D)  failb= 17(D)  OK
+[    3.286851] raid6test: test_disks(5, 18): faila=  5(D)  failb= 18(D)  OK
+[    3.287971] raid6test: test_disks(5, 19): faila=  5(D)  failb= 19(D)  OK
+[    3.289078] raid6test: test_disks(5, 20): faila=  5(D)  failb= 20(D)  OK
+[    3.290202] raid6test: test_disks(5, 21): faila=  5(D)  failb= 21(D)  OK
+[    3.291322] raid6test: test_disks(5, 22): faila=  5(D)  failb= 22(D)  OK
+[    3.292439] raid6test: test_disks(5, 23): faila=  5(D)  failb= 23(D)  OK
+[    3.293563] raid6test: test_disks(5, 24): faila=  5(D)  failb= 24(D)  OK
+[    3.296557] raid6test: test_disks(5, 25): faila=  5(D)  failb= 25(D)  OK
+[    3.297583] tsc: Refined TSC clocksource calibration: 2693.407 MHz
+[    3.298637] raid6test: test_disks(5, 26): faila=  5(D)  failb= 26(D)  OK
+[    3.299756] raid6test: test_disks(5, 27): faila=  5(D)  failb= 27(D)  OK
+[    3.300900] raid6test: test_disks(5, 28): faila=  5(D)  failb= 28(D)  OK
+[    3.302021] raid6test: test_disks(5, 29): faila=  5(D)  failb= 29(D)  OK
+[    3.303134] raid6test: test_disks(5, 30): faila=  5(D)  failb= 30(D)  OK
+[    3.304275] raid6test: test_disks(5, 31): faila=  5(D)  failb= 31(D)  OK
+[    3.305388] raid6test: test_disks(5, 32): faila=  5(D)  failb= 32(D)  OK
+[    3.306502] raid6test: test_disks(5, 33): faila=  5(D)  failb= 33(D)  OK
+[    3.307639] raid6test: test_disks(5, 34): faila=  5(D)  failb= 34(D)  OK
+[    3.308756] raid6test: test_disks(5, 35): faila=  5(D)  failb= 35(D)  OK
+[    3.309860] raid6test: test_disks(5, 36): faila=  5(D)  failb= 36(D)  OK
+[    3.310955] raid6test: test_disks(5, 37): faila=  5(D)  failb= 37(D)  OK
+[    3.312034] raid6test: test_disks(5, 38): faila=  5(D)  failb= 38(D)  OK
+[    3.313106] raid6test: test_disks(5, 39): faila=  5(D)  failb= 39(D)  OK
+[    3.314198] raid6test: test_disks(5, 40): faila=  5(D)  failb= 40(D)  OK
+[    3.315263] raid6test: test_disks(5, 41): faila=  5(D)  failb= 41(D)  OK
+[    3.316344] raid6test: test_disks(5, 42): faila=  5(D)  failb= 42(D)  OK
+[    3.317442] raid6test: test_disks(5, 43): faila=  5(D)  failb= 43(D)  OK
+[    3.318528] raid6test: test_disks(5, 44): faila=  5(D)  failb= 44(D)  OK
+[    3.319601] raid6test: test_disks(5, 45): faila=  5(D)  failb= 45(D)  OK
+[    3.320687] raid6test: test_disks(5, 46): faila=  5(D)  failb= 46(D)  OK
+[    3.321768] raid6test: test_disks(5, 47): faila=  5(D)  failb= 47(D)  OK
+[    3.322849] raid6test: test_disks(5, 48): faila=  5(D)  failb= 48(D)  OK
+[    3.323949] raid6test: test_disks(5, 49): faila=  5(D)  failb= 49(D)  OK
+[    3.325030] raid6test: test_disks(5, 50): faila=  5(D)  failb= 50(D)  OK
+[    3.326112] raid6test: test_disks(5, 51): faila=  5(D)  failb= 51(D)  OK
+[    3.327195] raid6test: test_disks(5, 52): faila=  5(D)  failb= 52(D)  OK
+[    3.328265] raid6test: test_disks(5, 53): faila=  5(D)  failb= 53(D)  OK
+[    3.329344] raid6test: test_disks(5, 54): faila=  5(D)  failb= 54(D)  OK
+[    3.330436] raid6test: test_disks(5, 55): faila=  5(D)  failb= 55(D)  OK
+[    3.331505] raid6test: test_disks(5, 56): faila=  5(D)  failb= 56(D)  OK
+[    3.332588] raid6test: test_disks(5, 57): faila=  5(D)  failb= 57(D)  OK
+[    3.333673] raid6test: test_disks(5, 58): faila=  5(D)  failb= 58(D)  OK
+[    3.334755] raid6test: test_disks(5, 59): faila=  5(D)  failb= 59(D)  OK
+[    3.335833] raid6test: test_disks(5, 60): faila=  5(D)  failb= 60(D)  OK
+[    3.336927] raid6test: test_disks(5, 61): faila=  5(D)  failb= 61(D)  OK
+[    3.337998] raid6test: test_disks(5, 62): faila=  5(D)  failb= 62(P)  OK
+[    3.339085] raid6test: test_disks(5, 63): faila=  5(D)  failb= 63(Q)  OK
+[    3.340181] raid6test: test_disks(6, 7): faila=  6(D)  failb=  7(D)  OK
+[    3.341263] raid6test: test_disks(6, 8): faila=  6(D)  failb=  8(D)  OK
+[    3.342336] raid6test: test_disks(6, 9): faila=  6(D)  failb=  9(D)  OK
+[    3.343425] raid6test: test_disks(6, 10): faila=  6(D)  failb= 10(D)  OK
+[    3.344493] raid6test: test_disks(6, 11): faila=  6(D)  failb= 11(D)  OK
+[    3.345573] raid6test: test_disks(6, 12): faila=  6(D)  failb= 12(D)  OK
+[    3.346652] raid6test: test_disks(6, 13): faila=  6(D)  failb= 13(D)  OK
+[    3.347750] raid6test: test_disks(6, 14): faila=  6(D)  failb= 14(D)  OK
+[    3.348839] raid6test: test_disks(6, 15): faila=  6(D)  failb= 15(D)  OK
+[    3.349921] raid6test: test_disks(6, 16): faila=  6(D)  failb= 16(D)  OK
+[    3.351040] raid6test: test_disks(6, 17): faila=  6(D)  failb= 17(D)  OK
+[    3.352124] raid6test: test_disks(6, 18): faila=  6(D)  failb= 18(D)  OK
+[    3.353212] raid6test: test_disks(6, 19): faila=  6(D)  failb= 19(D)  OK
+[    3.354307] raid6test: test_disks(6, 20): faila=  6(D)  failb= 20(D)  OK
+[    3.355393] raid6test: test_disks(6, 21): faila=  6(D)  failb= 21(D)  OK
+[    3.356465] raid6test: test_disks(6, 22): faila=  6(D)  failb= 22(D)  OK
+[    3.357547] raid6test: test_disks(6, 23): faila=  6(D)  failb= 23(D)  OK
+[    3.358625] raid6test: test_disks(6, 24): faila=  6(D)  failb= 24(D)  OK
+[    3.359716] raid6test: test_disks(6, 25): faila=  6(D)  failb= 25(D)  OK
+[    3.360816] raid6test: test_disks(6, 26): faila=  6(D)  failb= 26(D)  OK
+[    3.361895] raid6test: test_disks(6, 27): faila=  6(D)  failb= 27(D)  OK
+[    3.362981] raid6test: test_disks(6, 28): faila=  6(D)  failb= 28(D)  OK
+[    3.364080] raid6test: test_disks(6, 29): faila=  6(D)  failb= 29(D)  OK
+[    3.365160] raid6test: test_disks(6, 30): faila=  6(D)  failb= 30(D)  OK
+[    3.366244] raid6test: test_disks(6, 31): faila=  6(D)  failb= 31(D)  OK
+[    3.367345] raid6test: test_disks(6, 32): faila=  6(D)  failb= 32(D)  OK
+[    3.368444] raid6test: test_disks(6, 33): faila=  6(D)  failb= 33(D)  OK
+[    3.369518] raid6test: test_disks(6, 34): faila=  6(D)  failb= 34(D)  OK
+[    3.370617] raid6test: test_disks(6, 35): faila=  6(D)  failb= 35(D)  OK
+[    3.371717] raid6test: test_disks(6, 36): faila=  6(D)  failb= 36(D)  OK
+[    3.372790] raid6test: test_disks(6, 37): faila=  6(D)  failb= 37(D)  OK
+[    3.373886] raid6test: test_disks(6, 38): faila=  6(D)  failb= 38(D)  OK
+[    3.374970] raid6test: test_disks(6, 39): faila=  6(D)  failb= 39(D)  OK
+[    3.376051] raid6test: test_disks(6, 40): faila=  6(D)  failb= 40(D)  OK
+[    3.377145] raid6test: test_disks(6, 41): faila=  6(D)  failb= 41(D)  OK
+[    3.378222] raid6test: test_disks(6, 42): faila=  6(D)  failb= 42(D)  OK
+[    3.379292] raid6test: test_disks(6, 43): faila=  6(D)  failb= 43(D)  OK
+[    3.380402] raid6test: test_disks(6, 44): faila=  6(D)  failb= 44(D)  OK
+[    3.381496] raid6test: test_disks(6, 45): faila=  6(D)  failb= 45(D)  OK
+[    3.382580] raid6test: test_disks(6, 46): faila=  6(D)  failb= 46(D)  OK
+[    3.383676] raid6test: test_disks(6, 47): faila=  6(D)  failb= 47(D)  OK
+[    3.384764] raid6test: test_disks(6, 48): faila=  6(D)  failb= 48(D)  OK
+[    3.385850] raid6test: test_disks(6, 49): faila=  6(D)  failb= 49(D)  OK
+[    3.386950] raid6test: test_disks(6, 50): faila=  6(D)  failb= 50(D)  OK
+[    3.388031] raid6test: test_disks(6, 51): faila=  6(D)  failb= 51(D)  OK
+[    3.389108] raid6test: test_disks(6, 52): faila=  6(D)  failb= 52(D)  OK
+[    3.390186] raid6test: test_disks(6, 53): faila=  6(D)  failb= 53(D)  OK
+[    3.391268] raid6test: test_disks(6, 54): faila=  6(D)  failb= 54(D)  OK
+[    3.392345] raid6test: test_disks(6, 55): faila=  6(D)  failb= 55(D)  OK
+[    3.393443] raid6test: test_disks(6, 56): faila=  6(D)  failb= 56(D)  OK
+[    3.394525] raid6test: test_disks(6, 57): faila=  6(D)  failb= 57(D)  OK
+[    3.395606] raid6test: test_disks(6, 58): faila=  6(D)  failb= 58(D)  OK
+[    3.396703] raid6test: test_disks(6, 59): faila=  6(D)  failb= 59(D)  OK
+[    3.397787] raid6test: test_disks(6, 60): faila=  6(D)  failb= 60(D)  OK
+[    3.398897] raid6test: test_disks(6, 61): faila=  6(D)  failb= 61(D)  OK
+[    3.399983] raid6test: test_disks(6, 62): faila=  6(D)  failb= 62(P)  OK
+[    3.401101] raid6test: test_disks(6, 63): faila=  6(D)  failb= 63(Q)  OK
+[    3.402192] raid6test: test_disks(7, 8): faila=  7(D)  failb=  8(D)  OK
+[    3.403275] raid6test: test_disks(7, 9): faila=  7(D)  failb=  9(D)  OK
+[    3.404371] raid6test: test_disks(7, 10): faila=  7(D)  failb= 10(D)  OK
+[    3.405460] raid6test: test_disks(7, 11): faila=  7(D)  failb= 11(D)  OK
+[    3.406536] raid6test: test_disks(7, 12): faila=  7(D)  failb= 12(D)  OK
+[    3.407629] raid6test: test_disks(7, 13): faila=  7(D)  failb= 13(D)  OK
+[    3.408710] raid6test: test_disks(7, 14): faila=  7(D)  failb= 14(D)  OK
+[    3.409804] raid6test: test_disks(7, 15): faila=  7(D)  failb= 15(D)  OK
+[    3.410909] raid6test: test_disks(7, 16): faila=  7(D)  failb= 16(D)  OK
+[    3.411990] raid6test: test_disks(7, 17): faila=  7(D)  failb= 17(D)  OK
+[    3.413071] raid6test: test_disks(7, 18): faila=  7(D)  failb= 18(D)  OK
+[    3.414175] raid6test: test_disks(7, 19): faila=  7(D)  failb= 19(D)  OK
+[    3.415257] raid6test: test_disks(7, 20): faila=  7(D)  failb= 20(D)  OK
+[    3.416339] raid6test: test_disks(7, 21): faila=  7(D)  failb= 21(D)  OK
+[    3.417447] raid6test: test_disks(7, 22): faila=  7(D)  failb= 22(D)  OK
+[    3.418526] raid6test: test_disks(7, 23): faila=  7(D)  failb= 23(D)  OK
+[    3.419608] raid6test: test_disks(7, 24): faila=  7(D)  failb= 24(D)  OK
+[    3.420703] raid6test: test_disks(7, 25): faila=  7(D)  failb= 25(D)  OK
+[    3.421780] raid6test: test_disks(7, 26): faila=  7(D)  failb= 26(D)  OK
+[    3.422856] raid6test: test_disks(7, 27): faila=  7(D)  failb= 27(D)  OK
+[    3.423962] raid6test: test_disks(7, 28): faila=  7(D)  failb= 28(D)  OK
+[    3.425049] raid6test: test_disks(7, 29): faila=  7(D)  failb= 29(D)  OK
+[    3.426135] raid6test: test_disks(7, 30): faila=  7(D)  failb= 30(D)  OK
+[    3.427238] raid6test: test_disks(7, 31): faila=  7(D)  failb= 31(D)  OK
+[    3.428329] raid6test: test_disks(7, 32): faila=  7(D)  failb= 32(D)  OK
+[    3.429423] raid6test: test_disks(7, 33): faila=  7(D)  failb= 33(D)  OK
+[    3.430516] raid6test: test_disks(7, 34): faila=  7(D)  failb= 34(D)  OK
+[    3.431602] raid6test: test_disks(7, 35): faila=  7(D)  failb= 35(D)  OK
+[    3.432677] raid6test: test_disks(7, 36): faila=  7(D)  failb= 36(D)  OK
+[    3.433757] raid6test: test_disks(7, 37): faila=  7(D)  failb= 37(D)  OK
+[    3.434834] raid6test: test_disks(7, 38): faila=  7(D)  failb= 38(D)  OK
+[    3.435915] raid6test: test_disks(7, 39): faila=  7(D)  failb= 39(D)  OK
+[    3.437012] raid6test: test_disks(7, 40): faila=  7(D)  failb= 40(D)  OK
+[    3.438092] raid6test: test_disks(7, 41): faila=  7(D)  failb= 41(D)  OK
+[    3.439175] raid6test: test_disks(7, 42): faila=  7(D)  failb= 42(D)  OK
+[    3.440275] raid6test: test_disks(7, 43): faila=  7(D)  failb= 43(D)  OK
+[    3.441357] raid6test: test_disks(7, 44): faila=  7(D)  failb= 44(D)  OK
+[    3.442452] raid6test: test_disks(7, 45): faila=  7(D)  failb= 45(D)  OK
+[    3.443557] raid6test: test_disks(7, 46): faila=  7(D)  failb= 46(D)  OK
+[    3.444647] raid6test: test_disks(7, 47): faila=  7(D)  failb= 47(D)  OK
+[    3.445734] raid6test: test_disks(7, 48): faila=  7(D)  failb= 48(D)  OK
+[    3.446826] raid6test: test_disks(7, 49): faila=  7(D)  failb= 49(D)  OK
+[    3.447915] raid6test: test_disks(7, 50): faila=  7(D)  failb= 50(D)  OK
+[    3.448998] raid6test: test_disks(7, 51): faila=  7(D)  failb= 51(D)  OK
+[    3.450087] raid6test: test_disks(7, 52): faila=  7(D)  failb= 52(D)  OK
+[    3.451165] raid6test: test_disks(7, 53): faila=  7(D)  failb= 53(D)  OK
+[    3.452244] raid6test: test_disks(7, 54): faila=  7(D)  failb= 54(D)  OK
+[    3.453345] raid6test: test_disks(7, 55): faila=  7(D)  failb= 55(D)  OK
+[    3.454434] raid6test: test_disks(7, 56): faila=  7(D)  failb= 56(D)  OK
+[    3.455503] raid6test: test_disks(7, 57): faila=  7(D)  failb= 57(D)  OK
+[    3.456590] raid6test: test_disks(7, 58): faila=  7(D)  failb= 58(D)  OK
+[    3.457705] raid6test: test_disks(7, 59): faila=  7(D)  failb= 59(D)  OK
+[    3.458794] raid6test: test_disks(7, 60): faila=  7(D)  failb= 60(D)  OK
+[    3.459881] raid6test: test_disks(7, 61): faila=  7(D)  failb= 61(D)  OK
+[    3.460987] raid6test: test_disks(7, 62): faila=  7(D)  failb= 62(P)  OK
+[    3.462070] raid6test: test_disks(7, 63): faila=  7(D)  failb= 63(Q)  OK
+[    3.463151] raid6test: test_disks(8, 9): faila=  8(D)  failb=  9(D)  OK
+[    3.464253] raid6test: test_disks(8, 10): faila=  8(D)  failb= 10(D)  OK
+[    3.465325] raid6test: test_disks(8, 11): faila=  8(D)  failb= 11(D)  OK
+[    3.466413] raid6test: test_disks(8, 12): faila=  8(D)  failb= 12(D)  OK
+[    3.467511] raid6test: test_disks(8, 13): faila=  8(D)  failb= 13(D)  OK
+[    3.468616] raid6test: test_disks(8, 14): faila=  8(D)  failb= 14(D)  OK
+[    3.469710] raid6test: test_disks(8, 15): faila=  8(D)  failb= 15(D)  OK
+[    3.470806] raid6test: test_disks(8, 16): faila=  8(D)  failb= 16(D)  OK
+[    3.471887] raid6test: test_disks(8, 17): faila=  8(D)  failb= 17(D)  OK
+[    3.472965] raid6test: test_disks(8, 18): faila=  8(D)  failb= 18(D)  OK
+[    3.474073] raid6test: test_disks(8, 19): faila=  8(D)  failb= 19(D)  OK
+[    3.475143] raid6test: test_disks(8, 20): faila=  8(D)  failb= 20(D)  OK
+[    3.476216] raid6test: test_disks(8, 21): faila=  8(D)  failb= 21(D)  OK
+[    3.477313] raid6test: test_disks(8, 22): faila=  8(D)  failb= 22(D)  OK
+[    3.478393] raid6test: test_disks(8, 23): faila=  8(D)  failb= 23(D)  OK
+[    3.479474] raid6test: test_disks(8, 24): faila=  8(D)  failb= 24(D)  OK
+[    3.480573] raid6test: test_disks(8, 25): faila=  8(D)  failb= 25(D)  OK
+[    3.481655] raid6test: test_disks(8, 26): faila=  8(D)  failb= 26(D)  OK
+[    3.482739] raid6test: test_disks(8, 27): faila=  8(D)  failb= 27(D)  OK
+[    3.483839] raid6test: test_disks(8, 28): faila=  8(D)  failb= 28(D)  OK
+[    3.484925] raid6test: test_disks(8, 29): faila=  8(D)  failb= 29(D)  OK
+[    3.486014] raid6test: test_disks(8, 30): faila=  8(D)  failb= 30(D)  OK
+[    3.487115] raid6test: test_disks(8, 31): faila=  8(D)  failb= 31(D)  OK
+[    3.488213] raid6test: test_disks(8, 32): faila=  8(D)  failb= 32(D)  OK
+[    3.489297] raid6test: test_disks(8, 33): faila=  8(D)  failb= 33(D)  OK
+[    3.490398] raid6test: test_disks(8, 34): faila=  8(D)  failb= 34(D)  OK
+[    3.491485] raid6test: test_disks(8, 35): faila=  8(D)  failb= 35(D)  OK
+[    3.494386] raid6test: test_disks(8, 36): faila=  8(D)  failb= 36(D)  OK
+[    3.495494] raid6test: test_disks(8, 37): faila=  8(D)  failb= 37(D)  OK
+[    3.496570] raid6test: test_disks(8, 38): faila=  8(D)  failb= 38(D)  OK
+[    3.497668] raid6test: test_disks(8, 39): faila=  8(D)  failb= 39(D)  OK
+[    3.498784] raid6test: test_disks(8, 40): faila=  8(D)  failb= 40(D)  OK
+[    3.499862] raid6test: test_disks(8, 41): faila=  8(D)  failb= 41(D)  OK
+[    3.500966] raid6test: test_disks(8, 42): faila=  8(D)  failb= 42(D)  OK
+[    3.502057] raid6test: test_disks(8, 43): faila=  8(D)  failb= 43(D)  OK
+[    3.503142] raid6test: test_disks(8, 44): faila=  8(D)  failb= 44(D)  OK
+[    3.504245] raid6test: test_disks(8, 45): faila=  8(D)  failb= 45(D)  OK
+[    3.505335] raid6test: test_disks(8, 46): faila=  8(D)  failb= 46(D)  OK
+[    3.506431] raid6test: test_disks(8, 47): faila=  8(D)  failb= 47(D)  OK
+[    3.507528] raid6test: test_disks(8, 48): faila=  8(D)  failb= 48(D)  OK
+[    3.508613] raid6test: test_disks(8, 49): faila=  8(D)  failb= 49(D)  OK
+[    3.509700] raid6test: test_disks(8, 50): faila=  8(D)  failb= 50(D)  OK
+[    3.510801] raid6test: test_disks(8, 51): faila=  8(D)  failb= 51(D)  OK
+[    3.511875] raid6test: test_disks(8, 52): faila=  8(D)  failb= 52(D)  OK
+[    3.512956] raid6test: test_disks(8, 53): faila=  8(D)  failb= 53(D)  OK
+[    3.514047] raid6test: test_disks(8, 54): faila=  8(D)  failb= 54(D)  OK
+[    3.515128] raid6test: test_disks(8, 55): faila=  8(D)  failb= 55(D)  OK
+[    3.516198] raid6test: test_disks(8, 56): faila=  8(D)  failb= 56(D)  OK
+[    3.517300] raid6test: test_disks(8, 57): faila=  8(D)  failb= 57(D)  OK
+[    3.518386] raid6test: test_disks(8, 58): faila=  8(D)  failb= 58(D)  OK
+[    3.519471] raid6test: test_disks(8, 59): faila=  8(D)  failb= 59(D)  OK
+[    3.520569] raid6test: test_disks(8, 60): faila=  8(D)  failb= 60(D)  OK
+[    3.521646] raid6test: test_disks(8, 61): faila=  8(D)  failb= 61(D)  OK
+[    3.522727] raid6test: test_disks(8, 62): faila=  8(D)  failb= 62(P)  OK
+[    3.523840] raid6test: test_disks(8, 63): faila=  8(D)  failb= 63(Q)  OK
+[    3.524928] raid6test: test_disks(9, 10): faila=  9(D)  failb= 10(D)  OK
+[    3.526006] raid6test: test_disks(9, 11): faila=  9(D)  failb= 11(D)  OK
+[    3.527098] raid6test: test_disks(9, 12): faila=  9(D)  failb= 12(D)  OK
+[    3.528177] raid6test: test_disks(9, 13): faila=  9(D)  failb= 13(D)  OK
+[    3.529253] raid6test: test_disks(9, 14): faila=  9(D)  failb= 14(D)  OK
+[    3.530355] raid6test: test_disks(9, 15): faila=  9(D)  failb= 15(D)  OK
+[    3.531442] raid6test: test_disks(9, 16): faila=  9(D)  failb= 16(D)  OK
+[    3.532528] raid6test: test_disks(9, 17): faila=  9(D)  failb= 17(D)  OK
+[    3.533633] raid6test: test_disks(9, 18): faila=  9(D)  failb= 18(D)  OK
+[    3.534725] raid6test: test_disks(9, 19): faila=  9(D)  failb= 19(D)  OK
+[    3.535813] raid6test: test_disks(9, 20): faila=  9(D)  failb= 20(D)  OK
+[    3.536898] raid6test: test_disks(9, 21): faila=  9(D)  failb= 21(D)  OK
+[    3.537979] raid6test: test_disks(9, 22): faila=  9(D)  failb= 22(D)  OK
+[    3.539058] raid6test: test_disks(9, 23): faila=  9(D)  failb= 23(D)  OK
+[    3.540145] raid6test: test_disks(9, 24): faila=  9(D)  failb= 24(D)  OK
+[    3.541232] raid6test: test_disks(9, 25): faila=  9(D)  failb= 25(D)  OK
+[    3.542325] raid6test: test_disks(9, 26): faila=  9(D)  failb= 26(D)  OK
+[    3.543426] raid6test: test_disks(9, 27): faila=  9(D)  failb= 27(D)  OK
+[    3.544514] raid6test: test_disks(9, 28): faila=  9(D)  failb= 28(D)  OK
+[    3.545601] raid6test: test_disks(9, 29): faila=  9(D)  failb= 29(D)  OK
+[    3.546699] raid6test: test_disks(9, 30): faila=  9(D)  failb= 30(D)  OK
+[    3.547789] raid6test: test_disks(9, 31): faila=  9(D)  failb= 31(D)  OK
+[    3.548872] raid6test: test_disks(9, 32): faila=  9(D)  failb= 32(D)  OK
+[    3.549964] raid6test: test_disks(9, 33): faila=  9(D)  failb= 33(D)  OK
+[    3.551066] raid6test: test_disks(9, 34): faila=  9(D)  failb= 34(D)  OK
+[    3.552146] raid6test: test_disks(9, 35): faila=  9(D)  failb= 35(D)  OK
+[    3.553220] raid6test: test_disks(9, 36): faila=  9(D)  failb= 36(D)  OK
+[    3.554316] raid6test: test_disks(9, 37): faila=  9(D)  failb= 37(D)  OK
+[    3.555402] raid6test: test_disks(9, 38): faila=  9(D)  failb= 38(D)  OK
+[    3.556487] raid6test: test_disks(9, 39): faila=  9(D)  failb= 39(D)  OK
+[    3.557583] raid6test: test_disks(9, 40): faila=  9(D)  failb= 40(D)  OK
+[    3.558663] raid6test: test_disks(9, 41): faila=  9(D)  failb= 41(D)  OK
+[    3.559736] raid6test: test_disks(9, 42): faila=  9(D)  failb= 42(D)  OK
+[    3.560846] raid6test: test_disks(9, 43): faila=  9(D)  failb= 43(D)  OK
+[    3.561934] raid6test: test_disks(9, 44): faila=  9(D)  failb= 44(D)  OK
+[    3.563013] raid6test: test_disks(9, 45): faila=  9(D)  failb= 45(D)  OK
+[    3.564114] raid6test: test_disks(9, 46): faila=  9(D)  failb= 46(D)  OK
+[    3.565203] raid6test: test_disks(9, 47): faila=  9(D)  failb= 47(D)  OK
+[    3.566294] raid6test: test_disks(9, 48): faila=  9(D)  failb= 48(D)  OK
+[    3.567401] raid6test: test_disks(9, 49): faila=  9(D)  failb= 49(D)  OK
+[    3.568498] raid6test: test_disks(9, 50): faila=  9(D)  failb= 50(D)  OK
+[    3.569583] raid6test: test_disks(9, 51): faila=  9(D)  failb= 51(D)  OK
+[    3.570675] raid6test: test_disks(9, 52): faila=  9(D)  failb= 52(D)  OK
+[    3.571754] raid6test: test_disks(9, 53): faila=  9(D)  failb= 53(D)  OK
+[    3.572834] raid6test: test_disks(9, 54): faila=  9(D)  failb= 54(D)  OK
+[    3.573926] raid6test: test_disks(9, 55): faila=  9(D)  failb= 55(D)  OK
+[    3.575017] raid6test: test_disks(9, 56): faila=  9(D)  failb= 56(D)  OK
+[    3.576090] raid6test: test_disks(9, 57): faila=  9(D)  failb= 57(D)  OK
+[    3.577188] raid6test: test_disks(9, 58): faila=  9(D)  failb= 58(D)  OK
+[    3.578269] raid6test: test_disks(9, 59): faila=  9(D)  failb= 59(D)  OK
+[    3.579351] raid6test: test_disks(9, 60): faila=  9(D)  failb= 60(D)  OK
+[    3.580455] raid6test: test_disks(9, 61): faila=  9(D)  failb= 61(D)  OK
+[    3.581547] raid6test: test_disks(9, 62): faila=  9(D)  failb= 62(P)  OK
+[    3.582637] raid6test: test_disks(9, 63): faila=  9(D)  failb= 63(Q)  OK
+[    3.583728] raid6test: test_disks(10, 11): faila= 10(D)  failb= 11(D)  OK
+[    3.584822] raid6test: test_disks(10, 12): faila= 10(D)  failb= 12(D)  OK
+[    3.585921] raid6test: test_disks(10, 13): faila= 10(D)  failb= 13(D)  OK
+[    3.587020] raid6test: test_disks(10, 14): faila= 10(D)  failb= 14(D)  OK
+[    3.588119] raid6test: test_disks(10, 15): faila= 10(D)  failb= 15(D)  OK
+[    3.589215] raid6test: test_disks(10, 16): faila= 10(D)  failb= 16(D)  OK
+[    3.590313] raid6test: test_disks(10, 17): faila= 10(D)  failb= 17(D)  OK
+[    3.591407] raid6test: test_disks(10, 18): faila= 10(D)  failb= 18(D)  OK
+[    3.592498] raid6test: test_disks(10, 19): faila= 10(D)  failb= 19(D)  OK
+[    3.593589] raid6test: test_disks(10, 20): faila= 10(D)  failb= 20(D)  OK
+[    3.594672] raid6test: test_disks(10, 21): faila= 10(D)  failb= 21(D)  OK
+[    3.595761] raid6test: test_disks(10, 22): faila= 10(D)  failb= 22(D)  OK
+[    3.596860] raid6test: test_disks(10, 23): faila= 10(D)  failb= 23(D)  OK
+[    3.597940] raid6test: test_disks(10, 24): faila= 10(D)  failb= 24(D)  OK
+[    3.599059] raid6test: test_disks(10, 25): faila= 10(D)  failb= 25(D)  OK
+[    3.600164] raid6test: test_disks(10, 26): faila= 10(D)  failb= 26(D)  OK
+[    3.601253] raid6test: test_disks(10, 27): faila= 10(D)  failb= 27(D)  OK
+[    3.602347] raid6test: test_disks(10, 28): faila= 10(D)  failb= 28(D)  OK
+[    3.603448] raid6test: test_disks(10, 29): faila= 10(D)  failb= 29(D)  OK
+[    3.604551] raid6test: test_disks(10, 30): faila= 10(D)  failb= 30(D)  OK
+[    3.605647] raid6test: test_disks(10, 31): faila= 10(D)  failb= 31(D)  OK
+[    3.606749] raid6test: test_disks(10, 32): faila= 10(D)  failb= 32(D)  OK
+[    3.607849] raid6test: test_disks(10, 33): faila= 10(D)  failb= 33(D)  OK
+[    3.608941] raid6test: test_disks(10, 34): faila= 10(D)  failb= 34(D)  OK
+[    3.610046] raid6test: test_disks(10, 35): faila= 10(D)  failb= 35(D)  OK
+[    3.611128] raid6test: test_disks(10, 36): faila= 10(D)  failb= 36(D)  OK
+[    3.612219] raid6test: test_disks(10, 37): faila= 10(D)  failb= 37(D)  OK
+[    3.613303] raid6test: test_disks(10, 38): faila= 10(D)  failb= 38(D)  OK
+[    3.614416] raid6test: test_disks(10, 39): faila= 10(D)  failb= 39(D)  OK
+[    3.615512] raid6test: test_disks(10, 40): faila= 10(D)  failb= 40(D)  OK
+[    3.616601] raid6test: test_disks(10, 41): faila= 10(D)  failb= 41(D)  OK
+[    3.617711] raid6test: test_disks(10, 42): faila= 10(D)  failb= 42(D)  OK
+[    3.618807] raid6test: test_disks(10, 43): faila= 10(D)  failb= 43(D)  OK
+[    3.619896] raid6test: test_disks(10, 44): faila= 10(D)  failb= 44(D)  OK
+[    3.621009] raid6test: test_disks(10, 45): faila= 10(D)  failb= 45(D)  OK
+[    3.622107] raid6test: test_disks(10, 46): faila= 10(D)  failb= 46(D)  OK
+[    3.623201] raid6test: test_disks(10, 47): faila= 10(D)  failb= 47(D)  OK
+[    3.624316] raid6test: test_disks(10, 48): faila= 10(D)  failb= 48(D)  OK
+[    3.625414] raid6test: test_disks(10, 49): faila= 10(D)  failb= 49(D)  OK
+[    3.626515] raid6test: test_disks(10, 50): faila= 10(D)  failb= 50(D)  OK
+[    3.627629] raid6test: test_disks(10, 51): faila= 10(D)  failb= 51(D)  OK
+[    3.628722] raid6test: test_disks(10, 52): faila= 10(D)  failb= 52(D)  OK
+[    3.629812] raid6test: test_disks(10, 53): faila= 10(D)  failb= 53(D)  OK
+[    3.630918] raid6test: test_disks(10, 54): faila= 10(D)  failb= 54(D)  OK
+[    3.632005] raid6test: test_disks(10, 55): faila= 10(D)  failb= 55(D)  OK
+[    3.633104] raid6test: test_disks(10, 56): faila= 10(D)  failb= 56(D)  OK
+[    3.634210] raid6test: test_disks(10, 57): faila= 10(D)  failb= 57(D)  OK
+[    3.635297] raid6test: test_disks(10, 58): faila= 10(D)  failb= 58(D)  OK
+[    3.636399] raid6test: test_disks(10, 59): faila= 10(D)  failb= 59(D)  OK
+[    3.637509] raid6test: test_disks(10, 60): faila= 10(D)  failb= 60(D)  OK
+[    3.638603] raid6test: test_disks(10, 61): faila= 10(D)  failb= 61(D)  OK
+[    3.639697] raid6test: test_disks(10, 62): faila= 10(D)  failb= 62(P)  OK
+[    3.640819] raid6test: test_disks(10, 63): faila= 10(D)  failb= 63(Q)  OK
+[    3.641888] raid6test: test_disks(11, 12): faila= 11(D)  failb= 12(D)  OK
+[    3.642969] raid6test: test_disks(11, 13): faila= 11(D)  failb= 13(D)  OK
+[    3.644059] raid6test: test_disks(11, 14): faila= 11(D)  failb= 14(D)  OK
+[    3.645143] raid6test: test_disks(11, 15): faila= 11(D)  failb= 15(D)  OK
+[    3.646226] raid6test: test_disks(11, 16): faila= 11(D)  failb= 16(D)  OK
+[    3.647329] raid6test: test_disks(11, 17): faila= 11(D)  failb= 17(D)  OK
+[    3.648416] raid6test: test_disks(11, 18): faila= 11(D)  failb= 18(D)  OK
+[    3.649487] raid6test: test_disks(11, 19): faila= 11(D)  failb= 19(D)  OK
+[    3.650589] raid6test: test_disks(11, 20): faila= 11(D)  failb= 20(D)  OK
+[    3.651670] raid6test: test_disks(11, 21): faila= 11(D)  failb= 21(D)  OK
+[    3.652747] raid6test: test_disks(11, 22): faila= 11(D)  failb= 22(D)  OK
+[    3.653843] raid6test: test_disks(11, 23): faila= 11(D)  failb= 23(D)  OK
+[    3.654921] raid6test: test_disks(11, 24): faila= 11(D)  failb= 24(D)  OK
+[    3.656000] raid6test: test_disks(11, 25): faila= 11(D)  failb= 25(D)  OK
+[    3.657085] raid6test: test_disks(11, 26): faila= 11(D)  failb= 26(D)  OK
+[    3.658170] raid6test: test_disks(11, 27): faila= 11(D)  failb= 27(D)  OK
+[    3.659253] raid6test: test_disks(11, 28): faila= 11(D)  failb= 28(D)  OK
+[    3.660350] raid6test: test_disks(11, 29): faila= 11(D)  failb= 29(D)  OK
+[    3.661446] raid6test: test_disks(11, 30): faila= 11(D)  failb= 30(D)  OK
+[    3.662532] raid6test: test_disks(11, 31): faila= 11(D)  failb= 31(D)  OK
+[    3.663633] raid6test: test_disks(11, 32): faila= 11(D)  failb= 32(D)  OK
+[    3.664712] raid6test: test_disks(11, 33): faila= 11(D)  failb= 33(D)  OK
+[    3.665796] raid6test: test_disks(11, 34): faila= 11(D)  failb= 34(D)  OK
+[    3.666886] raid6test: test_disks(11, 35): faila= 11(D)  failb= 35(D)  OK
+[    3.667976] raid6test: test_disks(11, 36): faila= 11(D)  failb= 36(D)  OK
+[    3.669050] raid6test: test_disks(11, 37): faila= 11(D)  failb= 37(D)  OK
+[    3.670135] raid6test: test_disks(11, 38): faila= 11(D)  failb= 38(D)  OK
+[    3.671219] raid6test: test_disks(11, 39): faila= 11(D)  failb= 39(D)  OK
+[    3.672295] raid6test: test_disks(11, 40): faila= 11(D)  failb= 40(D)  OK
+[    3.673380] raid6test: test_disks(11, 41): faila= 11(D)  failb= 41(D)  OK
+[    3.674456] raid6test: test_disks(11, 42): faila= 11(D)  failb= 42(D)  OK
+[    3.675541] raid6test: test_disks(11, 43): faila= 11(D)  failb= 43(D)  OK
+[    3.676629] raid6test: test_disks(11, 44): faila= 11(D)  failb= 44(D)  OK
+[    3.677735] raid6test: test_disks(11, 45): faila= 11(D)  failb= 45(D)  OK
+[    3.678818] raid6test: test_disks(11, 46): faila= 11(D)  failb= 46(D)  OK
+[    3.679904] raid6test: test_disks(11, 47): faila= 11(D)  failb= 47(D)  OK
+[    3.681014] raid6test: test_disks(11, 48): faila= 11(D)  failb= 48(D)  OK
+[    3.682102] raid6test: test_disks(11, 49): faila= 11(D)  failb= 49(D)  OK
+[    3.683182] raid6test: test_disks(11, 50): faila= 11(D)  failb= 50(D)  OK
+[    3.684290] raid6test: test_disks(11, 51): faila= 11(D)  failb= 51(D)  OK
+[    3.685373] raid6test: test_disks(11, 52): faila= 11(D)  failb= 52(D)  OK
+[    3.686449] raid6test: test_disks(11, 53): faila= 11(D)  failb= 53(D)  OK
+[    3.687544] raid6test: test_disks(11, 54): faila= 11(D)  failb= 54(D)  OK
+[    3.688620] raid6test: test_disks(11, 55): faila= 11(D)  failb= 55(D)  OK
+[    3.689700] raid6test: test_disks(11, 56): faila= 11(D)  failb= 56(D)  OK
+[    3.692613] raid6test: test_disks(11, 57): faila= 11(D)  failb= 57(D)  OK
+[    3.693713] raid6test: test_disks(11, 58): faila= 11(D)  failb= 58(D)  OK
+[    3.694807] raid6test: test_disks(11, 59): faila= 11(D)  failb= 59(D)  OK
+[    3.695895] raid6test: test_disks(11, 60): faila= 11(D)  failb= 60(D)  OK
+[    3.696981] raid6test: test_disks(11, 61): faila= 11(D)  failb= 61(D)  OK
+[    3.698054] raid6test: test_disks(11, 62): faila= 11(D)  failb= 62(P)  OK
+[    3.699173] raid6test: test_disks(11, 63): faila= 11(D)  failb= 63(Q)  OK
+[    3.700272] raid6test: test_disks(12, 13): faila= 12(D)  failb= 13(D)  OK
+[    3.701353] raid6test: test_disks(12, 14): faila= 12(D)  failb= 14(D)  OK
+[    3.702451] raid6test: test_disks(12, 15): faila= 12(D)  failb= 15(D)  OK
+[    3.703544] raid6test: test_disks(12, 16): faila= 12(D)  failb= 16(D)  OK
+[    3.704631] raid6test: test_disks(12, 17): faila= 12(D)  failb= 17(D)  OK
+[    3.705720] raid6test: test_disks(12, 18): faila= 12(D)  failb= 18(D)  OK
+[    3.706817] raid6test: test_disks(12, 19): faila= 12(D)  failb= 19(D)  OK
+[    3.707899] raid6test: test_disks(12, 20): faila= 12(D)  failb= 20(D)  OK
+[    3.708990] raid6test: test_disks(12, 21): faila= 12(D)  failb= 21(D)  OK
+[    3.710086] raid6test: test_disks(12, 22): faila= 12(D)  failb= 22(D)  OK
+[    3.711172] raid6test: test_disks(12, 23): faila= 12(D)  failb= 23(D)  OK
+[    3.712267] raid6test: test_disks(12, 24): faila= 12(D)  failb= 24(D)  OK
+[    3.713359] raid6test: test_disks(12, 25): faila= 12(D)  failb= 25(D)  OK
+[    3.714449] raid6test: test_disks(12, 26): faila= 12(D)  failb= 26(D)  OK
+[    3.715527] raid6test: test_disks(12, 27): faila= 12(D)  failb= 27(D)  OK
+[    3.716618] raid6test: test_disks(12, 28): faila= 12(D)  failb= 28(D)  OK
+[    3.717729] raid6test: test_disks(12, 29): faila= 12(D)  failb= 29(D)  OK
+[    3.718818] raid6test: test_disks(12, 30): faila= 12(D)  failb= 30(D)  OK
+[    3.719908] raid6test: test_disks(12, 31): faila= 12(D)  failb= 31(D)  OK
+[    3.721016] raid6test: test_disks(12, 32): faila= 12(D)  failb= 32(D)  OK
+[    3.722100] raid6test: test_disks(12, 33): faila= 12(D)  failb= 33(D)  OK
+[    3.723178] raid6test: test_disks(12, 34): faila= 12(D)  failb= 34(D)  OK
+[    3.724288] raid6test: test_disks(12, 35): faila= 12(D)  failb= 35(D)  OK
+[    3.725400] raid6test: test_disks(12, 36): faila= 12(D)  failb= 36(D)  OK
+[    3.726486] raid6test: test_disks(12, 37): faila= 12(D)  failb= 37(D)  OK
+[    3.727578] raid6test: test_disks(12, 38): faila= 12(D)  failb= 38(D)  OK
+[    3.728649] raid6test: test_disks(12, 39): faila= 12(D)  failb= 39(D)  OK
+[    3.729730] raid6test: test_disks(12, 40): faila= 12(D)  failb= 40(D)  OK
+[    3.730832] raid6test: test_disks(12, 41): faila= 12(D)  failb= 41(D)  OK
+[    3.731917] raid6test: test_disks(12, 42): faila= 12(D)  failb= 42(D)  OK
+[    3.733004] raid6test: test_disks(12, 43): faila= 12(D)  failb= 43(D)  OK
+[    3.734113] raid6test: test_disks(12, 44): faila= 12(D)  failb= 44(D)  OK
+[    3.735201] raid6test: test_disks(12, 45): faila= 12(D)  failb= 45(D)  OK
+[    3.736287] raid6test: test_disks(12, 46): faila= 12(D)  failb= 46(D)  OK
+[    3.737400] raid6test: test_disks(12, 47): faila= 12(D)  failb= 47(D)  OK
+[    3.738489] raid6test: test_disks(12, 48): faila= 12(D)  failb= 48(D)  OK
+[    3.739579] raid6test: test_disks(12, 49): faila= 12(D)  failb= 49(D)  OK
+[    3.740687] raid6test: test_disks(12, 50): faila= 12(D)  failb= 50(D)  OK
+[    3.741779] raid6test: test_disks(12, 51): faila= 12(D)  failb= 51(D)  OK
+[    3.742862] raid6test: test_disks(12, 52): faila= 12(D)  failb= 52(D)  OK
+[    3.743959] raid6test: test_disks(12, 53): faila= 12(D)  failb= 53(D)  OK
+[    3.745036] raid6test: test_disks(12, 54): faila= 12(D)  failb= 54(D)  OK
+[    3.746118] raid6test: test_disks(12, 55): faila= 12(D)  failb= 55(D)  OK
+[    3.747216] raid6test: test_disks(12, 56): faila= 12(D)  failb= 56(D)  OK
+[    3.748297] raid6test: test_disks(12, 57): faila= 12(D)  failb= 57(D)  OK
+[    3.749392] raid6test: test_disks(12, 58): faila= 12(D)  failb= 58(D)  OK
+[    3.750495] raid6test: test_disks(12, 59): faila= 12(D)  failb= 59(D)  OK
+[    3.751574] raid6test: test_disks(12, 60): faila= 12(D)  failb= 60(D)  OK
+[    3.752662] raid6test: test_disks(12, 61): faila= 12(D)  failb= 61(D)  OK
+[    3.753767] raid6test: test_disks(12, 62): faila= 12(D)  failb= 62(P)  OK
+[    3.754864] raid6test: test_disks(12, 63): faila= 12(D)  failb= 63(Q)  OK
+[    3.755944] raid6test: test_disks(13, 14): faila= 13(D)  failb= 14(D)  OK
+[    3.757045] raid6test: test_disks(13, 15): faila= 13(D)  failb= 15(D)  OK
+[    3.758130] raid6test: test_disks(13, 16): faila= 13(D)  failb= 16(D)  OK
+[    3.759211] raid6test: test_disks(13, 17): faila= 13(D)  failb= 17(D)  OK
+[    3.760304] raid6test: test_disks(13, 18): faila= 13(D)  failb= 18(D)  OK
+[    3.761396] raid6test: test_disks(13, 19): faila= 13(D)  failb= 19(D)  OK
+[    3.762480] raid6test: test_disks(13, 20): faila= 13(D)  failb= 20(D)  OK
+[    3.763568] raid6test: test_disks(13, 21): faila= 13(D)  failb= 21(D)  OK
+[    3.764661] raid6test: test_disks(13, 22): faila= 13(D)  failb= 22(D)  OK
+[    3.765748] raid6test: test_disks(13, 23): faila= 13(D)  failb= 23(D)  OK
+[    3.766846] raid6test: test_disks(13, 24): faila= 13(D)  failb= 24(D)  OK
+[    3.767936] raid6test: test_disks(13, 25): faila= 13(D)  failb= 25(D)  OK
+[    3.769019] raid6test: test_disks(13, 26): faila= 13(D)  failb= 26(D)  OK
+[    3.770116] raid6test: test_disks(13, 27): faila= 13(D)  failb= 27(D)  OK
+[    3.771207] raid6test: test_disks(13, 28): faila= 13(D)  failb= 28(D)  OK
+[    3.772283] raid6test: test_disks(13, 29): faila= 13(D)  failb= 29(D)  OK
+[    3.773386] raid6test: test_disks(13, 30): faila= 13(D)  failb= 30(D)  OK
+[    3.774484] raid6test: test_disks(13, 31): faila= 13(D)  failb= 31(D)  OK
+[    3.775570] raid6test: test_disks(13, 32): faila= 13(D)  failb= 32(D)  OK
+[    3.776661] raid6test: test_disks(13, 33): faila= 13(D)  failb= 33(D)  OK
+[    3.777772] raid6test: test_disks(13, 34): faila= 13(D)  failb= 34(D)  OK
+[    3.778862] raid6test: test_disks(13, 35): faila= 13(D)  failb= 35(D)  OK
+[    3.779937] raid6test: test_disks(13, 36): faila= 13(D)  failb= 36(D)  OK
+[    3.781036] raid6test: test_disks(13, 37): faila= 13(D)  failb= 37(D)  OK
+[    3.782124] raid6test: test_disks(13, 38): faila= 13(D)  failb= 38(D)  OK
+[    3.783205] raid6test: test_disks(13, 39): faila= 13(D)  failb= 39(D)  OK
+[    3.784316] raid6test: test_disks(13, 40): faila= 13(D)  failb= 40(D)  OK
+[    3.785432] raid6test: test_disks(13, 41): faila= 13(D)  failb= 41(D)  OK
+[    3.786515] raid6test: test_disks(13, 42): faila= 13(D)  failb= 42(D)  OK
+[    3.787621] raid6test: test_disks(13, 43): faila= 13(D)  failb= 43(D)  OK
+[    3.788717] raid6test: test_disks(13, 44): faila= 13(D)  failb= 44(D)  OK
+[    3.789792] raid6test: test_disks(13, 45): faila= 13(D)  failb= 45(D)  OK
+[    3.790901] raid6test: test_disks(13, 46): faila= 13(D)  failb= 46(D)  OK
+[    3.791982] raid6test: test_disks(13, 47): faila= 13(D)  failb= 47(D)  OK
+[    3.793072] raid6test: test_disks(13, 48): faila= 13(D)  failb= 48(D)  OK
+[    3.794179] raid6test: test_disks(13, 49): faila= 13(D)  failb= 49(D)  OK
+[    3.795270] raid6test: test_disks(13, 50): faila= 13(D)  failb= 50(D)  OK
+[    3.796379] raid6test: test_disks(13, 51): faila= 13(D)  failb= 51(D)  OK
+[    3.797459] raid6test: test_disks(13, 52): faila= 13(D)  failb= 52(D)  OK
+[    3.798568] raid6test: test_disks(13, 53): faila= 13(D)  failb= 53(D)  OK
+[    3.799654] raid6test: test_disks(13, 54): faila= 13(D)  failb= 54(D)  OK
+[    3.800754] raid6test: test_disks(13, 55): faila= 13(D)  failb= 55(D)  OK
+[    3.801846] raid6test: test_disks(13, 56): faila= 13(D)  failb= 56(D)  OK
+[    3.802930] raid6test: test_disks(13, 57): faila= 13(D)  failb= 57(D)  OK
+[    3.804023] raid6test: test_disks(13, 58): faila= 13(D)  failb= 58(D)  OK
+[    3.805113] raid6test: test_disks(13, 59): faila= 13(D)  failb= 59(D)  OK
+[    3.806208] raid6test: test_disks(13, 60): faila= 13(D)  failb= 60(D)  OK
+[    3.807319] raid6test: test_disks(13, 61): faila= 13(D)  failb= 61(D)  OK
+[    3.808410] raid6test: test_disks(13, 62): faila= 13(D)  failb= 62(P)  OK
+[    3.809515] raid6test: test_disks(13, 63): faila= 13(D)  failb= 63(Q)  OK
+[    3.810619] raid6test: test_disks(14, 15): faila= 14(D)  failb= 15(D)  OK
+[    3.811699] raid6test: test_disks(14, 16): faila= 14(D)  failb= 16(D)  OK
+[    3.812793] raid6test: test_disks(14, 17): faila= 14(D)  failb= 17(D)  OK
+[    3.813893] raid6test: test_disks(14, 18): faila= 14(D)  failb= 18(D)  OK
+[    3.814983] raid6test: test_disks(14, 19): faila= 14(D)  failb= 19(D)  OK
+[    3.816066] raid6test: test_disks(14, 20): faila= 14(D)  failb= 20(D)  OK
+[    3.817169] raid6test: test_disks(14, 21): faila= 14(D)  failb= 21(D)  OK
+[    3.818258] raid6test: test_disks(14, 22): faila= 14(D)  failb= 22(D)  OK
+[    3.819352] raid6test: test_disks(14, 23): faila= 14(D)  failb= 23(D)  OK
+[    3.820461] raid6test: test_disks(14, 24): faila= 14(D)  failb= 24(D)  OK
+[    3.821550] raid6test: test_disks(14, 25): faila= 14(D)  failb= 25(D)  OK
+[    3.822638] raid6test: test_disks(14, 26): faila= 14(D)  failb= 26(D)  OK
+[    3.823751] raid6test: test_disks(14, 27): faila= 14(D)  failb= 27(D)  OK
+[    3.824842] raid6test: test_disks(14, 28): faila= 14(D)  failb= 28(D)  OK
+[    3.825927] raid6test: test_disks(14, 29): faila= 14(D)  failb= 29(D)  OK
+[    3.827031] raid6test: test_disks(14, 30): faila= 14(D)  failb= 30(D)  OK
+[    3.828120] raid6test: test_disks(14, 31): faila= 14(D)  failb= 31(D)  OK
+[    3.829210] raid6test: test_disks(14, 32): faila= 14(D)  failb= 32(D)  OK
+[    3.830311] raid6test: test_disks(14, 33): faila= 14(D)  failb= 33(D)  OK
+[    3.831400] raid6test: test_disks(14, 34): faila= 14(D)  failb= 34(D)  OK
+[    3.832490] raid6test: test_disks(14, 35): faila= 14(D)  failb= 35(D)  OK
+[    3.833589] raid6test: test_disks(14, 36): faila= 14(D)  failb= 36(D)  OK
+[    3.834675] raid6test: test_disks(14, 37): faila= 14(D)  failb= 37(D)  OK
+[    3.835758] raid6test: test_disks(14, 38): faila= 14(D)  failb= 38(D)  OK
+[    3.836852] raid6test: test_disks(14, 39): faila= 14(D)  failb= 39(D)  OK
+[    3.837935] raid6test: test_disks(14, 40): faila= 14(D)  failb= 40(D)  OK
+[    3.839011] raid6test: test_disks(14, 41): faila= 14(D)  failb= 41(D)  OK
+[    3.840104] raid6test: test_disks(14, 42): faila= 14(D)  failb= 42(D)  OK
+[    3.841186] raid6test: test_disks(14, 43): faila= 14(D)  failb= 43(D)  OK
+[    3.842281] raid6test: test_disks(14, 44): faila= 14(D)  failb= 44(D)  OK
+[    3.843387] raid6test: test_disks(14, 45): faila= 14(D)  failb= 45(D)  OK
+[    3.844481] raid6test: test_disks(14, 46): faila= 14(D)  failb= 46(D)  OK
+[    3.845563] raid6test: test_disks(14, 47): faila= 14(D)  failb= 47(D)  OK
+[    3.846648] raid6test: test_disks(14, 48): faila= 14(D)  failb= 48(D)  OK
+[    3.847752] raid6test: test_disks(14, 49): faila= 14(D)  failb= 49(D)  OK
+[    3.848842] raid6test: test_disks(14, 50): faila= 14(D)  failb= 50(D)  OK
+[    3.849931] raid6test: test_disks(14, 51): faila= 14(D)  failb= 51(D)  OK
+[    3.851029] raid6test: test_disks(14, 52): faila= 14(D)  failb= 52(D)  OK
+[    3.852113] raid6test: test_disks(14, 53): faila= 14(D)  failb= 53(D)  OK
+[    3.853208] raid6test: test_disks(14, 54): faila= 14(D)  failb= 54(D)  OK
+[    3.854316] raid6test: test_disks(14, 55): faila= 14(D)  failb= 55(D)  OK
+[    3.855415] raid6test: test_disks(14, 56): faila= 14(D)  failb= 56(D)  OK
+[    3.856500] raid6test: test_disks(14, 57): faila= 14(D)  failb= 57(D)  OK
+[    3.857607] raid6test: test_disks(14, 58): faila= 14(D)  failb= 58(D)  OK
+[    3.858704] raid6test: test_disks(14, 59): faila= 14(D)  failb= 59(D)  OK
+[    3.859790] raid6test: test_disks(14, 60): faila= 14(D)  failb= 60(D)  OK
+[    3.860897] raid6test: test_disks(14, 61): faila= 14(D)  failb= 61(D)  OK
+[    3.861993] raid6test: test_disks(14, 62): faila= 14(D)  failb= 62(P)  OK
+[    3.863087] raid6test: test_disks(14, 63): faila= 14(D)  failb= 63(Q)  OK
+[    3.864205] raid6test: test_disks(15, 16): faila= 15(D)  failb= 16(D)  OK
+[    3.865307] raid6test: test_disks(15, 17): faila= 15(D)  failb= 17(D)  OK
+[    3.866414] raid6test: test_disks(15, 18): faila= 15(D)  failb= 18(D)  OK
+[    3.867532] raid6test: test_disks(15, 19): faila= 15(D)  failb= 19(D)  OK
+[    3.868611] raid6test: test_disks(15, 20): faila= 15(D)  failb= 20(D)  OK
+[    3.869696] raid6test: test_disks(15, 21): faila= 15(D)  failb= 21(D)  OK
+[    3.870801] raid6test: test_disks(15, 22): faila= 15(D)  failb= 22(D)  OK
+[    3.871920] raid6test: test_disks(15, 23): faila= 15(D)  failb= 23(D)  OK
+[    3.873017] raid6test: test_disks(15, 24): faila= 15(D)  failb= 24(D)  OK
+[    3.874128] raid6test: test_disks(15, 25): faila= 15(D)  failb= 25(D)  OK
+[    3.875227] raid6test: test_disks(15, 26): faila= 15(D)  failb= 26(D)  OK
+[    3.876322] raid6test: test_disks(15, 27): faila= 15(D)  failb= 27(D)  OK
+[    3.877431] raid6test: test_disks(15, 28): faila= 15(D)  failb= 28(D)  OK
+[    3.878533] raid6test: test_disks(15, 29): faila= 15(D)  failb= 29(D)  OK
+[    3.879631] raid6test: test_disks(15, 30): faila= 15(D)  failb= 30(D)  OK
+[    3.880749] raid6test: test_disks(15, 31): faila= 15(D)  failb= 31(D)  OK
+[    3.881842] raid6test: test_disks(15, 32): faila= 15(D)  failb= 32(D)  OK
+[    3.882948] raid6test: test_disks(15, 33): faila= 15(D)  failb= 33(D)  OK
+[    3.884058] raid6test: test_disks(15, 34): faila= 15(D)  failb= 34(D)  OK
+[    3.885154] raid6test: test_disks(15, 35): faila= 15(D)  failb= 35(D)  OK
+[    3.886234] raid6test: test_disks(15, 36): faila= 15(D)  failb= 36(D)  OK
+[    3.887339] raid6test: test_disks(15, 37): faila= 15(D)  failb= 37(D)  OK
+[    3.888439] raid6test: test_disks(15, 38): faila= 15(D)  failb= 38(D)  OK
+[    3.891339] raid6test: test_disks(15, 39): faila= 15(D)  failb= 39(D)  OK
+[    3.892431] raid6test: test_disks(15, 40): faila= 15(D)  failb= 40(D)  OK
+[    3.893531] raid6test: test_disks(15, 41): faila= 15(D)  failb= 41(D)  OK
+[    3.894619] raid6test: test_disks(15, 42): faila= 15(D)  failb= 42(D)  OK
+[    3.895747] raid6test: test_disks(15, 43): faila= 15(D)  failb= 43(D)  OK
+[    3.896857] raid6test: test_disks(15, 44): faila= 15(D)  failb= 44(D)  OK
+[    3.897954] raid6test: test_disks(15, 45): faila= 15(D)  failb= 45(D)  OK
+[    3.899078] raid6test: test_disks(15, 46): faila= 15(D)  failb= 46(D)  OK
+[    3.900187] raid6test: test_disks(15, 47): faila= 15(D)  failb= 47(D)  OK
+[    3.901282] raid6test: test_disks(15, 48): faila= 15(D)  failb= 48(D)  OK
+[    3.902370] raid6test: test_disks(15, 49): faila= 15(D)  failb= 49(D)  OK
+[    3.903479] raid6test: test_disks(15, 50): faila= 15(D)  failb= 50(D)  OK
+[    3.904583] raid6test: test_disks(15, 51): faila= 15(D)  failb= 51(D)  OK
+[    3.905677] raid6test: test_disks(15, 52): faila= 15(D)  failb= 52(D)  OK
+[    3.906782] raid6test: test_disks(15, 53): faila= 15(D)  failb= 53(D)  OK
+[    3.907882] raid6test: test_disks(15, 54): faila= 15(D)  failb= 54(D)  OK
+[    3.908973] raid6test: test_disks(15, 55): faila= 15(D)  failb= 55(D)  OK
+[    3.910073] raid6test: test_disks(15, 56): faila= 15(D)  failb= 56(D)  OK
+[    3.911167] raid6test: test_disks(15, 57): faila= 15(D)  failb= 57(D)  OK
+[    3.912267] raid6test: test_disks(15, 58): faila= 15(D)  failb= 58(D)  OK
+[    3.913382] raid6test: test_disks(15, 59): faila= 15(D)  failb= 59(D)  OK
+[    3.914489] raid6test: test_disks(15, 60): faila= 15(D)  failb= 60(D)  OK
+[    3.915591] raid6test: test_disks(15, 61): faila= 15(D)  failb= 61(D)  OK
+[    3.916687] raid6test: test_disks(15, 62): faila= 15(D)  failb= 62(P)  OK
+[    3.917798] raid6test: test_disks(15, 63): faila= 15(D)  failb= 63(Q)  OK
+[    3.918888] raid6test: test_disks(16, 17): faila= 16(D)  failb= 17(D)  OK
+[    3.919976] raid6test: test_disks(16, 18): faila= 16(D)  failb= 18(D)  OK
+[    3.921095] raid6test: test_disks(16, 19): faila= 16(D)  failb= 19(D)  OK
+[    3.922181] raid6test: test_disks(16, 20): faila= 16(D)  failb= 20(D)  OK
+[    3.923277] raid6test: test_disks(16, 21): faila= 16(D)  failb= 21(D)  OK
+[    3.924387] raid6test: test_disks(16, 22): faila= 16(D)  failb= 22(D)  OK
+[    3.925478] raid6test: test_disks(16, 23): faila= 16(D)  failb= 23(D)  OK
+[    3.926574] raid6test: test_disks(16, 24): faila= 16(D)  failb= 24(D)  OK
+[    3.927688] raid6test: test_disks(16, 25): faila= 16(D)  failb= 25(D)  OK
+[    3.928778] raid6test: test_disks(16, 26): faila= 16(D)  failb= 26(D)  OK
+[    3.929862] raid6test: test_disks(16, 27): faila= 16(D)  failb= 27(D)  OK
+[    3.930965] raid6test: test_disks(16, 28): faila= 16(D)  failb= 28(D)  OK
+[    3.932061] raid6test: test_disks(16, 29): faila= 16(D)  failb= 29(D)  OK
+[    3.933154] raid6test: test_disks(16, 30): faila= 16(D)  failb= 30(D)  OK
+[    3.934267] raid6test: test_disks(16, 31): faila= 16(D)  failb= 31(D)  OK
+[    3.935371] raid6test: test_disks(16, 32): faila= 16(D)  failb= 32(D)  OK
+[    3.936470] raid6test: test_disks(16, 33): faila= 16(D)  failb= 33(D)  OK
+[    3.937583] raid6test: test_disks(16, 34): faila= 16(D)  failb= 34(D)  OK
+[    3.938677] raid6test: test_disks(16, 35): faila= 16(D)  failb= 35(D)  OK
+[    3.939760] raid6test: test_disks(16, 36): faila= 16(D)  failb= 36(D)  OK
+[    3.940868] raid6test: test_disks(16, 37): faila= 16(D)  failb= 37(D)  OK
+[    3.941943] raid6test: test_disks(16, 38): faila= 16(D)  failb= 38(D)  OK
+[    3.943031] raid6test: test_disks(16, 39): faila= 16(D)  failb= 39(D)  OK
+[    3.944134] raid6test: test_disks(16, 40): faila= 16(D)  failb= 40(D)  OK
+[    3.945225] raid6test: test_disks(16, 41): faila= 16(D)  failb= 41(D)  OK
+[    3.946318] raid6test: test_disks(16, 42): faila= 16(D)  failb= 42(D)  OK
+[    3.947429] raid6test: test_disks(16, 43): faila= 16(D)  failb= 43(D)  OK
+[    3.948521] raid6test: test_disks(16, 44): faila= 16(D)  failb= 44(D)  OK
+[    3.949620] raid6test: test_disks(16, 45): faila= 16(D)  failb= 45(D)  OK
+[    3.950722] raid6test: test_disks(16, 46): faila= 16(D)  failb= 46(D)  OK
+[    3.951817] raid6test: test_disks(16, 47): faila= 16(D)  failb= 47(D)  OK
+[    3.952906] raid6test: test_disks(16, 48): faila= 16(D)  failb= 48(D)  OK
+[    3.954009] raid6test: test_disks(16, 49): faila= 16(D)  failb= 49(D)  OK
+[    3.955108] raid6test: test_disks(16, 50): faila= 16(D)  failb= 50(D)  OK
+[    3.956207] raid6test: test_disks(16, 51): faila= 16(D)  failb= 51(D)  OK
+[    3.957303] raid6test: test_disks(16, 52): faila= 16(D)  failb= 52(D)  OK
+[    3.958401] raid6test: test_disks(16, 53): faila= 16(D)  failb= 53(D)  OK
+[    3.959498] raid6test: test_disks(16, 54): faila= 16(D)  failb= 54(D)  OK
+[    3.960601] raid6test: test_disks(16, 55): faila= 16(D)  failb= 55(D)  OK
+[    3.961698] raid6test: test_disks(16, 56): faila= 16(D)  failb= 56(D)  OK
+[    3.962790] raid6test: test_disks(16, 57): faila= 16(D)  failb= 57(D)  OK
+[    3.963895] raid6test: test_disks(16, 58): faila= 16(D)  failb= 58(D)  OK
+[    3.964988] raid6test: test_disks(16, 59): faila= 16(D)  failb= 59(D)  OK
+[    3.966083] raid6test: test_disks(16, 60): faila= 16(D)  failb= 60(D)  OK
+[    3.967192] raid6test: test_disks(16, 61): faila= 16(D)  failb= 61(D)  OK
+[    3.968285] raid6test: test_disks(16, 62): faila= 16(D)  failb= 62(P)  OK
+[    3.969390] raid6test: test_disks(16, 63): faila= 16(D)  failb= 63(Q)  OK
+[    3.970493] raid6test: test_disks(17, 18): faila= 17(D)  failb= 18(D)  OK
+[    3.971585] raid6test: test_disks(17, 19): faila= 17(D)  failb= 19(D)  OK
+[    3.972665] raid6test: test_disks(17, 20): faila= 17(D)  failb= 20(D)  OK
+[    3.973764] raid6test: test_disks(17, 21): faila= 17(D)  failb= 21(D)  OK
+[    3.974850] raid6test: test_disks(17, 22): faila= 17(D)  failb= 22(D)  OK
+[    3.975938] raid6test: test_disks(17, 23): faila= 17(D)  failb= 23(D)  OK
+[    3.977041] raid6test: test_disks(17, 24): faila= 17(D)  failb= 24(D)  OK
+[    3.978125] raid6test: test_disks(17, 25): faila= 17(D)  failb= 25(D)  OK
+[    3.979217] raid6test: test_disks(17, 26): faila= 17(D)  failb= 26(D)  OK
+[    3.980320] raid6test: test_disks(17, 27): faila= 17(D)  failb= 27(D)  OK
+[    3.981416] raid6test: test_disks(17, 28): faila= 17(D)  failb= 28(D)  OK
+[    3.982500] raid6test: test_disks(17, 29): faila= 17(D)  failb= 29(D)  OK
+[    3.983604] raid6test: test_disks(17, 30): faila= 17(D)  failb= 30(D)  OK
+[    3.984702] raid6test: test_disks(17, 31): faila= 17(D)  failb= 31(D)  OK
+[    3.985792] raid6test: test_disks(17, 32): faila= 17(D)  failb= 32(D)  OK
+[    3.986889] raid6test: test_disks(17, 33): faila= 17(D)  failb= 33(D)  OK
+[    3.987981] raid6test: test_disks(17, 34): faila= 17(D)  failb= 34(D)  OK
+[    3.989083] raid6test: test_disks(17, 35): faila= 17(D)  failb= 35(D)  OK
+[    3.990178] raid6test: test_disks(17, 36): faila= 17(D)  failb= 36(D)  OK
+[    3.991278] raid6test: test_disks(17, 37): faila= 17(D)  failb= 37(D)  OK
+[    3.992373] raid6test: test_disks(17, 38): faila= 17(D)  failb= 38(D)  OK
+[    3.993462] raid6test: test_disks(17, 39): faila= 17(D)  failb= 39(D)  OK
+[    3.994550] raid6test: test_disks(17, 40): faila= 17(D)  failb= 40(D)  OK
+[    3.995660] raid6test: test_disks(17, 41): faila= 17(D)  failb= 41(D)  OK
+[    3.996770] raid6test: test_disks(17, 42): faila= 17(D)  failb= 42(D)  OK
+[    3.997868] raid6test: test_disks(17, 43): faila= 17(D)  failb= 43(D)  OK
+[    3.998981] raid6test: test_disks(17, 44): faila= 17(D)  failb= 44(D)  OK
+[    4.000088] raid6test: test_disks(17, 45): faila= 17(D)  failb= 45(D)  OK
+[    4.001185] raid6test: test_disks(17, 46): faila= 17(D)  failb= 46(D)  OK
+[    4.002282] raid6test: test_disks(17, 47): faila= 17(D)  failb= 47(D)  OK
+[    4.003401] raid6test: test_disks(17, 48): faila= 17(D)  failb= 48(D)  OK
+[    4.004494] raid6test: test_disks(17, 49): faila= 17(D)  failb= 49(D)  OK
+[    4.005585] raid6test: test_disks(17, 50): faila= 17(D)  failb= 50(D)  OK
+[    4.006687] raid6test: test_disks(17, 51): faila= 17(D)  failb= 51(D)  OK
+[    4.007767] raid6test: test_disks(17, 52): faila= 17(D)  failb= 52(D)  OK
+[    4.008856] raid6test: test_disks(17, 53): faila= 17(D)  failb= 53(D)  OK
+[    4.009938] raid6test: test_disks(17, 54): faila= 17(D)  failb= 54(D)  OK
+[    4.011035] raid6test: test_disks(17, 55): faila= 17(D)  failb= 55(D)  OK
+[    4.012125] raid6test: test_disks(17, 56): faila= 17(D)  failb= 56(D)  OK
+[    4.013215] raid6test: test_disks(17, 57): faila= 17(D)  failb= 57(D)  OK
+[    4.014330] raid6test: test_disks(17, 58): faila= 17(D)  failb= 58(D)  OK
+[    4.015430] raid6test: test_disks(17, 59): faila= 17(D)  failb= 59(D)  OK
+[    4.016522] raid6test: test_disks(17, 60): faila= 17(D)  failb= 60(D)  OK
+[    4.017636] raid6test: test_disks(17, 61): faila= 17(D)  failb= 61(D)  OK
+[    4.018735] raid6test: test_disks(17, 62): faila= 17(D)  failb= 62(P)  OK
+[    4.019838] raid6test: test_disks(17, 63): faila= 17(D)  failb= 63(Q)  OK
+[    4.020959] raid6test: test_disks(18, 19): faila= 18(D)  failb= 19(D)  OK
+[    4.022055] raid6test: test_disks(18, 20): faila= 18(D)  failb= 20(D)  OK
+[    4.023145] raid6test: test_disks(18, 21): faila= 18(D)  failb= 21(D)  OK
+[    4.024256] raid6test: test_disks(18, 22): faila= 18(D)  failb= 22(D)  OK
+[    4.025355] raid6test: test_disks(18, 23): faila= 18(D)  failb= 23(D)  OK
+[    4.026448] raid6test: test_disks(18, 24): faila= 18(D)  failb= 24(D)  OK
+[    4.027551] raid6test: test_disks(18, 25): faila= 18(D)  failb= 25(D)  OK
+[    4.028643] raid6test: test_disks(18, 26): faila= 18(D)  failb= 26(D)  OK
+[    4.029737] raid6test: test_disks(18, 27): faila= 18(D)  failb= 27(D)  OK
+[    4.030852] raid6test: test_disks(18, 28): faila= 18(D)  failb= 28(D)  OK
+[    4.031957] raid6test: test_disks(18, 29): faila= 18(D)  failb= 29(D)  OK
+[    4.033047] raid6test: test_disks(18, 30): faila= 18(D)  failb= 30(D)  OK
+[    4.034158] raid6test: test_disks(18, 31): faila= 18(D)  failb= 31(D)  OK
+[    4.035250] raid6test: test_disks(18, 32): faila= 18(D)  failb= 32(D)  OK
+[    4.036355] raid6test: test_disks(18, 33): faila= 18(D)  failb= 33(D)  OK
+[    4.037470] raid6test: test_disks(18, 34): faila= 18(D)  failb= 34(D)  OK
+[    4.038568] raid6test: test_disks(18, 35): faila= 18(D)  failb= 35(D)  OK
+[    4.039656] raid6test: test_disks(18, 36): faila= 18(D)  failb= 36(D)  OK
+[    4.040769] raid6test: test_disks(18, 37): faila= 18(D)  failb= 37(D)  OK
+[    4.041860] raid6test: test_disks(18, 38): faila= 18(D)  failb= 38(D)  OK
+[    4.042950] raid6test: test_disks(18, 39): faila= 18(D)  failb= 39(D)  OK
+[    4.044058] raid6test: test_disks(18, 40): faila= 18(D)  failb= 40(D)  OK
+[    4.045151] raid6test: test_disks(18, 41): faila= 18(D)  failb= 41(D)  OK
+[    4.046249] raid6test: test_disks(18, 42): faila= 18(D)  failb= 42(D)  OK
+[    4.047368] raid6test: test_disks(18, 43): faila= 18(D)  failb= 43(D)  OK
+[    4.048467] raid6test: test_disks(18, 44): faila= 18(D)  failb= 44(D)  OK
+[    4.049558] raid6test: test_disks(18, 45): faila= 18(D)  failb= 45(D)  OK
+[    4.050668] raid6test: test_disks(18, 46): faila= 18(D)  failb= 46(D)  OK
+[    4.051774] raid6test: test_disks(18, 47): faila= 18(D)  failb= 47(D)  OK
+[    4.052872] raid6test: test_disks(18, 48): faila= 18(D)  failb= 48(D)  OK
+[    4.053985] raid6test: test_disks(18, 49): faila= 18(D)  failb= 49(D)  OK
+[    4.055082] raid6test: test_disks(18, 50): faila= 18(D)  failb= 50(D)  OK
+[    4.056178] raid6test: test_disks(18, 51): faila= 18(D)  failb= 51(D)  OK
+[    4.057273] raid6test: test_disks(18, 52): faila= 18(D)  failb= 52(D)  OK
+[    4.058369] raid6test: test_disks(18, 53): faila= 18(D)  failb= 53(D)  OK
+[    4.059460] raid6test: test_disks(18, 54): faila= 18(D)  failb= 54(D)  OK
+[    4.060556] raid6test: test_disks(18, 55): faila= 18(D)  failb= 55(D)  OK
+[    4.061659] raid6test: test_disks(18, 56): faila= 18(D)  failb= 56(D)  OK
+[    4.062757] raid6test: test_disks(18, 57): faila= 18(D)  failb= 57(D)  OK
+[    4.063858] raid6test: test_disks(18, 58): faila= 18(D)  failb= 58(D)  OK
+[    4.064959] raid6test: test_disks(18, 59): faila= 18(D)  failb= 59(D)  OK
+[    4.066053] raid6test: test_disks(18, 60): faila= 18(D)  failb= 60(D)  OK
+[    4.067166] raid6test: test_disks(18, 61): faila= 18(D)  failb= 61(D)  OK
+[    4.068275] raid6test: test_disks(18, 62): faila= 18(D)  failb= 62(P)  OK
+[    4.069381] raid6test: test_disks(18, 63): faila= 18(D)  failb= 63(Q)  OK
+[    4.070479] raid6test: test_disks(19, 20): faila= 19(D)  failb= 20(D)  OK
+[    4.071573] raid6test: test_disks(19, 21): faila= 19(D)  failb= 21(D)  OK
+[    4.072659] raid6test: test_disks(19, 22): faila= 19(D)  failb= 22(D)  OK
+[    4.073763] raid6test: test_disks(19, 23): faila= 19(D)  failb= 23(D)  OK
+[    4.074863] raid6test: test_disks(19, 24): faila= 19(D)  failb= 24(D)  OK
+[    4.075952] raid6test: test_disks(19, 25): faila= 19(D)  failb= 25(D)  OK
+[    4.077048] raid6test: test_disks(19, 26): faila= 19(D)  failb= 26(D)  OK
+[    4.078140] raid6test: test_disks(19, 27): faila= 19(D)  failb= 27(D)  OK
+[    4.079238] raid6test: test_disks(19, 28): faila= 19(D)  failb= 28(D)  OK
+[    4.080343] raid6test: test_disks(19, 29): faila= 19(D)  failb= 29(D)  OK
+[    4.081448] raid6test: test_disks(19, 30): faila= 19(D)  failb= 30(D)  OK
+[    4.082551] raid6test: test_disks(19, 31): faila= 19(D)  failb= 31(D)  OK
+[    4.083663] raid6test: test_disks(19, 32): faila= 19(D)  failb= 32(D)  OK
+[    4.084768] raid6test: test_disks(19, 33): faila= 19(D)  failb= 33(D)  OK
+[    4.085868] raid6test: test_disks(19, 34): faila= 19(D)  failb= 34(D)  OK
+[    4.086982] raid6test: test_disks(19, 35): faila= 19(D)  failb= 35(D)  OK
+[    4.088068] raid6test: test_disks(19, 36): faila= 19(D)  failb= 36(D)  OK
+[    4.090967] raid6test: test_disks(19, 37): faila= 19(D)  failb= 37(D)  OK
+[    4.092061] raid6test: test_disks(19, 38): faila= 19(D)  failb= 38(D)  OK
+[    4.093153] raid6test: test_disks(19, 39): faila= 19(D)  failb= 39(D)  OK
+[    4.094271] raid6test: test_disks(19, 40): faila= 19(D)  failb= 40(D)  OK
+[    4.095371] raid6test: test_disks(19, 41): faila= 19(D)  failb= 41(D)  OK
+[    4.096489] raid6test: test_disks(19, 42): faila= 19(D)  failb= 42(D)  OK
+[    4.097605] raid6test: test_disks(19, 43): faila= 19(D)  failb= 43(D)  OK
+[    4.098732] raid6test: test_disks(19, 44): faila= 19(D)  failb= 44(D)  OK
+[    4.099820] raid6test: test_disks(19, 45): faila= 19(D)  failb= 45(D)  OK
+[    4.100966] raid6test: test_disks(19, 46): faila= 19(D)  failb= 46(D)  OK
+[    4.102073] raid6test: test_disks(19, 47): faila= 19(D)  failb= 47(D)  OK
+[    4.103179] raid6test: test_disks(19, 48): faila= 19(D)  failb= 48(D)  OK
+[    4.104280] raid6test: test_disks(19, 49): faila= 19(D)  failb= 49(D)  OK
+[    4.105385] raid6test: test_disks(19, 50): faila= 19(D)  failb= 50(D)  OK
+[    4.106490] raid6test: test_disks(19, 51): faila= 19(D)  failb= 51(D)  OK
+[    4.107595] raid6test: test_disks(19, 52): faila= 19(D)  failb= 52(D)  OK
+[    4.108692] raid6test: test_disks(19, 53): faila= 19(D)  failb= 53(D)  OK
+[    4.109785] raid6test: test_disks(19, 54): faila= 19(D)  failb= 54(D)  OK
+[    4.110894] raid6test: test_disks(19, 55): faila= 19(D)  failb= 55(D)  OK
+[    4.111998] raid6test: test_disks(19, 56): faila= 19(D)  failb= 56(D)  OK
+[    4.113090] raid6test: test_disks(19, 57): faila= 19(D)  failb= 57(D)  OK
+[    4.114195] raid6test: test_disks(19, 58): faila= 19(D)  failb= 58(D)  OK
+[    4.115298] raid6test: test_disks(19, 59): faila= 19(D)  failb= 59(D)  OK
+[    4.116401] raid6test: test_disks(19, 60): faila= 19(D)  failb= 60(D)  OK
+[    4.117510] raid6test: test_disks(19, 61): faila= 19(D)  failb= 61(D)  OK
+[    4.118607] raid6test: test_disks(19, 62): faila= 19(D)  failb= 62(P)  OK
+[    4.119709] raid6test: test_disks(19, 63): faila= 19(D)  failb= 63(Q)  OK
+[    4.120809] raid6test: test_disks(20, 21): faila= 20(D)  failb= 21(D)  OK
+[    4.121888] raid6test: test_disks(20, 22): faila= 20(D)  failb= 22(D)  OK
+[    4.122966] raid6test: test_disks(20, 23): faila= 20(D)  failb= 23(D)  OK
+[    4.124065] raid6test: test_disks(20, 24): faila= 20(D)  failb= 24(D)  OK
+[    4.125150] raid6test: test_disks(20, 25): faila= 20(D)  failb= 25(D)  OK
+[    4.126239] raid6test: test_disks(20, 26): faila= 20(D)  failb= 26(D)  OK
+[    4.127341] raid6test: test_disks(20, 27): faila= 20(D)  failb= 27(D)  OK
+[    4.128438] raid6test: test_disks(20, 28): faila= 20(D)  failb= 28(D)  OK
+[    4.129526] raid6test: test_disks(20, 29): faila= 20(D)  failb= 29(D)  OK
+[    4.130614] raid6test: test_disks(20, 30): faila= 20(D)  failb= 30(D)  OK
+[    4.131701] raid6test: test_disks(20, 31): faila= 20(D)  failb= 31(D)  OK
+[    4.132797] raid6test: test_disks(20, 32): faila= 20(D)  failb= 32(D)  OK
+[    4.133900] raid6test: test_disks(20, 33): faila= 20(D)  failb= 33(D)  OK
+[    4.134992] raid6test: test_disks(20, 34): faila= 20(D)  failb= 34(D)  OK
+[    4.136082] raid6test: test_disks(20, 35): faila= 20(D)  failb= 35(D)  OK
+[    4.137183] raid6test: test_disks(20, 36): faila= 20(D)  failb= 36(D)  OK
+[    4.138269] raid6test: test_disks(20, 37): faila= 20(D)  failb= 37(D)  OK
+[    4.139360] raid6test: test_disks(20, 38): faila= 20(D)  failb= 38(D)  OK
+[    4.140454] raid6test: test_disks(20, 39): faila= 20(D)  failb= 39(D)  OK
+[    4.141541] raid6test: test_disks(20, 40): faila= 20(D)  failb= 40(D)  OK
+[    4.142609] raid6test: test_disks(20, 41): faila= 20(D)  failb= 41(D)  OK
+[    4.143705] raid6test: test_disks(20, 42): faila= 20(D)  failb= 42(D)  OK
+[    4.144793] raid6test: test_disks(20, 43): faila= 20(D)  failb= 43(D)  OK
+[    4.145884] raid6test: test_disks(20, 44): faila= 20(D)  failb= 44(D)  OK
+[    4.146986] raid6test: test_disks(20, 45): faila= 20(D)  failb= 45(D)  OK
+[    4.148078] raid6test: test_disks(20, 46): faila= 20(D)  failb= 46(D)  OK
+[    4.149169] raid6test: test_disks(20, 47): faila= 20(D)  failb= 47(D)  OK
+[    4.150270] raid6test: test_disks(20, 48): faila= 20(D)  failb= 48(D)  OK
+[    4.151366] raid6test: test_disks(20, 49): faila= 20(D)  failb= 49(D)  OK
+[    4.152451] raid6test: test_disks(20, 50): faila= 20(D)  failb= 50(D)  OK
+[    4.153546] raid6test: test_disks(20, 51): faila= 20(D)  failb= 51(D)  OK
+[    4.154634] raid6test: test_disks(20, 52): faila= 20(D)  failb= 52(D)  OK
+[    4.155714] raid6test: test_disks(20, 53): faila= 20(D)  failb= 53(D)  OK
+[    4.156821] raid6test: test_disks(20, 54): faila= 20(D)  failb= 54(D)  OK
+[    4.157920] raid6test: test_disks(20, 55): faila= 20(D)  failb= 55(D)  OK
+[    4.159009] raid6test: test_disks(20, 56): faila= 20(D)  failb= 56(D)  OK
+[    4.160108] raid6test: test_disks(20, 57): faila= 20(D)  failb= 57(D)  OK
+[    4.161198] raid6test: test_disks(20, 58): faila= 20(D)  failb= 58(D)  OK
+[    4.162284] raid6test: test_disks(20, 59): faila= 20(D)  failb= 59(D)  OK
+[    4.163383] raid6test: test_disks(20, 60): faila= 20(D)  failb= 60(D)  OK
+[    4.164470] raid6test: test_disks(20, 61): faila= 20(D)  failb= 61(D)  OK
+[    4.165563] raid6test: test_disks(20, 62): faila= 20(D)  failb= 62(P)  OK
+[    4.166667] raid6test: test_disks(20, 63): faila= 20(D)  failb= 63(Q)  OK
+[    4.167769] raid6test: test_disks(21, 22): faila= 21(D)  failb= 22(D)  OK
+[    4.168847] raid6test: test_disks(21, 23): faila= 21(D)  failb= 23(D)  OK
+[    4.169937] raid6test: test_disks(21, 24): faila= 21(D)  failb= 24(D)  OK
+[    4.171040] raid6test: test_disks(21, 25): faila= 21(D)  failb= 25(D)  OK
+[    4.172120] raid6test: test_disks(21, 26): faila= 21(D)  failb= 26(D)  OK
+[    4.173216] raid6test: test_disks(21, 27): faila= 21(D)  failb= 27(D)  OK
+[    4.174320] raid6test: test_disks(21, 28): faila= 21(D)  failb= 28(D)  OK
+[    4.175419] raid6test: test_disks(21, 29): faila= 21(D)  failb= 29(D)  OK
+[    4.176500] raid6test: test_disks(21, 30): faila= 21(D)  failb= 30(D)  OK
+[    4.177601] raid6test: test_disks(21, 31): faila= 21(D)  failb= 31(D)  OK
+[    4.178694] raid6test: test_disks(21, 32): faila= 21(D)  failb= 32(D)  OK
+[    4.179782] raid6test: test_disks(21, 33): faila= 21(D)  failb= 33(D)  OK
+[    4.180894] raid6test: test_disks(21, 34): faila= 21(D)  failb= 34(D)  OK
+[    4.181973] raid6test: test_disks(21, 35): faila= 21(D)  failb= 35(D)  OK
+[    4.183054] raid6test: test_disks(21, 36): faila= 21(D)  failb= 36(D)  OK
+[    4.184157] raid6test: test_disks(21, 37): faila= 21(D)  failb= 37(D)  OK
+[    4.185242] raid6test: test_disks(21, 38): faila= 21(D)  failb= 38(D)  OK
+[    4.186310] raid6test: test_disks(21, 39): faila= 21(D)  failb= 39(D)  OK
+[    4.187413] raid6test: test_disks(21, 40): faila= 21(D)  failb= 40(D)  OK
+[    4.188501] raid6test: test_disks(21, 41): faila= 21(D)  failb= 41(D)  OK
+[    4.189584] raid6test: test_disks(21, 42): faila= 21(D)  failb= 42(D)  OK
+[    4.190685] raid6test: test_disks(21, 43): faila= 21(D)  failb= 43(D)  OK
+[    4.191768] raid6test: test_disks(21, 44): faila= 21(D)  failb= 44(D)  OK
+[    4.192856] raid6test: test_disks(21, 45): faila= 21(D)  failb= 45(D)  OK
+[    4.193953] raid6test: test_disks(21, 46): faila= 21(D)  failb= 46(D)  OK
+[    4.195042] raid6test: test_disks(21, 47): faila= 21(D)  failb= 47(D)  OK
+[    4.196156] raid6test: test_disks(21, 48): faila= 21(D)  failb= 48(D)  OK
+[    4.197248] raid6test: test_disks(21, 49): faila= 21(D)  failb= 49(D)  OK
+[    4.198357] raid6test: test_disks(21, 50): faila= 21(D)  failb= 50(D)  OK
+[    4.199469] raid6test: test_disks(21, 51): faila= 21(D)  failb= 51(D)  OK
+[    4.200562] raid6test: test_disks(21, 52): faila= 21(D)  failb= 52(D)  OK
+[    4.201651] raid6test: test_disks(21, 53): faila= 21(D)  failb= 53(D)  OK
+[    4.202741] raid6test: test_disks(21, 54): faila= 21(D)  failb= 54(D)  OK
+[    4.203827] raid6test: test_disks(21, 55): faila= 21(D)  failb= 55(D)  OK
+[    4.204907] raid6test: test_disks(21, 56): faila= 21(D)  failb= 56(D)  OK
+[    4.205981] raid6test: test_disks(21, 57): faila= 21(D)  failb= 57(D)  OK
+[    4.207077] raid6test: test_disks(21, 58): faila= 21(D)  failb= 58(D)  OK
+[    4.208174] raid6test: test_disks(21, 59): faila= 21(D)  failb= 59(D)  OK
+[    4.209257] raid6test: test_disks(21, 60): faila= 21(D)  failb= 60(D)  OK
+[    4.210366] raid6test: test_disks(21, 61): faila= 21(D)  failb= 61(D)  OK
+[    4.211455] raid6test: test_disks(21, 62): faila= 21(D)  failb= 62(P)  OK
+[    4.212548] raid6test: test_disks(21, 63): faila= 21(D)  failb= 63(Q)  OK
+[    4.213628] raid6test: test_disks(22, 23): faila= 22(D)  failb= 23(D)  OK
+[    4.214713] raid6test: test_disks(22, 24): faila= 22(D)  failb= 24(D)  OK
+[    4.215806] raid6test: test_disks(22, 25): faila= 22(D)  failb= 25(D)  OK
+[    4.216902] raid6test: test_disks(22, 26): faila= 22(D)  failb= 26(D)  OK
+[    4.217998] raid6test: test_disks(22, 27): faila= 22(D)  failb= 27(D)  OK
+[    4.219078] raid6test: test_disks(22, 28): faila= 22(D)  failb= 28(D)  OK
+[    4.220182] raid6test: test_disks(22, 29): faila= 22(D)  failb= 29(D)  OK
+[    4.221256] raid6test: test_disks(22, 30): faila= 22(D)  failb= 30(D)  OK
+[    4.222347] raid6test: test_disks(22, 31): faila= 22(D)  failb= 31(D)  OK
+[    4.223447] raid6test: test_disks(22, 32): faila= 22(D)  failb= 32(D)  OK
+[    4.224547] raid6test: test_disks(22, 33): faila= 22(D)  failb= 33(D)  OK
+[    4.225654] raid6test: test_disks(22, 34): faila= 22(D)  failb= 34(D)  OK
+[    4.226758] raid6test: test_disks(22, 35): faila= 22(D)  failb= 35(D)  OK
+[    4.227842] raid6test: test_disks(22, 36): faila= 22(D)  failb= 36(D)  OK
+[    4.228924] raid6test: test_disks(22, 37): faila= 22(D)  failb= 37(D)  OK
+[    4.230025] raid6test: test_disks(22, 38): faila= 22(D)  failb= 38(D)  OK
+[    4.231112] raid6test: test_disks(22, 39): faila= 22(D)  failb= 39(D)  OK
+[    4.232210] raid6test: test_disks(22, 40): faila= 22(D)  failb= 40(D)  OK
+[    4.233293] raid6test: test_disks(22, 41): faila= 22(D)  failb= 41(D)  OK
+[    4.234393] raid6test: test_disks(22, 42): faila= 22(D)  failb= 42(D)  OK
+[    4.235492] raid6test: test_disks(22, 43): faila= 22(D)  failb= 43(D)  OK
+[    4.236574] raid6test: test_disks(22, 44): faila= 22(D)  failb= 44(D)  OK
+[    4.237679] raid6test: test_disks(22, 45): faila= 22(D)  failb= 45(D)  OK
+[    4.238777] raid6test: test_disks(22, 46): faila= 22(D)  failb= 46(D)  OK
+[    4.239869] raid6test: test_disks(22, 47): faila= 22(D)  failb= 47(D)  OK
+[    4.240983] raid6test: test_disks(22, 48): faila= 22(D)  failb= 48(D)  OK
+[    4.242072] raid6test: test_disks(22, 49): faila= 22(D)  failb= 49(D)  OK
+[    4.243169] raid6test: test_disks(22, 50): faila= 22(D)  failb= 50(D)  OK
+[    4.244271] raid6test: test_disks(22, 51): faila= 22(D)  failb= 51(D)  OK
+[    4.245363] raid6test: test_disks(22, 52): faila= 22(D)  failb= 52(D)  OK
+[    4.246440] raid6test: test_disks(22, 53): faila= 22(D)  failb= 53(D)  OK
+[    4.247553] raid6test: test_disks(22, 54): faila= 22(D)  failb= 54(D)  OK
+[    4.248633] raid6test: test_disks(22, 55): faila= 22(D)  failb= 55(D)  OK
+[    4.249723] raid6test: test_disks(22, 56): faila= 22(D)  failb= 56(D)  OK
+[    4.250816] raid6test: test_disks(22, 57): faila= 22(D)  failb= 57(D)  OK
+[    4.251901] raid6test: test_disks(22, 58): faila= 22(D)  failb= 58(D)  OK
+[    4.252994] raid6test: test_disks(22, 59): faila= 22(D)  failb= 59(D)  OK
+[    4.254105] raid6test: test_disks(22, 60): faila= 22(D)  failb= 60(D)  OK
+[    4.255213] raid6test: test_disks(22, 61): faila= 22(D)  failb= 61(D)  OK
+[    4.256309] raid6test: test_disks(22, 62): faila= 22(D)  failb= 62(P)  OK
+[    4.257434] raid6test: test_disks(22, 63): faila= 22(D)  failb= 63(Q)  OK
+[    4.258524] raid6test: test_disks(23, 24): faila= 23(D)  failb= 24(D)  OK
+[    4.259608] raid6test: test_disks(23, 25): faila= 23(D)  failb= 25(D)  OK
+[    4.260704] raid6test: test_disks(23, 26): faila= 23(D)  failb= 26(D)  OK
+[    4.261785] raid6test: test_disks(23, 27): faila= 23(D)  failb= 27(D)  OK
+[    4.262874] raid6test: test_disks(23, 28): faila= 23(D)  failb= 28(D)  OK
+[    4.263977] raid6test: test_disks(23, 29): faila= 23(D)  failb= 29(D)  OK
+[    4.265074] raid6test: test_disks(23, 30): faila= 23(D)  failb= 30(D)  OK
+[    4.266166] raid6test: test_disks(23, 31): faila= 23(D)  failb= 31(D)  OK
+[    4.267275] raid6test: test_disks(23, 32): faila= 23(D)  failb= 32(D)  OK
+[    4.268376] raid6test: test_disks(23, 33): faila= 23(D)  failb= 33(D)  OK
+[    4.269467] raid6test: test_disks(23, 34): faila= 23(D)  failb= 34(D)  OK
+[    4.270564] raid6test: test_disks(23, 35): faila= 23(D)  failb= 35(D)  OK
+[    4.271655] raid6test: test_disks(23, 36): faila= 23(D)  failb= 36(D)  OK
+[    4.272738] raid6test: test_disks(23, 37): faila= 23(D)  failb= 37(D)  OK
+[    4.273843] raid6test: test_disks(23, 38): faila= 23(D)  failb= 38(D)  OK
+[    4.274932] raid6test: test_disks(23, 39): faila= 23(D)  failb= 39(D)  OK
+[    4.276023] raid6test: test_disks(23, 40): faila= 23(D)  failb= 40(D)  OK
+[    4.277124] raid6test: test_disks(23, 41): faila= 23(D)  failb= 41(D)  OK
+[    4.278210] raid6test: test_disks(23, 42): faila= 23(D)  failb= 42(D)  OK
+[    4.279297] raid6test: test_disks(23, 43): faila= 23(D)  failb= 43(D)  OK
+[    4.280407] raid6test: test_disks(23, 44): faila= 23(D)  failb= 44(D)  OK
+[    4.281498] raid6test: test_disks(23, 45): faila= 23(D)  failb= 45(D)  OK
+[    4.282586] raid6test: test_disks(23, 46): faila= 23(D)  failb= 46(D)  OK
+[    4.283690] raid6test: test_disks(23, 47): faila= 23(D)  failb= 47(D)  OK
+[    4.284781] raid6test: test_disks(23, 48): faila= 23(D)  failb= 48(D)  OK
+[    4.285872] raid6test: test_disks(23, 49): faila= 23(D)  failb= 49(D)  OK
+[    4.286974] raid6test: test_disks(23, 50): faila= 23(D)  failb= 50(D)  OK
+[    4.289864] raid6test: test_disks(23, 51): faila= 23(D)  failb= 51(D)  OK
+[    4.290970] raid6test: test_disks(23, 52): faila= 23(D)  failb= 52(D)  OK
+[    4.292054] raid6test: test_disks(23, 53): faila= 23(D)  failb= 53(D)  OK
+[    4.293138] raid6test: test_disks(23, 54): faila= 23(D)  failb= 54(D)  OK
+[    4.294239] raid6test: test_disks(23, 55): faila= 23(D)  failb= 55(D)  OK
+[    4.295328] raid6test: test_disks(23, 56): faila= 23(D)  failb= 56(D)  OK
+[    4.296450] raid6test: test_disks(23, 57): faila= 23(D)  failb= 57(D)  OK
+[    4.297556] raid6test: test_disks(23, 58): faila= 23(D)  failb= 58(D)  OK
+[    4.298683] raid6test: test_disks(23, 59): faila= 23(D)  failb= 59(D)  OK
+[    4.299809] raid6test: test_disks(23, 60): faila= 23(D)  failb= 60(D)  OK
+[    4.300933] raid6test: test_disks(23, 61): faila= 23(D)  failb= 61(D)  OK
+[    4.302020] raid6test: test_disks(23, 62): faila= 23(D)  failb= 62(P)  OK
+[    4.303118] raid6test: test_disks(23, 63): faila= 23(D)  failb= 63(Q)  OK
+[    4.304240] raid6test: test_disks(24, 25): faila= 24(D)  failb= 25(D)  OK
+[    4.305329] raid6test: test_disks(24, 26): faila= 24(D)  failb= 26(D)  OK
+[    4.306422] raid6test: test_disks(24, 27): faila= 24(D)  failb= 27(D)  OK
+[    4.307534] raid6test: test_disks(24, 28): faila= 24(D)  failb= 28(D)  OK
+[    4.308654] raid6test: test_disks(24, 29): faila= 24(D)  failb= 29(D)  OK
+[    4.309753] raid6test: test_disks(24, 30): faila= 24(D)  failb= 30(D)  OK
+[    4.310876] raid6test: test_disks(24, 31): faila= 24(D)  failb= 31(D)  OK
+[    4.311977] raid6test: test_disks(24, 32): faila= 24(D)  failb= 32(D)  OK
+[    4.313074] raid6test: test_disks(24, 33): faila= 24(D)  failb= 33(D)  OK
+[    4.314182] raid6test: test_disks(24, 34): faila= 24(D)  failb= 34(D)  OK
+[    4.315282] raid6test: test_disks(24, 35): faila= 24(D)  failb= 35(D)  OK
+[    4.316371] raid6test: test_disks(24, 36): faila= 24(D)  failb= 36(D)  OK
+[    4.317473] raid6test: test_disks(24, 37): faila= 24(D)  failb= 37(D)  OK
+[    4.318566] raid6test: test_disks(24, 38): faila= 24(D)  failb= 38(D)  OK
+[    4.319655] raid6test: test_disks(24, 39): faila= 24(D)  failb= 39(D)  OK
+[    4.320751] raid6test: test_disks(24, 40): faila= 24(D)  failb= 40(D)  OK
+[    4.321839] raid6test: test_disks(24, 41): faila= 24(D)  failb= 41(D)  OK
+[    4.322932] raid6test: test_disks(24, 42): faila= 24(D)  failb= 42(D)  OK
+[    4.324035] raid6test: test_disks(24, 43): faila= 24(D)  failb= 43(D)  OK
+[    4.325134] raid6test: test_disks(24, 44): faila= 24(D)  failb= 44(D)  OK
+[    4.326222] raid6test: test_disks(24, 45): faila= 24(D)  failb= 45(D)  OK
+[    4.327328] raid6test: test_disks(24, 46): faila= 24(D)  failb= 46(D)  OK
+[    4.328421] raid6test: test_disks(24, 47): faila= 24(D)  failb= 47(D)  OK
+[    4.329515] raid6test: test_disks(24, 48): faila= 24(D)  failb= 48(D)  OK
+[    4.330622] raid6test: test_disks(24, 49): faila= 24(D)  failb= 49(D)  OK
+[    4.331718] raid6test: test_disks(24, 50): faila= 24(D)  failb= 50(D)  OK
+[    4.332811] raid6test: test_disks(24, 51): faila= 24(D)  failb= 51(D)  OK
+[    4.333905] raid6test: test_disks(24, 52): faila= 24(D)  failb= 52(D)  OK
+[    4.334991] raid6test: test_disks(24, 53): faila= 24(D)  failb= 53(D)  OK
+[    4.336083] raid6test: test_disks(24, 54): faila= 24(D)  failb= 54(D)  OK
+[    4.337187] raid6test: test_disks(24, 55): faila= 24(D)  failb= 55(D)  OK
+[    4.338273] raid6test: test_disks(24, 56): faila= 24(D)  failb= 56(D)  OK
+[    4.339374] raid6test: test_disks(24, 57): faila= 24(D)  failb= 57(D)  OK
+[    4.340471] raid6test: test_disks(24, 58): faila= 24(D)  failb= 58(D)  OK
+[    4.341564] raid6test: test_disks(24, 59): faila= 24(D)  failb= 59(D)  OK
+[    4.342662] raid6test: test_disks(24, 60): faila= 24(D)  failb= 60(D)  OK
+[    4.343767] raid6test: test_disks(24, 61): faila= 24(D)  failb= 61(D)  OK
+[    4.344863] raid6test: test_disks(24, 62): faila= 24(D)  failb= 62(P)  OK
+[    4.345968] raid6test: test_disks(24, 63): faila= 24(D)  failb= 63(Q)  OK
+[    4.347064] raid6test: test_disks(25, 26): faila= 25(D)  failb= 26(D)  OK
+[    4.348159] raid6test: test_disks(25, 27): faila= 25(D)  failb= 27(D)  OK
+[    4.349252] raid6test: test_disks(25, 28): faila= 25(D)  failb= 28(D)  OK
+[    4.350361] raid6test: test_disks(25, 29): faila= 25(D)  failb= 29(D)  OK
+[    4.351453] raid6test: test_disks(25, 30): faila= 25(D)  failb= 30(D)  OK
+[    4.352583] raid6test: test_disks(25, 31): faila= 25(D)  failb= 31(D)  OK
+[    4.353694] raid6test: test_disks(25, 32): faila= 25(D)  failb= 32(D)  OK
+[    4.354779] raid6test: test_disks(25, 33): faila= 25(D)  failb= 33(D)  OK
+[    4.355879] raid6test: test_disks(25, 34): faila= 25(D)  failb= 34(D)  OK
+[    4.356984] raid6test: test_disks(25, 35): faila= 25(D)  failb= 35(D)  OK
+[    4.358065] raid6test: test_disks(25, 36): faila= 25(D)  failb= 36(D)  OK
+[    4.359153] raid6test: test_disks(25, 37): faila= 25(D)  failb= 37(D)  OK
+[    4.360244] raid6test: test_disks(25, 38): faila= 25(D)  failb= 38(D)  OK
+[    4.361327] raid6test: test_disks(25, 39): faila= 25(D)  failb= 39(D)  OK
+[    4.362410] raid6test: test_disks(25, 40): faila= 25(D)  failb= 40(D)  OK
+[    4.363508] raid6test: test_disks(25, 41): faila= 25(D)  failb= 41(D)  OK
+[    4.364605] raid6test: test_disks(25, 42): faila= 25(D)  failb= 42(D)  OK
+[    4.365713] raid6test: test_disks(25, 43): faila= 25(D)  failb= 43(D)  OK
+[    4.366811] raid6test: test_disks(25, 44): faila= 25(D)  failb= 44(D)  OK
+[    4.367889] raid6test: test_disks(25, 45): faila= 25(D)  failb= 45(D)  OK
+[    4.368968] raid6test: test_disks(25, 46): faila= 25(D)  failb= 46(D)  OK
+[    4.370069] raid6test: test_disks(25, 47): faila= 25(D)  failb= 47(D)  OK
+[    4.371167] raid6test: test_disks(25, 48): faila= 25(D)  failb= 48(D)  OK
+[    4.372255] raid6test: test_disks(25, 49): faila= 25(D)  failb= 49(D)  OK
+[    4.373369] raid6test: test_disks(25, 50): faila= 25(D)  failb= 50(D)  OK
+[    4.374462] raid6test: test_disks(25, 51): faila= 25(D)  failb= 51(D)  OK
+[    4.375542] raid6test: test_disks(25, 52): faila= 25(D)  failb= 52(D)  OK
+[    4.376629] raid6test: test_disks(25, 53): faila= 25(D)  failb= 53(D)  OK
+[    4.377717] raid6test: test_disks(25, 54): faila= 25(D)  failb= 54(D)  OK
+[    4.378805] raid6test: test_disks(25, 55): faila= 25(D)  failb= 55(D)  OK
+[    4.379891] raid6test: test_disks(25, 56): faila= 25(D)  failb= 56(D)  OK
+[    4.381015] raid6test: test_disks(25, 57): faila= 25(D)  failb= 57(D)  OK
+[    4.382092] raid6test: test_disks(25, 58): faila= 25(D)  failb= 58(D)  OK
+[    4.383185] raid6test: test_disks(25, 59): faila= 25(D)  failb= 59(D)  OK
+[    4.384305] raid6test: test_disks(25, 60): faila= 25(D)  failb= 60(D)  OK
+[    4.385403] raid6test: test_disks(25, 61): faila= 25(D)  failb= 61(D)  OK
+[    4.386487] raid6test: test_disks(25, 62): faila= 25(D)  failb= 62(P)  OK
+[    4.387609] raid6test: test_disks(25, 63): faila= 25(D)  failb= 63(Q)  OK
+[    4.388702] raid6test: test_disks(26, 27): faila= 26(D)  failb= 27(D)  OK
+[    4.389795] raid6test: test_disks(26, 28): faila= 26(D)  failb= 28(D)  OK
+[    4.390911] raid6test: test_disks(26, 29): faila= 26(D)  failb= 29(D)  OK
+[    4.392000] raid6test: test_disks(26, 30): faila= 26(D)  failb= 30(D)  OK
+[    4.393088] raid6test: test_disks(26, 31): faila= 26(D)  failb= 31(D)  OK
+[    4.394202] raid6test: test_disks(26, 32): faila= 26(D)  failb= 32(D)  OK
+[    4.395287] raid6test: test_disks(26, 33): faila= 26(D)  failb= 33(D)  OK
+[    4.396411] raid6test: test_disks(26, 34): faila= 26(D)  failb= 34(D)  OK
+[    4.397520] raid6test: test_disks(26, 35): faila= 26(D)  failb= 35(D)  OK
+[    4.398605] raid6test: test_disks(26, 36): faila= 26(D)  failb= 36(D)  OK
+[    4.399715] raid6test: test_disks(26, 37): faila= 26(D)  failb= 37(D)  OK
+[    4.400820] raid6test: test_disks(26, 38): faila= 26(D)  failb= 38(D)  OK
+[    4.401901] raid6test: test_disks(26, 39): faila= 26(D)  failb= 39(D)  OK
+[    4.402985] raid6test: test_disks(26, 40): faila= 26(D)  failb= 40(D)  OK
+[    4.404087] raid6test: test_disks(26, 41): faila= 26(D)  failb= 41(D)  OK
+[    4.405177] raid6test: test_disks(26, 42): faila= 26(D)  failb= 42(D)  OK
+[    4.406267] raid6test: test_disks(26, 43): faila= 26(D)  failb= 43(D)  OK
+[    4.407368] raid6test: test_disks(26, 44): faila= 26(D)  failb= 44(D)  OK
+[    4.408461] raid6test: test_disks(26, 45): faila= 26(D)  failb= 45(D)  OK
+[    4.409560] raid6test: test_disks(26, 46): faila= 26(D)  failb= 46(D)  OK
+[    4.410667] raid6test: test_disks(26, 47): faila= 26(D)  failb= 47(D)  OK
+[    4.411760] raid6test: test_disks(26, 48): faila= 26(D)  failb= 48(D)  OK
+[    4.412853] raid6test: test_disks(26, 49): faila= 26(D)  failb= 49(D)  OK
+[    4.413959] raid6test: test_disks(26, 50): faila= 26(D)  failb= 50(D)  OK
+[    4.415062] raid6test: test_disks(26, 51): faila= 26(D)  failb= 51(D)  OK
+[    4.416146] raid6test: test_disks(26, 52): faila= 26(D)  failb= 52(D)  OK
+[    4.417248] raid6test: test_disks(26, 53): faila= 26(D)  failb= 53(D)  OK
+[    4.418336] raid6test: test_disks(26, 54): faila= 26(D)  failb= 54(D)  OK
+[    4.419423] raid6test: test_disks(26, 55): faila= 26(D)  failb= 55(D)  OK
+[    4.420530] raid6test: test_disks(26, 56): faila= 26(D)  failb= 56(D)  OK
+[    4.421621] raid6test: test_disks(26, 57): faila= 26(D)  failb= 57(D)  OK
+[    4.422723] raid6test: test_disks(26, 58): faila= 26(D)  failb= 58(D)  OK
+[    4.423829] raid6test: test_disks(26, 59): faila= 26(D)  failb= 59(D)  OK
+[    4.424925] raid6test: test_disks(26, 60): faila= 26(D)  failb= 60(D)  OK
+[    4.426012] raid6test: test_disks(26, 61): faila= 26(D)  failb= 61(D)  OK
+[    4.427116] raid6test: test_disks(26, 62): faila= 26(D)  failb= 62(P)  OK
+[    4.428221] raid6test: test_disks(26, 63): faila= 26(D)  failb= 63(Q)  OK
+[    4.429315] raid6test: test_disks(27, 28): faila= 27(D)  failb= 28(D)  OK
+[    4.430425] raid6test: test_disks(27, 29): faila= 27(D)  failb= 29(D)  OK
+[    4.431521] raid6test: test_disks(27, 30): faila= 27(D)  failb= 30(D)  OK
+[    4.432618] raid6test: test_disks(27, 31): faila= 27(D)  failb= 31(D)  OK
+[    4.433733] raid6test: test_disks(27, 32): faila= 27(D)  failb= 32(D)  OK
+[    4.434833] raid6test: test_disks(27, 33): faila= 27(D)  failb= 33(D)  OK
+[    4.435931] raid6test: test_disks(27, 34): faila= 27(D)  failb= 34(D)  OK
+[    4.437045] raid6test: test_disks(27, 35): faila= 27(D)  failb= 35(D)  OK
+[    4.438138] raid6test: test_disks(27, 36): faila= 27(D)  failb= 36(D)  OK
+[    4.439227] raid6test: test_disks(27, 37): faila= 27(D)  failb= 37(D)  OK
+[    4.440331] raid6test: test_disks(27, 38): faila= 27(D)  failb= 38(D)  OK
+[    4.441417] raid6test: test_disks(27, 39): faila= 27(D)  failb= 39(D)  OK
+[    4.442524] raid6test: test_disks(27, 40): faila= 27(D)  failb= 40(D)  OK
+[    4.443627] raid6test: test_disks(27, 41): faila= 27(D)  failb= 41(D)  OK
+[    4.444724] raid6test: test_disks(27, 42): faila= 27(D)  failb= 42(D)  OK
+[    4.445822] raid6test: test_disks(27, 43): faila= 27(D)  failb= 43(D)  OK
+[    4.446925] raid6test: test_disks(27, 44): faila= 27(D)  failb= 44(D)  OK
+[    4.448014] raid6test: test_disks(27, 45): faila= 27(D)  failb= 45(D)  OK
+[    4.449110] raid6test: test_disks(27, 46): faila= 27(D)  failb= 46(D)  OK
+[    4.450220] raid6test: test_disks(27, 47): faila= 27(D)  failb= 47(D)  OK
+[    4.451320] raid6test: test_disks(27, 48): faila= 27(D)  failb= 48(D)  OK
+[    4.452425] raid6test: test_disks(27, 49): faila= 27(D)  failb= 49(D)  OK
+[    4.453531] raid6test: test_disks(27, 50): faila= 27(D)  failb= 50(D)  OK
+[    4.454629] raid6test: test_disks(27, 51): faila= 27(D)  failb= 51(D)  OK
+[    4.455722] raid6test: test_disks(27, 52): faila= 27(D)  failb= 52(D)  OK
+[    4.456808] raid6test: test_disks(27, 53): faila= 27(D)  failb= 53(D)  OK
+[    4.457886] raid6test: test_disks(27, 54): faila= 27(D)  failb= 54(D)  OK
+[    4.458971] raid6test: test_disks(27, 55): faila= 27(D)  failb= 55(D)  OK
+[    4.460071] raid6test: test_disks(27, 56): faila= 27(D)  failb= 56(D)  OK
+[    4.461146] raid6test: test_disks(27, 57): faila= 27(D)  failb= 57(D)  OK
+[    4.462239] raid6test: test_disks(27, 58): faila= 27(D)  failb= 58(D)  OK
+[    4.463347] raid6test: test_disks(27, 59): faila= 27(D)  failb= 59(D)  OK
+[    4.464450] raid6test: test_disks(27, 60): faila= 27(D)  failb= 60(D)  OK
+[    4.465544] raid6test: test_disks(27, 61): faila= 27(D)  failb= 61(D)  OK
+[    4.466642] raid6test: test_disks(27, 62): faila= 27(D)  failb= 62(P)  OK
+[    4.467773] raid6test: test_disks(27, 63): faila= 27(D)  failb= 63(Q)  OK
+[    4.468871] raid6test: test_disks(28, 29): faila= 28(D)  failb= 29(D)  OK
+[    4.469965] raid6test: test_disks(28, 30): faila= 28(D)  failb= 30(D)  OK
+[    4.471078] raid6test: test_disks(28, 31): faila= 28(D)  failb= 31(D)  OK
+[    4.472180] raid6test: test_disks(28, 32): faila= 28(D)  failb= 32(D)  OK
+[    4.473279] raid6test: test_disks(28, 33): faila= 28(D)  failb= 33(D)  OK
+[    4.474396] raid6test: test_disks(28, 34): faila= 28(D)  failb= 34(D)  OK
+[    4.475487] raid6test: test_disks(28, 35): faila= 28(D)  failb= 35(D)  OK
+[    4.476574] raid6test: test_disks(28, 36): faila= 28(D)  failb= 36(D)  OK
+[    4.477676] raid6test: test_disks(28, 37): faila= 28(D)  failb= 37(D)  OK
+[    4.478761] raid6test: test_disks(28, 38): faila= 28(D)  failb= 38(D)  OK
+[    4.479843] raid6test: test_disks(28, 39): faila= 28(D)  failb= 39(D)  OK
+[    4.480957] raid6test: test_disks(28, 40): faila= 28(D)  failb= 40(D)  OK
+[    4.482055] raid6test: test_disks(28, 41): faila= 28(D)  failb= 41(D)  OK
+[    4.483137] raid6test: test_disks(28, 42): faila= 28(D)  failb= 42(D)  OK
+[    4.484254] raid6test: test_disks(28, 43): faila= 28(D)  failb= 43(D)  OK
+[    4.485352] raid6test: test_disks(28, 44): faila= 28(D)  failb= 44(D)  OK
+[    4.486441] raid6test: test_disks(28, 45): faila= 28(D)  failb= 45(D)  OK
+[    4.489373] raid6test: test_disks(28, 46): faila= 28(D)  failb= 46(D)  OK
+[    4.490485] raid6test: test_disks(28, 47): faila= 28(D)  failb= 47(D)  OK
+[    4.491583] raid6test: test_disks(28, 48): faila= 28(D)  failb= 48(D)  OK
+[    4.492683] raid6test: test_disks(28, 49): faila= 28(D)  failb= 49(D)  OK
+[    4.493785] raid6test: test_disks(28, 50): faila= 28(D)  failb= 50(D)  OK
+[    4.494874] raid6test: test_disks(28, 51): faila= 28(D)  failb= 51(D)  OK
+[    4.495958] raid6test: test_disks(28, 52): faila= 28(D)  failb= 52(D)  OK
+[    4.497085] raid6test: test_disks(28, 53): faila= 28(D)  failb= 53(D)  OK
+[    4.498173] raid6test: test_disks(28, 54): faila= 28(D)  failb= 54(D)  OK
+[    4.499254] raid6test: test_disks(28, 55): faila= 28(D)  failb= 55(D)  OK
+[    4.500389] raid6test: test_disks(28, 56): faila= 28(D)  failb= 56(D)  OK
+[    4.501483] raid6test: test_disks(28, 57): faila= 28(D)  failb= 57(D)  OK
+[    4.502579] raid6test: test_disks(28, 58): faila= 28(D)  failb= 58(D)  OK
+[    4.503682] raid6test: test_disks(28, 59): faila= 28(D)  failb= 59(D)  OK
+[    4.504775] raid6test: test_disks(28, 60): faila= 28(D)  failb= 60(D)  OK
+[    4.505875] raid6test: test_disks(28, 61): faila= 28(D)  failb= 61(D)  OK
+[    4.506981] raid6test: test_disks(28, 62): faila= 28(D)  failb= 62(P)  OK
+[    4.508082] raid6test: test_disks(28, 63): faila= 28(D)  failb= 63(Q)  OK
+[    4.509166] raid6test: test_disks(29, 30): faila= 29(D)  failb= 30(D)  OK
+[    4.510267] raid6test: test_disks(29, 31): faila= 29(D)  failb= 31(D)  OK
+[    4.511366] raid6test: test_disks(29, 32): faila= 29(D)  failb= 32(D)  OK
+[    4.512462] raid6test: test_disks(29, 33): faila= 29(D)  failb= 33(D)  OK
+[    4.513570] raid6test: test_disks(29, 34): faila= 29(D)  failb= 34(D)  OK
+[    4.514674] raid6test: test_disks(29, 35): faila= 29(D)  failb= 35(D)  OK
+[    4.515770] raid6test: test_disks(29, 36): faila= 29(D)  failb= 36(D)  OK
+[    4.516868] raid6test: test_disks(29, 37): faila= 29(D)  failb= 37(D)  OK
+[    4.517956] raid6test: test_disks(29, 38): faila= 29(D)  failb= 38(D)  OK
+[    4.519036] raid6test: test_disks(29, 39): faila= 29(D)  failb= 39(D)  OK
+[    4.520145] raid6test: test_disks(29, 40): faila= 29(D)  failb= 40(D)  OK
+[    4.521240] raid6test: test_disks(29, 41): faila= 29(D)  failb= 41(D)  OK
+[    4.522341] raid6test: test_disks(29, 42): faila= 29(D)  failb= 42(D)  OK
+[    4.523447] raid6test: test_disks(29, 43): faila= 29(D)  failb= 43(D)  OK
+[    4.524543] raid6test: test_disks(29, 44): faila= 29(D)  failb= 44(D)  OK
+[    4.525634] raid6test: test_disks(29, 45): faila= 29(D)  failb= 45(D)  OK
+[    4.526736] raid6test: test_disks(29, 46): faila= 29(D)  failb= 46(D)  OK
+[    4.527824] raid6test: test_disks(29, 47): faila= 29(D)  failb= 47(D)  OK
+[    4.528949] raid6test: test_disks(29, 48): faila= 29(D)  failb= 48(D)  OK
+[    4.530063] raid6test: test_disks(29, 49): faila= 29(D)  failb= 49(D)  OK
+[    4.531159] raid6test: test_disks(29, 50): faila= 29(D)  failb= 50(D)  OK
+[    4.532259] raid6test: test_disks(29, 51): faila= 29(D)  failb= 51(D)  OK
+[    4.533352] raid6test: test_disks(29, 52): faila= 29(D)  failb= 52(D)  OK
+[    4.534424] raid6test: test_disks(29, 53): faila= 29(D)  failb= 53(D)  OK
+[    4.535519] raid6test: test_disks(29, 54): faila= 29(D)  failb= 54(D)  OK
+[    4.536610] raid6test: test_disks(29, 55): faila= 29(D)  failb= 55(D)  OK
+[    4.537723] raid6test: test_disks(29, 56): faila= 29(D)  failb= 56(D)  OK
+[    4.538809] raid6test: test_disks(29, 57): faila= 29(D)  failb= 57(D)  OK
+[    4.539918] raid6test: test_disks(29, 58): faila= 29(D)  failb= 58(D)  OK
+[    4.541028] raid6test: test_disks(29, 59): faila= 29(D)  failb= 59(D)  OK
+[    4.542116] raid6test: test_disks(29, 60): faila= 29(D)  failb= 60(D)  OK
+[    4.543210] raid6test: test_disks(29, 61): faila= 29(D)  failb= 61(D)  OK
+[    4.544325] raid6test: test_disks(29, 62): faila= 29(D)  failb= 62(P)  OK
+[    4.545430] raid6test: test_disks(29, 63): faila= 29(D)  failb= 63(Q)  OK
+[    4.546526] raid6test: test_disks(30, 31): faila= 30(D)  failb= 31(D)  OK
+[    4.547635] raid6test: test_disks(30, 32): faila= 30(D)  failb= 32(D)  OK
+[    4.548732] raid6test: test_disks(30, 33): faila= 30(D)  failb= 33(D)  OK
+[    4.549816] raid6test: test_disks(30, 34): faila= 30(D)  failb= 34(D)  OK
+[    4.550929] raid6test: test_disks(30, 35): faila= 30(D)  failb= 35(D)  OK
+[    4.552009] raid6test: test_disks(30, 36): faila= 30(D)  failb= 36(D)  OK
+[    4.553098] raid6test: test_disks(30, 37): faila= 30(D)  failb= 37(D)  OK
+[    4.554190] raid6test: test_disks(30, 38): faila= 30(D)  failb= 38(D)  OK
+[    4.555312] raid6test: test_disks(30, 39): faila= 30(D)  failb= 39(D)  OK
+[    4.556483] raid6test: test_disks(30, 40): faila= 30(D)  failb= 40(D)  OK
+[    4.557664] raid6test: test_disks(30, 41): faila= 30(D)  failb= 41(D)  OK
+[    4.558788] raid6test: test_disks(30, 42): faila= 30(D)  failb= 42(D)  OK
+[    4.559964] raid6test: test_disks(30, 43): faila= 30(D)  failb= 43(D)  OK
+[    4.561130] raid6test: test_disks(30, 44): faila= 30(D)  failb= 44(D)  OK
+[    4.562274] raid6test: test_disks(30, 45): faila= 30(D)  failb= 45(D)  OK
+[    4.563419] raid6test: test_disks(30, 46): faila= 30(D)  failb= 46(D)  OK
+[    4.564550] raid6test: test_disks(30, 47): faila= 30(D)  failb= 47(D)  OK
+[    4.565673] raid6test: test_disks(30, 48): faila= 30(D)  failb= 48(D)  OK
+[    4.566825] raid6test: test_disks(30, 49): faila= 30(D)  failb= 49(D)  OK
+[    4.567957] raid6test: test_disks(30, 50): faila= 30(D)  failb= 50(D)  OK
+[    4.569088] raid6test: test_disks(30, 51): faila= 30(D)  failb= 51(D)  OK
+[    4.570225] raid6test: test_disks(30, 52): faila= 30(D)  failb= 52(D)  OK
+[    4.571353] raid6test: test_disks(30, 53): faila= 30(D)  failb= 53(D)  OK
+[    4.572470] raid6test: test_disks(30, 54): faila= 30(D)  failb= 54(D)  OK
+[    4.573606] raid6test: test_disks(30, 55): faila= 30(D)  failb= 55(D)  OK
+[    4.574740] raid6test: test_disks(30, 56): faila= 30(D)  failb= 56(D)  OK
+[    4.575861] raid6test: test_disks(30, 57): faila= 30(D)  failb= 57(D)  OK
+[    4.577009] raid6test: test_disks(30, 58): faila= 30(D)  failb= 58(D)  OK
+[    4.578136] raid6test: test_disks(30, 59): faila= 30(D)  failb= 59(D)  OK
+[    4.579275] raid6test: test_disks(30, 60): faila= 30(D)  failb= 60(D)  OK
+[    4.580421] raid6test: test_disks(30, 61): faila= 30(D)  failb= 61(D)  OK
+[    4.581556] raid6test: test_disks(30, 62): faila= 30(D)  failb= 62(P)  OK
+[    4.582693] raid6test: test_disks(30, 63): faila= 30(D)  failb= 63(Q)  OK
+[    4.583838] raid6test: test_disks(31, 32): faila= 31(D)  failb= 32(D)  OK
+[    4.584967] raid6test: test_disks(31, 33): faila= 31(D)  failb= 33(D)  OK
+[    4.586106] raid6test: test_disks(31, 34): faila= 31(D)  failb= 34(D)  OK
+[    4.587253] raid6test: test_disks(31, 35): faila= 31(D)  failb= 35(D)  OK
+[    4.588385] raid6test: test_disks(31, 36): faila= 31(D)  failb= 36(D)  OK
+[    4.589509] raid6test: test_disks(31, 37): faila= 31(D)  failb= 37(D)  OK
+[    4.590646] raid6test: test_disks(31, 38): faila= 31(D)  failb= 38(D)  OK
+[    4.591767] raid6test: test_disks(31, 39): faila= 31(D)  failb= 39(D)  OK
+[    4.592895] raid6test: test_disks(31, 40): faila= 31(D)  failb= 40(D)  OK
+[    4.594037] raid6test: test_disks(31, 41): faila= 31(D)  failb= 41(D)  OK
+[    4.595159] raid6test: test_disks(31, 42): faila= 31(D)  failb= 42(D)  OK
+[    4.596292] raid6test: test_disks(31, 43): faila= 31(D)  failb= 43(D)  OK
+[    4.597433] raid6test: test_disks(31, 44): faila= 31(D)  failb= 44(D)  OK
+[    4.598566] raid6test: test_disks(31, 45): faila= 31(D)  failb= 45(D)  OK
+[    4.599691] raid6test: test_disks(31, 46): faila= 31(D)  failb= 46(D)  OK
+[    4.600849] raid6test: test_disks(31, 47): faila= 31(D)  failb= 47(D)  OK
+[    4.601991] raid6test: test_disks(31, 48): faila= 31(D)  failb= 48(D)  OK
+[    4.603112] raid6test: test_disks(31, 49): faila= 31(D)  failb= 49(D)  OK
+[    4.604231] raid6test: test_disks(31, 50): faila= 31(D)  failb= 50(D)  OK
+[    4.605336] raid6test: test_disks(31, 51): faila= 31(D)  failb= 51(D)  OK
+[    4.606424] raid6test: test_disks(31, 52): faila= 31(D)  failb= 52(D)  OK
+[    4.607524] raid6test: test_disks(31, 53): faila= 31(D)  failb= 53(D)  OK
+[    4.608618] raid6test: test_disks(31, 54): faila= 31(D)  failb= 54(D)  OK
+[    4.609707] raid6test: test_disks(31, 55): faila= 31(D)  failb= 55(D)  OK
+[    4.610817] raid6test: test_disks(31, 56): faila= 31(D)  failb= 56(D)  OK
+[    4.611905] raid6test: test_disks(31, 57): faila= 31(D)  failb= 57(D)  OK
+[    4.613000] raid6test: test_disks(31, 58): faila= 31(D)  failb= 58(D)  OK
+[    4.614109] raid6test: test_disks(31, 59): faila= 31(D)  failb= 59(D)  OK
+[    4.615191] raid6test: test_disks(31, 60): faila= 31(D)  failb= 60(D)  OK
+[    4.616289] raid6test: test_disks(31, 61): faila= 31(D)  failb= 61(D)  OK
+[    4.617394] raid6test: test_disks(31, 62): faila= 31(D)  failb= 62(P)  OK
+[    4.618501] raid6test: test_disks(31, 63): faila= 31(D)  failb= 63(Q)  OK
+[    4.619582] raid6test: test_disks(32, 33): faila= 32(D)  failb= 33(D)  OK
+[    4.620698] raid6test: test_disks(32, 34): faila= 32(D)  failb= 34(D)  OK
+[    4.621795] raid6test: test_disks(32, 35): faila= 32(D)  failb= 35(D)  OK
+[    4.622882] raid6test: test_disks(32, 36): faila= 32(D)  failb= 36(D)  OK
+[    4.623993] raid6test: test_disks(32, 37): faila= 32(D)  failb= 37(D)  OK
+[    4.625081] raid6test: test_disks(32, 38): faila= 32(D)  failb= 38(D)  OK
+[    4.626169] raid6test: test_disks(32, 39): faila= 32(D)  failb= 39(D)  OK
+[    4.627276] raid6test: test_disks(32, 40): faila= 32(D)  failb= 40(D)  OK
+[    4.628379] raid6test: test_disks(32, 41): faila= 32(D)  failb= 41(D)  OK
+[    4.629470] raid6test: test_disks(32, 42): faila= 32(D)  failb= 42(D)  OK
+[    4.630577] raid6test: test_disks(32, 43): faila= 32(D)  failb= 43(D)  OK
+[    4.631678] raid6test: test_disks(32, 44): faila= 32(D)  failb= 44(D)  OK
+[    4.632784] raid6test: test_disks(32, 45): faila= 32(D)  failb= 45(D)  OK
+[    4.633899] raid6test: test_disks(32, 46): faila= 32(D)  failb= 46(D)  OK
+[    4.634998] raid6test: test_disks(32, 47): faila= 32(D)  failb= 47(D)  OK
+[    4.636121] raid6test: test_disks(32, 48): faila= 32(D)  failb= 48(D)  OK
+[    4.637308] raid6test: test_disks(32, 49): faila= 32(D)  failb= 49(D)  OK
+[    4.638540] raid6test: test_disks(32, 50): faila= 32(D)  failb= 50(D)  OK
+[    4.639668] raid6test: test_disks(32, 51): faila= 32(D)  failb= 51(D)  OK
+[    4.640802] raid6test: test_disks(32, 52): faila= 32(D)  failb= 52(D)  OK
+[    4.641916] raid6test: test_disks(32, 53): faila= 32(D)  failb= 53(D)  OK
+[    4.643040] raid6test: test_disks(32, 54): faila= 32(D)  failb= 54(D)  OK
+[    4.644180] raid6test: test_disks(32, 55): faila= 32(D)  failb= 55(D)  OK
+[    4.645327] raid6test: test_disks(32, 56): faila= 32(D)  failb= 56(D)  OK
+[    4.646466] raid6test: test_disks(32, 57): faila= 32(D)  failb= 57(D)  OK
+[    4.647607] raid6test: test_disks(32, 58): faila= 32(D)  failb= 58(D)  OK
+[    4.648739] raid6test: test_disks(32, 59): faila= 32(D)  failb= 59(D)  OK
+[    4.649862] raid6test: test_disks(32, 60): faila= 32(D)  failb= 60(D)  OK
+[    4.651002] raid6test: test_disks(32, 61): faila= 32(D)  failb= 61(D)  OK
+[    4.652120] raid6test: test_disks(32, 62): faila= 32(D)  failb= 62(P)  OK
+[    4.653243] raid6test: test_disks(32, 63): faila= 32(D)  failb= 63(Q)  OK
+[    4.654403] raid6test: test_disks(33, 34): faila= 33(D)  failb= 34(D)  OK
+[    4.655522] raid6test: test_disks(33, 35): faila= 33(D)  failb= 35(D)  OK
+[    4.656642] raid6test: test_disks(33, 36): faila= 33(D)  failb= 36(D)  OK
+[    4.657782] raid6test: test_disks(33, 37): faila= 33(D)  failb= 37(D)  OK
+[    4.658896] raid6test: test_disks(33, 38): faila= 33(D)  failb= 38(D)  OK
+[    4.660021] raid6test: test_disks(33, 39): faila= 33(D)  failb= 39(D)  OK
+[    4.661138] raid6test: test_disks(33, 40): faila= 33(D)  failb= 40(D)  OK
+[    4.662262] raid6test: test_disks(33, 41): faila= 33(D)  failb= 41(D)  OK
+[    4.663417] raid6test: test_disks(33, 42): faila= 33(D)  failb= 42(D)  OK
+[    4.664546] raid6test: test_disks(33, 43): faila= 33(D)  failb= 43(D)  OK
+[    4.665674] raid6test: test_disks(33, 44): faila= 33(D)  failb= 44(D)  OK
+[    4.666825] raid6test: test_disks(33, 45): faila= 33(D)  failb= 45(D)  OK
+[    4.667961] raid6test: test_disks(33, 46): faila= 33(D)  failb= 46(D)  OK
+[    4.669093] raid6test: test_disks(33, 47): faila= 33(D)  failb= 47(D)  OK
+[    4.670236] raid6test: test_disks(33, 48): faila= 33(D)  failb= 48(D)  OK
+[    4.671370] raid6test: test_disks(33, 49): faila= 33(D)  failb= 49(D)  OK
+[    4.672505] raid6test: test_disks(33, 50): faila= 33(D)  failb= 50(D)  OK
+[    4.673652] raid6test: test_disks(33, 51): faila= 33(D)  failb= 51(D)  OK
+[    4.674780] raid6test: test_disks(33, 52): faila= 33(D)  failb= 52(D)  OK
+[    4.675902] raid6test: test_disks(33, 53): faila= 33(D)  failb= 53(D)  OK
+[    4.677038] raid6test: test_disks(33, 54): faila= 33(D)  failb= 54(D)  OK
+[    4.678166] raid6test: test_disks(33, 55): faila= 33(D)  failb= 55(D)  OK
+[    4.679299] raid6test: test_disks(33, 56): faila= 33(D)  failb= 56(D)  OK
+[    4.680457] raid6test: test_disks(33, 57): faila= 33(D)  failb= 57(D)  OK
+[    4.681580] raid6test: test_disks(33, 58): faila= 33(D)  failb= 58(D)  OK
+[    4.682700] raid6test: test_disks(33, 59): faila= 33(D)  failb= 59(D)  OK
+[    4.683812] raid6test: test_disks(33, 60): faila= 33(D)  failb= 60(D)  OK
+[    4.684908] raid6test: test_disks(33, 61): faila= 33(D)  failb= 61(D)  OK
+[    4.686005] raid6test: test_disks(33, 62): faila= 33(D)  failb= 62(P)  OK
+[    4.687120] raid6test: test_disks(33, 63): faila= 33(D)  failb= 63(Q)  OK
+[    4.688217] raid6test: test_disks(34, 35): faila= 34(D)  failb= 35(D)  OK
+[    4.689314] raid6test: test_disks(34, 36): faila= 34(D)  failb= 36(D)  OK
+[    4.692229] raid6test: test_disks(34, 37): faila= 34(D)  failb= 37(D)  OK
+[    4.693317] raid6test: test_disks(34, 38): faila= 34(D)  failb= 38(D)  OK
+[    4.694420] raid6test: test_disks(34, 39): faila= 34(D)  failb= 39(D)  OK
+[    4.695513] raid6test: test_disks(34, 40): faila= 34(D)  failb= 40(D)  OK
+[    4.696636] raid6test: test_disks(34, 41): faila= 34(D)  failb= 41(D)  OK
+[    4.697748] raid6test: test_disks(34, 42): faila= 34(D)  failb= 42(D)  OK
+[    4.698851] raid6test: test_disks(34, 43): faila= 34(D)  failb= 43(D)  OK
+[    4.699975] raid6test: test_disks(34, 44): faila= 34(D)  failb= 44(D)  OK
+[    4.701091] raid6test: test_disks(34, 45): faila= 34(D)  failb= 45(D)  OK
+[    4.702198] raid6test: test_disks(34, 46): faila= 34(D)  failb= 46(D)  OK
+[    4.703300] raid6test: test_disks(34, 47): faila= 34(D)  failb= 47(D)  OK
+[    4.704421] raid6test: test_disks(34, 48): faila= 34(D)  failb= 48(D)  OK
+[    4.705510] raid6test: test_disks(34, 49): faila= 34(D)  failb= 49(D)  OK
+[    4.706601] raid6test: test_disks(34, 50): faila= 34(D)  failb= 50(D)  OK
+[    4.707724] raid6test: test_disks(34, 51): faila= 34(D)  failb= 51(D)  OK
+[    4.708812] raid6test: test_disks(34, 52): faila= 34(D)  failb= 52(D)  OK
+[    4.709906] raid6test: test_disks(34, 53): faila= 34(D)  failb= 53(D)  OK
+[    4.711012] raid6test: test_disks(34, 54): faila= 34(D)  failb= 54(D)  OK
+[    4.712100] raid6test: test_disks(34, 55): faila= 34(D)  failb= 55(D)  OK
+[    4.713196] raid6test: test_disks(34, 56): faila= 34(D)  failb= 56(D)  OK
+[    4.714300] raid6test: test_disks(34, 57): faila= 34(D)  failb= 57(D)  OK
+[    4.715393] raid6test: test_disks(34, 58): faila= 34(D)  failb= 58(D)  OK
+[    4.716485] raid6test: test_disks(34, 59): faila= 34(D)  failb= 59(D)  OK
+[    4.717595] raid6test: test_disks(34, 60): faila= 34(D)  failb= 60(D)  OK
+[    4.718690] raid6test: test_disks(34, 61): faila= 34(D)  failb= 61(D)  OK
+[    4.719782] raid6test: test_disks(34, 62): faila= 34(D)  failb= 62(P)  OK
+[    4.720900] raid6test: test_disks(34, 63): faila= 34(D)  failb= 63(Q)  OK
+[    4.721988] raid6test: test_disks(35, 36): faila= 35(D)  failb= 36(D)  OK
+[    4.723087] raid6test: test_disks(35, 37): faila= 35(D)  failb= 37(D)  OK
+[    4.724186] raid6test: test_disks(35, 38): faila= 35(D)  failb= 38(D)  OK
+[    4.725312] raid6test: test_disks(35, 39): faila= 35(D)  failb= 39(D)  OK
+[    4.726405] raid6test: test_disks(35, 40): faila= 35(D)  failb= 40(D)  OK
+[    4.727508] raid6test: test_disks(35, 41): faila= 35(D)  failb= 41(D)  OK
+[    4.728599] raid6test: test_disks(35, 42): faila= 35(D)  failb= 42(D)  OK
+[    4.729692] raid6test: test_disks(35, 43): faila= 35(D)  failb= 43(D)  OK
+[    4.730807] raid6test: test_disks(35, 44): faila= 35(D)  failb= 44(D)  OK
+[    4.731905] raid6test: test_disks(35, 45): faila= 35(D)  failb= 45(D)  OK
+[    4.733006] raid6test: test_disks(35, 46): faila= 35(D)  failb= 46(D)  OK
+[    4.734115] raid6test: test_disks(35, 47): faila= 35(D)  failb= 47(D)  OK
+[    4.735209] raid6test: test_disks(35, 48): faila= 35(D)  failb= 48(D)  OK
+[    4.736309] raid6test: test_disks(35, 49): faila= 35(D)  failb= 49(D)  OK
+[    4.737424] raid6test: test_disks(35, 50): faila= 35(D)  failb= 50(D)  OK
+[    4.738518] raid6test: test_disks(35, 51): faila= 35(D)  failb= 51(D)  OK
+[    4.739608] raid6test: test_disks(35, 52): faila= 35(D)  failb= 52(D)  OK
+[    4.740712] raid6test: test_disks(35, 53): faila= 35(D)  failb= 53(D)  OK
+[    4.741803] raid6test: test_disks(35, 54): faila= 35(D)  failb= 54(D)  OK
+[    4.742895] raid6test: test_disks(35, 55): faila= 35(D)  failb= 55(D)  OK
+[    4.744003] raid6test: test_disks(35, 56): faila= 35(D)  failb= 56(D)  OK
+[    4.745099] raid6test: test_disks(35, 57): faila= 35(D)  failb= 57(D)  OK
+[    4.746189] raid6test: test_disks(35, 58): faila= 35(D)  failb= 58(D)  OK
+[    4.747297] raid6test: test_disks(35, 59): faila= 35(D)  failb= 59(D)  OK
+[    4.748403] raid6test: test_disks(35, 60): faila= 35(D)  failb= 60(D)  OK
+[    4.749492] raid6test: test_disks(35, 61): faila= 35(D)  failb= 61(D)  OK
+[    4.750591] raid6test: test_disks(35, 62): faila= 35(D)  failb= 62(P)  OK
+[    4.751697] raid6test: test_disks(35, 63): faila= 35(D)  failb= 63(Q)  OK
+[    4.752780] raid6test: test_disks(36, 37): faila= 36(D)  failb= 37(D)  OK
+[    4.753872] raid6test: test_disks(36, 38): faila= 36(D)  failb= 38(D)  OK
+[    4.754954] raid6test: test_disks(36, 39): faila= 36(D)  failb= 39(D)  OK
+[    4.756038] raid6test: test_disks(36, 40): faila= 36(D)  failb= 40(D)  OK
+[    4.757138] raid6test: test_disks(36, 41): faila= 36(D)  failb= 41(D)  OK
+[    4.758216] raid6test: test_disks(36, 42): faila= 36(D)  failb= 42(D)  OK
+[    4.759294] raid6test: test_disks(36, 43): faila= 36(D)  failb= 43(D)  OK
+[    4.760403] raid6test: test_disks(36, 44): faila= 36(D)  failb= 44(D)  OK
+[    4.761497] raid6test: test_disks(36, 45): faila= 36(D)  failb= 45(D)  OK
+[    4.762579] raid6test: test_disks(36, 46): faila= 36(D)  failb= 46(D)  OK
+[    4.763672] raid6test: test_disks(36, 47): faila= 36(D)  failb= 47(D)  OK
+[    4.764752] raid6test: test_disks(36, 48): faila= 36(D)  failb= 48(D)  OK
+[    4.765842] raid6test: test_disks(36, 49): faila= 36(D)  failb= 49(D)  OK
+[    4.766942] raid6test: test_disks(36, 50): faila= 36(D)  failb= 50(D)  OK
+[    4.768030] raid6test: test_disks(36, 51): faila= 36(D)  failb= 51(D)  OK
+[    4.769117] raid6test: test_disks(36, 52): faila= 36(D)  failb= 52(D)  OK
+[    4.770215] raid6test: test_disks(36, 53): faila= 36(D)  failb= 53(D)  OK
+[    4.771297] raid6test: test_disks(36, 54): faila= 36(D)  failb= 54(D)  OK
+[    4.772387] raid6test: test_disks(36, 55): faila= 36(D)  failb= 55(D)  OK
+[    4.773480] raid6test: test_disks(36, 56): faila= 36(D)  failb= 56(D)  OK
+[    4.774565] raid6test: test_disks(36, 57): faila= 36(D)  failb= 57(D)  OK
+[    4.775647] raid6test: test_disks(36, 58): faila= 36(D)  failb= 58(D)  OK
+[    4.776748] raid6test: test_disks(36, 59): faila= 36(D)  failb= 59(D)  OK
+[    4.777841] raid6test: test_disks(36, 60): faila= 36(D)  failb= 60(D)  OK
+[    4.778927] raid6test: test_disks(36, 61): faila= 36(D)  failb= 61(D)  OK
+[    4.780017] raid6test: test_disks(36, 62): faila= 36(D)  failb= 62(P)  OK
+[    4.781113] raid6test: test_disks(36, 63): faila= 36(D)  failb= 63(Q)  OK
+[    4.782204] raid6test: test_disks(37, 38): faila= 37(D)  failb= 38(D)  OK
+[    4.783277] raid6test: test_disks(37, 39): faila= 37(D)  failb= 39(D)  OK
+[    4.784386] raid6test: test_disks(37, 40): faila= 37(D)  failb= 40(D)  OK
+[    4.785502] raid6test: test_disks(37, 41): faila= 37(D)  failb= 41(D)  OK
+[    4.786594] raid6test: test_disks(37, 42): faila= 37(D)  failb= 42(D)  OK
+[    4.787703] raid6test: test_disks(37, 43): faila= 37(D)  failb= 43(D)  OK
+[    4.788794] raid6test: test_disks(37, 44): faila= 37(D)  failb= 44(D)  OK
+[    4.789885] raid6test: test_disks(37, 45): faila= 37(D)  failb= 45(D)  OK
+[    4.790997] raid6test: test_disks(37, 46): faila= 37(D)  failb= 46(D)  OK
+[    4.792086] raid6test: test_disks(37, 47): faila= 37(D)  failb= 47(D)  OK
+[    4.793174] raid6test: test_disks(37, 48): faila= 37(D)  failb= 48(D)  OK
+[    4.794283] raid6test: test_disks(37, 49): faila= 37(D)  failb= 49(D)  OK
+[    4.795383] raid6test: test_disks(37, 50): faila= 37(D)  failb= 50(D)  OK
+[    4.796483] raid6test: test_disks(37, 51): faila= 37(D)  failb= 51(D)  OK
+[    4.797594] raid6test: test_disks(37, 52): faila= 37(D)  failb= 52(D)  OK
+[    4.798683] raid6test: test_disks(37, 53): faila= 37(D)  failb= 53(D)  OK
+[    4.799793] raid6test: test_disks(37, 54): faila= 37(D)  failb= 54(D)  OK
+[    4.800898] raid6test: test_disks(37, 55): faila= 37(D)  failb= 55(D)  OK
+[    4.801987] raid6test: test_disks(37, 56): faila= 37(D)  failb= 56(D)  OK
+[    4.803075] raid6test: test_disks(37, 57): faila= 37(D)  failb= 57(D)  OK
+[    4.804178] raid6test: test_disks(37, 58): faila= 37(D)  failb= 58(D)  OK
+[    4.805272] raid6test: test_disks(37, 59): faila= 37(D)  failb= 59(D)  OK
+[    4.806366] raid6test: test_disks(37, 60): faila= 37(D)  failb= 60(D)  OK
+[    4.807455] raid6test: test_disks(37, 61): faila= 37(D)  failb= 61(D)  OK
+[    4.808544] raid6test: test_disks(37, 62): faila= 37(D)  failb= 62(P)  OK
+[    4.809643] raid6test: test_disks(37, 63): faila= 37(D)  failb= 63(Q)  OK
+[    4.810746] raid6test: test_disks(38, 39): faila= 38(D)  failb= 39(D)  OK
+[    4.811834] raid6test: test_disks(38, 40): faila= 38(D)  failb= 40(D)  OK
+[    4.812918] raid6test: test_disks(38, 41): faila= 38(D)  failb= 41(D)  OK
+[    4.814007] raid6test: test_disks(38, 42): faila= 38(D)  failb= 42(D)  OK
+[    4.815095] raid6test: test_disks(38, 43): faila= 38(D)  failb= 43(D)  OK
+[    4.816191] raid6test: test_disks(38, 44): faila= 38(D)  failb= 44(D)  OK
+[    4.817299] raid6test: test_disks(38, 45): faila= 38(D)  failb= 45(D)  OK
+[    4.818383] raid6test: test_disks(38, 46): faila= 38(D)  failb= 46(D)  OK
+[    4.819469] raid6test: test_disks(38, 47): faila= 38(D)  failb= 47(D)  OK
+[    4.820576] raid6test: test_disks(38, 48): faila= 38(D)  failb= 48(D)  OK
+[    4.821660] raid6test: test_disks(38, 49): faila= 38(D)  failb= 49(D)  OK
+[    4.822749] raid6test: test_disks(38, 50): faila= 38(D)  failb= 50(D)  OK
+[    4.823853] raid6test: test_disks(38, 51): faila= 38(D)  failb= 51(D)  OK
+[    4.824938] raid6test: test_disks(38, 52): faila= 38(D)  failb= 52(D)  OK
+[    4.826014] raid6test: test_disks(38, 53): faila= 38(D)  failb= 53(D)  OK
+[    4.827118] raid6test: test_disks(38, 54): faila= 38(D)  failb= 54(D)  OK
+[    4.828205] raid6test: test_disks(38, 55): faila= 38(D)  failb= 55(D)  OK
+[    4.829290] raid6test: test_disks(38, 56): faila= 38(D)  failb= 56(D)  OK
+[    4.830396] raid6test: test_disks(38, 57): faila= 38(D)  failb= 57(D)  OK
+[    4.831482] raid6test: test_disks(38, 58): faila= 38(D)  failb= 58(D)  OK
+[    4.832567] raid6test: test_disks(38, 59): faila= 38(D)  failb= 59(D)  OK
+[    4.833669] raid6test: test_disks(38, 60): faila= 38(D)  failb= 60(D)  OK
+[    4.834759] raid6test: test_disks(38, 61): faila= 38(D)  failb= 61(D)  OK
+[    4.835852] raid6test: test_disks(38, 62): faila= 38(D)  failb= 62(P)  OK
+[    4.836957] raid6test: test_disks(38, 63): faila= 38(D)  failb= 63(Q)  OK
+[    4.838046] raid6test: test_disks(39, 40): faila= 39(D)  failb= 40(D)  OK
+[    4.839134] raid6test: test_disks(39, 41): faila= 39(D)  failb= 41(D)  OK
+[    4.840230] raid6test: test_disks(39, 42): faila= 39(D)  failb= 42(D)  OK
+[    4.841321] raid6test: test_disks(39, 43): faila= 39(D)  failb= 43(D)  OK
+[    4.842418] raid6test: test_disks(39, 44): faila= 39(D)  failb= 44(D)  OK
+[    4.843526] raid6test: test_disks(39, 45): faila= 39(D)  failb= 45(D)  OK
+[    4.844619] raid6test: test_disks(39, 46): faila= 39(D)  failb= 46(D)  OK
+[    4.845712] raid6test: test_disks(39, 47): faila= 39(D)  failb= 47(D)  OK
+[    4.846810] raid6test: test_disks(39, 48): faila= 39(D)  failb= 48(D)  OK
+[    4.847893] raid6test: test_disks(39, 49): faila= 39(D)  failb= 49(D)  OK
+[    4.848979] raid6test: test_disks(39, 50): faila= 39(D)  failb= 50(D)  OK
+[    4.850076] raid6test: test_disks(39, 51): faila= 39(D)  failb= 51(D)  OK
+[    4.851164] raid6test: test_disks(39, 52): faila= 39(D)  failb= 52(D)  OK
+[    4.852242] raid6test: test_disks(39, 53): faila= 39(D)  failb= 53(D)  OK
+[    4.853326] raid6test: test_disks(39, 54): faila= 39(D)  failb= 54(D)  OK
+[    4.854423] raid6test: test_disks(39, 55): faila= 39(D)  failb= 55(D)  OK
+[    4.855507] raid6test: test_disks(39, 56): faila= 39(D)  failb= 56(D)  OK
+[    4.856600] raid6test: test_disks(39, 57): faila= 39(D)  failb= 57(D)  OK
+[    4.857706] raid6test: test_disks(39, 58): faila= 39(D)  failb= 58(D)  OK
+[    4.858803] raid6test: test_disks(39, 59): faila= 39(D)  failb= 59(D)  OK
+[    4.859891] raid6test: test_disks(39, 60): faila= 39(D)  failb= 60(D)  OK
+[    4.860998] raid6test: test_disks(39, 61): faila= 39(D)  failb= 61(D)  OK
+[    4.862097] raid6test: test_disks(39, 62): faila= 39(D)  failb= 62(P)  OK
+[    4.863194] raid6test: test_disks(39, 63): faila= 39(D)  failb= 63(Q)  OK
+[    4.864305] raid6test: test_disks(40, 41): faila= 40(D)  failb= 41(D)  OK
+[    4.865399] raid6test: test_disks(40, 42): faila= 40(D)  failb= 42(D)  OK
+[    4.866494] raid6test: test_disks(40, 43): faila= 40(D)  failb= 43(D)  OK
+[    4.867607] raid6test: test_disks(40, 44): faila= 40(D)  failb= 44(D)  OK
+[    4.868712] raid6test: test_disks(40, 45): faila= 40(D)  failb= 45(D)  OK
+[    4.869804] raid6test: test_disks(40, 46): faila= 40(D)  failb= 46(D)  OK
+[    4.870919] raid6test: test_disks(40, 47): faila= 40(D)  failb= 47(D)  OK
+[    4.872012] raid6test: test_disks(40, 48): faila= 40(D)  failb= 48(D)  OK
+[    4.873103] raid6test: test_disks(40, 49): faila= 40(D)  failb= 49(D)  OK
+[    4.874223] raid6test: test_disks(40, 50): faila= 40(D)  failb= 50(D)  OK
+[    4.875329] raid6test: test_disks(40, 51): faila= 40(D)  failb= 51(D)  OK
+[    4.876412] raid6test: test_disks(40, 52): faila= 40(D)  failb= 52(D)  OK
+[    4.877522] raid6test: test_disks(40, 53): faila= 40(D)  failb= 53(D)  OK
+[    4.878614] raid6test: test_disks(40, 54): faila= 40(D)  failb= 54(D)  OK
+[    4.879712] raid6test: test_disks(40, 55): faila= 40(D)  failb= 55(D)  OK
+[    4.880820] raid6test: test_disks(40, 56): faila= 40(D)  failb= 56(D)  OK
+[    4.881910] raid6test: test_disks(40, 57): faila= 40(D)  failb= 57(D)  OK
+[    4.882993] raid6test: test_disks(40, 58): faila= 40(D)  failb= 58(D)  OK
+[    4.884094] raid6test: test_disks(40, 59): faila= 40(D)  failb= 59(D)  OK
+[    4.885193] raid6test: test_disks(40, 60): faila= 40(D)  failb= 60(D)  OK
+[    4.886285] raid6test: test_disks(40, 61): faila= 40(D)  failb= 61(D)  OK
+[    4.887407] raid6test: test_disks(40, 62): faila= 40(D)  failb= 62(P)  OK
+[    4.888511] raid6test: test_disks(40, 63): faila= 40(D)  failb= 63(Q)  OK
+[    4.891432] raid6test: test_disks(41, 42): faila= 41(D)  failb= 42(D)  OK
+[    4.892522] raid6test: test_disks(41, 43): faila= 41(D)  failb= 43(D)  OK
+[    4.893624] raid6test: test_disks(41, 44): faila= 41(D)  failb= 44(D)  OK
+[    4.894712] raid6test: test_disks(41, 45): faila= 41(D)  failb= 45(D)  OK
+[    4.895796] raid6test: test_disks(41, 46): faila= 41(D)  failb= 46(D)  OK
+[    4.896927] raid6test: test_disks(41, 47): faila= 41(D)  failb= 47(D)  OK
+[    4.898011] raid6test: test_disks(41, 48): faila= 41(D)  failb= 48(D)  OK
+[    4.899098] raid6test: test_disks(41, 49): faila= 41(D)  failb= 49(D)  OK
+[    4.900225] raid6test: test_disks(41, 50): faila= 41(D)  failb= 50(D)  OK
+[    4.901317] raid6test: test_disks(41, 51): faila= 41(D)  failb= 51(D)  OK
+[    4.902401] raid6test: test_disks(41, 52): faila= 41(D)  failb= 52(D)  OK
+[    4.903496] raid6test: test_disks(41, 53): faila= 41(D)  failb= 53(D)  OK
+[    4.904580] raid6test: test_disks(41, 54): faila= 41(D)  failb= 54(D)  OK
+[    4.905665] raid6test: test_disks(41, 55): faila= 41(D)  failb= 55(D)  OK
+[    4.906766] raid6test: test_disks(41, 56): faila= 41(D)  failb= 56(D)  OK
+[    4.907865] raid6test: test_disks(41, 57): faila= 41(D)  failb= 57(D)  OK
+[    4.908951] raid6test: test_disks(41, 58): faila= 41(D)  failb= 58(D)  OK
+[    4.910046] raid6test: test_disks(41, 59): faila= 41(D)  failb= 59(D)  OK
+[    4.911140] raid6test: test_disks(41, 60): faila= 41(D)  failb= 60(D)  OK
+[    4.912228] raid6test: test_disks(41, 61): faila= 41(D)  failb= 61(D)  OK
+[    4.913323] raid6test: test_disks(41, 62): faila= 41(D)  failb= 62(P)  OK
+[    4.914433] raid6test: test_disks(41, 63): faila= 41(D)  failb= 63(Q)  OK
+[    4.915519] raid6test: test_disks(42, 43): faila= 42(D)  failb= 43(D)  OK
+[    4.916612] raid6test: test_disks(42, 44): faila= 42(D)  failb= 44(D)  OK
+[    4.917725] raid6test: test_disks(42, 45): faila= 42(D)  failb= 45(D)  OK
+[    4.918817] raid6test: test_disks(42, 46): faila= 42(D)  failb= 46(D)  OK
+[    4.919901] raid6test: test_disks(42, 47): faila= 42(D)  failb= 47(D)  OK
+[    4.921011] raid6test: test_disks(42, 48): faila= 42(D)  failb= 48(D)  OK
+[    4.922110] raid6test: test_disks(42, 49): faila= 42(D)  failb= 49(D)  OK
+[    4.923206] raid6test: test_disks(42, 50): faila= 42(D)  failb= 50(D)  OK
+[    4.924308] raid6test: test_disks(42, 51): faila= 42(D)  failb= 51(D)  OK
+[    4.925387] raid6test: test_disks(42, 52): faila= 42(D)  failb= 52(D)  OK
+[    4.926476] raid6test: test_disks(42, 53): faila= 42(D)  failb= 53(D)  OK
+[    4.927586] raid6test: test_disks(42, 54): faila= 42(D)  failb= 54(D)  OK
+[    4.928669] raid6test: test_disks(42, 55): faila= 42(D)  failb= 55(D)  OK
+[    4.929760] raid6test: test_disks(42, 56): faila= 42(D)  failb= 56(D)  OK
+[    4.930867] raid6test: test_disks(42, 57): faila= 42(D)  failb= 57(D)  OK
+[    4.931966] raid6test: test_disks(42, 58): faila= 42(D)  failb= 58(D)  OK
+[    4.933062] raid6test: test_disks(42, 59): faila= 42(D)  failb= 59(D)  OK
+[    4.934170] raid6test: test_disks(42, 60): faila= 42(D)  failb= 60(D)  OK
+[    4.935260] raid6test: test_disks(42, 61): faila= 42(D)  failb= 61(D)  OK
+[    4.936348] raid6test: test_disks(42, 62): faila= 42(D)  failb= 62(P)  OK
+[    4.937449] raid6test: test_disks(42, 63): faila= 42(D)  failb= 63(Q)  OK
+[    4.938542] raid6test: test_disks(43, 44): faila= 43(D)  failb= 44(D)  OK
+[    4.939647] raid6test: test_disks(43, 45): faila= 43(D)  failb= 45(D)  OK
+[    4.940760] raid6test: test_disks(43, 46): faila= 43(D)  failb= 46(D)  OK
+[    4.941850] raid6test: test_disks(43, 47): faila= 43(D)  failb= 47(D)  OK
+[    4.942955] raid6test: test_disks(43, 48): faila= 43(D)  failb= 48(D)  OK
+[    4.944065] raid6test: test_disks(43, 49): faila= 43(D)  failb= 49(D)  OK
+[    4.945152] raid6test: test_disks(43, 50): faila= 43(D)  failb= 50(D)  OK
+[    4.946242] raid6test: test_disks(43, 51): faila= 43(D)  failb= 51(D)  OK
+[    4.947348] raid6test: test_disks(43, 52): faila= 43(D)  failb= 52(D)  OK
+[    4.948442] raid6test: test_disks(43, 53): faila= 43(D)  failb= 53(D)  OK
+[    4.949525] raid6test: test_disks(43, 54): faila= 43(D)  failb= 54(D)  OK
+[    4.950630] raid6test: test_disks(43, 55): faila= 43(D)  failb= 55(D)  OK
+[    4.951723] raid6test: test_disks(43, 56): faila= 43(D)  failb= 56(D)  OK
+[    4.952813] raid6test: test_disks(43, 57): faila= 43(D)  failb= 57(D)  OK
+[    4.953919] raid6test: test_disks(43, 58): faila= 43(D)  failb= 58(D)  OK
+[    4.955013] raid6test: test_disks(43, 59): faila= 43(D)  failb= 59(D)  OK
+[    4.956114] raid6test: test_disks(43, 60): faila= 43(D)  failb= 60(D)  OK
+[    4.957226] raid6test: test_disks(43, 61): faila= 43(D)  failb= 61(D)  OK
+[    4.958358] raid6test: test_disks(43, 62): faila= 43(D)  failb= 62(P)  OK
+[    4.959507] raid6test: test_disks(43, 63): faila= 43(D)  failb= 63(Q)  OK
+[    4.960653] raid6test: test_disks(44, 45): faila= 44(D)  failb= 45(D)  OK
+[    4.961780] raid6test: test_disks(44, 46): faila= 44(D)  failb= 46(D)  OK
+[    4.962882] raid6test: test_disks(44, 47): faila= 44(D)  failb= 47(D)  OK
+[    4.964000] raid6test: test_disks(44, 48): faila= 44(D)  failb= 48(D)  OK
+[    4.965100] raid6test: test_disks(44, 49): faila= 44(D)  failb= 49(D)  OK
+[    4.966196] raid6test: test_disks(44, 50): faila= 44(D)  failb= 50(D)  OK
+[    4.967312] raid6test: test_disks(44, 51): faila= 44(D)  failb= 51(D)  OK
+[    4.968404] raid6test: test_disks(44, 52): faila= 44(D)  failb= 52(D)  OK
+[    4.969493] raid6test: test_disks(44, 53): faila= 44(D)  failb= 53(D)  OK
+[    4.970597] raid6test: test_disks(44, 54): faila= 44(D)  failb= 54(D)  OK
+[    4.971682] raid6test: test_disks(44, 55): faila= 44(D)  failb= 55(D)  OK
+[    4.972782] raid6test: test_disks(44, 56): faila= 44(D)  failb= 56(D)  OK
+[    4.973884] raid6test: test_disks(44, 57): faila= 44(D)  failb= 57(D)  OK
+[    4.974969] raid6test: test_disks(44, 58): faila= 44(D)  failb= 58(D)  OK
+[    4.976066] raid6test: test_disks(44, 59): faila= 44(D)  failb= 59(D)  OK
+[    4.977187] raid6test: test_disks(44, 60): faila= 44(D)  failb= 60(D)  OK
+[    4.978284] raid6test: test_disks(44, 61): faila= 44(D)  failb= 61(D)  OK
+[    4.979384] raid6test: test_disks(44, 62): faila= 44(D)  failb= 62(P)  OK
+[    4.980499] raid6test: test_disks(44, 63): faila= 44(D)  failb= 63(Q)  OK
+[    4.981598] raid6test: test_disks(45, 46): faila= 45(D)  failb= 46(D)  OK
+[    4.982697] raid6test: test_disks(45, 47): faila= 45(D)  failb= 47(D)  OK
+[    4.983796] raid6test: test_disks(45, 48): faila= 45(D)  failb= 48(D)  OK
+[    4.984892] raid6test: test_disks(45, 49): faila= 45(D)  failb= 49(D)  OK
+[    4.985992] raid6test: test_disks(45, 50): faila= 45(D)  failb= 50(D)  OK
+[    4.987097] raid6test: test_disks(45, 51): faila= 45(D)  failb= 51(D)  OK
+[    4.988188] raid6test: test_disks(45, 52): faila= 45(D)  failb= 52(D)  OK
+[    4.989271] raid6test: test_disks(45, 53): faila= 45(D)  failb= 53(D)  OK
+[    4.990372] raid6test: test_disks(45, 54): faila= 45(D)  failb= 54(D)  OK
+[    4.991461] raid6test: test_disks(45, 55): faila= 45(D)  failb= 55(D)  OK
+[    4.992557] raid6test: test_disks(45, 56): faila= 45(D)  failb= 56(D)  OK
+[    4.993661] raid6test: test_disks(45, 57): faila= 45(D)  failb= 57(D)  OK
+[    4.994752] raid6test: test_disks(45, 58): faila= 45(D)  failb= 58(D)  OK
+[    4.995849] raid6test: test_disks(45, 59): faila= 45(D)  failb= 59(D)  OK
+[    4.996990] raid6test: test_disks(45, 60): faila= 45(D)  failb= 60(D)  OK
+[    4.998081] raid6test: test_disks(45, 61): faila= 45(D)  failb= 61(D)  OK
+[    4.999171] raid6test: test_disks(45, 62): faila= 45(D)  failb= 62(P)  OK
+[    5.000320] raid6test: test_disks(45, 63): faila= 45(D)  failb= 63(Q)  OK
+[    5.001414] raid6test: test_disks(46, 47): faila= 46(D)  failb= 47(D)  OK
+[    5.002511] raid6test: test_disks(46, 48): faila= 46(D)  failb= 48(D)  OK
+[    5.003615] raid6test: test_disks(46, 49): faila= 46(D)  failb= 49(D)  OK
+[    5.004710] raid6test: test_disks(46, 50): faila= 46(D)  failb= 50(D)  OK
+[    5.005807] raid6test: test_disks(46, 51): faila= 46(D)  failb= 51(D)  OK
+[    5.006913] raid6test: test_disks(46, 52): faila= 46(D)  failb= 52(D)  OK
+[    5.007994] raid6test: test_disks(46, 53): faila= 46(D)  failb= 53(D)  OK
+[    5.009085] raid6test: test_disks(46, 54): faila= 46(D)  failb= 54(D)  OK
+[    5.010188] raid6test: test_disks(46, 55): faila= 46(D)  failb= 55(D)  OK
+[    5.011279] raid6test: test_disks(46, 56): faila= 46(D)  failb= 56(D)  OK
+[    5.012374] raid6test: test_disks(46, 57): faila= 46(D)  failb= 57(D)  OK
+[    5.013478] raid6test: test_disks(46, 58): faila= 46(D)  failb= 58(D)  OK
+[    5.014572] raid6test: test_disks(46, 59): faila= 46(D)  failb= 59(D)  OK
+[    5.015673] raid6test: test_disks(46, 60): faila= 46(D)  failb= 60(D)  OK
+[    5.016769] raid6test: test_disks(46, 61): faila= 46(D)  failb= 61(D)  OK
+[    5.017873] raid6test: test_disks(46, 62): faila= 46(D)  failb= 62(P)  OK
+[    5.018978] raid6test: test_disks(46, 63): faila= 46(D)  failb= 63(Q)  OK
+[    5.020089] raid6test: test_disks(47, 48): faila= 47(D)  failb= 48(D)  OK
+[    5.021185] raid6test: test_disks(47, 49): faila= 47(D)  failb= 49(D)  OK
+[    5.022281] raid6test: test_disks(47, 50): faila= 47(D)  failb= 50(D)  OK
+[    5.023399] raid6test: test_disks(47, 51): faila= 47(D)  failb= 51(D)  OK
+[    5.024476] raid6test: test_disks(47, 52): faila= 47(D)  failb= 52(D)  OK
+[    5.025562] raid6test: test_disks(47, 53): faila= 47(D)  failb= 53(D)  OK
+[    5.026694] raid6test: test_disks(47, 54): faila= 47(D)  failb= 54(D)  OK
+[    5.027780] raid6test: test_disks(47, 55): faila= 47(D)  failb= 55(D)  OK
+[    5.028869] raid6test: test_disks(47, 56): faila= 47(D)  failb= 56(D)  OK
+[    5.029966] raid6test: test_disks(47, 57): faila= 47(D)  failb= 57(D)  OK
+[    5.031079] raid6test: test_disks(47, 58): faila= 47(D)  failb= 58(D)  OK
+[    5.032164] raid6test: test_disks(47, 59): faila= 47(D)  failb= 59(D)  OK
+[    5.033250] raid6test: test_disks(47, 60): faila= 47(D)  failb= 60(D)  OK
+[    5.034366] raid6test: test_disks(47, 61): faila= 47(D)  failb= 61(D)  OK
+[    5.035455] raid6test: test_disks(47, 62): faila= 47(D)  failb= 62(P)  OK
+[    5.036562] raid6test: test_disks(47, 63): faila= 47(D)  failb= 63(Q)  OK
+[    5.037664] raid6test: test_disks(48, 49): faila= 48(D)  failb= 49(D)  OK
+[    5.038761] raid6test: test_disks(48, 50): faila= 48(D)  failb= 50(D)  OK
+[    5.039858] raid6test: test_disks(48, 51): faila= 48(D)  failb= 51(D)  OK
+[    5.040962] raid6test: test_disks(48, 52): faila= 48(D)  failb= 52(D)  OK
+[    5.042053] raid6test: test_disks(48, 53): faila= 48(D)  failb= 53(D)  OK
+[    5.043154] raid6test: test_disks(48, 54): faila= 48(D)  failb= 54(D)  OK
+[    5.044252] raid6test: test_disks(48, 55): faila= 48(D)  failb= 55(D)  OK
+[    5.045350] raid6test: test_disks(48, 56): faila= 48(D)  failb= 56(D)  OK
+[    5.046442] raid6test: test_disks(48, 57): faila= 48(D)  failb= 57(D)  OK
+[    5.047550] raid6test: test_disks(48, 58): faila= 48(D)  failb= 58(D)  OK
+[    5.048650] raid6test: test_disks(48, 59): faila= 48(D)  failb= 59(D)  OK
+[    5.049740] raid6test: test_disks(48, 60): faila= 48(D)  failb= 60(D)  OK
+[    5.050849] raid6test: test_disks(48, 61): faila= 48(D)  failb= 61(D)  OK
+[    5.051940] raid6test: test_disks(48, 62): faila= 48(D)  failb= 62(P)  OK
+[    5.053046] raid6test: test_disks(48, 63): faila= 48(D)  failb= 63(Q)  OK
+[    5.054164] raid6test: test_disks(49, 50): faila= 49(D)  failb= 50(D)  OK
+[    5.055259] raid6test: test_disks(49, 51): faila= 49(D)  failb= 51(D)  OK
+[    5.056357] raid6test: test_disks(49, 52): faila= 49(D)  failb= 52(D)  OK
+[    5.057454] raid6test: test_disks(49, 53): faila= 49(D)  failb= 53(D)  OK
+[    5.058541] raid6test: test_disks(49, 54): faila= 49(D)  failb= 54(D)  OK
+[    5.059634] raid6test: test_disks(49, 55): faila= 49(D)  failb= 55(D)  OK
+[    5.060754] raid6test: test_disks(49, 56): faila= 49(D)  failb= 56(D)  OK
+[    5.061841] raid6test: test_disks(49, 57): faila= 49(D)  failb= 57(D)  OK
+[    5.062932] raid6test: test_disks(49, 58): faila= 49(D)  failb= 58(D)  OK
+[    5.064045] raid6test: test_disks(49, 59): faila= 49(D)  failb= 59(D)  OK
+[    5.065142] raid6test: test_disks(49, 60): faila= 49(D)  failb= 60(D)  OK
+[    5.066232] raid6test: test_disks(49, 61): faila= 49(D)  failb= 61(D)  OK
+[    5.067333] raid6test: test_disks(49, 62): faila= 49(D)  failb= 62(P)  OK
+[    5.068443] raid6test: test_disks(49, 63): faila= 49(D)  failb= 63(Q)  OK
+[    5.069549] raid6test: test_disks(50, 51): faila= 50(D)  failb= 51(D)  OK
+[    5.070657] raid6test: test_disks(50, 52): faila= 50(D)  failb= 52(D)  OK
+[    5.071738] raid6test: test_disks(50, 53): faila= 50(D)  failb= 53(D)  OK
+[    5.072824] raid6test: test_disks(50, 54): faila= 50(D)  failb= 54(D)  OK
+[    5.073924] raid6test: test_disks(50, 55): faila= 50(D)  failb= 55(D)  OK
+[    5.075047] raid6test: test_disks(50, 56): faila= 50(D)  failb= 56(D)  OK
+[    5.076145] raid6test: test_disks(50, 57): faila= 50(D)  failb= 57(D)  OK
+[    5.077246] raid6test: test_disks(50, 58): faila= 50(D)  failb= 58(D)  OK
+[    5.078340] raid6test: test_disks(50, 59): faila= 50(D)  failb= 59(D)  OK
+[    5.079439] raid6test: test_disks(50, 60): faila= 50(D)  failb= 60(D)  OK
+[    5.080548] raid6test: test_disks(50, 61): faila= 50(D)  failb= 61(D)  OK
+[    5.081639] raid6test: test_disks(50, 62): faila= 50(D)  failb= 62(P)  OK
+[    5.082748] raid6test: test_disks(50, 63): faila= 50(D)  failb= 63(Q)  OK
+[    5.083843] raid6test: test_disks(51, 52): faila= 51(D)  failb= 52(D)  OK
+[    5.084924] raid6test: test_disks(51, 53): faila= 51(D)  failb= 53(D)  OK
+[    5.086005] raid6test: test_disks(51, 54): faila= 51(D)  failb= 54(D)  OK
+[    5.087094] raid6test: test_disks(51, 55): faila= 51(D)  failb= 55(D)  OK
+[    5.088191] raid6test: test_disks(51, 56): faila= 51(D)  failb= 56(D)  OK
+[    5.091113] raid6test: test_disks(51, 57): faila= 51(D)  failb= 57(D)  OK
+[    5.092207] raid6test: test_disks(51, 58): faila= 51(D)  failb= 58(D)  OK
+[    5.093312] raid6test: test_disks(51, 59): faila= 51(D)  failb= 59(D)  OK
+[    5.094429] raid6test: test_disks(51, 60): faila= 51(D)  failb= 60(D)  OK
+[    5.095569] raid6test: test_disks(51, 61): faila= 51(D)  failb= 61(D)  OK
+[    5.096711] raid6test: test_disks(51, 62): faila= 51(D)  failb= 62(P)  OK
+[    5.097872] raid6test: test_disks(51, 63): faila= 51(D)  failb= 63(Q)  OK
+[    5.098993] raid6test: test_disks(52, 53): faila= 52(D)  failb= 53(D)  OK
+[    5.100109] raid6test: test_disks(52, 54): faila= 52(D)  failb= 54(D)  OK
+[    5.101256] raid6test: test_disks(52, 55): faila= 52(D)  failb= 55(D)  OK
+[    5.102398] raid6test: test_disks(52, 56): faila= 52(D)  failb= 56(D)  OK
+[    5.103519] raid6test: test_disks(52, 57): faila= 52(D)  failb= 57(D)  OK
+[    5.104630] raid6test: test_disks(52, 58): faila= 52(D)  failb= 58(D)  OK
+[    5.105742] raid6test: test_disks(52, 59): faila= 52(D)  failb= 59(D)  OK
+[    5.106861] raid6test: test_disks(52, 60): faila= 52(D)  failb= 60(D)  OK
+[    5.108004] raid6test: test_disks(52, 61): faila= 52(D)  failb= 61(D)  OK
+[    5.109121] raid6test: test_disks(52, 62): faila= 52(D)  failb= 62(P)  OK
+[    5.110291] raid6test: test_disks(52, 63): faila= 52(D)  failb= 63(Q)  OK
+[    5.111413] raid6test: test_disks(53, 54): faila= 53(D)  failb= 54(D)  OK
+[    5.112527] raid6test: test_disks(53, 55): faila= 53(D)  failb= 55(D)  OK
+[    5.113651] raid6test: test_disks(53, 56): faila= 53(D)  failb= 56(D)  OK
+[    5.114776] raid6test: test_disks(53, 57): faila= 53(D)  failb= 57(D)  OK
+[    5.115888] raid6test: test_disks(53, 58): faila= 53(D)  failb= 58(D)  OK
+[    5.117023] raid6test: test_disks(53, 59): faila= 53(D)  failb= 59(D)  OK
+[    5.118138] raid6test: test_disks(53, 60): faila= 53(D)  failb= 60(D)  OK
+[    5.119248] raid6test: test_disks(53, 61): faila= 53(D)  failb= 61(D)  OK
+[    5.120412] raid6test: test_disks(53, 62): faila= 53(D)  failb= 62(P)  OK
+[    5.121537] raid6test: test_disks(53, 63): faila= 53(D)  failb= 63(Q)  OK
+[    5.122646] raid6test: test_disks(54, 55): faila= 54(D)  failb= 55(D)  OK
+[    5.123782] raid6test: test_disks(54, 56): faila= 54(D)  failb= 56(D)  OK
+[    5.124901] raid6test: test_disks(54, 57): faila= 54(D)  failb= 57(D)  OK
+[    5.126015] raid6test: test_disks(54, 58): faila= 54(D)  failb= 58(D)  OK
+[    5.127144] raid6test: test_disks(54, 59): faila= 54(D)  failb= 59(D)  OK
+[    5.128313] raid6test: test_disks(54, 60): faila= 54(D)  failb= 60(D)  OK
+[    5.129443] raid6test: test_disks(54, 61): faila= 54(D)  failb= 61(D)  OK
+[    5.130570] raid6test: test_disks(54, 62): faila= 54(D)  failb= 62(P)  OK
+[    5.131696] raid6test: test_disks(54, 63): faila= 54(D)  failb= 63(Q)  OK
+[    5.132811] raid6test: test_disks(55, 56): faila= 55(D)  failb= 56(D)  OK
+[    5.133932] raid6test: test_disks(55, 57): faila= 55(D)  failb= 57(D)  OK
+[    5.135012] raid6test: test_disks(55, 58): faila= 55(D)  failb= 58(D)  OK
+[    5.136105] raid6test: test_disks(55, 59): faila= 55(D)  failb= 59(D)  OK
+[    5.137210] raid6test: test_disks(55, 60): faila= 55(D)  failb= 60(D)  OK
+[    5.138310] raid6test: test_disks(55, 61): faila= 55(D)  failb= 61(D)  OK
+[    5.139402] raid6test: test_disks(55, 62): faila= 55(D)  failb= 62(P)  OK
+[    5.140502] raid6test: test_disks(55, 63): faila= 55(D)  failb= 63(Q)  OK
+[    5.141584] raid6test: test_disks(56, 57): faila= 56(D)  failb= 57(D)  OK
+[    5.142677] raid6test: test_disks(56, 58): faila= 56(D)  failb= 58(D)  OK
+[    5.143779] raid6test: test_disks(56, 59): faila= 56(D)  failb= 59(D)  OK
+[    5.144877] raid6test: test_disks(56, 60): faila= 56(D)  failb= 60(D)  OK
+[    5.145965] raid6test: test_disks(56, 61): faila= 56(D)  failb= 61(D)  OK
+[    5.147074] raid6test: test_disks(56, 62): faila= 56(D)  failb= 62(P)  OK
+[    5.148215] raid6test: test_disks(56, 63): faila= 56(D)  failb= 63(Q)  OK
+[    5.149316] raid6test: test_disks(57, 58): faila= 57(D)  failb= 58(D)  OK
+[    5.150427] raid6test: test_disks(57, 59): faila= 57(D)  failb= 59(D)  OK
+[    5.151523] raid6test: test_disks(57, 60): faila= 57(D)  failb= 60(D)  OK
+[    5.152616] raid6test: test_disks(57, 61): faila= 57(D)  failb= 61(D)  OK
+[    5.153722] raid6test: test_disks(57, 62): faila= 57(D)  failb= 62(P)  OK
+[    5.154822] raid6test: test_disks(57, 63): faila= 57(D)  failb= 63(Q)  OK
+[    5.155922] raid6test: test_disks(58, 59): faila= 58(D)  failb= 59(D)  OK
+[    5.157024] raid6test: test_disks(58, 60): faila= 58(D)  failb= 60(D)  OK
+[    5.158142] raid6test: test_disks(58, 61): faila= 58(D)  failb= 61(D)  OK
+[    5.159239] raid6test: test_disks(58, 62): faila= 58(D)  failb= 62(P)  OK
+[    5.160354] raid6test: test_disks(58, 63): faila= 58(D)  failb= 63(Q)  OK
+[    5.161450] raid6test: test_disks(59, 60): faila= 59(D)  failb= 60(D)  OK
+[    5.162551] raid6test: test_disks(59, 61): faila= 59(D)  failb= 61(D)  OK
+[    5.163661] raid6test: test_disks(59, 62): faila= 59(D)  failb= 62(P)  OK
+[    5.164763] raid6test: test_disks(59, 63): faila= 59(D)  failb= 63(Q)  OK
+[    5.165861] raid6test: test_disks(60, 61): faila= 60(D)  failb= 61(D)  OK
+[    5.166970] raid6test: test_disks(60, 62): faila= 60(D)  failb= 62(P)  OK
+[    5.168082] raid6test: test_disks(60, 63): faila= 60(D)  failb= 63(Q)  OK
+[    5.169179] raid6test: test_disks(61, 62): faila= 61(D)  failb= 62(P)  OK
+[    5.170303] raid6test: test_disks(61, 63): faila= 61(D)  failb= 63(Q)  OK
+[    5.171405] raid6test: test_disks(62, 63): faila= 62(P)  failb= 63(Q)  OK
+[    5.172379] raid6test: 
+[    5.172903] raid6test: complete (2429 tests, 0 failures)
+[    5.173908]   Magic number: 15:409:728
+[    5.174707] PM: Hibernation image not present or could not be loaded
+--=-5OTMAMIc6FDpBZRSHoNh
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+_______________________________________________
+LKP mailing list
+LKP@linux.intel.com
+=0D
+--=-5OTMAMIc6FDpBZRSHoNh--
+
