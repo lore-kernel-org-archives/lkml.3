@@ -1,121 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211AbbAZSG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:06:26 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:33419 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125AbbAZSGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:06:16 -0500
-From: Johan Hovold <johan@kernel.org>
+	id S932103AbbAZSIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:08:38 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20042 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756560AbbAZSIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 13:08:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,470,1418112000"; 
+   d="scan'208";a="642768404"
+Subject: Re: [PATCH char-misc-next v2 00/13] misc: mic: SCIF driver
+From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: [PATCH 2/2] gpio: sysfs: fix gpio device-attribute leak
-Date: Mon, 26 Jan 2015 19:06:00 +0100
-Message-Id: <1422295560-6284-3-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.5
-In-Reply-To: <1422295560-6284-1-git-send-email-johan@kernel.org>
-References: <1422295496-6194-1-git-send-email-johan@kernel.org>
- <1422295560-6284-1-git-send-email-johan@kernel.org>
+Cc: sudeep.dutt@intel.com, Arnd Bergmann <arnd@arndb.de>,
+        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>
+In-Reply-To: <20150125124429.GC21763@kroah.com>
+References: <cover.1421097390.git.sudeep.dutt@intel.com>
+	 <20150125124429.GC21763@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Jan 2015 10:07:07 -0800
+Message-ID: <1422295627.9362.173.camel@rbtaylor-desk1.amr.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
+On Sun, 2015-01-25 at 20:44 +0800, Greg Kroah-Hartman wrote:
+> On Mon, Jan 12, 2015 at 03:09:54PM -0800, Sudeep Dutt wrote:
+> > ChangeLog:
+> > =========
+> > v1 => v2:
+> > a) Use kernel-doc formatting for SCIF header file documentation, enhance
+> >    SCIF ring buffer documentation and formatting cleanup in patch 4 as
+> >    per feedback from Greg Kroah-Hartman
+> > b) SCIF bug fixes and cleanups since initial post
+> > 
+> > v1: Initial post @ https://lkml.org/lkml/2014/12/10/546
+> 
+> Do you have any test code that can be added to the tree to exercise this
+> api and at least give a hint as to how it all works from the userspace
+> side?  You don't have any pointers to any userspace code, what is using
+> this API?
+> 
 
-The gpio device attributes were never destroyed when the gpio was
-unexported (or on export failures).
+SCIF has been used to implement an ICC offload compiler runtime in user
+space. We will be submitting a kernel client as well if this initial
+patch series is accepted upstream. SCIF has a user space library which
+is a thin IOCTL wrapper providing a user space API similar to the kernel
+API in scif.h. The SCIF user space library is distributed separately via
+https://software.intel.com/en-us/mic-developer
 
-Use device_create_with_groups() to create the default device attributes
-of the gpio class device. Note that this also fixes the
-attribute-creation race with userspace for these attributes.
+Here is some SCIF pseudo code as an example:
 
-Remove contingent attributes in export error path and on unexport.
+Process A (on host)	 		Process B (on MIC Coprocessor)
 
-Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-Cc: stable <stable@vger.kernel.org> # v2.6.27+
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-[johan: fix leaks without device_create_with_groups, which wasn't
-introduced until 3.11 ]
-Signed-off-by: Johan Hovold <johan@kernel.org>
----
- drivers/gpio/gpiolib.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+scif_open(..)				scif_open(..)
+scif_bind(..)				scif_bind(..)
+scif_listen(..)
+scif_accept(..)				scif_connect(..)
+/* SCIF connection established */
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index bc3d59efe80b..4b2a26b62025 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -362,7 +362,7 @@ static ssize_t gpio_value_store(struct device *dev,
- 	return status;
- }
- 
--static const DEVICE_ATTR(value, 0644,
-+static DEVICE_ATTR(value, 0644,
- 		gpio_value_show, gpio_value_store);
- 
- static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
-@@ -580,17 +580,17 @@ static ssize_t gpio_active_low_store(struct device *dev,
- 	return status ? : size;
- }
- 
--static const DEVICE_ATTR(active_low, 0644,
-+static DEVICE_ATTR(active_low, 0644,
- 		gpio_active_low_show, gpio_active_low_store);
- 
--static const struct attribute *gpio_attrs[] = {
-+static struct attribute *gpio_attrs[] = {
- 	&dev_attr_value.attr,
- 	&dev_attr_active_low.attr,
- 	NULL,
- };
- 
- static const struct attribute_group gpio_attr_group = {
--	.attrs = (struct attribute **) gpio_attrs,
-+       .attrs = gpio_attrs,
- };
- 
- /*
-@@ -806,20 +806,24 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 	if (direction_may_change) {
- 		status = device_create_file(dev, &dev_attr_direction);
- 		if (status)
--			goto fail_unregister_device;
-+			goto fail_remove_attr_group;
- 	}
- 
- 	if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
- 				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
- 		status = device_create_file(dev, &dev_attr_edge);
- 		if (status)
--			goto fail_unregister_device;
-+			goto fail_remove_attr_direction;
- 	}
- 
- 	set_bit(FLAG_EXPORT, &desc->flags);
- 	mutex_unlock(&sysfs_lock);
- 	return 0;
- 
-+fail_remove_attr_direction:
-+	device_remove_file(dev, &dev_attr_direction);
-+fail_remove_attr_group:
-+	sysfs_remove_group(&dev->kobj, &gpio_attr_group);
- fail_unregister_device:
- 	device_unregister(dev);
- fail_unlock:
-@@ -962,6 +966,9 @@ static void gpiod_unexport(struct gpio_desc *desc)
- 
- 		dev = class_find_device(&gpio_class, NULL, desc, match_export);
- 		if (dev) {
-+			device_remove_file(dev, &dev_attr_edge);
-+			device_remove_file(dev, &dev_attr_direction);
-+			sysfs_remove_group(&dev->kobj, &gpio_attr_group);
- 			gpio_setup_irq(desc, dev, 0);
- 			clear_bit(FLAG_EXPORT, &desc->flags);
- 		} else
--- 
-2.0.5
+/* Send and receive control messages */
+scif_send(..)/scif_recv(..)		scif_send(..)/scif_recv(..)
+
+/* Register memory */
+scif_register(..)			scif_register(..)
+
+/* RDMA */
+scif_readfrom(..)/scif_writeto(..)    scif_readfrom(..)/scif_writeto(..)
+
+mmap(..)				mmap(..)
+/* Access remote registered memory */
+
+/* Close the endpoints */
+scif_close(..)				scif_close(..)
+
+The user space code has been distributed and maintained separately from
+the kernel so we did not include it as part of this patch series to
+avoid bloating the kernel. Do you think we should include the user space
+SCIF library and some sample user space test applications under
+Documentation/mic with this patch series?
+
+Thanks,
+Sudeep Dutt
 
