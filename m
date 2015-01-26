@@ -1,126 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106AbbAZQ0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:26:51 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33060 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694AbbAZQ0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:26:44 -0500
-Date: Mon, 26 Jan 2015 17:26:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@kernel.org, linux-kernel@vger.kernel.org
-Cc: vincent.weaver@maine.edu, eranian@gmail.com, jolsa@redhat.com,
-        mark.rutland@arm.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de
-Subject: Re: [RFC][PATCH 2/3] perf: Add a bit of paranoia
-Message-ID: <20150126162639.GA21418@twins.programming.kicks-ass.net>
-References: <20150123125159.696530128@infradead.org>
- <20150123125834.150481799@infradead.org>
+	id S1756395AbbAZQ2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:28:10 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:49400 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752869AbbAZQ2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 11:28:06 -0500
+Message-ID: <54C66B0D.9040109@ti.com>
+Date: Mon, 26 Jan 2015 18:27:57 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123125834.150481799@infradead.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: <cw00.choi@samsung.com>
+CC: Felipe Balbi <balbi@ti.com>, <tony@atomide.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        <george.cherian@ti.com>, <nsekhar@ti.com>,
+        devicetree <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/7] extcon: usb-gpio: Introduce gpio usb extcon driver
+References: <1422274532-9488-1-git-send-email-rogerq@ti.com>	<1422274532-9488-2-git-send-email-rogerq@ti.com> <CAGTfZH3nmpUGgFJ6RU+xH8tuDkGBFA-NbXWa0CSXZXR+DXrbkQ@mail.gmail.com>
+In-Reply-To: <CAGTfZH3nmpUGgFJ6RU+xH8tuDkGBFA-NbXWa0CSXZXR+DXrbkQ@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 01:52:01PM +0100, Peter Zijlstra wrote:
-> @@ -1442,6 +1450,10 @@ event_sched_out(struct perf_event *event
->  {
->  	u64 tstamp = perf_event_time(event);
->  	u64 delta;
-> +
-> +	WARN_ON_ONCE(event->ctx != ctx);
-> +	lockdep_assert_held(&ctx->lock);
-> +
->  	/*
->  	 * An event which could not be activated because of
->  	 * filter mismatch still needs to have its timings
+Hi Chanwoo,
 
-Jiri reported triggering that WARN_ON_ONCE over the weekend:
+All your comments are valid. Need some clarification on one comment.
 
- event_sched_out.isra.79+0x2b9/0x2d0
- group_sched_out+0x69/0xc0
- ctx_sched_out+0x106/0x130
- task_ctx_sched_out+0x37/0x70
- __perf_install_in_context+0x70/0x1a0
- remote_function+0x48/0x60
- generic_exec_single+0x15b/0x1d0
- smp_call_function_single+0x67/0xa0
- task_function_call+0x53/0x80
- perf_install_in_context+0x8b/0x110
+On 26/01/15 15:56, Chanwoo Choi wrote:
+> Hi Roger,
+> 
+> This patch looks good to me. But I add some comment.
+> If you modify some comment, I'll apply this patch on 3.21 queue.
+> 
+> On Mon, Jan 26, 2015 at 9:15 PM, Roger Quadros <rogerq@ti.com> wrote:
+>> This driver observes the USB ID pin connected over a GPIO and
+>> updates the USB cable extcon states accordingly.
+>>
+>> The existing GPIO extcon driver is not suitable for this purpose
+>> as it needs to be taught to understand USB cable states and it
+>> can't handle more than one cable per instance.
+>>
+>> For the USB case we need to handle 2 cable states.
+>> 1) USB (attach/detach)
+>> 2) USB-Host (attach/detach)
+>>
+>> This driver can be easily updated in the future to handle VBUS
+>> events in case it happens to be available on GPIO for any platform.
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  .../devicetree/bindings/extcon/extcon-usb-gpio.txt |  20 ++
+>>  drivers/extcon/Kconfig                             |   7 +
+>>  drivers/extcon/Makefile                            |   1 +
+>>  drivers/extcon/extcon-usb-gpio.c                   | 214 +++++++++++++++++++++
+>>  4 files changed, 242 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+>>  create mode 100644 drivers/extcon/extcon-usb-gpio.c
+>>
 
+<snip>
 
-I think the below should cure this; if we install a group leader it will
-iterate the (still intact) group list and find its siblings and try and
-install those too -- even though those still have the old event->ctx --
-in the new ctx.
+>> +
+>> +static int usb_extcon_probe(struct platform_device *pdev)
+>> +{
+>> +       struct device *dev = &pdev->dev;
+>> +       struct device_node *np = dev->of_node;
+>> +       struct usb_extcon_info *info;
+>> +       int ret;
+>> +
+>> +       if (!np)
+>> +               return -EINVAL;
+>> +
+>> +       info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+>> +       if (!info)
+>> +               return -ENOMEM;
+>> +
+>> +       info->dev = dev;
+>> +       info->id_gpiod = devm_gpiod_get(&pdev->dev, "id");
+>> +       if (IS_ERR(info->id_gpiod)) {
+>> +               dev_err(dev, "failed to get ID GPIO\n");
+>> +               return PTR_ERR(info->id_gpiod);
+>> +       }
+>> +
+>> +       ret = gpiod_set_debounce(info->id_gpiod,
+>> +                                USB_GPIO_DEBOUNCE_MS * 1000);
+>> +       if (ret < 0)
+>> +               info->debounce_jiffies = msecs_to_jiffies(USB_GPIO_DEBOUNCE_MS);
+>> +
+>> +       INIT_DELAYED_WORK(&info->wq_detcable, usb_extcon_detect_cable);
+>> +
+>> +       info->id_irq = gpiod_to_irq(info->id_gpiod);
+>> +       if (info->id_irq < 0) {
+>> +               dev_err(dev, "failed to get ID IRQ\n");
+>> +               return info->id_irq;
+>> +       }
+>> +
+>> +       ret = devm_request_threaded_irq(dev, info->id_irq, NULL,
+>> +                                       usb_irq_handler,
+>> +                                       IRQF_SHARED | IRQF_ONESHOT |
+>> +                                       IRQF_NO_SUSPEND,
+>> +                                       pdev->name, info);
 
-Upon installing the first group sibling we'd try and schedule out the
-group and trigger the above warn.
+use of IRQF_NO_SUSPEND is not recommended to be used together with IRQF_SHARED so
+I'll remove IRQF_SHARED from here if we decide to stick with IRQF_NO_SUSPEND.
+More on this below.
 
-Fix this by installing the group leader last, installing siblings would
-have no effect, they're not reachable through the group lists and
-therefore we don't schedule them.
+>> +       if (ret < 0) {
+>> +               dev_err(dev, "failed to request handler for ID IRQ\n");
+>> +               return ret;
+>> +       }
+>> +
+>> +       info->edev = devm_extcon_dev_allocate(dev, usb_extcon_cable);
+>> +       if (IS_ERR(info->edev)) {
+>> +               dev_err(dev, "failed to allocate extcon device\n");
+>> +               return -ENOMEM;
+>> +       }
+>> +
+>> +       ret = devm_extcon_dev_register(dev, info->edev);
+>> +       if (ret < 0) {
+>> +               dev_err(dev, "failed to register extcon device\n");
+>> +               return ret;
+>> +       }
+>> +
+>> +       platform_set_drvdata(pdev, info);
+> 
+> I prefer to execute the device_init_wakeup() function as following
+> for suspend/resume function:
+>             device_init_wakeup(&pdev->dev, 1);
+> 
+>> +
+>> +       /* Perform initial detection */
+>> +       usb_extcon_detect_cable(&info->wq_detcable.work);
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int usb_extcon_remove(struct platform_device *pdev)
+>> +{
+>> +       struct usb_extcon_info *info = platform_get_drvdata(pdev);
+>> +
+>> +       cancel_delayed_work_sync(&info->wq_detcable);
+> 
+> Need to add blank line.
+> 
+>> +       return 0;
+>> +}
+>> +
+>> +#ifdef CONFIG_PM_SLEEP
+>> +static int usb_extcon_suspend(struct device *dev)
+>> +{
+>> +       struct usb_extcon_info *info = dev_get_drvdata(dev);
+>> +
+>> +       enable_irq_wake(info->id_irq);
+> 
+> I prefer to use device_may_wakeup() function for whether
+> executing enable_irq_wake() or not. Also, The disable_irq()
+> in the suspend function would prevent us from discarding interrupt
+> before wakeup from suspend completely.
+> 
 
-Also delay resetting the state until we're absolutely sure the events
-are quiescent -- which raises the question; should perf_pmu_migrate()
-not also have perf_event__state_init() calls in?
+I need more clarification here.
 
----
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7645,16 +7645,9 @@ SYSCALL_DEFINE5(perf_event_open,
- 
- 		perf_remove_from_context(group_leader, false);
- 
--		/*
--		 * Removing from the context ends up with disabled
--		 * event. What we want here is event in the initial
--		 * startup state, ready to be add into new context.
--		 */
--		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
- 			perf_remove_from_context(sibling, false);
--			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
- 	} else {
-@@ -7670,13 +7663,31 @@ SYSCALL_DEFINE5(perf_event_open,
- 		 */
- 		synchronize_rcu();
- 
--		perf_install_in_context(ctx, group_leader, group_leader->cpu);
--		get_ctx(ctx);
-+		/*
-+		 * Install the group siblings before the group leader.
-+		 *
-+		 * Because a group leader will try and install the entire group
-+		 * (through the sibling list, which is still in-tact), we can
-+		 * end up with siblings installed in the wrong context.
-+		 *
-+		 * By installing siblings first we NO-OP because they're not
-+		 * reachable through the group lists.
-+		 */
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
-+			perf_event__state_init(sibling);
- 			perf_install_in_context(ctx, sibling, sibling->cpu);
- 			get_ctx(ctx);
- 		}
-+
-+		/*
-+		 * Removing from the context ends up with disabled
-+		 * event. What we want here is event in the initial
-+		 * startup state, ready to be add into new context.
-+		 */
-+		perf_event__state_init(group_leader);
-+		perf_install_in_context(ctx, group_leader, group_leader->cpu);
-+		get_ctx(ctx);
- 	}
- 
- 	perf_install_in_context(ctx, event, event->cpu);
+If we are going to use enable_irq_wake() here then what is the point of IRQF_NO_SUSPEND?
+
+>From Documentation/power/suspend-and-interrupts.txt I see that interrupts marked
+as IRQF_NO_SUSPEND should not be configured for system wakeup using enable_irq_wake().
+
+what is your preference?
+
+Is it good enough to not use IRQF_NO_SUSPEND but use enable_irq_wake() instead to
+enable system wakeup for that IRQ.
+
+>             if (device_may_wakeup(dev))
+>                      enable_irq_wake(info->id_irq);
+>             disable_irq(info->id_irq);
+
+why do we need to disable irq here? How will the system wakeup if IRQ is disabled?
+
+> 
+> 
+>> +       return 0;
+>> +}
+>> +
+
+<snip>
+
+cheers,
+-roger
 
