@@ -1,152 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbbAZJf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 04:35:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46047 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753067AbbAZJfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 04:35:22 -0500
-Message-ID: <54C60A56.7010403@suse.de>
-Date: Mon, 26 Jan 2015 10:35:18 +0100
-From: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753840AbbAZJiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:38:25 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:45850 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbbAZJiX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 04:38:23 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <wenyou.yang@atmel.com>
+Subject: [PATCH v2 00/12] AT91 pm cleanup for 3.20
+Date: Mon, 26 Jan 2015 17:36:45 +0800
+Message-ID: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: monstr@monstr.eu, Michal Simek <michal.simek@xilinx.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: devicetree@vger.kernel.org,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Ola Jeppson <ola@adapteva.com>
-Subject: Re: [PATCH v3] ARM: zynq: DT: Add USB to device tree
-References: <1417536431-27759-1-git-send-email-soren.brinkmann@xilinx.com> <d78fedd84f354d80985187f851cb3cd1@BN1AFFO11FD055.protection.gbl> <54C5F89A.3090901@suse.de> <54C5F965.90100@monstr.eu> <54C5FBC3.7030903@suse.de>
-In-Reply-To: <54C5FBC3.7030903@suse.de>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="IQ2PJjWJADvmgolNgg8stDx9uFR6W9Nb4"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---IQ2PJjWJADvmgolNgg8stDx9uFR6W9Nb4
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Hi Nicolas,
 
-Am 26.01.2015 um 09:33 schrieb Andreas F=E4rber:
-> Am 26.01.2015 um 09:23 schrieb Michal Simek:
->> On 01/26/2015 09:19 AM, Andreas F=E4rber wrote:
->>> And if I apply it to my -next based tree, adding corresponding nodes =
-to
->>> zynq-parallella.dts, I get repeatedly:
->>>
->>> [  +0,012242] ci_hdrc ci_hdrc.0: no of_node; not parsing pinctrl DT
->>> [  +0,000157] ci_hdrc ci_hdrc.0: ChipIdea HDRC found, lpm: 0; cap:
->>> f090e100 op: f090e140
->>> [  +0,000081] platform ci_hdrc.0: Driver ci_hdrc requests probe defer=
-ral
->>> [  +0,005360] ci_hdrc ci_hdrc.1: no of_node; not parsing pinctrl DT
->>> [  +0,000120] ci_hdrc ci_hdrc.1: ChipIdea HDRC found, lpm: 0; cap:
->>> f0910100 op: f0910140
->>> [  +0,001810] platform ci_hdrc.1: Driver ci_hdrc requests probe defer=
-ral
->>>
->>> Am I missing any other patches or config options?
->>> (I do notice that the pinctrl v3 patch that got merged has a trivial =
-bug
->>> for usb0, for which I'll send a patch later on.)
->>
->> Why is it deferred? Is it because of pinmuxing stuff?
->=20
-> No, happened without as well.
->=20
-> Looking at a different place in dmesg, I spot this:
->=20
-> [  +0,003988] usb_phy_generic phy0: GPIO lookup for consumer reset-gpio=
-s
-> [  +0,000012] usb_phy_generic phy0: using device tree for GPIO lookup
-> [  +0,000015] of_get_named_gpiod_flags: can't parse 'reset-gpios-gpios'=
+This version is rebased on the branch: at91-3.20-cleanup of the repository
+	git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git
 
-> property
->  of node '/phy0[0]'
-> [  +0,000013] of_get_named_gpiod_flags: can't parse 'reset-gpios-gpio'
-> property
-> of node '/phy0[0]'
-> [  +0,000010] usb_phy_generic phy0: using lookup tables for GPIO lookup=
+It is purpose to clean up the PM code, includes the patches from Peter Rosin and Sylvain Rochet.
 
-> [  +0,000153] usb_phy_generic phy0: lookup for GPIO reset-gpios failed
-> [  +0,000012] usb_phy_generic phy0: Error requesting RESET GPIO
-> [  +0,004360] usb_phy_generic: probe of phy0 failed with error -2
-> [  +0,004991] usb_phy_generic phy1: GPIO lookup for consumer reset-gpio=
-s
-> [  +0,000012] usb_phy_generic phy1: using device tree for GPIO lookup
-> [  +0,000013] of_get_named_gpiod_flags: can't parse 'reset-gpios-gpios'=
+Since verifying the USB clock and USB PLL disabling before suspending to memory,
+it aslo depends on the following patch serials from Sylvain:
+	[PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
+	[PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
 
-> property
->  of node '/phy1[0]'
-> [  +0,000013] of_get_named_gpiod_flags: can't parse 'reset-gpios-gpio'
-> property of node '/phy1[0]'
-> [  +0,000010] usb_phy_generic phy1: using lookup tables for GPIO lookup=
+Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
+The suspend to standby mode uses the same sram function as the suspend to memory mode.
+Remove some unused code.
 
-> [  +0,000012] usb_phy_generic phy1: lookup for GPIO reset-gpios failed
-> [  +0,000011] usb_phy_generic phy1: Error requesting RESET GPIO
-> [  +0,004337] usb_phy_generic: probe of phy1 failed with error -2
->=20
-> So, I guess the chipidea driver is deferring because the phys want a
-> property that neither me nor you are specifying? Would that be the two
-> MDIO pins 52 and 53 that would need to be specified?
+Alexandr & Sylvain, Thank you very much for so many feedbacks.
 
-Erm, scratch that last question - wrong PHY. Trying it resolved the
-above phy errors but not the original problem. And so does an empty one:
+Changes in v2:
+ - Rebase on the at91-3.20-cleanup branch
+ - Recover the verify clock condition, only for suspend to memory.
+ - Collect ACK from Alexandre
+ - Add the macro for PM mode
 
-@@ -99,11 +100,13 @@
+Peter Rosin (1):
+  pm: at91: Workaround DDRSDRC self-refresh bug with LPDDR1 memories.
 
-        usb_phy0: phy0 {
-                compatible =3D "usb-nop-xceiv";
-+               reset-gpios =3D <>;
-                #phy-cells =3D <0>;
-        };
+Sylvain Rochet (1):
+  pm: at91: pm_slowclock: improve reliability of suspend/resume
 
-        usb_phy1: phy1 {
-                compatible =3D "usb-nop-xceiv";
-+               reset-gpios =3D <>;
-                #phy-cells =3D <0>;
-        };
- };
+Wenyou Yang (10):
+  pm: at91: pm_slowclock: remove the unused code related with
+    SLOWDOWN_MASTER_CLOCK
+  pm: at91: move the copying the sram function to the sram
+    initializationi phase
+  ARM: at91: move select SRAM to ARCH_AT91
+  pm: at91: remove the config item CONFIG_AT91_SLOW_CLOCK
+  pm: at91: the standby mode uses the same sram function as the suspend
+    to memory mode
+  pm: at91: rename file name: pm_slowclock.S -->pm_suspend.S
+  pm: at91: rename function name:
+    at91_slow_clock()-->at91_pm_suspend_sram_fn
+  pm: at91: remove the at91_xxx_standby() function definitions in the
+    pm.h
+  pm: at91: setup: remove the struct ramc_ids .data at91_xxx_standby
+    members
+  pm: at91: amend the pm_suspend entry for at91_cpuidle_device
+arch/arm/mach-at91/Kconfig         |   17 +-
+ arch/arm/mach-at91/Makefile        |    2 +-
+ arch/arm/mach-at91/pm.c            |  143 ++++++++--------
+ arch/arm/mach-at91/pm.h            |  100 +----------
+ arch/arm/mach-at91/pm_slowclock.S  |  323 ------------------------------------
+ arch/arm/mach-at91/pm_suspend.S    |  277 +++++++++++++++++++++++++++++++
+ arch/arm/mach-at91/setup.c         |   19 +--
+ include/soc/at91/at91sam9_ddrsdr.h |    2 +-
+ 8 files changed, 362 insertions(+), 521 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/pm_slowclock.S
+ create mode 100644 arch/arm/mach-at91/pm_suspend.S
 
-In my manuals and notes I can't find any GPIO being used as reset for
-the USB PHYs. Any thoughts appreciated.
+-- 
+1.7.9.5
 
-Regards,
-Andreas
-
---=20
-SUSE Linux GmbH, Maxfeldstr. 5, 90409 N=FCrnberg, Germany
-GF: Felix Imend=F6rffer, Jane Smithard, Jennifer Guild, Dilip Upmanyu,
-Graham Norton; HRB 21284 (AG N=FCrnberg)
-
-
---IQ2PJjWJADvmgolNgg8stDx9uFR6W9Nb4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUxgpWAAoJEPou0S0+fgE/OIQP/RI1BwNGStRF0jyuN5uS49HQ
-k6iEaUprAuW7rSxxsN9bLlrYcjcov6YuiDkw+FT5DhA4+rPxJsfbr9HmWX//SGpE
-/Jqk5BbCexZChBgHyRfDGDFwSH77EQcGh84Gz+/CqNyC1Z8/vmQdvegp+psv2Kji
-pRK5lT2kUV2vK7ztACqZemzHCAourpxlMMhK+plgfA/T2rAZv5Y+0P73luJIc898
-s8AeMPctMSUnOMlki5EQL8rtgpRCp0WsuGVL8oBkNMTdVmQiC5rlo/87ihdgxzta
-BCxGLxk1SIbr6+b/4R4dYA692DA3zdSwls3eEoK+3cC/GCkzU0JUnUh+ROEMB1G1
-ShZ8uPltxl6vr6bdfLD/3LM28f601ayKT9rO6dYd7lwA2i0sustSv8Mxb+YN92V0
-EFVjPZsReD47GV8zAkWf8/1J/YYsVMRCSvzNy0Ucxeq/ZBvmZJXK/B7P59qsdtnU
-iTdQh5B7dF1QRqniiTUxOPnmWWi3Ex09+IXpnmOQa/3clGKecuMXax6W0LHtvSkS
-dWTfIFLDG1x67PRgVJEqhRaGJCKKIgQ2Nv+RtO3cvsrZB7a7icpffQs7ODdmOiyg
-Breqj5KklmT9x7nIeazFFsbYCWj4D5XqzeEcnrESkD7Blf7n7+HgZ5qgowbJZIc2
-wfeFwM8EwF1LnkdZtCzv
-=ISKl
------END PGP SIGNATURE-----
-
---IQ2PJjWJADvmgolNgg8stDx9uFR6W9Nb4--
