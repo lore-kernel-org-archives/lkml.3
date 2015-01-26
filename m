@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867AbbAZSCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:02:09 -0500
-Received: from mga03.intel.com ([134.134.136.65]:61019 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991AbbAZSCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:02:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,470,1418112000"; 
-   d="scan'208";a="642764951"
-Date: Mon, 26 Jan 2015 18:02:04 +0000 (UTC)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.lm.intel.com
-To: Christoph Hellwig <hch@infradead.org>
-cc: Yan Liu <yan@purestorage.com>, Matthew Wilcox <willy@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
-Subject: Re: [PATCH 1/1] NVMe: Do not take nsid while a passthrough IO command
- is being issued via a block device file descriptor
-In-Reply-To: <20150125145900.GA15231@infradead.org>
-Message-ID: <alpine.LNX.2.00.1501261635190.15481@localhost.lm.intel.com>
-References: <1422057426-8014-1-git-send-email-yan@purestorage.com> <20150125145900.GA15231@infradead.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756904AbbAZSCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:02:24 -0500
+Received: from outbound-smtp06.blacknight.com ([81.17.249.39]:49180 "EHLO
+	outbound-smtp06.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755991AbbAZSCW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 13:02:22 -0500
+Message-ID: <54C6812C.9060101@nexus-software.ie>
+Date: Mon, 26 Jan 2015 18:02:20 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "dvhart@infradead.org" <dvhart@infradead.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/1] x86: Add Isolated Memory Regions for Quark X1000
+References: <1422281727-32610-1-git-send-email-pure.logic@nexus-software.ie>	<1422281727-32610-2-git-send-email-pure.logic@nexus-software.ie>	<CAHp75VfAPjermaPYu2FwoRCycKsU48m=uXq=JqwQ6Bi31kV0hg@mail.gmail.com>	<54C67267.3060406@nexus-software.ie> <CAHp75VcgUuUkfq0+W-Q5ab0Jm_i9syzvD=gC+Qd0_SX9L2LVqA@mail.gmail.com>
+In-Reply-To: <CAHp75VcgUuUkfq0+W-Q5ab0Jm_i9syzvD=gC+Qd0_SX9L2LVqA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Jan 2015, Christoph Hellwig wrote:
-> On Fri, Jan 23, 2015 at 03:57:06PM -0800, Yan Liu wrote:
->> When a passthrough IO command is issued with a specific block device file descriptor. It should be applied at
->> the namespace which is associated with that block device file descriptor. This patch makes such passthrough
->> command ignore nsid in nvme_passthru_cmd structure. Instead it takes the namespace ID asscoiated with the
->> block device descriptor.
->
-> This looks good to me.  If Keith can point to a use case for magic or
-> hidden nsids we'll have to find a bypass for them, but this certainly
-> is the right short term fix:
+On 26/01/15 17:23, Andy Shevchenko wrote:
 
-'Flush' is the only command from the spec where specifying all namespaces
-might be desirable. Otherwise, I can't disclose vendor specific behavior
-to gain concensus on operating within spec, silly as this desire may
-seem. Why empower the driver to make a feature unreachable?
+>>> So, I'm not sure the above is a part of the patch. Would it be a prepend?
+>> Hmm - what do you mean by that ?
+>
+> I mean first to introduce IMR files and then create the board entry in
+> the kernel config.
+>
+> And it may contain the following as well (whatever is mandatory from it)
+>
+>          depends on M586TSC
+>          select ARCH_REQUIRE_GPIOLIB
+>          select I2C
+>
+> I took this snippet from BSP code.
+>
+Hmm I actually added that to the BSP...
+
+/thinks
+
+Yes 586TSC is in there to make sure the kernel build happens with TSC 
+enabled - I think it's not an unreasonable constraint to add.
+
+V5 + TSC.
+
+--
+BOD
