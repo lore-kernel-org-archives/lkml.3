@@ -1,145 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274AbbAZXZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:25:29 -0500
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:35220 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662AbbAZXZ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:25:27 -0500
-Date: Mon, 26 Jan 2015 18:25:23 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, eparis@redhat.com,
-        viro@ZenIV.linux.org.uk, linux-unionfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Overlayfs, *notify() and file locking...
-Message-ID: <20150126182523.585c876e@tlielax.poochiereds.net>
-In-Reply-To: <22064.1422309732@warthog.procyon.org.uk>
-References: <22064.1422309732@warthog.procyon.org.uk>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	id S1757284AbbAZX0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:26:32 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:34050 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756212AbbAZX0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 18:26:30 -0500
+Message-ID: <54C6CCF3.7080308@ti.com>
+Date: Mon, 26 Jan 2015 18:25:39 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <iommu@lists.linux-foundation.org>, Joerg Roedel <joro@8bytes.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH v4 4/6] of/pci: add of_pci_dma_configure() update dma
+ configuration
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-5-git-send-email-m-karicheri2@ti.com> <20150123234124.GW29776@google.com>
+In-Reply-To: <20150123234124.GW29776@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015 22:02:12 +0000
-David Howells <dhowells@redhat.com> wrote:
+On 01/23/2015 06:41 PM, Bjorn Helgaas wrote:
+> On Fri, Jan 23, 2015 at 05:32:37PM -0500, Murali Karicheri wrote:
+>> Add of_pci_dma_configure() to allow updating the dma configuration
+>> of the pci device using the configuration from DT of the parent of
+>> the root bridge device.
+>>
+>> Cc: Joerg Roedel<joro@8bytes.org>
+>> Cc: Grant Likely<grant.likely@linaro.org>
+>> Cc: Rob Herring<robh+dt@kernel.org>
+>> Cc: Bjorn Helgaas<bhelgaas@google.com>
+>> Cc: Will Deacon<will.deacon@arm.com>
+>> Cc: Russell King<linux@arm.linux.org.uk>
+>> Cc: Arnd Bergmann<arnd@arndb.de>
+>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
+>>
+>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>> ---
+>>   drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
+>>   include/linux/of_pci.h |   12 ++++++++++++
+>>   2 files changed, 51 insertions(+)
+>>
+>> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+>> index 88471d3..34878c9 100644
+>> --- a/drivers/of/of_pci.c
+>> +++ b/drivers/of/of_pci.c
+>> @@ -2,6 +2,7 @@
+>>   #include<linux/export.h>
+>>   #include<linux/of.h>
+>>   #include<linux/of_address.h>
+>> +#include<linux/of_device.h>
+>>   #include<linux/of_pci.h>
+>>   #include<linux/slab.h>
+>>
+>> @@ -229,6 +230,44 @@ parse_failed:
+>>   	return err;
+>>   }
+>>   EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
+>> +
+>> +/**
+>> + * of_get_pci_root_bridge_parent - get the OF node of the root bridge's parent
+>> + * @dev: ptr to pci_dev struct of the pci device
+>> + *
+>> + * This function will traverse the bus up to the root bus starting with
+>> + * the child and return the OF node ptr to root bridge device's parent device.
+>> + */
+>> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
+>
+> I'm not an OF person, but this interface seems like it might be too
+> special-purpose.  Maybe it would be enough to add
+> "of_get_pci_root_bridge()", and the caller could do this:
+>
+>      struct device *bridge = of_get_pci_root_bridge(dev);
+>      struct device_node *parent_np = bridge->parent->of_node;
+>
+> Also, the name "of_get_..." suggests that it increments a refcount, as
+> of_get_parent() does.  But you aren't doing anything with the refcount.
+>
+> But I guess an "of_get_pci_root_bridge()" isn't doing anything OF-related,
+> so maybe we should just add a "pci_get_host_bridge(struct pci_dev *)"
+> to PCI instead.
 
-> Having looked briefly at *notify() and file locking with an eye to doing some
-> changes there to provide support LSMs and procfs for overlayfs/unionmount type
-> things, I'm wondering how we're going to manage these two facilities.
-> 
-> The problem with both of these (afaict) is that they attach things to the
-> inode(s) to be watched.  Now, take overlayfs for an example:
-> 
-> Say you have a file that is pristine and on the lower layer.  You open it read
-> only and lock it.  Someone else then opens it for writing.  Even if there's a
-> mandatory lock on it, it will be copied up, and the copy will have no locks on
-> it.  Now, we can get round that - sort of - by duplicating, sharing or moving
-> the locking records between the inodes (though they may well exist on widely
-> different media).
-> 
-> This is probably manageable, provided there isn't one or more servers involved
-> (imagine if you've got one layer on NFS and another on CIFS, for example).
-> Further more, if there are leases, we have to manage those trans-copyup also.
-> 
-> Note that moving the lock may not be possible if the R/O file is still open
-> and still locked.  The R/O file still refers to the R/O copy, even after the
-> copy up.
-> 
-> The situation is slightly complicated in the case of overlayfs in that there's
-> a third inode - the overlay inode - around, though that's probably bypassed by
-> file->f_inode pointing to one of the other layers.  Note that to get proc and
-> LSMs working, I need to make file->f_path point to the overlay/union layer
-> whilst file->f_inode points to the upper/lower layer inode.
-> 
-> The situation is more complicated in the case of unionmount if we go there as
-> there *is* no top inode to hang things off until we try to write to the union
-> layer.
-> 
-> Two further complications are that if a lock is placed on a lower inode, that
-> lower inode may be shared with other overlays - and so must (a) be copied,
-> moved or duplicated to the right overlay; and (b) must still interact
-> correctly with any locks from other overlays.
-> 
-> Yet a further complication is how should locks interact between a file shared
-> between namespaces?  F_GETLK can return information about a locker
-> (eg. l_pid).
-> 
-> To summarise the problems:
-> 
->  (1) Locks may need to migrate between layers on copy up.
-> 
->  (2) Locks taken on source layers must still interact even after copy up.
-> 
->  (3) The top layer may get in the way.
-> 
->  (4) Layers may be remote and have remote locks (eg. NFS).
-> 
->  (5) There are also leases.
-> 
->  (6) There may be multiple overlays sharing files and locks must be copied up
->      to the right place.
-> 
->  (7) Mandatory locks vs copyup.
-> 
->  (8) f_path needs to point to the overlay layer while f_inode points to the
->      lower layer to fix proc and LSMs.
-> 
-> 
+Bjorn,
 
-I think the first thing to do is to sort out how we expect this to work
-from a user's standpoint. For instance:
+Thanks for the comment.
 
-Suppose I have a "shared" R/O layer on a NFS server with a "private" R/W
-layer on some local storage. I then open the file O_RDWR and it gets
-copied up. I then place a (POSIX) F_WRLCK on the file. Should that lock
-be sent to the NFS server?
+I think adding pci_get_host_bridge() is a good idea. There is already 
+similar function in host-bridge.c. I have added this function re-using 
+existing function find_pci_root_bus(). See the incremental diff below 
+after this change. Does this look good?
 
-My expectation would be no. The file on the server isn't going to
-change, so there's no need to send lock requests out to the server in
-that use case. Doing so might be harmful -- other clients that are
-using R/O layer could fail to get the lock.
+diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+index 34878c9..77b15b5 100644
+--- a/drivers/of/of_pci.c
++++ b/drivers/of/of_pci.c
+@@ -232,26 +232,6 @@ parse_failed:
+  EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
 
-That's just one case though. There are probably others where we *do*
-want to send the locks to the server (e.g maybe the R/W layer is on
-NFS). Perhaps if we outline more of these sorts of use cases, a pattern
-will emerge that will help illustrate how it should all work. :)
+  /**
+- * of_get_pci_root_bridge_parent - get the OF node of the root bridge's 
+parent
+- * @dev: ptr to pci_dev struct of the pci device
+- *
+- * This function will traverse the bus up to the root bus starting with
+- * the child and return the OF node ptr to root bridge device's parent 
+device.
+- */
+-struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
+-{
+-       struct pci_bus *bus = dev->bus;
+-       struct device *bridge;
+-
+-       while (!pci_is_root_bus(bus))
+-               bus = bus->parent;
+-       bridge = bus->bridge;
+-
+-       return bridge->parent->of_node;
+-}
+-EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
+-
+-/**
+   * of_pci_dma_configure - Setup DMA configuration
+   * @dev: ptr to pci_dev struct of the pci device
+   *
+@@ -261,10 +241,9 @@ EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
+  void of_pci_dma_configure(struct pci_dev *pci_dev)
+  {
+         struct device *dev = &pci_dev->dev;
+-       struct device_node *parent_np;
++       struct device *bridge = pci_get_host_bridge(pci_dev);
+
+-       parent_np = of_get_pci_root_bridge_parent(pci_dev);
+-       of_dma_configure(dev, parent_np);
++       of_dma_configure(dev, bridge->parent->of_node);
+  }
+  EXPORT_SYMBOL_GPL(of_pci_dma_configure);
+
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index 0e5f3c9..9803aa6 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -23,6 +23,13 @@ static struct pci_host_bridge 
+*find_pci_host_bridge(struct pci_bus *bus)
+         return to_pci_host_bridge(root_bus->bridge);
+  }
+
++struct device *pci_get_host_bridge(struct pci_dev *dev)
++{
++       struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
++
++       return root_bus->bridge;
++}
++
+  void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+                                  void (*release_fn)(struct 
+pci_host_bridge *),
+                                  void *release_data)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 9603094..5bcdfa6 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -513,6 +513,8 @@ static inline struct pci_dev 
+*pci_upstream_bridge(struct pci_dev *dev)
+         return dev->bus->self;
+  }
+
++struct device *pci_get_host_bridge(struct pci_dev *dev);
++
+  #ifdef CONFIG_PCI_MSI
+  static inline bool pci_dev_msi_enabled(struct pci_dev *pci_dev)
+  {
+@@ -1823,6 +1825,7 @@ int pci_vpd_find_tag(const u8 *buf, unsigned int 
+off, unsigned int len, u8 rdt);
+  int pci_vpd_find_info_keyword(const u8 *buf, unsigned int off,
+                               unsigned int len, const char *kw);
+
+  /* PCI <-> OF binding helpers */
+  #ifdef CONFIG_OF
+  struct device_node;
 
 
-> Now, the problem with file notifications is very similar.  These again hang
-> off the inode, but the inode they need to be hung off may change:
-> 
->  (1) Watches may need to migrate between layers.
-> 
->  (2) Watches on the source layer need to be duplicated to all overlays on copy
->      up.
-> 
->  (2b) Watches probably theoretically ought to remain watching the copied up
->       files even after a restart.  This is probably just too impractical,
->       though.
-> 
->  (3) The top layer may get in the way and watches should probably go on the
->      appropriate lower layer.
-> 
->  (4) The layers may be remote and have remote watches (eg. CIFS).
-> 
->  (5) f_path needs to point to the overlay layer while f_inode points to the
->      lower layer to fix proc and LSMs.
-> 
-> 
-> Note that for both overlayfs and unionmount, directories are 'real' on the top
-> layer, so watches (and locks if that's possible) may be easier to handle
-> there, though in another sense, they're harder since they're the union of
-> several directories' worth of contents and *all* the contributory directories
-> need to be watched as two unions need not be fabricated from the same set of
-> directories in the same order.
-> 
-> David
+>
+> Bjorn
+>
+>> +{
+>> +	struct pci_bus *bus = dev->bus;
+>> +	struct device *bridge;
+>> +
+>> +	while (!pci_is_root_bus(bus))
+>> +		bus = bus->parent;
+>> +	bridge = bus->bridge;
+>> +
+>> +	return bridge->parent->of_node;
+>> +}
+>> +EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
+>> +
+>> +/**
+>> + * of_pci_dma_configure - Setup DMA configuration
+>> + * @dev: ptr to pci_dev struct of the pci device
+>> + *
+>> + * Function to update PCI devices's DMA configuration using the same
+>> + * info from the OF node of root host bridge's parent.
+>> + */
+>> +void of_pci_dma_configure(struct pci_dev *pci_dev)
+>> +{
+>> +	struct device *dev =&pci_dev->dev;
+>> +	struct device_node *parent_np;
+>> +
+>> +	parent_np = of_get_pci_root_bridge_parent(pci_dev);
+>> +	of_dma_configure(dev, parent_np);
+>> +}
+>> +EXPORT_SYMBOL_GPL(of_pci_dma_configure);
+>> +
+>>   #endif /* CONFIG_OF_ADDRESS */
+>>
+>>   #ifdef CONFIG_PCI_MSI
+>> diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
+>> index ce0e5ab..0465a2a 100644
+>> --- a/include/linux/of_pci.h
+>> +++ b/include/linux/of_pci.h
+>> @@ -16,6 +16,8 @@ int of_pci_get_devfn(struct device_node *np);
+>>   int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
+>>   int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
+>>   int of_get_pci_domain_nr(struct device_node *node);
+>> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev);
+>> +void of_pci_dma_configure(struct pci_dev *pci_dev);
+>>   #else
+>>   static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
+>>   {
+>> @@ -50,6 +52,16 @@ of_get_pci_domain_nr(struct device_node *node)
+>>   {
+>>   	return -1;
+>>   }
+>> +
+>> +static inline struct device_node
+>> +*of_get_pci_root_bridge_parent(struct pci_dev *dev)
+>> +{
+>> +	return NULL;
+>> +}
+>> +
+>> +static inline void of_pci_dma_configure(struct pci_dev *pci_dev)
+>> +{
+>> +}
+>>   #endif
+>>
+>>   #if defined(CONFIG_OF_ADDRESS)
+>> --
+>> 1.7.9.5
+>>
 
 
 -- 
-Jeff Layton <jeff.layton@primarydata.com>
+Murali Karicheri
+Linux Kernel, Texas Instruments
