@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbbAZMon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:44:43 -0500
-Received: from mga11.intel.com ([192.55.52.93]:49210 "EHLO mga11.intel.com"
+	id S1754880AbbAZMpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:45:43 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:48642 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752145AbbAZMol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:44:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,468,1418112000"; 
-   d="scan'208";a="667604763"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH] memcg: fix static checker warning
-Date: Mon, 26 Jan 2015 14:44:08 +0200
-Message-Id: <1422276248-40456-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 2.1.4
+	id S1753127AbbAZMpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:45:39 -0500
+Date: Mon, 26 Jan 2015 13:45:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH 3/3] x86, crash: Allocate enough low-mem when
+ crashkernel=high
+Message-ID: <20150126124529.GB1656@pd.tnic>
+References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
+ <1420555874-11506-4-git-send-email-joro@8bytes.org>
+ <20150123170243.GG22635@pd.tnic>
+ <20150126121142.GG30345@8bytes.org>
+ <20150126122017.GA1656@pd.tnic>
+ <20150126124005.GC4653@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150126124005.GC4653@8bytes.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch "mm: remove rest usage of VM_NONLINEAR and pte_file()" from
-Jan 17, 2015, leads to the following static checker warning:
+On Mon, Jan 26, 2015 at 01:40:06PM +0100, Joerg Roedel wrote:
+> Yes. Given that we have no data about what would work on most
+> systems, we can only change the value to a number that fixes know
+> problems and then act on possible regressions caused by the change (and
+> that change is pretty easy to revert if needed).
 
-        mm/memcontrol.c:4794 mc_handle_file_pte()
-        warn: passing uninitialized 'pgoff'
+... and I think we can safely concentrate on kdump-specific usage anyway
+and de-prioritize the others. Like not adding in the radeon module to
+initramfs and such. I don't think we want to show a funky graphic while
+dumping the first kernel.
 
-After the patch, the only case when mc_handle_file_pte() called is
-pte_none(ptent). The 'if' check is redundant and lead to the warning.
-Let's drop it.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
----
- mm/memcontrol.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index cd42f14d138a..a6140c0764f4 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4792,8 +4792,7 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
- 		return NULL;
- 
- 	mapping = vma->vm_file->f_mapping;
--	if (pte_none(ptent))
--		pgoff = linear_page_index(vma, addr);
-+	pgoff = linear_page_index(vma, addr);
- 
- 	/* page is moved even if it's not RSS of this task(page-faulted). */
- #ifdef CONFIG_SWAP
 -- 
-2.1.4
+Regards/Gruss,
+    Boris.
 
+ECO tip #101: Trim your mails when you reply.
+--
