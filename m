@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbbAZKGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:06:44 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:16765 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697AbbAZKGm (ORCPT
+	id S1754464AbbAZKHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:07:25 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:27040 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752657AbbAZKHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:06:42 -0500
+	Mon, 26 Jan 2015 05:07:22 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
         <peda@axentia.se>, <wenyou.yang@atmel.com>,
-        <Patrice.VILCHEZ@atmel.com>
-Subject: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
-Date: Mon, 26 Jan 2015 18:06:01 +0800
-Message-ID: <1422266761-24487-1-git-send-email-wenyou.yang@atmel.com>
+        <Patrice.VILCHEZ@atmel.com>,
+        Patrice Vilchez <patrice.vilchez@atmel.com>
+Subject: [PATCH 3/7] pm: at91: pm_suspend: MOR register KEY was missing
+Date: Mon, 26 Jan 2015 18:06:36 +0800
+Message-ID: <1422266796-24523-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
 References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
@@ -25,83 +26,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+From: Patrice Vilchez <patrice.vilchez@atmel.com>
+
+Signed-off-by: Patrice Vilchez <patrice.vilchez@atmel.com>
 ---
- arch/arm/mach-at91/pm_suspend.S |   54 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 53 insertions(+), 1 deletion(-)
+ arch/arm/mach-at91/pm_suspend.S |    2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
-index 122a3f1..e796722 100644
+index e796722..88cf228 100644
 --- a/arch/arm/mach-at91/pm_suspend.S
 +++ b/arch/arm/mach-at91/pm_suspend.S
-@@ -53,6 +53,58 @@ mode	.req	r6
- 	beq	1b
- 	.endm
- 
-+/*
-+ * Put the processor to enter the WFI state
-+ */
-+	.macro _do_wfi
-+
-+#if defined(CONFIG_CPU_V7)
-+	/*
-+	 * Execute an ISB instruction to flush the pipeline to ensure
-+	 * that all of operations have beem completed.
-+	 */
-+	isb
-+
-+	/*
-+	 * Execute an ISB instruction to ensure that all of the
-+	 * CP15 register changes have been committed.
-+	 */
-+	dsb
-+	dmb
-+
-+	/* Disable the processor's clock */
-+	mov	tmp1, #AT91_PMC_PCK
-+	str	tmp1, [pmc, #AT91_PMC_SCDR]
-+
-+	/* Execute a WFI instruction */
-+	wfi	@ Wait For Interrupt
-+
-+	/*
-+	 * CPU can specualatively prefetch the instructions
-+	 * so add NOPs after WFI. Sixteen NOPs as Cortex-A5 pipeline.
-+	 */
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+#else
-+	mcr	p15, 0, tmp1, c7, c0, 4
-+#endif
-+
-+	.endm
-+
- 	.text
- 
- /*
-@@ -181,7 +233,7 @@ sdr_sr_done:
+@@ -229,6 +229,7 @@ sdr_sr_done:
+ 	/* Turn off the main oscillator */
+ 	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
+ 	bic	tmp1, tmp1, #AT91_PMC_MOSCEN
++	orr	tmp1, tmp1, #AT91_PMC_KEY
+ 	str	tmp1, [pmc, #AT91_CKGR_MOR]
  
  skip_disable_main_clock:
- 	/* Wait for interrupt */
--	mcr	p15, 0, tmp1, c7, c0, 4
-+	_do_wfi
+@@ -241,6 +242,7 @@ skip_disable_main_clock:
+ 	/* Turn on the main oscillator */
+ 	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
+ 	orr	tmp1, tmp1, #AT91_PMC_MOSCEN
++	orr	tmp1, tmp1, #AT91_PMC_KEY
+ 	str	tmp1, [pmc, #AT91_CKGR_MOR]
  
- 	tst	mode, #AT91_PM_SLOW_CLOCK
- 	beq	skip_enable_main_clock
+ 	wait_moscrdy
 -- 
 1.7.9.5
 
