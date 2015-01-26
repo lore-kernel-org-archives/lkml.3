@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459AbbAZKPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:15:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47180 "EHLO mx1.redhat.com"
+	id S1755487AbbAZKQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:16:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59927 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932153AbbAZKPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:15:49 -0500
+	id S1755463AbbAZKP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:15:56 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -18,22 +18,22 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        "S. Lockwood-Childs" <sjl@vctlabs.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 35/36] tools lib lockdep: Use tools build framework
-Date: Mon, 26 Jan 2015 11:12:35 +0100
-Message-Id: <1422267156-13873-36-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 36/36] perf build: Display make commands on V=1
+Date: Mon, 26 Jan 2015 11:12:36 +0100
+Message-Id: <1422267156-13873-37-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 References: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the lockdep library building under tools
-build framework.
+Get more verbose output wrt displaying executed commands
+from make.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Tested-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Tested-by: Will Deacon <will.deacon@arm.com>
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Borislav Petkov <bp@alien8.de>
@@ -44,222 +44,172 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: S. Lockwood-Childs <sjl@vctlabs.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/lib/lockdep/Build    |   1 +
- tools/lib/lockdep/Makefile | 132 ++++++++-------------------------------------
- 2 files changed, 24 insertions(+), 109 deletions(-)
- create mode 100644 tools/lib/lockdep/Build
+ tools/build/Makefile.build |  4 +++-
+ tools/perf/Makefile.perf   | 48 ++++++++++++++++++++++++++--------------------
+ 2 files changed, 30 insertions(+), 22 deletions(-)
 
-diff --git a/tools/lib/lockdep/Build b/tools/lib/lockdep/Build
-new file mode 100644
-index 000000000000..6f667355b068
---- /dev/null
-+++ b/tools/lib/lockdep/Build
-@@ -0,0 +1 @@
-+liblockdep-y += common.o lockdep.o preload.o rbtree.o
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index 52f9279c6c13..8c3340a4b9f8 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -35,6 +35,10 @@ bindir = $(prefix)/$(bindir_relative)
+diff --git a/tools/build/Makefile.build b/tools/build/Makefile.build
+index b5ded207f49b..10df57237a66 100644
+--- a/tools/build/Makefile.build
++++ b/tools/build/Makefile.build
+@@ -13,8 +13,10 @@ __build:
  
- export DESTDIR DESTDIR_SQ INSTALL
- 
-+MAKEFLAGS += --no-print-directory
-+
-+include ../../scripts/Makefile.include
-+
- # copy a bit from Linux kbuild
- 
- ifeq ("$(origin V)", "command line")
-@@ -44,56 +48,21 @@ ifndef VERBOSE
-   VERBOSE = 0
- endif
- 
--ifeq ("$(origin O)", "command line")
--  BUILD_OUTPUT := $(O)
-+ifeq ($(srctree),)
-+srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-+srctree := $(patsubst %/,%,$(dir $(srctree)))
-+srctree := $(patsubst %/,%,$(dir $(srctree)))
-+#$(info Determined 'srctree' to be $(srctree))
- endif
- 
--ifeq ($(BUILD_SRC),)
--ifneq ($(BUILD_OUTPUT),)
--
--define build_output
--	$(if $(VERBOSE:1=),@)$(MAKE) -C $(BUILD_OUTPUT)	\
--	BUILD_SRC=$(CURDIR) -f $(CURDIR)/Makefile $1
--endef
--
--saved-output := $(BUILD_OUTPUT)
--BUILD_OUTPUT := $(shell cd $(BUILD_OUTPUT) && /bin/pwd)
--$(if $(BUILD_OUTPUT),, \
--     $(error output directory "$(saved-output)" does not exist))
--
--all: sub-make
--
--gui: force
--	$(call build_output, all_cmd)
--
--$(filter-out gui,$(MAKECMDGOALS)): sub-make
--
--sub-make: force
--	$(call build_output, $(MAKECMDGOALS))
--
--
--# Leave processing to above invocation of make
--skip-makefile := 1
--
--endif # BUILD_OUTPUT
--endif # BUILD_SRC
--
--# We process the rest of the Makefile if this is the final invocation of make
--ifeq ($(skip-makefile),)
--
--srctree		:= $(realpath $(if $(BUILD_SRC),$(BUILD_SRC),$(CURDIR)))
--objtree		:= $(realpath $(CURDIR))
--src		:= $(srctree)
--obj		:= $(objtree)
--
--export prefix libdir bindir src obj
--
- # Shell quotes
- libdir_SQ = $(subst ','\'',$(libdir))
- bindir_SQ = $(subst ','\'',$(bindir))
- 
--LIB_FILE = liblockdep.a liblockdep.so.$(LIBLOCKDEP_VERSION)
-+LIB_IN := $(OUTPUT)liblockdep-in.o
-+
- BIN_FILE = lockdep
-+LIB_FILE = $(OUTPUT)liblockdep.a $(OUTPUT)liblockdep.so.$(LIBLOCKDEP_VERSION)
- 
- CONFIG_INCLUDES =
- CONFIG_LIBS	=
-@@ -108,33 +77,23 @@ INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include -I../../include $(C
- 
- # Set compile option CFLAGS if not set elsewhere
- CFLAGS ?= -g -DCONFIG_LOCKDEP -DCONFIG_STACKTRACE -DCONFIG_PROVE_LOCKING -DBITS_PER_LONG=__WORDSIZE -DLIBLOCKDEP_VERSION='"$(LIBLOCKDEP_VERSION)"' -rdynamic -O0 -g
-+CFLAGS += -fPIC
- 
- override CFLAGS += $(CONFIG_FLAGS) $(INCLUDES) $(PLUGIN_DIR_SQ)
- 
- ifeq ($(VERBOSE),1)
-   Q =
--  print_compile =
--  print_app_build =
--  print_fpic_compile =
-   print_shared_lib_compile =
-   print_install =
+ ifeq ($(V),1)
+   quiet =
++  Q =
  else
-   Q = @
--  print_compile =		echo '  CC                 '$(OBJ);
--  print_app_build =		echo '  BUILD              '$(OBJ);
--  print_fpic_compile =		echo '  CC FPIC            '$(OBJ);
--  print_shared_lib_compile =	echo '  BUILD SHARED LIB   '$(OBJ);
--  print_static_lib_build =	echo '  BUILD STATIC LIB   '$(OBJ);
--  print_install =		echo '  INSTALL     '$1'	to	$(DESTDIR_SQ)$2';
-+  print_shared_lib_compile =	echo '  LD       '$(OBJ);
-+  print_static_lib_build =	echo '  LD       '$(OBJ);
-+  print_install =		echo '  INSTALL  '$1'	to	$(DESTDIR_SQ)$2';
+   quiet=quiet_
++  Q=@
  endif
  
--do_fpic_compile =					\
--	($(print_fpic_compile)				\
--	$(CC) -c $(CFLAGS) $(EXT) -fPIC $< -o $@)
--
--do_app_build =						\
--	($(print_app_build)				\
--	$(CC) $^ -rdynamic -o $@ $(CONFIG_LIBS) $(LIBS))
-+export srctree OUTPUT CC LD CFLAGS V
-+build := -f $(srctree)/tools/build/Makefile.build dir=. obj
+ build-dir := $(srctree)/tools/build
+@@ -102,7 +104,7 @@ in-target := $(prefix)$(obj)-in.o
+ PHONY += $(subdir-y)
  
- do_compile_shared_library =			\
- 	($(print_shared_lib_compile)		\
-@@ -144,22 +103,6 @@ do_build_static_lib =				\
- 	($(print_static_lib_build)		\
- 	$(RM) $@;  $(AR) rcs $@ $^)
+ $(subdir-y):
+-	@$(MAKE) -f $(build-dir)/Makefile.build dir=$(dir)/$@ obj=$(obj)
++	$(Q)$(MAKE) -f $(build-dir)/Makefile.build dir=$(dir)/$@ obj=$(obj)
  
--
--define do_compile
--	$(print_compile)						\
--	$(CC) -c $(CFLAGS) $(EXT) $< -o $(obj)/$@;
--endef
--
--$(obj)/%.o: $(src)/%.c
--	$(Q)$(call do_compile)
--
--%.o: $(src)/%.c
--	$(Q)$(call do_compile)
--
--PEVENT_LIB_OBJS = common.o lockdep.o preload.o rbtree.o
--
--ALL_OBJS = $(PEVENT_LIB_OBJS)
--
- CMD_TARGETS = $(LIB_FILE)
+ $(sort $(subdir-obj-y)): $(subdir-y) ;
  
- TARGETS = $(CMD_TARGETS)
-@@ -169,42 +112,15 @@ all: all_cmd
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 5b083da3b934..7850ab25c178 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -89,13 +89,19 @@ VPATH += $(OUTPUT)
+ export VPATH
+ endif
  
- all_cmd: $(CMD_TARGETS)
- 
--liblockdep.so.$(LIBLOCKDEP_VERSION): $(PEVENT_LIB_OBJS)
-+$(LIB_IN): force
-+	$(Q)$(MAKE) $(build)=liblockdep
++ifeq ($(V),1)
++  Q =
++else
++  Q = @
++endif
 +
-+liblockdep.so.$(LIBLOCKDEP_VERSION): $(LIB_IN)
- 	$(Q)$(do_compile_shared_library)
+ # Do not use make's built-in rules
+ # (this increases performance and avoids hard-to-debug behaviour);
+ MAKEFLAGS += -r
  
--liblockdep.a: $(PEVENT_LIB_OBJS)
-+liblockdep.a: $(LIB_IN)
- 	$(Q)$(do_build_static_lib)
+ $(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
+-	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+-	@touch $(OUTPUT)PERF-VERSION-FILE
++	$(Q)$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
++	$(Q)touch $(OUTPUT)PERF-VERSION-FILE
  
--$(PEVENT_LIB_OBJS): %.o: $(src)/%.c
--	$(Q)$(do_fpic_compile)
--
--## make deps
--
--all_objs := $(sort $(ALL_OBJS))
--all_deps := $(all_objs:%.o=.%.d)
--
--# let .d file also depends on the source and header files
--define check_deps
--		@set -e; $(RM) $@; \
--		$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
--		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
--		$(RM) $@.$$$$
--endef
--
--$(all_deps): .%.d: $(src)/%.c
--	$(Q)$(call check_deps)
--
--$(all_objs) : %.o : .%.d
--
--dep_includes := $(wildcard $(all_deps))
--
--ifneq ($(dep_includes),)
-- include $(dep_includes)
--endif
--
--### Detect environment changes
--TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):$(ARCH):$(CROSS_COMPILE)
--
- tags:	force
- 	$(RM) tags
- 	find . -name '*.[ch]' | xargs ctags --extra=+f --c-kinds=+px \
-@@ -233,8 +149,6 @@ clean:
- 	$(RM) *.o *~ $(TARGETS) *.a *liblockdep*.so* $(VERSION_FILES) .*.d
- 	$(RM) tags TAGS
+ CC = $(CROSS_COMPILE)gcc
+ LD = $(CROSS_COMPILE)ld
+@@ -251,7 +257,7 @@ SHELL = $(SHELL_PATH)
+ all: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(OTHER_PROGRAMS)
  
--endif # skip-makefile
--
- PHONY += force
- force:
+ please_set_SHELL_PATH_to_a_more_modern_shell:
+-	@$$(:)
++	$(Q)$$(:)
  
+ shell_compatibility_test: please_set_SHELL_PATH_to_a_more_modern_shell
+ 
+@@ -264,13 +270,13 @@ export srctree OUTPUT RM CC LD AR CFLAGS V BISON FLEX
+ build := -f $(srctree)/tools/build/Makefile.build dir=. obj
+ 
+ $(PERF_IN): $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h FORCE
+-	@$(MAKE) $(build)=perf
++	$(Q)$(MAKE) $(build)=perf
+ 
+ $(OUTPUT)perf: $(PERFLIBS) $(PERF_IN)
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(PERF_IN) $(LIBS) -o $@
+ 
+ $(GTK_IN): FORCE
+-	@$(MAKE) $(build)=gtk
++	$(Q)$(MAKE) $(build)=gtk
+ 
+ $(OUTPUT)libperf-gtk.so: $(GTK_IN) $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) -o $@ -shared $(LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
+@@ -315,25 +321,25 @@ build-dir   = $(if $(__build-dir),$(__build-dir),.)
+ single_dep: $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
+ 
+ $(OUTPUT)%.o: %.c single_dep FORCE
+-	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
++	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
+ 
+ $(OUTPUT)%.i: %.c single_dep FORCE
+-	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
++	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
+ 
+ $(OUTPUT)%.s: %.c single_dep FORCE
+-	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
++	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
+ 
+ $(OUTPUT)%-bison.o: %.c single_dep FORCE
+-	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
++	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
+ 
+ $(OUTPUT)%-flex.o: %.c single_dep FORCE
+-	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
++	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
+ 
+ $(OUTPUT)%.o: %.S single_dep FORCE
+-	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
++	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
+ 
+ $(OUTPUT)%.i: %.S single_dep FORCE
+-	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
++	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
+ 
+ $(OUTPUT)perf-%: %.o $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
+@@ -353,7 +359,7 @@ $(patsubst perf-%,%.o,$(PROGRAMS)): $(wildcard */*.h)
+ LIBPERF_IN := $(OUTPUT)libperf-in.o
+ 
+ $(LIBPERF_IN): FORCE
+-	@$(MAKE) $(build)=libperf
++	$(Q)$(MAKE) $(build)=libperf
+ 
+ $(LIB_FILE): $(LIBPERF_IN)
+ 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIBPERF_IN) $(LIB_OBJS)
+@@ -362,21 +368,21 @@ LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS)"
+ LIBTRACEEVENT_FLAGS += plugin_dir=$(plugindir_SQ)
+ 
+ $(LIBTRACEEVENT): FORCE
+-	@$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) $(OUTPUT)libtraceevent.a plugins
++	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) $(OUTPUT)libtraceevent.a plugins
+ 
+ $(LIBTRACEEVENT)-clean:
+ 	$(call QUIET_CLEAN, libtraceevent)
+-	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
++	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
+ 
+ install-traceevent-plugins: $(LIBTRACEEVENT)
+-	@$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) install_plugins
++	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) install_plugins
+ 
+ $(LIBAPIKFS): FORCE
+-	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapi.a
++	$(Q)$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapi.a
+ 
+ $(LIBAPIKFS)-clean:
+ 	$(call QUIET_CLEAN, libapi)
+-	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) clean >/dev/null
++	$(Q)$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) clean >/dev/null
+ 
+ help:
+ 	@echo 'Perf make targets:'
+@@ -514,12 +520,12 @@ $(INSTALL_DOC_TARGETS):
+ #
+ config-clean:
+ 	$(call QUIET_CLEAN, config)
+-	@$(MAKE) -C config/feature-checks clean >/dev/null
++	$(Q)$(MAKE) -C config/feature-checks clean >/dev/null
+ 
+ clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
+ 	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(LANG_BINDINGS)
+-	@find . -name '*.o' -delete -o -name '\.*.cmd' -delete -o -name '\.*.d' -delete
+-	@$(RM) .config-detected
++	$(Q)find . -name '*.o' -delete -o -name '\.*.cmd' -delete -o -name '\.*.d' -delete
++	$(Q)$(RM) .config-detected
+ 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
+ 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
 -- 
 1.9.3
 
