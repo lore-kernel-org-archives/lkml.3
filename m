@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558AbbAZQLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:11:34 -0500
-Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:37363 "EHLO
-	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187AbbAZQLa (ORCPT
+	id S1755896AbbAZQMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:12:07 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:48445 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596AbbAZQME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:11:30 -0500
-Date: Mon, 26 Jan 2015 17:11:24 +0100
-From: Sylvain Rochet <sylvain.rochet@finsecur.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Peter Rosin <peda@axentia.se>, Wenyou Yang <wenyou.yang@atmel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>
-Message-ID: <20150126161124.GA24190@gradator.net>
-References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
- <1422265139-23011-1-git-send-email-wenyou.yang@atmel.com>
- <20150126103605.GA20837@gradator.net>
- <54C6426E.9090808@atmel.com>
- <20150126134453.GA27559@gradator.net>
- <372b731350484f8ea1d29bd016421dfb@EMAIL.axentia.se>
- <54C66589.3040505@atmel.com>
+	Mon, 26 Jan 2015 11:12:04 -0500
+Message-ID: <54C66742.7000500@gmail.com>
+Date: Mon, 26 Jan 2015 19:11:46 +0300
+From: Dmitry Osipenko <digetx@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Bob Mottram <bob.mottram@codethink.co.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] i2c: tegra: Maintain CPU endianness
+References: <1421756555-20266-1-git-send-email-digetx@gmail.com> <20150122074001.GB427@ulmo> <CAAVeFuJHST9VOWXe_cZNvLmfGdamuU4HSgdZC6EoQvrsGFt+Fg@mail.gmail.com> <54C115D1.10206@gmail.com> <54C12010.8040504@gmail.com> <54C130EA.2050505@gmail.com> <20150123094552.GD3835@ulmo> <54C24C2B.1070907@gmail.com> <54C2601A.7000005@gmail.com> <20150126160339.GD13494@katana>
+In-Reply-To: <20150126160339.GD13494@katana>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <54C66589.3040505@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 172.16.8.13
-X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
-Subject: Re: [PATCH v2 02/12] pm: at91: Workaround DDRSDRC self-refresh bug
- with LPDDR1 memories.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nicolas and Peter,
+26.01.2015 19:03, Wolfram Sang пишет:
+>
+>> Gaahh! I'm sure it wasn't working before! I'll make more testing and send v3
+>> without "val = 0", if all will be fine.
+>
+> Please either send V3 or explicitly say V2 is OK. No need to hurry, just
+> saying that I am waiting for updates here...
+>
+Sure!
 
-On Mon, Jan 26, 2015 at 05:04:25PM +0100, Nicolas Ferre wrote:
-> Le 26/01/2015 16:58, Peter Rosin a écrit :
-> > Sylvain Rochet wrote:
-> >> Hello Nicolas,
-> >>
-> >> On Mon, Jan 26, 2015 at 02:34:38PM +0100, Nicolas Ferre wrote:
-> >>> Le 26/01/2015 11:36, Sylvain Rochet a écrit :
-> >>>>
-> >>>> I think we should explain we are dealing with an errata here, this
-> >>>> is not obvious at first sight, the patch summary may find its place
-> >>>> here :-)
-> >>>
-> >>> True but the problem is that this errata is not public yet, it will be
-> >>> in a couple of weeks.
-> >>>
-> >>> I have the feeling though that the commit message is pretty clear.
-> >>> We'll maybe add that it"s an actual errata.
-> >>
-> >> Humm, this is not what I meant actually. I only proposed a code source
-> >> comment explaining why this is done this way, the current patch summary
-> >> looked like it will be perfect between /* */ ;-)
-> > 
-> > I did not want to fill up the source with wordy comments, and settled
-> > for a one-liner. I don't know much about the underlying reasons other
-> > than the fact that LPDDR1 mode of the controller isn't working properly
-> > in self-refresh and that the DDR2 spec is similar enough to work.
-> > 
-> > The one-liner comment says about the same thing, but not with so
-> > many words. The comment does make it clear that the switch to DDR2
-> > is intentional, and that is all that is needed as protection from some
-> > future cleanup. I mean, anyone seeing that comment and just erasing
-> > the whole thing without further investigation is not doing a very good
-> > job as there is no reason to intentionally switch from LPDDR1 mode to
-> > DDR2 mode, other that the fact that the LPDDR1 mode isn't working for
-> > some reason. That reason is not to be found in the commit message
-> > and I have no information to improve the situation. IMO, the only thing
-> > missing is a pointer to the as yet unreleased errata, which should explain
-> > the situation clearly for any and all interested parties. May I suggest that
-> > someone who cares sends a patch with the comment update when the
-> > errata is released?
-> 
-> That's the option that I'll take.
-> 
-> Let's go for it (and anyone remind me if I don't when the errata is
-> released).
-
-I fully agree with that, a pointer to a datasheet errata is exactly the 
-same thing as explaining the issue.
-
-Sylvain
+-- 
+Dmitry
