@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555AbbAZKN0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:13:26 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:36998 "EHLO
+	id S1755411AbbAZKPV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:15:21 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:36188 "EHLO
 	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202AbbAZKNX (ORCPT
+	with ESMTP id S1754635AbbAZKPN (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Mon, 26 Jan 2015 05:13:23 -0500
-Message-ID: <1422267197.24914.13.camel@stgolabs.net>
-Subject: [PATCH] drivers/block/swim: use current->state helpers
+	Mon, 26 Jan 2015 05:15:13 -0500
+Message-ID: <1422267302.24914.15.camel@stgolabs.net>
+Subject: [PATCH] drivers/staging: use current->state helpers
 From: Davidlohr Bueso <dave@stgolabs.net>
-To: Jens Axboe <axboe@fb.com>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <dave@stgolabs.net>
-Date: Mon, 26 Jan 2015 02:13:17 -0800
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <dave@stgolabs.net>,
+        driverdev-devel@linuxdriverproject.org
+Date: Mon, 26 Jan 2015 02:15:02 -0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.12.7 
 Mime-Version: 1.0
@@ -27,40 +28,87 @@ keeping track of who changed the state.
 
 Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
 ---
- drivers/block/swim.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/comedi/drivers/me_daq.c   | 2 +-
+ drivers/staging/dgnc/dgnc_utils.c         | 2 +-
+ drivers/staging/panel/panel.c             | 2 +-
+ drivers/staging/speakup/selection.c       | 2 +-
+ drivers/staging/unisys/include/timskmod.h | 4 ++--
+ 5 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/block/swim.c b/drivers/block/swim.c
-index b5afd49..1a0b395 100644
---- a/drivers/block/swim.c
-+++ b/drivers/block/swim.c
-@@ -331,7 +331,7 @@ static inline void swim_motor(struct swim __iomem *base,
- 			swim_select(base, RELAX);
- 			if (swim_readbit(base, MOTOR_ON))
- 				break;
--			current->state = TASK_INTERRUPTIBLE;
-+			__set_current_state(TASK_INTERRUPTIBLE);
- 			schedule_timeout(1);
- 		}
- 	} else if (action == OFF) {
-@@ -350,7 +350,7 @@ static inline void swim_eject(struct swim __iomem *base)
- 		swim_select(base, RELAX);
- 		if (!swim_readbit(base, DISK_IN))
- 			break;
+diff --git a/drivers/staging/comedi/drivers/me_daq.c b/drivers/staging/comedi/drivers/me_daq.c
+index bffc161..92e2352 100644
+--- a/drivers/staging/comedi/drivers/me_daq.c
++++ b/drivers/staging/comedi/drivers/me_daq.c
+@@ -174,7 +174,7 @@ struct me_private_data {
+ 
+ static inline void sleep(unsigned sec)
+ {
+-	current->state = TASK_INTERRUPTIBLE;
++	__set_current_state(TASK_INTERRUPTIBLE);
+ 	schedule_timeout(sec * HZ);
+ }
+ 
+diff --git a/drivers/staging/dgnc/dgnc_utils.c b/drivers/staging/dgnc/dgnc_utils.c
+index 61efc13..80b5133 100644
+--- a/drivers/staging/dgnc/dgnc_utils.c
++++ b/drivers/staging/dgnc/dgnc_utils.c
+@@ -12,7 +12,7 @@
+  */
+ int dgnc_ms_sleep(ulong ms)
+ {
+-	current->state = TASK_INTERRUPTIBLE;
++	__set_current_state(TASK_INTERRUPTIBLE);
+ 	schedule_timeout((ms * HZ) / 1000);
+ 	return signal_pending(current);
+ }
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 9c68ccf..6ed35b6 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -780,7 +780,7 @@ static void long_sleep(int ms)
+ 	if (in_interrupt()) {
+ 		mdelay(ms);
+ 	} else {
 -		current->state = TASK_INTERRUPTIBLE;
 +		__set_current_state(TASK_INTERRUPTIBLE);
- 		schedule_timeout(1);
+ 		schedule_timeout((ms * HZ + 999) / 1000);
  	}
- 	swim_select(base, RELAX);
-@@ -374,7 +374,7 @@ static inline int swim_step(struct swim __iomem *base)
+ }
+diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
+index 507fc9a..a031570 100644
+--- a/drivers/staging/speakup/selection.c
++++ b/drivers/staging/speakup/selection.c
+@@ -157,7 +157,7 @@ static void __speakup_paste_selection(struct work_struct *work)
+ 		pasted += count;
+ 	}
+ 	remove_wait_queue(&vc->paste_wait, &wait);
+-	current->state = TASK_RUNNING;
++	__set_current_state(TASK_RUNNING);
  
- 	for (wait = 0; wait < HZ; wait++) {
+ 	tty_buffer_unlock_exclusive(&vc->port);
+ 	tty_ldisc_deref(ld);
+diff --git a/drivers/staging/unisys/include/timskmod.h b/drivers/staging/unisys/include/timskmod.h
+index cff7983..4019a0d 100644
+--- a/drivers/staging/unisys/include/timskmod.h
++++ b/drivers/staging/unisys/include/timskmod.h
+@@ -133,7 +133,7 @@
+  *  x - the number of seconds to sleep.
+  */
+ #define SLEEP(x)					     \
+-	do { current->state = TASK_INTERRUPTIBLE;	     \
++	do { __set_current_state(TASK_INTERRUPTIBLE);        \
+ 		schedule_timeout((x)*HZ);		     \
+ 	} while (0)
  
--		current->state = TASK_INTERRUPTIBLE;
-+		__set_current_state(TASK_INTERRUPTIBLE);
- 		schedule_timeout(1);
+@@ -141,7 +141,7 @@
+  *  x - the number of jiffies to sleep.
+  */
+ #define SLEEPJIFFIES(x)						    \
+-	do { current->state = TASK_INTERRUPTIBLE;		    \
++	do { __set_current_state(TASK_INTERRUPTIBLE);		    \
+ 		schedule_timeout(x);				    \
+ 	} while (0)
  
- 		swim_select(base, RELAX);
 -- 
 2.1.2
 
