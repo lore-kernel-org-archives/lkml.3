@@ -1,95 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248AbbAZXzD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:55:03 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35272 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757670AbbAZXyz (ORCPT
+	id S1757754AbbAZXzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:55:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47778 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757707AbbAZXy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:54:55 -0500
-Date: Mon, 26 Jan 2015 23:54:38 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20150126235438.GJ21293@sirena.org.uk>
-References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
- <1422029330-10971-5-git-send-email-ricardo.ribalda@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="W/y7qBwfEQL/2otS"
-Content-Disposition: inline
-In-Reply-To: <1422029330-10971-5-git-send-email-ricardo.ribalda@gmail.com>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 04/18] spi-xilinx: Simplify spi_fill_tx_fifo
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 26 Jan 2015 18:54:58 -0500
+Date: Mon, 26 Jan 2015 15:54:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, arnd@arndb.de,
+        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/7] lib: Add huge I/O map capability interfaces
+Message-Id: <20150126155456.a40df49e42b1b7f8077421f4@linux-foundation.org>
+In-Reply-To: <1422314009-31667-3-git-send-email-toshi.kani@hp.com>
+References: <1422314009-31667-1-git-send-email-toshi.kani@hp.com>
+	<1422314009-31667-3-git-send-email-toshi.kani@hp.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 26 Jan 2015 16:13:24 -0700 Toshi Kani <toshi.kani@hp.com> wrote:
 
---W/y7qBwfEQL/2otS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Add ioremap_pud_enabled() and ioremap_pmd_enabled(), which
+> return 1 when I/O mappings of pud/pmd are enabled on the kernel.
+> 
+> ioremap_huge_init() calls arch_ioremap_pud_supported() and
+> arch_ioremap_pmd_supported() to initialize the capabilities.
+> 
+> A new kernel option "nohgiomap" is also added, so that user can
+> disable the huge I/O map capabilities if necessary.
 
-On Fri, Jan 23, 2015 at 05:08:36PM +0100, Ricardo Ribalda Delgado wrote:
-> Instead of checking the TX_FULL flag for every transaction, find out the
-> size of the buffer at probe time and use it.
+Why?  What's the problem with leaving it enabled?
 
-So, I see what's going on here and the potential performance benefit
-=66rom avoiding the MMIO access.  However I can't help but worry that this
-makes things more fragile - the current code will transparently handle
-any races or anything which result in a misfilling of the FIFO for some
-reason either now or in the future as performance is improved and the
-driver gets more fancy.
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2304,6 +2304,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			register save and restore. The kernel will only save
+>  			legacy floating-point registers on task switch.
+>  
+> +	nohgiomap	[KNL,x86] Disable huge I/O mappings.
 
-As things stand if I look at the code it's fairly clear it should be
-safe and unfortunately we only have an underrun interrupt which will be
-triggered normally (no overflow interrupt) so we can't really use that
-to add a bit of robustness.  I'm tempted to suggest checking that we did
-trigger the FIFO full flag when we fill the FIFO but that feels like
-overengineering.
+That reads like "no high iomap" to me.  "nohugeiomap" would be better.
 
-Let me think about this, I'll probably apply it but if you can think
-about ways of making this more robust that'd be good.
-
-> @@ -413,6 +424,8 @@ static int xilinx_spi_probe(struct platform_device *p=
-dev)
->  		goto put_master;
->  	}
-> =20
-> +	xspi->buffer_size =3D xilinx_spi_find_buffer_size(xspi);
+> --- a/lib/ioremap.c
+> +++ b/lib/ioremap.c
+> @@ -13,6 +13,44 @@
+>  #include <asm/cacheflush.h>
+>  #include <asm/pgtable.h>
+>  
+> +#ifdef CONFIG_HUGE_IOMAP
+> +int __read_mostly ioremap_pud_capable;
+> +int __read_mostly ioremap_pmd_capable;
+> +int __read_mostly ioremap_huge_disabled;
 > +
->  	/* SPI controller initializations */
->  	xspi_init_hw(xspi);
+> +static int __init set_nohgiomap(char *str)
+> +{
+> +	ioremap_huge_disabled = 1;
+> +	return 0;
+> +}
+> +early_param("nohgiomap", set_nohgiomap);
 
-It seems safer to reset the hardware, probe the FIFO size and then reset
-the hardware again in case something decided to leave some data in the
-FIFO (perhaps some bootloader wasn't as well programmed as one might
-desire for example).  Not cricial now but it could again become
-important with future optimizations.
+Why early?
 
---W/y7qBwfEQL/2otS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +static inline void ioremap_huge_init(void)
+> +{
+> +	if (!ioremap_huge_disabled) {
+> +		if (arch_ioremap_pud_supported())
+> +			ioremap_pud_capable = 1;
+> +		if (arch_ioremap_pmd_supported())
+> +			ioremap_pmd_capable = 1;
+> +	}
+> +}
+> +
+> +static inline int ioremap_pud_enabled(void)
+> +{
+> +	return ioremap_pud_capable;
+> +}
+> +
+> +static inline int ioremap_pmd_enabled(void)
+> +{
+> +	return ioremap_pmd_capable;
+> +}
+> +
+> +#else	/* !CONFIG_HUGE_IOMAP */
+> +static inline void ioremap_huge_init(void) { }
+> +static inline int ioremap_pud_enabled(void) { return 0; }
+> +static inline int ioremap_pmd_enabled(void) { return 0; }
+> +#endif	/* CONFIG_HUGE_IOMAP */
+> +
+>  static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
+>  		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
+>  {
+> @@ -74,6 +112,12 @@ int ioremap_page_range(unsigned long addr,
+>  	unsigned long start;
+>  	unsigned long next;
+>  	int err;
+> +	static int ioremap_huge_init_done;
+> +
+> +	if (!ioremap_huge_init_done) {
+> +		ioremap_huge_init_done = 1;
+> +		ioremap_huge_init();
+> +	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Looks hacky.  Why can't we just get the startup ordering correct?  It
+at least needs a comment which fully explains the situation.
 
-iQEcBAEBCAAGBQJUxtO9AAoJECTWi3JdVIfQKSsH/Ah9V6F++jpOAxUkVw9fUE8A
-pCqrFInxUDHKY/+I03IuaBd2lgaRY+cYPqYnBXPKJEvJSvarwFJMZOCNnLGgjdYC
-wXdpXtXIyu3hzJErddzLxTcYTG6z1XEJT0xo42brxloLUbmjezwnjESqy/UA28AG
-l3/2FwA2Q0lx7OVmT5YKUF3/URIi1C4vWnbr25hQrT6RxXMqlJDEae9vSJ2GqxIm
-9Iiqr8ZLHflcttfPPG2Q+Mz3bIT01ZhpCiR65fy6NctkzRAp+aDwhCdhNXcfQ7H0
-XJpvSX8puTx6LnOPm8tTb+79yCo7sTzfaW8KEQdeoX0O1cuYklXJ21c/f2gr4nc=
-=Cdfu
------END PGP SIGNATURE-----
-
---W/y7qBwfEQL/2otS--
