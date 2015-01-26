@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbbAZRBD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:01:03 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:44544 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755719AbbAZRA6 (ORCPT
+	id S1756612AbbAZRAw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:00:52 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:53587 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755719AbbAZRAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:00:58 -0500
+	Mon, 26 Jan 2015 12:00:48 -0500
+Date: Mon, 26 Jan 2015 09:00:48 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Zach Brown <zab@zabbo.net>, Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "open list:AIO" <linux-aio@kvack.org>
+Subject: Re: [PATCH v2 1/4] aio: add aio_kernel_() interface
+Message-ID: <20150126170048.GA2080@infradead.org>
+References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+ <1421163888-21452-2-git-send-email-ming.lei@canonical.com>
+ <20150125133147.GA19445@infradead.org>
+ <CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CABVT_geRjB12v8XnRvNbf_2h6-hQJwgxuFkqxBhwQv2nrZ-w9A@mail.gmail.com>
-References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
- <1421751814.29486.13.camel@linux-0dmf.site> <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
- <1421762788.29486.28.camel@linux-0dmf.site> <CABVT_gdCvbK8mUQMjDmiAmc_6kbBUMf4XFeAZ=zzjOYS+7oCGg@mail.gmail.com>
- <1421775689.1112.4.camel@linux-0dmf.site> <CABVT_geh3RjaG+zX6xUWL9RQtwoAeyuC33xf2vT2o0HPPkokcg@mail.gmail.com>
- <1421790436.1112.14.camel@linux-0dmf.site> <CABVT_geRjB12v8XnRvNbf_2h6-hQJwgxuFkqxBhwQv2nrZ-w9A@mail.gmail.com>
-From: Kirill Elagin <kirelagin@gmail.com>
-Date: Mon, 26 Jan 2015 21:00:36 +0400
-Message-ID: <CABVT_gcm0-3in9uOhpwM7VJrEdaE6982X01TGD29if8OQEW4Uw@mail.gmail.com>
-Subject: Re: USB autosuspend causing trouble with bluetooth
-To: Oliver Neukum <oneukum@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Things just got way worse with this hotplug thing.
-When the host power/control is set to `auto`, as soon as I insert  the
-Unifying receiver one of kworkers starts eating 100% of one of the
-cores, according to `htop`. As soon as I `echo on` to power/control of
-the relevant USB hub the kworker stops doing this. This also happens
-with that other USB1.1 BT-dongle, so I assume any USB1.1 device would
-do. Also just unplugging the device is not enough, the kworker keeps
-eating CPU until I `echo on` to power/control.
+On Tue, Jan 27, 2015 at 12:18:23AM +0800, Ming Lei wrote:
+> > Also it might make sense to just offer aio_kernel_read/write intefaces
+> > instead of the common submit wrapper, as that's much closer to other
+> > kernel APIs, e.g.
+> >
+> > int aio_kernel_read(struct kiocb *iocb, struct file *file,
+> >                 struct iov_iter *iter, loff_t off,
+> >                 void (*complete)(struct kiocb *iocb, long res));
+> > int aio_kernel_write(struct kiocb *iocb, struct file *file,
+> >                 struct iov_iter *iter, loff_t off,
+> >                 void (*complete)(struct kiocb *iocb, long res));
+> 
+> It is like style of sync APIs, looks submit/complete is common
+> for async APIs, like io_submit().
 
-Should I start a separate thread?
-Right now I'm on 3.18.2-gentoo.
+io_submit is a fairly horrible API.  While Posix AIO isn't too much
+better it does have separate APIs for read/write.  Given that there
+isn't much code shared I'd keep an API that feels familar.
+
