@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627AbbAZMhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:37:35 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57749 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbbAZMhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:37:33 -0500
-Message-ID: <54C63506.3020106@ti.com>
-Date: Mon, 26 Jan 2015 14:37:26 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1754124AbbAZMkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:40:11 -0500
+Received: from 8bytes.org ([81.169.241.247]:46374 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751885AbbAZMkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:40:08 -0500
+Date: Mon, 26 Jan 2015 13:40:06 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH 3/3] x86, crash: Allocate enough low-mem when
+ crashkernel=high
+Message-ID: <20150126124005.GC4653@8bytes.org>
+References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
+ <1420555874-11506-4-git-send-email-joro@8bytes.org>
+ <20150123170243.GG22635@pd.tnic>
+ <20150126121142.GG30345@8bytes.org>
+ <20150126122017.GA1656@pd.tnic>
 MIME-Version: 1.0
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-CC: Thomas Winischhofer <thomas@winischhofer.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] video: fbdev: sis: remove unused variables
-References: <1421940699-20670-1-git-send-email-sudipm.mukherjee@gmail.com>
-In-Reply-To: <1421940699-20670-1-git-send-email-sudipm.mukherjee@gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="e2Mvn7ckpOhQ4MSFDodcmeA6BE37N8kGQ"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150126122017.GA1656@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e2Mvn7ckpOhQ4MSFDodcmeA6BE37N8kGQ
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 26, 2015 at 01:20:17PM +0100, Borislav Petkov wrote:
+> On Mon, Jan 26, 2015 at 01:11:42PM +0100, Joerg Roedel wrote:
+> > Or we solve it in user-space by some more cleverness in creating the
+> > kernel command-line for crashkernel=high.
+> 
+> I'd say, we should try to do as much as possible automatically.
 
-On 22/01/15 17:31, Sudip Mukherjee wrote:
-> removed some variables which were not used. Few calls to SiS_GetReg()
-> were left behind as they are reading from the hardare, removing them
-> might affect the overall functionality.
->=20
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
-> This patch will generate checkpatch error, to fix that error we need
-> to change the style of init.c and init301.c
->=20
->  drivers/video/fbdev/sis/init.c     | 33 +++++-------------------------=
----
->  drivers/video/fbdev/sis/init301.c  | 10 ++--------
->  drivers/video/fbdev/sis/sis_main.c |  9 ++++-----
->  3 files changed, 11 insertions(+), 41 deletions(-)
+Thats hard to do, without any information about the driver needs we only
+have the amount of devices in the system to base any heuristic on.
 
-Are you able to test this?
+> > But besides that, I think the first two patches of this set make sense
+> > anyway. I understand that the third one is debatable.
+> 
+> Right, but since they fix a real problem, maybe we should take them now
+> until a better fix is done? Yes, no?
 
-The patch doesn't look too complex, but it's still slightly too complex
-for me to comfortably merge it without any testing.
-
- Tomi
+Yes. Given that we have no data about what would work on most
+systems, we can only change the value to a number that fixes know
+problems and then act on possible regressions caused by the change (and
+that change is pretty easy to revert if needed).
 
 
+	Joerg
 
---e2Mvn7ckpOhQ4MSFDodcmeA6BE37N8kGQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUxjUGAAoJEPo9qoy8lh71cnIP/3HA7IZ09M3THHjJCe5C2Dgo
-iZ0dM66ulp7mbdICDJhpZTpaVtU6l9sONyF0BRMxRcdeE2UhNLIzUN9MPa6THOMM
-qzEJ0Yqw9xpFpsz7Ap+jxdcqGh/SIX2EcdO6yZqz8cKox8BQDoTgQHVZTLrcKt+C
-Q7ZsBUXV8M+w6WKqYRYvhvnXR1x7FTXm2UUb/HOg4Dd6UZbrJX3oHBmwPhuzFZxq
-eUONR85FUR9xXV0qk3N12TKxRjwbmujsuINMsdDV8hilJBpg4PtEQ+Wz8KhJM5X2
-R6oQRxadTJLgFCSkmZWlr+VmkDtSKON86lwWZm3UvcPewiTOeGxN0rxjXujFZw0V
-zjEJJk9057SOXQKRTIIIMY+PennV+i8frfQrTjZjY74zYFzhbIuzkSs4L3yDY20Y
-cvc0icEfHEC4bFk8Js1oNLYfSslNInAvhbZEGTHiFdlgPQ01+6tUaO82/fn0MB1S
-HesimVYkhHF4z34aVUlYHYTUpsOXVuW4+t3Kj26NU8MfOf32vmFtrETzIDMNr2Pq
-FPSRPhI38W3hPXOvQ9KZsb+YrkZr05WxbE7P80MzboqzAPhNx2kcgG+gd69FKGNw
-DVxHv3hAB/+3da3QWTfb7hNpgT6ejDDTMjxHtuQSawCvzSkfGMFvic3Wv/IIcUK1
-1aEx6IAHdklZg83Tx/Ll
-=y+B3
------END PGP SIGNATURE-----
-
---e2Mvn7ckpOhQ4MSFDodcmeA6BE37N8kGQ--
