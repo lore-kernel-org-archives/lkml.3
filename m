@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777AbbAZTKc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 14:10:32 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43502 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755466AbbAZTK2 (ORCPT
+	id S1756598AbbAZTL0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 14:11:26 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35031 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120AbbAZTLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 14:10:28 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] genirq: MSI: Fix freeing of unallocated MSI
-Date: Mon, 26 Jan 2015 19:10:19 +0000
-Message-Id: <1422299419-6051-1-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.1.4
+	Mon, 26 Jan 2015 14:11:24 -0500
+Date: Mon, 26 Jan 2015 19:11:07 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Milo Kim <milo.kim@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20150126191107.GC21293@sirena.org.uk>
+References: <1422239113.8261.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="NJ3lxSTgSwfmyg6j"
+Content-Disposition: inline
+In-Reply-To: <1422239113.8261.1.camel@phoenix>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: lp872x: Remove **regulators from struct lp872x
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While debugging an unrelated issue with the GICv3 ITS driver, the
-following trace triggered:
 
-WARNING: CPU: 1 PID: 1 at kernel/irq/irqdomain.c:1121 irq_domain_free_irqs+0x160/0x17c()
-NULL pointer, cannot free irq
-Modules linked in:
-CPU: 1 PID: 1 Comm: swapper/0 Tainted: G        W      3.19.0-rc6+ #3690
-Hardware name: FVP Base (DT)
-Call trace:
-[<ffffffc000089398>] dump_backtrace+0x0/0x13c
-[<ffffffc0000894e4>] show_stack+0x10/0x1c
-[<ffffffc00066d134>] dump_stack+0x74/0x94
-[<ffffffc0000a92f8>] warn_slowpath_common+0x9c/0xd4
-[<ffffffc0000a938c>] warn_slowpath_fmt+0x5c/0x80
-[<ffffffc0000ee04c>] irq_domain_free_irqs+0x15c/0x17c
-[<ffffffc0000ef918>] msi_domain_free_irqs+0x58/0x74
-[<ffffffc000386f58>] free_msi_irqs+0xb4/0x1c0
+--NJ3lxSTgSwfmyg6j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-    // The msi_prepare callback fails here
+On Mon, Jan 26, 2015 at 10:25:13AM +0800, Axel Lin wrote:
+> Current code is using devm_regulator_register(), so we don't need to store *rdev
+> in struct lp872x for clean up.
+> Also clean up lp872x_probe() a bit to remove unnecessary goto and num_regulators
+> variable.
 
-[<ffffffc0003872c0>] pci_enable_msix+0x25c/0x3d4
-[<ffffffc00038746c>] pci_enable_msix_range+0x34/0x80
-[<ffffffc0003924ac>] vp_try_to_find_vqs+0xec/0x528
-[<ffffffc000392954>] vp_find_vqs+0x6c/0xa8
-[<ffffffc0003ee2a8>] init_vq+0x120/0x248
-[<ffffffc0003eefb0>] virtblk_probe+0xb0/0x6bc
-[<ffffffc00038fc34>] virtio_dev_probe+0x17c/0x214
-[<ffffffc0003d4a04>] driver_probe_device+0x7c/0x23c
-[<ffffffc0003d4cb0>] __driver_attach+0x98/0xa0
-[<ffffffc0003d2c60>] bus_for_each_dev+0x60/0xb4
-[<ffffffc0003d455c>] driver_attach+0x1c/0x28
-[<ffffffc0003d41b0>] bus_add_driver+0x150/0x208
-[<ffffffc0003d54c0>] driver_register+0x64/0x130
-[<ffffffc00038f9e8>] register_virtio_driver+0x24/0x68
-[<ffffffc00091320c>] init+0x70/0xac
-[<ffffffc0000828f0>] do_one_initcall+0x94/0x1d0
-[<ffffffc0008e9b00>] kernel_init_freeable+0x144/0x1e4
-[<ffffffc00066a434>] kernel_init+0xc/0xd8
----[ end trace f9ee562a77cc7bae ]---
+Applied, thanks.
 
-The ITS msi_prepare callback having failed, we end-up trying to
-free MSIs that have never been allocated. Oddly enough, the kernel
-is pretty upset about it.
+--NJ3lxSTgSwfmyg6j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-It turns out that this behaviour was expected before the MSI domain
-was introduced (and dealt with in arch_teardown_msi_irqs).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-The obvious fix is to detect this early enough and bail out.
+iQEcBAEBCAAGBQJUxpFKAAoJECTWi3JdVIfQuTgH/AieWyUWPrR0XC0F53dKimrg
+qMN6z3urB92gAhjvDEQuHXLJG7Xsy9oCvnd3GLlaIqBMy720yxelYDuvYhBGhvHp
+xZ2VOnDbjfPsBl9jC+tBs0M+RkX454AUlt33jirwDoh2J6xDvK3JJcjfHlS01g3n
+FjkcEqzsyJzqoDEpgmbcVUVQL9EtP4UZPrM3cRgNnjcOb6w36Z3F6f+pMg2j4laj
+TCkw76hKJHxv3ZWPHBRZZkDXGPvY0c+zFUp4wGR19DH42FX30hstIteJy+EIZ6El
+uq6iFl6vbD0tbqqcxFjsPqH3XN+nWJgEYBjWkTgQDOu4sUOaKYF1scS3mHFOP5c=
+=O22y
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- kernel/irq/msi.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/irq/msi.c b/kernel/irq/msi.c
-index 3e18163..474de5c 100644
---- a/kernel/irq/msi.c
-+++ b/kernel/irq/msi.c
-@@ -310,8 +310,15 @@ void msi_domain_free_irqs(struct irq_domain *domain, struct device *dev)
- 	struct msi_desc *desc;
- 
- 	for_each_msi_entry(desc, dev) {
--		irq_domain_free_irqs(desc->irq, desc->nvec_used);
--		desc->irq = 0;
-+		/*
-+		 * We might have failed to allocate an MSI early
-+		 * enough that there is no IRQ associated to this
-+		 * entry. If that's the case, don't do anything.
-+		 */
-+		if (desc->irq) {
-+			irq_domain_free_irqs(desc->irq, desc->nvec_used);
-+			desc->irq = 0;
-+		}
- 	}
- }
- 
--- 
-2.1.4
-
+--NJ3lxSTgSwfmyg6j--
