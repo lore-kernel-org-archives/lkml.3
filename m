@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202AbbAZVua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:50:30 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:45913 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756626AbbAZVuL (ORCPT
+	id S1756364AbbAZVxh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:53:37 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:41221 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517AbbAZVxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:50:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPc5daVu=hjjYwDoCwco=cdg16kib80ZBbArh3z8R+j2vq6C6g@mail.gmail.com>
-References: <CA+5PVA7rVy6Li_1haj1QmGG0D6avLB5Xej=2YGt6K-11kKHR5A@mail.gmail.com>
-	<CA+5PVA4bs6CYU8MHn1JqBjnb-5wYJT2Tjqa65=v2uSPL8c7dYw@mail.gmail.com>
-	<CA+55aFxbY21vBbPs5qCFPT1HSBbaeS+Z2Fr9So1r3rXrMWe_ZQ@mail.gmail.com>
-	<CA+5PVA5RdtLyRiYerG=u--bRZQ87qU0EGf7kGPMiQs9_KB3hRw@mail.gmail.com>
-	<CA+55aFwa1-pudNus+r=5EghpGkm33h--GZNND5UHt=ZKvP15Xw@mail.gmail.com>
-	<CAPc5daVu=hjjYwDoCwco=cdg16kib80ZBbArh3z8R+j2vq6C6g@mail.gmail.com>
-Date: Mon, 26 Jan 2015 13:50:10 -0800
-X-Google-Sender-Auth: e4jHrz25M44yl5BhMZhIvUPShQU
-Message-ID: <CA+55aFxdssyi_CrhB_yf8yXrG2PnuEHxf-=X6NnoVFxJnG0Jww@mail.gmail.com>
-Subject: Re: patch-2.7.3 no longer applies relative symbolic link patches
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        twaugh@redhat.com, Git Mailing List <git@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Jan 2015 16:53:34 -0500
+From: Sergei Rogachev <rogachevsergei@gmail.com>
+To: akpm@linux-foundation.org, iamjoonsoo.kim@lge.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Sergei Rogachev <rogachevsergei@gmail.com>
+Subject: [PATCH 0/1] mm/page_ext: remove unnecessary stack_trace field
+Date: Tue, 27 Jan 2015 00:52:11 +0300
+Message-Id: <1422309132-28030-1-git-send-email-rogachevsergei@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 1:35 PM, Junio C Hamano <gitster@pobox.com> wrote:
->
-> What is your take on CVE-2015-1196, which brought this /regression/ to
-> GNU patch?
-> If "git apply" get /fixed/ for that same CVE, would that /break/ your fix?
+The functionality named "page owner" has resurrected the structure page_ext
+which is used for keeping additional page-related information. Every page in
+the system has its own corresponding page_ext structure.
 
-I _think_ we allow arbitrary symlinks to be created, but then we
-should be careful about actually _following_ them.
+Page owner uses this structure to keep allocation order, gfp_mask and backtrace
+entries; moreover page_ext includes a field of type "struct stack_trace". And
+this field is used for collecting backtraces: a pointer to struct stack_trace is
+passed to save_stack_trace in the function __set_page_owner. But it is really
+not necessary to keep dedicated stack_trace structures for all physical pages in
+the system, only an amount of saved backtrace entries is needed to be saved.
 
-At least I _thought_ we were already quite careful not to do that,
-even if it's been a long time since I looked at the code. So even if
-we create a symlink to outside the repository, it normally shouldn't
-matter. We have that whole "lstat_cache()" thing that exists exactly
-to make it efficient to do pathname lookups while at the same time
-being aware of symlinks in the middle.
+The stack_trace structure can be allocated on the stack (it is relatively small)
+and used for save_stack_trace invocation. Such change can save 12 bytes of
+memory per page if page owner functionality is enabled.
 
-Of course, our lstat cache is racy if somebody else modifies the tree
-concurrently and changes things, but that's a non-issue, because if
-somebody can just directly create random symlinks in the middle of the
-tree, I don't think we care about any symlinks _git_ might be creating
-concurrently ;)
+Sergei Rogachev (1):
+  mm/page_ext: remove unnecessary stack_trace field
 
-But it is entirely possible that "git apply" - especially when used
-outside of a real git directory - ends up doing that. And it's not
-like we necessarily always use the whole "lstat-cache" mechanism to
-begin with, so the fact that we have the infrastructure to be careful
-in no way means that we necessarily always _are_ careful...
+ include/linux/page_ext.h |  2 +-
+ mm/page_owner.c          | 21 ++++++++++++---------
+ 2 files changed, 13 insertions(+), 10 deletions(-)
 
-                                 Linus
+-- 
+1.9.1
+
