@@ -1,568 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbbAZFwf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 00:52:35 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:42126 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbbAZFwc (ORCPT
+	id S1753369AbbAZFyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 00:54:51 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:58847 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810AbbAZFys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 00:52:32 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-bd-54c5d61e495b
+	Mon, 26 Jan 2015 00:54:48 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-20-54c5d6a63210
 From: Chao Yu <chao2.yu@samsung.com>
 To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH v2 06/10] f2fs: add core functions for rb-tree extent
+Subject: [f2fs-dev][PATCH v2 07/10] f2fs: add a mount option for rb-tree extent
  cache
-Date: Mon, 26 Jan 2015 13:51:40 +0800
-Message-id: <006201d0392c$43741650$ca5c42f0$@samsung.com>
+Date: Mon, 26 Jan 2015 13:53:14 +0800
+Message-id: <006301d0392c$96dec330$c49c4990$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdA238UCB/ObuTmeRFqeO2hrn46yTw==
+Thread-index: AdA5EFvFaIzM7Q04R1y6T3OW90W4Ow==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAV25a0dDDB7MNLG4tq+RyeLJ+lnM
-	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxu9VsxgL
-	+isqPj+9y9rAOCGpi5GTQ0LAROLPvDusELaYxIV769m6GLk4hAQWMUp837uYBcL5wSjxdOsP
-	JpAqNgEVieUd/8FsEQEviUn7T7CA2MwCHhKNHd+BJnFwCAuES0xe6AASZhFQlbh7cTrYAl4B
-	S4lfZ1awQdiCEj8m34Nq1ZJYv/M4E4QtL7F5zVtmiIMUJHacfc0IsUpPovP+BEaIGnGJjUdu
-	sUxgFJiFZNQsJKNmIRk1C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBIf1Megfj
-	qgaLQ4wCHIxKPLwajUdDhFgTy4orcw8xSnAwK4nwlk8BCvGmJFZWpRblxxeV5qQWH2KU5mBR
-	EudVsm8LERJITyxJzU5NLUgtgskycXBKNTCyJZ5a4yvIuKnO8k9i74P07Cm19ftPc14/MOGV
-	8YzNyfb7qornvPixUUH0n+gxqfmuadd1HuYfn3trP8/Jefr3dd8wvvC/5GF8O/He0pL84APC
-	6/62vZlmefvrtp3/FRPkzc87yPZszA2v8Mq7H6EXt65WIHT3xlVub5sEhR71Z3p6Vnu+NWhS
-	YinOSDTUYi4qTgQAMEiiDWUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jQd1l146GGOy8r29xbV8jk8WT9bOY
+	LS4tcre4vGsOmwOLx6ZVnWweuxd8ZvLo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujPsLvjAX
+	XBWvuD/3K2MD4xGhLkZODgkBE4l11/awQthiEhfurWfrYuTiEBKYzijxZuNcZgjnB6NEw5tH
+	7CBVbAIqEss7/jOB2CICXhKT9p9gAbGZBTwkGju+g00SFgiX+PvsMlicRUBVov3MMbB6XgFL
+	idfb/7NA2IISPybfg+rVkli/8zgThC0vsXnNW2aIixQkdpx9zQixS09i64kWRogacYmNR26x
+	TGAUmIVk1Cwko2YhGTULScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFB/Ux6B+Oq
+	BotDjAIcjEo8vBqNR0OEWBPLiitzDzFKcDArifCWTwEK8aYkVlalFuXHF5XmpBYfYpTmYFES
+	51WybwsREkhPLEnNTk0tSC2CyTJxcEo1MPYnqFx88d4rR6ePN40/6NL2Q6mTM/1nc3T0Hd93
+	P/raGtYNiXW7xJ4tFpiYkTO9V/iXq3+MehW3VkuO1LG7C38+d713z2STQZU8a8ZT48buBNFS
+	jrTVPtF9jB8npJsvM0l+vLBhaiLzCs/nAZdMsp//5Q//E/Lrq6pJX9mszx/Pcfbu7Lf7p8RS
+	nJFoqMVcVJwIAM+4Jx9mAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds core functions including slab cache init function and
-init/lookup/update/shrink/destroy function for rb-tree based extent cache.
+This patch adds a mount option 'extent_cache' in f2fs.
 
-Thank Jaegeuk Kim and Changman Lee as they gave much suggestion about detail
-design and implementation of extent cache.
+It tries to use a rb-tree based extent cache to cache more mapping information
+with less memory if this option is set, otherwise we will use the original one
+extent info cache.
 
-Todo:
- * add a cached_ei into struct extent_tree for a quick recent cache.
- * register rb-based extent cache shrink with mm shrink interface.
- * disable dir inode's extent cache.
-
-v2:
- o move set_extent_info and __is_{extent,back,front}_mergeable into f2fs.h.
- o introduce __{attach,detach}_extent_node for code readability.
- o use f2fs_kmem_cache_alloc/f2fs_radix_tree_insert for code readability.
- o fix some coding style and typo issues.
- o get rid of node/tree count stat in f2fs_{shrink,destroy}_extent_tree.
-
+Suggested-by: Changman Lee <cm224.lee@samsung.com>
 Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-Signed-off-by: Changman Lee <cm224.lee@samsung.com>
 ---
- fs/f2fs/data.c | 410 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/f2fs.h |  27 ++++
- fs/f2fs/node.c |   9 +-
- 3 files changed, 445 insertions(+), 1 deletion(-)
+ Documentation/filesystems/f2fs.txt | 4 ++++
+ fs/f2fs/f2fs.h                     | 1 +
+ fs/f2fs/super.c                    | 7 +++++++
+ 3 files changed, 12 insertions(+)
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 69b0781..7ba2df9 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -25,6 +25,9 @@
- #include "trace.h"
- #include <trace/events/f2fs.h>
+diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
+index e0950c4..87ae1a2 100644
+--- a/Documentation/filesystems/f2fs.txt
++++ b/Documentation/filesystems/f2fs.txt
+@@ -138,6 +138,10 @@ nobarrier              This option can be used if underlying storage guarantees
+ fastboot               This option is used when a system wants to reduce mount
+                        time as much as possible, even though normal performance
+ 		       can be sacrificed.
++extent_cache           Enable an extent cache based on rb-tree, it can cache
++                       as many as extent which map between contiguous logical
++                       address and physical address per inode, resulting in
++                       increasing the cache hit ratio.
  
-+struct kmem_cache *extent_tree_slab;
-+struct kmem_cache *extent_node_slab;
-+
- static void f2fs_read_end_io(struct bio *bio, int err)
- {
- 	struct bio_vec *bvec;
-@@ -366,6 +369,382 @@ end_update:
- 	return need_update;
- }
- 
-+struct extent_node *__attach_extent_node(struct f2fs_sb_info *sbi,
-+				struct extent_tree *et, struct extent_info *ei,
-+				struct rb_node *parent, struct rb_node **p)
-+{
-+	struct extent_node *en;
-+
-+	en = kmem_cache_alloc(extent_node_slab, GFP_ATOMIC);
-+	if (!en)
-+		return NULL;
-+
-+	en->ei = *ei;
-+	INIT_LIST_HEAD(&en->list);
-+
-+	rb_link_node(&en->rb_node, parent, p);
-+	rb_insert_color(&en->rb_node, &et->root);
-+	et->count++;
-+	atomic_inc(&sbi->total_ext_node);
-+	return en;
-+}
-+
-+static void __detach_extent_node(struct f2fs_sb_info *sbi,
-+				struct extent_tree *et, struct extent_node *en)
-+{
-+	rb_erase(&en->rb_node, &et->root);
-+	et->count--;
-+	atomic_dec(&sbi->total_ext_node);
-+}
-+
-+static struct extent_node *__lookup_extent_tree(struct extent_tree *et,
-+							unsigned int fofs)
-+{
-+	struct rb_node *node = et->root.rb_node;
-+	struct extent_node *en;
-+
-+	while (node) {
-+		en = rb_entry(node, struct extent_node, rb_node);
-+
-+		if (fofs < en->ei.fofs)
-+			node = node->rb_left;
-+		else if (fofs >= en->ei.fofs + en->ei.len)
-+			node = node->rb_right;
-+		else
-+			return en;
-+	}
-+	return NULL;
-+}
-+
-+static struct extent_node *__try_back_merge(struct f2fs_sb_info *sbi,
-+				struct extent_tree *et, struct extent_node *en)
-+{
-+	struct extent_node *prev;
-+	struct rb_node *node;
-+
-+	node = rb_prev(&en->rb_node);
-+	if (!node)
-+		return NULL;
-+
-+	prev = rb_entry(node, struct extent_node, rb_node);
-+	if (__is_back_mergeable(&en->ei, &prev->ei)) {
-+		en->ei.fofs = prev->ei.fofs;
-+		en->ei.blk = prev->ei.blk;
-+		en->ei.len += prev->ei.len;
-+		__detach_extent_node(sbi, et, prev);
-+		return prev;
-+	}
-+	return NULL;
-+}
-+
-+static struct extent_node *__try_front_merge(struct f2fs_sb_info *sbi,
-+				struct extent_tree *et, struct extent_node *en)
-+{
-+	struct extent_node *next;
-+	struct rb_node *node;
-+
-+	node = rb_next(&en->rb_node);
-+	if (!node)
-+		return NULL;
-+
-+	next = rb_entry(node, struct extent_node, rb_node);
-+	if (__is_front_mergeable(&en->ei, &next->ei)) {
-+		en->ei.len += next->ei.len;
-+		__detach_extent_node(sbi, et, next);
-+		return next;
-+	}
-+	return NULL;
-+}
-+
-+static struct extent_node *__insert_extent_tree(struct f2fs_sb_info *sbi,
-+				struct extent_tree *et, struct extent_info *ei,
-+				struct extent_node **den)
-+{
-+	struct rb_node **p = &et->root.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct extent_node *en;
-+
-+	while (*p) {
-+		parent = *p;
-+		en = rb_entry(parent, struct extent_node, rb_node);
-+
-+		if (ei->fofs < en->ei.fofs) {
-+			if (__is_front_mergeable(ei, &en->ei)) {
-+				f2fs_bug_on(sbi, !den);
-+				en->ei.fofs = ei->fofs;
-+				en->ei.blk = ei->blk;
-+				en->ei.len += ei->len;
-+				*den = __try_back_merge(sbi, et, en);
-+				return en;
-+			}
-+			p = &(*p)->rb_left;
-+		} else if (ei->fofs >= en->ei.fofs + en->ei.len) {
-+			if (__is_back_mergeable(ei, &en->ei)) {
-+				f2fs_bug_on(sbi, !den);
-+				en->ei.len += ei->len;
-+				*den = __try_front_merge(sbi, et, en);
-+				return en;
-+			}
-+			p = &(*p)->rb_right;
-+		} else {
-+			f2fs_bug_on(sbi, 1);
-+		}
-+	}
-+
-+	return __attach_extent_node(sbi, et, ei, parent, p);
-+}
-+
-+static unsigned int __free_extent_tree(struct f2fs_sb_info *sbi,
-+					struct extent_tree *et, bool free_all)
-+{
-+	struct rb_node *node, *next;
-+	struct extent_node *en;
-+	unsigned int count = et->count;
-+
-+	node = rb_first(&et->root);
-+	while (node) {
-+		next = rb_next(node);
-+		en = rb_entry(node, struct extent_node, rb_node);
-+
-+		if (free_all) {
-+			spin_lock(&sbi->extent_lock);
-+			if (!list_empty(&en->list))
-+				list_del_init(&en->list);
-+			spin_unlock(&sbi->extent_lock);
-+		}
-+
-+		if (free_all || list_empty(&en->list)) {
-+			__detach_extent_node(sbi, et, en);
-+			kmem_cache_free(extent_node_slab, en);
-+		}
-+		node = next;
-+	}
-+
-+	return count - et->count;
-+}
-+
-+static bool f2fs_lookup_extent_tree(struct inode *inode, pgoff_t pgofs,
-+							struct extent_info *ei)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
-+	struct extent_tree *et;
-+	struct extent_node *en;
-+
-+	if (is_inode_flag_set(F2FS_I(inode), FI_NO_EXTENT))
-+		return false;
-+
-+	down_read(&sbi->extent_tree_lock);
-+	et = radix_tree_lookup(&sbi->extent_tree_root, inode->i_ino);
-+	if (!et) {
-+		up_read(&sbi->extent_tree_lock);
-+		return false;
-+	}
-+	atomic_inc(&et->refcount);
-+	up_read(&sbi->extent_tree_lock);
-+
-+	read_lock(&et->lock);
-+	en = __lookup_extent_tree(et, pgofs);
-+	if (en) {
-+		*ei = en->ei;
-+		spin_lock(&sbi->extent_lock);
-+		if (!list_empty(&en->list))
-+			list_move_tail(&en->list, &sbi->extent_list);
-+		spin_unlock(&sbi->extent_lock);
-+		stat_inc_read_hit(sbi->sb);
-+	}
-+	stat_inc_total_hit(sbi->sb);
-+	read_unlock(&et->lock);
-+
-+	atomic_dec(&et->refcount);
-+	return en ? true : false;
-+}
-+
-+static void f2fs_update_extent_tree(struct inode *inode, pgoff_t fofs,
-+							block_t blkaddr)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
-+	nid_t ino = inode->i_ino;
-+	struct extent_tree *et;
-+	struct extent_node *en = NULL, *en1 = NULL, *en2 = NULL, *en3 = NULL;
-+	struct extent_node *den = NULL;
-+	struct extent_info ei, dei;
-+	unsigned int endofs;
-+
-+	if (is_inode_flag_set(F2FS_I(inode), FI_NO_EXTENT))
-+		return;
-+
-+	down_write(&sbi->extent_tree_lock);
-+	et = radix_tree_lookup(&sbi->extent_tree_root, ino);
-+	if (!et) {
-+		f2fs_kmem_cache_alloc(extent_tree_slab, GFP_NOFS);
-+		f2fs_radix_tree_insert(&sbi->extent_tree_root, ino, et);
-+		memset(et, 0, sizeof(struct extent_tree));
-+		et->ino = ino;
-+		et->root = RB_ROOT;
-+		rwlock_init(&et->lock);
-+		atomic_set(&et->refcount, 0);
-+		et->count = 0;
-+		sbi->total_ext_tree++;
-+	}
-+	atomic_inc(&et->refcount);
-+	up_write(&sbi->extent_tree_lock);
-+
-+	write_lock(&et->lock);
-+
-+	/* 1. lookup and remove existing extent info in cache */
-+	en = __lookup_extent_tree(et, fofs);
-+	if (!en)
-+		goto update_extent;
-+
-+	dei = en->ei;
-+	__detach_extent_node(sbi, et, en);
-+
-+	/* 2. if extent can be split more, split and insert the left part */
-+	if (dei.len > 1) {
-+		/*  insert left part of split extent into cache */
-+		if (fofs - dei.fofs >= F2FS_MIN_EXTENT_LEN) {
-+			set_extent_info(&ei, dei.fofs, dei.blk,
-+							fofs - dei.fofs);
-+			en1 = __insert_extent_tree(sbi, et, &ei, NULL);
-+		}
-+
-+		/* insert right part of split extent into cache */
-+		endofs = dei.fofs + dei.len - 1;
-+		if (endofs - fofs >= F2FS_MIN_EXTENT_LEN) {
-+			set_extent_info(&ei, fofs + 1,
-+				fofs - dei.fofs + dei.blk, endofs - fofs);
-+			en2 = __insert_extent_tree(sbi, et, &ei, NULL);
-+		}
-+	}
-+
-+update_extent:
-+	/* 3. update extent in extent cache */
-+	if (blkaddr) {
-+		set_extent_info(&ei, fofs, blkaddr, 1);
-+		en3 = __insert_extent_tree(sbi, et, &ei, &den);
-+	}
-+
-+	/* 4. update in global extent list */
-+	spin_lock(&sbi->extent_lock);
-+	if (en && !list_empty(&en->list))
-+		list_del_init(&en->list);
-+	/*
-+	 * en1 and en2 split from en, they will become more and more smaller
-+	 * fragments after splitting several times. So if the length is smaller
-+	 * than F2FS_MIN_EXTENT_LEN, we will not add them into extent tree.
-+	 */
-+	if (en1)
-+		list_add_tail(&en1->list, &sbi->extent_list);
-+	if (en2)
-+		list_add_tail(&en2->list, &sbi->extent_list);
-+	if (en3) {
-+		if (list_empty(&en3->list))
-+			list_add_tail(&en3->list, &sbi->extent_list);
-+		else
-+			list_move_tail(&en3->list, &sbi->extent_list);
-+	}
-+	if (den && !list_empty(&den->list))
-+		list_del_init(&den->list);
-+	spin_unlock(&sbi->extent_lock);
-+
-+	if (en)
-+		kmem_cache_free(extent_node_slab, en);
-+	if (den)
-+		kmem_cache_free(extent_node_slab, den);
-+
-+	write_unlock(&et->lock);
-+	atomic_dec(&et->refcount);
-+}
-+
-+void f2fs_shrink_extent_tree(struct f2fs_sb_info *sbi, int nr_shrink)
-+{
-+	struct extent_tree *treevec[EXT_TREE_VEC_SIZE];
-+	struct extent_node *en, *tmp;
-+	unsigned long ino = F2FS_ROOT_INO(sbi);
-+	struct radix_tree_iter iter;
-+	void **slot;
-+	unsigned int found;
-+
-+	if (available_free_memory(sbi, EXTENT_CACHE))
-+		return;
-+
-+	spin_lock(&sbi->extent_lock);
-+	list_for_each_entry_safe(en, tmp, &sbi->extent_list, list) {
-+		if (!nr_shrink--)
-+			break;
-+		list_del_init(&en->list);
-+	}
-+	spin_unlock(&sbi->extent_lock);
-+
-+	down_read(&sbi->extent_tree_lock);
-+	while ((found = radix_tree_gang_lookup(&sbi->extent_tree_root,
-+				(void **)treevec, ino, EXT_TREE_VEC_SIZE))) {
-+		unsigned i;
-+
-+		ino = treevec[found - 1]->ino + 1;
-+		for (i = 0; i < found; i++) {
-+			struct extent_tree *et = treevec[i];
-+
-+			atomic_inc(&et->refcount);
-+			write_lock(&et->lock);
-+			__free_extent_tree(sbi, et, false);
-+			write_unlock(&et->lock);
-+			atomic_dec(&et->refcount);
-+		}
-+	}
-+	up_read(&sbi->extent_tree_lock);
-+
-+	down_write(&sbi->extent_tree_lock);
-+	radix_tree_for_each_slot(slot, &sbi->extent_tree_root, &iter,
-+							F2FS_ROOT_INO(sbi)) {
-+		struct extent_tree *et = (struct extent_tree *)*slot;
-+
-+		if (!atomic_read(&et->refcount) && !et->count) {
-+			radix_tree_delete(&sbi->extent_tree_root, et->ino);
-+			kmem_cache_free(extent_tree_slab, et);
-+			sbi->total_ext_tree--;
-+		}
-+	}
-+	up_write(&sbi->extent_tree_lock);
-+}
-+
-+void f2fs_destroy_extent_tree(struct inode *inode)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
-+	struct extent_tree *et;
-+
-+	down_read(&sbi->extent_tree_lock);
-+	et = radix_tree_lookup(&sbi->extent_tree_root, inode->i_ino);
-+	if (!et) {
-+		up_read(&sbi->extent_tree_lock);
-+		goto out;
-+	}
-+	atomic_inc(&et->refcount);
-+	up_read(&sbi->extent_tree_lock);
-+
-+	/* free all extent info belong to this extent tree */
-+	write_lock(&et->lock);
-+	__free_extent_tree(sbi, et, true);
-+	write_unlock(&et->lock);
-+
-+	atomic_dec(&et->refcount);
-+
-+	/* try to find and delete extent tree entry in radix tree */
-+	down_write(&sbi->extent_tree_lock);
-+	et = radix_tree_lookup(&sbi->extent_tree_root, inode->i_ino);
-+	if (!et) {
-+		up_write(&sbi->extent_tree_lock);
-+		goto out;
-+	}
-+	f2fs_bug_on(sbi, atomic_read(&et->refcount) || et->count);
-+	radix_tree_delete(&sbi->extent_tree_root, inode->i_ino);
-+	kmem_cache_free(extent_tree_slab, et);
-+	sbi->total_ext_tree--;
-+	up_write(&sbi->extent_tree_lock);
-+out:
-+	return;
-+}
-+
- static bool f2fs_lookup_extent_cache(struct inode *inode, pgoff_t pgofs,
- 							struct extent_info *ei)
- {
-@@ -1191,6 +1570,37 @@ static sector_t f2fs_bmap(struct address_space *mapping, sector_t block)
- 	return generic_block_bmap(mapping, block, get_data_block);
- }
- 
-+void init_extent_cache_info(struct f2fs_sb_info *sbi)
-+{
-+	INIT_RADIX_TREE(&sbi->extent_tree_root, GFP_NOIO);
-+	init_rwsem(&sbi->extent_tree_lock);
-+	INIT_LIST_HEAD(&sbi->extent_list);
-+	spin_lock_init(&sbi->extent_lock);
-+	sbi->total_ext_tree = 0;
-+	atomic_set(&sbi->total_ext_node, 0);
-+}
-+
-+int __init create_extent_cache(void)
-+{
-+	extent_tree_slab = f2fs_kmem_cache_create("f2fs_extent_tree",
-+			sizeof(struct extent_tree));
-+	if (!extent_tree_slab)
-+		return -ENOMEM;
-+	extent_node_slab = f2fs_kmem_cache_create("f2fs_extent_node",
-+			sizeof(struct extent_node));
-+	if (!extent_node_slab) {
-+		kmem_cache_destroy(extent_tree_slab);
-+		return -ENOMEM;
-+	}
-+	return 0;
-+}
-+
-+void destroy_extent_cache(void)
-+{
-+	kmem_cache_destroy(extent_node_slab);
-+	kmem_cache_destroy(extent_tree_slab);
-+}
-+
- const struct address_space_operations f2fs_dblock_aops = {
- 	.readpage	= f2fs_read_data_page,
- 	.readpages	= f2fs_read_data_pages,
+ ================================================================================
+ DEBUGFS ENTRIES
 diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 63edc22..a77b30f 100644
+index a77b30f..fe74286 100644
 --- a/fs/f2fs/f2fs.h
 +++ b/fs/f2fs/f2fs.h
-@@ -346,6 +346,33 @@ static inline void set_raw_extent(struct extent_info *ext,
- 	i_ext->len = cpu_to_le32(ext->len);
- }
+@@ -50,6 +50,7 @@
+ #define F2FS_MOUNT_FLUSH_MERGE		0x00000400
+ #define F2FS_MOUNT_NOBARRIER		0x00000800
+ #define F2FS_MOUNT_FASTBOOT		0x00001000
++#define F2FS_MOUNT_EXTENT_CACHE		0x00002000
  
-+static inline void set_extent_info(struct extent_info *ei, unsigned int fofs,
-+						u32 blk, unsigned int len)
-+{
-+	ei->fofs = fofs;
-+	ei->blk = blk;
-+	ei->len = len;
-+}
-+
-+static inline bool __is_extent_mergeable(struct extent_info *back,
-+						struct extent_info *front)
-+{
-+	return (back->fofs + back->len == front->fofs &&
-+			back->blk + back->len == front->blk);
-+}
-+
-+static inline bool __is_back_mergeable(struct extent_info *cur,
-+						struct extent_info *back)
-+{
-+	return __is_extent_mergeable(back, cur);
-+}
-+
-+static inline bool __is_front_mergeable(struct extent_info *cur,
-+						struct extent_info *front)
-+{
-+	return __is_extent_mergeable(cur, front);
-+}
-+
- struct f2fs_nm_info {
- 	block_t nat_blkaddr;		/* base disk address of NAT */
- 	nid_t max_nid;			/* maximum possible node ids */
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index d7c1436..387017f 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -41,7 +41,9 @@ bool available_free_memory(struct f2fs_sb_info *sbi, int type)
- 	/* only uses low memory */
- 	avail_ram = val.totalram - val.totalhigh;
+ #define clear_opt(sbi, option)	(sbi->mount_opt.opt &= ~F2FS_MOUNT_##option)
+ #define set_opt(sbi, option)	(sbi->mount_opt.opt |= F2FS_MOUNT_##option)
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 5706c17..1b88b59 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -56,6 +56,7 @@ enum {
+ 	Opt_flush_merge,
+ 	Opt_nobarrier,
+ 	Opt_fastboot,
++	Opt_extent_cache,
+ 	Opt_err,
+ };
  
--	/* give 25%, 25%, 50%, 50% memory for each components respectively */
-+	/*
-+	 * give 25%, 25%, 50%, 50%, 50% memory for each components respectively
-+	 */
- 	if (type == FREE_NIDS) {
- 		mem_size = (nm_i->fcnt * sizeof(struct free_nid)) >>
- 							PAGE_CACHE_SHIFT;
-@@ -62,6 +64,11 @@ bool available_free_memory(struct f2fs_sb_info *sbi, int type)
- 			mem_size += (sbi->im[i].ino_num *
- 				sizeof(struct ino_entry)) >> PAGE_CACHE_SHIFT;
- 		res = mem_size < ((avail_ram * nm_i->ram_thresh / 100) >> 1);
-+	} else if (type == EXTENT_CACHE) {
-+		mem_size = (sbi->total_ext_tree * sizeof(struct extent_tree) +
-+				atomic_read(&sbi->total_ext_node) *
-+				sizeof(struct extent_node)) >> PAGE_CACHE_SHIFT;
-+		res = mem_size < ((avail_ram * nm_i->ram_thresh / 100) >> 1);
- 	} else {
- 		if (sbi->sb->s_bdi->dirty_exceeded)
- 			return false;
+@@ -76,6 +77,7 @@ static match_table_t f2fs_tokens = {
+ 	{Opt_flush_merge, "flush_merge"},
+ 	{Opt_nobarrier, "nobarrier"},
+ 	{Opt_fastboot, "fastboot"},
++	{Opt_extent_cache, "extent_cache"},
+ 	{Opt_err, NULL},
+ };
+ 
+@@ -357,6 +359,9 @@ static int parse_options(struct super_block *sb, char *options)
+ 		case Opt_fastboot:
+ 			set_opt(sbi, FASTBOOT);
+ 			break;
++		case Opt_extent_cache:
++			set_opt(sbi, EXTENT_CACHE);
++			break;
+ 		default:
+ 			f2fs_msg(sb, KERN_ERR,
+ 				"Unrecognized mount option \"%s\" or missing value",
+@@ -589,6 +594,8 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
+ 		seq_puts(seq, ",nobarrier");
+ 	if (test_opt(sbi, FASTBOOT))
+ 		seq_puts(seq, ",fastboot");
++	if (test_opt(sbi, EXTENT_CACHE))
++		seq_puts(seq, ",extent_cache");
+ 	seq_printf(seq, ",active_logs=%u", sbi->active_logs);
+ 
+ 	return 0;
 -- 
 2.2.1
 
