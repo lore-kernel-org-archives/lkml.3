@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073AbbAZUv1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 15:51:27 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43541 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbbAZUvW (ORCPT
+	id S1757110AbbAZUvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 15:51:45 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:46102 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756995AbbAZUvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 15:51:22 -0500
-Date: Mon, 26 Jan 2015 20:50:57 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jon Masters <jcm@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        leif.lindholm@linaro.org, grant.likely@linaro.org
-Subject: Re: inverse mapping from a struct console to device
-Message-ID: <20150126205056.GA17169@leverpostej>
-References: <54C6984A.20501@redhat.com>
+	Mon, 26 Jan 2015 15:51:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C6984A.20501@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150127074921.3a4ac6df@canb.auug.org.au>
+References: <20150127074921.3a4ac6df@canb.auug.org.au>
+Date: Mon, 26 Jan 2015 22:51:40 +0200
+Message-ID: <CACE9dm92M1JO0OXW_4bWRBxOjo60ntYJ_Z+w1EJvPDTDM+yGyw@mail.gmail.com>
+Subject: Re: linux-next: contact change for the integrity tree
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 07:40:58PM +0000, Jon Masters wrote:
-> Hi Folks,
-> 
-> TLDR: I need a back reference from a console struct to its device. I
-> can't see an easy way to do this right now without adding one?
+Hi,
 
-I don't think that's quite what you need. All you need is to be able to
-refer to the SPCR at serial probe time (more on that below), when you
-should have the data you want.
+Yes, please.
 
-> I've a quick question. I have prototype code that parses an ACPI table
-> known as the SPCR (Serial Port Console Redirection - exists on both x86
-> and ARM systems). It finds the correct serial device (but it's not a
-> Linux specific DT-style solution so there's no "console=" parameter
-> embedded in it or something)
+(in plain text)
 
-In DT we have /chosen/stdout-path which offers analagous functionality.
-It is independent of the command line, and has a standard set of
-parameters (<baud>{<parity>{<bits>{<flow>}}}).
+- Dmitry
 
-To make this work we check against the stdout-path when we register the
-UART. Take a look at of_console check (called from uart_add_one_port).
+On 26 January 2015 at 22:49, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> I noticed commit bfd33c4b4b1a ("MAINTAINERS: email update") in the
+> integrity tree today.  I assume that I should also update the email
+> address in my contacts list?
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-Assuming your UART probing looks similar for ACPI, you can have an
-analagous function that goes and checks uport->dev.acpi_dev_node against
-entires in the SPCR, configuring the UART as required at this point at
-registration time.
 
-This requires that you parse the SPCR earlier, but presumably the SPCR
-is simple enough that this is possible (no AML, for instance).
 
-Is there some reason that approach is unworkable?
-
-Mark.
+-- 
+Thanks,
+Dmitry
