@@ -1,318 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917AbbAZSWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:22:55 -0500
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:46976 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815AbbAZSWh (ORCPT
+	id S1754878AbbAZSWi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:22:38 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:11508 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751631AbbAZSWf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:22:37 -0500
-Date: Mon, 26 Jan 2015 12:22:33 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 07/16] ARM: integrator: convert PCI to use generic config
- accesses
-Message-ID: <20150126182233.GB4063@google.com>
-References: <1420857290-8373-1-git-send-email-robh@kernel.org>
- <1420857290-8373-8-git-send-email-robh@kernel.org>
- <CACRpkdbwKN9LenqrWeu4WykhdZOGAdxpC_BYr2cYpc2_cn5GfA@mail.gmail.com>
- <4938579.0KIk3QtTCP@wuerfel>
- <CACRpkdZSXWrVudiadVjbhQDS_zQrYttaytW-TUoeFUrc=beD1A@mail.gmail.com>
- <20150122203336.GD13072@google.com>
+	Mon, 26 Jan 2015 13:22:35 -0500
+Date: Mon, 26 Jan 2015 19:22:44 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Jyri Sarha <jsarha@ti.com>
+Subject: Re: [alsa-devel] [PATCH v2 3/3] ASoC: add generic dt-card support
+Message-ID: <20150126192244.12a79eff@armhf>
+In-Reply-To: <54C62AD1.2090207@metafoo.de>
+References: <cover.1421868426.git.moinejf@free.fr>
+	<d0c66c2e2f200119f9990fa52a503b1a4af6238f.1421868426.git.moinejf@free.fr>
+	<54C0088F.9070609@metafoo.de>
+	<20150122090723.50ac0156@armhf>
+	<54C14EB3.8080305@metafoo.de>
+	<20150123131554.623003f9@armhf>
+	<54C252F4.9000504@metafoo.de>
+	<20150123193456.276ea512@armhf>
+	<54C381A7.3020209@metafoo.de>
+	<20150124141820.3793bd47@armhf>
+	<54C62AD1.2090207@metafoo.de>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150122203336.GD13072@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 02:33:36PM -0600, Bjorn Helgaas wrote:
-> On Mon, Jan 12, 2015 at 01:05:12AM +0100, Linus Walleij wrote:
-> > On Sat, Jan 10, 2015 at 10:53 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > > On Saturday 10 January 2015 22:40:22 Linus Walleij wrote:
-> > >> >  static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
-> > >> >                           int size, u32 *val)
-> > >> >  {
-> > >> > -       addr = v3_open_config_window(bus, devfn, where);
-> > >> > +       int ret = pci_generic_config_read(bus, devfn, where, size, val);
-> > >> >         v3_close_config_window();
-> > >> > +       return ret;
-> > >> >  }
-> > >> >
-> > >> >  static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
-> > >> >                            int size, u32 val)
-> > >> >  {
-> > >> > +       int ret = pci_generic_config_write(bus, devfn, where, size, val);
-> > >> >         v3_close_config_window();
-> > >> > -       raw_spin_unlock_irqrestore(&v3_lock, flags);
-> > >> > +       return ret;
-> > >> >  }
-> > >> >
-> > >> >  static struct pci_ops pci_v3_ops = {
-> > >> > +       .map_bus = v3_open_config_window,
-> > >> >         .read   = v3_read_config,
-> > >> >         .write  = v3_write_config,
-> > >>
-> > >> So .map_bus is called before every .read/.write operation I take it.
-> > >>
-> > >> Wouldn't it be proper to call the v3_close_config_window() from a
-> > >> matching .unmap_bus() callback for symmetry?
-> > >
-> > > It would be nicer for integrator but useless for anything else, so
-> > > I'd vote for leaving it the way Rob posted.
-> > 
-> > OK I buy that, throw in a comment about it in the code if there
-> > is some time for iterating the patch.
+On Mon, 26 Jan 2015 12:53:53 +0100
+Lars-Peter Clausen <lars@metafoo.de> wrote:
+> > - a generic sound node in the case of multi controllers or multi codec
+> >    levels (after dt-card extension):
+> >
+> > 	sound {
+> > 		compatible = "linux,dt-card";
+> > 		audio-root = <&audio1>;	/* starting point of the graph */
+> > 		... card properties ...
+> > 	};
+> >
+> > For the last case, the creation of the simple dt-card builder could be
+> > done by a node in the controller, avoiding the DT to have a knowledge
+> > of this piece of software:
+> >
+> > 	&audio1 {
+> > 		...
+> > 		audio-card {
+> > 			... card properties ...
+> > 		}
+> > 		port@0 {
+> > 			...
+> > 		};
+> > 		...
+> > 	};  
 > 
-> Would you prefer something like the following instead?  It keeps the
-> v3_open/close symmetry, but it does break apart and duplicate some of the
-> logic from v3_open_config_window().
+> Is there any advantage to putting the card node inside the controller node 
+> rather than having it as a separate node?
 
-Hearing nothing, I kept Rob's initial version.  It can be tweaked later if
-anybody wants to.  I just want to get all this into v3.20.
+There is no advantage, but it seems to me that the sound device is a
+software entity which should not appear in the devicetree.
 
-Bjorn
-
-> commit 3e0c269a560968002298d22ac47bde4bd45aea8e
-> Author: Rob Herring <robh@kernel.org>
-> Date:   Fri Jan 9 20:34:41 2015 -0600
+> >> I think this is something that needs to be done in the ASoC/ALSA core
+> >> itself. Create the graph, wait until all endpoints of the graph have been
+> >> registered and then create the card. Or something similar.  
+> >
+> > To go further, such a function could fully replace
+> > snd_soc_register_card()!  
 > 
->     ARM: integrator: Convert PCI to use generic config accessors
->     
->     Convert the integrator PCI driver to use the generic config access
->     functions.
->     
->     This changes accesses from __raw_readX/__raw_writeX to readX/writeX
->     variants.  The spinlock is removed because it is unnecessary.  The config
->     read and write functions are already protected with a spinlock and no
->     access can occur during the .pre_init function.
->     
->     Signed-off-by: Rob Herring <robh@kernel.org>
->     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->     Acked-by: Linus Walleij <linus.walleij@linaro.org>
->     CC: Russell King <linux@arm.linux.org.uk>
->     CC: linux-arm-kernel@lists.infradead.org
-> 
-> diff --git a/arch/arm/mach-integrator/pci_v3.c b/arch/arm/mach-integrator/pci_v3.c
-> index c186a17c2cff..c1098729cf8a 100644
-> --- a/arch/arm/mach-integrator/pci_v3.c
-> +++ b/arch/arm/mach-integrator/pci_v3.c
-> @@ -324,7 +324,7 @@ static u64 pre_mem_pci_sz;
->   * configuration address space, you present the V3 with the following pattern
->   * (which is very nearly a type 1 (except that the lower two bits are 00 and
->   * not 01).   In order for this mapping to work you need to set up one of
-> - * the local to PCI aperatures to 16Mbytes in length translating to
-> + * the local to PCI apertures to 16Mbytes in length translating to
->   * PCI configuration space starting at 0x0000.0000.
->   *
->   * PCI configuration cycles look like this:
-> @@ -356,15 +356,14 @@ static u64 pre_mem_pci_sz;
->   *	 7:2	register number
->   *
->   */
-> -static DEFINE_RAW_SPINLOCK(v3_lock);
->  
->  #undef V3_LB_BASE_PREFETCH
->  #define V3_LB_BASE_PREFETCH 0
->  
-> -static void __iomem *v3_open_config_window(struct pci_bus *bus,
-> -					   unsigned int devfn, int offset)
-> +static void v3_open_config_window(struct pci_bus *bus, unsigned int devfn,
-> +				  int offset)
->  {
-> -	unsigned int address, mapaddress, busnr;
-> +	unsigned int mapaddress, busnr;
->  
->  	busnr = bus->number;
->  
-> @@ -381,14 +380,10 @@ static void __iomem *v3_open_config_window(struct pci_bus *bus,
->  		/*
->  		 * local bus segment so need a type 0 config cycle
->  		 *
-> -		 * build the PCI configuration "address" with one-hot in
-> -		 * A31-A11
-> -		 *
->  		 * mapaddress:
->  		 *  3:1 = config cycle (101)
->  		 *  0   = PCI A1 & A0 are 0 (0)
->  		 */
-> -		address = PCI_FUNC(devfn) << 8;
->  		mapaddress = V3_LB_MAP_TYPE_CONFIG;
->  
->  		if (slot > 12)
-> @@ -396,26 +391,15 @@ static void __iomem *v3_open_config_window(struct pci_bus *bus,
->  			 * high order bits are handled by the MAP register
->  			 */
->  			mapaddress |= 1 << (slot - 5);
-> -		else
-> -			/*
-> -			 * low order bits handled directly in the address
-> -			 */
-> -			address |= 1 << (slot + 11);
->  	} else {
->          	/*
->  		 * not the local bus segment so need a type 1 config cycle
->  		 *
-> -		 * address:
-> -		 *  23:16 = bus number
-> -		 *  15:11 = slot number (7:3 of devfn)
-> -		 *  10:8  = func number (2:0 of devfn)
-> -		 *
->  		 * mapaddress:
->  		 *  3:1 = config cycle (101)
->  		 *  0   = PCI A1 & A0 from host bus (1)
->  		 */
->  		mapaddress = V3_LB_MAP_TYPE_CONFIG | V3_LB_MAP_AD_LOW_EN;
-> -		address = (busnr << 16) | (devfn << 8);
->  	}
->  
->  	/*
-> @@ -432,8 +416,6 @@ static void __iomem *v3_open_config_window(struct pci_bus *bus,
->  	v3_writel(V3_LB_BASE1, v3_addr_to_lb_base(conf_mem.start) |
->  			V3_LB_BASE_ADR_SIZE_16MB | V3_LB_BASE_ENABLE);
->  	v3_writew(V3_LB_MAP1, mapaddress);
-> -
-> -	return PCI_CONFIG_VADDR + address + offset;
->  }
->  
->  static void v3_close_config_window(void)
-> @@ -454,70 +436,66 @@ static void v3_close_config_window(void)
->  			V3_LB_BASE_ADR_SIZE_256MB | V3_LB_BASE_ENABLE);
->  }
->  
-> -static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
-> -			  int size, u32 *val)
-> +static void __iomem *v3_map_bus(struct pci_bus *bus,
-> +					   unsigned int devfn, int offset)
->  {
-> -	void __iomem *addr;
-> -	unsigned long flags;
-> -	u32 v;
-> +	unsigned int busnr = bus->number;
-> +	unsigned int address;
->  
-> -	raw_spin_lock_irqsave(&v3_lock, flags);
-> -	addr = v3_open_config_window(bus, devfn, where);
-> -
-> -	switch (size) {
-> -	case 1:
-> -		v = __raw_readb(addr);
-> -		break;
-> +	if (busnr == 0) {
-> +		int slot = PCI_SLOT(devfn);
->  
-> -	case 2:
-> -		v = __raw_readw(addr);
-> -		break;
-> +		/*
-> +		 * build the PCI configuration "address" with function in
-> +		 * A10-A8 and device one-hot in A31-A11
-> +		 */
-> +		address = PCI_FUNC(devfn) << 8;
->  
-> -	default:
-> -		v = __raw_readl(addr);
-> -		break;
-> +		/*
-> +		 * high order bits are handled by the MAP register;
-> +		 * low order bits handled directly in the address
-> +		 */
-> +		if (slot <= 12)
-> +			address |= 1 << (slot + 11);
-> +	} else {
-> +		/*
-> +		 * not the local bus segment so need a type 1 config cycle
-> +		 *
-> +		 * address:
-> +		 *  23:16 = bus number
-> +		 *  15:11 = slot number (7:3 of devfn)
-> +		 *  10:8  = func number (2:0 of devfn)
-> +		 */
-> +		address = (busnr << 16) | (devfn << 8);
->  	}
->  
-> -	v3_close_config_window();
-> -	raw_spin_unlock_irqrestore(&v3_lock, flags);
-> +	return PCI_CONFIG_VADDR + address + offset;
-> +}
-> +
-> +static int v3_read_config(struct pci_bus *bus, unsigned int devfn, int where,
-> +			  int size, u32 *val)
-> +{
-> +	int ret;
->  
-> -	*val = v;
-> -	return PCIBIOS_SUCCESSFUL;
-> +	v3_open_config_window();
-> +	ret = pci_generic_config_read(bus, devfn, where, size, val);
-> +	v3_close_config_window();
-> +	return ret;
->  }
->  
->  static int v3_write_config(struct pci_bus *bus, unsigned int devfn, int where,
->  			   int size, u32 val)
->  {
-> -	void __iomem *addr;
-> -	unsigned long flags;
-> -
-> -	raw_spin_lock_irqsave(&v3_lock, flags);
-> -	addr = v3_open_config_window(bus, devfn, where);
-> -
-> -	switch (size) {
-> -	case 1:
-> -		__raw_writeb((u8)val, addr);
-> -		__raw_readb(addr);
-> -		break;
-> -
-> -	case 2:
-> -		__raw_writew((u16)val, addr);
-> -		__raw_readw(addr);
-> -		break;
-> -
-> -	case 4:
-> -		__raw_writel(val, addr);
-> -		__raw_readl(addr);
-> -		break;
-> -	}
-> +	int ret;
->  
-> +	v3_open_config_window();
-> +	ret = pci_generic_config_write(bus, devfn, where, size, val);
->  	v3_close_config_window();
-> -	raw_spin_unlock_irqrestore(&v3_lock, flags);
-> -
-> -	return PCIBIOS_SUCCESSFUL;
-> +	return ret;
->  }
->  
->  static struct pci_ops pci_v3_ops = {
-> +	.map_bus = v3_map_bus,
->  	.read	= v3_read_config,
->  	.write	= v3_write_config,
->  };
-> @@ -672,8 +650,6 @@ static void __init pci_v3_preinit(void)
->  	hook_fault_code(8, v3_pci_fault, SIGBUS, 0, "external abort on non-linefetch");
->  	hook_fault_code(10, v3_pci_fault, SIGBUS, 0, "external abort on non-linefetch");
->  
-> -	raw_spin_lock_irqsave(&v3_lock, flags);
-> -
->  	/*
->  	 * Unlock V3 registers, but only if they were previously locked.
->  	 */
-> @@ -736,8 +712,6 @@ static void __init pci_v3_preinit(void)
->  	v3_writew(V3_LB_CFG, v3_readw(V3_LB_CFG) | (1 << 10));
->  	v3_writeb(V3_LB_IMASK, 0x28);
->  	__raw_writel(3, ap_syscon_base + INTEGRATOR_SC_PCIENABLE_OFFSET);
-> -
-> -	raw_spin_unlock_irqrestore(&v3_lock, flags);
->  }
->  
->  static void __init pci_v3_postinit(void)
+> Yes, if the graph is strongly connected (which it should be) the framework 
+> will be able to identify when all components that belong to the graph have 
+> been registered and is then able to create a card for it.
+
+Russell's "Componentized device handling" would permit to synchronize
+all components avoiding the PROBE_DEFERs, but there is a problem with
+the tda998x: this one is a component of both the audio and video
+subsystems, and the bind() callback does not indicate by which master
+compoment it is called...
+
+> Are you by chance at FOSDEM? If you are maybe we can sit down for a moment 
+> and discuss things.
+
+Sorry, I will not be at FOSDEM.
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
