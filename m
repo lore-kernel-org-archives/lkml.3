@@ -1,169 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419AbbAZRUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:20:30 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:36834 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808AbbAZRUY (ORCPT
+	id S1756522AbbAZRVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:21:09 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:35659 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795AbbAZRVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:20:24 -0500
+	Mon, 26 Jan 2015 12:21:07 -0500
+Message-ID: <54C67781.5070602@linaro.org>
+Date: Mon, 26 Jan 2015 17:21:05 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <1417345161-18548-1-git-send-email-arjun024@gmail.com>
-References: <1417345161-18548-1-git-send-email-arjun024@gmail.com>
-From: Arjun Sreedharan <arjun024@gmail.com>
-Date: Mon, 26 Jan 2015 22:49:56 +0530
-Message-ID: <CAJFMrCE8S6oUqYoWHpKoU-T3ukquU3wUnStdVEdt+J4ytQZe9g@mail.gmail.com>
-Subject: Re: [PATCH] mn10300: remove redundant hex()
-To: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jason Cooper <jason@lakedaemon.net>, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>
+Subject: Re: [PATCH 3.19-rc2 v15 5/8] printk: Simple implementation for NMI
+ backtracing
+References: <1422022952-31552-1-git-send-email-daniel.thompson@linaro.org> <1422022952-31552-6-git-send-email-daniel.thompson@linaro.org> <alpine.DEB.2.11.1501242105230.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501242105230.5526@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping !!
+On 24/01/15 21:44, Thomas Gleixner wrote:
+> On Fri, 23 Jan 2015, Daniel Thompson wrote:
+>> +#ifdef CONFIG_ARCH_WANT_NMI_PRINTK
+>> +extern __printf(1, 0) int nmi_vprintk(const char *fmt, va_list args);
+>> +
+>> +struct cpumask;
+>> +extern int prepare_nmi_printk(struct cpumask *cpus);
+>> +extern void complete_nmi_printk(struct cpumask *cpus);
+>> +
+>> +/*
+>> + * Replace printk to write into the NMI seq.
+>> + *
+>> + * To avoid include hell this is a macro rather than an inline function
+>> + * (printk_func is not declared in this header file).
+>> + */
+>> +#define this_cpu_begin_nmi_printk() ({ \
+>> +	printk_func_t __orig = this_cpu_read(printk_func); \
+>> +	this_cpu_write(printk_func, nmi_vprintk); \
+>> +	__orig; \
+>> +})
+>> +#define this_cpu_end_nmi_printk(fn) this_cpu_write(printk_func, fn)
+> 
+> Why can't we just make it a proper function in printk.c and make
+> DEFINE_PER_CPU(printk_func_t, printk_func) static once x86 is
+> converted over, thereby getting rid of the misplaced declaration in
+> percpu.h?
+> 
+> It's really not performance critical at all. If you do system wide
+> backtraces a function call is the least of your worries.
 
-On 30 November 2014 at 16:29, Arjun Sreedharan <arjun024@gmail.com> wrote:
-> replace rendundant hex() with kernel's hex_to_bin()
->
-> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
-> ---
->  arch/mn10300/kernel/gdb-stub.c | 61 ++++++++++++++++--------------------------
->  1 file changed, 23 insertions(+), 38 deletions(-)
->
-> diff --git a/arch/mn10300/kernel/gdb-stub.c b/arch/mn10300/kernel/gdb-stub.c
-> index a128c57..06adf39 100644
-> --- a/arch/mn10300/kernel/gdb-stub.c
-> +++ b/arch/mn10300/kernel/gdb-stub.c
-> @@ -176,27 +176,12 @@ static struct gdbstub_bkpt gdbstub_bkpts[256];
->  static void getpacket(char *buffer);
->  static int putpacket(char *buffer);
->  static int computeSignal(enum exception_code excep);
-> -static int hex(unsigned char ch);
->  static int hexToInt(char **ptr, int *intValue);
->  static unsigned char *mem2hex(const void *mem, char *buf, int count,
->                               int may_fault);
->  static const char *hex2mem(const char *buf, void *_mem, int count,
->                            int may_fault);
->
-> -/*
-> - * Convert ch from a hex digit to an int
-> - */
-> -static int hex(unsigned char ch)
-> -{
-> -       if (ch >= 'a' && ch <= 'f')
-> -               return ch - 'a' + 10;
-> -       if (ch >= '0' && ch <= '9')
-> -               return ch - '0';
-> -       if (ch >= 'A' && ch <= 'F')
-> -               return ch - 'A' + 10;
-> -       return -1;
-> -}
-> -
->  #ifdef CONFIG_GDBSTUB_DEBUGGING
->
->  void debug_to_serial(const char *p, int n)
-> @@ -283,12 +268,12 @@ static void getpacket(char *buffer)
->                 ret = gdbstub_io_rx_char(&ch, 0);
->                 if (ret < 0)
->                         error = ret;
-> -               xmitcsum = hex(ch) << 4;
-> +               xmitcsum = hex_to_bin(ch) << 4;
->
->                 ret = gdbstub_io_rx_char(&ch, 0);
->                 if (ret < 0)
->                         error = ret;
-> -               xmitcsum |= hex(ch);
-> +               xmitcsum |= hex_to_bin(ch);
->
->                 if (error) {
->                         if (error == -EIO)
-> @@ -391,7 +376,7 @@ static int hexToInt(char **ptr, int *intValue)
->         *intValue = 0;
->
->         while (**ptr) {
-> -               hexValue = hex(**ptr);
-> +               hexValue = hex_to_bin(**ptr);
->                 if (hexValue < 0)
->                         break;
->
-> @@ -857,8 +842,8 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
->         } ch;
->
->         if ((u32) mem & 1 && count >= 1) {
-> -               ch.b[0]  = hex(*buf++) << 4;
-> -               ch.b[0] |= hex(*buf++);
-> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[0] |= hex_to_bin(*buf++);
->                 if (gdbstub_write_byte(ch.val, mem) != 0)
->                         return 0;
->                 mem++;
-> @@ -866,10 +851,10 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
->         }
->
->         if ((u32) mem & 3 && count >= 2) {
-> -               ch.b[0]  = hex(*buf++) << 4;
-> -               ch.b[0] |= hex(*buf++);
-> -               ch.b[1]  = hex(*buf++) << 4;
-> -               ch.b[1] |= hex(*buf++);
-> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[0] |= hex_to_bin(*buf++);
-> +               ch.b[1]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[1] |= hex_to_bin(*buf++);
->                 if (gdbstub_write_word(ch.val, mem) != 0)
->                         return 0;
->                 mem += 2;
-> @@ -877,14 +862,14 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
->         }
->
->         while (count >= 4) {
-> -               ch.b[0]  = hex(*buf++) << 4;
-> -               ch.b[0] |= hex(*buf++);
-> -               ch.b[1]  = hex(*buf++) << 4;
-> -               ch.b[1] |= hex(*buf++);
-> -               ch.b[2]  = hex(*buf++) << 4;
-> -               ch.b[2] |= hex(*buf++);
-> -               ch.b[3]  = hex(*buf++) << 4;
-> -               ch.b[3] |= hex(*buf++);
-> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[0] |= hex_to_bin(*buf++);
-> +               ch.b[1]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[1] |= hex_to_bin(*buf++);
-> +               ch.b[2]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[2] |= hex_to_bin(*buf++);
-> +               ch.b[3]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[3] |= hex_to_bin(*buf++);
->                 if (gdbstub_write_dword(ch.val, mem) != 0)
->                         return 0;
->                 mem += 4;
-> @@ -892,10 +877,10 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
->         }
->
->         if (count >= 2) {
-> -               ch.b[0]  = hex(*buf++) << 4;
-> -               ch.b[0] |= hex(*buf++);
-> -               ch.b[1]  = hex(*buf++) << 4;
-> -               ch.b[1] |= hex(*buf++);
-> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[0] |= hex_to_bin(*buf++);
-> +               ch.b[1]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[1] |= hex_to_bin(*buf++);
->                 if (gdbstub_write_word(ch.val, mem) != 0)
->                         return 0;
->                 mem += 2;
-> @@ -903,8 +888,8 @@ const char *hex2mem(const char *buf, void *_mem, int count, int may_fault)
->         }
->
->         if (count >= 1) {
-> -               ch.b[0]  = hex(*buf++) << 4;
-> -               ch.b[0] |= hex(*buf++);
-> +               ch.b[0]  = hex_to_bin(*buf++) << 4;
-> +               ch.b[0] |= hex_to_bin(*buf++);
->                 if (gdbstub_write_byte(ch.val, mem) != 0)
->                         return 0;
->         }
-> --
-> 1.7.11.7
->
+Yes. I'll make this a proper function.
+
+Not sure about tidying up printk_func though. I had hoped to use that to
+get rid of CONFIG_KGGB_KDB ifdef's that are currently found in printk.c .
+
+
+>> +#ifdef CONFIG_ARCH_WANT_NMI_PRINTK
+> 
+> Why can't this simply be CONFIG_PRINTK_NMI and live at the same place
+> as the other printk related options?
+
+Will do.
+
+
+>> +int nmi_vprintk(const char *fmt, va_list args)
+>> +{
+>> +	struct nmi_seq_buf *s = this_cpu_ptr(&nmi_print_seq);
+>> +	unsigned int len = seq_buf_used(&s->seq);
+>> +
+>> +	seq_buf_vprintf(&s->seq, fmt, args);
+>> +	return seq_buf_used(&s->seq) - len;
+>> +}
+>> +EXPORT_SYMBOL_GPL(nmi_vprintk);
+> 
+> What's the point of these exports? This stuff is really not supposed
+> to be used inside random modules.
+
+Will do.
+
+
+>> +/*
+>> + * Check for concurrent usage and set up per_cpu seq_buf buffers that the NMIs
+>> + * running on the other CPUs will write to. Provides the mask of CPUs it is
+>> + * safe to write from (i.e. a copy of the online mask).
+>> + */
+>> +int prepare_nmi_printk(struct cpumask *cpus)
+> 
+> Can we please make all this proper prefixed? , i.e. printk_nmi_*
+
+Will do.
+
+
+>> +{
+>> +	struct nmi_seq_buf *s;
+>> +	int cpu;
+>> +
+>> +	if (test_and_set_bit(0, &nmi_print_flag)) {
+>> +		/*
+>> +		 * If something is already using the NMI print facility we
+>> +		 * can't allow a second one...
+>> +		 */
+>> +		return -EBUSY;
+> 
+> So what's the point of saving and restoring the printk_func pointer at
+> the call site?
+> 
+> void printk_nmi_begin()
+> {
+> 	if (__this_cpu_inc_return(nmi_printk_nest_level) == 1)
+> 	      this_cpu_write(printk_func, nmi_vprintk);
+> }
+> 
+> void printk_nmi_end()
+> {
+> 	if (__this_cpu_dec_return(nmi_printk_nest_level) > 0)
+> 	        return;
+>         this_cpu_write(printk_func, default_vprintk);
+
+Looks good to here.
+
+
+> 	if (in_nmi())
+> 		irq_work_schedule();
+>         else
+> 		printk_nmi_complete();
+> }
+
+Not sure about using irq_work here. arch_trigger_all_cpu_backtrace is
+generally called when something's gone bad meaning there's a good chance
+the interrupts are masked.
+
+
+> 
+>> +	}
+>> +
+>> +	cpumask_copy(cpus, cpu_online_mask);
+> 
+> Why do you need external storage for this if nesting is not allowed?
+> What's wrong with having a printk_nmi_mask? It's protected by the
+> nmi_print_flag, so the call sites do not have to take care about
+> protecting it until printk_nmi_complete() has been invoked.
+
+It was used to tell the caller which CPUs are initialized and allowed to
+trace...
+
+On reflection though that's a rather pointless optimization. Given the
+quantity of data we're about to throw on the console I can't really see
+any reason not to use for_each_possible_cpu() for initialization and
+leave the caller to figure out which cores to send IPIs to.
+
+
+>> +	for_each_cpu(cpu, cpus) {
+>> +		s = &per_cpu(nmi_print_seq, cpu);
+>> +		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
+> 
+> Why do you want to do this here? The buffers should be initialized
+> before the first NMI can hit and the complete code should reinit them
+> before the next printk_nmi_prepare() sees the nmi_print_flag cleared.
+
+To be honest I inherited the just-in-time initialization from Steven's code.
+
+Assuming Steven didn't have a special reason to do it like that then I'm
+happy to change this.
+
+
+>> +static void print_seq_line(struct nmi_seq_buf *s, int start, int end)
+>> +{
+>> +	const char *buf = s->buffer + start;
+>> +
+>> +	printk("%.*s", (end - start) + 1, buf);
+>> +}
+>> +
+>> +void complete_nmi_printk(struct cpumask *cpus)
+>> +{
+>> +	struct nmi_seq_buf *s;
+>> +	int len;
+>> +	int cpu;
+>> +	int i;
+> 
+> Please condense all ints to a single line, but what's worse is the
+> completely inconsistency versus scopes.
+> 
+> len and i are only used in the for_each loop. Either we put all of
+> them at the top of the function or we do it right.
+
+Will do.
