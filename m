@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448AbbAZSf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:35:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43587 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755433AbbAZSfJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:35:09 -0500
-Date: Mon, 26 Jan 2015 10:35:08 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Hans Holmberg <hans.holmberg@intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 3.10 25/50] gpiolib: of: Correct error handling in
- of_get_named_gpiod_flags
-Message-ID: <20150126183508.GA6772@kroah.com>
-References: <20150125180702.521559311@linuxfoundation.org>
- <20150125180703.970882239@linuxfoundation.org>
- <20150125213149.GA3313@roeck-us.net>
- <20150125220518.GA29924@kroah.com>
- <54C58A66.8070500@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C58A66.8070500@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756271AbbAZSlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:41:51 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:57396 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752596AbbAZSls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 13:41:48 -0500
+From: Baruch Siach <baruch@tkos.co.il>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Baruch Siach <baruch@tkos.co.il>
+Subject: [PATCH v6 0/2] clocksource: Conexant CX92755 timers support
+Date: Mon, 26 Jan 2015 20:35:16 +0200
+Message-Id: <cover.1422296650.git.baruch@tkos.co.il>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 25, 2015 at 04:29:26PM -0800, Guenter Roeck wrote:
-> On 01/25/2015 02:05 PM, Greg Kroah-Hartman wrote:
-> >On Sun, Jan 25, 2015 at 01:31:49PM -0800, Guenter Roeck wrote:
-> >>On Sun, Jan 25, 2015 at 10:07:15AM -0800, Greg Kroah-Hartman wrote:
-> >>>3.10-stable review patch.  If anyone has any objections, please let me know.
-> >>>
-> >>>------------------
-> >>>
-> >>>From: Hans Holmberg <hans.holmberg@intel.com>
-> >>>
-> >>>commit 7b8792bbdffdff3abda704f89c6a45ea97afdc62 upstream.
-> >>>
-> >>>of_get_named_gpiod_flags fails with -EPROBE_DEFER in cases
-> >>>where the gpio chip is available and the GPIO translation fails.
-> >>>
-> >>>This causes drivers to be re-probed erroneusly, and hides the
-> >>>real problem(i.e. the GPIO number being out of range).
-> >>>
-> >>>Signed-off-by: Hans Holmberg <hans.holmberg@intel.com>
-> >>>Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-> >>>Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> >>>Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >>>
-> >>
-> >>This patch is causing several build failures.
-> >>
-> >>Error log:
-> >>drivers/gpio/gpiolib-of.c: In function 'of_gpiochip_find_and_xlate':
-> >>drivers/gpio/gpiolib-of.c:50:3: error: implicit declaration of function 'ERR_PTR'
-> >>
-> >>since "#include <linux/err.h>" is missing in drivers/gpio/gpiolib-of.c
-> >>in the 3.10 kernel.
-> >
-> >Thanks for letting me know, I've pushed out a fix for this in the quilt
-> >tree of patches.
-> >
-> 
-> Confirmed; build and qemu tests now pass with no errors.
+This short series adds support for the Conexant CX92755 SoC timers. This SoC is
+part of the Conexant Digicolor series of SoCs.
 
-Wonderful, thanks for letting me know.
+v6:
+   * Use a dedicated config symbol, CONFIG_DIGICOLOR_TIMER, to enable the 
+	 driver (Daniel Lezcano)
 
-greg k-h
+v5:
+   http://thread.gmane.org/gmane.linux.kernel/1874237
+
+   * Switch back to use of_iomap (not of_io_request_and_map), as the watchdog 
+	 driver also needs access to the same registers; add a comment clarifying 
+	 this
+
+   Address more review comments by Daniel Lezcano:
+
+   * Properly encapsulate the static objects for the clock_event code
+
+   * Use dc_timer_{disable,enable,set_count} accessors to make the code clearer
+
+v4:
+   http://thread.gmane.org/gmane.linux.kernel/1874017
+
+   Address review comments by Daniel Lezcano:
+
+   * Use macros for register configuration values
+
+   * Encapsulate static objects in a struct
+
+   * Use of_io_request_and_map to exclusively map registers
+
+   * Use UINT_MAX instead of ~0
+
+   * Use request_irq instead of setup_irq, obviating the need for a separate 
+     irqaction struct
+
+v3:
+   http://article.gmane.org/gmane.linux.kernel/1870628
+   http://article.gmane.org/gmane.linux.kernel/1870627
+
+   * Split into a separate clocksource series
+
+v2:
+   http://article.gmane.org/gmane.linux.kernel/1861850
+   http://article.gmane.org/gmane.linux.kernel/1861853
+
+   * Change the timer dt binding, so that the 'reg' property points to the
+     first "Agent Communication" register. This should improve the chance of
+     reusing this binding for other SoCs in this series.
+
+   * Add the CONTROL() and COUNT() macros to the timer driver to make the code
+     clearer.
+
+   * Move arch/arm Kconfig changes from the clocksource driver patch to the
+     base arch support patch to reduce dependency between them
+
+v1:
+   http://article.gmane.org/gmane.linux.kernel/1855028
+   http://article.gmane.org/gmane.linux.kernel/1855025
+
+Baruch Siach (2):
+  clocksource: devicetree: document Conexant Digicolor timer binding
+  clocksource: driver for Conexant Digicolor SoC timer
+
+ .../devicetree/bindings/timer/digicolor-timer.txt  |  18 ++
+ drivers/clocksource/Kconfig                        |   3 +
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/timer-digicolor.c              | 199 +++++++++++++++++++++
+ 4 files changed, 221 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/timer/digicolor-timer.txt
+ create mode 100644 drivers/clocksource/timer-digicolor.c
+
+-- 
+2.1.4
+
