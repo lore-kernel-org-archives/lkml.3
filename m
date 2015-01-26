@@ -1,43 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbbAZKBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:01:30 -0500
-Received: from grace.univie.ac.at ([131.130.3.115]:34285 "EHLO
-	grace.univie.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657AbbAZKB1 (ORCPT
+	id S1753047AbbAZJzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:55:48 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57407 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749AbbAZJzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:01:27 -0500
-X-Greylist: delayed 495 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jan 2015 05:01:27 EST
-Message-ID: <6344cf9a34e77766f4c0893db50b75ad.squirrel@webmail.univie.ac.at>
-Date: Mon, 26 Jan 2015 10:53:10 +0100
-Subject: atomic unlink filename only if everything but basename is no 
- symlink?
-From: "Axel Kittenberger" <axel.kittenberger@univie.ac.at>
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.19
+	Mon, 26 Jan 2015 04:55:45 -0500
+Message-ID: <54C60F13.5040104@pengutronix.de>
+Date: Mon, 26 Jan 2015 10:55:31 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Univie-Virus-Scan: scanned by ClamAV on justin.univie.ac.at
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Andri Yngvason <andri.yngvason@marel.com>
+CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 0/7] can: kvaser_usb: Leaf bugfixes and USBCan-II support
+References: <20141223154654.GB6460@vivalin-002> <20150126051755.GA3014@Darwish.PC>
+In-Reply-To: <20150126051755.GA3014@Darwish.PC>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="OgiWu4PWPcHviuUHdTiJ3iKTenCI7BwD6"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is there a Linux system call that allows one to call unlink() to execute
-properly only if no part of the path is a symlink? Except the basename of
-course since that would be simply removing the symlink itself?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--OgiWu4PWPcHviuUHdTiJ3iKTenCI7BwD6
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-The issue is with some tools like Lsyncd this can lead to removes outside
-of what is expected if one part of the path happened to become a symlink
-to some place where it shouldn't operate.
+On 01/26/2015 06:17 AM, Ahmed S. Darwish wrote:
+> Hi!
+>=20
+> This is an updated patch series for the Kvaser CAN/USB devices:
+>=20
+> 1- Extra patches are now added to the series. Most importantly
+> patch #1 which fixes a critical `sleep in atomic context' bug
+> in the current upstream driver. Patch #2 fixes a corruption in
+> the kernel logs, also affecting current upstream driver. Patch
+> #4 was originally USBCan-II only, but since it's a generic fix,
+> it's now retrofitted to the Leaf-only upstream driver first.
+>=20
+> 2- The series has been re-organized so that patches #1 -> #4
+> inclusive can go to linux-can/origin, while the rest can move
+> to -next.
 
-I could test if a "realpath -s PATH" is equals to "realpath PATH" but the
-basename, but even if I coded that, there would still be a racecondition
-by something else replacing one physical directory by a symlink just
-between the test and the call to unlink, so it unlinks something it didn't
-want to.
+Applied 1-4 to can/master, I'm adding stable on Cc before sending a
+pull-request to David.
 
-Like there is now lchown should there be a lunlink() systemcall or an
-option to unlink()? Or a global process flag like "do not follow *any*
-symlinks for me please (including my subprocesses)"?
+Thanks,
+Marc
 
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--OgiWu4PWPcHviuUHdTiJ3iKTenCI7BwD6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCgAGBQJUxg8WAAoJECte4hHFiupUJVwP/1nce41HvqiZB0ISlwYTzELI
+EjWwnlBF+ePEZTyuYmyqriPlrZaE8TamLQxYwcVmdw4y01BoRZVSAG1jovqqtgYd
+1oOeJMG5lCniJGPLmaxatQvsxyj+/WeB0OciwcoR9GYlyFfybJQa8q/dCtMzNosy
+fy45Y6neoHsQyegHHqMNV8p5avm/KA1LIpKIafq7iVA+fV7au5ijFAR89SZGoC6D
+pXBiRfyCC7NwcLstRej9k/MxSWxGviWspW/J2Y4Y5yjFOfAOMrxItX7ZVIaRuRpP
+its4yDDr8TzRFcpcwTiHzkPY8D8+DXf1JwgaPoV4m2EnLXLNHTRHLkI6lxb5pXmm
+9REf3yrbNTSqHay83fkL9pHotRG3NwCSqwiJqG2TqLoPiAGKZnyJl1CpynZL4uSp
+n4IAk2yIyyt/NcHSGPFifRvLmgW6ZWeMO/gq59AqkBoz+FS0dHbq8dsJUEEmoqTa
+pOIjJxW4GaHPQoTywFgwykxBZGiJEdt5IH7sn8lfAsB/G2yrvTXiet+G5QsqUQkI
+YVtit+ck0irhf+s1V3nBWlUtxBNIbUu1nyFLKRtNYwTw5Kg6UCuXXE5X33F3WhXU
+wVD6F+Sai/IKYVcPdsDoigRWBqBv1pgU3i0nMLMgOCRlx5MwK90Uj3FTxjviNe1O
+ROPRdJeeiB+ApdqUe4dV
+=o3CA
+-----END PGP SIGNATURE-----
+
+--OgiWu4PWPcHviuUHdTiJ3iKTenCI7BwD6--
