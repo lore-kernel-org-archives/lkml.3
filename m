@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809AbbAZUqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 15:46:08 -0500
-Received: from bes.se.axis.com ([195.60.68.10]:38245 "EHLO bes.se.axis.com"
+	id S1756876AbbAZUth (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 15:49:37 -0500
+Received: from ozlabs.org ([103.22.144.67]:53056 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248AbbAZUqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 15:46:06 -0500
-From: Rabin Vincent <rabin.vincent@axis.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabinv@axis.com>
-Subject: [PATCH] module: set ksymtab/kcrctab* section addresses to 0x0
-Date: Mon, 26 Jan 2015 21:45:55 +0100
-Message-Id: <1422305155-23136-1-git-send-email-rabin.vincent@axis.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753477AbbAZUt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 15:49:29 -0500
+Date: Tue, 27 Jan 2015 07:49:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: contact change for the integrity tree
+Message-ID: <20150127074921.3a4ac6df@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/kzoIXuD.h1xzzMAXw6tSSis"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These __ksymtab*/__kcrctab* sections currently have non-zero addresses.
-Non-zero section addresses in a relocatable ELF confuse GDB and it ends
-up not relocating all symbols when add-symbol-file is used on modules
-which have exports.  The kernel's module loader does not care about
-these addresses, so let's just set them to zero.
+--Sig_/kzoIXuD.h1xzzMAXw6tSSis
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
- Before:
+Hi all,
 
-  $ readelf -S lib/notifier-error-inject.ko   | grep 'Name\| __ksymtab_gpl'
-    [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
-    [ 8] __ksymtab_gpl     PROGBITS        0000000c 0001b4 000010 00   A  0   0  4
+I noticed commit bfd33c4b4b1a ("MAINTAINERS: email update") in the
+integrity tree today.  I assume that I should also update the email
+address in my contacts list?
 
-  (gdb) add-symbol-file lib/notifier-error-inject.ko 0x500000 -s .bss 0x700000
-  add symbol table from file "lib/notifier-error-inject.ko" at
-     .text_addr = 0x500000
-     .bss_addr = 0x700000
-  (gdb) p &notifier_err_inject_dir
-  $3 = (struct dentry **) 0x0
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- After:
+--Sig_/kzoIXuD.h1xzzMAXw6tSSis
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-  $ readelf -S lib/notifier-error-inject.ko   | grep 'Name\| __ksymtab_gpl'
-    [Nr] Name              Type            Addr     Off    Size   ES Flg Lk Inf Al
-    [ 8] __ksymtab_gpl     PROGBITS        00000000 0001b4 000010 00   A  0   0  4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-  (gdb) add-symbol-file lib/notifier-error-inject.ko 0x500000 -s .bss 0x700000
-  add symbol table from file "lib/notifier-error-inject.ko" at
-     .text_addr = 0x500000
-     .bss_addr = 0x700000
-  (gdb) p &notifier_err_inject_dir
-  $3 = (struct dentry **) 0x700000
+iQIcBAEBCAAGBQJUxqhXAAoJEMDTa8Ir7ZwVXVEP/0fPmxW2K0uw2ploRjKGu4Up
+EJfDisOkzQF/QS5NMxJTQ5c7bstdK9duAsudf9A/JF4acvOSGo/Up4Io1kWViQPb
+cm0cTGFe1oCmtzxJpBJQoPO9GiDqZY1ECeqFYU/9rYJmoW6vzfGCw8bkiU2EaFgw
+w/afkVsqBA7bqqzIxy4fM/4jctFm23wu9LeEIv+HmS3eVLH5UR90CbknaAiF5xyQ
+O6Fbuvx8wGVWWE9o7aksEAC5x7mULys4qALeYCZc8P3vpJ5B7V8tw8Aq7C32VtEK
+KrdIJKe9kytwQLHT47OD9YrHOKSkp4o254DXJgwK5Ix8ywgCGE6rJ5l/1Mjvk5YU
+qB7vXhMk1al7+tAvQyieHEHfgIM+FRry7+GOn1wqjANS37RmzuXAffmGMiOd6EeF
+KGaUo5DY7PQR6NrsKKmLX+pGHDsW5mNYd59ZKAs/3Nt8fSIi7rwSPxuas+BFrSxz
+EKzDRiLmqR9BJ3cHTJZFYpJh0AC7F60uYdnJLtYUDf0n3ghD/0C/Js5MtPFl1m0g
+4GKLS63R+b5h3SvPtBPYH+V9lSwwEzsT/YQoYOeRlp9QwViId1HqEm36frnbKUQI
+0C5aRc7SQDQN4a7j9rj/zHjwXGLqY0sn2Vs+efiHbaVrI1I+Fz0kQcP/ny87JfuE
+jlHoCc3SQwN/5IPfQP1e
+=FVIO
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Rabin Vincent <rabin.vincent@axis.com>
----
- scripts/module-common.lds |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
-
-diff --git a/scripts/module-common.lds b/scripts/module-common.lds
-index 0865b3e..bec15f9 100644
---- a/scripts/module-common.lds
-+++ b/scripts/module-common.lds
-@@ -6,14 +6,14 @@
- SECTIONS {
- 	/DISCARD/ : { *(.discard) }
- 
--	__ksymtab		: { *(SORT(___ksymtab+*)) }
--	__ksymtab_gpl		: { *(SORT(___ksymtab_gpl+*)) }
--	__ksymtab_unused	: { *(SORT(___ksymtab_unused+*)) }
--	__ksymtab_unused_gpl	: { *(SORT(___ksymtab_unused_gpl+*)) }
--	__ksymtab_gpl_future	: { *(SORT(___ksymtab_gpl_future+*)) }
--	__kcrctab		: { *(SORT(___kcrctab+*)) }
--	__kcrctab_gpl		: { *(SORT(___kcrctab_gpl+*)) }
--	__kcrctab_unused	: { *(SORT(___kcrctab_unused+*)) }
--	__kcrctab_unused_gpl	: { *(SORT(___kcrctab_unused_gpl+*)) }
--	__kcrctab_gpl_future	: { *(SORT(___kcrctab_gpl_future+*)) }
-+	__ksymtab		0 : { *(SORT(___ksymtab+*)) }
-+	__ksymtab_gpl		0 : { *(SORT(___ksymtab_gpl+*)) }
-+	__ksymtab_unused	0 : { *(SORT(___ksymtab_unused+*)) }
-+	__ksymtab_unused_gpl	0 : { *(SORT(___ksymtab_unused_gpl+*)) }
-+	__ksymtab_gpl_future	0 : { *(SORT(___ksymtab_gpl_future+*)) }
-+	__kcrctab		0 : { *(SORT(___kcrctab+*)) }
-+	__kcrctab_gpl		0 : { *(SORT(___kcrctab_gpl+*)) }
-+	__kcrctab_unused	0 : { *(SORT(___kcrctab_unused+*)) }
-+	__kcrctab_unused_gpl	0 : { *(SORT(___kcrctab_unused_gpl+*)) }
-+	__kcrctab_gpl_future	0 : { *(SORT(___kcrctab_gpl_future+*)) }
- }
--- 
-1.7.10.4
-
+--Sig_/kzoIXuD.h1xzzMAXw6tSSis--
