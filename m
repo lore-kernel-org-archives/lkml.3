@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507AbbAZLqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:46:38 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:53659 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910AbbAZLqe (ORCPT
+	id S1753599AbbAZLqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:46:47 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34530 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430AbbAZLqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:46:34 -0500
-Message-ID: <54C62912.3040401@gmail.com>
-Date: Mon, 26 Jan 2015 09:46:26 -0200
-From: Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 26 Jan 2015 06:46:36 -0500
+Date: Mon, 26 Jan 2015 11:46:31 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
+Message-ID: <20150126114631.GZ21293@sirena.org.uk>
 MIME-Version: 1.0
-To: Sun Paul <paulrbk@gmail.com>, Daniel Borkmann <dborkman@redhat.com>
-CC: Michael Tuexen <tuexen@fh-muenster.de>,
-        Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Question on SCTP ABORT chunk is generated when the association_max_retrans
- is reached
-References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com>	<CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>	<54C23581.9060809@redhat.com>	<54C27137.5010405@gmail.com>	<54C2807E.8080607@redhat.com>	<8BBFBEE6-FA34-4190-BFCB-AB6BEC093774@fh-muenster.de>	<54C29B82.7090502@redhat.com> <CAFXGft+XZCmhuwj2QTCiU0MD10Uo+WZ3WCC+rfbsd_Lxbhk3iw@mail.gmail.com>
-In-Reply-To: <CAFXGft+XZCmhuwj2QTCiU0MD10Uo+WZ3WCC+rfbsd_Lxbhk3iw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="EH85xkKza2NXtwkF"
+Content-Disposition: inline
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] spi fixes for v3.19
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 25-01-2015 23:27, Sun Paul wrote:
-> Hi
->
-> sorry for the late reply. I am a bit confused. when side-A sends a
-> request to side-B, and side-B return the response, but side-A keep
-> re-transmit the same request to side-B, why side-B needed to send a
-> ABORT to side-A?
+--EH85xkKza2NXtwkF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That happens on data transfers. When A pushes data to B, A has to retry it 
-until B finally acknowledges it and A receive this signal. If the ack from B 
-gets dropped, A has no way to know if a) the ack was lost or b) its initial 
-message never actually made it to A, thus it retransmits. If it reaches a 
-limit, it gives up..
+The following changes since commit ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc:
 
-> If it is used in order to reestablish the connection, shoudn't it
-> should be side-A to send ABORT instead?
+  Linux 3.19-rc5 (2015-01-18 18:02:20 +1200)
 
-Meant to reestablish it? Not really.. just to keep both sides in sync, as A 
-has given up by then.
+are available in the git repository at:
 
-   Marcelo
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3.19-rc6
 
-> - PS
->
-> On Sat, Jan 24, 2015 at 3:05 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> On 01/23/2015 07:36 PM, Michael Tuexen wrote:
->> ...
->>>
->>> Yepp. It might not reach the peer or it might. If it does it helps
->>> to keep the states in sync. If it doesn't it sometimes helps in
->>> analysing tracefiles. In BSD, we also send it. It is not required,
->>> doesn't harm and is useful in some cases...
->>
->>
->> Ok, as the TCB is destroyed in any case, should be fine then.
->>
->> Thanks,
->> Daniel
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+for you to fetch changes up to 06a5687f82bd7f1fbf56363351c47e8c337302fc:
 
+  Merge remote-tracking branches 'spi/fix/dw', 'spi/fix/msiof' and 'spi/fix/pxa2xx' into spi-linus (2015-01-26 11:16:27 +0000)
+
+----------------------------------------------------------------
+spi: Fixes for v3.19
+
+A few driver specific fixes here, some fixes for issues introduced and
+discovered during recent work on the DesignWare driver (which has been
+getting a lot of attention recently) and a couple of other drivers.  All
+serious things for people who run into them.
+
+----------------------------------------------------------------
+Andy Shevchenko (2):
+      spi: dw-mid: fix FIFO size
+      spi: dw: amend warning message
+
+Axel Lin (1):
+      spi: dw: Fix detecting FIFO depth
+
+Mark Brown (1):
+      Merge remote-tracking branches 'spi/fix/dw', 'spi/fix/msiof' and 'spi/fix/pxa2xx' into spi-linus
+
+Mika Westerberg (1):
+      spi/pxa2xx: Clear cur_chip pointer before starting next message
+
+Yoshihiro Shimoda (1):
+      spi: sh-msiof: fix MDR1_FLD_MASK value
+
+ drivers/spi/spi-dw-mid.c   | 1 -
+ drivers/spi/spi-dw.c       | 6 +++---
+ drivers/spi/spi-pxa2xx.c   | 2 +-
+ drivers/spi/spi-sh-msiof.c | 2 +-
+ 4 files changed, 5 insertions(+), 6 deletions(-)
+
+--EH85xkKza2NXtwkF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUxikWAAoJECTWi3JdVIfQRrMH/0AwlRphAMjV1pyb0StsVwFw
+1TksoMu33c+/DHRotjx3rOFoFSgo+XDs7IM6ZoFAzTA/WeJ5nl5P0tlrVa5zCaqI
+ZQ3KK2F10m65tjaJONi1TnFomsX4pKh8Pa5smLE5h/cLnHaFK86b17L39nDReNuF
+xMMZoTgLeheeoEeUQ/f9Edmv4hjYeisTumANO1ajqwBfhA3E7oHD7fbxMyXshtTI
+ns8lbwVXJ3XpS3pOBw1XgGqoERwypNwjfEOIKWP6x0OsNSh6saLbtLht1p4UY2OC
+nrM+YGO/EGeBEGOhAmpWbBYEDgmrnl6EEFN1uRbxXlvyMawnkp7jy11+x5l9iEw=
+=aix3
+-----END PGP SIGNATURE-----
+
+--EH85xkKza2NXtwkF--
