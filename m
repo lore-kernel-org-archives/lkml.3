@@ -1,241 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189AbbA0PE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:04:29 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:64994 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755AbbA0PE0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:04:26 -0500
-Date: Tue, 27 Jan 2015 00:58:23 +0800
-From: Simon Guo <wei.guo.simon@gmail.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, aaa@thunderCat
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        wei.guo.simon@gmail.com
-Subject: [PATCH 3.19.0-rc5 01/02] STAGING: Fix pcl818.c coding style issue:
- code indent should use tabs where possible
-Message-ID: <20150126165822.GA10112@thunderCat>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756581AbbAZRAQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:00:16 -0500
+Received: from gn237.zone.eu ([217.146.67.237]:24537 "EHLO gn237.zone.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752905AbbAZRAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 12:00:09 -0500
+From: Priit Laes <plaes@plaes.org>
+Cc: linux-sunxi@googlegroups.com, Priit Laes <plaes@plaes.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-api@vger.kernel.org (open list:ABI/API),
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Allwinner
+	A1X...),
+        linux-kernel@vger.kernel.org (open list),
+        linux-input@vger.kernel.org (open list:SUN4I LOW RES ADC...)
+Subject: [PATCH] arm: sunxi: input: RFC: Add sysfs voltage for sun4i-lradc driver
+Date: Mon, 26 Jan 2015 18:58:32 +0200
+Message-Id: <1422291516-24895-1-git-send-email-plaes@plaes.org>
+X-Mailer: git-send-email 2.2.2
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Correct one coding style problem(detected by checkpatch.pl) in pcl818.c.
-- code indent should use tabs where possible
-It is fixed by reformatting the comment block to usual comment style.
-
-And with the reformatting, following coding style problem is also fixed:
-- please, no space before tabs
-
-Signed-off-by: Simon Guo <wei.guo.simon@gmail.com>
 ---
- drivers/staging/comedi/drivers/pcl818.c | 189 +++++++++++++++-----------------
- 1 file changed, 91 insertions(+), 98 deletions(-)
+ .../ABI/testing/sysfs-driver-input-sun4i-lradc     |  4 ++
+ drivers/input/keyboard/sun4i-lradc-keys.c          | 49 +++++++++++++++++-----
+ 2 files changed, 43 insertions(+), 10 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index ba2e137..5d9050c 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -1,102 +1,95 @@
- /*
--   comedi/drivers/pcl818.c
--
--   Author:  Michal Dobes <dobes@tesnet.cz>
--
--   hardware driver for Advantech cards:
--    card:   PCL-818L, PCL-818H, PCL-818HD, PCL-818HG, PCL-818, PCL-718
--    driver: pcl818l,  pcl818h,  pcl818hd,  pcl818hg,  pcl818,  pcl718
--*/
--/*
--Driver: pcl818
--Description: Advantech PCL-818 cards, PCL-718
--Author: Michal Dobes <dobes@tesnet.cz>
--Devices: [Advantech] PCL-818L (pcl818l), PCL-818H (pcl818h),
--  PCL-818HD (pcl818hd), PCL-818HG (pcl818hg), PCL-818 (pcl818),
--  PCL-718 (pcl718)
--Status: works
--
--All cards have 16 SE/8 DIFF ADCs, one or two DACs, 16 DI and 16 DO.
--Differences are only at maximal sample speed, range list and FIFO
--support.
--The driver support AI mode 0, 1, 3 other subdevices (AO, DI, DO) support
--only mode 0. If DMA/FIFO/INT are disabled then AI support only mode 0.
--PCL-818HD and PCL-818HG support 1kword FIFO. Driver support this FIFO
--but this code is untested.
--A word or two about DMA. Driver support DMA operations at two ways:
--1) DMA uses two buffers and after one is filled then is generated
--   INT and DMA restart with second buffer. With this mode I'm unable run
--   more that 80Ksamples/secs without data dropouts on K6/233.
--2) DMA uses one buffer and run in autoinit mode and the data are
--   from DMA buffer moved on the fly with 2kHz interrupts from RTC.
--   This mode is used if the interrupt 8 is available for allocation.
--   If not, then first DMA mode is used. With this I can run at
--   full speed one card (100ksamples/secs) or two cards with
--   60ksamples/secs each (more is problem on account of ISA limitations).
--   To use this mode you must have compiled  kernel with disabled
--   "Enhanced Real Time Clock Support".
--   Maybe you can have problems if you use xntpd or similar.
--   If you've data dropouts with DMA mode 2 then:
--    a) disable IDE DMA
--    b) switch text mode console to fb.
--
--   Options for PCL-818L:
--    [0] - IO Base
--    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
--    [2] - DMA	(0=disable, 1, 3)
--    [3] - 0, 10=10MHz clock for 8254
--              1= 1MHz clock for 8254
--    [4] - 0,  5=A/D input  -5V.. +5V
--          1, 10=A/D input -10V..+10V
--    [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
--          1, 10=D/A output 0-10V (internal reference -10V)
--	  2    =D/A output unknown (external reference)
--
--   Options for PCL-818, PCL-818H:
--    [0] - IO Base
--    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
--    [2] - DMA	(0=disable, 1, 3)
--    [3] - 0, 10=10MHz clock for 8254
--              1= 1MHz clock for 8254
--    [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
--          1, 10=D/A output 0-10V (internal reference -10V)
--	  2    =D/A output unknown (external reference)
--
--   Options for PCL-818HD, PCL-818HG:
--    [0] - IO Base
--    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
--    [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
--                      1=use DMA ch 1, 3=use DMA ch 3)
--    [3] - 0, 10=10MHz clock for 8254
--              1= 1MHz clock for 8254
--    [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
--          1, 10=D/A output 0-10V (internal reference -10V)
--   	  2    =D/A output unknown (external reference)
--
--   Options for PCL-718:
--    [0] - IO Base
--    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
--    [2] - DMA	(0=disable, 1, 3)
--    [3] - 0, 10=10MHz clock for 8254
--              1= 1MHz clock for 8254
--    [4] -     0=A/D Range is +/-10V
--	      1=             +/-5V
--	      2=             +/-2.5V
--	      3=             +/-1V
--	      4=             +/-0.5V
--	      5=  	     user defined bipolar
--	      6=	     0-10V
--	      7=	     0-5V
-- 	      8=	     0-2V
--	      9=	     0-1V
--	     10=	     user defined unipolar
--    [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
--          1, 10=D/A outputs 0-10V (internal reference -10V)
--	      2=D/A outputs unknown (external reference)
--    [6] - 0, 60=max  60kHz A/D sampling
--          1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
--
--*/
-+ * comedi/drivers/pcl818.c
-+ *
-+ * Driver: pcl818
-+ * Description: Advantech PCL-818 cards, PCL-718
-+ * Author: Michal Dobes <dobes@tesnet.cz>
-+ * Devices: [Advantech] PCL-818L (pcl818l), PCL-818H (pcl818h),
-+ *   PCL-818HD (pcl818hd), PCL-818HG (pcl818hg), PCL-818 (pcl818),
-+ *   PCL-718 (pcl718)
-+ * Status: works
-+ *
-+ * All cards have 16 SE/8 DIFF ADCs, one or two DACs, 16 DI and 16 DO.
-+ * Differences are only at maximal sample speed, range list and FIFO
-+ * support.
-+ * The driver support AI mode 0, 1, 3 other subdevices (AO, DI, DO) support
-+ * only mode 0. If DMA/FIFO/INT are disabled then AI support only mode 0.
-+ * PCL-818HD and PCL-818HG support 1kword FIFO. Driver support this FIFO
-+ * but this code is untested.
-+ * A word or two about DMA. Driver support DMA operations at two ways:
-+ * 1) DMA uses two buffers and after one is filled then is generated
-+ *    INT and DMA restart with second buffer. With this mode I'm unable run
-+ *    more that 80Ksamples/secs without data dropouts on K6/233.
-+ * 2) DMA uses one buffer and run in autoinit mode and the data are
-+ *    from DMA buffer moved on the fly with 2kHz interrupts from RTC.
-+ *    This mode is used if the interrupt 8 is available for allocation.
-+ *    If not, then first DMA mode is used. With this I can run at
-+ *    full speed one card (100ksamples/secs) or two cards with
-+ *    60ksamples/secs each (more is problem on account of ISA limitations).
-+ *    To use this mode you must have compiled  kernel with disabled
-+ *    "Enhanced Real Time Clock Support".
-+ *    Maybe you can have problems if you use xntpd or similar.
-+ *    If you've data dropouts with DMA mode 2 then:
-+ *     a) disable IDE DMA
-+ *     b) switch text mode console to fb.
-+ *
-+ *  Options for PCL-818L:
-+ *  [0] - IO Base
-+ *  [1] - IRQ        (0=disable, 2, 3, 4, 5, 6, 7)
-+ *  [2] - DMA        (0=disable, 1, 3)
-+ *  [3] - 0, 10=10MHz clock for 8254
-+ *            1= 1MHz clock for 8254
-+ *  [4] - 0,  5=A/D input  -5V.. +5V
-+ *        1, 10=A/D input -10V..+10V
-+ *  [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
-+ *        1, 10=D/A output 0-10V (internal reference -10V)
-+ *        2    =D/A output unknown (external reference)
-+ *
-+ *  Options for PCL-818, PCL-818H:
-+ *  [0] - IO Base
-+ *  [1] - IRQ        (0=disable, 2, 3, 4, 5, 6, 7)
-+ *  [2] - DMA        (0=disable, 1, 3)
-+ *  [3] - 0, 10=10MHz clock for 8254
-+ *            1= 1MHz clock for 8254
-+ *  [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
-+ *        1, 10=D/A output 0-10V (internal reference -10V)
-+ *        2    =D/A output unknown (external reference)
-+ *
-+ *  Options for PCL-818HD, PCL-818HG:
-+ *  [0] - IO Base
-+ *  [1] - IRQ        (0=disable, 2, 3, 4, 5, 6, 7)
-+ *  [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
-+ *                    1=use DMA ch 1, 3=use DMA ch 3)
-+ *  [3] - 0, 10=10MHz clock for 8254
-+ *            1= 1MHz clock for 8254
-+ *  [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
-+ *        1, 10=D/A output 0-10V (internal reference -10V)
-+ *        2    =D/A output unknown (external reference)
-+ *
-+ *  Options for PCL-718:
-+ *  [0] - IO Base
-+ *  [1] - IRQ        (0=disable, 2, 3, 4, 5, 6, 7)
-+ *  [2] - DMA        (0=disable, 1, 3)
-+ *  [3] - 0, 10=10MHz clock for 8254
-+ *            1= 1MHz clock for 8254
-+ *  [4] -     0=A/D Range is +/-10V
-+ *            1=             +/-5V
-+ *            2=             +/-2.5V
-+ *            3=             +/-1V
-+ *            4=             +/-0.5V
-+ *            5=             user defined bipolar
-+ *            6=             0-10V
-+ *            7=             0-5V
-+ *            8=             0-2V
-+ *            9=             0-1V
-+ *           10=             user defined unipolar
-+ *  [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
-+ *        1, 10=D/A outputs 0-10V (internal reference -10V)
-+ *            2=D/A outputs unknown (external reference)
-+ *  [6] - 0, 60=max  60kHz A/D sampling
-+ *        1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
-+ *
-+ */
+diff --git a/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc b/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
+new file mode 100644
+index 0000000..e4e6448
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
+@@ -0,0 +1,4 @@
++What:		/sys/class/input/input(x)/device/voltage
++Date:		February 2015
++Contact:	Priit Laes <plaes@plaes.org>
++Description:	ADC output voltage in microvolts or 0 if device is not opened.
+diff --git a/drivers/input/keyboard/sun4i-lradc-keys.c b/drivers/input/keyboard/sun4i-lradc-keys.c
+index cc8f7dd..c0ab8ec 100644
+--- a/drivers/input/keyboard/sun4i-lradc-keys.c
++++ b/drivers/input/keyboard/sun4i-lradc-keys.c
+@@ -79,10 +79,27 @@ struct sun4i_lradc_data {
+ 	u32 vref;
+ };
  
- #include <linux/module.h>
- #include <linux/gfp.h>
++static u32 sun4i_lradc_read_voltage(struct sun4i_lradc_data *lradc)
++{
++	u32 val = readl(lradc->base + LRADC_DATA0) & 0x3f;
++	return val * lradc->vref / 63;
++};
++
++static ssize_t
++sun4i_lradc_dev_voltage_show(struct device *dev,
++			struct device_attribute *attr, char *buf)
++{
++	struct sun4i_lradc_data *lradc = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%u\n", sun4i_lradc_read_voltage(lradc));
++}
++
++static const DEVICE_ATTR(voltage, S_IRUGO, sun4i_lradc_dev_voltage_show, NULL);
++
+ static irqreturn_t sun4i_lradc_irq(int irq, void *dev_id)
+ {
+ 	struct sun4i_lradc_data *lradc = dev_id;
+-	u32 i, ints, val, voltage, diff, keycode = 0, closest = 0xffffffff;
++	u32 i, ints, voltage, diff, keycode = 0, closest = 0xffffffff;
+ 
+ 	ints  = readl(lradc->base + LRADC_INTS);
+ 
+@@ -97,8 +114,7 @@ static irqreturn_t sun4i_lradc_irq(int irq, void *dev_id)
+ 	}
+ 
+ 	if ((ints & CHAN0_KEYDOWN_IRQ) && lradc->chan0_keycode == 0) {
+-		val = readl(lradc->base + LRADC_DATA0) & 0x3f;
+-		voltage = val * lradc->vref / 63;
++		voltage = sun4i_lradc_read_voltage(lradc);
+ 
+ 		for (i = 0; i < lradc->chan0_map_count; i++) {
+ 			diff = abs(lradc->chan0_map[i].voltage - voltage);
+@@ -156,7 +172,7 @@ static void sun4i_lradc_close(struct input_dev *dev)
+ }
+ 
+ static int sun4i_lradc_load_dt_keymap(struct device *dev,
+-				      struct sun4i_lradc_data *lradc)
++				    struct sun4i_lradc_data *lradc)
+ {
+ 	struct device_node *np, *pp;
+ 	int i;
+@@ -168,8 +184,8 @@ static int sun4i_lradc_load_dt_keymap(struct device *dev,
+ 
+ 	lradc->chan0_map_count = of_get_child_count(np);
+ 	if (lradc->chan0_map_count == 0) {
+-		dev_err(dev, "keymap is missing in device tree\n");
+-		return -EINVAL;
++		dev_info(dev, "keymap is missing in device tree\n");
++		return 0;
+ 	}
+ 
+ 	lradc->chan0_map = devm_kmalloc_array(dev, lradc->chan0_map_count,
+@@ -185,19 +201,19 @@ static int sun4i_lradc_load_dt_keymap(struct device *dev,
+ 
+ 		error = of_property_read_u32(pp, "channel", &channel);
+ 		if (error || channel != 0) {
+-			dev_err(dev, "%s: Inval channel prop\n", pp->name);
++			dev_err(dev, "%s: Invalid 'channel' property\n", pp->name);
+ 			return -EINVAL;
+ 		}
+ 
+ 		error = of_property_read_u32(pp, "voltage", &map->voltage);
+ 		if (error) {
+-			dev_err(dev, "%s: Inval voltage prop\n", pp->name);
++			dev_err(dev, "%s: Invalid 'voltage' property\n", pp->name);
+ 			return -EINVAL;
+ 		}
+ 
+ 		error = of_property_read_u32(pp, "linux,code", &map->keycode);
+ 		if (error) {
+-			dev_err(dev, "%s: Inval linux,code prop\n", pp->name);
++			dev_err(dev, "%s: Invalid 'linux,code' property\n", pp->name);
+ 			return -EINVAL;
+ 		}
+ 
+@@ -257,14 +273,26 @@ static int sun4i_lradc_probe(struct platform_device *pdev)
+ 	if (error)
+ 		return error;
+ 
+-	error = input_register_device(lradc->input);
++	error = device_create_file(dev, &dev_attr_voltage);
+ 	if (error)
+ 		return error;
+ 
++	error = input_register_device(lradc->input);
++	if (error) {
++		device_remove_file(&pdev->dev, &dev_attr_voltage);
++		return error;
++	}
++
+ 	platform_set_drvdata(pdev, lradc);
+ 	return 0;
+ }
+ 
++static int sun4i_lradc_remove(struct platform_device *pdev)
++{
++	device_remove_file(&pdev->dev, &dev_attr_voltage);
++	return 0;
++}
++
+ static const struct of_device_id sun4i_lradc_of_match[] = {
+ 	{ .compatible = "allwinner,sun4i-a10-lradc-keys", },
+ 	{ /* sentinel */ }
+@@ -277,6 +305,7 @@ static struct platform_driver sun4i_lradc_driver = {
+ 		.of_match_table = of_match_ptr(sun4i_lradc_of_match),
+ 	},
+ 	.probe	= sun4i_lradc_probe,
++	.remove = sun4i_lradc_remove,
+ };
+ 
+ module_platform_driver(sun4i_lradc_driver);
 -- 
-1.8.1.2
+2.2.2
 
