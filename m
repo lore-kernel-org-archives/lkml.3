@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234AbbAZTsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 14:48:52 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:38345 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359AbbAZTst (ORCPT
+	id S1756560AbbAZTud (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 14:50:33 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:40504 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120AbbAZTua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 14:48:49 -0500
-Date: Mon, 26 Jan 2015 22:48:38 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 2/3] slab: zap kmem_cache_shrink return value
-Message-ID: <20150126194838.GB2660@esperanza>
-References: <cover.1422275084.git.vdavydov@parallels.com>
- <b89d28384f8ec7865c3fefc2f025955d55798b78.1422275084.git.vdavydov@parallels.com>
- <alpine.DEB.2.11.1501260949150.15849@gentwo.org>
- <20150126170418.GC28978@esperanza>
- <alpine.DEB.2.11.1501261226250.16638@gentwo.org>
+	Mon, 26 Jan 2015 14:50:30 -0500
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH 1/2] ARM: zynq: Remove bogus value from 'bias-disable' property
+Date: Mon, 26 Jan 2015 11:49:55 -0800
+Message-Id: <1422301796-22888-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.2.2.1.g63c5777
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501261226250.16638@gentwo.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 12:26:57PM -0600, Christoph Lameter wrote:
-> On Mon, 26 Jan 2015, Vladimir Davydov wrote:
-> 
-> > __cache_shrink() is used not only in __kmem_cache_shrink(), but also in
-> > SLAB's __kmem_cache_shutdown(), where we do need its return value to
-> > check if the cache is empty.
-> 
-> It could be useful to know if a slab is empty. So maybe leave
-> kmem_cache_shrink the way it is and instead fix up slub to return the
-> proper value?
+In one pinctrl node, a 'bias-disable' property is erroneously assigned a
+value.
 
-Hmm, why? The return value has existed since this function was
-introduced, but nobody seems to have ever used it outside the slab core.
-Besides, this check is racy, so IMO we shouldn't encourage users of the
-API to rely on it. That said, I believe we should drop the return value
-for now. If anybody ever needs it, we can reintroduce it.
+Fixes: ARM: zynq: DT: Add pinctrl information
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+Feel free to squash this into the mentioned patch. I don't see it in any
+stable branch yet.
 
-Thanks,
-Vladimir
+	Sören
+---
+ arch/arm/boot/dts/zynq-zc702.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
+index 365bdd407eb4..4f8835be4874 100644
+--- a/arch/arm/boot/dts/zynq-zc702.dts
++++ b/arch/arm/boot/dts/zynq-zc702.dts
+@@ -309,7 +309,7 @@
+ 
+ 		conf-tx {
+ 			pins = "MIO48";
+-			bias-disable = <0>;
++			bias-disable;
+ 		};
+ 	};
+ };
+-- 
+2.2.2.1.g63c5777
+
