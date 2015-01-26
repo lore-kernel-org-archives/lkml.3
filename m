@@ -1,148 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566AbbAZJoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 04:44:24 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:47422 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184AbbAZJoW (ORCPT
+	id S1754547AbbAZJn5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:43:57 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:60038 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754479AbbAZJnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 04:44:22 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <wenyou.yang@atmel.com>
-Subject: [PATCH v2 09/12] pm: at91: rename function name: at91_slow_clock()-->at91_pm_suspend_sram_fn
-Date: Mon, 26 Jan 2015 17:43:31 +0800
-Message-ID: <1422265411-23309-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
+	Mon, 26 Jan 2015 04:43:47 -0500
+Message-ID: <54C60C4F.50507@linaro.org>
+Date: Mon, 26 Jan 2015 10:43:43 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Baruch Siach <baruch@tkos.co.il>, Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 2/2] clocksource: driver for Conexant Digicolor SoC
+ timer
+References: <cover.1422256855.git.baruch@tkos.co.il> <d2d06d04f8ee8acb62e7748b42c3177229de478a.1422256855.git.baruch@tkos.co.il>
+In-Reply-To: <d2d06d04f8ee8acb62e7748b42c3177229de478a.1422256855.git.baruch@tkos.co.il>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the file name's renaming, rename the file name at91_slow_clock()-->
-at91_pm_suspend_sram_fn, rename the function handler's name at the same time.
+On 01/26/2015 08:56 AM, Baruch Siach wrote:
+> Add clocksource driver to the Conexant CX92755 SoC, part of the Digicolor SoCs
+> series. Hardware provides 8 timers, A to H. Timer A is dedicated to a future
+> watchdog driver so we don't use it here. Use timer B for sched_clock, and timer
+> C for clock_event.
+>
+> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+> ---
+>   drivers/clocksource/Makefile          |   1 +
+>   drivers/clocksource/timer-digicolor.c | 170 ++++++++++++++++++++++++++++++++++
+>   2 files changed, 171 insertions(+)
+>   create mode 100644 drivers/clocksource/timer-digicolor.c
+>
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 94d90b24b56b..a993c108be67 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -10,6 +10,7 @@ obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
+>   obj-$(CONFIG_EM_TIMER_STI)	+= em_sti.o
+>   obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
+>   obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
+> +obj-$(CONFIG_ARCH_DIGICOLOR)	+= timer-digicolor.o
+>   obj-$(CONFIG_DW_APB_TIMER)	+= dw_apb_timer.o
+>   obj-$(CONFIG_DW_APB_TIMER_OF)	+= dw_apb_timer_of.o
+>   obj-$(CONFIG_CLKSRC_NOMADIK_MTU)	+= nomadik-mtu.o
+> diff --git a/drivers/clocksource/timer-digicolor.c b/drivers/clocksource/timer-digicolor.c
+> new file mode 100644
+> index 000000000000..c97ea7eac4a5
+> --- /dev/null
+> +++ b/drivers/clocksource/timer-digicolor.c
+> @@ -0,0 +1,170 @@
+> +/*
+> + * Conexant Digicolor timer driver
+> + *
+> + * Author: Baruch Siach <baruch@tkos.co.il>
+> + *
+> + * Copyright (C) 2014 Paradox Innovation Ltd.
+> + *
+> + * Based on:
+> + *	Allwinner SoCs hstimer driver
+> + *
+> + * Copyright (C) 2013 Maxime Ripard
+> + *
+> + * Maxime Ripard <maxime.ripard@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +/*
+> + * Conexant Digicolor SoCs have 8 configurable timers, named from "Timer A" to
+> + * "Timer H". Timer A is the only one with watchdog support, so it is dedicated
+> + * to the watchdog driver. This driver uses Timer B for sched_clock(), and
+> + * Timer C for clockevents.
+> + */
+> +
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+> +#include <linux/clk.h>
+> +#include <linux/clockchips.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqreturn.h>
+> +#include <linux/sched_clock.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +
+> +enum {
+> +	TIMER_A,
+> +	TIMER_B,
+> +	TIMER_C,
+> +	TIMER_D,
+> +	TIMER_E,
+> +	TIMER_F,
+> +	TIMER_G,
+> +	TIMER_H,
+> +};
+> +
+> +#define CONTROL(t)	((t)*8)
+> +#define COUNT(t)	((t)*8 + 4)
+> +
+> +#define CONTROL_DISABLE		0
+> +#define CONTROL_ENABLE		BIT(0)
+> +#define CONTROL_MODE(m)		((m) << 4)
+> +#define CONTROL_MODE_ONESHOT	CONTROL_MODE(1)
+> +#define CONTROL_MODE_PERIODIC	CONTROL_MODE(2)
+> +
+> +static struct dc_dev_t {
+> +	void __iomem *timer_base;
+> +	u32 ticks_per_jiffy;
+> +} dc_dev;
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/pm.c         |   23 +++++++++++------------
- arch/arm/mach-at91/pm_suspend.S |   24 ++++++++++--------------
- 2 files changed, 21 insertions(+), 26 deletions(-)
+Hi Baruch,
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 509ac9d..68cd3ce 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -133,13 +133,12 @@ int at91_suspend_entering_slow_clock(void)
- }
- EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
- 
--
--static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0,
-+static void (*at91_suspend_sram_fn)(void __iomem *pmc, void __iomem *ramc0,
- 			  void __iomem *ramc1, int memctrl);
- 
--extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
-+extern void at91_pm_suspend_in_sram(void __iomem *pmc, void __iomem *ramc0,
- 			    void __iomem *ramc1, int memctrl);
--extern u32 at91_slow_clock_sz;
-+extern u32 at91_pm_suspend_in_sram_sz;
- 
- static void at91_pm_suspend(suspend_state_t state)
- {
-@@ -148,8 +147,8 @@ static void at91_pm_suspend(suspend_state_t state)
- 	pm_data |= (state == PM_SUSPEND_MEM) ?
- 				AT91_PM_MODE(AT91_PM_SLOW_CLOCK) : 0;
- 
--	slow_clock(at91_pmc_base, at91_ramc_base[0],
--			at91_ramc_base[1], pm_data);
-+	at91_suspend_sram_fn(at91_pmc_base, at91_ramc_base[0],
-+				at91_ramc_base[1], pm_data);
- }
- 
- static int at91_pm_enter(suspend_state_t state)
-@@ -249,17 +248,19 @@ static void __init at91_pm_sram_init(void)
- 		goto put_node;
- 	}
- 
--	sram_base = gen_pool_alloc(sram_pool, at91_slow_clock_sz);
-+	sram_base = gen_pool_alloc(sram_pool, at91_pm_suspend_in_sram_sz);
- 	if (!sram_base) {
- 		pr_warn("%s: unable to alloc ocram!\n", __func__);
- 		goto put_node;
- 	}
- 
- 	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
--	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
-+	at91_suspend_sram_fn = __arm_ioremap_exec(sram_pbase,
-+					at91_pm_suspend_in_sram_sz, false);
- 
--	/* Copy slow_clock handler to SRAM, and call it */
--	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
-+	/* Copy pm suspend handler to SRAM, and call it */
-+	memcpy(at91_suspend_sram_fn,
-+		at91_pm_suspend_in_sram, at91_pm_suspend_in_sram_sz);
- 
- put_node:
- 	of_node_put(node);
-@@ -269,8 +270,6 @@ static void __init at91_pm_init(void)
- {
- 	at91_pm_sram_init();
- 
--	pr_info("AT91: Power Management%s\n", (slow_clock ? " (with slow clock mode)" : ""));
--
- 	if (at91_cpuidle_device.dev.platform_data)
- 		platform_device_register(&at91_cpuidle_device);
- 
-diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
-index 8edbad0..122a3f1 100644
---- a/arch/arm/mach-at91/pm_suspend.S
-+++ b/arch/arm/mach-at91/pm_suspend.S
-@@ -55,23 +55,19 @@ mode	.req	r6
- 
- 	.text
- 
--/* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc,
-+/*
-+ * void at91_pm_suspend_in_sram(void __iomem *pmc, void __iomem *sdramc,
-  *			void __iomem *ramc1, int memctrl)
-+ * @input param:
-+ * 	@r0: the base address of AT91_PMC
-+ *  	@r1: the base address of SDRAM Controller (SDRAM, DDRSDR, or AT91_SYS)
-+ *	@r2: the base address of second SDRAM Controller or 0 if not present
-+ *	@r3: the pm information
-  */
--ENTRY(at91_slow_clock)
-+ENTRY(at91_pm_suspend_in_sram)
- 	/* Save registers on stack */
- 	stmfd	sp!, {r4 - r12, lr}
- 
--	/*
--	 * Register usage:
--	 *  R0 = Base address of AT91_PMC
--	 *  R1 = Base address of RAM Controller (SDRAM, DDRSDR, or AT91_SYS)
--	 *  R2 = Base address of second RAM Controller or 0 if not present
--	 *  R3 = Memory controller
--	 *  R4 = temporary register
--	 *  R5 = temporary register
--	 */
--
- 	/* Drain write buffer */
- 	mov	tmp1, #0
- 	mcr	p15, 0, tmp1, c7, c10, 4
-@@ -277,5 +273,5 @@ ram_restored:
- .saved_sam9_mdr1:
- 	.word 0
- 
--ENTRY(at91_slow_clock_sz)
--	.word .-at91_slow_clock
-+ENTRY(at91_pm_suspend_in_sram_sz)
-+	.word .-at91_pm_suspend_in_sram
+your code is valid but I think there is a misunderstanding when we 
+talked about the encapsulation.
+
+I was expecting something like:
+
+static struct digicolor_timer {
+	void __iomem *base;
+	u32 ticks_per_jiffy;
+	int channel;
+	struct clock_event_device ce;
+};
+
+struct digicolor_timer *dg_timer(struct clock_event_device *ce)
+{
+	return container_of(ce, struct digicolor_timer, ce);
+}
+
+So the timer could be accessed directly from the clock_event_device 
+structure. The exception is the 'sched_read' and the init function where 
+you will have to address directly the global variable.
+
+Perhaps, that would be nice if you take the opportunity to encapsulate 
+the enable/disable functions.
+
+static inline void dg_timer_disable(struct clock_event_device *ce)
+{
+	struct digital_timer *dt = dg_timer(ce);
+	writeb(CONTROL_DISABLE, dt->base + CONTROL(dt->channel));	
+}
+
+static inline void dg_timer_enable(struct clock_event_device *ce, int mode)
+{
+	struct digital_timer *dt = dg_timer(ce);
+	writeb(CONTROL_ENABLE | mode, dt->base, CONTROL(dt->channel));
+}
+
+> +
+> +static void digicolor_clkevt_mode(enum clock_event_mode mode,
+> +				  struct clock_event_device *clk)
+
+IMO, 'clk' argument name is confusing. I would suggest to use 'ce' or 
+whatever.
+
+> +{
+> +	switch (mode) {
+> +	case CLOCK_EVT_MODE_PERIODIC:
+> +		writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_C));
+> +		writel(dc_dev.ticks_per_jiffy,
+> +		       dc_dev.timer_base + COUNT(TIMER_C));
+> +		writeb(CONTROL_ENABLE | CONTROL_MODE_PERIODIC,
+> +		       dc_dev.timer_base + CONTROL(TIMER_C));
+
+Becomes:
+
+		dg_timer_disable(ce);
+		dg_timer_enable(ce, CONTROL_MODE_PERIODIC);
+
+...
+
+> +		break;
+> +	case CLOCK_EVT_MODE_ONESHOT:
+> +		writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_C));
+> +		writeb(CONTROL_ENABLE | CONTROL_MODE_ONESHOT,
+> +		       dc_dev.timer_base + CONTROL(TIMER_C));
+
+
+Becomes:
+		dg_timer_disable(ce);
+		dg_timer_enable(ce, CONTROL_MODE_ONESHOT);
+	
+
+> +		break;
+> +	case CLOCK_EVT_MODE_UNUSED:
+> +	case CLOCK_EVT_MODE_SHUTDOWN:
+> +	default:
+> +		writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_C));
+
+Becomes:
+		dg_timer_disable(ce);
+
+> +		break;
+> +	}
+> +}
+> +
+> +static int digicolor_clkevt_next_event(unsigned long evt,
+> +				       struct clock_event_device *unused)
+> +{
+> +	writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_C));
+> +	writel(evt, dc_dev.timer_base + COUNT(TIMER_C));
+> +	writeb(CONTROL_ENABLE | CONTROL_MODE_ONESHOT,
+> +	       dc_dev.timer_base + CONTROL(TIMER_C));
+
+Becomes:
+	dg_timer_disable(ce);
+	writel(evt, dg_timer(ce)->base + COUNT(dg_timer(ce)->base));
+	dg_timer_enable(ce, CONTROL_MODE_ONESHOT);
+> +	return 0;
+> +}
+> +
+> +static struct clock_event_device digicolor_clockevent = {
+> +	.name = "digicolor_tick",
+> +	.rating = 340,
+> +	.features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
+> +	.set_mode = digicolor_clkevt_mode,
+> +	.set_next_event = digicolor_clkevt_next_event,
+> +};
+
+
+struct digicolor_timer dg_timer = {
+	
+	.ce = {
+		.name = "digicolor_tick",
+		.rating = 340,
+		.features = CLOCK_EVT_FEAT_PERIODIC |
+				CLOCK_EVT_FEAT_ONESHOT,
+		.set_mode = digicolor_clkevt_mode,
+		.set_next_event = digicolor_clkevt_next_event,
+	},
+	.channel = TIMER_C,
+};
+
+What do you think ?
+
+> +static irqreturn_t digicolor_timer_interrupt(int irq, void *dev_id)
+> +{
+> +	struct clock_event_device *evt = dev_id;
+> +
+> +	evt->event_handler(evt);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static u64 digicolor_timer_sched_read(void)
+> +{
+> +	return ~readl(dc_dev.timer_base + COUNT(TIMER_B));
+> +}
+> +
+> +static void __init digicolor_timer_init(struct device_node *node)
+> +{
+> +	unsigned long rate;
+> +	struct clk *clk;
+> +	int ret, irq;
+> +
+> +	dc_dev.timer_base =
+> +		of_io_request_and_map(node, 0, of_node_full_name(node));
+> +	if (!dc_dev.timer_base) {
+> +		pr_err("Can't map registers");
+> +		return;
+> +	}
+> +
+> +	irq = irq_of_parse_and_map(node, TIMER_C);
+> +	if (irq <= 0) {
+> +		pr_err("Can't parse IRQ");
+> +		return;
+> +	}
+> +
+> +	clk = of_clk_get(node, 0);
+> +	if (IS_ERR(clk)) {
+> +		pr_err("Can't get timer clock");
+> +		return;
+> +	}
+> +	clk_prepare_enable(clk);
+> +	rate = clk_get_rate(clk);
+> +	dc_dev.ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
+> +
+> +	writeb(CONTROL_DISABLE, dc_dev.timer_base + CONTROL(TIMER_B));
+> +	writel(UINT_MAX, dc_dev.timer_base + COUNT(TIMER_B));
+> +	writeb(CONTROL_ENABLE, dc_dev.timer_base + CONTROL(TIMER_B));
+> +
+> +	sched_clock_register(digicolor_timer_sched_read, 32, rate);
+> +	clocksource_mmio_init(dc_dev.timer_base + COUNT(TIMER_B), node->name,
+> +			      rate, 340, 32, clocksource_mmio_readl_down);
+> +
+> +	ret = request_irq(irq, digicolor_timer_interrupt,
+> +			  IRQF_TIMER | IRQF_IRQPOLL, "digicolor_timerC",
+> +			  &digicolor_clockevent);
+> +	if (ret)
+> +		pr_warn("request of timer irq %d failed (%d)\n", irq, ret);
+> +
+> +	digicolor_clockevent.cpumask = cpu_possible_mask;
+> +	digicolor_clockevent.irq = irq;
+> +
+> +	clockevents_config_and_register(&digicolor_clockevent, rate, 0,
+> +					0xffffffff);
+> +}
+> +CLOCKSOURCE_OF_DECLARE(conexant_digicolor, "cnxt,cx92755-timer",
+> +		       digicolor_timer_init);
+>
+
+
 -- 
-1.7.9.5
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
