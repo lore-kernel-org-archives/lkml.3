@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124AbbAZMkL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:40:11 -0500
-Received: from 8bytes.org ([81.169.241.247]:46374 "EHLO theia.8bytes.org"
+	id S1754285AbbAZMkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:40:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50910 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885AbbAZMkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:40:08 -0500
-Date: Mon, 26 Jan 2015 13:40:06 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
-Subject: Re: [PATCH 3/3] x86, crash: Allocate enough low-mem when
- crashkernel=high
-Message-ID: <20150126124005.GC4653@8bytes.org>
-References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
- <1420555874-11506-4-git-send-email-joro@8bytes.org>
- <20150123170243.GG22635@pd.tnic>
- <20150126121142.GG30345@8bytes.org>
- <20150126122017.GA1656@pd.tnic>
+	id S1751885AbbAZMkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:40:33 -0500
+Message-ID: <54C635BF.6010906@suse.cz>
+Date: Mon, 26 Jan 2015 13:40:31 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126122017.GA1656@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4] mm/thp: Allocate transparent hugepages on local node
+References: <1421753671-16793-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20150120164832.abe2e47b760e1a8d7bb6055b@linux-foundation.org> <54C62803.8010105@suse.cz> <20150126121309.GD25833@node.dhcp.inet.fi>
+In-Reply-To: <20150126121309.GD25833@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 01:20:17PM +0100, Borislav Petkov wrote:
-> On Mon, Jan 26, 2015 at 01:11:42PM +0100, Joerg Roedel wrote:
-> > Or we solve it in user-space by some more cleverness in creating the
-> > kernel command-line for crashkernel=high.
+On 01/26/2015 01:13 PM, Kirill A. Shutemov wrote:
+> On Mon, Jan 26, 2015 at 12:41:55PM +0100, Vlastimil Babka wrote:
+>> On 01/21/2015 01:48 AM, Andrew Morton wrote:
+>> > On Tue, 20 Jan 2015 17:04:31 +0530 "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+>> >> + * Should be called with the mm_sem of the vma hold.
+>> > 
+>> > That's a pretty cruddy sentence, isn't it?  Copied from
+>> > alloc_pages_vma().  "vma->vm_mm->mmap_sem" would be better.
+>> > 
+>> > And it should tell us whether mmap_sem required a down_read or a
+>> > down_write.  What purpose is it serving?
+>> 
+>> This is already said for mmap_sem further above this comment line, which
+>> should be just deleted (and from alloc_hugepage_vma comment too).
+>> 
+>> >> + *
+>> >> + */
+>> >> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
+>> >> +				unsigned long addr, int order)
+>> > 
+>> > This pointlessly bloats the kernel if CONFIG_TRANSPARENT_HUGEPAGE=n?
+>> > 
+>> > 
+>> > 
+>> > --- a/mm/mempolicy.c~mm-thp-allocate-transparent-hugepages-on-local-node-fix
+>> > +++ a/mm/mempolicy.c
+>> 
+>> How about this cleanup on top? I'm not fully decided on the GFP_TRANSHUGE test.
+>> This is potentially false positive, although I doubt anything else uses the same
+>> gfp mask bits.
 > 
-> I'd say, we should try to do as much as possible automatically.
+> This info on gfp mask should be in commit message.
 
-Thats hard to do, without any information about the driver needs we only
-have the amount of devices in the system to base any heuristic on.
+Right. Wanted to get some consensus first.
 
-> > But besides that, I think the first two patches of this set make sense
-> > anyway. I understand that the third one is debatable.
+> And what about WARN_ON_ONCE() if we the matching bits with
+> !TRANSPARENT_HUGEPAGE?
+
+Hmm, can't say I like that, but could work.
+
+>> 
+>> Should "hugepage" be extra bool parameter instead? Should I #ifdef the parameter
+>> only for CONFIG_TRANSPARENT_HUGEPAGE, or is it not worth the ugliness?
 > 
-> Right, but since they fix a real problem, maybe we should take them now
-> until a better fix is done? Yes, no?
+> Do we have spare gfp bit? ;)
 
-Yes. Given that we have no data about what would work on most
-systems, we can only change the value to a number that fixes know
-problems and then act on possible regressions caused by the change (and
-that change is pretty easy to revert if needed).
-
-
-	Joerg
-
+Seems we have defined 24 out of 32. Not too much to spare, and the use case here
+is very narrow.
