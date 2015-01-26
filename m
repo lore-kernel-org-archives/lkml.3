@@ -1,67 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517AbbAZQ6T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:58:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:34694 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753422AbbAZQ6R convert rfc822-to-8bit (ORCPT
+	id S1758189AbbA0PE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:04:29 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:64994 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755AbbA0PE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:58:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,469,1418112000"; 
-   d="scan'208";a="656642887"
-From: "Vick, Matthew" <matthew.vick@intel.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-CC: Alexander Duyck <alexander.h.duyck@intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ethernet: fm10k: Actually drop 4 bits
-Thread-Topic: [PATCH] ethernet: fm10k: Actually drop 4 bits
-Thread-Index: AQHQN2+xwQuPicYglkaLrsR9ALJ30JzSo6uA
-Date: Mon, 26 Jan 2015 16:58:13 +0000
-Message-ID: <D0EBB1E6.6855F%matthew.vick@intel.com>
-References: <1421967198-16667-1-git-send-email-linux@rasmusvillemoes.dk>
- <D0E81E0C.682EB%matthew.vick@intel.com> <87twzhknnl.fsf@rasmusvillemoes.dk>
-In-Reply-To: <87twzhknnl.fsf@rasmusvillemoes.dk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.4.7.141117
-x-originating-ip: [10.166.14.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <BC1833DA4954844B8EA32498F76E075F@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Jan 2015 10:04:26 -0500
+Date: Tue, 27 Jan 2015 00:58:23 +0800
+From: Simon Guo <wei.guo.simon@gmail.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, aaa@thunderCat
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        wei.guo.simon@gmail.com
+Subject: [PATCH 3.19.0-rc5 01/02] STAGING: Fix pcl818.c coding style issue:
+ code indent should use tabs where possible
+Message-ID: <20150126165822.GA10112@thunderCat>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/23/15, 4:50 PM, "Rasmus Villemoes" <linux@rasmusvillemoes.dk> wrote:
 
->On Sat, Jan 24 2015, "Vick, Matthew" <matthew.vick@intel.com> wrote:
->
->> Good catch! I noticed this too and was getting a patch together to
->>address
->> this.
->>
->> The difference is that I was planning on not silently accepting an
->>invalid
->> VLAN ID to begin with and returning FM10K_ERR_PARAM if the VLAN was
->> invalid, which I think is a better approach for this situation. If it's
->> alright with you, I'll generate the patch shortly and credit you via
->>your
->> Reported-by.
->
->Sure, do what you think is best.
->
->Rasmus
+Correct one coding style problem(detected by checkpatch.pl) in pcl818.c.
+- code indent should use tabs where possible
+It is fixed by reformatting the comment block to usual comment style.
 
-Sounds good. I'll get the patch created and validated through Jeff's tree.
+And with the reformatting, following coding style problem is also fixed:
+- please, no space before tabs
 
-Cheers,
-Matthew
+Signed-off-by: Simon Guo <wei.guo.simon@gmail.com>
+---
+ drivers/staging/comedi/drivers/pcl818.c | 189 +++++++++++++++-----------------
+ 1 file changed, 91 insertions(+), 98 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index ba2e137..5d9050c 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -1,102 +1,95 @@
+ /*
+-   comedi/drivers/pcl818.c
+-
+-   Author:  Michal Dobes <dobes@tesnet.cz>
+-
+-   hardware driver for Advantech cards:
+-    card:   PCL-818L, PCL-818H, PCL-818HD, PCL-818HG, PCL-818, PCL-718
+-    driver: pcl818l,  pcl818h,  pcl818hd,  pcl818hg,  pcl818,  pcl718
+-*/
+-/*
+-Driver: pcl818
+-Description: Advantech PCL-818 cards, PCL-718
+-Author: Michal Dobes <dobes@tesnet.cz>
+-Devices: [Advantech] PCL-818L (pcl818l), PCL-818H (pcl818h),
+-  PCL-818HD (pcl818hd), PCL-818HG (pcl818hg), PCL-818 (pcl818),
+-  PCL-718 (pcl718)
+-Status: works
+-
+-All cards have 16 SE/8 DIFF ADCs, one or two DACs, 16 DI and 16 DO.
+-Differences are only at maximal sample speed, range list and FIFO
+-support.
+-The driver support AI mode 0, 1, 3 other subdevices (AO, DI, DO) support
+-only mode 0. If DMA/FIFO/INT are disabled then AI support only mode 0.
+-PCL-818HD and PCL-818HG support 1kword FIFO. Driver support this FIFO
+-but this code is untested.
+-A word or two about DMA. Driver support DMA operations at two ways:
+-1) DMA uses two buffers and after one is filled then is generated
+-   INT and DMA restart with second buffer. With this mode I'm unable run
+-   more that 80Ksamples/secs without data dropouts on K6/233.
+-2) DMA uses one buffer and run in autoinit mode and the data are
+-   from DMA buffer moved on the fly with 2kHz interrupts from RTC.
+-   This mode is used if the interrupt 8 is available for allocation.
+-   If not, then first DMA mode is used. With this I can run at
+-   full speed one card (100ksamples/secs) or two cards with
+-   60ksamples/secs each (more is problem on account of ISA limitations).
+-   To use this mode you must have compiled  kernel with disabled
+-   "Enhanced Real Time Clock Support".
+-   Maybe you can have problems if you use xntpd or similar.
+-   If you've data dropouts with DMA mode 2 then:
+-    a) disable IDE DMA
+-    b) switch text mode console to fb.
+-
+-   Options for PCL-818L:
+-    [0] - IO Base
+-    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+-    [2] - DMA	(0=disable, 1, 3)
+-    [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
+-    [4] - 0,  5=A/D input  -5V.. +5V
+-          1, 10=A/D input -10V..+10V
+-    [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-	  2    =D/A output unknown (external reference)
+-
+-   Options for PCL-818, PCL-818H:
+-    [0] - IO Base
+-    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+-    [2] - DMA	(0=disable, 1, 3)
+-    [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
+-    [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-	  2    =D/A output unknown (external reference)
+-
+-   Options for PCL-818HD, PCL-818HG:
+-    [0] - IO Base
+-    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+-    [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
+-                      1=use DMA ch 1, 3=use DMA ch 3)
+-    [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
+-    [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-   	  2    =D/A output unknown (external reference)
+-
+-   Options for PCL-718:
+-    [0] - IO Base
+-    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+-    [2] - DMA	(0=disable, 1, 3)
+-    [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
+-    [4] -     0=A/D Range is +/-10V
+-	      1=             +/-5V
+-	      2=             +/-2.5V
+-	      3=             +/-1V
+-	      4=             +/-0.5V
+-	      5=  	     user defined bipolar
+-	      6=	     0-10V
+-	      7=	     0-5V
+- 	      8=	     0-2V
+-	      9=	     0-1V
+-	     10=	     user defined unipolar
+-    [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
+-          1, 10=D/A outputs 0-10V (internal reference -10V)
+-	      2=D/A outputs unknown (external reference)
+-    [6] - 0, 60=max  60kHz A/D sampling
+-          1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
+-
+-*/
++ * comedi/drivers/pcl818.c
++ *
++ * Driver: pcl818
++ * Description: Advantech PCL-818 cards, PCL-718
++ * Author: Michal Dobes <dobes@tesnet.cz>
++ * Devices: [Advantech] PCL-818L (pcl818l), PCL-818H (pcl818h),
++ *   PCL-818HD (pcl818hd), PCL-818HG (pcl818hg), PCL-818 (pcl818),
++ *   PCL-718 (pcl718)
++ * Status: works
++ *
++ * All cards have 16 SE/8 DIFF ADCs, one or two DACs, 16 DI and 16 DO.
++ * Differences are only at maximal sample speed, range list and FIFO
++ * support.
++ * The driver support AI mode 0, 1, 3 other subdevices (AO, DI, DO) support
++ * only mode 0. If DMA/FIFO/INT are disabled then AI support only mode 0.
++ * PCL-818HD and PCL-818HG support 1kword FIFO. Driver support this FIFO
++ * but this code is untested.
++ * A word or two about DMA. Driver support DMA operations at two ways:
++ * 1) DMA uses two buffers and after one is filled then is generated
++ *    INT and DMA restart with second buffer. With this mode I'm unable run
++ *    more that 80Ksamples/secs without data dropouts on K6/233.
++ * 2) DMA uses one buffer and run in autoinit mode and the data are
++ *    from DMA buffer moved on the fly with 2kHz interrupts from RTC.
++ *    This mode is used if the interrupt 8 is available for allocation.
++ *    If not, then first DMA mode is used. With this I can run at
++ *    full speed one card (100ksamples/secs) or two cards with
++ *    60ksamples/secs each (more is problem on account of ISA limitations).
++ *    To use this mode you must have compiled  kernel with disabled
++ *    "Enhanced Real Time Clock Support".
++ *    Maybe you can have problems if you use xntpd or similar.
++ *    If you've data dropouts with DMA mode 2 then:
++ *     a) disable IDE DMA
++ *     b) switch text mode console to fb.
++ *
++ *  Options for PCL-818L:
++ *  [0] - IO Base
++ *  [1] - IRQ        (0=disable, 2, 3, 4, 5, 6, 7)
++ *  [2] - DMA        (0=disable, 1, 3)
++ *  [3] - 0, 10=10MHz clock for 8254
++ *            1= 1MHz clock for 8254
++ *  [4] - 0,  5=A/D input  -5V.. +5V
++ *        1, 10=A/D input -10V..+10V
++ *  [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
++ *        1, 10=D/A output 0-10V (internal reference -10V)
++ *        2    =D/A output unknown (external reference)
++ *
++ *  Options for PCL-818, PCL-818H:
++ *  [0] - IO Base
++ *  [1] - IRQ        (0=disable, 2, 3, 4, 5, 6, 7)
++ *  [2] - DMA        (0=disable, 1, 3)
++ *  [3] - 0, 10=10MHz clock for 8254
++ *            1= 1MHz clock for 8254
++ *  [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
++ *        1, 10=D/A output 0-10V (internal reference -10V)
++ *        2    =D/A output unknown (external reference)
++ *
++ *  Options for PCL-818HD, PCL-818HG:
++ *  [0] - IO Base
++ *  [1] - IRQ        (0=disable, 2, 3, 4, 5, 6, 7)
++ *  [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
++ *                    1=use DMA ch 1, 3=use DMA ch 3)
++ *  [3] - 0, 10=10MHz clock for 8254
++ *            1= 1MHz clock for 8254
++ *  [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
++ *        1, 10=D/A output 0-10V (internal reference -10V)
++ *        2    =D/A output unknown (external reference)
++ *
++ *  Options for PCL-718:
++ *  [0] - IO Base
++ *  [1] - IRQ        (0=disable, 2, 3, 4, 5, 6, 7)
++ *  [2] - DMA        (0=disable, 1, 3)
++ *  [3] - 0, 10=10MHz clock for 8254
++ *            1= 1MHz clock for 8254
++ *  [4] -     0=A/D Range is +/-10V
++ *            1=             +/-5V
++ *            2=             +/-2.5V
++ *            3=             +/-1V
++ *            4=             +/-0.5V
++ *            5=             user defined bipolar
++ *            6=             0-10V
++ *            7=             0-5V
++ *            8=             0-2V
++ *            9=             0-1V
++ *           10=             user defined unipolar
++ *  [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
++ *        1, 10=D/A outputs 0-10V (internal reference -10V)
++ *            2=D/A outputs unknown (external reference)
++ *  [6] - 0, 60=max  60kHz A/D sampling
++ *        1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
++ *
++ */
+ 
+ #include <linux/module.h>
+ #include <linux/gfp.h>
+-- 
+1.8.1.2
 
