@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762AbbAZUEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 15:04:42 -0500
-Received: from mail.efficios.com ([78.47.125.74]:58793 "EHLO mail.efficios.com"
+	id S1756804AbbAZUFR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 15:05:17 -0500
+Received: from mga14.intel.com ([192.55.52.115]:47219 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756648AbbAZUEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 15:04:40 -0500
-Date: Mon, 26 Jan 2015 20:04:45 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: lttng-dev@lists.lttng.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Message-ID: <1224618254.53158.1422302685749.JavaMail.zimbra@efficios.com>
-In-Reply-To: <314636431.53126.1422302376219.JavaMail.zimbra@efficios.com>
-Subject: [RELEASE] LTTng modules 2.6.0 (Gaia)
+	id S1756648AbbAZUFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 15:05:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,470,1418112000"; 
+   d="scan'208";a="656729685"
+Message-ID: <54C69DF9.1090702@intel.com>
+Date: Mon, 26 Jan 2015 12:05:13 -0800
+From: "H. Peter Anvin" <h.peter.anvin@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Ross Zwisler <ross.zwisler@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH v2 0/2] add support for new persistent memory instructions
+References: <1422045628-16225-1-git-send-email-ross.zwisler@linux.intel.com>	 <54C2D34D.7010709@intel.com> <1422301899.13382.2.camel@theros.lm.intel.com>
+In-Reply-To: <1422301899.13382.2.camel@theros.lm.intel.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.246.22.116]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF35 (Linux)/8.0.7_GA_6021)
-Thread-Topic: LTTng modules 2.6.0 (Gaia)
-Thread-Index: NS7Bq2lIbwRtvaKLVS89qZrlgDxSEA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are now releasing the 2.6.0 LTTng modules Linux kernel tracer.
+On 01/26/2015 11:51 AM, Ross Zwisler wrote:
+> 
+> This is fine, but now you've got two fences in a row.  Another slightly more
+> messy choice would be to include the fence in the pcommit assembly, so
+> you either get pcommit + sfence or a pair of NOPs.
+> 
 
-New & Noteworthy features in the LTTng Linux kernel tracer 2.6.0: 
+If that is the required usage pattern, it should be part of the clwb()
+inline at least.
 
-- System call filtering! Fine-tune which system calls you want
-  to trace or not,
-- We now gather in/out parameters of system calls at entry and
-  exit of the syscall. Please note that the system call event
-  semantic (naming) have changed in this release. You may have
-  to update your analysis if they depended on the old semantic,
-- Trace NMI handlers, using the new NMI-safe clock monotonic
-  available in kernels >= 3.17.
+	-hpa
 
-Changelog since LTTng modules 2.6.0-rc2:
-
-2015-01-26 LTTng modules 2.6.0
-        * Fix: missing parenthesis in offset_align_floor
-        * Fix: implement time.h wrapper for FD_ISSET
-        * Fix: update sched instrumentation for 3.19+ kernels
-        * Fix: update rcu instrumentation for 3.19+ kernels
-        * Fix: update scsi instrumentation for 3.19+ kernels
-        * Fix: update module instrumentation for 3.19+ kernels
-        * Fix: Add f_dentry wrapper for 3.19+ kernels
-        * Fix: introduce lttng_get_unused_fd() wrapper for 3.19 kernels
-        * Fix: lttng_this_cpu_ptr wrapper for kernel 3.19+
-        * Fix: Update btrfs instrumentation for 3.18 Linux kernel
-        * Fix compile error on kernel 3.0.101 with CONFIG_PERF_EVENTS
-        * Conditional compilation introduced by lttng-modules commit
-
-Project website: http://lttng.org
-Documentation: http://lttng.org/docs
-Download link: http://lttng.org/download
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
