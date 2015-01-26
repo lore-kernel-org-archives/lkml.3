@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbbAZMQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:16:11 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38866 "EHLO bear.ext.ti.com"
+	id S1755235AbbAZMQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:16:25 -0500
+Received: from 8bytes.org ([81.169.241.247]:46236 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755141AbbAZMQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:16:07 -0500
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>, <tony@atomide.com>, <myungjoo.ham@samsung.com>,
-        <cw00.choi@samsung.com>
-CC: <george.cherian@ti.com>, <nsekhar@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2 7/7] ARM: omap2plus_defconfig: Enable EXTCON_GPIO_USB
-Date: Mon, 26 Jan 2015 14:15:32 +0200
-Message-ID: <1422274532-9488-8-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1422274532-9488-1-git-send-email-rogerq@ti.com>
-References: <1422274532-9488-1-git-send-email-rogerq@ti.com>
+	id S1752657AbbAZMQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:16:21 -0500
+Date: Mon, 26 Jan 2015 13:16:18 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: alex.williamson@redhat.com, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iommu: fix trace_map() to report original iova and
+ original size
+Message-ID: <20150126121618.GA4653@8bytes.org>
+References: <1421375383-8930-1-git-send-email-shuahkh@osg.samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421375383-8930-1-git-send-email-shuahkh@osg.samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is needed for USB cable type detection on dra7-evm,
-dra72-evm and am57xx-beagle-x15.
+On Thu, Jan 15, 2015 at 07:29:43PM -0700, Shuah Khan wrote:
+> iommu_map() calls trace_map() with iova and size. trace_map()
+> should report original iova and original size as opposed to
+> iova and size after they get changed during mapping. size is
+> always zero at the end of mapping which is useless to report
+> and iova as it gets incremented, it is not as useful as the
+> original iova. Change iommu_map() to call trace_map() to
+> report original iova and original size.
+> 
+> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+> Reported-by: Alex Williamson <alex.williamson@redhat.com>
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/configs/omap2plus_defconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
-index 667d9d5..7e10e58 100644
---- a/arch/arm/configs/omap2plus_defconfig
-+++ b/arch/arm/configs/omap2plus_defconfig
-@@ -326,6 +326,7 @@ CONFIG_DMADEVICES=y
- CONFIG_TI_EDMA=y
- CONFIG_DMA_OMAP=y
- CONFIG_EXTCON=y
-+CONFIG_EXTCON_USB_GPIO=m
- CONFIG_EXTCON_PALMAS=y
- CONFIG_PWM=y
- CONFIG_PWM_TIECAP=y
--- 
-2.1.0
+Applied, thanks.
 
