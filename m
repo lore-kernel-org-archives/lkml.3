@@ -1,55 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053AbbAZNQV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:16:21 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:53801 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753977AbbAZNPr (ORCPT
+	id S1755259AbbAZNwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:52:30 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:51864 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517AbbAZNw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:15:47 -0500
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-To: <tiwai@suse.de>, <perex@perex.cz>
-CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <Zubair.Kakakhel@imgtec.com>,
-        <lars@metafoo.de>
-Subject: [PATCH_V2 4/4] sound: jz4740: set i2s clk rate to 12MHz
-Date: Mon, 26 Jan 2015 13:15:38 +0000
-Message-ID: <1422278138-51097-5-git-send-email-Zubair.Kakakhel@imgtec.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422278138-51097-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-References: <1422278138-51097-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+	Mon, 26 Jan 2015 08:52:27 -0500
+Date: Mon, 26 Jan 2015 21:16:28 +0800
+From: Simon Guo <wei.guo.simon@gmail.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        wei.guo.simon@gmail.com
+Subject: [PATCH 3.19.0-rc5 01/03] STAGING: Fix pcl818.c coding style issue:
+ code indent should use tabs where possible
+Message-ID: <20150126131627.GA9183@thunderCat>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.89]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i2s clock rate is not set to 12MHz currently. Set it before enabling
-the clock.
+Correct one coding style problem(detected by checkpatch.pl) in pcl818.c.
+- code indent should use tabs where possible
+It is fixed by reformatting the comment block to usual comment style.
 
-Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-
+Signed-off-by: Simon Guo <wei.guo.simon@gmail.com>
 ---
-V2 changes: Removed clk_prepare_enable call as clock was already being
-enabled elsewhere. Just set rate to 12MHz.
----
- sound/soc/jz4740/jz4740-i2s.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/comedi/drivers/pcl818.c | 195 ++++++++++++++++----------------
+ 1 file changed, 97 insertions(+), 98 deletions(-)
 
-diff --git a/sound/soc/jz4740/jz4740-i2s.c b/sound/soc/jz4740/jz4740-i2s.c
-index 07f7781..c2e5852 100644
---- a/sound/soc/jz4740/jz4740-i2s.c
-+++ b/sound/soc/jz4740/jz4740-i2s.c
-@@ -125,6 +125,7 @@ static int jz4740_i2s_startup(struct snd_pcm_substream *substream,
- 	ctrl |= JZ_AIC_CTRL_FLUSH;
- 	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index ba2e137..5a005e5 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -1,102 +1,101 @@
+ /*
+-   comedi/drivers/pcl818.c
+-
+-   Author:  Michal Dobes <dobes@tesnet.cz>
+-
+-   hardware driver for Advantech cards:
+-    card:   PCL-818L, PCL-818H, PCL-818HD, PCL-818HG, PCL-818, PCL-718
+-    driver: pcl818l,  pcl818h,  pcl818hd,  pcl818hg,  pcl818,  pcl718
+-*/
+-/*
+-Driver: pcl818
+-Description: Advantech PCL-818 cards, PCL-718
+-Author: Michal Dobes <dobes@tesnet.cz>
+-Devices: [Advantech] PCL-818L (pcl818l), PCL-818H (pcl818h),
+-  PCL-818HD (pcl818hd), PCL-818HG (pcl818hg), PCL-818 (pcl818),
+-  PCL-718 (pcl718)
+-Status: works
+-
+-All cards have 16 SE/8 DIFF ADCs, one or two DACs, 16 DI and 16 DO.
+-Differences are only at maximal sample speed, range list and FIFO
+-support.
+-The driver support AI mode 0, 1, 3 other subdevices (AO, DI, DO) support
+-only mode 0. If DMA/FIFO/INT are disabled then AI support only mode 0.
+-PCL-818HD and PCL-818HG support 1kword FIFO. Driver support this FIFO
+-but this code is untested.
+-A word or two about DMA. Driver support DMA operations at two ways:
+-1) DMA uses two buffers and after one is filled then is generated
+-   INT and DMA restart with second buffer. With this mode I'm unable run
+-   more that 80Ksamples/secs without data dropouts on K6/233.
+-2) DMA uses one buffer and run in autoinit mode and the data are
+-   from DMA buffer moved on the fly with 2kHz interrupts from RTC.
+-   This mode is used if the interrupt 8 is available for allocation.
+-   If not, then first DMA mode is used. With this I can run at
+-   full speed one card (100ksamples/secs) or two cards with
+-   60ksamples/secs each (more is problem on account of ISA limitations).
+-   To use this mode you must have compiled  kernel with disabled
+-   "Enhanced Real Time Clock Support".
+-   Maybe you can have problems if you use xntpd or similar.
+-   If you've data dropouts with DMA mode 2 then:
+-    a) disable IDE DMA
+-    b) switch text mode console to fb.
+-
+-   Options for PCL-818L:
+-    [0] - IO Base
+-    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+-    [2] - DMA	(0=disable, 1, 3)
+-    [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
+-    [4] - 0,  5=A/D input  -5V.. +5V
+-          1, 10=A/D input -10V..+10V
+-    [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-	  2    =D/A output unknown (external reference)
+-
+-   Options for PCL-818, PCL-818H:
+-    [0] - IO Base
+-    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+-    [2] - DMA	(0=disable, 1, 3)
+-    [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
+-    [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-	  2    =D/A output unknown (external reference)
+-
+-   Options for PCL-818HD, PCL-818HG:
+-    [0] - IO Base
+-    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+-    [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
+-                      1=use DMA ch 1, 3=use DMA ch 3)
+-    [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
+-    [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-   	  2    =D/A output unknown (external reference)
+-
+-   Options for PCL-718:
+-    [0] - IO Base
+-    [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+-    [2] - DMA	(0=disable, 1, 3)
+-    [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
+-    [4] -     0=A/D Range is +/-10V
+-	      1=             +/-5V
+-	      2=             +/-2.5V
+-	      3=             +/-1V
+-	      4=             +/-0.5V
+-	      5=  	     user defined bipolar
+-	      6=	     0-10V
+-	      7=	     0-5V
+- 	      8=	     0-2V
+-	      9=	     0-1V
+-	     10=	     user defined unipolar
+-    [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
+-          1, 10=D/A outputs 0-10V (internal reference -10V)
+-	      2=D/A outputs unknown (external reference)
+-    [6] - 0, 60=max  60kHz A/D sampling
+-          1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
+-
+-*/
++ * comedi/drivers/pcl818.c
++ *
++ * Author:  Michal Dobes <dobes@tesnet.cz>
++ *
++ * hardware driver for Advantech cards:
++ *  card:   PCL-818L, PCL-818H, PCL-818HD, PCL-818HG, PCL-818, PCL-718
++ *  driver: pcl818l,  pcl818h,  pcl818hd,  pcl818hg,  pcl818,  pcl718
++
++ * Driver: pcl818
++ * Description: Advantech PCL-818 cards, PCL-718
++ * Author: Michal Dobes <dobes@tesnet.cz>
++ * Devices: [Advantech] PCL-818L (pcl818l), PCL-818H (pcl818h),
++ *   PCL-818HD (pcl818hd), PCL-818HG (pcl818hg), PCL-818 (pcl818),
++ *   PCL-718 (pcl718)
++ * Status: works
++ *
++ * All cards have 16 SE/8 DIFF ADCs, one or two DACs, 16 DI and 16 DO.
++ * Differences are only at maximal sample speed, range list and FIFO
++ * support.
++ * The driver support AI mode 0, 1, 3 other subdevices (AO, DI, DO) support
++ * only mode 0. If DMA/FIFO/INT are disabled then AI support only mode 0.
++ * PCL-818HD and PCL-818HG support 1kword FIFO. Driver support this FIFO
++ * but this code is untested.
++ * A word or two about DMA. Driver support DMA operations at two ways:
++ * 1) DMA uses two buffers and after one is filled then is generated
++ *    INT and DMA restart with second buffer. With this mode I'm unable run
++ *    more that 80Ksamples/secs without data dropouts on K6/233.
++ * 2) DMA uses one buffer and run in autoinit mode and the data are
++ *    from DMA buffer moved on the fly with 2kHz interrupts from RTC.
++ *    This mode is used if the interrupt 8 is available for allocation.
++ *    If not, then first DMA mode is used. With this I can run at
++ *    full speed one card (100ksamples/secs) or two cards with
++ *    60ksamples/secs each (more is problem on account of ISA limitations).
++ *    To use this mode you must have compiled  kernel with disabled
++ *    "Enhanced Real Time Clock Support".
++ *    Maybe you can have problems if you use xntpd or similar.
++ *    If you've data dropouts with DMA mode 2 then:
++ *     a) disable IDE DMA
++ *     b) switch text mode console to fb.
++ *
++ *    Options for PCL-818L:
++ *     [0] - IO Base
++ *     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
++ *     [2] - DMA	(0=disable, 1, 3)
++ *     [3] - 0, 10=10MHz clock for 8254
++ *               1= 1MHz clock for 8254
++ *     [4] - 0,  5=A/D input  -5V.. +5V
++ *           1, 10=A/D input -10V..+10V
++ *     [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
++ *           1, 10=D/A output 0-10V (internal reference -10V)
++ *           2    =D/A output unknown (external reference)
++ *
++ *    Options for PCL-818, PCL-818H:
++ *     [0] - IO Base
++ *     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
++ *     [2] - DMA	(0=disable, 1, 3)
++ *     [3] - 0, 10=10MHz clock for 8254
++ *               1= 1MHz clock for 8254
++ *     [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
++ *           1, 10=D/A output 0-10V (internal reference -10V)
++ *           2    =D/A output unknown (external reference)
++ *
++ *    Options for PCL-818HD, PCL-818HG:
++ *     [0] - IO Base
++ *     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
++ *     [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
++ *                       1=use DMA ch 1, 3=use DMA ch 3)
++ *     [3] - 0, 10=10MHz clock for 8254
++ *               1= 1MHz clock for 8254
++ *     [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
++ *           1, 10=D/A output 0-10V (internal reference -10V)
++ *           2    =D/A output unknown (external reference)
++ *
++ *    Options for PCL-718:
++ *     [0] - IO Base
++ *     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
++ *     [2] - DMA	(0=disable, 1, 3)
++ *     [3] - 0, 10=10MHz clock for 8254
++ *               1= 1MHz clock for 8254
++ *     [4] -     0=A/D Range is +/-10V
++ *               1=             +/-5V
++ *               2=             +/-2.5V
++ *               3=             +/-1V
++ *               4=             +/-0.5V
++ *               5=  	     user defined bipolar
++ *               6=	     0-10V
++ *               7=	     0-5V
++ *               8=	     0-2V
++ *               9=	     0-1V
++ *              10=	     user defined unipolar
++ *     [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
++ *           1, 10=D/A outputs 0-10V (internal reference -10V)
++ *               2=D/A outputs unknown (external reference)
++ *     [6] - 0, 60=max  60kHz A/D sampling
++ *           1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
++ *
++ */
  
-+	clk_set_rate(i2s->clk_i2s, 12000000);
- 	clk_prepare_enable(i2s->clk_i2s);
- 
- 	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
+ #include <linux/module.h>
+ #include <linux/gfp.h>
 -- 
-1.9.1
+1.8.1.2
 
