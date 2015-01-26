@@ -1,55 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422AbbAZXCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:02:10 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41977 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521AbbAZXCH (ORCPT
+	id S1757144AbbAZXDe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:03:34 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:41254 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753568AbbAZXDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:02:07 -0500
-Date: Mon, 26 Jan 2015 23:02:03 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
-Message-ID: <20150126230203.GT29656@ZenIV.linux.org.uk>
-References: <20150126150913.653681560@goodmis.org>
- <20150126193049.GN29656@ZenIV.linux.org.uk>
- <20150126154259.5e650d32@gandalf.local.home>
- <20150126214658.GQ29656@ZenIV.linux.org.uk>
+	Mon, 26 Jan 2015 18:03:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126214658.GQ29656@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54B3800C.2000704@samsung.com>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-3-git-send-email-j.anaszewski@samsung.com>
+ <20150109174058.GC18076@amd> <54B3800C.2000704@samsung.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 26 Jan 2015 15:03:09 -0800
+Message-ID: <CAK5ve-LKieXPbKVTG8PV6EQQPvOKXC46AdwAxksuNcKU_QKcug@mail.gmail.com>
+Subject: Re: [PATCH/RFC v10 02/19] Documentation: leds: Add description of LED
+ Flash class extension
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 09:46:58PM +0000, Al Viro wrote:
-> On Mon, Jan 26, 2015 at 03:42:59PM -0500, Steven Rostedt wrote:
-> > On Mon, 26 Jan 2015 19:30:49 +0000
-> > Al Viro <viro@ZenIV.linux.org.uk> wrote:
-> > 
-> > > You are still fighting an inconvenient API, but now it's not debugfs one -
-> > > it's your copy thereof.  Why not give your instances/ an inode_operations
-> > > of its own?  One with ->mkdir() and ->rmdir(), leaving all other directories
-> > > as-is.  That way you don't need the secondary methods at all.  And sure,
-> > > debugfs_create_dir() grabs ->i_mutex on parent, making you drop that in
-> > > your ->mkdir() if you want to call it.  But now you are not talking to it -
-> > > just to your own code, where you are free to change the calling conventions,
-> > > making it caller's responsibility to get that ->i_mutex.  The same goes for
-> > > the rmdir side...
-> > 
-> > The vfs layer grabs the i_mutex, which needs to be dropped.
-> 
-> What for?  Just keep it through your instance_mkdir/instance_rmdir and be
-> done with that.  Sure, it means that you need variants of file/directory
-> creation/removal primitives that would assume that parent is already locked
-> by caller (and would leave unlocking to the caller as well).  So add them...
+On Mon, Jan 12, 2015 at 12:04 AM, Jacek Anaszewski
+<j.anaszewski@samsung.com> wrote:
+> Hi Pavel,
+>
+> Thanks for the review.
+>
+> On 01/09/2015 06:40 PM, Pavel Machek wrote:
+>>
+>> Hi!
+>>
+>>> The documentation being added contains overall description of the
+>>> LED Flash Class and the related sysfs attributes.
+>>>
+>>> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> Cc: Bryan Wu <cooloney@gmail.com>
+>>> Cc: Richard Purdie <rpurdie@rpsys.net>
+>>
+>>
+>>> +In order to enable support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol
+>>> +must be defined in the kernel config. A flash LED driver must register
+>>> +in the LED subsystem with led_classdev_flash_register function to gain
+>>> flash
+>>> +related capabilities.
+>>> +
+>>> +There are flash LED devices which can control more than one LED and
+>>> allow for
+>>> +strobing the sub-leds synchronously. A LED will be strobed synchronously
+>>> with
+>>> +the one whose identifier is written to the flash_sync_strobe sysfs
+>>> attribute.
+>>> +The list of available sub-led identifiers can be read from the
+>>
+>>
+>> sub-LED?
+>
+>
+> Indeed, this naming will be more consistent.
+>
+>>> +       - flash_fault - bitmask of flash faults that may have occurred
+>>> +                       possible flags are:
+>>> +               * 0x01 - flash controller voltage to the flash LED has
+>>> exceeded
+>>> +                        the limit specific to the flash controller
+>>> +               * 0x02 - the flash strobe was still on when the timeout
+>>> set by
+>>> +                        the user has expired; not all flash controllers
+>>> may
+>>> +                        set this in all such conditions
+>>> +               * 0x04 - the flash controller has overheated
+>>> +               * 0x08 - the short circuit protection of the flash
+>>> controller
+>>> +                        has been triggered
+>>> +               * 0x10 - current in the LED power supply has exceeded the
+>>> limit
+>>> +                        specific to the flash controller
+>>> +               * 0x20 - the flash controller has detected a short or
+>>> open
+>>> +                        circuit condition on the indicator LED
+>>> +               * 0x40 - flash controller voltage to the flash LED has
+>>> been
+>>> +                        below the minimum limit specific to the flash
+>>> +               * 0x80 - the input voltage of the flash controller is
+>>> below
+>>> +                        the limit under which strobing the flash at full
+>>> +                        current will not be possible. The condition
+>>> persists
+>>> +                        until this flag is no longer set
+>>> +               * 0x100 - the temperature of the LED has exceeded its
+>>> allowed
+>>> +                         upper limit
+>>
+>>
+>> Did not everyone agree that text strings are preferable to bitmasks?
+>>
+>>
+>> Pavel
+>>
+>
+> I just forgot to update the flash_fault documentation. Will fix in the
+> next version.
+>
+Please provide an updated version. I will merge them.
 
-BTW, could you merge vfs.git#debugfs_automount, rather than copy the commits
-into your branch?  Bloody inconvenient as it is...
+-Bryan
