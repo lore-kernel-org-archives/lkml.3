@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547AbbAZKtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:49:41 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:44714 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754240AbbAZKtj (ORCPT
+	id S1756103AbbAZKu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:50:26 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34091 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597AbbAZKuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:49:39 -0500
-Date: Mon, 26 Jan 2015 10:49:36 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jon Masters <jonathan@jonmasters.org>, Laszlo Ersek <lersek@redhat.com>,
-        Dave Young <dyoung@redhat.com>, linux-efi <linux-efi@vger.kernel.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Shorten efi regions output
-Message-ID: <20150126104936.GB3320@codeblueprint.co.uk>
-References: <20141209095843.GA3990@pd.tnic>
- <20141210021741.GA3280@darkstar.nay.redhat.com>
- <20141210104627.GA17053@pd.tnic>
- <20150105140332.GB3163@console-pimps.org>
- <54AAA723.1070605@redhat.com>
- <54BF3DCA.4070708@jonmasters.org>
- <20150121100633.GC12173@pd.tnic>
+	Mon, 26 Jan 2015 05:50:23 -0500
+Message-ID: <54C61BE4.8070105@pengutronix.de>
+Date: Mon, 26 Jan 2015 11:50:12 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150121100633.GC12173@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andri Yngvason <andri.yngvason@marel.com>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 5/7] can: kvaser_usb: Update interface state before
+ exiting on OOM
+References: <20141223154654.GB6460@vivalin-002> <20150126051755.GA3014@Darwish.PC> <20150126052039.GB3014@Darwish.PC> <20150126052254.GC3014@Darwish.PC> <20150126052406.GD3014@Darwish.PC> <20150126052543.GE3014@Darwish.PC> <20150126052719.GF3014@Darwish.PC> <20150126102843.17894.84372@shannon>
+In-Reply-To: <20150126102843.17894.84372@shannon>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="HhotTsnSxVTEcMWmE346UJcbg8uGaeSrP"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jan, at 11:06:33AM, Borislav Petkov wrote:
-> On Wed, Jan 21, 2015 at 12:48:58AM -0500, Jon Masters wrote:
-> > We have on a number of occasions found just this output useful in
-> > debugging boot issues on ARM servers
-> 
-> We can turn it on by default on ARM and off on x86...
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--HhotTsnSxVTEcMWmE346UJcbg8uGaeSrP
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, there's no reason we need to have the same default. That is to
-say, it can be on for ARM and off for x86, but when enabled the format
-should be the same for both.
+On 01/26/2015 11:28 AM, Andri Yngvason wrote:
+> Quoting Ahmed S. Darwish (2015-01-26 05:27:19)
+>> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+>>
+>> Update all of the can interface's state and error counters before
+>> trying any skb allocation that can actually fail with -ENOMEM.
+>>
+>> Suggested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+>> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+>> ---
+>>  drivers/net/can/usb/kvaser_usb.c |  181 ++++++++++++++++++++++-------=
+---------
+>>  1 files changed, 105 insertions(+), 76 deletions(-)
+[..]
 
-In the future the memory maps are likely to contain even more entries
-and I suspect we're going to get more requests to disable the voluminous
-memmap output by default if we don't do so now.
+> Looks good to me.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Can I add your Acked-by to 5-7?
+
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--HhotTsnSxVTEcMWmE346UJcbg8uGaeSrP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCgAGBQJUxhvpAAoJECte4hHFiupURm0P/RoHDtCC3lfTVSjW5MlHe/Z/
+CyU/xuqwaJar1TON+/D8EQXqVLL3bV2CWoj0FQpfKjKuTxylrqenRxwj+YD3dEIt
+NErjVVNiQc3445tPJVFc0bJoqpmFB+20XemYUMKSC4aNbWHgVfHFdda3kkTVynyL
+mnnokF26pdDGi54IuYZ3IyNkkNR6tVmr6iTxVgBU6LF5/2bgRnfcGglAJxk5CaA3
+vkjmECWMFdxVxQENym2i56PgYrYm9k/HvvF+yMg8+gEXrI5Vxoyd3sfUhjI8kmT8
+1ZfVVpTQTnr/XpAVy9INpS0yymVFTJmJkQdjg9oniUt/XyRtnkC1Xrhcr2EIL1HS
+Unk4Uu2C+goq76DhrQ2enVxwBm5DG3T69qt9FDlHZIWaXwqErSRAsaBzpVqBU2uM
+zfGS3TbztOT0MgQKWQhtIY9bHqCjDrqfR8Il4anww9TVzKBPF1lSafJEaLiThTKN
+i+ZZnInltxYTR8Ql/Kt1rk9kJplF9eVhd1m4TLdlIpUgA3FlrcwrZCZb/Wg1asFG
+AAlsaiy7qc2qn3xO0Y4AF4DY+MyLn+d/giZX6fLeHwLjTCfxWiAqPRNcWK0vpd50
+zDkbGsU1yyAxXobAmW4vx2jFH9935xa9HIGH6UregWvk+OueeqE3cRgEfEx9oeTj
+Tl9A9SNaqxGjnC7/gFc3
+=0KwO
+-----END PGP SIGNATURE-----
+
+--HhotTsnSxVTEcMWmE346UJcbg8uGaeSrP--
