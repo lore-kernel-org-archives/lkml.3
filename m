@@ -1,110 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbbAZKII (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:08:08 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:45165 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754077AbbAZKIF (ORCPT
+	id S1754612AbbAZKHh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:07:37 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34135 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529AbbAZKHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:08:05 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <wenyou.yang@atmel.com>,
-        <Patrice.VILCHEZ@atmel.com>
-Subject: [PATCH 4/7] ARM: at91: enable the L2 Cache controller
-Date: Mon, 26 Jan 2015 18:07:16 +0800
-Message-ID: <1422266836-24592-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
+	Mon, 26 Jan 2015 05:07:33 -0500
+Message-ID: <54C611DA.8050500@pengutronix.de>
+Date: Mon, 26 Jan 2015 11:07:22 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Andri Yngvason <andri.yngvason@marel.com>
+CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 0/7] can: kvaser_usb: Leaf bugfixes and USBCan-II support
+References: <20141223154654.GB6460@vivalin-002> <20150126051755.GA3014@Darwish.PC>
+In-Reply-To: <20150126051755.GA3014@Darwish.PC>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="IhcF0iCl1oeMF2mbQfi54CMViQpiSU1HD"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- arch/arm/mach-at91/board-dt-sama5.c |   53 +++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--IhcF0iCl1oeMF2mbQfi54CMViQpiSU1HD
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index 86cffcd..ed6db28 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -17,17 +17,70 @@
- #include <linux/of_platform.h>
- #include <linux/phy.h>
- #include <linux/clk-provider.h>
-+#include <linux/of_address.h>
- 
- #include <asm/setup.h>
- #include <asm/irq.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/mach/irq.h>
-+#include <asm/hardware/cache-l2x0.h>
- 
- #include "generic.h"
- 
-+void __iomem *at91_l2cc_base;
-+EXPORT_SYMBOL_GPL(at91_l2cc_base);
-+
-+#ifdef CONFIG_CACHE_L2X0
-+static void __init at91_init_l2cache(void)
-+{
-+	struct device_node *np;
-+	u32 reg;
-+
-+	np = of_find_compatible_node(NULL, NULL, "arm,pl310-cache");
-+	if (!np)
-+		return;
-+
-+	at91_l2cc_base = of_iomap(np, 0);
-+	if (!at91_l2cc_base)
-+		panic("unable to map l2cc cpu registers\n");
-+
-+	of_node_put(np);
-+
-+	/* Disable cache if it hasn't been done yet */
-+	if (readl_relaxed(at91_l2cc_base + L2X0_CTRL) & L2X0_CTRL_EN)
-+		writel_relaxed(~L2X0_CTRL_EN, at91_l2cc_base + L2X0_CTRL);
-+
-+	/* Prefetch Control */
-+	reg = readl_relaxed(at91_l2cc_base + L310_PREFETCH_CTRL);
-+	reg &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
-+	reg |= 0x01;
-+	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-+	reg |= L310_PREFETCH_CTRL_PREFETCH_DROP;
-+	reg |= L310_PREFETCH_CTRL_DATA_PREFETCH;
-+	reg |= L310_PREFETCH_CTRL_INSTR_PREFETCH;
-+	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL;
-+	writel_relaxed(reg, at91_l2cc_base + L310_PREFETCH_CTRL);
-+
-+	/* Power Control */
-+	reg = readl_relaxed(at91_l2cc_base + L310_POWER_CTRL);
-+	reg |= L310_STNDBY_MODE_EN;
-+	reg |= L310_DYNAMIC_CLK_GATING_EN;
-+	writel_relaxed(reg, at91_l2cc_base + L310_POWER_CTRL);
-+
-+	/* Disable interrupts */
-+	writel_relaxed(0x00, at91_l2cc_base + L2X0_INTR_MASK);
-+	writel_relaxed(0x01ff, at91_l2cc_base + L2X0_INTR_CLEAR);
-+	l2x0_of_init(0, ~0UL);
-+}
-+#else
-+static inline void at91_init_l2cache(void) {}
-+#endif
-+
- static void __init sama5_dt_device_init(void)
- {
-+	at91_init_l2cache();
-+
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- 	at91_sam9x5_pm_init();
- }
--- 
-1.7.9.5
+On 01/26/2015 06:17 AM, Ahmed S. Darwish wrote:
+> Hi!
+>=20
+> This is an updated patch series for the Kvaser CAN/USB devices:
+>=20
+> 1- Extra patches are now added to the series. Most importantly
+> patch #1 which fixes a critical `sleep in atomic context' bug
+> in the current upstream driver. Patch #2 fixes a corruption in
+> the kernel logs, also affecting current upstream driver. Patch
+> #4 was originally USBCan-II only, but since it's a generic fix,
+> it's now retrofitted to the Leaf-only upstream driver first.
+>=20
+> 2- The series has been re-organized so that patches #1 -> #4
+> inclusive can go to linux-can/origin, while the rest can move
+> to -next.
+>=20
+> 3- There are some important updates regarding the USBCan-II
+> error counters, and how really erratic their heaviour is. All
+> the new details are covered at the bottom of this URL:
+>=20
+> 	http://article.gmane.org/gmane.linux.can/7481
+>=20
+> 4- Attached below is the new candump traces. Now
+> `back-to-error-active' states appear _if_ the hardware was
+> kind enough and decreased the error counters appropriately.
+> The earlier code did not recognize the error counters going
+> down, thus the `back-to-error-active' transitions did not
+> appear.
 
+For patches 5-7 I'm waiting for an Acked by Andri.
+
+=2E..and we have to wait until Patches 1-4 will show up on net-next/maste=
+r.
+
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--IhcF0iCl1oeMF2mbQfi54CMViQpiSU1HD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCgAGBQJUxhHdAAoJECte4hHFiupUOdUQAKv/8q2FPc1dSy1NTyKH5DOQ
+Oj9cy6lkZzhbLxGP4fhAlbSrxvVFwEF4iOrlzoUJYH0l7ckh3cp97vYvUR3mCiPy
+WuqkVJecB5pef/00PkA0GtITWLXZe6XbdaTEqhEUkcNA9OElgrRQtfLQs3ukYThV
+UQd/VcPBxC/rmQet5kpb27GgPsz+w3auGn3W6Zgoz2zjhpCgEjOFhDl/TSUOeTDs
+ira2uiztJXBnnAD1jFWj9udmRY8wQE9VLcXFDM7jRD2fElL8wA7N5Z6P3T4QfIHB
+ILnISjjl720MOpkFxM2mX/T4ZOyXKr1bFh8LOkwKpKvBsfEAXPcpSnCrs0qWl99F
+FqrONeM5Fi/fB6aV7NJst4rOQxEImCvZAgqxcgbtGlXrzN2Y6rwdJ70Xo/naore2
+C4OsLEM1JZUrqMybqhthqhqCQGyk1ibnoJBOmntiPaHNtuToPWE5IghuEDdibT2t
+H3qH9r+Z1/lX3kqJZx1v3uQpTJ2HrkAnpzfSdcx3M3oB4QQNMfJciWUUcJs1EPEi
+20H4hX5XEzq+KKKXR14ky5CFBk0IBhHB0CRYD8yJte4KAF4XqknWkiFe9596sX/A
+V/uUPdPAfDAxYmiVcC6M9A7poCihzdN+8QmCDyHy6uZizgC5MMdxCp4RjOuwOjEo
+0Kos9VqJO1A4IynMQcSs
+=/6es
+-----END PGP SIGNATURE-----
+
+--IhcF0iCl1oeMF2mbQfi54CMViQpiSU1HD--
