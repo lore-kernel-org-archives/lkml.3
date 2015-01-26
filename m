@@ -1,101 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753AbbAZNJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:09:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:13221 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753803AbbAZNJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:09:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,468,1418112000"; 
-   d="scan'208";a="656531796"
-Date: Mon, 26 Jan 2015 15:06:47 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
-Message-ID: <20150126130647.GC28539@kuha.fi.intel.com>
-References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1564228.rcRekIyDUd@vostro.rjw.lan>
- <20150123112122.GD30522@kuha.fi.intel.com>
- <4300012.3cqZ9mP0gj@vostro.rjw.lan>
+	id S1754395AbbAZNHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:07:25 -0500
+Received: from exprod5og124.obsmtp.com ([64.18.0.212]:47758 "EHLO
+	exprod5og124.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbbAZNHV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 08:07:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4300012.3cqZ9mP0gj@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Reply-To: semen.protsenko@globallogic.com
+In-Reply-To: <54C60DF1.9070300@ti.com>
+References: <1422131320-1018-1-git-send-email-semen.protsenko@globallogic.com>
+	<1422131320-1018-3-git-send-email-semen.protsenko@globallogic.com>
+	<54C60DF1.9070300@ti.com>
+Date: Mon, 26 Jan 2015 15:07:19 +0200
+Message-ID: <CAJOTznVwfMO7EmxcSEAx_v8cBe8apE_buAy2dLORxa-w+nQPLQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: OMAP2+: gpmc: Do not modify LIMITEDADDRESS on
+ new architectures
+From: Sam Protsenko <semen.protsenko@globallogic.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 04:14:13PM +0100, Rafael J. Wysocki wrote:
-> > That actually makes me think that we could then drop the lookup tables
-> > completely and use device properties instead with the help of "generic
-> > property" (attached):
-> 
-> Which reminds me that I've lost track of this one.
-> 
-> Can you please resend it and CC something like linux-acpi?
+On Mon, Jan 26, 2015 at 11:50 AM, Roger Quadros <rogerq@ti.com> wrote:
+> Hi,
+>
+> On 24/01/15 22:28, Semen Protsenko wrote:
+>> New OMAP-based architectures (like OMAP5, DRA7XX, AM572X) don't have
+>> LIMITEDADDRESS bit in GPMC_CONFIG register (this bit marked as
+>> RESERVED). Seems like these SoCs have new revision of GPMC IP-core
+>> (despite of same GPMC_REVISION value as for earlier SoCs).
+>>
+>> According to OMAP5 TRM: "Nonmultiplexed NOR flash devices are
+>> supported by the GPMC, but their use is highly limited. Because only
+>> 10 address pins are available on the GPMC interface, the maximum device
+>> size supported is 2KiB."
+>>
+>> From [1]:
+>>  - OMAP4 GPMC_CONFIG has LIMITEDADDRESS bit, hence supports both
+>>    limited and full address mode.
+>>  - OMAP5 GPMC_CONFIG doesn't have LIMITEDDADDRESS bit.
+>
+> According to OMAP5432 TRM SWPU249AC, I can see LIMITEDADDRESS bit in GPMC_CONFIG.
+> Which TRM version are you referring to?
+>
 
-OK, I'll resend it.
+Wow, it seems I mixed it with OMAP57xx TRM. Good catch!
 
-> Also I'm not sure what you mean by "drop the lookup tables completely".
+>>    OMAP5 supports only limited address mode for nonmultiplexed flashes
+>>    In this mode only A1-A10 lines are being modified by GPMC, which
+>>    leaves us (on flash devices with 1 word = 2 bytes) only
+>>    2^10 * 2 = 2KiB memory that we can access.
+>>  - DRA7XX GPMC_CONFIG doesn't have LIMITEDADDRESS bit.
+>>    DRA7XX supports only full address mode for nonmultiplexed flashes
+>>    (current TRM says contrary, but according to [1] it's typo and
+>>    gonna be fixed in new DRA7XX TRMs). In full address mode all
+>>    A1-A26 lines are modified by GPMC, so one can address up to 128 MiB.
+>>
+>> This patch ensures that GPMC driver doesn't try to modify LIMITEDADDRESS
+>> bit on new OMAP-based devices, because such an action could possibly
+>> lead to undefined behavior in GPMC state-machine (this bit is marked as
+>> RESERVED now).
+>>
+>> [1] http://e2e.ti.com/support/omap/f/885/t/396939
+>>
+>> Signed-off-by: Semen Protsenko <semen.protsenko@globallogic.com>
+>> ---
+>>  drivers/memory/omap-gpmc.c |   32 ++++++++++++++++++++++++--------
+>>  1 file changed, 24 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/memory/omap-gpmc.c b/drivers/memory/omap-gpmc.c
+>> index db77adb..477d0ba 100644
+>> --- a/drivers/memory/omap-gpmc.c
+>> +++ b/drivers/memory/omap-gpmc.c
+>> @@ -108,6 +108,7 @@
+>>  #define      GPMC_HAS_WR_ACCESS              0x1
+>>  #define      GPMC_HAS_WR_DATA_MUX_BUS        0x2
+>>  #define      GPMC_HAS_MUX_AAD                0x4
+>> +#define      GPMC_HAS_LIMITEDADDRESS         0x8
+>>
+>>  #define GPMC_NR_WAITPINS             4
+>>
+>> @@ -1709,6 +1710,18 @@ static int gpmc_probe_onenand_child(struct platform_device *pdev,
+>>  }
+>>  #endif
+>>
+>> +static void gpmc_disable_limited(void)
+>> +{
+>> +     if (gpmc_capability & GPMC_HAS_LIMITEDADDRESS) {
+>> +             u32 val;
+>> +
+>> +             /* Clear limited address i.e. enable A26-A11 */
+>> +             val = gpmc_read_reg(GPMC_CONFIG);
+>> +             val &= ~GPMC_CONFIG_LIMITEDADDRESS;
+>> +             gpmc_write_reg(GPMC_CONFIG, val);
+>> +     }
+>> +}
+>> +
+>>  /**
+>>   * gpmc_probe_generic_child - configures the gpmc for a child device
+>>   * @pdev:    pointer to gpmc platform device
+>> @@ -1726,7 +1739,6 @@ static int gpmc_probe_generic_child(struct platform_device *pdev,
+>>       unsigned long base;
+>>       const char *name;
+>>       int ret, cs;
+>> -     u32 val;
+>>
+>>       if (of_property_read_u32(child, "reg", &cs) < 0) {
+>>               dev_err(&pdev->dev, "%s has no 'reg' property\n",
+>> @@ -1805,10 +1817,7 @@ static int gpmc_probe_generic_child(struct platform_device *pdev,
+>>               goto err;
+>>       }
+>>
+>> -     /* Clear limited address i.e. enable A26-A11 */
+>> -     val = gpmc_read_reg(GPMC_CONFIG);
+>> -     val &= ~GPMC_CONFIG_LIMITEDADDRESS;
+>> -     gpmc_write_reg(GPMC_CONFIG, val);
+>> +     gpmc_disable_limited();
+>>
+>>       /* Enable CS region */
+>>       gpmc_cs_enable_mem(cs);
+>> @@ -1935,14 +1944,21 @@ static int gpmc_probe(struct platform_device *pdev)
+>>        * devices support the addr-addr-data multiplex protocol.
+>>        *
+>>        * GPMC IP revisions:
+>> -      * - OMAP24xx                   = 2.0
+>> -      * - OMAP3xxx                   = 5.0
+>> -      * - OMAP44xx/54xx/AM335x       = 6.0
+>> +      * - OMAP24xx                           = 2.0
+>> +      * - OMAP3xxx                           = 5.0
+>> +      * - OMAP44xx/54xx/AM335x/DRA7XX        = 6.0
+>>        */
+>>       if (GPMC_REVISION_MAJOR(l) > 0x4)
+>>               gpmc_capability = GPMC_HAS_WR_ACCESS | GPMC_HAS_WR_DATA_MUX_BUS;
+>>       if (GPMC_REVISION_MAJOR(l) > 0x5)
+>>               gpmc_capability |= GPMC_HAS_MUX_AAD;
+>> +     if (GPMC_REVISION_MAJOR(l) < 0x6)
+>> +             gpmc_capability |= GPMC_HAS_LIMITEDADDRESS;
+>> +#if !defined(CONFIG_SOC_OMAP5) && !defined(CONFIG_SOC_DRA7XX)
+>> +     if (GPMC_REVISION_MAJOR(l) == 0x6)
+>> +             gpmc_capability |= GPMC_HAS_LIMITEDADDRESS;
+>> +#endif
+>> +
+>
+> This logic will prevent GPMC_HAS_LIMITEDADDRESS to be set on OMAP4 if we have
+> either SOC_OMAP5 or SOC_DRA7XX enabled. So it is not good.
+>
 
-So I meant removing struct gpio_lookup and struct gpio_lookup_table.
+Why? OMAP4 devices have 0x6 revision of GPMC, and as I remember they don't
+define SOC_OMAP5. So this logic enables limited address capability for OMAP4.
+Am I missing something?
 
-> > We would just need to agree on the format how to describe a gpio
-> > property, document it and of course convert the current users as
-> > usual. The format could be something like this as an example (I'm
-> > writing this out of my head so don't shoot me if you can see it would
-> > not work. Just an example):
-> > 
-> > static const u32 example_gpio[] = { <gpio>, <flags>, };
-> > 
-> > static struct dev_gen_prop example_prop[] =
-> >         {
-> >                 .type = DEV_PROP_U32,
-> >                 .name = "gpio,<con_id>",
-> >                 .nval = 2,
-> >                 .num = &example_gpio,
-> >         },
-> >         { },
-> > };
-> > 
-> > static struct platform_device example_pdev = {
-> >         ...
-> >         .dev = {
-> >                 .gen_prop = &example_prop,
-> >         },
-> > }
-> > 
-> > 
-> > In gpiolib.c we would then, instead of going through the lookups,
-> > simply ask for that property:
-> > 
-> >         ...
-> >         sprintf(propname, "gpio,%s", con_id);
-> >         device_property_read_u32_array(dev, propname, &val, 2);
-> >         ...
-> >         desc = gpio_to_desc(val[0]);
-> >         flags = val[1];
-> >         ...
-> > 
-> > 
-> > So this is just and idea. I think it would be relatively easy to
-> > implement. What do you guys think?
-> 
-> Well, I need some time to think about that.
+> I think this patch is unnecessary as we are only setting the reserved bit to 0.
+> It is safe to set RESERVED bit to 0. We are not modifying it as RESERVED bit is
+> meant to be 0. If bootloader is setting the reserved bit to 1, it is a bug in
+> the bootloader.
+>
 
+Ok, let's drop this patch then. Anyway, I'm gonna reuse it next week
+for another patch
+(I want to make it possible to enable/disable limited address mode via
+dts bool option).
+Also, can you point me out where I can read about RESERVED bit should
+be always 0?
 
-Cheers,
-
--- 
-heikki
+>>       dev_info(gpmc_dev, "GPMC revision %d.%d\n", GPMC_REVISION_MAJOR(l),
+>>                GPMC_REVISION_MINOR(l));
+>>
+>>
+>
+> cheers,
+> -roger
