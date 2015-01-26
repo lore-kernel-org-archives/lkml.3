@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbbAZJUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 04:20:35 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:56161 "EHLO comal.ext.ti.com"
+	id S1753849AbbAZJWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:22:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60264 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517AbbAZJUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 04:20:31 -0500
-Message-ID: <54C606D8.4080904@ti.com>
-Date: Mon, 26 Jan 2015 11:20:24 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1753222AbbAZJWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 04:22:15 -0500
+Date: Mon, 26 Jan 2015 10:20:58 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jan Heylen <heyleke@gmail.com>,
+        Mark Salter <msalter@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "S. Lockwood-Childs" <sjl@vctlabs.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCHv3 00/36] perf tools: New build framework
+Message-ID: <20150126092058.GD13287@krava.brq.redhat.com>
+References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
+ <20150121233043.GA23660@us.ibm.com>
 MIME-Version: 1.0
-To: Semen Protsenko <semen.protsenko@globallogic.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: OMAP2+: gpmc: make gpmc_cs_get_name() static
-References: <1422131320-1018-1-git-send-email-semen.protsenko@globallogic.com> <1422131320-1018-2-git-send-email-semen.protsenko@globallogic.com>
-In-Reply-To: <1422131320-1018-2-git-send-email-semen.protsenko@globallogic.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150121233043.GA23660@us.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/01/15 22:28, Semen Protsenko wrote:
-> Fix sparse warning:
->   warning: symbol 'gpmc_cs_get_name' was not declared. Should it be static?
+On Wed, Jan 21, 2015 at 03:30:44PM -0800, Sukadev Bhattiprolu wrote:
+> Jiri Olsa [jolsa@kernel.org] wrote:
+> | 
+> | The patchset is also available in:
+> |   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+> |   perf/build
+> | 
+> | All tests/make tests passed.
+> | 
 > 
-> Signed-off-by: Semen Protsenko <semen.protsenko@globallogic.com>
-
-Acked-by: Roger Quadros <rogerq@ti.com>
-
-cheers,
--roger
-
-> ---
->  drivers/memory/omap-gpmc.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> The build and make tests passed on my Power8 system.
 > 
-> diff --git a/drivers/memory/omap-gpmc.c b/drivers/memory/omap-gpmc.c
-> index 10eb4ac..db77adb 100644
-> --- a/drivers/memory/omap-gpmc.c
-> +++ b/drivers/memory/omap-gpmc.c
-> @@ -668,7 +668,7 @@ static void gpmc_cs_set_name(int cs, const char *name)
->  	gpmc->name = name;
->  }
->  
-> -const char *gpmc_cs_get_name(int cs)
-> +static const char *gpmc_cs_get_name(int cs)
->  {
->  	struct gpmc_cs_data *gpmc = &gpmc_cs[cs];
->  
+> Tested-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 > 
 
+thanks!
+
+jirka
