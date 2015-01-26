@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635AbbAZSgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:36:13 -0500
-Received: from resqmta-ch2-05v.sys.comcast.net ([69.252.207.37]:57910 "EHLO
-	resqmta-ch2-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755624AbbAZSfU (ORCPT
+	id S1756587AbbAZSf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:35:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43593 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433AbbAZSf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:35:20 -0500
-Date: Mon, 26 Jan 2015 12:35:19 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Michal Hocko <mhocko@suse.cz>
-cc: Vinayak Menon <vinmenon@codeaurora.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, vdavydov@parallels.com, mgorman@suse.de,
-        minchan@kernel.org
-Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in
- too_many_isolated
-In-Reply-To: <20150126172832.GC22681@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.11.1501261235030.16786@gentwo.org>
-References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org> <20150114165036.GI4706@dhcp22.suse.cz> <54B7F7C4.2070105@codeaurora.org> <20150116154922.GB4650@dhcp22.suse.cz> <54BA7D3A.40100@codeaurora.org> <alpine.DEB.2.11.1501171347290.25464@gentwo.org>
- <20150126172832.GC22681@dhcp22.suse.cz>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 26 Jan 2015 13:35:27 -0500
+Date: Mon, 26 Jan 2015 10:35:26 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.18 000/183] 3.18.4-stable review
+Message-ID: <20150126183526.GB6772@kroah.com>
+References: <20150125180810.160428929@linuxfoundation.org>
+ <54C67C98.6020905@osg.samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C67C98.6020905@osg.samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015, Michal Hocko wrote:
-> >From 12d00a8066e336d3e1311600b50fa9b588798448 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Mon, 26 Jan 2015 18:07:51 +0100
-> Subject: [PATCH] vmstat: Do not use deferrable delayed work for vmstat_update
+On Mon, Jan 26, 2015 at 10:42:48AM -0700, Shuah Khan wrote:
+> On 01/25/2015 11:05 AM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.18.4 release.
+> > There are 183 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Tue Jan 27 18:07:34 UTC 2015.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.18.4-rc1.gz
+> > and the diffstat can be found below.
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
+> 
+> Compiled and booted on my test system. No dmesg regressions.
 
-Acked-by: Christoph Lameter <cl@linux.com>
+Thanks for testing all 3 of these and letting me know.
+
+greg k-h
