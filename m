@@ -1,152 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbbAZKqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:46:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39895 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500AbbAZKqC (ORCPT
+	id S1755936AbbAZKpv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:45:51 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:52998 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865AbbAZKpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:46:02 -0500
-Date: Mon, 26 Jan 2015 02:45:33 -0800
-From: tip-bot for Qais Yousef <tipbot@zytor.com>
-Message-ID: <tip-d7eb4f2ecccd71f701bc8873bcf07c2d3b0375f6@git.kernel.org>
-Cc: linux-mips@linux-mips.org, abrestic@chromium.org, jason@lakedaemon.net,
-        mingo@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        qais.yousef@imgtec.com, hpa@zytor.com
-Reply-To: abrestic@chromium.org, linux-mips@linux-mips.org,
-        jason@lakedaemon.net, linux-kernel@vger.kernel.org,
-        qais.yousef@imgtec.com, tglx@linutronix.de, mingo@kernel.org,
-        hpa@zytor.com
-In-Reply-To: <1421668289-828-1-git-send-email-qais.yousef@imgtec.com>
-References: <1421668289-828-1-git-send-email-qais.yousef@imgtec.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] irqchip: mips-gic:
-  Handle pending interrupts once in __gic_irq_dispatch()
-Git-Commit-ID: d7eb4f2ecccd71f701bc8873bcf07c2d3b0375f6
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 26 Jan 2015 05:45:46 -0500
+Date: Mon, 26 Jan 2015 13:45:34 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm] slab: update_memcg_params: explicitly check that old
+ array != NULL
+Message-ID: <20150126104534.GA28978@esperanza>
+References: <20150126085638.GA6507@mwanda>
+ <1422266479-29098-1-git-send-email-vdavydov@parallels.com>
+ <20150126101902.GC6507@mwanda>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <20150126101902.GC6507@mwanda>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7eb4f2ecccd71f701bc8873bcf07c2d3b0375f6
-Gitweb:     http://git.kernel.org/tip/d7eb4f2ecccd71f701bc8873bcf07c2d3b0375f6
-Author:     Qais Yousef <qais.yousef@imgtec.com>
-AuthorDate: Mon, 19 Jan 2015 11:51:29 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 26 Jan 2015 11:38:23 +0100
+On Mon, Jan 26, 2015 at 01:23:05PM +0300, Dan Carpenter wrote:
+> On Mon, Jan 26, 2015 at 01:01:19PM +0300, Vladimir Davydov wrote:
+> > This warning is false-positive, because @old equals NULL iff
+> > @memcg_nr_cache_ids equals 0.
+> 
+> I don't see how it could be a false positive.  The "old" pointer is
+> dereferenced inside the call to memset() so unless memset is a macro the
+> compiler isn't going to optimize the dereference away.
 
-irqchip: mips-gic: Handle pending interrupts once in __gic_irq_dispatch()
+old->entries is not dereferenced: memcg_cache_array->entries is not a
+pointer - it is embedded to the memcg_cache_array struct.
 
-When an interrupt occurs __gic_irq_dispatch() continuously reads local
-and shared pending registers until all is serviced before
-returning. The problem with that is that it could introduce a long
-delay before returning if a piece of hardware keeps triggering while
-in one of these loops.
+> 
+> 
+> //----- test code
+> 
+> void frob(void *p){}
+> 
+> struct foo {
+> 	int *x, *y, *z;
+> };
+> 
+> int main(void)
+> {
+> 	struct foo *x = NULL;
+> 
+> 	frob(x->y);
+> 
+> 	return 0;
+> }
+> 
+> //---- end
+> 
+> 
+> If we compile with gcc test.c then it segfaults.  With -02 the compiler
+> is able to tell that frob() is an empty function and it doesn't
+> segfault.  In the kernel code, there is no way for the compiler to
+> optimize the memset() away so it will Oops.
 
-To ensure fairness and priority doesn't get skewed a lot, read local
-and shared pending registers once to service each pending IRQ once.
-If another interupt triggers while servicing the current ones, then we
-shall re-enter the handler after we return.
+Just change
 
-Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Bresticker <abrestic@chromium.org>
-Cc: <linux-mips@linux-mips.org>
-Link: http://lkml.kernel.org/r/1421668289-828-1-git-send-email-qais.yousef@imgtec.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/irqchip/irq-mips-gic.c | 44 +++++++++++++++++++++++++-----------------
- 1 file changed, 26 insertions(+), 18 deletions(-)
+- 	int *x, *y, *z;
++	int *x, *z;
++	int *y[0];
 
-diff --git a/drivers/irqchip/irq-mips-gic.c b/drivers/irqchip/irq-mips-gic.c
-index 2b0468e..f3f9873 100644
---- a/drivers/irqchip/irq-mips-gic.c
-+++ b/drivers/irqchip/irq-mips-gic.c
-@@ -234,9 +234,9 @@ int gic_get_c0_perfcount_int(void)
- 				  GIC_LOCAL_TO_HWIRQ(GIC_LOCAL_INT_PERFCTR));
- }
- 
--static unsigned int gic_get_int(void)
-+static void gic_handle_shared_int(void)
- {
--	unsigned int i;
-+	unsigned int i, intr, virq;
- 	unsigned long *pcpu_mask;
- 	unsigned long pending_reg, intrmask_reg;
- 	DECLARE_BITMAP(pending, GIC_MAX_INTRS);
-@@ -258,7 +258,16 @@ static unsigned int gic_get_int(void)
- 	bitmap_and(pending, pending, intrmask, gic_shared_intrs);
- 	bitmap_and(pending, pending, pcpu_mask, gic_shared_intrs);
- 
--	return find_first_bit(pending, gic_shared_intrs);
-+	intr = find_first_bit(pending, gic_shared_intrs);
-+	while (intr != gic_shared_intrs) {
-+		virq = irq_linear_revmap(gic_irq_domain,
-+					 GIC_SHARED_TO_HWIRQ(intr));
-+		do_IRQ(virq);
-+
-+		/* go to next pending bit */
-+		bitmap_clear(pending, intr, 1);
-+		intr = find_first_bit(pending, gic_shared_intrs);
-+	}
- }
- 
- static void gic_mask_irq(struct irq_data *d)
-@@ -385,16 +394,26 @@ static struct irq_chip gic_edge_irq_controller = {
- #endif
- };
- 
--static unsigned int gic_get_local_int(void)
-+static void gic_handle_local_int(void)
- {
- 	unsigned long pending, masked;
-+	unsigned int intr, virq;
- 
- 	pending = gic_read(GIC_REG(VPE_LOCAL, GIC_VPE_PEND));
- 	masked = gic_read(GIC_REG(VPE_LOCAL, GIC_VPE_MASK));
- 
- 	bitmap_and(&pending, &pending, &masked, GIC_NUM_LOCAL_INTRS);
- 
--	return find_first_bit(&pending, GIC_NUM_LOCAL_INTRS);
-+	intr = find_first_bit(&pending, GIC_NUM_LOCAL_INTRS);
-+	while (intr != GIC_NUM_LOCAL_INTRS) {
-+		virq = irq_linear_revmap(gic_irq_domain,
-+					 GIC_LOCAL_TO_HWIRQ(intr));
-+		do_IRQ(virq);
-+
-+		/* go to next pending bit */
-+		bitmap_clear(&pending, intr, 1);
-+		intr = find_first_bit(&pending, GIC_NUM_LOCAL_INTRS);
-+	}
- }
- 
- static void gic_mask_local_irq(struct irq_data *d)
-@@ -453,19 +472,8 @@ static struct irq_chip gic_all_vpes_local_irq_controller = {
- 
- static void __gic_irq_dispatch(void)
- {
--	unsigned int intr, virq;
--
--	while ((intr = gic_get_local_int()) != GIC_NUM_LOCAL_INTRS) {
--		virq = irq_linear_revmap(gic_irq_domain,
--					 GIC_LOCAL_TO_HWIRQ(intr));
--		do_IRQ(virq);
--	}
--
--	while ((intr = gic_get_int()) != gic_shared_intrs) {
--		virq = irq_linear_revmap(gic_irq_domain,
--					 GIC_SHARED_TO_HWIRQ(intr));
--		do_IRQ(virq);
--	}
-+	gic_handle_local_int();
-+	gic_handle_shared_int();
- }
- 
- static void gic_irq_dispatch(unsigned int irq, struct irq_desc *desc)
+and it won't.
+
+Thanks,
+Vladimir
