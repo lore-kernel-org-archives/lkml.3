@@ -1,81 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316AbbAZJr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 04:47:26 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:48110 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062AbbAZJrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 04:47:23 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <wenyou.yang@atmel.com>
-Subject: [PATCH v2 12/12] pm: at91: amend the pm_suspend entry for at91_cpuidle_device
-Date: Mon, 26 Jan 2015 17:45:47 +0800
-Message-ID: <1422265547-23479-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
+	id S1754283AbbAZKFC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:05:02 -0500
+Received: from mail.linn.co.uk ([195.59.102.251]:59780 "EHLO mail.linn.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754118AbbAZKE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:04:59 -0500
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jan 2015 05:04:58 EST
+Message-ID: <54C60DB8.1060900@linn.co.uk>
+Date: Mon, 26 Jan 2015 09:49:44 +0000
+From: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Daniel Borkmann <dborkman@redhat.com>,
+        Stathis Voukelatos <stathisv70@gmail.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "abrestic@chromium.org" <abrestic@chromium.org>
+Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
+References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk> <54C22E68.1080601@redhat.com>
+In-Reply-To: <54C22E68.1080601@redhat.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.2.10.219]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the at91_xxx_standby() function is substitued by the at91_pm_suspend(),
-the pm_suspend entry for at91_cpuidle_device changes as well.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/pm.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+On 23/01/15 11:20, Daniel Borkmann wrote:
+> On 01/23/2015 11:07 AM, Stathis Voukelatos wrote:
+>> This patch adds support the Ethernet Packet Sniffer H/W module
+>> developed by Linn Products Ltd and found in the IMG Pistachio SoC.
+>> The module allows Ethernet packets to be parsed, matched against
+>> a user-defined pattern and timestamped. It sits between a 100M
+>> Ethernet MAC and PHY and is completely passive with respect to
+>> Ethernet frames.
+>>
+>> Matched packet bytes and timestamp values are returned through a
+>> FIFO. Timestamps are provided to the module through an externally
+>> generated Gray-encoded counter.
+>>
+>> The command pattern for packet matching is stored in module RAM
+>> and consists of a sequence of 16-bit entries. Each entry includes
+>> an 8-bit command code and and 8-bit data value. Valid command
+>> codes are:
+>> 0 - Don't care
+>> 1 - Match: packet data must match command string byte
+>> 2 - Copy: packet data will be copied to FIFO
+>> 3 - Match/Stamp: if packet data matches string byte, a timestamp
+>>                    is copied into the FIFO
+>> 4 - Copy/Done: packet data will be copied into the FIFO.
+>>                  This command terminates the command string.
+>>
+>> The driver consists of two modules:
+>> - Core: it provides an API to user space using the Generic Netlink
+>>           framework. Specific backend implementations, like the
+>>           Ethernet Packet Sniffer, register one or more channels
+>>           with the Core. For each channel a Genl family is created.
+>>           User space can access a channel by sending Genl messages
+>>           to the Genl family associated with the channel. Packet
+>>           matching events are multicast.
+>>
+>> - Ethernet Packet Sniffer backend: provides the driver for the
+>>           Linn Ethernet Packet Sniffer H/W modules.
+>>
+>> The split between a core and backend modules allows software-only
+>> implementations to be added for platforms where no H/W support
+>> is available.
+>>
+>> Based on 3.19-rc5
+>>
+>> Signed-off-by: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
+> Please have a look at packet sockets, they offer already all the
+> functionality (if not more) your driver interface to the user space
+> resembles, are transparent to the underlying hardware, and easily
+> can cope with 100Mbit.
+>
+> If I understand this correctly, you are effectively introducing a
+> parallel API *next* to packet sockets to user space that we have to
+> maintain forever ...
+>
+> Thanks !
+>
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 68cd3ce..7473978 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -40,8 +40,6 @@ static struct {
- 	int memctrl;
- } at91_pm_data;
- 
--static void (*at91_pm_standby)(void);
--
- static int at91_pm_valid_state(suspend_state_t state)
- {
- 	switch (state) {
-@@ -214,12 +212,15 @@ static struct platform_device at91_cpuidle_device = {
- 	.name = "cpuidle-at91",
- };
- 
--void at91_pm_set_standby(void (*at91_standby)(void))
-+static void at91_cpuidle_suspend(void)
- {
--	if (at91_standby) {
--		at91_cpuidle_device.dev.platform_data = at91_standby;
--		at91_pm_standby = at91_standby;
--	}
-+	at91_pm_suspend(PM_SUSPEND_STANDBY);
-+}
-+
-+static void at91_cpuidle_set_suspend(void (*at91_suspend)(void))
-+{
-+	if (at91_suspend)
-+		at91_cpuidle_device.dev.platform_data = at91_suspend;
- }
- 
- static void __init at91_pm_sram_init(void)
-@@ -270,6 +271,8 @@ static void __init at91_pm_init(void)
- {
- 	at91_pm_sram_init();
- 
-+	at91_cpuidle_set_suspend(at91_cpuidle_suspend);
-+
- 	if (at91_cpuidle_device.dev.platform_data)
- 		platform_device_register(&at91_cpuidle_device);
- 
--- 
-1.7.9.5
+Hello Daniel. Thank you for your feedback.
+Packet sockets could also be used for the driver interface to
+user space, however I think that both approaches would require the same
+amount of maintenance. We need to maintain a protocol consisting of
+a set of messages or commands that user space can use to communicate
+with the driver in order to configure the H/W and retrieve results.
+We could use packet sockets to send those messages  too, but I thought
+netlink already provides a message exchange framework that we could
+make use of.
 
