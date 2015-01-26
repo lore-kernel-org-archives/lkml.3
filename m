@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944AbbAZP1Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 10:27:16 -0500
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:63770 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135AbbAZP1O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 10:27:14 -0500
+	id S1755895AbbAZOaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:30:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:13264 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755826AbbAZOaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 09:30:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,469,1418112000"; 
+   d="scan'208";a="642663054"
+Date: Mon, 26 Jan 2015 23:30:39 +0800
+From: Zhuang Jin Can <jin.can.zhuang@intel.com>
+To: gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        dan.j.williams@intel.com, pmladek@suse.cz, peter.chen@freescale.com,
+        hdegoede@redhat.com, mathias.nyman@linux.intel.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jin.can.zhuang@intel.com
+Subject: [PATCH] Revert "usb: Reset USB-3 devices on USB-3 link bounce"
+Message-ID: <20150126153039.GA18043@intel.com>
+Reply-To: jin.can.zhuang@intel.com
 MIME-Version: 1.0
-X-Originating-IP: [195.159.206.166]
-In-Reply-To: <54C65267.7090905@gmail.com>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
- <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
- <54BE5DC8.70706@gmail.com> <54BE9D08.7010804@zonque.org> <54BF805B.4000609@gmail.com>
- <54BFDAAA.50203@zonque.org> <54C0CE8A.5080805@gmail.com> <20150123155402.GB2159@kroah.com>
- <54C65267.7090905@gmail.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Mon, 26 Jan 2015 16:26:53 +0100
-Message-ID: <CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
-        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+This revert a82b76f7fa6154e8ab2d8071842a3e38b9c0d0ff.
 
-On Mon, Jan 26, 2015 at 3:42 PM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> 2. Is the API to be invoked directly by applications or is intended to
->    be used only behind specific libraries? You seem to be saying that
->    the latter is the case (here, I'm referring to your comment above
->    about sd-bus). However, when I asked David Herrmann a similar
->    question I got this responser:
->
->       "kdbus is in no way bound to systemd. There are ongoing efforts
->        to port glib and qt to kdbus natively. The API is pretty simple
->        and I don't see how a libkdbus would simplify things. In fact,
->        even our tests only have slim wrappers around the ioctls to
->        simplify error-handling in test-scenarios."
->
->    To me, that implies that users will employ the raw kernel API.
+The commit causes an extra reset in remote wakeup as described in:
+http://www.spinics.net/lists/linux-usb/msg119080.html
 
-The way I read this is that there will (probably) be a handful of
-users, namely the existing dbus libraries: libdus, sd-bus, glib, Qt,
-ell, and maybe a few others. However, third-party developers will not
-know/care about the details of kdbus, they'll just be coding against
-the dbus libraries as before (might be minor changes, but they
-certainly won't need to know anything about the kernel API). Similarly
-to how userspace developers now code against their libc of choice,
-rather than use kernel syscalls directly.
+Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
+---
+ drivers/usb/core/hub.c |   34 +++++++++-------------------------
+ 1 file changed, 9 insertions(+), 25 deletions(-)
 
-HTH,
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index aeb50bb..89d009a 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4882,7 +4882,7 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
+ static void port_event(struct usb_hub *hub, int port1)
+ 		__must_hold(&port_dev->status_lock)
+ {
+-	int connect_change, reset_device = 0;
++	int connect_change;
+ 	struct usb_port *port_dev = hub->ports[port1 - 1];
+ 	struct usb_device *udev = port_dev->child;
+ 	struct usb_device *hdev = hub->hdev;
+@@ -4970,30 +4970,14 @@ static void port_event(struct usb_hub *hub, int port1)
+ 			if (hub_port_reset(hub, port1, NULL,
+ 					HUB_BH_RESET_TIME, true) < 0)
+ 				hub_port_disable(hub, port1, 1);
+-		} else
+-			reset_device = 1;
+-	}
+-
+-	/*
+-	 * On disconnect USB3 protocol ports transit from U0 to
+-	 * SS.Inactive to Rx.Detect. If this happens a warm-
+-	 * reset is not needed, but a (re)connect may happen
+-	 * before hub_wq runs and sees the disconnect, and the
+-	 * device may be an unknown state.
+-	 *
+-	 * If the port went through SS.Inactive without hub_wq
+-	 * seeing it the C_LINK_STATE change flag will be set,
+-	 * and we reset the dev to put it in a known state.
+-	 */
+-	if (reset_device || (udev && hub_is_superspeed(hub->hdev)
+-				&& (portchange & USB_PORT_STAT_C_LINK_STATE)
+-				&& (portstatus & USB_PORT_STAT_CONNECTION))) {
+-		usb_unlock_port(port_dev);
+-		usb_lock_device(udev);
+-		usb_reset_device(udev);
+-		usb_unlock_device(udev);
+-		usb_lock_port(port_dev);
+-		connect_change = 0;
++		} else {
++			usb_unlock_port(port_dev);
++			usb_lock_device(udev);
++			usb_reset_device(udev);
++			usb_unlock_device(udev);
++			usb_lock_port(port_dev);
++			connect_change = 0;
++		}
+ 	}
+ 
+ 	if (connect_change)
+-- 
+1.7.9.5
 
-Tom
