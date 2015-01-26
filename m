@@ -1,58 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435AbbAZB1P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 20:27:15 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:40710 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902AbbAZB1M (ORCPT
+	id S1752780AbbAZBd1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 20:33:27 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:39774 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752424AbbAZBdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 20:27:12 -0500
+	Sun, 25 Jan 2015 20:33:19 -0500
+Date: Mon, 26 Jan 2015 10:33:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
+Message-ID: <20150126013309.GA26895@blaptop>
+References: <1421992707-32658-1-git-send-email-minchan@kernel.org>
+ <20150123142435.GA2320@swordfish>
+ <54C25F25.9070609@redhat.com>
+ <20150123154707.GA1046@swordfish>
 MIME-Version: 1.0
-In-Reply-To: <54C29B82.7090502@redhat.com>
-References: <CAFXGftKp3=OfjkCVBuR-zM3+uZ42Sk_9i2UjAHBNnbX=hQJwpA@mail.gmail.com>
-	<CAFXGft+fwo=8LJEG7h6uOpGciSo5f_dXjSx3sn67RZZp7jsYHw@mail.gmail.com>
-	<54C23581.9060809@redhat.com>
-	<54C27137.5010405@gmail.com>
-	<54C2807E.8080607@redhat.com>
-	<8BBFBEE6-FA34-4190-BFCB-AB6BEC093774@fh-muenster.de>
-	<54C29B82.7090502@redhat.com>
-Date: Mon, 26 Jan 2015 09:27:10 +0800
-Message-ID: <CAFXGft+XZCmhuwj2QTCiU0MD10Uo+WZ3WCC+rfbsd_Lxbhk3iw@mail.gmail.com>
-Subject: Re: Question on SCTP ABORT chunk is generated when the
- association_max_retrans is reached
-From: Sun Paul <paulrbk@gmail.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Michael Tuexen <tuexen@fh-muenster.de>,
-        Vlad Yasevich <vyasevich@gmail.com>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150123154707.GA1046@swordfish>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hello,
 
-sorry for the late reply. I am a bit confused. when side-A sends a
-request to side-B, and side-B return the response, but side-A keep
-re-transmit the same request to side-B, why side-B needed to send a
-ABORT to side-A?
+On Sat, Jan 24, 2015 at 12:47:07AM +0900, Sergey Senozhatsky wrote:
+> On (01/23/15 15:48), Jerome Marchand wrote:
+> > Date: Fri, 23 Jan 2015 15:48:05 +0100
+> > From: Jerome Marchand <jmarchan@redhat.com>
+> > To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, Minchan Kim
+> >  <minchan@kernel.org>
+> > CC: Andrew Morton <akpm@linux-foundation.org>,
+> >  linux-kernel@vger.kernel.org, linux-mm@kvack.org, Nitin Gupta
+> >  <ngupta@vflare.org>
+> > Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
+> > User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+> >  Thunderbird/31.3.0
+> > 
+> > On 01/23/2015 03:24 PM, Sergey Senozhatsky wrote:
+> > > On (01/23/15 14:58), Minchan Kim wrote:
+> > >> We don't need to call zram_meta_free, zcomp_destroy and zs_free
+> > >> under init_lock. What we need to prevent race with init_lock
+> > >> in reset is setting NULL into zram->meta (ie, init_done).
+> > >> This patch does it.
+> > >>
+> > >> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > >> ---
+> > >>  drivers/block/zram/zram_drv.c | 28 ++++++++++++++++------------
+> > >>  1 file changed, 16 insertions(+), 12 deletions(-)
+> > >>
+> > >> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > >> index 9250b3f54a8f..0299d82275e7 100644
+> > >> --- a/drivers/block/zram/zram_drv.c
+> > >> +++ b/drivers/block/zram/zram_drv.c
+> > >> @@ -708,6 +708,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> > >>  {
+> > >>  	size_t index;
+> > >>  	struct zram_meta *meta;
+> > >> +	struct zcomp *comp;
+> > >>  
+> > >>  	down_write(&zram->init_lock);
+> > >>  
+> > >> @@ -719,20 +720,10 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> > >>  	}
+> > >>  
+> > >>  	meta = zram->meta;
+> > >> -	/* Free all pages that are still in this zram device */
+> > >> -	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> > >> -		unsigned long handle = meta->table[index].handle;
+> > >> -		if (!handle)
+> > >> -			continue;
+> > >> -
+> > >> -		zs_free(meta->mem_pool, handle);
+> > >> -	}
+> > >> -
+> > >> -	zcomp_destroy(zram->comp);
+> > > 
+> > > I'm not so sure about moving zcomp destruction. if we would have detached it
+> > > from zram, then yes. otherwise, think of zram ->destoy vs ->init race.
+> > > 
+> > > suppose,
+> > > CPU1 waits for down_write() init lock in disksize_store() with new comp already allocated;
+> > > CPU0 detaches ->meta and releases write init lock;
+> > > CPU1 grabs the lock and does zram->comp = comp;
+> > > CPU0 reaches the point of zcomp_destroy(zram->comp);
+> > 
+> > I don't see your point: this patch does not call
+> > zcomp_destroy(zram->comp) anymore, but zram_destroy(comp), where comp is
+> > the old zram->comp.
+> 
+> 
+> oh... yes. sorry! my bad.
+> 
+> 
+> 
+> anyway, on a second thought, do we even want to destoy meta out of init_lock?
+> 
+> I mean, it will let you init new device quicker. but... assume, you have
+> 30G zram (or any other bad-enough number). on CPU0 you reset device -- iterate
+> over 30G meta->table, etc. out of init_lock.
+> on CPU1 you concurrently re-init device and request again 30G.
+> 
+> how bad that can be?
+> 
+> 
+> 
+> diskstore called on already initialised device is also not so perfect.
+> we first will try to allocate ->meta (vmalloc pages for another 30G),
+> then allocate comp, then down_write() init lock to find out that device
+> is initialised and we need to release allocated memory.
+> 
+> 
+> 
+> may be we better keep ->meta destruction under init_lock and additionally
+> move ->meta and ->comp allocation under init_lock in disksize_store()?
+> 
+> like the following one:
+> 
+> ---
+> 
+>  drivers/block/zram/zram_drv.c | 25 +++++++++++++------------
+>  1 file changed, 13 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 9250b3f..827ab21 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -765,9 +765,18 @@ static ssize_t disksize_store(struct device *dev,
+>  		return -EINVAL;
+>  
+>  	disksize = PAGE_ALIGN(disksize);
+> +	down_write(&zram->init_lock);
+> +	if (init_done(zram)) {
+> +		up_write(&zram->init_lock);
+> +		pr_info("Cannot change disksize for initialized device\n");
+> +		return -EBUSY;
+> +	}
+> +
+>  	meta = zram_meta_alloc(zram->disk->first_minor, disksize);
+> -	if (!meta)
+> -		return -ENOMEM;
+> +	if (!meta) {
+> +		err = -ENOMEM;
+> +		goto out_unlock;
+> +	}
+>  
+>  	comp = zcomp_create(zram->compressor, zram->max_comp_streams);
+>  	if (IS_ERR(comp)) {
+> @@ -777,13 +786,6 @@ static ssize_t disksize_store(struct device *dev,
+>  		goto out_free_meta;
+>  	}
+>  
+> -	down_write(&zram->init_lock);
+> -	if (init_done(zram)) {
+> -		pr_info("Cannot change disksize for initialized device\n");
+> -		err = -EBUSY;
+> -		goto out_destroy_comp;
+> -	}
+> -
+>  	zram->meta = meta;
+>  	zram->comp = comp;
+>  	zram->disksize = disksize;
+> @@ -799,11 +801,10 @@ static ssize_t disksize_store(struct device *dev,
+>  
+>  	return len;
+>  
+> -out_destroy_comp:
+> -	up_write(&zram->init_lock);
+> -	zcomp_destroy(comp);
+>  out_free_meta:
+>  	zram_meta_free(meta);
+> +out_unlock:
+> +	up_write(&zram->init_lock);
+>  	return err;
+>  }
+>  
 
-If it is used in order to reestablish the connection, shoudn't it
-should be side-A to send ABORT instead?
+The init_lock is really troublesome. We can't do call zram_meta_alloc
+under init_lock due to lockdep report. Please keep in mind.
+The zram_rw_page is one of the function under reclaim path and hold it
+as read_lock while here holds it as write_lock.
+It's a false positive so that we might could make shut lockdep up
+by annotation but I don't want it but want to work with lockdep rather
+than disable. As well, there are other pathes to use init_lock to
+protect other data where would be victims of lockdep.
 
-- PS
+I didn't tell the motivation of this patch because it made you busy
+guys wasted. Let me tell it now. It was another lockdep report by
+kmem_cache_destroy for zsmalloc compaction about init_lock. That's why
+the patchset was one of the patch in compaction.
 
-On Sat, Jan 24, 2015 at 3:05 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 01/23/2015 07:36 PM, Michael Tuexen wrote:
-> ...
->>
->> Yepp. It might not reach the peer or it might. If it does it helps
->> to keep the states in sync. If it doesn't it sometimes helps in
->> analysing tracefiles. In BSD, we also send it. It is not required,
->> doesn't harm and is useful in some cases...
->
->
-> Ok, as the TCB is destroyed in any case, should be fine then.
->
-> Thanks,
-> Daniel
+Yes, the ideal is to remove horrible init_lock of zram in this phase and
+make code more simple and clear but I don't want to stuck zsmalloc
+compaction by the work. Having said that, I feel it's time to revisit
+to remove init_lock.
+At least, I will think over to find a solution to kill init_lock.
+
+Thanks!
+
+
