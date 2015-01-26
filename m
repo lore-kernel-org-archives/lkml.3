@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbbAZKjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:39:17 -0500
-Received: from mga11.intel.com ([192.55.52.93]:8096 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755277AbbAZKjL convert rfc822-to-8bit (ORCPT
+	id S1755371AbbAZKkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:40:05 -0500
+Received: from smtp-out-156.synserver.de ([212.40.185.156]:1076 "EHLO
+	smtp-out-156.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661AbbAZKkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:39:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,468,1418112000"; 
-   d="scan'208";a="667550899"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Pavel Machek <pavel@ucw.cz>, "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Brown, Len" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
- PM/Trace: get rid of synchronous resume limit during PM trace)
-Thread-Topic: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
- PM/Trace: get rid of synchronous resume limit during PM trace)
-Thread-Index: AQHQOVI4WhHuql6TR0OwGyzNDtsW5ZzSNSqA
-Date: Mon, 26 Jan 2015 10:39:04 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01F1AD6A@SHSMSX101.ccr.corp.intel.com>
-References: <54C5CB77.4000109@linux.intel.com> <20150126102352.GA1758@amd>
-In-Reply-To: <20150126102352.GA1758@amd>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 Jan 2015 05:40:02 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 16687
+Message-ID: <54C61980.9030205@metafoo.de>
+Date: Mon, 26 Jan 2015 11:40:00 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
 MIME-Version: 1.0
+To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>, tiwai@suse.de,
+        perex@perex.cz
+CC: broonie@kernel.org, lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 4/4] sound: jz4740: Enable codec clock during dai_probe
+References: <1422267511-6649-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1422267511-6649-5-git-send-email-Zubair.Kakakhel@imgtec.com>
+In-Reply-To: <1422267511-6649-5-git-send-email-Zubair.Kakakhel@imgtec.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Pavel,
+On 01/26/2015 11:18 AM, Zubair Lutfullah Kakakhel wrote:
+> As we are moving away from platform to DT, we cant rely on the board
+> file to do this now. So enable it here.
 
-> -----Original Message-----
-> From: Pavel Machek [mailto:pavel@ucw.cz]
-> Sent: Monday, January 26, 2015 6:24 PM
-> To: Fu, Zhonghui
-> Cc: Rafael J. Wysocki; Brown, Len; Greg Kroah-Hartman;
-> linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Liu, Chuansheng
-> Subject: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
-> PM/Trace: get rid of synchronous resume limit during PM trace)
-> 
-> On Mon 2015-01-26 13:07:03, Fu, Zhonghui wrote:
-> > >From f9c841d1f943d81b5ab0aac7483e794a7f966296 Mon Sep 17 00:00:00
-> 2001
-> > From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> > Date: Mon, 26 Jan 2015 11:27:08 +0800
-> > Subject: [PATCH] PM/Trace: get rid of synchronous resume limit during PM
-> trace
-> >
-> > There are some kind of dependency between devices in some
-> > hardware platforms. So, asynchronous resuming devices may
-> > hang system due to wrong resume order. As a result, should
-> > not fore synchronously resuming devices during tracing
-> > PM events.
-> >
-> > Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
-> > ---
-> >  drivers/base/power/main.c    |    3 +--
-> >  include/linux/resume-trace.h |    7 -------
-> >  2 files changed, 1 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> > index 9717d5f..5df148b 100644
-> > --- a/drivers/base/power/main.c
-> > +++ b/drivers/base/power/main.c
-> > @@ -517,8 +517,7 @@ static int device_resume_noirq(struct device *dev,
-> pm_message_t state, bool asyn
-> >
-> >  static bool is_async(struct device *dev)
-> >  {
-> > -	return dev->power.async_suspend && pm_async_enabled
-> > -		&& !pm_trace_is_enabled();
-> > +	return dev->power.async_suspend && pm_async_enabled;
-> >  }
-> >
-> 
-> Actually... whoever did the original patch was evil person. Changing
-> behaviour when tracing is requested is evil, evil, evil. Git blame
-> tells me
-> 
-> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> 
-> went to the dark side.
+I don't understand this changelog. The board file never did this. The driver 
+enables the clock in the startup() callback.
 
-Although I didn't get where is something wrong, but the is_async() is not created by my commit,
-it is from commit (PM: Start asynchronous resume threads upfront), I just moved it ahead.
+>
+> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+> ---
+>   sound/soc/jz4740/jz4740-i2s.c | 4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/sound/soc/jz4740/jz4740-i2s.c b/sound/soc/jz4740/jz4740-i2s.c
+> index 3c309fc..a7e4a7b 100644
+> --- a/sound/soc/jz4740/jz4740-i2s.c
+> +++ b/sound/soc/jz4740/jz4740-i2s.c
+> @@ -376,6 +376,10 @@ static int jz4740_i2s_dai_probe(struct snd_soc_dai *dai)
+>   		JZ_AIC_CONF_I2S |
+>   		JZ_AIC_CONF_INTERNAL_CODEC;
+>
+> +	/* enable codec sysclk */
+> +	clk_set_rate(i2s->clk_i2s, 12000000);
+> +	clk_prepare_enable(i2s->clk_i2s);
+> +
+>   	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, JZ_AIC_CONF_RESET);
+>   	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
+>
+>
 
-And like other phases, I added it into resum/suspend_noirq()...
