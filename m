@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbbAZKxh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:53:37 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:7888 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523AbbAZKxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:53:34 -0500
-X-IronPort-AV: E=Sophos;i="5.09,468,1418083200"; 
-   d="scan'208";a="220551388"
-Message-ID: <1422269607.27469.5.camel@citrix.com>
-Subject: Re: [Xen-devel] [PATCH 2/2] swiotlb-xen: pass dev_addr to
- swiotlb_tbl_unmap_single
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <david.vrabel@citrix.com>, <stable@vger.kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Date: Mon, 26 Jan 2015 10:53:27 +0000
-In-Reply-To: <1416589220-7720-2-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com>
-	 <1416589220-7720-2-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
+	id S1756143AbbAZKyF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:54:05 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55476 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957AbbAZKyD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:54:03 -0500
+Message-ID: <54C61CC4.4030501@pengutronix.de>
+Date: Mon, 26 Jan 2015 11:53:56 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+To: Andri Yngvason <andri.yngvason@marel.com>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 5/7] can: kvaser_usb: Update interface state before
+ exiting on OOM
+References: <20141223154654.GB6460@vivalin-002> <20150126051755.GA3014@Darwish.PC> <20150126052039.GB3014@Darwish.PC> <20150126052254.GC3014@Darwish.PC> <20150126052406.GD3014@Darwish.PC> <20150126052543.GE3014@Darwish.PC> <20150126052719.GF3014@Darwish.PC> <20150126102843.17894.84372@shannon> <54C61BE4.8070105@pengutronix.de> <20150126105250.19943.75012@shannon>
+In-Reply-To: <20150126105250.19943.75012@shannon>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="c9mMJJ4T1DHtE5K3WFl1o5XlbHcBKabqM"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-11-21 at 17:00 +0000, Stefano Stabellini wrote:
-> Need to pass the pointer within the swiotlb internal buffer to the
-> swiotlb library, that in the case of xen_unmap_single is dev_addr, not
-> paddr.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> CC: konrad.wilk@oracle.com
-> CC: stable@vger.kernel.org
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--c9mMJJ4T1DHtE5K3WFl1o5XlbHcBKabqM
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-This went into mainline as 2c3fc8d26dd0 "swiotlb-xen: pass dev_addr to
-swiotlb_tbl_unmap_single" but was reverted in dbdd74763f1f.
+On 01/26/2015 11:52 AM, Andri Yngvason wrote:
+> Quoting Marc Kleine-Budde (2015-01-26 10:50:12)
+>> On 01/26/2015 11:28 AM, Andri Yngvason wrote:
+>>> Quoting Ahmed S. Darwish (2015-01-26 05:27:19)
+>>>> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+>>>>
+>>>> Update all of the can interface's state and error counters before
+>>>> trying any skb allocation that can actually fail with -ENOMEM.
+>>>>
+>>>> Suggested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+>>>> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+>>>> ---
+>>>>  drivers/net/can/usb/kvaser_usb.c |  181 ++++++++++++++++++++++-----=
+-----------
+>>>>  1 files changed, 105 insertions(+), 76 deletions(-)
+>> [..]
+>>
+>>> Looks good to me.
+>>
+>> Can I add your Acked-by to 5-7?
+>>
+> Yes.
 
-However it seems that 2c3fc8d26dd0 has made it into at least some stable
-kernel trees:
-        v3.18.3 as 2129c43d41e9
-        v3.16.7-ckt4 as 94ab279b0c9a
-        v3.14.29 as 3394691d34fc
-        v3.10.65 as 81cb80b578c5
-so it should be reverted there too. This is causing issues in the field
-such as https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=776237.
+Tnx.
 
-v3.17, v3.15, v3.13.11-ckt14, v3.12.x, v3.11.x appear clean, I stopped
-going backwards at v3.10.
+Marc
 
-Cheers,
-Ian.
-
-> ---
->  drivers/xen/swiotlb-xen.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index 810ad41..5ea1e3c 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -451,7 +451,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
->  
->  	/* NOTE: We use dev_addr here, not paddr! */
->  	if (is_xen_swiotlb_buffer(dev_addr)) {
-> -		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
-> +		swiotlb_tbl_unmap_single(hwdev, dev_addr, size, dir);
->  		return;
->  	}
->  
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
+--c9mMJJ4T1DHtE5K3WFl1o5XlbHcBKabqM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCgAGBQJUxhzEAAoJECte4hHFiupUxL4P/0qicrRqOH6jMsUjIcSkBfze
+SGVMcZis+ZBgMxwOzzgmMQU51n96OA6405h8BJIxz3oeCK7WIjUw8O2joxx/4CbW
+IPZAuD+zIMV+NJBaz18VC+4BW4uwgXrH5JA292ClQKqs5hbdfuhUAcEm6skhaDZF
+t8kO1ntII1Ao+GQG6XtupvBqbru35L/cuQMcACcq3M/MVtmSMSWuuBwLCl1tUATD
+ZpHrqSCwDbMbJTMWb21xecCFj+KAWLbl/pkmIWIaIeveaUpjuxduH9YOFjaSYOOL
+VhuMYAbnaFUhn1t/BuRGaTauLCdxU9cJCvuPn+5o3tma3lEskbpl1WYqjTdJioQx
+cI642idoybQxyKWOXEDFInIINf0+MCzouunXPX6HcrWCtv7+8yoSP2YkGFSuJJQF
+Vsvu7ms+YDD1TsRjZszREf9gBpmSkWVmk03Vz0I+6KN7QhvXV4sQMw7+f1Lic6OM
+0oG1Y6jS68m/TEsRuXPZNREBu8RE1eA15PbJQTtPwgPp7TcPftqa0XZEZ2tInwEO
+IYrOez72Q92SA2E2FD+phj0tNBZ+fzVb2WUiwMgPjl9viapS5Ja7LXJHwWlLkl7A
+VEhqGnrDYqZi8lmUEWJvr750fDAlioCu00covBUYrR6v7B5gjufsJ4JpzVdFbmMv
+Z7dKw/7+hRElFbp9sj3q
+=j084
+-----END PGP SIGNATURE-----
+
+--c9mMJJ4T1DHtE5K3WFl1o5XlbHcBKabqM--
