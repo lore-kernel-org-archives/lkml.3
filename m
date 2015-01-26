@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094AbbAZKr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:47:57 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:31824 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662AbbAZKrw (ORCPT
+	id S1755547AbbAZKtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:49:41 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:44714 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240AbbAZKtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:47:52 -0500
-X-IronPort-AV: E=Sophos;i="5.09,468,1418083200"; 
-   d="scan'208";a="221482449"
-Message-ID: <54C61B54.2060309@citrix.com>
-Date: Mon, 26 Jan 2015 10:47:48 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 26 Jan 2015 05:49:39 -0500
+Date: Mon, 26 Jan 2015 10:49:36 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jon Masters <jonathan@jonmasters.org>, Laszlo Ersek <lersek@redhat.com>,
+        Dave Young <dyoung@redhat.com>, linux-efi <linux-efi@vger.kernel.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Shorten efi regions output
+Message-ID: <20150126104936.GB3320@codeblueprint.co.uk>
+References: <20141209095843.GA3990@pd.tnic>
+ <20141210021741.GA3280@darkstar.nay.redhat.com>
+ <20141210104627.GA17053@pd.tnic>
+ <20150105140332.GB3163@console-pimps.org>
+ <54AAA723.1070605@redhat.com>
+ <54BF3DCA.4070708@jonmasters.org>
+ <20150121100633.GC12173@pd.tnic>
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        Borislav Petkov <bp@suse.de>, <kvm@vger.kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rostedt@goodmis.org>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@redhat.com>,
-        Jan Beulich <JBeulich@suse.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, <paulmck@linux.vnet.ibm.com>
-Subject: Re: [Xen-devel] [RFC v4 2/2] x86/xen: allow privcmd hypercalls to
- be preempted
-References: <1421972951-3940-1-git-send-email-mcgrof@do-not-panic.com> <1421972951-3940-3-git-send-email-mcgrof@do-not-panic.com> <54C23442.9000008@citrix.com> <20150123185812.GX17887@wotan.suse.de>
-In-Reply-To: <20150123185812.GX17887@wotan.suse.de>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150121100633.GC12173@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/01/15 18:58, Luis R. Rodriguez wrote:
+On Wed, 21 Jan, at 11:06:33AM, Borislav Petkov wrote:
+> On Wed, Jan 21, 2015 at 12:48:58AM -0500, Jon Masters wrote:
+> > We have on a number of occasions found just this output useful in
+> > debugging boot issues on ARM servers
 > 
-> Its not just hypercalls though, this is all about the interactions
-> with multicalls no?
+> We can turn it on by default on ARM and off on x86...
 
-No.  This applies to any preemptible hypercall and the toolstack doesn't
-use multicalls for most of its work.
+Yeah, there's no reason we need to have the same default. That is to
+say, it can be on for ARM and off for x86, but when enabled the format
+should be the same for both.
 
-David
+In the future the memory maps are likely to contain even more entries
+and I suspect we're going to get more requests to disable the voluminous
+memmap output by default if we don't do so now.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
