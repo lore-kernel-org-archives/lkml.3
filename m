@@ -1,121 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420AbbAZQYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:24:10 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55823 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480AbbAZQYE (ORCPT
+	id S1756577AbbAZQY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:24:26 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:36862 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391AbbAZQYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:24:04 -0500
-Date: Mon, 26 Jan 2015 17:23:58 +0100
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Paul Clements <paul.clements@us.sios.com>
-Cc: "nbd-general@lists.sourceforge.net" 
-	<nbd-general@lists.sourceforge.net>,
-        kernel list <linux-kernel@vger.kernel.org>, kernel@pengutronix.de
-Subject: Re: [RFC 2/4] nbd: Split 'DO_IT' into three functions
-Message-ID: <20150126162358.GE32082@pengutronix.de>
-References: <1421156665-27318-1-git-send-email-mpa@pengutronix.de>
- <1421156665-27318-3-git-send-email-mpa@pengutronix.de>
- <CAECXXi5GcAbBzS+ATr2BRryJPvAUPCTMkmVT2TKWESG6anWuWw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jKBxcB1XkHIR0Eqt"
-Content-Disposition: inline
-In-Reply-To: <CAECXXi5GcAbBzS+ATr2BRryJPvAUPCTMkmVT2TKWESG6anWuWw@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 17:17:36 up 5 days,  6:24, 89 users,  load average: 0.81, 1.60, 1.55
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 26 Jan 2015 11:24:21 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
+Cc: Jeffy Chen <jeffy.chen@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] pinctrl: rockchip: Only mask interrupts; never disable
+Date: Mon, 26 Jan 2015 08:24:03 -0800
+Message-Id: <1422289444-15142-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The Rockchip GPIO interrupt controller totally throws away all status
+about an interrupt when you "disable" the interrupt.  That has
+unfortunate consequences in the following situation:
 
---jKBxcB1XkHIR0Eqt
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+1. An edge-triggered interrupt is enabled and should wake the system.
+2. System suspend happens: interrupt is disabled and marked for wake.
+3. rockchip_irq_suspend() reenables the interrupt so we can wake.
+4. Interrupt happens when asleep.
+5. rockchip_irq_resume() redisables the interrupt.
+6. Disabling the interrupt throws away all status about it.
+7. Normal system resume happens and we enable the interrupt again,
+   since we threw away status about the interrupt we don't know it
+   fired while suspended.  Even worse: if we need both edges of the
+   interrupt the logic to swap edges never runs.
 
-Hi Paul,
+Note: even if we somehow can post the status about wakeup interrupts
+in rockchip_irq_resume() we would still have a window of losing any
+edges that came in while interrupts were disabled.
 
-On Mon, Jan 26, 2015 at 11:16:12AM -0500, Paul Clements wrote:
-> Markus,
->=20
-> This refactor looks OK with the exception of one thing...
->=20
-> On Tue, Jan 13, 2015 at 8:44 AM, Markus Pargmann <mpa@pengutronix.de> wro=
-te:
->=20
-> >  /* Must be called with tx_lock held */
-> >
-> >  static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *n=
-bd,
-> > @@ -684,61 +773,8 @@ static int __nbd_ioctl(struct block_device *bdev, =
-struct nbd_device *nbd,
-> >                 set_capacity(nbd->disk, nbd->bytesize >> 9);
-> >                 return 0;
-> >
-> > -       case NBD_DO_IT: {
-> > -               struct task_struct *thread;
-> > -               struct socket *sock;
-> > -               int error;
-> > -
-> > -               if (nbd->pid)
-> > -                       return -EBUSY;
-> > -               if (!nbd->sock)
-> > -                       return -EINVAL;
-> >
->=20
-> You seem to have done away with these checks. Was that inadvertent or
-> was there a reason for that? The pid check is necessary to prevent two
-> instances of NBD_DO_IT from running. Without the sock check you'll get
-> a null pointer deref in nbd_do_it.
+If we use mask only then we don't need to worry.  The GPIO Interrupt
+controller keeps track of pending interrupts that are enabled and just
+masked.
 
-Thanks, no there is no reason, it got dropped somewhere. These checks
-should defenitely be there. Will fix it for the next version.
+There was no real strong reason to support the enable/disable
+functionality (other than that it seemed right), so let's go back to
+just supporting mask/unmask but actually map it to the real
+mask/unmask.  This ends up with slightly different (and more correct)
+behavior than before (f2dd028 pinctrl: rockchip: Fix
+enable/disable/mask/unmask).
 
-I also fixed a lot of error handling, style, format and documentation in
-the other patches. Will send the patch series soon, but thanks for the
-review so far.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/pinctrl/pinctrl-rockchip.c | 48 +++++++++++---------------------------
+ 1 file changed, 13 insertions(+), 35 deletions(-)
 
-Best regards,
+diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
+index d144330..dee7d5f 100644
+--- a/drivers/pinctrl/pinctrl-rockchip.c
++++ b/drivers/pinctrl/pinctrl-rockchip.c
+@@ -89,7 +89,7 @@ struct rockchip_iomux {
+  * @reg_pull: optional separate register for additional pull settings
+  * @clk: clock of the gpio bank
+  * @irq: interrupt of the gpio bank
+- * @saved_enables: Saved content of GPIO_INTEN at suspend time.
++ * @saved_masks: Saved content of GPIO_INTEN at suspend time.
+  * @pin_base: first pin number
+  * @nr_pins: number of pins in this bank
+  * @name: name of the bank
+@@ -108,7 +108,7 @@ struct rockchip_pin_bank {
+ 	struct regmap			*regmap_pull;
+ 	struct clk			*clk;
+ 	int				irq;
+-	u32				saved_enables;
++	u32				saved_masks;
+ 	u32				pin_base;
+ 	u8				nr_pins;
+ 	char				*name;
+@@ -1545,8 +1545,8 @@ static void rockchip_irq_suspend(struct irq_data *d)
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+ 	struct rockchip_pin_bank *bank = gc->private;
+ 
+-	bank->saved_enables = irq_reg_readl(gc, GPIO_INTEN);
+-	irq_reg_writel(gc, gc->wake_active, GPIO_INTEN);
++	bank->saved_masks = irq_reg_readl(gc, GPIO_INTMASK);
++	irq_reg_writel(gc, ~gc->wake_active, GPIO_INTMASK);
+ }
+ 
+ static void rockchip_irq_resume(struct irq_data *d)
+@@ -1554,35 +1554,7 @@ static void rockchip_irq_resume(struct irq_data *d)
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+ 	struct rockchip_pin_bank *bank = gc->private;
+ 
+-	irq_reg_writel(gc, bank->saved_enables, GPIO_INTEN);
+-}
+-
+-static void rockchip_irq_disable(struct irq_data *d)
+-{
+-	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 val;
+-
+-	irq_gc_lock(gc);
+-
+-	val = irq_reg_readl(gc, GPIO_INTEN);
+-	val &= ~d->mask;
+-	irq_reg_writel(gc, val, GPIO_INTEN);
+-
+-	irq_gc_unlock(gc);
+-}
+-
+-static void rockchip_irq_enable(struct irq_data *d)
+-{
+-	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	u32 val;
+-
+-	irq_gc_lock(gc);
+-
+-	val = irq_reg_readl(gc, GPIO_INTEN);
+-	val |= d->mask;
+-	irq_reg_writel(gc, val, GPIO_INTEN);
+-
+-	irq_gc_unlock(gc);
++	irq_reg_writel(gc, bank->saved_masks, GPIO_INTMASK);
+ }
+ 
+ static int rockchip_interrupts_register(struct platform_device *pdev,
+@@ -1620,6 +1592,14 @@ static int rockchip_interrupts_register(struct platform_device *pdev,
+ 			continue;
+ 		}
+ 
++		/*
++		 * Linux assumes that all interrupts start out disabled/masked.
++		 * Our driver only uses the concept of masked and always keeps
++		 * things enabled, so for us that's all masked and all enabled.
++		 */
++		writel_relaxed(0xffffffff, bank->reg_base + GPIO_INTMASK);
++		writel_relaxed(0xffffffff, bank->reg_base + GPIO_INTEN);
++
+ 		gc = irq_get_domain_generic_chip(bank->domain, 0);
+ 		gc->reg_base = bank->reg_base;
+ 		gc->private = bank;
+@@ -1628,8 +1608,6 @@ static int rockchip_interrupts_register(struct platform_device *pdev,
+ 		gc->chip_types[0].chip.irq_ack = irq_gc_ack_set_bit;
+ 		gc->chip_types[0].chip.irq_mask = irq_gc_mask_set_bit;
+ 		gc->chip_types[0].chip.irq_unmask = irq_gc_mask_clr_bit;
+-		gc->chip_types[0].chip.irq_enable = rockchip_irq_enable;
+-		gc->chip_types[0].chip.irq_disable = rockchip_irq_disable;
+ 		gc->chip_types[0].chip.irq_set_wake = irq_gc_set_wake;
+ 		gc->chip_types[0].chip.irq_suspend = rockchip_irq_suspend;
+ 		gc->chip_types[0].chip.irq_resume = rockchip_irq_resume;
+-- 
+2.2.0.rc0.207.ga3a616c
 
-Markus
-
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---jKBxcB1XkHIR0Eqt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUxmoeAAoJEEpcgKtcEGQQYX8P/iPbi+CSDiVWDIvH0YIYVtPT
-gEUQVdUR/6BIiFxBIKTfcb1GZs00VJd36y/pJQIEw+DnUSGS+xN9Gpdbc0e6nE7l
-q7wUFGLoNBqO+JcT1cCMO/oRhZP1XdW6H9Mi3QF4xjWLTUQqy1HEKDFNgZ2e1Ch2
-SGLIVBMMqWwkzbWSZ3LnsRuItW9n2fcM1w8gne3yBfdrKmBZtZM7325Ozj9AR1U1
-/lWCWOLLIHrC6yFj5ePaEnUdmUWAHtbYVdfnIBXLwqMFMZBQY5RD25IItoVLxDKG
-IkTSf3eoL/k0nxFhmrNqPuPjWHfmV4GDT9ENR5kGC7JnT13nbEcfBgl2vU7sHLYe
-9OlehYfqhj1O17+km/8pcrbVvOhTF6yPb7Xy3tgxKtRywahwArRJdhy5R5iNqYDk
-xSqSp4lKI2WHFoX4OAN8RXi1ssJgZ7KiLKs0jeZuValG/wWuX5kfZ7qYrBAuNCqh
-ruIekvRX/FL8mUQJeMJdlmZb8EhaVOKm2WKp5eO3UvcDQDg2fGi6Zuc9DLxL5Pt8
-LAoDunkNt3zyiUZ7xvhvvEn6PZtXQHtSfCSRlzDC8qG3uV+sNwAc/Sz8I8bTvWkf
-rJMAqCm8qXEbc+CiiDVhgZ6CL3cHj1VtMKNEjM/kUeyHsc9ScmB/S2vaOIliRjpm
-dG5i4E2veni7Ew9fwJ7u
-=na74
------END PGP SIGNATURE-----
-
---jKBxcB1XkHIR0Eqt--
