@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865AbbAZVBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:01:00 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:44745 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756795AbbAZVA5 (ORCPT
+	id S1756918AbbAZVBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:01:44 -0500
+Received: from fencepost.gnu.org ([208.118.235.10]:40660 "EHLO
+	fencepost.gnu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818AbbAZVBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:00:57 -0500
-Date: Tue, 27 Jan 2015 00:00:54 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Calvin Owens <calvinowens@fb.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-team@fb.com,
-        Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org
-Subject: Re: [RFC][PATCH v2] procfs: Always expose /proc/<pid>/map_files/ and
- make it readable
-Message-ID: <20150126210054.GG651@moon>
-References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
- <20150114152501.GB9820@node.dhcp.inet.fi>
- <20150114153323.GF2253@moon>
- <20150114204653.GA26698@mail.thefacebook.com>
- <20150114211613.GH2253@moon>
- <20150122024554.GB23762@mail.thefacebook.com>
- <20150124031544.GA1992748@mail.thefacebook.com>
- <20150126124731.GA26916@node.dhcp.inet.fi>
+	Mon, 26 Jan 2015 16:01:41 -0500
+From: David Kastrup <dak@gnu.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>, Junio C Hamano <gitster@pobox.com>,
+        "Linux-Kernel\@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        twaugh@redhat.com, Git Mailing List <git@vger.kernel.org>
+Subject: Re: patch-2.7.3 no longer applies relative symbolic link patches
+References: <CA+5PVA7rVy6Li_1haj1QmGG0D6avLB5Xej=2YGt6K-11kKHR5A@mail.gmail.com>
+	<CA+5PVA4bs6CYU8MHn1JqBjnb-5wYJT2Tjqa65=v2uSPL8c7dYw@mail.gmail.com>
+	<CA+55aFxbY21vBbPs5qCFPT1HSBbaeS+Z2Fr9So1r3rXrMWe_ZQ@mail.gmail.com>
+Date: Mon, 26 Jan 2015 22:01:11 +0100
+In-Reply-To: <CA+55aFxbY21vBbPs5qCFPT1HSBbaeS+Z2Fr9So1r3rXrMWe_ZQ@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 26 Jan 2015 12:44:33 -0800")
+Message-ID: <87twzdl0iw.fsf@fencepost.gnu.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/25.0.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126124731.GA26916@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 02:47:31PM +0200, Kirill A. Shutemov wrote:
-> On Fri, Jan 23, 2015 at 07:15:44PM -0800, Calvin Owens wrote:
-> > Currently, /proc/<pid>/map_files/ is restricted to CAP_SYS_ADMIN, and
-> > is only exposed if CONFIG_CHECKPOINT_RESTORE is set. This interface
-> > is very useful for enumerating the files mapped into a process when
-> > the more verbose information in /proc/<pid>/maps is not needed.
-> > 
-> > This patch moves the folder out from behind CHECKPOINT_RESTORE, and
-> > removes the CAP_SYS_ADMIN restrictions. Following the links requires
-> > the ability to ptrace the process in question, so this doesn't allow
-> > an attacker to do anything they couldn't already do before.
-> > 
-> > Signed-off-by: Calvin Owens <calvinowens@fb.com>
-> 
-> Cc +linux-api@
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-Looks good to me, thanks! Though I would really appreciate if someone
-from security camp take a look as well.
+> On Mon, Jan 26, 2015 at 8:32 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>>
+>> I went to do the Fedora 3.19-rc6 build this morning and it failed in
+>> our buildsystem with:
+>>
+>> + '[' '!' -f /builddir/build/SOURCES/patch-3.19-rc6.xz ']'
+>> + case "$patch" in
+>> + unxz
+>> + patch -p1 -F1 -s
+>> symbolic link target '../../../../../include/dt-bindings' is invalid
+>> error: Bad exit status from /var/tmp/rpm-tmp.mWE3ZL (%prep)
+>
+> Ugh. I don't see anything we can do about this on the git side, and I
+> do kind of understand why 'patch' would be worried about '..' files.
+> In a perfect world, patch would parse the filename and see that it
+> stays within the directory structure of the project, but that is a
+> rather harder thing to do than just say "no dot-dot files".
+>
+> The short-term fix is likely to just use "git apply" instead of "patch".
+>
+> The long-term fix? I dunno. I don't see us not using symlinks, and a
+> quick check says that every *single* symlink we have in the kernel
+> source tree is one that points to a different directory using ".."
+> format. And while I could imagine that "patch" ends up counting the
+> dot-dot entries and checking that it's all inside the same tree it is
+> patching, I could also easily see patch *not* doing that.
+
+I consider it rather hard and error-prone and/or an attack vector to
+choose a course of action for ../ in connection with the -p option.
+
+-- 
+David Kastrup
