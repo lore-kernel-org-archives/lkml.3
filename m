@@ -1,147 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789AbbAZSMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:12:47 -0500
-Received: from mga14.intel.com ([192.55.52.115]:2358 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756706AbbAZSMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:12:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,470,1418112000"; 
-   d="scan'208";a="667761574"
-Subject: Re: [PATCH char-misc-next v2 01/13] misc: mic: SCIF header file
- and IOCTL interface
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: sudeep.dutt@intel.com, Arnd Bergmann <arnd@arndb.de>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Dave Jiang <dave.jiang@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>
-In-Reply-To: <20150125123942.GA21763@kroah.com>
-References: <cover.1421097390.git.sudeep.dutt@intel.com>
-	 <8ff5b107eeabad618e07c156ec541409b9f88c6a.1421097390.git.sudeep.dutt@intel.com>
-	 <20150125123942.GA21763@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Jan 2015 10:07:35 -0800
-Message-ID: <1422295655.9362.175.camel@rbtaylor-desk1.amr.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1756808AbbAZSI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:08:26 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:35592 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbbAZSIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 13:08:23 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Bo Shen <voice.shen@atmel.com>, Wenyou Yang <wenyou.yang@atmel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2] ARM: at91: at91rm9200: set idle and restart from rm9200_dt_device_init()
+Date: Mon, 26 Jan 2015 19:08:33 +0100
+Message-ID: <1422295713-26549-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1421359100-8930-12-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1421359100-8930-12-git-send-email-alexandre.belloni@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-25 at 20:39 +0800, Greg Kroah-Hartman wrote:
-> On Mon, Jan 12, 2015 at 03:09:55PM -0800, Sudeep Dutt wrote:
-> > --- /dev/null
-> > +++ b/include/uapi/linux/scif_ioctl.h
-> > @@ -0,0 +1,213 @@
-> > +/*
-> > + * Intel MIC Platform Software Stack (MPSS)
-> > + *
-> > + * This file is provided under a dual BSD/GPLv2 license.  When using or
-> > + * redistributing this file, you may do so under either license.
-> > + *
-> > + * GPL LICENSE SUMMARY
-> > + *
-> > + * Copyright(c) 2014 Intel Corporation.
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of version 2 of the GNU General Public License as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful, but
-> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> > + * General Public License for more details.
-> > + *
-> > + * BSD LICENSE
-> > + *
-> > + * Copyright(c) 2014 Intel Corporation.
-> > + *
-> > + * Redistribution and use in source and binary forms, with or without
-> > + * modification, are permitted provided that the following conditions
-> > + * are met:
-> > + *
-> > + * * Redistributions of source code must retain the above copyright
-> > + *   notice, this list of conditions and the following disclaimer.
-> > + * * Redistributions in binary form must reproduce the above copyright
-> > + *   notice, this list of conditions and the following disclaimer in
-> > + *   the documentation and/or other materials provided with the
-> > + *   distribution.
-> > + * * Neither the name of Intel Corporation nor the names of its
-> > + *   contributors may be used to endorse or promote products derived
-> > + *   from this software without specific prior written permission.
-> > + *
-> > + * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-> > + * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-> > + * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-> > + * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-> > + * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-> > + * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-> > + * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-> > + * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-> > + * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-> > + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-> > + * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-> > + *
-> > + * Intel SCIF driver.
-> > + *
-> > + */
-> > +/*
-> > + * -----------------------------------------
-> > + * SCIF IOCTL interface information
-> > + * -----------------------------------------
-> > + */
-> > +#ifndef SCIF_IOCTL_H
-> > +#define SCIF_IOCTL_H
-> > +
-> > +/**
-> > + * struct scif_port_id - SCIF port information
-> > + * @node:	node on which port resides
-> > + * @port:	local port number
-> > + */
-> > +struct scif_port_id {
-> > +	uint16_t node;
-> > +	uint16_t port;
-> 
-> variables that cross the kernel/user interface need to use the __*
-> types, so these would be __u16.  Please fix up all of these structures
-> in this file.
-> 
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-Agreed, I have fixed it in v3 which will be posted this week.
+Setup arm_pm_idle and arm_pm_restart function pointers from
+rm9200_dt_device_init() function to simplify the at91rm9200 initialization
+process.
+This same move is already done for the sam9s.
 
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+[nicolas.ferre@atmel.com: adapt patch to newer series]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/at91rm9200.c      | 14 --------------
+ arch/arm/mach-at91/board-dt-rm9200.c | 14 ++++++++++++++
+ 2 files changed, 14 insertions(+), 14 deletions(-)
 
-> > +};
-> > +
-> > +/**
-> > + * struct scifioctl_connect - used for SCIF_CONNECT IOCTL
-> > + * @self:	used to read back the assigned port_id
-> > + * @peer:	destination node and port to connect to
-> > + */
-> > +struct scifioctl_connect {
-> > +	struct scif_port_id	self;
-> > +	struct scif_port_id	peer;
-> > +};
-> > +
-> > +/**
-> > + * struct scifioctl_accept - used for SCIF_ACCEPTREQ IOCTL
-> > + * @flags:	flags
-> > + * @peer:	global id of peer endpoint
-> > + * @endpt:	new connected endpoint descriptor
-> > + */
-> > +struct scifioctl_accept {
-> > +	int			flags;
-> 
-> int?  Please be specific of your types for ioctls.
-> 
-
-Agreed, I have fixed this in v3 which will be posted this week.
-
-Thanks,
-Sudeep Dutt
-
-
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index 3be1963f5c56..ae0d5f0eb108 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -22,25 +22,11 @@
+ #include "generic.h"
+ 
+ 
+-static void at91rm9200_restart(enum reboot_mode reboot_mode, const char *cmd)
+-{
+-	/*
+-	 * Perform a hardware reset with the use of the Watchdog timer.
+-	 */
+-	at91_st_write(AT91_ST_WDMR, AT91_ST_RSTEN | AT91_ST_EXTEN | 1);
+-	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
+-}
+ 
+ /* --------------------------------------------------------------------
+  *  AT91RM9200 processor initialization
+  * -------------------------------------------------------------------- */
+ 
+-static void __init at91rm9200_initialize(void)
+-{
+-	arm_pm_idle = at91rm9200_idle;
+-	arm_pm_restart = at91rm9200_restart;
+-}
+ 
+ AT91_SOC_START(at91rm9200)
+-	.init = at91rm9200_initialize,
+ AT91_SOC_END
+diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
+index d47c4433444d..5fcd1c73ece0 100644
+--- a/arch/arm/mach-at91/board-dt-rm9200.c
++++ b/arch/arm/mach-at91/board-dt-rm9200.c
+@@ -22,9 +22,21 @@
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/mach/irq.h>
++#include <asm/system_misc.h>
++
++#include <mach/at91_st.h>
+ 
+ #include "generic.h"
+ 
++static void at91rm9200_restart(enum reboot_mode reboot_mode, const char *cmd)
++{
++	/*
++	 * Perform a hardware reset with the use of the Watchdog timer.
++	 */
++	at91_st_write(AT91_ST_WDMR, AT91_ST_RSTEN | AT91_ST_EXTEN | 1);
++	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
++}
++
+ static void __init at91rm9200_dt_timer_init(void)
+ {
+ 	of_clk_init(NULL);
+@@ -35,6 +47,8 @@ static void __init rm9200_dt_device_init(void)
+ {
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ 
++	arm_pm_idle = at91rm9200_idle;
++	arm_pm_restart = at91rm9200_restart;
+ 	at91_rm9200_pm_init();
+ }
+ 
+-- 
+2.1.3
 
