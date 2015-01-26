@@ -1,150 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbbAZHbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 02:31:09 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:57312 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284AbbAZHbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 02:31:03 -0500
-Message-ID: <54C5ECF4.10709@ti.com>
-Date: Mon, 26 Jan 2015 09:29:56 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sekhar Nori <nsekhar@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        <linux-spi@vger.kernel.org>, linux-omap <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ARM: edma: Split up header file to platform_data
- and API file
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com>	<1417084891-17990-4-git-send-email-peter.ujfalusi@ti.com> <CAOesGMgdLB9WkOwCt__iRMnTYZ-tMNS==FL+b6s3CzHK4b0MYQ@mail.gmail.com>
-In-Reply-To: <CAOesGMgdLB9WkOwCt__iRMnTYZ-tMNS==FL+b6s3CzHK4b0MYQ@mail.gmail.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+	id S1753575AbbAZHgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 02:36:42 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:52174 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444AbbAZHgl (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Mon, 26 Jan 2015 02:36:41 -0500
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, Michel Lespinasse <walken@google.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <dave@stgolabs.net>
+Subject: [PATCH -tip 0/6] rwsem: Fine tuning
+Date: Sun, 25 Jan 2015 23:36:03 -0800
+Message-Id: <1422257769-14083-1-git-send-email-dave@stgolabs.net>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On 01/22/2015 03:40 AM, Olof Johansson wrote:
-> Hi,
-> 
-> On Thu, Nov 27, 2014 at 2:41 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
->> include/linux/platform_data/ is not a correct place to keep the API
->> definitions for edma, it is meant to be only for the pdata for the device.
->> Clean up this by moving the API to include/linux/edma.h
-> 
-> It's a nice net improvement, but it moves some things that should be
-> in _neither_ location to a new place where it doesn't belong either --
-> and the new location is even more global. See below.
-> 
-> ...
-> 
->> diff --git a/include/linux/edma.h b/include/linux/edma.h
->> new file mode 100644
->> index 000000000000..9df92198c117
->> --- /dev/null
->> +++ b/include/linux/edma.h
->> @@ -0,0 +1,153 @@
->> +/*
->> + * TI EDMA definitions
->> + *
->> + * Copyright (C) 2006-2013 Texas Instruments.
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License as
->> + * published by the Free Software Foundation version 2.
->> + *
->> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
->> + * kind, whether express or implied; without even the implied warranty
->> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +/*
->> + * This EDMA3 programming framework exposes two basic kinds of resource:
->> + *
->> + *  Channel    Triggers transfers, usually from a hardware event but
->> + *             also manually or by "chaining" from DMA completions.
->> + *             Each channel is coupled to a Parameter RAM (PaRAM) slot.
->> + *
->> + *  Slot       Each PaRAM slot holds a DMA transfer descriptor (PaRAM
->> + *             "set"), source and destination addresses, a link to a
->> + *             next PaRAM slot (if any), options for the transfer, and
->> + *             instructions for updating those addresses.  There are
->> + *             more than twice as many slots as event channels.
->> + *
->> + * Each PaRAM set describes a sequence of transfers, either for one large
->> + * buffer or for several discontiguous smaller buffers.  An EDMA transfer
->> + * is driven only from a channel, which performs the transfers specified
->> + * in its PaRAM slot until there are no more transfers.  When that last
->> + * transfer completes, the "link" field may be used to reload the channel's
->> + * PaRAM slot with a new transfer descriptor.
->> + *
->> + * The EDMA Channel Controller (CC) maps requests from channels into physical
->> + * Transfer Controller (TC) requests when the channel triggers (by hardware
->> + * or software events, or by chaining).  The two physical DMA channels provided
->> + * by the TCs are thus shared by many logical channels.
->> + *
->> + * DaVinci hardware also has a "QDMA" mechanism which is not currently
->> + * supported through this interface.  (DSP firmware uses it though.)
->> + */
->> +
->> +#ifndef __LINUX_EDMA_H_
->> +#define __LINUX_EDMA_H_
->> +
->> +#include <linux/platform_data/edma.h>
->> +
->> +/* PaRAM slots are laid out like this */
->> +struct edmacc_param {
->> +       u32 opt;
->> +       u32 src;
->> +       u32 a_b_cnt;
->> +       u32 dst;
->> +       u32 src_dst_bidx;
->> +       u32 link_bcntrld;
->> +       u32 src_dst_cidx;
->> +       u32 ccnt;
->> +} __packed;
->> +
->> +/* fields in edmacc_param.opt */
->> +#define SAM            BIT(0)
->> +#define DAM            BIT(1)
->> +#define SYNCDIM                BIT(2)
->> +#define STATIC         BIT(3)
->> +#define EDMA_FWID      (0x07 << 8)
->> +#define TCCMODE                BIT(11)
->> +#define EDMA_TCC(t)    ((t) << 12)
->> +#define TCINTEN                BIT(20)
->> +#define ITCINTEN       BIT(21)
->> +#define TCCHEN         BIT(22)
->> +#define ITCCHEN                BIT(23)
-> 
-> This seems like the kind of thing that should go with the edma driver
-> instead of being globally exported to the kernel through a
-> include/linux header file.
+First two patches are self descriptive obvious add-ons.
 
-Currently the edmacc_param struct is used by arch/arm/common/edma.c,
-drivers/dma/edma.c and the sound/soc/davinci/davinci-pcm.c
+The rest are performance enhancements for write-mostly workloads.
+While this is not our priority (use mutexes instead!!), there are
+cases where heavy use of writers can severly hurt rwsem performance.
+For instace, we got reports[1] of writer only issues when converting
+the i_mmap_rwsem from mutex, on a workload that pathologically pounds
+on this lock for vma operations:
 
-For now this has to be in a global header file. Even with my local VIP branch
-where I had removed the davinci-pcm already the two drivers for edma needs
-this in global header file.
-I can assure you, it will be gone (along with the arch/arm/common/edma.c) but
-not right away.
+-     81.20%           execl  [kernel.kallsyms]     [k] osq_lock
+      - 100.00% mutex_optimistic_spin                                                                                                   
+           __mutex_lock_slowpath                                                                                                        
+         - mutex_lock                                                                                                                   
+            + 47.71% unlink_file_vma                                                                                                    
+            + 34.91% vma_adjust                                                                                                         
+            + 17.38% vma_link
+
+This is enough to make small differences painfully evident. These changes
+(particularly patch 6/6) recover most (~75%) of the performance regression.
+Patches 4 and 6 deal with optimistic spinning fine tunning, while patch
+5 is an attempt to get tid of two barriers when blocking. While I believe
+this is safe, it certainly needs more eyeballs, I could have easily overlooked
+something. Most of these changes are straighforward, but have various implications.
+
+Passes multiple x86-64 tests.
+
+Thanks!
+
+[1] https://lkml.org/lkml/2015/1/7/884
+
+Davidlohr Bueso (6):
+  locking/rwsem: Use task->state helpers
+  locking/rwsem: Document barrier need when waking tasks
+  locking/rwsem: Set lock ownership ASAP
+  locking/rwsem: Avoid deceiving lock spinners
+  locking/rwsem: Optimize slowpath/sleeping
+  locking/rwsem: Check for active lock before bailing on spinning
+
+ kernel/locking/mutex.c          |  2 +-
+ kernel/locking/rwsem-spinlock.c |  7 +++-
+ kernel/locking/rwsem-xadd.c     | 71 +++++++++++++++++++++++++++++------------
+ kernel/locking/rwsem.c          | 22 +------------
+ kernel/locking/rwsem.h          | 20 ++++++++++++
+ 5 files changed, 78 insertions(+), 44 deletions(-)
+ create mode 100644 kernel/locking/rwsem.h
 
 -- 
-Péter
+2.1.2
+
