@@ -1,85 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849AbbAZWyd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 17:54:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46014 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753521AbbAZWya (ORCPT
+	id S1756894AbbAZXIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:08:47 -0500
+Received: from gproxy9-pub.mail.unifiedlayer.com ([69.89.20.122]:51101 "HELO
+	gproxy9-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754054AbbAZXIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 17:54:30 -0500
-Date: Mon, 26 Jan 2015 14:54:29 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
-        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
-        Dexuan Cui <decui@microsoft.com>
-Subject: Re: [PATCH v3] Drivers: hv: vmbus: prevent cpu offlining on newer
- hypervisors
-Message-ID: <20150126225429.GA17514@kroah.com>
-References: <1417431161-12845-1-git-send-email-vkuznets@redhat.com>
- <1421081411-5759-1-git-send-email-vkuznets@redhat.com>
- <20150125133659.GA21552@kroah.com>
- <87k309g729.fsf@vitty.brq.redhat.com>
+	Mon, 26 Jan 2015 18:08:43 -0500
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jan 2015 18:08:43 EST
+X-Authority-Analysis: v=2.1 cv=NPZGpSKg c=1 sm=1 tr=0
+ a=9W6Fsu4pMcyimqnCr1W0/w==:117 a=9W6Fsu4pMcyimqnCr1W0/w==:17 a=cNaOj0WVAAAA:8
+ a=f5113yIGAAAA:8 a=kj9zAlcOel0A:10 a=TBVoxVdAAAAA:8 a=GhZ5P8ky69gA:10
+ a=noBwr2J6l1kA:10 a=YNv0rlydsVwA:10 a=zd2uoN0lAAAA:8 a=8dKeP_MnjSISBZ1eSeEA:9
+ a=jTwm3t7mrdCKyZOE:21 a=WTck2an6gj19rEFh:21 a=CjuIK1q_8ugA:10
+Date: Mon, 26 Jan 2015 15:01:55 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Oded Gabbay <oded.gabbay@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jroedel@suse.de" <jroedel@suse.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        <iommu@lists.linux-foundation.org>,
+        "Bridgman, John" <John.Bridgman@amd.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>
+Subject: Re: [PATCH 2/2] iommu/amd: use handle_mm_fault directly v2
+Message-ID: <20150126150155.292bf707@jbarnes-hsw>
+In-Reply-To: <54C4ECBC.5070301@amd.com>
+References: <1415830228-7844-1-git-send-email-jbarnes@virtuousgeek.org>
+	<1415830228-7844-2-git-send-email-jbarnes@virtuousgeek.org>
+	<54C4ECBC.5070301@amd.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87k309g729.fsf@vitty.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 11:38:54AM +0100, Vitaly Kuznetsov wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+On Sun, 25 Jan 2015 15:16:44 +0200
+Oded Gabbay <oded.gabbay@amd.com> wrote:
+
 > 
-> > On Mon, Jan 12, 2015 at 05:50:11PM +0100, Vitaly Kuznetsov wrote:
-> >> When an SMP Hyper-V guest is running on top of 2012R2 Server and secondary
-> >> cpus are sent offline (with echo 0 > /sys/devices/system/cpu/cpu$cpu/online)
-> >> the system freeze is observed. This happens due to the fact that on newer
-> >> hypervisors (Win8, WS2012R2, ...) vmbus channel handlers are distributed
-> >> across all cpus (see init_vp_index() function in drivers/hv/channel_mgmt.c)
-> >> and on cpu offlining nobody reassigns them to CPU0. Prevent cpu offlining
-> >> when vmbus is loaded until the issue is fixed host-side.
-> >> 
-> >> This patch also disables hibernation but it is OK as it is also broken (MCE
-> >> error is hit on resume). Suspend still works.
-> >> 
-> >> Tested with WS2008R2 and WS2012R2.
-> >> 
-> >> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> >> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> >> ---
-> >> Changes since v2:
-> >> - repair the build when vmbus is builded as a module [Greg KH] by saving
-> >>   current cpu_disable pointer to previous_cpu_disable and restoring it on
-> >>   unload;
-> >> - return -ENOSYS (same as native_cpu_disable when !CONFIG_HOTPLUG_CPU) instead
-> >>   of -1 in hyperv_cpu_disable().
-> >> 
-> >> Changes since v1:
-> >> - introduce hv_cpu_hotplug_quirk() function to not spread #ifdefs [Greg KH];
-> >> - add pr_notice() message "hv_vmbus: CPU offlining is not supported by
-> >>   hypervisor".
-> >> ---
-> >>  drivers/hv/vmbus_drv.c | 36 ++++++++++++++++++++++++++++++++++++
-> >>  1 file changed, 36 insertions(+)
+> 
+> On 11/13/2014 12:10 AM, Jesse Barnes wrote:
+> > This could be useful for debug in the future if we want to track
+> > major/minor faults more closely, and also avoids the put_page trick we
+> > used with gup.
 > >
-> > Doesn't apply to my char-misc-test branch at all :(
+> > In order to do this, we also track the task struct in the PASID state
+> > structure.  This lets us update the appropriate task stats after the
+> > fault has been handled, and may aid with debug in the future as well.
+> >
+> > v2: drop task accounting; GPU activity may have been submitted by a
+> >      different thread than the one binding the PASID (Joerg)
+> >
+> > Tested-by: Oded Gabbay<oded.gabbay@amd.com>
+> > Signed-off-by: Jesse Barnes<jbarnes@virtuousgeek.org>
 > 
-> Another mid-air collision with K.Y's "Drivers: hv: vmbus: Implement a
-> clockevent device", please use the attached version. No functional
-> changes are required, I just fixed the merge conflict (includes).
+> Hi Jesse,
 > 
-> Othere than that (and sorry for meddling), would it it be better if
-> you switch to 'pull requests' workflow with K.Y? There is a lot of
-> ongoing work in hyperv nowdays and such collisions seem otherwise
-> inevitable ...
+> I know I tested your patch a few months ago, but we have a new feature (still 
+> internally) in the driver, which has some conflicts with this patch.
+> 
+> Our feature is basically doing "exception handling" by registering a callback 
+> function with the iommu driver in inv_ppr_cb.
+> 
+> Now, with the old code (we used 3.17.2 until a few days ago), this callback 
+> function was called in, at least, three use-cases (which we are testing):
+> 
+> (1) Writing to a "bad" system memory address, which is *not* in the process's 
+> memory address space.
+> 
+> (2) Writing to a read-only page, which is inside the process's memory address space
+> 
+> (3) Reading from a page without permissions, which is inside the process's 
+> memory address space
+> 
+> With the new code (3.19-rc5), this callback is only called in the first 
+> use-case, while (2) and (3) are handled in handle_mm_fault(), which is now 
+> called from do_fault. The return value of handle_mm_fault() is 0, so 
+> handle_fault_error() is not called and amdkfd doesn't get notification, hence 
+> our test fails.
+> 
+> This is a problem for us as we want to propagate these exceptions to the user 
+> space HSA runtime, so it could handle them.
+> 
+> I have 2 questions:
+> 
+> 1. Why don't we call inv_ppr_cb() in any case ?
 
-This is a trivial number of patches for this subsystem, so no, a git
-workflow isn't needed.  But if KY would collect the patches up and send
-them to me for all hyperv patches from now on, that would make these
-types of issues go away, KY, can you do that from now on?
+We do if we fail to allocate the vma or it's in the wrong location, but
+we could extend the do_fault() handling to do it in more cases.
 
-thanks,
+> 2. How come handle_mm_fault() returns 0 in cases (2) and (3) ? Or in other 
+> words, what is considered to be a success in handle_mm_fault() and is it visible 
+> to the user-space process ?
 
-greg k-h
+handle_mm_fault() is somewhat of a low level function.  We can catch
+more cases in our own do_fault() code if we need to.   The x86
+__do_page_fault is probably a good reference.  I mainly tried to match
+existing behavior when I added the handle_mm_fault(), but may have
+missed stuff.  As I said, we can extend our do_fault() to handle all
+the cases we want prior to calling handle_mm_fault().
+
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
