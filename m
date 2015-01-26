@@ -1,173 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332AbbAZQQm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:16:42 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:44660 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756200AbbAZQQd (ORCPT
+	id S1756570AbbAZQS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:18:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57917 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756534AbbAZQS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:16:33 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Felipe Balbi <balbi@ti.com>
-Cc: Olof Johansson <olof@lixom.net>, Simon Horman <horms+renesas@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v4 5/5] drivers: bus: Add Simple Power-Managed Bus Driver
-Date: Mon, 26 Jan 2015 17:16:17 +0100
-Message-Id: <1422288977-20353-6-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
-References: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
+	Mon, 26 Jan 2015 11:18:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150125133147.GA19445@infradead.org>
+References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+	<1421163888-21452-2-git-send-email-ming.lei@canonical.com>
+	<20150125133147.GA19445@infradead.org>
+Date: Tue, 27 Jan 2015 00:18:23 +0800
+Message-ID: <CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] aio: add aio_kernel_() interface
+From: Ming Lei <ming.lei@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Zach Brown <zab@zabbo.net>, Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "open list:AIO" <linux-aio@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a driver for transparent busses that don't need a real driver, but
-where the bus controller is part of a PM domain, or under the control of
-a functional clock.  Typically, the bus controller's PM domain and/or
-clock must be enabled for child devices connected to the bus (either
-on-SoC or externally) to function.
+On Sun, Jan 25, 2015 at 9:31 PM, Christoph Hellwig <hch@infradead.org> wrote:
+>> +struct kiocb *aio_kernel_alloc(gfp_t gfp)
+>> +{
+>> +     return kzalloc(sizeof(struct kiocb), gfp);
+>> +}
+>> +EXPORT_SYMBOL_GPL(aio_kernel_alloc);
+>> +
+>> +void aio_kernel_free(struct kiocb *iocb)
+>> +{
+>> +     kfree(iocb);
+>> +}
+>> +EXPORT_SYMBOL_GPL(aio_kernel_free);
+>
+> Both functions don't actually seem to be used in this patch set.
 
-Hence the sole purpose of this driver is to enable its clock and PM
-domain (if exist(s)), which are specified in the DT and managed from
-platform and PM domain code, and to probe for child devices.
+My fault, and it is just v2 which stops using them.
 
-Due to the child-parent relationship with devices connected to the bus,
-PM domain and clock state transitions are handled in the correct order.
+>> +void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
+>> +                     size_t nr, loff_t off,
+>> +                     void (*complete)(u64 user_data, long res),
+>> +                     u64 user_data)
+>
+>> +int aio_kernel_submit(struct kiocb *iocb, bool is_write,
+>> +                   struct iov_iter *iter)
+>
+> Why do we keep these two separate?  Especially having the iov passed
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Tested-by: Ulrich Hecht <ulrich.hecht+renesas@gmail.com>
----
-v4:
-  - Bind against the generic "simple-pm-bus" instead of "renesas,bsc",
-  - Explicitly call of_platform_populate() after pm_runtime_enable() to
-    enforce ordering, instead of depending on claimed compatibility with
-    "simple-bus",
+No special meaning, just follow previous patches, :-)
 
-v3:
-  - Add Tested-by,
+But one benefit is that we can separate the one-shot
+initialization from submit, at least filep/complete/ki_ctx can be
+set during initialization.
 
-v2:
-  - Rename from "Renesas Bus State Controller Driver" (renesas-bsc) to
-    "Simple Power-Managed Bus Driver" (simple-pm-bus),
-  - Change module license to GPL v2,
-  - Change email address to geert+renesas@glider.be.
----
- drivers/bus/Kconfig         | 13 ++++++++++
- drivers/bus/Makefile        |  1 +
- drivers/bus/simple-pm-bus.c | 58 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 72 insertions(+)
- create mode 100644 drivers/bus/simple-pm-bus.c
+> n the second, and the count in the first seems rather confusing as
+> we shouldn't even need both for a high level API.  Also the private
+> data should really be a void pointer for the kernel, or simply be
+> left away as we can assume the iocb is embedded into a caller
+> data structure and container_of can be used to find that structure.
 
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-index 626960819e6df16c..7e9c2674af81d6e9 100644
---- a/drivers/bus/Kconfig
-+++ b/drivers/bus/Kconfig
-@@ -58,6 +58,19 @@ config OMAP_OCP2SCP
- 	  OCP2SCP and in OMAP5, both USB PHY and SATA PHY is connected via
- 	  OCP2SCP.
- 
-+config SIMPLE_PM_BUS
-+	bool "Simple Power-Managed Bus Driver"
-+	depends on OF && PM
-+	depends on ARCH_SHMOBILE || COMPILE_TEST
-+	help
-+	  Driver for transparent busses that don't need a real driver, but
-+	  where the bus controller is part of a PM domain, or under the control
-+	  of a functional clock, and thus relies on runtime PM for managing
-+	  this PM domain and/or clock.
-+	  An example of such a bus controller is the Renesas Bus State
-+	  Controller (BSC, sometimes called "LBSC within Bus Bridge", or
-+	  "External Bus Interface") as found on several Renesas ARM SoCs.
-+
- config VEXPRESS_CONFIG
- 	bool "Versatile Express configuration bus"
- 	default y if ARCH_VEXPRESS
-diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-index 3cfaf2c7f25ac4f0..e023a2bec664d900 100644
---- a/drivers/bus/Makefile
-+++ b/drivers/bus/Makefile
-@@ -14,4 +14,5 @@ obj-$(CONFIG_MVEBU_MBUS) 	+= mvebu-mbus.o
- obj-$(CONFIG_OMAP_INTERCONNECT)	+= omap_l3_smx.o omap_l3_noc.o
- 
- obj-$(CONFIG_OMAP_OCP2SCP)	+= omap-ocp2scp.o
-+obj-$(CONFIG_SIMPLE_PM_BUS)	+= simple-pm-bus.o
- obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o
-diff --git a/drivers/bus/simple-pm-bus.c b/drivers/bus/simple-pm-bus.c
-new file mode 100644
-index 0000000000000000..c5eb46cbf388b507
---- /dev/null
-+++ b/drivers/bus/simple-pm-bus.c
-@@ -0,0 +1,58 @@
-+/*
-+ * Simple Power-Managed Bus Driver
-+ *
-+ * Copyright (C) 2014-2015 Glider bvba
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/of_platform.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm_runtime.h>
-+
-+
-+static int simple_pm_bus_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+	pm_runtime_enable(&pdev->dev);
-+
-+	if (np)
-+		of_platform_populate(np, NULL, NULL, &pdev->dev);
-+
-+	return 0;
-+}
-+
-+static int simple_pm_bus_remove(struct platform_device *pdev)
-+{
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+	pm_runtime_disable(&pdev->dev);
-+	return 0;
-+}
-+
-+static const struct of_device_id simple_pm_bus_of_match[] = {
-+	{ .compatible = "simple-pm-bus", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, simple_pm_bus_of_match);
-+
-+static struct platform_driver simple_pm_bus_driver = {
-+	.probe = simple_pm_bus_probe,
-+	.remove = simple_pm_bus_remove,
-+	.driver = {
-+		.name = "simple-pm-bus",
-+		.of_match_table = simple_pm_bus_of_match,
-+	},
-+};
-+
-+module_platform_driver(simple_pm_bus_driver);
-+
-+MODULE_DESCRIPTION("Simple Power-Managed Bus Driver");
-+MODULE_AUTHOR("Geert Uytterhoeven <geert+renesas@glider.be>");
-+MODULE_LICENSE("GPL v2");
--- 
-1.9.1
+Either one is OK.
 
+> Also it might make sense to just offer aio_kernel_read/write intefaces
+> instead of the common submit wrapper, as that's much closer to other
+> kernel APIs, e.g.
+>
+> int aio_kernel_read(struct kiocb *iocb, struct file *file,
+>                 struct iov_iter *iter, loff_t off,
+>                 void (*complete)(struct kiocb *iocb, long res));
+> int aio_kernel_write(struct kiocb *iocb, struct file *file,
+>                 struct iov_iter *iter, loff_t off,
+>                 void (*complete)(struct kiocb *iocb, long res));
+
+It is like style of sync APIs, looks submit/complete is common
+for async APIs, like io_submit().
+
+>> +     if (WARN_ON(!is_kernel_kiocb(iocb) || !iocb->ki_obj.complete
+>> +                     || !iocb->ki_filp || !(iter->type & ITER_BVEC)))
+>
+> Why do you want to limit what the iov_iter can contain?  iovec based
+> ones seem very useful, and athough I can come up with a use case
+> for vectors pointing to userspace address I can't see anything that
+> speaks against allowing them either.
+> call this from drivers deadling
+
+Yes, we should allow KVEC at least.
+
+
+Thanks,
+Ming Lei
