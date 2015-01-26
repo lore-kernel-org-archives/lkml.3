@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054AbbAZXTr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:19:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46338 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054AbbAZXTo (ORCPT
+	id S1757238AbbAZXVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:21:15 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:34010 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301AbbAZXVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:19:44 -0500
-Date: Mon, 26 Jan 2015 15:19:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ganesh Mahendran <opensource.ganesh@gmail.com>
-Cc: minchan@kernel.org, ngupta@vflare.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/zsmalloc: add log for module load/unload
-Message-Id: <20150126151942.2dd88d5221423e7379b43a06@linux-foundation.org>
-In-Reply-To: <1422107321-9973-1-git-send-email-opensource.ganesh@gmail.com>
-References: <1422107321-9973-1-git-send-email-opensource.ganesh@gmail.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Jan 2015 18:21:12 -0500
+Date: Tue, 27 Jan 2015 01:21:04 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@kernel.org>
+Subject: Re: mmc does not work in qemu n900
+Message-ID: <20150126232104.GA591@fuloong-minipc.musicnaut.iki.fi>
+References: <201501262204.59305@pali>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201501262204.59305@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Jan 2015 21:48:41 +0800 Ganesh Mahendran <opensource.ganesh@gmail.com> wrote:
+Hi,
 
-> Sometimes, we want to know whether a module is loaded or unloaded
-> from the log.
+On Mon, Jan 26, 2015 at 10:04:59PM +0100, Pali Rohár wrote:
+> problem? Why any of these two patches fix problem when mmc is not 
+> detected by kernel in qemu (machine n900)? Detection of mmc fails 
+> because function mmc_send_op_cond() without one of above patches 
+> fails.
 
-Why?  What's special about zsmalloc?
+Has it ever worked? It could be just that QEMU's emulation is broken.
+Since the kernel works on actual HW, you probably should contact
+QEMU maintainers.
 
-Please provide much better justification than this.
+I don't see n900 in Debian's QEMU. There's n800 and n810 but
+I couldn't boot any of my kernels with those...
+
+A.
