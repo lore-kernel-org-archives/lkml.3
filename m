@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918AbbAZVBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:01:44 -0500
-Received: from fencepost.gnu.org ([208.118.235.10]:40660 "EHLO
-	fencepost.gnu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818AbbAZVBl (ORCPT
+	id S1756937AbbAZVCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:02:53 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:50849 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbbAZVCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:01:41 -0500
-From: David Kastrup <dak@gnu.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, Junio C Hamano <gitster@pobox.com>,
-        "Linux-Kernel\@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        twaugh@redhat.com, Git Mailing List <git@vger.kernel.org>
-Subject: Re: patch-2.7.3 no longer applies relative symbolic link patches
-References: <CA+5PVA7rVy6Li_1haj1QmGG0D6avLB5Xej=2YGt6K-11kKHR5A@mail.gmail.com>
-	<CA+5PVA4bs6CYU8MHn1JqBjnb-5wYJT2Tjqa65=v2uSPL8c7dYw@mail.gmail.com>
-	<CA+55aFxbY21vBbPs5qCFPT1HSBbaeS+Z2Fr9So1r3rXrMWe_ZQ@mail.gmail.com>
-Date: Mon, 26 Jan 2015 22:01:11 +0100
-In-Reply-To: <CA+55aFxbY21vBbPs5qCFPT1HSBbaeS+Z2Fr9So1r3rXrMWe_ZQ@mail.gmail.com>
-	(Linus Torvalds's message of "Mon, 26 Jan 2015 12:44:33 -0800")
-Message-ID: <87twzdl0iw.fsf@fencepost.gnu.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/25.0.50 (gnu/linux)
+	Mon, 26 Jan 2015 16:02:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CA+8MBbKnT=mE3kev8BRPq0GeTgHx8WVa6o54tJuBX_XXLpHdYQ@mail.gmail.com>
+References: <20150123203145.GA6691@google.com> <CA+8MBbKnT=mE3kev8BRPq0GeTgHx8WVa6o54tJuBX_XXLpHdYQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 26 Jan 2015 15:02:29 -0600
+Message-ID: <CAErSpo7y1wWStjcEOH9xTiM-As8+QeMynZ5ENrL9v3X2PvQCcw@mail.gmail.com>
+Subject: Re: [GIT PULL] PCI fixes for v3.19
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Richard Zhu <Richard.Zhu@freescale.com>,
+        Yinghai Lu <yinghai@kernel.org>, Marek Kordik <kordikmarek@gmail.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Andreas Hartmann <andihartmann@freenet.de>,
+        Alexey Voronkov <zermond@gmail.com>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Mon, Jan 26, 2015 at 1:58 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> I'm seeing these new messages in v3.19-rc6 on ia64:
 
-> On Mon, Jan 26, 2015 at 8:32 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->>
->> I went to do the Fedora 3.19-rc6 build this morning and it failed in
->> our buildsystem with:
->>
->> + '[' '!' -f /builddir/build/SOURCES/patch-3.19-rc6.xz ']'
->> + case "$patch" in
->> + unxz
->> + patch -p1 -F1 -s
->> symbolic link target '../../../../../include/dt-bindings' is invalid
->> error: Bad exit status from /var/tmp/rpm-tmp.mWE3ZL (%prep)
->
-> Ugh. I don't see anything we can do about this on the git side, and I
-> do kind of understand why 'patch' would be worried about '..' files.
-> In a perfect world, patch would parse the filename and see that it
-> stays within the directory structure of the project, but that is a
-> rather harder thing to do than just say "no dot-dot files".
->
-> The short-term fix is likely to just use "git apply" instead of "patch".
->
-> The long-term fix? I dunno. I don't see us not using symlinks, and a
-> quick check says that every *single* symlink we have in the kernel
-> source tree is one that points to a different directory using ".."
-> format. And while I could imagine that "patch" ends up counting the
-> dot-dot entries and checking that it's all inside the same tree it is
-> patching, I could also easily see patch *not* doing that.
+Hi Tony,
 
-I consider it rather hard and error-prone and/or an attack vector to
-choose a course of action for ../ in connection with the -p option.
+Sorry for the inconvenience.  Can you collect a complete dmesg log and
+"lspci -vv" output, too (from the kernel with the reverted commit)?
+That will have more useful information than just /proc/iomem.
 
--- 
-David Kastrup
+> pci 0000:01:00.0: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]:
+> no compatible bridge window
+
+These are option ROMs, probably just not assigned.  We should be able
+to assign space for them, so this might not even be a problem, but we
+certainly need a better message if that's all it is.
+
+> pci 0000:01:00.1: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]:
+> no compatible bridge window
+> pci 0000:03:00.0: can't claim BAR 6 [mem 0xffe00000-0xffffffff pref]:
+> no compatible bridge window
+> pci 0000:0b:04.0: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]:
+> no compatible bridge window
+> pci 0000:80:13.0: can't claim BAR 0 [mem 0xa0220000-0xa0220fff]: no
+> compatible bridge window
+
+Interesting.  There's no mention of bus 80 at all in /proc/iomem;
+maybe this is found by blind probing?  Do we even do that on ia64?
+Dmesg should have a clue.
+
+> pci 0000:80:16.0: can't claim BAR 0 [mem 0xa0200000-0xa0203fff 64bit]:
+> no compatible bridge window
+> pci 0000:80:16.1: can't claim BAR 0 [mem 0xa0204000-0xa0207fff 64bit]:
+> no compatible bridge window
+> pci 0000:80:16.2: can't claim BAR 0 [mem 0xa0208000-0xa020bfff 64bit]:
+> no compatible bridge window
+> pci 0000:80:16.3: can't claim BAR 0 [mem 0xa020c000-0xa020ffff 64bit]:
+> no compatible bridge window
+> pci 0000:80:16.4: can't claim BAR 0 [mem 0xa0210000-0xa0213fff 64bit]:
+> no compatible bridge window
+> pci 0000:80:16.5: can't claim BAR 0 [mem 0xa0214000-0xa0217fff 64bit]:
+> no compatible bridge window
+> pci 0000:80:16.6: can't claim BAR 0 [mem 0xa0218000-0xa021bfff 64bit]:
+> no compatible bridge window
+> pci 0000:80:16.7: can't claim BAR 0 [mem 0xa021c000-0xa021ffff 64bit]:
+> no compatible bridge window
+> pci 0000:80:01.0: can't claim BAR 8 [mem 0xa0100000-0xa01fffff]: no
+> compatible bridge window
+
+Looks like a bridge window (assuming you have CONFIG_PCI_IOV unset).
+There's definitely something wrong -- all those mpt and igb devices at
+the top level *should* be under some PCI hierarchy, but the hierarchy
+is missing from iomem.
+
+Bjorn
