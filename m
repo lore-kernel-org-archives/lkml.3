@@ -1,148 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632AbbAZKos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:44:48 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:18500 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093AbbAZKoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:44:37 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <jolsa@redhat.com>, <jeremie.galarneau@efficios.com>,
-        <rostedt@goodmis.org>, <alexmonthy@voxpopuli.im>,
-        <bigeasy@linutronix.de>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/3] perf: convert: fix signess of value.
-Date: Mon, 26 Jan 2015 18:38:25 +0800
-Message-ID: <1422268705-32084-4-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1422268705-32084-1-git-send-email-wangnan0@huawei.com>
-References: <1422268705-32084-1-git-send-email-wangnan0@huawei.com>
+	id S1755270AbbAZKjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:39:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754679AbbAZKjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:39:06 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
+        Dexuan Cui <decui@microsoft.com>
+Subject: Re: [PATCH v3] Drivers: hv: vmbus: prevent cpu offlining on newer hypervisors
+References: <1417431161-12845-1-git-send-email-vkuznets@redhat.com>
+	<1421081411-5759-1-git-send-email-vkuznets@redhat.com>
+	<20150125133659.GA21552@kroah.com>
+Date: Mon, 26 Jan 2015 11:38:54 +0100
+In-Reply-To: <20150125133659.GA21552@kroah.com> (Greg Kroah-Hartman's message
+	of "Sun, 25 Jan 2015 21:36:59 +0800")
+Message-ID: <87k309g729.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.54C61A8F.0017,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 8a85538849d0a27f2cb73f2806e96a24
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When converting int values, perf first extractes it to a ulonglong, then
-feeds it to babeltrace as a signed value. For negative 32 bit values
-(for example, return values of failed syscalls), the extracted data
-should be something like 0xfffffffe (-2). It becomes a large int64
-value. Babeltrace denies to insert it with
-bt_ctf_field_signed_integer_set_value() because it is larger than
-0x7fffffff, the largest positive value a signed 32 bit int can be.
+--=-=-=
+Content-Type: text/plain
 
-This patch introduces adjust_signess(), which fills high bits of
-ulonglong with 1 if the value is negative.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> On Mon, Jan 12, 2015 at 05:50:11PM +0100, Vitaly Kuznetsov wrote:
+>> When an SMP Hyper-V guest is running on top of 2012R2 Server and secondary
+>> cpus are sent offline (with echo 0 > /sys/devices/system/cpu/cpu$cpu/online)
+>> the system freeze is observed. This happens due to the fact that on newer
+>> hypervisors (Win8, WS2012R2, ...) vmbus channel handlers are distributed
+>> across all cpus (see init_vp_index() function in drivers/hv/channel_mgmt.c)
+>> and on cpu offlining nobody reassigns them to CPU0. Prevent cpu offlining
+>> when vmbus is loaded until the issue is fixed host-side.
+>> 
+>> This patch also disables hibernation but it is OK as it is also broken (MCE
+>> error is hit on resume). Suspend still works.
+>> 
+>> Tested with WS2008R2 and WS2012R2.
+>> 
+>> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+>> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+>> ---
+>> Changes since v2:
+>> - repair the build when vmbus is builded as a module [Greg KH] by saving
+>>   current cpu_disable pointer to previous_cpu_disable and restoring it on
+>>   unload;
+>> - return -ENOSYS (same as native_cpu_disable when !CONFIG_HOTPLUG_CPU) instead
+>>   of -1 in hyperv_cpu_disable().
+>> 
+>> Changes since v1:
+>> - introduce hv_cpu_hotplug_quirk() function to not spread #ifdefs [Greg KH];
+>> - add pr_notice() message "hv_vmbus: CPU offlining is not supported by
+>>   hypervisor".
+>> ---
+>>  drivers/hv/vmbus_drv.c | 36 ++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 36 insertions(+)
+>
+> Doesn't apply to my char-misc-test branch at all :(
+
+Another mid-air collision with K.Y's "Drivers: hv: vmbus: Implement a
+clockevent device", please use the attached version. No functional
+changes are required, I just fixed the merge conflict (includes).
+
+Othere than that (and sorry for meddling), would it it be better if
+you switch to 'pull requests' workflow with K.Y? There is a lot of
+ongoing work in hyperv nowdays and such collisions seem otherwise
+inevitable ...
+
+-- 
+  Vitaly
+
+
+--=-=-=
+Content-Type: text/x-patch
+Content-Disposition: inline;
+ filename=0001-Drivers-hv-vmbus-prevent-cpu-offlining-on-newer-hype.patch
+
+>From 95f9b0ff3f73c3bbe8aa9c525414097c2c26a3ef Mon Sep 17 00:00:00 2001
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+Date: Mon, 12 Jan 2015 17:50:11 +0100
+Subject: [PATCH] Drivers: hv: vmbus: prevent cpu offlining on newer
+ hypervisors
+
+When an SMP Hyper-V guest is running on top of 2012R2 Server and secondary
+cpus are sent offline (with echo 0 > /sys/devices/system/cpu/cpu$cpu/online)
+the system freeze is observed. This happens due to the fact that on newer
+hypervisors (Win8, WS2012R2, ...) vmbus channel handlers are distributed
+across all cpus (see init_vp_index() function in drivers/hv/channel_mgmt.c)
+and on cpu offlining nobody reassigns them to CPU0. Prevent cpu offlining
+when vmbus is loaded until the issue is fixed host-side.
+
+This patch also disables hibernation but it is OK as it is also broken (MCE
+error is hit on resume). Suspend still works.
+
+Tested with WS2008R2 and WS2012R2.
+
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- tools/perf/util/data-convert-bt.c | 63 +++++++++++++++++++++++++++++++--------
- 1 file changed, 51 insertions(+), 12 deletions(-)
+ drivers/hv/vmbus_drv.c | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
-diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
-index 934bd9b..a89f879 100644
---- a/tools/perf/util/data-convert-bt.c
-+++ b/tools/perf/util/data-convert-bt.c
-@@ -166,6 +166,43 @@ get_tracepoint_field_type(struct ctf_writer *cw, struct format_field *field)
- 		return cw->data.u32;
+diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
+index 35e3f42..90c3400 100644
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -33,6 +33,7 @@
+ #include <linux/hyperv.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/clockchips.h>
++#include <linux/cpu.h>
+ #include <asm/hyperv.h>
+ #include <asm/hypervisor.h>
+ #include <asm/mshyperv.h>
+@@ -704,6 +705,39 @@ static void vmbus_isr(void)
+ 	}
  }
  
-+static unsigned long long adjust_signess(unsigned long long value_int, int size)
++#ifdef CONFIG_HOTPLUG_CPU
++static int hyperv_cpu_disable(void)
 +{
-+	unsigned long long value_mask;
-+
-+	/*
-+	 * value_mask = (1 << (size * 8 - 1)) - 1.
-+	 * Directly set value_mask for code readers.
-+	 */
-+	switch (size) {
-+	case 1:
-+		value_mask = 0x7fULL;
-+		break;
-+	case 2:
-+		value_mask = 0x7fffULL;
-+		break;
-+	case 4:
-+		value_mask = 0x7fffffffULL;
-+		break;
-+	case 8:
-+		/*
-+		 * For 64 bit value, return it self. There is no need
-+		 * to fill high bit.
-+		 */
-+		/* Fall through */
-+	default:
-+		/* BUG! */
-+		return value_int;
-+	}
-+
-+	/* If it is a positive value, don't adjust. */
-+	if ((value_int & (~0ULL - value_mask)) == 0)
-+		return value_int;
-+
-+	/* Fill upper part of value_int with 1 to make it a negative long long. */
-+	return (value_int & value_mask) | ~value_mask;
++	return -ENOSYS;
 +}
 +
- static int add_tracepoint_field_value(struct ctf_writer *cw,
- 				      struct bt_ctf_event_class *event_class,
- 				      struct bt_ctf_event *event,
-@@ -177,7 +214,6 @@ static int add_tracepoint_field_value(struct ctf_writer *cw,
- 	struct bt_ctf_field *field;
- 	const char *name = fmtf->name;
- 	void *data = sample->raw_data;
--	unsigned long long value_int;
- 	unsigned long flags = fmtf->flags;
- 	unsigned int n_items;
- 	unsigned int i;
-@@ -222,11 +258,6 @@ static int add_tracepoint_field_value(struct ctf_writer *cw,
- 	type = get_tracepoint_field_type(cw, fmtf);
++static void hv_cpu_hotplug_quirk(bool vmbus_loaded)
++{
++	static void *previous_cpu_disable;
++
++	/*
++	 * Offlining a CPU when running on newer hypervisors (WS2012R2, Win8,
++	 * ...) is not supported at this moment as channel interrupts are
++	 * distributed across all of them.
++	 */
++
++	if ((vmbus_proto_version == VERSION_WS2008) ||
++	    (vmbus_proto_version == VERSION_WIN7))
++		return;
++
++	if (vmbus_loaded) {
++		previous_cpu_disable = smp_ops.cpu_disable;
++		smp_ops.cpu_disable = hyperv_cpu_disable;
++		pr_notice("CPU offlining is not supported by hypervisor\n");
++	} else if (previous_cpu_disable)
++		smp_ops.cpu_disable = previous_cpu_disable;
++}
++#else
++static void hv_cpu_hotplug_quirk(bool vmbus_loaded)
++{
++}
++#endif
++
+ /*
+  * vmbus_bus_init -Main vmbus driver initialization routine.
+  *
+@@ -744,6 +778,7 @@ static int vmbus_bus_init(int irq)
+ 	if (ret)
+ 		goto err_alloc;
  
- 	for (i = 0; i < n_items; i++) {
--		if (!(flags & FIELD_IS_STRING))
--			value_int = pevent_read_number(
--					fmtf->event->pevent,
--					data + offset + i * len, len);
--
- 		if (flags & FIELD_IS_ARRAY)
- 			field = bt_ctf_field_array_get_field(array_field, i);
- 		else
-@@ -240,12 +271,20 @@ static int add_tracepoint_field_value(struct ctf_writer *cw,
- 		if (flags & FIELD_IS_STRING)
- 			ret = bt_ctf_field_string_set_value(field,
- 					data + offset + i * len);
--		else if (!(flags & FIELD_IS_SIGNED))
--			ret = bt_ctf_field_unsigned_integer_set_value(
--					field, value_int);
--		else
--			ret = bt_ctf_field_signed_integer_set_value(
--					field, value_int);
-+		else {
-+			unsigned long long value_int;
-+			value_int = pevent_read_number(
-+					fmtf->event->pevent,
-+					data + offset + i * len, len);
-+
-+			if (!(flags & FIELD_IS_SIGNED))
-+				ret = bt_ctf_field_unsigned_integer_set_value(
-+						field, value_int);
-+			else
-+				ret = bt_ctf_field_signed_integer_set_value(
-+						field, adjust_signess(value_int, len));
-+		}
-+
- 		if (ret) {
- 			pr_err("failed to set file value %s\n", name);
- 			goto err_put_field;
++	hv_cpu_hotplug_quirk(true);
+ 	vmbus_request_offers();
+ 
+ 	return 0;
+@@ -997,6 +1032,7 @@ static void __exit vmbus_exit(void)
+ 	bus_unregister(&hv_bus);
+ 	hv_cleanup();
+ 	acpi_bus_unregister_driver(&vmbus_acpi_driver);
++	hv_cpu_hotplug_quirk(false);
+ }
+ 
+ 
 -- 
-1.8.4
+1.9.3
 
+
+--=-=-=--
