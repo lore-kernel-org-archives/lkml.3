@@ -1,104 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026AbbAZVFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:05:05 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:58237 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755573AbbAZVFC (ORCPT
+	id S1757126AbbAZVFl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:05:41 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:50751 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756931AbbAZVFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:05:02 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: mmc does not work in qemu n900
-Date: Mon, 26 Jan 2015 22:04:59 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
+	Mon, 26 Jan 2015 16:05:37 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2140942.rm5U7zV4qW";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201501262204.59305@pali>
+In-Reply-To: <54C09A65.9090809@codeaurora.org>
+References: <1421419702-17812-1-git-send-email-architt@codeaurora.org>
+ <1421419702-17812-3-git-send-email-architt@codeaurora.org>
+ <CAAK6Zt0xAY=kD68y1vQP1-AoEHdmyjuzsMTCSQyykPnuwbZLJA@mail.gmail.com> <54C09A65.9090809@codeaurora.org>
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Mon, 26 Jan 2015 13:05:16 -0800
+Message-ID: <CAJiQ=7B+2xp_XPA6_nieG30+dQUSxQeLGN=xBX0e3zQqgiPqNA@mail.gmail.com>
+Subject: Re: [PATCH 2/5] mtd: nand: Add qcom nand controller driver
+To: Archit Taneja <architt@codeaurora.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Cc: Daniel Ehrenberg <dehrenberg@google.com>, linux-arm-msm@vger.kernel.org,
+        agross@codeaurora.org,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        galak@codeaurora.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2140942.rm5U7zV4qW
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jan 21, 2015 at 10:36 PM, Archit Taneja <architt@codeaurora.org> wrote:
+> On 01/21/2015 06:24 AM, Daniel Ehrenberg wrote:
+>> On Fri, Jan 16, 2015 at 6:48 AM, Archit Taneja <architt@codeaurora.org>
+>> wrote:
+>>>
+>>> +/*
+>>> + * the bad block marker is readable only when we read the page with ECC
+>>> + * disabled. all the read/write commands like NAND_CMD_READOOB,
+>>> NAND_CMD_READ0
+>>> + * and NAND_CMD_PAGEPROG are executed in the driver with ECC enabled.
+>>> therefore,
+>>> + * the default nand helper functions to detect a bad block or mark a bad
+>>> block
+>>> + * can't be used.
+>>> + */
+>>> +static int qcom_nandc_block_bad(struct mtd_info *mtd, loff_t ofs, int
+>>> getchip)
+>>> +{
+>>> +       int page, r, mark, bad = 0;
+>>> +       struct nand_chip *chip = mtd->priv;
+>>> +       struct nand_ecc_ctrl *ecc = &chip->ecc;
+>>> +       int cwperpage = ecc->steps;
+>>> +       struct qcom_nandc_data *this = chip->priv;
+>>> +       u32 flash_status;
+>>> +
+>>> +       pre_command(this, NAND_CMD_NONE);
+>>> +
+>>> +       page = (int)(ofs >> chip->page_shift) & chip->pagemask;
+>>> +
+>>> +       /*
+>>> +        * configure registers for a raw page read, the address is set to
+>>> the
+>>> +        * beginning of the last codeword
+>>> +        */
+>>> +       this->use_ecc = false;
+>>> +       set_address(this, this->cw_size * (cwperpage - 1), page);
+>>> +
+>>> +       /* we just read one codeword that contains the bad block marker
+>>> */
+>>> +       update_rw_regs(this, 1, true);
+>>> +
+>>> +       read_cw(this, this->cw_size, 0);
+>>> +
+>>> +       r = submit_descs(this);
+>>> +       if (r) {
+>>> +               dev_err(this->dev, "error submitting descs\n");
+>>> +               goto err;
+>>> +       }
+>>> +
+>>> +       flash_status = this->reg_read_buf[0];
+>>> +
+>>> +       /*
+>>> +        * unable to read the marker successfully, is that sufficient to
+>>> report
+>>> +        * the block as bad?
+>>> +        */
+>>> +       if (flash_status & (FS_OP_ERR | FS_MPU_ERR)) {
+>>> +               dev_warn(this->dev, "error while reading bad block
+>>> mark\n");
+>>> +               goto err;
+>>> +       }
+>>> +
+>>> +       mark = mtd->writesize - (this->cw_size * (cwperpage - 1));
+>>> +
+>>> +       if (chip->options & NAND_BUSWIDTH_16)
+>>> +               bad = this->data_buffer[mark] != 0xff ||
+>>> +                       this->data_buffer[mark + 1] != 0xff;
+>>> +
+>>> +       bad = this->data_buffer[mark] != 0xff;
+>>> +err:
+>>> +       free_descs(this);
+>>> +
+>>> +       return bad;
+>>> +}
+>>> +
+>>> +static int qcom_nandc_block_markbad(struct mtd_info *mtd, loff_t ofs)
+>>> +{
+>>> +       int page, r;
+>>> +       struct nand_chip *chip = mtd->priv;
+>>> +       struct nand_ecc_ctrl *ecc = &chip->ecc;
+>>> +       int cwperpage = ecc->steps;
+>>> +       struct qcom_nandc_data *this = chip->priv;
+>>> +       u32 flash_status;
+>>> +
+>>> +       pre_command(this, NAND_CMD_NONE);
+>>> +
+>>> +       /* fill our internal buffer's oob area with 0's */
+>>> +       memset(this->data_buffer, 0x00, mtd->writesize + mtd->oobsize);
+>>> +
+>>> +       page = (int)(ofs >> chip->page_shift) & chip->pagemask;
+>>> +
+>>> +       this->use_ecc = false;
+>>> +       set_address(this, this->cw_size * (cwperpage - 1), page);
+>>> +
+>>> +       /* we just write to one codeword that contains the bad block
+>>> marker*/
+>>> +       update_rw_regs(this, 1, false);
+>>> +
+>>> +       /*
+>>> +        * overwrite the last codeword with 0s, this will result in
+>>> setting
+>>> +        * the bad block marker to 0 too
+>>> +        */
+>>> +       write_cw(this, this->cw_size, 0);
+>>> +
+>>> +       r = submit_descs(this);
+>>> +       if (r) {
+>>> +               dev_err(this->dev, "error submitting descs\n");
+>>> +               r = -EIO;
+>>> +               goto err;
+>>> +       }
+>>> +
+>>> +       flash_status = this->reg_read_buf[0];
+>>> +
+>>> +       if (flash_status & (FS_OP_ERR | FS_MPU_ERR))
+>>> +               r = -EIO;
+>>> +
+>>> +err:
+>>> +       free_descs(this);
+>>> +
+>>> +       return r;
+>>> +}
 
-Hello,
+Would it be possible to refactor this code so that it implements
+generic read_oob_raw() and write_oob_raw() callbacks, which can
+read/write arbitrary uncorrected OOB bytes instead of just the BBI?
+Or is the controller limited in which OOB bytes can be directly
+accessed?
 
-for unknown reason kernel in qemu n900 machine is not able to=20
-detect internal eMMC memory. External SD card is detected without=20
-problem.
+One advantage of implementing the generic raw read/write callbacks is
+that the MTD subsystem already has logic to handle old NAND chips with
+different BBI positions, bitflips in the BBI, and other corner cases.
 
-If I apply this one-line patch eMMC in qemu start working:
+>> Looks like this code marks block bad and reads bad block information
+>> based on information in the OOB area. And in qcom_nandc_init,
+>> NAND_SKIP_BBTSCAN is set, meaning that this is the code used in
+>> practice on the chip in the mtd_block_isbad path. Can this driver be
+>> used with an on-flash OOB table by editing the init function's chip
+>> flags, or would it need more significant changes to allow that?
+>
+>
+> The code doesn't exactly read the OOB area. When the ECC HW block is
+> enabled, the bad block isn't in either oob or data area! We can access it
+> only when ECC is disabled. With ECC disabled, the bad block marker lies in
+> the last codeword somewhere in the middle of the user data. For the
+> mtd_read_oob()/write_oob() functions, we have the ECC always enabled, hence,
+> we never access the bad block marker through them at all.
+>
+> Creating an on-flash bad block table won't work right now. The reason is
+> that the nand_bbt library assumes that it can find the bad block marker by
+> reading oob. While creating a bbt in memory, it scans the device for bad
+> blocks using the function scan_block_fast(). This would currently result in
+> not reading the bad block marker, and therefore break things.
+>
+> I'm trying to find out if there is a way by which the controller can access
+> the bad block marker with ECC HW enabled. If that works, we can use the
+> nand_bbt helper as is. For now, I wanted to get the driver upstream without
+> the BBT functionality.
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 9584bff..0d4461c 100644
-=2D-- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -2337,6 +2337,9 @@ static int mmc_rescan_try_freq(
- 		return 0;
- 	if (!mmc_attach_sd(host))
- 		return 0;
-+
-+	mmc_go_idle(host);
-+
- 	if (!mmc_attach_mmc(host))
- 		return 0;
+So, back in commit a7e68834fc2739 ("mtd: nand: use ECC, if present,
+when scanning OOB"), the BBT code was changed to use MTD_OPS_PLACE_OOB
+instead of MTD_OPS_RAW, because some controllers offer the ability to
+provide corrected OOB data and we wanted to use it if possible.  The
+changelog notes that many existing drivers still disabled ECC when
+reading OOB in MTD_OPS_PLACE_OOB mode.
 
-I played with mmc and qemu n900 a bit and also this simple patch=20
-(without first) fix problem (that mmc is not detected by kernel):
+Now it sounds like the qcom_nandc controller can either provide access
+to some corrected OOB bytes (not including the BBI) when
+MTD_OPS_PLACE_OOB is used, or all (?) uncorrected OOB bytes (including
+the BBI) when MTD_OPS_RAW is used.
 
-diff --git a/drivers/mmc/core/mmc_ops.c=20
-b/drivers/mmc/core/mmc_ops.c
-index 3b044c5..0c93a2c 100644
-=2D-- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -157,6 +157,10 @@ int mmc_send_op_cond(
-=20
- 	BUG_ON(!host);
-=20
-+	/* reset mmc before calling op_cond */
-+	memset(&cmd, 0, sizeof(struct mmc_command));
-+	mmc_wait_for_cmd(host, &cmd, MMC_CMD_RETRIES);
-+
- 	cmd.opcode =3D MMC_SEND_OP_COND;
- 	cmd.arg =3D mmc_host_is_spi(host) ? 0 : ocr;
- 	cmd.flags =3D MMC_RSP_SPI_R1 | MMC_RSP_R3 | MMC_CMD_BCR;
-=20
+Two possible options are:
 
-I have no idea where is problem. I also do not understand mmc=20
-kernel code, but second patch I have on my HDD since 2.6.37.
+1) qcom_nandc should just disable ECC when performing OOB reads/writes
+in MTD_OPS_PLACE_OOB mode
 
-Can somebody with knowledge of mmc subsystem look at this=20
-problem? Why any of these two patches fix problem when mmc is not=20
-detected by kernel in qemu (machine n900)? Detection of mmc fails=20
-because function mmc_send_op_cond() without one of above patches=20
-fails.
+2) MTD should be made aware of whether the controller can access the
+BBI in MTD_OPS_PLACE_OOB mode, and fall back to MTD_OPS_RAW mode if
+the hardware cannot do so
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart2140942.rm5U7zV4qW
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlTGq/sACgkQi/DJPQPkQ1LpbQCbB9rsxOTbfxx9Jw/lRHFG4fak
-bJ8An3uQy5wmH0DbPFFon01Y7LNIC/wZ
-=D3yF
------END PGP SIGNATURE-----
-
---nextPart2140942.rm5U7zV4qW--
+Any thoughts?
