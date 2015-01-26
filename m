@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475AbbAZMaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:30:06 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:60722 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838AbbAZMaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:30:03 -0500
-Date: Mon, 26 Jan 2015 14:29:44 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
- page tables to the process'
-Message-ID: <20150126122944.GE25833@node.dhcp.inet.fi>
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
- <20150123050445.GA22751@roeck-us.net>
- <20150123111304.GA5975@node.dhcp.inet.fi>
- <54C263CC.1060904@roeck-us.net>
- <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org>
- <20150124055207.GA8926@roeck-us.net>
+	id S1754662AbbAZMaQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:30:16 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:35227 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368AbbAZMaM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:30:12 -0500
+Date: Mon, 26 Jan 2015 14:30:04 +0200
+From: Heba Aamer <heba93aamer@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, florian.c.schilhabel@googlemail.com,
+        thomas@grouk.net, tapaswenipathak@gmail.com,
+        rickard_strandqvist@spectrumdigital.se, linux-kernel@vger.kernel.org,
+        sudipm.mukherjee@gmail.com, Larry.Finger@lwfinger.net
+Subject: Re: [PATCH] staging: rtl8712: fix Prefer [subsystem eg:
+ netdev]_info([subsystem]dev, ... then dev_info(dev, ... then pr_info(...  to
+ printk(KERN_INFO ...
+Message-ID: <20150126123004.GA7895@mohammed-Inspiron-3537>
+References: <20150124202053.GA1641@mohammed-Inspiron-3537>
+ <20150125115755.GA1369@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20150124055207.GA8926@roeck-us.net>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150125115755.GA1369@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 09:52:07PM -0800, Guenter Roeck wrote:
-> On Fri, Jan 23, 2015 at 01:55:19PM -0800, Andrew Morton wrote:
-> > On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
+On Sun, Jan 25, 2015 at 07:57:55PM +0800, Greg KH wrote:
+> On Sat, Jan 24, 2015 at 10:20:53PM +0200, Heba Aamer wrote:
+> > This patch fixes the following checkpatch.pl warning:
+> > fix Prefer [subsystem eg: netdev]_info([subsystem]dev, ... then
+> > dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
 > > 
-> > > >>
-> > > >> qemu:microblaze generates warnings to the console.
-> > > >>
-> > > >> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
-> > > >>
-> > > >> with various call stacks. See
-> > > >> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
-> > > >> for details.
-> > > >
-> > > > Could you try patch below? Completely untested.
-> > > >
-> > > >>From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
-> > > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > > > Date: Fri, 23 Jan 2015 13:08:26 +0200
-> > > > Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
-> > > >
-> > > > Microblaze uses custom implementation of PMD folding, but doesn't define
-> > > > __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
-> > > >
-> > > > Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
-> > > > It also fixes problems with recently-introduced pmd accounting.
-> > > >
-> > > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > > > Reported-by: Guenter Roeck <linux@roeck-us.net>
-> > > 
-> > > Tested working.
-> > > 
-> > > Tested-by: Guenter Roeck <linux@roeck-us.net>
-> > > 
-> > > Any idea how to fix the sh problem ?
+> > netdev_info was used since it is a network subsystem
 > > 
-> > Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
-> > shut down", which isn't very clear.
+> > Signed-off-by: Heba Aamer <heba93aamer@gmail.com>
+> > ---
+> >  drivers/staging/rtl8712/usb_intf.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/staging/rtl8712/usb_intf.c b/drivers/staging/rtl8712/usb_intf.c
+> > index 7d0d171..7748a75 100644
+> > --- a/drivers/staging/rtl8712/usb_intf.c
+> > +++ b/drivers/staging/rtl8712/usb_intf.c
+> > @@ -366,7 +366,7 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
+> >  	struct net_device *pnetdev;
+> >  	struct usb_device *udev;
+> >  
+> > -	printk(KERN_INFO "r8712u: Staging version\n");
+> > +	netdev_info(pnetdev, "r8712u: Staging version\n");
+> >  	/* In this probe function, O.S. will provide the usb interface pointer
+> >  	 * to driver. We have to increase the reference count of the usb device
+> >  	 * structure by using the usb_get_dev function.
 > 
-> Turns out that the include file defining __PAGETABLE_PMD_FOLDED
-> was not always included where used, resulting in a messed up mm_struct.
+> Please don't send patches that you do not at least test-build, it's a
+> bit rude and wastes people's time.
+>
 
-What means "messed up" here? It should only affect size of mm_struct.
+Sorry Greg! I did build the module but it was cached. I built the 
+driver again after cleaning it, and I did find a warning related to 
+my patch. I had a question though, I found a warning related to an
+unused function. Here is the warning:
+
+drivers/staging/rtl8712/rtl871x_mp_ioctl.c:708:12: warning: 
+‘mp_query_drv_var’ defined but not used [-Wunused-function]
+
+Should I remove this function or should I keep it as is?
+If it will be removed, I will send it in a different patch. 
  
-> The patch below fixes the problem for the sh architecture.
-> No idea if the patch is correct/acceptable for other architectures.
+> Oh, and also ensure that your patch is correct, hint, this one does not
+> work at all :(
 
-That's pain. Some archs includes <linux/mm_types.h> from <asm/pgtable.h>.
-I don't see obvious way to fix this. Urghh.
+Sorry again and I will be sending the new patch soon.
 
--- 
- Kirill A. Shutemov
+> 
+> greg k-h
+
+Heba Aamer
