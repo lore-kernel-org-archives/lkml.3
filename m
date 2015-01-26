@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361AbbA0ATw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 19:19:52 -0500
-Received: from smtprelay0252.hostedemail.com ([216.40.44.252]:50656 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753759AbbA0ATs (ORCPT
+	id S1756903AbbAZXnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:43:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46576 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326AbbAZXnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 19:19:48 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:599:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4385:5007:6119:6261:7875:7903:8660:9389:10004:10400:10848:10967:11026:11232:11658:11914:12296:12517:12519:12740:13069:13148:13230:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: color59_73c0c875a541e
-X-Filterd-Recvd-Size: 2724
-Date: Mon, 26 Jan 2015 18:43:14 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
-Message-ID: <20150126184314.24f2583c@gandalf.local.home>
-In-Reply-To: <20150126214658.GQ29656@ZenIV.linux.org.uk>
-References: <20150126150913.653681560@goodmis.org>
-	<20150126193049.GN29656@ZenIV.linux.org.uk>
-	<20150126154259.5e650d32@gandalf.local.home>
-	<20150126214658.GQ29656@ZenIV.linux.org.uk>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	Mon, 26 Jan 2015 18:43:49 -0500
+Date: Mon, 26 Jan 2015 15:43:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Calvin Owens <calvinowens@fb.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        linux-kernel@vger.kernel.org, kernel-team@fb.com,
+        Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [RFC][PATCH v2] procfs: Always expose /proc/<pid>/map_files/
+ and make it readable
+Message-Id: <20150126154346.c63c512e5821e9e0ea31f759@linux-foundation.org>
+In-Reply-To: <20150126210054.GG651@moon>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+	<20150114152501.GB9820@node.dhcp.inet.fi>
+	<20150114153323.GF2253@moon>
+	<20150114204653.GA26698@mail.thefacebook.com>
+	<20150114211613.GH2253@moon>
+	<20150122024554.GB23762@mail.thefacebook.com>
+	<20150124031544.GA1992748@mail.thefacebook.com>
+	<20150126124731.GA26916@node.dhcp.inet.fi>
+	<20150126210054.GG651@moon>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015 21:46:58 +0000
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Tue, 27 Jan 2015 00:00:54 +0300 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-> On Mon, Jan 26, 2015 at 03:42:59PM -0500, Steven Rostedt wrote:
-> > On Mon, 26 Jan 2015 19:30:49 +0000
-> > Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> On Mon, Jan 26, 2015 at 02:47:31PM +0200, Kirill A. Shutemov wrote:
+> > On Fri, Jan 23, 2015 at 07:15:44PM -0800, Calvin Owens wrote:
+> > > Currently, /proc/<pid>/map_files/ is restricted to CAP_SYS_ADMIN, and
+> > > is only exposed if CONFIG_CHECKPOINT_RESTORE is set. This interface
+> > > is very useful for enumerating the files mapped into a process when
+> > > the more verbose information in /proc/<pid>/maps is not needed.
+
+This is the main (actually only) justification for the patch, and it it
+far too thin.  What does "not needed" mean.  Why can't people just use
+/proc/pid/maps?
+
+> > > This patch moves the folder out from behind CHECKPOINT_RESTORE, and
+> > > removes the CAP_SYS_ADMIN restrictions. Following the links requires
+> > > the ability to ptrace the process in question, so this doesn't allow
+> > > an attacker to do anything they couldn't already do before.
+> > > 
+> > > Signed-off-by: Calvin Owens <calvinowens@fb.com>
 > > 
-> > > You are still fighting an inconvenient API, but now it's not debugfs one -
-> > > it's your copy thereof.  Why not give your instances/ an inode_operations
-> > > of its own?  One with ->mkdir() and ->rmdir(), leaving all other directories
-> > > as-is.  That way you don't need the secondary methods at all.  And sure,
-> > > debugfs_create_dir() grabs ->i_mutex on parent, making you drop that in
-> > > your ->mkdir() if you want to call it.  But now you are not talking to it -
-> > > just to your own code, where you are free to change the calling conventions,
-> > > making it caller's responsibility to get that ->i_mutex.  The same goes for
-> > > the rmdir side...
-> > 
-> > The vfs layer grabs the i_mutex, which needs to be dropped.
+> > Cc +linux-api@
 > 
-> What for?  Just keep it through your instance_mkdir/instance_rmdir and be
-> done with that.  Sure, it means that you need variants of file/directory
-> creation/removal primitives that would assume that parent is already locked
-> by caller (and would leave unlocking to the caller as well).  So add them...
+> Looks good to me, thanks! Though I would really appreciate if someone
+> from security camp take a look as well.
 
-I originally had this, but the issue isn't with i_mutex only. The
-instance_mkdir and instance_rmdir need to grab trace_types_lock. This
-is also held when calling into tracefs.
+hm, who's that.  Kees comes to mind.
 
-That is, we can not hold i_mutex and take trace_types_lock.
+And reviewers' task would be a heck of a lot easier if they knew what
+/proc/pid/map_files actually does.  This:
 
-trace_types_lock needs to be held with the creation or destruction of
-events, which is what mkdir an rmdir do.
+akpm3:/usr/src/25> grep -r map_files Documentation 
+akpm3:/usr/src/25> 
+
+does not help.
+
+The 640708a2cff7f81 changelog says:
+
+:     This one behaves similarly to the /proc/<pid>/fd/ one - it contains
+:     symlinks one for each mapping with file, the name of a symlink is
+:     "vma->vm_start-vma->vm_end", the target is the file.  Opening a symlink
+:     results in a file that point exactly to the same inode as them vma's one.
+:     
+:     For example the ls -l of some arbitrary /proc/<pid>/map_files/
+:     
+:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
+:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
+:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
+:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
+:      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
+
+afacit this info is also available in /proc/pid/maps, so things
+shouldn't get worse if the /proc/pid/map_files permissions are at least
+as restrictive as the /proc/pid/maps permissions.  Is that the case? 
+(Please add to changelog).
 
 
--- Steve
+There's one other problem here: we're assuming that the map_files
+implementation doesn't have bugs.  If it does have bugs then relaxing
+permissions like this will create new vulnerabilities.  And the
+map_files implementation is surprisingly complex.  Is it bug-free?
