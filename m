@@ -1,114 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674AbbAZOEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 09:04:38 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:37186 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524AbbAZOEb (ORCPT
+	id S1754118AbbAZOEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:04:33 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:55225 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbbAZOE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 09:04:31 -0500
-Message-ID: <54C6494D.80802@roeck-us.net>
-Date: Mon, 26 Jan 2015 06:03:57 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Mon, 26 Jan 2015 09:04:29 -0500
+Message-ID: <54C64962.2070204@gmail.com>
+Date: Mon, 26 Jan 2015 19:34:18 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
- page tables to the process'
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050445.GA22751@roeck-us.net> <20150123111304.GA5975@node.dhcp.inet.fi> <54C263CC.1060904@roeck-us.net> <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org> <20150124055207.GA8926@roeck-us.net> <20150126122944.GE25833@node.dhcp.inet.fi>
-In-Reply-To: <20150126122944.GE25833@node.dhcp.inet.fi>
+To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>, alex.aring@gmail.com,
+        linux-wpan@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH bluetooth-next] ieee802154: cc2520: Replace shift operations
+ by BIT macro
+References: <1422021509-18877-1-git-send-email-md.jamalmohiuddin@gmail.com>
+In-Reply-To: <1422021509-18877-1-git-send-email-md.jamalmohiuddin@gmail.com>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54C6496F.013F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 7
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015 04:29 AM, Kirill A. Shutemov wrote:
-> On Fri, Jan 23, 2015 at 09:52:07PM -0800, Guenter Roeck wrote:
->> On Fri, Jan 23, 2015 at 01:55:19PM -0800, Andrew Morton wrote:
->>> On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
->>>
->>>>>>
->>>>>> qemu:microblaze generates warnings to the console.
->>>>>>
->>>>>> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
->>>>>>
->>>>>> with various call stacks. See
->>>>>> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
->>>>>> for details.
->>>>>
->>>>> Could you try patch below? Completely untested.
->>>>>
->>>>> >From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
->>>>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>>>> Date: Fri, 23 Jan 2015 13:08:26 +0200
->>>>> Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
->>>>>
->>>>> Microblaze uses custom implementation of PMD folding, but doesn't define
->>>>> __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
->>>>>
->>>>> Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
->>>>> It also fixes problems with recently-introduced pmd accounting.
->>>>>
->>>>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->>>>> Reported-by: Guenter Roeck <linux@roeck-us.net>
->>>>
->>>> Tested working.
->>>>
->>>> Tested-by: Guenter Roeck <linux@roeck-us.net>
->>>>
->>>> Any idea how to fix the sh problem ?
->>>
->>> Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
->>> shut down", which isn't very clear.
->>
->> Turns out that the include file defining __PAGETABLE_PMD_FOLDED
->> was not always included where used, resulting in a messed up mm_struct.
->
-> What means "messed up" here? It should only affect size of mm_struct.
->
-Plus the offset of all variables after the #ifndef.
+Hi Jamal,
 
->> The patch below fixes the problem for the sh architecture.
->> No idea if the patch is correct/acceptable for other architectures.
->
-> That's pain. Some archs includes <linux/mm_types.h> from <asm/pgtable.h>.
-> I don't see obvious way to fix this. Urghh.
->
-Does it matter ? Circular includes are normally ok and happen all over the place.
-I could run a full build / qemu test cycle for all architectures if that helps.
+On Friday 23 January 2015 07:28 PM, Mohammad Jamal wrote:
+> This patch replaces the shifting operations by BIT macro
 
-Guenter
+Thanks for the patch.
+
+Acked-by: Varka Bhadram <varkabhadram@gmail.com>
+
+> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+> ---
+>   drivers/net/ieee802154/cc2520.c |    6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/net/ieee802154/cc2520.c b/drivers/net/ieee802154/cc2520.c
+> index 665a3db..181b349 100644
+> --- a/drivers/net/ieee802154/cc2520.c
+> +++ b/drivers/net/ieee802154/cc2520.c
+> @@ -44,9 +44,9 @@
+>   #define	CC2520_FREG_MASK	0x3F
+>   
+>   /* status byte values */
+> -#define	CC2520_STATUS_XOSC32M_STABLE	(1 << 7)
+> -#define	CC2520_STATUS_RSSI_VALID	(1 << 6)
+> -#define	CC2520_STATUS_TX_UNDERFLOW	(1 << 3)
+> +#define	CC2520_STATUS_XOSC32M_STABLE	BIT(7)
+> +#define	CC2520_STATUS_RSSI_VALID	BIT(6)
+> +#define	CC2520_STATUS_TX_UNDERFLOW	BIT(3)
+>   
+>   /* IEEE-802.15.4 defined constants (2.4 GHz logical channels) */
+>   #define	CC2520_MINCHANNEL		11
+
+-- 
+Thanks and Regards,
+Varka Bhadram.
 
