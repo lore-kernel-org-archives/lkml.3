@@ -1,110 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbbAZMzS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:55:18 -0500
-Received: from mga14.intel.com ([192.55.52.115]:51905 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456AbbAZMzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:55:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,468,1418112000"; 
-   d="scan'208";a="642623974"
-Date: Mon, 26 Jan 2015 14:55:03 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH 8/8] phy: add driver for TI TUSB1210 ULPI PHY
-Message-ID: <20150126125503.GB28539@kuha.fi.intel.com>
-References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1422025978-178336-9-git-send-email-heikki.krogerus@linux.intel.com>
- <20150124235811.GA24665@psi-dev26.jf.intel.com>
+	id S1755368AbbAZMzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:55:48 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:55906 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200AbbAZMzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:55:40 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm 0/3] slub: make dead caches discard free slabs immediately
+Date: Mon, 26 Jan 2015 15:55:26 +0300
+Message-ID: <cover.1422275084.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150124235811.GA24665@psi-dev26.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hi,
 
-On Sat, Jan 24, 2015 at 03:58:11PM -0800, David Cohen wrote:
-> > +static int tusb1210_power_on(struct phy *phy)
-> > +{
-> > +	struct tusb1210 *tusb = phy_get_drvdata(phy);
-> > +
-> > +	gpiod_set_value_cansleep(tusb->gpio_reset, 1);
-> > +	gpiod_set_value_cansleep(tusb->gpio_cs, 1);
-> > +
-> > +	/* Restore eye diagram optimisation value */
-> > +	ulpi_write(tusb->ulpi, TUSB1210_VENDOR_SPECIFIC2,
-> > +		   tusb->eye_diagram_tuning);
-> 
-> After you power on phy, ulpi bus may not be available right away. In
-> intel case, phy power on happens during dwc3 power on. ULPI bus is not
-> available until OTG controller and phy are in sync.
-> 
-> In resume, you can't restore eye diagram from here.
+The kmem extension of the memory cgroup is almost usable now. There is,
+in fact, the only serious issue left: per memcg kmem caches may pin the
+owner cgroup for indefinitely long. This is, because a slab cache may
+keep empty slab pages in its private structures to optimize performance,
+while we take a css reference per each charged kmem page.
 
-I'm sorry but I don't think I understand? Where do we power on the phy
-before dwc3 is powered on? Or is this a Baytrail-CR specific problem?
-I can't see any problems with the hardware I have.
+The issue is only relevant to SLUB, because SLAB periodically reaps
+empty slabs. This patch set fixes this issue for SLUB. For details,
+please see patch 3.
 
-In any case, this sounds like purely dwc3 issue and not tusb1210
-issue.
+Thanks,
 
-> > +static int tusb1210_probe(struct ulpi *ulpi)
-> > +{
-> > +	struct gpio_desc *gpio;
-> > +	struct tusb1210 *tusb;
-> > +	int ret;
-> > +
-> > +	tusb = devm_kzalloc(&ulpi->dev, sizeof(*tusb), GFP_KERNEL);
-> > +	if (!tusb)
-> > +		return -ENOMEM;
-> > +
-> > +	gpio = devm_gpiod_get(&ulpi->dev, "reset");
-> > +	if (!IS_ERR(gpio)) {
-> > +		ret = gpiod_direction_output(gpio, 0);
-> > +		if (ret)
-> > +			return ret;
-> > +		tusb->gpio_reset = gpio;
-> > +	}
-> 
-> You cannot proceed with probe if gpio reset is not available. Different
-> from CS, it's a mandatory pin to toggle in order to power on/off phy and
-> get it in sync with OTG controller.
+Vladimir Davydov (3):
+  slub: don't fail kmem_cache_shrink if slab placement optimization
+    fails
+  slab: zap kmem_cache_shrink return value
+  slub: make dead caches discard free slabs immediately
 
-Well, let's check -ENOENT and -ENODEV return values separately. The
-reset pin is not used on all platforms so getting this gpio is
-optional. This is the case even with some Intel's platforms using
-TUSB1210.
-
-> > +
-> > +	gpio = devm_gpiod_get(&ulpi->dev, "cs");
-> > +	if (!IS_ERR(gpio)) {
-> > +		ret = gpiod_direction_output(gpio, 0);
-> > +		if (ret)
-> > +			return ret;
-> > +		tusb->gpio_cs = gpio;
-> > +	}
-> > +
-> > +	/* Store initial eye diagram optimisation value */
-> > +	ret = ulpi_read(ulpi, TUSB1210_VENDOR_SPECIFIC2);
-> 
-> It's unclear if ulpi is accessible at this point. You can't read it at
-> this point.
-
-We wouldn't have reached this point if ulpi wasn't accessible.
-Registering the ulpi interface would have already failed so no driver
-would have been probed.
-
-
-Thanks!
+ include/linux/slab.h |    2 +-
+ mm/slab.c            |    9 +++++++--
+ mm/slab.h            |    2 +-
+ mm/slab_common.c     |   21 +++++++++++++-------
+ mm/slob.c            |    3 +--
+ mm/slub.c            |   53 +++++++++++++++++++++++++++++++++++---------------
+ 6 files changed, 61 insertions(+), 29 deletions(-)
 
 -- 
-heikki
+1.7.10.4
+
