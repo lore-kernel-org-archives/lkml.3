@@ -1,118 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256AbbAZLOW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:14:22 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:36517 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121AbbAZLOQ (ORCPT
+	id S1755313AbbAZLOZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:14:25 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:57412 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755175AbbAZLOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:14:16 -0500
+	Mon, 26 Jan 2015 06:14:19 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, mturquette@linaro.org,
         sboyd@codeaurora.org, devicetree@vger.kernel.org
-Subject: [PATCH 3/4] clk: st: Provide a clock domain
-Date: Mon, 26 Jan 2015 11:13:59 +0000
-Message-Id: <1422270840-3039-4-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 4/4] clk: dt: st: Introduce clock domain documentation
+Date: Mon, 26 Jan 2015 11:14:00 +0000
+Message-Id: <1422270840-3039-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422270840-3039-1-git-send-email-lee.jones@linaro.org>
 References: <1422270840-3039-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST's h/w contains clocks which if turned off would prove fatal.  The
-only way to recover is to restart the board(s).  This driver takes
-references to clocks which are required to be always-on in order to
-prevent the common clk framework from trying to turn them off during
-the clk_disabled_unused() procedure.
-
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/clk/st/Makefile     |  2 +-
- drivers/clk/st/clk-domain.c | 63 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+), 1 deletion(-)
- create mode 100644 drivers/clk/st/clk-domain.c
+ .../devicetree/bindings/clock/st/st,clk-domain.txt | 34 ++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/st/st,clk-domain.txt
 
-diff --git a/drivers/clk/st/Makefile b/drivers/clk/st/Makefile
-index ede7b2f..ac09be6 100644
---- a/drivers/clk/st/Makefile
-+++ b/drivers/clk/st/Makefile
-@@ -1 +1 @@
--obj-y += clkgen-mux.o clkgen-pll.o clkgen-fsyn.o clk-flexgen.o
-+obj-y += clkgen-mux.o clkgen-pll.o clkgen-fsyn.o clk-flexgen.o clk-domain.o
-diff --git a/drivers/clk/st/clk-domain.c b/drivers/clk/st/clk-domain.c
+diff --git a/Documentation/devicetree/bindings/clock/st/st,clk-domain.txt b/Documentation/devicetree/bindings/clock/st/st,clk-domain.txt
 new file mode 100644
-index 0000000..e34049b
+index 0000000..7309937
 --- /dev/null
-+++ b/drivers/clk/st/clk-domain.c
-@@ -0,0 +1,63 @@
-+/*
-+ * ST Clock Domain
-+ *
-+ * Copyright (C) 2015 STMicroelectronics – All Rights Reserved
-+ *
-+ * Author: Lee Jones <lee.jones@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
++++ b/Documentation/devicetree/bindings/clock/st/st,clk-domain.txt
+@@ -0,0 +1,34 @@
++STMicroelectronics Clock Domain
 +
-+#include <linux/clk-private.h>
-+#include <linux/clk-provider.h>
-+#include <linux/of_address.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
++ST hardware have a bunch of clocks which must not be turned off.
++If drivers a) fail to obtain a reference to any of these or b) give
++up a previously obtained reference during suspend, the common clk
++framework will attempt to turn them off and the hardware will
++subsequently die.  The only way to recover from this failure is to
++restart.
 +
-+static void st_clk_domain_hog_clock(struct platform_device *pdev, int index)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct clk *clk;
-+	int ret;
++To avoid either of these two scenarios from catastrophically
++disabling the running system we have implemented a clock domain
++where clocks are consumed and references are taken, thus preventing
++them from being shut down by the framework.
 +
-+	clk = of_clk_get(np, index);
-+	if (IS_ERR(clk)) {
-+		dev_warn(&pdev->dev, "Failed get clock %s[%d]: %li\n",
-+			 np->full_name, index, PTR_ERR(clk));
-+		return;
-+	}
++We use the generic clock bindings found in:
++  Documentation/devicetree/bindings/clock/clock-bindings.txt
 +
-+	ret = clk_prepare_enable(clk);
-+	if (ret)
-+		dev_warn(&pdev->dev, "Failed to enable clock: %s\n", clk->name);
-+}
++Required properties:
++- compatible : Must be "st,clk-domain"
 +
-+static int st_clk_domain_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	int nclks, i;
++Example:
 +
-+	nclks = of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+
-+	for (i = 0; i < nclks; i++)
-+		st_clk_domain_hog_clock(pdev, i);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id st_clk_domain_match[] = {
-+	{ .compatible = "st,clk-domain" },
-+	{ },
++clk-domain {
++	compatible = "st,clk-domain";
++	clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>,
++		 <&clk_s_c0_flexgen CLK_COMPO_DVP>,
++		 <&clk_s_c0_flexgen CLK_MMC_1>,
++		 <&clk_s_c0_flexgen CLK_ICN_SBC>,
++		 <&clk_s_c0_flexgen CLK_ICN_LMI>,
++		 <&clk_s_c0_flexgen CLK_ICN_CPU>,
++		 <&clk_s_c0_flexgen CLK_TX_ICN_DMU>,
++		 <&clk_s_a0_flexgen CLK_IC_LMI0>,
++		 <&clk_m_a9>;
 +};
-+
-+static struct platform_driver st_clk_domain_driver = {
-+	.probe = st_clk_domain_probe,
-+	.driver = {
-+		.name = "st-clk-domain",
-+		.of_match_table = st_clk_domain_match,
-+	},
-+};
-+module_platform_driver(st_clk_domain_driver);
 -- 
 1.9.1
 
