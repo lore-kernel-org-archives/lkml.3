@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679AbbAZRCA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:02:00 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:45361 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678AbbAZRB7 (ORCPT
+	id S1756699AbbAZRCN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:02:13 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:44236 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870AbbAZRCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:01:59 -0500
-Date: Mon, 26 Jan 2015 20:01:47 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 1/3] slub: don't fail kmem_cache_shrink if slab
- placement optimization fails
-Message-ID: <20150126170147.GB28978@esperanza>
-References: <cover.1422275084.git.vdavydov@parallels.com>
- <3804a429071f939e6b4f654b6c6426c1fdd95f7e.1422275084.git.vdavydov@parallels.com>
- <alpine.DEB.2.11.1501260944550.15849@gentwo.org>
+	Mon, 26 Jan 2015 12:02:06 -0500
+Date: Mon, 26 Jan 2015 12:02:02 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [GIT PULL] cgroup fixes for v3.19-rc6
+Message-ID: <20150126170202.GC21242@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501260944550.15849@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+Hello, Linus.
 
-On Mon, Jan 26, 2015 at 09:48:00AM -0600, Christoph Lameter wrote:
-> On Mon, 26 Jan 2015, Vladimir Davydov wrote:
-> 
-> > SLUB's kmem_cache_shrink not only removes empty slabs from the cache,
-> > but also sorts slabs by the number of objects in-use to cope with
-> > fragmentation. To achieve that, it tries to allocate a temporary array.
-> > If it fails, it will abort the whole procedure.
-> 
-> I do not think its worth optimizing this. If we cannot allocate even a
-> small object then the system is in an extremely bad state anyways.
+The lifetime rules of cgroup hierarchies always have been somewhat
+counter-intuitive and cgroup core tried to enforce that hierarchies
+w/o userland-visible usages must die in finite amount of time so that
+the controllers can be reused for other hierarchies; unfortunately,
+this can't be implemented reasonably for the memory controller - the
+kmemcg part doesn't have any way to forcefully drain the existing
+usages, leading to an interruptible hang if a following mount attempts
+to use the controller in any way.
 
-Hmm, I've just checked my /proc/slabinfo and seen that I have 512
-objects per slab at max, so that the temporary array will be 2 pages at
-max. So you're right - this kmalloc will never fail on my system, simply
-because we never fail GFP_KERNEL allocations of order < 3. However,
-theoretically we can have as much as MAX_OBJS_PER_PAGE=32767 objects per
-slab, which would result in a huge allocation.
+So, it seems like we're stuck with "hierarchies live on till they die
+whenever that may be" at least for now.  This pretty much confines
+attaching controllers to hierarchies to before the hierarchies are
+actively used by making dynamic configurations post active usages
+unreliable.  This has never been reliable and should be fine in
+practice given how cgroups are used.
 
-Anyways, I think that silently relying on the fact that the allocator
-never fails small allocations is kind of unreliable. What if this
-behavior will change one day? So I'd prefer to either make
-kmem_cache_shrink fall back to using a variable on stack in case of the
-kmalloc failure, like this patch does, or place an explicit BUG_ON after
-it. The latter looks dangerous to me, because, as I mentioned above, I'm
-not sure that we always have less than 2048 objects per slab.
+After the patch, hierarchies aren't killed if it isn't already
+drained.  A following mount attempt of the same mount options will
+reuse the existing hierarchy.  Mount attempts with differing options
+will fail w/ -EBUSY.
 
-> 
-> > @@ -3400,7 +3407,9 @@ int __kmem_cache_shrink(struct kmem_cache *s)
-> >  		 * list_lock. page->inuse here is the upper limit.
-> >  		 */
-> >  		list_for_each_entry_safe(page, t, &n->partial, lru) {
-> > -			list_move(&page->lru, slabs_by_inuse + page->inuse);
-> > +			if (page->inuse < objects)
-> > +				list_move(&page->lru,
-> > +					  slabs_by_inuse + page->inuse);
-> >  			if (!page->inuse)
-> >  				n->nr_partial--;
-> >  		}
-> 
-> The condition is always true. A page that has page->inuse == objects
-> would not be on the partial list.
-> 
+Thanks.
 
-This is in case we failed to allocate the slabs_by_inuse array. We only
-have a list for empty slabs then (on stack).
+The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
 
-Thanks,
-Vladimir
+  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.19-fixes
+
+for you to fetch changes up to 3c606d35fe9766ede86a45273a628b320be13b45:
+
+  cgroup: prevent mount hang due to memory controller lifetime (2015-01-22 10:26:43 -0500)
+
+----------------------------------------------------------------
+Johannes Weiner (1):
+      cgroup: prevent mount hang due to memory controller lifetime
+
+ kernel/cgroup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index bb263d0..04cfe8a 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1909,7 +1909,7 @@ static void cgroup_kill_sb(struct super_block *sb)
+ 	 *
+ 	 * And don't kill the default root.
+ 	 */
+-	if (css_has_online_children(&root->cgrp.self) ||
++	if (!list_empty(&root->cgrp.self.children) ||
+ 	    root == &cgrp_dfl_root)
+ 		cgroup_put(&root->cgrp);
+ 	else
+
+-- 
+tejun
