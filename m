@@ -1,119 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090AbbAZOS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 09:18:27 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:38891 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040AbbAZOS0 (ORCPT
+	id S1755386AbbAZOTO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:19:14 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:49155 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040AbbAZOTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 09:18:26 -0500
-Message-ID: <54C64C93.6040504@roeck-us.net>
-Date: Mon, 26 Jan 2015 06:17:55 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Mon, 26 Jan 2015 09:19:08 -0500
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
- page tables to the process'
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050445.GA22751@roeck-us.net> <20150123111304.GA5975@node.dhcp.inet.fi> <54C263CC.1060904@roeck-us.net> <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org> <20150124055207.GA8926@roeck-us.net> <20150126122944.GE25833@node.dhcp.inet.fi> <54C6494D.80802@roeck-us.net>
-In-Reply-To: <54C6494D.80802@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54C64CAF.012B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 7
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Date: Mon, 26 Jan 2015 15:18:53 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: tglx@linutronix.de, jason@lakedaemon.net,
+        Marc Zyngier <Marc.Zyngier@arm.com>, u.kleine-koenig@pengutronix.de,
+        shawn.guo@linaro.org, kernel@pengutronix.de, arnd@arndb.de,
+        robh+dt@kernel.org, Pawel Moll <Pawel.Moll@arm.com>,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 2/3] irqchip: vf610-mscm: dt-bindings: add
+ MSCM bindings
+In-Reply-To: <20150126133602.GG23313@leverpostej>
+References: <1421309046-22452-1-git-send-email-stefan@agner.ch>
+ <1421309046-22452-3-git-send-email-stefan@agner.ch>
+ <20150126133602.GG23313@leverpostej>
+Message-ID: <e8f5ff60a8da4c7539d9a33d162bb773@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015 06:03 AM, Guenter Roeck wrote:
-> On 01/26/2015 04:29 AM, Kirill A. Shutemov wrote:
->> On Fri, Jan 23, 2015 at 09:52:07PM -0800, Guenter Roeck wrote:
->>> On Fri, Jan 23, 2015 at 01:55:19PM -0800, Andrew Morton wrote:
->>>> On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
->>>>
->>>>>>>
->>>>>>> qemu:microblaze generates warnings to the console.
->>>>>>>
->>>>>>> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
->>>>>>>
->>>>>>> with various call stacks. See
->>>>>>> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
->>>>>>> for details.
->>>>>>
->>>>>> Could you try patch below? Completely untested.
->>>>>>
->>>>>> >From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
->>>>>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>>>>> Date: Fri, 23 Jan 2015 13:08:26 +0200
->>>>>> Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
->>>>>>
->>>>>> Microblaze uses custom implementation of PMD folding, but doesn't define
->>>>>> __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
->>>>>>
->>>>>> Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
->>>>>> It also fixes problems with recently-introduced pmd accounting.
->>>>>>
->>>>>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->>>>>> Reported-by: Guenter Roeck <linux@roeck-us.net>
->>>>>
->>>>> Tested working.
->>>>>
->>>>> Tested-by: Guenter Roeck <linux@roeck-us.net>
->>>>>
->>>>> Any idea how to fix the sh problem ?
->>>>
->>>> Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
->>>> shut down", which isn't very clear.
->>>
->>> Turns out that the include file defining __PAGETABLE_PMD_FOLDED
->>> was not always included where used, resulting in a messed up mm_struct.
+On 2015-01-26 14:36, Mark Rutland wrote:
+> On Thu, Jan 15, 2015 at 08:04:05AM +0000, Stefan Agner wrote:
+>> Add binding documentation for Miscellaneous System Control Module
+>> found in Freescale Vybrid SoC's.
 >>
->> What means "messed up" here? It should only affect size of mm_struct.
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>> ---
+>>  .../bindings/arm/freescale/fsl,vf610-mscm.txt         | 19 +++++++++++++++++++
+>>  1 file changed, 19 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
 >>
-> Plus the offset of all variables after the #ifndef.
->
->>> The patch below fixes the problem for the sh architecture.
->>> No idea if the patch is correct/acceptable for other architectures.
->>
->> That's pain. Some archs includes <linux/mm_types.h> from <asm/pgtable.h>.
->> I don't see obvious way to fix this. Urghh.
->>
-> Does it matter ? Circular includes are normally ok and happen all over the place.
+>> diff --git a/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt b/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+>> new file mode 100644
+>> index 0000000..e051b88
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+>> @@ -0,0 +1,19 @@
+>> +Freescale Vybrid Miscellaneous System Control Module
+>> +
+>> +The MSCM IP contains Access Control and TrustZone Security hardware,
+>> +CPU Configuration registers and Interrupt Router control.
+>> +
+>> +Required properties:
+>> +- compatible : "fsl,vf610-mscm", "syscon"
+> 
+> I'm a little concerned by this also being a syscon. What other devices
+> need to refer to this block as a syscon?
+> 
 
-Ah yes, it does, because mm_struct will not see the define in that case
-since it comes later. Hmm, that is really tricky. You could of course
-just drop the conditional from mm_struct. That would result in an unused
-variable for some architectures, but at least it would work.
+The block offers several functionality. I'm happy we can discuss this
+here a bit more in depth, since I'm really not sure if the current
+solution is the best solution...
 
-Guenter
+Due to the general rule to not split hardware modules, I hesitated to
+make different nodes out of it. However, this module has some quite
+distinct sub-modules, hence I guess it would be also feasible to do so:
 
+0x40001000-0x4000105C - Processor information e.g. which processor ID is
+the accessing processor (processor identity), cache size etc...
+0x40001800-0x40001820 - CPU2CPU directed interrupt generation/clear
+registers...
+0x40001880-0x4000195E - the actual interrupt router
+0x40001C00-0x40001DDC - ACTZS TrustZone registers...
+
+This driver accesses the first and the third block. The first block is
+necessary since the driver needs to know which CPU ID it is running on
+to actually program the interrupt router (Note: this is a heterogeneous
+multiprocessing system. This are actually treated as two independent UP
+systems, considering that Linux can also run on the Cortex-M4).
+
+Hence, the syscon definition which would allow to access other areas as
+needed, especially the processor information might be needed by any
+other peripheral (driver) which needs to know what CPU it is running on.
+What do you think?
+
+OTH, we could as well split it up in three or even four nodes. The MSCM
+interrupt router part just needs to access the the MSCM processor
+information part somehow (syscon?)...
+
+Fwiw, in our downstream kernel, the CPU2CPU interrupts are used for
+Freescales messaging system (MCC). I hacked a special interface in that
+early version of this driver, to export this functionality. But then I
+guess such a functionality should not affect the device tree
+bindings...?
+http://git.toradex.com/cgit/linux-toradex.git/commit/?h=toradex_vf_3.18-next&id=6f0bbad6b805cf2014eec54531dbe4ddb4867a91
+
+For detailed information, the module is documented in the public
+reference manual, chapter 64.
+http://www.freescale.com/webapp/sps/site/prod_summary.jsp?code=VF6xx&fpsp=1&tab=Documentation_Tab
+
+>> +- interrupt-controller : Identifies the node as an interrupt controller
+>> +- #interrupt-cells : Two cells, interrupt number and flags (IRQ type)
+> 
+> What numbers and flags are valid?
+> 
+
+The first cell is the hardware interrupt ID according to the MSCM
+interrupt router. The flags gets passed to the GIC interrupt controller
+only, hence those are the one which are supported by the GIC controller.
+
+
+Will add that information, thx.
+
+--
+Stefan
+
+> Mark.
+> 
+>> +- reg : the register range of the MSCM module
+>> +
+>> +Example:
+>> +	mscm: mscm@40001000 {
+>> +		compatible = "fsl,vf610-mscm", "syscon";
+>> +		interrupt-controller;
+>> +		#interrupt-cells = <2>;
+>> +		interrupt-parent = <&intc>;
+>> +		reg = <0x40001000 0x1000>;
+>> +	}
+>> --
+>> 2.2.1
+>>
+>>
