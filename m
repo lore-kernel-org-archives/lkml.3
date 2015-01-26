@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbbAZMLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:11:47 -0500
-Received: from 8bytes.org ([81.169.241.247]:46097 "EHLO theia.8bytes.org"
+	id S1753794AbbAZMLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:11:54 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38719 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623AbbAZMLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:11:45 -0500
-Date: Mon, 26 Jan 2015 13:11:42 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
-Subject: Re: [PATCH 3/3] x86, crash: Allocate enough low-mem when
- crashkernel=high
-Message-ID: <20150126121142.GG30345@8bytes.org>
-References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
- <1420555874-11506-4-git-send-email-joro@8bytes.org>
- <20150123170243.GG22635@pd.tnic>
+	id S1753098AbbAZMLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:11:51 -0500
+Message-ID: <54C62EFF.1010202@ti.com>
+Date: Mon, 26 Jan 2015 14:11:43 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150123170243.GG22635@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Scot Doyle <lkml14@scotdoyle.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] fbcon: Remove unused vblank cursor code
+References: <alpine.DEB.2.11.1501232247340.2377@localhost.localdomain>
+In-Reply-To: <alpine.DEB.2.11.1501232247340.2377@localhost.localdomain>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="HiFRWLNX4ferETt22DSbOenjewSWAE76c"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 06:02:43PM +0100, Borislav Petkov wrote:
-> On Tue, Jan 06, 2015 at 03:51:14PM +0100, Joerg Roedel wrote:
-> > From: Joerg Roedel <jroedel@suse.de>
-> > 
-> > When the crashkernel is loaded above 4GiB in memory the
-> > first kernel only allocates 72MiB of low-memory for the DMA
-> > requirements of the second kernel. On systems with many
-> > devices this is not enough and causes device driver
-> > initialization errors and failed crash dumps. Set this
-> > default value to 256MiB to make sure there is enough memory
-> 
-> This upper limit of 256 looks arbitrary. Are we going to raise it a
-> couple of years from now if it becomes insufficient then?
+--HiFRWLNX4ferETt22DSbOenjewSWAE76c
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Yes, it is arbitrary. I am open for suggestions on what might be a
-proper value to satisfy most systems.
+On 24/01/15 00:55, Scot Doyle wrote:
+> commit 1fa0b29f3a43 ("fbdev: Kill Atari vblank cursor blinking")
+>=20
+> rendered vbl_cursor_cnt and therefore CURSOR_DRAW_DELAY unused in fbcon=
+=2Ec,
+> so remove them.
+>=20
+> Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+> ---
+>  drivers/video/console/fbcon.c | 4 ----
+>  1 file changed, 4 deletions(-)
+>=20
+> diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbco=
+n.c
+> index ea43724..b972106 100644
+> --- a/drivers/video/console/fbcon.c
+> +++ b/drivers/video/console/fbcon.c
+> @@ -146,9 +146,6 @@ static const struct consw fb_con;
+> =20
+>  static int fbcon_set_origin(struct vc_data *);
+> =20
+> -#define CURSOR_DRAW_DELAY		(1)
+> -
+> -static int vbl_cursor_cnt;
+>  static int fbcon_cursor_noblink;
+> =20
+>  #define divides(a, b)	((!(a) || (b)%(a)) ? 0 : 1)
+> @@ -1329,7 +1326,6 @@ static void fbcon_cursor(struct vc_data *vc, int =
+mode)
+> =20
+>  	ops->cursor(vc, info, mode, y, get_color(vc, info, c, 1),
+>  		    get_color(vc, info, c, 0));
+> -	vbl_cursor_cnt =3D CURSOR_DRAW_DELAY;
+>  }
+> =20
+>  static int scrollback_phys_max =3D 0;
+>=20
 
-> It probably won't be easy but is there some more reliable way to
-> allocate enough memory for DMA on a say per-system basis or whatever...?
-> Probably not but let me ask it anyway.
+Thanks, queued for 3.20.
 
-Well, there is no easy way. But we could collect information from the
-loaded drivers on boot about how many dma-memory they allocate and base
-our allocation on that. Or we solve it in user-space by some more
-cleverness in creating the kernel command-line for crashkernel=high.
-
-But besides that, I think the first two patches of this set make sense
-anyway. I understand that the third one is debatable.
+ Tomi
 
 
-	Joerg
 
+--HiFRWLNX4ferETt22DSbOenjewSWAE76c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUxi7/AAoJEPo9qoy8lh71evoP/REgfrdP+SfW+LFnEf7e927A
+iUB1PC06BXHlNiNrMFiuBW2GPreudVw38Q9m47a6rtQHAVBj4zvb4XvYLx5ud+q3
+0L8J+h/OWTW3ZTmQUC7KWGdwHtMY49cps5avZ9JfxuH0F8CC0rpQTYq47pqOxpu2
+r56S1nYOEBYDEEE0KOaB1RwbEnlog7d9UALmhsala/pBTx2sC+n7OJu0+FDicxX3
+EiyoYhiLHZWVqBYAe2OqYox8CUbgMslPbsuqf24/Vo0uBuUrYHAVZsewRxgSasc3
+ZGZ067sEscionIvPHqq9f9t9HtYS4+Xq+YAJL0IOuJBuzfUce3pWocVQfngeZ5er
+eGhT8iRydGmeBXX+iQ/9O4fQD8nML1hhkMhO5R70LgCj/kyycsLEJyeFEOg89qxL
+9ZVI5d/HyLJ5vPm83difXAyqfte9Zg77XS18xOd9Ffu1Sgt+4UeNMfdDlombYOA6
+kh4lbQvZycNY6qaoGoe3rjodoG23fhLe8ms6VfrsjKtfvJVnKMkYRPF7VYvKsFc9
+i+J3jqiFLZYF7AJYlsA4/LBu+IQAkOAoQ9vAUUSsspUKC8GTUAzuObD6N3asSCvD
+DlxDb8wIOhl1f7ImbnAjszh5WHERdwK1v++6Llz3gCK1FwWCew6njgZh34GaTf9F
+7Tjmd8oRt/iEz730QKLE
+=UQbz
+-----END PGP SIGNATURE-----
+
+--HiFRWLNX4ferETt22DSbOenjewSWAE76c--
