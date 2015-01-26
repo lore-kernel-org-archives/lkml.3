@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994AbbAZVDH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:03:07 -0500
-Received: from ozlabs.org ([103.22.144.67]:56946 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755691AbbAZVDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:03:06 -0500
-Date: Tue, 27 Jan 2015 08:02:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-next@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: contact change for the integrity tree
-Message-ID: <20150127080258.534b0376@canb.auug.org.au>
-In-Reply-To: <CACE9dm92M1JO0OXW_4bWRBxOjo60ntYJ_Z+w1EJvPDTDM+yGyw@mail.gmail.com>
-References: <20150127074921.3a4ac6df@canb.auug.org.au>
-	<CACE9dm92M1JO0OXW_4bWRBxOjo60ntYJ_Z+w1EJvPDTDM+yGyw@mail.gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1757026AbbAZVFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:05:05 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:58237 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755573AbbAZVFC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 16:05:02 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: mmc does not work in qemu n900
+Date: Mon, 26 Jan 2015 22:04:59 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@kernel.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/VL2Ww/_4oLXlyDYhXBHSPE="; protocol="application/pgp-signature"
+Content-Type: multipart/signed;
+  boundary="nextPart2140942.rm5U7zV4qW";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201501262204.59305@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/VL2Ww/_4oLXlyDYhXBHSPE=
-Content-Type: text/plain; charset=US-ASCII
+--nextPart2140942.rm5U7zV4qW
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Dmitry,
+Hello,
 
-On Mon, 26 Jan 2015 22:51:40 +0200 Dmitry Kasatkin <dmitry.kasatkin@gmail.c=
-om> wrote:
->
-> Yes, please.
+for unknown reason kernel in qemu n900 machine is not able to=20
+detect internal eMMC memory. External SD card is detected without=20
+problem.
 
-Done.
+If I apply this one-line patch eMMC in qemu start working:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 9584bff..0d4461c 100644
+=2D-- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -2337,6 +2337,9 @@ static int mmc_rescan_try_freq(
+ 		return 0;
+ 	if (!mmc_attach_sd(host))
+ 		return 0;
++
++	mmc_go_idle(host);
++
+ 	if (!mmc_attach_mmc(host))
+ 		return 0;
 
---Sig_/VL2Ww/_4oLXlyDYhXBHSPE=
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+I played with mmc and qemu n900 a bit and also this simple patch=20
+(without first) fix problem (that mmc is not detected by kernel):
+
+diff --git a/drivers/mmc/core/mmc_ops.c=20
+b/drivers/mmc/core/mmc_ops.c
+index 3b044c5..0c93a2c 100644
+=2D-- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -157,6 +157,10 @@ int mmc_send_op_cond(
+=20
+ 	BUG_ON(!host);
+=20
++	/* reset mmc before calling op_cond */
++	memset(&cmd, 0, sizeof(struct mmc_command));
++	mmc_wait_for_cmd(host, &cmd, MMC_CMD_RETRIES);
++
+ 	cmd.opcode =3D MMC_SEND_OP_COND;
+ 	cmd.arg =3D mmc_host_is_spi(host) ? 0 : ocr;
+ 	cmd.flags =3D MMC_RSP_SPI_R1 | MMC_RSP_R3 | MMC_CMD_BCR;
+=20
+
+I have no idea where is problem. I also do not understand mmc=20
+kernel code, but second patch I have on my HDD since 2.6.37.
+
+Can somebody with knowledge of mmc subsystem look at this=20
+problem? Why any of these two patches fix problem when mmc is not=20
+detected by kernel in qemu (machine n900)? Detection of mmc fails=20
+because function mmc_send_op_cond() without one of above patches=20
+fails.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2140942.rm5U7zV4qW
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJUxquIAAoJEMDTa8Ir7ZwVnb8P/jwubfZWiKAPt8wlenvIfjoe
-CcMb+dXt3kCuCuJS+i6VHCq9u1OXax05MqHDvzojPqPuixgCMdC/FqmqZb0zdcJR
-cHLCUDm8WWf2YGfdo0Rdm/l6m0Zj3OWrgrx6nEqCL/TZXJBwuCe+pXKyHxpSqcqz
-UaIMctcZbMmDjIEJdvA3YBa2YxS8ErEt+aiWoSAjFW/8L6J8WfTbPPTME5F+NKkK
-0kJvmoktJJgoYHyE+nu5UdaMx09fgx0acrKGDWP85gzmwq0rMih8GJxsN+20mB/a
-y7TIOcaNRmh8DyxkntvoFakvPcv47JRrYL5IjPZSs99d9x78ybAMyNI/zsCB9l4C
-CxSBt/zDbup+GgJnFUo5gsIlyXu2F5chJcw5+eaiGsaoi4JLzMxrS0vh7Sz6aWWi
-tojcwby8ca503t7wqBMNIqABpTM2VXtsqKGkcgcdzhxsdZT9OnQDA1vPXNdWeUN4
-Jv7KL5BHz9PwttFDsIBYudWX+GB+prBwCihaNlM//aMrS+X60NSHgNgMWbYHfQQB
-n2tQHPBLnKG/pOAqXliRd5e3EiNVYu7Pi0E15ga7U5+h7Ugk0feS1DTlgBfMjZQk
-gNyZbeq1Iln7G9aVyDJIvpJsjeOXa3JVObo2MfyEXhEcjLg3Zh4ymcx9JM8qTVMP
-NO2qYP3NL7wAulRQPIsR
-=a502
+iEYEABECAAYFAlTGq/sACgkQi/DJPQPkQ1LpbQCbB9rsxOTbfxx9Jw/lRHFG4fak
+bJ8An3uQy5wmH0DbPFFon01Y7LNIC/wZ
+=D3yF
 -----END PGP SIGNATURE-----
 
---Sig_/VL2Ww/_4oLXlyDYhXBHSPE=--
+--nextPart2140942.rm5U7zV4qW--
