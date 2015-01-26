@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433AbbAZLyO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 06:54:14 -0500
-Received: from 8bytes.org ([81.169.241.247]:45958 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753823AbbAZLyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 06:54:10 -0500
-Date: Mon, 26 Jan 2015 12:54:08 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Baoquan He <bhe@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
-Subject: Re: [PATCH 2/3] x86, swiotlb: Try coherent allocations with
- __GFP_NOWARN
-Message-ID: <20150126115408.GE30345@8bytes.org>
-References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
- <1420555874-11506-3-git-send-email-joro@8bytes.org>
- <20150123170306.GH22635@pd.tnic>
- <20150126032236.GN2461@dhcp-16-105.nay.redhat.com>
+	id S1754595AbbAZLzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 06:55:24 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:48431 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517AbbAZLzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 06:55:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126032236.GN2461@dhcp-16-105.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Mon, 26 Jan 2015 12:55:07 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Thomas Gleixner <tglx@linutronix.de>, marc.zyngier@arm.com
+Cc: jason@lakedaemon.net, u.kleine-koenig@pengutronix.de, shawn.guo@linaro.org,
+        kernel@pengutronix.de, arnd@arndb.de, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 0/3] irqchip: vf610-mscm: add support for MSCM
+ interrupt router
+In-Reply-To: <alpine.DEB.2.11.1501261115300.5526@nanos>
+References: <1421309046-22452-1-git-send-email-stefan@agner.ch>
+ <alpine.DEB.2.11.1501261115300.5526@nanos>
+Message-ID: <36990c90fa3d2ee0849227f31cbafb54@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 11:22:36AM +0800, Baoquan He wrote:
-> > Ok, so this practically does all allocations __GFP_NOWARN now. Shouldn't
-> > you be doing this before swiotlb_alloc_coherent() and not before
-> > dma_generic_alloc_coherent()?
+On 2015-01-26 11:16, Thomas Gleixner wrote:
+> On Thu, 15 Jan 2015, Stefan Agner wrote:
 > 
-> I think this patch mainly suppress warning from buddy allocation
-> failure because it tried buddy allocation several times before the final
-> try of bounce buffer allocation. Buddy allocation failure will call
-> dump_stack.
+>> Splitted out version of the MSCM driver. My first driver based on the
+>> routeable domain support and was part of the Vybrid Cortex-M4 support
+>> patchset.
+>>
+>> So far the MSCM interrupt router was initialized by the boot loader
+>> and configured all interrupts for the Cortex-A5 CPU. There are two
+>> use cases where a proper driver is necessary:
+>> - To run Linux on the Cortex-M4. When the kernel is running on the
+>>   non-preconfigured CPU, the interrupt router need to be configured
+>>   properly.
+>> - To support deeper sleep modes: LPSTOP clears the interrupt router
+>>   configuration, hence a driver needs to restore the configuration
+>>   on resume.
+>> I created a seperate patchset for that driver which hopefully makes
+>> it easier to get it into mergeable state.
+>>
+>> Since I identified some registers likely to be used by other drivers
+>> (e.g. CPU ID or the CPU Generate Interrupt Register) I also added
+>> the "syscon" compatible string to make the registers available for
+>> other drivers in case needed.
+>>
+>> This resend version of this patchset is rebased on v3.19-rc4.
+> 
+> Has the discussion with Marc on the original V3 set been resolved?
 
-Yes, exactly. The default low-memory available to the page-allocator
-with crashkernel=high is 8MB. This is up pretty fast and then we start
-to get warnings, even when there is still memory left in the swiotlb
-space. The __GFP_WARN is there to suppress the warnings from the
-page-allocator, so it has to be set before it is called.
+There was no answer to the original v3 patch. The comments of Marc was
+back in the v2 set, and has been resolved in v3. However, no Ack from
+Marc so far.
 
+ 
+> What about the DT bindings? I'm relucant to pick that up w/o acks from
+> the DT folks.
 
-	Joerg
+The bindings are straight forward interrupt-controller bindings, since
+it uses the hierarchic irq domain stuff. The only uncommon thing is that
+I also added "syscon" as compatible, since the module has functionality
+which might be required by other drivers (e.g. register to generate
+CPU2CPU interrupt or processor personality information).
 
+--
+Stefan
