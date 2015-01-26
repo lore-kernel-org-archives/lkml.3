@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535AbbAZQvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:51:37 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:47566 "EHLO gloria.sntech.de"
+	id S1756517AbbAZQ6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:58:19 -0500
+Received: from mga09.intel.com ([134.134.136.24]:34694 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905AbbAZQvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:51:20 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Jeffy Chen <jeffy.chen@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: rockchip: Only mask interrupts; never disable
-Date: Mon, 26 Jan 2015 17:56:19 +0100
-Message-ID: <1844800.Wx1PProku3@diego>
-User-Agent: KMail/4.14.1 (Linux/3.16-3-amd64; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <1422289444-15142-1-git-send-email-dianders@chromium.org>
-References: <1422289444-15142-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1753422AbbAZQ6R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 11:58:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,469,1418112000"; 
+   d="scan'208";a="656642887"
+From: "Vick, Matthew" <matthew.vick@intel.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+CC: Alexander Duyck <alexander.h.duyck@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ethernet: fm10k: Actually drop 4 bits
+Thread-Topic: [PATCH] ethernet: fm10k: Actually drop 4 bits
+Thread-Index: AQHQN2+xwQuPicYglkaLrsR9ALJ30JzSo6uA
+Date: Mon, 26 Jan 2015 16:58:13 +0000
+Message-ID: <D0EBB1E6.6855F%matthew.vick@intel.com>
+References: <1421967198-16667-1-git-send-email-linux@rasmusvillemoes.dk>
+ <D0E81E0C.682EB%matthew.vick@intel.com> <87twzhknnl.fsf@rasmusvillemoes.dk>
+In-Reply-To: <87twzhknnl.fsf@rasmusvillemoes.dk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.4.7.141117
+x-originating-ip: [10.166.14.12]
 Content-Type: text/plain; charset="us-ascii"
+Content-ID: <BC1833DA4954844B8EA32498F76E075F@intel.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 26. Januar 2015, 08:24:03 schrieb Doug Anderson:
-> The Rockchip GPIO interrupt controller totally throws away all status
-> about an interrupt when you "disable" the interrupt.  That has
-> unfortunate consequences in the following situation:
-> 
-> 1. An edge-triggered interrupt is enabled and should wake the system.
-> 2. System suspend happens: interrupt is disabled and marked for wake.
-> 3. rockchip_irq_suspend() reenables the interrupt so we can wake.
-> 4. Interrupt happens when asleep.
-> 5. rockchip_irq_resume() redisables the interrupt.
-> 6. Disabling the interrupt throws away all status about it.
-> 7. Normal system resume happens and we enable the interrupt again,
->    since we threw away status about the interrupt we don't know it
->    fired while suspended.  Even worse: if we need both edges of the
->    interrupt the logic to swap edges never runs.
-> 
-> Note: even if we somehow can post the status about wakeup interrupts
-> in rockchip_irq_resume() we would still have a window of losing any
-> edges that came in while interrupts were disabled.
-> 
-> If we use mask only then we don't need to worry.  The GPIO Interrupt
-> controller keeps track of pending interrupts that are enabled and just
-> masked.
-> 
-> There was no real strong reason to support the enable/disable
-> functionality (other than that it seemed right), so let's go back to
-> just supporting mask/unmask but actually map it to the real
-> mask/unmask.  This ends up with slightly different (and more correct)
-> behavior than before (f2dd028 pinctrl: rockchip: Fix
-> enable/disable/mask/unmask).
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On 1/23/15, 4:50 PM, "Rasmus Villemoes" <linux@rasmusvillemoes.dk> wrote:
 
-I talked with Doug about it and this looks sane, so
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+>On Sat, Jan 24 2015, "Vick, Matthew" <matthew.vick@intel.com> wrote:
+>
+>> Good catch! I noticed this too and was getting a patch together to
+>>address
+>> this.
+>>
+>> The difference is that I was planning on not silently accepting an
+>>invalid
+>> VLAN ID to begin with and returning FM10K_ERR_PARAM if the VLAN was
+>> invalid, which I think is a better approach for this situation. If it's
+>> alright with you, I'll generate the patch shortly and credit you via
+>>your
+>> Reported-by.
+>
+>Sure, do what you think is best.
+>
+>Rasmus
 
+Sounds good. I'll get the patch created and validated through Jeff's tree.
 
-Heiko
+Cheers,
+Matthew
+
