@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464AbbAZKHZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:07:25 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:27040 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752657AbbAZKHW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:07:22 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <wenyou.yang@atmel.com>,
-        <Patrice.VILCHEZ@atmel.com>,
-        Patrice Vilchez <patrice.vilchez@atmel.com>
-Subject: [PATCH 3/7] pm: at91: pm_suspend: MOR register KEY was missing
-Date: Mon, 26 Jan 2015 18:06:36 +0800
-Message-ID: <1422266796-24523-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
+	id S1754562AbbAZKHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:07:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754529AbbAZKH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:07:29 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com
+Subject: Re: [PATCH RESEND 1/5] Tools: hv: add mising fcopyd to the Makefile
+References: <1420870690-2223-1-git-send-email-kys@microsoft.com>
+	<1420870735-2265-1-git-send-email-kys@microsoft.com>
+	<20150125133433.GA2708@kroah.com>
+Date: Mon, 26 Jan 2015 11:07:13 +0100
+In-Reply-To: <20150125133433.GA2708@kroah.com> (Greg KH's message of "Sun, 25
+	Jan 2015 21:34:33 +0800")
+Message-ID: <87ppa1g8j2.fsf@vitty.brq.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrice Vilchez <patrice.vilchez@atmel.com>
+Greg KH <gregkh@linuxfoundation.org> writes:
 
-Signed-off-by: Patrice Vilchez <patrice.vilchez@atmel.com>
----
- arch/arm/mach-at91/pm_suspend.S |    2 ++
- 1 file changed, 2 insertions(+)
+> On Fri, Jan 09, 2015 at 10:18:51PM -0800, K. Y. Srinivasan wrote:
+>> From: Vitaly Kuznetsov <vkuznets@redhat.com>
+>> 
+>> fcopyd in missing in the Makefile, add it there.
+>> 
+>> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+>> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+>> ---
+>>  tools/hv/Makefile |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> This patch fails to apply :(
 
-diff --git a/arch/arm/mach-at91/pm_suspend.S b/arch/arm/mach-at91/pm_suspend.S
-index e796722..88cf228 100644
---- a/arch/arm/mach-at91/pm_suspend.S
-+++ b/arch/arm/mach-at91/pm_suspend.S
-@@ -229,6 +229,7 @@ sdr_sr_done:
- 	/* Turn off the main oscillator */
- 	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
- 	bic	tmp1, tmp1, #AT91_PMC_MOSCEN
-+	orr	tmp1, tmp1, #AT91_PMC_KEY
- 	str	tmp1, [pmc, #AT91_CKGR_MOR]
- 
- skip_disable_main_clock:
-@@ -241,6 +242,7 @@ skip_disable_main_clock:
- 	/* Turn on the main oscillator */
- 	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
- 	orr	tmp1, tmp1, #AT91_PMC_MOSCEN
-+	orr	tmp1, tmp1, #AT91_PMC_KEY
- 	str	tmp1, [pmc, #AT91_CKGR_MOR]
- 
- 	wait_moscrdy
+The was a mid-air collision with Matej's 'tools: hv: Makefile: Add
+hv_fcopy_daemon to Makefile' patch, feel free to drop this one.
+
+Sorry for the inconvenience,
+
 -- 
-1.7.9.5
-
+  Vitaly
