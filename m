@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894AbbAZN6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:58:23 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:46549 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbbAZN6V (ORCPT
+	id S1754674AbbAZOEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:04:38 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:37186 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524AbbAZOEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:58:21 -0500
-Message-ID: <54C647FA.7010300@linaro.org>
-Date: Mon, 26 Jan 2015 14:58:18 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 26 Jan 2015 09:04:31 -0500
+Message-ID: <54C6494D.80802@roeck-us.net>
+Date: Mon, 26 Jan 2015 06:03:57 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Baruch Siach <baruch@tkos.co.il>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 2/2] clocksource: driver for Conexant Digicolor SoC
- timer
-References: <cover.1422272518.git.baruch@tkos.co.il> <ad84f7155286c45401ff7f6bc6506407cc3beb61.1422272518.git.baruch@tkos.co.il> <54C644AF.9030208@linaro.org> <20150126134751.GE3148@tarshish>
-In-Reply-To: <20150126134751.GE3148@tarshish>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
+ page tables to the process'
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org> <20150123050445.GA22751@roeck-us.net> <20150123111304.GA5975@node.dhcp.inet.fi> <54C263CC.1060904@roeck-us.net> <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org> <20150124055207.GA8926@roeck-us.net> <20150126122944.GE25833@node.dhcp.inet.fi>
+In-Reply-To: <20150126122944.GE25833@node.dhcp.inet.fi>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54C6496F.013F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 7
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015 02:47 PM, Baruch Siach wrote:
-> Hi Daniel,
->
-> On Mon, Jan 26, 2015 at 02:44:15PM +0100, Daniel Lezcano wrote:
->>> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
->>> index 94d90b24b56b..a993c108be67 100644
->>> --- a/drivers/clocksource/Makefile
->>> +++ b/drivers/clocksource/Makefile
->>> @@ -10,6 +10,7 @@ obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
->>>   obj-$(CONFIG_EM_TIMER_STI)	+= em_sti.o
->>>   obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
->>>   obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
->>> +obj-$(CONFIG_ARCH_DIGICOLOR)	+= timer-digicolor.o
+On 01/26/2015 04:29 AM, Kirill A. Shutemov wrote:
+> On Fri, Jan 23, 2015 at 09:52:07PM -0800, Guenter Roeck wrote:
+>> On Fri, Jan 23, 2015 at 01:55:19PM -0800, Andrew Morton wrote:
+>>> On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
+>>>
+>>>>>>
+>>>>>> qemu:microblaze generates warnings to the console.
+>>>>>>
+>>>>>> WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
+>>>>>>
+>>>>>> with various call stacks. See
+>>>>>> http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
+>>>>>> for details.
+>>>>>
+>>>>> Could you try patch below? Completely untested.
+>>>>>
+>>>>> >From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
+>>>>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>>>>> Date: Fri, 23 Jan 2015 13:08:26 +0200
+>>>>> Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
+>>>>>
+>>>>> Microblaze uses custom implementation of PMD folding, but doesn't define
+>>>>> __PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
+>>>>>
+>>>>> Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
+>>>>> It also fixes problems with recently-introduced pmd accounting.
+>>>>>
+>>>>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+>>>>> Reported-by: Guenter Roeck <linux@roeck-us.net>
+>>>>
+>>>> Tested working.
+>>>>
+>>>> Tested-by: Guenter Roeck <linux@roeck-us.net>
+>>>>
+>>>> Any idea how to fix the sh problem ?
+>>>
+>>> Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
+>>> shut down", which isn't very clear.
 >>
->> Ah, one minor change I forgot to mention in the last review (sorry about
->> that).
->>
->> Don't depend on the ARCH, add and select a TIMER_DIGICOLOR (or whatever the
->> name you prefer) in the mach-digicolor/Kconfig and use it here.
+>> Turns out that the include file defining __PAGETABLE_PMD_FOLDED
+>> was not always included where used, resulting in a messed up mm_struct.
 >
-> OK. I'll make the change. I'm just curious: what is the advantage of having a
-> separate config symbol for the timer?
+> What means "messed up" here? It should only affect size of mm_struct.
+>
+Plus the offset of all variables after the #ifndef.
 
-It is because some timers could be used in different platforms, so the 
-policy of the house is to let the platform Kconfig to select the timer.
+>> The patch below fixes the problem for the sh architecture.
+>> No idea if the patch is correct/acceptable for other architectures.
+>
+> That's pain. Some archs includes <linux/mm_types.h> from <asm/pgtable.h>.
+> I don't see obvious way to fix this. Urghh.
+>
+Does it matter ? Circular includes are normally ok and happen all over the place.
+I could run a full build / qemu test cycle for all architectures if that helps.
 
-Also, that let one platform to not select the timer if it is not needed. 
-For example one SoC uses the architected timers and there is not power 
-management on the board, hence no cpu is powered down and no backup 
-timer is needed.
-
-Even if the timer is expected to be used on only one platform, we try to 
-keep the rule consistent across the different drivers (even if I admit 
-some cleanups should be done in the Kconfig file).
-
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Guenter
 
