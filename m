@@ -1,168 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581AbbAZRAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:00:16 -0500
-Received: from gn237.zone.eu ([217.146.67.237]:24537 "EHLO gn237.zone.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905AbbAZRAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:00:09 -0500
-From: Priit Laes <plaes@plaes.org>
-Cc: linux-sunxi@googlegroups.com, Priit Laes <plaes@plaes.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-api@vger.kernel.org (open list:ABI/API),
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Allwinner
-	A1X...),
-        linux-kernel@vger.kernel.org (open list),
-        linux-input@vger.kernel.org (open list:SUN4I LOW RES ADC...)
-Subject: [PATCH] arm: sunxi: input: RFC: Add sysfs voltage for sun4i-lradc driver
-Date: Mon, 26 Jan 2015 18:58:32 +0200
-Message-Id: <1422291516-24895-1-git-send-email-plaes@plaes.org>
-X-Mailer: git-send-email 2.2.2
-To: unlisted-recipients:; (no To-header on input)
+	id S1755777AbbAZQ7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:59:23 -0500
+Received: from outbound-smtp04.blacknight.com ([81.17.249.35]:36560 "EHLO
+	outbound-smtp04.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753420AbbAZQ7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 11:59:21 -0500
+Message-ID: <54C67267.3060406@nexus-software.ie>
+Date: Mon, 26 Jan 2015 16:59:19 +0000
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, dvhart@infradead.org,
+        boon.leong.ong@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/1] x86: Add Isolated Memory Regions for Quark X1000
+References: <1422281727-32610-1-git-send-email-pure.logic@nexus-software.ie>	<1422281727-32610-2-git-send-email-pure.logic@nexus-software.ie> <CAHp75VfAPjermaPYu2FwoRCycKsU48m=uXq=JqwQ6Bi31kV0hg@mail.gmail.com>
+In-Reply-To: <CAHp75VfAPjermaPYu2FwoRCycKsU48m=uXq=JqwQ6Bi31kV0hg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- .../ABI/testing/sysfs-driver-input-sun4i-lradc     |  4 ++
- drivers/input/keyboard/sun4i-lradc-keys.c          | 49 +++++++++++++++++-----
- 2 files changed, 43 insertions(+), 10 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
+On 26/01/15 16:37, Andy Shevchenko wrote:
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc b/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
-new file mode 100644
-index 0000000..e4e6448
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
-@@ -0,0 +1,4 @@
-+What:		/sys/class/input/input(x)/device/voltage
-+Date:		February 2015
-+Contact:	Priit Laes <plaes@plaes.org>
-+Description:	ADC output voltage in microvolts or 0 if device is not opened.
-diff --git a/drivers/input/keyboard/sun4i-lradc-keys.c b/drivers/input/keyboard/sun4i-lradc-keys.c
-index cc8f7dd..c0ab8ec 100644
---- a/drivers/input/keyboard/sun4i-lradc-keys.c
-+++ b/drivers/input/keyboard/sun4i-lradc-keys.c
-@@ -79,10 +79,27 @@ struct sun4i_lradc_data {
- 	u32 vref;
- };
- 
-+static u32 sun4i_lradc_read_voltage(struct sun4i_lradc_data *lradc)
-+{
-+	u32 val = readl(lradc->base + LRADC_DATA0) & 0x3f;
-+	return val * lradc->vref / 63;
-+};
-+
-+static ssize_t
-+sun4i_lradc_dev_voltage_show(struct device *dev,
-+			struct device_attribute *attr, char *buf)
-+{
-+	struct sun4i_lradc_data *lradc = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%u\n", sun4i_lradc_read_voltage(lradc));
-+}
-+
-+static const DEVICE_ATTR(voltage, S_IRUGO, sun4i_lradc_dev_voltage_show, NULL);
-+
- static irqreturn_t sun4i_lradc_irq(int irq, void *dev_id)
- {
- 	struct sun4i_lradc_data *lradc = dev_id;
--	u32 i, ints, val, voltage, diff, keycode = 0, closest = 0xffffffff;
-+	u32 i, ints, voltage, diff, keycode = 0, closest = 0xffffffff;
- 
- 	ints  = readl(lradc->base + LRADC_INTS);
- 
-@@ -97,8 +114,7 @@ static irqreturn_t sun4i_lradc_irq(int irq, void *dev_id)
- 	}
- 
- 	if ((ints & CHAN0_KEYDOWN_IRQ) && lradc->chan0_keycode == 0) {
--		val = readl(lradc->base + LRADC_DATA0) & 0x3f;
--		voltage = val * lradc->vref / 63;
-+		voltage = sun4i_lradc_read_voltage(lradc);
- 
- 		for (i = 0; i < lradc->chan0_map_count; i++) {
- 			diff = abs(lradc->chan0_map[i].voltage - voltage);
-@@ -156,7 +172,7 @@ static void sun4i_lradc_close(struct input_dev *dev)
- }
- 
- static int sun4i_lradc_load_dt_keymap(struct device *dev,
--				      struct sun4i_lradc_data *lradc)
-+				    struct sun4i_lradc_data *lradc)
- {
- 	struct device_node *np, *pp;
- 	int i;
-@@ -168,8 +184,8 @@ static int sun4i_lradc_load_dt_keymap(struct device *dev,
- 
- 	lradc->chan0_map_count = of_get_child_count(np);
- 	if (lradc->chan0_map_count == 0) {
--		dev_err(dev, "keymap is missing in device tree\n");
--		return -EINVAL;
-+		dev_info(dev, "keymap is missing in device tree\n");
-+		return 0;
- 	}
- 
- 	lradc->chan0_map = devm_kmalloc_array(dev, lradc->chan0_map_count,
-@@ -185,19 +201,19 @@ static int sun4i_lradc_load_dt_keymap(struct device *dev,
- 
- 		error = of_property_read_u32(pp, "channel", &channel);
- 		if (error || channel != 0) {
--			dev_err(dev, "%s: Inval channel prop\n", pp->name);
-+			dev_err(dev, "%s: Invalid 'channel' property\n", pp->name);
- 			return -EINVAL;
- 		}
- 
- 		error = of_property_read_u32(pp, "voltage", &map->voltage);
- 		if (error) {
--			dev_err(dev, "%s: Inval voltage prop\n", pp->name);
-+			dev_err(dev, "%s: Invalid 'voltage' property\n", pp->name);
- 			return -EINVAL;
- 		}
- 
- 		error = of_property_read_u32(pp, "linux,code", &map->keycode);
- 		if (error) {
--			dev_err(dev, "%s: Inval linux,code prop\n", pp->name);
-+			dev_err(dev, "%s: Invalid 'linux,code' property\n", pp->name);
- 			return -EINVAL;
- 		}
- 
-@@ -257,14 +273,26 @@ static int sun4i_lradc_probe(struct platform_device *pdev)
- 	if (error)
- 		return error;
- 
--	error = input_register_device(lradc->input);
-+	error = device_create_file(dev, &dev_attr_voltage);
- 	if (error)
- 		return error;
- 
-+	error = input_register_device(lradc->input);
-+	if (error) {
-+		device_remove_file(&pdev->dev, &dev_attr_voltage);
-+		return error;
-+	}
-+
- 	platform_set_drvdata(pdev, lradc);
- 	return 0;
- }
- 
-+static int sun4i_lradc_remove(struct platform_device *pdev)
-+{
-+	device_remove_file(&pdev->dev, &dev_attr_voltage);
-+	return 0;
-+}
-+
- static const struct of_device_id sun4i_lradc_of_match[] = {
- 	{ .compatible = "allwinner,sun4i-a10-lradc-keys", },
- 	{ /* sentinel */ }
-@@ -277,6 +305,7 @@ static struct platform_driver sun4i_lradc_driver = {
- 		.of_match_table = of_match_ptr(sun4i_lradc_of_match),
- 	},
- 	.probe	= sun4i_lradc_probe,
-+	.remove = sun4i_lradc_remove,
- };
- 
- module_platform_driver(sun4i_lradc_driver);
--- 
-2.2.2
+>> +config X86_INTEL_QUARK
+>> +       bool "Intel Quark platform support"
+>> +       depends on X86_32
+>> +       depends on X86_EXTENDED_PLATFORM
+>> +       depends on X86_PLATFORM_DEVICES
+>> +       depends on PCI
+>> +       depends on PCI_GOANY
+>> +       depends on X86_IO_APIC
+>> +       select IOSF_MBI
+>> +       select INTEL_IMR
+>> +       ---help---
+>> +         Select to include support for Quark X1000 SoC.
+>> +         Say Y here if you have a Quark based system such as the Arduino
+>> +         compatible Intel Galileo.
+>> +
+>
+> Does it mean we introduce a minimal support for the platform.
 
+I'd call it minimal support yes since the IMR memory map needs to be 
+sanitized before you run DMA.
+
+All shipping versions of Galileo will need to have IMRs sanitized to 
+reliably run Linux - or any other kernel for that matter - with DMA.
+
+> So, I mean if user enables this in the kernel config and runs rebuilt
+> kernel on the Quark it will work, will it?
+
+Yes. Do you mean to add a stronger comment indicating IMR is mandatory ?
+No issue with that.
+
+> If so, IMR is mandatory stuff or not? What else is mandatory?
+
+IMR is the only mandatory addition.
+
+> So, I'm not sure the above is a part of the patch. Would it be a prepend?
+
+Hmm - what do you mean by that ?
+
+<snip>
+
+No issue with the rest of the review - thanks for the time.
+
+--
+BOD
