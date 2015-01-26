@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198AbbAZRQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:16:10 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:33028 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbbAZRQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:16:08 -0500
-Date: Mon, 26 Jan 2015 09:16:03 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: module: fix module_refcount() return when running in a module
- exit routine
-Message-ID: <20150126171603.GA32729@infradead.org>
-References: <54BC93C3.7010808@hitachi.com>
- <878ugzco8c.fsf@rustcorp.com.au>
- <1421683701.2080.25.camel@HansenPartnership.com>
- <871tmqcmau.fsf@rustcorp.com.au>
- <1421774615.2080.88.camel@HansenPartnership.com>
- <20150122165018.GA27377@infradead.org>
- <1421946175.2093.1.camel@HansenPartnership.com>
- <87iofyurzc.fsf@rustcorp.com.au>
- <20150123131758.GC8045@infradead.org>
- <1422038567.2126.14.camel@HansenPartnership.com>
+	id S1756283AbbAZRQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:16:41 -0500
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:41893
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753677AbbAZRQk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 12:16:40 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] staging: comedi: addi_apci_1032: add comedi driver
+ comment
+Thread-Topic: [PATCH] staging: comedi: addi_apci_1032: add comedi driver
+ comment
+Thread-Index: AQHQOXR1e4uk73zWv0CUaNAhhogNNpzSpDdg
+Date: Mon, 26 Jan 2015 17:16:39 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D88260E5B95@P3PWEX4MB008.ex4.secureserver.net>
+References: <1422282536-18606-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1422282536-18606-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422038567.2126.14.camel@HansenPartnership.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 10:42:47AM -0800, James Bottomley wrote:
-> To that point, Rusty's patch just keeps the status quo in the new
-> module_refcount() environment, so it's the quick bandaid.
-> 
-> I think the use case you're worrying about is what happens if someone
-> tries to use a device after module removal begins executing but before
-> the device has been deleted (say by opening it)?  We'll exit the device
-> removal routines and then kill the module, because after the module code
-> gets to ->exit(), nothing re-checks the module refcount, so the host
-> module will get free'd while we're still using the device.
-> 
-> The fix for this seems to be to differentiate between special uses of
-> scsi_get_device, which are allowed to get the device in the module exit
-> routines and ordinary uses which aren't.  Something like this? (the
-> patch isn't complete, but you get the idea).
+On Monday, January 26, 2015 7:29 AM, Ian Abbott wrote:
+> Add a comedi driver comment in a form suitable for importing into
+> Comedilib documentation.  The information about the change-of-state
+> subdevice has been pulled from other comments in the driver.
+>
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+>  drivers/staging/comedi/drivers/addi_apci_1032.c | 78 +++++++++++++++----------
+>  1 file changed, 48 insertions(+), 30 deletions(-)
 
-Yes, that's exactly what I worry about.  But you're right, the patch
-doesn't make anything worse compared to the 3.18 and earlier status quo.
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-So I think I'm fine with the __module_get patch (which I assume will go
-through the module tree as well?), and I'll get back to my series to
-unwind our bandaids back to the start for the proper fix.
