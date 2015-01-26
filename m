@@ -1,264 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284AbbAZX0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:26:32 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:34050 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756212AbbAZX0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:26:30 -0500
-Message-ID: <54C6CCF3.7080308@ti.com>
-Date: Mon, 26 Jan 2015 18:25:39 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <iommu@lists.linux-foundation.org>, Joerg Roedel <joro@8bytes.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH v4 4/6] of/pci: add of_pci_dma_configure() update dma
- configuration
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-5-git-send-email-m-karicheri2@ti.com> <20150123234124.GW29776@google.com>
-In-Reply-To: <20150123234124.GW29776@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757300AbbAZX10 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:27:26 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:42030 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757077AbbAZX1X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 18:27:23 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>
+Cc: Heiko Stuebner <heiko@sntech.de>, Lunxue Dai <lunxue.dai@rock-chips.com>,
+        Jisheng Zhang <jszhang@marvell.com>, Dinh Nguyen <dinguyen@altera.com>,
+        Doug Anderson <dianders@chromium.org>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] watchdog: dw_wdt: pat the watchdog before enabling it
+Date: Mon, 26 Jan 2015 15:27:15 -0800
+Message-Id: <1422314836-30516-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2015 06:41 PM, Bjorn Helgaas wrote:
-> On Fri, Jan 23, 2015 at 05:32:37PM -0500, Murali Karicheri wrote:
->> Add of_pci_dma_configure() to allow updating the dma configuration
->> of the pci device using the configuration from DT of the parent of
->> the root bridge device.
->>
->> Cc: Joerg Roedel<joro@8bytes.org>
->> Cc: Grant Likely<grant.likely@linaro.org>
->> Cc: Rob Herring<robh+dt@kernel.org>
->> Cc: Bjorn Helgaas<bhelgaas@google.com>
->> Cc: Will Deacon<will.deacon@arm.com>
->> Cc: Russell King<linux@arm.linux.org.uk>
->> Cc: Arnd Bergmann<arnd@arndb.de>
->> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
->>
->> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->> ---
->>   drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
->>   include/linux/of_pci.h |   12 ++++++++++++
->>   2 files changed, 51 insertions(+)
->>
->> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
->> index 88471d3..34878c9 100644
->> --- a/drivers/of/of_pci.c
->> +++ b/drivers/of/of_pci.c
->> @@ -2,6 +2,7 @@
->>   #include<linux/export.h>
->>   #include<linux/of.h>
->>   #include<linux/of_address.h>
->> +#include<linux/of_device.h>
->>   #include<linux/of_pci.h>
->>   #include<linux/slab.h>
->>
->> @@ -229,6 +230,44 @@ parse_failed:
->>   	return err;
->>   }
->>   EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
->> +
->> +/**
->> + * of_get_pci_root_bridge_parent - get the OF node of the root bridge's parent
->> + * @dev: ptr to pci_dev struct of the pci device
->> + *
->> + * This function will traverse the bus up to the root bus starting with
->> + * the child and return the OF node ptr to root bridge device's parent device.
->> + */
->> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
->
-> I'm not an OF person, but this interface seems like it might be too
-> special-purpose.  Maybe it would be enough to add
-> "of_get_pci_root_bridge()", and the caller could do this:
->
->      struct device *bridge = of_get_pci_root_bridge(dev);
->      struct device_node *parent_np = bridge->parent->of_node;
->
-> Also, the name "of_get_..." suggests that it increments a refcount, as
-> of_get_parent() does.  But you aren't doing anything with the refcount.
->
-> But I guess an "of_get_pci_root_bridge()" isn't doing anything OF-related,
-> so maybe we should just add a "pci_get_host_bridge(struct pci_dev *)"
-> to PCI instead.
+On some dw_wdt implementations the "top" register may be initted to 0
+at bootup.  In such a case, each "pat" of the watchdog will reset the
+timer to 0xffff.  That's pretty short.
 
-Bjorn,
+The input clock of the wdt can be any of a wide range of values.  On
+an rk3288 system, I've seen the wdt clock be 24.75 MHz.  That means
+each tick is ~40ns and we'll count to 0xffff in ~2.6ms.
 
-Thanks for the comment.
+Because of the above two facts, it's a really good idea to pat the
+watchdog after initting the "top" register properly and before
+enabling the watchdog.  If you don't then there's no way we'll get the
+next heartbeat in time.
 
-I think adding pci_get_host_bridge() is a good idea. There is already 
-similar function in host-bridge.c. I have added this function re-using 
-existing function find_pci_root_bus(). See the incremental diff below 
-after this change. Does this look good?
+Jisheng Zhang fixed this problem on some dw_mmc versions by using the
+TOP_INIT feature.  However, the dw_wdt on rk3288 doesn't have TOP_INIT
+so it's a good idea to also pat the watchdog manually.
 
-diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-index 34878c9..77b15b5 100644
---- a/drivers/of/of_pci.c
-+++ b/drivers/of/of_pci.c
-@@ -232,26 +232,6 @@ parse_failed:
-  EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v2:
+- Add comment about why TOP_INIT doesn't work on rk3288; move pat
+  to right next to the attempt to use TOP_INIT.
 
-  /**
-- * of_get_pci_root_bridge_parent - get the OF node of the root bridge's 
-parent
-- * @dev: ptr to pci_dev struct of the pci device
-- *
-- * This function will traverse the bus up to the root bus starting with
-- * the child and return the OF node ptr to root bridge device's parent 
-device.
-- */
--struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
--{
--       struct pci_bus *bus = dev->bus;
--       struct device *bridge;
--
--       while (!pci_is_root_bus(bus))
--               bus = bus->parent;
--       bridge = bus->bridge;
--
--       return bridge->parent->of_node;
--}
--EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
--
--/**
-   * of_pci_dma_configure - Setup DMA configuration
-   * @dev: ptr to pci_dev struct of the pci device
-   *
-@@ -261,10 +241,9 @@ EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
-  void of_pci_dma_configure(struct pci_dev *pci_dev)
-  {
-         struct device *dev = &pci_dev->dev;
--       struct device_node *parent_np;
-+       struct device *bridge = pci_get_host_bridge(pci_dev);
+ drivers/watchdog/dw_wdt.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
--       parent_np = of_get_pci_root_bridge_parent(pci_dev);
--       of_dma_configure(dev, parent_np);
-+       of_dma_configure(dev, bridge->parent->of_node);
-  }
-  EXPORT_SYMBOL_GPL(of_pci_dma_configure);
-
-diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index 0e5f3c9..9803aa6 100644
---- a/drivers/pci/host-bridge.c
-+++ b/drivers/pci/host-bridge.c
-@@ -23,6 +23,13 @@ static struct pci_host_bridge 
-*find_pci_host_bridge(struct pci_bus *bus)
-         return to_pci_host_bridge(root_bus->bridge);
-  }
-
-+struct device *pci_get_host_bridge(struct pci_dev *dev)
+diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
+index b34a2e4..2c24882 100644
+--- a/drivers/watchdog/dw_wdt.c
++++ b/drivers/watchdog/dw_wdt.c
+@@ -96,6 +96,12 @@ static inline void dw_wdt_set_next_heartbeat(void)
+ 	dw_wdt.next_heartbeat = jiffies + dw_wdt_get_top() * HZ;
+ }
+ 
++static void dw_wdt_keepalive(void)
 +{
-+       struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
-+
-+       return root_bus->bridge;
++	writel(WDOG_COUNTER_RESTART_KICK_VALUE, dw_wdt.regs +
++	       WDOG_COUNTER_RESTART_REG_OFFSET);
 +}
 +
-  void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
-                                  void (*release_fn)(struct 
-pci_host_bridge *),
-                                  void *release_data)
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 9603094..5bcdfa6 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -513,6 +513,8 @@ static inline struct pci_dev 
-*pci_upstream_bridge(struct pci_dev *dev)
-         return dev->bus->self;
-  }
-
-+struct device *pci_get_host_bridge(struct pci_dev *dev);
+ static int dw_wdt_set_top(unsigned top_s)
+ {
+ 	int i, top_val = DW_WDT_MAX_TOP;
+@@ -114,17 +120,18 @@ static int dw_wdt_set_top(unsigned top_s)
+ 	writel(top_val | top_val << WDOG_TIMEOUT_RANGE_TOPINIT_SHIFT,
+ 		dw_wdt.regs + WDOG_TIMEOUT_RANGE_REG_OFFSET);
+ 
++	/*
++	 * On some versions of dw_wdt writing to TOPINIT counts as a pat
++	 * (kick) of the watchdog; for other version of dw_wdt bits 4-7
++	 * are reserved and we need to pat the watchdog dog manually.
++	 */
++	dw_wdt_keepalive();
 +
-  #ifdef CONFIG_PCI_MSI
-  static inline bool pci_dev_msi_enabled(struct pci_dev *pci_dev)
-  {
-@@ -1823,6 +1825,7 @@ int pci_vpd_find_tag(const u8 *buf, unsigned int 
-off, unsigned int len, u8 rdt);
-  int pci_vpd_find_info_keyword(const u8 *buf, unsigned int off,
-                               unsigned int len, const char *kw);
-
-  /* PCI <-> OF binding helpers */
-  #ifdef CONFIG_OF
-  struct device_node;
-
-
->
-> Bjorn
->
->> +{
->> +	struct pci_bus *bus = dev->bus;
->> +	struct device *bridge;
->> +
->> +	while (!pci_is_root_bus(bus))
->> +		bus = bus->parent;
->> +	bridge = bus->bridge;
->> +
->> +	return bridge->parent->of_node;
->> +}
->> +EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
->> +
->> +/**
->> + * of_pci_dma_configure - Setup DMA configuration
->> + * @dev: ptr to pci_dev struct of the pci device
->> + *
->> + * Function to update PCI devices's DMA configuration using the same
->> + * info from the OF node of root host bridge's parent.
->> + */
->> +void of_pci_dma_configure(struct pci_dev *pci_dev)
->> +{
->> +	struct device *dev =&pci_dev->dev;
->> +	struct device_node *parent_np;
->> +
->> +	parent_np = of_get_pci_root_bridge_parent(pci_dev);
->> +	of_dma_configure(dev, parent_np);
->> +}
->> +EXPORT_SYMBOL_GPL(of_pci_dma_configure);
->> +
->>   #endif /* CONFIG_OF_ADDRESS */
->>
->>   #ifdef CONFIG_PCI_MSI
->> diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
->> index ce0e5ab..0465a2a 100644
->> --- a/include/linux/of_pci.h
->> +++ b/include/linux/of_pci.h
->> @@ -16,6 +16,8 @@ int of_pci_get_devfn(struct device_node *np);
->>   int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
->>   int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
->>   int of_get_pci_domain_nr(struct device_node *node);
->> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev);
->> +void of_pci_dma_configure(struct pci_dev *pci_dev);
->>   #else
->>   static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
->>   {
->> @@ -50,6 +52,16 @@ of_get_pci_domain_nr(struct device_node *node)
->>   {
->>   	return -1;
->>   }
->> +
->> +static inline struct device_node
->> +*of_get_pci_root_bridge_parent(struct pci_dev *dev)
->> +{
->> +	return NULL;
->> +}
->> +
->> +static inline void of_pci_dma_configure(struct pci_dev *pci_dev)
->> +{
->> +}
->>   #endif
->>
->>   #if defined(CONFIG_OF_ADDRESS)
->> --
->> 1.7.9.5
->>
-
-
+ 	dw_wdt_set_next_heartbeat();
+ 
+ 	return dw_wdt_top_in_seconds(top_val);
+ }
+ 
+-static void dw_wdt_keepalive(void)
+-{
+-	writel(WDOG_COUNTER_RESTART_KICK_VALUE, dw_wdt.regs +
+-	       WDOG_COUNTER_RESTART_REG_OFFSET);
+-}
+-
+ static int dw_wdt_restart_handle(struct notifier_block *this,
+ 				unsigned long mode, void *cmd)
+ {
 -- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+2.2.0.rc0.207.ga3a616c
+
