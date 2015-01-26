@@ -1,54 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbbAZJYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 04:24:41 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:64097 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbbAZJYj (ORCPT
+	id S1754038AbbAZJ0R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 04:26:17 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:40778 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbbAZJ0L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 04:24:39 -0500
-Date: Mon, 26 Jan 2015 11:24:36 +0200
-From: Mariam Mohamed Fawzy <maryammohamed61@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
-        gclement@baobob.org, guido@vanguardiasur.com.ar,
-        veronicca114@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: vt6655: fix that open brace { should be on the
- previous line
-Message-ID: <20150126092436.GA3622@mariam-VirtualBox>
+	Mon, 26 Jan 2015 04:26:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150125160253.GG8470@lukather>
+References: <1422188530-1794-1-git-send-email-wens@csie.org>
+ <1422188530-1794-2-git-send-email-wens@csie.org> <20150125160253.GG8470@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Mon, 26 Jan 2015 17:25:49 +0800
+X-Google-Sender-Auth: XQG94FYTvYrh4bpyTWl5t3E-JJs
+Message-ID: <CAGb2v667DGBPXGdU1jO1x=pxmu3Oue9qxVZmZz5KxqzC_9xxGw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/9] clk: sunxi: Add support for sun9i a80 usb clocks
+ and resets
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl error:
-fix that open brace { should be on the previous line
+Hi,
 
-Signed-off-by: Mariam Mohamed Fawzy <maryammohamed61@gmail.com>
----
-v2: Adjusted my legal name.
+2015年1月25日 下午11:05 於 "Maxime Ripard" <maxime.ripard@free-electrons.com> 寫道：
+>
+> Hi,
+>
+> On Sun, Jan 25, 2015 at 08:22:02PM +0800, Chen-Yu Tsai wrote:
+> > The USB controller/phy clocks and reset controls are in a separate
+> > address block, unlike previous SoCs where they were in the clock
+> > controller.
+> >
+> > This patch copies the original gates clk functions used for usb
+> > clocks into a separate file, and renames them to *_usb_*. Also
+> > add a per-gate parent index, so we can set different parents for
+> > each gate.
+> >
+> > Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> > ---
+> >  Documentation/devicetree/bindings/clock/sunxi.txt |   2 +
+> >  drivers/clk/sunxi/Makefile                        |   1 +
+> >  drivers/clk/sunxi/clk-usb.c                       | 193 ++++++++++++++++++++++
+> >  3 files changed, 196 insertions(+)
+> >  create mode 100644 drivers/clk/sunxi/clk-usb.c
+> >
+> > diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
+> > index 60b44285250d..3f1dcd879af7 100644
+> > --- a/Documentation/devicetree/bindings/clock/sunxi.txt
+> > +++ b/Documentation/devicetree/bindings/clock/sunxi.txt
+> > @@ -66,6 +66,8 @@ Required properties:
+> >       "allwinner,sun4i-a10-usb-clk" - for usb gates + resets on A10 / A20
+> >       "allwinner,sun5i-a13-usb-clk" - for usb gates + resets on A13
+> >       "allwinner,sun6i-a31-usb-clk" - for usb gates + resets on A31
+> > +     "allwinner,sun9i-a80-usb-mod-clk" - for usb gates + resets on A80
+> > +     "allwinner,sun9i-a80-usb-phy-clk" - for usb phy gates + resets on A80
+> >
+> >  Required properties for all clocks:
+> >  - reg : shall be the control register address for the clock.
+> > diff --git a/drivers/clk/sunxi/Makefile b/drivers/clk/sunxi/Makefile
+> > index 3a5292e3fcf8..058f273d6154 100644
+> > --- a/drivers/clk/sunxi/Makefile
+> > +++ b/drivers/clk/sunxi/Makefile
+> > @@ -9,6 +9,7 @@ obj-y += clk-mod0.o
+> >  obj-y += clk-sun8i-mbus.o
+> >  obj-y += clk-sun9i-core.o
+> >  obj-y += clk-sun9i-mmc.o
+> > +obj-y += clk-usb.o
+>
+> Is that supposed to handle the other USB clocks in the future as well?
 
- drivers/staging/vt6655/card.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I plan to do that. If you compare this and the original USB clk driver,
+you'll notice it's pretty much the same.
 
-diff --git a/drivers/staging/vt6655/card.c b/drivers/staging/vt6655/card.c
-index 47801ca..1cdcf49 100644
---- a/drivers/staging/vt6655/card.c
-+++ b/drivers/staging/vt6655/card.c
-@@ -68,8 +68,8 @@
- 
- /*---------------------  Static Variables  --------------------------*/
- 
--static const unsigned short cwRXBCNTSFOff[MAX_RATE] =
--{17, 17, 17, 17, 34, 23, 17, 11, 8, 5, 4, 3};
-+static const unsigned short cwRXBCNTSFOff[MAX_RATE] = {
-+	17, 17, 17, 17, 34, 23, 17, 11, 8, 5, 4, 3};
- 
- /*---------------------  Static Functions  --------------------------*/
- 
--- 
-1.9.1
+> >
+> >  obj-$(CONFIG_MFD_SUN6I_PRCM) += \
+> >       clk-sun6i-ar100.o clk-sun6i-apb0.o clk-sun6i-apb0-gates.o \
+> > diff --git a/drivers/clk/sunxi/clk-usb.c b/drivers/clk/sunxi/clk-usb.c
+> > new file mode 100644
+> > index 000000000000..1a93400353de
+> > --- /dev/null
+> > +++ b/drivers/clk/sunxi/clk-usb.c
+> > @@ -0,0 +1,193 @@
+> > +/*
+> > + * Copyright 2013 Emilio López
+> > + *
+> > + * Emilio López <emilio@elopez.com.ar>
+>
+> Hmmmm, the copyright notice seems weird :)
 
+The code was pulled from clk-sunxi.c, which only has Emilio's
+copyright. I suppose I could dig up who actually wrote the code.
+I think it was Hans.
+
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#include <linux/clk-provider.h>
+> > +#include <linux/clkdev.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_address.h>
+> > +#include <linux/reset-controller.h>
+> > +#include <linux/spinlock.h>
+> > +
+> > +
+> > +/**
+> > + * sunxi_usb_reset... - reset bits in usb clk registers handling
+> > + */
+> > +
+> > +struct usb_reset_data {
+> > +     void __iomem                    *reg;
+> > +     spinlock_t                      *lock;
+> > +     struct clk                      *clk;
+> > +     struct reset_controller_dev     rcdev;
+> > +};
+> > +
+> > +static int sunxi_usb_reset_assert(struct reset_controller_dev *rcdev,
+> > +                           unsigned long id)
+> > +{
+> > +     struct usb_reset_data *data = container_of(rcdev,
+> > +                                                struct usb_reset_data,
+> > +                                                rcdev);
+> > +     unsigned long flags;
+> > +     u32 reg;
+> > +
+> > +     clk_prepare_enable(data->clk);
+> > +     spin_lock_irqsave(data->lock, flags);
+> > +
+> > +     reg = readl(data->reg);
+> > +     writel(reg & ~BIT(id), data->reg);
+> > +
+> > +     spin_unlock_irqrestore(data->lock, flags);
+> > +     clk_disable_unprepare(data->clk);
+> > +
+> > +     return 0;
+> > +}
+> > +
+> > +static int sunxi_usb_reset_deassert(struct reset_controller_dev *rcdev,
+> > +                             unsigned long id)
+> > +{
+> > +     struct usb_reset_data *data = container_of(rcdev,
+> > +                                                  struct usb_reset_data,
+> > +                                                  rcdev);
+> > +     unsigned long flags;
+> > +     u32 reg;
+> > +
+> > +     clk_prepare_enable(data->clk);
+> > +     spin_lock_irqsave(data->lock, flags);
+> > +
+> > +     reg = readl(data->reg);
+> > +     writel(reg | BIT(id), data->reg);
+> > +
+> > +     spin_unlock_irqrestore(data->lock, flags);
+> > +     clk_disable_unprepare(data->clk);
+> > +
+> > +     return 0;
+> > +}
+> > +
+> > +static struct reset_control_ops sunxi_usb_reset_ops = {
+> > +     .assert         = sunxi_usb_reset_assert,
+> > +     .deassert       = sunxi_usb_reset_deassert,
+> > +};
+> > +
+> > +/**
+> > + * sunxi_usb_clk_setup() - Setup function for usb gate clocks
+> > + */
+> > +
+> > +#define SUNXI_USB_MAX_SIZE 32
+> > +
+> > +struct usb_clk_data {
+> > +     u32 clk_mask;
+> > +     u32 reset_mask;
+> > +     bool reset_needs_clk;
+> > +};
+> > +
+> > +static void __init sunxi_usb_clk_setup(struct device_node *node,
+> > +                                    const struct usb_clk_data *data,
+> > +                                    spinlock_t *lock)
+> > +{
+> > +     struct clk_onecell_data *clk_data;
+> > +     struct usb_reset_data *reset_data;
+> > +     const char *clk_parent;
+> > +     const char *clk_name;
+> > +     void __iomem *reg;
+> > +     int qty;
+> > +     int i = 0;
+> > +     int j = 0;
+> > +
+> > +     reg = of_io_request_and_map(node, 0, of_node_full_name(node));
+>
+> You should check the return code here.
+
+Right.
+
+> > +     clk_parent = of_clk_get_parent_name(node, 0);
+> > +     if (!clk_parent)
+> > +             return;
+> > +
+> > +     /* Worst-case size approximation and memory allocation */
+> > +     qty = find_last_bit((unsigned long *)&data->clk_mask,
+> > +                         SUNXI_USB_MAX_SIZE);
+>
+> Newline
+
+OK.
+
+> > +     clk_data = kmalloc(sizeof(struct clk_onecell_data), GFP_KERNEL);
+> > +     if (!clk_data)
+> > +             return;
+>
+> Newline.
+
+OK.
+
+> > +     clk_data->clks = kzalloc((qty+1) * sizeof(struct clk *), GFP_KERNEL);
+> > +     if (!clk_data->clks) {
+> > +             kfree(clk_data);
+> > +             return;
+> > +     }
+> > +
+> > +     for_each_set_bit(i, (unsigned long *)&data->clk_mask,
+> > +                      SUNXI_USB_MAX_SIZE) {
+> > +             of_property_read_string_index(node, "clock-output-names",
+> > +                                           j, &clk_name);
+> > +             clk_data->clks[i] = clk_register_gate(NULL, clk_name,
+> > +                                                   clk_parent, 0,
+> > +                                                   reg, i, 0, lock);
+> > +             WARN_ON(IS_ERR(clk_data->clks[i]));
+> > +             clk_register_clkdev(clk_data->clks[i], clk_name, NULL);
+>
+> Do we really need to use clkdev for these clocks?
+
+Original code. I don't think we do.
+
+> > +             j++;
+> > +     }
+> > +
+> > +     /* Adjust to the real max */
+> > +     clk_data->clk_num = i;
+> > +
+> > +     of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
+> > +
+> > +     /* Register a reset controller for usb with reset bits */
+> > +     if (data->reset_mask == 0)
+> > +             return;
+> > +
+> > +     reset_data = kzalloc(sizeof(*reset_data), GFP_KERNEL);
+> > +     if (!reset_data)
+> > +             return;
+> > +
+> > +     if (data->reset_needs_clk)
+> > +             reset_data->clk = of_clk_get(node, 0);
+>
+> Newline
+
+OK.
+
+> > +     if (IS_ERR(reset_data->clk)) {
+> > +             pr_err("Could not get clock for reset controls\n");
+> > +             kfree(reset_data);
+> > +             return;
+> > +     }
+>
+> Newline, and that block should probably be part of the if block above.
+
+NULL is not considered an error, but maybe being in the same block
+makes it clear that they are related.
+
+> > +     reset_data->reg = reg;
+> > +     reset_data->lock = lock;
+> > +     reset_data->rcdev.nr_resets = __fls(data->reset_mask) + 1;
+> > +     reset_data->rcdev.ops = &sunxi_usb_reset_ops;
+> > +     reset_data->rcdev.of_node = node;
+> > +     reset_controller_register(&reset_data->rcdev);
+> > +}
+> > +
+> > +static const struct usb_clk_data sun9i_a80_usb_mod_data __initconst = {
+> > +     .clk_mask = BIT(6) | BIT(5) | BIT(4) | BIT(3) | BIT(2) | BIT(1),
+> > +     .reset_mask = BIT(19) | BIT(18) | BIT(17),
+> > +     .reset_needs_clk = 1,
+> > +};
+> > +
+> > +static DEFINE_SPINLOCK(a80_usb_mod_lock);
+> > +
+> > +static void __init sun9i_a80_usb_mod_setup(struct device_node *node)
+> > +{
+> > +     sunxi_usb_clk_setup(node, &sun9i_a80_usb_mod_data, &a80_usb_mod_lock);
+> > +}
+> > +CLK_OF_DECLARE(sun9i_a80_usb_mod, "allwinner,sun9i-a80-usb-mod-clk", sun9i_a80_usb_mod_setup);
+> > +
+> > +static const struct usb_clk_data sun9i_a80_usb_phy_data __initconst = {
+> > +     .clk_mask = BIT(10) | BIT(5) | BIT(4) | BIT(3) | BIT(2) | BIT(1),
+> > +     .reset_mask = BIT(21) | BIT(20) | BIT(19) | BIT(18) | BIT(17),
+> > +     .reset_needs_clk = 1,
+> > +};
+> > +
+> > +static DEFINE_SPINLOCK(a80_usb_phy_lock);
+> > +
+> > +static void __init sun9i_a80_usb_phy_setup(struct device_node *node)
+> > +{
+> > +     sunxi_usb_clk_setup(node, &sun9i_a80_usb_phy_data, &a80_usb_phy_lock);
+> > +}
+> > +CLK_OF_DECLARE(sun9i_a80_usb_phy, "allwinner,sun9i-a80-usb-phy-clk", sun9i_a80_usb_phy_setup);
+>
+> Looks good otherwise, thanks!
+
+Thanks.
+
+ChenYu
