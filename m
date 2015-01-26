@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615AbbAZO1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 09:27:36 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:53482 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755481AbbAZO1b (ORCPT
+	id S1755566AbbAZO1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:27:34 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:52244 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476AbbAZO1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Jan 2015 09:27:31 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-Cc: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        alsa-devel@alsa-project.org, lars@metafoo.de
-Subject: Re: [PATCH_V2 2/4] dt: sound: jz4740: Add binding documentation for jz4740-i2s
-Date: Mon, 26 Jan 2015 15:27:17 +0100
-Message-ID: <5212689.3MTQUevMKn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1422278138-51097-3-git-send-email-Zubair.Kakakhel@imgtec.com>
-References: <1422278138-51097-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1422278138-51097-3-git-send-email-Zubair.Kakakhel@imgtec.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:nXQQ7ds3aZOPhypjyKPw1sP1Ds/HMgmFs79ftyCk8NjgiJlizWS
- 8AMF2dmCHtq+ExOO5fN8sG9FDxsR9IB4wP7xbmDSsI+sgrhS/66aTn0RXPJYh7KiRLDTSgj
- wVBgU/E1RaKRuG7XGnk7BoiUabLFJEMnrpz7RChrw5KLysE80olEFFZXuw3aXsuvlB1J9eL
- g/22UdEPBV/C3rMsyFvOQ==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1421054073-43468-1-git-send-email-eddie.huang@mediatek.com>
+References: <1421054073-43468-1-git-send-email-eddie.huang@mediatek.com>
+Date: Mon, 26 Jan 2015 15:27:29 +0100
+Message-ID: <CABuKBeKjGL6puqhqCb6b4=5Qb9+hcm-sGQ7vLxyb2jAFaLYGUQ@mail.gmail.com>
+Subject: Re: [PATCH v4 0/4] Add basic support for Mediatek MT8173 SoC
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Eddie Huang <eddie.huang@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Peter Maydell <peter.maydell@linaro.org>,
+        Yu-hau Chen <yh.chen@mediatek.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 January 2015 13:15:36 Zubair Lutfullah Kakakhel wrote:
-> +
-> +Required properties:
-> +- compatible : "ingenic,jz4740-i2s"
-> +- reg : I2S registers location and length
-> +- clocks : AIC and I2S PLL clock specifiers.
-> +- clock-names: "aic" and "i2s"
-> +
-> +Example:
-> +
-> +i2s: i2s@10020000 {
-> +       compatible = "ingenic,jz4740-i2s";
-> +       reg = <0x10020000 0x94>;
-> +
-> +       clocks = <&cgu JZ4740_CLK_AIC>, <&cgu JZ4740_CLK_I2SPLL>;
-> +       clock-names = "aic", "i2s";
-> +
-> +       dmas = <&dma 2>, <&dma 3>;
-> +       dma-names = "tx", "rx";
-> +
-> 
+2015-01-12 10:14 GMT+01:00 Eddie Huang <eddie.huang@mediatek.com>:
+> MT8173 is a SoC based on 64bit ARMv8 architecture. It contains 2 CA53 + 2 CA57 cores.
+> MT8173 share many HW IP with MT8135 and other MT65xx series. This patchset was tested
+> on MT8173 engineer sample, and boot to shell ok.
+>
+> This series contains document bindings, device tree, defconfig, and one sysirq
+> modification for MT8173.
+>
+> Changes in v4:
+> 1. Add sysirq, uart binding documents.
+> 2. Disable UART in mt8173.dtsi, enable needed UART in mt8173-evb.dtsi
+>
+> This patch base on 3.19-rc1, Joe's sysirq patch [1] and test boot to shell with
+> Catalin Marinas's arch_timer virtual counter patch [2]
+>
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/310335.html
+> [2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/309856.html
 
-Thanks for adding the dma entries to the example. Unfortunately you
-have missed adding them to the list of required properties,
-so please add those as well.
+Applied to v3.20-next/arm64.
+Thanks.
 
-	Arnd
+>
+> Eddie Huang (3):
+>   Document: DT: Add bindings for mediatek MT8173 SoC Platform
+>   arm64: dts: Add mediatek MT8173 SoC and evaluation board dts and
+>     Makefile
+>   arm64: mediatek: Add MT8173 SoC Kconfig and defconfig
+>
+> Yingjoe Chen (1):
+>   irqchip: mtk-sysirq: Get irq number from register resource size
+>
+>  Documentation/devicetree/bindings/arm/mediatek.txt |   4 +
+>  .../bindings/arm/mediatek/mediatek,sysirq.txt      |   1 +
+>  .../devicetree/bindings/serial/mtk-uart.txt        |   4 +-
+>  arch/arm64/Kconfig                                 |   6 +
+>  arch/arm64/boot/dts/Makefile                       |   1 +
+>  arch/arm64/boot/dts/mediatek/Makefile              |   5 +
+>  arch/arm64/boot/dts/mediatek/mt8173-evb.dts        |  38 +++++
+>  arch/arm64/boot/dts/mediatek/mt8173.dtsi           | 168 +++++++++++++++++++++
+>  arch/arm64/configs/defconfig                       |   2 +
+>  drivers/irqchip/irq-mtk-sysirq.c                   |  18 ++-
+>  10 files changed, 239 insertions(+), 8 deletions(-)
+>  create mode 100644 arch/arm64/boot/dts/mediatek/Makefile
+>  create mode 100644 arch/arm64/boot/dts/mediatek/mt8173-evb.dts
+>  create mode 100644 arch/arm64/boot/dts/mediatek/mt8173.dtsi
+>
+> --
+> 1.8.1.1.dirty
+>
+
+
+
+-- 
+motzblog.wordpress.com
