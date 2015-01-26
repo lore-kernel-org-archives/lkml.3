@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709AbbAZOrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 09:47:17 -0500
-Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:37570 "EHLO
-	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753901AbbAZOrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 09:47:14 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <54C6536D.1050404@mev.co.uk>
-Date: Mon, 26 Jan 2015 14:47:09 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1755838AbbAZOrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:47:36 -0500
+Received: from mga03.intel.com ([134.134.136.65]:45403 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751244AbbAZOre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 09:47:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,469,1418112000"; 
+   d="scan'208";a="667657908"
+Date: Mon, 26 Jan 2015 16:47:29 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] HID: i2c-hid: Add support for GPIO interrupts
+Message-ID: <20150126144729.GG1451@lahna.fi.intel.com>
+References: <1422282573-18215-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1422282573-18215-2-git-send-email-mika.westerberg@linux.intel.com>
+ <20150126143723.GI23313@leverpostej>
 MIME-Version: 1.0
-To: Simon Guo <wei.guo.simon@gmail.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.19.0-rc5 02/03] STAGING: Fix pcl818.c coding style issue:
- line over 80 characters
-References: <20150126131735.GB9183@thunderCat>
-In-Reply-To: <20150126131735.GB9183@thunderCat>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150126143723.GI23313@leverpostej>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/01/15 13:17, Simon Guo wrote:
-> Correct one coding style problem(detected by checkpatch.pl) in pcl818.c.
-> - line over 80 characters
->
-> Signed-off-by: Simon Guo <wei.guo.simon@gmail.com>
-> ---
->   drivers/staging/comedi/drivers/pcl818.c | 15 ++++++++++-----
->   1 file changed, 10 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-> index 5a005e5..bc8493f 100644
-> --- a/drivers/staging/comedi/drivers/pcl818.c
-> +++ b/drivers/staging/comedi/drivers/pcl818.c
-> @@ -303,9 +303,11 @@ static const struct pcl818_board boardtypes[] = {
->
->   struct pcl818_private {
->   	struct comedi_isadma *dma;
-> -	unsigned int ns_min;	/*  manimal allowed delay between samples (in us) for actual card */
-> +	/*  manimal allowed delay between samples (in us) for actual card */
-> +	unsigned int ns_min;
->   	int i8253_osc_base;	/*  1/frequency of on board oscilator in ns */
-> -	unsigned int act_chanlist[16];	/*  MUX setting for actual AI operations */
-> +	/*  MUX setting for actual AI operations */
-> +	unsigned int act_chanlist[16];
->   	unsigned int act_chanlist_len;	/*  how long is actual MUX list */
->   	unsigned int act_chanlist_pos;	/*  actual position in MUX list */
->   	unsigned int divisor1;
-> @@ -647,7 +649,8 @@ static int check_channel_list(struct comedi_device *dev,
->   				break;
->   			nowmustbechan =
->   			    (CR_CHAN(chansegment[i - 1]) + 1) % s->n_chan;
-> -			if (nowmustbechan != CR_CHAN(chanlist[i])) {	/*  channel list isn't continuous :-( */
-> +			if (nowmustbechan != CR_CHAN(chanlist[i])) {
-> +				/*  channel list isn't continuous :-( */
->   				dev_dbg(dev->class_dev,
->   					"channel list must be continuous! chanlist[%i]=%d but must be %d or %d!\n",
->   					i, CR_CHAN(chanlist[i]), nowmustbechan,
-> @@ -1153,8 +1156,10 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->   	devpriv->ns_min = board->ns_min;
->
->   	if (!board->is_818) {
-> -		if ((it->options[6] == 1) || (it->options[6] == 100))
-> -			devpriv->ns_min = 10000;	/* extended PCL718 to 100kHz DAC */
-> +		if ((it->options[6] == 1) || (it->options[6] == 100)) {
-> +			/* extended PCL718 to 100kHz DAC */
-> +			devpriv->ns_min = 10000;
-> +		}
->   	}
->
->   	pcl818_reset(dev);
->
+On Mon, Jan 26, 2015 at 02:37:24PM +0000, Mark Rutland wrote:
+> On Mon, Jan 26, 2015 at 02:29:33PM +0000, Mika Westerberg wrote:
+> > The HID over I2C specification allows to have the interrupt for a HID
+> > device to be GPIO instead of directly connected to the IO-APIC.
+> > 
+> > Add support for this so that when the driver does not find proper interrupt
+> > number from the I2C client structure we check if the device has property
+> > named "gpios". This is then assumed to be the GPIO that serves as an
+> > interrupt for the device.
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > ---
+> >  .../devicetree/bindings/hid/hid-over-i2c.txt       |  5 +-
+> >  drivers/hid/i2c-hid/i2c-hid.c                      | 70 ++++++++++++++++------
+> >  2 files changed, 56 insertions(+), 19 deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/hid/hid-over-i2c.txt b/Documentation/devicetree/bindings/hid/hid-over-i2c.txt
+> > index 488edcb264c4..8f4a99dad3b9 100644
+> > --- a/Documentation/devicetree/bindings/hid/hid-over-i2c.txt
+> > +++ b/Documentation/devicetree/bindings/hid/hid-over-i2c.txt
+> > @@ -15,7 +15,10 @@ Required properties:
+> >  - reg: i2c slave address
+> >  - hid-descr-addr: HID descriptor address
+> >  - interrupt-parent: the phandle for the interrupt controller
+> > -- interrupts: interrupt line
+> > +- interrupts: interrupt line if the device uses IO-APIC interrupts
+> > +
+> > +Optional properties:
+> > +- gpios: GPIO used as an interrupt if the device uses GPIO interrupts
+> 
+> Elsewhere we've said that for a GPIO acting as an interrupt line, GPIO
+> controller should be marked as an interrupt-controller, and the GPIO
+> described as an interrupt line. That also gets you the appropriate
+> configuration for the GPIO as an interrupt.
+> 
+> Does this GPIO serve any other purpose than an ersatz interrupt line?
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+It is just an interrupt.
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+> If not, it should probably be described as an interrupt. From the PoV of
+> this device, it's just an interrupt controller hooked up to the
+> interrupt pin.
+
+What I'm trying to do is to get a GPIO that is described in ACPI (as
+GpioInt() in _CRS) to be supported in this driver using gpiolib like
+this:
+
+	desc = gpiod_get(&client->dev, NULL);
+
+This calls to find "gpios" property which ends up finding the GpioInt()
+in _CRS.
