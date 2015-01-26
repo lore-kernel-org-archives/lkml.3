@@ -1,547 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948AbbAZRt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:49:59 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:32017 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459AbbAZRtX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:49:23 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Bo Shen <voice.shen@atmel.com>, Wenyou Yang <wenyou.yang@atmel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2] ARM: at91: merge SOC_AT91SAM9xxx
-Date: Mon, 26 Jan 2015 18:49:31 +0100
-Message-ID: <1422294571-25356-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421359100-8930-11-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1421359100-8930-11-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1756826AbbAZR6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:58:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55530 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756230AbbAZR6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 12:58:36 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Zach Brown <zab@zabbo.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH v2 3/4] block: loop: introduce 'use_aio' sysfs file
+References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+	<1421163888-21452-4-git-send-email-ming.lei@canonical.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 26 Jan 2015 12:57:53 -0500
+In-Reply-To: <1421163888-21452-4-git-send-email-ming.lei@canonical.com> (Ming
+	Lei's message of "Tue, 13 Jan 2015 23:44:47 +0800")
+Message-ID: <x49zj952zmm.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Ming Lei <ming.lei@canonical.com> writes:
 
-Only use SOC_AT91SAM9 for all the at91sam9 SoCs.
+> So that users can control if kernel aio is used to submit I/O.
 
-It enables HAVE_AT91_SMD and HAVE_AT91_UTMI for all the sam9 SoCs but this only
-represents 96 bytes of uncompressed kernel code.
+How would a user know to choose aio or, um, /not/ aio?  At the very
+least, documentation is required for this.  I'd rather see the option
+disappear completely, though.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-[nicolas.ferre@atmel.com: remove all use of particular SAM9 config options]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/configs/at91_dt_defconfig    | 10 +---
- arch/arm/mach-at91/Kconfig            | 92 ++++++++++-------------------------
- arch/arm/mach-at91/Makefile           |  7 ---
- arch/arm/mach-at91/at91sam9260.c      | 26 ----------
- arch/arm/mach-at91/at91sam9261.c      | 25 ----------
- arch/arm/mach-at91/at91sam9263.c      | 24 ---------
- arch/arm/mach-at91/at91sam9g45.c      | 24 ---------
- arch/arm/mach-at91/at91sam9n12.c      | 20 --------
- arch/arm/mach-at91/at91sam9rl.c       | 25 ----------
- arch/arm/mach-at91/at91sam9x5.c       | 20 --------
- arch/arm/mach-at91/include/mach/cpu.h | 52 ++++++--------------
- arch/arm/mach-at91/soc.h              | 20 +-------
- 12 files changed, 42 insertions(+), 303 deletions(-)
- delete mode 100644 arch/arm/mach-at91/at91sam9260.c
- delete mode 100644 arch/arm/mach-at91/at91sam9261.c
- delete mode 100644 arch/arm/mach-at91/at91sam9263.c
- delete mode 100644 arch/arm/mach-at91/at91sam9g45.c
- delete mode 100644 arch/arm/mach-at91/at91sam9n12.c
- delete mode 100644 arch/arm/mach-at91/at91sam9rl.c
- delete mode 100644 arch/arm/mach-at91/at91sam9x5.c
+Cheers,
+Jeff
 
-diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
-index a67375f24b21..f2670f638e97 100644
---- a/arch/arm/configs/at91_dt_defconfig
-+++ b/arch/arm/configs/at91_dt_defconfig
-@@ -15,15 +15,7 @@ CONFIG_MODULE_UNLOAD=y
- # CONFIG_IOSCHED_CFQ is not set
- CONFIG_ARCH_AT91=y
- CONFIG_SOC_AT91RM9200=y
--CONFIG_SOC_AT91SAM9260=y
--CONFIG_SOC_AT91SAM9261=y
--CONFIG_SOC_AT91SAM9263=y
--CONFIG_SOC_AT91SAM9RL=y
--CONFIG_SOC_AT91SAM9G45=y
--CONFIG_SOC_AT91SAM9X5=y
--CONFIG_SOC_AT91SAM9N12=y
--CONFIG_MACH_AT91RM9200_DT=y
--CONFIG_MACH_AT91SAM9_DT=y
-+CONFIG_SOC_AT91SAM9=y
- CONFIG_AT91_TIMER_HZ=128
- CONFIG_AEABI=y
- CONFIG_UACCESS_WITH_MEMCPY=y
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index c6956b863b9d..c6740e359a44 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -16,15 +16,6 @@ config HAVE_AT91_SMD
- config HAVE_AT91_H32MX
- 	bool
- 
--config SOC_AT91SAM9
--	bool
--	select ATMEL_AIC_IRQ
--	select COMMON_CLK_AT91
--	select CPU_ARM926T
--	select GENERIC_CLOCKEVENTS
--	select MEMORY
--	select ATMEL_SDRAMC
--
- config SOC_SAMA5
- 	bool
- 	select ATMEL_AIC5_IRQ
-@@ -92,67 +83,36 @@ config SOC_AT91RM9200
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_AT91_USB_CLK
- 
--config SOC_AT91SAM9260
--	bool "AT91SAM9260, AT91SAM9XE or AT91SAM9G20"
--	select SOC_AT91SAM9
--	select HAVE_AT91_USB_CLK
--	help
--	  Select this if you are using one of Atmel's AT91SAM9260, AT91SAM9XE
--	  or AT91SAM9G20 SoC.
--
--config SOC_AT91SAM9261
--	bool "AT91SAM9261 or AT91SAM9G10"
--	select HAVE_FB_ATMEL
--	select SOC_AT91SAM9
--	select HAVE_AT91_USB_CLK
--	help
--	  Select this if you are using one of Atmel's AT91SAM9261 or AT91SAM9G10 SoC.
--
--config SOC_AT91SAM9263
--	bool "AT91SAM9263"
--	select HAVE_FB_ATMEL
--	select SOC_AT91SAM9
--	select HAVE_AT91_USB_CLK
--
--config SOC_AT91SAM9RL
--	bool "AT91SAM9RL"
--	select HAVE_FB_ATMEL
--	select SOC_AT91SAM9
--	select HAVE_AT91_UTMI
--
--config SOC_AT91SAM9G45
--	bool "AT91SAM9G45 or AT91SAM9M10 families"
--	select HAVE_FB_ATMEL
--	select SOC_AT91SAM9
--	select HAVE_AT91_UTMI
--	select HAVE_AT91_USB_CLK
--	help
--	  Select this if you are using one of Atmel's AT91SAM9G45 family SoC.
--	  This support covers AT91SAM9G45, AT91SAM9G46, AT91SAM9M10 and AT91SAM9M11.
--
--config SOC_AT91SAM9X5
--	bool "AT91SAM9x5 family"
--	select HAVE_FB_ATMEL
--	select SOC_AT91SAM9
--	select HAVE_AT91_UTMI
-+config SOC_AT91SAM9
-+	bool "AT91SAM9"
-+	select ATMEL_AIC_IRQ
-+	select ATMEL_SDRAMC
-+	select COMMON_CLK_AT91
-+	select CPU_ARM926T
-+	select GENERIC_CLOCKEVENTS
- 	select HAVE_AT91_SMD
- 	select HAVE_AT91_USB_CLK
--	help
--	  Select this if you are using one of Atmel's AT91SAM9x5 family SoC.
--	  This means that your SAM9 name finishes with a '5' (except if it is
--	  AT91SAM9G45!).
--	  This support covers AT91SAM9G15, AT91SAM9G25, AT91SAM9X25, AT91SAM9G35
--	  and AT91SAM9X35.
--
--config SOC_AT91SAM9N12
--	bool "AT91SAM9N12 family"
-+	select HAVE_AT91_UTMI
- 	select HAVE_FB_ATMEL
--	select SOC_AT91SAM9
--	select HAVE_AT91_USB_CLK
-+	select MEMORY
- 	help
--	  Select this if you are using Atmel's AT91SAM9N12 SoC.
--
--# ----------------------------------------------------------
-+	  Select this if you are using one of those Atmel SoC:
-+	    AT91SAM9260
-+	    AT91SAM9261
-+	    AT91SAM9263
-+	    AT91SAM9G15
-+	    AT91SAM9G20
-+	    AT91SAM9G25
-+	    AT91SAM9G35
-+	    AT91SAM9G45
-+	    AT91SAM9G46
-+	    AT91SAM9M10
-+	    AT91SAM9M11
-+	    AT91SAM9N12
-+	    AT91SAM9RL
-+	    AT91SAM9X25
-+	    AT91SAM9X35
-+	    AT91SAM9XE
- endif # SOC_SAM_V4_V5
- 
- comment "AT91 Feature Selections"
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index 8ef7d9a2e855..ad7fc5834188 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -8,13 +8,6 @@ obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
- 
- # CPU-specific support
- obj-$(CONFIG_SOC_AT91RM9200)	+= at91rm9200.o at91rm9200_time.o
--obj-$(CONFIG_SOC_AT91SAM9260)	+= at91sam9260.o
--obj-$(CONFIG_SOC_AT91SAM9261)	+= at91sam9261.o
--obj-$(CONFIG_SOC_AT91SAM9263)	+= at91sam9263.o
--obj-$(CONFIG_SOC_AT91SAM9G45)	+= at91sam9g45.o
--obj-$(CONFIG_SOC_AT91SAM9N12)	+= at91sam9n12.o
--obj-$(CONFIG_SOC_AT91SAM9X5)	+= at91sam9x5.o
--obj-$(CONFIG_SOC_AT91SAM9RL)	+= at91sam9rl.o
- obj-$(CONFIG_SOC_SAMA5D3)	+= sama5d3.o
- obj-$(CONFIG_SOC_SAMA5D4)	+= sama5d4.o
- 
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-deleted file mode 100644
-index 37b7ce4c6a3b..000000000000
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ /dev/null
-@@ -1,26 +0,0 @@
--/*
-- * arch/arm/mach-at91/at91sam9260.c
-- *
-- *  Copyright (C) 2006 SAN People
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- */
--
--#include <asm/system_misc.h>
--#include <mach/cpu.h>
--#include <mach/at91_dbgu.h>
--#include <mach/hardware.h>
--
--#include "soc.h"
--#include "generic.h"
--
--/* --------------------------------------------------------------------
-- *  AT91SAM9260 processor initialization
-- * -------------------------------------------------------------------- */
--
--AT91_SOC_START(at91sam9260)
--AT91_SOC_END
-diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-deleted file mode 100644
-index aebbf76b6038..000000000000
---- a/arch/arm/mach-at91/at91sam9261.c
-+++ /dev/null
-@@ -1,25 +0,0 @@
--/*
-- * arch/arm/mach-at91/at91sam9261.c
-- *
-- *  Copyright (C) 2005 SAN People
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- */
--
--#include <asm/system_misc.h>
--#include <mach/cpu.h>
--#include <mach/hardware.h>
--
--#include "soc.h"
--#include "generic.h"
--
--/* --------------------------------------------------------------------
-- *  AT91SAM9261 processor initialization
-- * -------------------------------------------------------------------- */
--
--AT91_SOC_START(at91sam9261)
--AT91_SOC_END
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-deleted file mode 100644
-index dca29457d9cc..000000000000
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ /dev/null
-@@ -1,24 +0,0 @@
--/*
-- * arch/arm/mach-at91/at91sam9263.c
-- *
-- *  Copyright (C) 2007 Atmel Corporation.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- */
--
--#include <asm/system_misc.h>
--#include <mach/hardware.h>
--
--#include "soc.h"
--#include "generic.h"
--
--/* --------------------------------------------------------------------
-- *  AT91SAM9263 processor initialization
-- * -------------------------------------------------------------------- */
--
--AT91_SOC_START(at91sam9263)
--AT91_SOC_END
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-deleted file mode 100644
-index 4957a9ef748a..000000000000
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ /dev/null
-@@ -1,24 +0,0 @@
--/*
-- *  Chip-specific setup code for the AT91SAM9G45 family
-- *
-- *  Copyright (C) 2009 Atmel Corporation.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- */
--
--#include <asm/system_misc.h>
--#include <mach/hardware.h>
--
--#include "soc.h"
--#include "generic.h"
--
--/* --------------------------------------------------------------------
-- *  AT91SAM9G45 processor initialization
-- * -------------------------------------------------------------------- */
--
--AT91_SOC_START(at91sam9g45)
--AT91_SOC_END
-diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
-deleted file mode 100644
-index b5ea69a3eaf6..000000000000
---- a/arch/arm/mach-at91/at91sam9n12.c
-+++ /dev/null
-@@ -1,20 +0,0 @@
--/*
-- * SoC specific setup code for the AT91SAM9N12
-- *
-- * Copyright (C) 2012 Atmel Corporation.
-- *
-- * Licensed under GPLv2 or later.
-- */
--
--#include <asm/system_misc.h>
--#include <mach/hardware.h>
--
--#include "soc.h"
--#include "generic.h"
--
--/* --------------------------------------------------------------------
-- *  AT91SAM9N12 processor initialization
-- * -------------------------------------------------------------------- */
--
--AT91_SOC_START(at91sam9n12)
--AT91_SOC_END
-diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-deleted file mode 100644
-index 6cb40e4ec20f..000000000000
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ /dev/null
-@@ -1,25 +0,0 @@
--/*
-- * arch/arm/mach-at91/at91sam9rl.c
-- *
-- *  Copyright (C) 2005 SAN People
-- *  Copyright (C) 2007 Atmel Corporation
-- *
-- * This file is subject to the terms and conditions of the GNU General Public
-- * License.  See the file COPYING in the main directory of this archive for
-- * more details.
-- */
--
--#include <asm/system_misc.h>
--#include <mach/cpu.h>
--#include <mach/at91_dbgu.h>
--#include <mach/hardware.h>
--
--#include "soc.h"
--#include "generic.h"
--
--/* --------------------------------------------------------------------
-- *  AT91SAM9RL processor initialization
-- * -------------------------------------------------------------------- */
--
--AT91_SOC_START(at91sam9rl)
--AT91_SOC_END
-diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-deleted file mode 100644
-index 7b60a529db01..000000000000
---- a/arch/arm/mach-at91/at91sam9x5.c
-+++ /dev/null
-@@ -1,20 +0,0 @@
--/*
-- *  Chip-specific setup code for the AT91SAM9x5 family
-- *
-- *  Copyright (C) 2010-2012 Atmel Corporation.
-- *
-- * Licensed under GPLv2 or later.
-- */
--
--#include <asm/system_misc.h>
--#include <mach/hardware.h>
--
--#include "soc.h"
--#include "generic.h"
--
--/* --------------------------------------------------------------------
-- *  AT91SAM9x5 processor initialization
-- * -------------------------------------------------------------------- */
--
--AT91_SOC_START(at91sam9x5)
--AT91_SOC_END
-diff --git a/arch/arm/mach-at91/include/mach/cpu.h b/arch/arm/mach-at91/include/mach/cpu.h
-index 61914fb35f5d..ce7c80a44983 100644
---- a/arch/arm/mach-at91/include/mach/cpu.h
-+++ b/arch/arm/mach-at91/include/mach/cpu.h
-@@ -152,69 +152,45 @@ static inline int at91_soc_is_detected(void)
- #define cpu_is_at91rm9200_pqfp() (0)
- #endif
- 
--#ifdef CONFIG_SOC_AT91SAM9260
-+#ifdef CONFIG_SOC_AT91SAM9
- #define cpu_is_at91sam9xe()	(at91_soc_initdata.subtype == AT91_SOC_SAM9XE)
- #define cpu_is_at91sam9260()	(at91_soc_initdata.type == AT91_SOC_SAM9260)
- #define cpu_is_at91sam9g20()	(at91_soc_initdata.type == AT91_SOC_SAM9G20)
--#else
--#define cpu_is_at91sam9xe()	(0)
--#define cpu_is_at91sam9260()	(0)
--#define cpu_is_at91sam9g20()	(0)
--#endif
--
--#ifdef CONFIG_SOC_AT91SAM9261
- #define cpu_is_at91sam9261()	(at91_soc_initdata.type == AT91_SOC_SAM9261)
- #define cpu_is_at91sam9g10()	(at91_soc_initdata.type == AT91_SOC_SAM9G10)
--#else
--#define cpu_is_at91sam9261()	(0)
--#define cpu_is_at91sam9g10()	(0)
--#endif
--
--#ifdef CONFIG_SOC_AT91SAM9263
- #define cpu_is_at91sam9263()	(at91_soc_initdata.type == AT91_SOC_SAM9263)
--#else
--#define cpu_is_at91sam9263()	(0)
--#endif
--
--#ifdef CONFIG_SOC_AT91SAM9RL
- #define cpu_is_at91sam9rl()	(at91_soc_initdata.type == AT91_SOC_SAM9RL)
--#else
--#define cpu_is_at91sam9rl()	(0)
--#endif
--
--#ifdef CONFIG_SOC_AT91SAM9G45
- #define cpu_is_at91sam9g45()	(at91_soc_initdata.type == AT91_SOC_SAM9G45)
- #define cpu_is_at91sam9g45es()	(at91_soc_initdata.subtype == AT91_SOC_SAM9G45ES)
- #define cpu_is_at91sam9m10()	(at91_soc_initdata.subtype == AT91_SOC_SAM9M10)
- #define cpu_is_at91sam9g46()	(at91_soc_initdata.subtype == AT91_SOC_SAM9G46)
- #define cpu_is_at91sam9m11()	(at91_soc_initdata.subtype == AT91_SOC_SAM9M11)
--#else
--#define cpu_is_at91sam9g45()	(0)
--#define cpu_is_at91sam9g45es()	(0)
--#define cpu_is_at91sam9m10()	(0)
--#define cpu_is_at91sam9g46()	(0)
--#define cpu_is_at91sam9m11()	(0)
--#endif
--
--#ifdef CONFIG_SOC_AT91SAM9X5
- #define cpu_is_at91sam9x5()	(at91_soc_initdata.type == AT91_SOC_SAM9X5)
- #define cpu_is_at91sam9g15()	(at91_soc_initdata.subtype == AT91_SOC_SAM9G15)
- #define cpu_is_at91sam9g35()	(at91_soc_initdata.subtype == AT91_SOC_SAM9G35)
- #define cpu_is_at91sam9x35()	(at91_soc_initdata.subtype == AT91_SOC_SAM9X35)
- #define cpu_is_at91sam9g25()	(at91_soc_initdata.subtype == AT91_SOC_SAM9G25)
- #define cpu_is_at91sam9x25()	(at91_soc_initdata.subtype == AT91_SOC_SAM9X25)
-+#define cpu_is_at91sam9n12()	(at91_soc_initdata.type == AT91_SOC_SAM9N12)
- #else
-+#define cpu_is_at91sam9xe()	(0)
-+#define cpu_is_at91sam9260()	(0)
-+#define cpu_is_at91sam9g20()	(0)
-+#define cpu_is_at91sam9261()	(0)
-+#define cpu_is_at91sam9g10()	(0)
-+#define cpu_is_at91sam9263()	(0)
-+#define cpu_is_at91sam9rl()	(0)
-+#define cpu_is_at91sam9g45()	(0)
-+#define cpu_is_at91sam9g45es()	(0)
-+#define cpu_is_at91sam9m10()	(0)
-+#define cpu_is_at91sam9g46()	(0)
-+#define cpu_is_at91sam9m11()	(0)
- #define cpu_is_at91sam9x5()	(0)
- #define cpu_is_at91sam9g15()	(0)
- #define cpu_is_at91sam9g35()	(0)
- #define cpu_is_at91sam9x35()	(0)
- #define cpu_is_at91sam9g25()	(0)
- #define cpu_is_at91sam9x25()	(0)
--#endif
--
--#ifdef CONFIG_SOC_AT91SAM9N12
--#define cpu_is_at91sam9n12()	(at91_soc_initdata.type == AT91_SOC_SAM9N12)
--#else
- #define cpu_is_at91sam9n12()	(0)
- #endif
- 
-diff --git a/arch/arm/mach-at91/soc.h b/arch/arm/mach-at91/soc.h
-index ae6c0b2f1146..f803e1016f74 100644
---- a/arch/arm/mach-at91/soc.h
-+++ b/arch/arm/mach-at91/soc.h
-@@ -40,31 +40,13 @@ static inline int at91_soc_is_enabled(void)
- #define at91rm9200_soc	at91_boot_soc
- #endif
- 
--#if !defined(CONFIG_SOC_AT91SAM9260)
-+#if !defined(CONFIG_SOC_AT91SAM9)
- #define at91sam9260_soc	at91_boot_soc
--#endif
--
--#if !defined(CONFIG_SOC_AT91SAM9261)
- #define at91sam9261_soc	at91_boot_soc
--#endif
--
--#if !defined(CONFIG_SOC_AT91SAM9263)
- #define at91sam9263_soc	at91_boot_soc
--#endif
--
--#if !defined(CONFIG_SOC_AT91SAM9G45)
- #define at91sam9g45_soc	at91_boot_soc
--#endif
--
--#if !defined(CONFIG_SOC_AT91SAM9RL)
- #define at91sam9rl_soc	at91_boot_soc
--#endif
--
--#if !defined(CONFIG_SOC_AT91SAM9X5)
- #define at91sam9x5_soc	at91_boot_soc
--#endif
--
--#if !defined(CONFIG_SOC_AT91SAM9N12)
- #define at91sam9n12_soc	at91_boot_soc
- #endif
- 
--- 
-2.1.3
-
+>
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/block/loop.c |   33 +++++++++++++++++++++++++++++++++
+>  drivers/block/loop.h |    1 +
+>  2 files changed, 34 insertions(+)
+>
+> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+> index d1f168b..47af456 100644
+> --- a/drivers/block/loop.c
+> +++ b/drivers/block/loop.c
+> @@ -659,6 +659,38 @@ static ssize_t loop_attr_partscan_show(struct loop_device *lo, char *buf)
+>  	return sprintf(buf, "%s\n", partscan ? "1" : "0");
+>  }
+>  
+> +static ssize_t loop_attr_do_show_use_aio(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+> +{
+> +	struct gendisk *disk = dev_to_disk(dev);
+> +	struct loop_device *lo = disk->private_data;
+> +
+> +	return sprintf(buf, "%s\n", lo->use_aio ? "1" : "0");
+> +}
+> +
+> +ssize_t loop_attr_do_store_use_aio(struct device *dev,
+> +		struct device_attribute *attr, const char *buf,
+> +		size_t count)
+> +{
+> +	struct gendisk *disk = dev_to_disk(dev);
+> +	struct loop_device *lo = disk->private_data;
+> +	int err;
+> +	unsigned long v;
+> +
+> +	err = kstrtoul(buf, 10, &v);
+> +	if (err < 0)
+> +		return err;
+> +	if (v)
+> +		lo->use_aio = true;
+> +	else
+> +		lo->use_aio = false;
+> +	return count;
+> +}
+> +
+> +static struct device_attribute loop_attr_use_aio =
+> +	__ATTR(use_aio, S_IRUGO | S_IWUSR, loop_attr_do_show_use_aio,
+> +			loop_attr_do_store_use_aio);
+> +
+>  LOOP_ATTR_RO(backing_file);
+>  LOOP_ATTR_RO(offset);
+>  LOOP_ATTR_RO(sizelimit);
+> @@ -671,6 +703,7 @@ static struct attribute *loop_attrs[] = {
+>  	&loop_attr_sizelimit.attr,
+>  	&loop_attr_autoclear.attr,
+>  	&loop_attr_partscan.attr,
+> +	&loop_attr_use_aio.attr,
+>  	NULL,
+>  };
+>  
+> diff --git a/drivers/block/loop.h b/drivers/block/loop.h
+> index 301c27f..15049e9 100644
+> --- a/drivers/block/loop.h
+> +++ b/drivers/block/loop.h
+> @@ -57,6 +57,7 @@ struct loop_device {
+>  	struct list_head	write_cmd_head;
+>  	struct work_struct	write_work;
+>  	bool			write_started;
+> +	bool			use_aio;
+>  	int			lo_state;
+>  	struct mutex		lo_ctl_mutex;
