@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307AbbAZQsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:48:31 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:11381 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756208AbbAZQs0 (ORCPT
+	id S1756374AbbAZQtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:49:19 -0500
+Received: from smtp-out-157.synserver.de ([212.40.185.157]:1068 "EHLO
+	smtp-out-157.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755702AbbAZQtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:48:26 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-d3-54c66f469713
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org,
-        Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [PATCH] net/9p: fix format string in p9_mount_tag_show()
-Date: Mon, 26 Jan 2015 19:48:16 +0300
-Message-id: <1422290896-25042-1-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.2.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xK7pu+cdCDHqWmlts+/WIzeLx63ks
-	FnPOt7BYzJ21id3i8q45bBb3pt9mtTi2QMxi2++NzBYf/65ic+D02LLyJpPHzll32T2m3dvE
-	5PHg0GYWj90LPjN59G1ZxejRu3Uhm8fnTXIBHFFcNimpOZllqUX6dglcGXubr7IUzGKvmNN+
-	g7mBsZGti5GTQ0LARGLKjd8sELaYxIV764HiXBxCAksZJSYc/8YM4fQxSRw5voMVpIpNQE/i
-	36ztYN0iAgoSm3ufsYIUMQscZJLYt/UKO0hCWMBR4vyVvUwgNouAqkTT/bdgcV4BN4mv8z8A
-	NXAArZOTuPAxfgIj9wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIWH1ZQfj4mNWhxgF
-	OBiVeHgnTDwaIsSaWFZcmXuIUYKDWUmEVzr3WIgQb0piZVVqUX58UWlOavEhRiYOTqkGxpo4
-	Dbu9fk8qQrZHvgmzWShgu86pLsXP9lWnbr6AguuU/B9/kiTT1s9bvy2KMdeeazPPY5NDFvwL
-	/y25tId7m88cmd2rDfPPO66I8zcTbUm/cOr6ouMJq9/uOum25MutK4/mPrzA0smyRHLGg4vh
-	bDF2+xiEnPJDGhTeyVp/ajc4c7eKddUpfSWW4oxEQy3mouJEAL1EVY8JAgAA
+	Mon, 26 Jan 2015 11:49:15 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 22375
+Message-ID: <54C67007.6000708@metafoo.de>
+Date: Mon, 26 Jan 2015 17:49:11 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linux-sound@vger.kernel.org,
+        Alexander Morozov <linux@meltdown.ru>, Bo Shen <voice.shen@atmel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH v2 1/3] ASoC: codecs: wm8904: add dt ids
+ table
+References: <1418614273-2303-1-git-send-email-voice.shen@atmel.com> <20150115115425.GX3043@sirena.org.uk> <54B866B9.8000900@atmel.com> <54C65C36.9050106@atmel.com> <20150126164229.GB21293@sirena.org.uk>
+In-Reply-To: <20150126164229.GB21293@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using "%s" for non-NULL terminated string is quite
-dangerous, since this causes reading out of bounds.
-chan->tag is non-NULL terminated, so precision
-must be specified for printing it.
+On 01/26/2015 05:42 PM, Mark Brown wrote:
+> On Mon, Jan 26, 2015 at 04:24:38PM +0100, Nicolas Ferre wrote:
+>> Le 16/01/2015 02:17, Bo Shen a écrit :
+>
+>>>> Does this end up in the i2c_driver_id driver data or do we need some
+>>>> extra code when devtype is assigned to check for an of_node and look at
+>>>> the DT data instead?  That certainly used to be the case...
+>
+>>> At the beginning I think as the same as you, and also add the code to
+>>> get the data as I do in <drivers/misc/atmel-ssc.c>. However, as I
+>>> remember, I2C seems only use the compatible string after the comma, that
+>>> means only for "wlf,wm8904", it uses "wm8904" to match. So, I remove all
+>>> the code I added, and just keep these, and it can get the device type
+>>> correctly.
+>
+>>> So, when I submit the patch and keep the code as simple as possible.
+>
+>> I don't understand what's keeping this patch from being applied. Voice,
+>> do you mind re-sending?
+>
+> I need to convince myself that the above actually works and is doing the
+> right thing; the above explanation sounds like if it works it might be
+> relying on a bug.
 
-Fixes: 86c8437383ac ("net/9p: Add sysfs mount_tag file for virtio 9P device")
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- net/9p/trans_virtio.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-index daa749c..f0d5f90 100644
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -504,7 +504,8 @@ static ssize_t p9_mount_tag_show(struct device *dev,
- 	vdev = dev_to_virtio(dev);
- 	chan = vdev->priv;
- 
--	return snprintf(buf, chan->tag_len + 1, "%s", chan->tag);
-+	return snprintf(buf, chan->tag_len + 1, "%.*s",
-+			chan->tag_len, chan->tag);
- }
- 
- static DEVICE_ATTR(mount_tag, 0444, p9_mount_tag_show, NULL);
--- 
-2.2.2
+I'd call it a undocumented feature. But I wouldn't rely on it being around 
+for ever. In my opinion to be future proof the driver should explicitly 
+handle the OF case in the probe function.
 
