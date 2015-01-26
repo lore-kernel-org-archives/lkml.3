@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756032AbbAZKXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:23:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47255 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755491AbbAZKXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:23:36 -0500
-Date: Mon, 26 Jan 2015 11:23:28 +0100
-From: Jean Delvare <jdelvare@suse.de>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] mmc: Add hardware dependencies for sdhci-pxav3 and
- sdhci-pxav2
-Message-ID: <20150126112328.318da5e7@endymion.delvare>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
+	id S1756052AbbAZKX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:23:59 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60168 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703AbbAZKXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:23:54 -0500
+Date: Mon, 26 Jan 2015 11:23:52 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, len.brown@intel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        chuansheng.liu@intel.com
+Subject: Change behaviour when tracing ... nasty trap (was Re: [PATCH]
+ PM/Trace: get rid of synchronous resume limit during PM trace)
+Message-ID: <20150126102352.GA1758@amd>
+References: <54C5CB77.4000109@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C5CB77.4000109@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I seem to understand that the sdhci-pxav3 and sdhci-pxav2 drivers are
-only needed on the MMP architecture. So add a hardware dependency on
-ARCH_MMP, so that other users don't get to build useless drivers.
+On Mon 2015-01-26 13:07:03, Fu, Zhonghui wrote:
+> >From f9c841d1f943d81b5ab0aac7483e794a7f966296 Mon Sep 17 00:00:00 2001
+> From: Zhonghui Fu <zhonghui.fu@linux.intel.com>
+> Date: Mon, 26 Jan 2015 11:27:08 +0800
+> Subject: [PATCH] PM/Trace: get rid of synchronous resume limit during PM trace
+> 
+> There are some kind of dependency between devices in some
+> hardware platforms. So, asynchronous resuming devices may
+> hang system due to wrong resume order. As a result, should
+> not fore synchronously resuming devices during tracing
+> PM events.
+> 
+> Signed-off-by: Zhonghui Fu <zhonghui.fu@linux.intel.com>
+> ---
+>  drivers/base/power/main.c    |    3 +--
+>  include/linux/resume-trace.h |    7 -------
+>  2 files changed, 1 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index 9717d5f..5df148b 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -517,8 +517,7 @@ static int device_resume_noirq(struct device *dev, pm_message_t state, bool asyn
+>  
+>  static bool is_async(struct device *dev)
+>  {
+> -	return dev->power.async_suspend && pm_async_enabled
+> -		&& !pm_trace_is_enabled();
+> +	return dev->power.async_suspend && pm_async_enabled;
+>  }
+>
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
----
-This patch was already sent on:
- * 2014-04-23
- * 2014-06-16
+Actually... whoever did the original patch was evil person. Changing
+behaviour when tracing is requested is evil, evil, evil. Git blame
+tells me
 
- drivers/mmc/host/Kconfig |    2 ++
- 1 file changed, 2 insertions(+)
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 
---- linux-3.19-rc6.orig/drivers/mmc/host/Kconfig	2015-01-26 10:30:56.472182636 +0100
-+++ linux-3.19-rc6/drivers/mmc/host/Kconfig	2015-01-26 11:13:33.669863314 +0100
-@@ -228,6 +228,7 @@ config MMC_SDHCI_PXAV3
- 	tristate "Marvell MMP2 SD Host Controller support (PXAV3)"
- 	depends on CLKDEV_LOOKUP
- 	depends on MMC_SDHCI_PLTFM
-+	depends on ARCH_MMP || COMPILE_TEST
- 	default CPU_MMP2
- 	help
- 	  This selects the Marvell(R) PXAV3 SD Host Controller.
-@@ -240,6 +241,7 @@ config MMC_SDHCI_PXAV2
- 	tristate "Marvell PXA9XX SD Host Controller support (PXAV2)"
- 	depends on CLKDEV_LOOKUP
- 	depends on MMC_SDHCI_PLTFM
-+	depends on ARCH_MMP || COMPILE_TEST
- 	default CPU_PXA910
- 	help
- 	  This selects the Marvell(R) PXAV2 SD Host Controller.
+went to the dark side.
 
+									Pavel
 
 -- 
-Jean Delvare
-SUSE L3 Support
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
