@@ -1,104 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641AbbAZOhp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 09:37:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50850 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755124AbbAZOhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 09:37:40 -0500
-Message-ID: <54C6511E.2000608@redhat.com>
-Date: Mon, 26 Jan 2015 15:37:18 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1756054AbbAZOiX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 09:38:23 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:35784 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131AbbAZOiS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 09:38:18 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4] mm/thp: Allocate transparent hugepages on local node
+In-Reply-To: <54C62803.8010105@suse.cz>
+References: <1421753671-16793-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20150120164832.abe2e47b760e1a8d7bb6055b@linux-foundation.org> <54C62803.8010105@suse.cz>
+User-Agent: Notmuch/0.19+30~gd241a48 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 26 Jan 2015 20:07:18 +0530
+Message-ID: <8761btvc9t.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: jin.can.zhuang@intel.com, gregkh@linuxfoundation.org,
-        stern@rowland.harvard.edu, dan.j.williams@intel.com, pmladek@suse.cz,
-        peter.chen@freescale.com, mathias.nyman@linux.intel.com
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Revert "usb: Reset USB-3 devices on USB-3 link bounce"
-References: <20150126153039.GA18043@intel.com>
-In-Reply-To: <20150126153039.GA18043@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012614-0029-0000-0000-0000010C4BBC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Vlastimil Babka <vbabka@suse.cz> writes:
 
-On 26-01-15 16:30, Zhuang Jin Can wrote:
-> This revert a82b76f7fa6154e8ab2d8071842a3e38b9c0d0ff.
+> On 01/21/2015 01:48 AM, Andrew Morton wrote:
+>> On Tue, 20 Jan 2015 17:04:31 +0530 "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+>>> + * Should be called with the mm_sem of the vma hold.
+>> 
+>> That's a pretty cruddy sentence, isn't it?  Copied from
+>> alloc_pages_vma().  "vma->vm_mm->mmap_sem" would be better.
+>> 
+>> And it should tell us whether mmap_sem required a down_read or a
+>> down_write.  What purpose is it serving?
 >
-> The commit causes an extra reset in remote wakeup as described in:
-> http://www.spinics.net/lists/linux-usb/msg119080.html
+> This is already said for mmap_sem further above this comment line, which
+> should be just deleted (and from alloc_hugepage_vma comment too).
 >
-> Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
-
-No objection from me (*) against reverting this, as it was fixing a
-rather obscure (but non the less real) issue, and the issue it
-causes seems to be a bigger one.
-
-Regards,
-
-Hans
-
-*) I'm the author of the original patch
-
-
-> ---
->   drivers/usb/core/hub.c |   34 +++++++++-------------------------
->   1 file changed, 9 insertions(+), 25 deletions(-)
+>>> + *
+>>> + */
+>>> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
+>>> +				unsigned long addr, int order)
+>> 
+>> This pointlessly bloats the kernel if CONFIG_TRANSPARENT_HUGEPAGE=n?
+>> 
+>> 
+>> 
+>> --- a/mm/mempolicy.c~mm-thp-allocate-transparent-hugepages-on-local-node-fix
+>> +++ a/mm/mempolicy.c
 >
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index aeb50bb..89d009a 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -4882,7 +4882,7 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
->   static void port_event(struct usb_hub *hub, int port1)
->   		__must_hold(&port_dev->status_lock)
->   {
-> -	int connect_change, reset_device = 0;
-> +	int connect_change;
->   	struct usb_port *port_dev = hub->ports[port1 - 1];
->   	struct usb_device *udev = port_dev->child;
->   	struct usb_device *hdev = hub->hdev;
-> @@ -4970,30 +4970,14 @@ static void port_event(struct usb_hub *hub, int port1)
->   			if (hub_port_reset(hub, port1, NULL,
->   					HUB_BH_RESET_TIME, true) < 0)
->   				hub_port_disable(hub, port1, 1);
-> -		} else
-> -			reset_device = 1;
-> -	}
-> -
-> -	/*
-> -	 * On disconnect USB3 protocol ports transit from U0 to
-> -	 * SS.Inactive to Rx.Detect. If this happens a warm-
-> -	 * reset is not needed, but a (re)connect may happen
-> -	 * before hub_wq runs and sees the disconnect, and the
-> -	 * device may be an unknown state.
-> -	 *
-> -	 * If the port went through SS.Inactive without hub_wq
-> -	 * seeing it the C_LINK_STATE change flag will be set,
-> -	 * and we reset the dev to put it in a known state.
-> -	 */
-> -	if (reset_device || (udev && hub_is_superspeed(hub->hdev)
-> -				&& (portchange & USB_PORT_STAT_C_LINK_STATE)
-> -				&& (portstatus & USB_PORT_STAT_CONNECTION))) {
-> -		usb_unlock_port(port_dev);
-> -		usb_lock_device(udev);
-> -		usb_reset_device(udev);
-> -		usb_unlock_device(udev);
-> -		usb_lock_port(port_dev);
-> -		connect_change = 0;
-> +		} else {
-> +			usb_unlock_port(port_dev);
-> +			usb_lock_device(udev);
-> +			usb_reset_device(udev);
-> +			usb_unlock_device(udev);
-> +			usb_lock_port(port_dev);
-> +			connect_change = 0;
-> +		}
->   	}
+> How about this cleanup on top? I'm not fully decided on the GFP_TRANSHUGE test.
+> This is potentially false positive, although I doubt anything else uses the same
+> gfp mask bits.
+
+IMHO I found that to be more complex.
+
 >
->   	if (connect_change)
+> Should "hugepage" be extra bool parameter instead? Should I #ifdef the parameter
+> only for CONFIG_TRANSPARENT_HUGEPAGE, or is it not worth the ugliness?
 >
+
+I guess if we really want to consolidate both the functions, we should
+try the above, without all those #ifdef. It is just one extra arg.  But
+then is the reason to consolidate that strong ?
+
+-aneesh
+
