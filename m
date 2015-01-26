@@ -1,171 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397AbbAZP6O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 10:58:14 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42418 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493AbbAZP6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 10:58:11 -0500
-Date: Mon, 26 Jan 2015 16:57:33 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Heiko =?iso-8859-15?Q?St=FCbner?= <heiko@sntech.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1755673AbbAZP6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 10:58:47 -0500
+Received: from axentia.se ([87.96.186.132]:50548 "EHLO EMAIL.axentia.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752919AbbAZP6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 10:58:44 -0500
+From: Peter Rosin <peda@axentia.se>
+To: Sylvain Rochet <sylvain.rochet@finsecur.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Wenyou Yang <wenyou.yang@atmel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        huang eddie <eddie.huang@mediatek.com>, dandan.he@mediatek.com,
-        alan.cheng@mediatek.com, toby.liu@mediatek.com
-Subject: Re: [PATCH v3 2/3] dt-bindings: Add pinctrl bindings for
- mt65xx/mt81xx.
-Message-ID: <20150126155733.GQ12209@pengutronix.de>
-References: <20141127101830.GP30369@pengutronix.de>
- <CACRpkdbMdJT6y-NL36RgQe0-CAFAVGqKiwY9+yFcwA7JDLmA+Q@mail.gmail.com>
- <20141202135527.GM30369@pengutronix.de>
- <CACRpkdZeRd+j7d_iRphruHRg8p3XjqWK8_HQzLH2PTZ_pqOrYA@mail.gmail.com>
- <20150112122200.GC18908@pengutronix.de>
- <CACRpkdYXrdiRWMV8YpxrSLe2rLEV-ZnX7=36w21zGquh==6WgA@mail.gmail.com>
- <20150113161614.GF23940@pengutronix.de>
- <CACRpkdYRrs2=gNM1XGSh1cSo5Pvx6iNLt4HjL6gdTqGPWYSRDw@mail.gmail.com>
- <1421403805.11671.58.camel@mtksdaap41>
- <CACRpkdYmjrEtds4wLr0cOmCPOLhS9xisfrY-cNZ3r0oh8n489Q@mail.gmail.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>
+Subject: RE: [PATCH v2 02/12] pm: at91: Workaround DDRSDRC self-refresh bug
+ with LPDDR1 memories.
+Thread-Topic: [PATCH v2 02/12] pm: at91: Workaround DDRSDRC self-refresh bug
+ with LPDDR1 memories.
+Thread-Index: AQHQOWzpIfeVbCMmykmXQ/zaShBoHJzSWOmAgAAcdAA=
+Date: Mon, 26 Jan 2015 15:58:44 +0000
+Message-ID: <372b731350484f8ea1d29bd016421dfb@EMAIL.axentia.se>
+References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
+ <1422265139-23011-1-git-send-email-wenyou.yang@atmel.com>
+ <20150126103605.GA20837@gradator.net> <54C6426E.9090808@atmel.com>
+ <20150126134453.GA27559@gradator.net>
+In-Reply-To: <20150126134453.GA27559@gradator.net>
+Accept-Language: en-US, sv-SE
+Content-Language: sv-SE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.2.1]
+x-gfi-smtp-submission: 1
+x-gfi-smtp-hellodomain: EMAIL.axentia.se
+x-gfi-smtp-remoteip: 192.168.2.5
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYmjrEtds4wLr0cOmCPOLhS9xisfrY-cNZ3r0oh8n489Q@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 15:31:37 up 103 days,  1:45, 143 users,  load average: 0.11, 0.10,
- 0.12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0QFwp32018538
 
-Hi Linus,
-
-On Tue, Jan 20, 2015 at 10:45:09AM +0100, Linus Walleij wrote:
-> On Fri, Jan 16, 2015 at 11:23 AM, Yingjoe Chen
-> <yingjoe.chen@mediatek.com> wrote:
-> > On Fri, 2015-01-16 at 10:53 +0100, Linus Walleij wrote:
-> >> On Tue, Jan 13, 2015 at 5:16 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> >> > On Tue, Jan 13, 2015 at 11:05:22AM +0100, Linus Walleij wrote:
-> >>
-> >> >> > You often talk about ambiguities. Could you give an example what
-> >> >> > ambiguities you mean?
-> >> >>
-> >> >> What happened was this pins = ; arguments were sometimes
-> >> >> strings and sometimes integers, that becomes strange to handle
-> >> >> in code, ambiguous.
-> >> >
-> >> > I see. I like naming it 'pinmux' because that's what it is: pins and
-> >> > mux settings. A plain 'pinno' suggests that it contains only pin mubers,
-> >> > without mux setting. How about 'pin-no-mux'? We also could add an
-> >> > explicit "pins-are-numbered" property instead of distinguishing this
-> >> > by property names.
-> >>
-> >> I kind of like this "pins-are-numbered" thing.
-> >>
-> >> The other property for the pin, whether pinmux or pin-no-mux or
-> >> pin-num-and-mux etc is no such big deal, as long as it's
-> >> consistent and documented with the generic bindings.
-> >
-> > Hi Linus,
-> >
-> > To make sure I understand it correct, you think something like this is
-> > OK?
-> >
-> >         pinctrl@01c20800 {
-> >                 compatible = "mediatek,mt8135-pinctrl";
-> > [...]
-> >                 pins-are-numbered;
-> >
-> >                 i2c0_pins_a: i2c0@0 {
-> >                         pins1 {
-> >                                 pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
-> >                                         <MT8135_PIN_101_SCL0__FUNC_SCL0>;
-> >                                 bias-disable;
-> >                         };
-> >                 };
+Sylvain Rochet wrote:
+> Hello Nicolas,
 > 
-> As discussed with Sascha Hauer it is ambigous to use "pins" for
-> a numerical value indicating both a mux setting and a pin. Sascha
-> suggests using "pinmux" and adding this as a secondary generic
-> binding for this type of pin controllers that use numbers and #defines
-> to set up bindings.
+> On Mon, Jan 26, 2015 at 02:34:38PM +0100, Nicolas Ferre wrote:
+> > Le 26/01/2015 11:36, Sylvain Rochet a Ã©crit :
+> > >
+> > > I think we should explain we are dealing with an errata here, this
+> > > is not obvious at first sight, the patch summary may find its place
+> > > here :-)
+> >
+> > True but the problem is that this errata is not public yet, it will be
+> > in a couple of weeks.
+> >
+> > I have the feeling though that the commit message is pretty clear.
+> > We'll maybe add that it"s an actual errata.
 > 
-> We should still move these parsing functions to the core.
+> Humm, this is not what I meant actually. I only proposed a code source
+> comment explaining why this is done this way, the current patch summary
+> looked like it will be perfect between /* */ ;-)
 
-I tried that for the last few days and failed.
+I did not want to fill up the source with wordy comments, and settled
+for a one-liner. I don't know much about the underlying reasons other
+than the fact that LPDDR1 mode of the controller isn't working properly
+in self-refresh and that the DDR2 spec is similar enough to work.
 
-Part of the problem is that the core lacks the data structures to put
-the information in. There is
+The one-liner comment says about the same thing, but not with so
+many words. The comment does make it clear that the switch to DDR2
+is intentional, and that is all that is needed as protection from some
+future cleanup. I mean, anyone seeing that comment and just erasing
+the whole thing without further investigation is not doing a very good
+job as there is no reason to intentionally switch from LPDDR1 mode to
+DDR2 mode, other that the fact that the LPDDR1 mode isn't working for
+some reason. That reason is not to be found in the commit message
+and I have no information to improve the situation. IMO, the only thing
+missing is a pointer to the as yet unreleased errata, which should explain
+the situation clearly for any and all interested parties. May I suggest that
+someone who cares sends a patch with the comment update when the
+errata is released?
 
-struct pinctrl_map_mux {
-	const char *group;
-	const char *function;
-};
+If others feel differently, by all means please reword and expand the
+comment.
 
-but its meaning is SoC specific. Some SoCs combine the pins found in a
-dt subnode to one group (i.MX, rockchip, at91) while others make an
-individual group from each single pin (Tegra, others?). Also the
-function string is SoC specific. Some SoCs just define functions like
-"alt1".."altn" which are valid for all groups, others define different
-function names for each group.
-
-Another thing is that the binding gives us numbers, but struct
-pinctrl_map_mux expects strings, so the numbers would have to be
-converted to strings. This is crude since the contents of struct
-pinctrl_map_mux are converted from strings back to numbers later from
-the pinctrl core with the help of the driver. So we would have to
-translate the numbers from the bindings to strings just to convert them
-back to numbers before passing them to the driver later.
-
-Given that the best I can come up with is something like:
-
-int pinctrl_parse_pinmux(struct device_node *np, int index,
-			 unsigned int *pinno, unsigned int *funcno)
-{
-	u32 val;
-	int ret;
-
-	ret = of_property_read_u32_index(np, "pinmux", index, &val);
-	if (ret)
-		return ret;
-
-	*pinno = val >> 8
-	*funcno = val & 0xff;
-
-	return 0;
-}
-
-Is that what you expect from a common parser?
-
-Sascha
-
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Cheers,
+Peter
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
