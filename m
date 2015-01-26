@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbbAZSfF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 13:35:05 -0500
-Received: from resqmta-ch2-07v.sys.comcast.net ([69.252.207.39]:32817 "EHLO
-	resqmta-ch2-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752596AbbAZSfB (ORCPT
+	id S1756448AbbAZSf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 13:35:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43587 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433AbbAZSfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 13:35:01 -0500
-Date: Mon, 26 Jan 2015 12:35:00 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Michal Hocko <mhocko@suse.cz>
-cc: Vinayak Menon <vinmenon@codeaurora.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, vdavydov@parallels.com, mgorman@suse.de,
-        minchan@kernel.org
-Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in
- too_many_isolated
-In-Reply-To: <20150126174606.GD22681@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.11.1501261233550.16786@gentwo.org>
-References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org> <20150114165036.GI4706@dhcp22.suse.cz> <54B7F7C4.2070105@codeaurora.org> <20150116154922.GB4650@dhcp22.suse.cz> <54BA7D3A.40100@codeaurora.org> <alpine.DEB.2.11.1501171347290.25464@gentwo.org>
- <54BC879C.90505@codeaurora.org> <20150121143920.GD23700@dhcp22.suse.cz> <alpine.DEB.2.11.1501221010510.3937@gentwo.org> <20150126174606.GD22681@dhcp22.suse.cz>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 26 Jan 2015 13:35:09 -0500
+Date: Mon, 26 Jan 2015 10:35:08 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Hans Holmberg <hans.holmberg@intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 3.10 25/50] gpiolib: of: Correct error handling in
+ of_get_named_gpiod_flags
+Message-ID: <20150126183508.GA6772@kroah.com>
+References: <20150125180702.521559311@linuxfoundation.org>
+ <20150125180703.970882239@linuxfoundation.org>
+ <20150125213149.GA3313@roeck-us.net>
+ <20150125220518.GA29924@kroah.com>
+ <54C58A66.8070500@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C58A66.8070500@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015, Michal Hocko wrote:
+On Sun, Jan 25, 2015 at 04:29:26PM -0800, Guenter Roeck wrote:
+> On 01/25/2015 02:05 PM, Greg Kroah-Hartman wrote:
+> >On Sun, Jan 25, 2015 at 01:31:49PM -0800, Guenter Roeck wrote:
+> >>On Sun, Jan 25, 2015 at 10:07:15AM -0800, Greg Kroah-Hartman wrote:
+> >>>3.10-stable review patch.  If anyone has any objections, please let me know.
+> >>>
+> >>>------------------
+> >>>
+> >>>From: Hans Holmberg <hans.holmberg@intel.com>
+> >>>
+> >>>commit 7b8792bbdffdff3abda704f89c6a45ea97afdc62 upstream.
+> >>>
+> >>>of_get_named_gpiod_flags fails with -EPROBE_DEFER in cases
+> >>>where the gpio chip is available and the GPIO translation fails.
+> >>>
+> >>>This causes drivers to be re-probed erroneusly, and hides the
+> >>>real problem(i.e. the GPIO number being out of range).
+> >>>
+> >>>Signed-off-by: Hans Holmberg <hans.holmberg@intel.com>
+> >>>Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+> >>>Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> >>>Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >>>
+> >>
+> >>This patch is causing several build failures.
+> >>
+> >>Error log:
+> >>drivers/gpio/gpiolib-of.c: In function 'of_gpiochip_find_and_xlate':
+> >>drivers/gpio/gpiolib-of.c:50:3: error: implicit declaration of function 'ERR_PTR'
+> >>
+> >>since "#include <linux/err.h>" is missing in drivers/gpio/gpiolib-of.c
+> >>in the 3.10 kernel.
+> >
+> >Thanks for letting me know, I've pushed out a fix for this in the quilt
+> >tree of patches.
+> >
+> 
+> Confirmed; build and qemu tests now pass with no errors.
 
-> > Please do not run the vmstat_updates concurrently. They update shared
-> > cachelines and therefore can cause bouncing cachelines if run concurrently
-> > on multiple cpus.
->
-> Would you preffer to call smp_call_function_single on each CPU
-> which needs an update? That would make vmstat_shepherd slower but that
-> is not a big deal, is it?
+Wonderful, thanks for letting me know.
 
-Run it from the timer interrupt as usual from a work request? Those are
-staggered.
-
-> Anyway I am wondering whether the cache line bouncing between
-> vmstat_update instances is a big deal in the real life. Updating shared
-> counters whould bounce with many CPUs but this is an operation which is
-> not done often. Also all the CPUs would have update the same counters
-> all the time and I am not sure this happens that often. Do you have a
-> load where this would be measurable?
-
-Concurrent page faults update lots of counters concurrently. But will
-those trigger the smp_call_function?
+greg k-h
