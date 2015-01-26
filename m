@@ -1,78 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389AbbAZNyb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:54:31 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:54976 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623AbbAZNy2 (ORCPT
+	id S1754963AbbAZN4u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:56:50 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:65092 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751910AbbAZN4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:54:28 -0500
-Date: Mon, 26 Jan 2015 13:54:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Will Deacon <will.deacon@arm.com>, Felipe Balbi <balbi@ti.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: perf not capturing stack traces
-Message-ID: <20150126135406.GD11502@n2100.arm.linux.org.uk>
-References: <20150123195128.GE26557@saruman.tx.rr.com>
- <20150123205959.GD3073@kernel.org>
- <20150123223745.GJ26557@saruman.tx.rr.com>
- <20150124151204.GF3073@kernel.org>
- <20150124222342.GA26941@saruman.tx.rr.com>
- <20150125155651.GB11502@n2100.arm.linux.org.uk>
- <20150126102711.GC15598@arm.com>
- <20150126121243.GA16629@kernel.org>
+	Mon, 26 Jan 2015 08:56:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126121243.GA16629@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Reply-To: cw00.choi@samsung.com
+In-Reply-To: <1422274532-9488-2-git-send-email-rogerq@ti.com>
+References: <1422274532-9488-1-git-send-email-rogerq@ti.com>
+	<1422274532-9488-2-git-send-email-rogerq@ti.com>
+Date: Mon, 26 Jan 2015 22:56:46 +0900
+Message-ID: <CAGTfZH3nmpUGgFJ6RU+xH8tuDkGBFA-NbXWa0CSXZXR+DXrbkQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/7] extcon: usb-gpio: Introduce gpio usb extcon driver
+From: Chanwoo Choi <cwchoi00@gmail.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>, tony@atomide.com,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        george.cherian@ti.com, nsekhar@ti.com,
+        devicetree <devicetree@vger.kernel.org>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 09:12:43AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jan 26, 2015 at 10:27:11AM +0000, Will Deacon escreveu:
-> > On Sun, Jan 25, 2015 at 03:56:52PM +0000, Russell King - ARM Linux wrote:
-> > > On Sat, Jan 24, 2015 at 04:23:42PM -0600, Felipe Balbi wrote:
-> > > > yeah, I'll try a few older kernels, also see if I can reproduce on other
-> > > > boards.
-> > > 
-> > > Perf works for me with CONFIG_FRAME_POINTER=y, but that's only for kernel
-> > > space, and for userspace where the programs have been built for ARM mode
-> > > with frame pointers.
-> > > 
-> > > The kernel may work without CONFIG_FRAME_POINTER set, but I've never
-> > > tested that, and I'd suggest that (given my experience looking at oops
-> > > dumps) it's not all that reliable.
-> > > 
-> > > Lastly, userspace without frame pointers is pretty much hopeless.
-> > 
-> > FWIW, perf can now use libunwind for unwinding the userspace side of
-> > things, so it's not quite as bad as it used to be. For the kernel side,
-> > if the unwinder isn't working properly it would be nice to know *why*,
-> > but I agree that it tends to be far flakier than the frame-pointer method.
-> 
-> Any idea why, with userspace using frame pointers, perf doesn't go all
-> the way from kernel to userspace main() (or whatever is the endpoint),
-> as Russel stated?
-           ^ *growl*
+Hi Roger,
 
-I've rebuilt userspace code which I've been working on in with a bunch of
-flags which makes it use frame pointers in ARM mode, and perf does seem
-to be capable of that; in that case, perf_callchain_user() can walk the
-linked set of frames.
+This patch looks good to me. But I add some comment.
+If you modify some comment, I'll apply this patch on 3.21 queue.
 
-However, if glibc is built for thumb2 or doesn't contain frame pointers,
-userspace tracing pretty much stops after you hit the first function in
-userspace.
+On Mon, Jan 26, 2015 at 9:15 PM, Roger Quadros <rogerq@ti.com> wrote:
+> This driver observes the USB ID pin connected over a GPIO and
+> updates the USB cable extcon states accordingly.
+>
+> The existing GPIO extcon driver is not suitable for this purpose
+> as it needs to be taught to understand USB cable states and it
+> can't handle more than one cable per instance.
+>
+> For the USB case we need to handle 2 cable states.
+> 1) USB (attach/detach)
+> 2) USB-Host (attach/detach)
+>
+> This driver can be easily updated in the future to handle VBUS
+> events in case it happens to be available on GPIO for any platform.
+>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  .../devicetree/bindings/extcon/extcon-usb-gpio.txt |  20 ++
+>  drivers/extcon/Kconfig                             |   7 +
+>  drivers/extcon/Makefile                            |   1 +
+>  drivers/extcon/extcon-usb-gpio.c                   | 214 +++++++++++++++++++++
+>  4 files changed, 242 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+>  create mode 100644 drivers/extcon/extcon-usb-gpio.c
+>
+> diff --git a/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+> new file mode 100644
+> index 0000000..ab52a85
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+> @@ -0,0 +1,20 @@
+> +USB GPIO Extcon device
+> +
+> +This is a virtual device used to generate USB cable states from the USB ID pin
+> +connected to a GPIO pin.
+> +
+> +Required properties:
+> +- compatible: Should be "linux,extcon-usb-gpio"
+> +- id-gpio: gpio for USB ID pin. See gpio binding.
+> +
+> +Example:
+> +       extcon_usb1 {
+> +               compatible = "linux,extcon-usb-gpio";
+> +               id-gpio = <&gpio6 1 GPIO_ACTIVE_HIGH>;
+> +       }
+> +
+> +       usb@1 {
+> +               ...
+> +               extcon = <&extcon_usb1>;
+> +               ...
 
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+I don' want to use '...' for example.
+How about using omap usecase in your patch4[1] as following?
+[1] ARM: dts: dra72-evm: Add extcon nodes for USB
+
+            &omap_dwc3_1 {
+                        extcon = <&extcon_usb1>;
+            };
+
+> +       };
+> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+> index 6a1f7de..e4c01ab 100644
+> --- a/drivers/extcon/Kconfig
+> +++ b/drivers/extcon/Kconfig
+> @@ -93,4 +93,11 @@ config EXTCON_SM5502
+>           Silicon Mitus SM5502. The SM5502 is a USB port accessory
+>           detector and switch.
+>
+> +config EXTCON_USB_GPIO
+> +       tristate "USB GPIO extcon support"
+> +       depends on GPIOLIB
+
+How about use 'select' keyword instead of 'depends on'?
+- depends on GPIOLIB -> select GPIOLIB
+
+> +       help
+> +         Say Y here to enable GPIO based USB cable detection extcon support.
+> +         Used typically if GPIO is used for USB ID pin detection.
+> +
+>  endif # MULTISTATE_SWITCH
+> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+> index 0370b42..6a08a98 100644
+> --- a/drivers/extcon/Makefile
+> +++ b/drivers/extcon/Makefile
+> @@ -12,3 +12,4 @@ obj-$(CONFIG_EXTCON_MAX8997)  += extcon-max8997.o
+>  obj-$(CONFIG_EXTCON_PALMAS)    += extcon-palmas.o
+>  obj-$(CONFIG_EXTCON_RT8973A)   += extcon-rt8973a.o
+>  obj-$(CONFIG_EXTCON_SM5502)    += extcon-sm5502.o
+> +obj-$(CONFIG_EXTCON_USB_GPIO)  += extcon-usb-gpio.o
+> diff --git a/drivers/extcon/extcon-usb-gpio.c b/drivers/extcon/extcon-usb-gpio.c
+> new file mode 100644
+> index 0000000..a20aa39
+> --- /dev/null
+> +++ b/drivers/extcon/extcon-usb-gpio.c
+> @@ -0,0 +1,214 @@
+> +/**
+> + * drivers/extcon/extcon_usb_gpio.c - USB GPIO extcon driver
+
+You should use the '-' instead of '_'.
+- s/extcon_usb_gpio.c/extcon-usb-gpio.c
+
+> + *
+> + * Copyright (C) 2015 Texas Instruments Incorporated - http://www.ti.com
+> + * Author: Roger Quadros <rogerq@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/extcon.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/workqueue.h>
+> +
+> +#define USB_GPIO_DEBOUNCE_MS   20      /* ms */
+> +
+> +struct usb_extcon_info {
+> +       struct device *dev;
+> +       struct extcon_dev *edev;
+> +
+> +       struct gpio_desc *id_gpiod;
+> +       int id_irq;
+> +
+> +       unsigned long debounce_jiffies;
+> +       struct delayed_work wq_detcable;
+> +};
+> +
+> +/* List of detectable cables */
+> +enum {
+> +       EXTCON_CABLE_USB = 0,
+> +       EXTCON_CABLE_USB_HOST,
+> +
+> +       EXTCON_CABLE_END,
+> +};
+> +
+> +static const char *usb_extcon_cable[] = {
+> +       [EXTCON_CABLE_USB] = "USB",
+> +       [EXTCON_CABLE_USB_HOST] = "USB-Host",
+> +       NULL,
+> +};
+> +
+> +static void usb_extcon_detect_cable(struct work_struct *work)
+> +{
+> +       int id;
+> +       struct usb_extcon_info *info;
+> +
+> +       info  = container_of(to_delayed_work(work), struct usb_extcon_info,
+> +                            wq_detcable);
+
+Simplify container_of statement as following:
+            struct usb_extcon_info *info  = container_of(to_delayed_work(work),
+                                                                struct
+usb_extcon_info, wq_detcable);
+
+> +
+> +       /* check ID and update cable state */
+> +       id = gpiod_get_value_cansleep(info->id_gpiod);
+> +       if (id) {
+> +               /*
+> +                * ID = 1 means USB HOST cable detached.
+> +                * As we don't have event for USB peripheral cable attached,
+> +                * we simulate USB peripheral attach here.
+> +                */
+> +               extcon_set_cable_state(info->edev,
+> +                                      usb_extcon_cable[EXTCON_CABLE_USB_HOST],
+> +                                      false);
+> +               extcon_set_cable_state(info->edev,
+> +                                      usb_extcon_cable[EXTCON_CABLE_USB],
+> +                                      true);
+> +       } else {
+> +               /*
+> +                * ID = 0 means USB HOST cable attached.
+> +                * As we don't have event for USB peripheral cable detached,
+> +                * we simulate USB peripheral detach here.
+> +                */
+> +               extcon_set_cable_state(info->edev,
+> +                                      usb_extcon_cable[EXTCON_CABLE_USB],
+> +                                      false);
+> +               extcon_set_cable_state(info->edev,
+> +                                      usb_extcon_cable[EXTCON_CABLE_USB_HOST],
+> +                                      true);
+> +       }
+> +}
+> +
+> +static irqreturn_t usb_irq_handler(int irq, void *dev_id)
+> +{
+> +       struct usb_extcon_info *info = dev_id;
+> +
+> +       queue_delayed_work(system_power_efficient_wq, &info->wq_detcable,
+> +                          info->debounce_jiffies);
+
+Need to add blank line.
+
+> +       return IRQ_HANDLED;
+> +}
+> +
+> +static int usb_extcon_probe(struct platform_device *pdev)
+> +{
+> +       struct device *dev = &pdev->dev;
+> +       struct device_node *np = dev->of_node;
+> +       struct usb_extcon_info *info;
+> +       int ret;
+> +
+> +       if (!np)
+> +               return -EINVAL;
+> +
+> +       info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+> +       if (!info)
+> +               return -ENOMEM;
+> +
+> +       info->dev = dev;
+> +       info->id_gpiod = devm_gpiod_get(&pdev->dev, "id");
+> +       if (IS_ERR(info->id_gpiod)) {
+> +               dev_err(dev, "failed to get ID GPIO\n");
+> +               return PTR_ERR(info->id_gpiod);
+> +       }
+> +
+> +       ret = gpiod_set_debounce(info->id_gpiod,
+> +                                USB_GPIO_DEBOUNCE_MS * 1000);
+> +       if (ret < 0)
+> +               info->debounce_jiffies = msecs_to_jiffies(USB_GPIO_DEBOUNCE_MS);
+> +
+> +       INIT_DELAYED_WORK(&info->wq_detcable, usb_extcon_detect_cable);
+> +
+> +       info->id_irq = gpiod_to_irq(info->id_gpiod);
+> +       if (info->id_irq < 0) {
+> +               dev_err(dev, "failed to get ID IRQ\n");
+> +               return info->id_irq;
+> +       }
+> +
+> +       ret = devm_request_threaded_irq(dev, info->id_irq, NULL,
+> +                                       usb_irq_handler,
+> +                                       IRQF_SHARED | IRQF_ONESHOT |
+> +                                       IRQF_NO_SUSPEND,
+> +                                       pdev->name, info);
+> +       if (ret < 0) {
+> +               dev_err(dev, "failed to request handler for ID IRQ\n");
+> +               return ret;
+> +       }
+> +
+> +       info->edev = devm_extcon_dev_allocate(dev, usb_extcon_cable);
+> +       if (IS_ERR(info->edev)) {
+> +               dev_err(dev, "failed to allocate extcon device\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       ret = devm_extcon_dev_register(dev, info->edev);
+> +       if (ret < 0) {
+> +               dev_err(dev, "failed to register extcon device\n");
+> +               return ret;
+> +       }
+> +
+> +       platform_set_drvdata(pdev, info);
+
+I prefer to execute the device_init_wakeup() function as following
+for suspend/resume function:
+            device_init_wakeup(&pdev->dev, 1);
+
+> +
+> +       /* Perform initial detection */
+> +       usb_extcon_detect_cable(&info->wq_detcable.work);
+> +
+> +       return 0;
+> +}
+> +
+> +static int usb_extcon_remove(struct platform_device *pdev)
+> +{
+> +       struct usb_extcon_info *info = platform_get_drvdata(pdev);
+> +
+> +       cancel_delayed_work_sync(&info->wq_detcable);
+
+Need to add blank line.
+
+> +       return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int usb_extcon_suspend(struct device *dev)
+> +{
+> +       struct usb_extcon_info *info = dev_get_drvdata(dev);
+> +
+> +       enable_irq_wake(info->id_irq);
+
+I prefer to use device_may_wakeup() function for whether
+executing enable_irq_wake() or not. Also, The disable_irq()
+in the suspend function would prevent us from discarding interrupt
+before wakeup from suspend completely.
+
+            if (device_may_wakeup(dev))
+                     enable_irq_wake(info->id_irq);
+            disable_irq(info->id_irq);
+
+
+> +       return 0;
+> +}
+> +
+> +static int usb_extcon_resume(struct device *dev)
+> +{
+> +       struct usb_extcon_info *info = dev_get_drvdata(dev);
+> +
+> +       disable_irq_wake(info->id_irq);
+
+ditto as following:
+
+            if (device_may_wakeup(dev))
+                     disable_irq_wake(info->id_irq);
+            enable_irq(info->id_irq);
+
+> +       return 0;
+> +}
+> +#endif
+> +
+> +static SIMPLE_DEV_PM_OPS(usb_extcon_pm_ops,
+> +                        usb_extcon_suspend, usb_extcon_resume);
+> +
+> +static struct of_device_id usb_extcon_dt_match[] = {
+> +       { .compatible = "linux,extcon-usb-gpio", },
+> +       { /* end */ }
+
+I prefer to use 'sentinel' word instead of 'end'
+
+> +};
+> +MODULE_DEVICE_TABLE(of, usb_extcon_dt_match);
+> +
+> +static struct platform_driver usb_extcon_driver = {
+> +       .probe          = usb_extcon_probe,
+> +       .remove         = usb_extcon_remove,
+> +       .driver         = {
+> +               .name   = "extcon-usb-gpio",
+> +               .pm     = &usb_extcon_pm_ops,
+> +               .of_match_table = usb_extcon_dt_match,
+> +       },
+> +};
+> +
+> +module_platform_driver(usb_extcon_driver);
+> +
+> +MODULE_AUTHOR("Roger Quadros <rogerq@ti.com>");
+> +MODULE_DESCRIPTION("USB GPIO extcon driver");
+> +MODULE_LICENSE("GPL v2");
+
+Thanks,
+Chanwoo Choi
