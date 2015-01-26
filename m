@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062AbbAZV07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:26:59 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:44557 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756489AbbAZV0z (ORCPT
+	id S1757118AbbAZV1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:27:37 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:34006 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120AbbAZV1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:26:55 -0500
-From: Julius Werner <jwerner@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Douglas Anderson <dianders@chromium.org>,
-        Tomasz Figa <tfiga@chromium.org>, Wu Liang feng <wulf@rock-chips.com>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH v2] usb: Retry port status check on resume to work around RH bugs
-Date: Mon, 26 Jan 2015 13:26:42 -0800
-Message-Id: <1422307602-30466-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <CAODwPW-EeNn_rWLTen2MHnpB_skL08j1aGX06Acf8kph=i_pcg@mail.gmail.com>
-References: <1422057688-18956-1-git-send-email-jwerner@chromium.org> <Pine.LNX.4.44L0.1501241046550.7435-100000@netrider.rowland.org> <CAODwPW-EeNn_rWLTen2MHnpB_skL08j1aGX06Acf8kph=i_pcg@mail.gmail.com>
+	Mon, 26 Jan 2015 16:27:35 -0500
+Message-ID: <1422307652.29618.30.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] drivers: net: xgene: fix: Out of order descriptor bytes
+ read
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Iyappan Subramanian <isubramanian@apm.com>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        mlangsdo@redhat.com, patches <patches@apm.com>,
+        Keyur Chudgar <kchudgar@apm.com>
+Date: Mon, 26 Jan 2015 13:27:32 -0800
+In-Reply-To: <CAKh23FmxvV82mVrHq5jv-FE+e6u6CkW+xL_a2_ULAQgP_mM2VA@mail.gmail.com>
+References: <1421957007-720-1-git-send-email-isubramanian@apm.com>
+	 <1421967050.3471.14.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CAKh23FmxvV82mVrHq5jv-FE+e6u6CkW+xL_a2_ULAQgP_mM2VA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EHCI controller on the RK3288 SoC is violating basic parts of the
-USB spec and thereby unable to properly resume a suspended port. It does
-not start SOF generation within 3ms of finishing resume signaling, so
-the attached device will drop off the bus again. This is a particular
-problem with runtime PM, where accessing the device will trigger a
-resume that immediately makes it unavailabe (and reenumerate with a new
-handle).
+On Mon, 2015-01-26 at 13:12 -0800, Iyappan Subramanian wrote:
+> On Thu, Jan 22, 2015 at 2:50 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > On Thu, 2015-01-22 at 12:03 -0800, Iyappan Subramanian wrote:
+> >> This patch fixes the following kernel crash,
+> >>
+> >>       WARNING: CPU: 2 PID: 0 at net/ipv4/tcp_input.c:3079 tcp_clean_rtx_queue+0x658/0x80c()
+> >>       Call trace:
+> >
+> >>
+> >> Software writes poison data into the descriptor bytes[15:8] and upon
+> >> receiving the interrupt, if those bytes are overwritten by the hardware with
+> >> the valid data, software also reads bytes[7:0] and executes receive/tx
+> >> completion logic.
+> >>
+> >> If the CPU executes the above two reads in out of order fashion, then the
+> >> bytes[7:0] will have older data and causing the kernel panic.  We have to
+> >> force the order of the reads and thus this patch introduces read memory
+> >> barrier between these reads.
+> >>
+> >> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+> >> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+> >> Tested-by: Mark Langsdorf <mlangsdo@redhat.com>
+> >> ---
+> >>  drivers/net/ethernet/apm/xgene/xgene_enet_main.c | 2 ++
+> >>  1 file changed, 2 insertions(+)
+> >>
+> >> diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_main.c b/drivers/net/ethernet/apm/xgene/xgene_enet_main.c
+> >> index 83a5028..3622cdb 100644
+> >> --- a/drivers/net/ethernet/apm/xgene/xgene_enet_main.c
+> >> +++ b/drivers/net/ethernet/apm/xgene/xgene_enet_main.c
+> >> @@ -369,6 +369,8 @@ static int xgene_enet_process_ring(struct xgene_enet_desc_ring *ring,
+> >>               if (unlikely(xgene_enet_is_desc_slot_empty(raw_desc)))
+> >>                       break;
+> >>
+> >> +             /* read fpqnum field after dataaddr field */
+> >> +             smp_rmb();
+> >>               if (is_rx_desc(raw_desc))
+> >>                       ret = xgene_enet_rx_frame(ring, raw_desc);
+> >>               else
+> >
+> > Reading your changelog, it looks like you need a plain rmb() here.
+> 
+> rmb() translates into dsb, which in arm64 serializes everything
+> including instructions and thus expensive compared to dmb.
+> 
+> Do you see any issue with smp_rmb() (which translates into dmb) ?
 
-Thankfully, the persist feature is generally able to work around stuff
-like that. Unfortunately, it doesn't quite work in this particular case
-because the controller will turn off the CurrentConnectStatus bit for an
-instant while the device is reconnecting, which causes the kernel to
-conclude that it permanently disappeared. This patch adds a tiny retry
-mechanism to the core port resume code which will catch this case and
-shouldn't have any notable impact on other controllers.
+What happens if you compile a kernel with CONFIG_SMP=n ?
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/core/hub.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index aeb50bb..d1d0a66 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2896,10 +2896,12 @@ static int port_is_suspended(struct usb_hub *hub, unsigned portstatus)
-  */
- static int check_port_resume_type(struct usb_device *udev,
- 		struct usb_hub *hub, int port1,
--		int status, unsigned portchange, unsigned portstatus)
-+		int status, u16 portchange, u16 portstatus)
- {
- 	struct usb_port *port_dev = hub->ports[port1 - 1];
-+	int retries = 3;
- 
-+retry:
- 	/* Is a warm reset needed to recover the connection? */
- 	if (status == 0 && udev->reset_resume
- 		&& hub_port_warm_reset_required(hub, port1, portstatus)) {
-@@ -2909,8 +2911,15 @@ static int check_port_resume_type(struct usb_device *udev,
- 	else if (status || port_is_suspended(hub, portstatus) ||
- 			!port_is_power_on(hub, portstatus) ||
- 			!(portstatus & USB_PORT_STAT_CONNECTION)) {
--		if (status >= 0)
-+		if (status >= 0) {
-+			if (retries--) {
-+				usleep_range(200, 300);
-+				status = hub_port_status(hub, port1,
-+						&portstatus, &portchange);
-+				goto retry;
-+			}
- 			status = -ENODEV;
-+		}
- 	}
- 
- 	/* Can't do a normal resume if the port isn't enabled,
--- 
-2.1.2
+Most drivers in drivers/net use rmb() in this case, not smp_rmb() or
+barrier()
+
+
 
