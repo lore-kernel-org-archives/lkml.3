@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772AbbAZNjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 08:39:12 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:54625 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbbAZNjJ (ORCPT
+	id S1755262AbbAZNlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 08:41:22 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43156 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292AbbAZNlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 08:39:09 -0500
-Message-ID: <54C64379.7070001@suse.cz>
-Date: Mon, 26 Jan 2015 14:39:05 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Mon, 26 Jan 2015 08:41:19 -0500
+Date: Mon, 26 Jan 2015 13:40:53 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stefan Agner <stefan@agner.ch>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND v3 0/3] irqchip: vf610-mscm: add support for MSCM
+ interrupt router
+Message-ID: <20150126134053.GH23313@leverpostej>
+References: <1421309046-22452-1-git-send-email-stefan@agner.ch>
+ <alpine.DEB.2.11.1501261115300.5526@nanos>
+ <36990c90fa3d2ee0849227f31cbafb54@agner.ch>
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        david.vrabel@citrix.com, stable@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: Re: [Xen-devel] [PATCH 2/2] swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single
-References: <alpine.DEB.2.02.1411211657430.2675@kaball.uk.xensource.com>	 <1416589220-7720-2-git-send-email-stefano.stabellini@eu.citrix.com> <1422269607.27469.5.camel@citrix.com>
-In-Reply-To: <1422269607.27469.5.camel@citrix.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <36990c90fa3d2ee0849227f31cbafb54@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015, 11:53 AM, Ian Campbell wrote:
-> On Fri, 2014-11-21 at 17:00 +0000, Stefano Stabellini wrote:
->> Need to pass the pointer within the swiotlb internal buffer to the
->> swiotlb library, that in the case of xen_unmap_single is dev_addr, not
->> paddr.
->>
->> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->> CC: konrad.wilk@oracle.com
->> CC: stable@vger.kernel.org
-> 
-> This went into mainline as 2c3fc8d26dd0 "swiotlb-xen: pass dev_addr to
-> swiotlb_tbl_unmap_single" but was reverted in dbdd74763f1f.
-> 
-> However it seems that 2c3fc8d26dd0 has made it into at least some stable
-> kernel trees:
->         v3.18.3 as 2129c43d41e9
->         v3.16.7-ckt4 as 94ab279b0c9a
->         v3.14.29 as 3394691d34fc
->         v3.10.65 as 81cb80b578c5
-> so it should be reverted there too. This is causing issues in the field
-> such as https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=776237.
-> 
-> v3.17, v3.15, v3.13.11-ckt14, v3.12.x, v3.11.x appear clean, I stopped
+[...]
 
-Hi, dropped from the 3.12 queue.
+> > What about the DT bindings? I'm relucant to pick that up w/o acks from
+> > the DT folks.
+> 
+> The bindings are straight forward interrupt-controller bindings, since
+> it uses the hierarchic irq domain stuff. The only uncommon thing is that
+> I also added "syscon" as compatible, since the module has functionality
+> which might be required by other drivers (e.g. register to generate
+> CPU2CPU interrupt or processor personality information).
 
-thanks,
--- 
-js
-suse labs
+I'd expect the CPU2CPU interrupt handling to be part of the interrupt
+controller driver, so I don't see why that would require "syscon".
+
+What exactly do you mean by "processor personality information"?
+
+Mark.
