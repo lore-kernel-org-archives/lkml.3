@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832AbbAZQnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:43:09 -0500
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:33413 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405AbbAZQnH (ORCPT
+	id S1756064AbbAZQph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:45:37 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:39017 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905AbbAZQpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:43:07 -0500
+	Mon, 26 Jan 2015 11:45:34 -0500
+Date: Mon, 26 Jan 2015 08:44:57 -0800
+From: christoph Hellwig <hch@infradead.org>
+To: Tom Gundersen <teg@jklm.no>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
+        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+Message-ID: <20150126164457.GC22803@infradead.org>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+ <54BE5DC8.70706@gmail.com>
+ <54BE9D08.7010804@zonque.org>
+ <54BF805B.4000609@gmail.com>
+ <54BFDAAA.50203@zonque.org>
+ <54C0CE8A.5080805@gmail.com>
+ <20150123155402.GB2159@kroah.com>
+ <54C65267.7090905@gmail.com>
+ <CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHp75VfAPjermaPYu2FwoRCycKsU48m=uXq=JqwQ6Bi31kV0hg@mail.gmail.com>
-References: <1422281727-32610-1-git-send-email-pure.logic@nexus-software.ie>
-	<1422281727-32610-2-git-send-email-pure.logic@nexus-software.ie>
-	<CAHp75VfAPjermaPYu2FwoRCycKsU48m=uXq=JqwQ6Bi31kV0hg@mail.gmail.com>
-Date: Mon, 26 Jan 2015 18:43:06 +0200
-Message-ID: <CAHp75Vej3g2nfgS2CDqwbmpkPPi9NmaGTaCE0+crngpmAFTWLg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/1] x86: Add Isolated Memory Regions for Quark X1000
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "dvhart@infradead.org" <dvhart@infradead.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 6:37 PM, Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Mon, Jan 26, 2015 at 4:15 PM, Bryan O'Donoghue
-> <pure.logic@nexus-software.ie> wrote:
+On Mon, Jan 26, 2015 at 04:26:53PM +0100, Tom Gundersen wrote:
+> The way I read this is that there will (probably) be a handful of
+> users, namely the existing dbus libraries: libdus, sd-bus, glib, Qt,
+> ell, and maybe a few others. However, third-party developers will not
+> know/care about the details of kdbus, they'll just be coding against
+> the dbus libraries as before (might be minor changes, but they
+> certainly won't need to know anything about the kernel API). Similarly
+> to how userspace developers now code against their libc of choice,
+> rather than use kernel syscalls directly.
 
-Oops, didn't notice second try.
-
--- 
-With Best Regards,
-Andy Shevchenko
+Which means we do need proper man pages and detailed documentation for
+it, just like syscalls for syscalls which just happened to be used by
+a few libcs.  I suspect it really should be implemented as
+syscalls anyway, but we can leave that argument aside from now.  Good
+documentation certainly helps with making that decision in an educated
+way.
