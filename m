@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006AbbAZKO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:14:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59420 "EHLO mx1.redhat.com"
+	id S1755046AbbAZKOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:14:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46638 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754932AbbAZKOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:14:22 -0500
+	id S1754924AbbAZKOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:14:21 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,17 +19,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 11/36] perf build: Add dwarf objects building
-Date: Mon, 26 Jan 2015 11:12:11 +0100
-Message-Id: <1422267156-13873-12-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 12/36] perf build: Add dwarf unwind objects building
+Date: Mon, 26 Jan 2015 11:12:12 +0100
+Message-Id: <1422267156-13873-13-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 References: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the dwarf objects building under build framework
-to be included in the libperf build object.
+Move the dwarf unwind objects building under build
+framework to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Tested-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
@@ -46,51 +46,57 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile.perf   | 7 -------
- tools/perf/config/Makefile | 1 +
+ tools/perf/Makefile.perf   | 9 ---------
+ tools/perf/config/Makefile | 2 ++
  tools/perf/util/Build      | 3 +++
- 3 files changed, 4 insertions(+), 7 deletions(-)
+ 3 files changed, 5 insertions(+), 9 deletions(-)
 
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index a4faa55831a8..bfbbac3da604 100644
+index bfbbac3da604..c680f8a5a4b4 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -346,13 +346,6 @@ ifneq ($(OUTPUT),)
+@@ -346,15 +346,6 @@ ifneq ($(OUTPUT),)
    CFLAGS += -I$(OUTPUT)
  endif
  
--ifndef NO_LIBELF
--ifndef NO_DWARF
--  LIB_OBJS += $(OUTPUT)util/probe-finder.o
--  LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
--endif # NO_DWARF
--endif # NO_LIBELF
+-ifndef NO_LIBDW_DWARF_UNWIND
+-  LIB_OBJS += $(OUTPUT)util/unwind-libdw.o
+-  LIB_H += util/unwind-libdw.h
+-endif
 -
- ifndef NO_LIBDW_DWARF_UNWIND
-   LIB_OBJS += $(OUTPUT)util/unwind-libdw.o
-   LIB_H += util/unwind-libdw.h
+-ifndef NO_LIBUNWIND
+-  LIB_OBJS += $(OUTPUT)util/unwind-libunwind.o
+-endif
+-
+ ifndef NO_SLANG
+   LIB_OBJS += $(OUTPUT)ui/browser.o
+   LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 1a3720f2cdbb..20f00b2effb9 100644
+index 20f00b2effb9..2b4b273cf804 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -386,6 +386,7 @@ ifndef NO_LIBELF
-       CFLAGS += -DHAVE_DWARF_SUPPORT $(LIBDW_CFLAGS)
-       LDFLAGS += $(LIBDW_LDFLAGS)
-       EXTLIBS += -ldw
-+      $(call detected,CONFIG_DWARF)
-     endif # PERF_HAVE_DWARF_REGS
-   endif # NO_DWARF
- endif # NO_LIBELF
+@@ -414,9 +414,11 @@ ifdef NO_LIBUNWIND
+     dwarf-post-unwind := 0
+   else
+     dwarf-post-unwind-text := libdw
++    $(call detected,CONFIG_LIBDW_DWARF_UNWIND)
+   endif
+ else
+   dwarf-post-unwind-text := libunwind
++  $(call detected,CONFIG_LIBUNWIND)
+   # Enable libunwind support by default.
+   ifndef NO_LIBDW_DWARF_UNWIND
+     NO_LIBDW_DWARF_UNWIND := 1
 diff --git a/tools/perf/util/Build b/tools/perf/util/Build
-index 73a0411e2014..10630fbe43c1 100644
+index 10630fbe43c1..0401a80bab09 100644
 --- a/tools/perf/util/Build
 +++ b/tools/perf/util/Build
-@@ -82,6 +82,9 @@ ifndef CONFIG_LIBELF
- libperf-y += symbol-minimal.o
- endif
+@@ -85,6 +85,9 @@ endif
+ libperf-$(CONFIG_DWARF) += probe-finder.o
+ libperf-$(CONFIG_DWARF) += dwarf-aux.o
  
-+libperf-$(CONFIG_DWARF) += probe-finder.o
-+libperf-$(CONFIG_DWARF) += dwarf-aux.o
++libperf-$(CONFIG_LIBDW_DWARF_UNWIND) += unwind-libdw.o
++libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
 +
  CFLAGS_config.o   += -DETC_PERFCONFIG="BUILD_STR($(ETC_PERFCONFIG_SQ))"
  CFLAGS_exec_cmd.o += -DPERF_EXEC_PATH="BUILD_STR($(perfexecdir_SQ))" -DPREFIX="BUILD_STR($(prefix_SQ))"
