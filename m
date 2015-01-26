@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867AbbAZPjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 10:39:35 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:41374 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752698AbbAZPjd (ORCPT
+	id S1755393AbbAZPpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 10:45:31 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:61708 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397AbbAZPpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 10:39:33 -0500
+	Mon, 26 Jan 2015 10:45:09 -0500
 From: Kumar Amit Mehta <gmate.amit@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: navin.patidar@gmail.com, Larry.Finger@lwfinger.net,
-        dan.carpenter@oracle.com, tapaswenipathak@gmail.com,
-        abelmoyo.ab@gmail.com, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8188eu: core: rtw_wlan_util.c: Fix for NULL dereference
-Date: Mon, 26 Jan 2015 16:39:14 +0100
-Message-Id: <1422286754-3039-1-git-send-email-gmate.amit@gmail.com>
+To: oleg.drokin@intel.com, andreas.dilger@intel.com
+Cc: gregkh@linuxfoundation.org, srikrishanmalik@gmail.com, rd@radekdostal.com,
+        tristan@lelong.xyz, HPDD-discuss@ml01.01.org,
+        devel@driverdev.osuosl.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: lustre: lustre: mdc: lproc_mdc.c: Fix for potential NULL pointer dereference
+Date: Mon, 26 Jan 2015 16:44:53 +0100
+Message-Id: <1422287093-3241-1-git-send-email-gmate.amit@gmail.com>
 X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In rtw_check_bcn_info(), check the return value of kzalloc() before
-dereferencing it, to avoid NULL pointer dereference.
+In mdc_kuc_write(), OBD_ALLOC(lh, len) may leave 'lh' to NULL as kmalloc
+may fail to allocate memory. This fix adds a check to avoid, dereferencing
+a NULL pointer.
 
 Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_wlan_util.c | 2 ++
+ drivers/staging/lustre/lustre/mdc/lproc_mdc.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-index 3e9b6e9..a3ffc69 100644
---- a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-@@ -931,6 +931,8 @@ int rtw_check_bcn_info(struct adapter  *Adapter, u8 *pframe, u32 packet_len)
- 	}
+diff --git a/drivers/staging/lustre/lustre/mdc/lproc_mdc.c b/drivers/staging/lustre/lustre/mdc/lproc_mdc.c
+index c420219..c791941 100644
+--- a/drivers/staging/lustre/lustre/mdc/lproc_mdc.c
++++ b/drivers/staging/lustre/lustre/mdc/lproc_mdc.c
+@@ -106,6 +106,8 @@ static ssize_t mdc_kuc_write(struct file *file,
+ 		/* for mockup below */ 2 * cfs_size_round(sizeof(*hai));
  
- 	bssid = kzalloc(sizeof(struct wlan_bssid_ex), GFP_ATOMIC);
-+	if (!bssid)
-+		return _FAIL;
+ 	OBD_ALLOC(lh, len);
++	if (!lh)
++		return -ENOMEM;
  
- 	subtype = GetFrameSubType(pframe) >> 4;
- 
+ 	lh->kuc_magic = KUC_MAGIC;
+ 	lh->kuc_transport = KUC_TRANSPORT_HSM;
 -- 
 2.1.0
 
