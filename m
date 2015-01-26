@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182AbbAZRxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:53:51 -0500
-Received: from mail.kernel.org ([198.145.29.136]:52792 "EHLO mail.kernel.org"
+	id S1756705AbbAZRsL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:48:11 -0500
+Received: from mail.kernel.org ([198.145.29.136]:52834 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756654AbbAZRsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:48:02 -0500
+	id S1756648AbbAZRsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 12:48:07 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/26] perf report: Get rid of report__inc_stat()
-Date: Mon, 26 Jan 2015 14:47:09 -0300
-Message-Id: <1422294449-12735-7-git-send-email-acme@kernel.org>
+Subject: [PATCH 07/26] perf tools: Remove some unused functions from color.c
+Date: Mon, 26 Jan 2015 14:47:10 -0300
+Message-Id: <1422294449-12735-8-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1422294449-12735-1-git-send-email-acme@kernel.org>
 References: <1422294449-12735-1-git-send-email-acme@kernel.org>
@@ -24,82 +25,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-The report__inc_stat() function collects the number of hist entries in
-the session in order to calculate the max size of the progess bar.
+Removes some functions that are not used anywhere:
 
-It'd be better if it does it during the addition of hist entries so that
-it can be used by other places too.
+ color_parse_mem()
+ color_parse()
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+This was partially found by using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1419223455-4362-2-git-send-email-namhyung@kernel.org
+Cc: Ramkumar Ramachandra <artagnon@gmail.com>
+Link: http://lkml.kernel.org/r/1419079865-354-1-git-send-email-rickard_strandqvist@spectrumdigital.se
+[ Remove now unused parse_{attr,color} routines too ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c | 16 +++-------------
- tools/perf/util/hist.c      |  2 ++
- 2 files changed, 5 insertions(+), 13 deletions(-)
+ tools/perf/util/color.c | 126 ------------------------------------------------
+ tools/perf/util/color.h |   2 -
+ 2 files changed, 128 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 072ae8ad67fc..2f91094e228b 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -86,17 +86,6 @@ static int report__config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
- }
+diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
+index f4654183d391..55355b3d4f85 100644
+--- a/tools/perf/util/color.c
++++ b/tools/perf/util/color.c
+@@ -5,132 +5,6 @@
  
--static void report__inc_stats(struct report *rep, struct hist_entry *he)
+ int perf_use_color_default = -1;
+ 
+-static int parse_color(const char *name, int len)
 -{
--	/*
--	 * The @he is either of a newly created one or an existing one
--	 * merging current sample.  We only want to count a new one so
--	 * checking ->nr_events being 1.
--	 */
--	if (he->stat.nr_events == 1)
--		rep->nr_entries++;
+-	static const char * const color_names[] = {
+-		"normal", "black", "red", "green", "yellow",
+-		"blue", "magenta", "cyan", "white"
+-	};
+-	char *end;
+-	int i;
+-
+-	for (i = 0; i < (int)ARRAY_SIZE(color_names); i++) {
+-		const char *str = color_names[i];
+-		if (!strncasecmp(name, str, len) && !str[len])
+-			return i - 1;
+-	}
+-	i = strtol(name, &end, 10);
+-	if (end - name == len && i >= -1 && i <= 255)
+-		return i;
+-	return -2;
 -}
 -
- static int hist_iter__report_callback(struct hist_entry_iter *iter,
- 				      struct addr_location *al, bool single,
- 				      void *arg)
-@@ -108,8 +97,6 @@ static int hist_iter__report_callback(struct hist_entry_iter *iter,
- 	struct mem_info *mi;
- 	struct branch_info *bi;
- 
--	report__inc_stats(rep, he);
+-static int parse_attr(const char *name, int len)
+-{
+-	static const int attr_values[] = { 1, 2, 4, 5, 7 };
+-	static const char * const attr_names[] = {
+-		"bold", "dim", "ul", "blink", "reverse"
+-	};
+-	unsigned int i;
 -
- 	if (!ui__has_annotation())
- 		return 0;
+-	for (i = 0; i < ARRAY_SIZE(attr_names); i++) {
+-		const char *str = attr_names[i];
+-		if (!strncasecmp(name, str, len) && !str[len])
+-			return attr_values[i];
+-	}
+-	return -1;
+-}
+-
+-void color_parse(const char *value, const char *var, char *dst)
+-{
+-	color_parse_mem(value, strlen(value), var, dst);
+-}
+-
+-void color_parse_mem(const char *value, int value_len, const char *var,
+-		char *dst)
+-{
+-	const char *ptr = value;
+-	int len = value_len;
+-	int attr = -1;
+-	int fg = -2;
+-	int bg = -2;
+-
+-	if (!strncasecmp(value, "reset", len)) {
+-		strcpy(dst, PERF_COLOR_RESET);
+-		return;
+-	}
+-
+-	/* [fg [bg]] [attr] */
+-	while (len > 0) {
+-		const char *word = ptr;
+-		int val, wordlen = 0;
+-
+-		while (len > 0 && !isspace(word[wordlen])) {
+-			wordlen++;
+-			len--;
+-		}
+-
+-		ptr = word + wordlen;
+-		while (len > 0 && isspace(*ptr)) {
+-			ptr++;
+-			len--;
+-		}
+-
+-		val = parse_color(word, wordlen);
+-		if (val >= -1) {
+-			if (fg == -2) {
+-				fg = val;
+-				continue;
+-			}
+-			if (bg == -2) {
+-				bg = val;
+-				continue;
+-			}
+-			goto bad;
+-		}
+-		val = parse_attr(word, wordlen);
+-		if (val < 0 || attr != -1)
+-			goto bad;
+-		attr = val;
+-	}
+-
+-	if (attr >= 0 || fg >= 0 || bg >= 0) {
+-		int sep = 0;
+-
+-		*dst++ = '\033';
+-		*dst++ = '[';
+-		if (attr >= 0) {
+-			*dst++ = '0' + attr;
+-			sep++;
+-		}
+-		if (fg >= 0) {
+-			if (sep++)
+-				*dst++ = ';';
+-			if (fg < 8) {
+-				*dst++ = '3';
+-				*dst++ = '0' + fg;
+-			} else {
+-				dst += sprintf(dst, "38;5;%d", fg);
+-			}
+-		}
+-		if (bg >= 0) {
+-			if (sep++)
+-				*dst++ = ';';
+-			if (bg < 8) {
+-				*dst++ = '4';
+-				*dst++ = '0' + bg;
+-			} else {
+-				dst += sprintf(dst, "48;5;%d", bg);
+-			}
+-		}
+-		*dst++ = 'm';
+-	}
+-	*dst = 0;
+-	return;
+-bad:
+-	die("bad color value '%.*s' for variable '%s'", value_len, value, var);
+-}
+-
+ int perf_config_colorbool(const char *var, const char *value, int stdout_is_tty)
+ {
+ 	if (value) {
+diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
+index 0a594b8a0c26..38146f922c54 100644
+--- a/tools/perf/util/color.h
++++ b/tools/perf/util/color.h
+@@ -30,8 +30,6 @@ extern int perf_use_color_default;
+ int perf_color_default_config(const char *var, const char *value, void *cb);
  
-@@ -499,6 +486,9 @@ static int __cmd_report(struct report *rep)
- 
- 	report__warn_kptr_restrict(rep);
- 
-+	evlist__for_each(session->evlist, pos)
-+		rep->nr_entries += evsel__hists(pos)->nr_entries;
-+
- 	if (use_browser == 0) {
- 		if (verbose > 3)
- 			perf_session__fprintf(session, stdout);
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 038483a24a54..e17163fcb702 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -429,6 +429,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	if (!he)
- 		return NULL;
- 
-+	hists->nr_entries++;
-+
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
+ int perf_config_colorbool(const char *var, const char *value, int stdout_is_tty);
+-void color_parse(const char *value, const char *var, char *dst);
+-void color_parse_mem(const char *value, int len, const char *var, char *dst);
+ int color_vsnprintf(char *bf, size_t size, const char *color,
+ 		    const char *fmt, va_list args);
+ int color_vfprintf(FILE *fp, const char *color, const char *fmt, va_list args);
 -- 
 1.9.3
 
