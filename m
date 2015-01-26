@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280AbbAZQQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 11:16:38 -0500
-Received: from laurent.telenet-ops.be ([195.130.137.89]:46241 "EHLO
-	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171AbbAZQQd (ORCPT
+	id S1756468AbbAZQRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 11:17:18 -0500
+Received: from xavier.telenet-ops.be ([195.130.132.52]:34096 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756198AbbAZQQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 11:16:33 -0500
+	Mon, 26 Jan 2015 11:16:37 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -23,9 +23,9 @@ Cc: Olof Johansson <olof@lixom.net>, Simon Horman <horms+renesas@verge.net.au>,
         linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v4 3/5] drivers: bus: Add Simple Power-Managed Bus DT Bindings
-Date: Mon, 26 Jan 2015 17:16:15 +0100
-Message-Id: <1422288977-20353-4-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH v4 4/5] drivers: bus: Add Renesas Bus State Controller (BSC) DT Bindings
+Date: Mon, 26 Jan 2015 17:16:16 +0100
+Message-Id: <1422288977-20353-5-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
 References: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
@@ -33,59 +33,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The bindings for the BSC extend the bindings for "simple-pm-bus".
+
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Tested-by: Ulrich Hecht <ulrich.hecht+renesas@gmail.com>
 ---
 v4:
-  - Replace "simple-bus" by "simple-pm-bus",
-  - Remove the "renesas,bsc" bindings. They will be specified in a
-    separate document.
-
-v3:
-  - Add Tested-by,
-  - Document required properties inherited from "simple-bus",
-  - Document required "reg" property for "renesas,bsc",
-  - Move "ranges" before "reg" in the example,
-
-v2:
-  - New.
+  - New, extracted from simple-pm-bus.txt in v3.
 ---
- .../devicetree/bindings/bus/simple-pm-bus.txt      | 41 ++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+ .../devicetree/bindings/bus/renesas,bsc.txt        | 46 ++++++++++++++++++++++
+ 1 file changed, 46 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/bus/renesas,bsc.txt
 
-diff --git a/Documentation/devicetree/bindings/bus/simple-pm-bus.txt b/Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+diff --git a/Documentation/devicetree/bindings/bus/renesas,bsc.txt b/Documentation/devicetree/bindings/bus/renesas,bsc.txt
 new file mode 100644
-index 0000000000000000..0415e93a816c5ac0
+index 0000000000000000..90e94726943772c4
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/bus/simple-pm-bus.txt
-@@ -0,0 +1,41 @@
-+Simple Power-Managed Bus
-+========================
++++ b/Documentation/devicetree/bindings/bus/renesas,bsc.txt
+@@ -0,0 +1,46 @@
++Renesas Bus State Controller (BSC)
++==================================
 +
-+A Simple Power-Managed Bus is a transparent bus that doesn't need a real
-+driver, as it's typically initialized by the boot loader.
++The Renesas Bus State Controller (BSC, sometimes called "LBSC within Bus
++Bridge", or "External Bus Interface") can be found in several Renesas ARM SoCs.
++It provides an external bus for connecting multiple external devices to the
++SoC, driving several chip select lines, for e.g. NOR FLASH, Ethernet and USB.
 +
-+However, its bus controller is part of a PM domain, or under the control of a
-+functional clock.  Hence, the bus controller's PM domain and/or clock must be
-+enabled for child devices connected to the bus (either on-SoC or externally)
-+to function.
++While the BSC is a fairly simple memory-mapped bus, it may be part of a PM
++domain, and may have a gateable functional clock.
++Before a device connected to the BSC can be accessed, the PM domain
++containing the BSC must be powered on, and the functional clock
++driving the BSC must be enabled.
 +
-+The bindings for the Simple Power-Managed Bus extend the bindings for
-+"simple-bus", as specified in ePAPR.
++The bindings for the BSC extend the bindings for "simple-pm-bus".
 +
 +
-+Required properties:
-+  - compatible: Must contain at least "simple-pm-bus".
-+		It's recommended to let this be preceded by one or more
-+		vendor-specific compatible values.
++Required properties
++  - compatible: Must contain an SoC-specific value, and "renesas,bsc" and
++		"simple-pm-bus" as fallbacks.
++                SoC-specific values can be:
++		"renesas,bsc-r8a73a4" for R-Mobile APE6 (r8a73a4)
++		"renesas,bsc-sh73a0" for SH-Mobile AG5 (sh73a0)
 +  - #address-cells, #size-cells, ranges: Must describe the mapping between
 +		parent address and child address spaces.
++  - reg: Must contain the base address and length to access the bus controller.
 +
-+Optional platform-specific properties for clock or PM domain control (at least
-+one of them is required):
-+  - clocks: Must contain a reference to the functional clock(s),
-+  - power-domains: Must contain a reference to the PM domain.
++Optional properties:
++  - interrupts: Must contain a reference to the BSC interrupt, if available.
++  - clocks: Must contain a reference to the functional clock, if available.
++  - power-domains: Must contain a reference to the PM domain, if available.
 +
 +
 +Example:
