@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbbAZDWS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jan 2015 22:22:18 -0500
-Received: from mail-bn1on0085.outbound.protection.outlook.com ([157.56.110.85]:23661
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751035AbbAZDWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jan 2015 22:22:15 -0500
-Date: Sun, 25 Jan 2015 19:22:04 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clk: zynq: Force CPU_2X clock to be ungated
-References: <1422056653-11271-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1752726AbbAZDZL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jan 2015 22:25:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56628 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752530AbbAZDZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jan 2015 22:25:09 -0500
+Date: Mon, 26 Jan 2015 11:22:36 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH 2/3] x86, swiotlb: Try coherent allocations with
+ __GFP_NOWARN
+Message-ID: <20150126032236.GN2461@dhcp-16-105.nay.redhat.com>
+References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
+ <1420555874-11506-3-git-send-email-joro@8bytes.org>
+ <20150123170306.GH22635@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1422056653-11271-1-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21284.004
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <3b7e448a3a9c4d8a8f566ef01160ba89@BY2FFO11FD041.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; lists.infradead.org; dkim=none
- (message not signed) header.d=none;
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(51704005)(377424004)(24454002)(86362001)(19580395003)(50986999)(575784001)(87936001)(76176999)(74316001)(6806004)(85182001)(19580405001)(50466002)(108616004)(2950100001)(53416004)(92726002)(77156002)(23676002)(46102003)(54356999)(92566002)(62966003)(47776003)(106466001)(85202003)(104016003)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB017;H:xsj-pvapsmtpgw01;FPR:;SPF:None;MLV:sfv;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB017;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2FFO11HUB017;
-X-Forefront-PRVS: 0468FE4A2B
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB017;
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 26 Jan 2015 03:22:13.3208
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2FFO11HUB017
+In-Reply-To: <20150123170306.GH22635@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-23 at 03:44PM -0800, Soren Brinkmann wrote:
-> The CPU_2X clock does not have a classical in kernel user, but is,
-> amongst other things, required for OCM and debug access. Make sure this
-> clock does not mistakenly disabled during boot up by enabling it in the
-> platforms clock driver.
+On 01/23/15 at 06:03pm, Borislav Petkov wrote:
+> On Tue, Jan 06, 2015 at 03:51:13PM +0100, Joerg Roedel wrote:
+> > From: Joerg Roedel <jroedel@suse.de>
+
+> > diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
+> > index 77dd0ad..79b2291 100644
+> > --- a/arch/x86/kernel/pci-swiotlb.c
+> > +++ b/arch/x86/kernel/pci-swiotlb.c
+> > @@ -20,6 +20,14 @@ void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
+> >  {
+> >  	void *vaddr;
+> >  
+> > +	/*
+> > +	 * When booting a kdump kernel in high memory these allocations are very
+> > +	 * likely to fail, as there are by default only 8MB of low memory to
+> > +	 * allocate from. So disable the warnings from the allocator when this
+> > +	 * happens.  SWIOTLB also implements fall-backs for failed allocations.
+> > +	 */
+> > +	flags |= __GFP_NOWARN;
 > 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> I just noticed this on Linus' latest tip. I can't remember having had issues
-> connecting the debugger before, but it might be a candidate for stable in case
-> people report something like that.
+> Ok, so this practically does all allocations __GFP_NOWARN now. Shouldn't
+> you be doing this before swiotlb_alloc_coherent() and not before
+> dma_generic_alloc_coherent()?
 
-I bisected this down to commit:
+I think this patch mainly suppress warning from buddy allocation
+failure because it tried buddy allocation several times before the final
+try of bounce buffer allocation. Buddy allocation failure will call
+dump_stack.
 
-ae43b3289186480f81c78bb63d788a85a3631f47 is the first bad commit
-commit ae43b3289186480f81c78bb63d788a85a3631f47
-Author: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Date:   Fri Nov 14 09:48:57 2014 +0100
 
-    ARM: 8202/1: dmaengine: pl330: Add runtime Power Management support v12
-    
-    This patch adds runtime PM support to pl330 DMA engine driver.
-    
-    The runtime power management for pl330 DMA driver allows gating of AMBA
-    clock (PDMA) in FSYS clock domain, when the device is not processing any
-    requests. This is necessary to enter low power modes on Exynos SoCs
-    (e.g. LPA on Exynos4x12 or W-AFTR on Exynos3250).
-    
-    Runtime PM resuming of the device may happen in atomic context (during
-    call device_issue_pending()) so pm_runtime_irq_safe() is used. This will
-    lead only to disabling/enabling of the clock but this is sufficient for
-    gating the clock and for reducing energy usage.
-    
-    Driver uses runtime PM callbacks from amba/bus.c driver only.
-    
-    Suggested-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-    Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-    Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-    Acked-by: Vinod Koul <vinod.koul@intel.com>
-    Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-
-:040000 040000 16e0cb02587254ea396e9d913d7997ac63bd3d49 97c1ee366f0790e65df00e85d06b2bcd07aa9f58 M      drivers
-
-which makes sense, since the PL330 clock in Zynq is the mentioned
-CPU_2X_CLK. I guess the additional runtime_pm in the driver causes the
-clock to be gated which causes the issues for the mentioned other users
-of this clock.
-Looks like this patch got introduced in the 3.19 merge window. Hence,
-stable should be off the table.
-
-	Sören
+> 
+> >  	vaddr = dma_generic_alloc_coherent(hwdev, size, dma_handle, flags,
+> >  					   attrs);
+> >  	if (vaddr)
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> ECO tip #101: Trim your mails when you reply.
+> --
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
