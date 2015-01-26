@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998AbbAZKBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:01:42 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:41008 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231AbbAZKBh (ORCPT
+	id S1753817AbbAZKEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:04:47 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:16387 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbbAZKEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:01:37 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] slab: update_memcg_params: explicitly check that old array != NULL
-Date: Mon, 26 Jan 2015 13:01:19 +0300
-Message-ID: <1422266479-29098-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20150126085638.GA6507@mwanda>
-References: <20150126085638.GA6507@mwanda>
+	Mon, 26 Jan 2015 05:04:44 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <wenyou.yang@atmel.com>
+Subject: [PATCH 0/7] AT91 pm improvements for 3.20
+Date: Mon, 26 Jan 2015 18:03:37 +0800
+Message-ID: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tree:   git://git.cmpxchg.org/linux-mmotm.git master
-head:   c64429bcc60a702f19f5cfdb5c39277863278a8c
-commit: 5d06629c100b942a51f02b4d886c116ba3afb32a [200/417] slab: embed memcg_cache_params to kmem_cache
+Hi Nicolas,
 
-mm/slab_common.c:166 update_memcg_params() warn: variable dereferenced before check 'old' (see line 162)
+This patch set is add pm support for ARMv7 SoCs.
+ - Add WFI support for ARMv7.
+ - Disable the L1 D-cache and L2 cache before suspending.
+ - Get the memory type from the dts file config.
+ - Disable the mpddr controller's clock and DDR clock during the suspending.
 
-git remote add mmotm git://git.cmpxchg.org/linux-mmotm.git
-git remote update mmotm
-git checkout 5d06629c100b942a51f02b4d886c116ba3afb32a
-vim +/old +166 mm/slab_common.c
+It is based on the following patch set,
+	[PATCH v2 00/12] AT91 pm cleanup for 3.20
 
-5d06629c Vladimir Davydov 2015-01-24  156                                       lockdep_is_held(&slab_mutex));
-5d06629c Vladimir Davydov 2015-01-24  157       new = kzalloc(sizeof(struct memcg_cache_array) +
-5d06629c Vladimir Davydov 2015-01-24  158                     new_array_size * sizeof(void *), GFP_KERNEL);
-5d06629c Vladimir Davydov 2015-01-24  159       if (!new)
-6f817f4c Vladimir Davydov 2014-10-09  160               return -ENOMEM;
-6f817f4c Vladimir Davydov 2014-10-09  161
-5d06629c Vladimir Davydov 2015-01-24 @162       memcpy(new->entries, old->entries,
-88a0b848 Vladimir Davydov 2015-01-24  163              memcg_nr_cache_ids * sizeof(void *));
-6f817f4c Vladimir Davydov 2014-10-09  164
-5d06629c Vladimir Davydov 2015-01-24  165       rcu_assign_pointer(s->memcg_params.memcg_caches, new);
-5d06629c Vladimir Davydov 2015-01-24 @166       if (old)
-5d06629c Vladimir Davydov 2015-01-24  167               kfree_rcu(old, rcu);
-6f817f4c Vladimir Davydov 2014-10-09  168       return 0;
-6f817f4c Vladimir Davydov 2014-10-09  169  }
+Patrice Vilchez (1):
+  pm: at91: pm_suspend: MOR register KEY was missing
 
-This warning is false-positive, because @old equals NULL iff
-@memcg_nr_cache_ids equals 0. Moreover, this function had been acting in
-exactly the same fashion before it was reworked by the culprit. Anyways,
-let's add an explicit check if @old is not NULL before passing it to
-@memcpy() to make static analysis tools happy.
+Wenyou Yang (6):
+  pm: at91: achieve the memory controller's type from the dts file.
+  pm: at91: pm_suspend: add the WFI support for ARMv7
+  ARM: at91: enable the L2 Cache controller
+  pm: at91: add disable/enable the L1/L2 cache while suspend/resume
+  pm: at91: add achieve the mpddrc peripheral ID and the DDR clock ID
+    support
+  pm: at91: add disable/enable the mpddrc's clock and DDR clock support
 
-fixes: slab-embed-memcg_cache_params-to-kmem_cache
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slab_common.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/arm/mach-at91/board-dt-sama5.c |   53 ++++++++
+ arch/arm/mach-at91/generic.h        |    7 ++
+ arch/arm/mach-at91/pm.c             |   22 ++--
+ arch/arm/mach-at91/pm.h             |    8 ++
+ arch/arm/mach-at91/pm_suspend.S     |  227 ++++++++++++++++++++++++++++++++++-
+ arch/arm/mach-at91/setup.c          |   52 +++++++-
+ 6 files changed, 356 insertions(+), 13 deletions(-)
 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index bf4a42b2c5ba..0dd9eb4e0f87 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -153,15 +153,16 @@ static int update_memcg_params(struct kmem_cache *s, int new_array_size)
- 	if (!is_root_cache(s))
- 		return 0;
- 
--	old = rcu_dereference_protected(s->memcg_params.memcg_caches,
--					lockdep_is_held(&slab_mutex));
- 	new = kzalloc(sizeof(struct memcg_cache_array) +
- 		      new_array_size * sizeof(void *), GFP_KERNEL);
- 	if (!new)
- 		return -ENOMEM;
- 
--	memcpy(new->entries, old->entries,
--	       memcg_nr_cache_ids * sizeof(void *));
-+	old = rcu_dereference_protected(s->memcg_params.memcg_caches,
-+					lockdep_is_held(&slab_mutex));
-+	if (old)
-+		memcpy(new->entries, old->entries,
-+		       memcg_nr_cache_ids * sizeof(void *));
- 
- 	rcu_assign_pointer(s->memcg_params.memcg_caches, new);
- 	if (old)
 -- 
-1.7.10.4
+1.7.9.5
 
