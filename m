@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672AbbAZMkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 07:40:45 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54318 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363AbbAZMkk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 07:40:40 -0500
-Date: Mon, 26 Jan 2015 13:40:34 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
-        linux-usb@vger.kernel.org, stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] USB: cp210x: add ID for RUGGEDCOM USB Serial Console
-Message-ID: <20150126124034.GC2465@localhost>
-References: <20150121202427.GA4451@csclub.uwaterloo.ca>
+	id S1754762AbbAZMlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 07:41:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39651 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752808AbbAZMlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 07:41:47 -0500
+Message-ID: <54C63606.30002@ti.com>
+Date: Mon, 26 Jan 2015 14:41:42 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150121202427.GA4451@csclub.uwaterloo.ca>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] OMAPDSS: hdmi5: remove unneeded check
+References: <1421167620-17290-1-git-send-email-sudipm.mukherjee@gmail.com>
+In-Reply-To: <1421167620-17290-1-git-send-email-sudipm.mukherjee@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="83rKs0qH6sFP7O5ktTRcJLWXMwmpmwDhW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 03:24:27PM -0500, Lennart Sorensen wrote:
-> Added the USB serial console device ID for Siemens Ruggedcom devices
-> which have a USB port for their serial console.
-> 
-> Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-> ---
->  drivers/usb/serial/cp210x.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-> index f4c56fc..f34e6ba 100644
-> --- a/drivers/usb/serial/cp210x.c
-> +++ b/drivers/usb/serial/cp210x.c
-> @@ -55,6 +55,7 @@ static const struct usb_device_id id_table[] = {
->  	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
->  	{ USB_DEVICE(0x0846, 0x1100) }, /* NetGear Managed Switch M4100 series, M5300 series, M7100 series */
->  	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
-> +	{ USB_DEVICE(0x0908, 0x01FF) }, /* RUGGEDCOM USB Serial Console */
->  	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
+--83rKs0qH6sFP7O5ktTRcJLWXMwmpmwDhW
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Please try to keep the entries sorted by VID/PID. I fixed it up here and
-applied.
+On 13/01/15 18:46, Sudip Mukherjee wrote:
+> prior to this check we are checking for word_length_16b and if word_len=
+gth_16b
+> is false then we are returning with -EINVAL.
+> So at this point word_length_16b can only be true.
 
-Thanks,
-Johan
+True, but it looks to me the code may be extended in the future.
+
+And if it would be clear that it won't be extended in the future, then
+there's more code changes needed to reflect that (the whole
+word_length_16b can be removed, etc).
+
+ Tomi
+
+
+
+--83rKs0qH6sFP7O5ktTRcJLWXMwmpmwDhW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUxjYGAAoJEPo9qoy8lh712nwP/j8/gAztbH+lyD8lx3wXU3vU
+3bZmI2N8fg/DPCdr578O+smRcLnOguWiyo0rzRumvktU1okxDZl+OOxKZ0Cwq+Ir
+tP8kqdQl78jK/bv/RQ1vvhM5WcLbE5AWAsWLkkC5fW2oSbvdQV3OgVQBXFxww2Gw
+t1MLD0k/9omv6O4XTjOT3GQlNo37q15hPYvNsEE95Q/VHpqiSDyY1Qc+Koj2IxA9
+PG2/HJwOxcxsOSbjHvcUYc12buy++fETmJHTTGGGsZ5R9R1TegqApRwd2Hu8vBhN
+yoOaQBkK0Z9bp+8FPFhYUsRskYJwEtYYYK+YN8qIj+fDa9aCyCL1CqXFuPm6fQ8f
+I296BOSmN/j+4SqmXaz9W1ykb/osomdB5PxCfXbJo2fQbMhaM+DByWhyYUbIoUnx
+hGBvQfThAS9NOZy4eMVgGG8eSw526BrDpA7NwfFN4uFXLc+mNAevtBbBWyoW9AGX
+tIahmCQW++ui04LKVOl1pN+gnm0c8C7cEl2MkDLvKf2SLqnLuAV7wytDd+io6v3b
+lTnahU8AJLWpNwZV5IuN6ciRoU2bW1/Lv430Qblhxt/whoutHsOaI3LeQksS9BdI
+XCPgCKlLs5qhl65d+42ji+Cbio5ujhR6OZ8T1Z3kDlgR618HLfOW144MzrMm9xDX
+v39GAS8tHZFkP6OI7/Q4
+=YGRp
+-----END PGP SIGNATURE-----
+
+--83rKs0qH6sFP7O5ktTRcJLWXMwmpmwDhW--
