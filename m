@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057AbbAZVtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 16:49:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45651 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976AbbAZVtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 16:49:20 -0500
-Date: Mon, 26 Jan 2015 13:49:19 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 2/5] syscalls: Declare sys_*stat64 prototypes if
- __ARCH_WANT_(COMPAT_)STAT64
-Message-Id: <20150126134919.ea59b69ae1c0b62188bdbdd0@linux-foundation.org>
-In-Reply-To: <1420819048-3515-3-git-send-email-catalin.marinas@arm.com>
-References: <1420819048-3515-1-git-send-email-catalin.marinas@arm.com>
-	<1420819048-3515-3-git-send-email-catalin.marinas@arm.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1757139AbbAZVuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 16:50:12 -0500
+Received: from mga11.intel.com ([192.55.52.93]:33280 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755308AbbAZVuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 16:50:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,470,1418112000"; 
+   d="scan'208";a="667856096"
+Message-ID: <1422309007.14456.1.camel@theros.lm.intel.com>
+Subject: Re: [PATCH v2 0/2] add support for new persistent memory
+ instructions
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <h.peter.anvin@intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 26 Jan 2015 14:50:07 -0700
+In-Reply-To: <20150126213457.GI1656@pd.tnic>
+References: <1422045628-16225-1-git-send-email-ross.zwisler@linux.intel.com>
+	 <54C2D34D.7010709@intel.com> <20150124111430.GA10084@pd.tnic>
+	 <1422302369.13382.3.camel@theros.lm.intel.com>
+	 <20150126213457.GI1656@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20.rez) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Jan 2015 15:57:25 +0000 Catalin Marinas <catalin.marinas@arm.com> wrote:
-
-> Currently, the sys_stat64, sys_fstat64 and sys_lstat64 prototpyes are
-> only declared if BITS_PER_LONG == 32. Following commit 0753f70f07fb
-> (fs: Build sys_stat64() and friends if __ARCH_WANT_COMPAT_STAT64), the
-> implementation of these functions is allowed on 64-bit systems for
-> compat support. The patch changes the condition on the prototype
-> declaration from BITS_PER_LONG == 32 to defined(__ARCH_WANT_STAT64) ||
-> defined(__ARCH_WANT_COMPAT_STAT64).
+On Mon, 2015-01-26 at 22:34 +0100, Borislav Petkov wrote:
+> On Mon, Jan 26, 2015 at 12:59:29PM -0700, Ross Zwisler wrote:
+> > 		/* 
+> > 		 * sfence to order pcommit
+> > 		 * mfence via mb() also works 
+> > 		 */
+> > 		wmb();
 > 
-> In addition, it moves the sys_fstatat64 prototype under the same #if
-> block
-> 
-> ...
->
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -410,12 +410,16 @@ asmlinkage long sys_newlstat(const char __user *filename,
->  				struct stat __user *statbuf);
->  asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
->  asmlinkage long sys_ustat(unsigned dev, struct ustat __user *ubuf);
-> -#if BITS_PER_LONG == 32
-> +#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
->  asmlinkage long sys_stat64(const char __user *filename,
->  				struct stat64 __user *statbuf);
->  asmlinkage long sys_fstat64(unsigned long fd, struct stat64 __user *statbuf);
->  asmlinkage long sys_lstat64(const char __user *filename,
->  				struct stat64 __user *statbuf);
-> +asmlinkage long sys_fstatat64(int dfd, const char __user *filename,
-> +			       struct stat64 __user *statbuf, int flag);
-> +#endif
-> +#if BITS_PER_LONG == 32
->  asmlinkage long sys_truncate64(const char __user *path, loff_t length);
->  asmlinkage long sys_ftruncate64(unsigned int fd, loff_t length);
+> Doc says PCOMMIT is not ordered wrt loads and SFENCE too. Don't we want
+> to be absolutely conservative here and use MFENCE both times?
 
-ack.  sys_stat64() and friends are already conditional on
-__ARCH_WANT_STAT64) && __ARCH_WANT_COMPAT_STAT64.  I'm a bit
-surprised that the current code didn't break.
+The code, for easy viewing:
+	void write_and_commit_buffer(void *vaddr, unsigned int size)
+	{
+		void *vend = vaddr + size - 1;
+
+		for (; vaddr < vend; vaddr += boot_cpu_data.x86_clflush_size)
+			clwb(vaddr);
+
+		/* Flush any possible final partial cacheline */
+		clwb(vend);
+
+		/* 
+		 * sfence to order clwb/clflushopt/clflush cache flushes
+		 * mfence via mb() also works 
+		 */
+		wmb();
+
+		pcommit();
+
+		/* 
+		 * sfence to order pcommit
+		 * mfence via mb() also works 
+		 */
+		wmb();
+	}
+
+We can use MFENCE, but I don't think we need to.  With SFENCE we will be
+ordered with respect to stores, and the flushes and pcommit will be ordered
+with respect to one another.  I think you can sprinkle in loads anywhere you
+want in that flow and everything will work. The worst that will happen is
+that if you've used clflush or clflushopt you'll have to re-fetch something
+you just flushed out of the CPU cache hierarchy, but you'll always get correct
+data from your load and you'll always pcommit valid data to the DIMM.
+
 
