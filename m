@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940AbbAZP0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 10:26:09 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:38135 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753526AbbAZP0H (ORCPT
+	id S1755944AbbAZP1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 10:27:16 -0500
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:63770 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753135AbbAZP1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 10:26:07 -0500
-Date: Mon, 26 Jan 2015 16:26:00 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-        Dominik Vogt <vogt@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
-Message-ID: <20150126152600.GA6977@osiris>
-References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
- <1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
- <20150126093701.699763dc@gandalf.local.home>
- <20150126150319.GF4968@osiris>
- <20150126102226.6f76b2ab@gandalf.local.home>
+	Mon, 26 Jan 2015 10:27:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126102226.6f76b2ab@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012615-0041-0000-0000-0000030EE8C1
+X-Originating-IP: [195.159.206.166]
+In-Reply-To: <54C65267.7090905@gmail.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+ <54BE5DC8.70706@gmail.com> <54BE9D08.7010804@zonque.org> <54BF805B.4000609@gmail.com>
+ <54BFDAAA.50203@zonque.org> <54C0CE8A.5080805@gmail.com> <20150123155402.GB2159@kroah.com>
+ <54C65267.7090905@gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Mon, 26 Jan 2015 16:26:53 +0100
+Message-ID: <CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
+        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 10:22:26AM -0500, Steven Rostedt wrote:
-> On Mon, 26 Jan 2015 16:03:19 +0100
-> Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
-> 
-> > Actually they should be mutually exclusive. I just merged them "just in case".
-> > 
-> > So something like this
-> > 
-> > #ifdef CC_USING_HOTPATCH
-> > #define notrace __attribute__((hotpatch(0,0)))
-> > #else
-> > #define notrace __attribute__((no_instrument_function))
-> > #endif
-> > 
-> > will work as well (just tested).
-> 
-> I think the above change looks cleaner.
+Hi Michael,
 
-Yes, I agree with you and will change the patch.
+On Mon, Jan 26, 2015 at 3:42 PM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> 2. Is the API to be invoked directly by applications or is intended to
+>    be used only behind specific libraries? You seem to be saying that
+>    the latter is the case (here, I'm referring to your comment above
+>    about sd-bus). However, when I asked David Herrmann a similar
+>    question I got this responser:
+>
+>       "kdbus is in no way bound to systemd. There are ongoing efforts
+>        to port glib and qt to kdbus natively. The API is pretty simple
+>        and I don't see how a libkdbus would simplify things. In fact,
+>        even our tests only have slim wrappers around the ioctls to
+>        simplify error-handling in test-scenarios."
+>
+>    To me, that implies that users will employ the raw kernel API.
 
+The way I read this is that there will (probably) be a handful of
+users, namely the existing dbus libraries: libdus, sd-bus, glib, Qt,
+ell, and maybe a few others. However, third-party developers will not
+know/care about the details of kdbus, they'll just be coding against
+the dbus libraries as before (might be minor changes, but they
+certainly won't need to know anything about the kernel API). Similarly
+to how userspace developers now code against their libc of choice,
+rather than use kernel syscalls directly.
+
+HTH,
+
+Tom
