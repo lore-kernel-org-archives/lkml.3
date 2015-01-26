@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987AbbAZXC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:02:27 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:36693 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756624AbbAZXCX (ORCPT
+	id S1756422AbbAZXCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:02:10 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41977 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521AbbAZXCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:02:23 -0500
+	Mon, 26 Jan 2015 18:02:07 -0500
+Date: Mon, 26 Jan 2015 23:02:03 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
+Message-ID: <20150126230203.GT29656@ZenIV.linux.org.uk>
+References: <20150126150913.653681560@goodmis.org>
+ <20150126193049.GN29656@ZenIV.linux.org.uk>
+ <20150126154259.5e650d32@gandalf.local.home>
+ <20150126214658.GQ29656@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20150109173707.GB18076@amd>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-2-git-send-email-j.anaszewski@samsung.com> <20150109173707.GB18076@amd>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 26 Jan 2015 15:02:02 -0800
-Message-ID: <CAK5ve-JV2EU+bT3yz4cMFLp0k-+Kk1YTQfEOV8cUCSvLUMuYng@mail.gmail.com>
-Subject: Re: [PATCH/RFC v10 01/19] leds: Add LED Flash class extension to the
- LED subsystem
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150126214658.GQ29656@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 9, 2015 at 9:37 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> On Fri 2015-01-09 16:22:51, Jacek Anaszewski wrote:
->> Some LED devices support two operation modes - torch and flash.
->> This patch provides support for flash LED devices in the LED subsystem
->> by introducing new sysfs attributes and kernel internal interface.
->> The attributes being introduced are: flash_brightness, flash_strobe,
->> flash_timeout, max_flash_timeout, max_flash_brightness, flash_fault,
->> flash_sync_strobe and available_sync_leds. All the flash related
->> features are placed in a separate module.
->>
->> The modifications aim to be compatible with V4L2 framework requirements
->> related to the flash devices management. The design assumes that V4L2
->> sub-device can take of the LED class device control and communicate
->> with it through the kernel internal interface. When V4L2 Flash sub-device
->> file is opened, the LED class device sysfs interface is made
->> unavailable.
->>
->> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Bryan Wu <cooloney@gmail.com>
->> Cc: Richard Purdie <rpurdie@rpsys.net>
->
-> Acked-by: Pavel Machek <pavel@ucw.cz>
->
+On Mon, Jan 26, 2015 at 09:46:58PM +0000, Al Viro wrote:
+> On Mon, Jan 26, 2015 at 03:42:59PM -0500, Steven Rostedt wrote:
+> > On Mon, 26 Jan 2015 19:30:49 +0000
+> > Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> > 
+> > > You are still fighting an inconvenient API, but now it's not debugfs one -
+> > > it's your copy thereof.  Why not give your instances/ an inode_operations
+> > > of its own?  One with ->mkdir() and ->rmdir(), leaving all other directories
+> > > as-is.  That way you don't need the secondary methods at all.  And sure,
+> > > debugfs_create_dir() grabs ->i_mutex on parent, making you drop that in
+> > > your ->mkdir() if you want to call it.  But now you are not talking to it -
+> > > just to your own code, where you are free to change the calling conventions,
+> > > making it caller's responsibility to get that ->i_mutex.  The same goes for
+> > > the rmdir side...
+> > 
+> > The vfs layer grabs the i_mutex, which needs to be dropped.
+> 
+> What for?  Just keep it through your instance_mkdir/instance_rmdir and be
+> done with that.  Sure, it means that you need variants of file/directory
+> creation/removal primitives that would assume that parent is already locked
+> by caller (and would leave unlocking to the caller as well).  So add them...
 
-Applied to my tree. Thanks for pushing this.
-
--Bryan
+BTW, could you merge vfs.git#debugfs_automount, rather than copy the commits
+into your branch?  Bloody inconvenient as it is...
