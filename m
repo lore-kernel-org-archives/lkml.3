@@ -1,27 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959AbbAZKoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:44:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39806 "EHLO
+	id S1755795AbbAZKpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:45:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39857 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571AbbAZKn4 (ORCPT
+	with ESMTP id S1755748AbbAZKpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:43:56 -0500
-Date: Mon, 26 Jan 2015 02:43:28 -0800
-From: tip-bot for Magnus Damm <tipbot@zytor.com>
-Message-ID: <tip-e03f9088e22ca7e2b0de826466540e2527518e52@git.kernel.org>
-Cc: magnus.damm@gmail.com, tglx@linutronix.de, mingo@kernel.org,
-        damm+renesas@opensource.se, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Reply-To: tglx@linutronix.de, mingo@kernel.org, magnus.damm@gmail.com,
-        damm+renesas@opensource.se, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20141203121803.5936.35881.sendpatchset@w520>
-References: <20141203121803.5936.35881.sendpatchset@w520>
+	Mon, 26 Jan 2015 05:45:06 -0500
+Date: Mon, 26 Jan 2015 02:43:47 -0800
+From: tip-bot for Yingjoe Chen <tipbot@zytor.com>
+Message-ID: <tip-cdb647a772e9def47594ff8ce7acf47f4d257b2e@git.kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, tglx@linutronix.de,
+        ijc+devicetree@hellion.org.uk, jason@lakedaemon.net,
+        pawel.moll@arm.com, peter.maydell@linaro.org, robh+dt@kernel.org,
+        eddie.huang@mediatek.com, matthias.bgg@gmail.com, marc.zyngier@arm.com,
+        broonie@linaro.org, olof@lixom.net, srv_heupstream@mediatek.com,
+        rrichter@cavium.com, galak@codeaurora.org, mingo@kernel.org,
+        kernel@pengutronix.de, mark.rutland@arm.com, yingjoe.chen@mediatek.com,
+        hpa@zytor.com, will.deacon@arm.com, linux-kernel@vger.kernel.org,
+        catalin.marinas@arm.com
+Reply-To: linux-kernel@vger.kernel.org, catalin.marinas@arm.com,
+        will.deacon@arm.com, mark.rutland@arm.com, yingjoe.chen@mediatek.com,
+        hpa@zytor.com, kernel@pengutronix.de, mingo@kernel.org,
+        srv_heupstream@mediatek.com, olof@lixom.net, broonie@linaro.org,
+        galak@codeaurora.org, rrichter@cavium.com, robh+dt@kernel.org,
+        peter.maydell@linaro.org, matthias.bgg@gmail.com, marc.zyngier@arm.com,
+        eddie.huang@mediatek.com, ijc+devicetree@hellion.org.uk,
+        jason@lakedaemon.net, pawel.moll@arm.com,
+        linux-arm-kernel@lists.infradead.org, tglx@linutronix.de
+In-Reply-To: <1421054073-43468-3-git-send-email-eddie.huang@mediatek.com>
+References: <1421054073-43468-3-git-send-email-eddie.huang@mediatek.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] irqchip: renesas-intc-irqpin:
-  r8a7779 IRLM setup support
-Git-Commit-ID: e03f9088e22ca7e2b0de826466540e2527518e52
+Subject: [tip:irq/core] irqchip: mtk-sysirq:
+  Get irq number from register resource size
+Git-Commit-ID: cdb647a772e9def47594ff8ce7acf47f4d257b2e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,178 +46,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e03f9088e22ca7e2b0de826466540e2527518e52
-Gitweb:     http://git.kernel.org/tip/e03f9088e22ca7e2b0de826466540e2527518e52
-Author:     Magnus Damm <damm+renesas@opensource.se>
-AuthorDate: Wed, 3 Dec 2014 21:18:03 +0900
+Commit-ID:  cdb647a772e9def47594ff8ce7acf47f4d257b2e
+Gitweb:     http://git.kernel.org/tip/cdb647a772e9def47594ff8ce7acf47f4d257b2e
+Author:     Yingjoe Chen <yingjoe.chen@mediatek.com>
+AuthorDate: Mon, 12 Jan 2015 17:14:31 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 26 Jan 2015 11:38:22 +0100
 
-irqchip: renesas-intc-irqpin: r8a7779 IRLM setup support
+irqchip: mtk-sysirq: Get irq number from register resource size
 
-Add r8a7779 specific support for IRLM bit configuration
-in the INTC-IRQPIN driver. Without this code we need
-special workaround code in arch/arm/mach-shmobile.
+Originally mtk-sysirq hardcoded supported irq number to 224. This
+was fine since all SoCs before support the same number of irqs for
+intpol.
 
-The IRLM bit for the INTC hardware exists on various
-older SH-based SoCs and is used to select between two
-modes for the external interrupt pins IRQ0 to IRQ3:
+However MT8173 intpol support 32 more irq pins, changes to get
+irq number from register resource size to suppor MT8173 properly.
 
-IRLM = 0: (default from reset on r8a7779)
-In this mode the pins IRQ0 to IRQ3 are used together
-to give a value between 0 and 15 to the SoC. External
-logic is required for masking. This mode is not
-supported by the INTC-IRQPIN driver.
-
-IRLM = 1: (needs this patch or configuration elsewhere)
-In this mode IRQ0 to IRQ3 operate as 4 individual
-external interrupt pins. In this mode the SMSC ethernet
-chip can be used via IRQ1 on r8a7779 Marzen. This mode
-is the only supported mode by the INTC-IRQPIN driver.
-
-For this patch to work the r8a7779 DTS needs to pass
-the ICR0 register as the last register bank.
-
-Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Cc: horms@verge.net.au
-Cc: jason@lakedaemon.net
-Link: http://lkml.kernel.org/r/20141203121803.5936.35881.sendpatchset@w520
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
+Cc: <srv_heupstream@mediatek.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Olof  Johansson <olof@lixom.net>
+Cc: Robert Richter <rrichter@cavium.com>
+Cc: Mark Brown <broonie@linaro.org>
+Cc: <linux-arm-kernel@lists.infradead.org>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: <marc.zyngier@arm.com>
+Cc: <peter.maydell@linaro.org>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Link: http://lkml.kernel.org/r/1421054073-43468-3-git-send-email-eddie.huang@mediatek.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- .../interrupt-controller/renesas,intc-irqpin.txt   |  5 +++
- drivers/irqchip/irq-renesas-intc-irqpin.c          | 50 ++++++++++++++++++----
- 2 files changed, 46 insertions(+), 9 deletions(-)
+ drivers/irqchip/irq-mtk-sysirq.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt b/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
-index c73acd0..4f7946a 100644
---- a/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
-+++ b/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.txt
-@@ -9,6 +9,11 @@ Required properties:
-     - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
-     - "renesas,intc-irqpin-r8a7779" (R-Car H1)
-     - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
-+
-+- reg: Base address and length of each register bank used by the external
-+  IRQ pins driven by the interrupt controller hardware module. The base
-+  addresses, length and number of required register banks varies with soctype.
-+
- - #interrupt-cells: has to be <2>: an interrupt index and flags, as defined in
-   interrupts.txt in this directory
+diff --git a/drivers/irqchip/irq-mtk-sysirq.c b/drivers/irqchip/irq-mtk-sysirq.c
+index 0b0d2c0..eaf0a71 100644
+--- a/drivers/irqchip/irq-mtk-sysirq.c
++++ b/drivers/irqchip/irq-mtk-sysirq.c
+@@ -23,8 +23,6 @@
  
-diff --git a/drivers/irqchip/irq-renesas-intc-irqpin.c b/drivers/irqchip/irq-renesas-intc-irqpin.c
-index 078cac5..9a0767b 100644
---- a/drivers/irqchip/irq-renesas-intc-irqpin.c
-+++ b/drivers/irqchip/irq-renesas-intc-irqpin.c
-@@ -30,6 +30,7 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/of_device.h>
- #include <linux/platform_data/irq-renesas-intc-irqpin.h>
- #include <linux/pm_runtime.h>
+ #include "irqchip.h"
  
-@@ -40,7 +41,9 @@
- #define INTC_IRQPIN_REG_SOURCE 2 /* INTREQnn */
- #define INTC_IRQPIN_REG_MASK 3 /* INTMSKnn */
- #define INTC_IRQPIN_REG_CLEAR 4 /* INTMSKCLRnn */
--#define INTC_IRQPIN_REG_NR 5
-+#define INTC_IRQPIN_REG_NR_MANDATORY 5
-+#define INTC_IRQPIN_REG_IRLM 5 /* ICR0 with IRLM bit (optional) */
-+#define INTC_IRQPIN_REG_NR 6
- 
- /* INTC external IRQ PIN hardware register access:
-  *
-@@ -82,6 +85,10 @@ struct intc_irqpin_priv {
- 	u8 shared_irq_mask;
- };
- 
-+struct intc_irqpin_irlm_config {
-+	unsigned int irlm_bit;
-+};
-+
- static unsigned long intc_irqpin_read32(void __iomem *iomem)
+-#define MT6577_SYS_INTPOL_NUM	(224)
+-
+ struct mtk_sysirq_chip_data {
+ 	spinlock_t lock;
+ 	void __iomem *intpol_base;
+@@ -124,7 +122,8 @@ static int __init mtk_sysirq_of_init(struct device_node *node,
  {
- 	return ioread32(iomem);
-@@ -345,10 +352,23 @@ static struct irq_domain_ops intc_irqpin_irq_domain_ops = {
- 	.xlate  = irq_domain_xlate_twocell,
- };
+ 	struct irq_domain *domain, *domain_parent;
+ 	struct mtk_sysirq_chip_data *chip_data;
+-	int ret = 0;
++	int ret, size, intpol_num;
++	struct resource res;
  
-+static const struct intc_irqpin_irlm_config intc_irqpin_irlm_r8a7779 = {
-+	.irlm_bit = 23, /* ICR0.IRLM0 */
-+};
-+
-+static const struct of_device_id intc_irqpin_dt_ids[] = {
-+	{ .compatible = "renesas,intc-irqpin", },
-+	{ .compatible = "renesas,intc-irqpin-r8a7779",
-+	  .data = &intc_irqpin_irlm_r8a7779 },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, intc_irqpin_dt_ids);
-+
- static int intc_irqpin_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct renesas_intc_irqpin_config *pdata = dev->platform_data;
-+	const struct of_device_id *of_id;
- 	struct intc_irqpin_priv *p;
- 	struct intc_irqpin_iomem *i;
- 	struct resource *io[INTC_IRQPIN_REG_NR];
-@@ -391,10 +411,11 @@ static int intc_irqpin_probe(struct platform_device *pdev)
- 	pm_runtime_enable(dev);
- 	pm_runtime_get_sync(dev);
- 
--	/* get hold of manadatory IOMEM */
-+	/* get hold of register banks */
-+	memset(io, 0, sizeof(io));
- 	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
- 		io[k] = platform_get_resource(pdev, IORESOURCE_MEM, k);
--		if (!io[k]) {
-+		if (!io[k] && k < INTC_IRQPIN_REG_NR_MANDATORY) {
- 			dev_err(dev, "not enough IOMEM resources\n");
- 			ret = -EINVAL;
- 			goto err0;
-@@ -422,6 +443,10 @@ static int intc_irqpin_probe(struct platform_device *pdev)
- 	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
- 		i = &p->iomem[k];
- 
-+		/* handle optional registers */
-+		if (!io[k])
-+			continue;
-+
- 		switch (resource_size(io[k])) {
- 		case 1:
- 			i->width = 8;
-@@ -448,6 +473,19 @@ static int intc_irqpin_probe(struct platform_device *pdev)
- 		}
+ 	domain_parent = irq_find_host(parent);
+ 	if (!domain_parent) {
+@@ -132,19 +131,24 @@ static int __init mtk_sysirq_of_init(struct device_node *node,
+ 		return -EINVAL;
  	}
  
-+	/* configure "individual IRQ mode" where needed */
-+	of_id = of_match_device(intc_irqpin_dt_ids, dev);
-+	if (of_id && of_id->data) {
-+		const struct intc_irqpin_irlm_config *irlm_config = of_id->data;
++	ret = of_address_to_resource(node, 0, &res);
++	if (ret)
++		return ret;
 +
-+		if (io[INTC_IRQPIN_REG_IRLM])
-+			intc_irqpin_read_modify_write(p, INTC_IRQPIN_REG_IRLM,
-+						      irlm_config->irlm_bit,
-+						      1, 1);
-+		else
-+			dev_warn(dev, "unable to select IRLM mode\n");
-+	}
-+
- 	/* mask all interrupts using priority */
- 	for (k = 0; k < p->number_of_irqs; k++)
- 		intc_irqpin_mask_unmask_prio(p, k, 1);
-@@ -550,12 +588,6 @@ static int intc_irqpin_remove(struct platform_device *pdev)
- 	return 0;
- }
+ 	chip_data = kzalloc(sizeof(*chip_data), GFP_KERNEL);
+ 	if (!chip_data)
+ 		return -ENOMEM;
  
--static const struct of_device_id intc_irqpin_dt_ids[] = {
--	{ .compatible = "renesas,intc-irqpin", },
--	{},
--};
--MODULE_DEVICE_TABLE(of, intc_irqpin_dt_ids);
--
- static struct platform_driver intc_irqpin_device_driver = {
- 	.probe		= intc_irqpin_probe,
- 	.remove		= intc_irqpin_remove,
+-	chip_data->intpol_base = of_io_request_and_map(node, 0, "intpol");
+-	if (IS_ERR(chip_data->intpol_base)) {
++	size = resource_size(&res);
++	intpol_num = size * 8;
++	chip_data->intpol_base = ioremap(res.start, size);
++	if (!chip_data->intpol_base) {
+ 		pr_err("mtk_sysirq: unable to map sysirq register\n");
+ 		ret = PTR_ERR(chip_data->intpol_base);
+ 		goto out_free;
+ 	}
+ 
+-	domain = irq_domain_add_hierarchy(domain_parent, 0,
+-					  MT6577_SYS_INTPOL_NUM, node,
++	domain = irq_domain_add_hierarchy(domain_parent, 0, intpol_num, node,
+ 					  &sysirq_domain_ops, chip_data);
+ 	if (!domain) {
+ 		ret = -ENOMEM;
