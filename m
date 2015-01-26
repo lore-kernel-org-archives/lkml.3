@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970AbbAZRMM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 12:12:12 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:58091 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631AbbAZRMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 12:12:09 -0500
-Date: Mon, 26 Jan 2015 18:12:00 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] sched, timer: Use atomics for thread_group_cputimer
- stats
-Message-ID: <20150126171200.GB23038@twins.programming.kicks-ass.net>
-References: <1421983913.4432.22.camel@j-VirtualBox>
- <20150123092508.GJ2896@worktop.programming.kicks-ass.net>
- <1422041016.2436.19.camel@j-VirtualBox>
- <20150123200828.GE23123@twins.programming.kicks-ass.net>
- <1422056755.2436.36.camel@j-VirtualBox>
+	id S1756192AbbAZROK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 12:14:10 -0500
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:37907
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752808AbbAZROI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 12:14:08 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/5] staging: comedi: 8255.[ch]: reformat comments
+Thread-Topic: [PATCH 0/5] staging: comedi: 8255.[ch]: reformat comments
+Thread-Index: AQHQOWuTXREdT78gFEmvLvGHnxUmMJzSo1Ow
+Date: Mon, 26 Jan 2015 17:14:07 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D88260E5B53@P3PWEX4MB008.ex4.secureserver.net>
+References: <1422278725-17740-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1422278725-17740-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422056755.2436.36.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 23, 2015 at 03:45:55PM -0800, Jason Low wrote:
-> On a side note, if we just move the cputimer->running = 1 to after the
-> call to update_gt_cputime in thread_group_cputimer(), then we don't have
-> to worry about concurrent adds occuring in this function?
+On Monday, January 26, 2015 6:25 AM, Ian Abbott wrote:
+> Reformat comments to usual style and add kerneldoc to exported
+> functions.
+>
+> 1) staging: comedi: 8255.c: reformat copyright comment
+> 2) staging: comedi: 8255.c: reformat comedi driver comment
+> 3) staging: comedi: 8255.c: document subdev_8255_init() and _mm_init()
+ >4) staging: comedi: 8255.c: reformat remaining block comments
+> 5) staging: comedi: 8255.h: reformat copyright comment
+>
+> drivers/staging/comedi/drivers/8255.c | 174 ++++++++++++++++++++--------------
+> drivers/staging/comedi/drivers/8255.h |  32 +++----
+> 2 files changed, 117 insertions(+), 89 deletions(-)
 
-Yeah, maybe.. There are a few races there, but I figure that because we
-already test cputimer->running outside of cputimer->lock they're already
-possible.
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
