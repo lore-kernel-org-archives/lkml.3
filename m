@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004AbbAZWcZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 17:32:25 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:40960 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755991AbbAZWcY (ORCPT
+	id S1757101AbbAZWeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 17:34:08 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:45621 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755466AbbAZWeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 17:32:24 -0500
-Date: Mon, 26 Jan 2015 22:32:20 +0000
-From: Matt Fleming <matt@codeblueprint.co.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
-Subject: Re: [GIT PULL] EFI changes for v3.20
-Message-ID: <20150126223220.GF3320@codeblueprint.co.uk>
-References: <20150121140250.GE12079@codeblueprint.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150121140250.GE12079@codeblueprint.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 26 Jan 2015 17:34:06 -0500
+Date: Mon, 26 Jan 2015 14:34:02 -0800 (PST)
+Message-Id: <20150126.143402.1309886104452878553.davem@davemloft.net>
+To: isubramanian@apm.com
+Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        mlangsdo@redhat.com, patches@apm.com, kchudgar@apm.com
+Subject: Re: [PATCH] drivers: net: xgene: fix: Out of order descriptor
+ bytes read
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAKh23FmxvV82mVrHq5jv-FE+e6u6CkW+xL_a2_ULAQgP_mM2VA@mail.gmail.com>
+References: <1421957007-720-1-git-send-email-isubramanian@apm.com>
+	<1421967050.3471.14.camel@edumazet-glaptop2.roam.corp.google.com>
+	<CAKh23FmxvV82mVrHq5jv-FE+e6u6CkW+xL_a2_ULAQgP_mM2VA@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 26 Jan 2015 14:34:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jan, at 02:02:50PM, Matt Fleming wrote:
-> Folks, please consider pulling the following changes for v3.20. There's
-> nothing super scary, mainly cleanups, and a merge from Ricardo who
-> kindly picked up some patches from the linux-efi mailing list while I
-> was out on annual leave in December.
-> 
-> Perhaps the biggest risk is the get_memory_map() change from Ard, which
-> changes the way that both the arm64 and x86 EFI boot stub build the
-> early memory map. It would be good to have it bake in linux-next for a
-> while.
-> 
-> One other thing to note is that I've picked up an rtc-efi patch from Ard
-> because the rtc maintainer hasn't been responsive for a while now.
-> 
-> The following changes since commit 8266e31ed0fedb7ee16ebc86e80468f7cc1bbb4e:
-> 
->   x86, ptdump: Add section for EFI runtime services (2014-11-11 22:28:57 +0000)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
-> 
-> for you to fetch changes up to 11629305043c513454c4ccb4fc384a1bfe610647:
-> 
->   efi: Don't look for chosen@0 node on DT platforms (2015-01-20 22:41:56 +0000)
+From: Iyappan Subramanian <isubramanian@apm.com>
+Date: Mon, 26 Jan 2015 13:12:23 -0800
 
-Ping?
+>>> @@ -369,6 +369,8 @@ static int xgene_enet_process_ring(struct xgene_enet_desc_ring *ring,
+>>>               if (unlikely(xgene_enet_is_desc_slot_empty(raw_desc)))
+>>>                       break;
+>>>
+>>> +             /* read fpqnum field after dataaddr field */
+>>> +             smp_rmb();
+>>>               if (is_rx_desc(raw_desc))
+>>>                       ret = xgene_enet_rx_frame(ring, raw_desc);
+>>>               else
+>>
+>> Reading your changelog, it looks like you need a plain rmb() here.
+> 
+> rmb() translates into dsb, which in arm64 serializes everything
+> including instructions and thus expensive compared to dmb.
+> 
+> Do you see any issue with smp_rmb() (which translates into dmb) ?
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+smp_rmb() is not appropriate.  You're not serializing accesses between
+two cpus, you're serializing the cpu with the device.
