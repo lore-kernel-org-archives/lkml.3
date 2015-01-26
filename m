@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129AbbAZKOm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:14:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34835 "EHLO mx1.redhat.com"
+	id S1755176AbbAZKOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:14:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34891 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755039AbbAZKOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:14:33 -0500
+	id S1755132AbbAZKOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:14:44 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,17 +19,19 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 14/36] perf build: Add slang objects building
-Date: Mon, 26 Jan 2015 11:12:14 +0100
-Message-Id: <1422267156-13873-15-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 15/36] perf build: Add gtk objects building
+Date: Mon, 26 Jan 2015 11:12:15 +0100
+Message-Id: <1422267156-13873-16-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 References: <1422267156-13873-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the slang objects building under build framework
-to be included in the libperf build object.
+Move the gtk objects building under build framework.
+
+Add new gtk build object so it's separated from
+the rest of the code and could be librarized.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Tested-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
@@ -46,118 +48,90 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile.perf     | 33 ---------------------------------
- tools/perf/config/Makefile   |  1 +
- tools/perf/ui/Build          |  6 ++++++
- tools/perf/ui/browsers/Build | 10 ++++++++++
- tools/perf/ui/tui/Build      |  4 ++++
- 5 files changed, 21 insertions(+), 33 deletions(-)
- create mode 100644 tools/perf/ui/browsers/Build
- create mode 100644 tools/perf/ui/tui/Build
+ tools/perf/Build           |  2 ++
+ tools/perf/Makefile.perf   | 17 +++++------------
+ tools/perf/config/Makefile |  1 +
+ tools/perf/ui/gtk/Build    |  9 +++++++++
+ 4 files changed, 17 insertions(+), 12 deletions(-)
+ create mode 100644 tools/perf/ui/gtk/Build
 
+diff --git a/tools/perf/Build b/tools/perf/Build
+index e84ced325147..a9ff8fd0bff9 100644
+--- a/tools/perf/Build
++++ b/tools/perf/Build
+@@ -35,3 +35,5 @@ CFLAGS_builtin-timechart.o += $(paths)
+ libperf-y += util/
+ libperf-y += arch/
+ libperf-y += ui/
++
++gtk-y += ui/gtk/
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index c06e64077633..6ecdfeaf23b6 100644
+index 6ecdfeaf23b6..523de5cfcf48 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -339,24 +339,6 @@ ifneq ($(OUTPUT),)
-   CFLAGS += -I$(OUTPUT)
- endif
+@@ -341,14 +341,7 @@ endif
  
--ifndef NO_SLANG
--  LIB_OBJS += $(OUTPUT)ui/browser.o
--  LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
--  LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
--  LIB_OBJS += $(OUTPUT)ui/browsers/map.o
--  LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
--  LIB_OBJS += $(OUTPUT)ui/browsers/header.o
--  LIB_OBJS += $(OUTPUT)ui/tui/setup.o
--  LIB_OBJS += $(OUTPUT)ui/tui/util.o
--  LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
--  LIB_OBJS += $(OUTPUT)ui/tui/progress.o
--  LIB_H += ui/tui/tui.h
--  LIB_H += ui/browser.h
--  LIB_H += ui/browsers/map.h
--  LIB_H += ui/keysyms.h
--  LIB_H += ui/libslang.h
--endif
--
  ifndef NO_GTK2
    ALL_PROGRAMS += $(OUTPUT)libperf-gtk.so
+-
+-  GTK_OBJS += $(OUTPUT)ui/gtk/browser.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/hists.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/setup.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/util.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/helpline.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/progress.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/annotate.o
++  GTK_IN := $(OUTPUT)gtk-in.o
  
-@@ -484,21 +466,6 @@ $(OUTPUT)%.o: %.S
- $(OUTPUT)%.s: %.S
- 	$(QUIET_CC)$(CC) -o $@ -E $(CFLAGS) $<
+ install-gtk: $(OUTPUT)libperf-gtk.so
+ 	$(call QUIET_INSTALL, 'GTK UI') \
+@@ -416,10 +409,10 @@ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS) $(PERF_IN)
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
+                $(BUILTIN_OBJS) $(PERF_IN) $(LIBS) -o $@
  
--$(OUTPUT)ui/browser.o: ui/browser.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
--
--$(OUTPUT)ui/browsers/annotate.o: ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
--
--$(OUTPUT)ui/browsers/hists.o: ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
--
--$(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
--
--$(OUTPUT)ui/browsers/scripts.o: ui/browsers/scripts.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
--
- $(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default $<
+-$(GTK_OBJS): $(OUTPUT)%.o: %.c $(LIB_H)
+-	$(QUIET_CC)$(CC) -o $@ -c -fPIC $(CFLAGS) $(GTK_CFLAGS) $<
++$(GTK_IN): FORCE
++	@$(MAKE) $(build)=gtk
  
+-$(OUTPUT)libperf-gtk.so: $(GTK_OBJS) $(PERFLIBS)
++$(OUTPUT)libperf-gtk.so: $(GTK_IN) $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) -o $@ -shared $(LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
+ 
+ $(OUTPUT)common-cmds.h: util/generate-cmdlist.sh command-list.txt
+@@ -699,7 +692,7 @@ config-clean:
+ 	@$(MAKE) -C config/feature-checks clean >/dev/null
+ 
+ clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
+-	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
++	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS)
+ 	@find . -name '*.o' -delete -o -name '\.*.cmd' -delete -o -name '\.*.d' -delete
+ 	@$(RM) .config-detected
+ 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index e7d1b46b7d31..4e5f080e2a22 100644
+index 4e5f080e2a22..05b6724fdb19 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -473,6 +473,7 @@ ifndef NO_SLANG
-     CFLAGS += -I/usr/include/slang
-     CFLAGS += -DHAVE_SLANG_SUPPORT
-     EXTLIBS += -lslang
-+    $(call detected,CONFIG_SLANG)
-   endif
- endif
- 
-diff --git a/tools/perf/ui/Build b/tools/perf/ui/Build
-index 077b6a448ddc..0a73538c0441 100644
---- a/tools/perf/ui/Build
-+++ b/tools/perf/ui/Build
-@@ -6,3 +6,9 @@ libperf-y += hist.o
- libperf-y += stdio/hist.o
- 
- CFLAGS_setup.o += -DLIBDIR="BUILD_STR($(LIBDIR))"
-+
-+libperf-$(CONFIG_SLANG) += browser.o
-+libperf-$(CONFIG_SLANG) += browsers/
-+libperf-$(CONFIG_SLANG) += tui/
-+
-+CFLAGS_browser.o += -DENABLE_SLFUTURE_CONST
-diff --git a/tools/perf/ui/browsers/Build b/tools/perf/ui/browsers/Build
+@@ -840,3 +840,4 @@ $(call detected_var,ETC_PERFCONFIG_SQ)
+ $(call detected_var,prefix_SQ)
+ $(call detected_var,perfexecdir_SQ)
+ $(call detected_var,LIBDIR)
++$(call detected_var,GTK_CFLAGS)
+diff --git a/tools/perf/ui/gtk/Build b/tools/perf/ui/gtk/Build
 new file mode 100644
-index 000000000000..de223f5bed58
+index 000000000000..ec22e899a224
 --- /dev/null
-+++ b/tools/perf/ui/browsers/Build
-@@ -0,0 +1,10 @@
-+libperf-y += annotate.o
-+libperf-y += hists.o
-+libperf-y += map.o
-+libperf-y += scripts.o
-+libperf-y += header.o
++++ b/tools/perf/ui/gtk/Build
+@@ -0,0 +1,9 @@
++CFLAGS_gtk += -fPIC $(GTK_CFLAGS)
 +
-+CFLAGS_annotate.o += -DENABLE_SLFUTURE_CONST
-+CFLAGS_hists.o    += -DENABLE_SLFUTURE_CONST
-+CFLAGS_map.o      += -DENABLE_SLFUTURE_CONST
-+CFLAGS_scripts.o  += -DENABLE_SLFUTURE_CONST
-diff --git a/tools/perf/ui/tui/Build b/tools/perf/ui/tui/Build
-new file mode 100644
-index 000000000000..9e4c6ca41a9f
---- /dev/null
-+++ b/tools/perf/ui/tui/Build
-@@ -0,0 +1,4 @@
-+libperf-y += setup.o
-+libperf-y += util.o
-+libperf-y += helpline.o
-+libperf-y += progress.o
++gtk-y += browser.o
++gtk-y += hists.o
++gtk-y += setup.o
++gtk-y += util.o
++gtk-y += helpline.o
++gtk-y += progress.o
++gtk-y += annotate.o
 -- 
 1.9.3
 
