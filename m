@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950AbbAZXLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 18:11:31 -0500
-Received: from mx1.scotdoyle.com ([23.226.141.211]:32808 "EHLO
+	id S1757099AbbAZXNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 18:13:44 -0500
+Received: from mx1.scotdoyle.com ([23.226.141.211]:34990 "EHLO
 	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291AbbAZXL3 (ORCPT
+	with ESMTP id S1753431AbbAZXNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 18:11:29 -0500
-Date: Mon, 26 Jan 2015 23:09:41 +0000 (UTC)
+	Mon, 26 Jan 2015 18:13:42 -0500
+Date: Mon, 26 Jan 2015 23:11:55 +0000 (UTC)
 From: Scot Doyle <lkml14@scotdoyle.com>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 cc: Geert Uytterhoeven <geert@linux-m68k.org>,
         Richard Weinberger <richard.weinberger@gmail.com>,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 0/2] fbcon: user-defined cursor blink interval
-Message-ID: <alpine.DEB.2.11.1501262305150.2783@localhost.localdomain>
+Subject: [PATCH v4 1/2] fbcon: store cursor blink interval in fbcon_ops
+In-Reply-To: <alpine.DEB.2.11.1501262305150.2783@localhost.localdomain>
+Message-ID: <alpine.DEB.2.11.1501262310430.2861@localhost.localdomain>
+References: <alpine.DEB.2.11.1501262305150.2783@localhost.localdomain>
 User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -23,24 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since users prefer different fbcon cursor blink intervals, allow the
-interval to be set via sysfs. The current interval of 200 milliseconds
-is retained as the default. Tested with intelfb.
+fbcon toggles cursor display state every 200 milliseconds when blinking.
+Since users prefer different toggle intervals, prepare to expose the
+interval via sysfs by moving it to fbdev_ops and setting the default
+to 200 milliseconds.
 
-v2:  Use kstrtos16() instead of kstrtoul() and min_t() as suggested by
-     Geert Uytterhoeven
-v3:  Add error messages as suggested by Tomi Valkeinen
-v4:  Add rationale into patch descriptions as suggested by
-     Richard Weinberger
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+---
+ drivers/video/console/fbcon.c | 5 +++--
+ drivers/video/console/fbcon.h | 1 +
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-Scot Doyle (2):
-  fbcon: store cursor blink interval in fbcon_ops
-  fbcon: expose cursor blink interval via sysfs
-
- drivers/video/console/fbcon.c | 84 +++++++++++++++++++++++++++++++++++++++++--
- drivers/video/console/fbcon.h |  1 +
- 2 files changed, 83 insertions(+), 2 deletions(-)
-
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index ea43724..7a2030b 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -405,7 +405,7 @@ static void cursor_timer_handler(unsigned long dev_addr)
+ 	struct fbcon_ops *ops = info->fbcon_par;
+ 
+ 	queue_work(system_power_efficient_wq, &info->queue);
+-	mod_timer(&ops->cursor_timer, jiffies + HZ/5);
++	mod_timer(&ops->cursor_timer, jiffies + ops->blink_jiffies);
+ }
+ 
+ static void fbcon_add_cursor_timer(struct fb_info *info)
+@@ -420,7 +420,7 @@ static void fbcon_add_cursor_timer(struct fb_info *info)
+ 
+ 		init_timer(&ops->cursor_timer);
+ 		ops->cursor_timer.function = cursor_timer_handler;
+-		ops->cursor_timer.expires = jiffies + HZ / 5;
++		ops->cursor_timer.expires = jiffies + ops->blink_jiffies;
+ 		ops->cursor_timer.data = (unsigned long ) info;
+ 		add_timer(&ops->cursor_timer);
+ 		ops->flags |= FBCON_FLAGS_CURSOR_TIMER;
+@@ -959,6 +959,7 @@ static const char *fbcon_startup(void)
+ 	ops->currcon = -1;
+ 	ops->graphics = 1;
+ 	ops->cur_rotate = -1;
++	ops->blink_jiffies = msecs_to_jiffies(200);
+ 	info->fbcon_par = ops;
+ 	p->con_rotate = initial_rotation;
+ 	set_blitting_type(vc, info);
+diff --git a/drivers/video/console/fbcon.h b/drivers/video/console/fbcon.h
+index 6bd2e0c..642c4e7 100644
+--- a/drivers/video/console/fbcon.h
++++ b/drivers/video/console/fbcon.h
+@@ -70,6 +70,7 @@ struct fbcon_ops {
+ 	struct fb_cursor cursor_state;
+ 	struct display *p;
+         int    currcon;	                /* Current VC. */
++	int    blink_jiffies;
+ 	int    cursor_flash;
+ 	int    cursor_reset;
+ 	int    blank_state;
 -- 
 2.1.4
 
