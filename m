@@ -1,79 +1,526 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256AbbAZWtP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 17:49:15 -0500
-Received: from mail-by2on0108.outbound.protection.outlook.com ([207.46.100.108]:17952
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1757115AbbAZWqo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 17:46:44 -0500
+Received: from skprod2.natinst.com ([130.164.80.23]:33965 "EHLO ni.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754054AbbAZWtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 17:49:12 -0500
-Date: Mon, 26 Jan 2015 16:43:52 -0600
-From: Kim Phillips <kim.phillips@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: [PATCH] .mailmap: update Konstantin Khlebnikov's email address
-Message-ID: <20150126164352.8b40796d5e3b6caebaca3f28@freescale.com>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=kim.phillips@freescale.com; gmail.com; dkim=none (message not
- signed) header.d=none;gmail.com; dmarc=permerror action=none
- header.from=freescale.com;
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(33646002)(46406003)(19580395003)(6806004)(19580405001)(77096005)(85426001)(86362001)(47776003)(87936001)(46102003)(50226001)(36756003)(104016003)(92566002)(106466001)(23726002)(105606002)(50466002)(229853001)(50986999)(110136001)(2351001)(77156002)(62966003)(100306002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB322;H:tx30smr01.am.freescale.net;FPR:;SPF:None;MLV:sfv;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BL2PR03MB322;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2PR03MB322;
-X-Forefront-PRVS: 0468FE4A2B
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB322;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 26 Jan 2015 22:49:08.4095
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2PR03MB322
+	id S1756622AbbAZWqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 17:46:40 -0500
+From: Xander Huff <xander.huff@ni.com>
+To: gregkh@suse.de, davem@davemloft.net, jeff.westfahl@ni.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jaeden.amero@ni.com,
+        ben.shelton@ni.com, brad.mouring@ni.com, rich.tollerton@ni.com
+Subject: [PATCH 1/2] driver core: add device_poll interface
+Date: Mon, 26 Jan 2015 16:46:32 -0600
+Message-Id: <1422312393-61485-1-git-send-email-xander.huff@ni.com>
+X-Mailer: git-send-email 1.9.1
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/26/2015 04:46:35 PM,
+	Serialize by Router on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/26/2015 04:46:35 PM,
+	Serialize complete at 01/26/2015 04:46:35 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-27_01:2015-01-27,2015-01-26,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_maintainer.pl returns k.khlebnikov@samsung.com via git history,
-for which emails get rejected:
+From: Jeff Westfahl <jeff.westfahl@ni.com>
 
- RCPT TO:<k.khlebnikov@samsung.com>
- 550 5.1.1 Recipient address rejected: User unknown
+Add the device_poll interface to the driver core. This is a generic
+interface that any struct device can take advantage of to dynamically
+switch between using interrupts and polling. Many drivers can be easily
+modified to take advantage of this feature if desired.
 
-Use his other address that passes vger's mxverify:
+This interface is most likely to be used along with the RT patch. It has
+only been used thus far on Ethernet interfaces. Even with the standard
+RT change to threaded interrupts for all devices, some RT applications
+can be sensitive to even the minimal hardware interrupt that still occurs
+with threaded interrupt handlers. The device_poll interface can be used
+to completely eliminate all hardware interrupts for a device and the
+associated jitter.
 
- RCPT TO:<koct9i@gmail.com>
- 250 2.1.5 OK ir10si13843754pbc.62 - gsmtp
+This is a standalone feature that should be submitted for review and
+possible inclusion in mainline, or maybe in the RT patch.
 
-and add his old email address in the wrong email address field.
-
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+Signed-off-by: Jeff Westfahl <jeff.westfahl@ni.com>
 ---
- .mailmap | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/base/Kconfig        |   3 +
+ drivers/base/Makefile       |   1 +
+ drivers/base/poll.c         | 327 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/device_poll.h | 105 ++++++++++++++
+ 4 files changed, 436 insertions(+)
+ create mode 100644 drivers/base/poll.c
+ create mode 100644 include/linux/device_poll.h
 
-diff --git a/.mailmap b/.mailmap
-index d357e1b..0d971cf 100644
---- a/.mailmap
-+++ b/.mailmap
-@@ -73,6 +73,7 @@ Juha Yrjola <juha.yrjola@nokia.com>
- Juha Yrjola <juha.yrjola@solidboot.com>
- Kay Sievers <kay.sievers@vrfy.org>
- Kenneth W Chen <kenneth.w.chen@intel.com>
-+Konstantin Khlebnikov <koct9i@gmail.com> <k.khlebnikov@samsung.com>
- Koushik <raghavendra.koushik@neterion.com>
- Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
- Leonid I Ananiev <leonid.i.ananiev@intel.com>
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index 21cf46f..d23df71 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -174,4 +174,7 @@ config SYS_HYPERVISOR
+ 
+ source "drivers/base/regmap/Kconfig"
+ 
++config DEVICE_POLL
++	bool
++
+ endmenu
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index 99a375a..92ab7f3 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -18,6 +18,7 @@ obj-$(CONFIG_MODULES)	+= module.o
+ endif
+ obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
+ obj-$(CONFIG_REGMAP)	+= regmap/
++obj-$(CONFIG_DEVICE_POLL) += poll.o
+ 
+ ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+ 
+diff --git a/drivers/base/poll.c b/drivers/base/poll.c
+new file mode 100644
+index 0000000..911a296
+--- /dev/null
++++ b/drivers/base/poll.c
+@@ -0,0 +1,327 @@
++/*
++ * Copyright (C) 2014 National Instruments Corp.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/device_poll.h>
++#include <linux/device.h>
++#include <linux/sysfs.h>
++#include <linux/sched.h>
++#include <linux/stat.h>
++#include <linux/kthread.h>
++#include <linux/delay.h>
++
++/* sysfs attributes */
++
++#define to_ext_attr(x) container_of(x, struct dev_ext_attribute, attr)
++
++/* get sysfs attributes */
++
++ssize_t device_poll_get_interval(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	struct dev_ext_attribute *ea = to_ext_attr(attr);
++	struct device_poll *device_poll = ea->var;
++
++	return sprintf(buf, "%d\n", device_poll->interval);
++}
++
++static ssize_t device_poll_get_policy(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct dev_ext_attribute *ea = to_ext_attr(attr);
++	struct device_poll *device_poll = ea->var;
++
++	switch (device_poll->policy) {
++	case SCHED_NORMAL:
++		return sprintf(buf, "SCHED_NORMAL (SCHED_OTHER)\n");
++	case SCHED_FIFO:
++		return sprintf(buf, "SCHED_FIFO\n");
++	case SCHED_RR:
++		return sprintf(buf, "SCHED_RR\n");
++	case SCHED_BATCH:
++		return sprintf(buf, "SCHED_BATCH\n");
++	case SCHED_IDLE:
++		return sprintf(buf, "SCHED_IDLE\n");
++	default:
++		return sprintf(buf, "unknown\n");
++	}
++}
++
++static ssize_t device_poll_get_priority(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct dev_ext_attribute *ea = to_ext_attr(attr);
++	struct device_poll *device_poll = ea->var;
++
++	return sprintf(buf, "%d\n", device_poll->priority);
++}
++
++/* set sysfs attributes */
++
++static ssize_t device_poll_set_interval(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t size)
++{
++	struct dev_ext_attribute *ea = to_ext_attr(attr);
++	struct device_poll *device_poll = ea->var;
++	int interval;
++	int ret = 0;
++
++	if (device_poll->use_capability && !capable(device_poll->capability))
++		return -EPERM;
++
++	if (0 > kstrtoint(buf, 0, &interval))
++		return -EINVAL;
++
++	device_poll->ops->lock(device_poll);
++	if (device_poll->interval != interval) {
++		device_poll->interval = interval;
++
++		ret = device_poll->ops->reinit(device_poll);
++	}
++	device_poll->ops->unlock(device_poll);
++
++	if (ret)
++		return ret;
++
++	return size;
++}
++
++static ssize_t device_poll_set_policy(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf, size_t size)
++{
++	struct dev_ext_attribute *ea = to_ext_attr(attr);
++	struct device_poll *device_poll = ea->var;
++	char policy_str[16] = { 0 };
++	int policy;
++	struct sched_param param;
++
++	if (device_poll->use_capability && !capable(device_poll->capability))
++		return -EPERM;
++
++	if (1 != sscanf(buf, "%15s", policy_str))
++		return -EINVAL;
++
++	if ((0 == strcmp(policy_str, "SCHED_NORMAL") ||
++	     (0 == strcmp(policy_str, "SCHED_OTHER"))))
++		policy = SCHED_NORMAL;
++	else if (0 == strcmp(policy_str, "SCHED_FIFO"))
++		policy = SCHED_FIFO;
++	else if (0 == strcmp(policy_str, "SCHED_RR"))
++		policy = SCHED_RR;
++	else if (0 == strcmp(policy_str, "SCHED_BATCH"))
++		policy = SCHED_BATCH;
++	else if (0 == strcmp(policy_str, "SCHED_IDLE"))
++		policy = SCHED_IDLE;
++	else
++		return -EINVAL;
++
++	device_poll->ops->lock(device_poll);
++	if (device_poll->policy != policy) {
++		device_poll->policy = policy;
++
++		if (device_poll->task) {
++			param.sched_priority = device_poll->priority;
++			sched_setscheduler(device_poll->task,
++					   device_poll->policy,
++					   &param);
++		}
++	}
++	device_poll->ops->unlock(device_poll);
++
++	return size;
++}
++
++static ssize_t device_poll_set_priority(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t size)
++{
++	struct dev_ext_attribute *ea = to_ext_attr(attr);
++	struct device_poll *device_poll = ea->var;
++	int priority;
++	struct sched_param param;
++
++	if (device_poll->use_capability && !capable(device_poll->capability))
++		return -EPERM;
++
++	if (0 > kstrtoint(buf, 0, &priority))
++		return -EINVAL;
++
++	device_poll->ops->lock(device_poll);
++	if (device_poll->priority != priority) {
++		device_poll->priority = priority;
++
++		if (device_poll->task) {
++			param.sched_priority = device_poll->priority;
++			sched_setscheduler(device_poll->task,
++					   device_poll->policy,
++					   &param);
++		}
++	}
++	device_poll->ops->unlock(device_poll);
++
++	return size;
++}
++
++/* sysfs attributes */
++
++static const DEVICE_ATTR(interval, S_IWUSR | S_IRUGO,
++			 device_poll_get_interval, device_poll_set_interval);
++
++static const DEVICE_ATTR(policy, S_IWUSR | S_IRUGO,
++			 device_poll_get_policy, device_poll_set_policy);
++
++static const DEVICE_ATTR(priority, S_IWUSR | S_IRUGO,
++			 device_poll_get_priority, device_poll_set_priority);
++
++/* device_poll internal functions */
++
++static int device_poll_thread(void *info)
++{
++	struct device_poll *device_poll = info;
++	int polling_interval;
++	int polling_interval_us;
++	struct sched_param param;
++
++	polling_interval = device_poll->interval;
++
++	/* If we got changed to interrupt mode before the polling thread
++	   started. */
++	if (unlikely(0 >= polling_interval)) {
++		while (!kthread_should_stop())
++			usleep(1);
++		return -EINTR;
++	}
++
++	polling_interval_us = polling_interval * 1000;
++
++	param.sched_priority = device_poll->priority;
++	sched_setscheduler(current, device_poll->policy, &param);
++
++	while (!kthread_should_stop()) {
++		/* Ensure changes to device_poll->enabled made on other CPUs
++		   are seen here. */
++		smp_rmb();
++		if (device_poll->enabled)
++			device_poll->ops->interrupt(device_poll);
++
++		if (20 > polling_interval)
++			usleep_range(polling_interval_us, polling_interval_us);
++		else
++			msleep(polling_interval);
++	}
++
++	return 0;
++}
++
++/* device_poll external functions */
++
++int device_poll_init(struct device_poll *device_poll)
++{
++	int ret;
++
++	if (!device_poll || !device_poll->device || !device_poll->ops)
++		return -EINVAL;
++
++	if (!device_poll->ops->reinit || !device_poll->ops->lock ||
++	    !device_poll->ops->unlock || !device_poll->ops->interrupt)
++		return -EINVAL;
++
++	if (device_poll->use_capability && !cap_valid(device_poll->capability))
++		return -EINVAL;
++
++	device_poll->task = NULL;
++	device_poll->enabled = 0;
++
++	device_poll->interval_attr.attr = dev_attr_interval;
++	device_poll->policy_attr.attr = dev_attr_policy;
++	device_poll->priority_attr.attr = dev_attr_priority;
++
++	device_poll->interval_attr.var = device_poll;
++	device_poll->policy_attr.var = device_poll;
++	device_poll->priority_attr.var = device_poll;
++
++	if (device_poll->use_capability) {
++		device_poll->interval_attr.attr.attr.mode |= S_IWUGO;
++		device_poll->policy_attr.attr.attr.mode |= S_IWUGO;
++		device_poll->priority_attr.attr.attr.mode |= S_IWUGO;
++	}
++
++	sysfs_attr_init(&device_poll->interval_attr.attr.attr);
++	sysfs_attr_init(&device_poll->policy_attr.attr.attr);
++	sysfs_attr_init(&device_poll->priority_attr.attr.attr);
++
++	device_poll->attrs[0] = &device_poll->interval_attr.attr.attr;
++	device_poll->attrs[1] = &device_poll->policy_attr.attr.attr;
++	device_poll->attrs[2] = &device_poll->priority_attr.attr.attr;
++	device_poll->attrs[3] = NULL;
++
++	device_poll->attr_group.name = "device_poll";
++	device_poll->attr_group.attrs = device_poll->attrs;
++
++	ret = sysfs_create_group(&device_poll->device->kobj,
++				 &device_poll->attr_group);
++	if (ret)
++		device_poll_exit(device_poll);
++
++	return ret;
++}
++EXPORT_SYMBOL(device_poll_init);
++
++void device_poll_exit(struct device_poll *device_poll)
++{
++	if (!device_poll || !device_poll->device)
++		return;
++
++	sysfs_remove_group(&device_poll->device->kobj,
++			   &device_poll->attr_group);
++}
++EXPORT_SYMBOL(device_poll_exit);
++
++int device_poll_request_irq(struct device_poll *device_poll)
++{
++	int err;
++
++	if (!device_poll)
++		return -EINVAL;
++
++	/* If interrupts are enabled. */
++	if (device_poll->interval <= 0)
++		return -ERANGE;
++
++	/* Start up the polling thread. */
++	device_poll->task = kthread_run(device_poll_thread,
++					device_poll, "poll/%s",
++					dev_name(device_poll->device));
++	if (IS_ERR(device_poll->task)) {
++		err = PTR_ERR(device_poll->task);
++		device_poll->task = NULL;
++		dev_err(device_poll->device,
++			"Unable to create polling thread: %d\n", err);
++		return err;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(device_poll_request_irq);
++
++void device_poll_free_irq(struct device_poll *device_poll)
++{
++	if (device_poll_is_active(device_poll)) {
++		kthread_stop(device_poll->task);
++		device_poll->task = NULL;
++	}
++}
++EXPORT_SYMBOL(device_poll_free_irq);
+diff --git a/include/linux/device_poll.h b/include/linux/device_poll.h
+new file mode 100644
+index 0000000..846a3b4
+--- /dev/null
++++ b/include/linux/device_poll.h
+@@ -0,0 +1,105 @@
++/*
++ * Copyright (C) 2014 National Instruments Corp.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef _LINUX_DEVICE_POLL_H_
++#define _LINUX_DEVICE_POLL_H_
++
++#ifdef CONFIG_DEVICE_POLL
++
++#include <linux/device.h>
++
++struct device_poll;
++
++struct device_poll_ops {
++	/* Reinitialize, if the mode changes. */
++	int (*reinit)(struct device_poll *device_poll);
++
++	/* Lock and unlock, for consistency when changing settings. */
++	void (*lock)(struct device_poll *device_poll);
++	void (*unlock)(struct device_poll *device_poll);
++
++	/* Polled interrupt handler. */
++	void (*interrupt)(struct device_poll *device_poll);
++};
++
++struct device_poll {
++	/* The following must be initialized by the driver before calling
++	   device_poll_init. */
++
++	/* The device for which we're polling. */
++	struct device *device;
++
++	/* Device operations. */
++	struct device_poll_ops *ops;
++
++	/* A capability can be specified to allow non-root users to modify
++	   the sysfs attributes. */
++	bool use_capability;
++	int capability;
++
++	/* Polling interval in milliseconds. A value of 0 or less means
++	   use interrupts. */
++	int interval;
++
++	/* Polling task policy and priority, such as SCHED_FIFO 10. */
++	int policy;
++	int priority;
++
++	/* The following are internal struct members and should not be touched
++	   by drivers. */
++
++	struct task_struct *task;
++	int enabled;
++
++	struct dev_ext_attribute interval_attr;
++	struct dev_ext_attribute policy_attr;
++	struct dev_ext_attribute priority_attr;
++	struct attribute *attrs[4];
++	struct attribute_group attr_group;
++};
++
++int device_poll_init(struct device_poll *device_poll);
++void device_poll_exit(struct device_poll *device_poll);
++
++int device_poll_request_irq(struct device_poll *device_poll);
++void device_poll_free_irq(struct device_poll *device_poll);
++
++static inline int device_poll_is_active(struct device_poll *device_poll)
++{
++	return likely(device_poll) && (device_poll->task != NULL);
++}
++
++static inline void device_poll_enable_irq(struct device_poll *device_poll)
++{
++	if (device_poll_is_active(device_poll)) {
++		device_poll->enabled = 1;
++		/* Ensure changes to device_poll->enabled are seen by the
++		   polling thread. */
++		smp_wmb();
++	}
++}
++
++static inline void device_poll_disable_irq(struct device_poll *device_poll)
++{
++	if (device_poll_is_active(device_poll)) {
++		device_poll->enabled = 0;
++		/* Ensure changes to device_poll->enabled are seen by the
++		   polling thread. */
++		smp_wmb();
++	}
++}
++
++#endif
++
++#endif /* _LINUX_DEVICE_POLL_H_ */
 -- 
-2.2.2
+1.9.1
 
