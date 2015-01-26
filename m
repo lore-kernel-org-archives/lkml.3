@@ -1,39 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795AbbAZKpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:45:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39857 "EHLO
+	id S1755059AbbAZKoe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:44:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39828 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748AbbAZKpG (ORCPT
+	with ESMTP id S1754359AbbAZKob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:45:06 -0500
-Date: Mon, 26 Jan 2015 02:43:47 -0800
-From: tip-bot for Yingjoe Chen <tipbot@zytor.com>
-Message-ID: <tip-cdb647a772e9def47594ff8ce7acf47f4d257b2e@git.kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, tglx@linutronix.de,
-        ijc+devicetree@hellion.org.uk, jason@lakedaemon.net,
-        pawel.moll@arm.com, peter.maydell@linaro.org, robh+dt@kernel.org,
-        eddie.huang@mediatek.com, matthias.bgg@gmail.com, marc.zyngier@arm.com,
-        broonie@linaro.org, olof@lixom.net, srv_heupstream@mediatek.com,
-        rrichter@cavium.com, galak@codeaurora.org, mingo@kernel.org,
-        kernel@pengutronix.de, mark.rutland@arm.com, yingjoe.chen@mediatek.com,
-        hpa@zytor.com, will.deacon@arm.com, linux-kernel@vger.kernel.org,
-        catalin.marinas@arm.com
-Reply-To: linux-kernel@vger.kernel.org, catalin.marinas@arm.com,
-        will.deacon@arm.com, mark.rutland@arm.com, yingjoe.chen@mediatek.com,
-        hpa@zytor.com, kernel@pengutronix.de, mingo@kernel.org,
-        srv_heupstream@mediatek.com, olof@lixom.net, broonie@linaro.org,
-        galak@codeaurora.org, rrichter@cavium.com, robh+dt@kernel.org,
-        peter.maydell@linaro.org, matthias.bgg@gmail.com, marc.zyngier@arm.com,
-        eddie.huang@mediatek.com, ijc+devicetree@hellion.org.uk,
-        jason@lakedaemon.net, pawel.moll@arm.com,
-        linux-arm-kernel@lists.infradead.org, tglx@linutronix.de
-In-Reply-To: <1421054073-43468-3-git-send-email-eddie.huang@mediatek.com>
-References: <1421054073-43468-3-git-send-email-eddie.huang@mediatek.com>
+	Mon, 26 Jan 2015 05:44:31 -0500
+Date: Mon, 26 Jan 2015 02:44:13 -0800
+From: tip-bot for Tony Lindgren <tipbot@zytor.com>
+Message-ID: <tip-19f92b237b1700d30b788f00b16a627ffbfdf0e5@git.kernel.org>
+Cc: tony@atomide.com, tglx@linutronix.de, balbi@ti.com, jason@lakedaemon.net,
+        mingo@kernel.org, hpa@zytor.com, b.hutchman@gmail.com,
+        linux-kernel@vger.kernel.org
+Reply-To: balbi@ti.com, tglx@linutronix.de, tony@atomide.com, mingo@kernel.org,
+        jason@lakedaemon.net, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        b.hutchman@gmail.com
+In-Reply-To: <1421187806-6804-2-git-send-email-tony@atomide.com>
+References: <1421187806-6804-2-git-send-email-tony@atomide.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] irqchip: mtk-sysirq:
-  Get irq number from register resource size
-Git-Commit-ID: cdb647a772e9def47594ff8ce7acf47f4d257b2e
+Subject: [tip:irq/core] irqchip: omap-intc:
+  Fix support for dm814 and dm816
+Git-Commit-ID: 19f92b237b1700d30b788f00b16a627ffbfdf0e5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -46,96 +34,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cdb647a772e9def47594ff8ce7acf47f4d257b2e
-Gitweb:     http://git.kernel.org/tip/cdb647a772e9def47594ff8ce7acf47f4d257b2e
-Author:     Yingjoe Chen <yingjoe.chen@mediatek.com>
-AuthorDate: Mon, 12 Jan 2015 17:14:31 +0800
+Commit-ID:  19f92b237b1700d30b788f00b16a627ffbfdf0e5
+Gitweb:     http://git.kernel.org/tip/19f92b237b1700d30b788f00b16a627ffbfdf0e5
+Author:     Tony Lindgren <tony@atomide.com>
+AuthorDate: Tue, 13 Jan 2015 14:23:25 -0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 26 Jan 2015 11:38:22 +0100
+CommitDate: Mon, 26 Jan 2015 11:38:23 +0100
 
-irqchip: mtk-sysirq: Get irq number from register resource size
+irqchip: omap-intc: Fix support for dm814 and dm816
 
-Originally mtk-sysirq hardcoded supported irq number to 224. This
-was fine since all SoCs before support the same number of irqs for
-intpol.
+On dm81xx we have 128 interrupts like am33xx has. Let's add
+compatible flags for dm814x and dm816x, and document the
+existing binding.
 
-However MT8173 intpol support 32 more irq pins, changes to get
-irq number from register resource size to suppor MT8173 properly.
+As the dm81xx are booting in device tree only mode, we can now
+also remove ti81xx_init_irq() legacy function.
 
-Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
-Cc: <srv_heupstream@mediatek.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Olof  Johansson <olof@lixom.net>
-Cc: Robert Richter <rrichter@cavium.com>
-Cc: Mark Brown <broonie@linaro.org>
-Cc: <linux-arm-kernel@lists.infradead.org>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: <marc.zyngier@arm.com>
-Cc: <peter.maydell@linaro.org>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Cc: Brian Hutchinson <b.hutchman@gmail.com>
 Cc: Jason Cooper <jason@lakedaemon.net>
-Link: http://lkml.kernel.org/r/1421054073-43468-3-git-send-email-eddie.huang@mediatek.com
+Link: http://lkml.kernel.org/r/1421187806-6804-2-git-send-email-tony@atomide.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/irqchip/irq-mtk-sysirq.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ .../interrupt-controller/ti,omap-intc-irq.txt      | 28 ++++++++++++++++++++++
+ drivers/irqchip/irq-omap-intc.c                    | 14 ++++-------
+ include/linux/irqchip/irq-omap-intc.h              |  1 -
+ 3 files changed, 33 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/irqchip/irq-mtk-sysirq.c b/drivers/irqchip/irq-mtk-sysirq.c
-index 0b0d2c0..eaf0a71 100644
---- a/drivers/irqchip/irq-mtk-sysirq.c
-+++ b/drivers/irqchip/irq-mtk-sysirq.c
-@@ -23,8 +23,6 @@
- 
- #include "irqchip.h"
- 
--#define MT6577_SYS_INTPOL_NUM	(224)
--
- struct mtk_sysirq_chip_data {
- 	spinlock_t lock;
- 	void __iomem *intpol_base;
-@@ -124,7 +122,8 @@ static int __init mtk_sysirq_of_init(struct device_node *node,
- {
- 	struct irq_domain *domain, *domain_parent;
- 	struct mtk_sysirq_chip_data *chip_data;
--	int ret = 0;
-+	int ret, size, intpol_num;
-+	struct resource res;
- 
- 	domain_parent = irq_find_host(parent);
- 	if (!domain_parent) {
-@@ -132,19 +131,24 @@ static int __init mtk_sysirq_of_init(struct device_node *node,
- 		return -EINVAL;
- 	}
- 
-+	ret = of_address_to_resource(node, 0, &res);
-+	if (ret)
-+		return ret;
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/ti,omap-intc-irq.txt b/Documentation/devicetree/bindings/interrupt-controller/ti,omap-intc-irq.txt
+new file mode 100644
+index 0000000..38ce5d03
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/ti,omap-intc-irq.txt
+@@ -0,0 +1,28 @@
++Omap2/3 intc controller
 +
- 	chip_data = kzalloc(sizeof(*chip_data), GFP_KERNEL);
- 	if (!chip_data)
- 		return -ENOMEM;
++On TI omap2 and 3 the intc interrupt controller can provide
++96 or 128 IRQ signals to the ARM host depending on the SoC.
++
++Required Properties:
++- compatible: should be one of
++			"ti,omap2-intc"
++			"ti,omap3-intc"
++			"ti,dm814-intc"
++			"ti,dm816-intc"
++			"ti,am33xx-intc"
++
++- interrupt-controller : Identifies the node as an interrupt controller
++- #interrupt-cells : Specifies the number of cells needed to encode interrupt
++		     source, should be 1 for intc
++- interrupts: interrupt reference to primary interrupt controller
++
++Please refer to interrupts.txt in this directory for details of the common
++Interrupt Controllers bindings used by client devices.
++
++Example:
++	intc: interrupt-controller@48200000 {
++		compatible = "ti,omap3-intc";
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		reg = <0x48200000 0x1000>;
++	};
+diff --git a/drivers/irqchip/irq-omap-intc.c b/drivers/irqchip/irq-omap-intc.c
+index c03f140..b444d0e 100644
+--- a/drivers/irqchip/irq-omap-intc.c
++++ b/drivers/irqchip/irq-omap-intc.c
+@@ -380,14 +380,6 @@ void __init omap3_init_irq(void)
+ 	set_handle_irq(omap_intc_handle_irq);
+ }
  
--	chip_data->intpol_base = of_io_request_and_map(node, 0, "intpol");
--	if (IS_ERR(chip_data->intpol_base)) {
-+	size = resource_size(&res);
-+	intpol_num = size * 8;
-+	chip_data->intpol_base = ioremap(res.start, size);
-+	if (!chip_data->intpol_base) {
- 		pr_err("mtk_sysirq: unable to map sysirq register\n");
- 		ret = PTR_ERR(chip_data->intpol_base);
- 		goto out_free;
+-void __init ti81xx_init_irq(void)
+-{
+-	omap_nr_irqs = 96;
+-	omap_nr_pending = 4;
+-	omap_init_irq(OMAP34XX_IC_BASE, NULL);
+-	set_handle_irq(omap_intc_handle_irq);
+-}
+-
+ static int __init intc_of_init(struct device_node *node,
+ 			     struct device_node *parent)
+ {
+@@ -399,7 +391,9 @@ static int __init intc_of_init(struct device_node *node,
+ 	if (WARN_ON(!node))
+ 		return -ENODEV;
+ 
+-	if (of_device_is_compatible(node, "ti,am33xx-intc")) {
++	if (of_device_is_compatible(node, "ti,dm814-intc") ||
++	    of_device_is_compatible(node, "ti,dm816-intc") ||
++	    of_device_is_compatible(node, "ti,am33xx-intc")) {
+ 		omap_nr_irqs = 128;
+ 		omap_nr_pending = 4;
  	}
+@@ -415,4 +409,6 @@ static int __init intc_of_init(struct device_node *node,
  
--	domain = irq_domain_add_hierarchy(domain_parent, 0,
--					  MT6577_SYS_INTPOL_NUM, node,
-+	domain = irq_domain_add_hierarchy(domain_parent, 0, intpol_num, node,
- 					  &sysirq_domain_ops, chip_data);
- 	if (!domain) {
- 		ret = -ENOMEM;
+ IRQCHIP_DECLARE(omap2_intc, "ti,omap2-intc", intc_of_init);
+ IRQCHIP_DECLARE(omap3_intc, "ti,omap3-intc", intc_of_init);
++IRQCHIP_DECLARE(dm814x_intc, "ti,dm814-intc", intc_of_init);
++IRQCHIP_DECLARE(dm816x_intc, "ti,dm816-intc", intc_of_init);
+ IRQCHIP_DECLARE(am33xx_intc, "ti,am33xx-intc", intc_of_init);
+diff --git a/include/linux/irqchip/irq-omap-intc.h b/include/linux/irqchip/irq-omap-intc.h
+index e06b370..bda426a 100644
+--- a/include/linux/irqchip/irq-omap-intc.h
++++ b/include/linux/irqchip/irq-omap-intc.h
+@@ -20,7 +20,6 @@
+ 
+ void omap2_init_irq(void);
+ void omap3_init_irq(void);
+-void ti81xx_init_irq(void);
+ 
+ int omap_irq_pending(void);
+ void omap_intc_save_context(void);
