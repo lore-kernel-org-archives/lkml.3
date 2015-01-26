@@ -1,71 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410AbbAZKKA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 05:10:00 -0500
-Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:48033 "EHLO
-	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbbAZKJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 05:09:58 -0500
-Date: Mon, 26 Jan 2015 11:09:55 +0100
-From: Sylvain Rochet <sylvain.rochet@finsecur.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, peda@axentia.se
-Message-ID: <20150126100955.GA18907@gradator.net>
-References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
- <1422265331-23236-1-git-send-email-wenyou.yang@atmel.com>
+	id S1754699AbbAZKLE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 05:11:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33928 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754674AbbAZKK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 05:10:58 -0500
+Message-ID: <54C612A5.2000208@redhat.com>
+Date: Mon, 26 Jan 2015 11:10:45 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1422265331-23236-1-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 172.16.8.13
-X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
-Subject: Re: [PATCH v2 07/12] pm: at91: the standby mode uses the same sram
- function as the suspend to memory mode
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
+To: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
+CC: Stathis Voukelatos <stathisv70@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "abrestic@chromium.org" <abrestic@chromium.org>
+Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
+References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk> <54C22E68.1080601@redhat.com> <54C60DB8.1060900@linn.co.uk>
+In-Reply-To: <54C60DB8.1060900@linn.co.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wenyou,
+Hi Stathis,
 
+On 01/26/2015 10:49 AM, Stathis Voukelatos wrote:
+> On 23/01/15 11:20, Daniel Borkmann wrote:
+>> On 01/23/2015 11:07 AM, Stathis Voukelatos wrote:
+>>> This patch adds support the Ethernet Packet Sniffer H/W module
+>>> developed by Linn Products Ltd and found in the IMG Pistachio SoC.
+>>> The module allows Ethernet packets to be parsed, matched against
+>>> a user-defined pattern and timestamped. It sits between a 100M
+>>> Ethernet MAC and PHY and is completely passive with respect to
+>>> Ethernet frames.
+>>>
+>>> Matched packet bytes and timestamp values are returned through a
+>>> FIFO. Timestamps are provided to the module through an externally
+>>> generated Gray-encoded counter.
+>>>
+>>> The command pattern for packet matching is stored in module RAM
+>>> and consists of a sequence of 16-bit entries. Each entry includes
+>>> an 8-bit command code and and 8-bit data value. Valid command
+>>> codes are:
+>>> 0 - Don't care
+>>> 1 - Match: packet data must match command string byte
+>>> 2 - Copy: packet data will be copied to FIFO
+>>> 3 - Match/Stamp: if packet data matches string byte, a timestamp
+>>>                    is copied into the FIFO
+>>> 4 - Copy/Done: packet data will be copied into the FIFO.
+>>>                  This command terminates the command string.
+>>>
+>>> The driver consists of two modules:
+>>> - Core: it provides an API to user space using the Generic Netlink
+>>>           framework. Specific backend implementations, like the
+>>>           Ethernet Packet Sniffer, register one or more channels
+>>>           with the Core. For each channel a Genl family is created.
+>>>           User space can access a channel by sending Genl messages
+>>>           to the Genl family associated with the channel. Packet
+>>>           matching events are multicast.
+>>>
+>>> - Ethernet Packet Sniffer backend: provides the driver for the
+>>>           Linn Ethernet Packet Sniffer H/W modules.
+>>>
+>>> The split between a core and backend modules allows software-only
+>>> implementations to be added for platforms where no H/W support
+>>> is available.
+>>>
+>>> Based on 3.19-rc5
+>>>
+>>> Signed-off-by: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
+>> Please have a look at packet sockets, they offer already all the
+>> functionality (if not more) your driver interface to the user space
+>> resembles, are transparent to the underlying hardware, and easily
+>> can cope with 100Mbit.
+>>
+>> If I understand this correctly, you are effectively introducing a
+>> parallel API *next* to packet sockets to user space that we have to
+>> maintain forever ...
+>>
+>> Thanks !
+>
+> Hello Daniel. Thank you for your feedback.
+> Packet sockets could also be used for the driver interface to
+> user space, however I think that both approaches would require the same
+> amount of maintenance. We need to maintain a protocol consisting of
+> a set of messages or commands that user space can use to communicate
+> with the driver in order to configure the H/W and retrieve results.
+> We could use packet sockets to send those messages  too, but I thought
+> netlink already provides a message exchange framework that we could
+> make use of.
 
-On Mon, Jan 26, 2015 at 05:42:11PM +0800, Wenyou Yang wrote:
-> +static int at91_pm_verify_clocks(suspend_state_t state)
->  {
->  	unsigned long scsr;
->  	int i;
->  
-> +	/* For PM_SUSPEND_STANDBY, skip verifying the clock */
-> +	if (state == PM_SUSPEND_STANDBY)
-> +		return 1;
-> +
+When using packet sockets and your driver as a backend feeding them,
+users can see that there's an extra capturing/monitoring netdev present,
+all libpcap-based tools such as tcpdump et al would work out of the box
+w/o adapting any code, and as an admin you can also see what users/tools
+are making of use of the device through packet sockets. I couldn't parse
+the exact motivation from the commit message of why avoiding all this is
+better?
 
-In my opinion we should use the select() already in place in 
-at91_pm_enter() to do that:
-
->  static int at91_pm_enter(suspend_state_t state)
->  {
->  	at91_pinctrl_gpio_suspend();
->  
->  	switch (state) {
-     (...)
-> +	case PM_SUSPEND_MEM:
-
-	/*
-	 * Ensure that clocks are in a valid state.
-	 */
-	if (!at91_pm_verify_clocks())
-		goto error;
-	/* FALLTHROUGH */
-
-> +	case PM_SUSPEND_STANDBY:
->  		/*
-> -		 * Suspend-to-RAM is like STANDBY plus slow clock mode, so
-
-
-Sylvain
+Thanks,
+Daniel
