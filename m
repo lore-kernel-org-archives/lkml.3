@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534AbbAZPWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 10:22:33 -0500
-Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:45368 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751771AbbAZPWa (ORCPT
+	id S1755520AbbAZPYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 10:24:06 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:41748 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752698AbbAZPYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 10:22:30 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3622:3865:3870:5007:6120:6261:7875:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cake09_6cc88943a1450
-X-Filterd-Recvd-Size: 1692
-Date: Mon, 26 Jan 2015 10:22:26 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-        Dominik Vogt <vogt@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
-Message-ID: <20150126102226.6f76b2ab@gandalf.local.home>
-In-Reply-To: <20150126150319.GF4968@osiris>
-References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
-	<1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
-	<20150126093701.699763dc@gandalf.local.home>
-	<20150126150319.GF4968@osiris>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Mon, 26 Jan 2015 10:24:04 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Mon, 26 Jan 2015 10:24:01 -0500
+To: Johan Hovold <johan@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] USB: cp210x: add ID for RUGGEDCOM USB Serial Console
+Message-ID: <20150126152401.GT30245@csclub.uwaterloo.ca>
+References: <20150121202427.GA4451@csclub.uwaterloo.ca>
+ <20150126124034.GC2465@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150126124034.GC2465@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015 16:03:19 +0100
-Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
-
-> Actually they should be mutually exclusive. I just merged them "just in case".
+On Mon, Jan 26, 2015 at 01:40:34PM +0100, Johan Hovold wrote:
+> On Wed, Jan 21, 2015 at 03:24:27PM -0500, Lennart Sorensen wrote:
+> > Added the USB serial console device ID for Siemens Ruggedcom devices
+> > which have a USB port for their serial console.
+> > 
+> > Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+> > ---
+> >  drivers/usb/serial/cp210x.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+> > index f4c56fc..f34e6ba 100644
+> > --- a/drivers/usb/serial/cp210x.c
+> > +++ b/drivers/usb/serial/cp210x.c
+> > @@ -55,6 +55,7 @@ static const struct usb_device_id id_table[] = {
+> >  	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
+> >  	{ USB_DEVICE(0x0846, 0x1100) }, /* NetGear Managed Switch M4100 series, M5300 series, M7100 series */
+> >  	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
+> > +	{ USB_DEVICE(0x0908, 0x01FF) }, /* RUGGEDCOM USB Serial Console */
+> >  	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
 > 
-> So something like this
-> 
-> #ifdef CC_USING_HOTPATCH
-> #define notrace __attribute__((hotpatch(0,0)))
-> #else
-> #define notrace __attribute__((no_instrument_function))
-> #endif
-> 
-> will work as well (just tested).
+> Please try to keep the entries sorted by VID/PID. I fixed it up here and
+> applied.
 
-I think the above change looks cleaner.
+Oh crap, I thought I did.  How ever did I mess that up?  Sorry about that.
 
--- Steve
+-- 
+Len Sorensen
