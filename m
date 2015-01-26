@@ -1,148 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756AbbAZTW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 14:22:27 -0500
-Received: from mga14.intel.com ([192.55.52.115]:15938 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517AbbAZTWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 14:22:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,470,1418112000"; 
-   d="scan'208";a="656710133"
-Date: Mon, 26 Jan 2015 11:23:37 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH 8/8] phy: add driver for TI TUSB1210 ULPI PHY
-Message-ID: <20150126192337.GA13936@psi-dev26.jf.intel.com>
-References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1422025978-178336-9-git-send-email-heikki.krogerus@linux.intel.com>
- <20150124235811.GA24665@psi-dev26.jf.intel.com>
- <20150126125503.GB28539@kuha.fi.intel.com>
+	id S1756267AbbAZTYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 14:24:00 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35071 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517AbbAZTX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 14:23:56 -0500
+Date: Mon, 26 Jan 2015 19:23:44 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20150126192344.GH21293@sirena.org.uk>
+References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1422029330-10971-2-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="R8CP7fzfAHpwDIZp"
 Content-Disposition: inline
-In-Reply-To: <20150126125503.GB28539@kuha.fi.intel.com>
+In-Reply-To: <1422029330-10971-2-git-send-email-ricardo.ribalda@gmail.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 01/18] spi/xilinx: Support for spi mode LSB_FIRST
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heikki,
 
-On Mon, Jan 26, 2015 at 02:55:03PM +0200, Heikki Krogerus wrote:
-> Hi David,
-> 
-> On Sat, Jan 24, 2015 at 03:58:11PM -0800, David Cohen wrote:
-> > > +static int tusb1210_power_on(struct phy *phy)
-> > > +{
-> > > +	struct tusb1210 *tusb = phy_get_drvdata(phy);
-> > > +
-> > > +	gpiod_set_value_cansleep(tusb->gpio_reset, 1);
-> > > +	gpiod_set_value_cansleep(tusb->gpio_cs, 1);
-> > > +
-> > > +	/* Restore eye diagram optimisation value */
-> > > +	ulpi_write(tusb->ulpi, TUSB1210_VENDOR_SPECIFIC2,
-> > > +		   tusb->eye_diagram_tuning);
-> > 
-> > After you power on phy, ulpi bus may not be available right away. In
-> > intel case, phy power on happens during dwc3 power on. ULPI bus is not
-> > available until OTG controller and phy are in sync.
-> > 
-> > In resume, you can't restore eye diagram from here.
-> 
-> I'm sorry but I don't think I understand? Where do we power on the phy
-> before dwc3 is powered on? Or is this a Baytrail-CR specific problem?
-> I can't see any problems with the hardware I have.
+--R8CP7fzfAHpwDIZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You can't see in single accesses. But you may see when running stability
-tests overnight.
+On Fri, Jan 23, 2015 at 05:08:33PM +0100, Ricardo Ribalda Delgado wrote:
+> Hardware supports LSB_FIRST mode. Support it also in the driver.
 
-Anyway, look for dwc3_core_soft_reset() function:
-- dwc3 goes to reset state
-- phy is initialized (or at least gets ready to sync clocks)
-- dwc3 goes out or reset state
+Applied, thanks.
 
-During tusb1210 phy init from dwc3, you shouldn't access ulpi bus.
+--R8CP7fzfAHpwDIZp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> 
-> In any case, this sounds like purely dwc3 issue and not tusb1210
-> issue.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-That's neither purely dwc3's not tusb1210's, that's your problem :)
-Since it's a potential bug introduced by your patch set here.
+iQEcBAEBCAAGBQJUxpQ/AAoJECTWi3JdVIfQzhQH/1DmOTqHDDxN11dZIkiaQbB/
+xczfP5xpaq/cTq11hOpf50Z1ID7kg1o/hQQUyf9Wk4hhC/sex0j6ZKyZlzJqnndU
+83Q+KTCBKs3SPnUasjpB3tADR4IHTwV4nNcs9esas8GhbY1l3KBH8qZVIiKVOQOT
+cQe3+x87xDTQoxRtLchNIlGHCzj8fwmVoV2LTQHS++AFj2zVKiEc1xr/l53VeJaE
+5+XNQkygJ8fjBNvv4OGRj81TB+lagu/2w3yms99Y2VO1QBp0l47sWPLbfilYTzd1
+JYEolfYmvn3zvOP+UxUe+1GeARSaqnf3klQ2SLHqc1e78lShV/EBSCzp/y23Lss=
+=mJq6
+-----END PGP SIGNATURE-----
 
-> 
-> > > +static int tusb1210_probe(struct ulpi *ulpi)
-> > > +{
-> > > +	struct gpio_desc *gpio;
-> > > +	struct tusb1210 *tusb;
-> > > +	int ret;
-> > > +
-> > > +	tusb = devm_kzalloc(&ulpi->dev, sizeof(*tusb), GFP_KERNEL);
-> > > +	if (!tusb)
-> > > +		return -ENOMEM;
-> > > +
-> > > +	gpio = devm_gpiod_get(&ulpi->dev, "reset");
-> > > +	if (!IS_ERR(gpio)) {
-> > > +		ret = gpiod_direction_output(gpio, 0);
-> > > +		if (ret)
-> > > +			return ret;
-> > > +		tusb->gpio_reset = gpio;
-> > > +	}
-> > 
-> > You cannot proceed with probe if gpio reset is not available. Different
-> > from CS, it's a mandatory pin to toggle in order to power on/off phy and
-> > get it in sync with OTG controller.
-> 
-> Well, let's check -ENOENT and -ENODEV return values separately. The
-> reset pin is not used on all platforms so getting this gpio is
-> optional. This is the case even with some Intel's platforms using
-> TUSB1210.
-
-I doublechecked the tusb1210 datasheet. Despite the power on sequence
-mentions RESET toggling as required, it has a comment later on that it
-can be tied to VDDIO.
-So as you mentioned, it'd be better to ignore -ENOENT and -ENODEV and
-raise error otherwise.
-
-> 
-> > > +
-> > > +	gpio = devm_gpiod_get(&ulpi->dev, "cs");
-> > > +	if (!IS_ERR(gpio)) {
-> > > +		ret = gpiod_direction_output(gpio, 0);
-> > > +		if (ret)
-> > > +			return ret;
-> > > +		tusb->gpio_cs = gpio;
-> > > +	}
-> > > +
-> > > +	/* Store initial eye diagram optimisation value */
-> > > +	ret = ulpi_read(ulpi, TUSB1210_VENDOR_SPECIFIC2);
-> > 
-> > It's unclear if ulpi is accessible at this point. You can't read it at
-> > this point.
-> 
-> We wouldn't have reached this point if ulpi wasn't accessible.
-> Registering the ulpi interface would have already failed so no driver
-> would have been probed.
-
-You have a chicken/egg problem here:
-- dwc3 needs phy to complete soft reset during probe
-- tusb1210 needs dwc3 soft reset completed to be accessible via ULPI
-
-Can you share how tusb1210 is connected on the platform you're using as
-test for this patch? I don't think this driver would work reliably with
-this device:
-http://liliputing.com/2014/11/trekstor-launches-first-android-tablet-based-intels-irda-reference-design.html
-
-Br, David
-
-> 
-> 
-> Thanks!
-> 
-> -- 
-> heikki
+--R8CP7fzfAHpwDIZp--
