@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465AbbA0L1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 06:27:42 -0500
-Received: from smtpbg63.qq.com ([103.7.29.150]:52059 "EHLO smtpbg63.qq.com"
+	id S1758142AbbA0LQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:16:15 -0500
+Received: from mail.linn.co.uk ([195.59.102.251]:54305 "EHLO mail.linn.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755780AbbA0L1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 06:27:39 -0500
-X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Jan 2015 06:27:39 EST
-X-QQ-mid: bizesmtp7t1422357399t363t289
-X-QQ-SSF: 01400000000000F0FPF2
-X-QQ-FEAT: JNrLgFxDiy2Z/G1AEgubCjy4ztnBf2nDNABpmOEAejHgdmfFYyB+ywEXBUliR
-	j8N9GDzkT0+5dfnvsYdmSJx6JTJ5yShlR54x5CSocuf/3MKeoKiNEnDHpGZxkPkwxaTI5yH
-	pbcIESD5Ys39T0yOoQu5tX1HmFczKFp4zA0HxrcszOUMKK/FUShzvUXok9z0kMe8NfdsyvR
-	1nN++qXARzxdX6WzAEO3p
-X-QQ-GoodBg: 2
-Subject: Re: [PATCH] irqchip: GICv3: ITS: Allocate enough memory for the full range of DeviceID
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Content-Type: multipart/signed; boundary="Apple-Mail=_68C08ABB-8EFD-46D9-9FC8-200D2360885D"; protocol="application/pgp-signature"; micalg=pgp-sha512
-X-Pgp-Agent: GPGMail 2.5b4
-From: Chen Baozi <chenbaozi@kylinos.com.cn>
-In-Reply-To: <1422327961-19733-1-git-send-email-baozich@gmail.com>
-Date: Tue, 27 Jan 2015 19:15:16 +0800
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>
-Message-Id: <15CDAC06-1E2B-4545-93E8-CBB4B47E2707@kylinos.com.cn>
-References: <1422327961-19733-1-git-send-email-baozich@gmail.com>
-To: =?utf-8?B?6ZmI6bKN5a2c?= <baozich@gmail.com>
-X-Mailer: Apple Mail (2.1993)
-X-QQ-SENDSIZE: 520
+	id S1754203AbbA0LQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 06:16:12 -0500
+Message-ID: <54C7736C.8090704@linn.co.uk>
+Date: Tue, 27 Jan 2015 11:15:56 +0000
+From: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Daniel Borkmann <dborkman@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "abrestic@chromium.org" <abrestic@chromium.org>
+Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
+References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk> <54C22E68.1080601@redhat.com> <54C60DB8.1060900@linn.co.uk> <54C612A5.2000208@redhat.com>
+In-Reply-To: <54C612A5.2000208@redhat.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.2.10.219]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Daniel,
 
---Apple-Mail=_68C08ABB-8EFD-46D9-9FC8-200D2360885D
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
-	charset=us-ascii
+On 26/01/15 10:10, Daniel Borkmann wrote:
+>> Hello Daniel. Thank you for your feedback.
+>> Packet sockets could also be used for the driver interface to
+>> user space, however I think that both approaches would require the same
+>> amount of maintenance. We need to maintain a protocol consisting of
+>> a set of messages or commands that user space can use to communicate
+>> with the driver in order to configure the H/W and retrieve results.
+>> We could use packet sockets to send those messages  too, but I thought
+>> netlink already provides a message exchange framework that we could
+>> make use of.
+>
+> When using packet sockets and your driver as a backend feeding them,
+> users can see that there's an extra capturing/monitoring netdev present,
+> all libpcap-based tools such as tcpdump et al would work out of the box
+> w/o adapting any code, and as an admin you can also see what users/tools
+> are making of use of the device through packet sockets. I couldn't parse
+> the exact motivation from the commit message of why avoiding all this is
+> better?
+>
+> Thanks,
+> Daniel
+>
+>
+Just wanted to clarify some implementation details for your approach.
+- The driver would need to create and register two net_device instances.
+One for sniffing Ethernet TX packets and one for RX.
+- Would the control interface for the sniffer in that case need to be
+through private socket ioctls (ie SIOCDEVPRIVATE + x ioctl ids)?
+- For each ethernet packet that matches the command string the sniffer
+returns some data bytes and optionally a timestamp (depending on the
+command string). Would a new protocol need to be added in
+<linux/if_ether.h> in order to deliver that data to user space through
+a packet socket?
 
-On Jan 27, 2015, at 11:06, Chen Baozi <baozich@gmail.com> wrote:
-> 
-> The ITS table allocator is only allocating a single page per table.
-> This works fine for most things, but leads to silent lack of
-> interrupt delivery if we end-up with a device that has an ID that is
-> out of the range defined by a single page of memory. Even worse, depending
-> on the page size, behaviour changes, which is not a very good experience.
-> 
-> A solution is actually to allocate memory for the full range of ID that
-> the ITS supports. A massive waste memory wise, but at least a safe bet.
-> 
-> This patch has been tested on the Phytium SoC.
-> 
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+Thanks,
+Stathis
 
-Failed to clarify that Marc is the author of this patch.
-
-Sorry for the mistake.
-
-Cheers,
-
-Baozi.
-
-
---Apple-Mail=_68C08ABB-8EFD-46D9-9FC8-200D2360885D
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename=signature.asc
-Content-Type: application/pgp-signature;
-	name=signature.asc
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - https://gpgtools.org
-
-iQIcBAEBCgAGBQJUx3NJAAoJEA9jpU/ZEyvnLIEP/jHVyddng9Ve/lLXgtJODX3z
-0P3P2jpTiL6wJg/9O6Q0V06CC74e7lSr9ONOcSZHwLIgdzULwftzpqoI9sWyio6N
-sWoY5Q/iVPT5CwfD5ZveXpRM2/mw54ERwIyn/pYyAUmR2vNds9PMf/ZysOLg9gvq
-xl+F7fv0lULq88E0tpaKXvs7bkWPo8PoDzc22fRLi7BH53Zi03MKQ4PMPJ+FSEve
-XOKpzdp1+B0IzS55poCJ7/nFnMbZqktshrbK5Nz8kD8iuTKsVBbIzJye5yteluAB
-rO/BFz+DSWBpuHkJYTPXrH30t9DSxFXWcg6YBWjPzXCdET7Pg8pblbsgx6h8FdR2
-fRT4NAOSFb/VrwqZpMOCGaJZCSIDZdY80XRncul8KaA35N9gOWF13j/X/1F9aASx
-xj4Mrxuz1nGTF52igiHWCpxplQBO9Aq+jnulP6M+o7wiATIPycbEVYvSU/qLufJH
-WoUgANP4id99Cdx3ugTFiXW49SFXT3wKKUsVRsh5GB0j2MEllMNR6Y6cz0njSpvP
-nCHC2ctsJszO6LcFvpJYp53Pcq/BpQxA6Kt/WeIbGtEqHEIr0aPy+N64mPV1Btig
-NoGuWV0i5hPjsS6eRc6QsAhhjYFIX1lJ9O1S/3tFupG9FpeX0/zSEXiu7eWI9GAw
-Vd7iVKdu4mI4lgK+5buZ
-=0Y4A
------END PGP SIGNATURE-----
-
---Apple-Mail=_68C08ABB-8EFD-46D9-9FC8-200D2360885D--
