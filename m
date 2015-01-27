@@ -1,91 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932631AbbA0Tw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 14:52:57 -0500
-Received: from mail.lysator.liu.se ([130.236.254.3]:45685 "EHLO
-	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932557AbbA0Twz (ORCPT
+	id S1759616AbbA0Tuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 14:50:52 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:48341 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759493AbbA0Tuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 14:52:55 -0500
-From: Peter Rosin <peda@lysator.liu.se>
-To: alsa-devel@alsa-project.org
-Cc: Peter Rosin <peda@axentia.se>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Clemens Ladisch <clemens@ladisch.de>,
-        Lars-Peter Clausen <lars@metafoo.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7 RESEND] ASoC: pcm512x: Support SND_SOC_DAIFMT_CBM_CFS
-Date: Tue, 27 Jan 2015 20:50:48 +0100
-Message-Id: <1422388248-25722-8-git-send-email-peda@lysator.liu.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1422388248-25722-1-git-send-email-peda@lysator.liu.se>
-References: <1422388248-25722-1-git-send-email-peda@lysator.liu.se>
+	Tue, 27 Jan 2015 14:50:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150127094103.GK651@moon>
+References: <20150127094103.GK651@moon>
+Date: Tue, 27 Jan 2015 11:50:49 -0800
+X-Google-Sender-Auth: BhssPOfcCZCh15j1Hi37zD5cTqc
+Message-ID: <CAGXu5jJ0oNeMq+gibuHfB-j_ZooGnuZ_o1aCoMO=qMWen+HQUw@mail.gmail.com>
+Subject: Re: [PATCH] docs: procs -- Describe /proc/<pid>/map_files entry
+From: Kees Cook <keescook@chromium.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Calvin Owens <calvinowens@fb.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Peter Feiner <pfeiner@google.com>,
+        Pavel Emelyanov <xemul@openvz.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Rosin <peda@axentia.se>
+On Tue, Jan 27, 2015 at 1:41 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Kees Cook <keescook@chromium.org>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: "Kirill A. Shutemov" <kirill@shutemov.name>
+> CC: Calvin Owens <calvinowens@fb.com>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> CC: Al Viro <viro@zeniv.linux.org.uk>
+> CC: Peter Feiner <pfeiner@google.com>
+> CC: Pavel Emelyanov <xemul@openvz.org>
+> ---
+>
+> Gentlemen, could you please take a look once time permit.
+> Which questions this text raises so I could add more info
+> here (how we use it in criu, ptrace_may_access guards?)
+>
+>  Documentation/filesystems/proc.txt |   23 +++++++++++++++++++++++
+>  1 file changed, 23 insertions(+)
+>
+> Index: linux-2.6.git/Documentation/filesystems/proc.txt
+> ===================================================================
+> --- linux-2.6.git.orig/Documentation/filesystems/proc.txt
+> +++ linux-2.6.git/Documentation/filesystems/proc.txt
+> @@ -42,6 +42,7 @@ Table of Contents
+>    3.6  /proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
+>    3.7   /proc/<pid>/task/<tid>/children - Information about task children
+>    3.8   /proc/<pid>/fdinfo/<fd> - Information about opened file
+> +  3.9   /proc/<pid>/map_files - Information about memory mapped files
+>
+>    4    Configuring procfs
+>    4.1  Mount options
+> @@ -1763,6 +1764,28 @@ pair provide additional information part
+>         with TIMER_ABSTIME option which will be shown in 'settime flags', but 'it_value'
+>         still exhibits timer's remaining time.
+>
+> +3.9    /proc/<pid>/map_files - Information about memory mapped files
+> +---------------------------------------------------------------------
+> +This directory consists of simbolic links which represent memory mapped files
+> +the process is carrying. A typical output is like the following
+> +
+> +     | lr-------- 1 root root 64 Jan 27 11:24 333c600000-333c620000 -> /usr/lib64/ld-2.18.so
+> +     | lr-------- 1 root root 64 Jan 27 11:24 333c81f000-333c820000 -> /usr/lib64/ld-2.18.so
+> +     | lr-------- 1 root root 64 Jan 27 11:24 333c820000-333c821000 -> /usr/lib64/ld-2.18.so
+> +     | ...
+> +     | lr-------- 1 root root 64 Jan 27 11:24 35d0421000-35d0422000 -> /usr/lib64/libselinux.so.1
+> +     | lr-------- 1 root root 64 Jan 27 11:24 400000-41a000 -> /usr/bin/ls
+> +
+> +The name of a link is virtual memory bounds a particular map exhibits, i.e.
+> +vm_area_struct::vm_start-vm_area_struct::vm_end.
+> +
+> +The main purpose of map_files directory is to be able to retrieve a set of
+> +memory mapped files in a fast way instead of parsing /proc/<pid>/maps or
+> +/proc/<pid>/smaps which contain a way more records. Same time one can open(2)
+> +mappings from the listings of two processes and comparing inodes figure out
+> +which anonymous memory areas are actually shared.
 
-Signed-off-by: Peter Rosin <peda@axentia.se>
----
- sound/soc/codecs/pcm512x.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+Thanks for details! I still don't understand how this is used for
+checkpoint/restore when the mmap offset isn't shown. Can't a process
+map, say 4K of a file, from different offsets, and it would show up
+as:
 
-diff --git a/sound/soc/codecs/pcm512x.c b/sound/soc/codecs/pcm512x.c
-index 7f45cc468fa1..33aa18c8c88e 100644
---- a/sound/soc/codecs/pcm512x.c
-+++ b/sound/soc/codecs/pcm512x.c
-@@ -486,6 +486,7 @@ static int pcm512x_dai_startup(struct snd_pcm_substream *substream,
- 
- 	switch (pcm512x->fmt & SND_SOC_DAIFMT_MASTER_MASK) {
- 	case SND_SOC_DAIFMT_CBM_CFM:
-+	case SND_SOC_DAIFMT_CBM_CFS:
- 		return pcm512x_dai_startup_master(substream, dai);
- 
- 	case SND_SOC_DAIFMT_CBS_CFS:
-@@ -992,6 +993,8 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 	struct pcm512x_priv *pcm512x = snd_soc_codec_get_drvdata(codec);
- 	int alen;
- 	int gpio;
-+	int clock_output;
-+	int master_mode;
- 	int ret;
- 
- 	dev_dbg(codec->dev, "hw_params %u Hz, %u channels\n",
-@@ -1040,6 +1043,12 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 		}
- 		return 0;
- 	case SND_SOC_DAIFMT_CBM_CFM:
-+		clock_output = PCM512x_BCKO | PCM512x_LRKO;
-+		master_mode = PCM512x_RLRK | PCM512x_RBCK;
-+		break;
-+	case SND_SOC_DAIFMT_CBM_CFS:
-+		clock_output = PCM512x_BCKO;
-+		master_mode = PCM512x_RBCK;
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -1136,7 +1145,7 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 
- 	ret = regmap_update_bits(pcm512x->regmap, PCM512x_BCLK_LRCLK_CFG,
- 				 PCM512x_BCKP | PCM512x_BCKO | PCM512x_LRKO,
--				 PCM512x_BCKO | PCM512x_LRKO);
-+				 clock_output);
- 	if (ret != 0) {
- 		dev_err(codec->dev, "Failed to enable clock output: %d\n", ret);
- 		return ret;
-@@ -1144,7 +1153,7 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 
- 	ret = regmap_update_bits(pcm512x->regmap, PCM512x_MASTER_MODE,
- 				 PCM512x_RLRK | PCM512x_RBCK,
--				 PCM512x_RLRK | PCM512x_RBCK);
-+				 master_mode);
- 	if (ret != 0) {
- 		dev_err(codec->dev, "Failed to enable master mode: %d\n", ret);
- 		return ret;
+400000-401000 -> /some/file
+401000-402000 -> /some/file
+
+but there'd be no way to know how to restore that mapping?
+
+Are these symlinks "regular" symlinks, or are they something more
+special that bypasses VFS? If it bypasses VFS, I think adding and open
+check with PTRACE_ATTACH is needed, since now you're able to _modify_
+the memory space of the target process instead of just reading it.
+
+-Kees
+
+-Kees
+
 -- 
-1.7.10.4
-
+Kees Cook
+Chrome OS Security
