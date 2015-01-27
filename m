@@ -1,142 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbbA0F1i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 00:27:38 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:57486 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbbA0F1f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 00:27:35 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
-        "Vilchez, Patrice" <Patrice.VILCHEZ@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "peda@axentia.se" <peda@axentia.se>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 6/7] pm: at91: add achieve the mpddrc peripheral ID and
- the DDR clock ID support
-Thread-Topic: [PATCH 6/7] pm: at91: add achieve the mpddrc peripheral ID and
- the DDR clock ID support
-Thread-Index: AQHQOVAXP3hkhHrFDkmf9/mv0N9foZzRw6wAgAGpv3A=
-Date: Tue, 27 Jan 2015 05:24:51 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BFD35D20@penmbx01>
-References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
- <1422266896-24666-1-git-send-email-wenyou.yang@atmel.com>
- <20150126114956.GE23313@leverpostej>
-In-Reply-To: <20150126114956.GE23313@leverpostej>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751869AbbA0FZF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 00:25:05 -0500
+Received: from ozlabs.org ([103.22.144.67]:50396 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751024AbbA0FZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 00:25:03 -0500
+Date: Tue, 27 Jan 2015 16:24:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Oleksij Rempel <linux@rempel-privat.de>
+Subject: linux-next: manual merge of the clockevents tree with the arm tree
+Message-ID: <20150127162454.4138ecd8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/qnI+bpDSe4yC=hkFhWdFYP3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+--Sig_/qnI+bpDSe4yC=hkFhWdFYP3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for your review.
+Hi Daniel,
 
-> -----Original Message-----
-> From: Mark Rutland [mailto:mark.rutland@arm.com]
-> Sent: Monday, January 26, 2015 7:50 PM
-> To: Yang, Wenyou
-> Cc: Ferre, Nicolas; linux@arm.linux.org.uk; sylvain.rochet@finsecur.com; Vilchez,
-> Patrice; linux-kernel@vger.kernel.org; alexandre.belloni@free-electrons.com;
-> peda@axentia.se; linux-arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH 6/7] pm: at91: add achieve the mpddrc peripheral ID and the
-> DDR clock ID support
-> 
-> On Mon, Jan 26, 2015 at 10:08:16AM +0000, Wenyou Yang wrote:
-> > The patch achieves the mpddr controller peripheral ID and the DDR
-> > clock ID from the dts file.
-> >
-> > They will be used in the future to disable the mpddr controller'c
-> > clock the and DDR clock to decrease the power consumption during suspending.
-> >
-> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> > ---
-> >  arch/arm/mach-at91/generic.h |    2 ++
-> >  arch/arm/mach-at91/setup.c   |   24 ++++++++++++++++++++++++
-> >  2 files changed, 26 insertions(+)
-> >
-> > diff --git a/arch/arm/mach-at91/generic.h
-> > b/arch/arm/mach-at91/generic.h index 41796bf..3c72a3e 100644
-> > --- a/arch/arm/mach-at91/generic.h
-> > +++ b/arch/arm/mach-at91/generic.h
-> > @@ -47,6 +47,8 @@ void __init at91_sam9x5_pm_init(void) { }  struct
-> > at91_pm_struct {
-> >  	unsigned long uhp_udp_mask;
-> >  	int memctrl;
-> > +	u32 mpddrc_id[2];
-> > +	u32 ddrck_id;
-> >  };
-> >
-> >  #endif /* _AT91_GENERIC_H */
-> > diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-> > index 7924663..a306f95 100644
-> > --- a/arch/arm/mach-at91/setup.c
-> > +++ b/arch/arm/mach-at91/setup.c
-> > @@ -363,6 +363,27 @@ void __init at91_ioremap_matrix(u32 base_addr)
-> >  		panic(pr_fmt("Impossible to ioremap at91_matrix_base\n"));  }
-> >
-> > +static u32 at91_of_get_ddr_id(struct device_node *np, char *name) {
-> > +	struct of_phandle_args clkspec;
-> > +	u32 id;
-> > +	int index;
-> > +	int rc;
-> > +
-> > +	index = of_property_match_string(np, "clock-names", name);
-> > +	rc = of_parse_phandle_with_args(np, "clocks", "#clock-cells", index,
-> &clkspec);
-> > +	if (rc)
-> > +		return 0;
-> > +
-> > +	rc = of_property_read_u32(clkspec.np, "reg", &id);
-> > +	if (rc)
-> > +		return 0;
-> > +
-> > +	of_node_put(clkspec.np);
-> > +
-> > +	return id;
-> > +}
-> 
-> This doesn't look right to me. This assumes the format of the clock provider node,
-> which invalidates the point of having the abstraction in the first place.
-> 
-> > +
-> >  struct at91_ramc_of_data {
-> >  	u8 ramc_type;
-> >  };
-> > @@ -400,6 +421,9 @@ static void at91_dt_ramc(void)
-> >  		of_data = of_id->data;
-> >  		at91_pm_data.memctrl = of_data->ramc_type;
-> >
-> > +		at91_pm_data.mpddrc_id[idx] = at91_of_get_ddr_id(np, "mpddr");
-> > +		at91_pm_data.ddrck_id = at91_of_get_ddr_id(np, "ddrck");
-> > +
-> 
-> Why do you need these here?
-> 
-> Surely the logic for poking any clocks should live in the relevant clock controller
-> drivers?
-Thank for your suggestion.
+Today's linux-next merge of the clockevents tree got a conflict in
+drivers/clocksource/Kconfig between commit e074ff86e8b4 ("ARM: 8251/1:
+clocksource: enable pxa_timer for SA-1100 platform") from the arm tree
+and commit e4940cd76934 ("ARM: clocksource: add asm9260_timer driver")
+from the clockevents tree.
 
-I thought that it is reasonable to get the DDR controller's peripheral id from the DDR device node.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Anyway, let me think over how to do it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> Mark.
+diff --cc drivers/clocksource/Kconfig
+index 6b6f1e4950df,4f2240c9c145..000000000000
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@@ -232,11 -236,13 +239,20 @@@ config CLKSRC_MIPS_GI
+  	depends on MIPS_GIC
+  	select CLKSRC_OF
+ =20
+ +config CLKSRC_PXA
+ +	def_bool y if ARCH_PXA || ARCH_SA1100
+ +	select CLKSRC_OF if USE_OF
+ +	help
+ +	  This enables OST0 support available on PXA and SA-11x0
+ +	  platforms.
+ +
++ config ASM9260_TIMER
++ 	bool "Alphascale ASM9260 timer driver"
++ 	select CLKSRC_MMIO
++ 	select CLKSRC_OF
++ 	default y if MACH_ASM9260
++ 	help
++ 	  This enables build of a clocksource and clockevent driver for
++ 	  the 32-bit System Timer hardware available on a Alphascale ASM9260.
++=20
+  endmenu
 
-Best Regards,
-Wenyou Yang
+--Sig_/qnI+bpDSe4yC=hkFhWdFYP3
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUxyErAAoJEMDTa8Ir7ZwVKiwP/23qVpZJLYCDSkhtvh8KrJMY
+Gmmc6Nqq5GTejIf5co7iDWSlYsK6I15tSGWv8wAo3KBf664aGmYXZvXuliyj9Cae
+7PhhvNcBxONure0gh+a0HUyYC4pVw2prVezCJTmFUTTA+iXLUj5zF1J7pvjjSL4u
+8doj+B2edjytovsP0bCxmSAbhtWrSqLPi3mXKz+octJCkppcdrGP3bAhwBWbG1rw
+sIsoRXiY6IkfXTYYFG1dSdM1VY4IIXDNRPZisDRjAu/GhnnCAeiFn91oUxhtlilX
+fskkBhZYhdlRiXl9kDBv1o3nATVzLwskzxQLwB1gHBYDQi0+plnHiUC8z0G/SWGt
+ke0tpDQWwdVzvSrlPsAhPTSOHBUHNzptH1V3LdbAt1eCKBPj2nnfD4tdIlU3QXao
+rs5ywekvumnrPjR3yG3FFowTHIgOZ8tTa/vMYiMhWYu1sVn40yDhcTjDZnx6rB4j
+OFuzBqFay9U03MoFiJfRO4fbpZ/6638QFwQM/nkWFWxYyFo9y/iVxGEfviTAdrPn
+CfquRTIgCxdsHKWjSTD83WIvxH5C7pQFDYnVRnUNe6EvzIAR/aPSAzEmxFLss5PQ
+jX9ez0NEfyFWUuQxl+NZcgOMJF+MJuiPeWPCD9wps+iKJTsfyNOfuup5nwUSWigx
+e8mTqhzAycxuVPeF6Jd6
+=7jsQ
+-----END PGP SIGNATURE-----
+
+--Sig_/qnI+bpDSe4yC=hkFhWdFYP3--
