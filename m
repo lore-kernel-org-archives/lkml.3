@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709AbbA0MYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:24:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35432 "EHLO
+	id S1758747AbbA0MUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:20:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35438 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758711AbbA0MUC (ORCPT
+	with ESMTP id S932544AbbA0MUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:02 -0500
+	Tue, 27 Jan 2015 07:20:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+Cc: Jisheng Zhang <jszhang@marvell.com>,
         Michael Turquette <mturquette@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 112/126] clk: at91: keep slow clk enabled to prevent system hang
-Date: Tue, 27 Jan 2015 12:16:57 +0000
-Message-Id: <1422361031-19364-113-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 113/126] clk: berlin: bg2q: remove non-exist "smemc" gate clock
+Date: Tue, 27 Jan 2015 12:16:58 +0000
+Message-Id: <1422361031-19364-114-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,83 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
+From: Jisheng Zhang <jszhang@marvell.com>
 
-commit dca1a4b5ff6e2c25adeff366eb06270dadeab3db upstream.
+commit b71e8ecd57c8aae5b1815782c47b74ffe3efc09a upstream.
 
-All slow clk users are not properly claiming it (get + prepare + enable)
-before using it.
-If all users properly claiming this clock release it, the clock is
-disabled, but faulty users still depends on it, and the system hangs.
+The "smemc" clock is removed on BG2Q SoCs. In fact, bit19 of clkenable
+register is for nfc. Current code use bit19 for non-exist "smemc"
+incorrectly, this prevents eMMC from working due to the sdhci's
+"core" clk is still gated.
 
-This fix prevents the slow clock from being disabled, and should solve the
-hanging issue, but offending drivers should be patched to properly claim
-this clock.
-
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Reported-by: Bo Shen <voice.shen@atmel.com>
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 Signed-off-by: Michael Turquette <mturquette@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/clk/at91/clk-slow.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/clk/berlin/bg2q.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/clk/at91/clk-slow.c b/drivers/clk/at91/clk-slow.c
-index 0300c46ee247..ef8d458cd74a 100644
---- a/drivers/clk/at91/clk-slow.c
-+++ b/drivers/clk/at91/clk-slow.c
-@@ -70,6 +70,7 @@ struct clk_sam9x5_slow {
+diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
+index 21784e4eb3f0..440ef81ab15c 100644
+--- a/drivers/clk/berlin/bg2q.c
++++ b/drivers/clk/berlin/bg2q.c
+@@ -285,7 +285,6 @@ static const struct berlin2_gate_data bg2q_gates[] __initconst = {
+ 	{ "pbridge",	"perif",	15, CLK_IGNORE_UNUSED },
+ 	{ "sdio",	"perif",	16, CLK_IGNORE_UNUSED },
+ 	{ "nfc",	"perif",	18 },
+-	{ "smemc",	"perif",	19 },
+ 	{ "pcie",	"perif",	22 },
+ };
  
- #define to_clk_sam9x5_slow(hw) container_of(hw, struct clk_sam9x5_slow, hw)
- 
-+static struct clk *slow_clk;
- 
- static int clk_slow_osc_prepare(struct clk_hw *hw)
- {
-@@ -357,6 +358,8 @@ at91_clk_register_sam9x5_slow(void __iomem *sckcr,
- 	clk = clk_register(NULL, &slowck->hw);
- 	if (IS_ERR(clk))
- 		kfree(slowck);
-+	else
-+		slow_clk = clk;
- 
- 	return clk;
- }
-@@ -433,6 +436,8 @@ at91_clk_register_sam9260_slow(struct at91_pmc *pmc,
- 	clk = clk_register(NULL, &slowck->hw);
- 	if (IS_ERR(clk))
- 		kfree(slowck);
-+	else
-+		slow_clk = clk;
- 
- 	return clk;
- }
-@@ -465,3 +470,25 @@ void __init of_at91sam9260_clk_slow_setup(struct device_node *np,
- 
- 	of_clk_add_provider(np, of_clk_src_simple_get, clk);
- }
-+
-+/*
-+ * FIXME: All slow clk users are not properly claiming it (get + prepare +
-+ * enable) before using it.
-+ * If all users properly claiming this clock decide that they don't need it
-+ * anymore (or are removed), it is disabled while faulty users are still
-+ * requiring it, and the system hangs.
-+ * Prevent this clock from being disabled until all users are properly
-+ * requesting it.
-+ * Once this is done we should remove this function and the slow_clk variable.
-+ */
-+static int __init of_at91_clk_slow_retain(void)
-+{
-+	if (!slow_clk)
-+		return 0;
-+
-+	__clk_get(slow_clk);
-+	clk_prepare_enable(slow_clk);
-+
-+	return 0;
-+}
-+arch_initcall(of_at91_clk_slow_retain);
 -- 
 2.1.4
 
