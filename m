@@ -1,31 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494AbbA0Mnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:43:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35022 "EHLO
+	id S1758469AbbA0MRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:17:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34982 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758421AbbA0MR4 (ORCPT
+	with ESMTP id S1758421AbbA0MRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:56 -0500
+	Tue, 27 Jan 2015 07:17:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Jerry Hoemann <jerry.hoemann@hp.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ken Helias <kenhelias@firemail.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 034/126] perf session: Do not fail on processing out of order event
-Date: Tue, 27 Jan 2015 12:15:39 +0000
-Message-Id: <1422361031-19364-35-git-send-email-luis.henriques@canonical.com>
+        Jan Kara <jack@suse.cz>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 035/126] fsnotify: next_i is freed during fsnotify_unmount_inodes.
+Date: Tue, 27 Jan 2015 12:15:40 +0000
+Message-Id: <1422361031-19364-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -38,93 +31,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Jerry Hoemann <jerry.hoemann@hp.com>
 
-commit f61ff6c06dc8f32c7036013ad802c899ec590607 upstream.
+commit 6424babfd68dd8a83d9c60a5242d27038856599f upstream.
 
-Linus reported perf report command being interrupted due to processing
-of 'out of order' event, with following error:
+During file system stress testing on 3.10 and 3.12 based kernels, the
+umount command occasionally hung in fsnotify_unmount_inodes in the
+section of code:
 
-  Timestamp below last timeslice flush
-  0x5733a8 [0x28]: failed to process type: 3
+                spin_lock(&inode->i_lock);
+                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
+                        spin_unlock(&inode->i_lock);
+                        continue;
+                }
 
-I could reproduce the issue and in my case it was caused by one CPU
-(mmap) being behind during record and userspace mmap reader seeing the
-data after other CPUs data were already stored.
+As this section of code holds the global inode_sb_list_lock, eventually
+the system hangs trying to acquire the lock.
 
-This is expected under some circumstances because we need to limit the
-number of events that we queue for reordering when we receive a
-PERF_RECORD_FINISHED_ROUND or when we force flush due to memory
-pressure.
+Multiple crash dumps showed:
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1417016371-30249-1-git-send-email-jolsa@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-[zhangzhiqiang: backport to 3.10:
- - adjust context
- - commit f61ff6c06d struct events_stats was defined in tools/perf/util/event.h
-   while 3.10 stable defined in tools/perf/util/hist.h.
- - 3.10 stable there is no pr_oe_time() which used for debug.
- - After the above adjustments, becomes same to the original patch:
-   https://github.com/torvalds/linux/commit/f61ff6c06dc8f32c7036013ad802c899ec590607
-]
-Signed-off-by: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
-[ luis: backported to 3.16: used zhangzhiqiang backport to 3.10 ]
+The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
+back at itself.  As this is not the value of list upon entry to the
+function, the kernel never exits the loop.
+
+To help narrow down problem, the call to list_del_init in
+inode_sb_list_del was changed to list_del.  This poisons the pointers in
+the i_sb_list and causes a kernel to panic if it transverse a freed
+inode.
+
+Subsequent stress testing paniced in fsnotify_unmount_inodes at the
+bottom of the list_for_each_entry_safe loop showing next_i had become
+free.
+
+We believe the root cause of the problem is that next_i is being freed
+during the window of time that the list_for_each_entry_safe loop
+temporarily releases inode_sb_list_lock to call fsnotify and
+fsnotify_inode_delete.
+
+The code in fsnotify_unmount_inodes attempts to prevent the freeing of
+inode and next_i by calling __iget.  However, the code doesn't do the
+__iget call on next_i
+
+	if i_count == 0 or
+	if i_state & (I_FREEING | I_WILL_FREE)
+
+The patch addresses this issue by advancing next_i in the above two cases
+until we either find a next_i which we can __iget or we reach the end of
+the list.  This makes the handling of next_i more closely match the
+handling of the variable "inode."
+
+The time to reproduce the hang is highly variable (from hours to days.) We
+ran the stress test on a 3.10 kernel with the proposed patch for a week
+without failure.
+
+During list_for_each_entry_safe, next_i is becoming free causing
+the loop to never terminate.  Advance next_i in those cases where
+__iget is not done.
+
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Ken Helias <kenhelias@firemail.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/perf/util/hist.h    | 1 +
- tools/perf/util/session.c | 6 ++++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ fs/notify/inode_mark.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 742f49a85725..c6d42fa4d3dd 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -47,6 +47,7 @@ struct events_stats {
- 	u32 nr_invalid_chains;
- 	u32 nr_unknown_id;
- 	u32 nr_unprocessable_samples;
-+	u32 nr_unordered_events;
- };
+diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
+index 74825be65b7b..fbb9dfb7b1d2 100644
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -288,20 +288,25 @@ void fsnotify_unmount_inodes(struct list_head *list)
+ 		spin_unlock(&inode->i_lock);
  
- enum hist_column {
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 64a186edc7be..7a4517c4510d 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -638,8 +638,7 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 		return -ETIME;
+ 		/* In case the dropping of a reference would nuke next_i. */
+-		if ((&next_i->i_sb_list != list) &&
+-		    atomic_read(&next_i->i_count)) {
++		while (&next_i->i_sb_list != list) {
+ 			spin_lock(&next_i->i_lock);
+-			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
++			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE)) &&
++						atomic_read(&next_i->i_count)) {
+ 				__iget(next_i);
+ 				need_iput = next_i;
++				spin_unlock(&next_i->i_lock);
++				break;
+ 			}
+ 			spin_unlock(&next_i->i_lock);
++			next_i = list_entry(next_i->i_sb_list.next,
++						struct inode, i_sb_list);
+ 		}
  
- 	if (timestamp < s->ordered_samples.last_flush) {
--		printf("Warning: Timestamp below last timeslice flush\n");
--		return -EINVAL;
-+		s->stats.nr_unordered_events++;
- 	}
+ 		/*
+-		 * We can safely drop inode_sb_list_lock here because we hold
+-		 * references on both inode and next_i.  Also no new inodes
+-		 * will be added since the umount has begun.
++		 * We can safely drop inode_sb_list_lock here because either
++		 * we actually hold references on both inode and next_i or
++		 * end of list.  Also no new inodes will be added since the
++		 * umount has begun.
+ 		 */
+ 		spin_unlock(&inode_sb_list_lock);
  
- 	if (!list_empty(sc)) {
-@@ -1136,6 +1135,9 @@ static void perf_session__warn_about_errors(const struct perf_session *session,
- 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
- 			    session->stats.nr_unprocessable_samples);
- 	}
-+
-+	if (session->stats.nr_unordered_events != 0)
-+		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
- }
- 
- volatile int session_done;
 -- 
 2.1.4
 
