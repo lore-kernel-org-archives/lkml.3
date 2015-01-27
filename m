@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932996AbbA0Mqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:46:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34946 "EHLO
+	id S1758419AbbA0MRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:17:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34952 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758359AbbA0MRh (ORCPT
+	with ESMTP id S1758372AbbA0MRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:37 -0500
+	Tue, 27 Jan 2015 07:17:38 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Jay Foad <jay.foad@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 030/126] HID: roccat: potential out of bounds in pyra_sysfs_write_settings()
-Date: Tue, 27 Jan 2015 12:15:35 +0000
-Message-Id: <1422361031-19364-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 031/126] mm: Don't count the stack guard page towards RLIMIT_STACK
+Date: Tue, 27 Jan 2015 12:15:36 +0000
+Message-Id: <1422361031-19364-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,52 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 606185b20caf4c57d7e41e5a5ea4aff460aef2ab upstream.
+commit 690eac53daff34169a4d74fc7bfbd388c4896abb upstream.
 
-This is a static checker fix.  We write some binary settings to the
-sysfs file.  One of the settings is the "->startup_profile".  There
-isn't any checking to make sure it fits into the
-pyra->profile_settings[] array in the profile_activated() function.
+Commit fee7e49d4514 ("mm: propagate error from stack expansion even for
+guard page") made sure that we return the error properly for stack
+growth conditions.  It also theorized that counting the guard page
+towards the stack limit might break something, but also said "Let's see
+if anybody notices".
 
-I added a check to pyra_sysfs_write_settings() in both places because
-I wasn't positive that the other callers were correct.
+Somebody did notice.  Apparently android-x86 sets the stack limit very
+close to the limit indeed, and including the guard page in the rlimit
+check causes the android 'zygote' process problems.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+So this adds the (fairly trivial) code to make the stack rlimit check be
+against the actual real stack size, rather than the size of the vma that
+includes the guard page.
+
+Reported-and-tested-by: Chih-Wei Huang <cwhuang@android-x86.org>
+Cc: Jay Foad <jay.foad@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-roccat-pyra.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ mm/mmap.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/hid-roccat-pyra.c b/drivers/hid/hid-roccat-pyra.c
-index 1a07e07d99a0..47d7e74231e5 100644
---- a/drivers/hid/hid-roccat-pyra.c
-+++ b/drivers/hid/hid-roccat-pyra.c
-@@ -35,6 +35,8 @@ static struct class *pyra_class;
- static void profile_activated(struct pyra_device *pyra,
- 		unsigned int new_profile)
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 4813ecec5a94..9f7b97613ca4 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2060,14 +2060,17 @@ static int acct_stack_growth(struct vm_area_struct *vma, unsigned long size, uns
  {
-+	if (new_profile >= ARRAY_SIZE(pyra->profile_settings))
-+		return;
- 	pyra->actual_profile = new_profile;
- 	pyra->actual_cpi = pyra->profile_settings[pyra->actual_profile].y_cpi;
- }
-@@ -257,9 +259,11 @@ static ssize_t pyra_sysfs_write_settings(struct file *fp,
- 	if (off != 0 || count != PYRA_SIZE_SETTINGS)
- 		return -EINVAL;
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	struct rlimit *rlim = current->signal->rlim;
+-	unsigned long new_start;
++	unsigned long new_start, actual_size;
  
--	mutex_lock(&pyra->pyra_lock);
--
- 	settings = (struct pyra_settings const *)buf;
-+	if (settings->startup_profile >= ARRAY_SIZE(pyra->profile_settings))
-+		return -EINVAL;
-+
-+	mutex_lock(&pyra->pyra_lock);
+ 	/* address space limit tests */
+ 	if (!may_expand_vm(mm, grow))
+ 		return -ENOMEM;
  
- 	retval = pyra_set_settings(usb_dev, settings);
- 	if (retval) {
+ 	/* Stack limit test */
+-	if (size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
++	actual_size = size;
++	if (size && (vma->vm_flags & (VM_GROWSUP | VM_GROWSDOWN)))
++		actual_size -= PAGE_SIZE;
++	if (actual_size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
+ 		return -ENOMEM;
+ 
+ 	/* mlock limit tests */
 -- 
 2.1.4
 
