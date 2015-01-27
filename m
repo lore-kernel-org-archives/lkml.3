@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015AbbA0WZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 17:25:44 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:55022 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754296AbbA0WZa (ORCPT
+	id S933103AbbA0W2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 17:28:55 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:58962 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbbA0W2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 17:25:30 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>
-Cc: Heiko Stuebner <heiko@sntech.de>, Lunxue Dai <lunxue.dai@rock-chips.com>,
-        Jisheng Zhang <jszhang@marvell.com>, Dinh Nguyen <dinguyen@altera.com>,
-        Doug Anderson <dianders@chromium.org>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/2] watchdog: dw_wdt: Try to get a 30 second watchdog by default
-Date: Tue, 27 Jan 2015 14:25:17 -0800
-Message-Id: <1422397517-20426-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <1422397517-20426-1-git-send-email-dianders@chromium.org>
-References: <1422397517-20426-1-git-send-email-dianders@chromium.org>
+	Tue, 27 Jan 2015 17:28:53 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: David Miller <davem@davemloft.net>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH net-next v8 0/4] net: Add Keystone NetCP ethernet driver support
+Date: Tue, 27 Jan 2015 23:28:42 +0100
+Message-ID: <25883654.BLFxICW9P0@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54BE7A00.2020205@ti.com>
+References: <1421367007-19744-1-git-send-email-m-karicheri2@ti.com> <20150119.151106.822126941934010309.davem@davemloft.net> <54BE7A00.2020205@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:HMwlm9+ghKHxT9jxqwJW8o9A2iyU2nMLhCBScvgJl5DCcmlNKLG
+ 8RKGnKcZEkeDC1ycRuwkxqA5fbG5y6s9Zhw6vDKDTyDz7GhTWMRtIJ/uLkoSYaGZwkiRLSn
+ YKe0DCIaBqPtiuZS2n3hDJPaumhmTUsmg1pQYGLX8v9nb8iaNSkySR44rkBDcjMgTFub139
+ mxGvfjcpA6yWdneJPyM4A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_wdt_set_top() function takes in a value in seconds.  In
-dw_wdt_open() we were calling it with a value that's supposed to
-represent the maximum value programmed into the "top" register with a
-comment saying that we were trying to set the watchdog to its maximum
-value.  Instead we ended up setting the watchdog to ~15 seconds.
+On Tuesday 20 January 2015 10:53:36 Murali Karicheri wrote:
+> On 01/19/2015 03:11 PM, David Miller wrote:
+> > From: Murali Karicheri<m-karicheri2@ti.com>
+> > Date: Thu, 15 Jan 2015 19:10:03 -0500
+> >
+> >> The Network Coprocessor (NetCP) is a hardware accelerator that processes
+> >> Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
+> >> switch sub-module to send and receive packets. NetCP also includes a packet
+> >> accelerator (PA) module to perform packet classification operations such as
+> >> header matching, and packet modification operations such as checksum
+> >> generation. NetCP can also optionally include a Security Accelerator(SA)
+> >> capable of performing IPSec operations on ingress/egress packets.
+> >>
+> >> Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
+> >> includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
+> >> 1Gb/s rates per Ethernet port.
+> >>
+> >> Both GBE and XGBE network processors supported using common driver. It
+> >> is also designed to handle future variants of NetCP.
+> >
+> > Series applied to net-next, thanks.
+> David,
+> 
+> Thanks a lot for applying this series. This helps us move forward to 
+> work on the next set of patches.
 
-Let's fix this.  However, setting things to the "max" gives me an 86
-second watchdog in the system I'm looking at.  86 seconds feels a
-little too long.  We'll explicitly choose 30 seconds as a more
-reasonable value.
+Hi Murali,
 
-NOTE: Ideally this driver should be transitioned to be a real watchdog
-driver.  Then we could use "watchdog_init_timeout" and let the timeout
-be specified in a number of ways (device tree, module parameter, etc).
-This patch should be considered a bit of a stopgap solution.
+Building an ARM 'allmodconfig' kernel now runs into two separate problems
+from your driver:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
----
-Changes in v3: None
-Changes in v2: None
+- you have two module_init() instances in one module, which conflict.
 
- drivers/watchdog/dw_wdt.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+- you have two files that are linked into more than one module, so building
+  both TI_CPSW and TI_KEYSTONE_NETCP in the same kernel fails.
 
-diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-index 3dde6de..d0bb949 100644
---- a/drivers/watchdog/dw_wdt.c
-+++ b/drivers/watchdog/dw_wdt.c
-@@ -51,6 +51,8 @@
- /* The maximum TOP (timeout period) value that can be set in the watchdog. */
- #define DW_WDT_MAX_TOP		15
- 
-+#define DW_WDT_DEFAULT_SECONDS	30
-+
- static bool nowayout = WATCHDOG_NOWAYOUT;
- module_param(nowayout, bool, 0);
- MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
-@@ -179,9 +181,9 @@ static int dw_wdt_open(struct inode *inode, struct file *filp)
- 	if (!dw_wdt_is_enabled()) {
- 		/*
- 		 * The watchdog is not currently enabled. Set the timeout to
--		 * the maximum and then start it.
-+		 * something reasonable and then start it.
- 		 */
--		dw_wdt_set_top(DW_WDT_MAX_TOP);
-+		dw_wdt_set_top(DW_WDT_DEFAULT_SECONDS);
- 		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
- 		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
- 	}
--- 
-2.2.0.rc0.207.ga3a616c
+The answer to both of these is probably to have separate loadable modules,
+but you might be able to come up with a different solution.
 
+	Arnd
