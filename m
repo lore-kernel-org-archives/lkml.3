@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724AbbA0Dh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 22:37:27 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:26837 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752345AbbA0DhA (ORCPT
+	id S1752356AbbA0Dng (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 22:43:36 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:42391 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbbA0Dnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 22:37:00 -0500
-From: Bo Shen <voice.shen@atmel.com>
-To: Mark Brown <broonie@kernel.org>, <nicolas.ferre@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <linux-sound@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
-Subject: [PATCH v3 2/2] binding: wm8904: add new compatible string
-Date: Tue, 27 Jan 2015 11:36:40 +0800
-Message-ID: <1422329800-28481-2-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 2.3.0.rc0
-In-Reply-To: <1422329800-28481-1-git-send-email-voice.shen@atmel.com>
-References: <1422329800-28481-1-git-send-email-voice.shen@atmel.com>
+	Mon, 26 Jan 2015 22:43:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CA+8MBb+bWiX2eayjBQHsvCjTp3t8H9=AviF9AkV6CC--cC_fYQ@mail.gmail.com>
+References: <20150123203145.GA6691@google.com>
+	<CA+8MBbKnT=mE3kev8BRPq0GeTgHx8WVa6o54tJuBX_XXLpHdYQ@mail.gmail.com>
+	<CAErSpo7y1wWStjcEOH9xTiM-As8+QeMynZ5ENrL9v3X2PvQCcw@mail.gmail.com>
+	<CA+8MBb+bWiX2eayjBQHsvCjTp3t8H9=AviF9AkV6CC--cC_fYQ@mail.gmail.com>
+Date: Mon, 26 Jan 2015 19:43:32 -0800
+X-Google-Sender-Auth: ICTGnCF7mbvwasbYyfsiPZ1Ad58
+Message-ID: <CAE9FiQXj07CtOJ6uBZomNyhAH9ANanbbUSo51td6G-UB5Rmmow@mail.gmail.com>
+Subject: Re: [GIT PULL] PCI fixes for v3.19
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Richard Zhu <Richard.Zhu@freescale.com>,
+        Marek Kordik <kordikmarek@gmail.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Andreas Hartmann <andihartmann@freenet.de>,
+        Alexey Voronkov <zermond@gmail.com>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "wlf,wm8912" compatible string is used for wm8912, which
-share driver with wm8904, however, the data type is different.
+On Mon, Jan 26, 2015 at 1:24 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> On Mon, Jan 26, 2015 at 1:02 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> Sorry for the inconvenience.  Can you collect a complete dmesg log and
+>> "lspci -vv" output, too (from the kernel with the reverted commit)?
+>> That will have more useful information than just /proc/iomem.
+>
+> Full dmesg, lspci -vv, and bonus .config (CONFIG_PCI_IOV is indeed
+> not set)
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
----
-Changes in v3: None
-Changes in v2: None
+Sorry for the problem.
 
- Documentation/devicetree/bindings/sound/wm8904.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Can you please get boot bog with "debug ignore_logleve"?
 
-diff --git a/Documentation/devicetree/bindings/sound/wm8904.txt b/Documentation/devicetree/bindings/sound/wm8904.txt
-index e99f409..66bf261 100644
---- a/Documentation/devicetree/bindings/sound/wm8904.txt
-+++ b/Documentation/devicetree/bindings/sound/wm8904.txt
-@@ -3,7 +3,7 @@ WM8904 audio CODEC
- This device supports I2C only.
- 
- Required properties:
--  - compatible: "wlf,wm8904"
-+  - compatible: "wlf,wm8904" or "wlf,wm8912"
-   - reg: the I2C address of the device.
-   - clock-names: "mclk"
-   - clocks: reference to
--- 
-2.3.0.rc0
+we should get print out from
 
++               dev_printk(KERN_DEBUG, &dev->dev, "%pR clipped to %pR\n",
++                                &orig_res, res);
+
+
+Thanks
+
+Yinghai
