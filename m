@@ -1,42 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132AbbA0MJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:09:12 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55781 "EHLO mail.skyhub.de"
+	id S932159AbbA0MON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:14:13 -0500
+Received: from axentia.se ([87.96.186.132]:37803 "EHLO EMAIL.axentia.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752118AbbA0MJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:09:08 -0500
-Date: Tue, 27 Jan 2015 13:08:55 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        linux-mmc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
-Message-ID: <20150127120855.GA9254@pd.tnic>
-References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de>
- <CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com>
- <54C77E69.7050600@ahsoftware.de>
+	id S1752514AbbA0MOK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 07:14:10 -0500
+From: Peter Rosin <peda@axentia.se>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Wenyou Yang <wenyou.yang@atmel.com>,
+        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
+        "linux@maxim.org.za" <linux@maxim.org.za>
+Subject: RE: [PATCH v3 03/13] pm: at91: Workaround DDRSDRC self-refresh bug
+ with LPDDR1 memories.
+Thread-Topic: [PATCH v3 03/13] pm: at91: Workaround DDRSDRC self-refresh bug
+ with LPDDR1 memories.
+Thread-Index: AQHQOiScCWovuWdO7UeEO88uR6g8+JzT2Pog
+Date: Tue, 27 Jan 2015 12:14:11 +0000
+Message-ID: <fd04e7c80f6841368ea1953d544f3386@EMAIL.axentia.se>
+References: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
+ <1422338006-3371-1-git-send-email-wenyou.yang@atmel.com>
+ <54C7675D.8000204@cogentembedded.com>
+In-Reply-To: <54C7675D.8000204@cogentembedded.com>
+Accept-Language: en-US, sv-SE
+Content-Language: sv-SE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.2.1]
+x-gfi-smtp-submission: 1
+x-gfi-smtp-hellodomain: EMAIL.axentia.se
+x-gfi-smtp-remoteip: 192.168.2.5
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <54C77E69.7050600@ahsoftware.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 01:02:49PM +0100, Alexander Holler wrote:
-> Look at the source at the message which is printed just before and decide
-> which one you find more informational / useful.
+Sergei Shtylyov wrote:
+> Hello.
 
-I find such a message absolutely useless. Also, if it flies off and
-printk buffer gets overwritten, it serves you sh*t. IOW, listen to what
-Richard tells you.
+Hi!
 
--- 
-Regards/Gruss,
-    Boris.
+> On 1/27/2015 8:53 AM, Wenyou Yang wrote:
+> 
+> > From: Peter Rosin <peda@axentia.se>
+> 
+> > The DDRSDR controller fails miserably to put LPDDR1 memories in
+> > self-refresh. Force the controller to think it has DDR2 memories
+> > during the self-refresh period, as the DDR2 self-refresh spec is
+> > equivalent to LPDDR1, and is correctly implemented in the controller.
+> 
+> > Assume that the second controller has the same fault, but that is
+> > untested.
+> 
+> > Signed-off-by: Peter Rosin <peda@axentia.se>
+> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > ---
+> >   arch/arm/mach-at91/pm_slowclock.S  |   43
+> +++++++++++++++++++++++++++++++-----
+> >   include/soc/at91/at91sam9_ddrsdr.h |    2 +-
+> >   2 files changed, 39 insertions(+), 6 deletions(-)
+> 
+> > diff --git a/arch/arm/mach-at91/pm_slowclock.S
+> > b/arch/arm/mach-at91/pm_slowclock.S
+> > index e2bfaf5..1155217 100644
+> > --- a/arch/arm/mach-at91/pm_slowclock.S
+> > +++ b/arch/arm/mach-at91/pm_slowclock.S
+> [...]
+> > @@ -108,14 +118,26 @@ ddr_sr_enable:
+> >
+> >   	/* figure out if we use the second ram controller */
+> >   	cmp	ramc1, #0
+> > -	ldrne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+> > -	strne	tmp2, .saved_sam9_lpr1
+> > -	bicne	tmp2, #AT91_DDRSDRC_LPCB
+> > -	orrne	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
+> > +	beq	ddr_no_2nd_ctrl
+> > +
+> > +	ldr	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
+> > +	str	tmp2, .saved_sam9_mdr1
+> > +	bic	tmp2, tmp2, #~AT91_DDRSDRC_MD
+> > +	cmp	tmp2, #AT91_DDRSDRC_MD_LOW_POWER_DDR
+> > +	ldreq	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
+> > +	biceq	tmp2, tmp2, #AT91_DDRSDRC_MD
+> 
+>     Didn't you forget ~? Either that, or ~ above is not needed, I think.
 
-ECO tip #101: Trim your mails when you reply.
---
+The code is correct, the first bic with ~ clears bits not in the relevant
+field in order to compare if LPDDR mode is active. The second bic(eq)
+w/o ~ clears the field, to make way for the bits in the below orreq
+when actually changing the register content into DDR2 mode.
+
+> > +	orreq	tmp2, tmp2, #AT91_DDRSDRC_MD_DDR2
+> > +	streq	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
+> > +
+> > +	ldr	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+> > +	str	tmp2, .saved_sam9_lpr1
+> > +	bic	tmp2, #AT91_DDRSDRC_LPCB
+> 
+>     Didn't you forget ~? And isn't it 3-operand instruction (as seen in the above
+> code)?
+
+The logic for the LPR register is from the old code, the "only" thing
+I did to it was changing the instruction sequence to not have the
+???ne form, i.e. ldrne, strne, bicne, orrne became ldr, str, bic, orr
+with a jump around it instead. So, the original code also had a two
+argument bic(ne), which indeed is strange, and I don't know why
+there is no warning from the assembler. Since there is no warning,
+my guess is that the assembler somehow mends it? Or does the
+patch actually break the second controller? It would be a surprise
+it the assembler handles 2-operand bicne differently from a
+2-operand bic, no?
+
+> > +	orr	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
+> 
+>     Only 2 operands?
+
+Same argument as above. I didn't touch it (sort of...)
+
+Should I update the patch and fix this collateral 2-operand problem as
+well? To me, it feels like a separate patch, no?
+
+> [...]
+> 
+> WBR, Sergei
+
+Cheers,
+Peter
