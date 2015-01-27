@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348AbbA0MRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:17:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34901 "EHLO
+	id S933021AbbA0MrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:47:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34906 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758294AbbA0MRY (ORCPT
+	with ESMTP id S1758326AbbA0MR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:24 -0500
+	Tue, 27 Jan 2015 07:17:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 023/126] arm64/efi: add missing call to early_ioremap_reset()
-Date: Tue, 27 Jan 2015 12:15:28 +0000
-Message-Id: <1422361031-19364-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 024/126] exit: fix race between wait_consider_task() and wait_task_zombie()
+Date: Tue, 27 Jan 2015 12:15:29 +0000
+Message-Id: <1422361031-19364-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -29,68 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 0e63ea48b4d8035dd0e91a3fa6fb79458b47adfb upstream.
+commit 3245d6acab981a2388ffb877c7ecc97e763c59d4 upstream.
 
-The early ioremap support introduced by patch bf4b558eba92
-("arm64: add early_ioremap support") failed to add a call to
-early_ioremap_reset() at an appropriate time. Without this call,
-invocations of early_ioremap etc. that are done too late will go
-unnoticed and may cause corruption.
+wait_consider_task() checks EXIT_ZOMBIE after EXIT_DEAD/EXIT_TRACE and
+both checks can fail if we race with EXIT_ZOMBIE -> EXIT_DEAD/EXIT_TRACE
+change in between, gcc needs to reload p->exit_state after
+security_task_wait().  In this case ->notask_error will be wrongly
+cleared and do_wait() can hang forever if it was the last eligible
+child.
 
-This is exactly what happened when the first user of this feature
-was added in patch f84d02755f5a ("arm64: add EFI runtime services").
-The early mapping of the EFI memory map is unmapped during an early
-initcall, at which time the early ioremap support is long gone.
+Many thanks to Arne who carefully investigated the problem.
 
-Fix by adding the missing call to early_ioremap_reset() to
-setup_arch(), and move the offending early_memunmap() to right after
-the point where the early mapping of the EFI memory map is last used.
+Note: this bug is very old but it was pure theoretical until commit
+b3ab03160dfa ("wait: completely ignore the EXIT_DEAD tasks").  Before
+this commit "-O2" was probably enough to guarantee that compiler won't
+read ->exit_state twice.
 
-Fixes: f84d02755f5a ("arm64: add EFI runtime services")
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-[ luis: backported to 3.16: adjusted context ]
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Arne Goedeke <el@laramies.com>
+Tested-by: Arne Goedeke <el@laramies.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/kernel/efi.c   | 2 +-
- arch/arm64/kernel/setup.c | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ kernel/exit.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
-index c0aead7d1a72..6b6bc795f72d 100644
---- a/arch/arm64/kernel/efi.c
-+++ b/arch/arm64/kernel/efi.c
-@@ -338,6 +338,7 @@ void __init efi_idmap_init(void)
+diff --git a/kernel/exit.c b/kernel/exit.c
+index e5c4668f1799..ab2472332043 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1294,9 +1294,15 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
+ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 				struct task_struct *p)
+ {
++	/*
++	 * We can race with wait_task_zombie() from another thread.
++	 * Ensure that EXIT_ZOMBIE -> EXIT_DEAD/EXIT_TRACE transition
++	 * can't confuse the checks below.
++	 */
++	int exit_state = ACCESS_ONCE(p->exit_state);
+ 	int ret;
  
- 	/* boot time idmap_pg_dir is incomplete, so fill in missing parts */
- 	efi_setup_idmap();
-+	early_memunmap(memmap.map, memmap.map_end - memmap.map);
- }
+-	if (unlikely(p->exit_state == EXIT_DEAD))
++	if (unlikely(exit_state == EXIT_DEAD))
+ 		return 0;
  
- static int __init remap_region(efi_memory_desc_t *md, void **new)
-@@ -395,7 +396,6 @@ static int __init arm64_enter_virtual_mode(void)
+ 	ret = eligible_child(wo, p);
+@@ -1317,7 +1323,7 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 		return 0;
+ 	}
  
- 	/* replace early memmap mapping with permanent mapping */
- 	mapsize = memmap.map_end - memmap.map;
--	early_memunmap(memmap.map, mapsize);
- 	memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
- 						   mapsize);
- 	memmap.map_end = memmap.map + mapsize;
-diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-index 9e03a1485cc3..209070d08ee3 100644
---- a/arch/arm64/kernel/setup.c
-+++ b/arch/arm64/kernel/setup.c
-@@ -390,6 +390,7 @@ void __init setup_arch(char **cmdline_p)
- 	request_standard_resources();
+-	if (unlikely(p->exit_state == EXIT_TRACE)) {
++	if (unlikely(exit_state == EXIT_TRACE)) {
+ 		/*
+ 		 * ptrace == 0 means we are the natural parent. In this case
+ 		 * we should clear notask_error, debugger will notify us.
+@@ -1344,7 +1350,7 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 	}
  
- 	efi_idmap_init();
-+	early_ioremap_reset();
- 
- 	unflatten_device_tree();
- 
+ 	/* slay zombie? */
+-	if (p->exit_state == EXIT_ZOMBIE) {
++	if (exit_state == EXIT_ZOMBIE) {
+ 		/* we don't reap group leaders with subthreads */
+ 		if (!delay_group_leader(p)) {
+ 			/*
 -- 
 2.1.4
 
