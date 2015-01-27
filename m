@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626AbbA0MVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:21:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35510 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932584AbbA0MUb (ORCPT
+	id S1758451AbbA0MXr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:23:47 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:27554 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932554AbbA0MUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:31 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 126/126] ARM: shmobile: sh73a0 legacy: Set .control_parent for all irqpin instances
-Date: Tue, 27 Jan 2015 12:17:11 +0000
-Message-Id: <1422361031-19364-127-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
-References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 27 Jan 2015 07:20:07 -0500
+X-IronPort-AV: E=Sophos;i="5.09,474,1418112000"; 
+   d="scan'208";a="55800223"
+Message-ID: <54C78273.7090700@broadcom.com>
+Date: Tue, 27 Jan 2015 13:20:03 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Alexander Holler <holler@ahsoftware.de>
+CC: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
+References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de>
+In-Reply-To: <1422359304-30321-1-git-send-email-holler@ahsoftware.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt5 -stable review patch.  If anyone has any objections, please let me know.
+On 01/27/15 12:48, Alexander Holler wrote:
+> It's an interesting detail, so inform the user about it.
+>
+> Signed-off-by: Alexander Holler<holler@ahsoftware.de>
+> ---
+>   drivers/mmc/core/bus.c | 4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
+> index 8a1f124..4a60028 100644
+> --- a/drivers/mmc/core/bus.c
+> +++ b/drivers/mmc/core/bus.c
+> @@ -347,6 +347,10 @@ int mmc_add_card(struct mmc_card *card)
+>   			uhs_bus_speed_mode, type, card->rca);
+>   	}
+>
+> +	if (mmc_can_secure_erase_trim(card))
+> +		pr_info("%s: card supports secure erase/trim\n",
+> +			mmc_hostname(card->host));
+> +
 
-------------------
+If you want to expose this info you could also consider doing it in the 
+debugfs folder that is created below.
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+>   #ifdef CONFIG_DEBUG_FS
+>   	mmc_add_card_debugfs(card);
+>   #endif
 
-commit b0ddb319db3d7a1943445f0de0a45c07a7f3457a upstream.
+Regards,
+Arend
 
-The sh73a0 INTC can't mask interrupts properly most likely due to a
-hardware bug. Set the .control_parent flag to delegate masking to the
-parent interrupt controller, like was already done for irqpin1.
-
-Without this, accessing the three-axis digital accelerometer ADXL345
-on kzm9g through /dev/input/event1 causes an interrupt storm, which
-requires a power-cycle to recover from.
-
-This was inspired by a patch for arch/arm/boot/dts/sh73a0.dtsi from
-Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>.
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Fixes: 341eb5465f67437a ("ARM: shmobile: INTC External IRQ pin driver on sh73a0")
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/arm/mach-shmobile/setup-sh73a0.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/arm/mach-shmobile/setup-sh73a0.c b/arch/arm/mach-shmobile/setup-sh73a0.c
-index ad00724a2269..f8584664369a 100644
---- a/arch/arm/mach-shmobile/setup-sh73a0.c
-+++ b/arch/arm/mach-shmobile/setup-sh73a0.c
-@@ -576,6 +576,7 @@ static struct platform_device ipmmu_device = {
- 
- static struct renesas_intc_irqpin_config irqpin0_platform_data = {
- 	.irq_base = irq_pin(0), /* IRQ0 -> IRQ7 */
-+	.control_parent = true,
- };
- 
- static struct resource irqpin0_resources[] = {
-@@ -637,6 +638,7 @@ static struct platform_device irqpin1_device = {
- 
- static struct renesas_intc_irqpin_config irqpin2_platform_data = {
- 	.irq_base = irq_pin(16), /* IRQ16 -> IRQ23 */
-+	.control_parent = true,
- };
- 
- static struct resource irqpin2_resources[] = {
-@@ -667,6 +669,7 @@ static struct platform_device irqpin2_device = {
- 
- static struct renesas_intc_irqpin_config irqpin3_platform_data = {
- 	.irq_base = irq_pin(24), /* IRQ24 -> IRQ31 */
-+	.control_parent = true,
- };
- 
- static struct resource irqpin3_resources[] = {
--- 
-2.1.4
-
+[1] http://lxr.free-electrons.com/ident?i=mmc_add_card_debugfs
