@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374AbbA0GE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 01:04:29 -0500
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:7342 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753071AbbA0GEZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 01:04:25 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>,
-        "'tranmanphong@gmail.com'" <tranmanphong@gmail.com>,
-        "'fabio.estevam@freescale.com'" <fabio.estevam@freescale.com>,
-        "'prime.zeng@huawei.com'" <prime.zeng@huawei.com>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-CC: "Gao, Neil" <Neil.Gao@sonymobile.com>
-Date: Tue, 27 Jan 2015 14:04:21 +0800
-Subject: [RFC] ion:change ion_cma_allocate return error value
-Thread-Topic: [RFC] ion:change ion_cma_allocate return error value
-Thread-Index: AdA59xeNaPys83UbSBCxEwQ2fVLbaQ==
-Message-ID: <35FD53F367049845BC99AC72306C23D1044A02027DF9@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751938AbbA0GRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:17:42 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:45023 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbbA0GRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 01:17:40 -0500
+From: Omar Sandoval <osandov@osandov.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Omar Sandoval <osandov@osandov.com>
+Subject: [PATCH] posix_acl: fix reference leaks in posix_acl_create
+Date: Mon, 26 Jan 2015 22:16:53 -0800
+Message-Id: <0d8672e771b8fc1fef94db4b40b418afc8763c2b.1422338890.git.osandov@osandov.com>
+X-Mailer: git-send-email 2.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch change the error return value from -1 to -ENOMEM,
-so that userspace can get the correct errno, otherwise,
--1 will be -EPERM, userspace will print permission deny for allocation
-failure.
+get_acl gets a reference which we must release in the error cases.
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
 ---
- drivers/staging/android/ion/ion_cma_heap.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ fs/posix_acl.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/android/ion/ion_cma_heap.c b/drivers/staging/android/ion/ion_cma_heap.c
-index f4211f1..55bcaec2 100644
---- a/drivers/staging/android/ion/ion_cma_heap.c
-+++ b/drivers/staging/android/ion/ion_cma_heap.c
-@@ -24,8 +24,6 @@
- #include "ion.h"
- #include "ion_priv.h"
+diff --git a/fs/posix_acl.c b/fs/posix_acl.c
+index 0855f77..f8f3cc2 100644
+--- a/fs/posix_acl.c
++++ b/fs/posix_acl.c
+@@ -555,28 +555,31 @@ posix_acl_create(struct inode *dir, umode_t *mode,
+ 	p = get_acl(dir, ACL_TYPE_DEFAULT);
+ 	if (IS_ERR(p)) {
+ 		if (p == ERR_PTR(-EOPNOTSUPP))
+ 			goto apply_umask;
+ 		return PTR_ERR(p);
+ 	}
  
--#define ION_CMA_ALLOCATE_FAILED -1
--
- struct ion_cma_heap {
- 	struct ion_heap heap;
- 	struct device *dev;
-@@ -59,7 +57,7 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
+ 	if (!p)
+ 		goto apply_umask;
  
- 	info = kzalloc(sizeof(struct ion_cma_buffer_info), GFP_KERNEL);
- 	if (!info)
--		return ION_CMA_ALLOCATE_FAILED;
-+		return -ENOMEM;
+ 	*acl = posix_acl_clone(p, GFP_NOFS);
+-	if (!*acl)
++	if (!*acl) {
++		posix_acl_release(p);
+ 		return -ENOMEM;
++	}
  
- 	info->cpu_addr = dma_alloc_coherent(dev, len, &(info->handle),
- 						GFP_HIGHUSER | __GFP_ZERO);
-@@ -87,7 +85,7 @@ free_mem:
- 	dma_free_coherent(dev, len, info->cpu_addr, info->handle);
- err:
- 	kfree(info);
--	return ION_CMA_ALLOCATE_FAILED;
-+	return -ENOMEM;
- }
+ 	ret = posix_acl_create_masq(*acl, mode);
+ 	if (ret < 0) {
+ 		posix_acl_release(*acl);
++		posix_acl_release(p);
+ 		return -ENOMEM;
+ 	}
  
- static void ion_cma_free(struct ion_buffer *buffer)
+ 	if (ret == 0) {
+ 		posix_acl_release(*acl);
+ 		*acl = NULL;
+ 	}
+ 
+ 	if (!S_ISDIR(*mode)) {
+ 		posix_acl_release(p);
+ 		*default_acl = NULL;
 -- 
 2.2.2
+
