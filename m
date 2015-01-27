@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685AbbA0Mx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:53:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34805 "EHLO
+	id S1758117AbbA0MQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:16:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34802 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077AbbA0MQu (ORCPT
+	with ESMTP id S1758028AbbA0MQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:16:50 -0500
+	Tue, 27 Jan 2015 07:16:49 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 002/126] drm/i915: Don't call intel_prepare_page_flip() multiple times on gen2-4
-Date: Tue, 27 Jan 2015 12:15:07 +0000
-Message-Id: <1422361031-19364-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 003/126] x86_64, vdso: Fix the vdso address randomization algorithm
+Date: Tue, 27 Jan 2015 12:15:08 +0000
+Message-Id: <1422361031-19364-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,83 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 7d47559ee84b3ac206aa9e675606fafcd7c0b500 upstream.
+commit 394f56fe480140877304d342dec46d50dc823d46 upstream.
 
-The flip stall detector kicks in when pending>=INTEL_FLIP_COMPLETE. That
-means if we first call intel_prepare_page_flip() but don't call
-intel_finish_page_flip(), the next stall check will erroneosly think
-the page flip was somehow stuck.
+The theory behind vdso randomization is that it's mapped at a random
+offset above the top of the stack.  To avoid wasting a page of
+memory for an extra page table, the vdso isn't supposed to extend
+past the lowest PMD into which it can fit.  Other than that, the
+address should be a uniformly distributed address that meets all of
+the alignment requirements.
 
-With enough debug spew emitted from the interrupt handler my 830 hangs
-when this happens. My theory is that the previous vblank interrupt gets
-sufficiently delayed that the handler will see the pending bit set in
-IIR, but ISR still has the bit set as well (ie. the flip was processed
-by CS but didn't complete yet). In this case the handler will proceed
-to call intel_check_page_flip() immediately after
-intel_prepare_page_flip(). It then tries to print a backtrace for the
-stuck flip WARN, which apparetly results in way too much debug spew
-delaying interrupt processing further. That then seems to cause an
-endless loop in the interrupt handler, and the machine is dead until
-the watchdog kicks in and reboots. At least limiting the number of
-iterations of the loop in the interrupt handler also prevented the
-hang.
+The current algorithm is buggy: the vdso has about a 50% probability
+of being at the very end of a PMD.  The current algorithm also has a
+decent chance of failing outright due to incorrect handling of the
+case where the top of the stack is near the top of its PMD.
 
-So it seems better to not call intel_prepare_page_flip() without
-immediately calling intel_finish_page_flip(). The IIR/ISR trickery
-avoids races here so this is a perfectly safe thing to do.
+This fixes the implementation.  The paxtest estimate of vdso
+"randomisation" improves from 11 bits to 18 bits.  (Disclaimer: I
+don't know what the paxtest code is actually calculating.)
 
-v2: Fix typo in commit message (checkpatch)
+It's worth noting that this algorithm is inherently biased: the vdso
+is more likely to end up near the end of its PMD than near the
+beginning.  Ideally we would either nix the PMD sharing requirement
+or jointly randomize the vdso and the stack to reduce the bias.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=88381
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=85888
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+In the mean time, this is a considerable improvement with basically
+no risk of compatibility issues, since the allowed outputs of the
+algorithm are unchanged.
+
+As an easy test, doing this:
+
+for i in `seq 10000`
+  do grep -P vdso /proc/self/maps |cut -d- -f1
+done |sort |uniq -d
+
+used to produce lots of output (1445 lines on my most recent run).
+A tiny subset looks like this:
+
+7fffdfffe000
+7fffe01fe000
+7fffe05fe000
+7fffe07fe000
+7fffe09fe000
+7fffe0bfe000
+7fffe0dfe000
+
+Note the suspicious fe000 endings.  With the fix, I get a much more
+palatable 76 repeated addresses.
+
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_irq.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/x86/vdso/vma.c | 45 +++++++++++++++++++++++++++++----------------
+ 1 file changed, 29 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index b54f8563ebbb..085cb5645e66 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -3723,8 +3723,6 @@ static bool i8xx_handle_vblank(struct drm_device *dev,
- 	if ((iir & flip_pending) == 0)
- 		return false;
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 5a5176de8d0a..3ae68edd8c52 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -54,12 +54,17 @@ subsys_initcall(init_vdso);
  
--	intel_prepare_page_flip(dev, plane);
+ struct linux_binprm;
+ 
+-/* Put the vdso above the (randomized) stack with another randomized offset.
+-   This way there is no hole in the middle of address space.
+-   To save memory make sure it is still in the same PTE as the stack top.
+-   This doesn't give that many random bits.
 -
- 	/* We detect FlipDone by looking for the change in PendingFlip from '1'
- 	 * to '0' on the following vblank, i.e. IIR has the Pendingflip
- 	 * asserted following the MI_DISPLAY_FLIP, but ISR is deasserted, hence
-@@ -3734,6 +3732,7 @@ static bool i8xx_handle_vblank(struct drm_device *dev,
- 	if (I915_READ16(ISR) & flip_pending)
- 		return false;
+-   Only used for the 64-bit and x32 vdsos. */
++/*
++ * Put the vdso above the (randomized) stack with another randomized
++ * offset.  This way there is no hole in the middle of address space.
++ * To save memory make sure it is still in the same PTE as the stack
++ * top.  This doesn't give that many random bits.
++ *
++ * Note that this algorithm is imperfect: the distribution of the vdso
++ * start address within a PMD is biased toward the end.
++ *
++ * Only used for the 64-bit and x32 vdsos.
++ */
+ static unsigned long vdso_addr(unsigned long start, unsigned len)
+ {
+ #ifdef CONFIG_X86_32
+@@ -67,22 +72,30 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
+ #else
+ 	unsigned long addr, end;
+ 	unsigned offset;
+-	end = (start + PMD_SIZE - 1) & PMD_MASK;
++
++	/*
++	 * Round up the start address.  It can start out unaligned as a result
++	 * of stack start randomization.
++	 */
++	start = PAGE_ALIGN(start);
++
++	/* Round the lowest possible end address up to a PMD boundary. */
++	end = (start + len + PMD_SIZE - 1) & PMD_MASK;
+ 	if (end >= TASK_SIZE_MAX)
+ 		end = TASK_SIZE_MAX;
+ 	end -= len;
+-	/* This loses some more bits than a modulo, but is cheaper */
+-	offset = get_random_int() & (PTRS_PER_PTE - 1);
+-	addr = start + (offset << PAGE_SHIFT);
+-	if (addr >= end)
+-		addr = end;
++
++	if (end > start) {
++		offset = get_random_int() % (((end - start) >> PAGE_SHIFT) + 1);
++		addr = start + (offset << PAGE_SHIFT);
++	} else {
++		addr = start;
++	}
  
-+	intel_prepare_page_flip(dev, plane);
- 	intel_finish_page_flip(dev, pipe);
+ 	/*
+-	 * page-align it here so that get_unmapped_area doesn't
+-	 * align it wrongfully again to the next page. addr can come in 4K
+-	 * unaligned here as a result of stack start randomization.
++	 * Forcibly align the final address in case we have a hardware
++	 * issue that requires alignment for performance reasons.
+ 	 */
+-	addr = PAGE_ALIGN(addr);
+ 	addr = align_vdso_addr(addr);
  
- 	return true;
-@@ -3908,8 +3907,6 @@ static bool i915_handle_vblank(struct drm_device *dev,
- 	if ((iir & flip_pending) == 0)
- 		return false;
- 
--	intel_prepare_page_flip(dev, plane);
--
- 	/* We detect FlipDone by looking for the change in PendingFlip from '1'
- 	 * to '0' on the following vblank, i.e. IIR has the Pendingflip
- 	 * asserted following the MI_DISPLAY_FLIP, but ISR is deasserted, hence
-@@ -3919,6 +3916,7 @@ static bool i915_handle_vblank(struct drm_device *dev,
- 	if (I915_READ(ISR) & flip_pending)
- 		return false;
- 
-+	intel_prepare_page_flip(dev, plane);
- 	intel_finish_page_flip(dev, pipe);
- 
- 	return true;
+ 	return addr;
 -- 
 2.1.4
 
