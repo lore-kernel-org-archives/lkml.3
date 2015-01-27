@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805AbbA0MZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:25:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35408 "EHLO
+	id S1758707AbbA0MT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:19:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35405 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488AbbA0MTx (ORCPT
+	with ESMTP id S932544AbbA0MTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:19:53 -0500
+	Tue, 27 Jan 2015 07:19:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Songjun Wu <songjun.wu@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 105/126] target: Drop arbitrary maximum I/O size limit
-Date: Tue, 27 Jan 2015 12:16:50 +0000
-Message-Id: <1422361031-19364-106-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 106/126] usb: gadget: udc: atmel: fix possible oops when unloading module
+Date: Tue, 27 Jan 2015 12:16:51 +0000
+Message-Id: <1422361031-19364-107-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -30,170 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Songjun Wu <songjun.wu@atmel.com>
 
-commit 046ba64285a4389ae5e9a7dfa253c6bff3d7c341 upstream.
+commit 5fb694f96e7c19e66b1c55124b98812e32e3efa5 upstream.
 
-This patch drops the arbitrary maximum I/O size limit in sbc_parse_cdb(),
-which currently for fabric_max_sectors is hardcoded to 8192 (4 MB for 512
-byte sector devices), and for hw_max_sectors is a backend driver dependent
-value.
+When unloading the module 'g_hid.ko', the urb request will be dequeued and the
+completion routine will be excuted. If there is no urb packet, the urb request
+will not be added to the endpoint queue and the completion routine pointer in
+urb request is NULL.
 
-This limit is problematic because Linux initiators have only recently
-started to honor block limits MAXIMUM TRANSFER LENGTH, and other non-Linux
-based initiators (eg: MSFT Fibre Channel) can also generate I/Os larger
-than 4 MB in size.
+Accessing to this NULL function pointer will cause the Oops issue reported
+below.
 
-Currently when this happens, the following message will appear on the
-target resulting in I/Os being returned with non recoverable status:
+Add the code to check if the urb request is in the endpoint queue
+or not. If the urb request is not in the endpoint queue, a negative
+error code will be returned.
 
-  SCSI OP 28h with too big sectors 16384 exceeds fabric_max_sectors: 8192
+Here is the Oops log:
 
-Instead, drop both [fabric,hw]_max_sector checks in sbc_parse_cdb(),
-and convert the existing hw_max_sectors into a purely informational
-attribute used to represent the granuality that backend driver and/or
-subsystem code is splitting I/Os upon.
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+pgd = dedf0000
+[00000000] *pgd=3ede5831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 80000007 [#1] ARM
+Modules linked in: g_hid(-) usb_f_hid libcomposite
+CPU: 0 PID: 923 Comm: rmmod Not tainted 3.18.0+ #2
+Hardware name: Atmel SAMA5 (Device Tree)
+task: df6b1100 ti: dedf6000 task.ti: dedf6000
+PC is at 0x0
+LR is at usb_gadget_giveback_request+0xc/0x10
+pc : [<00000000>]    lr : [<c02ace88>]    psr: 60000093
+sp : dedf7eb0  ip : df572634  fp : 00000000
+r10: 00000000  r9 : df52e210  r8 : 60000013
+r7 : df6a9858  r6 : df52e210  r5 : df6a9858  r4 : df572600
+r3 : 00000000  r2 : ffffff98  r1 : df572600  r0 : df6a9868
+Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c53c7d  Table: 3edf0059  DAC: 00000015
+Process rmmod (pid: 923, stack limit = 0xdedf6230)
+Stack: (0xdedf7eb0 to 0xdedf8000)
+7ea0:                                     00000000 c02adbbc df572580 deced608
+7ec0: df572600 df6a9868 df572634 c02aed3c df577c00 c01b8608 00000000 df6be27c
+7ee0: 00200200 00100100 bf0162f4 c000e544 dedf6000 00000000 00000000 bf010c00
+7f00: bf0162cc bf00159c 00000000 df572980 df52e218 00000001 df5729b8 bf0031d0
+[..]
+[<c02ace88>] (usb_gadget_giveback_request) from [<c02adbbc>] (request_complete+0x64/0x88)
+[<c02adbbc>] (request_complete) from [<c02aed3c>] (usba_ep_dequeue+0x70/0x128)
+[<c02aed3c>] (usba_ep_dequeue) from [<bf010c00>] (hidg_unbind+0x50/0x7c [usb_f_hid])
+[<bf010c00>] (hidg_unbind [usb_f_hid]) from [<bf00159c>] (remove_config.isra.6+0x98/0x9c [libcomposite])
+[<bf00159c>] (remove_config.isra.6 [libcomposite]) from [<bf0031d0>] (__composite_unbind+0x34/0x98 [libcomposite])
+[<bf0031d0>] (__composite_unbind [libcomposite]) from [<c02acee0>] (usb_gadget_remove_driver+0x50/0x78)
+[<c02acee0>] (usb_gadget_remove_driver) from [<c02ad570>] (usb_gadget_unregister_driver+0x64/0x94)
+[<c02ad570>] (usb_gadget_unregister_driver) from [<bf0160c0>] (hidg_cleanup+0x10/0x34 [g_hid])
+[<bf0160c0>] (hidg_cleanup [g_hid]) from [<c0056748>] (SyS_delete_module+0x118/0x19c)
+[<c0056748>] (SyS_delete_module) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
+Code: bad PC value
 
-Also, update FILEIO with an explicit FD_MAX_BYTES check in fd_execute_rw()
-to deal with the one special iovec limitiation case.
-
-v2 changes:
-  - Drop hw_max_sectors check in sbc_parse_cdb()
-
-Reported-by: Lance Gropper <lance.gropper@qosserver.com>
-Reported-by: Stefan Priebe <s.priebe@profihost.ag>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ luis: backported to 3.16: adjusted context ]
+Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
+[nicolas.ferre@atmel.com: reworked the commit message]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Fixes: 914a3f3b3754 ("USB: add atmel_usba_udc driver")
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ luis: backported to 3.16:
+  - file rename: drivers/usb/gadget/udc/atmel_usba_udc.c ->
+    drivers/usb/gadget/atmel_usba_udc.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/target/target_core_device.c |  8 ++++----
- drivers/target/target_core_file.c   | 11 ++++++++++-
- drivers/target/target_core_iblock.c |  2 +-
- drivers/target/target_core_sbc.c    | 15 ---------------
- drivers/target/target_core_spc.c    |  5 +----
- 5 files changed, 16 insertions(+), 25 deletions(-)
+ drivers/usb/gadget/atmel_usba_udc.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 15a1c133ec05..e205bdbe14b2 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1153,10 +1153,10 @@ int se_dev_set_optimal_sectors(struct se_device *dev, u32 optimal_sectors)
- 				" changed for TCM/pSCSI\n", dev);
- 		return -EINVAL;
- 	}
--	if (optimal_sectors > dev->dev_attrib.fabric_max_sectors) {
-+	if (optimal_sectors > dev->dev_attrib.hw_max_sectors) {
- 		pr_err("dev[%p]: Passed optimal_sectors %u cannot be"
--			" greater than fabric_max_sectors: %u\n", dev,
--			optimal_sectors, dev->dev_attrib.fabric_max_sectors);
-+			" greater than hw_max_sectors: %u\n", dev,
-+			optimal_sectors, dev->dev_attrib.hw_max_sectors);
- 		return -EINVAL;
- 	}
- 
-@@ -1565,7 +1565,6 @@ struct se_device *target_alloc_device(struct se_hba *hba, const char *name)
- 				DA_UNMAP_GRANULARITY_ALIGNMENT_DEFAULT;
- 	dev->dev_attrib.max_write_same_len = DA_MAX_WRITE_SAME_LEN;
- 	dev->dev_attrib.fabric_max_sectors = DA_FABRIC_MAX_SECTORS;
--	dev->dev_attrib.optimal_sectors = DA_FABRIC_MAX_SECTORS;
- 
- 	xcopy_lun = &dev->xcopy_lun;
- 	xcopy_lun->lun_se_dev = dev;
-@@ -1606,6 +1605,7 @@ int target_configure_device(struct se_device *dev)
- 	dev->dev_attrib.hw_max_sectors =
- 		se_dev_align_max_sectors(dev->dev_attrib.hw_max_sectors,
- 					 dev->dev_attrib.hw_block_size);
-+	dev->dev_attrib.optimal_sectors = dev->dev_attrib.hw_max_sectors;
- 
- 	dev->dev_index = scsi_get_new_index(SCSI_DEVICE_INDEX);
- 	dev->creation_time = get_jiffies_64();
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 7d6cddaec525..6f9f0c499813 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -620,7 +620,16 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 	struct fd_prot fd_prot;
- 	sense_reason_t rc;
- 	int ret = 0;
--
-+	/*
-+	 * We are currently limited by the number of iovecs (2048) per
-+	 * single vfs_[writev,readv] call.
-+	 */
-+	if (cmd->data_length > FD_MAX_BYTES) {
-+		pr_err("FILEIO: Not able to process I/O of %u bytes due to"
-+		       "FD_MAX_BYTES: %u iovec count limitiation\n",
-+			cmd->data_length, FD_MAX_BYTES);
-+		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
-+	}
- 	/*
- 	 * Call vectorized fileio functions to map struct scatterlist
- 	 * physical memory addresses to struct iovec virtual memory.
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index 7e6b857c6b3f..be27773ab829 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -123,7 +123,7 @@ static int iblock_configure_device(struct se_device *dev)
- 	q = bdev_get_queue(bd);
- 
- 	dev->dev_attrib.hw_block_size = bdev_logical_block_size(bd);
--	dev->dev_attrib.hw_max_sectors = UINT_MAX;
-+	dev->dev_attrib.hw_max_sectors = queue_max_hw_sectors(q);
- 	dev->dev_attrib.hw_queue_depth = q->nr_requests;
- 
- 	/*
-diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-index bd78d9235ac6..8368870dc01f 100644
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -953,21 +953,6 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
- 
- 	if (cmd->se_cmd_flags & SCF_SCSI_DATA_CDB) {
- 		unsigned long long end_lba;
--
--		if (sectors > dev->dev_attrib.fabric_max_sectors) {
--			printk_ratelimited(KERN_ERR "SCSI OP %02xh with too"
--				" big sectors %u exceeds fabric_max_sectors:"
--				" %u\n", cdb[0], sectors,
--				dev->dev_attrib.fabric_max_sectors);
--			return TCM_INVALID_CDB_FIELD;
--		}
--		if (sectors > dev->dev_attrib.hw_max_sectors) {
--			printk_ratelimited(KERN_ERR "SCSI OP %02xh with too"
--				" big sectors %u exceeds backend hw_max_sectors:"
--				" %u\n", cdb[0], sectors,
--				dev->dev_attrib.hw_max_sectors);
--			return TCM_INVALID_CDB_FIELD;
--		}
- check_lba:
- 		end_lba = dev->transport->get_blocks(dev) + 1;
- 		if (cmd->t_task_lba + sectors > end_lba) {
-diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-index 6cd7222738fc..2f1c928210b3 100644
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -505,7 +505,6 @@ static sense_reason_t
- spc_emulate_evpd_b0(struct se_cmd *cmd, unsigned char *buf)
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index f34157a8dc22..892bd9765f3b 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
  {
- 	struct se_device *dev = cmd->se_dev;
--	u32 max_sectors;
- 	int have_tp = 0;
- 	int opt, min;
+ 	struct usba_ep *ep = to_usba_ep(_ep);
+ 	struct usba_udc *udc = ep->udc;
+-	struct usba_request *req = to_usba_req(_req);
++	struct usba_request *req;
+ 	unsigned long flags;
+ 	u32 status;
  
-@@ -539,9 +538,7 @@ spc_emulate_evpd_b0(struct se_cmd *cmd, unsigned char *buf)
- 	/*
- 	 * Set MAXIMUM TRANSFER LENGTH
- 	 */
--	max_sectors = min(dev->dev_attrib.fabric_max_sectors,
--			  dev->dev_attrib.hw_max_sectors);
--	put_unaligned_be32(max_sectors, &buf[8]);
-+	put_unaligned_be32(dev->dev_attrib.hw_max_sectors, &buf[8]);
+@@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
  
- 	/*
- 	 * Set OPTIMAL TRANSFER LENGTH
+ 	spin_lock_irqsave(&udc->lock, flags);
+ 
++	list_for_each_entry(req, &ep->queue, queue) {
++		if (&req->req == _req)
++			break;
++	}
++
++	if (&req->req != _req) {
++		spin_unlock_irqrestore(&udc->lock, flags);
++		return -EINVAL;
++	}
++
+ 	if (req->using_dma) {
+ 		/*
+ 		 * If this request is currently being transferred,
 -- 
 2.1.4
 
