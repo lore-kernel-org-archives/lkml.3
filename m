@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809AbbA0RbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:31:16 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:19737 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758682AbbA0RbO (ORCPT
+	id S1758856AbbA0Rbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:31:38 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:37803 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758701AbbA0Rbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:31:14 -0500
-From: Bjorn <bjorn@sonymobile.com>
-Date: Tue, 27 Jan 2015 09:31:08 -0800
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Joonwoo Park <joonwoop@codeaurora.org>
-Subject: Re: [PATCH 3/3] pinctrl: qcom: Add msm8916 pinctrl driver
-Message-ID: <20150127173107.GE11960@sonymobile.com>
-References: <1421745476-6276-1-git-send-email-svarbanov@mm-sol.com>
- <1421745476-6276-4-git-send-email-svarbanov@mm-sol.com>
+	Tue, 27 Jan 2015 12:31:36 -0500
+Date: Tue, 27 Jan 2015 09:31:28 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laura Abbott <lauraa@codeaurora.org>
+Subject: Re: linux-next: Tree for Jan 27 (build failures due to 'don't offset
+ memmap for flatmem')
+Message-ID: <20150127173128.GA1555@roeck-us.net>
+References: <20150127195123.46885d96@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421745476-6276-4-git-send-email-svarbanov@mm-sol.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20150127195123.46885d96@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54C7CB77.039E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20 Jan 01:17 PST 2015, Stanimir Varbanov wrote:
-
-> From: Joonwoo Park <joonwoop@codeaurora.org>
+On Tue, Jan 27, 2015 at 07:51:23PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Add initial pinctrl driver to support pin configuration with
-> pinctrl framework for msm8916.
+> Changes since 20150123:
 > 
-> Signed-off-by: Joonwoo Park <joonwoop@codeaurora.org>
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> ---
-[..]
-> +
-> +static const struct msm_pingroup msm8916_groups[] = {
-> +       PINGROUP(0, blsp_spi1, blsp_uart1, blsp_uim1, dmic0_clk, NA, NA, NA, NA,
-> +                NA),
+> The arm64 tree gained a conflict against Linus' tree.
+> 
+> The net-next tree gained conflicts against the arm-soc and net trees.
+> 
+> The drm-panel tree gained a conflict against the drm tree.
+> 
+> The wireless-drivers-next tree gained a build failure for which I reverted
+> a commit.
+> 
+> The block tree gained conflicts against the vfs and Linus' trees.
+> 
+> The clockevents tree gained a conflict against the arm tree.
+> 
+> The akpm tree lost a patch that turned up elsewhere.
+> 
+> Non-merge commits (relative to Linus' tree): 5237
+>  4877 files changed, 200964 insertions(+), 94565 deletions(-)
+> 
+There are various build failures due to commit
+	'mm/page_alloc.c: don't offset memmap for flatmem',
+which assumes that ARCH_PFN_OFFSET is defined for all architectures,
+but it isn't. This is also the first use of ARCH_PFN_OFFSET outside
+an architecture directory.
 
-It's totally okay not to line break these things...
+Build fails for mn10300, m68k_nommu, and avr32.
 
-> +       PINGROUP(1, blsp_spi1, blsp_uart1, blsp_uim1, dmic0_data, NA, NA, NA,
-> +                NA, NA),
-> +       PINGROUP(2, blsp_spi1, blsp_uart1, blsp_i2c1, NA, NA, NA, NA, NA, NA),
-[..]
-> +};
-> +
-[..]
-
-My documentation is lacking the pingroup table, the rest is:
-Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-
-Regards,
-Bjorn
+Guenter
