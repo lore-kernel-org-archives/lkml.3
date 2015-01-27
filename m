@@ -1,174 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758930AbbA0SPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:15:10 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:50237 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456AbbA0SPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:15:06 -0500
-Message-ID: <54C7D576.6030502@ti.com>
-Date: Tue, 27 Jan 2015 13:14:14 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH v4 4/6] of/pci: add of_pci_dma_configure() update dma
- configuration
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-5-git-send-email-m-karicheri2@ti.com> <20150123234124.GW29776@google.com> <54C6CCF3.7080308@ti.com> <CAErSpo4w0zVCmXk2D2Qk5W3kceS9Wk+=jqHBDwk6HUXWwXdq_Q@mail.gmail.com>
-In-Reply-To: <CAErSpo4w0zVCmXk2D2Qk5W3kceS9Wk+=jqHBDwk6HUXWwXdq_Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932755AbbA0SQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:16:42 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:50823 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442AbbA0SQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 13:16:39 -0500
+From: Alexander Kuleshov <kuleshovmail@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Martin Mares <mj@ucw.cz>, Ingo Molnar <mingo@redhat.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Kuleshov <kuleshovmail@gmail.com>
+Subject: [PATCH] x86/kernel/head_64: fix path in comments
+Date: Wed, 28 Jan 2015 00:16:28 +0600
+Message-Id: <1422382588-10367-1-git-send-email-kuleshovmail@gmail.com>
+X-Mailer: git-send-email 2.3.0-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015 06:59 PM, Bjorn Helgaas wrote:
-> On Mon, Jan 26, 2015 at 5:25 PM, Murali Karicheri<m-karicheri2@ti.com>  wrote:
->> On 01/23/2015 06:41 PM, Bjorn Helgaas wrote:
->>>
->>> On Fri, Jan 23, 2015 at 05:32:37PM -0500, Murali Karicheri wrote:
->>>>
->>>> Add of_pci_dma_configure() to allow updating the dma configuration
->>>> of the pci device using the configuration from DT of the parent of
->>>> the root bridge device.
->>>>
-   -- Cut ---
->>>>
->>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->>>> ---
->>>>    drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
->>>>    include/linux/of_pci.h |   12 ++++++++++++
->>>>    2 files changed, 51 insertions(+)
->>>>
->>>> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
->>>> index 88471d3..34878c9 100644
->>>> --- a/drivers/of/of_pci.c
->>>> +++ b/drivers/of/of_pci.c
->>>> @@ -2,6 +2,7 @@
->>>>    #include<linux/export.h>
->>>>    #include<linux/of.h>
->>>>    #include<linux/of_address.h>
->>>> +#include<linux/of_device.h>
->>>>    #include<linux/of_pci.h>
->>>>    #include<linux/slab.h>
->>>>
->>>> @@ -229,6 +230,44 @@ parse_failed:
->>>>          return err;
->>>>    }
->>>>    EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
->>>> +
->>>> +/**
->>>> + * of_get_pci_root_bridge_parent - get the OF node of the root bridge's
->>>> parent
->>>> + * @dev: ptr to pci_dev struct of the pci device
->>>> + *
->>>> + * This function will traverse the bus up to the root bus starting with
->>>> + * the child and return the OF node ptr to root bridge device's parent
->>>> device.
->>>> + */
->>>> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
->>>
->>>
->>> I'm not an OF person, but this interface seems like it might be too
->>> special-purpose.  Maybe it would be enough to add
->>> "of_get_pci_root_bridge()", and the caller could do this:
->>>
->>>       struct device *bridge = of_get_pci_root_bridge(dev);
->>>       struct device_node *parent_np = bridge->parent->of_node;
->>>
->>> Also, the name "of_get_..." suggests that it increments a refcount, as
->>> of_get_parent() does.  But you aren't doing anything with the refcount.
->>>
->>> But I guess an "of_get_pci_root_bridge()" isn't doing anything OF-related,
->>> so maybe we should just add a "pci_get_host_bridge(struct pci_dev *)"
->>> to PCI instead.
->>
->>
->> Bjorn,
->>
->> Thanks for the comment.
->>
->> I think adding pci_get_host_bridge() is a good idea. There is already
->> similar function in host-bridge.c. I have added this function re-using
->> existing function find_pci_root_bus(). See the incremental diff below after
->> this change. Does this look good?
->
-> I like the implementation, but I think either we need to take a
-> reference on the host bridge, or change the name to  something like
-> "pci_find_host_bridge()", because using "_get_" is conventional for
-> functions that acquire a reference.
->
-> Since host bridges are hot-pluggable, at least in theory, I vote for
-> taking a reference.  Then of course, you'd have to add code to drop
-> the reference when you're finished with it.
->
-Bjorn,
+Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+---
+ arch/x86/kernel/head_64.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks. I agree with your suggestion even though the convention is not 
-followed fully :) of_pci_get_devfn(), of_get_pci_domain_nr(), 
-of_pci_get_host_bridge_resources() are some of those functions not 
-following the convention. I plan to change the function as below. Also 
-want to name functions as pci_get/put_host_bridge_device() as existing 
-function find_pci_host_bridge() is actually returning ptr to struct 
-pci_host_bridge  vs the new function returning ptr to device. Here are 
-the new functions and how they will be used. Please review and respond 
-so that I can avoid a re-spin.
-
-in linux/include/pci.h add the prototypes of 
-pci_get/put_host_bridge_device().
-
-in drivers/pci/host-bridge.c add two new functions.
-
-struct device *pci_get_host_bridge_device(struct pci_dev *dev)
-{
-	struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
-	struct device *bridge = root_bus->bridge;
-
-	kobject_get(&bridge->kobj);
-	return bridge;
-}
-
-void  pci_put_host_bridge_device(struct pci_dev *dev)
-{
-	struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
-	struct device *bridge = root_bus->bridge;
-
-	kobject_put(&bridge->kobj);
-}
-
-drivers/of/of_pci.c
-
-void of_pci_dma_configure(struct pci_dev *pci_dev)
-{
-	struct device *dev = &pci_dev->dev;
-	struct device *bridge = pci_get_host_bridge_device(pci_dev);
-
-	of_dma_configure(dev, bridge->parent->of_node);
-	pci_put_host_bridge_device(pci_dev);
-}
-
-Murali
-
-> Bjorn
->
-
->>>>
->>
->>
->> --
->> Murali Karicheri
->> Linux Kernel, Texas Instruments
-
-
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index a468c0a..6975f5d 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -1,5 +1,5 @@
+ /*
+- *  linux/arch/x86_64/kernel/head.S -- start in 32bit and switch to 64bit
++ *  linux/arch/x86/kernel/head_64.S -- start in 32bit and switch to 64bit
+  *
+  *  Copyright (C) 2000 Andrea Arcangeli <andrea@suse.de> SuSE
+  *  Copyright (C) 2000 Pavel Machek <pavel@suse.cz>
+@@ -56,7 +56,7 @@ startup_64:
+ 	 * %rsi holds a physical pointer to real_mode_data.
+ 	 *
+ 	 * We come here either directly from a 64bit bootloader, or from
+-	 * arch/x86_64/boot/compressed/head.S.
++	 * arch/x86/boot/compressed/head_64.S.
+ 	 *
+ 	 * We only come here initially at boot nothing else comes here.
+ 	 *
 -- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+2.3.0-rc1
+
