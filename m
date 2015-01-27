@@ -1,155 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759535AbbA0UYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 15:24:45 -0500
-Received: from smtp.variantweb.net ([104.131.104.118]:40781 "EHLO
-	smtp.variantweb.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882AbbA0UYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 15:24:44 -0500
-Date: Tue, 27 Jan 2015 14:24:40 -0600
-From: Seth Jennings <sjennings@variantweb.net>
-To: Heesub Shin <heesub.shin@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        Dan Streetman <ddstreet@ieee.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Sunae Seo <sunae.seo@samsung.com>
-Subject: Re: [RFC PATCH 0/9] mm/zbud: support highmem pages
-Message-ID: <20150127202440.GA13103@cerebellum.variantweb.net>
-References: <1413287968-13940-1-git-send-email-heesub.shin@samsung.com>
- <20141104163343.GA20974@cerebellum.variantweb.net>
+	id S1759726AbbA0U17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 15:27:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759692AbbA0U14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 15:27:56 -0500
+Message-ID: <54C7F4BB.5020509@redhat.com>
+Date: Tue, 27 Jan 2015 15:27:39 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141104163343.GA20974@cerebellum.variantweb.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: question about save_xstate_sig() - WHY DOES THIS WORK?
+References: <54C2A245.4010307@redhat.com> <20150124202021.GA1285@redhat.com> <54C6CD64.10208@redhat.com> <20150127194030.GA29879@redhat.com>
+In-Reply-To: <20150127194030.GA29879@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 04, 2014 at 10:33:43AM -0600, Seth Jennings wrote:
-> On Tue, Oct 14, 2014 at 08:59:19PM +0900, Heesub Shin wrote:
-> > zbud is a memory allocator for storing compressed data pages. It keeps
-> > two data objects of arbitrary size on a single page. This simple design
-> > provides very deterministic behavior on reclamation, which is one of
-> > reasons why zswap selected zbud as a default allocator over zsmalloc.
-> > 
-> > Unlike zsmalloc, however, zbud does not support highmem. This is
-> > problomatic especially on 32-bit machines having relatively small
-> > lowmem. Compressing anonymous pages from highmem and storing them into
-> > lowmem could eat up lowmem spaces.
-> > 
-> > This limitation is due to the fact that zbud manages its internal data
-> > structures on zbud_header which is kept in the head of zbud_page. For
-> > example, zbud_pages are tracked by several lists and have some status
-> > information, which are being referenced at any time by the kernel. Thus,
-> > zbud_pages should be allocated on a memory region directly mapped,
-> > lowmem.
-> > 
-> > After some digging out, I found that internal data structures of zbud
-> > can be kept in the struct page, the same way as zsmalloc does. So, this
-> > series moves out all fields in zbud_header to struct page. Though it
-> > alters quite a lot, it does not add any functional differences except
-> > highmem support. I am afraid that this kind of modification abusing
-> > several fields in struct page would be ok.
-> 
-> Hi Heesub,
-> 
-> Sorry for the very late reply.  The end of October was very busy for me.
-> 
-> A little history on zbud.  I didn't put the metadata in the struct
-> page, even though I knew that was an option since we had done it with
-> zsmalloc. At the time, Andrew Morton had concerns about memmap walkers
-> getting messed up with unexpected values in the struct page fields.  In
-> order to smooth zbud's acceptance, I decided to store the metadata
-> inline in the page itself.
-> 
-> Later, zsmalloc eventually got accepted, which basically gave the
-> impression that putting the metadata in the struct page was acceptable.
-> 
-> I have recently been looking at implementing compaction for zsmalloc,
-> but having the metadata in the struct page and having the handle
-> directly encode the PFN and offset of the data block prevents
-> transparent relocation of the data. zbud has a similar issue as it
-> currently encodes the page address in the handle returned to the user
-> (also the limitation that is preventing use of highmem pages).
-> 
-> I would like to implement compaction for zbud too and moving the
-> metadata into the struct page is going to work against that. In fact,
-> I'm looking at the option of converting the current zbud_header into a
-> per-allocation metadata structure, which would provide a layer of
-> indirection between zbud and the user, allowing for transparent
-> relocation and compaction.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I had some downtime and started thinking about this again today (after
-3 months).
-
-Upon further reflection, I really like this and don't think that it
-inhibits introducing compaction later.
-
-There are just a few places that look messy or problematic to me:
-
-1. the use of page->private and masking the number of chunks for both
-buddies into it (see suggestion for overlay struct below)
-2. the use of the second double word &page->index to store a list_head
-
-#2 might be problematic because, IIRC, memmap walkers will check _count
-(or _mapcount).  I think we ran into this in zsmalloc.
-
-Initially, when working on zsmalloc, I just created a structure that
-overlaid the struct page in the memmap, reserving the flags and _count
-areas, so that I wouldn't have to be bound by the field names/boundaries
-in the struct page.
-
-IIRC, Andrew was initially against that, but he was also against the
-whole idea of using the struct page fields for random stuff... I that
-ended up being accepted.
-
-This code looks really good!  I think with a little cleanup and finding
-a way to steer clear of using the _count part of the structure, this
-will be great.
-
-Sorry for dismissing it earlier.  Didn't give it enough credit.
-
-Thanks,
-Seth
-
+On 01/27/2015 02:40 PM, Oleg Nesterov wrote:
+> On 01/26, Rik van Riel wrote:
+>> 
+>> On 01/24/2015 03:20 PM, Oleg Nesterov wrote:
+>> 
+>>> Now the questions:
+>>> 
+>>> - This doesn't hurt, but does it really need __thread_fpu_end?
+>>> 
+>>> Perhaps this is because we do not check the error code returned
+>>> by __save_init_fpu? although I am not sure I understand the
+>>> comment above fpu_save_init correctly...
+>> 
+>> Looking at the code some more, I do not see any call site of 
+>> save_init_fpu() that actually needs or wants __thread_fpu_end(), 
+>> with or without eager fpu mode.
 > 
-> However, I do like the part about letting zbud use highmem pages.
+> Yes. But probably it is needed if __save_init_fpu() returns 0. But
+> this is minor, __thread_fpu_end() doesn't hurt correctness-wise if
+> !eager.
 > 
-> I have something in mind that would allow highmem pages _and_ move
-> toward something that would support compaction.  I'll see if I can put
-> it into code today.
+>> It looks like we can get rid of that.
 > 
-> Thanks,
-> Seth
+> Agreed, but probably this needs a separate change.
 > 
-> > 
-> > Heesub Shin (9):
-> >   mm/zbud: tidy up a bit
-> >   mm/zbud: remove buddied list from zbud_pool
-> >   mm/zbud: remove lru from zbud_header
-> >   mm/zbud: remove first|last_chunks from zbud_header
-> >   mm/zbud: encode zbud handle using struct page
-> >   mm/zbud: remove list_head for buddied list from zbud_header
-> >   mm/zbud: drop zbud_header
-> >   mm/zbud: allow clients to use highmem pages
-> >   mm/zswap: use highmem pages for compressed pool
-> > 
-> >  mm/zbud.c  | 244 ++++++++++++++++++++++++++++++-------------------------------
-> >  mm/zswap.c |   4 +-
-> >  2 files changed, 121 insertions(+), 127 deletions(-)
-> > 
-> > -- 
-> > 1.9.1
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>> - What about do_bounds() ? Should not it use save_init_fpu() 
+>>> rather than fpu_save_init() ?
+>> 
+>> I suppose do_bounds() probably should save the fpu context while 
+>> not preemptible,
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> plus it also needs the __thread_has_fpu() check. Otherwise
+> fpu_save_init() can save the wrong FPU state afaics.
+> 
+>> but that may also mean moving conditional_sti() until after
+>> save_init_fpu() or __save_init_fpu() has been called.
+> 
+> Agreed, this can work too.
+> 
+>>> - Why unlazy_fpu() always does __save_init_fpu() even if 
+>>> use_eager_fpu?
+>>> 
+>>> and note that in this case __thread_fpu_end() is wrong if 
+>>> use_eager_fpu, but fortunately the only possible caller of 
+>>> unlazy_fpu() is coredump. fpu_copy() checks use_eager_fpu().
+>>> 
+>>> - Is unlazy_fpu()->__save_init_fpu() safe wrt
+>>> __kernel_fpu_begin() from irq?
+
+It looks like it should be safe, as long as __save_init_fpu()
+knows that the task no longer has the FPU after __kernel_fpu_end(),
+so it does not try to save the kernel FPU state to the user's
+task->thread.fpu.state->xstate
+
+The caveat here is that __kernel_fpu_begin()/__kernel_fpu_end()
+needs to be kept from running during unlazy_fpu().
+
+This means interrupted_kernel_fpu_idle and/or irq_fpu_usable
+need to check whether preemption is disabled, and lock out
+__kernel_fpu_begin() when preemption is disabled.
+
+It does not look like it currently does that...
+
+>>> I mean, is it safe if __save_init_fpu() path is interrupted by 
+>>> another __save_init_fpu() + restore_fpu_checking() from 
+>>> __kernel_fpu_begin/end?
+>> 
+>> I got lost in the core dump code trying to figure out whether
+>> this is safe or broken. I'll need some more time to look through
+>> that code...
+> 
+> It is called indirectly by regset code, see
+> xstateregs_get()->init_fpu().
+> 
+> The coredumping task can't return to user-mode and use FPU in this
+> case, so this is not that bad. Still
+> unlazy_fpu()->__thread_fpu_end() is wrong if eager.
+> 
+> And I forgot to mention, the "else" branch in unlazy_fpu() makes no
+> sense. And note that save_init_fpu() and unlazy_fpu() is the same
+> thing (if we fix/cleanup them).
+
+I was wondering why there were several functions doing essentially
+the same thing...
+
+> Oh. I'll try to finish my cleanups and send them tomorrow. Unless
+> you do this ;)
+
+If you tell me what you would like to see done, I'd be more than
+happy to do it :)
+
+I can certainly merge unlazy_fpu() and save_init_fpu() into the
+same function, but I am not sure whether or not it should call
+__thread_fpu_end() - it looks like that would be desirable in some
+cases, but not in others...
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUx/S6AAoJEM553pKExN6DCJwH/0US/6JXKxX0vYOuaw9SKzhX
+fgkxWbHFtJ7qn/tXBJqKgQQr5RIJ8dH6opoGNzzeOGeNMISoo9EZrVYxO1mv/Lrk
+GoPjFDVyhm/hc74Bvpm7Xtzai7JJanTyLj63pLPu4wm+0+QKPEoRUMvtyLuLe0nM
+5GMpnW0wWZn/c0JWLihfKRCK5FecP9Tv9y/1gXGkLWymMw8PDpXxIqo+VJJM86ow
+eUrPTFHeAvYh1m0lsxOr4JMUB5+VeZV9zXNPefNHlMcBNchVGvDhxWpdqtGyROd4
+A+tMBM4EymrJoTeJrcxuFSdKFcCW0T/9JOHm3tb4B9Qjsk7/ROzp0d/s7bKyyKw=
+=9h6C
+-----END PGP SIGNATURE-----
