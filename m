@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537AbbA0Q7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:59:15 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:44505 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555AbbA0Q7L (ORCPT
+	id S932564AbbA0Q7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:59:47 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9270 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932352AbbA0Q7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:59:11 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] vfs: read file_handle only once in handle_to_path
-Date: Tue, 27 Jan 2015 11:58:20 -0500
-Message-Id: <1422377924-26080-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 2.1.0
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 27 Jan 2015 11:59:44 -0500
+From: Bjorn <bjorn@sonymobile.com>
+Date: Tue, 27 Jan 2015 08:59:38 -0800
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Joonwoo Park <joonwoop@codeaurora.org>
+Subject: Re: [PATCH 1/3] pinctrl: qcom: increase variable size for register
+ addresses
+Message-ID: <20150127165937.GC11960@sonymobile.com>
+References: <1421745476-6276-1-git-send-email-svarbanov@mm-sol.com>
+ <1421745476-6276-2-git-send-email-svarbanov@mm-sol.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1421745476-6276-2-git-send-email-svarbanov@mm-sol.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used to read file_handle twice. Once to get the amount of extra bytes, and
-once to fetch the entire structure.
+On Tue 20 Jan 01:17 PST 2015, Stanimir Varbanov wrote:
 
-This may be problematic since we do size verifications only after the first
-read, so if the number of extra bytes changes in userspace between the first
-and second calls, we'll have an incoherent view of file_handle.
+> From: Joonwoo Park <joonwoop@codeaurora.org>
+> 
+> Newer MSM SoCs have TLMM hardware block upper than 16 bit.  Increase to
+> 32 bit registers to hold addresses correctly.
+> 
 
-Instead, read the constant size once, and copy that over to the final
-structure without having to re-read it again.
+It's not the addresses but rather the offsets and the reason is that the
+registers are now spread so we need offsets >16 bit to address them. And this
+is to be able to benefit from page based access control.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- fs/fhandle.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Could you please update the subject and commit message to be slightly more
+accurate?
 
-diff --git a/fs/fhandle.c b/fs/fhandle.c
-index 999ff5c..f26d0e1 100644
---- a/fs/fhandle.c
-+++ b/fs/fhandle.c
-@@ -195,8 +195,9 @@ static int handle_to_path(int mountdirfd, struct file_handle __user *ufh,
- 		goto out_err;
- 	}
- 	/* copy the full handle */
--	if (copy_from_user(handle, ufh,
--			   sizeof(struct file_handle) +
-+	*handle = f_handle;
-+	if (copy_from_user(handle + sizeof(struct file_handle),
-+			   ufh + sizeof(struct file_handle),
- 			   f_handle.handle_bytes)) {
- 		retval = -EFAULT;
- 		goto out_handle;
--- 
-1.7.10.4
+> Signed-off-by: Joonwoo Park <joonwoop@codeaurora.org>
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> ---
+>  drivers/pinctrl/qcom/pinctrl-msm.h |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.h b/drivers/pinctrl/qcom/pinctrl-msm.h
+> index b952c4b..54fdd04 100644
+> --- a/drivers/pinctrl/qcom/pinctrl-msm.h
+> +++ b/drivers/pinctrl/qcom/pinctrl-msm.h
+> @@ -70,11 +70,11 @@ struct msm_pingroup {
+>  	unsigned *funcs;
+>  	unsigned nfuncs;
+>  
+> -	s16 ctl_reg;
+> -	s16 io_reg;
+> -	s16 intr_cfg_reg;
+> -	s16 intr_status_reg;
+> -	s16 intr_target_reg;
+> +	u32 ctl_reg;
+> +	u32 io_reg;
+> +	u32 intr_cfg_reg;
+> +	u32 intr_status_reg;
+> +	u32 intr_target_reg;
+>  
+>  	unsigned mux_bit:5;
+>  
 
+The patch itself looks good!
+
+Regards,
+Bjorn
