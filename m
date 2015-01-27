@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932932AbbA0MpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:45:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34967 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758399AbbA0MRm (ORCPT
+	id S1755361AbbA0MPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:15:48 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:54522 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbbA0MPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:42 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Michal Hocko <mhocko@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 032/126] mm: fix corner case in anon_vma endless growing prevention
-Date: Tue, 27 Jan 2015 12:15:37 +0000
-Message-Id: <1422361031-19364-33-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
-References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Tue, 27 Jan 2015 07:15:44 -0500
+Message-ID: <54C7816A.8050800@ahsoftware.de>
+Date: Tue, 27 Jan 2015 13:15:38 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Richard Weinberger <richard.weinberger@gmail.com>,
+        linux-mmc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
+References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de> <CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com> <54C77E69.7050600@ahsoftware.de> <20150127120855.GA9254@pd.tnic>
+In-Reply-To: <20150127120855.GA9254@pd.tnic>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt5 -stable review patch.  If anyone has any objections, please let me know.
+Am 27.01.2015 um 13:08 schrieb Borislav Petkov:
+> On Tue, Jan 27, 2015 at 01:02:49PM +0100, Alexander Holler wrote:
+>> Look at the source at the message which is printed just before and decide
+>> which one you find more informational / useful.
+>
+> I find such a message absolutely useless. Also, if it flies off and
+> printk buffer gets overwritten, it serves you sh*t. IOW, listen to what
+> Richard tells you.
 
-------------------
+Ok. I shut/give up.
 
-From: Konstantin Khlebnikov <koct9i@gmail.com>
+Maybe you could be so nice to inform me where the similiar detail is 
+exposed in sysfs for SSDs.
 
-commit b800c91a0517071156e772d4fb329ad33590da62 upstream.
+Also it's unlikely I will send any further patch. There are still 21 
+from me where I've exposed sysfs attributes for NAND devices which are 
+still not applied and most NAND devices still don't have a sysfs entry.
 
-Fix for BUG_ON(anon_vma->degree) splashes in unlink_anon_vmas() ("kernel
-BUG at mm/rmap.c:399!") caused by commit 7a3ef208e662 ("mm: prevent
-endless growth of anon_vma hierarchy")
+So why should I waste my time again?
 
-Anon_vma_clone() is usually called for a copy of source vma in
-destination argument.  If source vma has anon_vma it should be already
-in dst->anon_vma.  NULL in dst->anon_vma is used as a sign that it's
-called from anon_vma_fork().  In this case anon_vma_clone() finds
-anon_vma for reusing.
-
-Vma_adjust() calls it differently and this breaks anon_vma reusing
-logic: anon_vma_clone() links vma to old anon_vma and updates degree
-counters but vma_adjust() overrides vma->anon_vma right after that.  As
-a result final unlink_anon_vmas() decrements degree for wrong anon_vma.
-
-This patch assigns ->anon_vma before calling anon_vma_clone().
-
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-Reported-and-tested-by: Chris Clayton <chris2553@googlemail.com>
-Reported-and-tested-by: Oded Gabbay <oded.gabbay@amd.com>
-Reported-and-tested-by: Chih-Wei Huang <cwhuang@android-x86.org>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- mm/mmap.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 9f7b97613ca4..5f0712551402 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -749,10 +749,12 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
- 			int error;
- 
-+			importer->anon_vma = exporter->anon_vma;
- 			error = anon_vma_clone(importer, exporter);
--			if (error)
-+			if (error) {
-+				importer->anon_vma = NULL;
- 				return error;
--			importer->anon_vma = exporter->anon_vma;
-+			}
- 		}
- 	}
- 
--- 
-2.1.4
+Alexander Holler
 
