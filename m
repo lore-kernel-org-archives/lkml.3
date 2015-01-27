@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968AbbA0T4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 14:56:48 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:46417 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932516AbbA0T4p (ORCPT
+	id S933005AbbA0T5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 14:57:41 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:35195 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758666AbbA0T5i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 14:56:45 -0500
+	Tue, 27 Jan 2015 14:57:38 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20150127194912.GO21293@sirena.org.uk>
-References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
- <1422029330-10971-9-git-send-email-ricardo.ribalda@gmail.com>
- <20150127000428.GK21293@sirena.org.uk> <CAPybu_1RW0F-ak-B_4H-riTUwF2yCrpKdT2RWviTdCMR_kQmww@mail.gmail.com>
- <20150127194912.GO21293@sirena.org.uk>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 27 Jan 2015 20:56:23 +0100
-Message-ID: <CAPybu_3YJd_=wxOaGjGqDrhAJp2wxioeBG69S129r5UUNTCo1w@mail.gmail.com>
-Subject: Re: [PATCH 08/18] spi/xilinx: Support cores with no interrupt
-To: Mark Brown <broonie@kernel.org>
-Cc: Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-spi@vger.kernel.org,
-        "moderated list:ARM/S5P EXYNOS AR..." 
+Content-Transfer-Encoding: 8BIT
+To: Ulf Hansson <ulf.hansson@linaro.org>,
+        "Stephen Boyd" <sboyd@codeaurora.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <CAPDyKFrVseR_Mczn5q0pjcMk6SN1HCebWTis4wOfcH+vfEDnRA@mail.gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "Linus Walleij" <linus.walleij@linaro.org>
+References: <1421955259-8875-1-git-send-email-sboyd@codeaurora.org>
+ <CAPDyKFrVseR_Mczn5q0pjcMk6SN1HCebWTis4wOfcH+vfEDnRA@mail.gmail.com>
+Message-ID: <20150127195724.22722.97889@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk: ux500: Drop use of clk-private.h
+Date: Tue, 27 Jan 2015 11:57:24 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Quoting Ulf Hansson (2015-01-22 23:36:28)
+> On 22 January 2015 at 20:34, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > These drivers don't need to include clk-private.h. Remove the
+> > include.
+> >
+> > Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+> 
+> I suppose you can queue this through your clk tree directly?
 
-On Tue, Jan 27, 2015 at 8:49 PM, Mark Brown <broonie@kernel.org> wrote:
->
->> https://patchwork.kernel.org/patch/5648351/
->
-> Please include plain text descriptions of things in your mails rather
-> than just links/numbers.
+Applied.
 
-spi: xilinx: Use standard num-cs binding
+Regards,
+Mike
 
-
-Regards!
-
--- 
-Ricardo Ribalda
+> 
+> Kind regards
+> Uffe
+> 
+> > ---
+> >  drivers/clk/ux500/clk-prcc.c  | 1 -
+> >  drivers/clk/ux500/clk-prcmu.c | 1 -
+> >  2 files changed, 2 deletions(-)
+> >
+> > diff --git a/drivers/clk/ux500/clk-prcc.c b/drivers/clk/ux500/clk-prcc.c
+> > index bd4769a84485..0e950769ed03 100644
+> > --- a/drivers/clk/ux500/clk-prcc.c
+> > +++ b/drivers/clk/ux500/clk-prcc.c
+> > @@ -8,7 +8,6 @@
+> >   */
+> >
+> >  #include <linux/clk-provider.h>
+> > -#include <linux/clk-private.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/io.h>
+> >  #include <linux/err.h>
+> > diff --git a/drivers/clk/ux500/clk-prcmu.c b/drivers/clk/ux500/clk-prcmu.c
+> > index e2d63bc47436..bf63c96acb1a 100644
+> > --- a/drivers/clk/ux500/clk-prcmu.c
+> > +++ b/drivers/clk/ux500/clk-prcmu.c
+> > @@ -8,7 +8,6 @@
+> >   */
+> >
+> >  #include <linux/clk-provider.h>
+> > -#include <linux/clk-private.h>
+> >  #include <linux/mfd/dbx500-prcmu.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/io.h>
+> > --
+> > The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> > a Linux Foundation Collaborative Project
+> >
