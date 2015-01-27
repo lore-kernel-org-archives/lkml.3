@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598AbbA0Uhc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 15:37:32 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49697 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759263AbbA0Uhb (ORCPT
+	id S932703AbbA0UiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 15:38:08 -0500
+Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:57159
+	"EHLO p3plex2out01.prod.phx3.secureserver.netIMP"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932613AbbA0UiG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 15:37:31 -0500
-Date: Tue, 27 Jan 2015 22:37:24 +0200
-From: Heba Aamer <heba93aamer@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, notro@tronnes.org,
-        thomas.petazzoni@free-electrons.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] staging: fbtft: fix spaces required around that '<'
-Message-ID: <aba7dcfcd71087c13ed79b9f6ab6a97cb3c1cc13.1422296762.git.heba93aamer@gmail.com>
-References: <cover.1422296762.git.heba93aamer@gmail.com>
+	Tue, 27 Jan 2015 15:38:06 -0500
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 0/6] staging: comedi: comedi_compat32.[ch] fix and
+ tidy up
+Thread-Topic: [PATCH v2 0/6] staging: comedi: comedi_compat32.[ch] fix and
+ tidy up
+Thread-Index: AQHQOl12CAxEfqhMNUmduiztVUyKpZzUbC/Q
+Date: Tue, 27 Jan 2015 20:38:04 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D88260F294A@P3PWEX4MB008.ex4.secureserver.net>
+References: <1422373824-12793-1-git-send-email-abbotti@mev.co.uk>
+ <1422382616-6884-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1422382616-6884-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1422296762.git.heba93aamer@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl error:
-fix spaces required around that '<'
+On Tuesday, January 27, 2015 11:17 AM, Ian Abbott wrote:
+> Fix a bug in the handling of the 32-bit compatible version of the
+> COMEDI_CMD ioctl and tidy up the rest of the 32-bit compatible ioctl
+> handling code a bit.
+>
+> v2: fix minor niggle in patch 1 and drop patch 7.
+>
+> 1) staging: comedi: comedi_compat32.c: fix COMEDI_CMD copy back
+> 2) staging: comedi: comedi_compat32.h: reformat copyright comment
+> 3) staging: comedi: comedi_compat.c: reformat copyright comment
+> 4) staging: comedi: comedi_compat32.c: reformat other block comments
+> 5) staging: comedi: comedi_compat32.c: align some comments
+> 6) staging: comedi: comedi_compat32.c: absorb raw_ioctl()
+>
+>  drivers/staging/comedi/comedi_compat32.c | 99 +++++++++++++++++---------------
+>  drivers/staging/comedi/comedi_compat32.h | 38 ++++++------
+>  2 files changed, 73 insertions(+), 64 deletions(-)
 
-Signed-off-by: Heba Aamer <heba93aamer@gmail.com>
----
- drivers/staging/fbtft/fb_pcd8544.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Looks better. Thanks.
 
-diff --git a/drivers/staging/fbtft/fb_pcd8544.c b/drivers/staging/fbtft/fb_pcd8544.c
-index ed0922d..dd72bed 100644
---- a/drivers/staging/fbtft/fb_pcd8544.c
-+++ b/drivers/staging/fbtft/fb_pcd8544.c
-@@ -117,10 +117,10 @@ static int write_vmem(struct fbtft_par *par, size_t offset, size_t len)
- 
- 	fbtft_par_dbg(DEBUG_WRITE_VMEM, par, "%s()\n", __func__);
- 
--	for (x = 0; x<84; x++) {
--		for (y = 0; y<6; y++) {
-+	for (x = 0; x < 84; x++) {
-+		for (y = 0; y < 6; y++) {
- 			*buf = 0x00;
--			for (i = 0; i<8; i++) {
-+			for (i = 0; i < 8; i++) {
- 				*buf |= (vmem16[(y*8+i)*84+x] ? 1 : 0) << i;
- 			}
- 			buf++;
--- 
-1.7.9.5
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
