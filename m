@@ -1,94 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612AbbA0PKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:10:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:44209 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753173AbbA0PKD (ORCPT
+	id S932403AbbA0Or2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:47:28 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:51469 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932372AbbA0OrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:10:03 -0500
-Date: Tue, 27 Jan 2015 16:09:19 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Priit Laes <plaes@plaes.org>
-Cc: linux-sunxi@googlegroups.com, emilio@elopez.com.ar,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] ARM: dts: sun4i: Add initial dts for Gemei G9 tablet
-Message-ID: <20150127150919.GI7200@lukather>
-References: <1422295208-11016-1-git-send-email-plaes@plaes.org>
+	Tue, 27 Jan 2015 09:47:23 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v3]PM/Sleep: Timer quiesce in freeze state
+Date: Tue, 27 Jan 2015 16:10:08 +0100
+Message-ID: <11292969.Jn202SnHMu@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54C74651.3020403@linux.intel.com>
+References: <54866625.8010406@linux.intel.com> <2137807.aqSxQQCuJ3@vostro.rjw.lan> <54C74651.3020403@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NqSa+Xr3J/G6Hhls"
-Content-Disposition: inline
-In-Reply-To: <1422295208-11016-1-git-send-email-plaes@plaes.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, January 27, 2015 04:03:29 PM Li, Aubrey wrote:
+> On 2015/1/26 22:41, Rafael J. Wysocki wrote:
+> > On Monday, January 26, 2015 10:40:24 AM Thomas Gleixner wrote:
+> >> On Mon, 26 Jan 2015, Li, Aubrey wrote:
+> >>> On 2015/1/22 18:15, Thomas Gleixner wrote:
+> > 
+> > [...]
+> > 
+> >>>>> +		/*
+> >>>>> +		 * cpuidle_enter will return with interrupt enabled
+> >>>>> +		 */
+> >>>>> +		cpuidle_enter(drv, dev, next_state);
+> >>>>
+> >>>> How is that supposed to work?
+> >>>>
+> >>>> If timekeeping is not yet unfrozen, then any interrupt handling code
+> >>>> which calls anything time related is going to hit lala land.
+> >>>>
+> >>>> You must guarantee that timekeeping is unfrozen before any interrupt
+> >>>> is handled. If you cannot guarantee that, you cannot freeze
+> >>>> timekeeping ever.
+> >>>>
+> >>>> The cpu local tick device is less critical, but it happens to work by
+> >>>> chance, not by design.
+> >>>
+> >>> There are two way to guarantee this: the first way is, disable interrupt
+> >>> before timekeeping frozen and enable interrupt after timekeeping is
+> >>> unfrozen. However, we need to handle wakeup handler before unfreeze
+> >>> timekeeping to wake freeze task up from wait queue.
+> >>>
+> >>> So we have to go the other way, the other way is, we ignore time related
+> >>> calls during freeze, like what I added in irq_enter below.
+> >>
+> >> Groan. You just do not call in irq_enter/exit(), but what prevents any
+> >> interrupt handler or whatever to call into the time/timer code after
+> >> interrupts got reenabled?
+> >>
+> >> Nothing. 
+> >>
+> >>> Or, we need to re-implement freeze wait and wake up mechanism?
+> >>
+> >> You need to make sure in the low level idle implementation that this
+> >> cannot happen.
+> >>
+> >> tick_freeze()
+> >> {
+> >> 	raw_spin_lock(&tick_freeze_lock);
+> >> 	tick_frozen++;
+> >> 	if (tick_frozen == num_online_cpus())
+> >> 		timekeeping_suspend();
+> >> 	else
+> >> 		tick_suspend_local();
+> >> 	raw_spin_unlock(&tick_freeze_lock);
+> >> }
+> >>
+> >> tick_unfreeze()
+> >> {
+> >> 	raw_spin_lock(&tick_freeze_lock);
+> >> 	if (tick_frozen == num_online_cpus())
+> >> 		timekeeping_resume();
+> >> 	else
+> >> 		tick_resume_local();
+> >> 	tick_frozen--;
+> >> 	raw_spin_unlock(&tick_freeze_lock);
+> >> }
+> >>
+> >> idle_freeze()
+> >> {
+> >> 	local_irq_disable();
+> >>
+> >> 	tick_freeze();
+> >>
+> >> 	/* Must keep interrupts disabled! */
+> >>        	go_deep_idle()
+> >>
+> >> 	tick_unfreeze();
+> >>
+> >> 	local_irq_enable();
+> >> }
+> >>
+> >> That's the only way you can do it proper, everything else will just be
+> >> a horrible mess of bandaids and duct tape.
+> >>
+> >> So that does not need any of the irq_enter/exit conditionals, it does
+> >> not need the real_handler hack. It just works.
+> > 
+> > As long as go_deep_idle() above does not enable interrupts.  This means we won't
+> > be able to use some C-states for suspend-to-idle (hald-induced C1 on some x86
+> > for one example), but that's not a very big deal.
+> 
+> Does the legacy ACPI system IO method to enter C2/C3 need interrupt
+> enabled as well?
+> 
+> Do we need some platform ops to cover those legacy platforms? Different
+> platform go different branch here.
 
---NqSa+Xr3J/G6Hhls
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+No, we don't.
 
-On Mon, Jan 26, 2015 at 08:00:06PM +0200, Priit Laes wrote:
-> Gemei G9 is an A10 based tablet, with 1G RAM, 16G NAND, 1024x768
-> IPS LCD display, stereo speakers, 1.3MP front camera and 5 MP
-> rear camera, 8000mAh battery, GT901 2+1 touchscreen, Bosch BMA250
-> accelerometer and RTL8188CUS USB wifi. It also has MicroSD slot,
-> miniHDMI, 1 x MicroUSB OTG port and 1 x MicroUSB host port and
-> 3.5mm headphone jack.
->=20
-> Changes since v2:
->  * Fix syntax error (brown paper bag release)
->=20
-> Changes since v1:
->  * Added sun4i-lradc keymap
->  * Added TODO note about missing IRQ pins for bma250
->  * Fixed formatting issues and removed external URLs
->=20
-> Signed-off-by: Priit Laes <plaes@plaes.org>
+I think this needs to be addressed in a different way overall.  If you don't
+mind, I'd like to prepare my own version of the patch at this point.  That
+likely will be simpler than trying to explain what I'd like to do and I guess
+I'll need a few iterations to get something acceptable anyway.
 
-Applied, thanks!
+Rafael
 
-Note that it will probably show up in 3.21. I sent the pull request
-this weekend, and unless something major and unexpected shows up, I
-don't plan on making new ones.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---NqSa+Xr3J/G6Hhls
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUx6ofAAoJEBx+YmzsjxAggF0P/2+5OAqz3mhEkB3aciwtMZ5a
-bfOY+A8J+kuaNaeQJp6TPIIATv157hntiFMzE4B/tpLurMG9b6aYz755/xkXcifO
-nmBgQ2HwC4LweKRxoYePKTc6T7TJ5YqUpW7fSOc9Fjfw8lLRy+Lnv8pnJPtfyCIj
-GEuqH472yNE4C3dJXb6anqjn+lCTzt6FtmdDxIMDQEUc6iS4BqMBDo7Kn68XWNfe
-Ey8QRu5cCRm5UScJ0VvZ55l5V19Qk40XiB6g5J2KntAZHPviKgqdWb2GlO+lwajS
-+3/1ixoD3p5eMSQsoJG73rILwTQalVSWPMbLLvL/tkveo1DyPJy9VvCNh1IIDJ4u
-qeefLobHuBwJOYIv6Boo5Qg0L3K3YglpgW4NVemtjbrYu3K5sg3Mf5maDj+pn+tp
-To5/E7H0esDQcFVr9KVMIsL9MRfdttZ8LLBRywus9SV98KxiwSxC8qGKeMpID8TB
-fSoIImv8iTcI3Fw+eY4Bz5dzhzciYc/rA1IR/3QRxDAErUa2RzrNoMc2oP42SEOe
-lmH+/8uWuZBYv0H9ocPP6caqpBpsU2d2YD28efA+Uj6SS8oP8FjJISpP/zzGqxqz
-YU8AuNeNhYP2xoM2j4e08sbD5oH+t7ZIml09eAsecDCMa9y8a5NozcVUALukLe17
-KrZ2KMwu7QFm9aTbh8a5
-=nMam
------END PGP SIGNATURE-----
-
---NqSa+Xr3J/G6Hhls--
