@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285AbbA0MSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:18:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35069 "EHLO
+	id S1759236AbbA0Mmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:42:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35047 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758501AbbA0MSJ (ORCPT
+	with ESMTP id S1758453AbbA0MSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:18:09 -0500
+	Tue, 27 Jan 2015 07:18:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "joyce.xue" <xuejiufei@huawei.com>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Anton Blanchard <anton@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 041/126] ocfs2: fix the wrong directory passed to ocfs2_lookup_ino_from_name() when link file
-Date: Tue, 27 Jan 2015 12:15:46 +0000
-Message-Id: <1422361031-19364-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 042/126] powerpc: Fix bad NULL pointer check in udbg_uart_getc_poll()
+Date: Tue, 27 Jan 2015 12:15:47 +0000
+Message-Id: <1422361031-19364-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -30,166 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xue jiufei <xuejiufei@huawei.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 53dc20b9a3d928b0744dad5aee65b610de1cc85d upstream.
+commit cd32e2dcc9de6c27ecbbfc0e2079fb64b42bad5f upstream.
 
-In ocfs2_link(), the parent directory inode passed to function
-ocfs2_lookup_ino_from_name() is wrong.  Parameter dir is the parent of
-new_dentry not old_dentry.  We should get old_dir from old_dentry and
-lookup old_dentry in old_dir in case another node remove the old dentry.
+We have some code in udbg_uart_getc_poll() that tries to protect
+against a NULL udbg_uart_in, but gets it all wrong.
 
-With this change, hard linking works again, when paths are relative with
-at least one subdirectory.  This is how the problem was reproducable:
+Found with the LLVM static analyzer (scan-build).
 
-  # mkdir a
-  # mkdir b
-  # touch a/test
-  # ln a/test b/test
-  ln: failed to create hard link `b/test' => `a/test': No such file or  directory
-
-However when creating links in the same dir, it worked well.
-
-Now the link gets created.
-
-Fixes: 0e048316ff57 ("ocfs2: check existence of old dentry in ocfs2_link()")
-Signed-off-by: joyce.xue <xuejiufei@huawei.com>
-Reported-by: Szabo Aron - UBIT <aron@ubit.hu>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Tested-by: Aron Szabo <aron@ubit.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 309257484cc1 ("powerpc: Cleanup udbg_16550 and add support for LPC PIO-only UARTs")
+Signed-off-by: Anton Blanchard <anton@samba.org>
+[mpe: Add some newlines for readability while we're here]
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ocfs2/namei.c | 43 +++++++++++++++++++++++++++++++++++--------
- 1 file changed, 35 insertions(+), 8 deletions(-)
+ arch/powerpc/kernel/udbg_16550.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ocfs2/namei.c b/fs/ocfs2/namei.c
-index 8add6f1030d7..a997d7f40608 100644
---- a/fs/ocfs2/namei.c
-+++ b/fs/ocfs2/namei.c
-@@ -94,6 +94,14 @@ static int ocfs2_create_symlink_data(struct ocfs2_super *osb,
- 				     struct inode *inode,
- 				     const char *symname);
+diff --git a/arch/powerpc/kernel/udbg_16550.c b/arch/powerpc/kernel/udbg_16550.c
+index 6e7c4923b5ea..411116c38da4 100644
+--- a/arch/powerpc/kernel/udbg_16550.c
++++ b/arch/powerpc/kernel/udbg_16550.c
+@@ -69,8 +69,12 @@ static void udbg_uart_putc(char c)
  
-+static int ocfs2_double_lock(struct ocfs2_super *osb,
-+			     struct buffer_head **bh1,
-+			     struct inode *inode1,
-+			     struct buffer_head **bh2,
-+			     struct inode *inode2,
-+			     int rename);
-+
-+static void ocfs2_double_unlock(struct inode *inode1, struct inode *inode2);
- /* An orphan dir name is an 8 byte value, printed as a hex string */
- #define OCFS2_ORPHAN_NAMELEN ((int)(2 * sizeof(u64)))
- 
-@@ -678,8 +686,10 @@ static int ocfs2_link(struct dentry *old_dentry,
+ static int udbg_uart_getc_poll(void)
  {
- 	handle_t *handle;
- 	struct inode *inode = old_dentry->d_inode;
-+	struct inode *old_dir = old_dentry->d_parent->d_inode;
- 	int err;
- 	struct buffer_head *fe_bh = NULL;
-+	struct buffer_head *old_dir_bh = NULL;
- 	struct buffer_head *parent_fe_bh = NULL;
- 	struct ocfs2_dinode *fe = NULL;
- 	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
-@@ -696,19 +706,33 @@ static int ocfs2_link(struct dentry *old_dentry,
- 
- 	dquot_initialize(dir);
- 
--	err = ocfs2_inode_lock_nested(dir, &parent_fe_bh, 1, OI_LS_PARENT);
-+	err = ocfs2_double_lock(osb, &old_dir_bh, old_dir,
-+			&parent_fe_bh, dir, 0);
- 	if (err < 0) {
- 		if (err != -ENOENT)
- 			mlog_errno(err);
- 		return err;
- 	}
- 
-+	/* make sure both dirs have bhs
-+	 * get an extra ref on old_dir_bh if old==new */
-+	if (!parent_fe_bh) {
-+		if (old_dir_bh) {
-+			parent_fe_bh = old_dir_bh;
-+			get_bh(parent_fe_bh);
-+		} else {
-+			mlog(ML_ERROR, "%s: no old_dir_bh!\n", osb->uuid_str);
-+			err = -EIO;
-+			goto out;
-+		}
-+	}
+-	if (!udbg_uart_in || !(udbg_uart_in(UART_LSR) & LSR_DR))
++	if (!udbg_uart_in)
++		return -1;
 +
- 	if (!dir->i_nlink) {
- 		err = -ENOENT;
- 		goto out;
- 	}
- 
--	err = ocfs2_lookup_ino_from_name(dir, old_dentry->d_name.name,
-+	err = ocfs2_lookup_ino_from_name(old_dir, old_dentry->d_name.name,
- 			old_dentry->d_name.len, &old_de_ino);
- 	if (err) {
- 		err = -ENOENT;
-@@ -801,10 +825,11 @@ out_unlock_inode:
- 	ocfs2_inode_unlock(inode, 1);
- 
- out:
--	ocfs2_inode_unlock(dir, 1);
-+	ocfs2_double_unlock(old_dir, dir);
- 
- 	brelse(fe_bh);
- 	brelse(parent_fe_bh);
-+	brelse(old_dir_bh);
- 
- 	ocfs2_free_dir_lookup_result(&lookup);
- 
-@@ -1072,14 +1097,15 @@ static int ocfs2_check_if_ancestor(struct ocfs2_super *osb,
++	if (!(udbg_uart_in(UART_LSR) & LSR_DR))
+ 		return udbg_uart_in(UART_RBR);
++
+ 	return -1;
  }
  
- /*
-- * The only place this should be used is rename!
-+ * The only place this should be used is rename and link!
-  * if they have the same id, then the 1st one is the only one locked.
-  */
- static int ocfs2_double_lock(struct ocfs2_super *osb,
- 			     struct buffer_head **bh1,
- 			     struct inode *inode1,
- 			     struct buffer_head **bh2,
--			     struct inode *inode2)
-+			     struct inode *inode2,
-+			     int rename)
- {
- 	int status;
- 	int inode1_is_ancestor, inode2_is_ancestor;
-@@ -1127,7 +1153,7 @@ static int ocfs2_double_lock(struct ocfs2_super *osb,
- 		}
- 		/* lock id2 */
- 		status = ocfs2_inode_lock_nested(inode2, bh2, 1,
--						 OI_LS_RENAME1);
-+				rename == 1 ? OI_LS_RENAME1 : OI_LS_PARENT);
- 		if (status < 0) {
- 			if (status != -ENOENT)
- 				mlog_errno(status);
-@@ -1136,7 +1162,8 @@ static int ocfs2_double_lock(struct ocfs2_super *osb,
- 	}
- 
- 	/* lock id1 */
--	status = ocfs2_inode_lock_nested(inode1, bh1, 1, OI_LS_RENAME2);
-+	status = ocfs2_inode_lock_nested(inode1, bh1, 1,
-+			rename == 1 ?  OI_LS_RENAME2 : OI_LS_PARENT);
- 	if (status < 0) {
- 		/*
- 		 * An error return must mean that no cluster locks
-@@ -1252,7 +1279,7 @@ static int ocfs2_rename(struct inode *old_dir,
- 
- 	/* if old and new are the same, this'll just do one lock. */
- 	status = ocfs2_double_lock(osb, &old_dir_bh, old_dir,
--				   &new_dir_bh, new_dir);
-+				   &new_dir_bh, new_dir, 1);
- 	if (status < 0) {
- 		mlog_errno(status);
- 		goto bail;
 -- 
 2.1.4
 
