@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759747AbbA0Urh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 15:47:37 -0500
-Received: from smtprelay0237.hostedemail.com ([216.40.44.237]:38381 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751401AbbA0Urf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 15:47:35 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1567:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:2915:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6261:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13019:13069:13141:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ice16_5f0ecaab37b23
-X-Filterd-Recvd-Size: 1592
-Message-ID: <1422391651.13127.3.camel@perches.com>
-Subject: Re: [PATCH 0/6] Fix fbtft/fb_pcd8544.c coding style errors
-From: Joe Perches <joe@perches.com>
-To: Heba Aamer <heba93aamer@gmail.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, notro@tronnes.org,
-        thomas.petazzoni@free-electrons.com, linux-kernel@vger.kernel.org
-Date: Tue, 27 Jan 2015 12:47:31 -0800
-In-Reply-To: <cover.1422296762.git.heba93aamer@gmail.com>
-References: <cover.1422296762.git.heba93aamer@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759797AbbA0Uuf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 15:50:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759158AbbA0Uue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 15:50:34 -0500
+Message-ID: <54C7FA09.4000908@redhat.com>
+Date: Tue, 27 Jan 2015 15:50:17 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: question about save_xstate_sig() - WHY DOES THIS WORK?
+References: <54C2A245.4010307@redhat.com> <20150124202021.GA1285@redhat.com> <54C6CD64.10208@redhat.com> <20150127194030.GA29879@redhat.com> <54C7F4BB.5020509@redhat.com>
+In-Reply-To: <54C7F4BB.5020509@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-27 at 22:30 +0200, Heba Aamer wrote:
-> This patch set fixes most of the checkpatch.pl coding
-> style errors found in drivers/staging/fbtft/fb_pcd8544.c
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 01/27/2015 03:27 PM, Rik van Riel wrote:
+> On 01/27/2015 02:40 PM, Oleg Nesterov wrote:
+
+>>>> - Why unlazy_fpu() always does __save_init_fpu() even if 
+>>>> use_eager_fpu?
+>>>> 
+>>>> and note that in this case __thread_fpu_end() is wrong if 
+>>>> use_eager_fpu, but fortunately the only possible caller of 
+>>>> unlazy_fpu() is coredump. fpu_copy() checks use_eager_fpu().
+>>>> 
+>>>> - Is unlazy_fpu()->__save_init_fpu() safe wrt 
+>>>> __kernel_fpu_begin() from irq?
 > 
-> Heba Aamer (6):
->   staging: fbtft: fix space required after that ';'
->   staging: fbtft: fix spaces required around that '='
->   staging: fbtft: fix spaces required around that '<'
+> It looks like it should be safe, as long as __save_init_fpu() knows
+> that the task no longer has the FPU after __kernel_fpu_end(), so it
+> does not try to save the kernel FPU state to the user's 
+> task->thread.fpu.state->xstate
+> 
+> The caveat here is that __kernel_fpu_begin()/__kernel_fpu_end() 
+> needs to be kept from running during unlazy_fpu().
+> 
+> This means interrupted_kernel_fpu_idle and/or irq_fpu_usable need
+> to check whether preemption is disabled, and lock out 
+> __kernel_fpu_begin() when preemption is disabled.
+> 
+> It does not look like it currently does that...
 
-I suppose this is OK, but I think it's
-better to do all the horizontal whitespace
-changes in the same patch.
+... and that won't work, because preempt_disable() is a noop
+without CONFIG_PREEMPT enabled. Sigh.
 
-It's trivial and easy to verify all-at-once
-instead of modifying the same line multiple
-times.
+Not sure how to work around that, except by having
+__Kernel_fpu_end() always restore the task FPU state, if the
+task had the FPU when entering.
 
-It's also nice to say that git diff -w shows
-no difference and that objdiff is empty.
+This suggests it may be advantageous to be liberal with
+__thread_fpu_end() when we know user space will not be touching
+the FPU again for a while, since that would reduce the work
+done by __kernel_fpu_begin()/__kernel_fpu_end().
 
->   staging: fbtft: fix trailing whitespace
+Does that make sense?
 
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-
+iQEcBAEBAgAGBQJUx/oJAAoJEM553pKExN6Dh4YH/AtVOza5VeZuz55s59LifpLt
+5eXMQBxQt0JiX9NACc+7qXDuEFfkmnzhNpNT98abuic7/1dvj2TfcoXSnkysDaNb
+WojFW0gMc973G4UA6ZPsqScxz7jdfaqNrFdFEaTPM6URClIllVXTgnCcDoWCFfR2
+627s6vyOW//BgXnedHraGGqnBVpCBLWrsVnhJ0RbPd2cjrrwKPXcbLnk6+uzZqLY
+/7Zp2fSDjuAY6PhxRZM529vyJNqIM2mhlKFG8/xnch95mlXwtOQvLuuJmkwbKabb
+6Z1gqpyEXbWyB2riD/pQrIlkOg2P4UuLONM7fgFY4Dzc8MEM7UmNR4mWoPAeBuU=
+=SSqD
+-----END PGP SIGNATURE-----
