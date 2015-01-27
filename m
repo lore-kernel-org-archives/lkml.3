@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108AbbA0Mtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:49:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34877 "EHLO
+	id S932575AbbA0MtZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:49:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34881 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758265AbbA0MRO (ORCPT
+	with ESMTP id S1758237AbbA0MRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:14 -0500
+	Tue, 27 Jan 2015 07:17:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 018/126] ACPI / PM: Fix PM initialization for devices that are not present
-Date: Tue, 27 Jan 2015 12:15:23 +0000
-Message-Id: <1422361031-19364-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 019/126] mm: propagate error from stack expansion even for guard page
+Date: Tue, 27 Jan 2015 12:15:24 +0000
+Message-Id: <1422361031-19364-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,103 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 1b1f3e1699a9886f1070f94171097ab4ccdbfc95 upstream.
+commit fee7e49d45149fba60156f5b59014f764d3e3728 upstream.
 
-If an ACPI device object whose _STA returns 0 (not present and not
-functional) has _PR0 or _PS0, its power_manageable flag will be set
-and acpi_bus_init_power() will return 0 for it.  Consequently, if
-such a device object is passed to the ACPI device PM functions, they
-will attempt to carry out the requested operation on the device,
-although they should not do that for devices that are not present.
+Jay Foad reports that the address sanitizer test (asan) sometimes gets
+confused by a stack pointer that ends up being outside the stack vma
+that is reported by /proc/maps.
 
-To fix that problem make acpi_bus_init_power() return an error code
-for devices that are not present which will cause power_manageable to
-be cleared for them as appropriate in acpi_bus_get_power_flags().
-However, the lists of power resources should not be freed for the
-device in that case, so modify acpi_bus_get_power_flags() to keep
-those lists even if acpi_bus_init_power() returns an error.
-Accordingly, when deciding whether or not the lists of power
-resources need to be freed, acpi_free_power_resources_lists()
-should check the power.flags.power_resources flag instead of
-flags.power_manageable, so make that change too.
+This happens due to an interaction between RLIMIT_STACK and the guard
+page: when we do the guard page check, we ignore the potential error
+from the stack expansion, which effectively results in a missing guard
+page, since the expected stack expansion won't have been done.
 
-Furthermore, if acpi_bus_attach() sees that flags.initialized is
-unset for the given device, it should reset the power management
-settings of the device and re-initialize them from scratch instead
-of relying on the previous settings (the device may have appeared
-after being not present previously, for example), so make it use
-the 'valid' flag of the D0 power state as the initial value of
-flags.power_manageable for it and call acpi_bus_init_power() to
-discover its current power state.
+And since /proc/maps explicitly ignores the guard page (commit
+d7824370e263: "mm: fix up some user-visible effects of the stack guard
+page"), the stack pointer ends up being outside the reported stack area.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+This is the minimal patch: it just propagates the error.  It also
+effectively makes the guard page part of the stack limit, which in turn
+measn that the actual real stack is one page less than the stack limit.
+
+Let's see if anybody notices.  We could teach acct_stack_growth() to
+allow an extra page for a grow-up/grow-down stack in the rlimit test,
+but I don't want to add more complexity if it isn't needed.
+
+Reported-and-tested-by: Jay Foad <jay.foad@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/device_pm.c |  2 +-
- drivers/acpi/scan.c      | 13 ++++++++-----
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ include/linux/mm.h | 2 +-
+ mm/memory.c        | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/device_pm.c b/drivers/acpi/device_pm.c
-index 9ea7b99bc9a0..f702dcef4df9 100644
---- a/drivers/acpi/device_pm.c
-+++ b/drivers/acpi/device_pm.c
-@@ -257,7 +257,7 @@ int acpi_bus_init_power(struct acpi_device *device)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f988e4b189e1..663ad81d3c66 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1902,7 +1902,7 @@ extern int expand_downwards(struct vm_area_struct *vma,
+ #if VM_GROWSUP
+ extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
+ #else
+-  #define expand_upwards(vma, address) do { } while (0)
++  #define expand_upwards(vma, address) (0)
+ #endif
  
- 	device->power.state = ACPI_STATE_UNKNOWN;
- 	if (!acpi_device_is_present(device))
--		return 0;
-+		return -ENXIO;
+ /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
+diff --git a/mm/memory.c b/mm/memory.c
+index 00a99f5614df..49787747ca33 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2601,7 +2601,7 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
+ 		if (prev && prev->vm_end == address)
+ 			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
  
- 	result = acpi_device_get_power(device, &state);
- 	if (result)
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 2e9ed9a4f13f..465712f3b7b4 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -869,7 +869,7 @@ static void acpi_free_power_resources_lists(struct acpi_device *device)
- 	if (device->wakeup.flags.valid)
- 		acpi_power_resources_list_free(&device->wakeup.resources);
+-		expand_downwards(vma, address - PAGE_SIZE);
++		return expand_downwards(vma, address - PAGE_SIZE);
+ 	}
+ 	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
+ 		struct vm_area_struct *next = vma->vm_next;
+@@ -2610,7 +2610,7 @@ static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned lo
+ 		if (next && next->vm_start == address + PAGE_SIZE)
+ 			return next->vm_flags & VM_GROWSUP ? 0 : -ENOMEM;
  
--	if (!device->flags.power_manageable)
-+	if (!device->power.flags.power_resources)
- 		return;
- 
- 	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
-@@ -1588,10 +1588,8 @@ static void acpi_bus_get_power_flags(struct acpi_device *device)
- 			device->power.flags.power_resources)
- 		device->power.states[ACPI_STATE_D3_COLD].flags.os_accessible = 1;
- 
--	if (acpi_bus_init_power(device)) {
--		acpi_free_power_resources_lists(device);
-+	if (acpi_bus_init_power(device))
- 		device->flags.power_manageable = 0;
--	}
+-		expand_upwards(vma, address + PAGE_SIZE);
++		return expand_upwards(vma, address + PAGE_SIZE);
+ 	}
+ 	return 0;
  }
- 
- static void acpi_bus_get_flags(struct acpi_device *device)
-@@ -2159,13 +2157,18 @@ static void acpi_bus_attach(struct acpi_device *device)
- 	/* Skip devices that are not present. */
- 	if (!acpi_device_is_present(device)) {
- 		device->flags.visited = false;
-+		device->flags.power_manageable = 0;
- 		return;
- 	}
- 	if (device->handler)
- 		goto ok;
- 
- 	if (!device->flags.initialized) {
--		acpi_bus_update_power(device, NULL);
-+		device->flags.power_manageable =
-+			device->power.states[ACPI_STATE_D0].flags.valid;
-+		if (acpi_bus_init_power(device))
-+			device->flags.power_manageable = 0;
-+
- 		device->flags.initialized = true;
- 	}
- 	device->flags.visited = false;
 -- 
 2.1.4
 
