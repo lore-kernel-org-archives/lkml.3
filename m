@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274AbbA0Qge (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:36:34 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:40010 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461AbbA0Qgc (ORCPT
+	id S1758649AbbA0QiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:38:23 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:58811 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869AbbA0QiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:36:32 -0500
-From: Stephane Viau <sviau@codeaurora.org>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robdclark@gmail.com, Stephane Viau <sviau@codeaurora.org>
-Subject: [PATCH] drm/msm/mdp5: only flush on a CRTC ->atomic_flush()
-Date: Tue, 27 Jan 2015 11:35:56 -0500
-Message-Id: <1422376556-25904-1-git-send-email-sviau@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Tue, 27 Jan 2015 11:38:20 -0500
+Date: Tue, 27 Jan 2015 08:37:23 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Robert Rosengren <robert.rosengren@axis.com>
+Cc: Jean Delvare <jdelvare@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Johan Adolfsson <johana@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval
+ configurable
+Message-ID: <20150127163723.GA25845@roeck-us.net>
+References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>
+ <54B92596.2040206@roeck-us.net>
+ <20150116183020.GA6262@roeck-us.net>
+ <54C74567.9020201@axis.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C74567.9020201@axis.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.54C7BEFB.028C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 5
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MDP5 hardware has some limitation and requires to avoid flushing
-registers more than once between two Vblanks.
+On Tue, Jan 27, 2015 at 08:59:35AM +0100, Robert Rosengren wrote:
+> On 01/16/2015 07:30 PM, Guenter Roeck wrote:
+> >I sent a couple of patches a minute ago which should take care of the issue.
+> >Would be great if you can test it.
+> I applied the v2 versions of the patches for a quick test, but it was not
+> successful. Haven't done any further investigation on what the problem might
+> be, but when trying to read the sysfs driver I get "read error: No such
+> device or address".
+> 
+> The sysfs path have moved with the REGMAP settings, from
+> /sys/bus/i2c/devices/<x>/in0_input to
+> /sys/bus/i2c/devices/<x>/hwmon/hwmon0/in0_input.
+> 
+> Any ideas? Haven't had REGMAP configured in my kernel earlier, might it be
+> some specific configuration I miss?
+> 
 
-This change removes all FLUSH operations (except for HW cursor)
-beside the one coming from a CRTC's ->atomic_flush().
+My module test script at github.com/groeck/module-tests.git passes. Only
+downside is that it doesn't use real register values since I do not have
+a register dump.
 
-This avoid this type of behavior (eg: CRTC + 1 plane overlay):
+I requested samples for both ads2828 and ads2830, so I should be able
+to test the code myself on real hardware in a couple of days.
 
-	[drm:mdp5_crtc_vblank_irq] vblank
-	[drm:mdp5_ctl_commit] flush (20048)   CTL + LM0 + RGB0
-	[drm:mdp5_ctl_commit] flush (20040)   CTL + LM0
-	[drm:mdp5_crtc_vblank_irq] blank
-	[drm:mdp5_ctl_commit] flush (20049)   CTL + LM0 + RGB0 + VIG0
-	[drm:mdp5_crtc_vblank_irq] blank
-
-and replaces it by:
-
-	[drm:mdp5_crtc_vblank_irq] vblank
-	[drm:mdp5_ctl_commit] flush (20048)   CTL + LM0 + RGB0
-	[drm:mdp5_crtc_vblank_irq] blank
-	[drm:mdp5_ctl_commit] flush (20049)   CTL + LM0 + RGB0 + VIG0
-	[drm:mdp5_crtc_vblank_irq] blank
-
-Only *one* FLUSH is called between Vblanks interrupts.
-
-Signed-off-by: Stephane Viau <sviau@codeaurora.org>
----
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
-index 10f93cf..f455f38 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
-@@ -297,7 +297,7 @@ static void mdp5_crtc_commit(struct drm_crtc *crtc)
- 	struct mdp5_crtc *mdp5_crtc = to_mdp5_crtc(crtc);
- 	DBG("%s", mdp5_crtc->name);
- 	mdp5_crtc_dpms(crtc, DRM_MODE_DPMS_ON);
--	crtc_flush_all(crtc);
-+
- 	/* drop the ref to mdp clk's that we got in prepare: */
- 	mdp5_disable(get_kms(crtc));
- }
-@@ -600,7 +600,6 @@ void mdp5_crtc_set_intf(struct drm_crtc *crtc, int intf,
- {
- 	struct mdp5_crtc *mdp5_crtc = to_mdp5_crtc(crtc);
- 	struct mdp5_kms *mdp5_kms = get_kms(crtc);
--	uint32_t flush_mask = 0;
- 	uint32_t intf_sel;
- 	unsigned long flags;
- 
-@@ -639,10 +638,6 @@ void mdp5_crtc_set_intf(struct drm_crtc *crtc, int intf,
- 
- 	DBG("%s: intf_sel=%08x", mdp5_crtc->name, intf_sel);
- 	mdp5_ctl_set_intf(mdp5_crtc->ctl, intf);
--	flush_mask |= mdp5_ctl_get_flush(mdp5_crtc->ctl);
--	flush_mask |= mdp5_lm_get_flush(mdp5_crtc->lm);
--
--	crtc_flush(crtc, flush_mask);
- }
- 
- int mdp5_crtc_get_lm(struct drm_crtc *crtc)
--- 
-Qualcomm Innovation Center, Inc.
-
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, a Linux Foundation Collaborative Project
-
+Guenter
