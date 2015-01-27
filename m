@@ -1,88 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759874AbbA0VU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:20:26 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:65188 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450AbbA0VUZ (ORCPT
+	id S1760016AbbA0VUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 16:20:42 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:57576 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759982AbbA0VUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 16:20:25 -0500
-From: Julius Werner <jwerner@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Douglas Anderson <dianders@chromium.org>,
-        Tomasz Figa <tfiga@chromium.org>, Wu Liang feng <wulf@rock-chips.com>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH v3] usb: Retry port status check on resume to work around RH bugs
-Date: Tue, 27 Jan 2015 13:20:12 -0800
-Message-Id: <1422393612-14470-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <Pine.LNX.4.44L0.1501271107290.28374-100000@netrider.rowland.org>
+	Tue, 27 Jan 2015 16:20:40 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Tue, 27 Jan 2015 22:20:24 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: shawn.guo@linaro.org, B38611@freescale.com, maitysanchayan@gmail.com,
+        linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] iio: adc: vf610: use ADC clock within specification
+In-Reply-To: <54C7FC31.2000306@kernel.org>
+References: <1421769723-28677-1-git-send-email-stefan@agner.ch>
+ <1421769723-28677-2-git-send-email-stefan@agner.ch>
+ <54C7FC31.2000306@kernel.org>
+Message-ID: <6f337694ae952a4574ad678d80231bd2@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EHCI controller on the RK3288 SoC is violating basic parts of the
-USB spec and thereby unable to properly resume a suspended port. It does
-not start SOF generation within 3ms of finishing resume signaling, so
-the attached device will drop of the bus again. This is a particular
-problem with runtime PM, where accessing the device will trigger a
-resume that immediately makes it unavailable (and reenumerate with a new
-handle).
+On 2015-01-27 21:59, Jonathan Cameron wrote:
+> On 20/01/15 16:02, Stefan Agner wrote:
+>> Depending on conversion mode used, the ADC clock (ADCK) needs
+>> to be below a maximum frequency. According to Vybrid's data
+>> sheet this is 20MHz for the low power conversion mode.
+>>
+>> The ADC clock is depending on input clock, which is the bus
+>> clock by default. Vybrid SoC are typically clocked at at 400MHz
+>> or 500MHz, which leads to 66MHz or 83MHz bus clock respectively.
+>> Hence, a divider of 8 is required to stay below the specified
+>> maximum clock of 20MHz.
+> I hate to point out the obvious, by 83/8 > 20.  Missing something?
 
-Thankfully, the persist feature is generally able to work around stuff
-like that. Unfortunately, it doesn't quite work in this particular case
-because the controller will turn off the CurrentConnectStatus bit for an
-instant while the device is reconnecting, which causes the kernel to
-conclude that it permanently disappeared. This patch adds a tiny retry
-mechanism to the core port resume code which will catch this case and
-shouldn't have any notable impact on other controllers.
+"stay below the specified maximum clock of 20MHz."
+                          ^
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/core/hub.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+The next smaller divider is 4, but then we would en up with more than
+20MHz... Unfortunate, but I really don't want to violate the spec :-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index aeb50bb..26bdd96 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2896,10 +2896,12 @@ static int port_is_suspended(struct usb_hub *hub, unsigned portstatus)
-  */
- static int check_port_resume_type(struct usb_device *udev,
- 		struct usb_hub *hub, int port1,
--		int status, unsigned portchange, unsigned portstatus)
-+		int status, u16 portchange, u16 portstatus)
- {
- 	struct usb_port *port_dev = hub->ports[port1 - 1];
-+	int retries = 3;
- 
-+ retry:
- 	/* Is a warm reset needed to recover the connection? */
- 	if (status == 0 && udev->reset_resume
- 		&& hub_port_warm_reset_required(hub, port1, portstatus)) {
-@@ -2907,10 +2909,17 @@ static int check_port_resume_type(struct usb_device *udev,
- 	}
- 	/* Is the device still present? */
- 	else if (status || port_is_suspended(hub, portstatus) ||
--			!port_is_power_on(hub, portstatus) ||
--			!(portstatus & USB_PORT_STAT_CONNECTION)) {
-+			!port_is_power_on(hub, portstatus)) {
- 		if (status >= 0)
- 			status = -ENODEV;
-+	} else if (!(portstatus & USB_PORT_STAT_CONNECTION)) {
-+		if (retries--) {
-+			usleep_range(200, 300);
-+			status = hub_port_status(hub, port1, &portstatus,
-+							     &portchange);
-+			goto retry;
-+		}
-+		status = -ENODEV;
- 	}
- 
- 	/* Can't do a normal resume if the port isn't enabled,
--- 
-2.1.2
+>>
+>> Due to the different bus clock speeds, the resulting sampling
+>> frequency is not static. Hence use the ADC clock and calculate
+>> the actual available sampling frequency dynamically.
+>>
+>> This fixes bogous values observed on some 500MHz clocked Vybrid
+>> SoC. The resulting value usually showed Bit 9 being stuck at 1,
+>> or 0, which lead to a value of +/-512.
+>>
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> In principle this looks fine to me. I would however like an
+> Ack from Fugang as the original author of the driver).
 
+Ok, Fugang is in CC too (B38611@freescale.com).
+
+
+> Given timing I probably wouldn't send this upstream until after
+> the merge window now (as it's stable material this won't really
+> matter).
+
+That's fine for me, thx.
+
+--
+Stefan
+
+> 
+> Jonathan
+>> ---
+>>  drivers/iio/adc/vf610_adc.c | 91 ++++++++++++++++++++++++++++++---------------
+>>  1 file changed, 61 insertions(+), 30 deletions(-)
+>>
+>> diff --git a/drivers/iio/adc/vf610_adc.c b/drivers/iio/adc/vf610_adc.c
+>> index 8ec353c..e63b8e7 100644
+>> --- a/drivers/iio/adc/vf610_adc.c
+>> +++ b/drivers/iio/adc/vf610_adc.c
+>> @@ -141,9 +141,13 @@ struct vf610_adc {
+>>  	struct regulator *vref;
+>>  	struct vf610_adc_feature adc_feature;
+>>
+>> +	u32 sample_freq_avail[5];
+>> +
+>>  	struct completion completion;
+>>  };
+>>
+>> +static const u32 vf610_hw_avgs[] = { 1, 4, 8, 16, 32 };
+>> +
+>>  #define VF610_ADC_CHAN(_idx, _chan_type) {			\
+>>  	.type = (_chan_type),					\
+>>  	.indexed = 1,						\
+>> @@ -180,35 +184,47 @@ static const struct iio_chan_spec vf610_adc_iio_channels[] = {
+>>  	/* sentinel */
+>>  };
+>>
+>> -/*
+>> - * ADC sample frequency, unit is ADCK cycles.
+>> - * ADC clk source is ipg clock, which is the same as bus clock.
+>> - *
+>> - * ADC conversion time = SFCAdder + AverageNum x (BCT + LSTAdder)
+>> - * SFCAdder: fixed to 6 ADCK cycles
+>> - * AverageNum: 1, 4, 8, 16, 32 samples for hardware average.
+>> - * BCT (Base Conversion Time): fixed to 25 ADCK cycles for 12 bit mode
+>> - * LSTAdder(Long Sample Time): fixed to 3 ADCK cycles
+>> - *
+>> - * By default, enable 12 bit resolution mode, clock source
+>> - * set to ipg clock, So get below frequency group:
+>> - */
+>> -static const u32 vf610_sample_freq_avail[5] =
+>> -{1941176, 559332, 286957, 145374, 73171};
+>> +static inline void vf610_adc_calculate_rates(struct vf610_adc *info)
+>> +{
+>> +	unsigned long adck_rate, ipg_rate = clk_get_rate(info->clk);
+>> +	int i;
+>> +
+>> +	/*
+>> +	 * Calculate ADC sample frequencies
+>> +	 * Sample time unit is ADCK cycles. ADCK clk source is ipg clock,
+>> +	 * which is the same as bus clock.
+>> +	 *
+>> +	 * ADC conversion time = SFCAdder + AverageNum x (BCT + LSTAdder)
+>> +	 * SFCAdder: fixed to 6 ADCK cycles
+>> +	 * AverageNum: 1, 4, 8, 16, 32 samples for hardware average.
+>> +	 * BCT (Base Conversion Time): fixed to 25 ADCK cycles for 12 bit mode
+>> +	 * LSTAdder(Long Sample Time): fixed to 3 ADCK cycles
+>> +	 */
+>> +	adck_rate = ipg_rate / info->adc_feature.clk_div;
+>> +	for (i = 0; i < ARRAY_SIZE(vf610_hw_avgs); i++)
+>> +		info->sample_freq_avail[i] =
+>> +			adck_rate / (6 + vf610_hw_avgs[i] * (25 + 3));
+>> +}
+>>
+>>  static inline void vf610_adc_cfg_init(struct vf610_adc *info)
+>>  {
+>> +	struct vf610_adc_feature *adc_feature = &info->adc_feature;
+>> +
+>>  	/* set default Configuration for ADC controller */
+>> -	info->adc_feature.clk_sel = VF610_ADCIOC_BUSCLK_SET;
+>> -	info->adc_feature.vol_ref = VF610_ADCIOC_VR_VREF_SET;
+>> +	adc_feature->clk_sel = VF610_ADCIOC_BUSCLK_SET;
+>> +	adc_feature->vol_ref = VF610_ADCIOC_VR_VREF_SET;
+>> +
+>> +	adc_feature->calibration = true;
+>> +	adc_feature->ovwren = true;
+>> +
+>> +	adc_feature->res_mode = 12;
+>> +	adc_feature->sample_rate = 1;
+>> +	adc_feature->lpm = true;
+>>
+>> -	info->adc_feature.calibration = true;
+>> -	info->adc_feature.ovwren = true;
+>> +	/* Use a save ADCK which is below 20MHz on all devices */
+>> +	adc_feature->clk_div = 8;
+>>
+>> -	info->adc_feature.clk_div = 1;
+>> -	info->adc_feature.res_mode = 12;
+>> -	info->adc_feature.sample_rate = 1;
+>> -	info->adc_feature.lpm = true;
+>> +	vf610_adc_calculate_rates(info);
+>>  }
+>>
+>>  static void vf610_adc_cfg_post_set(struct vf610_adc *info)
+>> @@ -290,12 +306,10 @@ static void vf610_adc_cfg_set(struct vf610_adc *info)
+>>
+>>  	cfg_data = readl(info->regs + VF610_REG_ADC_CFG);
+>>
+>> -	/* low power configuration */
+>>  	cfg_data &= ~VF610_ADC_ADLPC_EN;
+>>  	if (adc_feature->lpm)
+>>  		cfg_data |= VF610_ADC_ADLPC_EN;
+>>
+>> -	/* disable high speed */
+>>  	cfg_data &= ~VF610_ADC_ADHSC_EN;
+>>
+>>  	writel(cfg_data, info->regs + VF610_REG_ADC_CFG);
+>> @@ -435,10 +449,27 @@ static irqreturn_t vf610_adc_isr(int irq, void *dev_id)
+>>  	return IRQ_HANDLED;
+>>  }
+>>
+>> -static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("1941176, 559332, 286957, 145374, 73171");
+>> +static ssize_t vf610_show_samp_freq_avail(struct device *dev,
+>> +				struct device_attribute *attr, char *buf)
+>> +{
+>> +	struct vf610_adc *info = iio_priv(dev_to_iio_dev(dev));
+>> +	size_t len = 0;
+>> +	int i;
+>> +
+>> +	for (i = 0; i < ARRAY_SIZE(info->sample_freq_avail); i++)
+>> +		len += scnprintf(buf + len, PAGE_SIZE - len,
+>> +			"%u ", info->sample_freq_avail[i]);
+>> +
+>> +	/* replace trailing space by newline */
+>> +	buf[len - 1] = '\n';
+>> +
+>> +	return len;
+>> +}
+>> +
+>> +static IIO_DEV_ATTR_SAMP_FREQ_AVAIL(vf610_show_samp_freq_avail);
+>>
+>>  static struct attribute *vf610_attributes[] = {
+>> -	&iio_const_attr_sampling_frequency_available.dev_attr.attr,
+>> +	&iio_dev_attr_sampling_frequency_available.dev_attr.attr,
+>>  	NULL
+>>  };
+>>
+>> @@ -502,7 +533,7 @@ static int vf610_read_raw(struct iio_dev *indio_dev,
+>>  		return IIO_VAL_FRACTIONAL_LOG2;
+>>
+>>  	case IIO_CHAN_INFO_SAMP_FREQ:
+>> -		*val = vf610_sample_freq_avail[info->adc_feature.sample_rate];
+>> +		*val = info->sample_freq_avail[info->adc_feature.sample_rate];
+>>  		*val2 = 0;
+>>  		return IIO_VAL_INT;
+>>
+>> @@ -525,9 +556,9 @@ static int vf610_write_raw(struct iio_dev *indio_dev,
+>>  	switch (mask) {
+>>  		case IIO_CHAN_INFO_SAMP_FREQ:
+>>  			for (i = 0;
+>> -				i < ARRAY_SIZE(vf610_sample_freq_avail);
+>> +				i < ARRAY_SIZE(info->sample_freq_avail);
+>>  				i++)
+>> -				if (val == vf610_sample_freq_avail[i]) {
+>> +				if (val == info->sample_freq_avail[i]) {
+>>  					info->adc_feature.sample_rate = i;
+>>  					vf610_adc_sample_set(info);
+>>  					return 0;
+>>
