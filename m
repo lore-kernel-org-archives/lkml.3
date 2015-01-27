@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758974AbbA0Xyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 18:54:43 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:51237 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756576AbbA0Xyl (ORCPT
+	id S1759135AbbA0XzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 18:55:11 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:50601 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758867AbbA0XzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 18:54:41 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150121061642.GD15963@gmail.com>
-References: <20150119170839.2c6b4b78@canb.auug.org.au> <20150119093501.GA4644@pd.tnic>
- <CALCETrW05f9nty5Sk8XA2DTsocqqOxp62aT9QXwta74Km+ZOng@mail.gmail.com>
- <20150121053410.GA15291@gmail.com> <CALCETrXCenu4UexZfV6HTq898JbXmZGU5KaCWCXrz7oikrA34g@mail.gmail.com>
- <20150121055532.GA15518@gmail.com> <CALCETrVKEZz+NFiqxrgQhqhDZ6dPLSr32RiBoZZmFk5ZydEL1w@mail.gmail.com>
- <20150121061642.GD15963@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 27 Jan 2015 15:54:19 -0800
-Message-ID: <CALCETrWBELO_ou7PH0axx7c9qmrWoJRdZdzCRL0__6TBYaJbaQ@mail.gmail.com>
-Subject: Re: Fwd: linux-next: manual merge of the luto-misc tree with the tip tree
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 27 Jan 2015 18:55:09 -0500
+Message-ID: <1422402906.29618.41.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] lib/checksum.c: fix carry in csum_tcpudp_nofold
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Karl Beldan <karl.beldan@gmail.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Karl Beldan <karl.beldan@rivierawaves.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Stable <stable@vger.kernel.org>
+Date: Tue, 27 Jan 2015 15:55:06 -0800
+In-Reply-To: <20150127231314.GA21679@gobelin>
+References: <1422372316-25287-1-git-send-email-karl.beldan@rivierawaves.com>
+	 <20150127220332.GZ29656@ZenIV.linux.org.uk>
+	 <20150127231314.GA21679@gobelin>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 10:16 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Andy Lutomirski <luto@amacapital.net> wrote:
->
->> On Tue, Jan 20, 2015 at 9:55 PM, Ingo Molnar <mingo@kernel.org> wrote:
->> >
->> > * Andy Lutomirski <luto@amacapital.net> wrote:
->> >
->> >> On Tue, Jan 20, 2015 at 9:34 PM, Ingo Molnar <mingo@kernel.org> wrote:
->> >> >
->> >> > * Andy Lutomirski <luto@amacapital.net> wrote:
->> >> >
->> >> >> Hi Ingo and Thomas-
->> >> >>
->> >> >> There's a trivial conflict in the pull request I sent last week.
->> >> >
->> >> > This is your x86 entry code rework pull request, right? The -tip
->> >> > tree now has the RCU commit it depends on, so could you please
->> >> > rebase it on top of tip:core/rcu so I can pull it? I'll resolve
->> >> > any remaining conflicts with the rest of -tip.
->> >> >
->> >>
->> >> Sure, I can do that in the morning.  The pull request merges cleanly
->> >> with tip:core/rcu, though, so is the rebase needed?
->> >
->> > Yes, because your changes rely on the RCU change (semantically),
->> > so if anyone bisects into your commits it might result in a
->> > subtly broken kernel, right?
->>
->> Almost.  The parent of my original pull request is the RCU
->> change that my entry changes semantically depend on, so
->> bisection should be fine.
->
-> Okay, that's good - so now I can pull your bits, because the RCU
-> commit is final, no need to rebase. (Because you already based
-> your bits on the RCU change that later on ended up in -tip.)
->
+On Wed, 2015-01-28 at 00:13 +0100, Karl Beldan wrote:
 
-Are you planning on pulling that version?  In the mean time, I removed
-it from -next so that there won't be a pointless conflict depending on
-which version you pull.
-
-Thanks,
-Andy
-
-> Thanks,
->
->         Ingo
+> Here however I don't assume that a is "small", however I assume it has
+> never overflowed, which is trivial to verify since we only add 3 32bits
+> values and 2 16 bits values to a 64bits.
+> Now we just want (a + b + carry(a + b)) % 2^32, and here I assume
+> (a + b + carry(a + b)) % 2^32 == (a + b) % 2^32 + carry(a + b), I
+> guess this is the trick, and this is easy to convince oneself with:
+> 0xffffffff + 0xffffffff == 0x1fffffffe ==>
+> ((u32)-1 + (u32)-1 + 1) % 2^32 == 0xfffffffe % 2^32 + 1
+> We get this carry pushed out from the MSbs side by the s+= addition
+> pushed back in to the LSbs side of the upper 32bits and this carry
+> doesn't make the upper side overflow.
+> 
+> If this explanation is acceptable, I can reword the commit message with
+> it. Sorry if my initial commit log lacked details, and thanks for your
+> detailed input
 
 
+...
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Look, we already have from32to16() helper :
+
+static inline unsigned short from32to16(unsigned int x)
+{
+        /* add up 16-bit and 16-bit for 16+c bit */
+        x = (x & 0xffff) + (x >> 16);
+        /* add up carry.. */
+        x = (x & 0xffff) + (x >> 16);
+        return x;
+}
+
+Simply add a clean 
+
+static inline u32 from64to32(u64 x)
+{
+        x = (x & 0xffffffff) + (x >> 32);
+        /* add up carry.. */
+        x = (x & 0xffffffff) + (x >> 32);
+        return (u32)x;
+}
+
+This would be self explanatory.
+
+
