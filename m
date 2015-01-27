@@ -1,115 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbbA0G2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 01:28:16 -0500
-Received: from ozlabs.org ([103.22.144.67]:34750 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751001AbbA0G2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 01:28:13 -0500
-Message-ID: <1422340090.27133.4.camel@ellerman.id.au>
-Subject: Re: cpuidle/powernv: Read target_residency value of idle states
- from DT if available
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: rafael.j.wysocki@intel.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Date: Tue, 27 Jan 2015 17:28:10 +1100
-In-Reply-To: <54C70DDD.9040408@linux.vnet.ibm.com>
-References: <20150123045906.D0086140297@ozlabs.org>
-	 <54C70DDD.9040408@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752862AbbA0G3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:29:40 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42881 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbbA0G3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 01:29:37 -0500
+Message-ID: <54C7304C.7010706@collabora.com>
+Date: Tue, 27 Jan 2015 07:29:32 +0100
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH v13 0/6] Per-user clock constraints
+References: <1422011024-32283-1-git-send-email-tomeu.vizoso@collabora.com> <54C6E1FB.5030907@codeaurora.org>
+In-Reply-To: <54C6E1FB.5030907@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-27 at 09:32 +0530, Preeti U Murthy wrote:
-> On 01/23/2015 10:29 AM, Michael Ellerman wrote:
-> > On Tue, 2015-20-01 at 11:26:49 UTC, Preeti U Murthy wrote:
-> >> @@ -177,34 +178,39 @@ static int powernv_add_idle_states(void)
-> > 
-> >>  	for (i = 0; i < dt_idle_states; i++) {
-> >>  
-> >>  		flags = be32_to_cpu(idle_state_flags[i]);
-> >> -
-> >> -		/* Cpuidle accepts exit_latency in us and we estimate
-> >> -		 * target residency to be 10x exit_latency
-> >> +		/*
-> >> +		 * Cpuidle accepts exit_latency and target_residency in us.
-> >> +		 * Use default target_residency values if f/w does not expose it.
-> >>  		 */
-> >> -		latency_ns = be32_to_cpu(idle_state_latency[i]);
-> >>  		if (flags & OPAL_PM_NAP_ENABLED) {
-> >>  			/* Add NAP state */
-> >>  			strcpy(powernv_states[nr_idle_states].name, "Nap");
-> >>  			strcpy(powernv_states[nr_idle_states].desc, "Nap");
-> >>  			powernv_states[nr_idle_states].flags = 0;
-> >> -			powernv_states[nr_idle_states].exit_latency =
-> >> -					((unsigned int)latency_ns) / 1000;
-> >> -			powernv_states[nr_idle_states].target_residency =
-> >> -					((unsigned int)latency_ns / 100);
-> >> +			powernv_states[nr_idle_states].target_residency = 100;
-> >>  			powernv_states[nr_idle_states].enter = &nap_loop;
-> >> -			nr_idle_states++;
-> > 
-> > That looks wrong? Or do you mean to do that?
+On 01/27/2015 01:55 AM, Stephen Boyd wrote:
+> On 01/23/15 03:03, Tomeu Vizoso wrote:
+>> Hi,
+>>
+>> in this v13 I have:
+>>
+>> * added the latest R-b tags from Stephen,
+>>
+>> * split some lines that went over the 80-char limit,
+>>
+>> * made explicit in the docs that the range limits are inclusive, and
+>>
+>> * removed an ifdef in clkdev.c by adding a dev_id param to __of_clk_get_by_name.
+>>
 > 
-> If you are pointing at the lines that remove increment of
-> nr_idle_states, it has to be done so towards the end of the iteration
-> because we are yet to populate the exit_latency and target_residency
-> outside of these conditions using this index.
+> I think this patch series is ready to go except for the last one? Do you
+> plan on polishing that one some more?
 
-Oh OK I think I get it, it's not clear at all.
+Not in time for 3.20, I'm afraid. Want to spin first each of my other
+series, then I will go back to it.
 
-The resulting code is:
+Regards,
 
-	for (i = 0; i < dt_idle_states; i++) {
-
-		flags = be32_to_cpu(idle_state_flags[i]);
-		/*
-		 * Cpuidle accepts exit_latency and target_residency in us.
-		 * Use default target_residency values if f/w does not expose it.
-		 */
-		if (flags & OPAL_PM_NAP_ENABLED) {
-			/* Add NAP state */
-			strcpy(powernv_states[nr_idle_states].name, "Nap");
-			strcpy(powernv_states[nr_idle_states].desc, "Nap");
-			powernv_states[nr_idle_states].flags = 0;
-			powernv_states[nr_idle_states].target_residency = 100;
-			powernv_states[nr_idle_states].enter = &nap_loop;
-		}
-
-		if (flags & OPAL_PM_SLEEP_ENABLED ||
-			flags & OPAL_PM_SLEEP_ENABLED_ER1) {
-			/* Add FASTSLEEP state */
-			strcpy(powernv_states[nr_idle_states].name, "FastSleep");
-			strcpy(powernv_states[nr_idle_states].desc, "FastSleep");
-			powernv_states[nr_idle_states].flags = CPUIDLE_FLAG_TIMER_STOP;
-			powernv_states[nr_idle_states].target_residency = 300000;
-			powernv_states[nr_idle_states].enter = &fastsleep_loop;
-		}
-
-		powernv_states[nr_idle_states].exit_latency =
-				((unsigned int)latency_ns[i]) / 1000;
-
-		if (!rc) {
-			powernv_states[nr_idle_states].target_residency =
-				((unsigned int)residency_ns[i]) / 1000;
-		}
-
-		nr_idle_states++;
-	}
-
-
-Which looks like you could potentially overwrite the first set of values, "Nap"
-with "FastSleep". But I think what you're going to tell me is that flags can
-never satisfy both conditions, so we will only ever execute either the "Nap"
-case OR the "FastSleep".
-
-If so please change the code to make that obvious, ie. by using else if.
-
-cheers
-
+Tomeu
 
