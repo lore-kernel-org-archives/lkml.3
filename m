@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122AbbA0OG7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 09:06:59 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:52807 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824AbbA0OG5 (ORCPT
+	id S932261AbbA0OHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:07:14 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:38973 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641AbbA0OHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 09:06:57 -0500
+	Tue, 27 Jan 2015 09:07:09 -0500
+Message-ID: <54C79B87.8040607@roeck-us.net>
+Date: Tue, 27 Jan 2015 06:07:03 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <20150126112328.318da5e7@endymion.delvare>
-References: <20150126112328.318da5e7@endymion.delvare>
-Date: Tue, 27 Jan 2015 15:06:56 +0100
-Message-ID: <CAPDyKFo363x7NGEctNwHkpn-6HkAu15qu-ZFtt73mJcWZrce4g@mail.gmail.com>
-Subject: Re: [PATCH] mmc: Add hardware dependencies for sdhci-pxav3 and sdhci-pxav2
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Robert Rosengren <robert.rosengren@axis.com>,
+        Jean Delvare <jdelvare@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+CC: Johan Adolfsson <johana@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval configurable
+References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com> <54B92596.2040206@roeck-us.net> <20150116183020.GA6262@roeck-us.net> <54C74567.9020201@axis.com>
+In-Reply-To: <54C74567.9020201@axis.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.54C79B8C.0292,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 January 2015 at 11:23, Jean Delvare <jdelvare@suse.de> wrote:
-> I seem to understand that the sdhci-pxav3 and sdhci-pxav2 drivers are
-> only needed on the MMP architecture. So add a hardware dependency on
-> ARCH_MMP, so that other users don't get to build useless drivers.
+On 01/26/2015 11:59 PM, Robert Rosengren wrote:
+> On 01/16/2015 07:30 PM, Guenter Roeck wrote:
+>> I sent a couple of patches a minute ago which should take care of the issue.
+>> Would be great if you can test it.
+> I applied the v2 versions of the patches for a quick test, but it was not successful. Haven't done any further investigation on what the problem might be, but when trying to read the sysfs driver I get "read error: No such device or address".
+>
+> The sysfs path have moved with the REGMAP settings, from /sys/bus/i2c/devices/<x>/in0_input to /sys/bus/i2c/devices/<x>/hwmon/hwmon0/in0_input.
+>
+> Any ideas? Haven't had REGMAP configured in my kernel earlier, might it be some specific configuration I miss?
+>
 
-I would rather see the default option to be N.
-Thus those configurations that needs this driver will have to select it.
+Did you configure REGMAP ? That would now be necessary.
+The "official" sysfs path would be /sys/class/hwmon/hwmonX (hwmon0 in your case).
 
-Kind regards
-Uffe
+Guenter
 
->
-> Signed-off-by: Jean Delvare <jdelvare@suse.de>
-> Cc: Chris Ball <chris@printf.net>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-> ---
-> This patch was already sent on:
->  * 2014-04-23
->  * 2014-06-16
->
->  drivers/mmc/host/Kconfig |    2 ++
->  1 file changed, 2 insertions(+)
->
-> --- linux-3.19-rc6.orig/drivers/mmc/host/Kconfig        2015-01-26 10:30:56.472182636 +0100
-> +++ linux-3.19-rc6/drivers/mmc/host/Kconfig     2015-01-26 11:13:33.669863314 +0100
-> @@ -228,6 +228,7 @@ config MMC_SDHCI_PXAV3
->         tristate "Marvell MMP2 SD Host Controller support (PXAV3)"
->         depends on CLKDEV_LOOKUP
->         depends on MMC_SDHCI_PLTFM
-> +       depends on ARCH_MMP || COMPILE_TEST
->         default CPU_MMP2
->         help
->           This selects the Marvell(R) PXAV3 SD Host Controller.
-> @@ -240,6 +241,7 @@ config MMC_SDHCI_PXAV2
->         tristate "Marvell PXA9XX SD Host Controller support (PXAV2)"
->         depends on CLKDEV_LOOKUP
->         depends on MMC_SDHCI_PLTFM
-> +       depends on ARCH_MMP || COMPILE_TEST
->         default CPU_PXA910
->         help
->           This selects the Marvell(R) PXAV2 SD Host Controller.
->
->
-> --
-> Jean Delvare
-> SUSE L3 Support
