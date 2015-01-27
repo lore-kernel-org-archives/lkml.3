@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135AbbA0Kwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 05:52:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44991 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754729AbbA0Kwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 05:52:45 -0500
-Date: Tue, 27 Jan 2015 11:52:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Christoph Lameter <cl@linux.com>
-Cc: Vinayak Menon <vinmenon@codeaurora.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, vdavydov@parallels.com, mgorman@suse.de,
-        minchan@kernel.org
-Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in
- too_many_isolated
-Message-ID: <20150127105242.GC19880@dhcp22.suse.cz>
-References: <20150114165036.GI4706@dhcp22.suse.cz>
- <54B7F7C4.2070105@codeaurora.org>
- <20150116154922.GB4650@dhcp22.suse.cz>
- <54BA7D3A.40100@codeaurora.org>
- <alpine.DEB.2.11.1501171347290.25464@gentwo.org>
- <54BC879C.90505@codeaurora.org>
- <20150121143920.GD23700@dhcp22.suse.cz>
- <alpine.DEB.2.11.1501221010510.3937@gentwo.org>
- <20150126174606.GD22681@dhcp22.suse.cz>
- <alpine.DEB.2.11.1501261233550.16786@gentwo.org>
+	id S1758208AbbA0KyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 05:54:20 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43831 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758191AbbA0KyS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 05:54:18 -0500
+Date: Tue, 27 Jan 2015 10:53:53 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
+Cc: Stathis Voukelatos <stathisv70@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "abrestic@chromium.org" <abrestic@chromium.org>
+Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
+Message-ID: <20150127105353.GC17721@leverpostej>
+References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
+ <20150123105114.GB23493@leverpostej>
+ <54C613F2.5090507@linn.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501261233550.16786@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54C613F2.5090507@linn.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-01-15 12:35:00, Christoph Lameter wrote:
-> On Mon, 26 Jan 2015, Michal Hocko wrote:
+On Mon, Jan 26, 2015 at 10:16:18AM +0000, Stathis Voukelatos wrote:
 > 
-> > > Please do not run the vmstat_updates concurrently. They update shared
-> > > cachelines and therefore can cause bouncing cachelines if run concurrently
-> > > on multiple cpus.
+> On 23/01/15 10:51, Mark Rutland wrote:
 > >
-> > Would you preffer to call smp_call_function_single on each CPU
-> > which needs an update? That would make vmstat_shepherd slower but that
-> > is not a big deal, is it?
-> 
-> Run it from the timer interrupt as usual from a work request? Those are
-> staggered.
+> > diff --git a/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt b/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
+> > new file mode 100644
+> > index 0000000..6b6e105
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
+> > @@ -0,0 +1,27 @@
+> > +* Linn Products Ethernet Packet Sniffer
+> > +
+> > +Required properties:
+> > +- compatible : must be "linn,eth-sniffer"
+> > +- reg : physical addresses and sizes of registers. Must contain 3 entries:
+> > +          first entry: registers memory space
+> > +          second entry: TX command memory
+> > +          third entry: RX command memory
+> > Just to check: are those memories are part of the packet sniffer device,
+> > or are carveouts from other memory?
+> Yes, the 3 memory areas are part of the packet sniffer module.
+> >> +- fifo-block-words : number of words in one data FIFO entry
+> >> +
+> >> +Example:
+> >> +
+> >> +sniffer@1814a000 {
+> >> +        compatible = "linn,eth-sniffer";
+> >> +        reg = <0x1814a000 0x100>, <0x1814a400 0x400>, <0x1814a800 0x400>;
+> >> +        reg-names = "regs", "tx-ram", "rx-ram";
+> >> +        interrupts = <GIC_SHARED 58 IRQ_TYPE_LEVEL_HIGH>;
+> >> +        interrupt-names = "eth-sniffer-irq";
+> >> +        clocks = <&system_clk>;
+> >> +        clock-names = "sys";
+> >> +        fifo-block-words = <4>;
+> >> +    };
+> > Surely the relationship between the sniffer, MAC, and PHY should be
+> > described, so we know which interface the sniffer is related to?
+> >
+> The packet sniffer sits between the MAC and the PHY and monitors TX or RX
+> packets, or both. Will add a description in the binding doc.
 
-I am not following. The idea was to run vmstat_shepherd in a kernel
-thread and waking up as per defined timeout and then check need_update
-for each CPU and call smp_call_function_single to refresh the timer
-rather than building a mask and then calling sm_call_function_many to
-reduce paralel contention on the shared counters.
+I understood that. However the binding does not explicitly refer to
+either of those, so I don't see how you'd associate this sniffer
+instance with the relevant PHY+MAC instances.
 
-> > Anyway I am wondering whether the cache line bouncing between
-> > vmstat_update instances is a big deal in the real life. Updating shared
-> > counters whould bounce with many CPUs but this is an operation which is
-> > not done often. Also all the CPUs would have update the same counters
-> > all the time and I am not sure this happens that often. Do you have a
-> > load where this would be measurable?
-> 
-> Concurrent page faults update lots of counters concurrently.
+That should be made explicit in the binding.
 
-True
-
-> But will those trigger the smp_call_function?
-
-The smp_call_function was meant to be called only from the
-vmstat_shepherd context which does happen "rarely". Or am I missing your
-point here?
-
--- 
-Michal Hocko
-SUSE Labs
+Mark.
