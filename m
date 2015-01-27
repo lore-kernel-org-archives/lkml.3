@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883AbbA0IhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 03:37:11 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:49457 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754074AbbA0IhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 03:37:07 -0500
-Date: Tue, 27 Jan 2015 10:36:34 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Chris Caputo <ccaputo@alt.net>
-cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
-        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] IPVS: add wlib & wlip schedulers
-In-Reply-To: <alpine.LFD.2.11.1501222308060.2572@ja.home.ssi.bg>
-Message-ID: <alpine.LFD.2.11.1501271008210.4961@ja.home.ssi.bg>
-References: <Pine.LNX.4.44.0501260832210.17893-100000@nacho.alt.net> <Pine.LNX.4.61.0502010007060.1148@penguin.linux-vs.org> <Pine.LNX.4.64.1501172217420.8217@nacho.alt.net> <alpine.LFD.2.11.1501192342190.2687@ja.home.ssi.bg> <Pine.LNX.4.64.1501200137310.8217@nacho.alt.net>
- <alpine.LFD.2.11.1501222308060.2572@ja.home.ssi.bg>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1757795AbbA0Igo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 03:36:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41634 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754034AbbA0Igm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 03:36:42 -0500
+Message-ID: <54C74E17.6020703@suse.cz>
+Date: Tue, 27 Jan 2015 09:36:39 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm/page_alloc: expands broken freepage to proper
+ buddy list when steal
+References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com> <1418022980-4584-3-git-send-email-iamjoonsoo.kim@lge.com> <54856F88.8090300@suse.cz> <20141210063840.GC13371@js1304-P5Q-DELUXE> <54C73FB5.30000@suse.cz> <20150127083419.GF11358@js1304-P5Q-DELUXE>
+In-Reply-To: <20150127083419.GF11358@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-	Hello,
-
-On Fri, 23 Jan 2015, Julian Anastasov wrote:
-
-> On Tue, 20 Jan 2015, Chris Caputo wrote:
+On 01/27/2015 09:34 AM, Joonsoo Kim wrote:
+> On Tue, Jan 27, 2015 at 08:35:17AM +0100, Vlastimil Babka wrote:
+>> On 12/10/2014 07:38 AM, Joonsoo Kim wrote:
+>> > After your patch is merged, I will resubmit these on top of it.
+>> 
+>> Hi Joonsoo,
+>> 
+>> my page stealing patches are now in -mm so are you planning to resubmit this? At
+>> least patch 1 is an obvious bugfix, and patch 4 a clear compaction overhead
+>> reduction. Those don't need to wait for the rest of the series. If you are busy
+>> with other stuff, I can also resend those two myself if you want.
 > 
-> > My application consists of incoming TCP streams being load balanced to 
-> > servers which receive the feeds. These are long lived multi-gigabyte 
-> > streams, and so I believe the estimator's 2-second timer is fine. As an 
-> > example:
-> > 
-> > # cat /proc/net/ip_vs_stats
-> >    Total Incoming Outgoing         Incoming         Outgoing
-> >    Conns  Packets  Packets            Bytes            Bytes
-> >      9AB  58B7C17        0      1237CA2C325                0
-> > 
-> >  Conns/s   Pkts/s   Pkts/s          Bytes/s          Bytes/s
-> >        1     387C        0          B16C4AE                0
+> Hello,
 > 
-> 	Not sure, may be everything here should be u64 because
-> we have shifted values. I'll need some days to investigate
-> this issue...
+> I've noticed that your patches are merged. :)
+> If you are in hurry, you can resend them. I'm glad if you handle it.
+> If not, I will resend them, maybe, on end of this week.
 
-	For now I don't see hope in using schedulers that rely
-on IPVS byte/packet stats, due to the slow update (2 seconds).
-If we reduce this period we can cause performance problems to
-other users.
+Hi,
 
-Every *-LEAST-* (eg. LC, WLC) algorithm needs actual information
-to take decision on every new connection. OTOH, all *-ROUND-ROBIN-*
-algorithms (RR, WRR) use information (weights) from user space,
-by this way kernel performs as expected.
+end of week is fine! I'm in no hurry, just wanted to know the status.
 
-	Currently, LC/WLC use feedback from the 3-way TCP handshake,
-see ip_vs_dest_conn_overhead() where the established connections
-have large preference. Such feedback from real servers is delayed
-usually with microseconds, up to milliseconds. More time if
-depends on clients.
+> In fact, I'm testing your stealing patches on my add-hoc fragmentation
+> benchmark. It would be finished soon and, after that, I can resend this
+> patchset.
 
-	The proposed schedulers have round-robin function but
-only among least loaded servers, so it is not dominant
-and we suffer from slow feedback from the estimator.
+Good to hear! Thanks.
 
-	For load information that is not present in kernel
-an user space daemon is needed to determine weights to use
-with WRR. It can take actual stats from real server, for
-example, it can take into account non-IPVS traffic.
+> Thanks.
+> 
 
-	As alternative, it is possible to implement some new svc
-method that can be called for every packet, for example, in
-ip_vs_in_stats(). It does not look fatal to add some fields in
-struct ip_vs_dest that only specific schedulers will update,
-for example, byte/packet counters. Of course, the spin_locks
-the scheduler must use will suffer on many CPUs. Such info can
-be also attached as allocated structure in RCU pointer
-dest->sched_info where data and corresponding methods can be
-stored. It will need careful RCU-kind of update, especially when
-scheduler is updated in svc. If you think such idea can work
-we can discuss the RCU and scheduler changes that are needed.
-The proposed schedulers have to implement counters, their
-own estimator and WRR function.
-
-	Another variant can be to extend WRR with some
-support for automatic dynamic-weight update depending on 
-parameters: -s wrr --sched-flags {wlip,wlib,...}
-
-	or using new option --sched-param that can also
-provide info for wrr estimator, etc. In any case, the
-extended WRR scheduler will need above support to check
-every packet.
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
