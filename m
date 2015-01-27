@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628AbbA0H1Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 02:27:16 -0500
-Received: from mout.gmx.net ([212.227.15.18]:52807 "EHLO mout.gmx.net"
+	id S1751833AbbA0Hf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 02:35:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40559 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751579AbbA0H1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 02:27:14 -0500
-From: Oleksij Rempel <linux@rempel-privat.de>
-To: daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-Cc: Oleksij Rempel <linux@rempel-privat.de>
-Subject: [PATCH] ARM: clocksource: fix compile of asm9260_timer driver on ARCH=parisc
-Date: Tue, 27 Jan 2015 08:27:04 +0100
-Message-Id: <1422343624-9764-1-git-send-email-linux@rempel-privat.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <54BE5E9A.8070502@linaro.org>
-References: <54BE5E9A.8070502@linaro.org>
-X-Provags-ID: V03:K0:r8Xt6IQJOnrBzqt9Iii30+9S+OR2SuDG9YfVjTXXm9iCF6pL97b
- uENb1kW9q5UjzsRZZ8ibIfZa0TpiCXoPaJP+z4ClvXBx1g+C24Du++W7hfplYnGjQwwZWgv
- qNnHPbQ96jWPPkToE+1gcMHiKyTAAbmP7aguvTRc4e0HNEvIMo0ZXGqRv/XsXdQUhhG63ab
- a0uU993T6qeN1deSjiRBw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751116AbbA0HfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 02:35:23 -0500
+Message-ID: <54C73FB5.30000@suse.cz>
+Date: Tue, 27 Jan 2015 08:35:17 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm/page_alloc: expands broken freepage to proper
+ buddy list when steal
+References: <1418022980-4584-1-git-send-email-iamjoonsoo.kim@lge.com> <1418022980-4584-3-git-send-email-iamjoonsoo.kim@lge.com> <54856F88.8090300@suse.cz> <20141210063840.GC13371@js1304-P5Q-DELUXE>
+In-Reply-To: <20141210063840.GC13371@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make sure this driver depends on GENERIC_CLOCKEVENTS
+On 12/10/2014 07:38 AM, Joonsoo Kim wrote:
+> After your patch is merged, I will resubmit these on top of it.
 
-compiler error was found by kbuild test robot:
+Hi Joonsoo,
 
->> drivers/clocksource/asm9260_timer.c:114:14: warning: its scope is only this definition or declaration, which is probably not what you want
->> drivers/clocksource/asm9260_timer.c:124:16: warning: 'struct clock_event_device' declared inside parameter list
-            struct clock_event_device *evt)
+my page stealing patches are now in -mm so are you planning to resubmit this? At
+least patch 1 is an obvious bugfix, and patch 4 a clear compaction overhead
+reduction. Those don't need to wait for the rest of the series. If you are busy
+with other stuff, I can also resend those two myself if you want.
 
->> drivers/clocksource/asm9260_timer.c:124:16: warning: 'enum clock_event_mode' declared inside parameter list
->> drivers/clocksource/asm9260_timer.c:123:58: error: parameter 1 ('mode') has incomplete type
-    static void asm9260_timer_set_mode(enum clock_event_mode mode,
-
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
----
- drivers/clocksource/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 13b8152..bfaaae4 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -231,6 +231,7 @@ config CLKSRC_MIPS_GIC
- 
- config ASM9260_TIMER
- 	bool "Alphascale ASM9260 timer driver"
-+	depends on GENERIC_CLOCKEVENTS
- 	select CLKSRC_MMIO
- 	select CLKSRC_OF
- 	default y if MACH_ASM9260
--- 
-1.9.1
-
+Thanks,
+Vlastimil
