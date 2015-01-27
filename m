@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597AbbA0MUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:20:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35495 "EHLO
+	id S1756093AbbA0MUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:20:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35504 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932572AbbA0MUX (ORCPT
+	with ESMTP id S1758781AbbA0MU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:23 -0500
+	Tue, 27 Jan 2015 07:20:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
+Cc: Mugunthan V N <mugunthanvnm@ti.com>, Tony Lindgren <tony@atomide.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 124/126] Revert "swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single"
-Date: Tue, 27 Jan 2015 12:17:09 +0000
-Message-Id: <1422361031-19364-125-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 125/126] ARM: dts: dra7-evm: fix qspi device tree partition size
+Date: Tue, 27 Jan 2015 12:17:10 +0000
+Message-Id: <1422361031-19364-126-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Mugunthan V N <mugunthanvnm@ti.com>
 
-commit dbdd74763f1faf799fbb9ed30423182e92919378 upstream.
+commit 69d2626f97b7f017ee4416b7dc071e9499c2c944 upstream.
 
-This reverts commit 2c3fc8d26dd09b9d7069687eead849ee81c78e46.
+64KiB is allocated for qspi dtb partition which is not
+sufficient, so updating the partition table size to 512KiB
+for device tree partition.
 
-This commit broke on x86 PV because entries in the generic SWIOTLB are
-indexed using (pseudo-)physical address not DMA address and these are
-not the same in a x86 PV guest.
+This also aligns the QSPI partition definitions between
+kernel and U-Boot.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
+Fixes: dc2dd5b8 ("ARM: dts: dra7: Add qspi device")
+
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/xen/swiotlb-xen.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/dra7-evm.dts | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index de37cc22b9a5..c9d0d5a0e662 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -451,7 +451,7 @@ static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
- 
- 	/* NOTE: We use dev_addr here, not paddr! */
- 	if (is_xen_swiotlb_buffer(dev_addr)) {
--		swiotlb_tbl_unmap_single(hwdev, dev_addr, size, dir);
-+		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
- 		return;
- 	}
- 
+diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+index 780d66119f3c..6944a6e9e162 100644
+--- a/arch/arm/boot/dts/dra7-evm.dts
++++ b/arch/arm/boot/dts/dra7-evm.dts
+@@ -377,23 +377,23 @@
+ 		};
+ 		partition@5 {
+ 			label = "QSPI.u-boot-spl-os";
+-			reg = <0x00140000 0x00010000>;
++			reg = <0x00140000 0x00080000>;
+ 		};
+ 		partition@6 {
+ 			label = "QSPI.u-boot-env";
+-			reg = <0x00150000 0x00010000>;
++			reg = <0x001c0000 0x00010000>;
+ 		};
+ 		partition@7 {
+ 			label = "QSPI.u-boot-env.backup1";
+-			reg = <0x00160000 0x0010000>;
++			reg = <0x001d0000 0x0010000>;
+ 		};
+ 		partition@8 {
+ 			label = "QSPI.kernel";
+-			reg = <0x00170000 0x0800000>;
++			reg = <0x001e0000 0x0800000>;
+ 		};
+ 		partition@9 {
+ 			label = "QSPI.file-system";
+-			reg = <0x00970000 0x01690000>;
++			reg = <0x009e0000 0x01620000>;
+ 		};
+ 	};
+ };
 -- 
 2.1.4
 
