@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752AbbA0XEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 18:04:41 -0500
-Received: from smtprelay0142.hostedemail.com ([216.40.44.142]:45063 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752403AbbA0XEk (ORCPT
+	id S1754644AbbA0XJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 18:09:48 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:60904 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897AbbA0XJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 18:04:40 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3871:3872:3873:3874:4250:4321:4385:5007:6119:6261:7875:10004:10400:10848:10967:11026:11232:11658:11914:12296:12517:12519:12555:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fish82_7fee8ee25421d
-X-Filterd-Recvd-Size: 1836
-Date: Tue, 27 Jan 2015 18:04:38 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Xunlei Pang <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH 4/5] sched/rt: Consider deadline tasks in cpupri_find()
-Message-ID: <20150127180438.445d8e76@gandalf.local.home>
-In-Reply-To: <20150127125859.GD21418@twins.programming.kicks-ass.net>
-References: <1421642980-10045-1-git-send-email-pang.xunlei@linaro.org>
-	<1421642980-10045-4-git-send-email-pang.xunlei@linaro.org>
-	<20150127125859.GD21418@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 27 Jan 2015 18:09:46 -0500
+Date: Wed, 28 Jan 2015 01:09:39 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Laura Abbott <lauraa@codeaurora.org>
+Subject: Re: N900 v3.19-rc5 arm atags_to_fdt.c is broken
+Message-ID: <20150127230938.GB591@fuloong-minipc.musicnaut.iki.fi>
+References: <201501232239.55801@pali>
+ <201501232336.36187@pali>
+ <20150126161454.GE28663@atomide.com>
+ <201501261723.10505@pali>
+ <20150126170323.GF28663@atomide.com>
+ <alpine.LFD.2.11.1501261318590.1322@knanqh.ubzr>
+ <20150127133739.GB25306@amd>
+ <alpine.LFD.2.11.1501271014160.1322@knanqh.ubzr>
+ <20150127175359.GE11502@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1501271309450.1322@knanqh.ubzr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1501271309450.1322@knanqh.ubzr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015 13:58:59 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Tue, Jan 27, 2015 at 01:50:22PM -0500, Nicolas Pitre wrote:
+> Hence the ATAG-to-DT compat code in the decompressor.  This 
+> was meant to smooth things around the transition to DT, etc.  After all, 
+> those devices with non-replaceable bootloaders where shim layers are not 
+> possible should get out of commission eventually?
 
+Probably after 5 years there are still people using and hacking mainline
+Linux with N900 etc., and newer OMAPs (since there no "useful" devices)
+are long forgotten...
 
-> Not a bad idea, Cc'ed Steve who likes to look after the RT bits,
-> excessive quoting for him.
-
-Yep I do.
-
-
-> > index ade2958..48c9576 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -5652,6 +5652,8 @@ static int init_rootdomain(struct root_domain *rd)
-> >  
-> >  	if (cpupri_init(&rd->cpupri) != 0)
-> >  		goto free_rto_mask;
-> > +
-> > +	rd->cpupri.cpudl = &rd->cpudl;
-> 
-> This is disgusting though; it breaks the cpuri abstraction. Why not pass
-> in the mask in the one place you actually need it?
-
-Yeah, probably should change cpupri_init() to take the rd->cpudl as a
-parameter.
-
-Rest looks good (ignoring Peter's other comment that he realized wasn't
-an issue).
-
--- Steve
-
+A.
