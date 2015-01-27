@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057AbbA0PQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:16:32 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:64744 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637AbbA0PQ2 (ORCPT
+	id S1758226AbbA0PSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:18:10 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:60238 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbbA0PSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:16:28 -0500
-Date: Tue, 27 Jan 2015 10:16:24 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>
-cc: Tony Lindgren <tony@atomide.com>,
-        =?ISO-8859-15?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sebastian Reichel <sre@kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: Re: N900 v3.19-rc5 arm atags_to_fdt.c is broken
-In-Reply-To: <20150127133739.GB25306@amd>
-Message-ID: <alpine.LFD.2.11.1501271014160.1322@knanqh.ubzr>
-References: <201501232239.55801@pali> <201501232336.36187@pali> <20150126161454.GE28663@atomide.com> <201501261723.10505@pali> <20150126170323.GF28663@atomide.com> <alpine.LFD.2.11.1501261318590.1322@knanqh.ubzr> <20150127133739.GB25306@amd>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 27 Jan 2015 10:18:08 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAD=FV=X9x0gW5TyLi4ERm8nxixQB__Y=5bRAtOax-_w+T33rCg@mail.gmail.com>
+References: <1422271175-19445-1-git-send-email-addy.ke@rock-chips.com>
+	<1422271175-19445-2-git-send-email-addy.ke@rock-chips.com>
+	<CAPDyKFp=5epMggHu0+u_LU7ETujcoeP2xOpB7iD6JF2bs8BnEA@mail.gmail.com>
+	<CAD=FV=X9x0gW5TyLi4ERm8nxixQB__Y=5bRAtOax-_w+T33rCg@mail.gmail.com>
+Date: Tue, 27 Jan 2015 16:18:06 +0100
+Message-ID: <CAPDyKFqjG=yxDcwnk4jbXMZ05hMkWR2x37uVpRNd_11-eB4G7w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mmc: core: use card pointer as the first parameter of execute_tuning()
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        =?UTF-8?Q?Pawe=C5=82_Moll?= <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Alexandru Stan <amstan@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
+        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        Han Jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015, Pavel Machek wrote:
+On 26 January 2015 at 18:45, Doug Anderson <dianders@chromium.org> wrote:
+> Ulf,
+>
+> On Mon, Jan 26, 2015 at 7:15 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> On 26 January 2015 at 12:19, Addy Ke <addy.ke@rock-chips.com> wrote:
+>>> We need to take the card pointer in execute_tuning() for mmc_send_status(),
+>>
+>> mmc_send_status() is an mmc core function, not intended for host's to call.
+>>
+>>> but mmc->card is NULL in tuning state. So we need change the first parameter
+>>> of execute_tuning() to card pointer(struct mmc_card * card).
+>>
+>> So, why do we need this?
+>
+> I asked Addy to post upstream against mmc_send_tuning(), but I guess
+> he didn't (he posted against Alex's NAKed patch instead).
+>
+> ...when I talked to him about it, Addy was asserting that when tuning
+> fails it is important (at least on dw_mmc on rk3288) that we wait for
+> the card to stop being busy and that the way to detect was using
+> mmc_send_status().
 
-> 
-> > > > I would say, problem is because omap3-n900 binary DT is too large
-> > 
-> > I agree.
-> > 
-> > > OK if that's the case, then your patch makes sense to me. It also
-> > > seems we can have the temporary stack be larger than the initial
-> > > stack just for atags_to_fdt.
-> > 
-> > The stack size isn't the issue, but rather its location.  We need to 
-> > position it away from the DT data.  The DT size is known and we could 
-> > use that, plus some room for the insertion of new data coming from the
-> > ATAG conversion.
-> > 
-> > Something like the following would be a more robust solution:
-> 
-> Tested-by: Pavel Machek <pavel@ucw.cz>
-> 
-> (Note, that in 3.19 dts for n900 got too big, so we are actually
-> triggering old bugs. That means that this is a regression fix, and
-> should go in ASAP).
+So, could that be due to the internal logic of the error handling in
+dw_mmc driver? Or you think this is a generic issue?
 
-It is queued here:
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8294/1
+According to the specifications (eMMC and SD) both states that the
+tuning command has an R1 response. So, there shouldn't be any busy
+signalling involved - at least according to spec.
 
+>
+> That would mean that against upstream you'd need to change
+> mmc_send_tuning() to take in the card as well (or move the "host->card
+> = card" assignment to before UHS init, which seems less desirable?)
+>
+> What do you think about that?  Is there a better solution?
 
-Nicolas
+Why do we need to change mmc_send_tuning()? I thought the issue was
+that mmc_send_status(), which currently takes "card" as a parameter.
+
+Kind regards
+Uffe
