@@ -1,183 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274AbbA0NMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 08:12:51 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:50440 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753988AbbA0NMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 08:12:49 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] inotify: update documentation to reflect code changes
-Date: Tue, 27 Jan 2015 08:12:47 -0500
-References: <1418785193-31576-1-git-send-email-zhenzhang.zhang@huawei.com> <54C78879.3010603@huawei.com>
-In-Reply-To: <54C78879.3010603@huawei.com>
+	id S932327AbbA0NNj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 08:13:39 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36215 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202AbbA0NNh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 08:13:37 -0500
+Date: Tue, 27 Jan 2015 13:13:27 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Bintian Wang <bintian.wang@huawei.com>
+Cc: linux-kernel@vger.kernel.org, srinivas.kandagatla@st.com,
+        huxinwei@huawei.com
+Message-ID: <20150127131327.GV21293@sirena.org.uk>
+References: <1422363029-19476-1-git-send-email-bintian.wang@huawei.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201501270812.47160.gheskett@wdtv.com>
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="Pzq24Sl94SYEqopo"
+Content-Disposition: inline
+In-Reply-To: <1422363029-19476-1-git-send-email-bintian.wang@huawei.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap.h: correct the description of structure element
+ in reg_field
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 January 2015, Zhang Zhen wrote:
->The inotify kernel interface was removed by Eric Paris
->in this commit: 2dfc1ca inotify: remove inotify in
->kernel interface.
->
->Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
->---
-> Documentation/filesystems/inotify.txt | 120
->+--------------------------------- 1 file changed, 2 insertions(+), 118
->deletions(-)
->
->diff --git a/Documentation/filesystems/inotify.txt
->b/Documentation/filesystems/inotify.txt index cfd0271..9b74b45 100644
->--- a/Documentation/filesystems/inotify.txt
->+++ b/Documentation/filesystems/inotify.txt
->@@ -69,123 +69,7 @@ Prototypes:
-> 	int inotify_rm_watch (int fd, __u32 mask);
->
->
->-(iii) Kernel Interface
->-
->-Inotify's kernel API consists a set of functions for managing watches
->and an -event callback.
->-
->-To use the kernel API, you must first initialize an inotify instance
->with a set -of inotify_operations.  You are given an opaque
->inotify_handle, which you use -for any further calls to inotify.
->-
->-    struct inotify_handle *ih = inotify_init(my_event_handler);
->-
->-You must provide a function for processing events and a function for
->destroying -the inotify watch.
->-
->-    void handle_event(struct inotify_watch *watch, u32 wd, u32 mask,
->-    	              u32 cookie, const char *name, struct inode *inode)
->-
->-	watch - the pointer to the inotify_watch that triggered this call
->-	wd - the watch descriptor
->-	mask - describes the event that occurred
->-	cookie - an identifier for synchronizing events
->-	name - the dentry name for affected files in a directory-based 
-event
->-	inode - the affected inode in a directory-based event
->-
->-    void destroy_watch(struct inotify_watch *watch)
->-
->-You may add watches by providing a pre-allocated and initialized
->inotify_watch -structure and specifying the inode to watch along with
->an inotify event mask. -You must pin the inode during the call.  You
->will likely wish to embed the -inotify_watch structure in a structure
->of your own which contains other -information about the watch.  Once
->you add an inotify watch, it is immediately -subject to removal
->depending on filesystem events.  You must grab a reference if -you
->depend on the watch hanging around after the call.
->-
->-    inotify_init_watch(&my_watch->iwatch);
->-    inotify_get_watch(&my_watch->iwatch);	// optional
->-    s32 wd = inotify_add_watch(ih, &my_watch->iwatch, inode, mask);
->-    inotify_put_watch(&my_watch->iwatch);	// optional
->-
->-You may use the watch descriptor (wd) or the address of the
->inotify_watch for -other inotify operations.  You must not directly
->read or manipulate data in the -inotify_watch.  Additionally, you must
->not call inotify_add_watch() more than -once for a given inotify_watch
->structure, unless you have first called either -inotify_rm_watch() or
->inotify_rm_wd().
->-
->-To determine if you have already registered a watch for a given inode,
->you may -call inotify_find_watch(), which gives you both the wd and the
->watch pointer for -the inotify_watch, or an error if the watch does not
->exist.
->-
->-    wd = inotify_find_watch(ih, inode, &watchp);
->-
->-You may use container_of() on the watch pointer to access your own data
->-associated with a given watch.  When an existing watch is found,
->-inotify_find_watch() bumps the refcount before releasing its locks. 
->You must -put that reference with:
->-
->-    put_inotify_watch(watchp);
->-
->-Call inotify_find_update_watch() to update the event mask for an
->existing watch. -inotify_find_update_watch() returns the wd of the
->updated watch, or an error if -the watch does not exist.
->-
->-    wd = inotify_find_update_watch(ih, inode, mask);
->-
->-An existing watch may be removed by calling either inotify_rm_watch()
->or -inotify_rm_wd().
->-
->-    int ret = inotify_rm_watch(ih, &my_watch->iwatch);
->-    int ret = inotify_rm_wd(ih, wd);
->-
->-A watch may be removed while executing your event handler with the
->following: -
->-    inotify_remove_watch_locked(ih, iwatch);
->-
->-Call inotify_destroy() to remove all watches from your inotify instance
->and -release it.  If there are no outstanding references,
->inotify_destroy() will call -your destroy_watch op for each watch.
->-
->-    inotify_destroy(ih);
->-
->-When inotify removes a watch, it sends an IN_IGNORED event to your
->callback. -You may use this event as an indication to free the watch
->memory.  Note that -inotify may remove a watch due to filesystem
->events, as well as by your request. -If you use IN_ONESHOT, inotify
->will remove the watch after the first event, at -which point you may
->call the final inotify_put_watch.
->-
->-(iv) Kernel Interface Prototypes
->-
->-	struct inotify_handle *inotify_init(struct inotify_operations 
-*ops);
->-
->-	inotify_init_watch(struct inotify_watch *watch);
->-
->-	s32 inotify_add_watch(struct inotify_handle *ih,
->-		              struct inotify_watch *watch,
->-			      struct inode *inode, u32 mask);
->-
->-	s32 inotify_find_watch(struct inotify_handle *ih, struct inode 
-*inode,
->-			       struct inotify_watch **watchp);
->-
->-	s32 inotify_find_update_watch(struct inotify_handle *ih,
->-				      struct inode *inode, u32 mask);
->-
->-	int inotify_rm_wd(struct inotify_handle *ih, u32 wd);
->-
->-	int inotify_rm_watch(struct inotify_handle *ih,
->-			     struct inotify_watch *watch);
->-
->-	void inotify_remove_watch_locked(struct inotify_handle *ih,
->-					 struct inotify_watch *watch);
->-
->-	void inotify_destroy(struct inotify_handle *ih);
->-
->-	void get_inotify_watch(struct inotify_watch *watch);
->-	void put_inotify_watch(struct inotify_watch *watch);
->-
->-
->-(v) Internal Kernel Implementation
->+(iii) Internal Kernel Implementation
->
-> Each inotify instance is represented by an inotify_handle structure.
-> Inotify's userspace consumers also have an inotify_device which is
->@@ -198,7 +82,7 @@ See fs/notify/inotify/inotify_fsnotify.c and
->fs/notify/inotify/inotify_user.c for the locking and lifetime rules.
 
-As a heavy user of the inotify kit of utils, inotify_wait in particular, I 
-object if this removal breaks those tools.
+--Pzq24Sl94SYEqopo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Cheers, Gene Heskett
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-US V Castleman, SCOTUS, Mar 2014 is grounds for Impeaching SCOTUS
+On Tue, Jan 27, 2015 at 08:50:29PM +0800, Bintian Wang wrote:
+> Fix incorrect description of structure element "msb", which is
+> described as "reg".
+
+Applied, thanks.  Please use subject lines matching the style for the
+subsystem.
+
+--Pzq24Sl94SYEqopo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUx472AAoJECTWi3JdVIfQ8CAH/Ax5aIIemriaRoyPuXp4Pc+2
+QDPErdn2/p3Z975Q0Ynux0RCkt/2KPfqrRzSDwu+ckJAe1QJQBkLPGMrzmaB7g+e
+ZpWqxUoZisa9a5qhQWMkH3y1VOUwb30oPabM05Ih17P7Xxx/MWcMt4UMAEVdluLn
+u+Ce3PfxuHXZU72LOjSOJe5+/ySyL/AF07KsF4Qz/cARHaR8ZxuqIU5MjXG5Ljf4
+Oo0CDm6nOEwCMgVCOERWUgamqO2cWavSgtZYwh2ZQ9ql8w10dAySGhzxeLdhKEZI
+htL8i7/aoBFEreI/sKLaAxF0hmeOUuQ3XZDv2OZsPYFvdi/o2WG8OcVcuBMZRZI=
+=0yO2
+-----END PGP SIGNATURE-----
+
+--Pzq24Sl94SYEqopo--
