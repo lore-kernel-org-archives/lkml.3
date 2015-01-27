@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532AbbA0N5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 08:57:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35974 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737AbbA0N5t (ORCPT
+	id S1758228AbbA0OAD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:00:03 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:62458 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755780AbbA0N7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 08:57:49 -0500
+	Tue, 27 Jan 2015 08:59:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150126170048.GA2080@infradead.org>
-References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
-	<1421163888-21452-2-git-send-email-ming.lei@canonical.com>
-	<20150125133147.GA19445@infradead.org>
-	<CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
-	<20150126170048.GA2080@infradead.org>
-Date: Tue, 27 Jan 2015 21:57:47 +0800
-Message-ID: <CACVXFVNLQegYD2RHO9EVCVNcYE0hgn5xXXJPRud9kM8zaCYNGQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] aio: add aio_kernel_() interface
-From: Ming Lei <ming.lei@canonical.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Jens Axboe <axboe@kernel.dk>,
-        Zach Brown <zab@zabbo.net>, Maxim Patlasov <mpatlasov@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "open list:AIO" <linux-aio@kvack.org>
+In-Reply-To: <20150124003340.GA16286@dtor-ws>
+References: <20150124003340.GA16286@dtor-ws>
+Date: Tue, 27 Jan 2015 14:59:01 +0100
+Message-ID: <CAPDyKFpk_SjBpT=+yCfNv8yGVVT64Z5GugjL+qoYubxjduxN3g@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: exynos: remove incorrect __exit_p()
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        Kukjin Kim <kgene@kernel.org>, Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Beomho Seo <beomho.seo@samsung.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 1:00 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Tue, Jan 27, 2015 at 12:18:23AM +0800, Ming Lei wrote:
->> > Also it might make sense to just offer aio_kernel_read/write intefaces
->> > instead of the common submit wrapper, as that's much closer to other
->> > kernel APIs, e.g.
->> >
->> > int aio_kernel_read(struct kiocb *iocb, struct file *file,
->> >                 struct iov_iter *iter, loff_t off,
->> >                 void (*complete)(struct kiocb *iocb, long res));
->> > int aio_kernel_write(struct kiocb *iocb, struct file *file,
->> >                 struct iov_iter *iter, loff_t off,
->> >                 void (*complete)(struct kiocb *iocb, long res));
->>
->> It is like style of sync APIs, looks submit/complete is common
->> for async APIs, like io_submit().
+On 24 January 2015 at 01:33, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> dw_mci_pltfm_remove() is not (nor should it be) marked as __exit,
+> so we should not be using __exit_p() wrapper with it.
 >
-> io_submit is a fairly horrible API.  While Posix AIO isn't too much
-> better it does have separate APIs for read/write.  Given that there
-> isn't much code shared I'd keep an API that feels familar.
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-But from performance view, the two APIs of aio_kernel_read()
-and aio_kernel_write() aren't good because both need
-5 parameters which can't be held in registers and they are
-often called from single thread context, not like synchronized
-read() and write().
+Thanks! Applied for next.
 
-Also aio_kernel_init_rw() can be moved to header file as inline
-to avoid too many parameters.
+Kind regards
+Uffe
 
-Thanks,
-Ming Lei
+
+> ---
+>  drivers/mmc/host/dw_mmc-exynos.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+> index 12a5eaa..fe32948 100644
+> --- a/drivers/mmc/host/dw_mmc-exynos.c
+> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+> @@ -422,7 +422,7 @@ static const struct dev_pm_ops dw_mci_exynos_pmops = {
+>
+>  static struct platform_driver dw_mci_exynos_pltfm_driver = {
+>         .probe          = dw_mci_exynos_probe,
+> -       .remove         = __exit_p(dw_mci_pltfm_remove),
+> +       .remove         = dw_mci_pltfm_remove,
+>         .driver         = {
+>                 .name           = "dwmmc_exynos",
+>                 .of_match_table = dw_mci_exynos_match,
+> --
+> 2.2.0.rc0.207.ga3a616c
+>
+>
+> --
+> Dmitry
