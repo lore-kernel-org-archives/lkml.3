@@ -1,174 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759213AbbA0SFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:05:12 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9926 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759171AbbA0SFJ (ORCPT
+	id S1759270AbbA0SHT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:07:19 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:10521 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759033AbbA0SHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:05:09 -0500
-From: Bjorn <bjorn@sonymobile.com>
-Date: Tue, 27 Jan 2015 10:05:04 -0800
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl: qcom: enable generic support and input-enable
- pinctrl conf
-Message-ID: <20150127180503.GG11960@sonymobile.com>
-References: <1422289494-31461-1-git-send-email-svarbanov@mm-sol.com>
- <54C6E753.606@codeaurora.org>
- <54C7928F.9090407@mm-sol.com>
+	Tue, 27 Jan 2015 13:07:17 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, Arnd Bergmann <arnd@arndb.de>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 0/7] AT91 cleanup rework for 3.20/3.21
+Date: Tue, 27 Jan 2015 19:07:19 +0100
+Message-ID: <cover.1422381280.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <54C7928F.9090407@mm-sol.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 27 Jan 05:28 PST 2015, Stanimir Varbanov wrote:
+This is a little rework of the patches sent by Alexandre and some ideas coming
+from Arnd.
+I reworked the series so that it goes flawlessly on top of what I'd already
+sent and doesn't need extra dependencies with drivers that are being cleaned-up
+(at91_udc, pata_at91, etc.).
 
-> Hi Stephen,
-> 
-> Thanks for the comments!
-> 
-> On 01/27/2015 03:18 AM, Stephen Boyd wrote:
-> > On 01/26/15 08:24, Stanimir Varbanov wrote:
-> >> Enables generic pinconf support and add handling for 'input-enable'
-> >> pinconf property.
-> >>
-> >> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> >> ---
+The multi-platform upcoming series from Alexandre has more dependencies. This
+is why it is not stacked on top of this material. I plan to sent some kind of
+preview soon so that it can be taken as a "late" pull-request if it's possible.
 
-Hi Stanimir,
+Thanks. Bye.
 
-Good stuff, but please split this into (although I think you already figured it out):
-* one patch that introduces input-enable
-* one that enable the usage of pinconf-generic debugfs (is_generic + drop the prints)
-* one that drops the msm_config_get/msm_config_set
+Alexandre Belloni (4):
+  ARM: at91: at91rm9200: set idle and restart from
+    rm9200_dt_device_init()
+  ARM: at91: merge all SOC_AT91SAM9xxx
+  ARM: at91: remove at91_boot_soc
+  ARM: at91: remove at91_dt_initialize and machine init_early()
 
-> >>  drivers/pinctrl/qcom/pinctrl-msm.c |   17 ++++++++++++-----
-> >>  1 files changed, 12 insertions(+), 5 deletions(-)
-> >>
-> >> diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-> >> index e730935..4a47eb1 100644
-> >> --- a/drivers/pinctrl/qcom/pinctrl-msm.c
-> >> +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-> >> @@ -193,11 +193,11 @@ static int msm_config_reg(struct msm_pinctrl *pctrl,
-> >>  		*mask = 7;
-> >>  		break;
-> >>  	case PIN_CONFIG_OUTPUT:
-> >> +	case PIN_CONFIG_INPUT_ENABLE:
+Nicolas Ferre (3):
+  ARM: at91: move alternative initial mapping to board-dt-sama5.c
+  ARM: at91: change board files into SoC files
+  ARM: at91/trivial: unify functions and machine names
 
-Looks good.
+ arch/arm/configs/at91_dt_defconfig    | 10 +---
+ arch/arm/mach-at91/Kconfig            | 92 ++++++++++------------------------
+ arch/arm/mach-at91/Makefile           | 18 +------
+ arch/arm/mach-at91/at91rm9200.c       | 57 ++++++++++++++-------
+ arch/arm/mach-at91/at91sam9.c         | 87 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-at91/at91sam9260.c      | 26 ----------
+ arch/arm/mach-at91/at91sam9261.c      | 25 ----------
+ arch/arm/mach-at91/at91sam9263.c      | 24 ---------
+ arch/arm/mach-at91/at91sam9g45.c      | 24 ---------
+ arch/arm/mach-at91/at91sam9n12.c      | 20 --------
+ arch/arm/mach-at91/at91sam9rl.c       | 25 ----------
+ arch/arm/mach-at91/at91sam9x5.c       | 20 --------
+ arch/arm/mach-at91/board-dt-rm9200.c  | 54 --------------------
+ arch/arm/mach-at91/board-dt-sam9.c    | 90 ---------------------------------
+ arch/arm/mach-at91/board-dt-sama5.c   | 60 ----------------------
+ arch/arm/mach-at91/generic.h          | 19 +++----
+ arch/arm/mach-at91/include/mach/cpu.h | 52 ++++++--------------
+ arch/arm/mach-at91/pm.c               | 52 ++++++++++++++++++--
+ arch/arm/mach-at91/sama5.c            | 93 +++++++++++++++++++++++++++++++++++
+ arch/arm/mach-at91/sama5d3.c          | 29 -----------
+ arch/arm/mach-at91/sama5d4.c          | 63 ------------------------
+ arch/arm/mach-at91/setup.c            | 77 -----------------------------
+ arch/arm/mach-at91/soc.h              | 77 -----------------------------
+ 23 files changed, 318 insertions(+), 776 deletions(-)
+ create mode 100644 arch/arm/mach-at91/at91sam9.c
+ delete mode 100644 arch/arm/mach-at91/at91sam9260.c
+ delete mode 100644 arch/arm/mach-at91/at91sam9261.c
+ delete mode 100644 arch/arm/mach-at91/at91sam9263.c
+ delete mode 100644 arch/arm/mach-at91/at91sam9g45.c
+ delete mode 100644 arch/arm/mach-at91/at91sam9n12.c
+ delete mode 100644 arch/arm/mach-at91/at91sam9rl.c
+ delete mode 100644 arch/arm/mach-at91/at91sam9x5.c
+ delete mode 100644 arch/arm/mach-at91/board-dt-rm9200.c
+ delete mode 100644 arch/arm/mach-at91/board-dt-sam9.c
+ delete mode 100644 arch/arm/mach-at91/board-dt-sama5.c
+ create mode 100644 arch/arm/mach-at91/sama5.c
+ delete mode 100644 arch/arm/mach-at91/sama5d3.c
+ delete mode 100644 arch/arm/mach-at91/sama5d4.c
+ delete mode 100644 arch/arm/mach-at91/soc.h
 
-> >>  		*bit = g->oe_bit;
-> >>  		*mask = 1;
-> >>  		break;
-> >>  	default:
-> >> -		dev_err(pctrl->dev, "Invalid config param %04x\n", param);
-> > 
-> > Is this removed because the generic framework already takes care of
-> > printing this information on such errors?
-> 
-> yes, more or less. These error messages just floods the screen when
-> using debugfs entries. Even more ENOTSUPP is legal error for generic
-> pinconf.
-> 
-> > 
+-- 
+2.1.3
 
-[..]
-
-> >>  
-> >> @@ -276,9 +274,11 @@ static int msm_config_group_get(struct pinctrl_dev *pctldev,
-> >>  		val = readl(pctrl->regs + g->io_reg);
-> >>  		arg = !!(val & BIT(g->in_bit));
-> >>  		break;
-> >> +	case PIN_CONFIG_INPUT_ENABLE:
-> >> +		val = readl(pctrl->regs + g->io_reg);
-> >> +		arg = !!(val & BIT(g->in_bit));
-> >> +		break;
-> > 
-> > This bit is used to read the value of the gpio. If the gpio is high,
-> > this bit will read back as a 1. If the gpio is low, this bit will read
-> > back as a 0. I don't see how this is related to input-enable? Doesn't
-> 
-> Maybe I had to split on few patches. The change in .pin_config_group_get
-> is related to debugfs dump. The change which adds input-enable support
-> is in .pin_config_group_set.
-> 
-> > input-enable mean we configure the pin to accept input? In that sense,
-> > configuring the pin to accept input would sort of be like configuring
-> > the pin for function "gpio" so that we can read this bit and see if the
-> > pin is high or low, but I don't know if we care to support that. I think
-> > we rely on users configuring the pin for the gpio function though.
-> 
-> Why you do not care, because you think that tlmm doesn't support it or
-> because it is a driver responsibility to set up gpio function plus
-> input/output configuration?
-> 
-> I can imagine usecase where the driver implements an 'idle' pinctrl
-> state which configure its pins to be gpio input enabled to save power
-> assuming that the previous 'default' pinctrl state it was gpio output.
-> In that case the driver doesn't need to call gpio_direction_input() for
-> every gpio, only call pinctrl_select_state('idle').
-> 
-> What's wrong with this?
-> 
-
-It makes a lot of sense to be able to have a input-enabled state that you can
-switch to. Such state would specify function = "gpio" and input-enable;
-
-I do however think that querying PIN_CONFIG_INPUT_ENABLE should not return the
-value of the pin, but rather !(readl(g->ctl_reg) & BIT(g->oe_bit)) to indicate
-if the pin is configured in input enable or not.
-
-> > 
-> >>  	default:
-> >> -		dev_err(pctrl->dev, "Unsupported config parameter: %x\n",
-> >> -			param);
-
-Is this part of the debugfs cleanup?
-
-> >>  		return -EINVAL;
-> >>  	}
-> >>  
-> >> @@ -348,6 +348,10 @@ static int msm_config_group_set(struct pinctrl_dev *pctldev,
-> >>  			/* enable output */
-> >>  			arg = 1;
-> >>  			break;
-> >> +		case PIN_CONFIG_INPUT_ENABLE:
-> >> +			/* disable output */
-> >> +			arg = 0;
-> >> +			break;
-
-Looks good.
-
-> >>  		default:
-> >>  			dev_err(pctrl->dev, "Unsupported config parameter: %x\n",
-> >>  				param);
-> >> @@ -372,6 +376,9 @@ static int msm_config_group_set(struct pinctrl_dev *pctldev,
-> >>  }
-> >>  
-> >>  static const struct pinconf_ops msm_pinconf_ops = {
-> >> +#ifdef CONFIG_GENERIC_PINCONF
-> >> +	.is_generic		= true,
-> >> +#endif
-> > 
-> > Shouldn't we have set this when we started this driver? I guess this
-> > only makes debugfs output change, but it seems like this is a "fix" of
-> > some kind that is different from input-enable support.
-> > 
-> 
-> yes, it should be different fix, I will split this on separate patch.
-> 
-
-PINCTRL_MSM does "select GENERIC_PINCONF", so the #ifdef is not needed. And
-Stephen you're right, it should have been there in my original version.
-
-Regards,
-Bjorn
