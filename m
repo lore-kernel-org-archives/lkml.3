@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710AbbA0RDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:03:24 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:36617 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754852AbbA0RDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:03:20 -0500
-Date: Tue, 27 Jan 2015 10:03:08 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Scot Doyle <lkml14@scotdoyle.com>, peterhuewe@gmx.de, ashley@ashleylai.com,
-        christophe.ricard@gmail.com, jason.gunthorpe@obsidianresearch.com,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, trousers-tech@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH] tpm: fix suspend/resume paths for TPM 2.0
-Message-ID: <20150127170308.GA10140@obsidianresearch.com>
-References: <1422356564-17312-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <alpine.DEB.2.11.1501271620520.1725@localhost.localdomain>
- <1422377842.2912.1.camel@linux.intel.com>
+	id S1757807AbbA0RGD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:06:03 -0500
+Received: from smtprelay0215.hostedemail.com ([216.40.44.215]:54896 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753188AbbA0RGB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 12:06:01 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::,RULES_HIT:41:355:379:541:599:800:960:968:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:3138:3139:3140:3141:3142:3167:3352:3622:3865:3867:3870:3871:3872:3873:3874:4321:4605:5007:6261:7576:7809:7875:9149:10004:10400:10848:10967:11026:11232:11658:11914:12043:12295:12296:12438:12517:12519:12555:12683:12740:13069:13311:13357:14110:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sun14_3452ec37ced4d
+X-Filterd-Recvd-Size: 2465
+Date: Tue, 27 Jan 2015 12:05:58 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tracing: Remove newline from trace_printk warning
+ banner
+Message-ID: <20150127120558.0b428aac@gandalf.local.home>
+In-Reply-To: <1422375440-31970-1-git-send-email-bp@alien8.de>
+References: <1422375440-31970-1-git-send-email-bp@alien8.de>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422377842.2912.1.camel@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.183
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 06:57:22PM +0200, Jarkko Sakkinen wrote:
-> > > +	/* TPM 1.2 requires self-test on resume. */
-> > > +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
-> > > +		ret = tpm_do_selftest(chip);
-> > > +		if (ret < 0)
-> > > +			return ret;
-> > 
-> > Just to note, the return value from tpm_do_selftest() on TPM 1.2 chips was 
-> > previously ignored. Mine does return 0.
+On Tue, 27 Jan 2015 17:17:20 +0100
+Borislav Petkov <bp@alien8.de> wrote:
+
+> From: Borislav Petkov <bp@suse.de>
 > 
-> Right. I can update the patch to ignore return value if the majority
-> wants that.
+> Remove the output-confusing newline below:
+> 
+> [    0.191328]
+> **********************************************************
+> [    0.191493] **   NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE   **
+> [    0.191586] **                                                      **
+> ...
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  kernel/trace/trace.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 4a9079b9f082..7a04946ffb06 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2036,7 +2036,7 @@ void trace_printk_init_buffers(void)
+>  
+>  	/* trace_printk() is for debug use only. Don't use it in production. */
+>  
+> -	pr_warning("\n**********************************************************\n");
+> +	pr_warning("**********************************************************\n");
 
-What happens to the system when pnp_driver.resume() returns failure?
+Actually, could you just move the \n to another pr_warning. Because
+this can print on console text that makes it look weird too:
 
-Should tpm ever report failure on resume to the rest of the kernel?
+login: [    0.191328] **********************************************************
+[    0.191493] **   NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE   **
+[    0.191586] **                                                      **
 
-Shouldn't this stuff be in tpm_pm_resume common code anyhow?
+-- Steve
 
-Jason
+>  	pr_warning("**   NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE   **\n");
+>  	pr_warning("**                                                      **\n");
+>  	pr_warning("** trace_printk() being used. Allocating extra memory.  **\n");
+
