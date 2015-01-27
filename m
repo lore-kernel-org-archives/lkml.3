@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733AbbA0Rar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:30:47 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:41287 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532AbbA0Raq (ORCPT
+	id S1758809AbbA0RbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:31:16 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:19737 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758682AbbA0RbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:30:46 -0500
-Date: Tue, 27 Jan 2015 09:30:45 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: P??draig Brady <P@draigBrady.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, aneesh.kumar@linux.vnet.ibm.com,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: RFC: More functions allowed with O_PATH
-Message-ID: <20150127173045.GA21651@infradead.org>
-References: <54C78B8F.9090903@draigBrady.com>
+	Tue, 27 Jan 2015 12:31:14 -0500
+From: Bjorn <bjorn@sonymobile.com>
+Date: Tue, 27 Jan 2015 09:31:08 -0800
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Joonwoo Park <joonwoop@codeaurora.org>
+Subject: Re: [PATCH 3/3] pinctrl: qcom: Add msm8916 pinctrl driver
+Message-ID: <20150127173107.GE11960@sonymobile.com>
+References: <1421745476-6276-1-git-send-email-svarbanov@mm-sol.com>
+ <1421745476-6276-4-git-send-email-svarbanov@mm-sol.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <54C78B8F.9090903@draigBrady.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1421745476-6276-4-git-send-email-svarbanov@mm-sol.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 12:58:55PM +0000, P??draig Brady wrote:
-> Since fsync(), fdatasync(), syncfs() work on an identifying descriptor,
-> and all work against a read-only file for example,
-> should any/all these functions work with a descriptor opened with O_PATH ?
+On Tue 20 Jan 01:17 PST 2015, Stanimir Varbanov wrote:
 
-fsync and fdatasync work on the file data, so they defintively
-shouldn't.
+> From: Joonwoo Park <joonwoop@codeaurora.org>
+> 
+> Add initial pinctrl driver to support pin configuration with
+> pinctrl framework for msm8916.
+> 
+> Signed-off-by: Joonwoo Park <joonwoop@codeaurora.org>
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> ---
+[..]
+> +
+> +static const struct msm_pingroup msm8916_groups[] = {
+> +       PINGROUP(0, blsp_spi1, blsp_uart1, blsp_uim1, dmic0_clk, NA, NA, NA, NA,
+> +                NA),
 
-syncfs might make sense as we just use it as a handle for the containing
-filesystem.
+It's totally okay not to line break these things...
 
-Adding fchmod and fchown would be more useful as they are allowed by
-Posix on O_EXEC and O_SEARCH fds.
+> +       PINGROUP(1, blsp_spi1, blsp_uart1, blsp_uim1, dmic0_data, NA, NA, NA,
+> +                NA, NA),
+> +       PINGROUP(2, blsp_spi1, blsp_uart1, blsp_i2c1, NA, NA, NA, NA, NA, NA),
+[..]
+> +};
+> +
+[..]
+
+My documentation is lacking the pingroup table, the rest is:
+Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+
+Regards,
+Bjorn
