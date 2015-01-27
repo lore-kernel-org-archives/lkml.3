@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758503AbbA0R7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:59:54 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:34514 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694AbbA0R7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:59:52 -0500
-Date: Tue, 27 Jan 2015 09:59:51 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Jens Axboe <axboe@kernel.dk>,
-        Zach Brown <zab@zabbo.net>, Maxim Patlasov <mpatlasov@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "open list:AIO" <linux-aio@kvack.org>
-Subject: Re: [PATCH v2 1/4] aio: add aio_kernel_() interface
-Message-ID: <20150127175951.GA6886@infradead.org>
-References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
- <1421163888-21452-2-git-send-email-ming.lei@canonical.com>
- <20150125133147.GA19445@infradead.org>
- <CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1758937AbbA0SAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:00:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59169 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758651AbbA0SAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 13:00:33 -0500
+Message-ID: <1422381619.14108.21.camel@linux-0dmf.site>
+Subject: Re: USB autosuspend causing trouble with bluetooth
+From: Oliver Neukum <oneukum@suse.de>
+To: Kirill Elagin <kirelagin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Date: Tue, 27 Jan 2015 19:00:19 +0100
+In-Reply-To: <CABVT_gcm0-3in9uOhpwM7VJrEdaE6982X01TGD29if8OQEW4Uw@mail.gmail.com>
+References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
+	 <1421751814.29486.13.camel@linux-0dmf.site>
+	 <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
+	 <1421762788.29486.28.camel@linux-0dmf.site>
+	 <CABVT_gdCvbK8mUQMjDmiAmc_6kbBUMf4XFeAZ=zzjOYS+7oCGg@mail.gmail.com>
+	 <1421775689.1112.4.camel@linux-0dmf.site>
+	 <CABVT_geh3RjaG+zX6xUWL9RQtwoAeyuC33xf2vT2o0HPPkokcg@mail.gmail.com>
+	 <1421790436.1112.14.camel@linux-0dmf.site>
+	 <CABVT_geRjB12v8XnRvNbf_2h6-hQJwgxuFkqxBhwQv2nrZ-w9A@mail.gmail.com>
+	 <CABVT_gcm0-3in9uOhpwM7VJrEdaE6982X01TGD29if8OQEW4Uw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 12:18:23AM +0800, Ming Lei wrote:
-> > Why do we keep these two separate?  Especially having the iov passed
-> 
-> No special meaning, just follow previous patches, :-)
-> 
-> But one benefit is that we can separate the one-shot
-> initialization from submit, at least filep/complete/ki_ctx can be
-> set during initialization.
+On Mon, 2015-01-26 at 21:00 +0400, Kirill Elagin wrote:
+> Things just got way worse with this hotplug thing.
 
-FYI, I've posted another approach at async kernel reads/writes in the
-"[RFC] split struct kiocb" series.  I thought I had you on Cc, but I
-messed it up.
+Is that a new test or did you update?
 
-This keeps the separate init function, but it still feels a bit
-pointless to me.
+> When the host power/control is set to `auto`, as soon as I insert  the
+> Unifying receiver one of kworkers starts eating 100% of one of the
+
+But it does not enumerate the dongle, does it?
+
+> cores, according to `htop`. As soon as I `echo on` to power/control of
+> the relevant USB hub the kworker stops doing this. This also happens
+> with that other USB1.1 BT-dongle, so I assume any USB1.1 device would
+> do. Also just unplugging the device is not enough, the kworker keeps
+> eating CPU until I `echo on` to power/control.
+> 
+> Should I start a separate thread?
+> Right now I'm on 3.18.2-gentoo.
+
+Can you tell at which kernel version this started?
+
+	Regards
+		Oliver
+
 
