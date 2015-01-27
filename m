@@ -1,222 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161AbbA0H6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 02:58:55 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42639 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbbA0H6w (ORCPT
+	id S1757721AbbA0IDY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 03:03:24 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:45069 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155AbbA0IDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 02:58:52 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 27 Jan 2015 17:00:09 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 3/3] slub: make dead caches discard free slabs
- immediately
-Message-ID: <20150127080009.GB11358@js1304-P5Q-DELUXE>
-References: <cover.1422275084.git.vdavydov@parallels.com>
- <42d95683e3c7f4bb00be4d777e2b334e8981d552.1422275084.git.vdavydov@parallels.com>
+	Tue, 27 Jan 2015 03:03:21 -0500
+Date: Tue, 27 Jan 2015 00:03:13 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Vishnu Patekar <vishnupatekar0510@gmail.com>
+Cc: hdegoede@redhat.com, ijc+devicetree@hellion.org.uk,
+        maxime.ripard@free-electrons.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        linux-input@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v5 2/4] ARM:sunxi:drivers:input Add support for A10/A20
+ PS2
+Message-ID: <20150127080313.GB11487@dtor-ws>
+References: <1422193209-17787-1-git-send-email-vishnupatekar0510@gmail.com>
+ <1422193209-17787-3-git-send-email-vishnupatekar0510@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <42d95683e3c7f4bb00be4d777e2b334e8981d552.1422275084.git.vdavydov@parallels.com>
+In-Reply-To: <1422193209-17787-3-git-send-email-vishnupatekar0510@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 03:55:29PM +0300, Vladimir Davydov wrote:
-> To speed up further allocations SLUB may store empty slabs in per
-> cpu/node partial lists instead of freeing them immediately. This
-> prevents per memcg caches destruction, because kmem caches created for a
-> memory cgroup are only destroyed after the last page charged to the
-> cgroup is freed.
-> 
-> To fix this issue, this patch resurrects approach first proposed in [1].
-> It forbids SLUB to cache empty slabs after the memory cgroup that the
-> cache belongs to was destroyed. It is achieved by setting kmem_cache's
-> cpu_partial and min_partial constants to 0 and tuning put_cpu_partial()
-> so that it would drop frozen empty slabs immediately if cpu_partial = 0.
-> 
-> The runtime overhead is minimal. From all the hot functions, we only
-> touch relatively cold put_cpu_partial(): we make it call
-> unfreeze_partials() after freezing a slab that belongs to an offline
-> memory cgroup. Since slab freezing exists to avoid moving slabs from/to
-> a partial list on free/alloc, and there can't be allocations from dead
-> caches, it shouldn't cause any overhead. We do have to disable
-> preemption for put_cpu_partial() to achieve that though.
-> 
-> The original patch was accepted well and even merged to the mm tree.
-> However, I decided to withdraw it due to changes happening to the memcg
-> core at that time. I had an idea of introducing per-memcg shrinkers for
-> kmem caches, but now, as memcg has finally settled down, I do not see it
-> as an option, because SLUB shrinker would be too costly to call since
-> SLUB does not keep free slabs on a separate list. Besides, we currently
-> do not even call per-memcg shrinkers for offline memcgs. Overall, it
-> would introduce much more complexity to both SLUB and memcg than this
-> small patch.
-> 
-> Regarding to SLAB, there's no problem with it, because it shrinks
-> per-cpu/node caches periodically. Thanks to list_lru reparenting, we no
-> longer keep entries for offline cgroups in per-memcg arrays (such as
-> memcg_cache_params->memcg_caches), so we do not have to bother if a
-> per-memcg cache will be shrunk a bit later than it could be.
-> 
-> [1] http://thread.gmane.org/gmane.linux.kernel.mm/118649/focus=118650
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Hi Vishnu,
+
+On Sun, Jan 25, 2015 at 07:10:07PM +0530, Vishnu Patekar wrote:
+> Signed-off-by: VishnuPatekar <vishnupatekar0510@gmail.com>
 > ---
->  mm/slab.c        |    2 +-
->  mm/slab.h        |    2 +-
->  mm/slab_common.c |   15 +++++++++++++--
->  mm/slob.c        |    2 +-
->  mm/slub.c        |   25 ++++++++++++++++++++-----
->  5 files changed, 36 insertions(+), 10 deletions(-)
+>  drivers/input/serio/Kconfig     |   11 ++
+>  drivers/input/serio/Makefile    |    1 +
+>  drivers/input/serio/sun4i-ps2.c |  347 +++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 359 insertions(+)
+>  create mode 100644 drivers/input/serio/sun4i-ps2.c
 > 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 279c44d6d8e1..f0514df07b85 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -2400,7 +2400,7 @@ static int __cache_shrink(struct kmem_cache *cachep)
->  	return (ret ? 1 : 0);
->  }
+> diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+> index bc2d474..964afc5 100644
+> --- a/drivers/input/serio/Kconfig
+> +++ b/drivers/input/serio/Kconfig
+> @@ -281,4 +281,15 @@ config HYPERV_KEYBOARD
+>  	  To compile this driver as a module, choose M here: the module will
+>  	  be called hyperv_keyboard.
 >  
-> -void __kmem_cache_shrink(struct kmem_cache *cachep)
-> +void __kmem_cache_shrink(struct kmem_cache *cachep, bool deactivate)
->  {
->  	__cache_shrink(cachep);
->  }
-> diff --git a/mm/slab.h b/mm/slab.h
-> index c036e520d2cf..041260197984 100644
-> --- a/mm/slab.h
-> +++ b/mm/slab.h
-> @@ -138,7 +138,7 @@ static inline unsigned long kmem_cache_flags(unsigned long object_size,
->  #define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
->  
->  int __kmem_cache_shutdown(struct kmem_cache *);
-> -void __kmem_cache_shrink(struct kmem_cache *);
-> +void __kmem_cache_shrink(struct kmem_cache *, bool);
->  void slab_kmem_cache_release(struct kmem_cache *);
->  
->  struct seq_file;
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index 6803639fdff0..472ab7fcffd4 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -549,10 +549,13 @@ void memcg_deactivate_kmem_caches(struct mem_cgroup *memcg)
->  {
->  	int idx;
->  	struct memcg_cache_array *arr;
-> -	struct kmem_cache *s;
-> +	struct kmem_cache *s, *c;
->  
->  	idx = memcg_cache_id(memcg);
->  
-> +	get_online_cpus();
-> +	get_online_mems();
+> +config SERIO_SUN4I_PS2
+> +	tristate "Allwinner A10 PS/2 controller support"
+> +	default n
+> +	depends on ARCH_SUNXI || COMPILE_TEST
+> +	help
+> +	  This selects support for the PS/2 Host Controller on
+> +	  Allwinner A10.
 > +
->  	mutex_lock(&slab_mutex);
->  	list_for_each_entry(s, &slab_caches, list) {
->  		if (!is_root_cache(s))
-> @@ -560,9 +563,17 @@ void memcg_deactivate_kmem_caches(struct mem_cgroup *memcg)
->  
->  		arr = rcu_dereference_protected(s->memcg_params.memcg_caches,
->  						lockdep_is_held(&slab_mutex));
-> +		c = arr->entries[idx];
-> +		if (!c)
-> +			continue;
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called sun4i-ps2.
 > +
-> +		__kmem_cache_shrink(c, true);
->  		arr->entries[idx] = NULL;
->  	}
->  	mutex_unlock(&slab_mutex);
+>  endif
+> diff --git a/drivers/input/serio/Makefile b/drivers/input/serio/Makefile
+> index 815d874..c600089 100644
+> --- a/drivers/input/serio/Makefile
+> +++ b/drivers/input/serio/Makefile
+> @@ -29,3 +29,4 @@ obj-$(CONFIG_SERIO_ARC_PS2)	+= arc_ps2.o
+>  obj-$(CONFIG_SERIO_APBPS2)	+= apbps2.o
+>  obj-$(CONFIG_SERIO_OLPC_APSP)	+= olpc_apsp.o
+>  obj-$(CONFIG_HYPERV_KEYBOARD)	+= hyperv-keyboard.o
+> +obj-$(CONFIG_SERIO_SUN4I_PS2)	+= sun4i-ps2.o
+> diff --git a/drivers/input/serio/sun4i-ps2.c b/drivers/input/serio/sun4i-ps2.c
+> new file mode 100644
+> index 0000000..d3cf6bc
+> --- /dev/null
+> +++ b/drivers/input/serio/sun4i-ps2.c
+> @@ -0,0 +1,347 @@
+> +/*
+> + *	Driver for Allwinner A10 PS2 host controller
+> + *
+> + *	Author: Vishnu Patekar <vishnupatekar0510@gmail.com>
+> + *		Aaron.maoye <leafy.myeh@newbietech.com>
+> + *
+> + *
+> + */
 > +
-> +	put_online_mems();
-> +	put_online_cpus();
->  }
->  
->  void memcg_destroy_kmem_caches(struct mem_cgroup *memcg)
-> @@ -646,7 +657,7 @@ void kmem_cache_shrink(struct kmem_cache *cachep)
->  {
->  	get_online_cpus();
->  	get_online_mems();
-> -	__kmem_cache_shrink(cachep);
-> +	__kmem_cache_shrink(cachep, false);
->  	put_online_mems();
->  	put_online_cpus();
->  }
-> diff --git a/mm/slob.c b/mm/slob.c
-> index 043a14b6ccbe..e63ff9d926dc 100644
-> --- a/mm/slob.c
-> +++ b/mm/slob.c
-> @@ -618,7 +618,7 @@ int __kmem_cache_shutdown(struct kmem_cache *c)
->  	return 0;
->  }
->  
-> -void __kmem_cache_shrink(struct kmem_cache *c)
-> +void __kmem_cache_shrink(struct kmem_cache *c, bool deactivate)
->  {
->  }
->  
-> diff --git a/mm/slub.c b/mm/slub.c
-> index c09d93dde40e..6f57824af019 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2007,6 +2007,7 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->  	int pages;
->  	int pobjects;
->  
-> +	preempt_disable();
->  	do {
->  		pages = 0;
->  		pobjects = 0;
-> @@ -2040,6 +2041,14 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
->  
->  	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
->  								!= oldpage);
-> +	if (unlikely(!s->cpu_partial)) {
-> +		unsigned long flags;
+> +#include <linux/module.h>
+> +#include <linux/serio.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/errno.h>
+> +#include <linux/slab.h>
+> +#include <linux/list.h>
+> +#include <linux/io.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_platform.h>
+
+You do not really need all these of_* includes. Neither you need list.h.
+
+> +#include <linux/clk.h>
+> +#include <linux/delay.h>
 > +
-> +		local_irq_save(flags);
-> +		unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
-> +		local_irq_restore(flags);
+> +#define DRIVER_NAME		"sun4i-ps2"
+> +
+> +/* register offset definitions */
+> +#define PS2_REG_GCTL		0x00	/*  PS2 Module Global Control Reg */
+> +#define PS2_REG_DATA		0x04	/*  PS2 Module Data Reg		*/
+> +#define PS2_REG_LCTL		0x08	/*  PS2 Module Line Control Reg */
+> +#define PS2_REG_LSTS		0x0C	/*  PS2 Module Line Status Reg	*/
+> +#define PS2_REG_FCTL		0x10	/*  PS2 Module FIFO Control Reg */
+> +#define PS2_REG_FSTS		0x14	/*  PS2 Module FIFO Status Reg	*/
+> +#define PS2_REG_CLKDR		0x18	/*  PS2 Module Clock Divider Reg*/
+> +
+> +/*  PS2 GLOBAL CONTROL REGISTER PS2_GCTL */
+> +#define PS2_GCTL_INTFLAG	BIT(4)
+> +#define PS2_GCTL_INTEN		BIT(3)
+> +#define PS2_GCTL_RESET		BIT(2)
+> +#define PS2_GCTL_MASTER		BIT(1)
+> +#define PS2_GCTL_BUSEN		BIT(0)
+> +
+> +/* PS2 LINE CONTROL REGISTER */
+> +#define PS2_LCTL_NOACK		BIT(18)
+> +#define PS2_LCTL_TXDTOEN	BIT(8)
+> +#define PS2_LCTL_STOPERREN	BIT(3)
+> +#define PS2_LCTL_ACKERREN	BIT(2)
+> +#define PS2_LCTL_PARERREN	BIT(1)
+> +#define PS2_LCTL_RXDTOEN	BIT(0)
+> +
+> +/* PS2 LINE STATUS REGISTER */
+> +#define PS2_LSTS_TXTDO		BIT(8)
+> +#define PS2_LSTS_STOPERR	BIT(3)
+> +#define PS2_LSTS_ACKERR		BIT(2)
+> +#define PS2_LSTS_PARERR		BIT(1)
+> +#define PS2_LSTS_RXTDO		BIT(0)
+> +
+> +#define PS2_LINE_ERROR_BIT \
+> +	(PS2_LSTS_TXTDO | PS2_LSTS_STOPERR | PS2_LSTS_ACKERR | \
+> +	PS2_LSTS_PARERR | PS2_LSTS_RXTDO)
+> +
+> +/* PS2 FIFO CONTROL REGISTER */
+> +#define PS2_FCTL_TXRST		BIT(17)
+> +#define PS2_FCTL_RXRST		BIT(16)
+> +#define PS2_FCTL_TXUFIEN	BIT(10)
+> +#define PS2_FCTL_TXOFIEN	BIT(9)
+> +#define PS2_FCTL_TXRDYIEN	BIT(8)
+> +#define PS2_FCTL_RXUFIEN	BIT(2)
+> +#define PS2_FCTL_RXOFIEN	BIT(1)
+> +#define PS2_FCTL_RXRDYIEN	BIT(0)
+> +
+> +/* PS2 FIFO STATUS REGISTER */
+> +#define PS2_FSTS_TXUF		BIT(10)
+> +#define PS2_FSTS_TXOF		BIT(9)
+> +#define PS2_FSTS_TXRDY		BIT(8)
+> +#define PS2_FSTS_RXUF		BIT(2)
+> +#define PS2_FSTS_RXOF		BIT(1)
+> +#define PS2_FSTS_RXRDY		BIT(0)
+> +
+> +#define PS2_FIFO_ERROR_BIT \
+> +	(PS2_FSTS_TXUF | PS2_FSTS_TXOF | PS2_FSTS_RXUF | PS2_FSTS_RXOF)
+> +
+> +#define PS2_SAMPLE_CLK		1000000
+> +#define PS2_SCLK		125000
+> +
+> +struct sun4i_ps2data {
+> +	struct serio *serio;
+> +	struct device *dev;
+> +
+> +	/* IO mapping base */
+> +	void __iomem	*reg_base;
+> +
+> +	/* clock management */
+> +	struct clk	*clk;
+> +
+> +	/* irq */
+> +	spinlock_t	lock;
+> +	int		irq;
+> +};
+> +
+> +/*********************/
+> +/* Interrupt handler */
+> +/*********************/
+> +static irqreturn_t sun4i_ps2_interrupt(int irq, void *dev_id)
+> +{
+> +	struct sun4i_ps2data *drvdata = dev_id;
+> +	u32 intr_status;
+> +	u32 fifo_status;
+> +	unsigned char byte;
+> +	unsigned int rxflags = 0;
+> +	u32 rval;
+> +
+> +	spin_lock(&drvdata->lock);
+> +
+> +	/* Get the PS/2 interrupts and clear them */
+> +	intr_status  = readl(drvdata->reg_base + PS2_REG_LSTS);
+> +	fifo_status  = readl(drvdata->reg_base + PS2_REG_FSTS);
+> +
+> +	/*Check Line Status Register*/
+> +	if (intr_status & PS2_LINE_ERROR_BIT) {
+> +		rxflags = (intr_status & PS2_LINE_ERROR_BIT) ? SERIO_FRAME : 0;
+> +		rxflags |= (intr_status & PS2_LSTS_PARERR) ? SERIO_PARITY : 0;
+> +		rxflags |= (intr_status & PS2_LSTS_PARERR) ? SERIO_TIMEOUT : 0;
+> +
+> +		rval = PS2_LSTS_TXTDO | PS2_LSTS_STOPERR | PS2_LSTS_ACKERR |
+> +			PS2_LSTS_PARERR | PS2_LSTS_RXTDO;
+> +		writel(rval, drvdata->reg_base + PS2_REG_LSTS);
 > +	}
-> +	preempt_enable();
->  #endif
->  }
->  
-> @@ -3368,7 +3377,7 @@ EXPORT_SYMBOL(kfree);
->   * being allocated from last increasing the chance that the last objects
->   * are freed in them.
->   */
-> -void __kmem_cache_shrink(struct kmem_cache *s)
-> +void __kmem_cache_shrink(struct kmem_cache *s, bool deactivate)
->  {
->  	int node;
->  	int i;
-> @@ -3381,6 +3390,15 @@ void __kmem_cache_shrink(struct kmem_cache *s)
->  		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
->  	unsigned long flags;
->  
-> +	if (deactivate) {
-> +		/*
-> +		 * Disable empty slabs caching. Used to avoid pinning offline
-> +		 * memory cgroups by freeable kmem pages.
-> +		 */
-> +		s->cpu_partial = 0;
-> +		s->min_partial = 0;
+> +
+> +	/*Check FIFO Status Register*/
+> +	if (fifo_status & PS2_FIFO_ERROR_BIT) {
+> +		rval = PS2_FSTS_TXUF | PS2_FSTS_TXOF | PS2_FSTS_TXRDY |
+> +			PS2_FSTS_RXUF | PS2_FSTS_RXOF | PS2_FSTS_RXRDY;
+> +		writel(rval, drvdata->reg_base + PS2_REG_FSTS);
 > +	}
 > +
+> +	rval = (fifo_status >> 16) & 0x3;
+> +	while (rval--) {
+> +		byte = readl(drvdata->reg_base + PS2_REG_DATA) & 0xff;
+> +		serio_interrupt(drvdata->serio, byte, rxflags);
+> +	}
+> +
+> +	writel(intr_status, drvdata->reg_base + PS2_REG_LSTS);
+> +	writel(fifo_status, drvdata->reg_base + PS2_REG_FSTS);
+> +
+> +	spin_unlock(&drvdata->lock);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +
+> +static int sun4i_ps2_open(struct serio *pserio)
+> +{
+> +	struct sun4i_ps2data *drvdata = pserio->port_data;
+> +	u32 src_clk = 0;
+> +	u32 clk_scdf;
+> +	u32 clk_pcdf;
+> +	u32 rval;
+> +	unsigned long flags;
+> +
+> +	/*Set Line Control And Enable Interrupt*/
+> +	rval = PS2_LCTL_STOPERREN | PS2_LCTL_ACKERREN
+> +		| PS2_LCTL_PARERREN | PS2_LCTL_RXDTOEN;
+> +	writel(rval, drvdata->reg_base + PS2_REG_LCTL);
+> +
+> +	/*Reset FIFO*/
+> +	rval = PS2_FCTL_TXRST | PS2_FCTL_RXRST | PS2_FCTL_TXUFIEN
+> +		| PS2_FCTL_TXOFIEN | PS2_FCTL_RXUFIEN
+> +		| PS2_FCTL_RXOFIEN | PS2_FCTL_RXRDYIEN;
+> +
+> +	writel(rval, drvdata->reg_base + PS2_REG_FCTL);
+> +
+> +	src_clk = clk_get_rate(drvdata->clk);
+> +	/*Set Clock Divider Register*/
+> +	clk_scdf = src_clk / PS2_SAMPLE_CLK - 1;
+> +	clk_pcdf = PS2_SAMPLE_CLK / PS2_SCLK - 1;
+> +	rval = (clk_scdf<<8) | clk_pcdf;
+> +	writel(rval, drvdata->reg_base + PS2_REG_CLKDR);
+> +
+> +
+> +	/*Set Global Control Register*/
+> +	rval = PS2_GCTL_RESET | PS2_GCTL_INTEN | PS2_GCTL_MASTER
+> +		| PS2_GCTL_BUSEN;
+> +
+> +	spin_lock_irqsave(&drvdata->lock, flags);
+> +	writel(rval, drvdata->reg_base + PS2_REG_GCTL);
+> +	spin_unlock_irqrestore(&drvdata->lock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static void sun4i_ps2_close(struct serio *pserio)
+> +{
+> +	struct sun4i_ps2data *drvdata = pserio->port_data;
+> +	u32 rval;
+> +
+> +	/* shutoff the interrupt */
+> +	rval = readl(drvdata->reg_base + PS2_REG_GCTL);
+> +	writel(rval & ~(PS2_GCTL_INTEN), drvdata->reg_base + PS2_REG_GCTL);
+> +
+> +	synchronize_irq(drvdata->irq);
+> +}
+> +
+> +static int sun4i_ps2_write(struct serio *pserio, unsigned char val)
+> +{
+> +	unsigned long expire = jiffies + msecs_to_jiffies(10000);
+> +	struct sun4i_ps2data *drvdata;
+> +
+> +	drvdata = (struct sun4i_ps2data *)pserio->port_data;
+> +
+> +	do {
+> +		if (readl(drvdata->reg_base + PS2_REG_FSTS) & PS2_FSTS_TXRDY) {
+> +			writel(val, drvdata->reg_base + PS2_REG_DATA);
+> +			return 0;
+> +		}
+> +	} while (time_before(jiffies, expire));
+> +
+> +	return SERIO_TIMEOUT;
+> +}
+> +
+> +static int sun4i_ps2_probe(struct platform_device *pdev)
+> +{
+> +	struct resource *res; /* IO mem resources */
+> +	struct sun4i_ps2data *drvdata;
+> +	struct serio *serio;
+> +	struct device *dev = &pdev->dev;
+> +	unsigned int irq;
+> +	int error;
+> +
+> +	drvdata = kzalloc(sizeof(struct sun4i_ps2data), GFP_KERNEL);
+> +	serio = kzalloc(sizeof(struct serio), GFP_KERNEL);
+> +	if (!drvdata || !serio) {
+> +		error = -ENOMEM;
+> +		goto err_free_mem;
+> +	}
+> +
+> +	spin_lock_init(&drvdata->lock);
+> +
+> +	/* IO */
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
-Hello,
+If you get NULL here you'll end up dereferencing it later.
 
-Maybe, kick_all_cpus_sync() is needed here since object would
-be freed asynchronously so they can't see this updated value.
+> +
+> +	drvdata->reg_base = ioremap(res->start, resource_size(res));
+> +	if (IS_ERR(drvdata->reg_base)) {
 
-Thanks.
+ioremap returns NULL on failure, not ERR_PTR-encoded result.
+
+> +		dev_err(dev, "failed to map registers\n");
+> +		error = PTR_ERR(drvdata->reg_base);
+> +		goto err_free_mem;
+> +	}
+> +
+> +	drvdata->clk = clk_get(dev, NULL);
+> +	if (IS_ERR(drvdata->clk)) {
+> +		error = PTR_ERR(drvdata->clk);
+> +		dev_err(dev, "couldn't get clock %d\n", error);
+> +		goto err_ioremap;
+> +	}
+> +
+> +	error = clk_prepare_enable(drvdata->clk);
+> +	if (error) {
+> +		dev_err(dev, "failed to enable clock %d\n", error);
+> +		goto err_clk;
+> +	}
+> +
+> +	serio->id.type = SERIO_8042;
+> +	serio->write = sun4i_ps2_write;
+> +	serio->open = sun4i_ps2_open;
+> +	serio->close = sun4i_ps2_close;
+> +	serio->port_data = drvdata;
+> +	serio->dev.parent = dev;
+> +	strlcpy(serio->name, dev_name(dev), sizeof(serio->name));
+> +	strlcpy(serio->phys, dev_name(dev), sizeof(serio->phys));
+> +
+> +	/* shutoff interrupt */
+> +	writel(0, drvdata->reg_base + PS2_REG_GCTL);
+> +
+> +	/* Get IRQ for the device */
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (!irq) {
+> +		dev_err(dev, "no IRQ found\n");
+> +		error = -ENXIO;
+> +		goto err_disable_clk;
+> +	}
+> +
+> +	drvdata->irq = irq;
+> +	drvdata->serio = serio;
+> +	drvdata->dev = dev;
+> +	error = request_irq(drvdata->irq, sun4i_ps2_interrupt, 0,
+> +				DRIVER_NAME, drvdata);
+> +
+> +	if (error) {
+> +		dev_err(drvdata->dev, "Interrupt alloc failed %d:error:%d\n",
+> +			drvdata->irq, error);
+> +		goto err_disable_clk;
+> +	}
+> +
+> +	serio_register_port(serio);
+> +	platform_set_drvdata(pdev, drvdata);
+> +
+> +	return 0;	/* success */
+> +
+> +err_disable_clk:
+> +	clk_disable_unprepare(drvdata->clk);
+> +err_clk:
+> +	clk_put(drvdata->clk);
+> +err_ioremap:
+> +	 iounmap(drvdata->reg_base);
+> +err_free_mem:
+> +	kfree(serio);
+> +	kfree(drvdata);
+> +	return error;
+> +}
+> +
+> +static int sun4i_ps2_remove(struct platform_device *pdev)
+> +{
+> +	struct sun4i_ps2data *drvdata = platform_get_drvdata(pdev);
+> +
+> +	serio_unregister_port(drvdata->serio);
+> +	free_irq(drvdata->irq, drvdata);
+> +
+> +	if (!IS_ERR(drvdata->clk))
+> +		clk_disable_unprepare(drvdata->clk);
+
+If you fail to get clk you abort the probe so it is not possible to have
+IS_ERR() clk here.
+
+I fixed up the issues and applied the patch, thank you.
+
+-- 
+Dmitry
