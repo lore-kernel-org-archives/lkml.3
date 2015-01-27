@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758420AbbA0M54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:57:56 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:58421 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182AbbA0M5y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:57:54 -0500
+	id S1758713AbbA0M6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:58:15 -0500
+Received: from mga01.intel.com ([192.55.52.88]:57015 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758545AbbA0M6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 07:58:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,474,1418112000"; 
+   d="scan'208";a="643227396"
+Date: Tue, 27 Jan 2015 14:57:39 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: David Cohen <david.a.cohen@linux.intel.com>, Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH 8/8] phy: add driver for TI TUSB1210 ULPI PHY
+Message-ID: <20150127125739.GF28539@kuha.fi.intel.com>
+References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1422025978-178336-9-git-send-email-heikki.krogerus@linux.intel.com>
+ <20150124235811.GA24665@psi-dev26.jf.intel.com>
+ <20150126125503.GB28539@kuha.fi.intel.com>
+ <20150126192337.GA13936@psi-dev26.jf.intel.com>
+ <20150127092856.GD28539@kuha.fi.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <54B7F8D2.4040400@wwwdotorg.org>
-References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com>
- <1421338359-27467-7-git-send-email-tomeu.vizoso@collabora.com> <54B7F8D2.4040400@wwwdotorg.org>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Tue, 27 Jan 2015 13:57:33 +0100
-X-Google-Sender-Auth: eQ-ZwTdunrwwPPOHjko9k7dfqqc
-Message-ID: <CAAObsKBfBREzQueA8NRJ0msi7g=5s9Sd2riSEF+0jp8JSbT-mw@mail.gmail.com>
-Subject: Re: [PATCH v2 06/11] ARM: tegra: Move out nyan-generic parts out from
- the nyan-big DT
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150127092856.GD28539@kuha.fi.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 January 2015 at 18:28, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
->>
->> In preparation for adding the DT for the nyan-blaze board.
->
->
-> "git format-patch -C" might help here; hopefully it'd highlight that
-> arch/arm/boot/dts/tegra124-nyan.dtsi was a copy from
-> arch/arm/boot/dts/tegra124-nyan-big.dts, with just a few small diffs?
+Hi guys,
 
-It doesn't, because we keep the pinmux config in the leaf files.
+> I'm only using the init and exit hooks instead of just
+> power_on/power_off because I'm not sure which the controllers will
+> use. For example, now dwc3 calls phy_init() in it's resume routine and
+> not phy_power_on() like I would expect. I know the problem has been
+> pointed out by others, so I'm expecting we'll get guidelines for it
+> later. But before we do, I see no harm in having both init and
+> power_on hooks in this driver.
 
-Regards,
+I'm unable to find the thread where somebody mentioned that, but I
+don't actually think there is any reason why we couldn't just call
+phy_power_on/off instead of phy_init/exit in dwc3_suspend/resume like
+I think we should. I'll add one more patch where I'll change it.
 
-Tomeu
+Felipe, is it OK?
+
+
+Thanks,
+
+-- 
+heikki
