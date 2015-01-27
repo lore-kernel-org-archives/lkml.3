@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231AbbA0PXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:23:34 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:48042 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758614AbbA0PX3 (ORCPT
+	id S1758614AbbA0PYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:24:21 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:54147 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbbA0PYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:23:29 -0500
+	Tue, 27 Jan 2015 10:24:19 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Andreas =?ISO-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
+        devicetree@vger.kernel.org,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Ola Jeppson <ola@adapteva.com>, linux-usb@vger.kernel.org,
+        Michal Simek <michal.simek@xilinx.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
+Subject: Re: [PATCH] usb: phy-generic: Don't fail on missing gpio reset
+Date: Tue, 27 Jan 2015 16:24:10 +0100
+Message-ID: <1488241.JRB4nxvr9q@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1422323129-20969-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1422323129-20969-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-In-Reply-To: <54C66F30.8050108@gmail.com>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
-	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
-	<54BE5DC8.70706@gmail.com>
-	<54BE9D08.7010804@zonque.org>
-	<54BF805B.4000609@gmail.com>
-	<54BFDAAA.50203@zonque.org>
-	<54C0CE8A.5080805@gmail.com>
-	<20150123155402.GB2159@kroah.com>
-	<54C65267.7090905@gmail.com>
-	<CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>
-	<54C66F30.8050108@gmail.com>
-Date: Tue, 27 Jan 2015 16:23:28 +0100
-Message-ID: <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-From: David Herrmann <dh.herrmann@gmail.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Tom Gundersen <teg@jklm.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
-        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:XKtCaLJjwuezDXstTnPEpEBAsy4Z/DSEmTc1uR8E4RVar334zlr
+ xCUpEBLz20YxXdH+xj/6gZ1a9QuwrZn+6oOoISj7Kkiz3g6U3CuLVkwXkDde5SP78DGSNTo
+ /hIUR+s9ZDaZCw7Mn9E44UcOM4zWWQI4yP0Pvg5E4AGHJzpHPY4p5pa3SC/DPe2dH5bAjIL
+ IV5Kcnp2n2qRAWUmqirqg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Monday 26 January 2015 17:45:29 Soren Brinkmann wrote:
+> diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
+> index dd05254241fb..a73d4c738f0b 100644
+> --- a/drivers/usb/phy/phy-generic.c
+> +++ b/drivers/usb/phy/phy-generic.c
+> @@ -241,10 +241,8 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
+>  
+>         if (err == -EPROBE_DEFER)
+>                 return -EPROBE_DEFER;
+> -       if (err) {
+> -               dev_err(dev, "Error requesting RESET GPIO\n");
+> -               return err;
+> -       }
+> +       if (err)
+> +               nop->gpiod_reset = NULL;
 
-On Mon, Jan 26, 2015 at 5:45 PM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> On 01/26/2015 04:26 PM, Tom Gundersen wrote:
->> On Mon, Jan 26, 2015 at 3:42 PM, Michael Kerrisk (man-pages)
->> <mtk.manpages@gmail.com> wrote:
->>> 2. Is the API to be invoked directly by applications or is intended to
->>>    be used only behind specific libraries? You seem to be saying that
->>>    the latter is the case (here, I'm referring to your comment above
->>>    about sd-bus). However, when I asked David Herrmann a similar
->>>    question I got this responser:
->>>
->>>       "kdbus is in no way bound to systemd. There are ongoing efforts
->>>        to port glib and qt to kdbus natively. The API is pretty simple
->>>        and I don't see how a libkdbus would simplify things. In fact,
->>>        even our tests only have slim wrappers around the ioctls to
->>>        simplify error-handling in test-scenarios."
->>>
->>>    To me, that implies that users will employ the raw kernel API.
->>
->> The way I read this is that there will (probably) be a handful of
->> users, namely the existing dbus libraries: libdus, sd-bus, glib, Qt,
->> ell, and maybe a few others. However, third-party developers will not
->> know/care about the details of kdbus, they'll just be coding against
->> the dbus libraries as before (might be minor changes, but they
->> certainly won't need to know anything about the kernel API). Similarly
->> to how userspace developers now code against their libc of choice,
->> rather than use kernel syscalls directly.
->
-> Thanks, Tom, for the input. I'm still confused though, since elsewhere
-> in this thread David Herrmann said in response to a question of mine:
->
->     I think we can agree that we want it to be generically useful,
->     like other ipc mechanisms, including UDS and netlink.
->
-> Again, that sounds to me like the vision is not "a handful of users".
-> Hopefully Greg and David can clarify.
+You might want to distinguish between a missing property and a
+reset gpio that was specified but for some reason cannot be used.
 
-I only expect a handful of users to call the ioctls directly. The
-libraries that implement the payload-marshaling, in particular. It's a
-similar situation with netlink.
-
-Thanks
-David
+	Arnd
