@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967AbbA0Mpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:45:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34957 "EHLO
+	id S932996AbbA0Mqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:46:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34946 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758378AbbA0MRk (ORCPT
+	with ESMTP id S1758359AbbA0MRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:40 -0500
+	Tue, 27 Jan 2015 07:17:37 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Luca Abeni <luca.abeni@unitn.it>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Dario Faggioli <raistlin@linux.it>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 029/126] sched/deadline: Avoid double-accounting in case of missed deadlines
-Date: Tue, 27 Jan 2015 12:15:34 +0000
-Message-Id: <1422361031-19364-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 030/126] HID: roccat: potential out of bounds in pyra_sysfs_write_settings()
+Date: Tue, 27 Jan 2015 12:15:35 +0000
+Message-Id: <1422361031-19364-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -31,74 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luca Abeni <luca.abeni@unitn.it>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 269ad8015a6b2bb1cf9e684da4921eb6fa0a0c88 upstream.
+commit 606185b20caf4c57d7e41e5a5ea4aff460aef2ab upstream.
 
-The dl_runtime_exceeded() function is supposed to ckeck if
-a SCHED_DEADLINE task must be throttled, by checking if its
-current runtime is <= 0. However, it also checks if the
-scheduling deadline has been missed (the current time is
-larger than the current scheduling deadline), further
-decreasing the runtime if this happens.
-This "double accounting" is wrong:
+This is a static checker fix.  We write some binary settings to the
+sysfs file.  One of the settings is the "->startup_profile".  There
+isn't any checking to make sure it fits into the
+pyra->profile_settings[] array in the profile_activated() function.
 
-- In case of partitioned scheduling (or single CPU), this
-  happens if task_tick_dl() has been called later than expected
-  (due to small HZ values). In this case, the current runtime is
-  also negative, and replenish_dl_entity() can take care of the
-  deadline miss by recharging the current runtime to a value smaller
-  than dl_runtime
+I added a check to pyra_sysfs_write_settings() in both places because
+I wasn't positive that the other callers were correct.
 
-- In case of global scheduling on multiple CPUs, scheduling
-  deadlines can be missed even if the task did not consume more
-  runtime than expected, hence penalizing the task is wrong
-
-This patch fix this problem by throttling a SCHED_DEADLINE task
-only when its runtime becomes negative, and not modifying the runtime
-
-Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Acked-by: Juri Lelli <juri.lelli@gmail.com>
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1418813432-20797-3-git-send-email-luca.abeni@unitn.it
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/deadline.c | 19 +------------------
- 1 file changed, 1 insertion(+), 18 deletions(-)
+ drivers/hid/hid-roccat-pyra.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index a07b08ce8307..d10e40862f7f 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -567,24 +567,7 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
- static
- int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
+diff --git a/drivers/hid/hid-roccat-pyra.c b/drivers/hid/hid-roccat-pyra.c
+index 1a07e07d99a0..47d7e74231e5 100644
+--- a/drivers/hid/hid-roccat-pyra.c
++++ b/drivers/hid/hid-roccat-pyra.c
+@@ -35,6 +35,8 @@ static struct class *pyra_class;
+ static void profile_activated(struct pyra_device *pyra,
+ 		unsigned int new_profile)
  {
--	int dmiss = dl_time_before(dl_se->deadline, rq_clock(rq));
--	int rorun = dl_se->runtime <= 0;
--
--	if (!rorun && !dmiss)
--		return 0;
--
--	/*
--	 * If we are beyond our current deadline and we are still
--	 * executing, then we have already used some of the runtime of
--	 * the next instance. Thus, if we do not account that, we are
--	 * stealing bandwidth from the system at each deadline miss!
--	 */
--	if (dmiss) {
--		dl_se->runtime = rorun ? dl_se->runtime : 0;
--		dl_se->runtime -= rq_clock(rq) - dl_se->deadline;
--	}
--
--	return 1;
-+	return (dl_se->runtime <= 0);
++	if (new_profile >= ARRAY_SIZE(pyra->profile_settings))
++		return;
+ 	pyra->actual_profile = new_profile;
+ 	pyra->actual_cpi = pyra->profile_settings[pyra->actual_profile].y_cpi;
  }
+@@ -257,9 +259,11 @@ static ssize_t pyra_sysfs_write_settings(struct file *fp,
+ 	if (off != 0 || count != PYRA_SIZE_SETTINGS)
+ 		return -EINVAL;
  
- extern bool sched_rt_bandwidth_account(struct rt_rq *rt_rq);
+-	mutex_lock(&pyra->pyra_lock);
+-
+ 	settings = (struct pyra_settings const *)buf;
++	if (settings->startup_profile >= ARRAY_SIZE(pyra->profile_settings))
++		return -EINVAL;
++
++	mutex_lock(&pyra->pyra_lock);
+ 
+ 	retval = pyra_set_settings(usb_dev, settings);
+ 	if (retval) {
 -- 
 2.1.4
 
