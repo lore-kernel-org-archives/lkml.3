@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769AbbA0BhF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 20:37:05 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:39117 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757665AbbA0Bg4 (ORCPT
+	id S1757803AbbA0BhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 20:37:07 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:36703 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757590AbbA0Bg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 20:36:56 -0500
+	Mon, 26 Jan 2015 20:36:57 -0500
 From: David Decotigny <ddecotig@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <ben@decadent.org.uk>, Amir Vadai <amirv@mellanox.com>,
@@ -22,9 +22,9 @@ Cc: Eric Dumazet <edumazet@google.com>,
         Eyal Perry <eyalpe@mellanox.com>, Pravin B Shelar <pshelar@nicira.com>,
         Ed Swierk <eswierk@skyportsystems.com>,
         David Decotigny <decot@googlers.com>
-Subject: [PATCH net-next v1 06/18] net: usnic: use __ethtool_get_ksettings
-Date: Mon, 26 Jan 2015 17:36:02 -0800
-Message-Id: <1422322574-6188-7-git-send-email-ddecotig@gmail.com>
+Subject: [PATCH net-next v1 07/18] net: bonding: use __ethtool_get_ksettings
+Date: Mon, 26 Jan 2015 17:36:03 -0800
+Message-Id: <1422322574-6188-8-git-send-email-ddecotig@gmail.com>
 X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 In-Reply-To: <1422322574-6188-1-git-send-email-ddecotig@gmail.com>
 References: <1422322574-6188-1-git-send-email-ddecotig@gmail.com>
@@ -36,39 +36,51 @@ From: David Decotigny <decot@googlers.com>
 
 Signed-off-by: David Decotigny <decot@googlers.com>
 ---
- drivers/infiniband/hw/usnic/usnic_ib_verbs.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/bonding/bond_main.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/infiniband/hw/usnic/usnic_ib_verbs.c b/drivers/infiniband/hw/usnic/usnic_ib_verbs.c
-index d71ba62..f6f67c9 100644
---- a/drivers/infiniband/hw/usnic/usnic_ib_verbs.c
-+++ b/drivers/infiniband/hw/usnic/usnic_ib_verbs.c
-@@ -305,12 +305,12 @@ int usnic_ib_query_port(struct ib_device *ibdev, u8 port,
- 				struct ib_port_attr *props)
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index f47bc43..7710386 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -371,22 +371,20 @@ down:
+ static void bond_update_speed_duplex(struct slave *slave)
  {
- 	struct usnic_ib_dev *us_ibdev = to_usdev(ibdev);
--	struct ethtool_cmd cmd;
-+	struct ethtool_ksettings cmd;
+ 	struct net_device *slave_dev = slave->dev;
+-	struct ethtool_cmd ecmd;
+-	u32 slave_speed;
++	struct ethtool_ksettings ecmd;
+ 	int res;
  
- 	usnic_dbg("\n");
+ 	slave->speed = SPEED_UNKNOWN;
+ 	slave->duplex = DUPLEX_UNKNOWN;
  
- 	mutex_lock(&us_ibdev->usdev_lock);
--	__ethtool_get_settings(us_ibdev->netdev, &cmd);
-+	__ethtool_get_ksettings(us_ibdev->netdev, &cmd);
- 	memset(props, 0, sizeof(*props));
+-	res = __ethtool_get_settings(slave_dev, &ecmd);
++	res = __ethtool_get_ksettings(slave_dev, &ecmd);
+ 	if (res < 0)
+ 		return;
  
- 	props->lid = 0;
-@@ -334,8 +334,8 @@ int usnic_ib_query_port(struct ib_device *ibdev, u8 port,
- 	props->pkey_tbl_len = 1;
- 	props->bad_pkey_cntr = 0;
- 	props->qkey_viol_cntr = 0;
--	eth_speed_to_ib_speed(cmd.speed, &props->active_speed,
--				&props->active_width);
-+	eth_speed_to_ib_speed(cmd.parent.speed, &props->active_speed,
-+			      &props->active_width);
- 	props->max_mtu = IB_MTU_4096;
- 	props->active_mtu = iboe_get_mtu(us_ibdev->ufdev->mtu);
- 	/* Userspace will adjust for hdrs */
+-	slave_speed = ethtool_cmd_speed(&ecmd);
+-	if (slave_speed == 0 || slave_speed == ((__u32) -1))
++	if (ecmd.parent.speed == 0 || ecmd.parent.speed == ((__u32) -1))
+ 		return;
+ 
+-	switch (ecmd.duplex) {
++	switch (ecmd.parent.duplex) {
+ 	case DUPLEX_FULL:
+ 	case DUPLEX_HALF:
+ 		break;
+@@ -394,8 +392,8 @@ static void bond_update_speed_duplex(struct slave *slave)
+ 		return;
+ 	}
+ 
+-	slave->speed = slave_speed;
+-	slave->duplex = ecmd.duplex;
++	slave->speed = ecmd.parent.speed;
++	slave->duplex = ecmd.parent.duplex;
+ 
+ 	return;
+ }
 -- 
 2.2.0.rc0.207.ga3a616c
 
