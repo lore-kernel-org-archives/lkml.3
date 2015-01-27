@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758226AbbA0PSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:18:10 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:60238 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027AbbA0PSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:18:08 -0500
+	id S1758379AbbA0PSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:18:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754533AbbA0PSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 10:18:47 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] configfs: Fix potential NULL d_inode dereference
+From: David Howells <dhowells@redhat.com>
+To: viro@zeniv.linux.org.uk
+Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        Joel Becker <joel.becker@oracle.com>, linux-kernel@vger.kernel.org
+Date: Tue, 27 Jan 2015 15:18:39 +0000
+Message-ID: <20150127151839.31483.83547.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=X9x0gW5TyLi4ERm8nxixQB__Y=5bRAtOax-_w+T33rCg@mail.gmail.com>
-References: <1422271175-19445-1-git-send-email-addy.ke@rock-chips.com>
-	<1422271175-19445-2-git-send-email-addy.ke@rock-chips.com>
-	<CAPDyKFp=5epMggHu0+u_LU7ETujcoeP2xOpB7iD6JF2bs8BnEA@mail.gmail.com>
-	<CAD=FV=X9x0gW5TyLi4ERm8nxixQB__Y=5bRAtOax-_w+T33rCg@mail.gmail.com>
-Date: Tue, 27 Jan 2015 16:18:06 +0100
-Message-ID: <CAPDyKFqjG=yxDcwnk4jbXMZ05hMkWR2x37uVpRNd_11-eB4G7w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mmc: core: use card pointer as the first parameter of execute_tuning()
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Addy Ke <addy.ke@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        =?UTF-8?Q?Pawe=C5=82_Moll?= <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
-        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris Zhong <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        Han Jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 January 2015 at 18:45, Doug Anderson <dianders@chromium.org> wrote:
-> Ulf,
->
-> On Mon, Jan 26, 2015 at 7:15 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> On 26 January 2015 at 12:19, Addy Ke <addy.ke@rock-chips.com> wrote:
->>> We need to take the card pointer in execute_tuning() for mmc_send_status(),
->>
->> mmc_send_status() is an mmc core function, not intended for host's to call.
->>
->>> but mmc->card is NULL in tuning state. So we need change the first parameter
->>> of execute_tuning() to card pointer(struct mmc_card * card).
->>
->> So, why do we need this?
->
-> I asked Addy to post upstream against mmc_send_tuning(), but I guess
-> he didn't (he posted against Alex's NAKed patch instead).
->
-> ...when I talked to him about it, Addy was asserting that when tuning
-> fails it is important (at least on dw_mmc on rk3288) that we wait for
-> the card to stop being busy and that the way to detect was using
-> mmc_send_status().
+Code that does this:
 
-So, could that be due to the internal logic of the error handling in
-dw_mmc driver? Or you think this is a generic issue?
+		if (!(d_unhashed(dentry) && dentry->d_inode)) {
+			...
+			simple_unlink(parent->d_inode, dentry);
+		}
 
-According to the specifications (eMMC and SD) both states that the
-tuning command has an R1 response. So, there shouldn't be any busy
-signalling involved - at least according to spec.
+is broken because:
 
->
-> That would mean that against upstream you'd need to change
-> mmc_send_tuning() to take in the card as well (or move the "host->card
-> = card" assignment to before UHS init, which seems less desirable?)
->
-> What do you think about that?  Is there a better solution?
+    !(d_unhashed(dentry) && dentry->d_inode)
 
-Why do we need to change mmc_send_tuning()? I thought the issue was
-that mmc_send_status(), which currently takes "card" as a parameter.
+is equivalent to:
 
-Kind regards
-Uffe
+    !d_unhashed(dentry) || !dentry->d_inode
+
+so it is possible to get into simple_unlink() with dentry->d_inode == NULL.
+
+simple_unlink(), however, assumes dentry->d_inode cannot be NULL.
+
+I think that what was meant is this:
+
+    !d_unhashed(dentry) && dentry->d_inode
+
+and that the logical-not operator or the final close-bracket was misplaced.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Joel Becker <joel.becker@oracle.com>
+---
+
+ fs/configfs/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/configfs/inode.c b/fs/configfs/inode.c
+index 5946ad98053f..e5a7c18a9bee 100644
+--- a/fs/configfs/inode.c
++++ b/fs/configfs/inode.c
+@@ -249,7 +249,7 @@ void configfs_drop_dentry(struct configfs_dirent * sd, struct dentry * parent)
+ 
+ 	if (dentry) {
+ 		spin_lock(&dentry->d_lock);
+-		if (!(d_unhashed(dentry) && dentry->d_inode)) {
++		if (!d_unhashed(dentry) && dentry->d_inode) {
+ 			dget_dlock(dentry);
+ 			__d_drop(dentry);
+ 			spin_unlock(&dentry->d_lock);
+
