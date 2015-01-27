@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760033AbbA0VUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:20:50 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:42326 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759982AbbA0VUr (ORCPT
+	id S1759886AbbA0VYO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 16:24:14 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:65496 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762AbbA0VYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 16:20:47 -0500
-Date: Wed, 28 Jan 2015 00:20:44 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Calvin Owens <calvinowens@fb.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Peter Feiner <pfeiner@google.com>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [PATCH] docs: procs -- Describe /proc/<pid>/map_files entry
-Message-ID: <20150127212044.GO651@moon>
-References: <20150127094103.GK651@moon>
- <CAGXu5jJ0oNeMq+gibuHfB-j_ZooGnuZ_o1aCoMO=qMWen+HQUw@mail.gmail.com>
+	Tue, 27 Jan 2015 16:24:12 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>, wim@iguana.be,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, paul@crapouillou.net
+Subject: Re: [PATCH 2/2] watchdog: jz4740: Add DT support
+Date: Tue, 27 Jan 2015 22:23:49 +0100
+Message-ID: <3983977.h1XXMbpmZb@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150127205430.GB6983@roeck-us.net>
+References: <1422371490-44402-1-git-send-email-Zubair.Kakakhel@imgtec.com> <2690526.hgsE0j4AZc@wuerfel> <20150127205430.GB6983@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ0oNeMq+gibuHfB-j_ZooGnuZ_o1aCoMO=qMWen+HQUw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:dAmRmPL8uNeTsy+MRZq1fL8eMREq+l3TgLGlm5jg9FFsuB0AFe5
+ 4ijMI/H+OLfauO5vYf40MLXNJJiqi9cCvkIdtcDMgxm2SQZlGQ0z4uc7qEmhuBARpwQIOfw
+ 6yyDExaoLIqOSLfW65c/mQC0jQj0m4Pz5uaREF6vuh98kQijWgIOflveWYTcwkITCb97mBl
+ lulAemj2wJkhPBUNHVNnA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 11:50:49AM -0800, Kees Cook wrote:
-> > +
-> > +The main purpose of map_files directory is to be able to retrieve a set of
-> > +memory mapped files in a fast way instead of parsing /proc/<pid>/maps or
-> > +/proc/<pid>/smaps which contain a way more records. Same time one can open(2)
-> > +mappings from the listings of two processes and comparing inodes figure out
-> > +which anonymous memory areas are actually shared.
+On Tuesday 27 January 2015 12:54:30 Guenter Roeck wrote:
+> On Tue, Jan 27, 2015 at 09:15:37PM +0100, Arnd Bergmann wrote:
+> > On Tuesday 27 January 2015 15:11:30 Zubair Lutfullah Kakakhel wrote:
+> > >  };
+> > >  
+> > > +#ifdef CONFIG_OF
+> > > +static const struct of_device_id jz4740_of_matches[] = {
+> > > +       { .compatible = "ingenic,jz4740-watchdog", },
+> > > +       { /* sentinel */ }
+> > > +};
+> > > +#endif
+> > > +
+> > >  static int jz4740_wdt_probe(struct platform_device *pdev)
+> > >  {
+> > >         struct jz4740_wdt_drvdata *drvdata;
+> > > @@ -211,6 +219,7 @@ static struct platform_driver jz4740_wdt_driver = {
+> > >         .remove = jz4740_wdt_remove,
+> > >         .driver = {
+> > >                 .name = "jz4740-wdt",
+> > > +               .of_match_table = of_match_ptr(jz4740_of_matches),
+> > >         },
+> > > 
+> > 
+> > Why the #ifdef? Presumably we want to move over jz4740 to DT-only in the
+> > long run, so you could just remove the #ifdef and the of_match_ptr()
+> > wrapper.
+> > 
+> Only if "depends on OF" is added to its Kconfig entry, or am I missing
+> something ?
 > 
-> Thanks for details! I still don't understand how this is used for
-> checkpoint/restore when the mmap offset isn't shown. Can't a process
-> map, say 4K of a file, from different offsets, and it would show up
-> as:
-> 
-> 400000-401000 -> /some/file
-> 401000-402000 -> /some/file
-> 
-> but there'd be no way to know how to restore that mapping?
 
-In criu we use a few sources of information (ie we scan not only
-map_files, but have to use /proc/pid/smaps as well which has
-offset for mapping). So at the end we have all picture under
-our hands.
+I'm pretty sure you don't need that, it will still compile and link
+fine, the only downside being a few wasted bytes to store the compatible
+string and the array.
 
-> Are these symlinks "regular" symlinks, or are they something more
-> special that bypasses VFS? If it bypasses VFS, I think adding and open
-> check with PTRACE_ATTACH is needed, since now you're able to _modify_
-> the memory space of the target process instead of just reading it.
-
-Opening them goes same way as open of /proc/pid/fd/ entries as
-far as I can tell. This should be enough, or I miss something
-obvious here? Otherwise opening /proc/pid/fd/ should use
-PTRACE_ATTACH instead of PTRACE_MODE_READ (as in proc_fd_access_allowed).
+	Arnd
