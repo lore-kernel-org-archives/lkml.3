@@ -1,103 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542AbbA0CEq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 21:04:46 -0500
-Received: from ozlabs.org ([103.22.144.67]:33990 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256AbbA0CEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 21:04:44 -0500
-Date: Tue, 27 Jan 2015 13:04:37 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roger Chen <roger.chen@rock-chips.com>,
-        Chris Zhong <zyw@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>
-Subject: linux-next: manual merge of the net-next tree with the arm-soc tree
-Message-ID: <20150127130437.3cd05af9@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1757665AbbA0CFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 21:05:35 -0500
+Received: from mail-by2on0080.outbound.protection.outlook.com ([207.46.100.80]:55120
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755358AbbA0CFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 21:05:32 -0500
+Date: Mon, 26 Jan 2015 18:05:23 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
+CC: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        <devicetree@vger.kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Heiko Stuebner <heiko@sntech.de>, <linux-sh@vger.kernel.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        Beniamino Galvani <b.galvani@gmail.com>,
+        <linux-rockchip@lists.infradead.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Alessandro Rubini <rubini@unipv.it>
+Subject: Re: [PATCH v4 6/7] ARM: zynq: DT: Add pinctrl information
+References: <1420818231-13451-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1420818231-13451-7-git-send-email-soren.brinkmann@xilinx.com>
+ <54C6D44C.4060106@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/cAKF/xMDWBelX7fDnaj._Mk"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54C6D44C.4060106@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21286.003
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <95fcb833572949c9aa2f406c0b147d1f@BL2FFO11FD060.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; unipv.it; dkim=none (message not
+ signed) header.d=none;
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(377424004)(51704005)(86362001)(19580405001)(104016003)(85182001)(53416004)(87936001)(19580395003)(83506001)(106466001)(6806004)(47776003)(74316001)(2950100001)(77156002)(92566002)(50466002)(62966003)(92726002)(110136001)(54356999)(85202003)(23676002)(76176999)(50986999)(108616004)(46102003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB019;H:xsj-pvapsmtpgw01;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB019;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB019;
+X-Forefront-PRVS: 046985391D
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB019;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 27 Jan 2015 02:05:30.2994
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB019
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cAKF/xMDWBelX7fDnaj._Mk
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2015-01-27 at 12:57AM +0100, Andreas Färber wrote:
+> Am 09.01.2015 um 16:43 schrieb Soren Brinkmann:
+> > Add pinctrl descriptions to the zc702 and zc706 device trees.
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > Tested-by: Andreas Färber <afaerber@suse.de>
+> > ---
+> > Changes since v1:
+> >  - remove 'pinctrl-' prefix for pinctrl sub-nodes
+> >  - separate config and mux nodes
+> > 
+> > Changes since RFC v2:
+> >  - add pinconf properties to zc702 mdio node
+> >  - remove arguments from bias-related props
+> > 
+> > Changes since RFC v1:
+> >  - separate DT changes into their own patch
+> > ---
+> >  arch/arm/boot/dts/zynq-7000.dtsi |   8 +-
+> >  arch/arm/boot/dts/zynq-zc702.dts | 181 +++++++++++++++++++++++++++++++++++++++
+> >  arch/arm/boot/dts/zynq-zc706.dts | 152 ++++++++++++++++++++++++++++++++
+> >  3 files changed, 340 insertions(+), 1 deletion(-)
+> [...]
+> > diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
+> > index 280f02dd4ddc..4995412f116f 100644
+> > --- a/arch/arm/boot/dts/zynq-zc702.dts
+> > +++ b/arch/arm/boot/dts/zynq-zc702.dts
+> [...]
+> > @@ -50,15 +52,24 @@
+> >  	status = "okay";
+> >  	phy-mode = "rgmii-id";
+> >  	phy-handle = <&ethernet_phy>;
+> > +	pinctrl-names = "default";
+> > +	pinctrl-0 = <&pinctrl_gem0_default>;
+> >  
+> >  	ethernet_phy: ethernet-phy@7 {
+> >  		reg = <7>;
+> >  	};
+> >  };
+> >  
+> > +&gpio0 {
+> > +	pinctrl-names = "default";
+> > +	pinctrl-0 = <&pinctrl_gpio0_default>;
+> 
+> On linux-next the equivalent no longer works for the Parallella, with
+> gpio failing to probe.
+> 
+> If I move these two properties to the leds node (for which I am
+> configuring gpio 7) then I get a heartbeat as before.
 
-Hi all,
+I think for USB I have a fix (see other email with patch), but LEDs seem
+to be broken too. On my zc702 I get:
+   of_get_named_gpiod_flags: parsed 'gpios' property of node '/leds/ds23[0]' - status (-517)
 
-Today's linux-next merge of the net-next tree got a conflict in
-arch/arm/boot/dts/rk3288.dtsi between commit eecfe981cecd ("ARM: dts:
-rockchip: add RK3288 suspend support") from the arm-soc tree and commit
-3d3fb74afc9b ("ARM: dts: rockchip: add gmac info for rk3288") from the
-net-next tree.
+517 is probe deferral. Looks like the LED driver needs to learn to defer
+probing when the GPIO driver isn't available yet.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/boot/dts/rk3288.dtsi
-index 2a878a35facc,910dcad2088a..000000000000
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@@ -734,24 -741,11 +750,29 @@@
-  			bias-disable;
-  		};
- =20
-+ 		pcfg_pull_none_12ma: pcfg-pull-none-12ma {
-+ 			bias-disable;
-+ 			drive-strength =3D <12>;
-+ 		};
-+=20
- +		sleep {
- +			global_pwroff: global-pwroff {
- +				rockchip,pins =3D <0 0 RK_FUNC_1 &pcfg_pull_none>;
- +			};
- +
- +			ddrio_pwroff: ddrio-pwroff {
- +				rockchip,pins =3D <0 1 RK_FUNC_1 &pcfg_pull_none>;
- +			};
- +
- +			ddr0_retention: ddr0-retention {
- +				rockchip,pins =3D <0 2 RK_FUNC_1 &pcfg_pull_up>;
- +			};
- +
- +			ddr1_retention: ddr1-retention {
- +				rockchip,pins =3D <0 3 RK_FUNC_1 &pcfg_pull_up>;
- +			};
- +		};
- +
-  		i2c0 {
-  			i2c0_xfer: i2c0-xfer {
-  				rockchip,pins =3D <0 15 RK_FUNC_1 &pcfg_pull_none>,
-
---Sig_/cAKF/xMDWBelX7fDnaj._Mk
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUxvI6AAoJEMDTa8Ir7ZwVbSgP/idOy0pPtJCcga1mktJsnQiX
-64W4nSTB0aHLwVgCtoo1zSkbtyKYCSKv5ePObrdz9MIhYBK9gZLsKf2XpOLU2fCS
-Pheqwx8i4p8f6G3qr/Z+EM4kxHln4HDSIfWLZw26GzVx2OZXAHIhBr7v19/9Z3yj
-d10qhfwB9V3/GpRqmlKKyDPUCofF2vFtfW3jGYTIi+UsuR1D96LIL/x5Qh9Ii6QT
-bE5ZIG535YWCZB5Q46KuuU15G7tYBpxRlUT67LXTRLkctvfLr/EmyjoxHvSanNM2
-BpKAgZi2OWHPySKj862uDVsZFNG5wc1jnv9EWUddidDK2zE8LEsBPrly7lA3txnP
-3wb0yI9JmtjwrROp/vwOlHvSsUVxTY0NK4SEqB/02oJVtHGKpIFpTvx7V4/bJEW0
-rpOfHSibBPuvAlueXm58y5pVJmbRFHxTW/QvYf/wr57rftyVUf/kRnHuevqghabu
-Z+XuykDLKZgDDAN+O2G32pOnTFDx6BBg0krBHKC+KgHsFE4X71tCg2411/1hpWe4
-UJucsNUSTlSW+Rm+4iIJ2p1+Ta5awMJ1VGwBR3wLeiaTUSRmSmdPGzOp9lfebx2C
-pei6L+iT18rX+IleMmqeSK6MFw0ERT5Fg7RYY7mvgHq+pzfs3H7VtbuuGqiGi7Yb
-Pakx2ScBTDffpLmXMXk2
-=T0OE
------END PGP SIGNATURE-----
-
---Sig_/cAKF/xMDWBelX7fDnaj._Mk--
+	Sören
