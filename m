@@ -1,96 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590AbbA0Tnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 14:43:50 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:46086 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbbA0Tns convert rfc822-to-8bit (ORCPT
+	id S1759572AbbA0TpJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 14:45:09 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:46186 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759472AbbA0TpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 14:43:48 -0500
-Content-Type: text/plain; charset="utf-8"
+	Tue, 27 Jan 2015 14:45:05 -0500
+Date: Tue, 27 Jan 2015 20:44:47 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Priit Laes <plaes@plaes.org>, linux-sunxi@googlegroups.com,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [linux-sunxi] Re: [PATCH] arm: sunxi: input: RFC: Add sysfs
+ voltage for sun4i-lradc driver
+Message-ID: <20150127194447.GO7200@lukather>
+References: <1422291516-24895-1-git-send-email-plaes@plaes.org>
+ <20150127091829.GD7200@lukather>
+ <1422352189.23189.12.camel@plaes.org>
+ <54C76DF2.50707@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Stephen Boyd" <sboyd@codeaurora.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1421684985-12397-1-git-send-email-geert+renesas@glider.be>
-Cc: "Simon Horman" <horms+renesas@verge.net.au>,
-        "Magnus Damm" <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1421684985-12397-1-git-send-email-geert+renesas@glider.be>
-Message-ID: <20150127194333.22722.39548@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [git pull] clk/shmobile updates for v3.20
-Date: Tue, 27 Jan 2015 11:43:33 -0800
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2uzDqHpccQJpqF2n"
+Content-Disposition: inline
+In-Reply-To: <54C76DF2.50707@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Geert Uytterhoeven (2015-01-19 08:29:45)
->         Hi Mike,
-> 
-> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
-> 
->   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/geert/renesas-drivers.git clk-shmobile-for-3.20
 
-Pulled.
+--2uzDqHpccQJpqF2n
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-Mike
+On Tue, Jan 27, 2015 at 11:52:34AM +0100, Hans de Goede wrote:
+> Hi,
+>=20
+> On 27-01-15 10:49, Priit Laes wrote:
+> >
+> >On Tue, 2015-01-27 at 10:18 +0100, Maxime Ripard wrote:
+> >>Hi,
+> >>
+> >>On Mon, Jan 26, 2015 at 06:58:32PM +0200, Priit Laes wrote:
+> >>>---
+> >>
+> >>Like Hans was pointing out, commit log and signed-off-by please
+> >>
+> >>>  .../ABI/testing/sysfs-driver-input-sun4i-lradc     |  4 ++
+> >>>  drivers/input/keyboard/sun4i-lradc-keys.c          | 49
+> >>>+++++++++++++++++-----
+> >>>  2 files changed, 43 insertions(+), 10 deletions(-)
+> >>>  create mode 100644 Documentation/ABI/testing/sysfs-driver-input-
+> >>>sun4i-lradc
+> >>>
+> >>>diff --git a/Documentation/ABI/testing/sysfs-driver-input-sun4i-
+> >>>lradc b/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
+> >>>new file mode 100644
+> >>>index 0000000..e4e6448
+> >>>--- /dev/null
+> >>>+++ b/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
+> >>>@@ -0,0 +1,4 @@
+> >>>+What:          /sys/class/input/input(x)/device/voltage
+> >>>+Date:          February 2015
+> >>>+Contact:       Priit Laes <plaes@plaes.org>
+> >>>+Description:   ADC output voltage in microvolts or 0 if device is
+> >>>not opened.
+> >>
+> >>Why is it returning 0 when "device is not opened" ? What does that
+> >>even mean? You can't read that file without opening it.
+> >
+> >It means that something has to open the /dev/input/inputX device which
+> >sets up the ADC before the voltage can be read from the sysfs file.
+> >
+> >[...]
+> >
+> >
+> >>
+> >>As I told you already, if you're going to expose this an ADC in the
+> >>end, the proper solution is to use the IIO framework, not adding a
+> >>custom sysfs file.
+> >
+> >My intention was to expose just a simple debug output, so one can
+> >press the buttons and read the voltages for devicetree keymap.
+> >
+> >If anyone can suggest a simpler approach than current sysfs based one,
+> >I would do it.
+>=20
+> The android driver always uses 0.2V / 200mV steps, so what I do is
+> simply create a mapping with 200mV mapped to KEY_VOLUMEUP, 400mV mapped
+> to KEY_VOLUMEDOWN, etc. following the hardcoded android driver mapping:
+>=20
+> https://github.com/linux-sunxi/linux-sunxi/blob/sunxi-3.4/drivers/input/k=
+eyboard/sun4i-keyboard.c#L136
+>=20
+> Usually this will be correct in one go, after testing one can shuffle
+> key codes as needed (usually not needed) and/or remove unused entries.
+>=20
+> With that said I do think that a sysfs file to see the actual voltages,
+> or a kernel parameter to printk them on keypress interrupt would be usefu=
+l.
+>=20
+> I guess the printk option would be better as it would show the actual
+> keypress value read, not some semi-random sample.
 
-> 
-> for you to fetch changes up to 1484276119fb5083a3a8cb0293e763363c317661:
-> 
->   clk: shmobile: Add R-Car Gen2 ADSP clock support (2015-01-08 16:14:31 +0100)
-> 
-> Summary:
->   - A bug fix needed on sh73a0,
->   - r8a7793 support,
->   - r8a73a4 CCF implementation and documentation,
->   - R-Car Gen2 CAN and ADSP clock support.
-> 
-> Thanks for pulling!
-> 
-> ----------------------------------------------------------------
-> Geert Uytterhoeven (1):
->       clk: shmobile: div6: Avoid changing divisor in .disable()
-> 
-> Hisashi Nakamura (1):
->       clk: shmobile: Add r8a7793 support
-> 
-> Sergei Shtylyov (2):
->       clk: shmobile: Add R-Car Gen2 RCAN clock support
->       clk: shmobile: Add R-Car Gen2 ADSP clock support
-> 
-> Ulrich Hecht (2):
->       clk: shmobile: r8a73a4 common clock framework implementation
->       clk: shmobile: Add r8a73a4 SoC to MSTP bindings
-> 
-> Yoshihiro Kaneko (1):
->       clk: shmobile: r8a7793: document CPG clock support
-> 
->  .../bindings/clock/renesas,cpg-mstp-clocks.txt     |   1 +
->  .../bindings/clock/renesas,r8a73a4-cpg-clocks.txt  |  33 +++
->  .../clock/renesas,rcar-gen2-cpg-clocks.txt         |  12 +-
->  drivers/clk/shmobile/Makefile                      |   2 +
->  drivers/clk/shmobile/clk-div6.c                    |  15 +-
->  drivers/clk/shmobile/clk-r8a73a4.c                 | 241 +++++++++++++++++++++
->  drivers/clk/shmobile/clk-rcar-gen2.c               |  88 ++++++++
->  7 files changed, 384 insertions(+), 8 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/renesas,r8a73a4-cpg-clocks.txt
->  create mode 100644 drivers/clk/shmobile/clk-r8a73a4.c
-> 
-> Gr{oetje,eeting}s,
-> 
->                                                 Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                                             -- Linus Torvalds
+That wouldn't require that much code actually. Either using dev_dbg,
+or debugfs like Dmitry was suggesting would be two nice solutions I
+guess.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--2uzDqHpccQJpqF2n
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUx+qvAAoJEBx+YmzsjxAgZTEP+wZFHeltbLNlKcMkZRajPNv4
+bFBt1MU01ao+zfcINXeBJ8YBydilRBcBavZt/+4ekTe5uXU5k6ug0RWFMz6PlXWD
+l/f/NW4c2teZwJvh2D/FOzJzE0ORyj9mn7yIOPF0yqPOqvv9vpRbgffrN5wXbrpq
+nK9C0s+tJJtIktBq7JnWLaHUZ7Uyd9zt7lbHQRr63Hd6KSuWH/vuWGB5ANqI2wkU
+ZLuM92zJm6Vvf2CWyUMUH117qwq09C7JCcZdWlu2j49qP5hZWoXhr+Omsl6XNeYN
+bPpHJ+eYE5RJw7Ib9yJveQ1qBVJXXE3F6o/ZkiuRIwqq7x5qf6IxfrROGJ4RgDsI
+F/SueieVOpZENB4+oN1qfiR4p8rLzRBeweQZnngNpO0xsmeCWNf7wwkqMF2aOMyb
+5TKRWsUMoKV0dnZAOBwY0HyMaKJodTyyNMktleSOfuElfNPJHjIMSBAPQwi//cXR
+2QuSgqPYx3/7eKpN838ZOgLrCV2zROuAaMZywIC6S0DnwEe3x/8mj1pbN12nDXgD
+Wnfqr1Z+mfVfEZBY8HBTNStQMrzq7ZuHy+P2hl+OiCRTi4e5GyL+lVAlJbSSZUXf
+YR10NxOmuDjh8wIAZ3+ouIiVxLxjLGunK93ZkRp77Q5eEZTce7JBOfolf8GQ3t8w
+PB2PgdQcq75+3Ab6/Myn
+=Z17m
+-----END PGP SIGNATURE-----
+
+--2uzDqHpccQJpqF2n--
