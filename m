@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949AbbA0LJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 06:09:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46743 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514AbbA0LJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 06:09:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,474,1418112000"; 
-   d="scan'208";a="668278038"
-Date: Tue, 27 Jan 2015 13:09:25 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] usb: dwc3: add ULPI interface support
-Message-ID: <20150127110925.GE28539@kuha.fi.intel.com>
-References: <1422025978-178336-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1422025978-178336-7-git-send-email-heikki.krogerus@linux.intel.com>
- <20150123162443.GH8585@saruman.tx.rr.com>
- <20150126114610.GA28539@kuha.fi.intel.com>
- <20150126193528.GF6660@saruman.tx.rr.com>
+	id S1758024AbbA0LMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:12:38 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:32984 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593AbbA0LMf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 06:12:35 -0500
+Message-ID: <54C772A0.2000203@arm.com>
+Date: Tue, 27 Jan 2015 11:12:32 +0000
+From: Robin Murphy <robin.murphy@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126193528.GF6660@saruman.tx.rr.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Murali Karicheri <m-karicheri2@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
+Subject: Re: [PATCH v4 6/6] arm: dma-mapping: updates to limit dma_mask and
+ iommu mapping size
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-7-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1422052359-12384-7-git-send-email-m-karicheri2@ti.com>
+X-OriginalArrivalTime: 27 Jan 2015 11:12:32.0456 (UTC) FILETIME=[25672480:01D03A22]
+X-MC-Unique: 115012711123403501
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> look at your patch again. In case DWC3_ULPI isn't enabled, this file
-> won't be linked at all. You're using stubs, so taht's fine.
-> 
-> In case it _is_ enabled, you're breaking out early if you can't register
-> ulpi interface, meaning you're exitting probe() (which, in fact, seems
-> wrong as I want to be able to run dwc3 with ULPI enabled on a platform
-> that was configured with ULPI+UTMI, but uses UTMI PHY).
-> 
-> I still think this patch won't work in all cases.
+Hi Murali,
 
-OK. So in case of ULPI+UTMI we'll try the ulpi interface, and if it
-fails, fall back to UTMI. Or can we use some other method to determine
-to which interface the PHY is really attached to in that case?
+On 23/01/15 22:32, Murali Karicheri wrote:
+> Limit the dma_mask to minimum of dma_mask and dma_base + size - 1.
+>
+> Also arm_iommu_create_mapping() has size parameter of size_t and
+> arm_setup_iommu_dma_ops() can take a value higher than that. So
+> limit the size to SIZE_MAX.
+>
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+>   arch/arm/mm/dma-mapping.c |   10 ++++++++++
+>   1 file changed, 10 insertions(+)
+>
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 7864797..a1f9030 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -2004,6 +2004,13 @@ static bool arm_setup_iommu_dma_ops(struct device *dev, u64 dma_base, u64 size,
+>   	if (!iommu)
+>   		return false;
+>
+> +	/*
+> +	 * currently arm_iommu_create_mapping() takes a max of size_t
+> +	 * for size param. So check this limit for now.
+> +	 */
+> +	if (size > SIZE_MAX)
+> +		return false;
+> +
+>   	mapping = arm_iommu_create_mapping(dev->bus, dma_base, size);
+>   	if (IS_ERR(mapping)) {
+>   		pr_warn("Failed to create %llu-byte IOMMU mapping for device %s\n",
+> @@ -2053,6 +2060,9 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
+>   {
+>   	struct dma_map_ops *dma_ops;
+>
+> +	/* limit dma_mask to the lower of the two values */
+> +	*dev->dma_mask = min((*dev->dma_mask), (dma_base + size - 1));
+> +
+
+Is there any reason not to do this in of_dma_configure? It seems like 
+something everyone could benefit from - I'd cooked up a dodgy workaround 
+for the same issue in my arm64 IOMMU code, but handling it generically 
+in common code would be much nicer.
+
+Robin.
+
+>   	dev->archdata.dma_coherent = coherent;
+>   	if (arm_setup_iommu_dma_ops(dev, dma_base, size, iommu))
+>   		dma_ops = arm_get_iommu_dma_map_ops(coherent);
+>
 
 
-Thanks,
-
--- 
-heikki
