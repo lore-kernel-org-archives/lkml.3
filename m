@@ -1,144 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbbA0F6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 00:58:23 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:17842 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172AbbA0F6U (ORCPT
+	id S1753974AbbA0Fxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 00:53:37 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:33199 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939AbbA0Fxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 00:58:20 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
-        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v3 03/13] pm: at91: Workaround DDRSDRC self-refresh bug with LPDDR1 memories.
-Date: Tue, 27 Jan 2015 13:53:26 +0800
-Message-ID: <1422338006-3371-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
+	Tue, 27 Jan 2015 00:53:34 -0500
+Message-ID: <54C727DA.4040601@gmail.com>
+Date: Tue, 27 Jan 2015 03:53:30 -0200
+From: Gustavo Bittencourt <gbitten@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH -rt] rtmutex: enable deadlock detection in the ww_mutex_lock
+ functions
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Rosin <peda@axentia.se>
+According the ww-mutex-design.txt documentation,  the ww_mutex_lock_interruptible and ww_mutex_lock functions should return -EDEADLK when faced with a deadlock. To do so, the flag detect_deadlock in the rt_mutex_slowlock calls should be enabled. This patch corrects potential deadlocks when running PREEMPT_RT with nouveau driver.
 
-The DDRSDR controller fails miserably to put LPDDR1 memories in
-self-refresh. Force the controller to think it has DDR2 memories
-during the self-refresh period, as the DDR2 self-refresh spec is
-equivalent to LPDDR1, and is correctly implemented in the
-controller.
+Kernel v3.14-rt
 
-Assume that the second controller has the same fault, but that is
-untested.
-
-Signed-off-by: Peter Rosin <peda@axentia.se>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Gustavo Bittencourt<gbitten@gmail.com>
 ---
- arch/arm/mach-at91/pm_slowclock.S  |   43 +++++++++++++++++++++++++++++++-----
- include/soc/at91/at91sam9_ddrsdr.h |    2 +-
- 2 files changed, 39 insertions(+), 6 deletions(-)
+  kernel/locking/rtmutex.c | 4 ++--
+  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index e2bfaf5..1155217 100644
---- a/arch/arm/mach-at91/pm_slowclock.S
-+++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -100,6 +100,16 @@ ddr_sr_enable:
- 	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
- 	bne	sdr_sr_enable
- 
-+	/* LPDDR1 --> force DDR2 mode during self-refresh */
-+	ldr	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
-+	str	tmp1, .saved_sam9_mdr
-+	bic	tmp1, tmp1, #~AT91_DDRSDRC_MD
-+	cmp	tmp1, #AT91_DDRSDRC_MD_LOW_POWER_DDR
-+	ldreq	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
-+	biceq	tmp1, tmp1, #AT91_DDRSDRC_MD
-+	orreq	tmp1, tmp1, #AT91_DDRSDRC_MD_DDR2
-+	streq	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
-+
- 	/* prepare for DDRAM self-refresh mode */
- 	ldr	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
- 	str	tmp1, .saved_sam9_lpr
-@@ -108,14 +118,26 @@ ddr_sr_enable:
- 
- 	/* figure out if we use the second ram controller */
- 	cmp	ramc1, #0
--	ldrne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
--	strne	tmp2, .saved_sam9_lpr1
--	bicne	tmp2, #AT91_DDRSDRC_LPCB
--	orrne	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
-+	beq	ddr_no_2nd_ctrl
-+
-+	ldr	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
-+	str	tmp2, .saved_sam9_mdr1
-+	bic	tmp2, tmp2, #~AT91_DDRSDRC_MD
-+	cmp	tmp2, #AT91_DDRSDRC_MD_LOW_POWER_DDR
-+	ldreq	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
-+	biceq	tmp2, tmp2, #AT91_DDRSDRC_MD
-+	orreq	tmp2, tmp2, #AT91_DDRSDRC_MD_DDR2
-+	streq	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
-+
-+	ldr	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
-+	str	tmp2, .saved_sam9_lpr1
-+	bic	tmp2, #AT91_DDRSDRC_LPCB
-+	orr	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
- 
- 	/* Enable DDRAM self-refresh mode */
-+	str	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
-+ddr_no_2nd_ctrl:
- 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
--	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
- 
- 	b	sdr_sr_done
- 
-@@ -227,12 +249,17 @@ sdr_sr_done:
- 	 */
- 	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
- 	bne	sdr_en_restore
-+	/* Restore MDR in case of LPDDR1 */
-+	ldr	tmp1, .saved_sam9_mdr
-+	str	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
- 	/* Restore LPR on AT91 with DDRAM */
- 	ldr	tmp1, .saved_sam9_lpr
- 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
- 
- 	/* if we use the second ram controller */
- 	cmp	ramc1, #0
-+	ldrne	tmp2, .saved_sam9_mdr1
-+	strne	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
- 	ldrne	tmp2, .saved_sam9_lpr1
- 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
- 
-@@ -263,5 +290,11 @@ ram_restored:
- .saved_sam9_lpr1:
- 	.word 0
- 
-+.saved_sam9_mdr:
-+	.word 0
-+
-+.saved_sam9_mdr1:
-+	.word 0
-+
- ENTRY(at91_slow_clock_sz)
- 	.word .-at91_slow_clock
-diff --git a/include/soc/at91/at91sam9_ddrsdr.h b/include/soc/at91/at91sam9_ddrsdr.h
-index 0210797..dc10c52 100644
---- a/include/soc/at91/at91sam9_ddrsdr.h
-+++ b/include/soc/at91/at91sam9_ddrsdr.h
-@@ -92,7 +92,7 @@
- #define		AT91_DDRSDRC_UPD_MR	(3 << 20)	 /* Update load mode register and extended mode register */
- 
- #define AT91_DDRSDRC_MDR	0x20	/* Memory Device Register */
--#define		AT91_DDRSDRC_MD		(3 << 0)		/* Memory Device Type */
-+#define		AT91_DDRSDRC_MD		(7 << 0)	/* Memory Device Type */
- #define			AT91_DDRSDRC_MD_SDR		0
- #define			AT91_DDRSDRC_MD_LOW_POWER_SDR	1
- #define			AT91_DDRSDRC_MD_LOW_POWER_DDR	3
--- 
-1.7.9.5
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index 6c40660..3f6ef91 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -1965,7 +1965,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ww_c
+  	might_sleep();
+  
+  	mutex_acquire(&lock->base.dep_map, 0, 0,_RET_IP_);
+-	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 0, ww_ctx);
++	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 1, ww_ctx);
+  	if (ret)
+  		mutex_release(&lock->base.dep_map, 1,_RET_IP_);
+  	else if (!ret && ww_ctx->acquired > 1)
+@@ -1984,7 +1984,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ww_ctx)
+  
+  	mutex_acquire_nest(&lock->base.dep_map, 0, 0, &ww_ctx->dep_map,
+  			_RET_IP_);
+-	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 0, ww_ctx);
++	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 1, ww_ctx);
+  	if (ret)
+  		mutex_release(&lock->base.dep_map, 1,_RET_IP_);
+  	else if (!ret && ww_ctx->acquired > 1)
+-- 1.9.1
 
