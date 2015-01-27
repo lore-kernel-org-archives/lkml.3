@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759236AbbA0Mmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:42:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35047 "EHLO
+	id S1758494AbbA0MSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:18:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35038 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758453AbbA0MSC (ORCPT
+	with ESMTP id S932221AbbA0MR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:18:02 -0500
+	Tue, 27 Jan 2015 07:17:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
+Cc: Karl Relton <karllinuxtest.relton@ntlworld.com>,
+        Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 042/126] powerpc: Fix bad NULL pointer check in udbg_uart_getc_poll()
-Date: Tue, 27 Jan 2015 12:15:47 +0000
-Message-Id: <1422361031-19364-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 043/126] HID: add battery quirk for USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO keyboard
+Date: Tue, 27 Jan 2015 12:15:48 +0000
+Message-Id: <1422361031-19364-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Karl Relton <karllinuxtest.relton@ntlworld.com>
 
-commit cd32e2dcc9de6c27ecbbfc0e2079fb64b42bad5f upstream.
+commit da940db41dcf8c04166f711646df2f35376010aa upstream.
 
-We have some code in udbg_uart_getc_poll() that tries to protect
-against a NULL udbg_uart_in, but gets it all wrong.
+Apple bluetooth wireless keyboard (sold in UK) has always reported zero
+for battery strength no matter what condition the batteries are actually
+in. With this patch applied (applying same quirk as other Apple
+keyboards), the battery strength is now correctly reported.
 
-Found with the LLVM static analyzer (scan-build).
-
-Fixes: 309257484cc1 ("powerpc: Cleanup udbg_16550 and add support for LPC PIO-only UARTs")
-Signed-off-by: Anton Blanchard <anton@samba.org>
-[mpe: Add some newlines for readability while we're here]
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Karl Relton <karllinuxtest.relton@ntlworld.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/udbg_16550.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/hid/hid-input.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/powerpc/kernel/udbg_16550.c b/arch/powerpc/kernel/udbg_16550.c
-index 6e7c4923b5ea..411116c38da4 100644
---- a/arch/powerpc/kernel/udbg_16550.c
-+++ b/arch/powerpc/kernel/udbg_16550.c
-@@ -69,8 +69,12 @@ static void udbg_uart_putc(char c)
- 
- static int udbg_uart_getc_poll(void)
- {
--	if (!udbg_uart_in || !(udbg_uart_in(UART_LSR) & LSR_DR))
-+	if (!udbg_uart_in)
-+		return -1;
-+
-+	if (!(udbg_uart_in(UART_LSR) & LSR_DR))
- 		return udbg_uart_in(UART_RBR);
-+
- 	return -1;
- }
- 
+diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+index 62e828655922..89ce91883eba 100644
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -312,6 +312,9 @@ static const struct hid_device_id hid_battery_quirks[] = {
+ 			       USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI),
+ 	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
++			       USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO),
++	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
+ 		USB_DEVICE_ID_APPLE_ALU_WIRELESS_ANSI),
+ 	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
+ 	{}
 -- 
 2.1.4
 
