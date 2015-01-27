@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230AbbA0Pzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:55:46 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:50985 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119AbbA0Pzo (ORCPT
+	id S1758282AbbA0P45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:56:57 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:40501 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbbA0P4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:55:44 -0500
-Date: Tue, 27 Jan 2015 21:25:38 +0530
-From: Tina Ruchandani <ruchandani.tina@gmail.com>
-To: Linux Kernel List <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v3] trace: Use 64-bit timekeeping
-Message-ID: <20150127155538.GA5132@tinar>
+	Tue, 27 Jan 2015 10:56:55 -0500
+Date: Tue, 27 Jan 2015 13:56:42 -0200
+From: Gustavo Bittencourt <gbitten@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH -rt] rtmutex: enable deadlock detection in ww_mutex_lock
+ functions
+Message-ID: <20150127155642.GA21058@gbitten>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,88 +22,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ring_buffer_producer uses 'struct timeval' to measure
-its start and end times. 'struct timeval' on 32-bit systems
-will have its tv_sec value overflow in year 2038 and beyond.
-This patch replaces struct timeval with 'ktime_t' which uses
-64-bit representation for seconds
+According the ww-mutex-design.txt documentation, the 
+ww_mutex_lock_interruptible and ww_mutex_lock functions should return -EDEADLK
+when faced with a deadlock. To do so, the detect_deadlock flag in the
+rt_mutex_slowlock calls should be enabled. This patch corrects potential
+deadlocks when running PREEMPT_RT with nouveau driver.
 
-Suggested-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
----
-Changes in v3:
-	- Use a more efficient way to compute condition for exiting
-	  loop.
-	- Fix variable naming - all caps is only for macros.
-Changes in v2:
-	- Use ktime_t instead of timespec64 for efficiency reasons.
----
- kernel/trace/ring_buffer_benchmark.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+PS: Sorry to post again, CC'ing -rt maintainers now.
 
-diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
-index 3f9e328..0a50abb 100644
---- a/kernel/trace/ring_buffer_benchmark.c
-+++ b/kernel/trace/ring_buffer_benchmark.c
-@@ -7,7 +7,7 @@
- #include <linux/completion.h>
- #include <linux/kthread.h>
- #include <linux/module.h>
--#include <linux/time.h>
-+#include <linux/ktime.h>
- #include <asm/local.h>
+Signed-off-by: Gustavo Bittencourt <gbitten@gmail.com>
+---
+ kernel/locking/rtmutex.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index 6c40660..3f6ef91 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -1965,7 +1965,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ww_c
+ 	might_sleep();
  
- struct rb_page {
-@@ -212,8 +212,7 @@ static void ring_buffer_consumer(void)
+ 	mutex_acquire(&lock->base.dep_map, 0, 0, _RET_IP_);
+-	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 0, ww_ctx);
++	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 1, ww_ctx);
+ 	if (ret)
+ 		mutex_release(&lock->base.dep_map, 1, _RET_IP_);
+ 	else if (!ret && ww_ctx->acquired > 1)
+@@ -1984,7 +1984,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ww_ctx)
  
- static void ring_buffer_producer(void)
- {
--	struct timeval start_tv;
--	struct timeval end_tv;
-+	ktime_t start_time, end_time, timeout;
- 	unsigned long long time;
- 	unsigned long long entries;
- 	unsigned long long overruns;
-@@ -227,7 +226,9 @@ static void ring_buffer_producer(void)
- 	 * make the system stall)
- 	 */
- 	trace_printk("Starting ring buffer hammer\n");
--	do_gettimeofday(&start_tv);
-+	start_time = ktime_get();
-+	timeout = ktime_add_ns(start_time,
-+			       ((long long) RUN_TIME) * NSEC_PER_SEC);
- 	do {
- 		struct ring_buffer_event *event;
- 		int *entry;
-@@ -244,7 +245,7 @@ static void ring_buffer_producer(void)
- 				ring_buffer_unlock_commit(buffer, event);
- 			}
- 		}
--		do_gettimeofday(&end_tv);
-+		end_time = ktime_get();
- 
- 		cnt++;
- 		if (consumer && !(cnt % wakeup_interval))
-@@ -264,7 +265,7 @@ static void ring_buffer_producer(void)
- 			cond_resched();
- #endif
- 
--	} while (end_tv.tv_sec < (start_tv.tv_sec + RUN_TIME) && !kill_test);
-+	} while (ktime_before(end_time, timeout) && !kill_test);
- 	trace_printk("End ring buffer hammer\n");
- 
- 	if (consumer) {
-@@ -280,9 +281,7 @@ static void ring_buffer_producer(void)
- 		wait_for_completion(&read_done);
- 	}
- 
--	time = end_tv.tv_sec - start_tv.tv_sec;
--	time *= USEC_PER_SEC;
--	time += (long long)((long)end_tv.tv_usec - (long)start_tv.tv_usec);
-+	time = ktime_us_delta(end_time, start_time);
- 
- 	entries = ring_buffer_entries(buffer);
- 	overruns = ring_buffer_overruns(buffer);
+ 	mutex_acquire_nest(&lock->base.dep_map, 0, 0, &ww_ctx->dep_map,
+ 			_RET_IP_);
+-	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 0, ww_ctx);
++	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 1, ww_ctx);
+ 	if (ret)
+ 		mutex_release(&lock->base.dep_map, 1, _RET_IP_);
+ 	else if (!ret && ww_ctx->acquired > 1)
 -- 
-2.2.0.rc0.207.ga3a616c
+1.9.1
 
