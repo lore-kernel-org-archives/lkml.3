@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208AbbA0KyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 05:54:20 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43831 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758191AbbA0KyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 05:54:18 -0500
-Date: Tue, 27 Jan 2015 10:53:53 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
-Cc: Stathis Voukelatos <stathisv70@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "abrestic@chromium.org" <abrestic@chromium.org>
-Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
-Message-ID: <20150127105353.GC17721@leverpostej>
-References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk>
- <20150123105114.GB23493@leverpostej>
- <54C613F2.5090507@linn.co.uk>
+	id S1756244AbbA0LLB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:11:01 -0500
+Received: from mail-am1on0140.outbound.protection.outlook.com ([157.56.112.140]:36278
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752479AbbA0LK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 06:10:59 -0500
+From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+To: <mark.rutland@arm.com>
+CC: <stefan@agner.ch>, <shawn.guo@linaro.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <linux@arm.linux.org.uk>, <broonie@kernel.org>,
+        <B44548@freescale.com>, <Li.Xiubo@freescale.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-spi@vger.kernel.org>,
+        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+Subject: [PATCH 0/7] Add SPI support for Colibri modules and DSPI driver fixes
+Date: Tue, 27 Jan 2015 16:27:17 +0530
+Message-ID: <1422356244-15629-1-git-send-email-bhuvanchandra.dv@toradex.com>
+X-Mailer: git-send-email 2.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C613F2.5090507@linn.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [115.115.225.206]
+X-ClientProxiedBy: HKXPR03CA001.apcprd03.prod.outlook.com (10.242.96.21) To
+ AMSPR05MB262.eurprd05.prod.outlook.com (10.242.95.19)
+Authentication-Results: arm.com; dkim=none (message not signed)
+ header.d=none;arm.com; dmarc=none action=none header.from=toradex.com;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:AMSPR05MB262;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:AMSPR05MB262;
+X-Forefront-PRVS: 046985391D
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(92566002)(229853001)(48376002)(19580395003)(122386002)(40100003)(50986999)(50466002)(15975445007)(87976001)(50226001)(53416004)(86362001)(47776003)(42186005)(36756003)(33646002)(77156002)(62966003)(110136001)(46102003)(77096005)(2351001)(66066001)(7059030);DIR:OUT;SFP:1102;SCL:1;SRVR:AMSPR05MB262;H:dvb.toradex.int;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:AMSPR05MB262;
+X-OriginatorOrg: toradex.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 27 Jan 2015 10:52:13.0564 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: AMSPR05MB262
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 10:16:18AM +0000, Stathis Voukelatos wrote:
-> 
-> On 23/01/15 10:51, Mark Rutland wrote:
-> >
-> > diff --git a/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt b/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
-> > new file mode 100644
-> > index 0000000..6b6e105
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/net/linn-ether-packet-sniffer.txt
-> > @@ -0,0 +1,27 @@
-> > +* Linn Products Ethernet Packet Sniffer
-> > +
-> > +Required properties:
-> > +- compatible : must be "linn,eth-sniffer"
-> > +- reg : physical addresses and sizes of registers. Must contain 3 entries:
-> > +          first entry: registers memory space
-> > +          second entry: TX command memory
-> > +          third entry: RX command memory
-> > Just to check: are those memories are part of the packet sniffer device,
-> > or are carveouts from other memory?
-> Yes, the 3 memory areas are part of the packet sniffer module.
-> >> +- fifo-block-words : number of words in one data FIFO entry
-> >> +
-> >> +Example:
-> >> +
-> >> +sniffer@1814a000 {
-> >> +        compatible = "linn,eth-sniffer";
-> >> +        reg = <0x1814a000 0x100>, <0x1814a400 0x400>, <0x1814a800 0x400>;
-> >> +        reg-names = "regs", "tx-ram", "rx-ram";
-> >> +        interrupts = <GIC_SHARED 58 IRQ_TYPE_LEVEL_HIGH>;
-> >> +        interrupt-names = "eth-sniffer-irq";
-> >> +        clocks = <&system_clk>;
-> >> +        clock-names = "sys";
-> >> +        fifo-block-words = <4>;
-> >> +    };
-> > Surely the relationship between the sniffer, MAC, and PHY should be
-> > described, so we know which interface the sniffer is related to?
-> >
-> The packet sniffer sits between the MAC and the PHY and monitors TX or RX
-> packets, or both. Will add a description in the binding doc.
+- Add second dspi instance.
+- Enable MCP2515 CAN controller which is avaialble on
+  Colibri evaluation board.
 
-I understood that. However the binding does not explicitly refer to
-either of those, so I don't see how you'd associate this sniffer
-instance with the relevant PHY+MAC instances.
+- Respin the stalled patches of dspi fixes.
+  Previous discussion at:
+  http://comments.gmane.org/gmane.linux.ports.arm.kernel/359542
 
-That should be made explicit in the binding.
+Bhuvanchandra DV (4):
+  ARM: vf610: add second DSPI instance
+  ARM: vf-colibri: add SPI support and enable MCP2515 CAN
+  spi: spi-fsl-dspi: Remove usage of devm_kalloc
+  spi: spi-fsl-dspi: avoid preparing the clocks two times
 
-Mark.
+Chao Fu (3):
+  spi: spi-fsl-dspi: Remove spi-bitbang
+  spi: spi-fsl-dspi: split the resuable code
+  spi: spi-fsl-dspi: Add support for TCFQ transfer mode
+
+ .../devicetree/bindings/spi/spi-fsl-dspi.txt       |   2 +
+ arch/arm/boot/dts/vf-colibri-eval-v3.dtsi          |  31 ++
+ arch/arm/boot/dts/vf-colibri.dtsi                  |  15 +
+ arch/arm/boot/dts/vf500.dtsi                       |   4 +
+ arch/arm/boot/dts/vfxxx.dtsi                       |  11 +
+ drivers/spi/Kconfig                                |   1 -
+ drivers/spi/spi-fsl-dspi.c                         | 314 +++++++++++++--------
+ 7 files changed, 254 insertions(+), 124 deletions(-)
+
+-- 
+2.2.2
+
