@@ -1,114 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610AbbA0Ie5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 03:34:57 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59987 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbbA0Iez (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 03:34:55 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 27 Jan 2015 17:36:12 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Sergei Rogachev <rogachevsergei@gmail.com>
-Cc: akpm@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] mm/page_ext: remove unnecessary stack_trace field
-Message-ID: <20150127083612.GG11358@js1304-P5Q-DELUXE>
-References: <1422309132-28030-1-git-send-email-rogachevsergei@gmail.com>
- <1422309132-28030-2-git-send-email-rogachevsergei@gmail.com>
+	id S1757883AbbA0IhL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 03:37:11 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:49457 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754074AbbA0IhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 03:37:07 -0500
+Date: Tue, 27 Jan 2015 10:36:34 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: Chris Caputo <ccaputo@alt.net>
+cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
+        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] IPVS: add wlib & wlip schedulers
+In-Reply-To: <alpine.LFD.2.11.1501222308060.2572@ja.home.ssi.bg>
+Message-ID: <alpine.LFD.2.11.1501271008210.4961@ja.home.ssi.bg>
+References: <Pine.LNX.4.44.0501260832210.17893-100000@nacho.alt.net> <Pine.LNX.4.61.0502010007060.1148@penguin.linux-vs.org> <Pine.LNX.4.64.1501172217420.8217@nacho.alt.net> <alpine.LFD.2.11.1501192342190.2687@ja.home.ssi.bg> <Pine.LNX.4.64.1501200137310.8217@nacho.alt.net>
+ <alpine.LFD.2.11.1501222308060.2572@ja.home.ssi.bg>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422309132-28030-2-git-send-email-rogachevsergei@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 12:52:12AM +0300, Sergei Rogachev wrote:
-> Page owner uses the page_ext structure to keep meta-information
-> for every page in the system. The structure also contains a field
-> of type 'struct stack_trace', page owner uses this field during
-> invocation of the function save_stack_trace. It is easy to notice
-> that keeping a copy of this structure for every page in the system
-> is very inefficiently in terms of memory.
-> 
-> The patch removes this unnecessary field of page_ext and forces
-> page owner to use a stack_trace structure allocated on the stack.
-> 
-> Signed-off-by: Sergei Rogachev <rogachevsergei@gmail.com>
-> ---
->  include/linux/page_ext.h |  2 +-
->  mm/page_owner.c          | 21 ++++++++++++---------
->  2 files changed, 13 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/page_ext.h b/include/linux/page_ext.h
-> index d2a2c84..c42981c 100644
-> --- a/include/linux/page_ext.h
-> +++ b/include/linux/page_ext.h
-> @@ -40,7 +40,7 @@ struct page_ext {
->  #ifdef CONFIG_PAGE_OWNER
->  	unsigned int order;
->  	gfp_t gfp_mask;
-> -	struct stack_trace trace;
-> +	unsigned int nr_entries;
->  	unsigned long trace_entries[8];
->  #endif
->  };
-> diff --git a/mm/page_owner.c b/mm/page_owner.c
-> index 9ab4a9b..f7f3318 100644
-> --- a/mm/page_owner.c
-> +++ b/mm/page_owner.c
-> @@ -60,19 +60,19 @@ void __reset_page_owner(struct page *page, unsigned int order)
->  void __set_page_owner(struct page *page, unsigned int order, gfp_t gfp_mask)
->  {
->  	struct page_ext *page_ext;
-> -	struct stack_trace *trace;
-> +	struct stack_trace trace;
->  
->  	page_ext = lookup_page_ext(page);
->  
-> -	trace = &page_ext->trace;
-> -	trace->nr_entries = 0;
-> -	trace->max_entries = ARRAY_SIZE(page_ext->trace_entries);
-> -	trace->entries = &page_ext->trace_entries[0];
-> -	trace->skip = 3;
-> -	save_stack_trace(&page_ext->trace);
-> +	trace.nr_entries = 0;
-> +	trace.max_entries = ARRAY_SIZE(page_ext->trace_entries);
-> +	trace.entries = &page_ext->trace_entries[0];
-> +	trace.skip = 3;
-> +	save_stack_trace(&trace);
->  
->  	page_ext->order = order;
->  	page_ext->gfp_mask = gfp_mask;
-> +	page_ext->nr_entries = trace.nr_entries;
->  
->  	__set_bit(PAGE_EXT_OWNER, &page_ext->flags);
->  }
-> @@ -83,6 +83,7 @@ print_page_owner(char __user *buf, size_t count, unsigned long pfn,
->  {
->  	int ret;
->  	int pageblock_mt, page_mt;
-> +	struct stack_trace trace;
->  	char *kbuf;
->  
->  	kbuf = kmalloc(count, GFP_KERNEL);
-> @@ -121,8 +122,10 @@ print_page_owner(char __user *buf, size_t count, unsigned long pfn,
->  	if (ret >= count)
->  		goto err;
->  
-> -	ret += snprint_stack_trace(kbuf + ret, count - ret,
-> -					&page_ext->trace, 0);
-> +	trace.nr_entries = page_ext->nr_entries;
-> +	trace.entries = &page_ext->trace_entries[0];
-> +
-> +	ret += snprint_stack_trace(kbuf + ret, count - ret, &trace, 0);
->  	if (ret >= count)
->  		goto err;
 
+	Hello,
 
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On Fri, 23 Jan 2015, Julian Anastasov wrote:
 
-Thanks.
+> On Tue, 20 Jan 2015, Chris Caputo wrote:
+> 
+> > My application consists of incoming TCP streams being load balanced to 
+> > servers which receive the feeds. These are long lived multi-gigabyte 
+> > streams, and so I believe the estimator's 2-second timer is fine. As an 
+> > example:
+> > 
+> > # cat /proc/net/ip_vs_stats
+> >    Total Incoming Outgoing         Incoming         Outgoing
+> >    Conns  Packets  Packets            Bytes            Bytes
+> >      9AB  58B7C17        0      1237CA2C325                0
+> > 
+> >  Conns/s   Pkts/s   Pkts/s          Bytes/s          Bytes/s
+> >        1     387C        0          B16C4AE                0
+> 
+> 	Not sure, may be everything here should be u64 because
+> we have shifted values. I'll need some days to investigate
+> this issue...
+
+	For now I don't see hope in using schedulers that rely
+on IPVS byte/packet stats, due to the slow update (2 seconds).
+If we reduce this period we can cause performance problems to
+other users.
+
+Every *-LEAST-* (eg. LC, WLC) algorithm needs actual information
+to take decision on every new connection. OTOH, all *-ROUND-ROBIN-*
+algorithms (RR, WRR) use information (weights) from user space,
+by this way kernel performs as expected.
+
+	Currently, LC/WLC use feedback from the 3-way TCP handshake,
+see ip_vs_dest_conn_overhead() where the established connections
+have large preference. Such feedback from real servers is delayed
+usually with microseconds, up to milliseconds. More time if
+depends on clients.
+
+	The proposed schedulers have round-robin function but
+only among least loaded servers, so it is not dominant
+and we suffer from slow feedback from the estimator.
+
+	For load information that is not present in kernel
+an user space daemon is needed to determine weights to use
+with WRR. It can take actual stats from real server, for
+example, it can take into account non-IPVS traffic.
+
+	As alternative, it is possible to implement some new svc
+method that can be called for every packet, for example, in
+ip_vs_in_stats(). It does not look fatal to add some fields in
+struct ip_vs_dest that only specific schedulers will update,
+for example, byte/packet counters. Of course, the spin_locks
+the scheduler must use will suffer on many CPUs. Such info can
+be also attached as allocated structure in RCU pointer
+dest->sched_info where data and corresponding methods can be
+stored. It will need careful RCU-kind of update, especially when
+scheduler is updated in svc. If you think such idea can work
+we can discuss the RCU and scheduler changes that are needed.
+The proposed schedulers have to implement counters, their
+own estimator and WRR function.
+
+	Another variant can be to extend WRR with some
+support for automatic dynamic-weight update depending on 
+parameters: -s wrr --sched-flags {wlip,wlib,...}
+
+	or using new option --sched-param that can also
+provide info for wrr estimator, etc. In any case, the
+extended WRR scheduler will need above support to check
+every packet.
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
