@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608AbbA0Mes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:34:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35233 "EHLO
+	id S1758997AbbA0MfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:35:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35216 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758594AbbA0MS4 (ORCPT
+	with ESMTP id S1758579AbbA0MSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:18:56 -0500
+	Tue, 27 Jan 2015 07:18:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Daniel Borkmann <dborkman@redhat.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: Zoltan Kiss <zoltan.kiss@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Paul Durrant <paul.durrant@citrix.com>, netdev@vger.kernel.org,
+        xen-devel@lists.xenproject.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Stefan Bader <stefan.bader@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 072/126] netfilter: conntrack: disable generic tracking for known protocols
-Date: Tue, 27 Jan 2015 12:16:17 +0000
-Message-Id: <1422361031-19364-73-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 073/126] xen-netfront: Fix handling packets on compound pages with skb_linearize
+Date: Tue, 27 Jan 2015 12:16:18 +0000
+Message-Id: <1422361031-19364-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,93 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-commit db29a9508a9246e77087c5531e45b2c88ec6988b upstream.
+commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d upstream.
 
-Given following iptables ruleset:
+There is a long known problem with the netfront/netback interface: if the guest
+tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
+it gets dropped. The reason is that netback maps these slots to a frag in the
+frags array, which is limited by size. Having so many slots can occur since
+compound pages were introduced, as the ring protocol slice them up into
+individual (non-compound) page aligned slots. The theoretical worst case
+scenario looks like this (note, skbs are limited to 64 Kb here):
+linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
+using 2 slots
+first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
+end and the beginning of a page, therefore they use 3 * 15 = 45 slots
+last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
+Although I don't think this 51 slots skb can really happen, we need a solution
+which can deal with every scenario. In real life there is only a few slots
+overdue, but usually it causes the TCP stream to be blocked, as the retry will
+most likely have the same buffer layout.
+This patch solves this problem by linearizing the packet. This is not the
+fastest way, and it can fail much easier as it tries to allocate a big linear
+area for the whole packet, but probably easier by an order of magnitude than
+anything else. Probably this code path is not touched very frequently anyway.
 
--P FORWARD DROP
--A FORWARD -m sctp --dport 9 -j ACCEPT
--A FORWARD -p tcp --dport 80 -j ACCEPT
--A FORWARD -p tcp -m conntrack -m state ESTABLISHED,RELATED -j ACCEPT
-
-One would assume that this allows SCTP on port 9 and TCP on port 80.
-Unfortunately, if the SCTP conntrack module is not loaded, this allows
-*all* SCTP communication, to pass though, i.e. -p sctp -j ACCEPT,
-which we think is a security issue.
-
-This is because on the first SCTP packet on port 9, we create a dummy
-"generic l4" conntrack entry without any port information (since
-conntrack doesn't know how to extract this information).
-
-All subsequent packets that are unknown will then be in established
-state since they will fallback to proto_generic and will match the
-'generic' entry.
-
-Our originally proposed version [1] completely disabled generic protocol
-tracking, but Jozsef suggests to not track protocols for which a more
-suitable helper is available, hence we now mitigate the issue for in
-tree known ct protocol helpers only, so that at least NAT and direction
-information will still be preserved for others.
-
- [1] http://www.spinics.net/lists/netfilter-devel/msg33430.html
-
-Joint work with Daniel Borkmann.
-
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Paul Durrant <paul.durrant@citrix.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/netfilter/nf_conntrack_proto_generic.c | 26 +++++++++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
+ drivers/net/xen-netfront.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/net/netfilter/nf_conntrack_proto_generic.c b/net/netfilter/nf_conntrack_proto_generic.c
-index d25f29377648..957c1db66652 100644
---- a/net/netfilter/nf_conntrack_proto_generic.c
-+++ b/net/netfilter/nf_conntrack_proto_generic.c
-@@ -14,6 +14,30 @@
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 7a4cd11e6a07..3e0019503440 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -623,9 +623,10 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE) +
+ 		xennet_count_skb_frag_slots(skb);
+ 	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
+-		net_alert_ratelimited(
+-			"xennet: skb rides the rocket: %d slots\n", slots);
+-		goto drop;
++		net_dbg_ratelimited("xennet: skb rides the rocket: %d slots, %d bytes\n",
++				    slots, skb->len);
++		if (skb_linearize(skb))
++			goto drop;
+ 	}
  
- static unsigned int nf_ct_generic_timeout __read_mostly = 600*HZ;
- 
-+static bool nf_generic_should_process(u8 proto)
-+{
-+	switch (proto) {
-+#ifdef CONFIG_NF_CT_PROTO_SCTP_MODULE
-+	case IPPROTO_SCTP:
-+		return false;
-+#endif
-+#ifdef CONFIG_NF_CT_PROTO_DCCP_MODULE
-+	case IPPROTO_DCCP:
-+		return false;
-+#endif
-+#ifdef CONFIG_NF_CT_PROTO_GRE_MODULE
-+	case IPPROTO_GRE:
-+		return false;
-+#endif
-+#ifdef CONFIG_NF_CT_PROTO_UDPLITE_MODULE
-+	case IPPROTO_UDPLITE:
-+		return false;
-+#endif
-+	default:
-+		return true;
-+	}
-+}
-+
- static inline struct nf_generic_net *generic_pernet(struct net *net)
- {
- 	return &net->ct.nf_ct_proto.generic;
-@@ -67,7 +91,7 @@ static int generic_packet(struct nf_conn *ct,
- static bool generic_new(struct nf_conn *ct, const struct sk_buff *skb,
- 			unsigned int dataoff, unsigned int *timeouts)
- {
--	return true;
-+	return nf_generic_should_process(nf_ct_protonum(ct));
- }
- 
- #if IS_ENABLED(CONFIG_NF_CT_NETLINK_TIMEOUT)
+ 	spin_lock_irqsave(&queue->tx_lock, flags);
 -- 
 2.1.4
 
