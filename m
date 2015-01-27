@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455AbbA0J2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 04:28:36 -0500
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:55227 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752077AbbA0J2e (ORCPT
+	id S1757603AbbA0J26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 04:28:58 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:35252 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757486AbbA0J24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 04:28:34 -0500
-Message-ID: <1422350909.14015.12.camel@x220>
-Subject: Re: [PATCH] staging: Remove the Android logger driver
-From: Paul Bolle <pebolle@tiscali.nl>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Rom Lemarchand <romlem@google.com>,
-        Mark Salyzyn <salyzyn@google.com>, Kees Cook <keescook@chromium.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Date: Tue, 27 Jan 2015 10:28:29 +0100
-In-Reply-To: <1422302852-11499-1-git-send-email-john.stultz@linaro.org>
-References: <20150125121139.GA30332@kroah.com>
-	 <1422302852-11499-1-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Jan 2015 09:28:30.0142 (UTC) FILETIME=[9CB19DE0:01D03A13]
-X-RcptDomain: vger.kernel.org
+	Tue, 27 Jan 2015 04:28:56 -0500
+Date: Tue, 27 Jan 2015 12:28:39 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Joonsoo Kim <js1304@gmail.com>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "Linux Memory Management List" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 3/3] slub: make dead caches discard free slabs
+ immediately
+Message-ID: <20150127092838.GA5165@esperanza>
+References: <cover.1422275084.git.vdavydov@parallels.com>
+ <42d95683e3c7f4bb00be4d777e2b334e8981d552.1422275084.git.vdavydov@parallels.com>
+ <20150127080009.GB11358@js1304-P5Q-DELUXE>
+ <20150127082301.GD28978@esperanza>
+ <CAAmzW4N+HVEO7_29QpzW9ezask4FZYVVUdm0eMKv4CdUwLWYxQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAAmzW4N+HVEO7_29QpzW9ezask4FZYVVUdm0eMKv4CdUwLWYxQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-26 at 12:07 -0800, John Stultz wrote:
-> With the relase of Lollipop, Android no longer
-> requires the logger driver.
+On Tue, Jan 27, 2015 at 06:21:14PM +0900, Joonsoo Kim wrote:
+> 2015-01-27 17:23 GMT+09:00 Vladimir Davydov <vdavydov@parallels.com>:
+> > Hi Joonsoo,
+> >
+> > On Tue, Jan 27, 2015 at 05:00:09PM +0900, Joonsoo Kim wrote:
+> >> On Mon, Jan 26, 2015 at 03:55:29PM +0300, Vladimir Davydov wrote:
+> >> > @@ -3381,6 +3390,15 @@ void __kmem_cache_shrink(struct kmem_cache *s)
+> >> >             kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
+> >> >     unsigned long flags;
+> >> >
+> >> > +   if (deactivate) {
+> >> > +           /*
+> >> > +            * Disable empty slabs caching. Used to avoid pinning offline
+> >> > +            * memory cgroups by freeable kmem pages.
+> >> > +            */
+> >> > +           s->cpu_partial = 0;
+> >> > +           s->min_partial = 0;
+> >> > +   }
+> >> > +
+> >>
+> >> Maybe, kick_all_cpus_sync() is needed here since object would
+> >> be freed asynchronously so they can't see this updated value.
+> >
+> > I thought flush_all() should do the trick, no?
 > 
-> There are three patches which the android dev's
-> still need before they drop logger on all their
-> devices:
+> Unfortunately, it doesn't.
 > 
-> [PATCH v4 1/5] pstores: use scnprintf
-> [PATCH v2 2/5] pstore: remove superfluous memory size check
-> [PATCH 3/5] pstore: handle zero-sized prz in series
-> [PATCH v4 4/5] pstore: add pmsg
-> [PATCH 5/5] pstore: selinux: add security in-core xattr support for pstore and debugfs
-> 
-> But these seem to have been acked and are hopefully
-> queued for upstream.
-> 
-> So this patch removes the logger driver from staging.
-> 
-> Cc: Rom Lemarchand <romlem@google.com>,
-> Cc: Mark Salyzyn <salyzyn@google.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: Greg KH <gregkh@linuxfoundation.org>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
-> ---
->  drivers/staging/android/Kconfig  |  17 -
+> flush_all() sends IPI to not all cpus. It only sends IPI to cpus where
+> some conditions
+> are met and freeing could occur on the other ones.
 
-Please include the change that would add
-   drivers/staging/android/Makefile |   1 -
-
->  drivers/staging/android/logger.c | 807 ---------------------------------------
->  drivers/staging/android/logger.h |  89 -----
->  3 files changed, 913 deletions(-)
->  delete mode 100644 drivers/staging/android/logger.c
->  delete mode 100644 drivers/staging/android/logger.h
-
-That is also delete this line:
-    obj-$(CONFIG_ANDROID_LOGGER)           += logger.o
+Oh, true, missed that. Yeah, we should kick all cpus explicitly then.
+Will fix in the next iteration. Thanks for catching this!
 
 Thanks,
-
-
-Paul Bolle
-
+Vladimir
