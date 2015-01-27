@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969AbbA0AiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 19:38:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37126 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757950AbbA0AiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 19:38:03 -0500
-Message-ID: <54C6DDE8.3000905@suse.de>
-Date: Tue, 27 Jan 2015 01:38:00 +0100
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1757983AbbA0Ail (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 19:38:41 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:53276 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755755AbbA0Aij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 19:38:39 -0500
+Date: Mon, 26 Jan 2015 19:39:09 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
+Message-ID: <20150126193909.19967bd0@grimm.local.home>
+In-Reply-To: <20150126184916.70d88963@gandalf.local.home>
+References: <20150126150913.653681560@goodmis.org>
+	<20150126193049.GN29656@ZenIV.linux.org.uk>
+	<20150126154259.5e650d32@gandalf.local.home>
+	<20150126214658.GQ29656@ZenIV.linux.org.uk>
+	<20150126184314.24f2583c@gandalf.local.home>
+	<20150126184916.70d88963@gandalf.local.home>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/2] ARM: zynq: Remove bogus value from 'bias-disable'
- property
-References: <1422301796-22888-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1422301796-22888-1-git-send-email-soren.brinkmann@xilinx.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="x7OTP5ALlf0PUxDlivFv2jtqOb9stSVwM"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---x7OTP5ALlf0PUxDlivFv2jtqOb9stSVwM
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, 26 Jan 2015 18:49:16 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Am 26.01.2015 um 20:49 schrieb Soren Brinkmann:
-> In one pinctrl node, a 'bias-disable' property is erroneously assigned =
-a
-> value.
->=20
-> Fixes: ARM: zynq: DT: Add pinctrl information
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> On Mon, 26 Jan 2015 18:43:14 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+>  
+> > That is, we can not hold i_mutex and take trace_types_lock.
+> > 
+> > trace_types_lock needs to be held with the creation or destruction
+> > of events, which is what mkdir an rmdir do.
+> 
+> Although, I can not remember how this happened, but lockdep blew up on
+> me with this. I'll look again.
 
-Reviewed-by: Andreas F=C3=A4rber <afaerber@suse.de>
+OK, found it. When events are created (module is loaded), the
+trace_types_lock is taken, and the event directories are created (these
+are in /sys/kernel/debug/tracing/events). We need to grab the i_mutex
+in order to create these files.
 
-Andreas
+This means that we can not take the trace_types_lock within the mkdir
+or rmdir calls.
 
---=20
-SUSE Linux GmbH, Maxfeldstr. 5, 90409 N=C3=BCrnberg, Germany
-GF: Felix Imend=C3=B6rffer, Jane Smithard, Jennifer Guild, Dilip Upmanyu,=
+The directories are not static even outside the mkdir and rmdir calls.
+As events can be created from several sources, which will create new
+files and directories.
 
-Graham Norton; HRB 21284 (AG N=C3=BCrnberg)
-
-
---x7OTP5ALlf0PUxDlivFv2jtqOb9stSVwM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUxt3oAAoJEPou0S0+fgE/OgMQAKMHENAvD2Sl4Z2wkLszdq+n
-xC/d/8mD51o/95ByFKkMx0EjjFF43DOxJDGUbqcHzOOgfGyv0scDatFAqxWEabMC
-GnCbMJeFqUkaKhgQqhHCPwhYvMW6MFnA2VPcbhk8KyYY9Qhjlbq8xLyNUtWPYk6U
-s2LtzPoLn7R7r9JGZGPOpF0SMU7gB3htABqgNHSwN/L3hkKLRdmAL/mXBAxa6Qpp
-M+vxiDOwjzPdYx2+x6FX9kdXEVyyO1vp75YCSrq3VCiEZwt2gqlm1voPljdlcFKD
-5hUpsnbS/Jh+HvmxbuWRN1tyJmwEln3C8Zfy0ct8b5FRP7DHem/nmKeI/kzhobyl
-7fh6a3JV5GgfNCQk325AecONRiMwmdikxOmCJJsiDzrNb4HrZQsR/1Q+o/RV8LZv
-lfHA8+UjUVGcgyLtyLu46lx4xGa2PHO/jrMFj9wVqbkTTm05xhBmKCDwh7SNdBhi
-isZ9M4kDcnELrkd8DW6yRSuaZJp+1cNw1Cor0UVKfNgp5CJO6fAYqlThtyZdmuul
-mSSgUh18IN1/OInbXDurQxETEaYqrs3SfogofMAhZmHa/9cRzDQ6PX9kVTXrLSQh
-GIzVwdhpyCZcOwtq11JoWRsOc5h8hRDzfD0bOVmXhfqGfxVUM8bOu350DBw3h4Om
-aG1sEn/O9dcbKqTmJy5f
-=xgpu
------END PGP SIGNATURE-----
-
---x7OTP5ALlf0PUxDlivFv2jtqOb9stSVwM--
+-- Steve
