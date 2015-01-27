@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933311AbbA0WiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 17:38:25 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:50883 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948AbbA0WiY (ORCPT
+	id S1756153AbbA0Wj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 17:39:29 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:58360 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882AbbA0Wj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 17:38:24 -0500
+	Tue, 27 Jan 2015 17:39:28 -0500
+Date: Tue, 27 Jan 2015 22:39:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mason <mpeg.blue@free.fr>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux ARM <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Embedded white space in out-of-tree module full pathname
+Message-ID: <20150127223922.GQ26493@n2100.arm.linux.org.uk>
+References: <54C75E09.6050002@free.fr>
 MIME-Version: 1.0
-In-Reply-To: <20150126164352.8b40796d5e3b6caebaca3f28@freescale.com>
-References: <20150126164352.8b40796d5e3b6caebaca3f28@freescale.com>
-Date: Wed, 28 Jan 2015 01:38:23 +0300
-Message-ID: <CALYGNiPNRno6QvAMuZ+mWS-2m8CwpjwUxaEo=LOHT57mPkHy6A@mail.gmail.com>
-Subject: Re: [PATCH] .mailmap: update Konstantin Khlebnikov's email address
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Kim Phillips <kim.phillips@freescale.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C75E09.6050002@free.fr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ack.
+On Tue, Jan 27, 2015 at 10:44:41AM +0100, Mason wrote:
+> I'd like some confirmation that this is either not supported, or that
+> I'm doing something obviously wrong. (Kernel 3.14 if it matters.)
 
-On Tue, Jan 27, 2015 at 1:43 AM, Kim Phillips
-<kim.phillips@freescale.com> wrote:
-> get_maintainer.pl returns k.khlebnikov@samsung.com via git history,
-> for which emails get rejected:
->
->  RCPT TO:<k.khlebnikov@samsung.com>
->  550 5.1.1 Recipient address rejected: User unknown
->
-> Use his other address that passes vger's mxverify:
->
->  RCPT TO:<koct9i@gmail.com>
->  250 2.1.5 OK ir10si13843754pbc.62 - gsmtp
->
-> and add his old email address in the wrong email address field.
->
-> Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
-> ---
->  .mailmap | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/.mailmap b/.mailmap
-> index d357e1b..0d971cf 100644
-> --- a/.mailmap
-> +++ b/.mailmap
-> @@ -73,6 +73,7 @@ Juha Yrjola <juha.yrjola@nokia.com>
->  Juha Yrjola <juha.yrjola@solidboot.com>
->  Kay Sievers <kay.sievers@vrfy.org>
->  Kenneth W Chen <kenneth.w.chen@intel.com>
-> +Konstantin Khlebnikov <koct9i@gmail.com> <k.khlebnikov@samsung.com>
->  Koushik <raghavendra.koushik@neterion.com>
->  Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
->  Leonid I Ananiev <leonid.i.ananiev@intel.com>
-> --
-> 2.2.2
->
+It's something which isn't going to be supported.
+
+Various things in the make makes it difficult - for example:
+
+module-dirs := $(addprefix _module_,$(KBUILD_EXTMOD))
+
+and as per your example, addprefix will see "/tmp/foo" and "bar/module"
+as two separate words.  make has no way to know that these are one
+path rather than two separate paths.
+
+See the addprefix documentation in make's info pages, which splits the
+second argument by whitespace.
+
+Unlike shell, where you have IFS= which can change the word splitting,
+make always uses white space.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
