@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845AbbA0UDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 15:03:25 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:29974 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812AbbA0UDY (ORCPT
+	id S1759568AbbA0UGw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 15:06:52 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:57369 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758660AbbA0UGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 15:03:24 -0500
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_9EBAoR2DljDs1NxKPTKPbA)"
-Date: Tue, 27 Jan 2015 15:03:23 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: =?ISO-8859-15?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-In-reply-to: <20150127174818.GM26493@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <20150127132127.GA869@amd>
- <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
- <201501271532.25540@pali> <20150127174818.GM26493@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 27 Jan 2015 15:06:51 -0500
+Date: Tue, 27 Jan 2015 12:05:53 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Robert Rosengren <robert.rosengren@axis.com>
+Cc: Jean Delvare <jdelvare@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Johan Adolfsson <johana@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval
+ configurable
+Message-ID: <20150127200553.GA5689@roeck-us.net>
+References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>
+ <54B92596.2040206@roeck-us.net>
+ <20150116183020.GA6262@roeck-us.net>
+ <54C74567.9020201@axis.com>
+ <54C79B87.8040607@roeck-us.net>
+ <4BEA3FF3CAA35E408EA55C7BE2E61D05943B6DD753@xmail3.se.axis.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BEA3FF3CAA35E408EA55C7BE2E61D05943B6DD753@xmail3.se.axis.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.54C7EFDA.029D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 5
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---Boundary_(ID_9EBAoR2DljDs1NxKPTKPbA)
-Content-type: TEXT/PLAIN; charset=iso-8859-1
-Content-transfer-encoding: 8BIT
-
-On Tue, 27 Jan 2015, Russell King - ARM Linux wrote:
-
-> On Tue, Jan 27, 2015 at 03:32:25PM +0100, Pali Rohár wrote:
-> > On Tuesday 27 January 2015 15:16:45 Rob Herring wrote:
-> > > What other devices? Where is bootreason in the list of ATAGS:
-> > > 
-> > > #define ATAG_MEM        0x54410002
-> > > #define ATAG_VIDEOTEXT  0x54410003
-> > > #define ATAG_RAMDISK    0x54410004
-> > > #define ATAG_INITRD     0x54410005
-> > > #define ATAG_INITRD2    0x54420005
-> > > #define ATAG_SERIAL     0x54410006
-> > > #define ATAG_REVISION   0x54410007
-> > > #define ATAG_VIDEOLFB   0x54410008
-> > > #define ATAG_CMDLINE    0x54410009
-> > > #define ATAG_ACORN      0x41000101
-> > > #define ATAG_MEMCLK     0x41000402
-> > > 
-> > > Rob
-> > 
-> > Each device is using own proprietary atag (or other information) 
-> > to pass bootreason from bootloader to kernel. No standard way :-(
-
-So that's what Pavel was alluding to.
-
-> The reason that happens is because people refuse to discuss their
-> requirements here - just like people refuse to report userspace API
-> regressions to kernel people.  This rather pisses me off, because
-> it creates all sorts of horrid per-platform yuck.
+On Tue, Jan 27, 2015 at 08:54:34PM +0100, Robert Rosengren wrote:
+> Guenter and Jean, 
 > 
-> We _could_ (and have in the past) turned round and refused to support
-> these kinds of hacks - which IMHO is quite a reasonable stance to
-> take: the message we should be sending is "if you wish to design
-> new methods without discussing it with us, we reserve the right not
-> to support them in mainline kernels; please discuss with us your
-> requirements."
+> To sum up, my problems was related my kernel and hardware configuration, and it now works. Many thanks for your input!
 > 
-> Each time that we accept one of these hacks, we're sending a message
-> that says "it's okay to work in this crappy way".
+> However, the values retrieved from hwmon sysfs is not the same as before the regmap patch. Guenter, the byte swap for the regval retrieved by regmap_read. In what order is the bits returned from that function, because it seems as if I disabled that code I get values as I expect (i.e. before the regmap patch).
 > 
-> Yes, I realise that the N900 has little in the way of support, and we
-> can't exert that kind of back pressure (since there's no one to direct
-> that onto to effect any change) so I guess we just have to live with it.
+Trying to understand. Are you saying everything works as expected
+if you keep byte_swap set to false ?
 
-If the method is: "let's pass non-standard ATAGs around and have ad-hoc 
-user space code interpret it in some arbitrary way" then it's a complete 
-abomination.
+That might well be, though it might mean that regmap has a bug
+in how it treats i2c word read operations. I'll have to look into it 
+some more.
 
-> > I think this kind of information (how was board/computer started) 
-> > can be useful also for other architectures. E.g. on laptop you 
-> > would like to know if if was started by RTC, power button, 
-> > WakeOnLan, another ACPI event, rebooted machine, watchdog, etc... 
-> > And scripts can act depending on this event (when by RTC, you 
-> > need to run some planned job, when by watchdog reset you should 
-> > check what caused that reason...).
+Can you send me your diffs on top of mine to help me understand what
+you changed ?
 
-Useful when properly designed and generic enough to be shared.
-
-I'd suggest a DT property be proposed for that purpose if it doesn't 
-already exist.  That at least has a chance to be generically useful.
-
-
-Nicolas
-
---Boundary_(ID_9EBAoR2DljDs1NxKPTKPbA)--
+Thanks,
+Guenter
