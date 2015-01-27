@@ -1,184 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979AbbA0Mq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:46:29 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:46710 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932483AbbA0MqZ (ORCPT
+	id S933040AbbA0Mr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:47:28 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:56628 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933023AbbA0MrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:46:25 -0500
-Message-ID: <54C78879.3010603@huawei.com>
-Date: Tue, 27 Jan 2015 20:45:45 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Wang Nan <wangnan0@huawei.com>, <eparis@parisplace.org>, <rlove@rlove.org>,
-        <john@johnmccutchan.com>
-Subject: [RESEND PATCH] inotify: update documentation to reflect code changes
-References: <1418785193-31576-1-git-send-email-zhenzhang.zhang@huawei.com>
-In-Reply-To: <1418785193-31576-1-git-send-email-zhenzhang.zhang@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 27 Jan 2015 07:47:25 -0500
+Message-ID: <1422362842.14015.48.camel@x220>
+Subject: Re: [PATCH v5 1/5] ARM: mediatek: Add config options for mediatek
+ SoCs.
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dandan.he@mediatek.com, alan.cheng@mediatek.com, toby.liu@mediatek.com,
+        maoguang.meng@mediatek.com, huang eddie <eddie.huang@mediatek.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrsoft.com>,
+        Howard Chen <howard.chen@linaro.org>
+Date: Tue, 27 Jan 2015 13:47:22 +0100
+In-Reply-To: <CABuKBeLPN74fiLduvswHfPrgAoQCFXCtdLZhhoha8Q=0xBSjpA@mail.gmail.com>
+References: <1421818097-9281-1-git-send-email-hongzhou.yang@mediatek.com>
+	 <1421818097-9281-2-git-send-email-hongzhou.yang@mediatek.com>
+	 <CABuKBeJGigY5ym9cJy=PYK8jbdsOLLtkmovHq6xho4gYseCAWg@mail.gmail.com>
+	 <1422353800.14015.35.camel@x220> <1422354400.32212.25.camel@mtksdaap41>
+	 <1422354858.14015.39.camel@x220>
+	 <CABuKBeLPN74fiLduvswHfPrgAoQCFXCtdLZhhoha8Q=0xBSjpA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.57]
-X-CFilter-Loop: Reflected
+X-OriginalArrivalTime: 27 Jan 2015 12:47:22.0459 (UTC) FILETIME=[64E8B2B0:01D03A2F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The inotify kernel interface was removed by Eric Paris
-in this commit: 2dfc1ca inotify: remove inotify in
-kernel interface.
+Matthias,
 
-Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
----
- Documentation/filesystems/inotify.txt | 120 +---------------------------------
- 1 file changed, 2 insertions(+), 118 deletions(-)
+On Tue, 2015-01-27 at 13:38 +0100, Matthias Brugger wrote:
+> Yes, this symbols are needed when we implement the pinctrl driver for
+> the other platforms.
+> I will implement mt6589 as soon as the pinctrl driver got merged.
+> I suppose Howard will go for the mt6592.
 
-diff --git a/Documentation/filesystems/inotify.txt b/Documentation/filesystems/inotify.txt
-index cfd0271..9b74b45 100644
---- a/Documentation/filesystems/inotify.txt
-+++ b/Documentation/filesystems/inotify.txt
-@@ -69,123 +69,7 @@ Prototypes:
- 	int inotify_rm_watch (int fd, __u32 mask);
+I see. Unless the users of MACH_MT6589, MACH_MT6592, MACH_MT8127, and
+MACH_MT8135 take very long to land in linux-next (or in mainline) I
+won't bother you again about this.
+
+Thanks!
 
 
--(iii) Kernel Interface
--
--Inotify's kernel API consists a set of functions for managing watches and an
--event callback.
--
--To use the kernel API, you must first initialize an inotify instance with a set
--of inotify_operations.  You are given an opaque inotify_handle, which you use
--for any further calls to inotify.
--
--    struct inotify_handle *ih = inotify_init(my_event_handler);
--
--You must provide a function for processing events and a function for destroying
--the inotify watch.
--
--    void handle_event(struct inotify_watch *watch, u32 wd, u32 mask,
--    	              u32 cookie, const char *name, struct inode *inode)
--
--	watch - the pointer to the inotify_watch that triggered this call
--	wd - the watch descriptor
--	mask - describes the event that occurred
--	cookie - an identifier for synchronizing events
--	name - the dentry name for affected files in a directory-based event
--	inode - the affected inode in a directory-based event
--
--    void destroy_watch(struct inotify_watch *watch)
--
--You may add watches by providing a pre-allocated and initialized inotify_watch
--structure and specifying the inode to watch along with an inotify event mask.
--You must pin the inode during the call.  You will likely wish to embed the
--inotify_watch structure in a structure of your own which contains other
--information about the watch.  Once you add an inotify watch, it is immediately
--subject to removal depending on filesystem events.  You must grab a reference if
--you depend on the watch hanging around after the call.
--
--    inotify_init_watch(&my_watch->iwatch);
--    inotify_get_watch(&my_watch->iwatch);	// optional
--    s32 wd = inotify_add_watch(ih, &my_watch->iwatch, inode, mask);
--    inotify_put_watch(&my_watch->iwatch);	// optional
--
--You may use the watch descriptor (wd) or the address of the inotify_watch for
--other inotify operations.  You must not directly read or manipulate data in the
--inotify_watch.  Additionally, you must not call inotify_add_watch() more than
--once for a given inotify_watch structure, unless you have first called either
--inotify_rm_watch() or inotify_rm_wd().
--
--To determine if you have already registered a watch for a given inode, you may
--call inotify_find_watch(), which gives you both the wd and the watch pointer for
--the inotify_watch, or an error if the watch does not exist.
--
--    wd = inotify_find_watch(ih, inode, &watchp);
--
--You may use container_of() on the watch pointer to access your own data
--associated with a given watch.  When an existing watch is found,
--inotify_find_watch() bumps the refcount before releasing its locks.  You must
--put that reference with:
--
--    put_inotify_watch(watchp);
--
--Call inotify_find_update_watch() to update the event mask for an existing watch.
--inotify_find_update_watch() returns the wd of the updated watch, or an error if
--the watch does not exist.
--
--    wd = inotify_find_update_watch(ih, inode, mask);
--
--An existing watch may be removed by calling either inotify_rm_watch() or
--inotify_rm_wd().
--
--    int ret = inotify_rm_watch(ih, &my_watch->iwatch);
--    int ret = inotify_rm_wd(ih, wd);
--
--A watch may be removed while executing your event handler with the following:
--
--    inotify_remove_watch_locked(ih, iwatch);
--
--Call inotify_destroy() to remove all watches from your inotify instance and
--release it.  If there are no outstanding references, inotify_destroy() will call
--your destroy_watch op for each watch.
--
--    inotify_destroy(ih);
--
--When inotify removes a watch, it sends an IN_IGNORED event to your callback.
--You may use this event as an indication to free the watch memory.  Note that
--inotify may remove a watch due to filesystem events, as well as by your request.
--If you use IN_ONESHOT, inotify will remove the watch after the first event, at
--which point you may call the final inotify_put_watch.
--
--(iv) Kernel Interface Prototypes
--
--	struct inotify_handle *inotify_init(struct inotify_operations *ops);
--
--	inotify_init_watch(struct inotify_watch *watch);
--
--	s32 inotify_add_watch(struct inotify_handle *ih,
--		              struct inotify_watch *watch,
--			      struct inode *inode, u32 mask);
--
--	s32 inotify_find_watch(struct inotify_handle *ih, struct inode *inode,
--			       struct inotify_watch **watchp);
--
--	s32 inotify_find_update_watch(struct inotify_handle *ih,
--				      struct inode *inode, u32 mask);
--
--	int inotify_rm_wd(struct inotify_handle *ih, u32 wd);
--
--	int inotify_rm_watch(struct inotify_handle *ih,
--			     struct inotify_watch *watch);
--
--	void inotify_remove_watch_locked(struct inotify_handle *ih,
--					 struct inotify_watch *watch);
--
--	void inotify_destroy(struct inotify_handle *ih);
--
--	void get_inotify_watch(struct inotify_watch *watch);
--	void put_inotify_watch(struct inotify_watch *watch);
--
--
--(v) Internal Kernel Implementation
-+(iii) Internal Kernel Implementation
-
- Each inotify instance is represented by an inotify_handle structure.
- Inotify's userspace consumers also have an inotify_device which is
-@@ -198,7 +82,7 @@ See fs/notify/inotify/inotify_fsnotify.c and fs/notify/inotify/inotify_user.c
- for the locking and lifetime rules.
-
-
--(vi) Rationale
-+(iv) Rationale
-
- Q: What is the design decision behind not tying the watch to the open fd of
-    the watched object?
--- 
-1.8.1.4
-
-
-.
-
-
-
+Paul Bolle
 
