@@ -1,124 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460AbbA0PvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:51:10 -0500
-Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:59667 "EHLO
-	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932394AbbA0Puq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:50:46 -0500
-X-Sender-Id: abbotti@mev.co.uk
-From: Ian Abbott <abbotti@mev.co.uk>
-To: <driverdev-devel@linuxdriverproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/7] staging: comedi: comedi_compat.c: use long unlocked_ioctl return value
-Date: Tue, 27 Jan 2015 15:50:24 +0000
-Message-Id: <1422373824-12793-8-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1422373824-12793-1-git-send-email-abbotti@mev.co.uk>
-References: <1422373824-12793-1-git-send-email-abbotti@mev.co.uk>
+	id S932595AbbA0PxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:53:12 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:33854 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753855AbbA0PxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 10:53:08 -0500
+Date: Tue, 27 Jan 2015 16:50:47 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, ezequiel.garcia@free-electrons.com,
+        dwmw2@infradead.org, computersforpeace@gmail.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/9] mtd: pxa3xx_nand: add a non mandatory ECC clock
+Message-ID: <20150127155047.GB16546@lunn.ch>
+References: <1422367816-4257-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1422367816-4257-3-git-send-email-antoine.tenart@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422367816-4257-3-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The `unlocked_ioctl` and `compat_ioctl` file operations are both defined
-to return a `long` (I don't know why).  Comedi's `compat_ioctl` handler
-`comedi_compat_ioctl()` and its helper functions currently assume the
-`unlocked_ioctl` handler return value will fit in an `int` (which it
-does, in fact).  Change it to pass through the full `long` return value.
+On Tue, Jan 27, 2015 at 03:10:09PM +0100, Antoine Tenart wrote:
+> Some controllers (as the coming Berlin nand controller) need to enable
+> an ECC clock. Add support for this clock in the pxa3xx nand driver, and
+> leave it as non mandatory.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/comedi_compat32.c | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+Hi Antoine
 
-diff --git a/drivers/staging/comedi/comedi_compat32.c b/drivers/staging/comedi/comedi_compat32.c
-index 24078b9..06ccf3c 100644
---- a/drivers/staging/comedi/comedi_compat32.c
-+++ b/drivers/staging/comedi/comedi_compat32.c
-@@ -87,8 +87,8 @@ struct comedi32_insnlist_struct {
- };
- 
- /* Handle translated ioctl. */
--static int translated_ioctl(struct file *file, unsigned int cmd,
--			    unsigned long arg)
-+static long translated_ioctl(struct file *file, unsigned int cmd,
-+			     unsigned long arg)
- {
- 	if (file->f_op->unlocked_ioctl)
- 		return file->f_op->unlocked_ioctl(file, cmd, arg);
-@@ -97,7 +97,7 @@ static int translated_ioctl(struct file *file, unsigned int cmd,
- }
- 
- /* Handle 32-bit COMEDI_CHANINFO ioctl. */
--static int compat_chaninfo(struct file *file, unsigned long arg)
-+static long compat_chaninfo(struct file *file, unsigned long arg)
- {
- 	struct comedi_chaninfo __user *chaninfo;
- 	struct comedi32_chaninfo_struct __user *chaninfo32;
-@@ -131,7 +131,7 @@ static int compat_chaninfo(struct file *file, unsigned long arg)
- }
- 
- /* Handle 32-bit COMEDI_RANGEINFO ioctl. */
--static int compat_rangeinfo(struct file *file, unsigned long arg)
-+static long compat_rangeinfo(struct file *file, unsigned long arg)
- {
- 	struct comedi_rangeinfo __user *rangeinfo;
- 	struct comedi32_rangeinfo_struct __user *rangeinfo32;
-@@ -264,7 +264,7 @@ static int put_compat_cmd(struct comedi32_cmd_struct __user *cmd32,
- }
- 
- /* Handle 32-bit COMEDI_CMD ioctl. */
--static int compat_cmd(struct file *file, unsigned long arg)
-+static long compat_cmd(struct file *file, unsigned long arg)
- {
- 	struct comedi_cmd __user *cmd;
- 	struct comedi32_cmd_struct __user *cmd32;
-@@ -290,11 +290,12 @@ static int compat_cmd(struct file *file, unsigned long arg)
- }
- 
- /* Handle 32-bit COMEDI_CMDTEST ioctl. */
--static int compat_cmdtest(struct file *file, unsigned long arg)
-+static long compat_cmdtest(struct file *file, unsigned long arg)
- {
- 	struct comedi_cmd __user *cmd;
- 	struct comedi32_cmd_struct __user *cmd32;
--	int rc, err;
-+	long rc;
-+	int err;
- 
- 	cmd32 = compat_ptr(arg);
- 	cmd = compat_alloc_user_space(sizeof(*cmd));
-@@ -344,7 +345,7 @@ static int get_compat_insn(struct comedi_insn __user *insn,
- }
- 
- /* Handle 32-bit COMEDI_INSNLIST ioctl. */
--static int compat_insnlist(struct file *file, unsigned long arg)
-+static long compat_insnlist(struct file *file, unsigned long arg)
- {
- 	struct combined_insnlist {
- 		struct comedi_insnlist insnlist;
-@@ -394,7 +395,7 @@ static int compat_insnlist(struct file *file, unsigned long arg)
- }
- 
- /* Handle 32-bit COMEDI_INSN ioctl. */
--static int compat_insn(struct file *file, unsigned long arg)
-+static long compat_insn(struct file *file, unsigned long arg)
- {
- 	struct comedi_insn __user *insn;
- 	struct comedi32_insn_struct __user *insn32;
-@@ -417,7 +418,7 @@ static int compat_insn(struct file *file, unsigned long arg)
-  */
- long comedi_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- {
--	int rc;
-+	long rc;
- 
- 	switch (cmd) {
- 	case COMEDI_DEVCONFIG:
--- 
-2.1.4
+It would be good to document this clock in the device tree binding.
 
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/mtd/nand/pxa3xx_nand.c | 26 +++++++++++++++++++-------
+>  1 file changed, 19 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
+> index d00ac392d1c4..2681ec4abafa 100644
+> --- a/drivers/mtd/nand/pxa3xx_nand.c
+> +++ b/drivers/mtd/nand/pxa3xx_nand.c
+> @@ -180,7 +180,7 @@ struct pxa3xx_nand_info {
+>  	struct nand_hw_control	controller;
+>  	struct platform_device	 *pdev;
+>  
+> -	struct clk		*clk;
+> +	struct clk		*clk, *ecc_clk;
+>  	void __iomem		*mmio_base;
+>  	unsigned long		mmio_phys;
+>  	struct completion	cmd_complete, dev_ready;
+> @@ -1608,7 +1608,7 @@ static int alloc_nand_resource(struct platform_device *pdev)
+>  
+>  	spin_lock_init(&chip->controller->lock);
+>  	init_waitqueue_head(&chip->controller->wq);
+> -	info->clk = devm_clk_get(&pdev->dev, NULL);
+> +	info->clk = devm_clk_get(&pdev->dev, "nfc");
+
+Does this keep backwards compatibility? Not all the existing users
+have there clocks named. What i think happens here is that
+of_clk_get_by_name() calls of_property_match_string(np, "clock-names",
+name); That returns -EINVAL, and then we ask of_clk_get() to get the
+-EINVAL'th clock. I don't think that is going to end well.
+
+I think you need to keep the NULL here, but should use "ecc" for the
+second clock and require the use of the clock-names property when an
+ecc clock is required.
+
+    Andrew
