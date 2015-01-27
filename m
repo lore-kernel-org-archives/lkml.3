@@ -1,103 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852AbbA0KPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 05:15:13 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43812 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174AbbA0KPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 05:15:10 -0500
-Date: Tue, 27 Jan 2015 10:14:40 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jon Masters <jcm@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        andre.przywara@arm.com
-Subject: Re: inverse mapping from a struct console to device
-Message-ID: <20150127101440.GA17721@leverpostej>
-References: <54C6984A.20501@redhat.com>
- <20150126205056.GA17169@leverpostej>
- <54C700BB.5030200@redhat.com>
+	id S1758050AbbA0KQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 05:16:18 -0500
+Received: from mga01.intel.com ([192.55.52.88]:24833 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755101AbbA0KQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 05:16:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,474,1418112000"; 
+   d="scan'208";a="676628159"
+Date: Tue, 27 Jan 2015 12:16:10 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] HID: i2c-hid: Add support for GPIO interrupts
+Message-ID: <20150127101610.GK1451@lahna.fi.intel.com>
+References: <1422282573-18215-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1422282573-18215-2-git-send-email-mika.westerberg@linux.intel.com>
+ <20150126143723.GI23313@leverpostej>
+ <20150126144729.GG1451@lahna.fi.intel.com>
+ <20150126145000.GJ23313@leverpostej>
+ <20150126151637.GH1451@lahna.fi.intel.com>
+ <20150126160044.GK23313@leverpostej>
+ <20150126161356.GJ1451@lahna.fi.intel.com>
+ <20150126163929.GL23313@leverpostej>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C700BB.5030200@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150126163929.GL23313@leverpostej>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 03:06:35AM +0000, Jon Masters wrote:
-> On 01/26/2015 03:50 PM, Mark Rutland wrote:
-> > On Mon, Jan 26, 2015 at 07:40:58PM +0000, Jon Masters wrote:
-> >> Hi Folks,
-> >>
-> >> TLDR: I need a back reference from a console struct to its device. I
-> >> can't see an easy way to do this right now without adding one?
-> > 
-> > I don't think that's quite what you need. All you need is to be able to
-> > refer to the SPCR at serial probe time (more on that below), when you
-> > should have the data you want.
-> 
-> Hmm. I wanted to do it in console_register due to the existing logic for
-> adding a preferred console there. But that's a silly reason.
-> 
-> >> I've a quick question. I have prototype code that parses an ACPI table
-> >> known as the SPCR (Serial Port Console Redirection - exists on both x86
-> >> and ARM systems). It finds the correct serial device (but it's not a
-> >> Linux specific DT-style solution so there's no "console=" parameter
-> >> embedded in it or something)
-> > 
-> > In DT we have /chosen/stdout-path which offers analagous functionality.
-> > It is independent of the command line, and has a standard set of
-> > parameters (<baud>{<parity>{<bits>{<flow>}}}).
-> 
-> Hmm. I thought it was embedding a Linux specific console parameter, but
-> I see when I actually check the code and the Documentation (sorry) that
-> it is indeed similar in capability. Which is awesome. I'll do similar.
-> 
-> > To make this work we check against the stdout-path when we register the
-> > UART. Take a look at of_console check (called from uart_add_one_port).
-> 
-> Great. Thanks. I looked at modifying uart_add_one_port, but I wasn't
-> convinced it was called by every serial driver (for example, the
-> sbsauart driver). I don't know the tty/serial code as well as I'd like.
-> But I'll implement it the same way as in the OF case for the moment, and
-> if we need to fix up a driver or two we can always do that.
+On Mon, Jan 26, 2015 at 04:39:30PM +0000, Mark Rutland wrote:
+> What I don't follow is why GpioInt seems to be translated as a GPIO
+> rather than as an interrupt which happens to be backed by a GPIO. Were
+> it not for that, the DT and ACPI cases would align better.
 
-The SBSA UART is a bit of a special case, given it cannot be
-reconfigured. While Andre's SBSA UART driver [1] will call
-uart_add_one_port (as the PL011 driver seems to currently), I believe
-any configuration is ignored.
+Because it *is* a GPIO.
 
-In the DT case, we'd expect the SBSA UART node to have a current-speed
-property describing the fixed, preconfigured speed. This has no bearing
-on the operation of the driver (because there's nothing to configure)
-and is only used to report the speed to userspace.
+In my experience we have had two kinds of interrupts that the devices
+are connected to: pins connected directly to the interrupt controller
+(IO-APIC or whatever), and pins connected to the GPIO controller. This
+is the later.
 
-I guess we don't have something on the ACPI node, and you want to use
-the SPCR to determine the preconfigured rate in this case?
+Now, the device in question has following resources:
 
-> > Assuming your UART probing looks similar for ACPI, you can have an
-> > analagous function that goes and checks uport->dev.acpi_dev_node against
-> > entires in the SPCR, configuring the UART as required at this point at
-> > registration time.
-> 
-> > This requires that you parse the SPCR earlier, but presumably the SPCR
-> > is simple enough that this is possible (no AML, for instance).
-> 
-> I already parse it as an initcall early in boot and indeed have it prior
-> to the port being registered.
-> 
-> > Is there some reason that approach is unworkable?
-> 
-> Apparently not, just need to check a couple of drivers.
-> 
-> Thanks Mark. I'll post a patch later for SPCR setup.
+	Name (_CRS, ResourceTemplate () {
+		I2cSerialBus (0x004C, ControllerInitiated, 0x00061A80,
+		    AddressingMode7Bit, "\\_SB.PCI0.I2C6",
+		    0x00, ResourceConsumer,,)
+		GpioInt (Level, ActiveLow, Shared, PullDefault, 0x0000,
+		    "\\_SB.GPO0", 0x00, ResourceConsumer,,)
+		    {
+			0x004C
+		    }
+	})
 
-Great!
+The GpioInt() above refers to GPIO controller ("\_SB.GPO0") and its pin
+number 0x4c.
 
-Mark.
+Normally I would do this in the driver regardless of where it is
+described (DT, ACPI, whatnot):
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/317146.html
+	desc = gpiod_get(dev, NULL);
+	gpiod_direction_input(desc);
+	irq = gpiod_to_irq(desc);
+
+Then the "irq" can be used for request_irq() and friends.
+
+Note how both DT and ACPI cases align just fine.
+
+If the above is not the right way to use GPIOs as interrupt, can you
+please tell me how it is done then?
+
+BTW, passing NULL to gpiod_get() implies property named "gpios" in DT
+(which is why I added it to the documentation).
