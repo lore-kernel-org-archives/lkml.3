@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbbA0L1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 06:27:25 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49893 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514AbbA0L1X convert rfc822-to-8bit (ORCPT
+	id S1758031AbbA0Lam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:30:42 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:36557 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317AbbA0Laj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 06:27:23 -0500
-Message-ID: <54C77616.80301@arm.com>
-Date: Tue, 27 Jan 2015 11:27:18 +0000
-From: Robin Murphy <robin.murphy@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Will Deacon <Will.Deacon@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 3/6] of: fix size when dma-range is not used
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-4-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1422052359-12384-4-git-send-email-m-karicheri2@ti.com>
-X-OriginalArrivalTime: 27 Jan 2015 11:27:19.0292 (UTC) FILETIME=[35FF93C0:01D03A24]
-X-MC-Unique: 115012711272101201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Jan 2015 06:30:39 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-0d-54c7764be96f
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dmitry Artamonow <mad_soft@inbox.ru>, Marek Belisko <marek@goldelico.com>,
+        Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
+        Darren Hart <dvhart@infradead.org>, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RFT PATCH 0/4] Check return value of power_supply_register
+Date: Tue, 27 Jan 2015 12:30:17 +0100
+Message-id: <1422358221-13199-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBJMWRmVeSWpSXmKPExsVy+t/xK7reZcdDDM5t4bBYcqKbxWLSk/fM
+	Fl0LDSwmrpzMbPH6haHF5V1z2Cw+9x5htNjedpTF4t/SLWwWq/e8YLY4vbvEgdtj56y77B5r
+	3p9i9jh27Q6Lx+YVWh6bVnWyefRtWcXo8XmTXAB7FJdNSmpOZllqkb5dAlfGyr7FbAWLuSsa
+	bq9hb2CczdnFyMkhIWAi0bpjByuELSZx4d56ti5GLg4hgaWMEoeXr2eGcPqYJD78n8QOUsUm
+	YCyxefkSsCoRgRZmiZ0LT7GAJJgFDCV+vvsDViQs4CJx9HYLM4jNIqAqsebmXaA4BwevgLvE
+	yam2ENvkJE4em8w6gZF7ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQ0Pqyg3HxMatD
+	jAIcjEo8vBxFx0OEWBPLiitzDzFKcDArifB6RQCFeFMSK6tSi/Lji0pzUosPMTJxcEo1MOb+
+	qromMvm5wOJuvfO2mqfe6F1737613+vzBO7Fq5dI+PIG3eLfbSGwivtPx/awkpzKTWZHqvo8
+	1z+5N/9REe+H1q+WK07e3cSxd/dWy6fGSmFrPwSce/T2RM3fhgbBBxc2bamK+lhVdJmF5cE3
+	o4vq7+8rmEbMdefqKZ3F2u6l1mK4Z9GK5XOVWIozEg21mIuKEwFhcL+lCwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Murali,
-
-On 23/01/15 22:32, Murali Karicheri wrote:
-> Fix the dma-range size when the DT attribute is missing. i.e  set size to
-> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. To detect
-> overflow when mask is set to max of u64, add a check, log error and return.
-> Some platform use mask format for size in DTS. So add a work around to
-> catch this and fix.
->
-> Cc: Joerg Roedel <joro@8bytes.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
->   drivers/of/device.c |   14 +++++++++++++-
->   1 file changed, 13 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/of/device.c b/drivers/of/device.c
-> index 2de320d..0a5ff54 100644
-> --- a/drivers/of/device.c
-> +++ b/drivers/of/device.c
-> @@ -105,12 +105,24 @@ void of_dma_configure(struct device *dev, struct device_node *np)
->   	ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
->   	if (ret < 0) {
->   		dma_addr = offset = 0;
-> -		size = dev->coherent_dma_mask;
-> +		size = dev->coherent_dma_mask + 1;
->   	} else {
->   		offset = PFN_DOWN(paddr - dma_addr);
-> +		/*
-> +		 * Add a work around to treat the size as mask + 1 in case
-> +		 * it is defined in DT as a mask.
-> +		 */
-> +		if (size & 1)
-> +			size = size + 1;
->   		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
->   	}
->
-> +	/* if size is 0, we have an overflow of u64 */
-> +	if (!size) {
-> +		dev_err(dev, "invalid size\n");
-> +		return;
-> +	}
-> +
-
-This seems potentially fragile to dodgy DTs given that we might also be 
-using size to make a mask later. Would it make sense to double-up a 
-sanity check as mask-format detection? Something like:
-
-if is_power_of_2(size)
-	// use size
-else if is_power_of_2(size + 1)
-	// use size + 1
-else
-	// cry
+Hi,
 
 
-Robin.
+During global rework of power supply register API I found possible
+issues related to not checked return value.
 
->   	dev->dma_pfn_offset = offset;
->
->   	coherent = of_dma_is_coherent(np);
->
+The power_supply_register() return value was ignored and during driver
+removal the power supply was always unregistered. This theoretically
+could lead to invalid memory accesses. However I did not reproduce
+the issue (only code analysis).
 
+Affected drivers:
+1. twl4030_madc
+2. compal-laptop
+3. ipaq_micro_battery
+
+I prepared patches but DID NOT test them. Only compilation + sparse
+ + smatch + coccicheck.
+
+I am kindly asking for review and testing.
+
+
+P.S. The acpi/sbs.c driver has the same issue. Before unregistering
+power supply it checks if sbs->charger.dev is non-NULL... which will
+be non-NULL in most error-paths. However the driver is little more
+complicated so fixing this without doing tests would be very
+error-prone.
+
+
+Best regards,
+Krzysztof
+
+
+Krzysztof Kozlowski (4):
+  power_supply: twl4030_madc: Check return value of
+    power_supply_register
+  compal-laptop: Check return value of power_supply_register
+  power_supply: ipaq_micro_battery: Fix leaking workqueue
+  power_supply: ipaq_micro_battery: Check return values in probe
+
+ drivers/platform/x86/compal-laptop.c |  7 ++++++-
+ drivers/power/ipaq_micro_battery.c   | 22 ++++++++++++++++++++--
+ drivers/power/twl4030_madc_battery.c |  7 +++++--
+ 3 files changed, 31 insertions(+), 5 deletions(-)
+
+-- 
+1.9.1
 
