@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbbA0F0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 00:26:39 -0500
-Received: from ozlabs.org ([103.22.144.67]:60765 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024AbbA0F0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 00:26:37 -0500
-Message-ID: <1422336395.27133.3.camel@ellerman.id.au>
-Subject: [git pull] Please pull mpe/linux.git powerpc-3.19-5 tag
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ldufour@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, shreyas@linux.vnet.ibm.com
-Date: Tue, 27 Jan 2015 16:26:35 +1100
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-7wH4UHCoAI0ARhp/Wi/z"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	id S1752833AbbA0F06 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 00:26:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:33001 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513AbbA0F04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 00:26:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150125133514.GC19445@infradead.org>
+References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+	<1421163888-21452-4-git-send-email-ming.lei@canonical.com>
+	<20150125133514.GC19445@infradead.org>
+Date: Tue, 27 Jan 2015 13:26:54 +0800
+Message-ID: <CACVXFVOgMvccTUZB91OZFgjc_zQk0VnhxtBTO0OhwRYBye8Xnw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] block: loop: introduce 'use_aio' sysfs file
+From: Ming Lei <ming.lei@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Zach Brown <zab@zabbo.net>,
+        Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 1/25/15, Christoph Hellwig <hch@infradead.org> wrote:
+> On Tue, Jan 13, 2015 at 11:44:47PM +0800, Ming Lei wrote:
+>> So that users can control if kernel aio is used to submit I/O.
+>
+> Why do you want a sysfs flag for this instead of a flags in ->lo_flags
+> at setup time?  That's how all other loop-related ABI flags work.
 
---=-7wH4UHCoAI0ARhp/Wi/z
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The flag only effects performance or CPU/memory resource utilization,
+and I plan to change it as dio flag.
 
-Hi Linus,
+On Tue, Jan 27, 2015 at 1:57 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Ming Lei <ming.lei@canonical.com> writes:
+>
+>> So that users can control if kernel aio is used to submit I/O.
+>
+> How would a user know to choose aio or, um, /not/ aio?  At the very
+> least, documentation is required for this.  I'd rather see the option
+> disappear completely, though.
 
-Please pull two powerpc fixes for 3.19:
-
-The following changes since commit ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc=
-:
-
-  Linux 3.19-rc5 (2015-01-18 18:02:20 +1200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mpe/linux.git tags/powerpc-=
-3.19-5
-
-for you to fetch changes up to 0eb13208aa16ca5517835ea8f3feef091a13b984:
-
-  powerpc/powernv: Restore LPCR with LPCR_PECE1 cleared (2015-01-22 17:22:5=
-7 +1100)
-
-Laurent Dufour (1):
-      powerpc/xmon: Fix another endiannes issue in RTAS call from xmon
-
-Shreyas B. Prabhu (1):
-      powerpc/powernv: Restore LPCR with LPCR_PECE1 cleared
-
- arch/powerpc/platforms/powernv/setup.c | 2 +-
- arch/powerpc/xmon/xmon.c               | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+As the comment says in patch 4/4, using direct I/O can save memory/CPU
+a lot, and won't hurt throughput if I/O is from filesystem. Otherwise,
+user may choose to not use direct I/O for sake of throughput.
 
 
-
---=-7wH4UHCoAI0ARhp/Wi/z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABAgAGBQJUxyGLAAoJEFHr6jzI4aWAPpUQAKEw3znjngN4vM91AWvCXLf7
-BfwBKCMWG7LIhFozABNfBaM5+R0PS+j6TMFE1Er01aRqpdzBsq6RFLS2bnaKwykU
-jIc18YwNDKGu0Gg9HlUloUQ9j8iLtoCboHWR/dpCP6vAxmhdGrVR8tXlUsGr0cFd
-kl+eTVRngDxbWA1P4RD+EDsiZtzrSE3qpwG/YKGn2pbLqCfYmeCkFetUZEO7FwwM
-4WbwhyJuFu8VLVtWtWRMzc/Q6tb8feK/8DP7PCnhNTaoU25iAE5zoJKWR33GRpOd
-Ao0GRKK3x3eyf+YZFoGP8QSiOpXBy6EZT3V1TIa78DSk8EfkfwBeXR7vL0qX1O2m
-tUGVQ4nvCwdMQKoEjfOcyTNyLxZ7Ic3OYobK4sj+uI2tzHe3PlCfMy8Ws0qFZuNt
-erLMsqlHT0Snfobw24lndZ/xwUXFr48N+TsIlc8SRS8Vc/M20NaeRvAq1WeTlyxJ
-U7hWNgy7mTFQKwHAIIWxDhxDx3QeUQ7sm4RIyGdM/I9WcjYBfHU4eG6OrIWDV+QB
-2WFc9D1YpJ999L9GEhFK2TXq12nbctnfTSDg5Bdy8S5ZDqQROufQplYqnIiz4o1p
-/fvsV3Wxq0QQ6fB/OySUkrHkchfaHJsjegS3C7PbbZNu+51T2yflfkP+QtbZzVqv
-cux+7syln3EghnQ4Oir7
-=M7pu
------END PGP SIGNATURE-----
-
---=-7wH4UHCoAI0ARhp/Wi/z--
-
+Thanks,
+Ming Lei
