@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072AbbA0MsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:48:23 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38274 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490AbbA0MsT (ORCPT
+	id S933055AbbA0MsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:48:14 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:47207 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933023AbbA0MsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:48:19 -0500
-Date: Tue, 27 Jan 2015 13:48:15 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Xunlei Pang <pang.xunlei@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH 3/5] sched/deadline: Fix wrong cpudl_find() in
- check_preempt_equal_dl()
-Message-ID: <20150127124815.GC21418@twins.programming.kicks-ass.net>
-References: <1421642980-10045-1-git-send-email-pang.xunlei@linaro.org>
- <1421642980-10045-3-git-send-email-pang.xunlei@linaro.org>
+	Tue, 27 Jan 2015 07:48:09 -0500
+From: Bintian Wang <bintian.wang@huawei.com>
+To: <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <srinivas.kandagatla@st.com>, <broonie@linaro.org>
+CC: <huxinwei@huawei.com>
+Subject: [PATCH] regmap.h: correct the description of structure element in reg_field
+Date: Tue, 27 Jan 2015 20:50:29 +0800
+Message-ID: <1422363029-19476-1-git-send-email-bintian.wang@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421642980-10045-3-git-send-email-pang.xunlei@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Originating-IP: [10.110.52.31]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 04:49:38AM +0000, Xunlei Pang wrote:
-> +++ b/kernel/sched/deadline.c
-> @@ -943,14 +943,23 @@ out:
->  	return cpu;
->  }
->  
-> +static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
-> +
->  static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
->  {
-> +	struct cpumask *later_mask =
-> +			this_cpu_cpumask_var_ptr(local_cpu_mask_dl);
-> +
-> +	/* Make sure the mask is initialized first */
-> +	if (unlikely(!later_mask))
-> +		return;
-> +
->  	/*
->  	 * Current can't be migrated, useless to reschedule,
->  	 * let's hope p can move out.
->  	 */
->  	if (rq->curr->nr_cpus_allowed == 1 ||
-> -	    cpudl_find(&rq->rd->cpudl, rq->curr, NULL) == -1)
-> +	    cpudl_find(&rq->rd->cpudl, rq->curr, later_mask) == -1)
->  		return;
->  
->  	/*
+Fix incorrect description of structure element "msb", which is
+described as "reg".
 
-But but, should you not put something in that mask before you use it?
+Signed-off-by: Bintian Wang <bintian.wang@huawei.com>
+---
+ include/linux/regmap.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 4419b99..116655d 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -468,7 +468,7 @@ bool regmap_reg_in_ranges(unsigned int reg,
+  *
+  * @reg: Offset of the register within the regmap bank
+  * @lsb: lsb of the register field.
+- * @reg: msb of the register field.
++ * @msb: msb of the register field.
+  * @id_size: port size if it has some ports
+  * @id_offset: address offset for each ports
+  */
+-- 
+1.7.9.5
+
