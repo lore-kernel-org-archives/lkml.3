@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407AbbA0KpT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 05:45:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44875 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054AbbA0KpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 05:45:13 -0500
-Date: Tue, 27 Jan 2015 11:45:11 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vinayak Menon <vinmenon@codeaurora.org>
-Cc: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, vdavydov@parallels.com, mgorman@suse.de,
-        minchan@kernel.org
-Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in
- too_many_isolated
-Message-ID: <20150127104511.GB19880@dhcp22.suse.cz>
-References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org>
- <20150114165036.GI4706@dhcp22.suse.cz>
- <54B7F7C4.2070105@codeaurora.org>
- <20150116154922.GB4650@dhcp22.suse.cz>
- <54BA7D3A.40100@codeaurora.org>
- <alpine.DEB.2.11.1501171347290.25464@gentwo.org>
- <20150126172832.GC22681@dhcp22.suse.cz>
- <54C76995.70501@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C76995.70501@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754465AbbA0KuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 05:50:00 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:53458 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752054AbbA0Kt6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 05:49:58 -0500
+Message-ID: <1422355793.14015.45.camel@x220>
+Subject: Re: [PATCH] mn10300: remove redundant hex()
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Arjun Sreedharan <arjun024@gmail.com>
+Cc: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
+Date: Tue, 27 Jan 2015 11:49:53 +0100
+In-Reply-To: <CAJFMrCE8S6oUqYoWHpKoU-T3ukquU3wUnStdVEdt+J4ytQZe9g@mail.gmail.com>
+References: <1417345161-18548-1-git-send-email-arjun024@gmail.com>
+	 <CAJFMrCE8S6oUqYoWHpKoU-T3ukquU3wUnStdVEdt+J4ytQZe9g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Jan 2015 10:49:53.0837 (UTC) FILETIME=[FB9A55D0:01D03A1E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 27-01-15 16:03:57, Vinayak Menon wrote:
-[...]
-> Sure, I can retest.
+Arjun,
 
-Thanks!
+On Mon, 2015-01-26 at 22:49 +0530, Arjun Sreedharan wrote:
+> Ping !!
 
-> Even without highly overloaded workqueues, there can be a delay of HZ in
-> updating the counters. This means reclaim path can be blocked for a second
-> or more, when there aren't really any isolated pages. So we need the fix in
-> too_many_isolated also right ?
+I wouldn't hold my breath waiting for any response, if I were you.
 
-Is this a big deal though? What you are hitting is certainly a corner
-case. I assume your system is trashing heavily already with so few pages
-on the file LRU list.
+> On 30 November 2014 at 16:29, Arjun Sreedharan <arjun024@gmail.com> wrote:
+> > replace rendundant hex() with kernel's hex_to_bin()
+> >
+> > Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+> > ---
+> >  arch/mn10300/kernel/gdb-stub.c | 61 ++++++++++++++++--------------------------
+> >  1 file changed, 23 insertions(+), 38 deletions(-)
 
-Anyway as mentioned in other email I would rather see vmstat data more
-reliable than spread hacks to the code where we see immediate issues.
+You can't actually build a mn10300 kernel with GDBSTUB set since
+v2.6.39, see https://lkml.org/lkml/2014/9/18/387 . Perhaps you still
+managed to build arch/mn10300/kernel/gdb-stub.o manually, bypassing
+kconfig. Or did you just edit out its dependency on DEPRECATED?
 
--- 
-Michal Hocko
-SUSE Labs
+
+Paul Bolle
+
