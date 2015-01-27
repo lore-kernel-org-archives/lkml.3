@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407AbbA0MTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:19:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35210 "EHLO
+	id S1758608AbbA0Mes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:34:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35233 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758580AbbA0MSw (ORCPT
+	with ESMTP id S1758594AbbA0MS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:18:52 -0500
+	Tue, 27 Jan 2015 07:18:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Benc <jbenc@redhat.com>, Stefan Assmann <sassmann@redhat.com>,
-        Govindarajulu Varadarajan <_govind@gmx.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Florian Westphal <fw@strlen.de>, Daniel Borkmann <dborkman@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 071/126] enic: fix rx skb checksum
-Date: Tue, 27 Jan 2015 12:16:16 +0000
-Message-Id: <1422361031-19364-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 072/126] netfilter: conntrack: disable generic tracking for known protocols
+Date: Tue, 27 Jan 2015 12:16:17 +0000
+Message-Id: <1422361031-19364-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -29,76 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Govindarajulu Varadarajan <_govind@gmx.com>
+From: Florian Westphal <fw@strlen.de>
 
-commit 17e96834fd35997ca7cdfbf15413bcd5a36ad448 upstream.
+commit db29a9508a9246e77087c5531e45b2c88ec6988b upstream.
 
-Hardware always provides compliment of IP pseudo checksum. Stack expects
-whole packet checksum without pseudo checksum if CHECKSUM_COMPLETE is set.
+Given following iptables ruleset:
 
-This causes checksum error in nf & ovs.
+-P FORWARD DROP
+-A FORWARD -m sctp --dport 9 -j ACCEPT
+-A FORWARD -p tcp --dport 80 -j ACCEPT
+-A FORWARD -p tcp -m conntrack -m state ESTABLISHED,RELATED -j ACCEPT
 
-kernel: qg-19546f09-f2: hw csum failure
-kernel: CPU: 9 PID: 0 Comm: swapper/9 Tainted: GF          O--------------   3.10.0-123.8.1.el7.x86_64 #1
-kernel: Hardware name: Cisco Systems Inc UCSB-B200-M3/UCSB-B200-M3, BIOS B200M3.2.2.3.0.080820141339 08/08/2014
-kernel: ffff881218f40000 df68243feb35e3a8 ffff881237a43ab8 ffffffff815e237b
-kernel: ffff881237a43ad0 ffffffff814cd4ca ffff8829ec71eb00 ffff881237a43af0
-kernel: ffffffff814c6232 0000000000000286 ffff8829ec71eb00 ffff881237a43b00
-kernel: Call Trace:
-kernel: <IRQ>  [<ffffffff815e237b>] dump_stack+0x19/0x1b
-kernel: [<ffffffff814cd4ca>] netdev_rx_csum_fault+0x3a/0x40
-kernel: [<ffffffff814c6232>] __skb_checksum_complete_head+0x62/0x70
-kernel: [<ffffffff814c6251>] __skb_checksum_complete+0x11/0x20
-kernel: [<ffffffff8155a20c>] nf_ip_checksum+0xcc/0x100
-kernel: [<ffffffffa049edc7>] icmp_error+0x1f7/0x35c [nf_conntrack_ipv4]
-kernel: [<ffffffff814cf419>] ? netif_rx+0xb9/0x1d0
-kernel: [<ffffffffa040eb7b>] ? internal_dev_recv+0xdb/0x130 [openvswitch]
-kernel: [<ffffffffa04c8330>] nf_conntrack_in+0xf0/0xa80 [nf_conntrack]
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffffa049e302>] ipv4_conntrack_in+0x22/0x30 [nf_conntrack_ipv4]
-kernel: [<ffffffff815005ca>] nf_iterate+0xaa/0xc0
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffff81500664>] nf_hook_slow+0x84/0x140
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffff81509dd4>] ip_rcv+0x344/0x380
+One would assume that this allows SCTP on port 9 and TCP on port 80.
+Unfortunately, if the SCTP conntrack module is not loaded, this allows
+*all* SCTP communication, to pass though, i.e. -p sctp -j ACCEPT,
+which we think is a security issue.
 
-Hardware verifies IP & tcp/udp header checksum but does not provide payload
-checksum, use CHECKSUM_UNNECESSARY. Set it only if its valid IP tcp/udp packet.
+This is because on the first SCTP packet on port 9, we create a dummy
+"generic l4" conntrack entry without any port information (since
+conntrack doesn't know how to extract this information).
 
-Cc: Jiri Benc <jbenc@redhat.com>
-Cc: Stefan Assmann <sassmann@redhat.com>
-Reported-by: Sunil Choudhary <schoudha@redhat.com>
-Signed-off-by: Govindarajulu Varadarajan <_govind@gmx.com>
-Reviewed-by: Jiri Benc <jbenc@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+All subsequent packets that are unknown will then be in established
+state since they will fallback to proto_generic and will match the
+'generic' entry.
+
+Our originally proposed version [1] completely disabled generic protocol
+tracking, but Jozsef suggests to not track protocols for which a more
+suitable helper is available, hence we now mitigate the issue for in
+tree known ct protocol helpers only, so that at least NAT and direction
+information will still be preserved for others.
+
+ [1] http://www.spinics.net/lists/netfilter-devel/msg33430.html
+
+Joint work with Daniel Borkmann.
+
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/cisco/enic/enic_main.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ net/netfilter/nf_conntrack_proto_generic.c | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
-index f32f828b7f3d..fb9708d4b8b5 100644
---- a/drivers/net/ethernet/cisco/enic/enic_main.c
-+++ b/drivers/net/ethernet/cisco/enic/enic_main.c
-@@ -1041,10 +1041,14 @@ static void enic_rq_indicate_buf(struct vnic_rq *rq,
- 				     PKT_HASH_TYPE_L4 : PKT_HASH_TYPE_L3);
- 		}
+diff --git a/net/netfilter/nf_conntrack_proto_generic.c b/net/netfilter/nf_conntrack_proto_generic.c
+index d25f29377648..957c1db66652 100644
+--- a/net/netfilter/nf_conntrack_proto_generic.c
++++ b/net/netfilter/nf_conntrack_proto_generic.c
+@@ -14,6 +14,30 @@
  
--		if ((netdev->features & NETIF_F_RXCSUM) && !csum_not_calc) {
--			skb->csum = htons(checksum);
--			skb->ip_summed = CHECKSUM_COMPLETE;
--		}
-+		/* Hardware does not provide whole packet checksum. It only
-+		 * provides pseudo checksum. Since hw validates the packet
-+		 * checksum but not provide us the checksum value. use
-+		 * CHECSUM_UNNECESSARY.
-+		 */
-+		if ((netdev->features & NETIF_F_RXCSUM) && tcp_udp_csum_ok &&
-+		    ipv4_csum_ok)
-+			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ static unsigned int nf_ct_generic_timeout __read_mostly = 600*HZ;
  
- 		if (vlan_stripped)
- 			__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), vlan_tci);
++static bool nf_generic_should_process(u8 proto)
++{
++	switch (proto) {
++#ifdef CONFIG_NF_CT_PROTO_SCTP_MODULE
++	case IPPROTO_SCTP:
++		return false;
++#endif
++#ifdef CONFIG_NF_CT_PROTO_DCCP_MODULE
++	case IPPROTO_DCCP:
++		return false;
++#endif
++#ifdef CONFIG_NF_CT_PROTO_GRE_MODULE
++	case IPPROTO_GRE:
++		return false;
++#endif
++#ifdef CONFIG_NF_CT_PROTO_UDPLITE_MODULE
++	case IPPROTO_UDPLITE:
++		return false;
++#endif
++	default:
++		return true;
++	}
++}
++
+ static inline struct nf_generic_net *generic_pernet(struct net *net)
+ {
+ 	return &net->ct.nf_ct_proto.generic;
+@@ -67,7 +91,7 @@ static int generic_packet(struct nf_conn *ct,
+ static bool generic_new(struct nf_conn *ct, const struct sk_buff *skb,
+ 			unsigned int dataoff, unsigned int *timeouts)
+ {
+-	return true;
++	return nf_generic_should_process(nf_ct_protonum(ct));
+ }
+ 
+ #if IS_ENABLED(CONFIG_NF_CT_NETLINK_TIMEOUT)
 -- 
 2.1.4
 
