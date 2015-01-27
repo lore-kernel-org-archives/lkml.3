@@ -1,115 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205AbbA0IEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 03:04:49 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:48039 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757278AbbA0IEs (ORCPT
+	id S1757700AbbA0IG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 03:06:29 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:48275 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbbA0IG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 03:04:48 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 27 Jan 2015 17:06:03 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        akpm@linux-foundation.org, lauraa@codeaurora.org
-Subject: Re: [PATCH v2 2/3] mm: cma: allocation trigger
-Message-ID: <20150127080603.GC11358@js1304-P5Q-DELUXE>
-References: <1422282365-20015-1-git-send-email-sasha.levin@oracle.com>
- <1422282365-20015-3-git-send-email-sasha.levin@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422282365-20015-3-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Jan 2015 03:06:26 -0500
+Date: Tue, 27 Jan 2015 00:06:25 -0800 (PST)
+Message-Id: <20150127.000625.1477155165878386119.davem@davemloft.net>
+To: vivien.didelot@savoirfairelinux.com
+Cc: netdev@vger.kernel.org, linux@roeck-us.net, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: Re: [PATCH] net: dsa/mv88e6352: make mv88e6352_wait generic
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1422056081-30088-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1422056081-30088-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 27 Jan 2015 00:06:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 09:26:04AM -0500, Sasha Levin wrote:
-> Provides a userspace interface to trigger a CMA allocation.
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Fri, 23 Jan 2015 18:34:41 -0500
+
+> Some busy bits are available in the global register 1, such as the ATU
+> Busy bit. We may want to use this function to wait for them to change,
+> so add a new parameter to mv88e6352_wait() instead of hard-coding
+> REG_GLOBAL2.
 > 
-> Usage:
+> In the meantime, since the REG_READ() macro already checks for error,
+> remove the redundant check for ret < 0.
 > 
-> 	echo [pages] > alloc
-> 
-> This would provide testing/fuzzing access to the CMA allocation paths.
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  mm/cma_debug.c |   60 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 58 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/cma_debug.c b/mm/cma_debug.c
-> index 3a25413..39c7116 100644
-> --- a/mm/cma_debug.c
-> +++ b/mm/cma_debug.c
-> @@ -7,9 +7,22 @@
->  
->  #include <linux/debugfs.h>
->  #include <linux/cma.h>
-> +#include <linux/list.h>
-> +#include <linux/kernel.h>
-> +#include <linux/dma-contiguous.h>
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 
-dma-contiguous.h doesn't needed now.
-
-> +#include <linux/slab.h>
->  
->  #include "cma.h"
->  
-> +struct cma_mem {
-> +	struct hlist_node node;
-> +	struct page *p;
-> +	unsigned long n;
-> +};
-> +
-> +static HLIST_HEAD(cma_mem_head);
-> +static DEFINE_SPINLOCK(cma_mem_head_lock);
-> +
->  static struct dentry *cma_debugfs_root;
-
-How about keeping cma_mem_head on each cma area separately?
-
->  static int cma_debugfs_get(void *data, u64 *val)
-> @@ -23,8 +36,48 @@ static int cma_debugfs_get(void *data, u64 *val)
->  
->  DEFINE_SIMPLE_ATTRIBUTE(cma_debugfs_fops, cma_debugfs_get, NULL, "%llu\n");
->  
-> -static void cma_debugfs_add_one(struct cma *cma, int idx)
-> +static void cma_add_to_cma_mem_list(struct cma_mem *mem)
-> +{
-> +	spin_lock(&cma_mem_head_lock);
-> +	hlist_add_head(&mem->node, &cma_mem_head);
-> +	spin_unlock(&cma_mem_head_lock);
-> +}
-> +
-> +static int cma_alloc_mem(struct cma *cma, int count)
->  {
-> +	struct cma_mem *mem;
-> +	struct page *p;
-> +
-> +	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
-> +	if (!mem)
-> +		return -ENOMEM;
-> +
-> +	p = cma_alloc(cma, count, CONFIG_CMA_ALIGNMENT);
-> +	if (!p) {
-> +		kfree(mem);
-> +		return -ENOMEM;
-> +	}
-
-CONFIG_CMA_ALIGNMENT looks not good. It means just maximum aligment
-so it is odd to use this value in testing. Is there special meaning
-to use it here?
-
-Could we also get alignment parameter from user? Something like below.
-
-echo "4 1" > alloc
-4 for number of pages
-1 for alignment.
-
-If it is impossible, just 0 looks better than CONFIG_CMA_ALIGNMENT.
-
-Thanks.
+Applied.
