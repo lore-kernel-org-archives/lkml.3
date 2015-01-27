@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637AbbA0XAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 18:00:53 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:50771 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745AbbA0XAv (ORCPT
+	id S1755095AbbA0XBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 18:01:41 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:47555 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751AbbA0XBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 18:00:51 -0500
-X-Auth-Info: tOfLkr20iEXyNDjhUYAF2SDBBBTaCveDZcSzvHP4JE0=
-From: Marek Vasut <marex@denx.de>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Subject: Re: [PATCH] staging: iio: adc: mxs-lradc: Change type in printf format string
-Date: Tue, 27 Jan 2015 23:59:58 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        "Lars-Peter Clausen" <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Darshana Padmadas <darshanapadmadas@gmail.com>,
-        Aybuke Ozdemir <aybuke.147@gmail.com>,
-        Vaishali Thakkar <vthakkar1994@gmail.com>,
-        Robert Hodaszi <robert.hodaszi@digi.com>,
-        Brian Vandre <bvandre@gmail.com>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-References: <1422397413-9447-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1422397413-9447-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Tue, 27 Jan 2015 18:01:39 -0500
+Date: Tue, 27 Jan 2015 15:01:41 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: arm@kernel.org, Mark Rutland <mark.rutland@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 3/4] ARM: digicolor: add minimal device tree
+ description
+Message-ID: <20150127230141.GA11263@quad.lixom.net>
+References: <cover.1421219953.git.baruch@tkos.co.il>
+ <474d0849bb30ab4ec323fa4c1bc67b30b31d3884.1421219953.git.baruch@tkos.co.il>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201501272359.59011.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <474d0849bb30ab4ec323fa4c1bc67b30b31d3884.1421219953.git.baruch@tkos.co.il>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 27, 2015 at 11:23:33 PM, Rickard Strandqvist wrote:
-> Wrong type in printf format string, requires 'int'
-> but the argument type is 'unsigned int'
+Hi,
+
+On Wed, Jan 14, 2015 at 10:40:32AM +0200, Baruch Siach wrote:
+> cx92755.dtsi describes CX92755 on chip peripherals. conexant_equinox.dts
+> describes the Equinox evaluation board for the CX92755 SoC.
 > 
-> This was found using a static code analysis program called cppcheck
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+> ---
+>  arch/arm/boot/dts/Makefile             |   1 +
+>  arch/arm/boot/dts/conexant_equinox.dts |  74 +++++++++++++++++++++++
+>  arch/arm/boot/dts/cx92755.dtsi         | 107 +++++++++++++++++++++++++++++++++
+>  3 files changed, 182 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/conexant_equinox.dts
+>  create mode 100644 arch/arm/boot/dts/cx92755.dtsi
 > 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 91bd5bd62857..fbeb65eaddda 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -75,6 +75,7 @@ dtb-$(CONFIG_ARCH_BRCMSTB) += \
+>  	bcm7445-bcm97445svmb.dtb
+>  dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
+>  	da850-evm.dtb
+> +dtb-$(CONFIG_ARCH_DIGICOLOR) += conexant_equinox.dtb
+>  dtb-$(CONFIG_ARCH_EFM32) += efm32gg-dk3750.dtb
+>  dtb-$(CONFIG_ARCH_EXYNOS) += exynos3250-monk.dtb \
+>  	exynos3250-rinato.dtb \
+> diff --git a/arch/arm/boot/dts/conexant_equinox.dts b/arch/arm/boot/dts/conexant_equinox.dts
+> new file mode 100644
+> index 000000000000..f33bf5635d47
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/conexant_equinox.dts
 
-Makes sense, thanks!
+To segment the namespace a bit, we ask that you prefix your dts files with the
+platform. What would be a suitable prefix here? conexant? digicolor?
 
-Reviewed-by: Marek Vasut <marex@denx.de>
 
-Best regards,
-Marek Vasut
+-Olof
