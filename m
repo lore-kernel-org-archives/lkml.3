@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbbA0Gel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 01:34:41 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:62779 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082AbbA0GeW (ORCPT
+	id S1752237AbbA0Gqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:46:53 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:52662 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbbA0Gqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 01:34:22 -0500
-From: Victor Kamensky <victor.kamensky@linaro.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        Avi Kivity <avi@cloudius-systems.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Blanchard <anton@samba.org>, Dave Martin <Dave.Martin@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH V3 2/2] perf symbols: debuglink should take symfs option into account
-Date: Mon, 26 Jan 2015 22:34:02 -0800
-Message-Id: <1422340442-4673-3-git-send-email-victor.kamensky@linaro.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1422340442-4673-1-git-send-email-victor.kamensky@linaro.org>
-References: <1422340442-4673-1-git-send-email-victor.kamensky@linaro.org>
+	Tue, 27 Jan 2015 01:46:50 -0500
+Date: Tue, 27 Jan 2015 09:46:47 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Calvin Owens <calvinowens@fb.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        linux-kernel@vger.kernel.org, kernel-team@fb.com,
+        Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [RFC][PATCH v2] procfs: Always expose /proc/<pid>/map_files/ and
+ make it readable
+Message-ID: <20150127064647.GH651@moon>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+ <20150114152501.GB9820@node.dhcp.inet.fi>
+ <20150114153323.GF2253@moon>
+ <20150114204653.GA26698@mail.thefacebook.com>
+ <20150114211613.GH2253@moon>
+ <20150122024554.GB23762@mail.thefacebook.com>
+ <20150124031544.GA1992748@mail.thefacebook.com>
+ <20150126124731.GA26916@node.dhcp.inet.fi>
+ <20150126210054.GG651@moon>
+ <20150126154346.c63c512e5821e9e0ea31f759@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150126154346.c63c512e5821e9e0ea31f759@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently code that tries to read corresponding debug symbol
-file from .gnu_debuglink section (DSO_BINARY_TYPE__DEBUGLINK)
-does not take in account symfs option, so filename__read_debuglink
-function cannot open ELF file, if symfs option is used.
+On Mon, Jan 26, 2015 at 03:43:46PM -0800, Andrew Morton wrote:
+> > 
+> > Looks good to me, thanks! Though I would really appreciate if someone
+> > from security camp take a look as well.
+> 
+> hm, who's that.  Kees comes to mind.
 
-Fix is to add proper handling of symfs as it is done in other
-places: use __symbol__join_symfs function to get real file name
-of target ELF file.
+yup, I managed to forget CC him.
 
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Cc: David Ahern <dsahern@gmail.com>
-Acked-and-tested-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/dso.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> And reviewers' task would be a heck of a lot easier if they knew what
+> /proc/pid/map_files actually does.  This:
+> 
+> akpm3:/usr/src/25> grep -r map_files Documentation 
+> akpm3:/usr/src/25> 
+> 
+> does not help.
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 45be944..ca8d8d5 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -45,13 +45,13 @@ int dso__read_binary_type_filename(const struct dso *dso,
- 	case DSO_BINARY_TYPE__DEBUGLINK: {
- 		char *debuglink;
- 
--		strncpy(filename, dso->long_name, size);
--		debuglink = filename + dso->long_name_len;
-+		len = __symbol__join_symfs(filename, size, dso->long_name);
-+		debuglink = filename + len;
- 		while (debuglink != filename && *debuglink != '/')
- 			debuglink--;
- 		if (*debuglink == '/')
- 			debuglink++;
--		ret = filename__read_debuglink(dso->long_name, debuglink,
-+		ret = filename__read_debuglink(filename, debuglink,
- 					       size - (debuglink - filename));
- 		}
- 		break;
--- 
-1.9.3
+Sigh. Imagine, for some reason I though we've the docs for that
+entry, probably i though that way because of many fdinfo snippets
+i've putted into /proc docs. my bad, sorry. I'll try to prepare
+docs today.
 
+> The 640708a2cff7f81 changelog says:
+> 
+> :     This one behaves similarly to the /proc/<pid>/fd/ one - it contains
+> :     symlinks one for each mapping with file, the name of a symlink is
+> :     "vma->vm_start-vma->vm_end", the target is the file.  Opening a symlink
+> :     results in a file that point exactly to the same inode as them vma's one.
+> :     
+> :     For example the ls -l of some arbitrary /proc/<pid>/map_files/
+> :     
+> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
+> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
+> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
+> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
+> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
+> 
+> afacit this info is also available in /proc/pid/maps, so things
+> shouldn't get worse if the /proc/pid/map_files permissions are at least
+> as restrictive as the /proc/pid/maps permissions.  Is that the case? 
+> (Please add to changelog).
+> 
+> There's one other problem here: we're assuming that the map_files
+> implementation doesn't have bugs.  If it does have bugs then relaxing
+> permissions like this will create new vulnerabilities.  And the
+> map_files implementation is surprisingly complex.  Is it bug-free?
+
+I didn't find any bugs in map-files (and we use it for long time already)
+so I think it is safe.
