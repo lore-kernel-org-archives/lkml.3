@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759086AbbA0SEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:04:15 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:42002 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759026AbbA0SEL (ORCPT
+	id S1759116AbbA0SEY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:04:24 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:40937 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759092AbbA0SEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:04:11 -0500
+	Tue, 27 Jan 2015 13:04:20 -0500
+Message-ID: <54C7D31D.6090109@ahsoftware.de>
+Date: Tue, 27 Jan 2015 19:04:13 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1501270205210.966@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1501270205210.966@skynet.skynet.ie>
-Date: Tue, 27 Jan 2015 10:04:10 -0800
-X-Google-Sender-Auth: VojYMIkXNohZ5OleNCqI3o1eA2I
-Message-ID: <CA+55aFz8yWK9ndqgLSDaaTeCPb5zHihjJvCH3r0y2n8CsoExHw@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Airlie <airlied@linux.ie>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arend van Spriel <arend@broadcom.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
+        Richard Weinberger <richard@nod.at>, linux-mmc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
+References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de> <CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com> <54C77E69.7050600@ahsoftware.de> <20150127120855.GA9254@pd.tnic> <54C7816A.8050800@ahsoftware.de> <54C78524.3070901@nod.at> <54C7881F.6020501@ahsoftware.de> <20150127142120.GA3351@pd.tnic> <54C7C2EC.7010605@ahsoftware.de> <20150127172415.GC25043@home.goodmis.org> <54C7CD1C.1060601@ahsoftware.de> <54C7D08E.8030309@broadcom.com>
+In-Reply-To: <54C7D08E.8030309@broadcom.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 6:06 PM, Dave Airlie <airlied@linux.ie> wrote:
->
-> are available in the git repository at:
->
->   git://people.freedesktop.org/~airlied/linux drm-fixes
+Am 27.01.2015 um 18:53 schrieb Arend van Spriel:
 
-No they aren't, actually, because you've screwed up your repository.
+> Ever used rgrep or grep -R. Anyway, if this is you use-case what about
+> the gazillion other pieces of info in the kernel. When moving in that
+> direction you can be sure dmesg will flush out.
 
-It looks like you were using an alternates that has gone away:
+Sorry, never heard about that -R and wasn't aware that the kernel does a 
+lot of things. ;)
 
-   remote: error: object directory
-/srv/anongit.freedesktop.org/git/nouveau/linux-2.6/objects does not
-exist; check .git/objects/info/alternates.
-   remote: error: Could not read fe06a892edbcd0cd42ea5928e4492a337e3bd90c
-   remote: fatal: bad tree object fe06a892edbcd0cd42ea5928e4492a337e3bd90c
-   remote: aborting due to possible repository corruption on the remote side.
+I don't want that ftrace stuff appears in dmesg, but I like to do
 
-it really looks like you started your repo by doing a shared clone
-from an insane source (ie the nouveau tree), and then the nouveau tree
-got renamed or deleted (perhaps somebody decided that the whole
-"linux-2.6" naming doesn't make sense any more, since we haven't been
-at 2.6 for years). So now your repository depends on another repo that
-is gone.
+dmesg | grep -i mmc (or whatever is of interest)
 
-It's should be trivially fixable by just editing the git "alternates"
-file to point to the proper base again, since that fe06a892edbc object
-is definitely part of my base kernel, but basically you shouldn't do
-shared clones unless you know you can really *rely* on the clone
-you're sharing from. Doing it from some random side project like the
-nouveau tree sounds like a bad bad idea.
+instead of
 
-                            Linus
+grep -Rsi mmc /sys/<a hundred tabs to search a matching direcory> or 
+something like
+
+find /sys -iname '*mmc*' -exec <more silly complications> \;
+
+Alexander Holler
