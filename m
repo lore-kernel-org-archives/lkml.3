@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199AbbA0Lbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 06:31:48 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:36557 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754837AbbA0Lal (ORCPT
+	id S1758098AbbA0Laq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:30:46 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:36012 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbbA0Lak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 06:30:41 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-ec-54c7764b5b2a
+	Tue, 27 Jan 2015 06:30:40 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-15-54c7764c6b33
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Dmitry Artamonow <mad_soft@inbox.ru>, Marek Belisko <marek@goldelico.com>,
         Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
@@ -17,24 +17,24 @@ To: Dmitry Artamonow <mad_soft@inbox.ru>, Marek Belisko <marek@goldelico.com>,
         platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [RFT PATCH 1/4] power_supply: twl4030_madc: Check return value of
+Subject: [RFT PATCH 2/4] compal-laptop: Check return value of
  power_supply_register
-Date: Tue, 27 Jan 2015 12:30:18 +0100
-Message-id: <1422358221-13199-2-git-send-email-k.kozlowski@samsung.com>
+Date: Tue, 27 Jan 2015 12:30:19 +0100
+Message-id: <1422358221-13199-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1422358221-13199-1-git-send-email-k.kozlowski@samsung.com>
 References: <1422358221-13199-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xK7reZcdDDNZeYLNYcqKbxWLSk/fM
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xK7o+ZcdDDOa94bNYcqKbxWLSk/fM
 	Fl0LDSwmrpzMbPH6haHF5V1z2Cw+9x5htNjedpTF4t/SLWwWq/e8YLY4vbvEYsHGR4wOPB47
-	Z91l91jz/hSzx7Frd1g8Nq/Q8ti0qpPNo2/LKkaPz5vkAtijuGxSUnMyy1KL9O0SuDLOfrjH
-	UvCFp6JtwRzWBsYe7i5GDg4JAROJF9tFuhg5gUwxiQv31rN1MXJxCAksZZRYsespC4TTxyRx
-	b9lpRpAqNgFjic3Ll4BViQi0MEvsXHiKBSTBLOAp8e7vQ3YQW1ggSWLhxmlgNouAqsSn9iVg
-	NbwC7hLd174wQayTkzh5bDIriM0p4CHxa/1esBohoJor08+zTGDkXcDIsIpRNLU0uaA4KT3X
-	SK84Mbe4NC9dLzk/dxMjJCi/7mBceszqEKMAB6MSD29CyfEQIdbEsuLK3EOMEhzMSiK8XhFA
-	Id6UxMqq1KL8+KLSnNTiQ4xMHJxSDYzhmkLX04/aKhz6uLDb47nLv68r42ZIzPCfnrBP79Rd
-	hXddN8NWMAlpJGTOZFseNHmn0/87O+5breR3Wf7Es3X5r4MfbWLnGz60fRzjpnTDYPOcjnV+
-	Fw92dG//pLOUO67o897ghlUF+1rstNWzr9y/+iC6+rCqx3Gu6x7b9712KGu9+0V12TkDJZbi
-	jERDLeai4kQARRP5LigCAAA=
+	Z91l91jz/hSzx7Frd1g8Nq/Q8ti0qpPNo2/LKkaPz5vkAtijuGxSUnMyy1KL9O0SuDIaH15n
+	KrjIV/Fmnk8D4x6eLkYODgkBE4npHcVdjJxAppjEhXvr2boYuTiEBJYySlxv2cwO4fQxSdzd
+	s4oZpIpNwFhi8/IlYFUiAi3MEjsXnmIBSTALeEq8+/uQHcQWFgiVeL52GhOIzSKgKnF82Saw
+	Zl4Bd4nr67+yQqyTkzh5bDKYzSngIfFr/V6wOUJANVemn2eZwMi7gJFhFaNoamlyQXFSeq6h
+	XnFibnFpXrpecn7uJkZISH7Zwbj4mNUhRgEORiUeXo6i4yFCrIllxZW5hxglOJiVRHi9IoBC
+	vCmJlVWpRfnxRaU5qcWHGJk4OKUaGL3y7srU6u9eo3Fv4m4Rj+qE7qWsKgtUH6vvPfA421t+
+	mb7rOg2deZn73r/fM/HwJ+8ZpyZklCXJMMkFMtWyzn9+pL7dvC/h8jbGtoDNQT/zWR96XP0a
+	1Xppy8Q5pX/eSB/YJlumZfb37AR7i6zI5UUV862/r0gOtRe2KLdNVtwSN0vvSffnGUosxRmJ
+	hlrMRcWJAGLlTJsnAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -47,39 +47,47 @@ actually registered.
 This could lead to memory corruption because power_supply_unregister()
 unconditionally cleans up given power supply.
 
+Fix this by checking return status of power_supply_register() call. In
+case of failure, unregister the hwmon device and fail the probe. Add a
+fixme note about missing hwmon_device_unregister() in driver removal.
+
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: da0a00ebc239 ("power: Add twl4030_madc battery driver.")
+Fixes: 9be0fcb5ed46 ("compal-laptop: add JHL90, battery & hwmon interface")
 Cc: <stable@vger.kernel.org>
 ---
- drivers/power/twl4030_madc_battery.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/platform/x86/compal-laptop.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/power/twl4030_madc_battery.c b/drivers/power/twl4030_madc_battery.c
-index 7ef445a6cfa6..cf907609ec49 100644
---- a/drivers/power/twl4030_madc_battery.c
-+++ b/drivers/power/twl4030_madc_battery.c
-@@ -192,6 +192,7 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
- {
- 	struct twl4030_madc_battery *twl4030_madc_bat;
- 	struct twl4030_madc_bat_platform_data *pdata = pdev->dev.platform_data;
-+	int ret = 0;
+diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
+index 15c0fab2bfa1..cf55a9246f12 100644
+--- a/drivers/platform/x86/compal-laptop.c
++++ b/drivers/platform/x86/compal-laptop.c
+@@ -1036,12 +1036,16 @@ static int compal_probe(struct platform_device *pdev)
  
- 	twl4030_madc_bat = kzalloc(sizeof(*twl4030_madc_bat), GFP_KERNEL);
- 	if (!twl4030_madc_bat)
-@@ -216,9 +217,11 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
+ 	/* Power supply */
+ 	initialize_power_supply_data(data);
+-	power_supply_register(&compal_device->dev, &data->psy);
++	err = power_supply_register(&compal_device->dev, &data->psy);
++	if (err < 0)
++		goto psy_err;
  
- 	twl4030_madc_bat->pdata = pdata;
- 	platform_set_drvdata(pdev, twl4030_madc_bat);
--	power_supply_register(&pdev->dev, &twl4030_madc_bat->psy);
-+	ret = power_supply_register(&pdev->dev, &twl4030_madc_bat->psy);
-+	if (ret < 0)
-+		kfree(twl4030_madc_bat);
+ 	platform_set_drvdata(pdev, data);
  
--	return 0;
-+	return ret;
- }
+ 	return 0;
  
- static int twl4030_madc_battery_remove(struct platform_device *pdev)
++psy_err:
++	hwmon_device_unregister(hwmon_dev);
+ remove:
+ 	sysfs_remove_group(&pdev->dev.kobj, &compal_platform_attr_group);
+ 	return err;
+@@ -1072,6 +1076,7 @@ static int compal_remove(struct platform_device *pdev)
+ 
+ 	data = platform_get_drvdata(pdev);
+ 	power_supply_unregister(&data->psy);
++	/* FIXME: missing hwmon_device_unregister() */
+ 
+ 	sysfs_remove_group(&pdev->dev.kobj, &compal_platform_attr_group);
+ 
 -- 
 1.9.1
 
