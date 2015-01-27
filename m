@@ -1,63 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932697AbbA0SOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:14:17 -0500
-Received: from svenfoo.org ([82.94.215.22]:58984 "EHLO mail.zonque.de"
+	id S1758930AbbA0SPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:15:10 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50237 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456AbbA0SOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:14:15 -0500
-Message-ID: <54C7D573.7080809@zonque.org>
-Date: Tue, 27 Jan 2015 19:14:11 +0100
-From: Daniel Mack <daniel@zonque.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S932456AbbA0SPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 13:15:06 -0500
+Message-ID: <54C7D576.6030502@ti.com>
+Date: Tue, 27 Jan 2015 13:14:14 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>
-CC: Tom Gundersen <teg@jklm.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
-        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>	<54BE5DC8.70706@gmail.com>	<54BE9D08.7010804@zonque.org>	<54BF805B.4000609@gmail.com>	<54BFDAAA.50203@zonque.org>	<54C0CE8A.5080805@gmail.com>	<20150123155402.GB2159@kroah.com>	<54C65267.7090905@gmail.com>	<CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>	<54C66F30.8050108@gmail.com> <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com> <54C7D0A3.4000900@gmail.com>
-In-Reply-To: <54C7D0A3.4000900@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH v4 4/6] of/pci: add of_pci_dma_configure() update dma
+ configuration
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-5-git-send-email-m-karicheri2@ti.com> <20150123234124.GW29776@google.com> <54C6CCF3.7080308@ti.com> <CAErSpo4w0zVCmXk2D2Qk5W3kceS9Wk+=jqHBDwk6HUXWwXdq_Q@mail.gmail.com>
+In-Reply-To: <CAErSpo4w0zVCmXk2D2Qk5W3kceS9Wk+=jqHBDwk6HUXWwXdq_Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+On 01/26/2015 06:59 PM, Bjorn Helgaas wrote:
+> On Mon, Jan 26, 2015 at 5:25 PM, Murali Karicheri<m-karicheri2@ti.com>  wrote:
+>> On 01/23/2015 06:41 PM, Bjorn Helgaas wrote:
+>>>
+>>> On Fri, Jan 23, 2015 at 05:32:37PM -0500, Murali Karicheri wrote:
+>>>>
+>>>> Add of_pci_dma_configure() to allow updating the dma configuration
+>>>> of the pci device using the configuration from DT of the parent of
+>>>> the root bridge device.
+>>>>
+   -- Cut ---
+>>>>
+>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>>>> ---
+>>>>    drivers/of/of_pci.c    |   39 +++++++++++++++++++++++++++++++++++++++
+>>>>    include/linux/of_pci.h |   12 ++++++++++++
+>>>>    2 files changed, 51 insertions(+)
+>>>>
+>>>> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+>>>> index 88471d3..34878c9 100644
+>>>> --- a/drivers/of/of_pci.c
+>>>> +++ b/drivers/of/of_pci.c
+>>>> @@ -2,6 +2,7 @@
+>>>>    #include<linux/export.h>
+>>>>    #include<linux/of.h>
+>>>>    #include<linux/of_address.h>
+>>>> +#include<linux/of_device.h>
+>>>>    #include<linux/of_pci.h>
+>>>>    #include<linux/slab.h>
+>>>>
+>>>> @@ -229,6 +230,44 @@ parse_failed:
+>>>>          return err;
+>>>>    }
+>>>>    EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
+>>>> +
+>>>> +/**
+>>>> + * of_get_pci_root_bridge_parent - get the OF node of the root bridge's
+>>>> parent
+>>>> + * @dev: ptr to pci_dev struct of the pci device
+>>>> + *
+>>>> + * This function will traverse the bus up to the root bus starting with
+>>>> + * the child and return the OF node ptr to root bridge device's parent
+>>>> device.
+>>>> + */
+>>>> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
+>>>
+>>>
+>>> I'm not an OF person, but this interface seems like it might be too
+>>> special-purpose.  Maybe it would be enough to add
+>>> "of_get_pci_root_bridge()", and the caller could do this:
+>>>
+>>>       struct device *bridge = of_get_pci_root_bridge(dev);
+>>>       struct device_node *parent_np = bridge->parent->of_node;
+>>>
+>>> Also, the name "of_get_..." suggests that it increments a refcount, as
+>>> of_get_parent() does.  But you aren't doing anything with the refcount.
+>>>
+>>> But I guess an "of_get_pci_root_bridge()" isn't doing anything OF-related,
+>>> so maybe we should just add a "pci_get_host_bridge(struct pci_dev *)"
+>>> to PCI instead.
+>>
+>>
+>> Bjorn,
+>>
+>> Thanks for the comment.
+>>
+>> I think adding pci_get_host_bridge() is a good idea. There is already
+>> similar function in host-bridge.c. I have added this function re-using
+>> existing function find_pci_root_bus(). See the incremental diff below after
+>> this change. Does this look good?
+>
+> I like the implementation, but I think either we need to take a
+> reference on the host bridge, or change the name to  something like
+> "pci_find_host_bridge()", because using "_get_" is conventional for
+> functions that acquire a reference.
+>
+> Since host bridges are hot-pluggable, at least in theory, I vote for
+> taking a reference.  Then of course, you'd have to add code to drop
+> the reference when you're finished with it.
+>
+Bjorn,
 
-On 01/27/2015 06:53 PM, Michael Kerrisk (man-pages) wrote:
-> On 01/27/2015 04:23 PM, David Herrmann wrote:
+Thanks. I agree with your suggestion even though the convention is not 
+followed fully :) of_pci_get_devfn(), of_get_pci_domain_nr(), 
+of_pci_get_host_bridge_resources() are some of those functions not 
+following the convention. I plan to change the function as below. Also 
+want to name functions as pci_get/put_host_bridge_device() as existing 
+function find_pci_host_bridge() is actually returning ptr to struct 
+pci_host_bridge  vs the new function returning ptr to device. Here are 
+the new functions and how they will be used. Please review and respond 
+so that I can avoid a re-spin.
 
->> I only expect a handful of users to call the ioctls directly. The
->> libraries that implement the payload-marshaling, in particular. It's a
->> similar situation with netlink.
-> 
-> Thanks, David, for the clarification. I think it would have been helpful
-> to have that more clearly stated up front, especially as some comments 
-> in this thread, such as the above, could be interpreted to mean quite 
-> the opposite. Can I suggest that some text on this point be added to 
-> kdbus.txt?
+in linux/include/pci.h add the prototypes of 
+pci_get/put_host_bridge_device().
 
-We're currently working on an a set of comprehensive man pages to
-document all the commands in the API, along with every struct, enum etc.
-We do that so that developers are able to actually understand every
-detail of the API, even though most people - as David explained - will
-not use that interface directly in the first place but let one of the
-high-level libraries help them integrate D-Bus functionality into their
-applications.
+in drivers/pci/host-bridge.c add two new functions.
 
-If you want, have a look at the upstream repository for a 	preliminary
-version of the new docs.
+struct device *pci_get_host_bridge_device(struct pci_dev *dev)
+{
+	struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
+	struct device *bridge = root_bus->bridge;
+
+	kobject_get(&bridge->kobj);
+	return bridge;
+}
+
+void  pci_put_host_bridge_device(struct pci_dev *dev)
+{
+	struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
+	struct device *bridge = root_bus->bridge;
+
+	kobject_put(&bridge->kobj);
+}
+
+drivers/of/of_pci.c
+
+void of_pci_dma_configure(struct pci_dev *pci_dev)
+{
+	struct device *dev = &pci_dev->dev;
+	struct device *bridge = pci_get_host_bridge_device(pci_dev);
+
+	of_dma_configure(dev, bridge->parent->of_node);
+	pci_put_host_bridge_device(pci_dev);
+}
+
+Murali
+
+> Bjorn
+>
+
+>>>>
+>>
+>>
+>> --
+>> Murali Karicheri
+>> Linux Kernel, Texas Instruments
 
 
-Thanks,
-Daniel
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
