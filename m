@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279AbbA0JoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 04:44:06 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:52960 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753836AbbA0Jnz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 04:43:55 -0500
-Message-ID: <1422351833.14015.20.camel@x220>
-Subject: arm64: USB_ARCH_HAS_EHCI
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Thierry Reding <treding@nvidia.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 27 Jan 2015 10:43:53 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1757677AbbA0Jov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 04:44:51 -0500
+Received: from smtp2-g21.free.fr ([212.27.42.2]:1137 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754429AbbA0Jos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 04:44:48 -0500
+Message-ID: <54C75E09.6050002@free.fr>
+Date: Tue, 27 Jan 2015 10:44:41 +0100
+From: Mason <mpeg.blue@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:35.0) Gecko/20100101 Firefox/35.0 SeaMonkey/2.32
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>,
+        Linux ARM <linux-arm-kernel@lists.infradead.org>
+Subject: Embedded white space in out-of-tree module full pathname
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Jan 2015 09:43:54.0162 (UTC) FILETIME=[C373E120:01D03A15]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul,
+Hello,
 
-Your commit d035fdfa27ac ("arm64: Add Tegra132 support") is included in
-today's linux-next (ie, next-20150127). I noticed because a script I use
-to check linux-next spotted a minor problem with it.
+I'd like some confirmation that this is either not supported, or that
+I'm doing something obviously wrong. (Kernel 3.14 if it matters.)
 
-It adds a select for the Kconfig symbol USB_ARCH_HAS_EHCI. That Kconfig
-was obsoleted in v3.11 and removed in v3.15. See commit b797b76fb464
-("usb: host: remove USB_ARCH_HAS_?HCI"). That select is now a nop.
+Suppose the source code for an out-of-tree kernel module is stored e.g.
+in "/tmp/foo bar/module" (note the embedded space in the path name)
 
-Should I submit the trivial patch to remove that line or do you prefer
-to do that yourself?
+Here is the Makefile template I'm using. (Maybe it's wrong.)
 
-Thanks,
+/tmp/foo bar/module$ cat Makefile
+KDIR          ?= /home/mason/linux-3.14
+ARCH          ?= arm
+CROSS_COMPILE ?= arm-none-linux-gnueabi-
+
+obj-m += mytest.o
+
+all:
+	make -C $(KDIR) M="$$PWD"
+
+clean:
+	make -C $(KDIR) M="$$PWD" clean
+
+/tmp/foo bar/module$ make
+make -C /home/mason/linux-3.14 M="$PWD"
+make[1]: Entering directory `/home/mason/linux-3.14'
+scripts/Makefile.build:44: /tmp/foo/Makefile: No such file or directory
+make[2]: *** No rule to make target `/tmp/foo/Makefile'.  Stop.
+make[1]: *** [_module_/tmp/foo] Error 2
+make[1]: Leaving directory `/home/mason/linux-3.14'
+make: *** [all] Error 2
 
 
-Paul Bolle
+Does the kernel build system support building an out-of-tree module whose
+full pathname contains embedded white space, like in my example?
 
+Do I have an obvious mistake in my Makefile?
+
+Regards.
