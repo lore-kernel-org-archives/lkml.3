@@ -1,128 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbbA0QQN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:16:13 -0500
-Received: from smtprelay0164.hostedemail.com ([216.40.44.164]:48428 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755395AbbA0QQK (ORCPT
+	id S932463AbbA0QQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:16:43 -0500
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.107]:34176 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932436AbbA0QQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:16:10 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2912:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3873:3874:4605:5007:6119:6261:7514:7875:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12050:12296:12438:12517:12519:12555:12740:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: trade61_35728666d093a
-X-Filterd-Recvd-Size: 4021
-Date: Tue, 27 Jan 2015 11:16:06 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tina Ruchandani <ruchandani.tina@gmail.com>
-Cc: Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v3] trace: Use 64-bit timekeeping
-Message-ID: <20150127111606.195ac188@gandalf.local.home>
-In-Reply-To: <20150127155538.GA5132@tinar>
-References: <20150127155538.GA5132@tinar>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 27 Jan 2015 11:16:38 -0500
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-14.tower-193.messagelabs.com!1422375393!31746282!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+To: Varka Bhadram <varkabhadram@gmail.com>,
+        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Support Opensource" <Support.Opensource@diasemi.com>
+Subject: RE: [PATCH v6 5/7] power: Add support for DA9150 Charger
+Thread-Topic: [PATCH v6 5/7] power: Add support for DA9150 Charger
+Thread-Index: AQHQNZGAcklmPzY0TkS8pve6Tv5mWJzKv5YAgAlnhLA=
+Date: Tue, 27 Jan 2015 16:16:31 +0000
+Message-ID: <2E89032DDAA8B9408CB92943514A0337AB529E6E@SW-EX-MBX01.diasemi.com>
+References: <cover.1421854282.git.Adam.Thomson.Opensource@diasemi.com>
+ <d9c5c61443e266880cab3cbe7502142439fe9886.1421854282.git.Adam.Thomson.Opensource@diasemi.com>
+ <54BFD072.8000707@gmail.com>
+In-Reply-To: <54BFD072.8000707@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.15]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0RGGkqK027047
 
-On Tue, 27 Jan 2015 21:25:38 +0530
-Tina Ruchandani <ruchandani.tina@gmail.com> wrote:
+On January 21, 2015 16:15, Varka Bhadram wrote:
 
-> The ring_buffer_producer uses 'struct timeval' to measure
-> its start and end times. 'struct timeval' on 32-bit systems
-> will have its tv_sec value overflow in year 2038 and beyond.
-> This patch replaces struct timeval with 'ktime_t' which uses
-> 64-bit representation for seconds
+> On Wednesday 21 January 2015 09:16 PM, Adam Thomson wrote:
+> > This patch adds support for DA9150 Charger & Fuel-Gauge IC Charger.
+> >
+> > Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> > ---
+> 
+> (...)
+> 
+> > +static int da9150_charger_register_irq(struct platform_device *pdev,
+> > +				       irq_handler_t handler,
+> > +				       const char *irq_name)
+> > +{
+> > +	struct device *dev = &pdev->dev;
+> > +	struct da9150_charger *charger = platform_get_drvdata(pdev);
+> > +	int irq, ret;
+> > +
+> > +	irq = platform_get_irq_byname(pdev, irq_name);
+> > +	if (irq < 0) {
+> > +		dev_err(dev, "Failed to get IRQ CHG_STATUS: %d\n", irq);
+> > +		return irq;
+> > +	}
+> > +
+> > +	ret = request_threaded_irq(irq, NULL, handler, IRQF_ONESHOT, irq_name,
+> > +				   charger);
+> 
+> Why don you use devm_* API..?
 
-Doesn't ktime_t actually use 64-bit representation for nanoseconds?
+As mentioned in previous discussions, the order of tidy up is important so 
+devm_* functions cannot be used here.
 
 > 
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
-> ---
-> Changes in v3:
-> 	- Use a more efficient way to compute condition for exiting
-> 	  loop.
-> 	- Fix variable naming - all caps is only for macros.
-> Changes in v2:
-> 	- Use ktime_t instead of timespec64 for efficiency reasons.
-> ---
->  kernel/trace/ring_buffer_benchmark.c | 17 ++++++++---------
->  1 file changed, 8 insertions(+), 9 deletions(-)
+> > +	if (ret)
+> > +		dev_err(dev, "Failed to request IRQ %d: %d\n", irq, ret);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> > +static void da9150_charger_unregister_irq(struct platform_device *pdev,
+> > +					  const char *irq_name)
+> > +{
+> > +	struct device *dev = &pdev->dev;
+> > +	struct da9150_charger *charger = platform_get_drvdata(pdev);
+> > +	int irq;
+> > +
+> > +	irq = platform_get_irq_byname(pdev, irq_name);
+> > +	if (irq < 0) {
+> > +		dev_err(dev, "Failed to get IRQ CHG_STATUS: %d\n", irq);
+> > +		return;
+> > +	}
+> > +
+> > +	free_irq(irq, charger);
+> > +}
+> > +
+> > +static int da9150_charger_probe(struct platform_device *pdev)
+> > +{
+> > +	struct device *dev = &pdev->dev;
+> > +	struct da9150 *da9150 = dev_get_drvdata(dev->parent);
+> > +	struct da9150_charger *charger;
+> > +	struct power_supply *usb, *battery;
+> > +	u8 reg;
+> > +	int ret;
+> > +
+> > +	charger = devm_kzalloc(dev, sizeof(struct da9150_charger), GFP_KERNEL);
+> > +	if (charger == NULL)
+> > +		return -ENOMEM;
 > 
-> diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
-> index 3f9e328..0a50abb 100644
-> --- a/kernel/trace/ring_buffer_benchmark.c
-> +++ b/kernel/trace/ring_buffer_benchmark.c
-> @@ -7,7 +7,7 @@
->  #include <linux/completion.h>
->  #include <linux/kthread.h>
->  #include <linux/module.h>
-> -#include <linux/time.h>
-> +#include <linux/ktime.h>
->  #include <asm/local.h>
->  
->  struct rb_page {
-> @@ -212,8 +212,7 @@ static void ring_buffer_consumer(void)
->  
->  static void ring_buffer_producer(void)
->  {
-> -	struct timeval start_tv;
-> -	struct timeval end_tv;
-> +	ktime_t start_time, end_time, timeout;
->  	unsigned long long time;
->  	unsigned long long entries;
->  	unsigned long long overruns;
-> @@ -227,7 +226,9 @@ static void ring_buffer_producer(void)
->  	 * make the system stall)
->  	 */
->  	trace_printk("Starting ring buffer hammer\n");
-> -	do_gettimeofday(&start_tv);
-> +	start_time = ktime_get();
-> +	timeout = ktime_add_ns(start_time,
-> +			       ((long long) RUN_TIME) * NSEC_PER_SEC);
+> sizeof(struct da9150_charger) can be replaced with sizeof(*charger)...
+> 
+> *!* operator can be used in comparison with NULL...
+> 
 
-Instead of the (long long) typecast, could you define RUN_TIME as 10ULL.
-
-Makes the code a bit cleaner, and we can put that on one line.
-
-Rest looks fine.
-
--- Steve
-
->  	do {
->  		struct ring_buffer_event *event;
->  		int *entry;
-> @@ -244,7 +245,7 @@ static void ring_buffer_producer(void)
->  				ring_buffer_unlock_commit(buffer, event);
->  			}
->  		}
-> -		do_gettimeofday(&end_tv);
-> +		end_time = ktime_get();
->  
->  		cnt++;
->  		if (consumer && !(cnt % wakeup_interval))
-> @@ -264,7 +265,7 @@ static void ring_buffer_producer(void)
->  			cond_resched();
->  #endif
->  
-> -	} while (end_tv.tv_sec < (start_tv.tv_sec + RUN_TIME) && !kill_test);
-> +	} while (ktime_before(end_time, timeout) && !kill_test);
->  	trace_printk("End ring buffer hammer\n");
->  
->  	if (consumer) {
-> @@ -280,9 +281,7 @@ static void ring_buffer_producer(void)
->  		wait_for_completion(&read_done);
->  	}
->  
-> -	time = end_tv.tv_sec - start_tv.tv_sec;
-> -	time *= USEC_PER_SEC;
-> -	time += (long long)((long)end_tv.tv_usec - (long)start_tv.tv_usec);
-> +	time = ktime_us_delta(end_time, start_time);
->  
->  	entries = ring_buffer_entries(buffer);
->  	overruns = ring_buffer_overruns(buffer);
-
+Yes, but functionally no different. Can maybe change this around later, but
+would like to avoid changing current patch set right now.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
