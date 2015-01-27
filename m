@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758707AbbA0MT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:19:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35405 "EHLO
+	id S1758821AbbA0MZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:25:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35406 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932544AbbA0MTw (ORCPT
+	with ESMTP id S932547AbbA0MTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:19:52 -0500
+	Tue, 27 Jan 2015 07:19:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Songjun Wu <songjun.wu@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Felipe Balbi <balbi@ti.com>,
+Cc: Johan Hovold <johan@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 106/126] usb: gadget: udc: atmel: fix possible oops when unloading module
-Date: Tue, 27 Jan 2015 12:16:51 +0000
-Message-Id: <1422361031-19364-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 107/126] USB: console: fix uninitialised ldisc semaphore
+Date: Tue, 27 Jan 2015 12:16:52 +0000
+Message-Id: <1422361031-19364-108-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,103 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Songjun Wu <songjun.wu@atmel.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 5fb694f96e7c19e66b1c55124b98812e32e3efa5 upstream.
+commit d269d4434c72ed0da3a9b1230c30da82c4918c63 upstream.
 
-When unloading the module 'g_hid.ko', the urb request will be dequeued and the
-completion routine will be excuted. If there is no urb packet, the urb request
-will not be added to the endpoint queue and the completion routine pointer in
-urb request is NULL.
+The USB console currently allocates a temporary fake tty which is used
+to pass terminal settings to the underlying serial driver.
 
-Accessing to this NULL function pointer will cause the Oops issue reported
-below.
+The tty struct is not fully initialised, something which can lead to a
+lockdep warning (or worse) if a serial driver tries to acquire a
+line-discipline reference:
 
-Add the code to check if the urb request is in the endpoint queue
-or not. If the urb request is not in the endpoint queue, a negative
-error code will be returned.
+	usbserial: USB Serial support registered for pl2303
+	pl2303 1-2.1:1.0: pl2303 converter detected
+	usb 1-2.1: pl2303 converter now attached to ttyUSB0
+	INFO: trying to register non-static key.
+	the code is fine but needs lockdep annotation.
+	turning off the locking correctness validator.
+	CPU: 0 PID: 68 Comm: udevd Tainted: G        W      3.18.0-rc5 #10
+	[<c0016f04>] (unwind_backtrace) from [<c0013978>] (show_stack+0x20/0x24)
+	[<c0013978>] (show_stack) from [<c0449794>] (dump_stack+0x24/0x28)
+	[<c0449794>] (dump_stack) from [<c006f730>] (__lock_acquire+0x1e50/0x2004)
+	[<c006f730>] (__lock_acquire) from [<c0070128>] (lock_acquire+0xe4/0x18c)
+	[<c0070128>] (lock_acquire) from [<c027c6f8>] (ldsem_down_read_trylock+0x78/0x90)
+	[<c027c6f8>] (ldsem_down_read_trylock) from [<c027a1cc>] (tty_ldisc_ref+0x24/0x58)
+	[<c027a1cc>] (tty_ldisc_ref) from [<c0340760>] (usb_serial_handle_dcd_change+0x48/0xe8)
+	[<c0340760>] (usb_serial_handle_dcd_change) from [<bf000484>] (pl2303_read_int_callback+0x210/0x220 [pl2303])
+	[<bf000484>] (pl2303_read_int_callback [pl2303]) from [<c031624c>] (__usb_hcd_giveback_urb+0x80/0x140)
+	[<c031624c>] (__usb_hcd_giveback_urb) from [<c0316fc0>] (usb_giveback_urb_bh+0x98/0xd4)
+	[<c0316fc0>] (usb_giveback_urb_bh) from [<c0042e44>] (tasklet_hi_action+0x9c/0x108)
+	[<c0042e44>] (tasklet_hi_action) from [<c0042380>] (__do_softirq+0x148/0x42c)
+	[<c0042380>] (__do_softirq) from [<c00429cc>] (irq_exit+0xd8/0x114)
+	[<c00429cc>] (irq_exit) from [<c007ae58>] (__handle_domain_irq+0x84/0xdc)
+	[<c007ae58>] (__handle_domain_irq) from [<c000879c>] (omap_intc_handle_irq+0xd8/0xe0)
+	[<c000879c>] (omap_intc_handle_irq) from [<c0014544>] (__irq_svc+0x44/0x7c)
+	Exception stack(0xdf4e7f08 to 0xdf4e7f50)
+	7f00:                   debc0b80 df4e7f5c 00000000 00000000 debc0b80 be8da96c
+	7f20: 00000000 00000128 c000fc84 df4e6000 00000000 df4e7f94 00000004 df4e7f50
+	7f40: c038ebc0 c038d74c 600f0013 ffffffff
+	[<c0014544>] (__irq_svc) from [<c038d74c>] (___sys_sendmsg.part.29+0x0/0x2e0)
+	[<c038d74c>] (___sys_sendmsg.part.29) from [<c038ec08>] (SyS_sendmsg+0x18/0x1c)
+	[<c038ec08>] (SyS_sendmsg) from [<c000fa00>] (ret_fast_syscall+0x0/0x48)
+	console [ttyUSB0] enabled
 
-Here is the Oops log:
-
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = dedf0000
-[00000000] *pgd=3ede5831, *pte=00000000, *ppte=00000000
-Internal error: Oops: 80000007 [#1] ARM
-Modules linked in: g_hid(-) usb_f_hid libcomposite
-CPU: 0 PID: 923 Comm: rmmod Not tainted 3.18.0+ #2
-Hardware name: Atmel SAMA5 (Device Tree)
-task: df6b1100 ti: dedf6000 task.ti: dedf6000
-PC is at 0x0
-LR is at usb_gadget_giveback_request+0xc/0x10
-pc : [<00000000>]    lr : [<c02ace88>]    psr: 60000093
-sp : dedf7eb0  ip : df572634  fp : 00000000
-r10: 00000000  r9 : df52e210  r8 : 60000013
-r7 : df6a9858  r6 : df52e210  r5 : df6a9858  r4 : df572600
-r3 : 00000000  r2 : ffffff98  r1 : df572600  r0 : df6a9868
-Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c53c7d  Table: 3edf0059  DAC: 00000015
-Process rmmod (pid: 923, stack limit = 0xdedf6230)
-Stack: (0xdedf7eb0 to 0xdedf8000)
-7ea0:                                     00000000 c02adbbc df572580 deced608
-7ec0: df572600 df6a9868 df572634 c02aed3c df577c00 c01b8608 00000000 df6be27c
-7ee0: 00200200 00100100 bf0162f4 c000e544 dedf6000 00000000 00000000 bf010c00
-7f00: bf0162cc bf00159c 00000000 df572980 df52e218 00000001 df5729b8 bf0031d0
-[..]
-[<c02ace88>] (usb_gadget_giveback_request) from [<c02adbbc>] (request_complete+0x64/0x88)
-[<c02adbbc>] (request_complete) from [<c02aed3c>] (usba_ep_dequeue+0x70/0x128)
-[<c02aed3c>] (usba_ep_dequeue) from [<bf010c00>] (hidg_unbind+0x50/0x7c [usb_f_hid])
-[<bf010c00>] (hidg_unbind [usb_f_hid]) from [<bf00159c>] (remove_config.isra.6+0x98/0x9c [libcomposite])
-[<bf00159c>] (remove_config.isra.6 [libcomposite]) from [<bf0031d0>] (__composite_unbind+0x34/0x98 [libcomposite])
-[<bf0031d0>] (__composite_unbind [libcomposite]) from [<c02acee0>] (usb_gadget_remove_driver+0x50/0x78)
-[<c02acee0>] (usb_gadget_remove_driver) from [<c02ad570>] (usb_gadget_unregister_driver+0x64/0x94)
-[<c02ad570>] (usb_gadget_unregister_driver) from [<bf0160c0>] (hidg_cleanup+0x10/0x34 [g_hid])
-[<bf0160c0>] (hidg_cleanup [g_hid]) from [<c0056748>] (SyS_delete_module+0x118/0x19c)
-[<c0056748>] (SyS_delete_module) from [<c000e3c0>] (ret_fast_syscall+0x0/0x30)
-Code: bad PC value
-
-Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
-[nicolas.ferre@atmel.com: reworked the commit message]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Fixes: 914a3f3b3754 ("USB: add atmel_usba_udc driver")
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ luis: backported to 3.16:
-  - file rename: drivers/usb/gadget/udc/atmel_usba_udc.c ->
-    drivers/usb/gadget/atmel_usba_udc.c ]
+Fixes: 36697529b5bb ("tty: Replace ldisc locking with ldisc_sem")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/gadget/atmel_usba_udc.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/usb/serial/console.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
-index f34157a8dc22..892bd9765f3b 100644
---- a/drivers/usb/gadget/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/atmel_usba_udc.c
-@@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
- {
- 	struct usba_ep *ep = to_usba_ep(_ep);
- 	struct usba_udc *udc = ep->udc;
--	struct usba_request *req = to_usba_req(_req);
-+	struct usba_request *req;
- 	unsigned long flags;
- 	u32 status;
- 
-@@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
- 
- 	spin_lock_irqsave(&udc->lock, flags);
- 
-+	list_for_each_entry(req, &ep->queue, queue) {
-+		if (&req->req == _req)
-+			break;
-+	}
-+
-+	if (&req->req != _req) {
-+		spin_unlock_irqrestore(&udc->lock, flags);
-+		return -EINVAL;
-+	}
-+
- 	if (req->using_dma) {
- 		/*
- 		 * If this request is currently being transferred,
+diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
+index 8d7fc48b1f30..e56f394b58d8 100644
+--- a/drivers/usb/serial/console.c
++++ b/drivers/usb/serial/console.c
+@@ -140,6 +140,7 @@ static int usb_console_setup(struct console *co, char *options)
+ 			tty_port_tty_set(&port->port, tty);
+ 			tty->driver = usb_serial_tty_driver;
+ 			tty->index = co->index;
++			init_ldsem(&tty->ldisc_sem);
+ 			if (tty_init_termios(tty)) {
+ 				retval = -ENOMEM;
+ 				goto free_tty;
 -- 
 2.1.4
 
