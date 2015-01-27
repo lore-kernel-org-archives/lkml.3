@@ -1,74 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205AbbA0OYf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 09:24:35 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51544 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbbA0OYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 09:24:34 -0500
-Date: Tue, 27 Jan 2015 15:24:31 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-Message-ID: <20150127142430.GA15236@amd>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <201412041857.49341@pali>
- <CAL_JsqJ9i0jwaL1cyeomQG=bhhcnEgdGWYOqkcwidyk5xOUukg@mail.gmail.com>
- <201501262016.52079@pali>
- <CAL_JsqL_EEg7tC-q8wV5v8jAfPSiri4z19iJfz2r7zntRwPyOg@mail.gmail.com>
- <20150127132127.GA869@amd>
- <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
+	id S1758335AbbA0OZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:25:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46323 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754243AbbA0OZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 09:25:42 -0500
+Date: Tue, 27 Jan 2015 09:24:59 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        kexec@lists.infradead.org, Andy Lutomirski <luto@amacapital.net>,
+        Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: Edited kexec_load(2) [kexec_file_load()] man page for review
+Message-ID: <20150127142459.GA12851@redhat.com>
+References: <545FBDDD.9060801@gmail.com>
+ <20141111213037.GA31445@redhat.com>
+ <54ADA284.30502@gmail.com>
+ <20150112221634.GD16162@redhat.com>
+ <54B91271.3000600@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
+In-Reply-To: <54B91271.3000600@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2015-01-27 08:16:45, Rob Herring wrote:
-> On Tue, Jan 27, 2015 at 7:21 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> > On Mon 2015-01-26 14:33:21, Rob Herring wrote:
-> >> On Mon, Jan 26, 2015 at 1:16 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-
-> >> This goes in the commit message.
-> >>
-> >> These would be non-standard fields which are not upstream. I don't
-> >> know that we care in that case...
-> >
-> > Other devices are going to care about boot reason, too, and we might
-> > as well be compatible...
+On Fri, Jan 16, 2015 at 02:30:25PM +0100, Michael Kerrisk (man-pages) wrote:
+[..]
 > 
-> What other devices? Where is bootreason in the list of ATAGS:
+
+Hi Michael,
+
+Please find my responses below. Sorry, I got stuck in other work and
+forgot about this thread.
+
+> So, returning to the kexeec_segment structure:
 > 
-> #define ATAG_MEM        0x54410002
-> #define ATAG_VIDEOTEXT  0x54410003
-> #define ATAG_RAMDISK    0x54410004
-> #define ATAG_INITRD     0x54410005
-> #define ATAG_INITRD2    0x54420005
-> #define ATAG_SERIAL     0x54410006
-> #define ATAG_REVISION   0x54410007
-> #define ATAG_VIDEOLFB   0x54410008
-> #define ATAG_CMDLINE    0x54410009
-> #define ATAG_ACORN      0x41000101
-> #define ATAG_MEMCLK     0x41000402
+>            struct kexec_segment {
+>                void   *buf;        /* Buffer in user space */
+>                size_t  bufsz;      /* Buffer length in user space */
+>                void   *mem;        /* Physical address of kernel */
+>                size_t  memsz;      /* Physical address length */
+>            };
+> 
+> Are the following statements correct:
+> * buf + bufsz identify a memory region in the caller's virtual 
+>   address space that is the source of the copy
 
-Anyone, whose charging involves userspace.
+Yes.
 
-But the fact that it is needed on n900 should be enough.
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> * mem + memsz specify the target memory region of the copy
+
+Yes.
+
+> * mem is  physical memory address, as seen from kernel space
+
+Yes.
+
+> * the number of bytes copied from userspace is min(bufsz, memsz)
+
+Yes. bufsz can not be more than memsz. There is a check to validate
+this in kernel.
+
+	result = -EINVAL;
+	for (i = 0; i < nr_segments; i++) {
+		if (image->segment[i].bufsz > image->segment[i].memsz)
+			return result;
+	}
+
+> * if bufsz > memsz, then excess bytes in the user-space buffer 
+>   are ignored.
+
+You will get -EINVAL.
+
+> * if memsz > bufsz, then excess bytes in the target kernel buffer
+>   are filled with zeros.
+
+Yes.
+
+> Also, it seems to me that 'mem' need not be page aligned.
+> Is that correct? Should the man page say something about that?
+> (E.g., is it generally desirable that 'mem' should be page aligned?)
+
+mem and memsz need to be page aligned. There is a check for that too.
+
+	mstart = image->segment[i].mem;
+	mend   = mstart + image->segment[i].memsz;
+	if ((mstart & ~PAGE_MASK) || (mend & ~PAGE_MASK))
+		return result;
+
+> 
+> Likewise, 'memsz' doesn't need to beta page multiple, IIUC.
+> Should the man page say anything about this? For example, should 
+> it note that the initialized kernel segment will be of size:
+> 
+>      (mem % PAGE_SIZE + memsz) rounded up to the next multiple of PAGE_SIZE
+> 
+> And should it note that if 'mem' is not a multiple of the page size, then
+> the initial bytes (mem % PAGE_SIZE)) in the first page of the kernel segment 
+> will be zeros?
+> 
+> (Hopefully I have read kimage_load_normal_segment() correctly.)
+
+Both mem and memsz need to be page aligned.
+
+> 
+> And one further question. Other than the fact that they are used with 
+> different system calls, what is the difference between KEXEC_ON_CRASH 
+> and KEXEC_FILE_ON_CRASH?
+
+Right now I can't think of any other difference. They both tell respective
+system call that this kernel needs to be loaded in reserved memory region
+for crash kernel.
+
+Thanks
+Vivek
