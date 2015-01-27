@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534AbbA0MYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:24:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35422 "EHLO
+	id S1758727AbbA0MUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:20:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35427 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758673AbbA0MT6 (ORCPT
+	with ESMTP id S1758710AbbA0MUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:19:58 -0500
+	Tue, 27 Jan 2015 07:20:00 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Ulf Hansson <ulf.hansson@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 110/126] mmc: sdhci-pxav3: do the mbus window configuration after enabling clocks
-Date: Tue, 27 Jan 2015 12:16:55 +0000
-Message-Id: <1422361031-19364-111-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 111/126] mmc: sdhci: Fix sleep in atomic after inserting SD card
+Date: Tue, 27 Jan 2015 12:16:56 +0000
+Message-Id: <1422361031-19364-112-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,99 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit aa8165f914420f143476305a01894b017d3abe6b upstream.
+commit 2836766a9d0bd02c66073f8dd44796e6cc23848d upstream.
 
-In commit 5491ce3f79ee ("mmc: sdhci-pxav3: add support for the Armada
-38x SDHCI controller"), the sdhci-pxav3 driver was extended to include
-support for the SDHCI controller found in the Armada 38x
-processor. This mainly involved adding some MBus window related
-configuration.
+Sleep in atomic context happened on Trats2 board after inserting or
+removing SD card because mmc_gpio_get_cd() was called under spin lock.
 
-However, this configuration is currently done too early in ->probe():
-it is done before clocks are enabled, while this configuration
-involves touching the registers of the controller, which will hang the
-SoC if the clock is disabled. It wasn't noticed until now because the
-bootloader typically leaves gatable clocks enabled, but in situations
-where we have a deferred probe (due to a CD GPIO that cannot be taken,
-for example), then the probe will be re-tried later, after a clock
-disable has been done in the exit path of the failed probe attempt of
-the device. This second probe() will hang the system due to the clock
-being disabled.
+Fix this by moving card detection earlier, before acquiring spin lock.
+The mmc_gpio_get_cd() call does not have to be protected by spin lock
+because it does not access any sdhci internal data.
+The sdhci_do_get_cd() call access host flags (SDHCI_DEVICE_DEAD). After
+moving it out side of spin lock it could theoretically race with driver
+removal but still there is no actual protection against manual card
+eject.
 
-This can for example be produced on Armada 385 GP, which has a CD GPIO
-connected to an I2C PCA9555. If the driver for the PCA9555 is not
-compiled into the kernel, then we will have the following sequence of
-events:
+Dmesg after inserting SD card:
+[   41.663414] BUG: sleeping function called from invalid context at drivers/gpio/gpiolib.c:1511
+[   41.670469] in_atomic(): 1, irqs_disabled(): 128, pid: 30, name: kworker/u8:1
+[   41.677580] INFO: lockdep is turned off.
+[   41.681486] irq event stamp: 61972
+[   41.684872] hardirqs last  enabled at (61971): [<c0490ee0>] _raw_spin_unlock_irq+0x24/0x5c
+[   41.693118] hardirqs last disabled at (61972): [<c04907ac>] _raw_spin_lock_irq+0x18/0x54
+[   41.701190] softirqs last  enabled at (61648): [<c0026fd4>] __do_softirq+0x234/0x2c8
+[   41.708914] softirqs last disabled at (61631): [<c00273a0>] irq_exit+0xd0/0x114
+[   41.716206] Preemption disabled at:[<  (null)>]   (null)
+[   41.721500]
+[   41.722985] CPU: 3 PID: 30 Comm: kworker/u8:1 Tainted: G        W      3.18.0-rc5-next-20141121 #883
+[   41.732111] Workqueue: kmmcd mmc_rescan
+[   41.735945] [<c0014d2c>] (unwind_backtrace) from [<c0011c80>] (show_stack+0x10/0x14)
+[   41.743661] [<c0011c80>] (show_stack) from [<c0489d14>] (dump_stack+0x70/0xbc)
+[   41.750867] [<c0489d14>] (dump_stack) from [<c0228b74>] (gpiod_get_raw_value_cansleep+0x18/0x30)
+[   41.759628] [<c0228b74>] (gpiod_get_raw_value_cansleep) from [<c03646e8>] (mmc_gpio_get_cd+0x38/0x58)
+[   41.768821] [<c03646e8>] (mmc_gpio_get_cd) from [<c036d378>] (sdhci_request+0x50/0x1a4)
+[   41.776808] [<c036d378>] (sdhci_request) from [<c0357934>] (mmc_start_request+0x138/0x268)
+[   41.785051] [<c0357934>] (mmc_start_request) from [<c0357cc8>] (mmc_wait_for_req+0x58/0x1a0)
+[   41.793469] [<c0357cc8>] (mmc_wait_for_req) from [<c0357e68>] (mmc_wait_for_cmd+0x58/0x78)
+[   41.801714] [<c0357e68>] (mmc_wait_for_cmd) from [<c0361c00>] (mmc_io_rw_direct_host+0x98/0x124)
+[   41.810480] [<c0361c00>] (mmc_io_rw_direct_host) from [<c03620f8>] (sdio_reset+0x2c/0x64)
+[   41.818641] [<c03620f8>] (sdio_reset) from [<c035a3d8>] (mmc_rescan+0x254/0x2e4)
+[   41.826028] [<c035a3d8>] (mmc_rescan) from [<c003a0e0>] (process_one_work+0x180/0x3f4)
+[   41.833920] [<c003a0e0>] (process_one_work) from [<c003a3bc>] (worker_thread+0x34/0x4b0)
+[   41.841991] [<c003a3bc>] (worker_thread) from [<c003fed8>] (kthread+0xe4/0x104)
+[   41.849285] [<c003fed8>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
+[   42.038276] mmc0: new high speed SDHC card at address 1234
 
-  1. The SDHCI probes
-  2. It does the MBus configuration (which works, because the clock is
-     left enabled by the bootloader)
-  3. It enables the clock
-  4. It tries to get the CD GPIO, which fails due to the driver being
-     missing, so -EPROBE_DEFER is returned.
-  5. Before returning -EPROBE_DEFER, the driver cleans up what was
-     done, which includes disabling the clock.
-  6. Later on, the SDHCI probe is tried again.
-  7. It does the MBus configuration, which hangs because the clock is
-     no longer enabled.
-
-This commit does the obvious fix of doing the MBus configuration after
-the clock has been enabled by the driver.
-
-Fixes: 5491ce3f79ee ("mmc: sdhci-pxav3: add support for the Armada 38x SDHCI controller")
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 94144a465dd0 ("mmc: sdhci: add get_cd() implementation")
 Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/sdhci-pxav3.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ drivers/mmc/host/sdhci.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-index 6675be324cbc..bdfdf5273252 100644
---- a/drivers/mmc/host/sdhci-pxav3.c
-+++ b/drivers/mmc/host/sdhci-pxav3.c
-@@ -297,13 +297,6 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
- 		return PTR_ERR(host);
- 	}
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 47055f3f01b8..1d92337f5e4d 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1308,6 +1308,8 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
  
--	if (of_device_is_compatible(np, "marvell,armada-380-sdhci")) {
--		ret = mv_conf_mbus_windows(pdev, mv_mbus_dram_info());
--		if (ret < 0)
--			goto err_mbus_win;
--	}
--
--
- 	pltfm_host = sdhci_priv(host);
- 	pltfm_host->priv = pxa;
+ 	sdhci_runtime_pm_get(host);
  
-@@ -316,6 +309,12 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
- 	pltfm_host->clk = clk;
- 	clk_prepare_enable(clk);
- 
-+	if (of_device_is_compatible(np, "marvell,armada-380-sdhci")) {
-+		ret = mv_conf_mbus_windows(pdev, mv_mbus_dram_info());
-+		if (ret < 0)
-+			goto err_mbus_win;
-+	}
++	present = mmc_gpio_get_cd(host->mmc);
 +
- 	/* enable 1/8V DDR capable */
- 	host->mmc->caps |= MMC_CAP_1_8V_DDR;
+ 	spin_lock_irqsave(&host->lock, flags);
  
-@@ -387,10 +386,10 @@ err_add_host:
- 	pm_runtime_disable(&pdev->dev);
- err_of_parse:
- err_cd_req:
-+err_mbus_win:
- 	clk_disable_unprepare(clk);
- 	clk_put(clk);
- err_clk_get:
--err_mbus_win:
- 	sdhci_pltfm_free(pdev);
- 	kfree(pxa);
- 	return ret;
+ 	WARN_ON(host->mrq != NULL);
+@@ -1336,7 +1338,6 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ 	 *     zero: cd-gpio is used, and card is removed
+ 	 *     one: cd-gpio is used, and card is present
+ 	 */
+-	present = mmc_gpio_get_cd(host->mmc);
+ 	if (present < 0) {
+ 		/* If polling, assume that the card is always present. */
+ 		if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
+@@ -2047,15 +2048,18 @@ static void sdhci_card_event(struct mmc_host *mmc)
+ {
+ 	struct sdhci_host *host = mmc_priv(mmc);
+ 	unsigned long flags;
++	int present;
+ 
+ 	/* First check if client has provided their own card event */
+ 	if (host->ops->card_event)
+ 		host->ops->card_event(host);
+ 
++	present = sdhci_do_get_cd(host);
++
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	/* Check host->mrq first in case we are runtime suspended */
+-	if (host->mrq && !sdhci_do_get_cd(host)) {
++	if (host->mrq && !present) {
+ 		pr_err("%s: Card removed during transfer!\n",
+ 			mmc_hostname(host->mmc));
+ 		pr_err("%s: Resetting controller.\n",
 -- 
 2.1.4
 
