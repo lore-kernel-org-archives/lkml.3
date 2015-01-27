@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759514AbbA0TeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 14:34:07 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:59052 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbbA0TeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 14:34:06 -0500
-Date: Tue, 27 Jan 2015 11:34:01 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Priit Laes <plaes@plaes.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [linux-sunxi] Re: [PATCH] arm: sunxi: input: RFC: Add sysfs
- voltage for sun4i-lradc driver
-Message-ID: <20150127193401.GB29637@dtor-glaptop>
-References: <1422291516-24895-1-git-send-email-plaes@plaes.org>
- <20150127091829.GD7200@lukather>
- <1422352189.23189.12.camel@plaes.org>
+	id S932276AbbA0Tlq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 14:41:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40806 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751890AbbA0Tlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 14:41:45 -0500
+Date: Tue, 27 Jan 2015 20:40:30 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: question about save_xstate_sig() - WHY DOES THIS WORK?
+Message-ID: <20150127194030.GA29879@redhat.com>
+References: <54C2A245.4010307@redhat.com> <20150124202021.GA1285@redhat.com> <54C6CD64.10208@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1422352189.23189.12.camel@plaes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54C6CD64.10208@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 11:49:49AM +0200, Priit Laes wrote:
-> 
-> On Tue, 2015-01-27 at 10:18 +0100, Maxime Ripard wrote:
-> > Hi,
-> > 
-> > On Mon, Jan 26, 2015 at 06:58:32PM +0200, Priit Laes wrote:
-> > > ---
-> > 
-> > Like Hans was pointing out, commit log and signed-off-by please
-> > 
-> > >  .../ABI/testing/sysfs-driver-input-sun4i-lradc     |  4 ++
-> > >  drivers/input/keyboard/sun4i-lradc-keys.c          | 49 
-> > > +++++++++++++++++-----
-> > >  2 files changed, 43 insertions(+), 10 deletions(-)
-> > >  create mode 100644 Documentation/ABI/testing/sysfs-driver-input-
-> > > sun4i-lradc
-> > > 
-> > > diff --git a/Documentation/ABI/testing/sysfs-driver-input-sun4i-
-> > > lradc b/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
-> > > new file mode 100644
-> > > index 0000000..e4e6448
-> > > --- /dev/null
-> > > +++ b/Documentation/ABI/testing/sysfs-driver-input-sun4i-lradc
-> > > @@ -0,0 +1,4 @@
-> > > +What:          /sys/class/input/input(x)/device/voltage
-> > > +Date:          February 2015
-> > > +Contact:       Priit Laes <plaes@plaes.org>
-> > > +Description:   ADC output voltage in microvolts or 0 if device is 
-> > > not opened.
-> > 
-> > Why is it returning 0 when "device is not opened" ? What does that 
-> > even mean? You can't read that file without opening it.
-> 
-> It means that something has to open the /dev/input/inputX device which 
-> sets up the ADC before the voltage can be read from the sysfs file.
+On 01/26, Rik van Riel wrote:
+>
+> On 01/24/2015 03:20 PM, Oleg Nesterov wrote:
+>
+> > Now the questions:
+> >
+> > - This doesn't hurt, but does it really need __thread_fpu_end?
+> >
+> > Perhaps this is because we do not check the error code returned by
+> > __save_init_fpu? although I am not sure I understand the comment
+> > above fpu_save_init correctly...
+>
+> Looking at the code some more, I do not see any call site of
+> save_init_fpu() that actually needs or wants __thread_fpu_end(),
+> with or without eager fpu mode.
 
-I'd consider this a bug. Why someone has to use an unrelated interface for
-another interface to work correctly?
+Yes. But probably it is needed if __save_init_fpu() returns 0.
+But this is minor, __thread_fpu_end() doesn't hurt correctness-wise
+if !eager.
 
-> 
-> [...]
-> 
-> 
-> > 
-> > As I told you already, if you're going to expose this an ADC in the 
-> > end, the proper solution is to use the IIO framework, not adding a 
-> > custom sysfs file.
-> 
-> My intention was to expose just a simple debug output, so one can 
-> press the buttons and read the voltages for devicetree keymap.
-> 
-> If anyone can suggest a simpler approach than current sysfs based one, 
-> I would do it. But full blown iio driver is currently out of scope. 
-> Also, Carlo's (ccaione) initially submitted (?) driver for lradc 
-> utilized iio subsystem.
+> It looks like we can get rid of that.
 
-For stuff like this debugfs (AKA dumping ground) is better suited as it does
-not establish ABI.  i
+Agreed, but probably this needs a separate change.
 
-Thanks.
+> > - What about do_bounds() ? Should not it use save_init_fpu()
+> > rather than fpu_save_init() ?
+>
+> I suppose do_bounds() probably should save the fpu context while
+> not preemptible,
 
--- 
-Dmitry
+plus it also needs the __thread_has_fpu() check. Otherwise fpu_save_init()
+can save the wrong FPU state afaics.
+
+> but that may also mean moving conditional_sti()
+> until after save_init_fpu() or __save_init_fpu() has been called.
+
+Agreed, this can work too.
+
+> > - Why unlazy_fpu() always does __save_init_fpu() even if
+> > use_eager_fpu?
+> >
+> > and note that in this case __thread_fpu_end() is wrong if
+> > use_eager_fpu, but fortunately the only possible caller of
+> > unlazy_fpu() is coredump. fpu_copy() checks use_eager_fpu().
+> >
+> > - Is unlazy_fpu()->__save_init_fpu() safe wrt __kernel_fpu_begin()
+> > from irq?
+> >
+> > I mean, is it safe if __save_init_fpu() path is interrupted by
+> > another __save_init_fpu() + restore_fpu_checking() from
+> > __kernel_fpu_begin/end?
+>
+> I got lost in the core dump code trying to figure out whether this is
+> safe or broken. I'll need some more time to look through that code...
+
+It is called indirectly by regset code, see xstateregs_get()->init_fpu().
+
+The coredumping task can't return to user-mode and use FPU in this case,
+so this is not that bad. Still unlazy_fpu()->__thread_fpu_end() is wrong
+if eager.
+
+And I forgot to mention, the "else" branch in unlazy_fpu() makes no sense.
+And note that save_init_fpu() and unlazy_fpu() is the same thing (if we
+fix/cleanup them).
+
+Oh. I'll try to finish my cleanups and send them tomorrow. Unless you
+do this ;)
+
+Oleg.
+
