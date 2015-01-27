@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409AbbA0Qsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:48:46 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58461 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712AbbA0Qsl (ORCPT
+	id S1758552AbbA0QyH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:54:07 -0500
+Received: from mx1.scotdoyle.com ([23.226.141.211]:48409 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017AbbA0QyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:48:41 -0500
-Message-ID: <54C7C16B.2080003@wwwdotorg.org>
-Date: Tue, 27 Jan 2015 09:48:43 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Tue, 27 Jan 2015 11:54:05 -0500
+Date: Tue, 27 Jan 2015 16:52:05 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+cc: peterhuewe@gmx.de, ashley@ashleylai.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH] tpm: fix suspend/resume paths for TPM
+ 2.0
+In-Reply-To: <1422356564-17312-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+Message-ID: <alpine.DEB.2.11.1501271620520.1725@localhost.localdomain>
+References: <1422356564-17312-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 04/11] ARM: tegra: Set spi-max-frequency property to
- flash node
-References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com> <1421338359-27467-5-git-send-email-tomeu.vizoso@collabora.com> <54B7F84A.6020906@wwwdotorg.org> <CAAObsKDx_W23OTL2RE4xxgXL-rtp3npkBtx6qMHV1j8ZXmo1rw@mail.gmail.com>
-In-Reply-To: <CAAObsKDx_W23OTL2RE4xxgXL-rtp3npkBtx6qMHV1j8ZXmo1rw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-554240536-1422375754=:1725"
+Content-ID: <alpine.DEB.2.11.1501271622490.1725@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2015 04:13 AM, Tomeu Vizoso wrote:
-> On 15 January 2015 at 18:26, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
->>>
->>> To silence a warning on Nyan boards.
->>>
->>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->>> ---
->>>    arch/arm/boot/dts/tegra124-nyan-big.dts | 1 +
->>>    1 file changed, 1 insertion(+)
->>>
->>> diff --git a/arch/arm/boot/dts/tegra124-nyan-big.dts
->>> b/arch/arm/boot/dts/tegra124-nyan-big.dts
->>> index 9a9cffe..94c7ba9 100644
->>> --- a/arch/arm/boot/dts/tegra124-nyan-big.dts
->>> +++ b/arch/arm/boot/dts/tegra124-nyan-big.dts
->>> @@ -1660,6 +1660,7 @@
->>>
->>>                  flash@0 {
->>>                          compatible = "winbond,w25q32dw";
->>> +                       spi-max-frequency = <25000000>;
->>
->>
->> This property already exists in the SPI controller. Isn't the max frequency
->> supposed to inherit from there? If so, shouldn't the code not warn when such
->> inheritance happens, i.e. it'd be better to fix the code?
->
-> I don't think it's supposed to fall back to the controller's max freq,
-> as each device has its own maximum frequency that it can support and
-> it's not related to what the master supports.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-If the controller-specific frequency property isn't ever used, we should 
-remove it. No point carrying cruft that looks like it does something but 
-doesn't.
+--8323328-554240536-1422375754=:1725
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.11.1501271622491.1725@localhost.localdomain>
 
-Logically, each device's max frequency certainly should be influenced by 
-all of the controller, board, and device max frequency. Those should all 
-impose a cap on the speed used. I'd expect this to be expressed in DT as 
-a single property in each device where the user has calculated that max 
-for the device, with the option to have all the devices fall back to the 
-"default" provided at the controller/bus level if the device imposes a 
-cap that's no lower.
+On Tue, 27 Jan 2015, Jarkko Sakkinen wrote:
+> Fixed suspend/resume paths for TPM 2.0 and consolidated all the
+> associated code to the tpm_pm_suspend() and tpm_pm_resume()
+> functions. Resume path should be handled by the firmware, i.e.
+> Startup(CLEAR) for hibernate and Startup(STATE) for suspend.
+> 
+> There might be some non-PC embedded devices in the future where
+> Startup() is not the handled by the FW but fixing the code for
+> those IMHO should be postponed until there is hardware available
+> to test the fixes although extra Startup in the driver code is
+> essentially a NOP.
+> 
+> Reported-by: Peter Hüwe <PeterHuewe@gmx.de>
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> ---
 
+...
+
+> --- a/drivers/char/tpm/tpm_tis.c
+> +++ b/drivers/char/tpm/tpm_tis.c
+> @@ -865,25 +865,23 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+>  static int tpm_tis_resume(struct device *dev)
+>  {
+
+...
+
+> +	/* TPM 1.2 requires self-test on resume. */
+> +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
+> +		ret = tpm_do_selftest(chip);
+> +		if (ret < 0)
+> +			return ret;
+
+Just to note, the return value from tpm_do_selftest() on TPM 1.2 chips was 
+previously ignored. Mine does return 0.
+
+--8323328-554240536-1422375754=:1725--
