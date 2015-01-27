@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727AbbA0MUJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:20:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35427 "EHLO
+	id S932709AbbA0MYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:24:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35432 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758710AbbA0MUA (ORCPT
+	with ESMTP id S1758711AbbA0MUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:00 -0500
+	Tue, 27 Jan 2015 07:20:02 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Michael Turquette <mturquette@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 111/126] mmc: sdhci: Fix sleep in atomic after inserting SD card
-Date: Tue, 27 Jan 2015 12:16:56 +0000
-Message-Id: <1422361031-19364-112-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 112/126] clk: at91: keep slow clk enabled to prevent system hang
+Date: Tue, 27 Jan 2015 12:16:57 +0000
+Message-Id: <1422361031-19364-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,100 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
 
-commit 2836766a9d0bd02c66073f8dd44796e6cc23848d upstream.
+commit dca1a4b5ff6e2c25adeff366eb06270dadeab3db upstream.
 
-Sleep in atomic context happened on Trats2 board after inserting or
-removing SD card because mmc_gpio_get_cd() was called under spin lock.
+All slow clk users are not properly claiming it (get + prepare + enable)
+before using it.
+If all users properly claiming this clock release it, the clock is
+disabled, but faulty users still depends on it, and the system hangs.
 
-Fix this by moving card detection earlier, before acquiring spin lock.
-The mmc_gpio_get_cd() call does not have to be protected by spin lock
-because it does not access any sdhci internal data.
-The sdhci_do_get_cd() call access host flags (SDHCI_DEVICE_DEAD). After
-moving it out side of spin lock it could theoretically race with driver
-removal but still there is no actual protection against manual card
-eject.
+This fix prevents the slow clock from being disabled, and should solve the
+hanging issue, but offending drivers should be patched to properly claim
+this clock.
 
-Dmesg after inserting SD card:
-[   41.663414] BUG: sleeping function called from invalid context at drivers/gpio/gpiolib.c:1511
-[   41.670469] in_atomic(): 1, irqs_disabled(): 128, pid: 30, name: kworker/u8:1
-[   41.677580] INFO: lockdep is turned off.
-[   41.681486] irq event stamp: 61972
-[   41.684872] hardirqs last  enabled at (61971): [<c0490ee0>] _raw_spin_unlock_irq+0x24/0x5c
-[   41.693118] hardirqs last disabled at (61972): [<c04907ac>] _raw_spin_lock_irq+0x18/0x54
-[   41.701190] softirqs last  enabled at (61648): [<c0026fd4>] __do_softirq+0x234/0x2c8
-[   41.708914] softirqs last disabled at (61631): [<c00273a0>] irq_exit+0xd0/0x114
-[   41.716206] Preemption disabled at:[<  (null)>]   (null)
-[   41.721500]
-[   41.722985] CPU: 3 PID: 30 Comm: kworker/u8:1 Tainted: G        W      3.18.0-rc5-next-20141121 #883
-[   41.732111] Workqueue: kmmcd mmc_rescan
-[   41.735945] [<c0014d2c>] (unwind_backtrace) from [<c0011c80>] (show_stack+0x10/0x14)
-[   41.743661] [<c0011c80>] (show_stack) from [<c0489d14>] (dump_stack+0x70/0xbc)
-[   41.750867] [<c0489d14>] (dump_stack) from [<c0228b74>] (gpiod_get_raw_value_cansleep+0x18/0x30)
-[   41.759628] [<c0228b74>] (gpiod_get_raw_value_cansleep) from [<c03646e8>] (mmc_gpio_get_cd+0x38/0x58)
-[   41.768821] [<c03646e8>] (mmc_gpio_get_cd) from [<c036d378>] (sdhci_request+0x50/0x1a4)
-[   41.776808] [<c036d378>] (sdhci_request) from [<c0357934>] (mmc_start_request+0x138/0x268)
-[   41.785051] [<c0357934>] (mmc_start_request) from [<c0357cc8>] (mmc_wait_for_req+0x58/0x1a0)
-[   41.793469] [<c0357cc8>] (mmc_wait_for_req) from [<c0357e68>] (mmc_wait_for_cmd+0x58/0x78)
-[   41.801714] [<c0357e68>] (mmc_wait_for_cmd) from [<c0361c00>] (mmc_io_rw_direct_host+0x98/0x124)
-[   41.810480] [<c0361c00>] (mmc_io_rw_direct_host) from [<c03620f8>] (sdio_reset+0x2c/0x64)
-[   41.818641] [<c03620f8>] (sdio_reset) from [<c035a3d8>] (mmc_rescan+0x254/0x2e4)
-[   41.826028] [<c035a3d8>] (mmc_rescan) from [<c003a0e0>] (process_one_work+0x180/0x3f4)
-[   41.833920] [<c003a0e0>] (process_one_work) from [<c003a3bc>] (worker_thread+0x34/0x4b0)
-[   41.841991] [<c003a3bc>] (worker_thread) from [<c003fed8>] (kthread+0xe4/0x104)
-[   41.849285] [<c003fed8>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
-[   42.038276] mmc0: new high speed SDHC card at address 1234
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 94144a465dd0 ("mmc: sdhci: add get_cd() implementation")
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Reported-by: Bo Shen <voice.shen@atmel.com>
+Signed-off-by: Michael Turquette <mturquette@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mmc/host/sdhci.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/clk/at91/clk-slow.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 47055f3f01b8..1d92337f5e4d 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1308,6 +1308,8 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
+diff --git a/drivers/clk/at91/clk-slow.c b/drivers/clk/at91/clk-slow.c
+index 0300c46ee247..ef8d458cd74a 100644
+--- a/drivers/clk/at91/clk-slow.c
++++ b/drivers/clk/at91/clk-slow.c
+@@ -70,6 +70,7 @@ struct clk_sam9x5_slow {
  
- 	sdhci_runtime_pm_get(host);
+ #define to_clk_sam9x5_slow(hw) container_of(hw, struct clk_sam9x5_slow, hw)
  
-+	present = mmc_gpio_get_cd(host->mmc);
-+
- 	spin_lock_irqsave(&host->lock, flags);
++static struct clk *slow_clk;
  
- 	WARN_ON(host->mrq != NULL);
-@@ -1336,7 +1338,6 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 	 *     zero: cd-gpio is used, and card is removed
- 	 *     one: cd-gpio is used, and card is present
- 	 */
--	present = mmc_gpio_get_cd(host->mmc);
- 	if (present < 0) {
- 		/* If polling, assume that the card is always present. */
- 		if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
-@@ -2047,15 +2048,18 @@ static void sdhci_card_event(struct mmc_host *mmc)
+ static int clk_slow_osc_prepare(struct clk_hw *hw)
  {
- 	struct sdhci_host *host = mmc_priv(mmc);
- 	unsigned long flags;
-+	int present;
+@@ -357,6 +358,8 @@ at91_clk_register_sam9x5_slow(void __iomem *sckcr,
+ 	clk = clk_register(NULL, &slowck->hw);
+ 	if (IS_ERR(clk))
+ 		kfree(slowck);
++	else
++		slow_clk = clk;
  
- 	/* First check if client has provided their own card event */
- 	if (host->ops->card_event)
- 		host->ops->card_event(host);
+ 	return clk;
+ }
+@@ -433,6 +436,8 @@ at91_clk_register_sam9260_slow(struct at91_pmc *pmc,
+ 	clk = clk_register(NULL, &slowck->hw);
+ 	if (IS_ERR(clk))
+ 		kfree(slowck);
++	else
++		slow_clk = clk;
  
-+	present = sdhci_do_get_cd(host);
+ 	return clk;
+ }
+@@ -465,3 +470,25 @@ void __init of_at91sam9260_clk_slow_setup(struct device_node *np,
+ 
+ 	of_clk_add_provider(np, of_clk_src_simple_get, clk);
+ }
 +
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	/* Check host->mrq first in case we are runtime suspended */
--	if (host->mrq && !sdhci_do_get_cd(host)) {
-+	if (host->mrq && !present) {
- 		pr_err("%s: Card removed during transfer!\n",
- 			mmc_hostname(host->mmc));
- 		pr_err("%s: Resetting controller.\n",
++/*
++ * FIXME: All slow clk users are not properly claiming it (get + prepare +
++ * enable) before using it.
++ * If all users properly claiming this clock decide that they don't need it
++ * anymore (or are removed), it is disabled while faulty users are still
++ * requiring it, and the system hangs.
++ * Prevent this clock from being disabled until all users are properly
++ * requesting it.
++ * Once this is done we should remove this function and the slow_clk variable.
++ */
++static int __init of_at91_clk_slow_retain(void)
++{
++	if (!slow_clk)
++		return 0;
++
++	__clk_get(slow_clk);
++	clk_prepare_enable(slow_clk);
++
++	return 0;
++}
++arch_initcall(of_at91_clk_slow_retain);
 -- 
 2.1.4
 
