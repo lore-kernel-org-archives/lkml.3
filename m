@@ -1,150 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174AbbA0LbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 06:31:07 -0500
-Received: from mga09.intel.com ([134.134.136.24]:37824 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758066AbbA0Laq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 06:30:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,474,1418112000"; 
-   d="scan'208";a="676671864"
-Date: Tue, 27 Jan 2015 13:30:41 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] HID: i2c-hid: Add support for GPIO interrupts
-Message-ID: <20150127113041.GP1451@lahna.fi.intel.com>
-References: <20150126144729.GG1451@lahna.fi.intel.com>
- <20150126145000.GJ23313@leverpostej>
- <20150126151637.GH1451@lahna.fi.intel.com>
- <20150126160044.GK23313@leverpostej>
- <20150126161356.GJ1451@lahna.fi.intel.com>
- <20150126163929.GL23313@leverpostej>
- <20150127101610.GK1451@lahna.fi.intel.com>
- <20150127103925.GB17721@leverpostej>
- <20150127105931.GN1451@lahna.fi.intel.com>
- <20150127111458.GD17721@leverpostej>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150127111458.GD17721@leverpostej>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758219AbbA0LdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:33:08 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:36149 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326AbbA0LdE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 06:33:04 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-83-54c776dd0a48
+Message-id: <54C77762.9090807@samsung.com>
+Date: Tue, 27 Jan 2015 12:32:50 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: "Baluta, Teodora" <teodora.baluta@intel.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        LMML <linux-media@vger.kernel.org>, Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [RFC PATCH 0/3] Introduce IIO interface for fingerprint sensors
+References: <1417698017-13835-1-git-send-email-teodora.baluta@intel.com>
+ <5481153B.4070609@kernel.org> <1418047828.18463.10.camel@bebop>
+ <54930604.1020607@metafoo.de> <549D42BD.1050901@kernel.org>
+ <1421255642.31900.4.camel@bebop> <54B7FAF2.8080207@samsung.com>
+ <A2E3DE9C026DE6469D89C3A4C6C219390A89FE37@IRSMSX107.ger.corp.intel.com>
+In-reply-to: <A2E3DE9C026DE6469D89C3A4C6C219390A89FE37@IRSMSX107.ger.corp.intel.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7p3y46HGNxab25xavIzJosHTauY
+	LJZMns9qMe/IOxaLy7vmsFn0bNjKanFxnbzF2TM3mBw4PBbvecnksWlVJ5vHkjeHWD36tqxi
+	9Pi8Sc7j1NfP7AFsUVw2Kak5mWWpRfp2CVwZO0/PYiyYLVxxdOpbtgbGv3xdjJwcEgImEmde
+	3mSFsMUkLtxbz9bFyMUhJLCUUWLll+/sEM4nRolDK9YAORwcvAJaEisPKYE0sAioSly895cJ
+	xGYTMJToPdrHCGKLCkRInLy7hx3E5hUQlPgx+R4LiC0iEC6xZ9NDsAXMAm1MEhf2nAIrEhbw
+	kdh/6TVYkZDAFSaJww2yIDanQJjEh5bTTCB7mQXUJaZMyQUJMwvIS2xe85Z5AqPALCQrZiFU
+	zUJStYCReRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSNB/2cG4+JjVIUYBDkYlHl6OouMh
+	QqyJZcWVuYcYJTiYlUR4vSKAQrwpiZVVqUX58UWlOanFhxiZODilGhjbnrtqfZDPfWkz+2vW
+	q2NKK9vrWWcFO3l+eaSpdVL7FvPd6Ql3ve4pL8k02hDWprhsssiLKWLzrcudb673cr34QuWg
+	w7/N9o+zecOEV+anyXhdyul8w+N+VNnuz7EpcfcNRa57N7VEcn2aetRg4r2lYTn3n4bLCGsx
+	yujxd56Jm+d6Sq3shKoSS3FGoqEWc1FxIgATgPJjWAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 11:14:58AM +0000, Mark Rutland wrote:
-> On Tue, Jan 27, 2015 at 10:59:31AM +0000, Mika Westerberg wrote:
-> > On Tue, Jan 27, 2015 at 10:39:25AM +0000, Mark Rutland wrote:
-> > > > If the above is not the right way to use GPIOs as interrupt, can you
-> > > > please tell me how it is done then?
-> > > 
-> > > 
-> > > So lets say we have a device which generates an interrupt:
-> > > 
-> > > 	device@f00 {
-> > > 		compatible = "some-interrupting-device";
-> > > 		reg = <0xf00 0x100>;
-> > > 		interrupts = < ... >;
-> > > 	};
-> > > 
-> > > It's intended that this is connected to an interrupt controller:
-> > > 
-> > > 	ic: interrupt-controller@b00 {
-> > > 		compatible = "some-interrupt-controller";
-> > > 		reg = <0xb00 0x100>;
-> > > 		#interrupt-cells = <1>;
-> > > 	};
-> > > 
-> > > 	device@f00 {
-> > > 		compatible = "some-interrupting-device";
-> > > 		reg = <0xf00 0x100>;
-> > > 		interrupt-parent = <&ic>;
-> > > 		interrupts = <0x3>;
-> > > 	};
-> > > 
-> > > But in some cases, this gets connected to a GPIO controller. In these
-> > > cases, the device is still logically generating an interrupt, and the
-> > > fact that the endpoint is an interrupt controller is irrelevant from the
-> > > PoV of the device. So we acknowledge that the GPIO controller is also
-> > > capable of acting as an interrupt controller, and mark it as such:
-> > > 
-> > > 	gc: gpio-controller@000 {
-> > > 		compatible = "some-gpio-controller";
-> > > 		reg = <0x000 0x100>;
-> > > 		#gpio-cells = <1>;
-> > > 		#interrupt-cells = <1>;
-> > > 	};
-> > > 
-> > > 	device@f00 {
-> > > 		compatible = "some-interrupting-device";
-> > > 		reg = <0xf00 0x100>;
-> > > 		interrupt-parent = <&gc>;
-> > > 		interrupts = <0x1>;
-> > > 	};
-> > > 
-> > > Thus the device binding only describes the logical interrupt, and the
-> > > driver only needs to handle interrupts.
-> > 
-> > OK.
-> > 
-> > > In cases where the binding/driver actually care about the GPIO being a
-> > > GPIO (e.g. for card detect in an MMC controller), describing the GPIO as
-> > > a GPIO makes sense, and we can try gpio_to_irq as an optimisation over
-> > > polling the state of the GPIO.
-> > 
-> > Well, I've seen touch panels where you actually need to switch the GPIO
-> > to be output and do some magic before you can use the same GPIO as an
-> > interrupt.
-> 
-> Ok. That's a nasty case, but surely in that case the relevant GPIO
-> shoiuld be a GpioIO object for output?
+Hi,
 
-I can't remember the details anymore, possibly it was GpioIo().
+On 23/01/15 14:05, Baluta, Teodora wrote:
+...
+>>>>>>> So why not v4l?  These are effectively image sensors..
+>>>>>>
+>>>>>> Well, here's why I don't think v4l would be the best option:
+>>>>>>
+>>>>>> - an image scanner could be implemented in the v4l subsystem, but
+>>>>>> it seems far more complicated for a simple fingerprint scanner - it
+>>>>>> usually has drivers for webcams, TVs or video streaming devices.
+>>>>>> The v4l subsystem (with all its support for colorspace, decoders,
+>>>>>> image compression, frame control) seems a bit of an overkill for a
+>>>>>> very straightforward fingerprint imaging sensor.
+>>>
+>>>> Whilst those are there, I would doubt the irrelevant bits would put
+>>>> much burden on a fingerprint scanning driver.  Been a while since I
+>>>> did anything in that area though so I could be wrong!
+>>
+>> IMO V4L is much better fit for this kind of devices than IIO. You can use just a
+>> subset of the API, it shouldn't take much effort to write a simple
+>> v4l2 capture driver, supporting fixed (probably vendor/chip specific) image
+>> format.  I'm not sure if it's better to use the v4l2 controls [1], define a new
+>> v4l2 controls class for the fingerprint scanner processing features, rather than
+>> trying to pass raw data to user space and interpret it then in some library.  I
+>> know there has been resistance to allowing passing unknown binary blobs to
+>> user space, due to possible abuses.
+>>
+>> [1] Documentation/video4linux/v4l2-controls.txt
+>                                                                                                                
+> The fingerprint sensor acts more like a scanner device, so the closest type 
+> is the V4L2_CAP_VIDEO_CAPTURE. However, this is not a perfect match because
+> the driver only sends an image, once, when triggered. Would it be a better
+> alternative to define a new capability type? Or it would be acceptable to
+> simply have a video device with no frame buffer or frame rate and the user
+> space application to read from the character device /dev/videoX?
 
-Nothing prevents you from using GpioIo() as an interrupt.
+I don't think a new capability is needed for just one buffer capture.
+The capture driver could just support read() and signal it by setting the
+V4L2_CAP_READWRITE capability flag [2], [3].
 
-> 
-> > > > BTW, passing NULL to gpiod_get() implies property named "gpios" in DT
-> > > > (which is why I added it to the documentation).
-> > > 
-> > > Sure. My concern is that we should not need to deal with GPIOs in this
-> > > case were the GPIO is only there to function as an interrupt.
-> > > 
-> > > Given that GpioInt seems to describe an interrupt which happens to be
-> > > backed by a GPIO, I don't understand what it is necessary to translate
-> > > this as a GPIO rather than an interrupt. If it were going to be used as
-> > > a GPIO, then it would be a GpioIO object, no?
-> > 
-> > OK, so where do you propose we handle the translation if not in the
-> > driver? Also keep in mind that some of the devices may have multiple
-> > GpioInt()s.
-> 
-> To me it seems that GpioInt objects should be translated to interrupts
-> by some core code. How are interrupts described and handed in ACPI? Are
-> they resource along the lines of GpioInts, or are they a completely
-> separate class of device property?
+[2]
+http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-querycap.html#device-capabilities
+[3] http://linuxtv.org/downloads/v4l-dvb-apis/io.html#rw
 
-They are similar resources in _CRS, like GpioIo/GpioInt etc. Below is
-from another touch panel:
-
-	Name (_CRS, ResourceTemplate () {
-		I2cSerialBus (0x004C, ControllerInitiated, 0x00061A80,
-			AddressingMode7Bit, "\\_SB.PCI0.I2C1", 0x00, ResourceConsumer,,)
-		Interrupt (ResourceConsumer, Level, ActiveLow, Exclusive, ,, )
-		{
-		    0x00000022,
-		}
-	})
-
-If we see one of the above we automatically add it to client->irq in
-case of I2C device.
+--
+Regards,
+Sylwester
