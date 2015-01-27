@@ -1,104 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759593AbbA0TrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 14:47:17 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:41155 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524AbbA0TrP convert rfc822-to-8bit (ORCPT
+	id S1759600AbbA0TtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 14:49:23 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36717 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbbA0TtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 14:47:15 -0500
-Content-Type: text/plain; charset="utf-8"
+	Tue, 27 Jan 2015 14:49:21 -0500
+Date: Tue, 27 Jan 2015 19:49:12 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <20150127194912.GO21293@sirena.org.uk>
+References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1422029330-10971-9-git-send-email-ricardo.ribalda@gmail.com>
+ <20150127000428.GK21293@sirena.org.uk>
+ <CAPybu_1RW0F-ak-B_4H-riTUwF2yCrpKdT2RWviTdCMR_kQmww@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        "Srinivas Kandagatla" <srinivas.kandagatla@linaro.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <54BD5EA3.6070106@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1421661433-27141-1-git-send-email-srinivas.kandagatla@linaro.org>
- <54BD5EA3.6070106@codeaurora.org>
-Message-ID: <20150127194701.22722.72853@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: Fix debugfs clk removal before inited
-Date: Tue, 27 Jan 2015 11:47:01 -0800
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="uugJhu2tcv2n65vm"
+Content-Disposition: inline
+In-Reply-To: <CAPybu_1RW0F-ak-B_4H-riTUwF2yCrpKdT2RWviTdCMR_kQmww@mail.gmail.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 08/18] spi/xilinx: Support cores with no interrupt
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Boyd (2015-01-19 11:44:35)
-> On 01/19/2015 01:57 AM, Srinivas Kandagatla wrote:
-> > Some of the clks can be registered & unregistered before the clk related debugfs
-> > entries are initialized at late_initcall. In the unregister path checking for only
-> > dentry before clk_debug_init() would lead dangling pointers in the debug clk list,
-> > because the list is already populated in register path and the clk pointer freed in
-> > unregister path.
-> > The side effect of not removing it from the list is either a null pointer
-> > dereference or if lucky to boot the system, the number of clk entries in
-> > debugfs disappear.
-> >
-> > We could add more checks like if (inited && !clk->dentry) but just removing
-> > the check for dentry made more sense as debugfs_remove_recursive() seems to be
-> > safe with null pointers. This will ensure that the unregistering clk would be
-> > removed from the debug list in all the code paths.
-> >
-> > Without this patch kernel would crash with log:
-> > Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> > pgd = c0204000
-> > [00000000] *pgd=00000000
-> > Internal error: Oops: 5 [#1] SMP ARM
-> > Modules linked in:
-> > CPU: 1 PID: 1 Comm: swapper/0 Tainted: G    B          3.19.0-rc3-00007-g412f9ba-dirty #840
-> > Hardware name: Qualcomm (Flattened Device Tree)
-> > task: ed948000 ti: ed944000 task.ti: ed944000
-> > PC is at strlen+0xc/0x40
-> > LR is at __create_file+0x64/0x1dc
-> > pc : [<c04ee604>]    lr : [<c049f1c4>]    psr: 60000013
-> > sp : ed945e40  ip : ed945e50  fp : ed945e4c
-> > r10: 00000000  r9 : c1006094  r8 : 00000000
-> > r7 : 000041ed  r6 : 00000000  r5 : ed4af998  r4 : c11b5e28
-> > r3 : 00000000  r2 : ed945e38  r1 : a0000013  r0 : 00000000
-> > Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> > Control: 10c5787d  Table: 8020406a  DAC: 00000015
-> > Process swapper/0 (pid: 1, stack limit = 0xed944248)
-> > Stack: (0xed945e40 to 0xed946000)
-> > 5e40: ed945e7c ed945e50 c049f1c4 c04ee604 c0fc2fa4 00000000 ecb748c0 c11c2b80
-> > 5e60: c0beec04 0000011c c0fc2fa4 00000000 ed945e94 ed945e80 c049f3e0 c049f16c
-> > 5e80: 00000000 00000000 ed945eac ed945e98 c08cbc50 c049f3c0 ecb748c0 c11c2b80
-> > 5ea0: ed945ed4 ed945eb0 c0fc3080 c08cbc30 c0beec04 c107e1d8 ecdf0600 c107e1d8
-> > 5ec0: c107e1d8 ecdf0600 ed945f54 ed945ed8 c0208ed4 c0fc2fb0 c026a784 c04ee628
-> > 5ee0: ed945f0c ed945ef0 c0f5d600 c04ee604 c0f5d5ec ef7fcc7d c0b40ecc 0000011c
-> > 5f00: ed945f54 ed945f10 c026a994 c0f5d5f8 c04ecc00 00000007 ef7fcc95 00000007
-> > 5f20: c0e90744 c0dd0884 ed945f54 c106cde0 00000007 c117f8c0 0000011c c0f5d5ec
-> > 5f40: c1006094 c100609c ed945f94 ed945f58 c0f5de34 c0208e50 00000007 00000007
-> > 5f60: c0f5d5ec be9b5ae0 00000000 c117f8c0 c0af1680 00000000 00000000 00000000
-> > 5f80: 00000000 00000000 ed945fac ed945f98 c0af169c c0f5dd2c ed944000 00000000
-> > 5fa0: 00000000 ed945fb0 c020f298 c0af168c 00000000 00000000 00000000 00000000
-> > 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> > 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 ebcc6d33 bfffca73
-> > [<c04ee604>] (strlen) from [<c049f1c4>] (__create_file+0x64/0x1dc)
-> > [<c049f1c4>] (__create_file) from [<c049f3e0>] (debugfs_create_dir+0x2c/0x34)
-> > [<c049f3e0>] (debugfs_create_dir) from [<c08cbc50>] (clk_debug_create_one+0x2c/0x16c)
-> > [<c08cbc50>] (clk_debug_create_one) from [<c0fc3080>] (clk_debug_init+0xdc/0x144)
-> > [<c0fc3080>] (clk_debug_init) from [<c0208ed4>] (do_one_initcall+0x90/0x1e0)
-> > [<c0208ed4>] (do_one_initcall) from [<c0f5de34>] (kernel_init_freeable+0x114/0x1e0)
-> > [<c0f5de34>] (kernel_init_freeable) from [<c0af169c>] (kernel_init+0x1c/0xfc)
-> > [<c0af169c>] (kernel_init) from [<c020f298>] (ret_from_fork+0x14/0x3c)
-> > Code: c0b40ecc e1a0c00d e92dd800 e24cb004 (e5d02000)
-> > ---[ end trace b940e45b5e25c1e7 ]---
-> >
-> > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> >
-> 
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-> Fixes: 6314b6796e3c "clk: Don't hold prepare_lock across debugfs creation"
 
-Applied to clk-next.
+--uugJhu2tcv2n65vm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards,
-Mike
+On Tue, Jan 27, 2015 at 08:05:57PM +0100, Ricardo Ribalda Delgado wrote:
 
-> 
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> a Linux Foundation Collaborative Project
-> 
+> > Right, for short transfers polling tends to win every time over
+> > interrupts - if you look at other controller drivers you'll see a lot of
+> > them use this technique.  The best practice here is generally to use a
+> > copy break and do very short transfers in polling mode and go back to
+> > interrupts for larger ones.  This break is typically done at the point
+> > where we go over a FIFO in transfer size since normally if the device is
+> > designed to be run with DMA the FIFO will be quite small.
+
+> Seems very reasonable. Only problem I can see is if the spi clk is
+> veeery slow, then a irq approach, even for transfer size bellow
+> buffer_size will be better.
+
+Yeah, there's a bit of guesswork in there though practically speaking
+people tend not to make SPI *that* slow since one of the reasons to use
+it over I2C is performance.  You can do things like estimate how long
+the transfer should be based on the clock rate and shove a msleep() in
+there as well.
+
+> > Obviously this isn't quite the same case since not only is there no DMA
+> > support (yet?) but the FIFO could be any size but similar things apply
+> > especially if someone configured the device with a large FIFO.
+
+> The hardware does not support dma (at least without making use of
+> another core called cdma....)
+
+Yes, that's standard - it's very rare to see a SPI controller with
+integrated DMA.  Usually the IP will bring out signals which can
+handshake with a DMA controller to control flow.
+
+> We can always argue that the system engineer can select polling by not
+> specifying an irq on the device tree.
+
+The DT should describe the hardware, performance tuning doesn't really
+come into that - what if the driver gets better and can be smarter about
+interrupts or the best tuning varies at runtime?
+
+> >> +     xspi_init_hw(xspi);
+
+> > This appears to move the interrupt request before the hardware reset.
+> > Are you sure the interrupt handler won't misbehave if it fires before we
+> > finished initializing?  One thing the hardware reset should do is get
+> > the device in a known good state.
+
+> The hardware will be reseted and in good state by the function
+> find_buffer_size, so this should be good. Also the initialization is
+> slightly different for polling and irq mode.
+
+> So far I have fixed what you have sent and implemented a new patch for
+> the "heuristic" irq mode. I will try to run in on hw tomorrow and send
+> a new patchset with the patches that have not been merged yet.
+
+OK.
+
+> Maybe you want to consider also this patch from Michal Simek to your
+> topic/xilinx branch
+
+> https://patchwork.kernel.org/patch/5648351/
+
+Please include plain text descriptions of things in your mails rather
+than just links/numbers.
+
+--uugJhu2tcv2n65vm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUx+u3AAoJECTWi3JdVIfQd0wH/39w/4VhBshJwqC81/J6XIWj
+Qg01hxnY3u3NTxUk/IqCkHzrcobZ8R3fvNwDuH8m3QtN51CCQt17TlkCmeoLaUP2
+CV/XstQZ9Xyq+yKuWmPXTI5BFVPl6tW40ZW/8Uu1tydv0zg43KVRBki/UfKOz+uY
+UeiebbNsVUQuMUueqoFwkJbHbQK37Ubg9/eFCeyL0rR1zurxgEuISTAbRJlf8OJT
+BxPcIFW4qTeCL4TQ3Hnxi30bqpcBcnYiFf+w82SNDwZoS73b9i93kij9UhHWtoht
+/LfYCm5GwbbjX0FVEeUCUWBBoQeMADFOLC/MDluSpuxImsOYaEBHg9B4M04H0WI=
+=Pg5B
+-----END PGP SIGNATURE-----
+
+--uugJhu2tcv2n65vm--
