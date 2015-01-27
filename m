@@ -1,73 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759460AbbA0Smw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:42:52 -0500
-Received: from smtprelay0084.hostedemail.com ([216.40.44.84]:55333 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754290AbbA0Smt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:42:49 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1042:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2892:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4389:5007:6261:7875:10004:10400:10848:10967:11232:11473:11658:11914:12517:12519:12663:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: copy34_185ae5ded3062
-X-Filterd-Recvd-Size: 2409
-Date: Tue, 27 Jan 2015 13:42:46 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Borislav Petkov <bp@alien8.de>, Richard Weinberger <richard@nod.at>,
-        linux-mmc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
-Message-ID: <20150127134246.297aae46@gandalf.local.home>
-In-Reply-To: <54C7DA10.3040209@ahsoftware.de>
-References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de>
-	<CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com>
-	<54C77E69.7050600@ahsoftware.de>
-	<20150127120855.GA9254@pd.tnic>
-	<54C7816A.8050800@ahsoftware.de>
-	<54C78524.3070901@nod.at>
-	<54C7881F.6020501@ahsoftware.de>
-	<20150127142120.GA3351@pd.tnic>
-	<54C7C2EC.7010605@ahsoftware.de>
-	<20150127172415.GC25043@home.goodmis.org>
-	<54C7CD1C.1060601@ahsoftware.de>
-	<20150127124817.608db508@gandalf.local.home>
-	<54C7D549.3070705@ahsoftware.de>
-	<20150127132148.365ef397@gandalf.local.home>
-	<54C7DA10.3040209@ahsoftware.de>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1759509AbbA0Sqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:46:43 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45724 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755AbbA0Sql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 13:46:41 -0500
+Message-ID: <54C7DCDA.4030809@ti.com>
+Date: Tue, 27 Jan 2015 13:45:46 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH v4 4/6] of/pci: add of_pci_dma_configure() update dma
+ configuration
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-5-git-send-email-m-karicheri2@ti.com> <20150123234124.GW29776@google.com> <54C6CCF3.7080308@ti.com> <CAErSpo4w0zVCmXk2D2Qk5W3kceS9Wk+=jqHBDwk6HUXWwXdq_Q@mail.gmail.com> <54C7D576.6030502@ti.com> <CAErSpo4Awgqu0ZtoMm0XSZzhnYtXh3xxH2OJMkyth5YDR9GUiA@mail.gmail.com>
+In-Reply-To: <CAErSpo4Awgqu0ZtoMm0XSZzhnYtXh3xxH2OJMkyth5YDR9GUiA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015 19:33:52 +0100
-Alexander Holler <holler@ahsoftware.de> wrote:
+On 01/27/2015 01:42 PM, Bjorn Helgaas wrote:
+> On Tue, Jan 27, 2015 at 12:14 PM, Murali Karicheri<m-karicheri2@ti.com>  wrote:
+>> On 01/26/2015 06:59 PM, Bjorn Helgaas wrote:
+>>>
+>>> On Mon, Jan 26, 2015 at 5:25 PM, Murali Karicheri<m-karicheri2@ti.com>
+>>> wrote:
+>>>>
+>>>> On 01/23/2015 06:41 PM, Bjorn Helgaas wrote:
+>>>>>
+>>>>>
+>>>>> On Fri, Jan 23, 2015 at 05:32:37PM -0500, Murali Karicheri wrote:
+>>>>>>
+>>>>>>
+>>>>>> Add of_pci_dma_configure() to allow updating the dma configuration
+>>>>>> of the pci device using the configuration from DT of the parent of
+>>>>>> the root bridge device.
+>>>>>>
+>>    -- Cut ---
+>>
+>>>>>>
+>>>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>>>>>> ---
+>>>>>>     drivers/of/of_pci.c    |   39
+>>>>>> +++++++++++++++++++++++++++++++++++++++
+>>>>>>     include/linux/of_pci.h |   12 ++++++++++++
+>>>>>>     2 files changed, 51 insertions(+)
+>>>>>>
+>>>>>> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+>>>>>> index 88471d3..34878c9 100644
+>>>>>> --- a/drivers/of/of_pci.c
+>>>>>> +++ b/drivers/of/of_pci.c
+>>>>>> @@ -2,6 +2,7 @@
+>>>>>>     #include<linux/export.h>
+>>>>>>     #include<linux/of.h>
+>>>>>>     #include<linux/of_address.h>
+>>>>>> +#include<linux/of_device.h>
+>>>>>>     #include<linux/of_pci.h>
+>>>>>>     #include<linux/slab.h>
+>>>>>>
+>>>>>> @@ -229,6 +230,44 @@ parse_failed:
+>>>>>>           return err;
+>>>>>>     }
+>>>>>>     EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
+>>>>>> +
+>>>>>> +/**
+>>>>>> + * of_get_pci_root_bridge_parent - get the OF node of the root
+>>>>>> bridge's
+>>>>>> parent
+>>>>>> + * @dev: ptr to pci_dev struct of the pci device
+>>>>>> + *
+>>>>>> + * This function will traverse the bus up to the root bus starting
+>>>>>> with
+>>>>>> + * the child and return the OF node ptr to root bridge device's parent
+>>>>>> device.
+>>>>>> + */
+>>>>>> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
+>>>>>
+>>>>>
+>>>>>
+>>>>> I'm not an OF person, but this interface seems like it might be too
+>>>>> special-purpose.  Maybe it would be enough to add
+>>>>> "of_get_pci_root_bridge()", and the caller could do this:
+>>>>>
+>>>>>        struct device *bridge = of_get_pci_root_bridge(dev);
+>>>>>        struct device_node *parent_np = bridge->parent->of_node;
+>>>>>
+>>>>> Also, the name "of_get_..." suggests that it increments a refcount, as
+>>>>> of_get_parent() does.  But you aren't doing anything with the refcount.
+>>>>>
+>>>>> But I guess an "of_get_pci_root_bridge()" isn't doing anything
+>>>>> OF-related,
+>>>>> so maybe we should just add a "pci_get_host_bridge(struct pci_dev *)"
+>>>>> to PCI instead.
+>>>>
+>>>>
+>>>>
+>>>> Bjorn,
+>>>>
+>>>> Thanks for the comment.
+>>>>
+>>>> I think adding pci_get_host_bridge() is a good idea. There is already
+>>>> similar function in host-bridge.c. I have added this function re-using
+>>>> existing function find_pci_root_bus(). See the incremental diff below
+>>>> after
+>>>> this change. Does this look good?
+>>>
+>>>
+>>> I like the implementation, but I think either we need to take a
+>>> reference on the host bridge, or change the name to  something like
+>>> "pci_find_host_bridge()", because using "_get_" is conventional for
+>>> functions that acquire a reference.
+>>>
+>>> Since host bridges are hot-pluggable, at least in theory, I vote for
+>>> taking a reference.  Then of course, you'd have to add code to drop
+>>> the reference when you're finished with it.
+>>>
+>> Bjorn,
+>>
+>> Thanks. I agree with your suggestion even though the convention is not
+>> followed fully :) of_pci_get_devfn(), of_get_pci_domain_nr(),
+>> of_pci_get_host_bridge_resources() are some of those functions not following
+>> the convention. I plan to change the function as below. Also want to name
+>> functions as pci_get/put_host_bridge_device() as existing function
+>> find_pci_host_bridge() is actually returning ptr to struct pci_host_bridge
+>> vs the new function returning ptr to device. Here are the new functions and
+>> how they will be used. Please review and respond so that I can avoid a
+>> re-spin.
+>>
+>> in linux/include/pci.h add the prototypes of
+>> pci_get/put_host_bridge_device().
+>>
+>> in drivers/pci/host-bridge.c add two new functions.
+>>
+>> struct device *pci_get_host_bridge_device(struct pci_dev *dev)
+>> {
+>>          struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
+>>          struct device *bridge = root_bus->bridge;
+>>
+>>          kobject_get(&bridge->kobj);
+>>          return bridge;
+>> }
+>
+> Looks good to me.
+>
+>> void  pci_put_host_bridge_device(struct pci_dev *dev)
+>> {
+>>          struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
+>>          struct device *bridge = root_bus->bridge;
+>>
+>>          kobject_put(&bridge->kobj);
+>> }
+>
+> I think I would pass in the "struct device *" here so we don't have to
+> call find_pci_root_bus() again.
+>
+>> drivers/of/of_pci.c
+>>
+>> void of_pci_dma_configure(struct pci_dev *pci_dev)
+>> {
+>>          struct device *dev =&pci_dev->dev;
+>>          struct device *bridge = pci_get_host_bridge_device(pci_dev);
+>>
+>>          of_dma_configure(dev, bridge->parent->of_node);
+>>          pci_put_host_bridge_device(pci_dev);
+>
+> Then this would become "pci_put_host_bridge_device(bridge)"
 
-> Am 27.01.2015 um 19:21 schrieb Steven Rostedt:
-> 
-> > You want to add a way to tell a property of a device. That is *exactly*
-> > what sysfs was made for. Not dmesg.
-> 
-> Err, dmesg existed long before sysfs.
+Agree with both. Will become part of my v5 of the series. I am adding 
+this as a separate commit.
 
-Yep, and dmesg shows you what is happening in the kernel. sysfs shows
-you the state and properties of the kernel (or devices). That's what it
-was created for, because dmesg wasn't the place to put it.
+Murali
+>
+>> }
+>>
+>> Murali
+>>
+>>> Bjorn
+>>>
+>>
+>>>>>>
+>>>>
+>>>>
+>>>> --
+>>>> Murali Karicheri
+>>>> Linux Kernel, Texas Instruments
+>>
+>>
+>>
+>> --
+>> Murali Karicheri
+>> Linux Kernel, Texas Instruments
 
-> 
-> Anyway, it's ok. You're all right and I should request project 
-> sponsoring for offering a simple piece of (imho) interesting information.
 
-I'm sure if it's interesting enough, someone will eventually add it.
-
-Hey, if you end up doing it, it could help with your resume.
-
-> 
-> Happy frameworking and sorry for disturbing.
-
-No problem. Enjoy,
-
--- Steve
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
