@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbbA0Ee1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 23:34:27 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42632 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbbA0EeZ (ORCPT
+	id S1753625AbbA0Ejj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 23:39:39 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:38426 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752117AbbA0Eje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 23:34:25 -0500
-Date: Tue, 27 Jan 2015 04:34:21 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
-Message-ID: <20150127043421.GV29656@ZenIV.linux.org.uk>
-References: <20150126150913.653681560@goodmis.org>
- <20150126193049.GN29656@ZenIV.linux.org.uk>
- <20150126154259.5e650d32@gandalf.local.home>
- <20150126214658.GQ29656@ZenIV.linux.org.uk>
- <20150126184314.24f2583c@gandalf.local.home>
- <20150126184916.70d88963@gandalf.local.home>
- <20150126193909.19967bd0@grimm.local.home>
+	Mon, 26 Jan 2015 23:39:34 -0500
+Date: Tue, 27 Jan 2015 12:36:23 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Lunxue Dai <lunxue.dai@rock-chips.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] watchdog: dw_wdt: pat the watchdog before enabling
+ it
+Message-ID: <20150127123623.7e93b5f4@xhacker>
+In-Reply-To: <54C70F17.7070003@roeck-us.net>
+References: <1421882243-3631-1-git-send-email-dianders@chromium.org>
+	<20150122132200.4729d38b@xhacker>
+	<CAD=FV=UMmfNAEQVKCxTBapwO=pgno+cWUJNiMS7_uFK7NPevkw@mail.gmail.com>
+	<20150126142210.4cd0b33f@xhacker>
+	<CAD=FV=WKeH2hmgsB1Hh8G6LWGqSVf_nOTCs7PVqLZV_gB_VqhA@mail.gmail.com>
+	<20150127114403.71736c3f@xhacker>
+	<54C70F17.7070003@roeck-us.net>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126193909.19967bd0@grimm.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-27_02:2015-01-27,2015-01-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1501270051
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 07:39:09PM -0500, Steven Rostedt wrote:
-> On Mon, 26 Jan 2015 18:49:16 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > On Mon, 26 Jan 2015 18:43:14 -0500
-> > Steven Rostedt <rostedt@goodmis.org> wrote:
-> >  
-> > > That is, we can not hold i_mutex and take trace_types_lock.
-> > > 
-> > > trace_types_lock needs to be held with the creation or destruction
-> > > of events, which is what mkdir an rmdir do.
-> > 
-> > Although, I can not remember how this happened, but lockdep blew up on
-> > me with this. I'll look again.
-> 
-> OK, found it. When events are created (module is loaded), the
-> trace_types_lock is taken, and the event directories are created (these
-> are in /sys/kernel/debug/tracing/events). We need to grab the i_mutex
-> in order to create these files.
-> 
-> This means that we can not take the trace_types_lock within the mkdir
-> or rmdir calls.
-> 
-> The directories are not static even outside the mkdir and rmdir calls.
-> As events can be created from several sources, which will create new
-> files and directories.
+On Mon, 26 Jan 2015 20:07:51 -0800
+Guenter Roeck <linux@roeck-us.net> wrote:
 
-Frankly, the first impression is that you have trace_types_lock way too
-high in the hierarchy - you are taking it well outside of the level where
-you start walking through ftrace_trace_arrays...
+> On 01/26/2015 07:44 PM, Jisheng Zhang wrote:
+> > Dear Doug,
+> >
+> > On Mon, 26 Jan 2015 09:01:37 -0800
+> > Doug Anderson <dianders@chromium.org> wrote:
+> >
+> >> Jisheng,
+> >>
+> >> On Sun, Jan 25, 2015 at 10:22 PM, Jisheng Zhang <jszhang@marvell.com>
+> >> wrote:
+> >>>> Specifically I see the register WDT_TORR that has an offset of 0x4.
+> >>>> That's the RANGE_REG in your code.  It shows bits 3:0 set the timeout
+> >>>> period (0 = 0xffff and 15 = 0x7fffffff).  It shows bits 31:4 as
+> >>>> "reserved".
+> >>>
+> >>> Could you please dump registers' value at offset 0xf4 and 0xf8 if you
+> >>> don't mind?
+> >>
+> >> Those are not documented in the user manual that I have, but:
+> >>
+> >>>>> r(0xff8000f4)
+> >> 0x10000a02
+> >>>>> r(0xff8000f8)
+> >> 0x3130332a
+> >
+> Hi Jisheng,
+> 
+> This translates to ascii "103*". How does it translate to "1.02a" ?
 
-What else is it used for?  You seem to use it protect trace_array refcounts,
-but you use them in a very odd way...  What happens if lookup for a file
-in that tree loses CPU just as it enters trace_array_get() (e.g. on the
-same trace_types_lock), at which point rm .../instances/<whatever> comes,
-sees that tr->ref is still zero, kicks the sucker out of the list and
-frees it, immediately followed by mkdir creating a new instace?  If the
-allocation of the new trace_array happens to reuse the just-freed one,
-your trace_array_get() will actually succeed, won't it?
+aha, yes. wdt version is v1.03* ;)
 
-It's not fatal (after all, everything will work as if you opened the similar
-file in new instance in the first place), but it looks rather bogus...
+> 
+> > Thanks. Now I got some information about your platform:
+> >
+> > wdt version: v1.02a
+> >
+> > WDT_DUAL_TOP is configured as false, so there's no TOP_INIT
+> > WDT_DFLT_TOP is configured as 0, so it will timeout soon.
+> >
+> Any chance you can provide the bit map for the register reporting
+> those flags ?
+
+will do in Doug's v2 patch thread
+
+Thanks,
+Jisheng
