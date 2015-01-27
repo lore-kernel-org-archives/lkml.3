@@ -1,85 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649AbbA0QiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:38:23 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58811 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869AbbA0QiU (ORCPT
+	id S1758577AbbA0Qnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:43:51 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:57467 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755187AbbA0Qns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:38:20 -0500
-Date: Tue, 27 Jan 2015 08:37:23 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Robert Rosengren <robert.rosengren@axis.com>
-Cc: Jean Delvare <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Johan Adolfsson <johana@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval
- configurable
-Message-ID: <20150127163723.GA25845@roeck-us.net>
-References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>
- <54B92596.2040206@roeck-us.net>
- <20150116183020.GA6262@roeck-us.net>
- <54C74567.9020201@axis.com>
+	Tue, 27 Jan 2015 11:43:48 -0500
+Date: Tue, 27 Jan 2015 11:43:47 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+cc: gregkh@linuxfoundation.org, <lars@metafoo.de>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH_V2 0/3] usb: ohci: jz4740: Add DT support and a fix
+In-Reply-To: <1422367356-38012-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+Message-ID: <Pine.LNX.4.44L0.1501271143220.28374-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C74567.9020201@axis.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54C7BEFB.028C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 08:59:35AM +0100, Robert Rosengren wrote:
-> On 01/16/2015 07:30 PM, Guenter Roeck wrote:
-> >I sent a couple of patches a minute ago which should take care of the issue.
-> >Would be great if you can test it.
-> I applied the v2 versions of the patches for a quick test, but it was not
-> successful. Haven't done any further investigation on what the problem might
-> be, but when trying to read the sysfs driver I get "read error: No such
-> device or address".
-> 
-> The sysfs path have moved with the REGMAP settings, from
-> /sys/bus/i2c/devices/<x>/in0_input to
-> /sys/bus/i2c/devices/<x>/hwmon/hwmon0/in0_input.
-> 
-> Any ideas? Haven't had REGMAP configured in my kernel earlier, might it be
-> some specific configuration I miss?
-> 
+On Tue, 27 Jan 2015, Zubair Lutfullah Kakakhel wrote:
 
-My module test script at github.com/groeck/module-tests.git passes. Only
-downside is that it doesn't use real register values since I do not have
-a register dump.
+> Hi,
+> 
+> Here are a few simple patches for the jz4740.
+> 
+> First adds a simple DT binding.
+> Seconds adds DT support.
+> Third is a minor fix in clock enabling.
+> 
+> Patches are based on 3.19-rc6. Quite disjoint and stay within jz4740 
+> so should apply easily on other trees.
+> 
+> If you would like to have them rebased to a different tree, please tell.
 
-I requested samples for both ads2828 and ads2830, so I should be able
-to test the code myself on real hardware in a couple of days.
+Patches 2/3 and 3/3:
 
-Guenter
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
