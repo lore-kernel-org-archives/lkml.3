@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759816AbbA0VPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:15:35 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:37044 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140AbbA0VPe (ORCPT
+	id S1759932AbbA0VRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 16:17:20 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:7707 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200AbbA0VRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 16:15:34 -0500
+	Tue, 27 Jan 2015 16:17:19 -0500
+From: James Hogan <james.hogan@imgtec.com>
+To: Ralf Baechle <ralf@linux-mips.org>, <linux-mips@linux-mips.org>
+CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: [PATCH 0/3] Add MIPS CDMM bus support
+Date: Tue, 27 Jan 2015 21:16:38 +0000
+Message-ID: <1422393401-13543-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 2.0.5
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFz8yWK9ndqgLSDaaTeCPb5zHihjJvCH3r0y2n8CsoExHw@mail.gmail.com>
-References: <alpine.DEB.2.00.1501270205210.966@skynet.skynet.ie>
-	<CA+55aFz8yWK9ndqgLSDaaTeCPb5zHihjJvCH3r0y2n8CsoExHw@mail.gmail.com>
-Date: Wed, 28 Jan 2015 07:15:33 +1000
-Message-ID: <CAPM=9tyZWzaF=iThfXcLgYSQ44e9AuRVTBcV1q++1oAdZ-QndA@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.110]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2015 at 04:04, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Jan 26, 2015 at 6:06 PM, Dave Airlie <airlied@linux.ie> wrote:
->>
->> are available in the git repository at:
->>
->>   git://people.freedesktop.org/~airlied/linux drm-fixes
->
-> No they aren't, actually, because you've screwed up your repository.
->
-> It looks like you were using an alternates that has gone away:
->
->    remote: error: object directory
-> /srv/anongit.freedesktop.org/git/nouveau/linux-2.6/objects does not
-> exist; check .git/objects/info/alternates.
->    remote: error: Could not read fe06a892edbcd0cd42ea5928e4492a337e3bd90c
->    remote: fatal: bad tree object fe06a892edbcd0cd42ea5928e4492a337e3bd90c
->    remote: aborting due to possible repository corruption on the remote side.
->
-> it really looks like you started your repo by doing a shared clone
-> from an insane source (ie the nouveau tree), and then the nouveau tree
-> got renamed or deleted (perhaps somebody decided that the whole
-> "linux-2.6" naming doesn't make sense any more, since we haven't been
-> at 2.6 for years). So now your repository depends on another repo that
-> is gone.
->
-> It's should be trivially fixable by just editing the git "alternates"
-> file to point to the proper base again, since that fe06a892edbc object
-> is definitely part of my base kernel, but basically you shouldn't do
-> shared clones unless you know you can really *rely* on the clone
-> you're sharing from. Doing it from some random side project like the
-> nouveau tree sounds like a bad bad idea.
+This patchset adds basic support for the MIPS Common Device Mapped
+Memory (CDMM) region in the form of a bus in the standard Linux device
+model.
 
-Actually everything was there, just one tree is NFS mounted from somewhere else,
-and fd.o got rebooted and the mount didn't come back up automatically,
-fixed it now.
+Since the CDMM region is a feature of the MIPS architecture (since
+around MIPSr2) the first patch adds the necessary definitions and
+probing to arch/mips.
 
-But yes I'll reorganise my tree to be a clean copy, I built it years
-ago temporarily
-and it kinda ended up permanent, and I forgot where I cloned it from.
+The second patch adds the actual bus driver (see that patch for lots
+more info). 
 
-Dave.
+The final patch just enables CDMM to work on Malta.
+
+Futher patches will follow soon to add TTY/Console/KGDB support for the
+EJTAG Fast Debug Channel (FDC) device which is found in the CDMM region.
+
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-mips@linux-mips.org
+
+James Hogan (3):
+  MIPS: Add arch CDMM definitions and probing
+  MIPS: Add CDMM bus support
+  MIPS: Malta: Implement mips_cdmm_phys_base()
+
+ arch/mips/include/asm/cdmm.h         |  87 +++++
+ arch/mips/include/asm/cpu-features.h |   4 +
+ arch/mips/include/asm/cpu.h          |   1 +
+ arch/mips/include/asm/mipsregs.h     |  11 +
+ arch/mips/kernel/cpu-probe.c         |   2 +
+ arch/mips/mti-malta/malta-memory.c   |   7 +
+ drivers/bus/Kconfig                  |  13 +
+ drivers/bus/Makefile                 |   1 +
+ drivers/bus/mips_cdmm.c              | 710 +++++++++++++++++++++++++++++++++++
+ include/linux/mod_devicetable.h      |   8 +
+ scripts/mod/devicetable-offsets.c    |   3 +
+ scripts/mod/file2alias.c             |  16 +
+ 12 files changed, 863 insertions(+)
+ create mode 100644 arch/mips/include/asm/cdmm.h
+ create mode 100644 drivers/bus/mips_cdmm.c
+
+-- 
+2.0.5
+
