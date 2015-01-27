@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046AbbA0GA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 01:00:58 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:27292 "EHLO
+	id S1756893AbbA0GBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:01:33 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:27536 "EHLO
 	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750917AbbA0GA4 (ORCPT
+	with ESMTP id S1753478AbbA0GBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 01:00:56 -0500
+	Tue, 27 Jan 2015 01:01:30 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
         <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
         <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v3 06/13] ARM: at91: move select SRAM to ARCH_AT91
-Date: Tue, 27 Jan 2015 13:56:42 +0800
-Message-ID: <1422338202-5906-1-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v3 07/13] pm: at91: remove the config item CONFIG_AT91_SLOW_CLOCK
+Date: Tue, 27 Jan 2015 13:57:27 +0800
+Message-ID: <1422338247-5945-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
 References: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
@@ -25,51 +25,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the CONFIG_AT91_SLOW_CLOCK will be removed
-to simply the PM config, so move select SRAM.
+The slow clock always exists, for the suspend to memory mode,
+the master clock always switch to the slow clock.
+
+To simplify the PM config, remove this config item, remove
+the definition code as well.
 
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/Kconfig |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/mach-at91/Kconfig  |   13 -------------
+ arch/arm/mach-at91/Makefile |    2 +-
+ arch/arm/mach-at91/pm.c     |    7 -------
+ 3 files changed, 1 insertion(+), 21 deletions(-)
 
 diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index c6956b8..cbaf0c8 100644
+index cbaf0c8..0af6744 100644
 --- a/arch/arm/mach-at91/Kconfig
 +++ b/arch/arm/mach-at91/Kconfig
-@@ -24,6 +24,7 @@ config SOC_AT91SAM9
- 	select GENERIC_CLOCKEVENTS
- 	select MEMORY
- 	select ATMEL_SDRAMC
-+	select SRAM if PM
+@@ -160,19 +160,6 @@ endif # SOC_SAM_V4_V5
  
- config SOC_SAMA5
- 	bool
-@@ -34,6 +35,7 @@ config SOC_SAMA5
- 	select MEMORY
- 	select ATMEL_SDRAMC
- 	select PHYLIB if NETDEVICES
-+	select SRAM if PM
+ comment "AT91 Feature Selections"
  
- menu "Atmel AT91 System-on-Chip"
+-config AT91_SLOW_CLOCK
+-	bool "Suspend-to-RAM disables main oscillator"
+-	depends on SUSPEND
+-	help
+-	  Select this if you want Suspend-to-RAM to save the most power
+-	  possible (without powering off the CPU) by disabling the PLLs
+-	  and main oscillator so that only the 32 KiHz clock is available.
+-
+-	  When only that slow-clock is available, some peripherals lose
+-	  functionality.  Many can't issue wakeup events unless faster
+-	  clocks are available.  Some lose their operating state and
+-	  need to be completely re-initialized.
+-
+ config AT91_TIMER_HZ
+        int "Kernel HZ (jiffies per second)"
+        range 32 1024
+diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+index 8ef7d9a..13dd3e6 100644
+--- a/arch/arm/mach-at91/Makefile
++++ b/arch/arm/mach-at91/Makefile
+@@ -27,7 +27,7 @@ obj-$(CONFIG_SOC_SAMA5)		+= board-dt-sama5.o
  
-@@ -91,6 +93,7 @@ config SOC_AT91RM9200
- 	select CPU_ARM920T
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_AT91_USB_CLK
-+	select SRAM if PM
+ # Power Management
+ obj-$(CONFIG_PM)		+= pm.o
+-obj-$(CONFIG_AT91_SLOW_CLOCK)	+= pm_slowclock.o
++obj-$(CONFIG_PM)		+= pm_slowclock.o
  
- config SOC_AT91SAM9260
- 	bool "AT91SAM9260, AT91SAM9XE or AT91SAM9G20"
-@@ -159,7 +162,6 @@ comment "AT91 Feature Selections"
+ ifeq ($(CONFIG_PM_DEBUG),y)
+ CFLAGS_pm.o += -DDEBUG
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 6b08098..0377c0d 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -133,11 +133,9 @@ EXPORT_SYMBOL(at91_suspend_entering_slow_clock);
+ static void (*slow_clock)(void __iomem *pmc, void __iomem *ramc0,
+ 			  void __iomem *ramc1, int memctrl);
  
- config AT91_SLOW_CLOCK
- 	bool "Suspend-to-RAM disables main oscillator"
--	select SRAM
- 	depends on SUSPEND
- 	help
- 	  Select this if you want Suspend-to-RAM to save the most power
+-#ifdef CONFIG_AT91_SLOW_CLOCK
+ extern void at91_slow_clock(void __iomem *pmc, void __iomem *ramc0,
+ 			    void __iomem *ramc1, int memctrl);
+ extern u32 at91_slow_clock_sz;
+-#endif
+ 
+ static int at91_pm_enter(suspend_state_t state)
+ {
+@@ -232,7 +230,6 @@ void at91_pm_set_standby(void (*at91_standby)(void))
+ 	}
+ }
+ 
+-#ifdef CONFIG_AT91_SLOW_CLOCK
+ static void __init at91_pm_sram_init(void)
+ {
+ 	struct gen_pool *sram_pool;
+@@ -274,14 +271,10 @@ static void __init at91_pm_sram_init(void)
+ put_node:
+ 	of_node_put(node);
+ }
+-#endif
+-
+ 
+ static void __init at91_pm_init(void)
+ {
+-#ifdef CONFIG_AT91_SLOW_CLOCK
+ 	at91_pm_sram_init();
+-#endif
+ 
+ 	pr_info("AT91: Power Management%s\n", (slow_clock ? " (with slow clock mode)" : ""));
+ 
 -- 
 1.7.9.5
 
