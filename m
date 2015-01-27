@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510AbbA0Q5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:57:44 -0500
-Received: from resqmta-po-02v.sys.comcast.net ([96.114.154.161]:40336 "EHLO
-	resqmta-po-02v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932446AbbA0Q5i (ORCPT
+	id S932537AbbA0Q7P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:59:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:44505 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555AbbA0Q7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:57:38 -0500
-Date: Tue, 27 Jan 2015 10:57:36 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: akpm@linuxfoundation.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        penberg@kernel.org, iamjoonsoo@lge.com,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [RFC 1/3] Slab infrastructure for array operations
-In-Reply-To: <20150127082132.GE11358@js1304-P5Q-DELUXE>
-Message-ID: <alpine.DEB.2.11.1501271054310.25124@gentwo.org>
-References: <20150123213727.142554068@linux.com> <20150123213735.590610697@linux.com> <20150127082132.GE11358@js1304-P5Q-DELUXE>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 27 Jan 2015 11:59:11 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] vfs: read file_handle only once in handle_to_path
+Date: Tue, 27 Jan 2015 11:58:20 -0500
+Message-Id: <1422377924-26080-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015, Joonsoo Kim wrote:
+We used to read file_handle twice. Once to get the amount of extra bytes, and
+once to fetch the entire structure.
 
-> IMHO, exposing these options is not a good idea. It's really
-> implementation specific. And, this flag won't show consistent performance
-> according to specific slab implementation. For example, to get best
-> performance, if SLAB is used, GFP_SLAB_ARRAY_LOCAL would be the best option,
-> but, for the same purpose, if SLUB is used, GFP_SLAB_ARRAY_NEW would
-> be the best option. And, performance could also depend on number of objects
-> and size.
+This may be problematic since we do size verifications only after the first
+read, so if the number of extra bytes changes in userspace between the first
+and second calls, we'll have an incoherent view of file_handle.
 
-Why would slab show a better performance? SLUB also can have partial
-allocated pages per cpu and could also get data quite fast if only a
-minimal number of objects are desired. SLAB is slightly better because the
-number of cachelines touches stays small due to the arrangement of the freelist
-on the slab page and the queueing approach that does not involve linked
-lists.
+Instead, read the constant size once, and copy that over to the final
+structure without having to re-read it again.
 
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ fs/fhandle.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-GFP_SLAB_ARRAY new is best for large quantities in either allocator since
-SLAB also has to construct local metadata structures.
-
-> And, overriding gfp flag isn't a good idea. Someday gfp could use
-> these values and they can't notice that these are used in slab
-> subsystem with different meaning.
-
-We can put a BUILD_BUG_ON in there to ensure that the GFP flags do not get
-too high. The upper portion of the GFP flags is also used elsewhere. And
-it is an allocation option so it naturally fits in there.
+diff --git a/fs/fhandle.c b/fs/fhandle.c
+index 999ff5c..f26d0e1 100644
+--- a/fs/fhandle.c
++++ b/fs/fhandle.c
+@@ -195,8 +195,9 @@ static int handle_to_path(int mountdirfd, struct file_handle __user *ufh,
+ 		goto out_err;
+ 	}
+ 	/* copy the full handle */
+-	if (copy_from_user(handle, ufh,
+-			   sizeof(struct file_handle) +
++	*handle = f_handle;
++	if (copy_from_user(handle + sizeof(struct file_handle),
++			   ufh + sizeof(struct file_handle),
+ 			   f_handle.handle_bytes)) {
+ 		retval = -EFAULT;
+ 		goto out_handle;
+-- 
+1.7.10.4
 
