@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403AbbA0NVc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 08:21:32 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44396 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbbA0NV3 (ORCPT
+	id S1754183AbbA0NY5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 08:24:57 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:54674 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164AbbA0NYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 08:21:29 -0500
-Date: Tue, 27 Jan 2015 14:21:27 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-Message-ID: <20150127132127.GA869@amd>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <201412041857.49341@pali>
- <CAL_JsqJ9i0jwaL1cyeomQG=bhhcnEgdGWYOqkcwidyk5xOUukg@mail.gmail.com>
- <201501262016.52079@pali>
- <CAL_JsqL_EEg7tC-q8wV5v8jAfPSiri4z19iJfz2r7zntRwPyOg@mail.gmail.com>
+	Tue, 27 Jan 2015 08:24:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+Cc: gregkh@linuxfoundation.org, robh+dt@kernel.org, mark.rutland@arm.com,
+        gnomes@lxorguk.ukuu.org.uk, peter@hurleysoftware.com,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, grant.likely@linaro.org, jslaby@suse.cz,
+        heiko@sntech.de, jason@lakedaemon.net, florian.vaussard@epfl.ch,
+        andrew@lunn.ch, hytszk@gmail.com, antonynpavlov@gmail.com,
+        shawn.guo@linaro.org, orsonzhai@gmail.com, geng.ren@spreadtrum.com,
+        zhizhou.zhang@spreadtrum.com, lanqing.liu@spreadtrum.com,
+        zhang.lyra@gmail.com, wei.qiao@spreadtrum.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 0/2] Add Spreadtrum SoC bindings and serial driver support
+Date: Tue, 27 Jan 2015 14:24:02 +0100
+Message-ID: <2196748.ag4UzqF1Px@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1422345407-10037-1-git-send-email-chunyan.zhang@spreadtrum.com>
+References: <1422345407-10037-1-git-send-email-chunyan.zhang@spreadtrum.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAL_JsqL_EEg7tC-q8wV5v8jAfPSiri4z19iJfz2r7zntRwPyOg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:n1q5506jtP9IBgWa2P0xoxzUGUyPMlmwmBB68H3jnZ11Xjwd0ma
+ Unk/sHo4j/Fb574v9kFAog6any55+l68mwLho0IIQ8u6KAq70cNNdtXpdwB4HZCy9GT9Vbn
+ mSBD3WiP/OVfQ5Ijc7OLZdDxiS46Qnmq0Rp88sU4P7ouVpV1gpCAX8t9GiBCo/UIOLJDKxF
+ WyHVk1cUBfcL1v9E9+XFw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2015-01-26 14:33:21, Rob Herring wrote:
-> On Mon, Jan 26, 2015 at 1:16 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> > This patch will cause that decompressor store full ATAG structure into DT tree ("/atags"):
-> >
-
-> > +       /* include the terminating ATAG_NONE */
-> > +       atag_size = (char *)atag - (char *)atag_list + sizeof(struct tag_header);
-> > +       setprop(fdt, "/", "atags", atag_list, atag_size);
-> > +
-> >         if (memcount) {
-> >                 setprop(fdt, "/memory", "reg", mem_reg_property,
-> >                         4 * memcount * memsize);
-> >
-> >
-> >
-> > And this patch will export ATAG structure from DT tree ("/atags") into /proc/atags file:
+On Tuesday 27 January 2015 15:56:45 Chunyan Zhang wrote:
+> This patch-set split the last version, and addressed the review comments from
+> last version on serial driver code.
 > 
-> Please properly send your patches.
-
-Actually, when sending patches for discussion, this is format easier
-to read.
-
-> > Some userspace applications needs access to ATAG structure where can be stored some information passed
-> > from bootloader to kernel. Example is Nokia N900 device and NOLO bootloader which provides information
-> > about bootreason (device was started by power button or by alarm or restarted...) and bootmode (normal
-> > mode or device update mode).
+> Changes from v7:
+> * Addressed review comments from Peter:
+>         - Initialized the stack local with zero in sprd_set_termios()
+>         - Used dev_get_drvdata() to get sprd_uart_port
 > 
-> This goes in the commit message.
-> 
-> These would be non-standard fields which are not upstream. I don't
-> know that we care in that case...
 
-Other devices are going to care about boot reason, too, and we might
-as well be compatible...
-									Pavel
+Looks good to me, but you still have too many people on 'To', so Greg
+might be missing that you expect him to merge it.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Greg, if there are no further comments, can you take both patches through
+the tty git?
+
+	Arnd
