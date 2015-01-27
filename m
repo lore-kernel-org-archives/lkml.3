@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbbA0Cdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 21:33:50 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:31978 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751116AbbA0Cds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 21:33:48 -0500
-Date: Mon, 26 Jan 2015 21:34:19 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
-Message-ID: <20150126213419.531774eb@grimm.local.home>
-In-Reply-To: <20150126183739.1d17fd82@gandalf.local.home>
-References: <20150126150913.653681560@goodmis.org>
-	<20150126193049.GN29656@ZenIV.linux.org.uk>
-	<20150126214020.GO29656@ZenIV.linux.org.uk>
-	<20150126183739.1d17fd82@gandalf.local.home>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1755337AbbA0CjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 21:39:15 -0500
+Received: from ozlabs.org ([103.22.144.67]:54318 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751116AbbA0CjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 21:39:12 -0500
+Date: Tue, 27 Jan 2015 13:39:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thierry Reding <thierry.reding@gmail.com>, Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Yan <andy.yan@rock-chips.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Ajay Kumar <ajaykumar.rs@samsung.com>
+Subject: linux-next: manual merge of the drm-panel tree with the drm tree
+Message-ID: <20150127133905.6a2b75bc@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/6bHmvUqOvqDMBD.YXljqwPy"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jan 2015 18:37:39 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+--Sig_/6bHmvUqOvqDMBD.YXljqwPy
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi Thierry,
 
-> > the first call of tracing_init_dentry().  Prior to that it's NULL.
-> > BTW, may I politely inquire what the fuck are those contortions in
-> > tracing_init_dentry_tr() about?  Looks like a stunningly convoluted
-> > way to trigger that automount point creation early in
-> > tracer_init_tracefs(). Why not do that right there explicitly?
-> 
-> Yeah, that could be cleaned up. Before the tracefs code, it made much
-> more sense to keep that as a single function. Now that
-> global_array.dir is treated differently as the subdirs, it does make
-> sense to have global_arry.dir initialized in a separate function.
-> 
-> I'll update my patch series to do this.
+Today's linux-next merge of the drm-panel tree got a conflict in
+drivers/gpu/drm/bridge/Kconfig between commit b21f4b658df8 ("drm: imx:
+imx-hdmi: move imx-hdmi to bridge/dw_hdmi") from the drm tree and
+commit c338dcdcc7b6 ("drm/bridge: ptn3460: Convert to I2C driver
+model") from the drm-panel tree.
 
-Now I remember why I did this (as I changed the code and everything
-blew up). The files in the tracing directory can be created by several
-users (do a grep for fs_initcall() in kernel/trace/*.c). The first
-caller to add a file initializes the tracing directory.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-I guess I can have all the other callers use fs_initcall_sync(). I'm
-assuming those come after fs_initcall().
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- Steve
+diff --cc drivers/gpu/drm/bridge/Kconfig
+index b70f3c8d4e8a,146e67bb037b..000000000000
+--- a/drivers/gpu/drm/bridge/Kconfig
++++ b/drivers/gpu/drm/bridge/Kconfig
+@@@ -1,10 -1,8 +1,13 @@@
+  config DRM_PTN3460
+  	tristate "PTN3460 DP/LVDS bridge"
+  	depends on DRM
++ 	depends on OF
+  	select DRM_KMS_HELPER
++ 	select DRM_PANEL
+  	---help---
++ 	  ptn3460 eDP-LVDS bridge chip driver.
+ +
+ +config DRM_DW_HDMI
+ +	tristate
+ +	depends on DRM
+ +	select DRM_KMS_HELPER
+
+--Sig_/6bHmvUqOvqDMBD.YXljqwPy
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUxvpNAAoJEMDTa8Ir7ZwVFWUP/R0YrnrZB6r742jrgjJrHjGI
+v1SlQS9SRQ0FKWLAW0WV9iasy6TYaoUC4PKkxaZ5KLeT2rUSIMW8B6KP4hUJP9Ix
+by2GQuB3yd7EF+ZZGy4uoSSfXM2EyqTQwmSadBKsOTC/aBuMDM/F+/FxyaiD7aks
+vFxYshbb582aq4g0IHRZqAhMWKzxDiUd1NLqA44DiJ99xcYQfHAiaMXGIttMV9zI
+OZxu7uRGLSk9NnZHsx7kVo3RpgF1/drWh8pQLdORS+JpWSOiI3kQOS/yN7A4QCiV
+SX2XhjBHvcdQigIG/JCVveiMVXJe5/emfyCXGObHdH652t6on85V5hBob0k7aT86
+FD4mTDmcNawmYIpU6kqKvU0077XB9VFWjInZ4bQhl7w29kOiJhhgYOWSI1yRefc5
+y3XYmBIcxQAcFdVUwG8Tq9s030UrcWAyFbqj8nJPpe+CpTP7IkWYcC2L5m+fCmHj
+m8QTPZZZ7V5u1xioVqHuZzAwiZuC2z9dIOMCgQ/a/c4aBeCcPA+JlX+mi4mkdjNB
+Ms0HcD02+0k490ZRVj/vZDpxy9QJc9piF3KP8dTYNa5zyjj72oHX18c2C7ih/3Wv
+OxlBuqqWGeNDk0en45TNeQQ+f3esbExL+P9wgMxkQIZNKVDkuqrgLwCBXy5D9vey
+QEzkutHH/rjs/PIjoXMl
+=N/hk
+-----END PGP SIGNATURE-----
+
+--Sig_/6bHmvUqOvqDMBD.YXljqwPy--
