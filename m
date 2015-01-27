@@ -1,150 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757787AbbA0IDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 03:03:36 -0500
-Received: from mga11.intel.com ([192.55.52.93]:26526 "EHLO mga11.intel.com"
+	id S1757848AbbA0ID5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 03:03:57 -0500
+Received: from ozlabs.org ([103.22.144.67]:50681 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757740AbbA0IDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 03:03:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,473,1418112000"; 
-   d="scan'208";a="676526726"
-Message-ID: <54C74651.3020403@linux.intel.com>
-Date: Tue, 27 Jan 2015 16:03:29 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1757822AbbA0ID4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 03:03:56 -0500
+Date: Tue, 27 Jan 2015 19:03:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kalle Valo <kvalo@codeaurora.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hong Xu <hong@topbug.net>
+Subject: linux-next: build failure after merge of the wireless-drivers-next
+ tree
+Message-ID: <20150127190349.22ff92e8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <peterz@infradead.org>, "Brown, Len" <len.brown@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v3]PM/Sleep: Timer quiesce in freeze state
-References: <54866625.8010406@linux.intel.com> <54C5FE6A.9010300@linux.intel.com> <alpine.DEB.2.11.1501260946390.5526@nanos> <2137807.aqSxQQCuJ3@vostro.rjw.lan>
-In-Reply-To: <2137807.aqSxQQCuJ3@vostro.rjw.lan>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/7ci_J69PRRYr0IHqg+bIabQ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/26 22:41, Rafael J. Wysocki wrote:
-> On Monday, January 26, 2015 10:40:24 AM Thomas Gleixner wrote:
->> On Mon, 26 Jan 2015, Li, Aubrey wrote:
->>> On 2015/1/22 18:15, Thomas Gleixner wrote:
-> 
-> [...]
-> 
->>>>> +		/*
->>>>> +		 * cpuidle_enter will return with interrupt enabled
->>>>> +		 */
->>>>> +		cpuidle_enter(drv, dev, next_state);
->>>>
->>>> How is that supposed to work?
->>>>
->>>> If timekeeping is not yet unfrozen, then any interrupt handling code
->>>> which calls anything time related is going to hit lala land.
->>>>
->>>> You must guarantee that timekeeping is unfrozen before any interrupt
->>>> is handled. If you cannot guarantee that, you cannot freeze
->>>> timekeeping ever.
->>>>
->>>> The cpu local tick device is less critical, but it happens to work by
->>>> chance, not by design.
->>>
->>> There are two way to guarantee this: the first way is, disable interrupt
->>> before timekeeping frozen and enable interrupt after timekeeping is
->>> unfrozen. However, we need to handle wakeup handler before unfreeze
->>> timekeeping to wake freeze task up from wait queue.
->>>
->>> So we have to go the other way, the other way is, we ignore time related
->>> calls during freeze, like what I added in irq_enter below.
->>
->> Groan. You just do not call in irq_enter/exit(), but what prevents any
->> interrupt handler or whatever to call into the time/timer code after
->> interrupts got reenabled?
->>
->> Nothing. 
->>
->>> Or, we need to re-implement freeze wait and wake up mechanism?
->>
->> You need to make sure in the low level idle implementation that this
->> cannot happen.
->>
->> tick_freeze()
->> {
->> 	raw_spin_lock(&tick_freeze_lock);
->> 	tick_frozen++;
->> 	if (tick_frozen == num_online_cpus())
->> 		timekeeping_suspend();
->> 	else
->> 		tick_suspend_local();
->> 	raw_spin_unlock(&tick_freeze_lock);
->> }
->>
->> tick_unfreeze()
->> {
->> 	raw_spin_lock(&tick_freeze_lock);
->> 	if (tick_frozen == num_online_cpus())
->> 		timekeeping_resume();
->> 	else
->> 		tick_resume_local();
->> 	tick_frozen--;
->> 	raw_spin_unlock(&tick_freeze_lock);
->> }
->>
->> idle_freeze()
->> {
->> 	local_irq_disable();
->>
->> 	tick_freeze();
->>
->> 	/* Must keep interrupts disabled! */
->>        	go_deep_idle()
->>
->> 	tick_unfreeze();
->>
->> 	local_irq_enable();
->> }
->>
->> That's the only way you can do it proper, everything else will just be
->> a horrible mess of bandaids and duct tape.
->>
->> So that does not need any of the irq_enter/exit conditionals, it does
->> not need the real_handler hack. It just works.
-> 
-> As long as go_deep_idle() above does not enable interrupts.  This means we won't
-> be able to use some C-states for suspend-to-idle (hald-induced C1 on some x86
-> for one example), but that's not a very big deal.
+--Sig_/7ci_J69PRRYr0IHqg+bIabQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Does the legacy ACPI system IO method to enter C2/C3 need interrupt
-enabled as well?
+Hi Kalle,
 
-Do we need some platform ops to cover those legacy platforms? Different
-platform go different branch here.
+After merging the wireless-drivers-next tree, today's linux-next build
+(powerpc allyesconfig) failed like this:
 
-Thanks,
--Aubrey
+drivers/net/wireless/ath/ath9k/ath9k_htc.o:(.data+0x29d0): multiple definit=
+ion of `led_blink'
+drivers/net/wireless/ath/ath9k/ath9k.o:(.bss+0x1654): first defined here
 
-> 
->> The only remaining issue might be a NMI calling into
->> ktime_get_mono_fast_ns() before timekeeping is resumed. Its probably a
->> non issue on x86/tsc, but it might be a problem on other platforms
->> which turn off devices, clocks, It's not rocket science to prevent
->> that.
-> 
-> I don't see any users of ktime_get_mono_fast_ns() at all, unless some non-trivial
-> macros are involved.  At least grepping for it only returns the definition,
-> declarations and the line in trace.c.
-> 
-> Rafael
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+Caused by commit 3a939a671225 ("ath9k_htc: Add a module parameter to
+disable blink").
 
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/7ci_J69PRRYr0IHqg+bIabQ
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUx0ZqAAoJEMDTa8Ir7ZwVqWEP/0LnsS4AkRaqblf2g5KOHZVR
+KPSZ0J3jm+hCyx81a5wHv6HfMY2HKQuZwBdIG2UzemK82DpbHe0do4bgg63EiYAs
+bWpAEevqYZwWwOUQx4KPqV+O0YiyJnnolMhascmOL96ghadBh8TJradS9q693wps
+B5mvsWDh1u9v70wYEZHtJzolN6K8qnP9iFo4OZznoa+Vwmh4ZzuBHIEArjaVUEQw
+Kt/MIa7yaegY3jexJAcVUjmyGs6xKzZnL4eMTY6m19tFgV3PkIrTeUcgBoegasF6
+dly95Ebvd221wvVeu6Dz4QL1XBcn+MtBcYPfkiS+7qmzLrkS0uhjy0GdFVFxeXe6
+8MKqS3VgYMMXy7IMeZS4g8SyPRHRx2L7JtK+lggQiNwoDheV0JdkCIs6kjiuSR6M
+smgYlZ/wo1QlzG0vFgYYsE10rewDVaz/CCSpgwsZEGUmmd+hkbhpdUJd1M48KGM7
+12QDeNYi/PijSqEBOLkIMfg6yKLNpj8v+b+l00epIbfCuY5/Edj0o1P/y6VGo8Jg
+78Rd2q3jxME6rWJmrdsCGcSZghmR7a12GZE/vfIexnkegSJzJhxe12khoMsPNov0
+hSvEdHKzEgDkiITpAsQE6f0ISslufKWe6vTG/TvXpWbWgFbiQpfjGNzBBGAbvmBE
+0Uz3HuiZqc/ewTqNZ/RB
+=eKkA
+-----END PGP SIGNATURE-----
+
+--Sig_/7ci_J69PRRYr0IHqg+bIabQ--
