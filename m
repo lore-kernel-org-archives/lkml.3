@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbbA0Rth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:49:37 -0500
-Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:59210 "EHLO
+	id S932609AbbA0Rtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:49:41 -0500
+Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:44182 "EHLO
 	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932442AbbA0Rtf (ORCPT
+	by vger.kernel.org with ESMTP id S1755486AbbA0Rtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:49:35 -0500
+	Tue, 27 Jan 2015 12:49:36 -0500
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/9] staging: comedi: usbduxfast: include new "comedi_usb.h" header
-Date: Tue, 27 Jan 2015 17:49:06 +0000
-Message-Id: <1422380949-5994-7-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 7/9] staging: comedi: usbduxsigma: include new "comedi_usb.h" header
+Date: Tue, 27 Jan 2015 17:49:07 +0000
+Message-Id: <1422380949-5994-8-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422380949-5994-1-git-send-email-abbotti@mev.co.uk>
 References: <1422380949-5994-1-git-send-email-abbotti@mev.co.uk>
@@ -29,26 +29,28 @@ Include the new "../comedi_usb.h" header instead of <linux/usb.h> and
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/usbduxfast.c | 3 +--
+ drivers/staging/comedi/drivers/usbduxsigma.c | 3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-index 85071da..7ce27c1 100644
---- a/drivers/staging/comedi/drivers/usbduxfast.c
-+++ b/drivers/staging/comedi/drivers/usbduxfast.c
-@@ -46,11 +46,10 @@
+diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
+index 17e5a81..378c449 100644
+--- a/drivers/staging/comedi/drivers/usbduxsigma.c
++++ b/drivers/staging/comedi/drivers/usbduxsigma.c
+@@ -45,13 +45,12 @@
  #include <linux/module.h>
  #include <linux/slab.h>
  #include <linux/input.h>
 -#include <linux/usb.h>
  #include <linux/fcntl.h>
  #include <linux/compiler.h>
+ #include <asm/unaligned.h>
+ 
  #include "comedi_fc.h"
 -#include "../comedidev.h"
 +#include "../comedi_usb.h"
  
- /*
-  * timeout for the USB-transfer
+ /* timeout for the USB-transfer in ms*/
+ #define BULK_TIMEOUT 1000
 -- 
 2.1.4
 
