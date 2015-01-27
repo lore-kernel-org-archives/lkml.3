@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920AbbA0RsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:48:22 -0500
-Received: from smtprelay0025.hostedemail.com ([216.40.44.25]:47111 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758153AbbA0RsV (ORCPT
+	id S932303AbbA0Rsf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:48:35 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:57820 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758153AbbA0Rsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:48:21 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1042:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2731:2840:2892:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4389:5007:6119:6261:7875:7903:10004:10400:10848:10967:11232:11658:11914:12050:12219:12517:12519:12679:12740:13069:13311:13357:13869:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: brick73_82c26a487e340
-X-Filterd-Recvd-Size: 2630
-Date: Tue, 27 Jan 2015 12:48:17 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Borislav Petkov <bp@alien8.de>, Richard Weinberger <richard@nod.at>,
-        linux-mmc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
-Message-ID: <20150127124817.608db508@gandalf.local.home>
-In-Reply-To: <54C7CD1C.1060601@ahsoftware.de>
-References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de>
-	<CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com>
-	<54C77E69.7050600@ahsoftware.de>
-	<20150127120855.GA9254@pd.tnic>
-	<54C7816A.8050800@ahsoftware.de>
-	<54C78524.3070901@nod.at>
-	<54C7881F.6020501@ahsoftware.de>
-	<20150127142120.GA3351@pd.tnic>
-	<54C7C2EC.7010605@ahsoftware.de>
-	<20150127172415.GC25043@home.goodmis.org>
-	<54C7CD1C.1060601@ahsoftware.de>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 27 Jan 2015 12:48:33 -0500
+Date: Tue, 27 Jan 2015 17:48:18 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Message-ID: <20150127174818.GM26493@n2100.arm.linux.org.uk>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <20150127132127.GA869@amd>
+ <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
+ <201501271532.25540@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201501271532.25540@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015 18:38:36 +0100
-Alexander Holler <holler@ahsoftware.de> wrote:
-
-> Anyway, I like(d) Linux because it didn't had a splash screen and used 
-> to spit out all types of information on the screen where it could be 
-> easily seen or found (in contrast other OS which try to hide all 
-> technical details from users).
-
-Yes, I like those days too, but as you say, times are changing, and we
-must adapt.
-
+On Tue, Jan 27, 2015 at 03:32:25PM +0100, Pali Rohár wrote:
+> On Tuesday 27 January 2015 15:16:45 Rob Herring wrote:
+> > What other devices? Where is bootreason in the list of ATAGS:
+> > 
+> > #define ATAG_MEM        0x54410002
+> > #define ATAG_VIDEOTEXT  0x54410003
+> > #define ATAG_RAMDISK    0x54410004
+> > #define ATAG_INITRD     0x54410005
+> > #define ATAG_INITRD2    0x54420005
+> > #define ATAG_SERIAL     0x54410006
+> > #define ATAG_REVISION   0x54410007
+> > #define ATAG_VIDEOLFB   0x54410008
+> > #define ATAG_CMDLINE    0x54410009
+> > #define ATAG_ACORN      0x41000101
+> > #define ATAG_MEMCLK     0x41000402
+> > 
+> > Rob
 > 
-> Of course, times are changing, including the amount of stuff printed on 
-> screen. But I still find it much much easier to grep on the output of 
-> dmesg than to search through thousands files in sysfs. Even if that can 
-> be done with grep too (kind of). But it's much more complicated because 
-> grep doesn't connect the file name with the content, so you need more 
-> complicated stuff to combine both in order to search for and find 
-> something in sysfs.
+> Each device is using own proprietary atag (or other information) 
+> to pass bootreason from bootloader to kernel. No standard way :-(
 
-Come on, it's not that more complex. If you know the name of the file,
-just do:
+The reason that happens is because people refuse to discuss their
+requirements here - just like people refuse to report userspace API
+regressions to kernel people.  This rather pisses me off, because
+it creates all sorts of horrid per-platform yuck.
 
-find /sys -print -name <name> -exec cat {} \;
+We _could_ (and have in the past) turned round and refused to support
+these kinds of hacks - which IMHO is quite a reasonable stance to
+take: the message we should be sending is "if you wish to design
+new methods without discussing it with us, we reserve the right not
+to support them in mainline kernels; please discuss with us your
+requirements."
 
-And you'll get the data you want.
+Each time that we accept one of these hacks, we're sending a message
+that says "it's okay to work in this crappy way".
 
-Basically, what you are saying is "printk is more convenient for me and
-I do not care about the other cases that make much more sense with
-sysfs". The kernel does not work that way.
+Yes, I realise that the N900 has little in the way of support, and we
+can't exert that kind of back pressure (since there's no one to direct
+that onto to effect any change) so I guess we just have to live with it.
 
--- Steve
+> I think this kind of information (how was board/computer started) 
+> can be useful also for other architectures. E.g. on laptop you 
+> would like to know if if was started by RTC, power button, 
+> WakeOnLan, another ACPI event, rebooted machine, watchdog, etc... 
+> And scripts can act depending on this event (when by RTC, you 
+> need to run some planned job, when by watchdog reset you should 
+> check what caused that reason...).
+
+There is a standard way to get the boot information already: look at
+the watchdog API:
+
+#define WDIOC_GETBOOTSTATUS     _IOR(WATCHDOG_IOCTL_BASE, 2, int)
+
+which uses the WDIOF_* flags to indicate the last boot reason.  It
+probably isn't as flexible as some may desire, but it should provide
+at least the "watchdog rebooted us" vs "over temperature" vs some
+other boot reason.
+
+The other thing to consider is whether we have a way to know what
+the boot reason was, and what we should do if we do not have a way
+of supporting some of the boot reasons.  For example, if we have
+support for RTC alarm based booting, but no way to actually tell
+if the boot was caused by the RTC alarm triggering.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
