@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759797AbbA0Uuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 15:50:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39500 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759158AbbA0Uue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 15:50:34 -0500
-Message-ID: <54C7FA09.4000908@redhat.com>
-Date: Tue, 27 Jan 2015 15:50:17 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1761003AbbA1G06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 01:26:58 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:46970 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760873AbbA1G05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 01:26:57 -0500
+Date: Tue, 27 Jan 2015 12:52:29 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>, wim@iguana.be,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, paul@crapouillou.net
+Subject: Re: [PATCH 1/2] dt: watchdog: Add DT binding documentation for
+ jz47xx watchdog timer
+Message-ID: <20150127205229.GA6983@roeck-us.net>
+References: <1422371490-44402-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+ <1422371490-44402-2-git-send-email-Zubair.Kakakhel@imgtec.com>
+ <11680810.808F8uDyN0@wuerfel>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: question about save_xstate_sig() - WHY DOES THIS WORK?
-References: <54C2A245.4010307@redhat.com> <20150124202021.GA1285@redhat.com> <54C6CD64.10208@redhat.com> <20150127194030.GA29879@redhat.com> <54C7F4BB.5020509@redhat.com>
-In-Reply-To: <54C7F4BB.5020509@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <11680810.808F8uDyN0@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Suspect
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 512
+X-CTCH-RefID: str=0001.0A010204.54C88130.0063,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 1
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 01/27/2015 03:27 PM, Rik van Riel wrote:
-> On 01/27/2015 02:40 PM, Oleg Nesterov wrote:
-
->>>> - Why unlazy_fpu() always does __save_init_fpu() even if 
->>>> use_eager_fpu?
->>>> 
->>>> and note that in this case __thread_fpu_end() is wrong if 
->>>> use_eager_fpu, but fortunately the only possible caller of 
->>>> unlazy_fpu() is coredump. fpu_copy() checks use_eager_fpu().
->>>> 
->>>> - Is unlazy_fpu()->__save_init_fpu() safe wrt 
->>>> __kernel_fpu_begin() from irq?
+On Tue, Jan 27, 2015 at 09:16:45PM +0100, Arnd Bergmann wrote:
+> On Tuesday 27 January 2015 15:11:29 Zubair Lutfullah Kakakhel wrote:
+> > +clocks: phandle to rtcclk
+> > +clock-names: must be "rtc"
+> > +
+> > +Example:
+> > +
+> > +watchdog: jz47xx-watchdog@0x10002000 {
+> > +       compatible = "ingenic,jz4780-watchdog";
+> > +       reg = <0x10002000 0x100>;
+> > +
+> > +       clocks = <&rtclk>;
+> > +       clock-names = "rtc";
+> > +};
 > 
-> It looks like it should be safe, as long as __save_init_fpu() knows
-> that the task no longer has the FPU after __kernel_fpu_end(), so it
-> does not try to save the kernel FPU state to the user's 
-> task->thread.fpu.state->xstate
+> Why is the name "rtc"? are you sure you are not confusing the output
+> name of the clock controller with the input of the watchdog device?
 > 
-> The caveat here is that __kernel_fpu_begin()/__kernel_fpu_end() 
-> needs to be kept from running during unlazy_fpu().
-> 
-> This means interrupted_kernel_fpu_idle and/or irq_fpu_usable need
-> to check whether preemption is disabled, and lock out 
-> __kernel_fpu_begin() when preemption is disabled.
-> 
-> It does not look like it currently does that...
+Driver does this (today):
 
-... and that won't work, because preempt_disable() is a noop
-without CONFIG_PREEMPT enabled. Sigh.
+	 drvdata->rtc_clk = clk_get(&pdev->dev, "rtc");
 
-Not sure how to work around that, except by having
-__Kernel_fpu_end() always restore the task FPU state, if the
-task had the FPU when entering.
+Isn't that the name to use ? Just wondering.
 
-This suggests it may be advantageous to be liberal with
-__thread_fpu_end() when we know user space will not be touching
-the FPU again for a while, since that would reduce the work
-done by __kernel_fpu_begin()/__kernel_fpu_end().
-
-Does that make sense?
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUx/oJAAoJEM553pKExN6Dh4YH/AtVOza5VeZuz55s59LifpLt
-5eXMQBxQt0JiX9NACc+7qXDuEFfkmnzhNpNT98abuic7/1dvj2TfcoXSnkysDaNb
-WojFW0gMc973G4UA6ZPsqScxz7jdfaqNrFdFEaTPM6URClIllVXTgnCcDoWCFfR2
-627s6vyOW//BgXnedHraGGqnBVpCBLWrsVnhJ0RbPd2cjrrwKPXcbLnk6+uzZqLY
-/7Zp2fSDjuAY6PhxRZM529vyJNqIM2mhlKFG8/xnch95mlXwtOQvLuuJmkwbKabb
-6Z1gqpyEXbWyB2riD/pQrIlkOg2P4UuLONM7fgFY4Dzc8MEM7UmNR4mWoPAeBuU=
-=SSqD
------END PGP SIGNATURE-----
+Thanks,
+Guenter
