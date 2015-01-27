@@ -1,43 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557AbbA0H7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 02:59:41 -0500
-Received: from bes.se.axis.com ([195.60.68.10]:58837 "EHLO bes.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188AbbA0H7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 02:59:38 -0500
-Message-ID: <54C74567.9020201@axis.com>
-Date: Tue, 27 Jan 2015 08:59:35 +0100
-From: Robert Rosengren <robert.rosengren@axis.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S932161AbbA0H6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 02:58:55 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42639 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027AbbA0H6w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 02:58:52 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 27 Jan 2015 17:00:09 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 3/3] slub: make dead caches discard free slabs
+ immediately
+Message-ID: <20150127080009.GB11358@js1304-P5Q-DELUXE>
+References: <cover.1422275084.git.vdavydov@parallels.com>
+ <42d95683e3c7f4bb00be4d777e2b334e8981d552.1422275084.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-CC: Johan Adolfsson <johana@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval configurable
-References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com> <54B92596.2040206@roeck-us.net> <20150116183020.GA6262@roeck-us.net>
-In-Reply-To: <20150116183020.GA6262@roeck-us.net>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <42d95683e3c7f4bb00be4d777e2b334e8981d552.1422275084.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 07:30 PM, Guenter Roeck wrote:
-> I sent a couple of patches a minute ago which should take care of the issue.
-> Would be great if you can test it.
-I applied the v2 versions of the patches for a quick test, but it was 
-not successful. Haven't done any further investigation on what the 
-problem might be, but when trying to read the sysfs driver I get "read 
-error: No such device or address".
+On Mon, Jan 26, 2015 at 03:55:29PM +0300, Vladimir Davydov wrote:
+> To speed up further allocations SLUB may store empty slabs in per
+> cpu/node partial lists instead of freeing them immediately. This
+> prevents per memcg caches destruction, because kmem caches created for a
+> memory cgroup are only destroyed after the last page charged to the
+> cgroup is freed.
+> 
+> To fix this issue, this patch resurrects approach first proposed in [1].
+> It forbids SLUB to cache empty slabs after the memory cgroup that the
+> cache belongs to was destroyed. It is achieved by setting kmem_cache's
+> cpu_partial and min_partial constants to 0 and tuning put_cpu_partial()
+> so that it would drop frozen empty slabs immediately if cpu_partial = 0.
+> 
+> The runtime overhead is minimal. From all the hot functions, we only
+> touch relatively cold put_cpu_partial(): we make it call
+> unfreeze_partials() after freezing a slab that belongs to an offline
+> memory cgroup. Since slab freezing exists to avoid moving slabs from/to
+> a partial list on free/alloc, and there can't be allocations from dead
+> caches, it shouldn't cause any overhead. We do have to disable
+> preemption for put_cpu_partial() to achieve that though.
+> 
+> The original patch was accepted well and even merged to the mm tree.
+> However, I decided to withdraw it due to changes happening to the memcg
+> core at that time. I had an idea of introducing per-memcg shrinkers for
+> kmem caches, but now, as memcg has finally settled down, I do not see it
+> as an option, because SLUB shrinker would be too costly to call since
+> SLUB does not keep free slabs on a separate list. Besides, we currently
+> do not even call per-memcg shrinkers for offline memcgs. Overall, it
+> would introduce much more complexity to both SLUB and memcg than this
+> small patch.
+> 
+> Regarding to SLAB, there's no problem with it, because it shrinks
+> per-cpu/node caches periodically. Thanks to list_lru reparenting, we no
+> longer keep entries for offline cgroups in per-memcg arrays (such as
+> memcg_cache_params->memcg_caches), so we do not have to bother if a
+> per-memcg cache will be shrunk a bit later than it could be.
+> 
+> [1] http://thread.gmane.org/gmane.linux.kernel.mm/118649/focus=118650
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> ---
+>  mm/slab.c        |    2 +-
+>  mm/slab.h        |    2 +-
+>  mm/slab_common.c |   15 +++++++++++++--
+>  mm/slob.c        |    2 +-
+>  mm/slub.c        |   25 ++++++++++++++++++++-----
+>  5 files changed, 36 insertions(+), 10 deletions(-)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 279c44d6d8e1..f0514df07b85 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -2400,7 +2400,7 @@ static int __cache_shrink(struct kmem_cache *cachep)
+>  	return (ret ? 1 : 0);
+>  }
+>  
+> -void __kmem_cache_shrink(struct kmem_cache *cachep)
+> +void __kmem_cache_shrink(struct kmem_cache *cachep, bool deactivate)
+>  {
+>  	__cache_shrink(cachep);
+>  }
+> diff --git a/mm/slab.h b/mm/slab.h
+> index c036e520d2cf..041260197984 100644
+> --- a/mm/slab.h
+> +++ b/mm/slab.h
+> @@ -138,7 +138,7 @@ static inline unsigned long kmem_cache_flags(unsigned long object_size,
+>  #define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
+>  
+>  int __kmem_cache_shutdown(struct kmem_cache *);
+> -void __kmem_cache_shrink(struct kmem_cache *);
+> +void __kmem_cache_shrink(struct kmem_cache *, bool);
+>  void slab_kmem_cache_release(struct kmem_cache *);
+>  
+>  struct seq_file;
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index 6803639fdff0..472ab7fcffd4 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -549,10 +549,13 @@ void memcg_deactivate_kmem_caches(struct mem_cgroup *memcg)
+>  {
+>  	int idx;
+>  	struct memcg_cache_array *arr;
+> -	struct kmem_cache *s;
+> +	struct kmem_cache *s, *c;
+>  
+>  	idx = memcg_cache_id(memcg);
+>  
+> +	get_online_cpus();
+> +	get_online_mems();
+> +
+>  	mutex_lock(&slab_mutex);
+>  	list_for_each_entry(s, &slab_caches, list) {
+>  		if (!is_root_cache(s))
+> @@ -560,9 +563,17 @@ void memcg_deactivate_kmem_caches(struct mem_cgroup *memcg)
+>  
+>  		arr = rcu_dereference_protected(s->memcg_params.memcg_caches,
+>  						lockdep_is_held(&slab_mutex));
+> +		c = arr->entries[idx];
+> +		if (!c)
+> +			continue;
+> +
+> +		__kmem_cache_shrink(c, true);
+>  		arr->entries[idx] = NULL;
+>  	}
+>  	mutex_unlock(&slab_mutex);
+> +
+> +	put_online_mems();
+> +	put_online_cpus();
+>  }
+>  
+>  void memcg_destroy_kmem_caches(struct mem_cgroup *memcg)
+> @@ -646,7 +657,7 @@ void kmem_cache_shrink(struct kmem_cache *cachep)
+>  {
+>  	get_online_cpus();
+>  	get_online_mems();
+> -	__kmem_cache_shrink(cachep);
+> +	__kmem_cache_shrink(cachep, false);
+>  	put_online_mems();
+>  	put_online_cpus();
+>  }
+> diff --git a/mm/slob.c b/mm/slob.c
+> index 043a14b6ccbe..e63ff9d926dc 100644
+> --- a/mm/slob.c
+> +++ b/mm/slob.c
+> @@ -618,7 +618,7 @@ int __kmem_cache_shutdown(struct kmem_cache *c)
+>  	return 0;
+>  }
+>  
+> -void __kmem_cache_shrink(struct kmem_cache *c)
+> +void __kmem_cache_shrink(struct kmem_cache *c, bool deactivate)
+>  {
+>  }
+>  
+> diff --git a/mm/slub.c b/mm/slub.c
+> index c09d93dde40e..6f57824af019 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -2007,6 +2007,7 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>  	int pages;
+>  	int pobjects;
+>  
+> +	preempt_disable();
+>  	do {
+>  		pages = 0;
+>  		pobjects = 0;
+> @@ -2040,6 +2041,14 @@ static void put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
+>  
+>  	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page)
+>  								!= oldpage);
+> +	if (unlikely(!s->cpu_partial)) {
+> +		unsigned long flags;
+> +
+> +		local_irq_save(flags);
+> +		unfreeze_partials(s, this_cpu_ptr(s->cpu_slab));
+> +		local_irq_restore(flags);
+> +	}
+> +	preempt_enable();
+>  #endif
+>  }
+>  
+> @@ -3368,7 +3377,7 @@ EXPORT_SYMBOL(kfree);
+>   * being allocated from last increasing the chance that the last objects
+>   * are freed in them.
+>   */
+> -void __kmem_cache_shrink(struct kmem_cache *s)
+> +void __kmem_cache_shrink(struct kmem_cache *s, bool deactivate)
+>  {
+>  	int node;
+>  	int i;
+> @@ -3381,6 +3390,15 @@ void __kmem_cache_shrink(struct kmem_cache *s)
+>  		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
+>  	unsigned long flags;
+>  
+> +	if (deactivate) {
+> +		/*
+> +		 * Disable empty slabs caching. Used to avoid pinning offline
+> +		 * memory cgroups by freeable kmem pages.
+> +		 */
+> +		s->cpu_partial = 0;
+> +		s->min_partial = 0;
+> +	}
+> +
 
-The sysfs path have moved with the REGMAP settings, from 
-/sys/bus/i2c/devices/<x>/in0_input to 
-/sys/bus/i2c/devices/<x>/hwmon/hwmon0/in0_input.
+Hello,
 
-Any ideas? Haven't had REGMAP configured in my kernel earlier, might it 
-be some specific configuration I miss?
+Maybe, kick_all_cpus_sync() is needed here since object would
+be freed asynchronously so they can't see this updated value.
 
-BR,
-Robert
+Thanks.
