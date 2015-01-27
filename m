@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205AbbA0Nwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 08:52:42 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:39591 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189AbbA0Nwg convert rfc822-to-8bit (ORCPT
+	id S1754532AbbA0N5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 08:57:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35974 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737AbbA0N5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 08:52:36 -0500
+	Tue, 27 Jan 2015 08:57:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <1421745476-6276-1-git-send-email-svarbanov@mm-sol.com>
-References: <1421745476-6276-1-git-send-email-svarbanov@mm-sol.com>
-Date: Tue, 27 Jan 2015 14:52:35 +0100
-Message-ID: <CACRpkdbEpd6jn6-CepNnZBWdLa1SygT_96tj3ww8rU8ZKx2j7g@mail.gmail.com>
-Subject: Re: [PATCH 0/3] pinctrl: Qualcomm msm8916 pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Joonwoo Park <joonwoop@codeaurora.org>
+In-Reply-To: <20150126170048.GA2080@infradead.org>
+References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+	<1421163888-21452-2-git-send-email-ming.lei@canonical.com>
+	<20150125133147.GA19445@infradead.org>
+	<CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
+	<20150126170048.GA2080@infradead.org>
+Date: Tue, 27 Jan 2015 21:57:47 +0800
+Message-ID: <CACVXFVNLQegYD2RHO9EVCVNcYE0hgn5xXXJPRud9kM8zaCYNGQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] aio: add aio_kernel_() interface
+From: Ming Lei <ming.lei@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Zach Brown <zab@zabbo.net>, Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "open list:AIO" <linux-aio@kvack.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 10:17 AM, Stanimir Varbanov
-<svarbanov@mm-sol.com> wrote:
-
-> This series adds a pinctrl driver for Snapdragon 410 (msm8916) SoC. The first
-> patch increase the register address variable size, next adds a binding document
-> and the last patch adds the pinctrl driver
+On Tue, Jan 27, 2015 at 1:00 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Tue, Jan 27, 2015 at 12:18:23AM +0800, Ming Lei wrote:
+>> > Also it might make sense to just offer aio_kernel_read/write intefaces
+>> > instead of the common submit wrapper, as that's much closer to other
+>> > kernel APIs, e.g.
+>> >
+>> > int aio_kernel_read(struct kiocb *iocb, struct file *file,
+>> >                 struct iov_iter *iter, loff_t off,
+>> >                 void (*complete)(struct kiocb *iocb, long res));
+>> > int aio_kernel_write(struct kiocb *iocb, struct file *file,
+>> >                 struct iov_iter *iter, loff_t off,
+>> >                 void (*complete)(struct kiocb *iocb, long res));
+>>
+>> It is like style of sync APIs, looks submit/complete is common
+>> for async APIs, like io_submit().
 >
-> Comments are welcome!
+> io_submit is a fairly horrible API.  While Posix AIO isn't too much
+> better it does have separate APIs for read/write.  Given that there
+> isn't much code shared I'd keep an API that feels familar.
 
-Stephen, Björn seems to be unavailable to review this patch set
-right now, can you have a look at it so it doesn't stall?
+But from performance view, the two APIs of aio_kernel_read()
+and aio_kernel_write() aren't good because both need
+5 parameters which can't be held in registers and they are
+often called from single thread context, not like synchronized
+read() and write().
 
-Yours,
-Linus Walleij
+Also aio_kernel_init_rw() can be moved to header file as inline
+to avoid too many parameters.
+
+Thanks,
+Ming Lei
