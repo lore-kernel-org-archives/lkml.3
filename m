@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193AbbA0CmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 21:42:10 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:59102 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbbA0CmG (ORCPT
+	id S1757509AbbA0CnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 21:43:06 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:47699 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383AbbA0CnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 21:42:06 -0500
-Date: Mon, 26 Jan 2015 18:42:06 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: cleanup/soc for 3.20 #3 (bis)
-Message-ID: <20150127024206.GC22154@quad.lixom.net>
-References: <20150123230609.GV20896@quad.lixom.net>
- <1422277230-25211-1-git-send-email-nicolas.ferre@atmel.com>
+	Mon, 26 Jan 2015 21:43:03 -0500
+Message-ID: <54C6FB28.3000304@roeck-us.net>
+Date: Mon, 26 Jan 2015 18:42:48 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422277230-25211-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        devel <devel@driverdev.osuosl.org>, isdn@linux-pingi.de,
+        netdev <netdev@vger.kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: make allyesconfig i386 build failure with next-20150122 (caused
+ by fb_agm1264k-fl driver)
+References: <CA+r1ZhhXF+hicy7JKo3jAbgSbO4KOLm6BwPosTKNb+E_Cb4yPQ@mail.gmail.com> <20150126215959.GA9853@roeck-us.net> <20150126224654.GA17166@kroah.com>
+In-Reply-To: <20150126224654.GA17166@kroah.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54C6FB36.0165,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 5
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 02:00:30PM +0100, Nicolas Ferre wrote:
-> 
-> Arnd, Olof, Kevin,
-> 
-> This is the rework of my previous pull-request with modifications advised by
-> Olof.
-> This is a batch of cleanup/soc modifications that you may also stack on top of
-> your "soc" branch as the previous one. It stabilizes a little bit our cleanup
-> action before going further.
-> Another one may be proposed before the merge-window opens.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit 29ee506d0d56f6d39cc237de2512f9cb5629cbf7:
-> 
->   ARM: at91: move at91rm9200_idle() to clk/at91/pmc.c (2015-01-16 18:08:42 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup3
-> 
-> for you to fetch changes up to 9726b6892beeaa736610370429a23a481d1b133e:
-> 
->   ARM: at91: pm: remove warning to remove SOC_AT91SAM9263 usage (2015-01-26 13:44:19 +0100)
+On 01/26/2015 02:46 PM, Greg Kroah-Hartman wrote:
+> On Mon, Jan 26, 2015 at 01:59:59PM -0800, Guenter Roeck wrote:
+>> On Thu, Jan 22, 2015 at 12:10:33PM -0700, Jim Davis wrote:
+>>> make ARCH=i386 allyesconfig fails with
+>>>
+>>> drivers/staging/built-in.o: In function `reset':
+>>> (.text+0x2ae89d): multiple definition of `reset'
+>>> drivers/isdn/built-in.o:(.text+0x185dc2): first defined here
+>>> make[1]: *** [drivers/built-in.o] Error 1
+>>
+>> Culprit:
+>>
+>> commit b2ebd4be6fa1d2329b63531b044f9e25474981cb
+>> Author: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+>> Date:   Wed Dec 31 10:11:10 2014 +0100
+>>
+>>      staging: fbtft: add fb_agm1264k-fl driver
+>>
+>> A global function named 'reset' isn't really a good idea.
+>>
+>> Not that the global function with the same name in the isdn code
+>> is better ;-).
+>
+> Agreed, the fbtft code is now fixed.  Patches to fix the isdn code would
+> be gladly accepted as well :)
+>
 
-Merged, thanks.
+Did you have a look into the isdn code ? It will need someone
+with a lot of spare time to clean this code up.
 
+Guenter
 
--Olof
