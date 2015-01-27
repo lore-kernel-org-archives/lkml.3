@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077AbbA0HzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 02:55:23 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:35882 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbbA0HzU convert rfc822-to-8bit (ORCPT
+	id S1757390AbbA0J1B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 04:27:01 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:35939 "EHLO
+	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752365AbbA0J05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 02:55:20 -0500
+	Tue, 27 Jan 2015 04:26:57 -0500
+From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+To: <gregkh@linuxfoundation.org>, <robh+dt@kernel.org>, <mark.rutland@arm.com>,
+        <arnd@arndb.de>, <gnomes@lxorguk.ukuu.org.uk>,
+        <peter@hurleysoftware.com>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <grant.likely@linaro.org>
+CC: <jslaby@suse.cz>, <heiko@sntech.de>, <jason@lakedaemon.net>,
+        <florian.vaussard@epfl.ch>, <andrew@lunn.ch>, <hytszk@gmail.com>,
+        <antonynpavlov@gmail.com>, <shawn.guo@linaro.org>,
+        <orsonzhai@gmail.com>, <geng.ren@spreadtrum.com>,
+        <zhizhou.zhang@spreadtrum.com>, <lanqing.liu@spreadtrum.com>,
+        <zhang.lyra@gmail.com>, <wei.qiao@spreadtrum.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>, <linux-api@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v8 0/2] Add Spreadtrum SoC bindings and serial driver support
+Date: Tue, 27 Jan 2015 15:56:45 +0800
+Message-ID: <1422345407-10037-1-git-send-email-chunyan.zhang@spreadtrum.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <sc9836-serial-v8>
+References: <sc9836-serial-v8>
 MIME-Version: 1.0
-In-Reply-To: <1421583604-27256-5-git-send-email-niso@kth.se>
-References: <1421583604-27256-1-git-send-email-niso@kth.se>
-	<1421583604-27256-5-git-send-email-niso@kth.se>
-Date: Tue, 27 Jan 2015 08:55:20 +0100
-Message-ID: <CACRpkda4SBof0EaZVWtEYaeb6j_BGAVj39kje+mBz90eB3qAwQ@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] ARM: shmobile: emev2-kzm9d: Add PFC information
- for uart1
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?UTF-8?Q?Niklas_S=C3=B6derlund?= <niso@kth.se>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Originating-IP: [10.0.67.142]
+X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
+ SHMBX02.spreadtrum.com (10.0.1.204)
+X-MAIL: SHSQR01.spreadtrum.com t0R7vMRL047429
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 1:20 PM, Niklas Söderlund <niso@kth.se> wrote:
+This patch-set split the last version, and addressed the review comments from
+last version on serial driver code.
 
-> Configure the pinmux on kzm9d to use the serial connector for uart1.
->
-> Signed-off-by: Niklas Söderlund <niso@kth.se>
+Changes from v7:
+* Addressed review comments from Peter:
+	- Initialized the stack local with zero in sprd_set_termios()
+	- Used dev_get_drvdata() to get sprd_uart_port
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Changes from v6:
+	- Setted SPRD_TIMEOUT with 256 rather than 2048
+	- Used u32 instead of uint32_t
+	- Removed inline of handle_lsr_errors which is a single call site function
+	- Removed unused parameter of sprd_tx & sprd_rx
+	- Used spin_lock_irqsave in sprd_startup() instead of spin_lock
+	- Added a check for port->sysrq in sprd_console_write()
+	- Used a global counter as a condition of calling uart_{un}register_driver
+	- Added pdev->id assignment in probe()
+	- Setted port->flags with UPF_BOOT_AUTOCONF instead of ASYNC_BOOT_AUTOCONF
 
-> +&pfc {
-> +       uart1_pins: uart@e1030000 {
-> +               renesas,groups = "uart1_ctrl", "uart1_data";
-> +               renesas,function = "uart1";
-> +       };
-> +};
+Changes from v5:
+	- Used Spreadtrum instead of SPRD in menus
+	- Changed TTY name to 'ttyS'
+	- Moved uart_register_driver() to probe()
+	- Added spinlock as needed
+	- Removed register states saving and restoring in suspend() and resume()
 
-Would be nice if the PFC driver could be augmented to also accept the
-now standard bindings "groups" and "function" simply :) we're adding parse
-functions for those to the core.
+Chunyan Zhang (2):
+  Documentation: DT: Add bindings for Spreadtrum SoC Platform
+  tty/serial: Add Spreadtrum sc9836-uart driver support
 
-Yours,
-Linus Walleij
+ Documentation/devicetree/bindings/arm/sprd.txt     |   11 +
+ .../devicetree/bindings/serial/sprd-uart.txt       |    7 +
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ drivers/tty/serial/Kconfig                         |   18 +
+ drivers/tty/serial/Makefile                        |    1 +
+ drivers/tty/serial/sprd_serial.c                   |  797 ++++++++++++++++++++
+ include/uapi/linux/serial_core.h                   |    3 +
+ 7 files changed, 838 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+ create mode 100644 Documentation/devicetree/bindings/serial/sprd-uart.txt
+ create mode 100644 drivers/tty/serial/sprd_serial.c
+
+-- 
+1.7.9.5
+
