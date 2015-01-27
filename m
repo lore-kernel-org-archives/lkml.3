@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571AbbA0MUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:20:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35469 "EHLO
+	id S1758376AbbA0MWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:22:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35475 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758748AbbA0MUO (ORCPT
+	with ESMTP id S1758754AbbA0MUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:14 -0500
+	Tue, 27 Jan 2015 07:20:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Michael Turquette <mturquette@linaro.org>,
+Cc: Hannes Reinecke <hare@suse.de>, Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 119/126] clk: Don't try to use a struct clk* after it could have been freed
-Date: Tue, 27 Jan 2015 12:17:04 +0000
-Message-Id: <1422361031-19364-120-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 120/126] tcm_loop: Fixup tag handling
+Date: Tue, 27 Jan 2015 12:17:05 +0000
+Message-Id: <1422361031-19364-121-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,45 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 10cdfe54dab034311c8e2fad9ba2dffbe616caa9 upstream.
+commit 6375f8908255ea7438b60bb5998e6b3e1628500d upstream.
 
-As __clk_release could call kfree on clk and then we wouldn't have a safe way
-of getting the module that owns the clock.
+The SCSI command tag is set to the tag assigned from the block
+layer, not the SCSI-II tag message. So we need to convert
+it into the correct SCSI-II tag message based on the
+device flags, not the tag value itself.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Fixes: fcb0ee6a3d33 ("clk: Implement clk_unregister")
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Michael Turquette <mturquette@linaro.org>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ luis: backported to 3.16:
+  - adjusted context, as commit 506787a2c7da ("tcm_loop: Fix wrong I_T
+    nexus association") had already been applied to 3.16 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/clk/clk.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/target/loopback/tcm_loop.c | 23 ++++++++---------------
+ 1 file changed, 8 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 4cc83ef7ef61..1dee8d2086fb 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2234,14 +2234,17 @@ int __clk_get(struct clk *clk)
+diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
+index 6177ed38121e..939c4af2d487 100644
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -153,18 +153,11 @@ static int tcm_loop_change_queue_type(struct scsi_device *sdev, int tag)
+ /*
+  * Locate the SAM Task Attr from struct scsi_cmnd *
+  */
+-static int tcm_loop_sam_attr(struct scsi_cmnd *sc)
+-{
+-	if (sc->device->tagged_supported) {
+-		switch (sc->tag) {
+-		case HEAD_OF_QUEUE_TAG:
+-			return MSG_HEAD_TAG;
+-		case ORDERED_QUEUE_TAG:
+-			return MSG_ORDERED_TAG;
+-		default:
+-			break;
+-		}
+-	}
++static int tcm_loop_sam_attr(struct scsi_cmnd *sc, int tag)
++{
++	if (sc->device->tagged_supported &&
++	    sc->device->ordered_tags && tag >= 0)
++		return MSG_ORDERED_TAG;
  
- void __clk_put(struct clk *clk)
- {
-+	struct module *owner;
-+
- 	if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
- 		return;
+ 	return MSG_SIMPLE_TAG;
+ }
+@@ -227,7 +220,7 @@ static void tcm_loop_submission_work(struct work_struct *work)
  
- 	clk_prepare_lock();
-+	owner = clk->owner;
- 	kref_put(&clk->ref, __clk_release);
- 	clk_prepare_unlock();
+ 	rc = target_submit_cmd_map_sgls(se_cmd, tl_nexus->se_sess, sc->cmnd,
+ 			&tl_cmd->tl_sense_buf[0], tl_cmd->sc->device->lun,
+-			transfer_length, tcm_loop_sam_attr(sc),
++			transfer_length, tcm_loop_sam_attr(sc, tl_cmd->sc_cmd_tag),
+ 			sc->sc_data_direction, 0,
+ 			scsi_sglist(sc), scsi_sg_count(sc),
+ 			sgl_bidi, sgl_bidi_count,
+@@ -266,7 +259,7 @@ static int tcm_loop_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+ 	}
  
--	module_put(clk->owner);
-+	module_put(owner);
+ 	tl_cmd->sc = sc;
+-	tl_cmd->sc_cmd_tag = sc->tag;
++	tl_cmd->sc_cmd_tag = sc->request->tag;
+ 	INIT_WORK(&tl_cmd->work, tcm_loop_submission_work);
+ 	queue_work(tcm_loop_workqueue, &tl_cmd->work);
+ 	return 0;
+@@ -366,7 +359,7 @@ static int tcm_loop_abort_task(struct scsi_cmnd *sc)
+ 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
+ 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
+ 	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
+-				 sc->tag, TMR_ABORT_TASK);
++				 sc->request->tag, TMR_ABORT_TASK);
+ 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
  }
  
- /***        clk rate change notifiers        ***/
 -- 
 2.1.4
 
