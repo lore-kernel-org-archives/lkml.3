@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848AbbA0ID5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 03:03:57 -0500
-Received: from ozlabs.org ([103.22.144.67]:50681 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757822AbbA0ID4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 03:03:56 -0500
-Date: Tue, 27 Jan 2015 19:03:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kalle Valo <kvalo@codeaurora.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hong Xu <hong@topbug.net>
-Subject: linux-next: build failure after merge of the wireless-drivers-next
- tree
-Message-ID: <20150127190349.22ff92e8@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/7ci_J69PRRYr0IHqg+bIabQ"; protocol="application/pgp-signature"
+	id S1757894AbbA0IEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 03:04:33 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:48264 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757278AbbA0IEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 03:04:31 -0500
+Date: Tue, 27 Jan 2015 00:04:30 -0800 (PST)
+Message-Id: <20150127.000430.1352169065847404927.davem@davemloft.net>
+To: vivien.didelot@savoirfairelinux.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: Re: [PATCH] net: dsa/mv88e6xxx: add reg read and write debug
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1422047436-6864-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1422047436-6864-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 27 Jan 2015 00:04:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/7ci_J69PRRYr0IHqg+bIabQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Date: Fri, 23 Jan 2015 16:10:36 -0500
 
-Hi Kalle,
+> This commit adds debug messages for the generic mv88e6xxx read and write
+> routines. The output is similar to this:
+> 
+>     mdio-gpio mdio-gpio.0: <- addr: 0x1b reg: 0x05 val: 0x4000
+>     mdio-gpio mdio-gpio.0: -> addr: 0x1b reg: 0x07 val: 0x3113
+>     mdio-gpio mdio-gpio.0: -> addr: 0x1b reg: 0x08 val: 0x0330
+>     mdio-gpio mdio-gpio.0: -> addr: 0x1b reg: 0x09 val: 0x0000
+> 
+> This is convenient to dynamically debug operations through debugfs with:
+> 
+>     echo file mv88e6xxx.c +p > <debugfs>/dynamic_debug/control
+> 
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 
-After merging the wireless-drivers-next tree, today's linux-next build
-(powerpc allyesconfig) failed like this:
-
-drivers/net/wireless/ath/ath9k/ath9k_htc.o:(.data+0x29d0): multiple definit=
-ion of `led_blink'
-drivers/net/wireless/ath/ath9k/ath9k.o:(.bss+0x1654): first defined here
-
-Caused by commit 3a939a671225 ("ath9k_htc: Add a module parameter to
-disable blink").
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/7ci_J69PRRYr0IHqg+bIabQ
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUx0ZqAAoJEMDTa8Ir7ZwVqWEP/0LnsS4AkRaqblf2g5KOHZVR
-KPSZ0J3jm+hCyx81a5wHv6HfMY2HKQuZwBdIG2UzemK82DpbHe0do4bgg63EiYAs
-bWpAEevqYZwWwOUQx4KPqV+O0YiyJnnolMhascmOL96ghadBh8TJradS9q693wps
-B5mvsWDh1u9v70wYEZHtJzolN6K8qnP9iFo4OZznoa+Vwmh4ZzuBHIEArjaVUEQw
-Kt/MIa7yaegY3jexJAcVUjmyGs6xKzZnL4eMTY6m19tFgV3PkIrTeUcgBoegasF6
-dly95Ebvd221wvVeu6Dz4QL1XBcn+MtBcYPfkiS+7qmzLrkS0uhjy0GdFVFxeXe6
-8MKqS3VgYMMXy7IMeZS4g8SyPRHRx2L7JtK+lggQiNwoDheV0JdkCIs6kjiuSR6M
-smgYlZ/wo1QlzG0vFgYYsE10rewDVaz/CCSpgwsZEGUmmd+hkbhpdUJd1M48KGM7
-12QDeNYi/PijSqEBOLkIMfg6yKLNpj8v+b+l00epIbfCuY5/Edj0o1P/y6VGo8Jg
-78Rd2q3jxME6rWJmrdsCGcSZghmR7a12GZE/vfIexnkegSJzJhxe12khoMsPNov0
-hSvEdHKzEgDkiITpAsQE6f0ISslufKWe6vTG/TvXpWbWgFbiQpfjGNzBBGAbvmBE
-0Uz3HuiZqc/ewTqNZ/RB
-=eKkA
------END PGP SIGNATURE-----
-
---Sig_/7ci_J69PRRYr0IHqg+bIabQ--
+Applied, thanks.
