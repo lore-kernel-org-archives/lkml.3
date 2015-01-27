@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759564AbbA0UNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 15:13:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38953 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020AbbA0UNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 15:13:02 -0500
-Date: Tue, 27 Jan 2015 21:12:59 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Jan Beulich <JBeulich@suse.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Andy Lutomirski <luto@amacapital.net>, rostedt@goodmis.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, paulmck@linux.vnet.ibm.com,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        konrad.wilk@oracle.com, Ingo Molnar <mingo@redhat.com>,
-        Borislav Petkov <bp@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v5 2/2] x86/xen: allow privcmd hypercalls to be
-	preempted on 64-bit
-Message-ID: <20150127201259.GB19988@wotan.suse.de>
-References: <1422323467-16713-1-git-send-email-mcgrof@do-not-panic.com> <1422323467-16713-3-git-send-email-mcgrof@do-not-panic.com> <54C75BD60200007800059BDD@mail.emea.novell.com> <54C76334.2080003@citrix.com>
+	id S1759634AbbA0UOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 15:14:15 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:32334 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759589AbbA0UOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 15:14:12 -0500
+Message-ID: <54C7F180.1030505@oracle.com>
+Date: Tue, 27 Jan 2015 15:13:52 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C76334.2080003@citrix.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        akpm@linux-foundation.org, lauraa@codeaurora.org
+Subject: Re: [PATCH v2 3/3] mm: cma: release trigger
+References: <1422282365-20015-1-git-send-email-sasha.levin@oracle.com> <1422282365-20015-4-git-send-email-sasha.levin@oracle.com> <20150127081012.GD11358@js1304-P5Q-DELUXE> <54C7D801.3070502@oracle.com>
+In-Reply-To: <54C7D801.3070502@oracle.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 10:06:44AM +0000, David Vrabel wrote:
-> On 27/01/15 08:35, Jan Beulich wrote:
-> >>>> On 27.01.15 at 02:51, <mcgrof@do-not-panic.com> wrote:
-> > 
-> > Even if David told you this would be acceptable, I have to question
-> > an abstract model of fixing issues on only 64-bit kernels - this may
-> > be acceptable for distro purposes, but seems hardly the right
-> > approach for upstream. If 32-bit ones are to become deliberately
-> > broken, the XEN config option should become dependent on !X86_32.
-> 
-> I'd rather have something omitted (keeping the current behaviour) than
-> something that has not been tested at all.
-> 
-> Obviously it would be preferable to to fix both 32-bit and 64-bit x86
-> (and ARM as well) but I'm not going to block an important bug fix for
-> the majority use case (64-bit x86).
+On 01/27/2015 01:25 PM, Sasha Levin wrote:
+> On 01/27/2015 03:10 AM, Joonsoo Kim wrote:
+>>> >> +		if (mem->n <= count) {
+>>>> >> > +			cma_release(cma, mem->p, mem->n);
+>>>> >> > +			count -= mem->n;
+>>>> >> > +			kfree(mem);
+>>>> >> > +		} else {
+>>>> >> > +			cma_release(cma, mem->p, count);
+>>>> >> > +			mem->p += count;
+>>>> >> > +			mem->n -= count;
+>>>> >> > +			count = 0;
+>>>> >> > +			cma_add_to_cma_mem_list(mem);
+>>>> >> > +		}
+>>>> >> > +	}
+>> > If order_per_bit is not 0 and count used in cma_release() is
+>> > different with the count used in cma_alloc(), problem could
+>> > occur since bitmap management code can't handle that situation.
+>> > 
+>> > Could we just disable this case in this testing module?
+> How should it behave then? Just free a max of 'count' pages and
+> stop beforehand if we're going to go over it?
 
-The hunk for 32-bit should indeed only go in once we get a Tested-by.
-Please let me know if there is anything else needed for this patch.
+Actually, Can I just check for order_per_bit == 0 and execute it
+then? I don't want to avoid testing these paths.
 
-  Luis
+
+Thanks,
+Sasha
