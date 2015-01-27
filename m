@@ -1,69 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759037AbbA0Mf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:35:58 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:45649 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759011AbbA0Mfy (ORCPT
+	id S932794AbbA0MiR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:38:17 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:34222 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932331AbbA0MiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:35:54 -0500
-Message-ID: <54C78624.5000702@imgtec.com>
-Date: Tue, 27 Jan 2015 12:35:48 +0000
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Tue, 27 Jan 2015 07:38:11 -0500
 MIME-Version: 1.0
-To: <tiwai@suse.de>, <perex@perex.cz>
-CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <lars@metafoo.de>
-Subject: Re: [PATCH_V3 4/4] sound: jz4740: set i2s clk rate to 12MHz
-References: <1422283993-53642-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1422283993-53642-5-git-send-email-Zubair.Kakakhel@imgtec.com>
-In-Reply-To: <1422283993-53642-5-git-send-email-Zubair.Kakakhel@imgtec.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.89]
+In-Reply-To: <1422354858.14015.39.camel@x220>
+References: <1421818097-9281-1-git-send-email-hongzhou.yang@mediatek.com>
+	<1421818097-9281-2-git-send-email-hongzhou.yang@mediatek.com>
+	<CABuKBeJGigY5ym9cJy=PYK8jbdsOLLtkmovHq6xho4gYseCAWg@mail.gmail.com>
+	<1422353800.14015.35.camel@x220>
+	<1422354400.32212.25.camel@mtksdaap41>
+	<1422354858.14015.39.camel@x220>
+Date: Tue, 27 Jan 2015 13:38:09 +0100
+Message-ID: <CABuKBeLPN74fiLduvswHfPrgAoQCFXCtdLZhhoha8Q=0xBSjpA@mail.gmail.com>
+Subject: Re: [PATCH v5 1/5] ARM: mediatek: Add config options for mediatek SoCs.
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dandan.he@mediatek.com, alan.cheng@mediatek.com, toby.liu@mediatek.com,
+        maoguang.meng@mediatek.com, huang eddie <eddie.huang@mediatek.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrsoft.com>,
+        Howard Chen <howard.chen@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2015-01-27 11:34 GMT+01:00 Paul Bolle <pebolle@tiscali.nl>:
+> Hi Joe,
+>
+> On Tue, 2015-01-27 at 18:26 +0800, Yingjoe Chen wrote:
+>> On Tue, 2015-01-27 at 11:16 +0100, Paul Bolle wrote:
+>> > On Thu, 2015-01-22 at 13:54 +0100, Matthias Brugger wrote:
+>> > > 2015-01-21 6:28 GMT+01:00 Hongzhou Yang <hongzhou.yang@mediatek.com>:
+>> > > > From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+>> > > >
+>> > > > The upcoming MTK pinctrl driver have a big pin table for each SoC
+>> > > > and we don't want to bloat the kernel binary if we don't need it.
+>> > > > Add config options so we can build for one SoC only.
+>> > > >
+>> > > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> > > > Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+>> > > > Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+>> > >
+>> > > Applied to v3.20-next/soc
+>> >
+>> > This became commit ad8a221e1f49 ("ARM: mediatek: Add config options for
+>> > mediatek SoCs.") in today's linux-next (ie, next-20150127). I noticed
+>> > because a script I use to check linux-next spotted a problem with it.
+>> >
+>> > > > ---
+>> > > >  arch/arm/mach-mediatek/Kconfig | 22 +++++++++++++++++++++-
+>> > > >  1 file changed, 21 insertions(+), 1 deletion(-)
+>> > > >
+>> > > > diff --git a/arch/arm/mach-mediatek/Kconfig b/arch/arm/mach-mediatek/Kconfig
+>> > > > index f73f588..f7e463c 100644
+>> > > > --- a/arch/arm/mach-mediatek/Kconfig
+>> > > > +++ b/arch/arm/mach-mediatek/Kconfig
+>> > > > @@ -1,6 +1,26 @@
+>> > > > -config ARCH_MEDIATEK
+>> > > > +menuconfig ARCH_MEDIATEK
+>> > > >         bool "Mediatek MT65xx & MT81xx SoC" if ARCH_MULTI_V7
+>> > > >         select ARM_GIC
+>> > > >         select MTK_TIMER
+>> > > >         help
+>> > > >           Support for Mediatek MT65xx & MT81xx SoCs
+>> > > > +
+>> > > > +if ARCH_MEDIATEK
+>> > > > +
+>> > > > +config MACH_MT6589
+>> > > > +       bool "MediaTek MT6589 SoCs support"
+>> > > > +       default ARCH_MEDIATEK
+>> > > > +
+>> > > > +config MACH_MT6592
+>> > > > +       bool "MediaTek MT6592 SoCs support"
+>> > > > +       default ARCH_MEDIATEK
+>> > > > +
+>> > > > +config MACH_MT8127
+>> > > > +       bool "MediaTek MT8127 SoCs support"
+>> > > > +       default ARCH_MEDIATEK
+>> > > > +
+>> > > > +config MACH_MT8135
+>> > > > +       bool "MediaTek MT8135 SoCs support"
+>> > > > +       default ARCH_MEDIATEK
+>> > > > +
+>> > > > +endif
+>> >
+>> > None of these four new MACH_MT* Kconfig symbols are currently used in
+>> > linux-next. I assume that patches that actually use them (either as a
+>> > Kconfig symbol or as a CONFIG_* macro) are still pending. Is that
+>> > correct?
+>>
+>> Yes, it is used in patch 3 in this series[1], and is discussed in [2].
+>>
+>> Joe.C
+>>
+>> [1]
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/318453.html
+>
+> That only seems to add a user for MACH_MT8135, not for the other three
+> symbols. The other three symbols will be used too, won't they?
+>
+>> [2]
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/315616.html
+>
+> (For the record, that is a message regarding v4 of this patch.)
+>
+>
+> Paul Bolle
+>
 
+Yes, this symbols are needed when we implement the pinctrl driver for
+the other platforms.
+I will implement mt6589 as soon as the pinctrl driver got merged.
+I suppose Howard will go for the mt6592.
 
-On 26/01/15 14:53, Zubair Lutfullah Kakakhel wrote:
-> i2s clock rate is not set to 12MHz currently. Set it before enabling
-> the clock.
-> 
-> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-> 
-> ---
-> V2 changes: Removed clk_prepare_enable call as clock was already being
-> enabled elsewhere. Just set rate to 12MHz.
-> ---
->  sound/soc/jz4740/jz4740-i2s.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/sound/soc/jz4740/jz4740-i2s.c b/sound/soc/jz4740/jz4740-i2s.c
-> index 07f7781..c2e5852 100644
-> --- a/sound/soc/jz4740/jz4740-i2s.c
-> +++ b/sound/soc/jz4740/jz4740-i2s.c
-> @@ -125,6 +125,7 @@ static int jz4740_i2s_startup(struct snd_pcm_substream *substream,
->  	ctrl |= JZ_AIC_CTRL_FLUSH;
->  	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
->  
-> +	clk_set_rate(i2s->clk_i2s, 12000000);
+Cheers,
+Matthias
 
-Lars recommended using dt and assigned-clock-rates for this. (irc)
-I've checked and it can be done.
-
-This patch is not needed.
-
-Patch 1-3 in this series are OK. This last one can be skipped.
-
-Do you want me to repost the series without it? Or is this fine?
-
-Thanks,
-ZubairLK
-
->  	clk_prepare_enable(i2s->clk_i2s);
->  
->  	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
-> 
+-- 
+motzblog.wordpress.com
