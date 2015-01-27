@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903AbbA0Dbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 22:31:40 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:48053 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756655AbbA0Dbi (ORCPT
+	id S1756822AbbA0DhA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 22:37:00 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:26795 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750917AbbA0Dg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 22:31:38 -0500
-Message-ID: <54C7068B.3050108@linux.vnet.ibm.com>
-Date: Tue, 27 Jan 2015 09:01:23 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 26 Jan 2015 22:36:59 -0500
+From: Bo Shen <voice.shen@atmel.com>
+To: Mark Brown <broonie@kernel.org>, <nicolas.ferre@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <linux-sound@vger.kernel.org>, Alexander Morozov <linux@meltdown.ru>,
+        Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH v3 1/2] ASoC: codecs: wm8904: add dt ids table
+Date: Tue, 27 Jan 2015 11:36:39 +0800
+Message-ID: <1422329800-28481-1-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 2.3.0.rc0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: aik@ozlabs.ru, shreyas@linux.vnet.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>, michael@ellerman.id.au,
-        Peter Zijlstra <peterz@infradead.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>
-Subject: Re: [PATCH V3] tick/broadcast: Make movement of broadcast hrtimer
- robust against hotplug
-References: <20150120103559.8430.50933.stgit@preeti.in.ibm.com> <alpine.DEB.2.11.1501211243270.5526@nanos> <54C09391.9080202@linux.vnet.ibm.com> <alpine.DEB.2.11.1501221209260.5526@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501221209260.5526@nanos>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012703-0029-0000-0000-0000077B2ED4
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2015 04:45 PM, Thomas Gleixner wrote:
-> On Thu, 22 Jan 2015, Preeti U Murthy wrote:
->> On 01/21/2015 05:16 PM, Thomas Gleixner wrote:
->> How about when the cpu that is going offline receives a timer interrupt
->> just before setting its state to CPU_DEAD ? That is still possible right
->> given that its clock devices may not have been shutdown and it is
->> capable of receiving interrupts for a short duration. Even with the
->> above patch, is the following scenario possible ?
->>
->>                 CPU0                                  CPU1
->> t0         Receives timer interrupt
->>
->> t1         Sees that there are hrtimers
->>            to be serviced (hrtimers are not yet migrated)
->>
->> t2         calls hrtimer_interrupt()
->>
->> t3         tick_program_event()                   CPU_DEAD notifiers
->>                                                 CPU0's td->evtdev = NULL
->>
->> t4         clockevent_program_event()
->>            references NULL tick device pointer
->>
->> So my concern is that since the CLOCK_EVT_NOTIFY_CPU_DEAD callback
->> handles shutting down of devices besides moving tick related duties.
->> it's functions may race with the hotplug cpu still handling tick events.
-> 
->   __cpu_disable() is supposed to block interrupts on the dying cpu.
-> 
-> But I agree, we should make it more robust. So we want an explicit
-> call for disabling the cpu local stuff and an explicit takeover of the
-> broadcast duty. I'm anyway distangling the clockevents_notify() stuff,
-> so it should be simple to do so.
+From: Alexander Morozov <linux@meltdown.ru>
 
-I noticed that tick_handover_do_timer() function also suffers from the
-issue that the patch I posted for moving the broadcast duty had, in that
-it relies on all cpus participating in stop_machine(). In a design where
-all cpus do not participate in stop_machine(), if the freshly nominated
-do_timer cpu is idle, there is no update of jiffies till that cpu gets
-back to being busy. So we must do an explicit take over of *both* the
-broadcast and do_timer duty just before the CPU_DEAD phase.
+The WM8904 and WM8918 has the same data type, while the WM8912
+has different data type. So, use the data in dt ids table to
+distinguish them.
 
-Regards
-Preeti U Murthy
+Signed-off-by: Alexander Morozov <linux@meltdown.ru>
+[voice.shen@atmel.com: add code to distinguish device type]
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+---
+Changes in v3:
+  - Get the device type from match data in probe function.
+Changes in v2:
+  - Add driver data for distinguish the device capability.
 
-> Thanks,
-> 
-> 	tglx
-> 
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
+ sound/soc/codecs/wm8904.c | 31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
+index 4d2d2b1..a80bc52 100644
+--- a/sound/soc/codecs/wm8904.c
++++ b/sound/soc/codecs/wm8904.c
+@@ -2098,6 +2098,24 @@ static const struct regmap_config wm8904_regmap = {
+ 	.num_reg_defaults = ARRAY_SIZE(wm8904_reg_defaults),
+ };
+ 
++#ifdef CONFIG_OF
++static enum wm8904_type wm8904_data = WM8904;
++static enum wm8904_type wm8912_data = WM8912;
++
++static const struct of_device_id wm8904_of_match[] = {
++	{
++		.compatible = "wlf,wm8904",
++		.data = &wm8904_data,
++	}, {
++		.compatible = "wlf,wm8912",
++		.data = &wm8912_data,
++	}, {
++		/* sentinel */
++	}
++};
++MODULE_DEVICE_TABLE(of, wm8904_of_match);
++#endif
++
+ static int wm8904_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+@@ -2125,7 +2143,17 @@ static int wm8904_i2c_probe(struct i2c_client *i2c,
+ 		return ret;
+ 	}
+ 
+-	wm8904->devtype = id->driver_data;
++	if (i2c->dev.of_node) {
++		const struct of_device_id *match;
++
++		match = of_match_node(wm8904_of_match, i2c->dev.of_node);
++		if (match == NULL)
++			return -EINVAL;
++		wm8904->devtype = *((enum wm8904_type *)match->data);
++	} else {
++		wm8904->devtype = id->driver_data;
++	}
++
+ 	i2c_set_clientdata(i2c, wm8904);
+ 	wm8904->pdata = i2c->dev.platform_data;
+ 
+@@ -2259,6 +2287,7 @@ static struct i2c_driver wm8904_i2c_driver = {
+ 	.driver = {
+ 		.name = "wm8904",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(wm8904_of_match),
+ 	},
+ 	.probe =    wm8904_i2c_probe,
+ 	.remove =   wm8904_i2c_remove,
+-- 
+2.3.0.rc0
 
