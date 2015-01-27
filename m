@@ -1,149 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbbA0OoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 09:44:21 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:44076 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932262AbbA0OoT (ORCPT
+	id S932246AbbA0Ome (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:42:34 -0500
+Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:57724 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753728AbbA0Omc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 09:44:19 -0500
-Message-ID: <54C7A3C0.6020507@free-electrons.com>
-Date: Tue, 27 Jan 2015 11:42:08 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, dwmw2@infradead.org,
-        computersforpeace@gmail.com
-CC: thomas.petazzoni@free-electrons.com, zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+	Tue, 27 Jan 2015 09:42:32 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3622:3865:3867:3871:3874:5007:6119:6120:6261:7875:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: show38_6d2265ce0d11d
+X-Filterd-Recvd-Size: 1544
+Date: Tue, 27 Jan 2015 09:42:28 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dominik Vogt <vogt@linux.vnet.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] mtd: pxa3xx_nand: add support for the Marvell Berlin
- nand controller
-References: <1422367816-4257-1-git-send-email-antoine.tenart@free-electrons.com> <1422367816-4257-6-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1422367816-4257-6-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
+Message-ID: <20150127094228.50e642fc@gandalf.local.home>
+In-Reply-To: <20150127061941.GA4591@linux.vnet.ibm.com>
+References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
+	<1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
+	<20150126093701.699763dc@gandalf.local.home>
+	<20150127061941.GA4591@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2015 11:10 AM, Antoine Tenart wrote:
-> The nand controller on Marvell Berlin SoC reuse the pxa3xx nand driver
-> as it quite close. The process of sending commands can be compared to
-> the one of the Marvell armada 370: read and write commands are done in
-> chunks.
-> 
-> But the Berlin nand controller has some other specificities which
-> require some modifications of the pxa3xx nand driver:
-> - there are no IRQ available so we need to poll the status register: we
->   have to use our own cmdfunc Berlin function, and early on the probing
->   function.
-> - PAGEPROG are very different from the one used in the pxa3xx driver,
->   so we're using a specific process for this one
-> - the SEQIN command is equivalent to a READ0 command
-> - the RNDOUT command must be used to perform a read operation, and the
->   command is not NAND_CMD_RNDOUT
-> - the ERASE1 command is specific (0xd060)
-> 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/mtd/nand/pxa3xx_nand.c | 287 +++++++++++++++++++++++++++++++++++++----
->  1 file changed, 261 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-> index b2783b1f663c..62ea369dc524 100644
-> --- a/drivers/mtd/nand/pxa3xx_nand.c
-> +++ b/drivers/mtd/nand/pxa3xx_nand.c
-> @@ -109,6 +109,8 @@
->  #define NDCB0_EXT_CMD_TYPE(x)	(((x) << 29) & NDCB0_EXT_CMD_TYPE_MASK)
->  #define NDCB0_CMD_TYPE_MASK	(0x7 << 21)
->  #define NDCB0_CMD_TYPE(x)	(((x) << 21) & NDCB0_CMD_TYPE_MASK)
-> +#define NDCB0_CMD_XTYPE_MASK	(0x7 << 29)
-> +#define NDCB0_CMD_XTYPE(x)	(((x) << 29) & NDCB0_CMD_XTYPE_MASK)
->  #define NDCB0_NC		(0x1 << 20)
->  #define NDCB0_DBC		(0x1 << 19)
->  #define NDCB0_ADDR_CYC_MASK	(0x7 << 16)
-> @@ -117,13 +119,20 @@
->  #define NDCB0_CMD1_MASK		(0xff)
->  #define NDCB0_ADDR_CYC_SHIFT	(16)
->  
-> -#define EXT_CMD_TYPE_DISPATCH	6 /* Command dispatch */
-> -#define EXT_CMD_TYPE_NAKED_RW	5 /* Naked read or Naked write */
-> -#define EXT_CMD_TYPE_READ	4 /* Read */
-> -#define EXT_CMD_TYPE_DISP_WR	4 /* Command dispatch with write */
-> -#define EXT_CMD_TYPE_FINAL	3 /* Final command */
-> -#define EXT_CMD_TYPE_LAST_RW	1 /* Last naked read/write */
-> -#define EXT_CMD_TYPE_MONO	0 /* Monolithic read/write */
-> +#define EXT_CMD_TYPE_LAST_PAGEPROG	10
-> +#define EXT_CMD_TYPE_CHUNK_PAGEPROG	9
-> +#define EXT_CMD_TYPE_LAST_RNDOUT	8
-> +#define EXT_CMD_TYPE_CHUNK_RNDOUT	7
-> +#define EXT_CMD_TYPE_DISPATCH		6 /* Command dispatch */
-> +#define EXT_CMD_TYPE_NAKED_RW		5 /* Naked read or Naked write */
-> +#define EXT_CMD_TYPE_READ		4 /* Read */
-> +#define EXT_CMD_TYPE_DISP_WR		4 /* Command dispatch with write */
-> +#define EXT_CMD_TYPE_FINAL		3 /* Final command */
-> +#define EXT_CMD_TYPE_LAST_RW		1 /* Last naked read/write */
-> +#define EXT_CMD_TYPE_MONO		0 /* Monolithic read/write */
-> +
-> +#define BERLIN_NAND_CMD_RNDOUT		0x3000
-> +#define BERLIN_NAND_CMD_ERASE1		0xd060
->  
->  /* macros for registers read/write */
->  #define nand_writel(info, off, val)	\
-> @@ -158,6 +167,7 @@ enum {
->  enum pxa3xx_nand_variant {
->  	PXA3XX_NAND_VARIANT_PXA,
->  	PXA3XX_NAND_VARIANT_ARMADA370,
-> +	PXA3XX_NAND_VARIANT_BERLIN2,
->  };
->  
->  struct pxa3xx_nand_host {
-> @@ -244,10 +254,13 @@ module_param(use_dma, bool, 0444);
->  MODULE_PARM_DESC(use_dma, "enable DMA for data transferring to/from NAND HW");
->  
->  static struct pxa3xx_nand_timing timing[] = {
-> -	{ 40, 80, 60, 100, 80, 100, 90000, 400, 40, },
-> -	{ 10,  0, 20,  40, 30,  40, 11123, 110, 10, },
-> -	{ 10, 25, 15,  25, 15,  30, 25000,  60, 10, },
-> -	{ 10, 35, 15,  25, 15,  25, 25000,  60, 10, },
-> +	{ 40, 80, 60, 100, 80, 100,  90000, 400, 40, },
-> +	{ 10,  0, 20,  40, 30,  40,  11123, 110, 10, },
-> +	{ 10, 25, 15,  25, 15,  30,  25000,  60, 10, },
-> +	{ 10, 35, 15,  25, 15,  25,  25000,  60, 10, },
-> +	{  5, 20, 10,  12, 10,  12,  60000,  60, 10, },
-> +	{  5, 20, 10,  12, 10,  12, 200000, 120, 10, },
-> +	{  5, 15, 10,  15, 10,  15,  60000,  60, 10, },
->  };
->  
->  static struct pxa3xx_nand_flash builtin_flash_types[] = {
-> @@ -260,6 +273,20 @@ static struct pxa3xx_nand_flash builtin_flash_types[] = {
->  { "512MiB 8-bit",  0xdc2c,  64, 2048,  8,  8, 4096, &timing[2] },
->  { "512MiB 16-bit", 0xcc2c,  64, 2048, 16, 16, 4096, &timing[2] },
->  { "256MiB 16-bit", 0xba20,  64, 2048, 16, 16, 2048, &timing[3] },
-> +{ },
-> +};
-> +
-> +static struct pxa3xx_nand_flash berlin_builtin_flash_types[] = {
-> +{ "2GiB 8-bit",    0xd5ec, 128, 8192,  8,  8, 2048, &timing[4] },
-> +{ "2GiB 8-bit",    0xd598, 128, 8192,  8,  8, 2048, &timing[5] },
-> +{ "2GiB 8-bit",    0x482c, 256, 4096,  8,  8, 2048, &timing[6] },
-> +{ "4GiB 8-bit",    0xd7ec, 128, 8192,  8,  8, 4096, &timing[5] },
-> +{ "8GiB 8-bit",    0xdeec, 128, 8192,  8,  8, 4096, &timing[5] },
-> +{ "4GiB 8-bit",    0xd7ad, 256, 8192,  8,  8, 2048, &timing[5] },
-> +{ "4GiB 8-bit",    0x682c, 256, 4096,  8,  8, 4096, &timing[6] },
-> +{ "8GiB 8-bit",    0x882c, 256, 8192,  8,  8, 4096, &timing[6] },
-> +{ "8GiB 8-bit",    0xdead, 256, 8192,  8,  8, 4096, &timing[6] },
-> +{ },
->  };
->  
+On Tue, 27 Jan 2015 07:19:42 +0100
+Dominik Vogt <vogt@linux.vnet.ibm.com> wrote:
+ 
+> While the kernel may use only profiling or hotpatch at the same
+> time, Gcc is able to generate both for the same function.
 
-IMO, this sucks. I was hoping to see this old style probing go away,
-instead of be augmented.
+Understood, but would that be useful for the kernel?
 
-There are proper ways to set timings.
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+-- Steve
+
