@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282AbbA0P45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:56:57 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:40501 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbbA0P4z (ORCPT
+	id S1758411AbbA0P6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:58:16 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:44051 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbbA0P6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:56:55 -0500
-Date: Tue, 27 Jan 2015 13:56:42 -0200
-From: Gustavo Bittencourt <gbitten@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH -rt] rtmutex: enable deadlock detection in ww_mutex_lock
- functions
-Message-ID: <20150127155642.GA21058@gbitten>
+	Tue, 27 Jan 2015 10:58:13 -0500
+Date: Tue, 27 Jan 2015 15:57:47 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH 2/2] HID: i2c-hid: Add support for GPIO interrupts
+Message-ID: <20150127155747.GJ17721@leverpostej>
+References: <20150126163929.GL23313@leverpostej>
+ <20150127101610.GK1451@lahna.fi.intel.com>
+ <20150127103925.GB17721@leverpostej>
+ <20150127105931.GN1451@lahna.fi.intel.com>
+ <20150127111458.GD17721@leverpostej>
+ <20150127113041.GP1451@lahna.fi.intel.com>
+ <20150127143334.GF17721@leverpostej>
+ <20150127144127.GT1451@lahna.fi.intel.com>
+ <20150127150606.GI17721@leverpostej>
+ <20150127152127.GV1451@lahna.fi.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20150127152127.GV1451@lahna.fi.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According the ww-mutex-design.txt documentation, the 
-ww_mutex_lock_interruptible and ww_mutex_lock functions should return -EDEADLK
-when faced with a deadlock. To do so, the detect_deadlock flag in the
-rt_mutex_slowlock calls should be enabled. This patch corrects potential
-deadlocks when running PREEMPT_RT with nouveau driver.
+On Tue, Jan 27, 2015 at 03:21:27PM +0000, Mika Westerberg wrote:
+> On Tue, Jan 27, 2015 at 03:06:06PM +0000, Mark Rutland wrote:
+> > On Tue, Jan 27, 2015 at 02:41:27PM +0000, Mika Westerberg wrote:
+> > > On Tue, Jan 27, 2015 at 02:33:34PM +0000, Mark Rutland wrote:
+> > > > Ok, that allays my fear w.r.t. ordering of the resources.
+> > > > 
+> > > > As I see it, the fact that we convert GpioInt entries to GPIOs rather
+> > > > than irqs when parsing _CRS is the issue here, and to me it makes no
+> > > > sense that we do so. Were we to treat them as interrupts, the binding is
+> > > > fine as-is, and we'd do the same thing in DT and ACPI.
+> > > > 
+> > > > The reason GpioInt is separate from GpioIo is that a GpioInt _is_ an
+> > > > interrupt (which happens to be backed by a GPIO), and is not something
+> > > > that necessarily makes sense as a GPIO.
+> > > 
+> > > I would rather say that GpioInt *is* a GPIO. That can then used as an
+> > > interrupt but it should not prevent you from using it as GPIO instead.
+> > > For example if you just want to poll that something is 0 or 1. That
+> > > should be possible as well and nothing say that you cannot do that for
+> > > GpioInt().
+> > 
+> > >From my POV a GpioInt is logically an interrupt, or it would be a
+> > GpioIo. That doesn't necessarily mean it's invalid to try to query its
+> > state as a GPIO, but I do not think that it makes sense to handle it by
+> > default as a GPIO given that it was handed to us as a GpioInt so that it
+> > can be used as an interrupt.
+> > 
+> > If it's just the case that ACPI and DT differ w.r.t. how this case (an
+> > interrupt line wired to a GPIO) is described, that in itself is fine;
+> > different standards have different models.
+> > 
+> > However, I do not think we must change the DT binding and violate
+> > established DT practice simply becuase on the ACPI side things are
+> > different (nor would it make sense to do things the other way around).
+> > If the two have different rules, then we should handle those rules
+> > separately rather than trying to force the two together when they
+> > clearly don't fit.
+> 
+> I agree.
+> 
+> > In the driver that can easily be achieved with separate probe paths.
+> 
+> Yes, that's what this patch is doing. It has different paths for
+> interrupt and GPIO cases. If we find that there is an interrupt number
+> already, then we use that directly.
+> 
+> If not we try to look for a GPIO which we could use as an interrupt.
 
-PS: Sorry to post again, CC'ing -rt maintainers now.
+My comment about separate probe paths was w.r.t. ACPI and DT. In DT,
+acquiring a GPIO here shouldn't be necessary (and ideally shouldn't be
+allowed) because the GPIO should be described as an interrupt (we need
+this to have the correct flags).
 
-Signed-off-by: Gustavo Bittencourt <gbitten@gmail.com>
----
- kernel/locking/rtmutex.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> The reason why this is not done only in the ACPI probe path is that
+> there is nothing ACPI specific in gpiod_get() and friends.
 
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index 6c40660..3f6ef91 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -1965,7 +1965,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ww_c
- 	might_sleep();
- 
- 	mutex_acquire(&lock->base.dep_map, 0, 0, _RET_IP_);
--	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 0, ww_ctx);
-+	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 1, ww_ctx);
- 	if (ret)
- 		mutex_release(&lock->base.dep_map, 1, _RET_IP_);
- 	else if (!ret && ww_ctx->acquired > 1)
-@@ -1984,7 +1984,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ww_ctx)
- 
- 	mutex_acquire_nest(&lock->base.dep_map, 0, 0, &ww_ctx->dep_map,
- 			_RET_IP_);
--	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 0, ww_ctx);
-+	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 1, ww_ctx);
- 	if (ret)
- 		mutex_release(&lock->base.dep_map, 1, _RET_IP_);
- 	else if (!ret && ww_ctx->acquired > 1)
--- 
-1.9.1
+While the high-level APIs are not specific to ACPI or DT, the behaviour
+we want for DT is subtly different top the behaviour you want for ACPI.
 
+In DT we don't necessarily have the relevant flags (e.g. edge vs level,
+active high vs active low) unless the GPIO is described as an interrupt,
+so permitting it to be described as a GPIO permits situations which we
+cannot handle correctly. In the DT case therefore we must not acquire
+the interrupt GPIO as a GPIO; it must be described as an interrupt.
+
+So if we need to acquire a GPIO in the ACPI case, this should be limited
+to the ACPI case.
+
+Looking further at ACPI, the flags issue also seems to be a problem
+there. If the interrupt GPIO were described as a GpioIo, then you could
+acquire it as a GPIO with gpiod_get(), but wouldn't have the EdgeLevel
+and ActiveLevel properties, and therefore cannot necessarily correctly
+convert the GPIO to an irq, no?
+
+Thanks,
+Mark.
