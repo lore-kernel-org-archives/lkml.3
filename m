@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509AbbA0CnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 21:43:06 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47699 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbbA0CnD (ORCPT
+	id S1757067AbbA0Cwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 21:52:47 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:45008 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838AbbA0Cwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 21:43:03 -0500
-Message-ID: <54C6FB28.3000304@roeck-us.net>
-Date: Mon, 26 Jan 2015 18:42:48 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Mon, 26 Jan 2015 21:52:45 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devel <devel@driverdev.osuosl.org>, isdn@linux-pingi.de,
-        netdev <netdev@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: make allyesconfig i386 build failure with next-20150122 (caused
- by fb_agm1264k-fl driver)
-References: <CA+r1ZhhXF+hicy7JKo3jAbgSbO4KOLm6BwPosTKNb+E_Cb4yPQ@mail.gmail.com> <20150126215959.GA9853@roeck-us.net> <20150126224654.GA17166@kroah.com>
-In-Reply-To: <20150126224654.GA17166@kroah.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54C6FB36.0165,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <1421633832-28490-1-git-send-email-coproscefalo@gmail.com>
+References: <1421633832-28490-1-git-send-email-coproscefalo@gmail.com>
+Date: Mon, 26 Jan 2015 19:52:43 -0700
+Message-ID: <CAGdLNWFc5wwwcDzp+Htg4Uuqsp9GQvXuX2g-ZdqeZabw_2WyoQ@mail.gmail.com>
+Subject: Re: [PATCH] toshiba_acpi: Add a check for TOS_NOT_SUPPORTED in the
+ sci_open function
+From: Azael Avalos <coproscefalo@gmail.com>
+To: Darren Hart <dvhart@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Azael Avalos <coproscefalo@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015 02:46 PM, Greg Kroah-Hartman wrote:
-> On Mon, Jan 26, 2015 at 01:59:59PM -0800, Guenter Roeck wrote:
->> On Thu, Jan 22, 2015 at 12:10:33PM -0700, Jim Davis wrote:
->>> make ARCH=i386 allyesconfig fails with
->>>
->>> drivers/staging/built-in.o: In function `reset':
->>> (.text+0x2ae89d): multiple definition of `reset'
->>> drivers/isdn/built-in.o:(.text+0x185dc2): first defined here
->>> make[1]: *** [drivers/built-in.o] Error 1
->>
->> Culprit:
->>
->> commit b2ebd4be6fa1d2329b63531b044f9e25474981cb
->> Author: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->> Date:   Wed Dec 31 10:11:10 2014 +0100
->>
->>      staging: fbtft: add fb_agm1264k-fl driver
->>
->> A global function named 'reset' isn't really a good idea.
->>
->> Not that the global function with the same name in the isdn code
->> is better ;-).
+Hi Darren,
+
+Any input on this patch?
+
+2015-01-18 19:17 GMT-07:00 Azael Avalos <coproscefalo@gmail.com>:
+> This was "toshiba_acpi: Change sci_open function return value"
 >
-> Agreed, the fbtft code is now fixed.  Patches to fix the isdn code would
-> be gladly accepted as well :)
+> Some Toshiba laptops have "poorly implemented" SCI calls on their
+> BIOSes and are not checking for sci_{open, close} calls, therefore,
+> the sci_open function is failing and making some of the supported
+> features unavailable (kbd backlight, touchpad, illumination, etc.).
+>
+> This patch checks wheter we receive TOS_NOT_SUPPORTED and returns
+> 1, making the supported features work on such laptops.
+>
+> In the case that some laptops really do not support the SCI, all the
+> SCI dependent functions check for TOS_NOT_SUPPORTED, and thus, not
+> registering support for the queried feature.
+>
+> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+> ---
+> Darren,
+>
+> Hopefully this new patch eases some of the concerns of the previous
+> patch, and this time I added a comment block explaining a bit, but of
+> course, let me know if there is something else that needs change.
+>
+> Cheers
+> Azael
+>
+>  drivers/platform/x86/toshiba_acpi.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+> index fc34a71..899ead6b 100644
+> --- a/drivers/platform/x86/toshiba_acpi.c
+> +++ b/drivers/platform/x86/toshiba_acpi.c
+> @@ -389,6 +389,19 @@ static int sci_open(struct toshiba_acpi_dev *dev)
+>         } else if (out[0] == TOS_ALREADY_OPEN) {
+>                 pr_info("Toshiba SCI already opened\n");
+>                 return 1;
+> +       } else if (out[0] == TOS_NOT_SUPPORTED) {
+> +               /* Some BIOSes do not have the SCI open/close functions
+> +                * implemented and return 0x8000 (Not Supported), failing to
+> +                * register some supported features.
+> +                *
+> +                * Simply return 1 if we hit those affected laptops to make the
+> +                * supported features work.
+> +                *
+> +                * In the case that some laptops really do not support the SCI,
+> +                * all the SCI dependent functions check for TOS_NOT_SUPPORTED,
+> +                * and thus, not registering support for the queried feature.
+> +                */
+> +               return 1;
+>         } else if (out[0] == TOS_NOT_PRESENT) {
+>                 pr_info("Toshiba SCI is not present\n");
+>         }
+> --
+> 2.2.1
 >
 
-Did you have a look into the isdn code ? It will need someone
-with a lot of spare time to clean this code up.
 
-Guenter
 
+-- 
+-- El mundo apesta y vosotros apestais tambien --
