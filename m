@@ -1,129 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095AbbA0LP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 06:15:26 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43860 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524AbbA0LPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 06:15:23 -0500
-Date: Tue, 27 Jan 2015 11:14:58 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] HID: i2c-hid: Add support for GPIO interrupts
-Message-ID: <20150127111458.GD17721@leverpostej>
-References: <20150126143723.GI23313@leverpostej>
- <20150126144729.GG1451@lahna.fi.intel.com>
- <20150126145000.GJ23313@leverpostej>
- <20150126151637.GH1451@lahna.fi.intel.com>
- <20150126160044.GK23313@leverpostej>
- <20150126161356.GJ1451@lahna.fi.intel.com>
- <20150126163929.GL23313@leverpostej>
- <20150127101610.GK1451@lahna.fi.intel.com>
- <20150127103925.GB17721@leverpostej>
- <20150127105931.GN1451@lahna.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150127105931.GN1451@lahna.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757465AbbA0L1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:27:42 -0500
+Received: from smtpbg63.qq.com ([103.7.29.150]:52059 "EHLO smtpbg63.qq.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755780AbbA0L1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 06:27:39 -0500
+X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Jan 2015 06:27:39 EST
+X-QQ-mid: bizesmtp7t1422357399t363t289
+X-QQ-SSF: 01400000000000F0FPF2
+X-QQ-FEAT: JNrLgFxDiy2Z/G1AEgubCjy4ztnBf2nDNABpmOEAejHgdmfFYyB+ywEXBUliR
+	j8N9GDzkT0+5dfnvsYdmSJx6JTJ5yShlR54x5CSocuf/3MKeoKiNEnDHpGZxkPkwxaTI5yH
+	pbcIESD5Ys39T0yOoQu5tX1HmFczKFp4zA0HxrcszOUMKK/FUShzvUXok9z0kMe8NfdsyvR
+	1nN++qXARzxdX6WzAEO3p
+X-QQ-GoodBg: 2
+Subject: Re: [PATCH] irqchip: GICv3: ITS: Allocate enough memory for the full range of DeviceID
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Content-Type: multipart/signed; boundary="Apple-Mail=_68C08ABB-8EFD-46D9-9FC8-200D2360885D"; protocol="application/pgp-signature"; micalg=pgp-sha512
+X-Pgp-Agent: GPGMail 2.5b4
+From: Chen Baozi <chenbaozi@kylinos.com.cn>
+In-Reply-To: <1422327961-19733-1-git-send-email-baozich@gmail.com>
+Date: Tue, 27 Jan 2015 19:15:16 +0800
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>
+Message-Id: <15CDAC06-1E2B-4545-93E8-CBB4B47E2707@kylinos.com.cn>
+References: <1422327961-19733-1-git-send-email-baozich@gmail.com>
+To: =?utf-8?B?6ZmI6bKN5a2c?= <baozich@gmail.com>
+X-Mailer: Apple Mail (2.1993)
+X-QQ-SENDSIZE: 520
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 10:59:31AM +0000, Mika Westerberg wrote:
-> On Tue, Jan 27, 2015 at 10:39:25AM +0000, Mark Rutland wrote:
-> > > If the above is not the right way to use GPIOs as interrupt, can you
-> > > please tell me how it is done then?
-> > 
-> > 
-> > So lets say we have a device which generates an interrupt:
-> > 
-> > 	device@f00 {
-> > 		compatible = "some-interrupting-device";
-> > 		reg = <0xf00 0x100>;
-> > 		interrupts = < ... >;
-> > 	};
-> > 
-> > It's intended that this is connected to an interrupt controller:
-> > 
-> > 	ic: interrupt-controller@b00 {
-> > 		compatible = "some-interrupt-controller";
-> > 		reg = <0xb00 0x100>;
-> > 		#interrupt-cells = <1>;
-> > 	};
-> > 
-> > 	device@f00 {
-> > 		compatible = "some-interrupting-device";
-> > 		reg = <0xf00 0x100>;
-> > 		interrupt-parent = <&ic>;
-> > 		interrupts = <0x3>;
-> > 	};
-> > 
-> > But in some cases, this gets connected to a GPIO controller. In these
-> > cases, the device is still logically generating an interrupt, and the
-> > fact that the endpoint is an interrupt controller is irrelevant from the
-> > PoV of the device. So we acknowledge that the GPIO controller is also
-> > capable of acting as an interrupt controller, and mark it as such:
-> > 
-> > 	gc: gpio-controller@000 {
-> > 		compatible = "some-gpio-controller";
-> > 		reg = <0x000 0x100>;
-> > 		#gpio-cells = <1>;
-> > 		#interrupt-cells = <1>;
-> > 	};
-> > 
-> > 	device@f00 {
-> > 		compatible = "some-interrupting-device";
-> > 		reg = <0xf00 0x100>;
-> > 		interrupt-parent = <&gc>;
-> > 		interrupts = <0x1>;
-> > 	};
-> > 
-> > Thus the device binding only describes the logical interrupt, and the
-> > driver only needs to handle interrupts.
-> 
-> OK.
-> 
-> > In cases where the binding/driver actually care about the GPIO being a
-> > GPIO (e.g. for card detect in an MMC controller), describing the GPIO as
-> > a GPIO makes sense, and we can try gpio_to_irq as an optimisation over
-> > polling the state of the GPIO.
-> 
-> Well, I've seen touch panels where you actually need to switch the GPIO
-> to be output and do some magic before you can use the same GPIO as an
-> interrupt.
 
-Ok. That's a nasty case, but surely in that case the relevant GPIO
-shoiuld be a GpioIO object for output?
+--Apple-Mail=_68C08ABB-8EFD-46D9-9FC8-200D2360885D
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=us-ascii
 
-> > > BTW, passing NULL to gpiod_get() implies property named "gpios" in DT
-> > > (which is why I added it to the documentation).
-> > 
-> > Sure. My concern is that we should not need to deal with GPIOs in this
-> > case were the GPIO is only there to function as an interrupt.
-> > 
-> > Given that GpioInt seems to describe an interrupt which happens to be
-> > backed by a GPIO, I don't understand what it is necessary to translate
-> > this as a GPIO rather than an interrupt. If it were going to be used as
-> > a GPIO, then it would be a GpioIO object, no?
+On Jan 27, 2015, at 11:06, Chen Baozi <baozich@gmail.com> wrote:
 > 
-> OK, so where do you propose we handle the translation if not in the
-> driver? Also keep in mind that some of the devices may have multiple
-> GpioInt()s.
+> The ITS table allocator is only allocating a single page per table.
+> This works fine for most things, but leads to silent lack of
+> interrupt delivery if we end-up with a device that has an ID that is
+> out of the range defined by a single page of memory. Even worse, depending
+> on the page size, behaviour changes, which is not a very good experience.
+> 
+> A solution is actually to allocate memory for the full range of ID that
+> the ITS supports. A massive waste memory wise, but at least a safe bet.
+> 
+> This patch has been tested on the Phytium SoC.
+> 
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 
-To me it seems that GpioInt objects should be translated to interrupts
-by some core code. How are interrupts described and handed in ACPI? Are
-they resource along the lines of GpioInts, or are they a completely
-separate class of device property?
+Failed to clarify that Marc is the author of this patch.
 
-Thanks,
-Mark
+Sorry for the mistake.
+
+Cheers,
+
+Baozi.
+
+
+--Apple-Mail=_68C08ABB-8EFD-46D9-9FC8-200D2360885D
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - https://gpgtools.org
+
+iQIcBAEBCgAGBQJUx3NJAAoJEA9jpU/ZEyvnLIEP/jHVyddng9Ve/lLXgtJODX3z
+0P3P2jpTiL6wJg/9O6Q0V06CC74e7lSr9ONOcSZHwLIgdzULwftzpqoI9sWyio6N
+sWoY5Q/iVPT5CwfD5ZveXpRM2/mw54ERwIyn/pYyAUmR2vNds9PMf/ZysOLg9gvq
+xl+F7fv0lULq88E0tpaKXvs7bkWPo8PoDzc22fRLi7BH53Zi03MKQ4PMPJ+FSEve
+XOKpzdp1+B0IzS55poCJ7/nFnMbZqktshrbK5Nz8kD8iuTKsVBbIzJye5yteluAB
+rO/BFz+DSWBpuHkJYTPXrH30t9DSxFXWcg6YBWjPzXCdET7Pg8pblbsgx6h8FdR2
+fRT4NAOSFb/VrwqZpMOCGaJZCSIDZdY80XRncul8KaA35N9gOWF13j/X/1F9aASx
+xj4Mrxuz1nGTF52igiHWCpxplQBO9Aq+jnulP6M+o7wiATIPycbEVYvSU/qLufJH
+WoUgANP4id99Cdx3ugTFiXW49SFXT3wKKUsVRsh5GB0j2MEllMNR6Y6cz0njSpvP
+nCHC2ctsJszO6LcFvpJYp53Pcq/BpQxA6Kt/WeIbGtEqHEIr0aPy+N64mPV1Btig
+NoGuWV0i5hPjsS6eRc6QsAhhjYFIX1lJ9O1S/3tFupG9FpeX0/zSEXiu7eWI9GAw
+Vd7iVKdu4mI4lgK+5buZ
+=0Y4A
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_68C08ABB-8EFD-46D9-9FC8-200D2360885D--
