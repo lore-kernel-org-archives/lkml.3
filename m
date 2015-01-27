@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808AbbA0Mii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:38:38 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:36557 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932331AbbA0Mif (ORCPT
+	id S932887AbbA0Mo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:44:27 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:56318 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932821AbbA0MoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:38:35 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Paul Clements <Paul.Clements@steeleye.com>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        nbd-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] nbd: fix possible memory leak
-Date: Tue, 27 Jan 2015 18:08:22 +0530
-Message-Id: <1422362302-25252-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 27 Jan 2015 07:44:22 -0500
+Message-ID: <54C7881F.6020501@ahsoftware.de>
+Date: Tue, 27 Jan 2015 13:44:15 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>, Borislav Petkov <bp@alien8.de>
+CC: linux-mmc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
+References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de> <CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com> <54C77E69.7050600@ahsoftware.de> <20150127120855.GA9254@pd.tnic> <54C7816A.8050800@ahsoftware.de> <54C78524.3070901@nod.at>
+In-Reply-To: <54C78524.3070901@nod.at>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we have already allocated memory for nbd_dev, but we were not
-releasing that memory and just returning the error value.
+Am 27.01.2015 um 13:31 schrieb Richard Weinberger:
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+>> Also it's unlikely I will send any further patch. There are still 21 from me where I've exposed sysfs attributes for NAND devices which are still not applied and most NAND devices
+>> still don't have a sysfs entry.
+>>
+>> So why should I waste my time again?
+>
+> If you give up after the first review round there is nothing I can do for you.
+> Postings like https://lkml.org/lkml/2014/5/30/162 are also not really beneficial
+> to get a patch merged.
 
-v2: moved kcalloc after the returns.
+Yes. Sorry, but I had so many bad experiences with maintainers. They 
+told me that using functions means hiding stuff, that I should bisect 
+even when I was absolutely sure which patch was wrong (and everxyone 
+could see it by just reading the source and by reading my comments, I've 
+got blamed because I prefer a controlled BUG_ON() (which might even just 
+kill the involved tasks, depending on config settings) instead of a 
+desastrous memory corruption which (hard-) reseted the machine (and 
+might have done even more bad things) and so on.
 
- drivers/block/nbd.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Regards,
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 4bc2a5c..db93c75 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -803,10 +803,6 @@ static int __init nbd_init(void)
- 		return -EINVAL;
- 	}
- 
--	nbd_dev = kcalloc(nbds_max, sizeof(*nbd_dev), GFP_KERNEL);
--	if (!nbd_dev)
--		return -ENOMEM;
--
- 	part_shift = 0;
- 	if (max_part > 0) {
- 		part_shift = fls(max_part);
-@@ -827,6 +823,10 @@ static int __init nbd_init(void)
- 
- 	if (nbds_max > 1UL << (MINORBITS - part_shift))
- 		return -EINVAL;
-+
-+	nbd_dev = kcalloc(nbds_max, sizeof(*nbd_dev), GFP_KERNEL);
-+	if (!nbd_dev)
-+		return -ENOMEM;
- 
- 	for (i = 0; i < nbds_max; i++) {
- 		struct gendisk *disk = alloc_disk(1 << part_shift);
--- 
-1.8.1.2
-
+Alexander Holler
