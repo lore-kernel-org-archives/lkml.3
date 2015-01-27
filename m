@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbbA0H0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 02:26:53 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:28117 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbbA0H0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 02:26:49 -0500
-Date: Tue, 27 Jan 2015 10:26:06 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>,
-        "'tranmanphong@gmail.com'" <tranmanphong@gmail.com>,
-        "'fabio.estevam@freescale.com'" <fabio.estevam@freescale.com>,
-        "'prime.zeng@huawei.com'" <prime.zeng@huawei.com>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Gao, Neil" <Neil.Gao@sonymobile.com>
-Subject: Re: [RFC] ion:change ion_cma_allocate return error value
-Message-ID: <20150127072606.GR6456@mwanda>
-References: <35FD53F367049845BC99AC72306C23D1044A02027DF9@CNBJMBX05.corpusers.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D1044A02027DF9@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1753628AbbA0H1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 02:27:16 -0500
+Received: from mout.gmx.net ([212.227.15.18]:52807 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751579AbbA0H1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 02:27:14 -0500
+From: Oleksij Rempel <linux@rempel-privat.de>
+To: daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+Cc: Oleksij Rempel <linux@rempel-privat.de>
+Subject: [PATCH] ARM: clocksource: fix compile of asm9260_timer driver on ARCH=parisc
+Date: Tue, 27 Jan 2015 08:27:04 +0100
+Message-Id: <1422343624-9764-1-git-send-email-linux@rempel-privat.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <54BE5E9A.8070502@linaro.org>
+References: <54BE5E9A.8070502@linaro.org>
+X-Provags-ID: V03:K0:r8Xt6IQJOnrBzqt9Iii30+9S+OR2SuDG9YfVjTXXm9iCF6pL97b
+ uENb1kW9q5UjzsRZZ8ibIfZa0TpiCXoPaJP+z4ClvXBx1g+C24Du++W7hfplYnGjQwwZWgv
+ qNnHPbQ96jWPPkToE+1gcMHiKyTAAbmP7aguvTRc4e0HNEvIMo0ZXGqRv/XsXdQUhhG63ab
+ a0uU993T6qeN1deSjiRBw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 02:04:21PM +0800, Wang, Yalin wrote:
-> This patch change the error return value from -1 to -ENOMEM,
-> so that userspace can get the correct errno, otherwise,
-> -1 will be -EPERM, userspace will print permission deny for allocation
-> failure.
-> 
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+make sure this driver depends on GENERIC_CLOCKEVENTS
 
-Looks good.
+compiler error was found by kbuild test robot:
 
-Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> drivers/clocksource/asm9260_timer.c:114:14: warning: its scope is only this definition or declaration, which is probably not what you want
+>> drivers/clocksource/asm9260_timer.c:124:16: warning: 'struct clock_event_device' declared inside parameter list
+            struct clock_event_device *evt)
 
-regards,
-dan carpenter
+>> drivers/clocksource/asm9260_timer.c:124:16: warning: 'enum clock_event_mode' declared inside parameter list
+>> drivers/clocksource/asm9260_timer.c:123:58: error: parameter 1 ('mode') has incomplete type
+    static void asm9260_timer_set_mode(enum clock_event_mode mode,
+
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+---
+ drivers/clocksource/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 13b8152..bfaaae4 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -231,6 +231,7 @@ config CLKSRC_MIPS_GIC
+ 
+ config ASM9260_TIMER
+ 	bool "Alphascale ASM9260 timer driver"
++	depends on GENERIC_CLOCKEVENTS
+ 	select CLKSRC_MMIO
+ 	select CLKSRC_OF
+ 	default y if MACH_ASM9260
+-- 
+1.9.1
 
