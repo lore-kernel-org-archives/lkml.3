@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760280AbbA0WN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 17:13:29 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44943 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759543AbbA0WN2 (ORCPT
+	id S1760292AbbA0WOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 17:14:46 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:38098 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759868AbbA0WOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 17:13:28 -0500
-Date: Tue, 27 Jan 2015 22:13:25 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] inotify: update documentation to reflect code
- changes
-Message-ID: <20150127221325.GA29656@ZenIV.linux.org.uk>
-References: <1418785193-31576-1-git-send-email-zhenzhang.zhang@huawei.com>
- <54C78879.3010603@huawei.com>
- <201501270812.47160.gheskett@wdtv.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201501270812.47160.gheskett@wdtv.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Jan 2015 17:14:44 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <Michael.Hennerich@analog.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: iio: impedance-analyzer: ad5933: Change type in printf format string
+Date: Tue, 27 Jan 2015 23:18:01 +0100
+Message-Id: <1422397081-8832-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 08:12:47AM -0500, Gene Heskett wrote:
+Wrong type in printf format string, requires 'int'
+but the argument type is 'unsigned int'
 
-> As a heavy user of the inotify kit of utils, inotify_wait in particular, I 
-> object if this removal breaks those tools.
+This was found using a static code analysis program called cppcheck
 
-What's inotify_wait?  I know of userland piece of garbage called inotifywait
-(sans underscore); if that's what you had in mind, rest easy - it's not
-broken any more than anything idiotify-related had always been.  It never
-worked on any number of filesystems and it never will, etc., but those are
-inherent limitation of that piece of crap concept, not something that had
-been changed lately.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/iio/impedance-analyzer/ad5933.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
+index b6bd609..4230a43 100644
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -360,11 +360,11 @@ static ssize_t ad5933_show(struct device *dev,
+ 	mutex_lock(&indio_dev->mlock);
+ 	switch ((u32) this_attr->address) {
+ 	case AD5933_OUT_RANGE:
+-		len = sprintf(buf, "%d\n",
++		len = sprintf(buf, "%u\n",
+ 			      st->range_avail[(st->ctrl_hb >> 1) & 0x3]);
+ 		break;
+ 	case AD5933_OUT_RANGE_AVAIL:
+-		len = sprintf(buf, "%d %d %d %d\n", st->range_avail[0],
++		len = sprintf(buf, "%u %u %u %u\n", st->range_avail[0],
+ 			      st->range_avail[3], st->range_avail[2],
+ 			      st->range_avail[1]);
+ 		break;
+-- 
+1.7.10.4
+
