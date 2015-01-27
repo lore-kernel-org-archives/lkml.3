@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928AbbA0Tym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 14:54:42 -0500
-Received: from bastet.se.axis.com ([195.60.68.11]:60850 "EHLO
-	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932769AbbA0Tyi convert rfc822-to-8bit (ORCPT
+	id S932968AbbA0T4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 14:56:48 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:46417 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932516AbbA0T4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 14:54:38 -0500
-From: Robert Rosengren <robert.rosengren@axis.com>
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-CC: Johan Adolfsson <johana@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 27 Jan 2015 20:54:34 +0100
-Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval
- configurable
-Thread-Topic: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval
- configurable
-Thread-Index: AdA6OrTF8l3nIihWQsiMWFKs/uYEGgAKEdid
-Message-ID: <4BEA3FF3CAA35E408EA55C7BE2E61D05943B6DD753@xmail3.se.axis.com>
-References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>
- <54B92596.2040206@roeck-us.net> <20150116183020.GA6262@roeck-us.net>
- <54C74567.9020201@axis.com>,<54C79B87.8040607@roeck-us.net>
-In-Reply-To: <54C79B87.8040607@roeck-us.net>
-Accept-Language: sv-SE
-Content-Language: sv-SE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: sv-SE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 27 Jan 2015 14:56:45 -0500
 MIME-Version: 1.0
+In-Reply-To: <20150127194912.GO21293@sirena.org.uk>
+References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1422029330-10971-9-git-send-email-ricardo.ribalda@gmail.com>
+ <20150127000428.GK21293@sirena.org.uk> <CAPybu_1RW0F-ak-B_4H-riTUwF2yCrpKdT2RWviTdCMR_kQmww@mail.gmail.com>
+ <20150127194912.GO21293@sirena.org.uk>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Tue, 27 Jan 2015 20:56:23 +0100
+Message-ID: <CAPybu_3YJd_=wxOaGjGqDrhAJp2wxioeBG69S129r5UUNTCo1w@mail.gmail.com>
+Subject: Re: [PATCH 08/18] spi/xilinx: Support cores with no interrupt
+To: Mark Brown <broonie@kernel.org>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guenter and Jean, 
+Hello
 
-To sum up, my problems was related my kernel and hardware configuration, and it now works. Many thanks for your input!
-
-However, the values retrieved from hwmon sysfs is not the same as before the regmap patch. Guenter, the byte swap for the regval retrieved by regmap_read. In what order is the bits returned from that function, because it seems as if I disabled that code I get values as I expect (i.e. before the regmap patch).
-
-BR,
-Robert
-
-
-> On 01/26/2015 11:59 PM, Robert Rosengren wrote:
->> On 01/16/2015 07:30 PM, Guenter Roeck wrote:
->>> I sent a couple of patches a minute ago which should take care of the issue.
->>> Would be great if you can test it.
->> I applied the v2 versions of the patches for a quick test, but it was not successful. Haven't done any further investigation on what the problem might be, but when trying to read the sysfs driver I get "read error: No such device or address".
->>
->> The sysfs path have moved with the REGMAP settings, from /sys/bus/i2c/devices/<x>/in0_input to /sys/bus/i2c/devices/<x>/hwmon/hwmon0/in0_input.
->>
->> Any ideas? Haven't had REGMAP configured in my kernel earlier, might it be some specific configuration I miss?
->>
+On Tue, Jan 27, 2015 at 8:49 PM, Mark Brown <broonie@kernel.org> wrote:
 >
-> Did you configure REGMAP ? That would now be necessary.
-> The "official" sysfs path would be /sys/class/hwmon/hwmonX (hwmon0 in your case).
+>> https://patchwork.kernel.org/patch/5648351/
 >
-> Guenter
+> Please include plain text descriptions of things in your mails rather
+> than just links/numbers.
 
+spi: xilinx: Use standard num-cs binding
+
+
+Regards!
+
+-- 
+Ricardo Ribalda
