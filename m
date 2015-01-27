@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758450AbbA0MRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:17:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34992 "EHLO
+	id S932900AbbA0Moq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:44:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35003 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758423AbbA0MRt (ORCPT
+	with ESMTP id S1758427AbbA0MRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:49 -0500
+	Tue, 27 Jan 2015 07:17:51 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jiri Kosina <jkosina@suse.cz>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 037/126] ASoC: eukrea-tlv320: Fix of_node_put() call with uninitialized object
-Date: Tue, 27 Jan 2015 12:15:42 +0000
-Message-Id: <1422361031-19364-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 038/126] HID: i2c-hid: Do not free buffers in i2c_hid_stop()
+Date: Tue, 27 Jan 2015 12:15:43 +0000
+Message-Id: <1422361031-19364-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-commit 077661b6ed24e530dabc9db3ab3ae48fbaf19679 upstream.
+commit 5b44c53aeb791757072be4a267255cedfff594fd upstream.
 
-The of_node_put() call in eukrea_tlv320_probe() may take an
-uninitialized pointer, as compiler spotted out:
-  sound/soc/fsl/eukrea-tlv320.c:221:14: warning: 'ssi_np' may be used uninitialized in this function [-Wuninitialized]
+When a hid driver that uses i2c-hid as transport is unloaded, the hid core
+will call i2c_hid_stop() which releases all the buffers associated with the
+device. This includes also the command buffer.
 
-This patch adds the proper NULL initializations as a fix.
-(codec_np is also NULL initialized just for consistency.)
+Now, when the i2c-hid driver itself is unloaded it tries to power down the
+device by sending it PWR_SLEEP command. Since the command buffer is already
+released we get following crash:
 
-Fixes: 66f232908de2 ('ASoC: eukrea-tlv320: Add DT support')
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+ [   79.691459] BUG: unable to handle kernel NULL pointer dereference at           (null)
+ [   79.691532] IP: [<ffffffffa05bc049>] __i2c_hid_command+0x49/0x310 [i2c_hid]
+ ...
+ [   79.693467] Call Trace:
+ [   79.693494]  [<ffffffff810424e1>] ? __unmask_ioapic+0x21/0x30
+ [   79.693537]  [<ffffffff81042855>] ? unmask_ioapic+0x25/0x40
+ [   79.693581]  [<ffffffffa05bc35b>] ? i2c_hid_set_power+0x4b/0xa0 [i2c_hid]
+ [   79.693632]  [<ffffffffa05bc3cf>] ? i2c_hid_runtime_resume+0x1f/0x30 [i2c_hid]
+ [   79.693689]  [<ffffffff814c08fb>] ? __rpm_callback+0x2b/0x70
+ [   79.693733]  [<ffffffff814c0961>] ? rpm_callback+0x21/0x90
+ [   79.693776]  [<ffffffff814c0dec>] ? rpm_resume+0x41c/0x600
+ [   79.693820]  [<ffffffff814c1e1c>] ? __pm_runtime_resume+0x4c/0x80
+ [   79.693868]  [<ffffffff814b8588>] ? __device_release_driver+0x28/0x100
+ [   79.693917]  [<ffffffff814b8d90>] ? driver_detach+0xa0/0xb0
+ [   79.693959]  [<ffffffff814b82cc>] ? bus_remove_driver+0x4c/0xb0
+ [   79.694006]  [<ffffffff810d1cfd>] ? SyS_delete_module+0x11d/0x1d0
+ [   79.694054]  [<ffffffff8165f107>] ? int_signal+0x12/0x17
+ [   79.694095]  [<ffffffff8165ee69>] ? system_call_fastpath+0x12/0x17
+
+Fix this so that we only free buffers when the i2c-hid driver itself is
+removed.
+
+Fixes: 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
+Reported-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/fsl/eukrea-tlv320.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/i2c-hid/i2c-hid.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/sound/soc/fsl/eukrea-tlv320.c b/sound/soc/fsl/eukrea-tlv320.c
-index eb093d5b85c4..54790461f39e 100644
---- a/sound/soc/fsl/eukrea-tlv320.c
-+++ b/sound/soc/fsl/eukrea-tlv320.c
-@@ -105,7 +105,7 @@ static int eukrea_tlv320_probe(struct platform_device *pdev)
- 	int ret;
- 	int int_port = 0, ext_port;
- 	struct device_node *np = pdev->dev.of_node;
--	struct device_node *ssi_np, *codec_np;
-+	struct device_node *ssi_np = NULL, *codec_np = NULL;
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 9bce5bf4182d..c56c7388d2d6 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -706,12 +706,7 @@ static int i2c_hid_start(struct hid_device *hid)
  
- 	eukrea_tlv320.dev = &pdev->dev;
- 	if (np) {
+ static void i2c_hid_stop(struct hid_device *hid)
+ {
+-	struct i2c_client *client = hid->driver_data;
+-	struct i2c_hid *ihid = i2c_get_clientdata(client);
+-
+ 	hid->claimed = 0;
+-
+-	i2c_hid_free_buffers(ihid);
+ }
+ 
+ static int i2c_hid_open(struct hid_device *hid)
 -- 
 2.1.4
 
