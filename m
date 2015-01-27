@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572AbbA0KGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 05:06:04 -0500
-Received: from mout.gmx.net ([212.227.17.21]:50420 "EHLO mout.gmx.net"
+	id S1758005AbbA0KGw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 05:06:52 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:6215 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754128AbbA0KGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 05:06:00 -0500
-Date: Tue, 27 Jan 2015 11:05:49 +0100
-From: Michael Brunner <mibru@gmx.de>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Kevin Strasser <kevin.strasser@linux.intel.com>,
-        Michael Brunner <michael.brunner@kontron.com>,
-        Christian Rauch <christian.rauch@kontron.com>
-Subject: [PATCH] mfd: Add support for COMe-cBL6 to Kontron PLD driver
-Message-ID: <20150127110549.0e15be0e@hyperion>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1750961AbbA0KGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 05:06:49 -0500
+X-IronPort-AV: E=Sophos;i="5.09,473,1418083200"; 
+   d="scan'208";a="221812956"
+Message-ID: <54C76334.2080003@citrix.com>
+Date: Tue, 27 Jan 2015 10:06:44 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: Andy Lutomirski <luto@amacapital.net>, <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, <paulmck@linux.vnet.ibm.com>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        <konrad.wilk@oracle.com>, Ingo Molnar <mingo@redhat.com>,
+        Luis Rodriguez <Mcgrof@suse.com>, Borislav Petkov <bp@suse.de>,
+        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v5 2/2] x86/xen: allow privcmd hypercalls to be preempted
+ on 64-bit
+References: <1422323467-16713-1-git-send-email-mcgrof@do-not-panic.com> <1422323467-16713-3-git-send-email-mcgrof@do-not-panic.com> <54C75BD60200007800059BDD@mail.emea.novell.com>
+In-Reply-To: <54C75BD60200007800059BDD@mail.emea.novell.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:MD6y1e0R9Z0RX9GT9IT2K4U3iFWzhu2u+lYU4HcqVIu0XVsN/6s
- YeGwqBWi5i4z3WZhjdj3jBSH/77k4VEvJJUZdBwMO5Gq7VcRQlGUNIYrU16TRuhf38dlJMK
- XHRVTJcuzeIUW0dzOjyG46AyrXBpfGg4N0kYAGeRlifKftB+esbATVXJjjOuMCkrAAjIO0X
- TYJrRBdj135uS711OslaA==
-X-UI-Out-Filterresults: notjunk:1;
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the DMI system ID of the Kontron COMe-cBL6 board to
-the Kontron PLD driver. The list of supported products in the module
-description is also updated.
+On 27/01/15 08:35, Jan Beulich wrote:
+>>>> On 27.01.15 at 02:51, <mcgrof@do-not-panic.com> wrote:
+> 
+> Even if David told you this would be acceptable, I have to question
+> an abstract model of fixing issues on only 64-bit kernels - this may
+> be acceptable for distro purposes, but seems hardly the right
+> approach for upstream. If 32-bit ones are to become deliberately
+> broken, the XEN config option should become dependent on !X86_32.
 
-Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
-Acked-by: Christian Rauch <christian.rauch@kontron.com>
----
- drivers/mfd/Kconfig       |  1 +
- drivers/mfd/kempld-core.c | 11 +++++++++--
- 2 files changed, 10 insertions(+), 2 deletions(-)
+I'd rather have something omitted (keeping the current behaviour) than
+something that has not been tested at all.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 2e6b731..0c066b9 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -352,6 +352,7 @@ config MFD_KEMPLD
- 		* COMe-bIP#
- 		* COMe-bPC2 (ETXexpress-PC)
- 		* COMe-bSC# (ETXexpress-SC T#)
-+		* COMe-cBL6
- 		* COMe-cBT6
- 		* COMe-cCT6
- 		* COMe-cDC2 (microETXexpress-DC)
-diff --git a/drivers/mfd/kempld-core.c b/drivers/mfd/kempld-core.c
-index f38ec42..61a1f9b 100644
---- a/drivers/mfd/kempld-core.c
-+++ b/drivers/mfd/kempld-core.c
-@@ -508,8 +508,15 @@ static struct dmi_system_id kempld_dmi_table[] __initdata = {
- 		},
- 		.driver_data = (void *)&kempld_platform_data_generic,
- 		.callback = kempld_create_platform_device,
--	},
--	{
-+	}, {
-+		.ident = "CBL6",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
-+			DMI_MATCH(DMI_BOARD_NAME, "COMe-cBL6"),
-+		},
-+		.driver_data = (void *)&kempld_platform_data_generic,
-+		.callback = kempld_create_platform_device,
-+	}, {
- 		.ident = "CCR2",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
--- 
-1.8.5.1
+Obviously it would be preferable to to fix both 32-bit and 64-bit x86
+(and ARM as well) but I'm not going to block an important bug fix for
+the majority use case (64-bit x86).
 
-
+David
