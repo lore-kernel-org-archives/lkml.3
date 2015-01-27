@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283AbbA0Xgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 18:36:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50818 "EHLO mx2.suse.de"
+	id S932475AbbA0Xgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 18:36:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50832 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754554AbbA0Xga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 18:36:30 -0500
+	id S932305AbbA0Xgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 18:36:41 -0500
 From: NeilBrown <neilb@suse.de>
 To: Tony Lindgren <tony@atomide.com>, Ulf Hansson <ulf.hansson@linaro.org>
 Date: Wed, 28 Jan 2015 10:35:24 +1100
-Subject: [PATCH 2/3] mmc: core: export functions for setting bus width.
+Subject: [PATCH 3/3] mmc: omap_hsmmc: switch to 1-bit before turning off
+ clocks if interrupts expected.
 Cc: Andreas Fenkart <afenkart@gmail.com>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>,
         NeilBrown <neil@brown.name>, linux-omap@vger.kernel.org
-Message-ID: <20150127233524.32160.48364.stgit@notabene.brown>
+Message-ID: <20150127233524.32160.33438.stgit@notabene.brown>
 In-Reply-To: <20150127233118.32160.11899.stgit@notabene.brown>
 References: <20150127233118.32160.11899.stgit@notabene.brown>
 User-Agent: StGit/0.17.1-dirty
@@ -24,78 +25,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not safe for a host to turn off clocks while
-expecting an SD card interrupt unless it first places
-the bus in 1-bit mode.
+According to section 7.1.2 of
 
-To allow hosts to do this, export functions necessary for changing bus
-width.
+http://www.sandisk.com/media/File/OEM/Manuals/SD_SDIO_specsv1.pdf
+
+    In the case where the interrupt mechanism is used to wake the host while
+    the card is in a low power state (i.e. no clocks), Both the card and the
+    host shall be placed into the 1-bit SD mode prior to stopping the clock.
+
+
+This is particularly important for the Marvell "libertas" wifi chip
+in the GTA04.  While in 4-bit mode it will only signal an interrupt
+when the clock is running (which is why setting CLKEXTFREE is
+important).
+In 1-bit mode, the interrupt is asynchronous (explained in OMAP3
+TRM description of the CIRQ flag to MMCHS_STAT:
+
+  In 1-bit mode, interrupt source is asynchronous (can be a source of
+  asynchronous wakeup).
+  In 4-bit mode, interrupt source is sampled during the interrupt
+  cycle.
+
+)
+
+We cannot simply set 1-bit mode in omap_hsmmc_runtime_suspend
+as that is called under a spinlock, and setting 1-bit mode requires
+a sleeping call to the card.
+
+So:
+ - use a work_struct to schedule setting of 1-bit mode
+ - intro a 'force_narrow' state flag which transitions:
+     0 -> NARROW_PENDING -> NARROW_FORCED -> 0
+ - have omap_hsmmc_runtime_suspend fail if interrupts are expected
+   but bus is not in 1-bit mode.  When it fails it schedules
+   the work to change the width. and sets NARROW_PENDING
+ - when the host is claimed, if NARROW_FORCED is set, restore the
+   4-bit bus
+ - When the host is released (disable_fclk), if NARROW_FORCED,
+   then suspend immediately, no autosuspend.  If NARROW_PENDING,
+   clear that flag as the device has obviously just been used.
+
+This all allows a graceful and race-free switch to 1-bit mode
+before switching off the clocks, if interrupts are enabled.
+
+With this, I can use my libertas wifi with a 4-bit bus, with
+interrupts and runtime power-management enabled, and get around
+14Mb/sec throughput (which is the best I've seen).
 
 Signed-off-by: NeilBrown <neil@brown.name>
 ---
- drivers/mmc/core/core.c  |    1 +
- drivers/mmc/core/sdio.c  |    8 ++++----
- include/linux/mmc/host.h |    4 ++++
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ drivers/mmc/host/omap_hsmmc.c |   55 ++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 53 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 7162ada24a24..418dd8ec36f8 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1099,6 +1099,7 @@ void mmc_set_bus_width(struct mmc_host *host, unsigned int width)
- 	mmc_set_ios(host);
- 	mmc_host_clk_release(host);
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index f84cfb01716d..91ddebbec8a3 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -214,6 +214,10 @@ struct omap_hsmmc_host {
+ 	int			reqs_blocked;
+ 	int			use_reg;
+ 	int			req_in_progress;
++	int			force_narrow;
++#define NARROW_PENDING	1
++#define NARROW_FORCED	2
++	struct work_struct	width_work;
+ 	unsigned long		clk_rate;
+ 	unsigned int		flags;
+ #define AUTO_CMD23		(1 << 0)        /* Auto CMD23 support */
+@@ -1778,12 +1782,43 @@ static void omap_hsmmc_conf_bus_power(struct omap_hsmmc_host *host)
+ 	set_sd_bus_power(host);
  }
-+EXPORT_SYMBOL(mmc_set_bus_width);
  
- /*
-  * Set initial state after a power cycle or a hw_reset.
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index fd0750b5a634..128bbf10ae98 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -257,7 +257,7 @@ static int sdio_disable_cd(struct mmc_card *card)
-  * Devices that remain active during a system suspend are
-  * put back into 1-bit mode.
-  */
--static int sdio_disable_wide(struct mmc_card *card)
-+int sdio_disable_wide(struct mmc_card *card)
++static void omap_hsmmc_width_work(struct work_struct *work)
++{
++	struct omap_hsmmc_host *host = container_of(work,
++						    struct omap_hsmmc_host,
++						    width_work);
++	atomic_t noblock;
++
++	atomic_set(&noblock, 1);
++	if (__mmc_claim_host(host->mmc, &noblock)) {
++		/* Device active again */
++		host->force_narrow = 0;
++		return;
++	}
++	if (host->force_narrow != NARROW_PENDING) {
++		/* Someone claimed and released before we got here */
++		mmc_release_host(host->mmc);
++		return;
++	}
++	if (sdio_disable_wide(host->mmc->card) == 0)
++		host->force_narrow = NARROW_FORCED;
++	else
++		host->force_narrow = 0;
++	mmc_release_host(host->mmc);
++}
++
+ static int omap_hsmmc_enable_fclk(struct mmc_host *mmc)
  {
- 	int ret;
- 	u8 ctrl;
-@@ -286,9 +286,9 @@ static int sdio_disable_wide(struct mmc_card *card)
+ 	struct omap_hsmmc_host *host = mmc_priv(mmc);
+ 
+ 	pm_runtime_get_sync(host->dev);
+ 
++	if (host->force_narrow == NARROW_FORCED) {
++		if (sdio_enable_4bit_bus(mmc->card) > 0)
++			mmc_set_bus_width(mmc, MMC_BUS_WIDTH_4);
++		host->force_narrow = 0;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -1791,8 +1826,13 @@ static int omap_hsmmc_disable_fclk(struct mmc_host *mmc)
+ {
+ 	struct omap_hsmmc_host *host = mmc_priv(mmc);
+ 
+-	pm_runtime_mark_last_busy(host->dev);
+-	pm_runtime_put_autosuspend(host->dev);
++	if (host->force_narrow == NARROW_FORCED) {
++		pm_runtime_put_sync(host->dev);
++	} else {
++		host->force_narrow = 0;
++		pm_runtime_mark_last_busy(host->dev);
++		pm_runtime_put_autosuspend(host->dev);
++	}
  
  	return 0;
  }
-+EXPORT_SYMBOL(sdio_disable_wide);
+@@ -2024,6 +2064,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 	host->power_mode = MMC_POWER_OFF;
+ 	host->next_data.cookie = 1;
+ 	host->pbias_enabled = 0;
++	INIT_WORK(&host->width_work, omap_hsmmc_width_work);
  
--
--static int sdio_enable_4bit_bus(struct mmc_card *card)
-+int sdio_enable_4bit_bus(struct mmc_card *card)
- {
- 	int err;
- 
-@@ -309,7 +309,7 @@ static int sdio_enable_4bit_bus(struct mmc_card *card)
- 
- 	return err;
- }
--
-+EXPORT_SYMBOL(sdio_enable_4bit_bus);
- 
- /*
-  * Test if the card supports high-speed mode and, if so, switch to it.
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index b6bf718c3498..822a02528c91 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -517,4 +517,8 @@ static inline bool mmc_card_hs400(struct mmc_card *card)
- 	return card->host->ios.timing == MMC_TIMING_MMC_HS400;
- }
- 
-+int sdio_disable_wide(struct mmc_card *card);
-+int sdio_enable_4bit_bus(struct mmc_card *card);
-+void mmc_set_bus_width(struct mmc_host *host, unsigned int width);
-+
- #endif /* LINUX_MMC_HOST_H */
+ 	ret = omap_hsmmc_gpio_init(mmc, host, pdata);
+ 	if (ret)
+@@ -2311,6 +2352,16 @@ static int omap_hsmmc_runtime_suspend(struct device *dev)
+ 	spin_lock_irqsave(&host->irq_lock, flags);
+ 	if ((host->mmc->caps & MMC_CAP_SDIO_IRQ) &&
+ 	    (host->flags & HSMMC_SDIO_IRQ_ENABLED)) {
++		if (host->mmc->ios.bus_width != MMC_BUS_WIDTH_1) {
++			/* In 4-bit mode the card need the clock
++			 * to deliver interrupts, so it isn't safe
++			 * to turn it off.
++			 */
++			host->force_narrow = NARROW_PENDING;
++			schedule_work(&host->width_work);
++			ret = -EBUSY;
++			goto abort;
++		}
+ 		/* disable sdio irq handling to prevent race */
+ 		OMAP_HSMMC_WRITE(host->base, ISE, 0);
+ 		OMAP_HSMMC_WRITE(host->base, IE, 0);
 
 
