@@ -1,126 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520AbbA0QRZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:17:25 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:41163 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752056AbbA0QRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:17:21 -0500
-Date: Tue, 27 Jan 2015 18:16:57 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
- page tables to the process'
-Message-ID: <20150127161657.GA7155@node.dhcp.inet.fi>
-References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
- <20150123050445.GA22751@roeck-us.net>
- <20150123111304.GA5975@node.dhcp.inet.fi>
- <54C263CC.1060904@roeck-us.net>
- <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org>
- <20150124055207.GA8926@roeck-us.net>
- <20150126122944.GE25833@node.dhcp.inet.fi>
- <54C6494D.80802@roeck-us.net>
+	id S932497AbbA0QRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:17:05 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:39164 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932436AbbA0QRE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 11:17:04 -0500
+Date: Tue, 27 Jan 2015 11:17:02 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Julius Werner <jwerner@chromium.org>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Douglas Anderson <dianders@chromium.org>,
+        Tomasz Figa <tfiga@chromium.org>, Wu Liang feng <wulf@rock-chips.com>
+Subject: Re: [PATCH v2] usb: Retry port status check on resume to work around
+ RH bugs
+In-Reply-To: <1422307602-30466-1-git-send-email-jwerner@chromium.org>
+Message-ID: <Pine.LNX.4.44L0.1501271107290.28374-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C6494D.80802@roeck-us.net>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 06:03:57AM -0800, Guenter Roeck wrote:
-> On 01/26/2015 04:29 AM, Kirill A. Shutemov wrote:
-> >On Fri, Jan 23, 2015 at 09:52:07PM -0800, Guenter Roeck wrote:
-> >>On Fri, Jan 23, 2015 at 01:55:19PM -0800, Andrew Morton wrote:
-> >>>On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
-> >>>
-> >>>>>>
-> >>>>>>qemu:microblaze generates warnings to the console.
-> >>>>>>
-> >>>>>>WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
-> >>>>>>
-> >>>>>>with various call stacks. See
-> >>>>>>http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
-> >>>>>>for details.
-> >>>>>
-> >>>>>Could you try patch below? Completely untested.
-> >>>>>
-> >>>>>>From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
-> >>>>>From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >>>>>Date: Fri, 23 Jan 2015 13:08:26 +0200
-> >>>>>Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
-> >>>>>
-> >>>>>Microblaze uses custom implementation of PMD folding, but doesn't define
-> >>>>>__PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
-> >>>>>
-> >>>>>Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
-> >>>>>It also fixes problems with recently-introduced pmd accounting.
-> >>>>>
-> >>>>>Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> >>>>>Reported-by: Guenter Roeck <linux@roeck-us.net>
-> >>>>
-> >>>>Tested working.
-> >>>>
-> >>>>Tested-by: Guenter Roeck <linux@roeck-us.net>
-> >>>>
-> >>>>Any idea how to fix the sh problem ?
-> >>>
-> >>>Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
-> >>>shut down", which isn't very clear.
-> >>
-> >>Turns out that the include file defining __PAGETABLE_PMD_FOLDED
-> >>was not always included where used, resulting in a messed up mm_struct.
-> >
-> >What means "messed up" here? It should only affect size of mm_struct.
-> >
-> Plus the offset of all variables after the #ifndef.
+On Mon, 26 Jan 2015, Julius Werner wrote:
 
-Okay, I guess the problem is that different parts of the kernel see
-different mm_struct depending on include ordering.
+> The EHCI controller on the RK3288 SoC is violating basic parts of the
+> USB spec and thereby unable to properly resume a suspended port. It does
+> not start SOF generation within 3ms of finishing resume signaling, so
+> the attached device will drop off the bus again. This is a particular
+> problem with runtime PM, where accessing the device will trigger a
+> resume that immediately makes it unavailabe (and reenumerate with a new
 
-Tried to look for options, but don't see anything better than patch below.
-Andrew, is it okay to you?
+Typo: "unavailabe"
 
->From 0f113e16a058d47f3bc63a3b6ced5296afb934a6 Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Tue, 27 Jan 2015 17:59:55 +0200
-Subject: [PATCH] mm: add nr_pmds into mm_struct unconditionally
+> handle).
+> 
+> Thankfully, the persist feature is generally able to work around stuff
+> like that. Unfortunately, it doesn't quite work in this particular case
+> because the controller will turn off the CurrentConnectStatus bit for an
+> instant while the device is reconnecting, which causes the kernel to
+> conclude that it permanently disappeared. This patch adds a tiny retry
+> mechanism to the core port resume code which will catch this case and
+> shouldn't have any notable impact on other controllers.
+> 
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
+> ---
+>  drivers/usb/core/hub.c | 13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index aeb50bb..d1d0a66 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -2896,10 +2896,12 @@ static int port_is_suspended(struct usb_hub *hub, unsigned portstatus)
+>   */
+>  static int check_port_resume_type(struct usb_device *udev,
+>  		struct usb_hub *hub, int port1,
+> -		int status, unsigned portchange, unsigned portstatus)
+> +		int status, u16 portchange, u16 portstatus)
+>  {
+>  	struct usb_port *port_dev = hub->ports[port1 - 1];
+> +	int retries = 3;
+>  
+> +retry:
 
-__PAGETABLE_PMD_FOLDED is defined during <asm/pgtable.h> which is not
-included into <linux/mm_types.h>. And we cannot include it here since
-many of <asm/pgtables> needs <linux/mm_types.h> to define struct page.
+I prefer to indent statement labels by one space, so that diff doesn't 
+see them as function declarations.
 
-I failed to come up with better solution rather than put nr_pmds into
-mm_struct unconditionally.
+>  	/* Is a warm reset needed to recover the connection? */
+>  	if (status == 0 && udev->reset_resume
+>  		&& hub_port_warm_reset_required(hub, port1, portstatus)) {
+> @@ -2909,8 +2911,15 @@ static int check_port_resume_type(struct usb_device *udev,
+>  	else if (status || port_is_suspended(hub, portstatus) ||
+>  			!port_is_power_on(hub, portstatus) ||
+>  			!(portstatus & USB_PORT_STAT_CONNECTION)) {
+> -		if (status >= 0)
+> +		if (status >= 0) {
 
-One possible solution would be to expose number of page table levels
-architecture has via Kconfig, but that's ugly and requires changes to
-all architectures.
+Thinking about this more carefully, it looks like the only thing you 
+care about here is the !(portstatus & USB_PORT_STAT_CONNECTION) case.  
+For everything else, you don't need to retry.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/mm_types.h | 2 --
- 1 file changed, 2 deletions(-)
+So why not separate out that one case?
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 79cdf6f5c746..199a03aab8dc 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -364,9 +364,7 @@ struct mm_struct {
- 	atomic_t mm_users;			/* How many users with user space? */
- 	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
- 	atomic_long_t nr_ptes;			/* PTE page table pages */
--#ifndef __PAGETABLE_PMD_FOLDED
- 	atomic_long_t nr_pmds;			/* PMD page table pages */
--#endif
- 	int map_count;				/* number of VMAs */
- 
- 	spinlock_t page_table_lock;		/* Protects page tables and some counters */
--- 
- Kirill A. Shutemov
+	else if (status || port_is_suspended(hub, portstatus) ||
+			!port_is_power_on(hub, portstatus)) {
+		if (status >= 0)
+			status = -ENODEV;
+	} else if (!(portstatus & USB_PORT_STAT_CONNECTION)) {
+		retry stuff...
+	}
+
+> +			if (retries--) {
+> +				usleep_range(200, 300);
+> +				status = hub_port_status(hub, port1,
+> +						&portstatus, &portchange);
+> +				goto retry;
+> +			}
+>  			status = -ENODEV;
+> +		}
+>  	}
+>  
+>  	/* Can't do a normal resume if the port isn't enabled,
+
+Alan Stern
+
