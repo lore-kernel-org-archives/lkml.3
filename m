@@ -1,78 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302AbbA0PaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:30:15 -0500
-Received: from smtp2.ore.mailhop.org ([54.186.57.195]:52858 "EHLO
-	smtp2.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119AbbA0PaM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:30:12 -0500
-X-Mail-Handler: DuoCircle Outbound SMTP
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+FX26Btkcmv3WEOsoNRuAo
-Date: Tue, 27 Jan 2015 07:26:53 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Pavel Machek <pavel@ucw.cz>,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sebastian Reichel <sre@kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: Re: N900 v3.19-rc5 arm atags_to_fdt.c is broken
-Message-ID: <20150127152653.GI28663@atomide.com>
-References: <201501232239.55801@pali>
- <201501232336.36187@pali>
- <20150126161454.GE28663@atomide.com>
- <201501261723.10505@pali>
- <20150126170323.GF28663@atomide.com>
- <alpine.LFD.2.11.1501261318590.1322@knanqh.ubzr>
- <20150127133739.GB25306@amd>
- <alpine.LFD.2.11.1501271014160.1322@knanqh.ubzr>
+	id S1754479AbbA0PiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:38:24 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38177 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851AbbA0PiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 10:38:22 -0500
+Message-ID: <54C7B0E5.20101@ti.com>
+Date: Tue, 27 Jan 2015 17:38:13 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1501271014160.1322@knanqh.ubzr>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: Felipe Balbi <balbi@ti.com>, <tony@atomide.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        <george.cherian@ti.com>, <nsekhar@ti.com>,
+        devicetree <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/7] extcon: usb-gpio: Introduce gpio usb extcon driver
+References: <1422274532-9488-1-git-send-email-rogerq@ti.com> <1422274532-9488-2-git-send-email-rogerq@ti.com> <CAGTfZH3nmpUGgFJ6RU+xH8tuDkGBFA-NbXWa0CSXZXR+DXrbkQ@mail.gmail.com> <54C66B0D.9040109@ti.com> <54C6EFC8.1090601@samsung.com>
+In-Reply-To: <54C6EFC8.1090601@samsung.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nicolas Pitre <nicolas.pitre@linaro.org> [150127 07:19]:
-> On Tue, 27 Jan 2015, Pavel Machek wrote:
+Chanwoo,
+
+On 27/01/15 03:54, Chanwoo Choi wrote:
+> Hi Roger,
 > 
-> > 
-> > > > > I would say, problem is because omap3-n900 binary DT is too large
-> > > 
-> > > I agree.
-> > > 
-> > > > OK if that's the case, then your patch makes sense to me. It also
-> > > > seems we can have the temporary stack be larger than the initial
-> > > > stack just for atags_to_fdt.
-> > > 
-> > > The stack size isn't the issue, but rather its location.  We need to 
-> > > position it away from the DT data.  The DT size is known and we could 
-> > > use that, plus some room for the insertion of new data coming from the
-> > > ATAG conversion.
-> > > 
-> > > Something like the following would be a more robust solution:
-> > 
-> > Tested-by: Pavel Machek <pavel@ucw.cz>
-> > 
-> > (Note, that in 3.19 dts for n900 got too big, so we are actually
-> > triggering old bugs. That means that this is a regression fix, and
-> > should go in ASAP).
+> On 01/27/2015 01:27 AM, Roger Quadros wrote:
+>> Hi Chanwoo,
+>>
+>> All your comments are valid. Need some clarification on one comment.
+>>
+>> On 26/01/15 15:56, Chanwoo Choi wrote:
+>>> Hi Roger,
+>>>
+>>> This patch looks good to me. But I add some comment.
+>>> If you modify some comment, I'll apply this patch on 3.21 queue.
+>>>
+>>> On Mon, Jan 26, 2015 at 9:15 PM, Roger Quadros <rogerq@ti.com> wrote:
+>>>> This driver observes the USB ID pin connected over a GPIO and
+>>>> updates the USB cable extcon states accordingly.
+>>>>
+>>>> The existing GPIO extcon driver is not suitable for this purpose
+>>>> as it needs to be taught to understand USB cable states and it
+>>>> can't handle more than one cable per instance.
+>>>>
+>>>> For the USB case we need to handle 2 cable states.
+>>>> 1) USB (attach/detach)
+>>>> 2) USB-Host (attach/detach)
+>>>>
+>>>> This driver can be easily updated in the future to handle VBUS
+>>>> events in case it happens to be available on GPIO for any platform.
+>>>>
+>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>> ---
+>>>>  .../devicetree/bindings/extcon/extcon-usb-gpio.txt |  20 ++
+>>>>  drivers/extcon/Kconfig                             |   7 +
+>>>>  drivers/extcon/Makefile                            |   1 +
+>>>>  drivers/extcon/extcon-usb-gpio.c                   | 214 +++++++++++++++++++++
+>>>>  4 files changed, 242 insertions(+)
+>>>>  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+>>>>  create mode 100644 drivers/extcon/extcon-usb-gpio.c
+>>>>
+>>
+>> <snip>
+>>
+>>>> +
+>>>> +static int usb_extcon_probe(struct platform_device *pdev)
+>>>> +{
+>>>> +       struct device *dev = &pdev->dev;
+>>>> +       struct device_node *np = dev->of_node;
+>>>> +       struct usb_extcon_info *info;
+>>>> +       int ret;
+>>>> +
+>>>> +       if (!np)
+>>>> +               return -EINVAL;
+>>>> +
+>>>> +       info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+>>>> +       if (!info)
+>>>> +               return -ENOMEM;
+>>>> +
+>>>> +       info->dev = dev;
+>>>> +       info->id_gpiod = devm_gpiod_get(&pdev->dev, "id");
+>>>> +       if (IS_ERR(info->id_gpiod)) {
+>>>> +               dev_err(dev, "failed to get ID GPIO\n");
+>>>> +               return PTR_ERR(info->id_gpiod);
+>>>> +       }
+>>>> +
+>>>> +       ret = gpiod_set_debounce(info->id_gpiod,
+>>>> +                                USB_GPIO_DEBOUNCE_MS * 1000);
+>>>> +       if (ret < 0)
+>>>> +               info->debounce_jiffies = msecs_to_jiffies(USB_GPIO_DEBOUNCE_MS);
+>>>> +
+>>>> +       INIT_DELAYED_WORK(&info->wq_detcable, usb_extcon_detect_cable);
+>>>> +
+>>>> +       info->id_irq = gpiod_to_irq(info->id_gpiod);
+>>>> +       if (info->id_irq < 0) {
+>>>> +               dev_err(dev, "failed to get ID IRQ\n");
+>>>> +               return info->id_irq;
+>>>> +       }
+>>>> +
+>>>> +       ret = devm_request_threaded_irq(dev, info->id_irq, NULL,
+>>>> +                                       usb_irq_handler,
+>>>> +                                       IRQF_SHARED | IRQF_ONESHOT |
+>>>> +                                       IRQF_NO_SUSPEND,
+>>>> +                                       pdev->name, info);
+>>
+>> use of IRQF_NO_SUSPEND is not recommended to be used together with IRQF_SHARED so
+>> I'll remove IRQF_SHARED from here if we decide to stick with IRQF_NO_SUSPEND.
+>> More on this below.
+>>
+>>>> +       if (ret < 0) {
+>>>> +               dev_err(dev, "failed to request handler for ID IRQ\n");
+>>>> +               return ret;
+>>>> +       }
+>>>> +
+>>>> +       info->edev = devm_extcon_dev_allocate(dev, usb_extcon_cable);
+>>>> +       if (IS_ERR(info->edev)) {
+>>>> +               dev_err(dev, "failed to allocate extcon device\n");
+>>>> +               return -ENOMEM;
+>>>> +       }
+>>>> +
+>>>> +       ret = devm_extcon_dev_register(dev, info->edev);
+>>>> +       if (ret < 0) {
+>>>> +               dev_err(dev, "failed to register extcon device\n");
+>>>> +               return ret;
+>>>> +       }
+>>>> +
+>>>> +       platform_set_drvdata(pdev, info);
+>>>
+>>> I prefer to execute the device_init_wakeup() function as following
+>>> for suspend/resume function:
+>>>             device_init_wakeup(&pdev->dev, 1);
+>>>
+>>>> +
+>>>> +       /* Perform initial detection */
+>>>> +       usb_extcon_detect_cable(&info->wq_detcable.work);
+>>>> +
+>>>> +       return 0;
+>>>> +}
+>>>> +
+>>>> +static int usb_extcon_remove(struct platform_device *pdev)
+>>>> +{
+>>>> +       struct usb_extcon_info *info = platform_get_drvdata(pdev);
+>>>> +
+>>>> +       cancel_delayed_work_sync(&info->wq_detcable);
+>>>
+>>> Need to add blank line.
+>>>
+>>>> +       return 0;
+>>>> +}
+>>>> +
+>>>> +#ifdef CONFIG_PM_SLEEP
+>>>> +static int usb_extcon_suspend(struct device *dev)
+>>>> +{
+>>>> +       struct usb_extcon_info *info = dev_get_drvdata(dev);
+>>>> +
+>>>> +       enable_irq_wake(info->id_irq);
+>>>
+>>> I prefer to use device_may_wakeup() function for whether
+>>> executing enable_irq_wake() or not. Also, The disable_irq()
+>>> in the suspend function would prevent us from discarding interrupt
+>>> before wakeup from suspend completely.
+>>>
+>>
+>> I need more clarification here.
+>>
+>> If we are going to use enable_irq_wake() here then what is the point of IRQF_NO_SUSPEND?
+>>
+>> >From Documentation/power/suspend-and-interrupts.txt I see that interrupts marked
+>> as IRQF_NO_SUSPEND should not be configured for system wakeup using enable_irq_wake().
+>>
+>> what is your preference?
+>>
+>> Is it good enough to not use IRQF_NO_SUSPEND but use enable_irq_wake() instead to
+>> enable system wakeup for that IRQ.
 > 
-> It is queued here:
-> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8294/1
+> I'm sorry for confusion about usage both IRQF_NO_SUSPEND and enable_irq_wake().
+> If suspend() function in device driver executes the enable_irq_wake(),
+> IRQF_NO_SUSPEND flag is not necessary.
+> 
+> I think that we better use enable_irq_wake() instead of adding IRQF_NO_SUSPEND flag.
+> I'll expect to remove IRQF_NO_SUSPEND flag when requesting gpio interrupt.
+> 
+OK.
 
-Thanks for fixing that one!
+>>
+>>>             if (device_may_wakeup(dev))
+>>>                      enable_irq_wake(info->id_irq);
+>>>             disable_irq(info->id_irq);
+>>
+>> why do we need to disable irq here? How will the system wakeup if IRQ is disabled?
+> 
+> The disable_irq() may make the interrupt as masking state.
+> Although interrput is masking state(disable), interrup can happen.
+> but, the interrupt may remain the pending state without discarding it.
+> 
+> And then,
+> When resume() function in extcon-usb-gpio.c executes enable_irq(info->id_irq),
+> pending interrupt will happen and executes the interrupt handler(usb_irq_handler).
+> 
+> If we don't execute disable_irq() in suspend function,
+> info->id->irq interrupt might happen before completing the resume sequence
+> of extcon-gpio-usb driver.
 
-Regards,
+How will that cause a problem? If an interrupt happens _before_ the system enters
+SUSPEND state then kernel should abort the suspend. This should be taken care by 
+kernel PM core and not the device driver.
 
-Tony
+I still fail to understand that we need to call disable_irq() in .suspend() and
+enable_irq() in .resume()
+
+can you point me to any other drivers doing so?
+
+cheers,
+-roger
