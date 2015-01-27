@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695AbbA0MYM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:24:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35443 "EHLO
+	id S932693AbbA0MXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:23:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35451 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932550AbbA0MUG (ORCPT
+	with ESMTP id S1758715AbbA0MUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:06 -0500
+	Tue, 27 Jan 2015 07:20:08 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mugunthan V N <mugunthanvnm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Amit Virdi <amit.virdi@st.com>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 114/126] drivers: net: cpsw: fix multicast flush in dual emac mode
-Date: Tue, 27 Jan 2015 12:16:59 +0000
-Message-Id: <1422361031-19364-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 115/126] usb: dwc3: gadget: Fix TRB preparation during SG
+Date: Tue, 27 Jan 2015 12:17:00 +0000
+Message-Id: <1422361031-19364-116-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,104 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
+From: Amit Virdi <amit.virdi@st.com>
 
-commit 25906052d953d3fbdb7e19480b9de5e6bb949f3f upstream.
+commit ec512fb8e5611fed1df2895f90317ce6797d6b32 upstream.
 
-Since ALE table is a common resource for both the interfaces in Dual EMAC
-mode and while bringing up the second interface in cpsw_ndo_set_rx_mode()
-all the multicast entries added by the first interface is flushed out and
-only second interface multicast addresses are added. Fixing this by
-flushing multicast addresses based on dual EMAC port vlans which will not
-affect the other emac port multicast addresses.
+When scatter gather (SG) is used, multiple TRBs are prepared from one DWC3
+request (dwc3_request). So while preparing TRBs, the 'last' flag should be set
+only when it is the last TRB being prepared from the last dwc3_request entry.
 
-Fixes: d9ba8f9 (driver: net: ethernet: cpsw: dual emac interface implementation)
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The current implementation uses list_is_last to check if the dwc3_request is the
+last entry from the request_list. However, list_is_last returns false for the
+last entry too. This is because, while preparing the first TRB from a request,
+the function dwc3_prepare_one_trb modifies the request's next and prev pointers
+while moving the URB to req_queued. Hence, list_is_last always returns false no
+matter what.
+
+The correct way is not to access the modified pointers of dwc3_request but to
+use list_empty macro instead.
+
+Fixes: e5ba5ec833aa (usb: dwc3: gadget: fix scatter gather implementation)
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/ti/cpsw.c     | 11 +++++++++--
- drivers/net/ethernet/ti/cpsw_ale.c | 10 +++++++++-
- drivers/net/ethernet/ti/cpsw_ale.h |  2 +-
- 3 files changed, 19 insertions(+), 4 deletions(-)
+ drivers/usb/dwc3/gadget.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index 869a0d43dbe5..c944fbd0e30c 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -606,7 +606,7 @@ static void cpsw_set_promiscious(struct net_device *ndev, bool enable)
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 9a565f0e3532..9b833a43212a 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -970,8 +970,7 @@ static void dwc3_prepare_trbs(struct dwc3_ep *dep, bool starting)
  
- 			/* Clear all mcast from ALE */
- 			cpsw_ale_flush_multicast(ale, ALE_ALL_PORTS <<
--						 priv->host_port);
-+						 priv->host_port, -1);
- 
- 			/* Flood All Unicast Packets to Host port */
- 			cpsw_ale_control_set(ale, 0, ALE_P0_UNI_FLOOD, 1);
-@@ -630,6 +630,12 @@ static void cpsw_set_promiscious(struct net_device *ndev, bool enable)
- static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
- {
- 	struct cpsw_priv *priv = netdev_priv(ndev);
-+	int vid;
-+
-+	if (priv->data.dual_emac)
-+		vid = priv->slaves[priv->emac_port].port_vlan;
-+	else
-+		vid = priv->data.default_vlan;
- 
- 	if (ndev->flags & IFF_PROMISC) {
- 		/* Enable promiscuous mode */
-@@ -641,7 +647,8 @@ static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
- 	}
- 
- 	/* Clear all mcast from ALE */
--	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port);
-+	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port,
-+				 vid);
- 
- 	if (!netdev_mc_empty(ndev)) {
- 		struct netdev_hw_addr *ha;
-diff --git a/drivers/net/ethernet/ti/cpsw_ale.c b/drivers/net/ethernet/ti/cpsw_ale.c
-index 7f893069c418..4eceb7e42c80 100644
---- a/drivers/net/ethernet/ti/cpsw_ale.c
-+++ b/drivers/net/ethernet/ti/cpsw_ale.c
-@@ -236,7 +236,7 @@ static void cpsw_ale_flush_mcast(struct cpsw_ale *ale, u32 *ale_entry,
- 		cpsw_ale_set_entry_type(ale_entry, ALE_TYPE_FREE);
- }
- 
--int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
-+int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid)
- {
- 	u32 ale_entry[ALE_ENTRY_WORDS];
- 	int ret, idx;
-@@ -247,6 +247,14 @@ int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
- 		if (ret != ALE_TYPE_ADDR && ret != ALE_TYPE_VLAN_ADDR)
- 			continue;
- 
-+		/* if vid passed is -1 then remove all multicast entry from
-+		 * the table irrespective of vlan id, if a valid vlan id is
-+		 * passed then remove only multicast added to that vlan id.
-+		 * if vlan id doesn't match then move on to next entry.
-+		 */
-+		if (vid != -1 && cpsw_ale_get_vlan_id(ale_entry) != vid)
-+			continue;
-+
- 		if (cpsw_ale_get_mcast(ale_entry)) {
- 			u8 addr[6];
- 
-diff --git a/drivers/net/ethernet/ti/cpsw_ale.h b/drivers/net/ethernet/ti/cpsw_ale.h
-index de409c33b250..e701358fd00b 100644
---- a/drivers/net/ethernet/ti/cpsw_ale.h
-+++ b/drivers/net/ethernet/ti/cpsw_ale.h
-@@ -88,7 +88,7 @@ void cpsw_ale_stop(struct cpsw_ale *ale);
- 
- int cpsw_ale_set_ageout(struct cpsw_ale *ale, int ageout);
- int cpsw_ale_flush(struct cpsw_ale *ale, int port_mask);
--int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask);
-+int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid);
- int cpsw_ale_add_ucast(struct cpsw_ale *ale, u8 *addr, int port,
- 		       int flags, u16 vid);
- int cpsw_ale_del_ucast(struct cpsw_ale *ale, u8 *addr, int port,
+ 				if (i == (request->num_mapped_sgs - 1) ||
+ 						sg_is_last(s)) {
+-					if (list_is_last(&req->list,
+-							&dep->request_list))
++					if (list_empty(&dep->request_list))
+ 						last_one = true;
+ 					chain = false;
+ 				}
 -- 
 2.1.4
 
