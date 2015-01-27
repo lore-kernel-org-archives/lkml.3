@@ -1,31 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859AbbA0FLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 00:11:36 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:63209 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750864AbbA0FLe convert rfc822-to-8bit (ORCPT
+	id S1752979AbbA0F1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 00:27:38 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:57486 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbbA0F1f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 00:11:34 -0500
+	Tue, 27 Jan 2015 00:27:35 -0500
 From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Mark Rutland <mark.rutland@arm.com>
 CC: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
         "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
+        "Vilchez, Patrice" <Patrice.VILCHEZ@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
         "peda@axentia.se" <peda@axentia.se>,
-        "Vilchez, Patrice" <Patrice.VILCHEZ@atmel.com>
-Subject: RE: [PATCH 4/7] ARM: at91: enable the L2 Cache controller
-Thread-Topic: [PATCH 4/7] ARM: at91: enable the L2 Cache controller
-Thread-Index: AQHQOU/zUJlwkcH7Hk+XOJEo4uXj5JzSeHKAgAD0HIA=
-Date: Tue, 27 Jan 2015 05:11:30 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BFD35D08@penmbx01>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 6/7] pm: at91: add achieve the mpddrc peripheral ID and
+ the DDR clock ID support
+Thread-Topic: [PATCH 6/7] pm: at91: add achieve the mpddrc peripheral ID and
+ the DDR clock ID support
+Thread-Index: AQHQOVAXP3hkhHrFDkmf9/mv0N9foZzRw6wAgAGpv3A=
+Date: Tue, 27 Jan 2015 05:24:51 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641BFD35D20@penmbx01>
 References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
- <1422266836-24592-1-git-send-email-wenyou.yang@atmel.com>
- <20150126223657.GB11867@piout.net>
-In-Reply-To: <20150126223657.GB11867@piout.net>
+ <1422266896-24666-1-git-send-email-wenyou.yang@atmel.com>
+ <20150126114956.GE23313@leverpostej>
+In-Reply-To: <20150126114956.GE23313@leverpostej>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -38,113 +42,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+Hi Mark,
+
+Thank you for your review.
 
 > -----Original Message-----
-> From: Alexandre Belloni [mailto:alexandre.belloni@free-electrons.com]
-> Sent: Tuesday, January 27, 2015 6:37 AM
+> From: Mark Rutland [mailto:mark.rutland@arm.com]
+> Sent: Monday, January 26, 2015 7:50 PM
 > To: Yang, Wenyou
-> Cc: Ferre, Nicolas; linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
-> linux-kernel@vger.kernel.org; sylvain.rochet@finsecur.com; peda@axentia.se;
-> Vilchez, Patrice
-> Subject: Re: [PATCH 4/7] ARM: at91: enable the L2 Cache controller
+> Cc: Ferre, Nicolas; linux@arm.linux.org.uk; sylvain.rochet@finsecur.com; Vilchez,
+> Patrice; linux-kernel@vger.kernel.org; alexandre.belloni@free-electrons.com;
+> peda@axentia.se; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH 6/7] pm: at91: add achieve the mpddrc peripheral ID and the
+> DDR clock ID support
 > 
-> Hi Wenyou,
-> 
-> This patch is not necessary, the only thing missing is the prefetch configuration
-> and I will submit the correct DT snippet for 3.21.
-I will drop this patch.
-
-> 
-> On 26/01/2015 at 18:07:16 +0800, Wenyou Yang wrote :
+> On Mon, Jan 26, 2015 at 10:08:16AM +0000, Wenyou Yang wrote:
+> > The patch achieves the mpddr controller peripheral ID and the DDR
+> > clock ID from the dts file.
+> >
+> > They will be used in the future to disable the mpddr controller'c
+> > clock the and DDR clock to decrease the power consumption during suspending.
+> >
 > > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 > > ---
-> >  arch/arm/mach-at91/board-dt-sama5.c |   53
-> +++++++++++++++++++++++++++++++++++
-> >  1 file changed, 53 insertions(+)
+> >  arch/arm/mach-at91/generic.h |    2 ++
+> >  arch/arm/mach-at91/setup.c   |   24 ++++++++++++++++++++++++
+> >  2 files changed, 26 insertions(+)
 > >
-> > diff --git a/arch/arm/mach-at91/board-dt-sama5.c
-> > b/arch/arm/mach-at91/board-dt-sama5.c
-> > index 86cffcd..ed6db28 100644
-> > --- a/arch/arm/mach-at91/board-dt-sama5.c
-> > +++ b/arch/arm/mach-at91/board-dt-sama5.c
-> > @@ -17,17 +17,70 @@
-> >  #include <linux/of_platform.h>
-> >  #include <linux/phy.h>
-> >  #include <linux/clk-provider.h>
-> > +#include <linux/of_address.h>
+> > diff --git a/arch/arm/mach-at91/generic.h
+> > b/arch/arm/mach-at91/generic.h index 41796bf..3c72a3e 100644
+> > --- a/arch/arm/mach-at91/generic.h
+> > +++ b/arch/arm/mach-at91/generic.h
+> > @@ -47,6 +47,8 @@ void __init at91_sam9x5_pm_init(void) { }  struct
+> > at91_pm_struct {
+> >  	unsigned long uhp_udp_mask;
+> >  	int memctrl;
+> > +	u32 mpddrc_id[2];
+> > +	u32 ddrck_id;
+> >  };
 > >
-> >  #include <asm/setup.h>
-> >  #include <asm/irq.h>
-> >  #include <asm/mach/arch.h>
-> >  #include <asm/mach/map.h>
-> >  #include <asm/mach/irq.h>
-> > +#include <asm/hardware/cache-l2x0.h>
+> >  #endif /* _AT91_GENERIC_H */
+> > diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+> > index 7924663..a306f95 100644
+> > --- a/arch/arm/mach-at91/setup.c
+> > +++ b/arch/arm/mach-at91/setup.c
+> > @@ -363,6 +363,27 @@ void __init at91_ioremap_matrix(u32 base_addr)
+> >  		panic(pr_fmt("Impossible to ioremap at91_matrix_base\n"));  }
 > >
-> >  #include "generic.h"
-> >
-> > +void __iomem *at91_l2cc_base;
-> > +EXPORT_SYMBOL_GPL(at91_l2cc_base);
+> > +static u32 at91_of_get_ddr_id(struct device_node *np, char *name) {
+> > +	struct of_phandle_args clkspec;
+> > +	u32 id;
+> > +	int index;
+> > +	int rc;
 > > +
-> > +#ifdef CONFIG_CACHE_L2X0
-> > +static void __init at91_init_l2cache(void) {
-> > +	struct device_node *np;
-> > +	u32 reg;
+> > +	index = of_property_match_string(np, "clock-names", name);
+> > +	rc = of_parse_phandle_with_args(np, "clocks", "#clock-cells", index,
+> &clkspec);
+> > +	if (rc)
+> > +		return 0;
 > > +
-> > +	np = of_find_compatible_node(NULL, NULL, "arm,pl310-cache");
-> > +	if (!np)
-> > +		return;
+> > +	rc = of_property_read_u32(clkspec.np, "reg", &id);
+> > +	if (rc)
+> > +		return 0;
 > > +
-> > +	at91_l2cc_base = of_iomap(np, 0);
-> > +	if (!at91_l2cc_base)
-> > +		panic("unable to map l2cc cpu registers\n");
+> > +	of_node_put(clkspec.np);
 > > +
-> > +	of_node_put(np);
-> > +
-> > +	/* Disable cache if it hasn't been done yet */
-> > +	if (readl_relaxed(at91_l2cc_base + L2X0_CTRL) & L2X0_CTRL_EN)
-> > +		writel_relaxed(~L2X0_CTRL_EN, at91_l2cc_base + L2X0_CTRL);
-> > +
-> > +	/* Prefetch Control */
-> > +	reg = readl_relaxed(at91_l2cc_base + L310_PREFETCH_CTRL);
-> > +	reg &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
-> > +	reg |= 0x01;
-> > +	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
-> > +	reg |= L310_PREFETCH_CTRL_PREFETCH_DROP;
-> > +	reg |= L310_PREFETCH_CTRL_DATA_PREFETCH;
-> > +	reg |= L310_PREFETCH_CTRL_INSTR_PREFETCH;
-> > +	reg |= L310_PREFETCH_CTRL_DBL_LINEFILL;
-> > +	writel_relaxed(reg, at91_l2cc_base + L310_PREFETCH_CTRL);
-> > +
-> > +	/* Power Control */
-> > +	reg = readl_relaxed(at91_l2cc_base + L310_POWER_CTRL);
-> > +	reg |= L310_STNDBY_MODE_EN;
-> > +	reg |= L310_DYNAMIC_CLK_GATING_EN;
-> > +	writel_relaxed(reg, at91_l2cc_base + L310_POWER_CTRL);
-> > +
-> > +	/* Disable interrupts */
-> > +	writel_relaxed(0x00, at91_l2cc_base + L2X0_INTR_MASK);
-> > +	writel_relaxed(0x01ff, at91_l2cc_base + L2X0_INTR_CLEAR);
-> > +	l2x0_of_init(0, ~0UL);
+> > +	return id;
 > > +}
-> > +#else
-> > +static inline void at91_init_l2cache(void) {} #endif
-> > +
-> >  static void __init sama5_dt_device_init(void)  {
-> > +	at91_init_l2cache();
-> > +
-> >  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> >  	at91_sam9x5_pm_init();
-> >  }
-> > --
-> > 1.7.9.5
-> >
 > 
-> --
-> Alexandre Belloni, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
+> This doesn't look right to me. This assumes the format of the clock provider node,
+> which invalidates the point of having the abstraction in the first place.
+> 
+> > +
+> >  struct at91_ramc_of_data {
+> >  	u8 ramc_type;
+> >  };
+> > @@ -400,6 +421,9 @@ static void at91_dt_ramc(void)
+> >  		of_data = of_id->data;
+> >  		at91_pm_data.memctrl = of_data->ramc_type;
+> >
+> > +		at91_pm_data.mpddrc_id[idx] = at91_of_get_ddr_id(np, "mpddr");
+> > +		at91_pm_data.ddrck_id = at91_of_get_ddr_id(np, "ddrck");
+> > +
+> 
+> Why do you need these here?
+> 
+> Surely the logic for poking any clocks should live in the relevant clock controller
+> drivers?
+Thank for your suggestion.
 
+I thought that it is reasonable to get the DDR controller's peripheral id from the DDR device node.
+
+Anyway, let me think over how to do it.
+
+> 
+> Mark.
 
 Best Regards,
 Wenyou Yang
