@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620AbbA0PX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:23:28 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42503 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753835AbbA0PX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:23:26 -0500
-Date: Tue, 27 Jan 2015 09:22:50 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Sneeker Yeh <sneeker.yeh@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>, Huang Rui <ray.huang@amd.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Andy Green <andy.green@linaro.org>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
-Subject: Re: [PATCH v3 0/5] Add support for Fujitsu USB host controller
-Message-ID: <20150127152250.GB13776@saruman.tx.rr.com>
-Reply-To: <balbi@ti.com>
-References: <1422173608-24355-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+	id S932231AbbA0PXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:23:34 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:48042 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758614AbbA0PX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 10:23:29 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xgyAXRrhYN0wYx8y"
-Content-Disposition: inline
-In-Reply-To: <1422173608-24355-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54C66F30.8050108@gmail.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+	<54BE5DC8.70706@gmail.com>
+	<54BE9D08.7010804@zonque.org>
+	<54BF805B.4000609@gmail.com>
+	<54BFDAAA.50203@zonque.org>
+	<54C0CE8A.5080805@gmail.com>
+	<20150123155402.GB2159@kroah.com>
+	<54C65267.7090905@gmail.com>
+	<CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>
+	<54C66F30.8050108@gmail.com>
+Date: Tue, 27 Jan 2015 16:23:28 +0100
+Message-ID: <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+From: David Herrmann <dh.herrmann@gmail.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Tom Gundersen <teg@jklm.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
+        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---xgyAXRrhYN0wYx8y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi
 
-Hi,
+On Mon, Jan 26, 2015 at 5:45 PM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> On 01/26/2015 04:26 PM, Tom Gundersen wrote:
+>> On Mon, Jan 26, 2015 at 3:42 PM, Michael Kerrisk (man-pages)
+>> <mtk.manpages@gmail.com> wrote:
+>>> 2. Is the API to be invoked directly by applications or is intended to
+>>>    be used only behind specific libraries? You seem to be saying that
+>>>    the latter is the case (here, I'm referring to your comment above
+>>>    about sd-bus). However, when I asked David Herrmann a similar
+>>>    question I got this responser:
+>>>
+>>>       "kdbus is in no way bound to systemd. There are ongoing efforts
+>>>        to port glib and qt to kdbus natively. The API is pretty simple
+>>>        and I don't see how a libkdbus would simplify things. In fact,
+>>>        even our tests only have slim wrappers around the ioctls to
+>>>        simplify error-handling in test-scenarios."
+>>>
+>>>    To me, that implies that users will employ the raw kernel API.
+>>
+>> The way I read this is that there will (probably) be a handful of
+>> users, namely the existing dbus libraries: libdus, sd-bus, glib, Qt,
+>> ell, and maybe a few others. However, third-party developers will not
+>> know/care about the details of kdbus, they'll just be coding against
+>> the dbus libraries as before (might be minor changes, but they
+>> certainly won't need to know anything about the kernel API). Similarly
+>> to how userspace developers now code against their libc of choice,
+>> rather than use kernel syscalls directly.
+>
+> Thanks, Tom, for the input. I'm still confused though, since elsewhere
+> in this thread David Herrmann said in response to a question of mine:
+>
+>     I think we can agree that we want it to be generically useful,
+>     like other ipc mechanisms, including UDS and netlink.
+>
+> Again, that sounds to me like the vision is not "a handful of users".
+> Hopefully Greg and David can clarify.
 
-On Sun, Jan 25, 2015 at 04:13:23PM +0800, Sneeker Yeh wrote:
-> These patches add support for XHCI compliant Host controller found
-> on Fujitsu Socs, and are based on http://lwn.net/Articles/629162/
-> The first patch is to add Fujitsu glue layer of Synopsis DesignWare USB3 =
-driver
-> and last four patch is about quirk implementation of errata in Synopsis
-> DesignWare USB3 IP.
->=20
-> Patch 1 introduces a quirk with device disconnection management necessary
-> Synopsys Designware USB3 IP with versions < 3.00a and hardware configurat=
-ion
-> DWC_USB3_SUSPEND_ON_DISCONNECT_EN=3D1. It solves a problem where without =
-the
-> quirk, that host controller will die after a usb device is disconnected f=
-rom
-> port of root hub.
->=20
-> Patch 2 is to set Synopsis quirk in xhci platform driver based on xhci pl=
-atform
-> data.
->=20
-> Patch 3 is to add a revison number 2.90a and 3.00a of Synopsis DesignWare=
- USB3
-> IP core driver.
->=20
-> Patch 4 introduces using a quirk based on a errata of Synopsis
-> DesignWare USB3 IP which is versions < 3.00a and has hardware configurati=
-on
-> DWC_USB3_SUSPEND_ON_DISCONNECT_EN=3D1, which cannot be read from software=
-=2E As a
-> result this quirk has to be enabled via platform data or device tree.
->=20
-> Patch 5 introduces Fujitsu Specific Glue layer in Synopsis DesignWare USB=
-3 IP
-> driver.=20
->=20
+I only expect a handful of users to call the ioctls directly. The
+libraries that implement the payload-marshaling, in particular. It's a
+similar situation with netlink.
 
-Mathias, let me know how you want to handle this. Either I take them
-all, or you take them all. What do you prefer ?
-
---=20
-balbi
-
---xgyAXRrhYN0wYx8y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUx61KAAoJEIaOsuA1yqREpJIP/0qd7l0DX4/2yFZ59RADw2D7
-J6Z4lDVgJmgFrho04qp9Wax3ExF9VWlKUrP/uXVd9ud3YZTSGXOMtWCQmZiTOyzo
-GH1ABqqoSPZq6ECt7GDEkwDe7LQEM4c1iRhvUPHwz6b8OPrZZs167VsbnOr831FA
-i0uoUxejYYr74nvUPMw151G0DErby+fhX9lUiv/l6JdnYZjBA3945FDsAGguf6AU
-DXfBz2eCBznupLuGI//BnEuLDUvzJdTUH19fu6PVTKdJbGlCmhP/wCRQ5fGDr0Rv
-/+R1H8Lb5nRNzu4xaQ+FA0GRz4kCsUQTdrtNsrw5Uok5lBG2p1/eq/jejo8xmlNJ
-pW+ID6ey4dcppW5eAyC0q0dMUw4Jz/EFUKjeH9+yYKKbgaFqT9HXT38uee5lCaFn
-7Uf13TC+A5mBObl99PqwdOZC/1edX7wLNLao2Fcf7+kbCzxN3pXP/vI/6k+z2Ick
-XZyU+4si9zeGzF2+7qADGgioSEp4BWCe19PIlCCejqywH2+w2MUd5vih+ArUpcQA
-JojAwpZcuBi5AQNQQpCEVo7JAdpypxoXbbLymuyhK2c07kczRw/R6cmF50QCDy1i
-8yRMkZEN9LyUXr+7aDHggr+s6wYWDsdSkryrLxNQaH0SomRc7Yi83AF8d40Yb6hB
-QrtfgmJ6hFIaIHaDqhBI
-=zZxd
------END PGP SIGNATURE-----
-
---xgyAXRrhYN0wYx8y--
+Thanks
+David
