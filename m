@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758771AbbA0NEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 08:04:37 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:48562 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758591AbbA0NEf (ORCPT
+	id S1758595AbbA0NIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 08:08:18 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:33637 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752159AbbA0NIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 08:04:35 -0500
-X-Sasl-enc: mkVR2AzNScupYMaixyJPj4f281wFfi5p+XX6TCGJyrZE 1422363874
-Message-ID: <54C78CE0.6040207@imap.cc>
-Date: Tue, 27 Jan 2015 14:04:32 +0100
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Tue, 27 Jan 2015 08:08:16 -0500
+Date: Tue, 27 Jan 2015 18:38:04 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Thomas Winischhofer <thomas@winischhofer.net>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: fbdev: sis: remove unused variables
+Message-ID: <20150127130804.GA25333@sudip-PC>
+References: <1421940699-20670-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <54C63506.3020106@ti.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devel <devel@driverdev.osuosl.org>, isdn@linux-pingi.de,
-        netdev <netdev@vger.kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: make allyesconfig i386 build failure with next-20150122 (caused
- by fb_agm1264k-fl driver)
-References: <CA+r1ZhhXF+hicy7JKo3jAbgSbO4KOLm6BwPosTKNb+E_Cb4yPQ@mail.gmail.com> <20150126215959.GA9853@roeck-us.net> <20150126224654.GA17166@kroah.com> <54C6FB28.3000304@roeck-us.net>
-In-Reply-To: <54C6FB28.3000304@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C63506.3020106@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.01.2015 um 03:42 schrieb Guenter Roeck:
-> On 01/26/2015 02:46 PM, Greg Kroah-Hartman wrote:
->> On Mon, Jan 26, 2015 at 01:59:59PM -0800, Guenter Roeck wrote:
->>> On Thu, Jan 22, 2015 at 12:10:33PM -0700, Jim Davis wrote:
->>>> make ARCH=i386 allyesconfig fails with
->>>>
->>>> drivers/staging/built-in.o: In function `reset':
->>>> (.text+0x2ae89d): multiple definition of `reset'
->>>> drivers/isdn/built-in.o:(.text+0x185dc2): first defined here
->>>> make[1]: *** [drivers/built-in.o] Error 1
->>>
->>> Culprit:
->>>
->>> commit b2ebd4be6fa1d2329b63531b044f9e25474981cb
->>> Author: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->>> Date:   Wed Dec 31 10:11:10 2014 +0100
->>>
->>>      staging: fbtft: add fb_agm1264k-fl driver
->>>
->>> A global function named 'reset' isn't really a good idea.
->>>
->>> Not that the global function with the same name in the isdn code
->>> is better ;-).
->>
->> Agreed, the fbtft code is now fixed.  Patches to fix the isdn code would
->> be gladly accepted as well :)
->>
+On Mon, Jan 26, 2015 at 02:37:26PM +0200, Tomi Valkeinen wrote:
+> On 22/01/15 17:31, Sudip Mukherjee wrote:
+> > removed some variables which were not used. Few calls to SiS_GetReg()
+> > were left behind as they are reading from the hardare, removing them
+> > might affect the overall functionality.
+> > 
+> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> > ---
+> > This patch will generate checkpatch error, to fix that error we need
+> > to change the style of init.c and init301.c
+> > 
+> >  drivers/video/fbdev/sis/init.c     | 33 +++++----------------------------
+> >  drivers/video/fbdev/sis/init301.c  | 10 ++--------
+> >  drivers/video/fbdev/sis/sis_main.c |  9 ++++-----
+> >  3 files changed, 11 insertions(+), 41 deletions(-)
 > 
-> Did you have a look into the isdn code ? It will need someone
-> with a lot of spare time to clean this code up.
+> Are you able to test this?
+> 
+> The patch doesn't look too complex, but it's still slightly too complex
+> for me to comfortably merge it without any testing.
 
-Cleaning up the entire isdn code certainly will, but that particular
-problem is in fact much more limited. The function in question is
-declared, along with several other also much too generically named
-ones, in drivers/isdn/sc/card.h which is included nowhere outside
-drivers/isdn/sc. So these are really private functions of the
-SpellCaster driver which could easily be renamed.
+No. It is not tested on actual hardware.
 
-OTOH good old SpellCaster was an ISA card, and the sc driver depends
-on the deprecated I4L framework. I wonder if it's worth any effort.
+Sudip
 
-Tilman
+> 
+>  Tomi
+> 
+> 
+
+
