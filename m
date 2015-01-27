@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759215AbbA0MmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:42:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35078 "EHLO
+	id S1759186AbbA0Mlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:41:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35080 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758504AbbA0MSJ (ORCPT
+	with ESMTP id S1758515AbbA0MSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:18:09 -0500
+	Tue, 27 Jan 2015 07:18:11 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+Cc: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 048/126] ARM: dts: Enable PWM node by default for s3c64xx
-Date: Tue, 27 Jan 2015 12:15:53 +0000
-Message-Id: <1422361031-19364-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 049/126] ARM: OMAP4: PM: Only do static dependency configuration in omap4_init_static_deps
+Date: Tue, 27 Jan 2015 12:15:54 +0000
+Message-Id: <1422361031-19364-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,51 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Figa <tomasz.figa@gmail.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit 5e794de514f56de1e78e979ca09c56a91aa2e9f1 upstream.
+commit 9008d83fe9dc2e0f19b8ba17a423b3759d8e0fd7 upstream.
 
-The PWM block is required for system clock source so it must be always
-enabled. This patch fixes boot issues on SMDK6410 which did not have
-the node enabled explicitly for other purposes.
+Commit 705814b5ea6f ("ARM: OMAP4+: PM: Consolidate OMAP4 PM code to
+re-use it for OMAP5")
 
-Fixes: eeb93d02 ("clocksource: of: Respect device tree node status")
+Moved logic generic for OMAP5+ as part of the init routine by
+introducing omap4_pm_init. However, the patch left the powerdomain
+initial setup, an unused omap4430 es1.0 check and a spurious log
+"Power Management for TI OMAP4." in the original code.
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Remove the duplicate code which is already present in omap4_pm_init from
+omap4_init_static_deps.
+
+As part of this change, also move the u-boot version print out of the
+static dependency function to the omap4_pm_init function.
+
+Fixes: 705814b5ea6f ("ARM: OMAP4+: PM: Consolidate OMAP4 PM code to re-use it for OMAP5")
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/s3c6410-mini6410.dts | 4 ----
- arch/arm/boot/dts/s3c64xx.dtsi         | 1 -
- 2 files changed, 5 deletions(-)
+ arch/arm/mach-omap2/pm44xx.c | 29 +++++++++--------------------
+ 1 file changed, 9 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/boot/dts/s3c6410-mini6410.dts b/arch/arm/boot/dts/s3c6410-mini6410.dts
-index 57e00f9bce99..a25debb50401 100644
---- a/arch/arm/boot/dts/s3c6410-mini6410.dts
-+++ b/arch/arm/boot/dts/s3c6410-mini6410.dts
-@@ -198,10 +198,6 @@
- 	status = "okay";
- };
+diff --git a/arch/arm/mach-omap2/pm44xx.c b/arch/arm/mach-omap2/pm44xx.c
+index 0dda6cf8b855..05213880c972 100644
+--- a/arch/arm/mach-omap2/pm44xx.c
++++ b/arch/arm/mach-omap2/pm44xx.c
+@@ -150,26 +150,6 @@ static inline int omap4_init_static_deps(void)
+ 	struct clockdomain *ducati_clkdm, *l3_2_clkdm;
+ 	int ret = 0;
  
--&pwm {
--	status = "okay";
--};
+-	if (omap_rev() == OMAP4430_REV_ES1_0) {
+-		WARN(1, "Power Management not supported on OMAP4430 ES1.0\n");
+-		return -ENODEV;
+-	}
 -
- &pinctrl0 {
- 	gpio_leds: gpio-leds {
- 		samsung,pins = "gpk-4", "gpk-5", "gpk-6", "gpk-7";
-diff --git a/arch/arm/boot/dts/s3c64xx.dtsi b/arch/arm/boot/dts/s3c64xx.dtsi
-index 4e3be4d3493d..4f1eff3420f6 100644
---- a/arch/arm/boot/dts/s3c64xx.dtsi
-+++ b/arch/arm/boot/dts/s3c64xx.dtsi
-@@ -168,7 +168,6 @@
- 			clocks = <&clocks PCLK_PWM>;
- 			samsung,pwm-outputs = <0>, <1>;
- 			#pwm-cells = <3>;
--			status = "disabled";
- 		};
+-	pr_err("Power Management for TI OMAP4.\n");
+-	/*
+-	 * OMAP4 chip PM currently works only with certain (newer)
+-	 * versions of bootloaders. This is due to missing code in the
+-	 * kernel to properly reset and initialize some devices.
+-	 * http://www.spinics.net/lists/arm-kernel/msg218641.html
+-	 */
+-	pr_warn("OMAP4 PM: u-boot >= v2012.07 is required for full PM support\n");
+-
+-	ret = pwrdm_for_each(pwrdms_setup, NULL);
+-	if (ret) {
+-		pr_err("Failed to setup powerdomains\n");
+-		return ret;
+-	}
+-
+ 	/*
+ 	 * The dynamic dependency between MPUSS -> MEMIF and
+ 	 * MPUSS -> L4_PER/L3_* and DUCATI -> L3_* doesn't work as
+@@ -233,6 +213,15 @@ int __init omap4_pm_init(void)
  
- 		pinctrl0: pinctrl@7f008000 {
+ 	pr_info("Power Management for TI OMAP4+ devices.\n");
+ 
++	/*
++	 * OMAP4 chip PM currently works only with certain (newer)
++	 * versions of bootloaders. This is due to missing code in the
++	 * kernel to properly reset and initialize some devices.
++	 * http://www.spinics.net/lists/arm-kernel/msg218641.html
++	 */
++	if (cpu_is_omap44xx())
++		pr_warn("OMAP4 PM: u-boot >= v2012.07 is required for full PM support\n");
++
+ 	ret = pwrdm_for_each(pwrdms_setup, NULL);
+ 	if (ret) {
+ 		pr_err("Failed to setup powerdomains.\n");
 -- 
 2.1.4
 
