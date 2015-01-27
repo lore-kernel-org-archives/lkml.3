@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393AbbA0OTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 09:19:41 -0500
-Received: from bes.se.axis.com ([195.60.68.10]:54343 "EHLO bes.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501AbbA0OTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 09:19:39 -0500
-Date: Tue, 27 Jan 2015 15:19:37 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH] cris: Remove unnecessary KERN_INFO from sync_serial.c
-Message-ID: <20150127141937.GA26817@axis.com>
-References: <1421322728-18968-1-git-send-email-standby24x7@gmail.com>
+	id S1758440AbbA0OVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:21:13 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:47552 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354AbbA0OVK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 09:21:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421322728-18968-1-git-send-email-standby24x7@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1422339332-27498-2-git-send-email-chaotian.jing@mediatek.com>
+References: <1422339332-27498-1-git-send-email-chaotian.jing@mediatek.com>
+	<1422339332-27498-2-git-send-email-chaotian.jing@mediatek.com>
+Date: Tue, 27 Jan 2015 15:21:10 +0100
+Message-ID: <CACRpkdbncsDJ3pP0dETpho5+j+OVuaYr=YTsH8pAs7vuT_9OLw@mail.gmail.com>
+Subject: Re: [PATCH 1/7] pinctrl: mediatek: emulate GPIO interrupt on both-edges
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chaotian Jing <chaotian.jing@mediatek.com>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        srv_heupstream@mediatek.com, Sascha Hauer <kernel@pengutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        James Liao <jamesjj.liao@mediatek.com>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        bin.zhang@mediatek.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 12:52:08PM +0100, Masanari Iida wrote:
-> This patch remove unnecessary KERN_INFO in sync_serial.c
+On Tue, Jan 27, 2015 at 7:15 AM, Chaotian Jing
+<chaotian.jing@mediatek.com> wrote:
 
-Thanks, added for 3.20.
+> From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+>
+> MTK EINT does not support generating interrupt on both edges.
+> Emulate this by changing edge polarity while enable irq,
+> set types and interrupt handling. This follows an example of
+> drivers/gpio/gpio-mxc.c.
+>
+> Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+> Signed-off-by: Chaotian Jing <chaotian.jing@mediatek.com>
 
-/Jesper
+Hongzhu, if you're fine with this patch can you ACK it as maintainer
+of the pinctrl driver so I can merge it immediately on top of your
+drivern whenever we consider it finished (and if it applies still...)
 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  arch/cris/arch-v32/drivers/sync_serial.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/cris/arch-v32/drivers/sync_serial.c b/arch/cris/arch-v32/drivers/sync_serial.c
-> index 08a313f..91e8773 100644
-> --- a/arch/cris/arch-v32/drivers/sync_serial.c
-> +++ b/arch/cris/arch-v32/drivers/sync_serial.c
-> @@ -1286,7 +1286,7 @@ static void start_dma_out(struct sync_port *port, const char *data, int count)
->  
->  		tr_cfg.tr_en = regk_sser_yes;
->  		REG_WR(sser, port->regi_sser, rw_tr_cfg, tr_cfg);
-> -		DEBUGTRDMA(pr_info(KERN_INFO "dma s\n"););
-> +		DEBUGTRDMA(pr_info("dma s\n"););
->  	} else {
->  		DMA_CONTINUE_DATA(port->regi_dmaout);
->  		DEBUGTRDMA(pr_info("dma c\n"););
-> @@ -1443,7 +1443,7 @@ static inline void handle_rx_packet(struct sync_port *port)
->  	reg_dma_rw_ack_intr ack_intr = { .data = regk_dma_yes };
->  	unsigned long flags;
->  
-> -	DEBUGRXINT(pr_info(KERN_INFO "!"));
-> +	DEBUGRXINT(pr_info("!"));
->  	spin_lock_irqsave(&port->lock, flags);
->  
->  	/* If we overrun the user experience is crap regardless if we
-> -- 
-> 2.3.0.rc0
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+Yours,
+Linus Walleij
