@@ -1,27 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758469AbbA0MRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:17:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34982 "EHLO
+	id S1759265AbbA0Mmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:42:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35032 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758421AbbA0MRs (ORCPT
+	with ESMTP id S932198AbbA0MR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:48 -0500
+	Tue, 27 Jan 2015 07:17:58 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jerry Hoemann <jerry.hoemann@hp.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ken Helias <kenhelias@firemail.de>,
+Cc: Arnaud Ebalard <arno@natisbad.org>, Mark Rutland <mark.rutland@arm.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Peter Huewe <peter.huewe@infineon.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Thierry Reding <treding@nvidia.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 035/126] fsnotify: next_i is freed during fsnotify_unmount_inodes.
-Date: Tue, 27 Jan 2015 12:15:40 +0000
-Message-Id: <1422361031-19364-36-git-send-email-luis.henriques@canonical.com>
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 036/126] drivers/rtc/rtc-isl12057.c: fix masking of register values
+Date: Tue, 27 Jan 2015 12:15:41 +0000
+Message-Id: <1422361031-19364-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,109 +37,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerry Hoemann <jerry.hoemann@hp.com>
+From: Arnaud Ebalard <arno@natisbad.org>
 
-commit 6424babfd68dd8a83d9c60a5242d27038856599f upstream.
+commit 5945b2880363ed7648e62aabba770ec57ff2a316 upstream.
 
-During file system stress testing on 3.10 and 3.12 based kernels, the
-umount command occasionally hung in fsnotify_unmount_inodes in the
-section of code:
+When Intersil ISL12057 support was added by commit 70e123373c05 ("rtc: Add
+support for Intersil ISL12057 I2C RTC chip"), two masks for time registers
+values imported from the device were either wrong or omitted, leading to
+additional bits from those registers to impact read values:
 
-                spin_lock(&inode->i_lock);
-                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
-                        spin_unlock(&inode->i_lock);
-                        continue;
-                }
+ - mask for hour register value when reading it in AM/PM mode. As
+   AM/PM mode is not the usual mode used by the driver, this error
+   would only have an impact on an externally configured RTC hour
+   later read by the driver.
+ - mask for month value. The lack of masking would provide an
+   erroneous value if century bit is set.
 
-As this section of code holds the global inode_sb_list_lock, eventually
-the system hangs trying to acquire the lock.
+This patch fixes those two masks.
 
-Multiple crash dumps showed:
-
-The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
-back at itself.  As this is not the value of list upon entry to the
-function, the kernel never exits the loop.
-
-To help narrow down problem, the call to list_del_init in
-inode_sb_list_del was changed to list_del.  This poisons the pointers in
-the i_sb_list and causes a kernel to panic if it transverse a freed
-inode.
-
-Subsequent stress testing paniced in fsnotify_unmount_inodes at the
-bottom of the list_for_each_entry_safe loop showing next_i had become
-free.
-
-We believe the root cause of the problem is that next_i is being freed
-during the window of time that the list_for_each_entry_safe loop
-temporarily releases inode_sb_list_lock to call fsnotify and
-fsnotify_inode_delete.
-
-The code in fsnotify_unmount_inodes attempts to prevent the freeing of
-inode and next_i by calling __iget.  However, the code doesn't do the
-__iget call on next_i
-
-	if i_count == 0 or
-	if i_state & (I_FREEING | I_WILL_FREE)
-
-The patch addresses this issue by advancing next_i in the above two cases
-until we either find a next_i which we can __iget or we reach the end of
-the list.  This makes the handling of next_i more closely match the
-handling of the variable "inode."
-
-The time to reproduce the hang is highly variable (from hours to days.) We
-ran the stress test on a 3.10 kernel with the proposed patch for a week
-without failure.
-
-During list_for_each_entry_safe, next_i is becoming free causing
-the loop to never terminate.  Advance next_i in those cases where
-__iget is not done.
-
-Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Ken Helias <kenhelias@firemail.de>
+Fixes: 70e123373c05 ("rtc: Add support for Intersil ISL12057 I2C RTC chip")
+Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Peter Huewe <peter.huewe@infineon.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thierry Reding <treding@nvidia.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Acked-by: Uwe Kleine-König <uwe@kleine-koenig.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/notify/inode_mark.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/rtc/rtc-isl12057.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
-index 74825be65b7b..fbb9dfb7b1d2 100644
---- a/fs/notify/inode_mark.c
-+++ b/fs/notify/inode_mark.c
-@@ -288,20 +288,25 @@ void fsnotify_unmount_inodes(struct list_head *list)
- 		spin_unlock(&inode->i_lock);
+diff --git a/drivers/rtc/rtc-isl12057.c b/drivers/rtc/rtc-isl12057.c
+index 455b601d731d..8c3f60737df8 100644
+--- a/drivers/rtc/rtc-isl12057.c
++++ b/drivers/rtc/rtc-isl12057.c
+@@ -88,7 +88,7 @@ static void isl12057_rtc_regs_to_tm(struct rtc_time *tm, u8 *regs)
+ 	tm->tm_min = bcd2bin(regs[ISL12057_REG_RTC_MN]);
  
- 		/* In case the dropping of a reference would nuke next_i. */
--		if ((&next_i->i_sb_list != list) &&
--		    atomic_read(&next_i->i_count)) {
-+		while (&next_i->i_sb_list != list) {
- 			spin_lock(&next_i->i_lock);
--			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
-+			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE)) &&
-+						atomic_read(&next_i->i_count)) {
- 				__iget(next_i);
- 				need_iput = next_i;
-+				spin_unlock(&next_i->i_lock);
-+				break;
- 			}
- 			spin_unlock(&next_i->i_lock);
-+			next_i = list_entry(next_i->i_sb_list.next,
-+						struct inode, i_sb_list);
- 		}
+ 	if (regs[ISL12057_REG_RTC_HR] & ISL12057_REG_RTC_HR_MIL) { /* AM/PM */
+-		tm->tm_hour = bcd2bin(regs[ISL12057_REG_RTC_HR] & 0x0f);
++		tm->tm_hour = bcd2bin(regs[ISL12057_REG_RTC_HR] & 0x1f);
+ 		if (regs[ISL12057_REG_RTC_HR] & ISL12057_REG_RTC_HR_PM)
+ 			tm->tm_hour += 12;
+ 	} else {					    /* 24 hour mode */
+@@ -97,7 +97,7 @@ static void isl12057_rtc_regs_to_tm(struct rtc_time *tm, u8 *regs)
  
- 		/*
--		 * We can safely drop inode_sb_list_lock here because we hold
--		 * references on both inode and next_i.  Also no new inodes
--		 * will be added since the umount has begun.
-+		 * We can safely drop inode_sb_list_lock here because either
-+		 * we actually hold references on both inode and next_i or
-+		 * end of list.  Also no new inodes will be added since the
-+		 * umount has begun.
- 		 */
- 		spin_unlock(&inode_sb_list_lock);
+ 	tm->tm_mday = bcd2bin(regs[ISL12057_REG_RTC_DT]);
+ 	tm->tm_wday = bcd2bin(regs[ISL12057_REG_RTC_DW]) - 1; /* starts at 1 */
+-	tm->tm_mon  = bcd2bin(regs[ISL12057_REG_RTC_MO]) - 1; /* starts at 1 */
++	tm->tm_mon  = bcd2bin(regs[ISL12057_REG_RTC_MO] & 0x1f) - 1; /* ditto */
+ 	tm->tm_year = bcd2bin(regs[ISL12057_REG_RTC_YR]) + 100;
+ }
  
 -- 
 2.1.4
