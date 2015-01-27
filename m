@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622AbbA0F5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 00:57:04 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:52088 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355AbbA0F5B (ORCPT
+	id S1753046AbbA0GA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:00:58 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:27292 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750917AbbA0GA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 00:57:01 -0500
+	Tue, 27 Jan 2015 01:00:56 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
+        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
+Subject: [PATCH v3 06/13] ARM: at91: move select SRAM to ARCH_AT91
+Date: Tue, 27 Jan 2015 13:56:42 +0800
+Message-ID: <1422338202-5906-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
+References: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Mon, 26 Jan 2015 21:56:40 -0800
-Message-ID: <CAMEtUuyfQF2eh+YszkmQa9g8kkZ0QZOTHbowa-npRyrV_mnJQQ@mail.gmail.com>
-Subject: BPF backend has landed in LLVM
-To: Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>,
-        Jesse Gross <jesse@nicira.com>, Thomas Graf <tgraf@suug.ch>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-llvm trunk now has BPF backend:
-https://twitter.com/llvmweekly/status/559076464973594625
-It's the one used to build samples/bpf/*_kern.c examples.
+Because the CONFIG_AT91_SLOW_CLOCK will be removed
+to simply the PM config, so move select SRAM.
 
-Compiler just emits extended BPF instructions. It's not
-aware whether they are used for tracing or networking,
-or how they're loaded into the kernel.
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/Kconfig |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-the backend has 'experimental' status,
-meaning that it doesn't get configured by default and
-one needs to use --enable-experimental-targets=bpf
-to build it.
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index c6956b8..cbaf0c8 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -24,6 +24,7 @@ config SOC_AT91SAM9
+ 	select GENERIC_CLOCKEVENTS
+ 	select MEMORY
+ 	select ATMEL_SDRAMC
++	select SRAM if PM
+ 
+ config SOC_SAMA5
+ 	bool
+@@ -34,6 +35,7 @@ config SOC_SAMA5
+ 	select MEMORY
+ 	select ATMEL_SDRAMC
+ 	select PHYLIB if NETDEVICES
++	select SRAM if PM
+ 
+ menu "Atmel AT91 System-on-Chip"
+ 
+@@ -91,6 +93,7 @@ config SOC_AT91RM9200
+ 	select CPU_ARM920T
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_AT91_USB_CLK
++	select SRAM if PM
+ 
+ config SOC_AT91SAM9260
+ 	bool "AT91SAM9260, AT91SAM9XE or AT91SAM9G20"
+@@ -159,7 +162,6 @@ comment "AT91 Feature Selections"
+ 
+ config AT91_SLOW_CLOCK
+ 	bool "Suspend-to-RAM disables main oscillator"
+-	select SRAM
+ 	depends on SUSPEND
+ 	help
+ 	  Select this if you want Suspend-to-RAM to save the most power
+-- 
+1.7.9.5
 
-todo list:
-- promote it from 'experimental' status by
-  the time llvm 3.7 is released :)
-- write front-end for tracing via mcjit api
-  llvm will be used as a library: parsing of some
-  tracing language, codegen, loading of bpf via
-  syscall will be done from one process
-- tighten accepted IR and improve error reporting
-  (currently it can compile too much of C that
-   kernel will later reject, so need to make strict)
-- test/fix what it emits on arm and other archs
-  (all little endian should work as-is, big-endian
-   might need some fixes)
-- support 32-bit subregisters
-
-If anyone has spare cycles to help out, it
-would be great.
-
-Thanks
