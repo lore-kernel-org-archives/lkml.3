@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609AbbA0Rtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:49:41 -0500
-Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:44182 "EHLO
+	id S932650AbbA0Ruq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:50:46 -0500
+Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:55606 "EHLO
 	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755486AbbA0Rtg (ORCPT
+	by vger.kernel.org with ESMTP id S1758358AbbA0Rtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 12:49:36 -0500
 X-Sender-Id: abbotti@mev.co.uk
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/9] staging: comedi: usbduxsigma: include new "comedi_usb.h" header
-Date: Tue, 27 Jan 2015 17:49:07 +0000
-Message-Id: <1422380949-5994-8-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 8/9] staging: comedi: vmk80xx: include new "comedi_usb.h" header
+Date: Tue, 27 Jan 2015 17:49:08 +0000
+Message-Id: <1422380949-5994-9-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422380949-5994-1-git-send-email-abbotti@mev.co.uk>
 References: <1422380949-5994-1-git-send-email-abbotti@mev.co.uk>
@@ -29,28 +29,25 @@ Include the new "../comedi_usb.h" header instead of <linux/usb.h> and
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/usbduxsigma.c | 3 +--
+ drivers/staging/comedi/drivers/vmk80xx.c | 3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-index 17e5a81..378c449 100644
---- a/drivers/staging/comedi/drivers/usbduxsigma.c
-+++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-@@ -45,13 +45,12 @@
- #include <linux/module.h>
- #include <linux/slab.h>
+diff --git a/drivers/staging/comedi/drivers/vmk80xx.c b/drivers/staging/comedi/drivers/vmk80xx.c
+index eb76460..e371183 100644
+--- a/drivers/staging/comedi/drivers/vmk80xx.c
++++ b/drivers/staging/comedi/drivers/vmk80xx.c
+@@ -42,10 +42,9 @@
  #include <linux/input.h>
+ #include <linux/slab.h>
+ #include <linux/poll.h>
 -#include <linux/usb.h>
- #include <linux/fcntl.h>
- #include <linux/compiler.h>
- #include <asm/unaligned.h>
+ #include <linux/uaccess.h>
  
- #include "comedi_fc.h"
 -#include "../comedidev.h"
 +#include "../comedi_usb.h"
  
- /* timeout for the USB-transfer in ms*/
- #define BULK_TIMEOUT 1000
+ enum {
+ 	DEVICE_VMK8055,
 -- 
 2.1.4
 
