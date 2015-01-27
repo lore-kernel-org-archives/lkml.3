@@ -1,122 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953AbbA0SD5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:03:57 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:62765 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184AbbA0SDz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:03:55 -0500
-Message-ID: <54C7D300.8070208@gmail.com>
-Date: Tue, 27 Jan 2015 19:03:44 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1759138AbbA0SE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:04:28 -0500
+Received: from mga03.intel.com ([134.134.136.65]:18587 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759092AbbA0SEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 13:04:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,476,1418112000"; 
+   d="scan'208";a="676876464"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        Kaixu Xia <kaixu.xia@linaro.org>, acme@infradead.org
+Subject: Re: [PATCH v9 12/14] x86: perf: intel_pt: Intel PT PMU driver
+In-Reply-To: <20150126165536.GA23038@twins.programming.kicks-ass.net>
+References: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com> <1421237903-181015-13-git-send-email-alexander.shishkin@linux.intel.com> <20150115090659.GQ23965@worktop.programming.kicks-ass.net> <87egqwmdhe.fsf@ashishki-desk.ger.corp.intel.com> <87twzllhbz.fsf@ashishki-desk.ger.corp.intel.com> <20150126165536.GA23038@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.18.2 (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
+Date: Tue, 27 Jan 2015 20:03:47 +0200
+Message-ID: <87zj9485j0.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>
-CC: mtk.manpages@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, "Theodore T'so" <tytso@mit.edu>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>	<54BE5DC8.70706@gmail.com>	<54BE9D08.7010804@zonque.org>	<54BF805B.4000609@gmail.com>	<54BFDAAA.50203@zonque.org>	<54C0CE8A.5080805@gmail.com>	<CANq1E4S=3qNw599L85uj-8aXwxeV+mcurB_Nu_rHH8opAeePjw@mail.gmail.com>	<54C10DDC.9000503@gmail.com>	<20150123160854.GA5210@kroah.com>	<54C65346.5070504@gmail.com> <CANq1E4SkHhs1pWUe-TzG7bzk1M-Q++mB2vmQGuYx0RMF53wg4Q@mail.gmail.com>
-In-Reply-To: <CANq1E4SkHhs1pWUe-TzG7bzk1M-Q++mB2vmQGuYx0RMF53wg4Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Peter Zijlstra <peterz@infradead.org> writes:
+>
+> Yes that'll work.
 
-On 01/27/2015 04:05 PM, David Herrmann wrote:
-> Hi
-> 
-> On Mon, Jan 26, 2015 at 3:46 PM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
->> Hello Greg,
->>
->> On 01/23/2015 05:08 PM, Greg Kroah-Hartman wrote:
->>> On Thu, Jan 22, 2015 at 09:49:00AM -0500, Austin S Hemmelgarn wrote:
->>>> While I agree that there should be a way for userspace to get the list of
->>>> supported operations, userspace apps will only actually care about that
->>>> once, when they begin talking to kdbus, because (ignoring the live kernel
->>>> patching that people have been working on recently) the list of supported
->>>> operations isn't going to change while the system is running.  While a u64
->>>> copy has relatively low overhead, it does have overhead, and that is very
->>>> significant when you consider part of the reason some people want kdbus is
->>>> for the performance gain.  Especially for those automotive applications that
->>>> have been mentioned which fire off thousands of messages during start-up,
->>>> every little bit of performance is significant.
->>>
->>> A single u64 in a structure is not going to be measurable at all,
->>> processors just copy memory too fast these days for 4 extra bytes to be
->>> noticable.
->>
->> It depends on the definition of measurable, I suppose, but this statement
->> appears incorrect to me. In some cases (e.g., kdbus_msg_info) we're talking
->> about *two* u64 fields (kernel_gs, kernel_msg_flags) being used to pass back
->> sets of valid flags. That's 16 bytes, and it definitely makes a difference.
->> Simply running a loop that does a naive memcpy() in a tight user-space
->> loop (code below), I see the following for the execution of 1e9 loops:
->>
->>     Including the two extra u64 fields: 3.2 sec
->>     Without the two extra u64 fields:   2.6 sec
->>
->> On the same box, doing 1e9 calls to getppid() (i.e., pretty much the
->> simplest syscall, giving us a rough measure of the context switch) takes
->> 68 seconds. In other words, the cost of copying those 16 bytes is about 1%
->> of the base context switch/syscall cost. I assume the costs of copying
->> those 16 bytes across the kernel-user-space boundary would not be cheaper,
->> but have not tested that. If my assumption is correct, then 1% seems a
->> significant figure to me in an API whose raison d'être is speed.
-> 
-> I have no idea how this is related to any kdbus ioctl?
-> 
-> A 16byte copy does not affect the performance of kdbus message
-> transactions in any way that matters.
+Ok, let me respin this last patch, with the per-task event counter to
+prevent cpu-wide events together with per-task events. The idea is that
+cpu-wide events are disallowed when per-task events exist on this pmu
+and vice versa. It adds an atomic counter to struct pmu to account for
+per-task events.
 
-I'm not sure if it's related/significant or not, since I'm ignorant
-of the performance figures for kdbus. I just got curious when Greg
-stated that the cost of copying would not be noticeable. (I got curious 
-also about my assumption, and did an experiment with a dummy system call
-that throws bytes across the fence into user space. The cost of an
-extra 16 bytes (56 to 72 bytes) is about 3% of the base syscall/context 
-switch cost.)
+If this looks all right to you, I can resend the patchset.
 
->>> So let's make this as easy as possible for userspace, making
->>> it simpler logic there, which is much more important than saving
->>> theoretical time in the kernel.
->>
->> But this also missed the other part of the point. Copying these fields on
->> every operation, when in fact they are only needed once, clutters the API,
->> in my opinion. Good APIs are as simple as they can be to do their job.
->> Redundancy is an enemy of simplicity. Simplest would have been a one time
->> API that returns a structure containing all of the supported flags across
->> the API. Alternatively, the traditional EINVAL approach is well understood,
->> and suffices.
-> 
-> We're going to drop "kernel_flags" in favor of a new
-> KDBUS_FLAG_NEGOTIATE flag which asks the kernel to do feature
-> negotiation for this ioctl and return the supported flags/items inline
-> (overwriting the passed data). The ioctl will not be executed and will
-> not affect the state of the FD.
-> I hope this keeps the API simple.
+Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+---
+ include/linux/perf_event.h |  1 +
+ kernel/events/core.c       | 87 ++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 81 insertions(+), 7 deletions(-)
 
-Not sure I quite understand the details from your description, but I assume 
-the it'll end up in the doc, and I'll try to take a look later.
-
-Thanks,
-
-Michael
-
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index e00d59dc08..bdbba674de 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -189,6 +189,7 @@ struct pmu {
+ 
+ 	int * __percpu			pmu_disable_count;
+ 	struct perf_cpu_context * __percpu pmu_cpu_context;
++	atomic_t			nr_per_task_events;
+ 	int				task_ctx_nr;
+ 	int				hrtimer_interval_ms;
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 35ed22a0d8..c0a0cd90ba 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3335,6 +3335,44 @@ static void unaccount_event(struct perf_event *event)
+ 	unaccount_event_cpu(event, event->cpu);
+ }
+ 
++static int account_per_task_counter(struct perf_event *event)
++{
++	struct pmu *pmu = event->pmu;
++
++	if (!(pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
++		return 0;
++
++	/*
++	 * Prevent co-existence of per-task and cpu-wide events on the
++	 * same exclusive pmu.
++	 *
++	 * Negative pmu::nr_per_task_events means there are cpu-wide
++	 * events on this "exclusive" pmu, positive means there are
++	 * per-task events.
++	 */
++	if (event->cpu == -1 &&
++	    !atomic_inc_unless_negative(&pmu->nr_per_task_events))
++		return -EBUSY;
++	else if (!(event->attach_state & PERF_ATTACH_TASK) &&
++		 !atomic_dec_unless_positive(&pmu->nr_per_task_events))
++		return -EBUSY;
++
++	return 0;
++}
++
++static void unaccount_per_task_counter(struct perf_event *event)
++{
++	struct pmu *pmu = event->pmu;
++
++	if (!(pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
++		return 0;
++
++	if (event->cpu == -1)
++		atomic_dec(&pmu->nr_per_task_events);
++	else if (!(event->attach_state & PERF_ATTACH_TASK))
++		atomic_inc(&pmu->nr_per_task_events);
++}
++
+ static void __free_event(struct perf_event *event)
+ {
+ 	if (!event->parent) {
+@@ -3348,8 +3386,11 @@ static void __free_event(struct perf_event *event)
+ 	if (event->ctx)
+ 		put_ctx(event->ctx);
+ 
+-	if (event->pmu)
++	if (event->pmu) {
++		unaccount_per_task_counter(event);
++
+ 		module_put(event->pmu->module);
++	}
+ 
+ 	call_rcu(&event->rcu_head, free_event_rcu);
+ }
+@@ -6908,6 +6949,7 @@ got_cpu_context:
+ 		pmu->event_idx = perf_event_idx_default;
+ 
+ 	list_add_rcu(&pmu->entry, &pmus);
++	atomic_set(&pmu->nr_per_task_events, 0);
+ 	ret = 0;
+ unlock:
+ 	mutex_unlock(&pmus_lock);
+@@ -7143,16 +7185,23 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 		goto err_ns;
+ 	}
+ 
++	err = account_per_task_counter(event);
++	if (err)
++		goto err_pmu;
++
+ 	if (!event->parent) {
+ 		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 			err = get_callchain_buffers();
+ 			if (err)
+-				goto err_pmu;
++				goto err_per_task;
+ 		}
+ 	}
+ 
+ 	return event;
+ 
++err_per_task:
++	unaccount_per_task_counter(event);
++
+ err_pmu:
+ 	if (event->destroy)
+ 		event->destroy(event);
+@@ -7360,14 +7409,11 @@ static bool exclusive_event_match(struct perf_event *e1, struct perf_event *e2)
+ 	return false;
+ }
+ 
+-static bool exclusive_event_ok(struct perf_event *event,
+-			      struct perf_event_context *ctx)
++static bool __exclusive_event_ok(struct perf_event *event,
++				 struct perf_event_context *ctx)
+ {
+ 	struct perf_event *iter_event;
+ 
+-	if (!(event->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
+-		return true;
+-
+ 	list_for_each_entry(iter_event, &ctx->event_list, event_entry) {
+ 		if (exclusive_event_match(iter_event, event))
+ 			return false;
+@@ -7376,6 +7422,33 @@ static bool exclusive_event_ok(struct perf_event *event,
+ 	return true;
+ }
+ 
++static bool exclusive_event_ok(struct perf_event *event,
++			       struct perf_event_context *ctx)
++{
++	struct pmu *pmu = event->pmu;
++	bool ret = true;
++
++	if (!(pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
++		return true;
++
++	if (!__exclusive_event_ok(event, ctx))
++		return false;
++
++	if (ctx->task) {
++		if (event->cpu != -1) {
++			struct perf_event_context *cpuctx;
++
++			cpuctx = &per_cpu_ptr(pmu->pmu_cpu_context, event->cpu)->ctx;
++
++			mutex_lock(&cpuctx->mutex);
++			ret = __exclusive_event_ok(event, cpuctx);
++			mutex_unlock(&cpuctx->mutex);
++		}
++	}
++
++	return ret;
++}
++
+ /**
+  * sys_perf_event_open - open a performance event, associate it to a task/cpu
+  *
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+2.1.4
+
