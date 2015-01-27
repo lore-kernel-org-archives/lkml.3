@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945AbbA0T4H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 14:56:07 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:16899 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758819AbbA0T4D (ORCPT
+	id S932590AbbA0Tnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 14:43:50 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:46086 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbbA0Tns convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 14:56:03 -0500
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Jan 2015 14:56:03 EST
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Tue, 27 Jan 2015 14:40:54 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Rob Herring <robherring2@gmail.com>,
-        =?ISO-8859-15?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-In-reply-to: <20150127132127.GA869@amd>
-Message-id: <alpine.LFD.2.11.1501271439020.1322@knanqh.ubzr>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <201412041857.49341@pali>
- <CAL_JsqJ9i0jwaL1cyeomQG=bhhcnEgdGWYOqkcwidyk5xOUukg@mail.gmail.com>
- <201501262016.52079@pali>
- <CAL_JsqL_EEg7tC-q8wV5v8jAfPSiri4z19iJfz2r7zntRwPyOg@mail.gmail.com>
- <20150127132127.GA869@amd>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 27 Jan 2015 14:43:48 -0500
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Geert Uytterhoeven <geert+renesas@glider.be>,
+        "Stephen Boyd" <sboyd@codeaurora.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1421684985-12397-1-git-send-email-geert+renesas@glider.be>
+Cc: "Simon Horman" <horms+renesas@verge.net.au>,
+        "Magnus Damm" <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1421684985-12397-1-git-send-email-geert+renesas@glider.be>
+Message-ID: <20150127194333.22722.39548@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [git pull] clk/shmobile updates for v3.20
+Date: Tue, 27 Jan 2015 11:43:33 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015, Pavel Machek wrote:
-
-> On Mon 2015-01-26 14:33:21, Rob Herring wrote:
-> > These would be non-standard fields which are not upstream. I don't
-> > know that we care in that case...
+Quoting Geert Uytterhoeven (2015-01-19 08:29:45)
+>         Hi Mike,
 > 
-> Other devices are going to care about boot reason, too, and we might
-> as well be compatible...
+> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+> 
+>   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/geert/renesas-drivers.git clk-shmobile-for-3.20
 
-Care to elaborate on that statement please?  What does this have to do 
-with ATAGs?
+Pulled.
 
+Regards,
+Mike
 
-Nicolas
+> 
+> for you to fetch changes up to 1484276119fb5083a3a8cb0293e763363c317661:
+> 
+>   clk: shmobile: Add R-Car Gen2 ADSP clock support (2015-01-08 16:14:31 +0100)
+> 
+> Summary:
+>   - A bug fix needed on sh73a0,
+>   - r8a7793 support,
+>   - r8a73a4 CCF implementation and documentation,
+>   - R-Car Gen2 CAN and ADSP clock support.
+> 
+> Thanks for pulling!
+> 
+> ----------------------------------------------------------------
+> Geert Uytterhoeven (1):
+>       clk: shmobile: div6: Avoid changing divisor in .disable()
+> 
+> Hisashi Nakamura (1):
+>       clk: shmobile: Add r8a7793 support
+> 
+> Sergei Shtylyov (2):
+>       clk: shmobile: Add R-Car Gen2 RCAN clock support
+>       clk: shmobile: Add R-Car Gen2 ADSP clock support
+> 
+> Ulrich Hecht (2):
+>       clk: shmobile: r8a73a4 common clock framework implementation
+>       clk: shmobile: Add r8a73a4 SoC to MSTP bindings
+> 
+> Yoshihiro Kaneko (1):
+>       clk: shmobile: r8a7793: document CPG clock support
+> 
+>  .../bindings/clock/renesas,cpg-mstp-clocks.txt     |   1 +
+>  .../bindings/clock/renesas,r8a73a4-cpg-clocks.txt  |  33 +++
+>  .../clock/renesas,rcar-gen2-cpg-clocks.txt         |  12 +-
+>  drivers/clk/shmobile/Makefile                      |   2 +
+>  drivers/clk/shmobile/clk-div6.c                    |  15 +-
+>  drivers/clk/shmobile/clk-r8a73a4.c                 | 241 +++++++++++++++++++++
+>  drivers/clk/shmobile/clk-rcar-gen2.c               |  88 ++++++++
+>  7 files changed, 384 insertions(+), 8 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/renesas,r8a73a4-cpg-clocks.txt
+>  create mode 100644 drivers/clk/shmobile/clk-r8a73a4.c
+> 
+> Gr{oetje,eeting}s,
+> 
+>                                                 Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                                             -- Linus Torvalds
