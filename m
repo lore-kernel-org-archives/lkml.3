@@ -1,20 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917AbbA0MpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:45:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34968 "EHLO
+	id S932494AbbA0Mnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:43:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35022 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758402AbbA0MRm (ORCPT
+	with ESMTP id S1758421AbbA0MR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:42 -0500
+	Tue, 27 Jan 2015 07:17:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 033/126] xen/arm/arm64: introduce xen_arch_need_swiotlb
-Date: Tue, 27 Jan 2015 12:15:38 +0000
-Message-Id: <1422361031-19364-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 034/126] perf session: Do not fail on processing out of order event
+Date: Tue, 27 Jan 2015 12:15:39 +0000
+Message-Id: <1422361031-19364-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,109 +38,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-commit a4dba130891271084344c12537731542ec77cb85 upstream.
+commit f61ff6c06dc8f32c7036013ad802c899ec590607 upstream.
 
-Introduce an arch specific function to find out whether a particular dma
-mapping operation needs to bounce on the swiotlb buffer.
+Linus reported perf report command being interrupted due to processing
+of 'out of order' event, with following error:
 
-On ARM and ARM64, if the page involved is a foreign page and the device
-is not coherent, we need to bounce because at unmap time we cannot
-execute any required cache maintenance operations (we don't know how to
-find the pfn from the mfn).
+  Timestamp below last timeslice flush
+  0x5733a8 [0x28]: failed to process type: 3
 
-No change of behaviour for x86.
+I could reproduce the issue and in my case it was caused by one CPU
+(mmap) being behind during record and userspace mmap reader seeing the
+data after other CPUs data were already stored.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[ stefano: The commit needs to be slightly modified because
-  is_device_dma_coherent is not available on kernels < 3.19, so I just
-  removed the call, thus assuming that the device is not coherent on arm
-  (slower but safe) ]
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-[ luis: backported to 3.16: used backport by stefano ]
+This is expected under some circumstances because we need to limit the
+number of events that we queue for reordering when we receive a
+PERF_RECORD_FINISHED_ROUND or when we force flush due to memory
+pressure.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1417016371-30249-1-git-send-email-jolsa@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+[zhangzhiqiang: backport to 3.10:
+ - adjust context
+ - commit f61ff6c06d struct events_stats was defined in tools/perf/util/event.h
+   while 3.10 stable defined in tools/perf/util/hist.h.
+ - 3.10 stable there is no pr_oe_time() which used for debug.
+ - After the above adjustments, becomes same to the original patch:
+   https://github.com/torvalds/linux/commit/f61ff6c06dc8f32c7036013ad802c899ec590607
+]
+Signed-off-by: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
+[ luis: backported to 3.16: used zhangzhiqiang backport to 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/include/asm/xen/page.h | 4 ++++
- arch/arm/xen/mm.c               | 7 +++++++
- arch/x86/include/asm/xen/page.h | 7 +++++++
- drivers/xen/swiotlb-xen.c       | 5 ++++-
- 4 files changed, 22 insertions(+), 1 deletion(-)
+ tools/perf/util/hist.h    | 1 +
+ tools/perf/util/session.c | 6 ++++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-index ded062f9b358..df89aa3b1f03 100644
---- a/arch/arm/include/asm/xen/page.h
-+++ b/arch/arm/include/asm/xen/page.h
-@@ -116,4 +116,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
- #define xen_unmap(cookie) iounmap((cookie))
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 742f49a85725..c6d42fa4d3dd 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -47,6 +47,7 @@ struct events_stats {
+ 	u32 nr_invalid_chains;
+ 	u32 nr_unknown_id;
+ 	u32 nr_unprocessable_samples;
++	u32 nr_unordered_events;
+ };
  
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn);
+ enum hist_column {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 64a186edc7be..7a4517c4510d 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -638,8 +638,7 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ 		return -ETIME;
+ 
+ 	if (timestamp < s->ordered_samples.last_flush) {
+-		printf("Warning: Timestamp below last timeslice flush\n");
+-		return -EINVAL;
++		s->stats.nr_unordered_events++;
+ 	}
+ 
+ 	if (!list_empty(sc)) {
+@@ -1136,6 +1135,9 @@ static void perf_session__warn_about_errors(const struct perf_session *session,
+ 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
+ 			    session->stats.nr_unprocessable_samples);
+ 	}
 +
- #endif /* _ASM_ARM_XEN_PAGE_H */
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index b0e77de99148..f8a576b1d9bb 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -16,6 +16,13 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/interface.h>
++	if (session->stats.nr_unordered_events != 0)
++		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
+ }
  
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn)
-+{
-+	return (pfn != mfn);
-+}
-+
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				 unsigned int address_bits,
- 				 dma_addr_t *dma_handle)
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index c949923a5668..f58ef6c0613b 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
- #define xen_remap(cookie, size) ioremap((cookie), (size));
- #define xen_unmap(cookie) iounmap((cookie))
- 
-+static inline bool xen_arch_need_swiotlb(struct device *dev,
-+					 unsigned long pfn,
-+					 unsigned long mfn)
-+{
-+	return false;
-+}
-+
- #endif /* _ASM_X86_XEN_PAGE_H */
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 9df5d6ec7eec..de37cc22b9a5 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -397,7 +397,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	 * buffering it.
- 	 */
- 	if (dma_capable(dev, dev_addr, size) &&
--	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-+	    !range_straddles_page_boundary(phys, size) &&
-+		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-+		!swiotlb_force) {
- 		/* we are not interested in the dma_addr returned by
- 		 * xen_dma_map_page, only in the potential cache flushes executed
- 		 * by the function. */
-@@ -555,6 +557,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
- 
- 		if (swiotlb_force ||
-+		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
- 		    !dma_capable(hwdev, dev_addr, sg->length) ||
- 		    range_straddles_page_boundary(paddr, sg->length)) {
- 			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
+ volatile int session_done;
 -- 
 2.1.4
 
