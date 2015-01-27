@@ -1,46 +1,634 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758353AbbA0QKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:10:21 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:39077 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613AbbA0QKR (ORCPT
+	id S1758576AbbA0QMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:12:12 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:45851 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925AbbA0QMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:10:17 -0500
-Date: Tue, 27 Jan 2015 11:10:09 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org, aswin@hp.com
-Subject: Re: [PATCH] cgroup: Initialize root in cgroup_mount
-Message-ID: <20150127161009.GB12314@htj.dyndns.org>
-References: <1422318099.6710.3.camel@j-VirtualBox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1422318099.6710.3.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 27 Jan 2015 11:12:09 -0500
+From: Matt Fleming <matt@codeblueprint.co.uk>
+To: Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@alien8.de>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH] x86/efi: Avoid triple faults during EFI mixed mode calls
+Date: Tue, 27 Jan 2015 16:12:04 +0000
+Message-Id: <1422375124-21265-1-git-send-email-matt@codeblueprint.co.uk>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 04:21:39PM -0800, Jason Low wrote:
-> Compiling kernel/ causes warnings:
-> 
->     ... ‘root’ may be used uninitialized in this function
->     ... ‘root’ was declared here
-> 
-> This isn't an issue since there is already logic to not use
-> root if we goto out_unlock without setting root.
-> 
-> Explicitly initialize root to NULL to suppress this so that we can
-> focus on catching warnings that can potentially cause bigger issues.
+From: Matt Fleming <matt.fleming@intel.com>
 
-Which complier are you using?  The variable, AFAICS, is always set
-before being deref'd and the function hasn't triggered spurious
-warnings for quite a while with differing versions of gcc.
+Andy pointed out that if an NMI or MCE is received while we're in the
+middle of an EFI mixed mode call a triple fault will occur. This can
+happen, for example, when issuing an EFI mixed mode call while running
+perf.
 
-Thanks.
+The reason for the triple fault is that we execute the mixed mode call
+in 32-bit mode with paging disabled but with 64-bit kernel IDT handlers
+installed throughout the call.
 
+At Andy's suggestion, stop playing the games we currently do at runtime,
+such as disabling paging and installing a 32-bit GDT for __KERNEL_CS. We
+can simply switch to the __KERNEL32_CS descriptor before invoking
+firmware services, and run in compatibility mode. This way, if an
+NMI/MCE does occur the kernel IDT handler will execute correctly, since
+it'll jump to __KERNEL_CS automatically.
+
+However, this change is only possible post-ExitBootServices(). Before
+then the firmware "owns" the machine and expects for its 32-bit IDT
+handlers to be left intact to service interrupts, etc.
+
+So, we now need to distinguish between early boot and runtime
+invocations of EFI services. During early boot, we need to restore the
+GDT that the firmware expects to be present. We can only jump to the
+__KERNEL32_CS code segment for mixed mode calls after ExitBootServices()
+has been invoked.
+
+A liberal sprinkling of comments in the thunking code should make the
+differences in early and late environments more apparent.
+
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/boot/compressed/Makefile       |   1 +
+ arch/x86/boot/compressed/efi_stub_64.S  |  25 ----
+ arch/x86/boot/compressed/efi_thunk_64.S | 196 ++++++++++++++++++++++++++++++++
+ arch/x86/platform/efi/efi_stub_64.S     | 161 --------------------------
+ arch/x86/platform/efi/efi_thunk_64.S    | 121 +++++++++++++++++---
+ 5 files changed, 301 insertions(+), 203 deletions(-)
+ create mode 100644 arch/x86/boot/compressed/efi_thunk_64.S
+
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 20db5b3609de..911bfc692c16 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -37,6 +37,7 @@ $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
+ 
+ vmlinux-objs-$(CONFIG_EFI_STUB) += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o \
+ 	$(objtree)/drivers/firmware/efi/libstub/lib.a
++vmlinux-objs-$(CONFIG_EFI_MIXED) += $(obj)/efi_thunk_$(BITS).o
+ 
+ $(obj)/vmlinux: $(vmlinux-objs-y) FORCE
+ 	$(call if_changed,ld)
+diff --git a/arch/x86/boot/compressed/efi_stub_64.S b/arch/x86/boot/compressed/efi_stub_64.S
+index 7ff3632806b1..99494dff2113 100644
+--- a/arch/x86/boot/compressed/efi_stub_64.S
++++ b/arch/x86/boot/compressed/efi_stub_64.S
+@@ -3,28 +3,3 @@
+ #include <asm/processor-flags.h>
+ 
+ #include "../../platform/efi/efi_stub_64.S"
+-
+-#ifdef CONFIG_EFI_MIXED
+-	.code64
+-	.text
+-ENTRY(efi64_thunk)
+-	push	%rbp
+-	push	%rbx
+-
+-	subq	$16, %rsp
+-	leaq	efi_exit32(%rip), %rax
+-	movl	%eax, 8(%rsp)
+-	leaq	efi_gdt64(%rip), %rax
+-	movl	%eax, 4(%rsp)
+-	movl	%eax, 2(%rax)		/* Fixup the gdt base address */
+-	leaq	efi32_boot_gdt(%rip), %rax
+-	movl	%eax, (%rsp)
+-
+-	call	__efi64_thunk
+-
+-	addq	$16, %rsp
+-	pop	%rbx
+-	pop	%rbp
+-	ret
+-ENDPROC(efi64_thunk)
+-#endif /* CONFIG_EFI_MIXED */
+diff --git a/arch/x86/boot/compressed/efi_thunk_64.S b/arch/x86/boot/compressed/efi_thunk_64.S
+new file mode 100644
+index 000000000000..630384a4c14a
+--- /dev/null
++++ b/arch/x86/boot/compressed/efi_thunk_64.S
+@@ -0,0 +1,196 @@
++/*
++ * Copyright (C) 2014, 2015 Intel Corporation; author Matt Fleming
++ *
++ * Early support for invoking 32-bit EFI services from a 64-bit kernel.
++ *
++ * Because this thunking occurs before ExitBootServices() we have to
++ * restore the firmware's 32-bit GDT before we make EFI serivce calls,
++ * since the firmware's 32-bit IDT is still currently installed and it
++ * needs to be able to service interrupts.
++ *
++ * On the plus side, we don't have to worry about mangling 64-bit
++ * addresses into 32-bits because we're executing with an identify
++ * mapped pagetable and haven't transitioned to 64-bit virtual addresses
++ * yet.
++ */
++
++#include <linux/linkage.h>
++#include <asm/msr.h>
++#include <asm/page_types.h>
++#include <asm/processor-flags.h>
++#include <asm/segment.h>
++
++	.code64
++	.text
++ENTRY(efi64_thunk)
++	push	%rbp
++	push	%rbx
++
++	subq	$8, %rsp
++	leaq	efi_exit32(%rip), %rax
++	movl	%eax, 4(%rsp)
++	leaq	efi_gdt64(%rip), %rax
++	movl	%eax, (%rsp)
++	movl	%eax, 2(%rax)		/* Fixup the gdt base address */
++
++	movl	%ds, %eax
++	push	%rax
++	movl	%es, %eax
++	push	%rax
++	movl	%ss, %eax
++	push	%rax
++
++	/*
++	 * Convert x86-64 ABI params to i386 ABI
++	 */
++	subq	$32, %rsp
++	movl	%esi, 0x0(%rsp)
++	movl	%edx, 0x4(%rsp)
++	movl	%ecx, 0x8(%rsp)
++	movq	%r8, %rsi
++	movl	%esi, 0xc(%rsp)
++	movq	%r9, %rsi
++	movl	%esi,  0x10(%rsp)
++
++	sgdt	save_gdt(%rip)
++
++	leaq	1f(%rip), %rbx
++	movq	%rbx, func_rt_ptr(%rip)
++
++	/*
++	 * Switch to gdt with 32-bit segments. This is the firmware GDT
++	 * that was installed when the kernel started executing. This
++	 * pointer was saved at the EFI stub entry point in head_64.S.
++	 */
++	leaq	efi32_boot_gdt(%rip), %rax
++	lgdt	(%rax)
++
++	pushq	$__KERNEL_CS
++	leaq	efi_enter32(%rip), %rax
++	pushq	%rax
++	lretq
++
++1:	addq	$32, %rsp
++
++	lgdt	save_gdt(%rip)
++
++	pop	%rbx
++	movl	%ebx, %ss
++	pop	%rbx
++	movl	%ebx, %es
++	pop	%rbx
++	movl	%ebx, %ds
++
++	/*
++	 * Convert 32-bit status code into 64-bit.
++	 */
++	test	%rax, %rax
++	jz	1f
++	movl	%eax, %ecx
++	andl	$0x0fffffff, %ecx
++	andl	$0xf0000000, %eax
++	shl	$32, %rax
++	or	%rcx, %rax
++1:
++	addq	$8, %rsp
++	pop	%rbx
++	pop	%rbp
++	ret
++ENDPROC(efi64_thunk)
++
++ENTRY(efi_exit32)
++	movq	func_rt_ptr(%rip), %rax
++	push	%rax
++	mov	%rdi, %rax
++	ret
++ENDPROC(efi_exit32)
++
++	.code32
++/*
++ * EFI service pointer must be in %edi.
++ *
++ * The stack should represent the 32-bit calling convention.
++ */
++ENTRY(efi_enter32)
++	movl	$__KERNEL_DS, %eax
++	movl	%eax, %ds
++	movl	%eax, %es
++	movl	%eax, %ss
++
++	/* Reload pgtables */
++	movl	%cr3, %eax
++	movl	%eax, %cr3
++
++	/* Disable paging */
++	movl	%cr0, %eax
++	btrl	$X86_CR0_PG_BIT, %eax
++	movl	%eax, %cr0
++
++	/* Disable long mode via EFER */
++	movl	$MSR_EFER, %ecx
++	rdmsr
++	btrl	$_EFER_LME, %eax
++	wrmsr
++
++	call	*%edi
++
++	/* We must preserve return value */
++	movl	%eax, %edi
++
++	/*
++	 * Some firmware will return with interrupts enabled. Be sure to
++	 * disable them before we switch GDTs.
++	 */
++	cli
++
++	movl	56(%esp), %eax
++	movl	%eax, 2(%eax)
++	lgdtl	(%eax)
++
++	movl	%cr4, %eax
++	btsl	$(X86_CR4_PAE_BIT), %eax
++	movl	%eax, %cr4
++
++	movl	%cr3, %eax
++	movl	%eax, %cr3
++
++	movl	$MSR_EFER, %ecx
++	rdmsr
++	btsl	$_EFER_LME, %eax
++	wrmsr
++
++	xorl	%eax, %eax
++	lldt	%ax
++
++	movl	60(%esp), %eax
++	pushl	$__KERNEL_CS
++	pushl	%eax
++
++	/* Enable paging */
++	movl	%cr0, %eax
++	btsl	$X86_CR0_PG_BIT, %eax
++	movl	%eax, %cr0
++	lret
++ENDPROC(efi_enter32)
++
++	.data
++	.balign	8
++	.global	efi32_boot_gdt
++efi32_boot_gdt:	.word	0
++		.quad	0
++
++save_gdt:	.word	0
++		.quad	0
++func_rt_ptr:	.quad	0
++
++	.global efi_gdt64
++efi_gdt64:
++	.word	efi_gdt64_end - efi_gdt64
++	.long	0			/* Filled out by user */
++	.word	0
++	.quad	0x0000000000000000	/* NULL descriptor */
++	.quad	0x00af9a000000ffff	/* __KERNEL_CS */
++	.quad	0x00cf92000000ffff	/* __KERNEL_DS */
++	.quad	0x0080890000000000	/* TS descriptor */
++	.quad   0x0000000000000000	/* TS continued */
++efi_gdt64_end:
+diff --git a/arch/x86/platform/efi/efi_stub_64.S b/arch/x86/platform/efi/efi_stub_64.S
+index 5fcda7272550..86d0f9e08dd9 100644
+--- a/arch/x86/platform/efi/efi_stub_64.S
++++ b/arch/x86/platform/efi/efi_stub_64.S
+@@ -91,167 +91,6 @@ ENTRY(efi_call)
+ 	ret
+ ENDPROC(efi_call)
+ 
+-#ifdef CONFIG_EFI_MIXED
+-
+-/*
+- * We run this function from the 1:1 mapping.
+- *
+- * This function must be invoked with a 1:1 mapped stack.
+- */
+-ENTRY(__efi64_thunk)
+-	movl	%ds, %eax
+-	push	%rax
+-	movl	%es, %eax
+-	push	%rax
+-	movl	%ss, %eax
+-	push	%rax
+-
+-	subq	$32, %rsp
+-	movl	%esi, 0x0(%rsp)
+-	movl	%edx, 0x4(%rsp)
+-	movl	%ecx, 0x8(%rsp)
+-	movq	%r8, %rsi
+-	movl	%esi, 0xc(%rsp)
+-	movq	%r9, %rsi
+-	movl	%esi,  0x10(%rsp)
+-
+-	sgdt	save_gdt(%rip)
+-
+-	leaq	1f(%rip), %rbx
+-	movq	%rbx, func_rt_ptr(%rip)
+-
+-	/* Switch to gdt with 32-bit segments */
+-	movl	64(%rsp), %eax
+-	lgdt	(%rax)
+-
+-	leaq	efi_enter32(%rip), %rax
+-	pushq	$__KERNEL_CS
+-	pushq	%rax
+-	lretq
+-
+-1:	addq	$32, %rsp
+-
+-	lgdt	save_gdt(%rip)
+-
+-	pop	%rbx
+-	movl	%ebx, %ss
+-	pop	%rbx
+-	movl	%ebx, %es
+-	pop	%rbx
+-	movl	%ebx, %ds
+-
+-	/*
+-	 * Convert 32-bit status code into 64-bit.
+-	 */
+-	test	%rax, %rax
+-	jz	1f
+-	movl	%eax, %ecx
+-	andl	$0x0fffffff, %ecx
+-	andl	$0xf0000000, %eax
+-	shl	$32, %rax
+-	or	%rcx, %rax
+-1:
+-	ret
+-ENDPROC(__efi64_thunk)
+-
+-ENTRY(efi_exit32)
+-	movq	func_rt_ptr(%rip), %rax
+-	push	%rax
+-	mov	%rdi, %rax
+-	ret
+-ENDPROC(efi_exit32)
+-
+-	.code32
+-/*
+- * EFI service pointer must be in %edi.
+- *
+- * The stack should represent the 32-bit calling convention.
+- */
+-ENTRY(efi_enter32)
+-	movl	$__KERNEL_DS, %eax
+-	movl	%eax, %ds
+-	movl	%eax, %es
+-	movl	%eax, %ss
+-
+-	/* Reload pgtables */
+-	movl	%cr3, %eax
+-	movl	%eax, %cr3
+-
+-	/* Disable paging */
+-	movl	%cr0, %eax
+-	btrl	$X86_CR0_PG_BIT, %eax
+-	movl	%eax, %cr0
+-
+-	/* Disable long mode via EFER */
+-	movl	$MSR_EFER, %ecx
+-	rdmsr
+-	btrl	$_EFER_LME, %eax
+-	wrmsr
+-
+-	call	*%edi
+-
+-	/* We must preserve return value */
+-	movl	%eax, %edi
+-
+-	/*
+-	 * Some firmware will return with interrupts enabled. Be sure to
+-	 * disable them before we switch GDTs.
+-	 */
+-	cli
+-
+-	movl	68(%esp), %eax
+-	movl	%eax, 2(%eax)
+-	lgdtl	(%eax)
+-
+-	movl	%cr4, %eax
+-	btsl	$(X86_CR4_PAE_BIT), %eax
+-	movl	%eax, %cr4
+-
+-	movl	%cr3, %eax
+-	movl	%eax, %cr3
+-
+-	movl	$MSR_EFER, %ecx
+-	rdmsr
+-	btsl	$_EFER_LME, %eax
+-	wrmsr
+-
+-	xorl	%eax, %eax
+-	lldt	%ax
+-
+-	movl	72(%esp), %eax
+-	pushl	$__KERNEL_CS
+-	pushl	%eax
+-
+-	/* Enable paging */
+-	movl	%cr0, %eax
+-	btsl	$X86_CR0_PG_BIT, %eax
+-	movl	%eax, %cr0
+-	lret
+-ENDPROC(efi_enter32)
+-
+-	.data
+-	.balign	8
+-	.global	efi32_boot_gdt
+-efi32_boot_gdt:	.word	0
+-		.quad	0
+-
+-save_gdt:	.word	0
+-		.quad	0
+-func_rt_ptr:	.quad	0
+-
+-	.global efi_gdt64
+-efi_gdt64:
+-	.word	efi_gdt64_end - efi_gdt64
+-	.long	0			/* Filled out by user */
+-	.word	0
+-	.quad	0x0000000000000000	/* NULL descriptor */
+-	.quad	0x00af9a000000ffff	/* __KERNEL_CS */
+-	.quad	0x00cf92000000ffff	/* __KERNEL_DS */
+-	.quad	0x0080890000000000	/* TS descriptor */
+-	.quad   0x0000000000000000	/* TS continued */
+-efi_gdt64_end:
+-#endif /* CONFIG_EFI_MIXED */
+-
+ 	.data
+ ENTRY(efi_scratch)
+ 	.fill 3,8,0
+diff --git a/arch/x86/platform/efi/efi_thunk_64.S b/arch/x86/platform/efi/efi_thunk_64.S
+index 8806fa73e6e6..ff85d28c50f2 100644
+--- a/arch/x86/platform/efi/efi_thunk_64.S
++++ b/arch/x86/platform/efi/efi_thunk_64.S
+@@ -1,9 +1,26 @@
+ /*
+  * Copyright (C) 2014 Intel Corporation; author Matt Fleming
++ *
++ * Support for invoking 32-bit EFI runtime services from a 64-bit
++ * kernel.
++ *
++ * The below thunking functions are only used after ExitBootServices()
++ * has been called. This simplifies things considerably as compared with
++ * the early EFI thunking because we can leave all the kernel state
++ * intact (GDT, IDT, etc) and simply invoke the the 32-bit EFI runtime
++ * services from __KERNEL32_CS. This means we can continue to service
++ * interrupts across an EFI mixed mode call.
++ *
++ * We do however, need to handle the fact that we're running in a full
++ * 64-bit virtual address space. Things like the stack and instruction
++ * addresses need to be accessible by the 32-bit firmware, so we rely on
++ * using the identity mappings in the EFI page table to access the stack
++ * and kernel text (see efi_setup_page_tables()).
+  */
+ 
+ #include <linux/linkage.h>
+ #include <asm/page_types.h>
++#include <asm/segment.h>
+ 
+ 	.text
+ 	.code64
+@@ -33,14 +50,6 @@ ENTRY(efi64_thunk)
+ 	leaq	efi_exit32(%rip), %rbx
+ 	subq	%rax, %rbx
+ 	movl	%ebx, 8(%rsp)
+-	leaq	efi_gdt64(%rip), %rbx
+-	subq	%rax, %rbx
+-	movl	%ebx, 2(%ebx)
+-	movl	%ebx, 4(%rsp)
+-	leaq	efi_gdt32(%rip), %rbx
+-	subq	%rax, %rbx
+-	movl	%ebx, 2(%ebx)
+-	movl	%ebx, (%rsp)
+ 
+ 	leaq	__efi64_thunk(%rip), %rbx
+ 	subq	%rax, %rbx
+@@ -52,14 +61,92 @@ ENTRY(efi64_thunk)
+ 	retq
+ ENDPROC(efi64_thunk)
+ 
+-	.data
+-efi_gdt32:
+-	.word 	efi_gdt32_end - efi_gdt32
+-	.long	0			/* Filled out above */
+-	.word	0
+-	.quad	0x0000000000000000	/* NULL descriptor */
+-	.quad	0x00cf9a000000ffff	/* __KERNEL_CS */
+-	.quad	0x00cf93000000ffff	/* __KERNEL_DS */
+-efi_gdt32_end:
++/*
++ * We run this function from the 1:1 mapping.
++ *
++ * This function must be invoked with a 1:1 mapped stack.
++ */
++ENTRY(__efi64_thunk)
++	movl	%ds, %eax
++	push	%rax
++	movl	%es, %eax
++	push	%rax
++	movl	%ss, %eax
++	push	%rax
++
++	subq	$32, %rsp
++	movl	%esi, 0x0(%rsp)
++	movl	%edx, 0x4(%rsp)
++	movl	%ecx, 0x8(%rsp)
++	movq	%r8, %rsi
++	movl	%esi, 0xc(%rsp)
++	movq	%r9, %rsi
++	movl	%esi,  0x10(%rsp)
++
++	leaq	1f(%rip), %rbx
++	movq	%rbx, func_rt_ptr(%rip)
++
++	/* Switch to 32-bit descriptor */
++	pushq	$__KERNEL32_CS
++	leaq	efi_enter32(%rip), %rax
++	pushq	%rax
++	lretq
++
++1:	addq	$32, %rsp
++
++	pop	%rbx
++	movl	%ebx, %ss
++	pop	%rbx
++	movl	%ebx, %es
++	pop	%rbx
++	movl	%ebx, %ds
+ 
++	/*
++	 * Convert 32-bit status code into 64-bit.
++	 */
++	test	%rax, %rax
++	jz	1f
++	movl	%eax, %ecx
++	andl	$0x0fffffff, %ecx
++	andl	$0xf0000000, %eax
++	shl	$32, %rax
++	or	%rcx, %rax
++1:
++	ret
++ENDPROC(__efi64_thunk)
++
++ENTRY(efi_exit32)
++	movq	func_rt_ptr(%rip), %rax
++	push	%rax
++	mov	%rdi, %rax
++	ret
++ENDPROC(efi_exit32)
++
++	.code32
++/*
++ * EFI service pointer must be in %edi.
++ *
++ * The stack should represent the 32-bit calling convention.
++ */
++ENTRY(efi_enter32)
++	movl	$__KERNEL_DS, %eax
++	movl	%eax, %ds
++	movl	%eax, %es
++	movl	%eax, %ss
++
++	call	*%edi
++
++	/* We must preserve return value */
++	movl	%eax, %edi
++
++	movl	72(%esp), %eax
++	pushl	$__KERNEL_CS
++	pushl	%eax
++
++	lret
++ENDPROC(efi_enter32)
++
++	.data
++	.balign	8
++func_rt_ptr:		.quad 0
+ efi_saved_sp:		.quad 0
 -- 
-tejun
+1.9.3
+
