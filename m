@@ -1,119 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759205AbbA0X5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 18:57:04 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63770 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523AbbA0X5D (ORCPT
+	id S1759272AbbA0X5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 18:57:18 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:44617 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523AbbA0X5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 18:57:03 -0500
+	Tue, 27 Jan 2015 18:57:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <54B86334.9060507@hitachi.com>
-References: <cover.1421183147.git.luto@amacapital.net> <6ceb805aba0291431f19f72d7f2e765f3a0a9fcf.1421183147.git.luto@amacapital.net>
- <54B7B49C.90003@hitachi.com> <CALCETrXG5wr+aT122O5YY=9TLGtXhJreXc5thFmVYgCj_J04bg@mail.gmail.com>
- <54B86334.9060507@hitachi.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 27 Jan 2015 15:56:40 -0800
-Message-ID: <CALCETrWzYtEbPsz9EUJHGoR+YDpVP=7_rVCfRTO0r9smLGYQXA@mail.gmail.com>
-Subject: Re: [PATCH 3.19 v4 2/2] x86: Enforce maximum instruction size in the
- instruction decoder
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>,
+From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Date: Tue, 27 Jan 2015 15:56:53 -0800
+Message-ID: <CAADnVQJWdAZc_q0yGZFrfxkGKLfk_Z2RPEKZ1C29xHRt0UYWJg@mail.gmail.com>
+Subject: Re: [PATCH] lib/checksum.c: fix carry in csum_tcpudp_nofold
+To: Karl Beldan <karl.beldan@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Karl Beldan <karl.beldan@rivierawaves.com>,
+        Mike Frysinger <vapier@gentoo.org>, Arnd Bergmann <arnd@arndb.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
+        Stable <stable@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 5:02 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2015/01/16 0:22), Andy Lutomirski wrote:
->> On Jan 15, 2015 4:37 AM, "Masami Hiramatsu"
->> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>> (2015/01/14 6:49), Andy Lutomirski wrote:
->>>> x86 instructions cannot exceed 15 bytes, and the instruction decoder
->>>> should enforce that.  Prior to 6ba48ff46f76, the instruction length
->>>> limit was implicitly set to 16, which was an approximation of 15,
->>>> but there is currently no limit at all.
->>>>
->>>> Fix the decoder to reject instructions that exceed 15 bytes.
->>>> A subsequent patch (targetted for 3.20) will fix MAX_INSN_SIZE.
->>>
->>> Hmm, is there any problem to just change MAX_INSN_SIZE to 15?
+On Tue, Jan 27, 2015 at 3:13 PM, Karl Beldan <karl.beldan@gmail.com> wrote:
+> On Tue, Jan 27, 2015 at 10:03:32PM +0000, Al Viro wrote:
+>> On Tue, Jan 27, 2015 at 04:25:16PM +0100, Karl Beldan wrote:
+>> > The carry from the 64->32bits folding was dropped, e.g with:
+>> > saddr=0xFFFFFFFF daddr=0xFF0000FF len=0xFFFF proto=0 sum=1
+>> >
+>> > Signed-off-by: Karl Beldan <karl.beldan@rivierawaves.com>
+>> > Cc: Mike Frysinger <vapier@gentoo.org>
+>> > Cc: Arnd Bergmann <arnd@arndb.de>
+>> > Cc: linux-kernel@vger.kernel.org
+>> > Cc: Stable <stable@vger.kernel.org>
+>> > ---
+>> >  lib/checksum.c | 4 ++--
+>> >  1 file changed, 2 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/lib/checksum.c b/lib/checksum.c
+>> > index 129775e..4b5adf2 100644
+>> > --- a/lib/checksum.c
+>> > +++ b/lib/checksum.c
+>> > @@ -195,8 +195,8 @@ __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
+>> >  #else
+>> >     s += (proto + len) << 8;
+>> >  #endif
+>> > -   s += (s >> 32);
+>> > -   return (__force __wsum)s;
+>> > +   s += (s << 32) + (s >> 32);
+>> > +   return (__force __wsum)(s >> 32);
 >>
->> I don't want to do that for 3.19.  It's kind of late.
+>> Umm...  I _think_ it's correct, but it needs a better commit message.  AFAICS,
+>> what we have is that s is guaranteed to be (a << 32) + b, with a being small.
+>> What we want is something congruent to a + b modulo 0xffff.  And yes, in case
+>> when a + b >= 2^32, the original variant fails - it yields a + b - 2^32, which
+>> is one less than what's needed.  New one results first in
+>> (a + b)(2^32+1)mod 2^64, then that divided by 2^32.  If a + b <= 2^32 - 1,
+>> the first product is less than 2^64 and dividing it by 2^32 yields a + b.
+>> If a + b = 2^32 + c, c is guaranteed to be small and we first get
+>> 2^32 * c + 2^32 + 1, then c + 1, i.e. a + b - 0xffffffff, i.e.
+>> a + b - 0x10001 * 0xffff, so the congruence holds in all cases.
 >>
->>>
->>>> Other than potentially confusing some of the decoder sanity checks,
->>>> I'm not aware of any actual problems that omitting this check would
->>>> cause.
->>>>
->>>> Fixes: 6ba48ff46f76 x86: Remove arbitrary instruction size limit in instruction decoder
->>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>>> ---
->>>>  arch/x86/lib/insn.c | 7 +++++++
->>>>  1 file changed, 7 insertions(+)
->>>>
->>>> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
->>>> index 2480978b31cc..7b80745d2c5a 100644
->>>> --- a/arch/x86/lib/insn.c
->>>> +++ b/arch/x86/lib/insn.c
->>>> @@ -52,6 +52,13 @@
->>>>   */
->>>>  void insn_init(struct insn *insn, const void *kaddr, int buf_len, int x86_64)
->>>>  {
->>>> +     /*
->>>> +      * Instructions longer than 15 bytes are invalid even if the
->>>> +      * input buffer is long enough to hold them.
->>>> +      */
->>>> +     if (buf_len > 15)
->>>> +             buf_len = 15;
->>>> +
->>>
->>> Without changing the MAX_INSN_SIZE, this looks very odd, since all other
->>> code suppose that the max length of an instruction is 16 (MAX_INSN_SIZE)
->>> except here.
->>
->> I thought this was your suggestion.  Did I misunderstand?
+>> IOW, I think the fix is correct, but it really needs analysis in the commit
+>> message.
 >
-> Yes, what I meant about "15" was the the "15" in the comment.
-> So
+> My take on this was "somewhat" simpler:
 >
-> +     /*
-> +      * Instructions longer than MAX_INSN_SIZE bytes are invalid even if the
-> +      * input buffer is long enough to hold them.
-> +      */
-> +     if (buf_len > MAX_INSN_SIZE)
-> +             buf_len = MAX_INSN_SIZE;
+> s = a31..0b31..b0 = a << 32 + b, as you put it
 >
-> is acceptable.
+> Here however I don't assume that a is "small", however I assume it has
+> never overflowed, which is trivial to verify since we only add 3 32bits
+> values and 2 16 bits values to a 64bits.
+> Now we just want (a + b + carry(a + b)) % 2^32, and here I assume
+> (a + b + carry(a + b)) % 2^32 == (a + b) % 2^32 + carry(a + b), I
+> guess this is the trick, and this is easy to convince oneself with:
+> 0xffffffff + 0xffffffff == 0x1fffffffe ==>
+> ((u32)-1 + (u32)-1 + 1) % 2^32 == 0xfffffffe % 2^32 + 1
+> We get this carry pushed out from the MSbs side by the s+= addition
+> pushed back in to the LSbs side of the upper 32bits and this carry
+> doesn't make the upper side overflow.
 >
->> If you think the current code is okay for 3.19, I can fold the two
->> patches together and send for 3.20.
->
-> If it does really cause a bug or a real problem, it must fix asap.
-> If not, I'd like to fix this issue with changing MAX_INSN_SIZE to 15.
->
+> If this explanation is acceptable, I can reword the commit message with
+> it. Sorry if my initial commit log lacked details, and thanks for your
+> detailed input.
 
-Since this has waited for quite a while and there's no known urgent
-problem, I'll just send a combined patch.
-
---Andy
-
-> Thank you,
->
-> --
-> Masami HIRAMATSU
-> Software Platform Research Dept. Linux Technology Research Center
-> Hitachi, Ltd., Yokohama Research Laboratory
-> E-mail: masami.hiramatsu.pt@hitachi.com
->
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+please cc: netdev next time as well.
