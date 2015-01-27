@@ -1,145 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183AbbA0BSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 20:18:24 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:45862 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754054AbbA0BST (ORCPT
+	id S1757204AbbA0BBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 20:01:50 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:2126 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751623AbbA0BBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 20:18:19 -0500
-Message-ID: <1422320515.2493.53.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH 2/7] lib: Add huge I/O map capability interfaces
-From: Toshi Kani <toshi.kani@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, arnd@arndb.de,
-        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 26 Jan 2015 18:01:55 -0700
-In-Reply-To: <20150126155456.a40df49e42b1b7f8077421f4@linux-foundation.org>
-References: <1422314009-31667-1-git-send-email-toshi.kani@hp.com>
-	 <1422314009-31667-3-git-send-email-toshi.kani@hp.com>
-	 <20150126155456.a40df49e42b1b7f8077421f4@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	Mon, 26 Jan 2015 20:01:48 -0500
+Date: Mon, 26 Jan 2015 20:02:18 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
+Message-ID: <20150126200218.6ecfc931@grimm.local.home>
+In-Reply-To: <20150127003742.GU29656@ZenIV.linux.org.uk>
+References: <20150126150913.653681560@goodmis.org>
+	<20150126193049.GN29656@ZenIV.linux.org.uk>
+	<20150126154259.5e650d32@gandalf.local.home>
+	<20150126214658.GQ29656@ZenIV.linux.org.uk>
+	<20150126184314.24f2583c@gandalf.local.home>
+	<20150127003742.GU29656@ZenIV.linux.org.uk>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-26 at 15:54 -0800, Andrew Morton wrote:
-> On Mon, 26 Jan 2015 16:13:24 -0700 Toshi Kani <toshi.kani@hp.com> wrote:
+On Tue, 27 Jan 2015 00:37:42 +0000
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
+
+> On Mon, Jan 26, 2015 at 06:43:14PM -0500, Steven Rostedt wrote:
 > 
-> > Add ioremap_pud_enabled() and ioremap_pmd_enabled(), which
-> > return 1 when I/O mappings of pud/pmd are enabled on the kernel.
+> > I originally had this, but the issue isn't with i_mutex only. The
+> > instance_mkdir and instance_rmdir need to grab trace_types_lock.
+> > This is also held when calling into tracefs.
 > > 
-> > ioremap_huge_init() calls arch_ioremap_pud_supported() and
-> > arch_ioremap_pmd_supported() to initialize the capabilities.
+> > That is, we can not hold i_mutex and take trace_types_lock.
 > > 
-> > A new kernel option "nohgiomap" is also added, so that user can
-> > disable the huge I/O map capabilities if necessary.
+> > trace_types_lock needs to be held with the creation or destruction
+> > of events, which is what mkdir an rmdir do.
 > 
-> Why?  What's the problem with leaving it enabled?
-
-No, there should not be any problem with leaving it enabled.  This
-option is added as a way to workaround a problem when someone hit an
-issue unexpectedly.
-
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -2304,6 +2304,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> >  			register save and restore. The kernel will only save
-> >  			legacy floating-point registers on task switch.
-> >  
-> > +	nohgiomap	[KNL,x86] Disable huge I/O mappings.
+> Yecchhh...
 > 
-> That reads like "no high iomap" to me.  "nohugeiomap" would be better.
+> Looks like something that fell out of BKL removal - AFAICS, you are
+> using it to protect all kinds of things ;-/
 
-Agreed.  Will use "nohugeiomap".
+It's only used to protect slow paths. Yes, it grew more than what it
+should protect. I had patches to add a few more mutexes, to narrow
+things down. But that still did not solve this issue. The broken out
+mutex still needed to be held when events are created.
 
-> > --- a/lib/ioremap.c
-> > +++ b/lib/ioremap.c
-> > @@ -13,6 +13,44 @@
-> >  #include <asm/cacheflush.h>
-> >  #include <asm/pgtable.h>
-> >  
-> > +#ifdef CONFIG_HUGE_IOMAP
-> > +int __read_mostly ioremap_pud_capable;
-> > +int __read_mostly ioremap_pmd_capable;
-> > +int __read_mostly ioremap_huge_disabled;
-> > +
-> > +static int __init set_nohgiomap(char *str)
-> > +{
-> > +	ioremap_huge_disabled = 1;
-> > +	return 0;
-> > +}
-> > +early_param("nohgiomap", set_nohgiomap);
-> 
-> Why early?
+The main issue is that mkdir() and rmdir() will create events that
+require holding a mutex to make sure access to the events are
+serialized.
 
-On my system, the first ioremap() call is made at:
+But creating events requires grabbing the i_mutex. We can create events
+either with mkdir() or when a module is loaded that has its own events.
 
-  start_kernel()
-   -> late_time_init()
-     -> x86_late_time_init()
-       -> hpet_time_init()
+Same goes with the mutex that protects adding and removing of
+trace_arrays. When a module is loaded, we need to add events to each
+trace array that exists (requiring that we grab the mutex that protects
+that list). And hold it while we add our events.
 
-I think this is too early for module_param().  Also, lib/ioremap.c is
-not really a module.
+Now you see why I found just dropping the parent mutex easier.
 
-> > +static inline void ioremap_huge_init(void)
-> > +{
-> > +	if (!ioremap_huge_disabled) {
-> > +		if (arch_ioremap_pud_supported())
-> > +			ioremap_pud_capable = 1;
-> > +		if (arch_ioremap_pmd_supported())
-> > +			ioremap_pmd_capable = 1;
-> > +	}
-> > +}
-> > +
-> > +static inline int ioremap_pud_enabled(void)
-> > +{
-> > +	return ioremap_pud_capable;
-> > +}
-> > +
-> > +static inline int ioremap_pmd_enabled(void)
-> > +{
-> > +	return ioremap_pmd_capable;
-> > +}
-> > +
-> > +#else	/* !CONFIG_HUGE_IOMAP */
-> > +static inline void ioremap_huge_init(void) { }
-> > +static inline int ioremap_pud_enabled(void) { return 0; }
-> > +static inline int ioremap_pmd_enabled(void) { return 0; }
-> > +#endif	/* CONFIG_HUGE_IOMAP */
-> > +
-> >  static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
-> >  		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
-> >  {
-> > @@ -74,6 +112,12 @@ int ioremap_page_range(unsigned long addr,
-> >  	unsigned long start;
-> >  	unsigned long next;
-> >  	int err;
-> > +	static int ioremap_huge_init_done;
-> > +
-> > +	if (!ioremap_huge_init_done) {
-> > +		ioremap_huge_init_done = 1;
-> > +		ioremap_huge_init();
-> > +	}
-> 
-> Looks hacky.  Why can't we just get the startup ordering correct?  It
-> at least needs a comment which fully explains the situation.
-
-How about calling it from mm_init() after vmalloc_init()?  
-
-void __init mm_init(void)
-		:
-        percpu_init_late();
-        pgtable_init();
-        vmalloc_init();
-+       ioremap_huge_init();
- }
-
-Thanks,
--Toshi
-
-
+-- Steve
