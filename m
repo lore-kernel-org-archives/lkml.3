@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769AbbA0UjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 15:39:15 -0500
-Received: from pb-smtp1.int.icgroup.com ([208.72.237.35]:53667 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932613AbbA0UjN (ORCPT
+	id S932849AbbA0UkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 15:40:03 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:45001 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932822AbbA0UkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 15:39:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=bHy3zc3fSp0BG/dN2aiBEYBzhBZwWPeN
-	NyIhHkznvh/yxTmzSZ7lWerbDVMm292hpK5nTO6IAH8JlXZIMarlvF2sNQGUl23e
-	wA7c/WrrDk1OLhAi1tkA5/AIoeg7/WXEMTSVMXGt5yS3VURvX0s4EMn7h31bQxuB
-	Rd9o9qD07cE=
-From: Junio C Hamano <gitster@pobox.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Linux-Kernel\@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        twaugh@redhat.com, Git Mailing List <git@vger.kernel.org>
-Subject: Re: patch-2.7.3 no longer applies relative symbolic link patches
-References: <CA+5PVA7rVy6Li_1haj1QmGG0D6avLB5Xej=2YGt6K-11kKHR5A@mail.gmail.com>
-	<CA+5PVA4bs6CYU8MHn1JqBjnb-5wYJT2Tjqa65=v2uSPL8c7dYw@mail.gmail.com>
-	<CA+55aFxbY21vBbPs5qCFPT1HSBbaeS+Z2Fr9So1r3rXrMWe_ZQ@mail.gmail.com>
-	<xmqqzj94lx7z.fsf@gitster.dls.corp.google.com>
-Date: Tue, 27 Jan 2015 12:39:11 -0800
-In-Reply-To: <xmqqzj94lx7z.fsf@gitster.dls.corp.google.com> (Junio C. Hamano's
-	message of "Mon, 26 Jan 2015 19:27:12 -0800")
-Message-ID: <xmqqa914klg0.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 27 Jan 2015 15:40:00 -0500
+Date: Tue, 27 Jan 2015 22:39:56 +0200
+From: Heba Aamer <heba93aamer@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: gregkh@linuxfoundation.org, notro@tronnes.org,
+        thomas.petazzoni@free-electrons.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6] staging: fbtft: fix Macros with complex values should be
+ enclosed in parentheses
+Message-ID: <3120ddbbd88e899cebf5b641e2de3b00b422f1f3.1422296762.git.heba93aamer@gmail.com>
+References: <cover.1422296762.git.heba93aamer@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Pobox-Relay-ID: 8D3A71E4-A664-11E4-B9F6-7BA29F42C9D4-77302942!pb-smtp1.pobox.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1422296762.git.heba93aamer@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano <gitster@pobox.com> writes:
+This patch fixes the following checkpatch.pl error:
+fix Macros with complex values should be enclosed in parentheses
 
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
->
->> Ugh. I don't see anything we can do about this on the git side, and I
->> do kind of understand why 'patch' would be worried about '..' files.
->> In a perfect world, patch would parse the filename and see that it
->> stays within the directory structure of the project, but that is a
->> rather harder thing to do than just say "no dot-dot files".
->
-> It is unclear to me why "limit to the current directory and below"
-> is such a big deal in the first place.
->
-> If the user wants to apply a patch that touches ../etc/shadow, is
-> the tool in the place to complain?"
+Signed-off-by: Heba Aamer <heba93aamer@gmail.com>
+---
+ drivers/staging/fbtft/fb_pcd8544.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Let me take this part back.
-
-I think "git apply" should behave closely to "git apply --index"
-(which is used by "git am" unless there is a very good reason not to
-(and "'git apply --index' behaves differently from GNU patch, and we
-should match what the latter does" is not a very good reason).  When
-the index guards the working tree, we do not follow any symlink,
-whether the destination is inside the current directory or not.
-
-I however do not think the current "git apply" notices that it will
-overwrite a path beyond a symlink---we may need to fix that if that
-is the case.  I'll see what I can find (but I'll be doing 2.3-rc2
-today so it may be later this week).
-
-Thanks.
-
-
+diff --git a/drivers/staging/fbtft/fb_pcd8544.c b/drivers/staging/fbtft/fb_pcd8544.c
+index dd72bed..d20d432 100644
+--- a/drivers/staging/fbtft/fb_pcd8544.c
++++ b/drivers/staging/fbtft/fb_pcd8544.c
+@@ -33,7 +33,7 @@
+ #define DRVNAME	       "fb_pcd8544"
+ #define WIDTH          84
+ #define HEIGHT         48
+-#define TXBUFLEN       84*6
++#define TXBUFLEN       (84*6)
+ #define DEFAULT_GAMMA  "40" /* gamma is used to control contrast in this driver */
+ 
+ static unsigned tc = 0;
+-- 
+1.7.9.5
 
