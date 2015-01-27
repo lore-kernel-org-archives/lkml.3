@@ -1,111 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758349AbbA0PFY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:05:24 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45663 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbbA0PFV convert rfc822-to-8bit (ORCPT
+	id S1758547AbbA0PGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:06:34 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:44004 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758523AbbA0PGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:05:21 -0500
+	Tue, 27 Jan 2015 10:06:31 -0500
+Date: Tue, 27 Jan 2015 15:06:06 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH 2/2] HID: i2c-hid: Add support for GPIO interrupts
+Message-ID: <20150127150606.GI17721@leverpostej>
+References: <20150126160044.GK23313@leverpostej>
+ <20150126161356.GJ1451@lahna.fi.intel.com>
+ <20150126163929.GL23313@leverpostej>
+ <20150127101610.GK1451@lahna.fi.intel.com>
+ <20150127103925.GB17721@leverpostej>
+ <20150127105931.GN1451@lahna.fi.intel.com>
+ <20150127111458.GD17721@leverpostej>
+ <20150127113041.GP1451@lahna.fi.intel.com>
+ <20150127143334.GF17721@leverpostej>
+ <20150127144127.GT1451@lahna.fi.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <54C65346.5070504@gmail.com>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
-	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
-	<54BE5DC8.70706@gmail.com>
-	<54BE9D08.7010804@zonque.org>
-	<54BF805B.4000609@gmail.com>
-	<54BFDAAA.50203@zonque.org>
-	<54C0CE8A.5080805@gmail.com>
-	<CANq1E4S=3qNw599L85uj-8aXwxeV+mcurB_Nu_rHH8opAeePjw@mail.gmail.com>
-	<54C10DDC.9000503@gmail.com>
-	<20150123160854.GA5210@kroah.com>
-	<54C65346.5070504@gmail.com>
-Date: Tue, 27 Jan 2015 16:05:20 +0100
-Message-ID: <CANq1E4SkHhs1pWUe-TzG7bzk1M-Q++mB2vmQGuYx0RMF53wg4Q@mail.gmail.com>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-From: David Herrmann <dh.herrmann@gmail.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Austin S Hemmelgarn <ahferroin7@gmail.com>,
-        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, "Theodore T'so" <tytso@mit.edu>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150127144127.GT1451@lahna.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Jan 27, 2015 at 02:41:27PM +0000, Mika Westerberg wrote:
+> On Tue, Jan 27, 2015 at 02:33:34PM +0000, Mark Rutland wrote:
+> > Ok, that allays my fear w.r.t. ordering of the resources.
+> > 
+> > As I see it, the fact that we convert GpioInt entries to GPIOs rather
+> > than irqs when parsing _CRS is the issue here, and to me it makes no
+> > sense that we do so. Were we to treat them as interrupts, the binding is
+> > fine as-is, and we'd do the same thing in DT and ACPI.
+> > 
+> > The reason GpioInt is separate from GpioIo is that a GpioInt _is_ an
+> > interrupt (which happens to be backed by a GPIO), and is not something
+> > that necessarily makes sense as a GPIO.
+> 
+> I would rather say that GpioInt *is* a GPIO. That can then used as an
+> interrupt but it should not prevent you from using it as GPIO instead.
+> For example if you just want to poll that something is 0 or 1. That
+> should be possible as well and nothing say that you cannot do that for
+> GpioInt().
 
-On Mon, Jan 26, 2015 at 3:46 PM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> Hello Greg,
->
-> On 01/23/2015 05:08 PM, Greg Kroah-Hartman wrote:
->> On Thu, Jan 22, 2015 at 09:49:00AM -0500, Austin S Hemmelgarn wrote:
->>> While I agree that there should be a way for userspace to get the list of
->>> supported operations, userspace apps will only actually care about that
->>> once, when they begin talking to kdbus, because (ignoring the live kernel
->>> patching that people have been working on recently) the list of supported
->>> operations isn't going to change while the system is running.  While a u64
->>> copy has relatively low overhead, it does have overhead, and that is very
->>> significant when you consider part of the reason some people want kdbus is
->>> for the performance gain.  Especially for those automotive applications that
->>> have been mentioned which fire off thousands of messages during start-up,
->>> every little bit of performance is significant.
->>
->> A single u64 in a structure is not going to be measurable at all,
->> processors just copy memory too fast these days for 4 extra bytes to be
->> noticable.
->
-> It depends on the definition of measurable, I suppose, but this statement
-> appears incorrect to me. In some cases (e.g., kdbus_msg_info) we're talking
-> about *two* u64 fields (kernel_gs, kernel_msg_flags) being used to pass back
-> sets of valid flags. That's 16 bytes, and it definitely makes a difference.
-> Simply running a loop that does a naive memcpy() in a tight user-space
-> loop (code below), I see the following for the execution of 1e9 loops:
->
->     Including the two extra u64 fields: 3.2 sec
->     Without the two extra u64 fields:   2.6 sec
->
-> On the same box, doing 1e9 calls to getppid() (i.e., pretty much the
-> simplest syscall, giving us a rough measure of the context switch) takes
-> 68 seconds. In other words, the cost of copying those 16 bytes is about 1%
-> of the base context switch/syscall cost. I assume the costs of copying
-> those 16 bytes across the kernel-user-space boundary would not be cheaper,
-> but have not tested that. If my assumption is correct, then 1% seems a
-> significant figure to me in an API whose raison d'être is speed.
+>From my POV a GpioInt is logically an interrupt, or it would be a
+GpioIo. That doesn't necessarily mean it's invalid to try to query its
+state as a GPIO, but I do not think that it makes sense to handle it by
+default as a GPIO given that it was handed to us as a GpioInt so that it
+can be used as an interrupt.
 
-I have no idea how this is related to any kdbus ioctl?
+If it's just the case that ACPI and DT differ w.r.t. how this case (an
+interrupt line wired to a GPIO) is described, that in itself is fine;
+different standards have different models.
 
-A 16byte copy does not affect the performance of kdbus message
-transactions in any way that matters.
+However, I do not think we must change the DT binding and violate
+established DT practice simply becuase on the ACPI side things are
+different (nor would it make sense to do things the other way around).
+If the two have different rules, then we should handle those rules
+separately rather than trying to force the two together when they
+clearly don't fit.
 
->> So let's make this as easy as possible for userspace, making
->> it simpler logic there, which is much more important than saving
->> theoretical time in the kernel.
->
-> But this also missed the other part of the point. Copying these fields on
-> every operation, when in fact they are only needed once, clutters the API,
-> in my opinion. Good APIs are as simple as they can be to do their job.
-> Redundancy is an enemy of simplicity. Simplest would have been a one time
-> API that returns a structure containing all of the supported flags across
-> the API. Alternatively, the traditional EINVAL approach is well understood,
-> and suffices.
+In the driver that can easily be achieved with separate probe paths.
+W.R.T. the DT binding, I do not think it makes sense to pretend this
+is also an ACPI binding.
 
-We're going to drop "kernel_flags" in favor of a new
-KDBUS_FLAG_NEGOTIATE flag which asks the kernel to do feature
-negotiation for this ioctl and return the supported flags/items inline
-(overwriting the passed data). The ioctl will not be executed and will
-not affect the state of the FD.
-I hope this keeps the API simple.
-
-Thanks
-David
+Thanks,
+Mark.
