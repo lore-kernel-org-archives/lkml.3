@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932781AbbA0Mdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:33:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35257 "EHLO
+	id S932763AbbA0Mdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:33:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35259 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932363AbbA0MTD (ORCPT
+	with ESMTP id S932387AbbA0MTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 07:19:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bo Shen <voice.shen@atmel.com>, Felipe Balbi <balbi@ti.com>,
+Cc: Dmitry Voytik <voytikd@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 078/126] [PATCH] usb: gadget: udc: atmel: fix possible IN hang issue
-Date: Tue, 27 Jan 2015 12:16:23 +0000
-Message-Id: <1422361031-19364-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 079/126] ARM: imx6q: drop unnecessary semicolon
+Date: Tue, 27 Jan 2015 12:16:24 +0000
+Message-Id: <1422361031-19364-80-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bo Shen <voice.shen@atmel.com>
+From: Dmitry Voytik <voytikd@gmail.com>
 
-commit 6785a1034461c2d2c205215f63a50a740896e55b upstream.
+commit d2a10a1727b3948019128e83162f22c65859f1fd upstream.
 
-When receive data, the RXRDY in status register set by hardware
-after a new packet has been stored in the endpoint FIFO. When it
-is copied from FIFO, this bit is cleared which make the FIFO can
-be accessed again.
+Drop unnecessary semicolon after closing curly bracket.
 
-In the receive_data() function, this bit RXRDY has been cleared.
-So, after the receive_data() function return, this bit should
-not be cleared again, or else it may cause the accessing FIFO
-corrupt, which will make the data loss.
-
-Fixes: 914a3f3b3754 (USB: add atmel_usba_udc driver)
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ luis: backported to 3.16:
-  - file rename: drivers/usb/gadget/udc/atmel_usba_udc.c ->
-    drivers/usb/gadget/atmel_usba_udc.c ]
+Signed-off-by: Dmitry Voytik <voytikd@gmail.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+[ luis: 3.16-stable prereq for:
+  9351c09fb16f "usb: gadget: udc: atmel: fix possible IN hang issue" ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/gadget/atmel_usba_udc.c | 1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/mach-imx/clk-imx6q.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
-index 9fff23fa1519..f34157a8dc22 100644
---- a/drivers/usb/gadget/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/atmel_usba_udc.c
-@@ -1572,7 +1572,6 @@ static void usba_ep_irq(struct usba_udc *udc, struct usba_ep *ep)
- 	if ((epstatus & epctrl) & USBA_RX_BK_RDY) {
- 		DBG(DBG_BUS, "%s: RX data ready\n", ep->ep.name);
- 		receive_data(ep);
--		usba_ep_writel(ep, CLR_STA, USBA_RX_BK_RDY);
- 	}
- }
+diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+index 8556c787e59c..e9f8dbc360f6 100644
+--- a/arch/arm/mach-imx/clk-imx6q.c
++++ b/arch/arm/mach-imx/clk-imx6q.c
+@@ -164,7 +164,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+ 		post_div_table[2].div = 1;
+ 		video_div_table[1].div = 1;
+ 		video_div_table[2].div = 1;
+-	};
++	}
  
+ 	/*                   type                               name         parent_name  base     div_mask */
+ 	clk[pll1_sys]      = imx_clk_pllv3(IMX_PLLV3_SYS,	"pll1_sys",	"osc", base,        0x7f);
 -- 
 2.1.4
 
