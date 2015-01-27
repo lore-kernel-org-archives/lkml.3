@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356AbbA0Dng (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 22:43:36 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:42391 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbbA0Dnd (ORCPT
+	id S1754383AbbA0DrV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 22:47:21 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:41985 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751236AbbA0DrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 22:43:33 -0500
+	Mon, 26 Jan 2015 22:47:18 -0500
+Date: Tue, 27 Jan 2015 11:44:03 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Doug Anderson <dianders@chromium.org>
+CC: Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Lunxue Dai <lunxue.dai@rock-chips.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] watchdog: dw_wdt: pat the watchdog before enabling
+ it
+Message-ID: <20150127114403.71736c3f@xhacker>
+In-Reply-To: <CAD=FV=WKeH2hmgsB1Hh8G6LWGqSVf_nOTCs7PVqLZV_gB_VqhA@mail.gmail.com>
+References: <1421882243-3631-1-git-send-email-dianders@chromium.org>
+	<20150122132200.4729d38b@xhacker>
+	<CAD=FV=UMmfNAEQVKCxTBapwO=pgno+cWUJNiMS7_uFK7NPevkw@mail.gmail.com>
+	<20150126142210.4cd0b33f@xhacker>
+	<CAD=FV=WKeH2hmgsB1Hh8G6LWGqSVf_nOTCs7PVqLZV_gB_VqhA@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CA+8MBb+bWiX2eayjBQHsvCjTp3t8H9=AviF9AkV6CC--cC_fYQ@mail.gmail.com>
-References: <20150123203145.GA6691@google.com>
-	<CA+8MBbKnT=mE3kev8BRPq0GeTgHx8WVa6o54tJuBX_XXLpHdYQ@mail.gmail.com>
-	<CAErSpo7y1wWStjcEOH9xTiM-As8+QeMynZ5ENrL9v3X2PvQCcw@mail.gmail.com>
-	<CA+8MBb+bWiX2eayjBQHsvCjTp3t8H9=AviF9AkV6CC--cC_fYQ@mail.gmail.com>
-Date: Mon, 26 Jan 2015 19:43:32 -0800
-X-Google-Sender-Auth: ICTGnCF7mbvwasbYyfsiPZ1Ad58
-Message-ID: <CAE9FiQXj07CtOJ6uBZomNyhAH9ANanbbUSo51td6G-UB5Rmmow@mail.gmail.com>
-Subject: Re: [GIT PULL] PCI fixes for v3.19
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Richard Zhu <Richard.Zhu@freescale.com>,
-        Marek Kordik <kordikmarek@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Andreas Hartmann <andihartmann@freenet.de>,
-        Alexey Voronkov <zermond@gmail.com>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-27_02:2015-01-27,2015-01-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1501270041
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 1:24 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> On Mon, Jan 26, 2015 at 1:02 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> Sorry for the inconvenience.  Can you collect a complete dmesg log and
->> "lspci -vv" output, too (from the kernel with the reverted commit)?
->> That will have more useful information than just /proc/iomem.
->
-> Full dmesg, lspci -vv, and bonus .config (CONFIG_PCI_IOV is indeed
-> not set)
+Dear Doug,
 
-Sorry for the problem.
+On Mon, 26 Jan 2015 09:01:37 -0800
+Doug Anderson <dianders@chromium.org> wrote:
 
-Can you please get boot bog with "debug ignore_logleve"?
+> Jisheng,
+> 
+> On Sun, Jan 25, 2015 at 10:22 PM, Jisheng Zhang <jszhang@marvell.com> wrote:
+> >> Specifically I see the register WDT_TORR that has an offset of 0x4.
+> >> That's the RANGE_REG in your code.  It shows bits 3:0 set the timeout
+> >> period (0 = 0xffff and 15 = 0x7fffffff).  It shows bits 31:4 as
+> >> "reserved".
+> >
+> > Could you please dump registers' value at offset 0xf4 and 0xf8 if you
+> > don't mind?
+> 
+> Those are not documented in the user manual that I have, but:
+> 
+> >>> r(0xff8000f4)
+> 0x10000a02
+> >>> r(0xff8000f8)
+> 0x3130332a
 
-we should get print out from
+Thanks. Now I got some information about your platform:
 
-+               dev_printk(KERN_DEBUG, &dev->dev, "%pR clipped to %pR\n",
-+                                &orig_res, res);
+wdt version: v1.02a
 
+WDT_DUAL_TOP is configured as false, so there's no TOP_INIT
+WDT_DFLT_TOP is configured as 0, so it will timeout soon.
 
-Thanks
+However, it doesn't hurt anything if we have an extra pat before
+enabling WDT
 
-Yinghai
+Thanks,
+Jisheng
