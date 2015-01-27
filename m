@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578AbbA0MU1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:20:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35485 "EHLO
+	id S1758118AbbA0MVu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:21:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35490 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758767AbbA0MUT (ORCPT
+	with ESMTP id S932544AbbA0MUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:19 -0500
+	Tue, 27 Jan 2015 07:20:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Alexander Y. Fomichev" <git.user@gmail.com>,
+Cc: Alexander Fomichev <git.user@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Miquel van Smoorenburg <mikevs@xs4all.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 121/126] net: prevent of emerging cross-namespace symlinks
-Date: Tue, 27 Jan 2015 12:17:06 +0000
-Message-Id: <1422361031-19364-122-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 122/126] net: fix creation adjacent device symlinks
+Date: Tue, 27 Jan 2015 12:17:07 +0000
+Message-Id: <1422361031-19364-123-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -31,134 +31,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Alexander Y. Fomichev" <git.user@gmail.com>
 
-commit 4c75431ac3520631f1d9e74aa88407e6374dbbc4 upstream.
+commit 7ce64c79c4decdeb1afe0bf2f6ef834b382871d1 upstream.
 
-Code manipulating sysfs symlinks on adjacent net_devices(s)
-currently doesn't take into account that devices potentially
-belong to different namespaces.
+__netdev_adjacent_dev_insert may add adjust device of different net
+namespace, without proper check it leads to emergence of broken
+sysfs links from/to devices in another namespace.
+Fix: rewrite netdev_adjacent_is_neigh_list macro as a function,
+     move net_eq check into netdev_adjacent_is_neigh_list.
+     (thanks David)
+     related to: 4c75431ac3520631f1d9e74aa88407e6374dbbc4
 
-This patch trying to fix an issue as follows:
-- check for net_ns before creating / deleting symlink.
-  for now only netdev_adjacent_rename_links and
-  __netdev_adjacent_dev_remove are affected, afaics
-  __netdev_adjacent_dev_insert implies both net_devs
-  belong to the same namespace.
-- Drop all existing symlinks to / from all adj_devs before
-  switching namespace and recreate them just after.
-
-Signed-off-by: Alexander Y. Fomichev <git.user@gmail.com>
+Signed-off-by: Alexander Fomichev <git.user@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Cc: Miquel van Smoorenburg <mikevs@xs4all.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/dev.c | 61 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 60 insertions(+), 1 deletion(-)
+ net/core/dev.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/net/core/dev.c b/net/core/dev.c
-index a4ebbe7d4f15..1a9b82061128 100644
+index 1a9b82061128..2d93b9de1d7b 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
-@@ -4885,7 +4885,8 @@ static void __netdev_adjacent_dev_remove(struct net_device *dev,
+@@ -4799,9 +4799,14 @@ static void netdev_adjacent_sysfs_del(struct net_device *dev,
+ 	sysfs_remove_link(&(dev->dev.kobj), linkname);
+ }
+ 
+-#define netdev_adjacent_is_neigh_list(dev, dev_list) \
+-		(dev_list == &dev->adj_list.upper || \
+-		 dev_list == &dev->adj_list.lower)
++static inline bool netdev_adjacent_is_neigh_list(struct net_device *dev,
++						 struct net_device *adj_dev,
++						 struct list_head *dev_list)
++{
++	return (dev_list == &dev->adj_list.upper ||
++		dev_list == &dev->adj_list.lower) &&
++		net_eq(dev_net(dev), dev_net(adj_dev));
++}
+ 
+ static int __netdev_adjacent_dev_insert(struct net_device *dev,
+ 					struct net_device *adj_dev,
+@@ -4831,7 +4836,7 @@ static int __netdev_adjacent_dev_insert(struct net_device *dev,
+ 	pr_debug("dev_hold for %s, because of link added from %s to %s\n",
+ 		 adj_dev->name, dev->name, adj_dev->name);
+ 
+-	if (netdev_adjacent_is_neigh_list(dev, dev_list)) {
++	if (netdev_adjacent_is_neigh_list(dev, adj_dev, dev_list)) {
+ 		ret = netdev_adjacent_sysfs_add(dev, adj_dev, dev_list);
+ 		if (ret)
+ 			goto free_adj;
+@@ -4852,7 +4857,7 @@ static int __netdev_adjacent_dev_insert(struct net_device *dev,
+ 	return 0;
+ 
+ remove_symlinks:
+-	if (netdev_adjacent_is_neigh_list(dev, dev_list))
++	if (netdev_adjacent_is_neigh_list(dev, adj_dev, dev_list))
+ 		netdev_adjacent_sysfs_del(dev, adj_dev->name, dev_list);
+ free_adj:
+ 	kfree(adj);
+@@ -4885,8 +4890,7 @@ static void __netdev_adjacent_dev_remove(struct net_device *dev,
  	if (adj->master)
  		sysfs_remove_link(&(dev->dev.kobj), "master");
  
--	if (netdev_adjacent_is_neigh_list(dev, dev_list))
-+	if (netdev_adjacent_is_neigh_list(dev, dev_list) &&
-+	    net_eq(dev_net(dev),dev_net(adj_dev)))
+-	if (netdev_adjacent_is_neigh_list(dev, dev_list) &&
+-	    net_eq(dev_net(dev),dev_net(adj_dev)))
++	if (netdev_adjacent_is_neigh_list(dev, adj_dev, dev_list))
  		netdev_adjacent_sysfs_del(dev, adj_dev->name, dev_list);
  
  	list_del_rcu(&adj->list);
-@@ -5155,11 +5156,65 @@ void netdev_upper_dev_unlink(struct net_device *dev,
- }
- EXPORT_SYMBOL(netdev_upper_dev_unlink);
- 
-+void netdev_adjacent_add_links(struct net_device *dev)
-+{
-+	struct netdev_adjacent *iter;
-+
-+	struct net *net = dev_net(dev);
-+
-+	list_for_each_entry(iter, &dev->adj_list.upper, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
-+		netdev_adjacent_sysfs_add(iter->dev, dev,
-+					  &iter->dev->adj_list.lower);
-+		netdev_adjacent_sysfs_add(dev, iter->dev,
-+					  &dev->adj_list.upper);
-+	}
-+
-+	list_for_each_entry(iter, &dev->adj_list.lower, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
-+		netdev_adjacent_sysfs_add(iter->dev, dev,
-+					  &iter->dev->adj_list.upper);
-+		netdev_adjacent_sysfs_add(dev, iter->dev,
-+					  &dev->adj_list.lower);
-+	}
-+}
-+
-+void netdev_adjacent_del_links(struct net_device *dev)
-+{
-+	struct netdev_adjacent *iter;
-+
-+	struct net *net = dev_net(dev);
-+
-+	list_for_each_entry(iter, &dev->adj_list.upper, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
-+		netdev_adjacent_sysfs_del(iter->dev, dev->name,
-+					  &iter->dev->adj_list.lower);
-+		netdev_adjacent_sysfs_del(dev, iter->dev->name,
-+					  &dev->adj_list.upper);
-+	}
-+
-+	list_for_each_entry(iter, &dev->adj_list.lower, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
-+		netdev_adjacent_sysfs_del(iter->dev, dev->name,
-+					  &iter->dev->adj_list.upper);
-+		netdev_adjacent_sysfs_del(dev, iter->dev->name,
-+					  &dev->adj_list.lower);
-+	}
-+}
-+
- void netdev_adjacent_rename_links(struct net_device *dev, char *oldname)
- {
- 	struct netdev_adjacent *iter;
- 
-+	struct net *net = dev_net(dev);
-+
- 	list_for_each_entry(iter, &dev->adj_list.upper, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
- 		netdev_adjacent_sysfs_del(iter->dev, oldname,
- 					  &iter->dev->adj_list.lower);
- 		netdev_adjacent_sysfs_add(iter->dev, dev,
-@@ -5167,6 +5222,8 @@ void netdev_adjacent_rename_links(struct net_device *dev, char *oldname)
- 	}
- 
- 	list_for_each_entry(iter, &dev->adj_list.lower, list) {
-+		if (!net_eq(net,dev_net(iter->dev)))
-+			continue;
- 		netdev_adjacent_sysfs_del(iter->dev, oldname,
- 					  &iter->dev->adj_list.upper);
- 		netdev_adjacent_sysfs_add(iter->dev, dev,
-@@ -6770,6 +6827,7 @@ int dev_change_net_namespace(struct net_device *dev, struct net *net, const char
- 
- 	/* Send a netdev-removed uevent to the old namespace */
- 	kobject_uevent(&dev->dev.kobj, KOBJ_REMOVE);
-+	netdev_adjacent_del_links(dev);
- 
- 	/* Actually switch the network namespace */
- 	dev_net_set(dev, net);
-@@ -6784,6 +6842,7 @@ int dev_change_net_namespace(struct net_device *dev, struct net *net, const char
- 
- 	/* Send a netdev-add uevent to the new namespace */
- 	kobject_uevent(&dev->dev.kobj, KOBJ_ADD);
-+	netdev_adjacent_add_links(dev);
- 
- 	/* Fixup kobjects */
- 	err = device_rename(&dev->dev, dev->name);
 -- 
 2.1.4
 
