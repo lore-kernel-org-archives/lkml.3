@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137AbbA0BlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 20:41:12 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:43959 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757693AbbA0BhA (ORCPT
+	id S1757846AbbA0BhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 20:37:12 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:53300 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757591AbbA0BhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 20:37:00 -0500
+	Mon, 26 Jan 2015 20:37:01 -0500
 From: David Decotigny <ddecotig@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <ben@decadent.org.uk>, Amir Vadai <amirv@mellanox.com>,
@@ -22,9 +22,9 @@ Cc: Eric Dumazet <edumazet@google.com>,
         Eyal Perry <eyalpe@mellanox.com>, Pravin B Shelar <pshelar@nicira.com>,
         Ed Swierk <eswierk@skyportsystems.com>,
         David Decotigny <decot@googlers.com>
-Subject: [PATCH net-next v1 09/18] net: macvlan: use __ethtool_get_ksettings
-Date: Mon, 26 Jan 2015 17:36:05 -0800
-Message-Id: <1422322574-6188-10-git-send-email-ddecotig@gmail.com>
+Subject: [PATCH net-next v1 10/18] net: team: use __ethtool_get_ksettings
+Date: Mon, 26 Jan 2015 17:36:06 -0800
+Message-Id: <1422322574-6188-11-git-send-email-ddecotig@gmail.com>
 X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 In-Reply-To: <1422322574-6188-1-git-send-email-ddecotig@gmail.com>
 References: <1422322574-6188-1-git-send-email-ddecotig@gmail.com>
@@ -36,38 +36,30 @@ From: David Decotigny <decot@googlers.com>
 
 Signed-off-by: David Decotigny <decot@googlers.com>
 ---
- drivers/net/macvlan.c | 8 ++++----
+ drivers/net/team/team.c | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index 1df38bd..ce934c3 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -925,12 +925,12 @@ static void macvlan_ethtool_get_drvinfo(struct net_device *dev,
- 	strlcpy(drvinfo->version, "0.1", sizeof(drvinfo->version));
- }
+diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
+index 4b2bfc5..77576d1 100644
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -2767,12 +2767,12 @@ static void __team_port_change_send(struct team_port *port, bool linkup)
+ 	port->state.linkup = linkup;
+ 	team_refresh_port_linkup(port);
+ 	if (linkup) {
+-		struct ethtool_cmd ecmd;
++		struct ethtool_ksettings ecmd;
  
--static int macvlan_ethtool_get_settings(struct net_device *dev,
--					struct ethtool_cmd *cmd)
-+static int macvlan_ethtool_get_ksettings(struct net_device *dev,
-+					 struct ethtool_ksettings *cmd)
- {
- 	const struct macvlan_dev *vlan = netdev_priv(dev);
- 
--	return __ethtool_get_settings(vlan->lowerdev, cmd);
-+	return __ethtool_get_ksettings(vlan->lowerdev, cmd);
- }
- 
- static netdev_features_t macvlan_fix_features(struct net_device *dev,
-@@ -998,7 +998,7 @@ static void macvlan_dev_netpoll_cleanup(struct net_device *dev)
- 
- static const struct ethtool_ops macvlan_ethtool_ops = {
- 	.get_link		= ethtool_op_get_link,
--	.get_settings		= macvlan_ethtool_get_settings,
-+	.get_ksettings		= macvlan_ethtool_get_ksettings,
- 	.get_drvinfo		= macvlan_ethtool_get_drvinfo,
- };
- 
+-		err = __ethtool_get_settings(port->dev, &ecmd);
++		err = __ethtool_get_ksettings(port->dev, &ecmd);
+ 		if (!err) {
+-			port->state.speed = ethtool_cmd_speed(&ecmd);
+-			port->state.duplex = ecmd.duplex;
++			port->state.speed = ecmd.parent.speed;
++			port->state.duplex = ecmd.parent.duplex;
+ 			goto send_event;
+ 		}
+ 	}
 -- 
 2.2.0.rc0.207.ga3a616c
 
