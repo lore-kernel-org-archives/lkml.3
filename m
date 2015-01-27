@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbbA0CMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 21:12:33 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:44602 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbbA0CMa (ORCPT
+	id S1756442AbbA0CNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 21:13:47 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:33151 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbbA0CNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 21:12:30 -0500
-Message-ID: <54C6F409.2030206@roeck-us.net>
-Date: Mon, 26 Jan 2015 18:12:25 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Mon, 26 Jan 2015 21:13:43 -0500
+Date: Mon, 26 Jan 2015 18:13:44 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        ARM Maintainers <arm@kernel.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: re-fromat AT91 part to match other entries
+Message-ID: <20150127021344.GA22154@quad.lixom.net>
+References: <20150112224203.GL22090@quad.lixom.net>
+ <20150113230956.GA15087@quad.lixom.net>
+ <20150113234759.GH3843@piout.net>
+ <2263559.r5MiMeqJt6@wuerfel>
+ <54C660FE.3000401@atmel.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Wim Van Sebroeck <wim@iguana.be>
-CC: Heiko Stuebner <heiko@sntech.de>, Lunxue Dai <lunxue.dai@rock-chips.com>,
-        Jisheng Zhang <jszhang@marvell.com>, Dinh Nguyen <dinguyen@altera.com>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] watchdog: dw_wdt: pat the watchdog before enabling
- it
-References: <1422314836-30516-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1422314836-30516-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.54C6F40D.00F9,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54C660FE.3000401@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015 03:27 PM, Doug Anderson wrote:
-> On some dw_wdt implementations the "top" register may be initted to 0
-> at bootup.  In such a case, each "pat" of the watchdog will reset the
-> timer to 0xffff.  That's pretty short.
->
-> The input clock of the wdt can be any of a wide range of values.  On
-> an rk3288 system, I've seen the wdt clock be 24.75 MHz.  That means
-> each tick is ~40ns and we'll count to 0xffff in ~2.6ms.
->
-> Because of the above two facts, it's a really good idea to pat the
-> watchdog after initting the "top" register properly and before
-> enabling the watchdog.  If you don't then there's no way we'll get the
-> next heartbeat in time.
->
-> Jisheng Zhang fixed this problem on some dw_mmc versions by using the
-> TOP_INIT feature.  However, the dw_wdt on rk3288 doesn't have TOP_INIT
-> so it's a good idea to also pat the watchdog manually.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On Mon, Jan 26, 2015 at 04:45:02PM +0100, Nicolas Ferre wrote:
+> Le 14/01/2015 10:05, Arnd Bergmann a écrit :
+> > On Wednesday 14 January 2015 00:47:59 Alexandre Belloni wrote:
+> >>
+> >> On 13/01/2015 at 15:09:56 -0800, Olof Johansson wrote :
+> >>> On Tue, Jan 13, 2015 at 03:43:00PM +0100, Nicolas Ferre wrote:
+> >>>> The entries are separated as ARM V4/V5 and ARM V7 as some other per-SoC config
+> >>>> options may be removed in the near future.
+> >>>>
+> >>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> >>>> ---
+> >>>> Hi Olof,
+> >>>>
+> >>>> This is an attempt to match other ARM SoC families format.
+> >>>> If you feel that the patch can be good, do not hesitate to take it yourself. I
+> >>>> don't plan to integrate it in any of my pull-request so it can appear quickly in
+> >>>> arm-soc and can be used by everyone.
+> >>>
+> >>> Hi,
+> >>>
+> >>> If you see what Peter did, he split up the rules per-SoC based on how
+> >>> things were selectable in Kconfig. Since you seem to have the Kconfig
+> >>> entries already, how about doing the same? That way the same information
+> >>> w.r.t. SoC family that you have as comments isn't lost either.
+> >>>
+> >>
+> >> You didn't see the patch set yet because it depends on a lot of other
+> >> series still being discussed but after the switch to multiplatform, the
+> >> only config option left will be SOC_AT91RM9200, SOC_AT91SAM9 (both
+> >> under SOC_SAM_V4_V5) and SOC_SAMA5, under SOC_SAM_V7.
+> >>
+> >> That's our plan, unless you feel that we should keep one config option
+> >> per SoC.
+> > 
+> > With the patches that I prepared last year, all of AT91SAM9 becomes
+> > one small file, so there really isn't any need to have separate Kconfig
+> > options.
+> 
+> Hi Olof,
+> 
+> After what noted Alexandre and Arnd, don't you think my initial attempt
+> was okay? Aka: ping ;-)
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Ah, yes. Applied now.
 
+
+-Olof
