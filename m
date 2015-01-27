@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758986AbbA0RyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:54:16 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:57835 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758243AbbA0RyO (ORCPT
+	id S1758503AbbA0R7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:59:54 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:34514 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694AbbA0R7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:54:14 -0500
-Date: Tue, 27 Jan 2015 17:53:59 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
+	Tue, 27 Jan 2015 12:59:52 -0500
+Date: Tue, 27 Jan 2015 09:59:51 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sebastian Reichel <sre@kernel.org>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: Re: N900 v3.19-rc5 arm atags_to_fdt.c is broken
-Message-ID: <20150127175359.GE11502@n2100.arm.linux.org.uk>
-References: <201501232239.55801@pali>
- <201501232336.36187@pali>
- <20150126161454.GE28663@atomide.com>
- <201501261723.10505@pali>
- <20150126170323.GF28663@atomide.com>
- <alpine.LFD.2.11.1501261318590.1322@knanqh.ubzr>
- <20150127133739.GB25306@amd>
- <alpine.LFD.2.11.1501271014160.1322@knanqh.ubzr>
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Zach Brown <zab@zabbo.net>, Maxim Patlasov <mpatlasov@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "open list:AIO" <linux-aio@kvack.org>
+Subject: Re: [PATCH v2 1/4] aio: add aio_kernel_() interface
+Message-ID: <20150127175951.GA6886@infradead.org>
+References: <1421163888-21452-1-git-send-email-ming.lei@canonical.com>
+ <1421163888-21452-2-git-send-email-ming.lei@canonical.com>
+ <20150125133147.GA19445@infradead.org>
+ <CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1501271014160.1322@knanqh.ubzr>
+In-Reply-To: <CACVXFVOzjroTqcgduqvKzcDVvNvO4xGX6go3+ZspfQkz3_2zAQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 10:16:24AM -0500, Nicolas Pitre wrote:
-> On Tue, 27 Jan 2015, Pavel Machek wrote:
-> > (Note, that in 3.19 dts for n900 got too big, so we are actually
-> > triggering old bugs. That means that this is a regression fix, and
-> > should go in ASAP).
+On Tue, Jan 27, 2015 at 12:18:23AM +0800, Ming Lei wrote:
+> > Why do we keep these two separate?  Especially having the iov passed
 > 
-> It is queued here:
-> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8294/1
+> No special meaning, just follow previous patches, :-)
+> 
+> But one benefit is that we can separate the one-shot
+> initialization from submit, at least filep/complete/ki_ctx can be
+> set during initialization.
 
-Irrespective of that patch, I commented on another thread (about adding
-the serial number to DT):
+FYI, I've posted another approach at async kernel reads/writes in the
+"[RFC] split struct kiocb" series.  I thought I had you on Cc, but I
+messed it up.
 
-| How about something a little more radical.
-| 
-| Rather than trying to squeeze various ATAGs into DT, why don't we add a
-| standard ATAG to contain the DT and pass that through into the kernel.
-| This is IMHO how we _should_ have done the ATAG compatibility from the
-| start.
-| 
-| That means we could get rid of most of the libfdt in the decompressor,
-| and instead resolve the differences in the kernel.
+This keeps the separate init function, but it still feels a bit
+pointless to me.
 
-That would allow us to get rid of all the FDT compatibility code in the
-decompressor, and when we encounter these special ATAGs, we can deal with
-them in the kernel instead of having to mess around with the DT.  I'd
-also assume (although I haven't checked) that it would be much easier to
-add additional DT properties in the kernel environment, rather than in
-the rather restrictive decompressor environment.
-
-We'd need to be careful about how we deal with the atags vs DT.  I'd
-suggest (as above) that we have a tag which points at the DT in
-physical memory, and its size, and pre-scan the atag list for that.
-When we find it, we kick off the DT based stuff as we would normally
-do, and follow it with a parse of the atags.  This would cause the
-atags to override whatever is in the DT, which afaics is the behaviour
-that we actually want.
-
-We could augment that with code to update DT too so that we can export
-just the DT based information to kexec'd kernels.
-
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
