@@ -1,53 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356AbbA0SST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:18:19 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:57796 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759093AbbA0SSQ (ORCPT
+	id S1759394AbbA0SVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:21:36 -0500
+Received: from smtp65.iad3a.emailsrvr.com ([173.203.187.65]:51103 "EHLO
+	smtp65.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755378AbbA0SVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:18:16 -0500
-Date: Tue, 27 Jan 2015 13:18:05 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Li Zefan <lizefan@huawei.com>, linux-kernel@vger.kernel.org, aswin@hp.com
-Subject: Re: [PATCH] cgroup: Initialize root in cgroup_mount
-Message-ID: <20150127181805.GD12314@htj.dyndns.org>
-References: <1422318099.6710.3.camel@j-VirtualBox>
- <20150127161009.GB12314@htj.dyndns.org>
- <1422380796.6710.13.camel@j-VirtualBox>
+	Tue, 27 Jan 2015 13:21:35 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54C7D72C.4060303@mev.co.uk>
+Date: Tue, 27 Jan 2015 18:21:32 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1422380796.6710.13.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: driverdev-devel@linuxdriverproject.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/6] staging: comedi: comedi_compat.c: reformat copyright
+ comment
+References: <1422373824-12793-1-git-send-email-abbotti@mev.co.uk> <1422382616-6884-1-git-send-email-abbotti@mev.co.uk> <1422382616-6884-4-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1422382616-6884-4-git-send-email-abbotti@mev.co.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 09:46:36AM -0800, Jason Low wrote:
-> On Tue, 2015-01-27 at 11:10 -0500, Tejun Heo wrote:
-> > On Mon, Jan 26, 2015 at 04:21:39PM -0800, Jason Low wrote:
-> > > Compiling kernel/ causes warnings:
-> > > 
-> > >     ... ‘root’ may be used uninitialized in this function
-> > >     ... ‘root’ was declared here
-> > > 
-> > > This isn't an issue since there is already logic to not use
-> > > root if we goto out_unlock without setting root.
-> > > 
-> > > Explicitly initialize root to NULL to suppress this so that we can
-> > > focus on catching warnings that can potentially cause bigger issues.
-> > 
-> > Which complier are you using?
-> 
-> Hi Tejun, one of the versions I am seeing this on is gcc 4.6.3.
-
-Can you plesae try something newer?  gcc for a while had trouble with
-these spurious warnings.  4.6.2 is 3+ years old now.
-
-Thanks.
+Bugger!  That should be "comedi_compat32.c", not "comedi_compat.c".
 
 -- 
-tejun
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
