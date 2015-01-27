@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717AbbA0McL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:32:11 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58642 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932656AbbA0McF (ORCPT
+	id S1759037AbbA0Mf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:35:58 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:45649 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759011AbbA0Mfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:32:05 -0500
-Message-ID: <54C78540.6080404@cogentembedded.com>
-Date: Tue, 27 Jan 2015 15:32:00 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Tue, 27 Jan 2015 07:35:54 -0500
+Message-ID: <54C78624.5000702@imgtec.com>
+Date: Tue, 27 Jan 2015 12:35:48 +0000
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: David Decotigny <ddecotig@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>, Amir Vadai <amirv@mellanox.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-api@vger.kernel.org
-CC: Eric Dumazet <edumazet@google.com>,
-        Eugenia Emantayev <eugenia@mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Ido Shamay <idos@mellanox.com>,
-        Joe Perches <joe@perches.com>, Saeed Mahameed <saeedm@mellanox.com>,
-        Govindarajulu Varadarajan <_govind@gmx.com>,
-        Venkata Duvvuru <VenkatKumar.Duvvuru@Emulex.Com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Eyal Perry <eyalpe@mellanox.com>, Pravin B Shelar <pshelar@nicira.com>,
-        Ed Swierk <eswierk@skyportsystems.com>,
-        David Decotigny <decot@googlers.com>
-Subject: Re: [PATCH net-next v1 05/18] net: tx4939: use __ethtool_get_ksettings
-References: <1422322574-6188-1-git-send-email-ddecotig@gmail.com> <1422322574-6188-6-git-send-email-ddecotig@gmail.com>
-In-Reply-To: <1422322574-6188-6-git-send-email-ddecotig@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: <tiwai@suse.de>, <perex@perex.cz>
+CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <lars@metafoo.de>
+Subject: Re: [PATCH_V3 4/4] sound: jz4740: set i2s clk rate to 12MHz
+References: <1422283993-53642-1-git-send-email-Zubair.Kakakhel@imgtec.com> <1422283993-53642-5-git-send-email-Zubair.Kakakhel@imgtec.com>
+In-Reply-To: <1422283993-53642-5-git-send-email-Zubair.Kakakhel@imgtec.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 1/27/2015 4:36 AM, David Decotigny wrote:
 
-> From: David Decotigny <decot@googlers.com>
-
-> Signed-off-by: David Decotigny <decot@googlers.com>
+On 26/01/15 14:53, Zubair Lutfullah Kakakhel wrote:
+> i2s clock rate is not set to 12MHz currently. Set it before enabling
+> the clock.
+> 
+> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+> 
 > ---
->   arch/mips/txx9/generic/setup_tx4939.c | 7 ++++---
->   1 file changed, 4 insertions(+), 3 deletions(-)
+> V2 changes: Removed clk_prepare_enable call as clock was already being
+> enabled elsewhere. Just set rate to 12MHz.
+> ---
+>  sound/soc/jz4740/jz4740-i2s.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/sound/soc/jz4740/jz4740-i2s.c b/sound/soc/jz4740/jz4740-i2s.c
+> index 07f7781..c2e5852 100644
+> --- a/sound/soc/jz4740/jz4740-i2s.c
+> +++ b/sound/soc/jz4740/jz4740-i2s.c
+> @@ -125,6 +125,7 @@ static int jz4740_i2s_startup(struct snd_pcm_substream *substream,
+>  	ctrl |= JZ_AIC_CTRL_FLUSH;
+>  	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
+>  
+> +	clk_set_rate(i2s->clk_i2s, 12000000);
 
-    I don't think "net: " prefix applies here.
-    And you should have CC'ed linux-mips@linux-mips.org.
+Lars recommended using dt and assigned-clock-rates for this. (irc)
+I've checked and it can be done.
 
-WBR, Sergei
+This patch is not needed.
 
+Patch 1-3 in this series are OK. This last one can be skipped.
+
+Do you want me to repost the series without it? Or is this fine?
+
+Thanks,
+ZubairLK
+
+>  	clk_prepare_enable(i2s->clk_i2s);
+>  
+>  	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
+> 
