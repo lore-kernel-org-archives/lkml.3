@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528AbbA0Q1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:27:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44491 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597AbbA0Q1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755457AbbA0Q1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:27:11 -0500
+Received: from bastet.se.axis.com ([195.60.68.11]:50124 "EHLO
+	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671AbbA0Q1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 11:27:07 -0500
 Date: Tue, 27 Jan 2015 17:27:05 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Cgroups <cgroups@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] mm: memcontrol: default hierarchy interface for memory
- fix - "none"
-Message-ID: <20150127162705.GE19880@dhcp22.suse.cz>
-References: <1421508107-29377-1-git-send-email-hannes@cmpxchg.org>
- <20150120133711.GI25342@dhcp22.suse.cz>
- <20150120143002.GB11181@phnom.home.cmpxchg.org>
- <20150120143644.GL25342@dhcp22.suse.cz>
- <CAOS58YNZFuSP6cKLAkYKkK+QUDxwngnKE5UGHmAL7n3PygraaQ@mail.gmail.com>
- <20150123170353.GA12036@phnom.home.cmpxchg.org>
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: Re: [PATCH v2 06/40] cris/uaccess: fix sparse errors
+Message-ID: <20150127162705.GB26817@axis.com>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
+ <1420558883-10131-7-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150123170353.GA12036@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420558883-10131-7-git-send-email-mst@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 23-01-15 12:03:53, Johannes Weiner wrote:
-> On Tue, Jan 20, 2015 at 12:00:11PM -0500, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Tue, Jan 20, 2015 at 9:36 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > > On Tue 20-01-15 09:30:02, Johannes Weiner wrote:
-> > > [...]
-> > >> Another possibility would be "infinity",
-> > >
-> > > yes infinity definitely sounds much better to me.
-> > 
-> > FWIW, I prefer "max". It's shorter and clear enough. I don't think
-> > there's anything ambiguous about "the memory max limit is at its
-> > maximum". No need to introduce a different term.
+On Tue, Jan 06, 2015 at 04:43:50PM +0100, Michael S. Tsirkin wrote:
+> virtio wants to read bitwise types from userspace using get_user.  At the
+> moment this triggers sparse errors, since the value is passed through an
+> integer.
 > 
-> While I don't feel too strongly, I do agree with this.  I don't see
-> much potential for confusion, and "max" is much shorter and sweeter.
+> Fix that up using __force.
+
+Looks sane, I'll take this in the CRIS tree since you
+have a cleanup patch which depends on it.
+
+Thanks!
+
+/Jesper
+
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  arch/cris/include/asm/uaccess.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Michal?
+> diff --git a/arch/cris/include/asm/uaccess.h b/arch/cris/include/asm/uaccess.h
+> index 9145408..9cf5a23 100644
+> --- a/arch/cris/include/asm/uaccess.h
+> +++ b/arch/cris/include/asm/uaccess.h
+> @@ -153,7 +153,7 @@ struct __large_struct { unsigned long buf[100]; };
+>  ({								\
+>  	long __gu_err, __gu_val;				\
+>  	__get_user_size(__gu_val,(ptr),(size),__gu_err);	\
+> -	(x) = (__typeof__(*(ptr)))__gu_val;			\
+> +	(x) = (__force __typeof__(*(ptr)))__gu_val;		\
+>  	__gu_err;						\
+>  })
+>  
+> @@ -163,7 +163,7 @@ struct __large_struct { unsigned long buf[100]; };
+>  	const __typeof__(*(ptr)) *__gu_addr = (ptr);			\
+>  	if (access_ok(VERIFY_READ,__gu_addr,size))			\
+>  		__get_user_size(__gu_val,__gu_addr,(size),__gu_err);	\
+> -	(x) = (__typeof__(*(ptr)))__gu_val;				\
+> +	(x) = (__force __typeof__(*(ptr)))__gu_val;			\
+>  	__gu_err;							\
+>  })
+>  
+> -- 
+> MST
 
-I dunno. Infinity is unambiguous and still not_too_long_to_write which
-is why I like it more. Max might evoke impression that this is a
-symbolic name for memory.max value. Which would work for both
-memory.high and memory.low because the meaning would be the same. But
-who knows what the future has to tell about that...
-
-I definitely do not want to bikeshed about this because both names are
-acceptable.
+/^JN - Jesper Nilsson
 -- 
-Michal Hocko
-SUSE Labs
+               Jesper Nilsson -- jesper.nilsson@axis.com
