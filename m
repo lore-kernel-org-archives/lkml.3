@@ -1,216 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932997AbbA0VCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:02:55 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:37072 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932653AbbA0VCx (ORCPT
+	id S1759482AbbA0VGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 16:06:16 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:34725 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290AbbA0VGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 16:02:53 -0500
-Message-ID: <54C7FCF8.80703@kernel.org>
-Date: Tue, 27 Jan 2015 21:02:48 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Tue, 27 Jan 2015 16:06:13 -0500
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>
-CC: shawn.guo@linaro.org, B38611@freescale.com, maitysanchayan@gmail.com,
-        linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] iio: adc: vf610: implement configurable conversion
- modes
-References: <1421769723-28677-1-git-send-email-stefan@agner.ch> <1421769723-28677-3-git-send-email-stefan@agner.ch>
-In-Reply-To: <1421769723-28677-3-git-send-email-stefan@agner.ch>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1422358221-13199-2-git-send-email-k.kozlowski@samsung.com>
+References: <1422358221-13199-1-git-send-email-k.kozlowski@samsung.com>
+	<1422358221-13199-2-git-send-email-k.kozlowski@samsung.com>
+Date: Tue, 27 Jan 2015 22:06:12 +0100
+Message-ID: <CAAfyv34YoUG8dyq10mFZRQ-uf6-oT_KAbwZ1UQQ0FvFrs10BrQ@mail.gmail.com>
+Subject: Re: [RFT PATCH 1/4] power_supply: twl4030_madc: Check return value of power_supply_register
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Dmitry Artamonow <mad_soft@inbox.ru>,
+        Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
+        Darren Hart <dvhart@infradead.org>, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        platform-driver-x86@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/01/15 16:02, Stefan Agner wrote:
-> Support configureable conversion mode through sysfs. So far, the
-> mode used was low-power, which is enabled by default now. Beside
-> that, the modes normal and high-speed are selectable as well.
-> 
-> Use the new device tree property which specifies the maximum ADC
-> conversion clock frequencies. Depending on the mode used, the
-> available resulting conversion frequency are calcaulated
-> dynamically.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-We have the extinfo stuff to cut down on the boiler plate, particularly
-with enum type items like this.  See the various IIO_ENUM() etc in iio.h
-> ---
->  drivers/iio/adc/vf610_adc.c | 92 ++++++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 86 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/iio/adc/vf610_adc.c b/drivers/iio/adc/vf610_adc.c
-> index e63b8e7..fd41d91c 100644
-> --- a/drivers/iio/adc/vf610_adc.c
-> +++ b/drivers/iio/adc/vf610_adc.c
-> @@ -118,15 +118,21 @@ enum average_sel {
->  	VF610_ADC_SAMPLE_32,
->  };
->  
-> +enum conversion_mode_sel {
-> +	VF610_ADC_CONV_NORMAL,
-> +	VF610_ADC_CONV_HIGH_SPEED,
-> +	VF610_ADC_CONV_LOW_POWER,
-> +};
-> +
->  struct vf610_adc_feature {
->  	enum clk_sel	clk_sel;
->  	enum vol_ref	vol_ref;
-> +	enum conversion_mode_sel conv_mode;
->  
->  	int	clk_div;
->  	int     sample_rate;
->  	int	res_mode;
->  
-> -	bool	lpm;
->  	bool	calibration;
->  	bool	ovwren;
->  };
-> @@ -139,6 +145,8 @@ struct vf610_adc {
->  	u32 vref_uv;
->  	u32 value;
->  	struct regulator *vref;
-> +
-> +	u32 max_adck_rate[3];
->  	struct vf610_adc_feature adc_feature;
->  
->  	u32 sample_freq_avail[5];
-> @@ -146,6 +154,8 @@ struct vf610_adc {
->  	struct completion completion;
->  };
->  
-> +static const char * const vf610_conv_modes[] = { "normal", "high-speed",
-> +						 "low-power" };
->  static const u32 vf610_hw_avgs[] = { 1, 4, 8, 16, 32 };
->  
->  #define VF610_ADC_CHAN(_idx, _chan_type) {			\
-> @@ -186,8 +196,20 @@ static const struct iio_chan_spec vf610_adc_iio_channels[] = {
->  
->  static inline void vf610_adc_calculate_rates(struct vf610_adc *info)
->  {
-> +	struct vf610_adc_feature *adc_feature = &info->adc_feature;
->  	unsigned long adck_rate, ipg_rate = clk_get_rate(info->clk);
-> -	int i;
-> +	int divisor, i;
-> +
-> +	adck_rate = info->max_adck_rate[adc_feature->conv_mode];
-> +
-> +	if (adck_rate) {
-> +		/* calculate clk divider which is within specification */
-> +		divisor = ipg_rate / adck_rate;
-> +		adc_feature->clk_div = 1 << fls(divisor + 1);
-> +	} else {
-> +		/* fall-back value using a safe divisor */
-> +		adc_feature->clk_div = 8;
-> +	}
->  
->  	/*
->  	 * Calculate ADC sample frequencies
-> @@ -219,10 +241,8 @@ static inline void vf610_adc_cfg_init(struct vf610_adc *info)
->  
->  	adc_feature->res_mode = 12;
->  	adc_feature->sample_rate = 1;
-> -	adc_feature->lpm = true;
->  
-> -	/* Use a save ADCK which is below 20MHz on all devices */
-> -	adc_feature->clk_div = 8;
-> +	adc_feature->conv_mode = VF610_ADC_CONV_LOW_POWER;
->  
->  	vf610_adc_calculate_rates(info);
->  }
-> @@ -307,10 +327,12 @@ static void vf610_adc_cfg_set(struct vf610_adc *info)
->  	cfg_data = readl(info->regs + VF610_REG_ADC_CFG);
->  
->  	cfg_data &= ~VF610_ADC_ADLPC_EN;
-> -	if (adc_feature->lpm)
-> +	if (adc_feature->conv_mode == VF610_ADC_CONV_LOW_POWER)
->  		cfg_data |= VF610_ADC_ADLPC_EN;
->  
->  	cfg_data &= ~VF610_ADC_ADHSC_EN;
-> +	if (adc_feature->conv_mode == VF610_ADC_CONV_HIGH_SPEED)
-> +		cfg_data |= VF610_ADC_ADHSC_EN;
->  
->  	writel(cfg_data, info->regs + VF610_REG_ADC_CFG);
->  }
-> @@ -466,10 +488,65 @@ static ssize_t vf610_show_samp_freq_avail(struct device *dev,
->  	return len;
->  }
->  
-> +static ssize_t vf610_read_mode(struct device *dev,
-> +		struct device_attribute *attr,
-> +		char *buf)
-> +{
-> +	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
-> +	struct vf610_adc *info = iio_priv(indio_dev);
-> +
-> +	return sprintf(buf, "%s\n",
-> +			vf610_conv_modes[info->adc_feature.conv_mode]);
-> +}
-> +
-> +
-> +static ssize_t vf610_write_mode(struct device *dev,
-> +		struct device_attribute *attr,
-> +		const char *buf,
-> +		size_t len)
-> +{
-> +	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
-> +	struct vf610_adc *info = iio_priv(indio_dev);
-> +	int i, mode = -EINVAL;
-> +
-> +	mutex_lock(&indio_dev->mlock);
-> +	if (iio_buffer_enabled(indio_dev)) {
-> +		mutex_unlock(&indio_dev->mlock);
-> +		return -EBUSY;
-> +	}
-> +	mutex_unlock(&indio_dev->mlock);
-> +
-> +	for (i = 0; i < ARRAY_SIZE(vf610_conv_modes); i++) {
-> +		if (!strcmp(vf610_conv_modes[i], buf)) {
-> +			mode = i;
-> +			break;
-> +		}
-> +	}
-> +
-> +	if (mode < 0)
-> +		return mode;
-> +
-> +	mutex_lock(&indio_dev->mlock);
-> +	info->adc_feature.conv_mode = mode;
-> +	vf610_adc_calculate_rates(info);
-> +	vf610_adc_hw_init(info);
-> +	mutex_unlock(&indio_dev->mlock);
-> +
-> +	return len;
-> +}
-> +
->  static IIO_DEV_ATTR_SAMP_FREQ_AVAIL(vf610_show_samp_freq_avail);
->  
-> +static IIO_CONST_ATTR_NAMED(conversion_mode_available,
-> +	conversion_mode_available, "normal high-speed low-power");
-> +
-> +IIO_DEVICE_ATTR(conversion_mode, S_IWUSR | S_IRUGO, vf610_read_mode,
-> +	vf610_write_mode, 0);
-> +
->  static struct attribute *vf610_attributes[] = {
->  	&iio_dev_attr_sampling_frequency_available.dev_attr.attr,
-> +	&iio_const_attr_conversion_mode_available.dev_attr.attr,
-> +	&iio_dev_attr_conversion_mode.dev_attr.attr,
->  	NULL
->  };
->  
-> @@ -654,6 +731,9 @@ static int vf610_adc_probe(struct platform_device *pdev)
->  
->  	info->vref_uv = regulator_get_voltage(info->vref);
->  
-> +	of_property_read_u32_array(pdev->dev.of_node, "fsl,adck-max-frequency",
-> +			info->max_adck_rate, 3);
-> +
->  	platform_set_drvdata(pdev, indio_dev);
->  
->  	init_completion(&info->completion);
-> 
+Hi Krzystof,
 
+On Tue, Jan 27, 2015 at 12:30 PM, Krzysztof Kozlowski
+<k.kozlowski@samsung.com> wrote:
+> The return value of power_supply_register() call was not checked and
+> even on error probe() function returned 0. If registering failed then
+> during unbind the driver tried to unregister power supply which was not
+> actually registered.
+>
+> This could lead to memory corruption because power_supply_unregister()
+> unconditionally cleans up given power supply.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Fixes: da0a00ebc239 ("power: Add twl4030_madc battery driver.")
+> Cc: <stable@vger.kernel.org>
+> ---
+>  drivers/power/twl4030_madc_battery.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/power/twl4030_madc_battery.c b/drivers/power/twl4030_madc_battery.c
+> index 7ef445a6cfa6..cf907609ec49 100644
+> --- a/drivers/power/twl4030_madc_battery.c
+> +++ b/drivers/power/twl4030_madc_battery.c
+> @@ -192,6 +192,7 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
+>  {
+>         struct twl4030_madc_battery *twl4030_madc_bat;
+>         struct twl4030_madc_bat_platform_data *pdata = pdev->dev.platform_data;
+> +       int ret = 0;
+>
+>         twl4030_madc_bat = kzalloc(sizeof(*twl4030_madc_bat), GFP_KERNEL);
+>         if (!twl4030_madc_bat)
+> @@ -216,9 +217,11 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
+>
+>         twl4030_madc_bat->pdata = pdata;
+>         platform_set_drvdata(pdev, twl4030_madc_bat);
+> -       power_supply_register(&pdev->dev, &twl4030_madc_bat->psy);
+> +       ret = power_supply_register(&pdev->dev, &twl4030_madc_bat->psy);
+> +       if (ret < 0)
+> +               kfree(twl4030_madc_bat);
+I post update twl4030_madc to iio some time ago [1] where this change
+was incorporated.
+I plan to respin in next week so we can drop this one (or take and
+I'll rebase on top).
+>
+> -       return 0;
+> +       return ret;
+>  }
+>
+>  static int twl4030_madc_battery_remove(struct platform_device *pdev)
+> --
+> 1.9.1
+>
+
+[1] - https://lkml.org/lkml/2014/3/5/284
+
+BR,
+
+marek
+
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
