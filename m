@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457AbbA0Bg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 20:36:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35408 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678AbbA0BgY (ORCPT
+	id S1758124AbbA0Bkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 20:40:32 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:54667 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757725AbbA0BkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 20:36:24 -0500
-Message-ID: <54C6EB93.6080409@infradead.org>
-Date: Mon, 26 Jan 2015 17:36:19 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 26 Jan 2015 20:40:24 -0500
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>, Jonathan Corbet <corbet@lwn.net>
-CC: linux-doc@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] DocBook: Do not exceed argument list limit
-References: <1422268277-5333-1-git-send-email-mmarek@suse.cz>
-In-Reply-To: <1422268277-5333-1-git-send-email-mmarek@suse.cz>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1421932594-5878-1-git-send-email-niklass@axis.com>
+References: <1421932594-5878-1-git-send-email-niklass@axis.com>
+From: Steve French <smfrench@gmail.com>
+Date: Mon, 26 Jan 2015 19:40:02 -0600
+Message-ID: <CAH2r5msDma05E3gO73jdzubvt4NB5rwvG1WrA5Z48obgL6LNYw@mail.gmail.com>
+Subject: Re: [PATCH] cifs: fix MUST SecurityFlags filtering
+To: Niklas Cassel <niklas.cassel@axis.com>
+Cc: Steve French <sfrench@samba.org>,
+        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        samba-technical <samba-technical@lists.samba.org>,
+        LKML <linux-kernel@vger.kernel.org>, Niklas Cassel <niklass@axis.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Mr. Corbet.
+merged into cifs-2.6.git
 
-On 01/26/15 02:31, Michal Marek wrote:
-> Use find + xargs to compress the generated manpages. Without this patch,
-> the build can fail with
-> 
->     gzip -f Documentation/DocBook/man/*.9
->     /bin/bash: /usr/bin/gzip: Argument list too long
-> 
-> This happened with qemu user mode emulation on aarch64.
-> 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+On Thu, Jan 22, 2015 at 7:16 AM, Niklas Cassel <niklas.cassel@axis.com> wrote:
+> If CONFIG_CIFS_WEAK_PW_HASH is not set, CIFSSEC_MUST_LANMAN
+> and CIFSSEC_MUST_PLNTXT is defined as 0.
+>
+> When setting new SecurityFlags without any MUST flags,
+> your flags would be overwritten with CIFSSEC_MUST_LANMAN (0).
+>
+> Signed-off-by: Niklas Cassel <niklass@axis.com>
 > ---
->  Documentation/DocBook/Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/DocBook/Makefile b/Documentation/DocBook/Makefile
-> index 9c7d92d..b6a6a2e 100644
-> --- a/Documentation/DocBook/Makefile
-> +++ b/Documentation/DocBook/Makefile
-> @@ -56,7 +56,7 @@ htmldocs: $(HTML)
->  
->  MAN := $(patsubst %.xml, %.9, $(BOOKS))
->  mandocs: $(MAN)
-> -	$(if $(wildcard $(obj)/man/*.9),gzip -f $(obj)/man/*.9)
-> +	find $(obj)/man -name '*.9' | xargs gzip -f
->  
->  installmandocs: mandocs
->  	mkdir -p /usr/local/man/man9/
-> 
+>  fs/cifs/cifs_debug.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/cifs/cifs_debug.c b/fs/cifs/cifs_debug.c
+> index 9c56ef7..7febcf2 100644
+> --- a/fs/cifs/cifs_debug.c
+> +++ b/fs/cifs/cifs_debug.c
+> @@ -606,9 +606,11 @@ cifs_security_flags_handle_must_flags(unsigned int *flags)
+>                 *flags = CIFSSEC_MUST_NTLMV2;
+>         else if ((*flags & CIFSSEC_MUST_NTLM) == CIFSSEC_MUST_NTLM)
+>                 *flags = CIFSSEC_MUST_NTLM;
+> -       else if ((*flags & CIFSSEC_MUST_LANMAN) == CIFSSEC_MUST_LANMAN)
+> +       else if (CIFSSEC_MUST_LANMAN &&
+> +                (*flags & CIFSSEC_MUST_LANMAN) == CIFSSEC_MUST_LANMAN)
+>                 *flags = CIFSSEC_MUST_LANMAN;
+> -       else if ((*flags & CIFSSEC_MUST_PLNTXT) == CIFSSEC_MUST_PLNTXT)
+> +       else if (CIFSSEC_MUST_PLNTXT &&
+> +                (*flags & CIFSSEC_MUST_PLNTXT) == CIFSSEC_MUST_PLNTXT)
+>                 *flags = CIFSSEC_MUST_PLNTXT;
+>
+>         *flags |= signflags;
+> --
+> 2.1.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
 
 -- 
-~Randy
+Thanks,
+
+Steve
