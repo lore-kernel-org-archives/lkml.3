@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758471AbbA0OzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 09:55:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57051 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957AbbA0OzV (ORCPT
+	id S1754171AbbA0O4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:56:31 -0500
+Received: from smtprelay0251.hostedemail.com ([216.40.44.251]:55727 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751888AbbA0O43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 09:55:21 -0500
-Date: Tue, 27 Jan 2015 06:55:18 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>, robh+dt@kernel.org,
-        mark.rutland@arm.com, gnomes@lxorguk.ukuu.org.uk,
-        peter@hurleysoftware.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        grant.likely@linaro.org, jslaby@suse.cz, heiko@sntech.de,
-        jason@lakedaemon.net, florian.vaussard@epfl.ch, andrew@lunn.ch,
-        hytszk@gmail.com, antonynpavlov@gmail.com, shawn.guo@linaro.org,
-        orsonzhai@gmail.com, geng.ren@spreadtrum.com,
-        zhizhou.zhang@spreadtrum.com, lanqing.liu@spreadtrum.com,
-        zhang.lyra@gmail.com, wei.qiao@spreadtrum.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v8 0/2] Add Spreadtrum SoC bindings and serial driver
- support
-Message-ID: <20150127145518.GA32531@kroah.com>
-References: <1422345407-10037-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <2196748.ag4UzqF1Px@wuerfel>
+	Tue, 27 Jan 2015 09:56:29 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3165:3352:3622:3865:3866:3870:3872:5007:6119:6261:7875:10004:10400:10848:10967:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:12663:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: grain59_5575d20935e31
+X-Filterd-Recvd-Size: 1720
+Date: Tue, 27 Jan 2015 09:56:26 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Xunlei Pang <pang.xunlei@linaro.org>, linux-kernel@vger.kernel.org,
+        Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH 5/5] sched/rt: Optimize find_lowest_rq() to select a
+ cache hot cpu
+Message-ID: <20150127095626.707e434d@gandalf.local.home>
+In-Reply-To: <20150127142136.GE21418@twins.programming.kicks-ass.net>
+References: <1421642980-10045-1-git-send-email-pang.xunlei@linaro.org>
+	<1421642980-10045-5-git-send-email-pang.xunlei@linaro.org>
+	<20150127142136.GE21418@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2196748.ag4UzqF1Px@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 02:24:02PM +0100, Arnd Bergmann wrote:
-> On Tuesday 27 January 2015 15:56:45 Chunyan Zhang wrote:
-> > This patch-set split the last version, and addressed the review comments from
-> > last version on serial driver code.
-> > 
-> > Changes from v7:
-> > * Addressed review comments from Peter:
-> >         - Initialized the stack local with zero in sprd_set_termios()
-> >         - Used dev_get_drvdata() to get sprd_uart_port
-> > 
-> 
-> Looks good to me, but you still have too many people on 'To', so Greg
-> might be missing that you expect him to merge it.
-> 
-> Greg, if there are no further comments, can you take both patches through
-> the tty git?
+On Tue, 27 Jan 2015 15:21:36 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Will do, thanks.
+> On Mon, Jan 19, 2015 at 04:49:40AM +0000, Xunlei Pang wrote:
+> > In find_lowest_rq(), if we can't find a wake_affine cpu from
+> > sched_domain, then we can actually determine a cache hot cpu
+> > instead of simply calling "cpumask_any(lowest_mask)" which
+> > always returns the first cpu in the mask.
+> > 
+> > So, we can determine the cache hot cpu during the interation of
+> > sched_domain() in passing.
+> 
+> Steve, I'm not getting this. Why are we using WAKE_AFFINE here?
+> 
 
-greg k-h
+It originated from Gregory Haskins topology patches. See 
+ 6e1254d2c41215da27025add8900ed187bca121d
+
+-- Steve
