@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021AbbA0MrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:47:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34906 "EHLO
+	id S933007AbbA0MrT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:47:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34911 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758326AbbA0MR0 (ORCPT
+	with ESMTP id S1758329AbbA0MR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:26 -0500
+	Tue, 27 Jan 2015 07:17:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 024/126] exit: fix race between wait_consider_task() and wait_task_zombie()
-Date: Tue, 27 Jan 2015 12:15:29 +0000
-Message-Id: <1422361031-19364-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 025/126] mm: prevent endless growth of anon_vma hierarchy
+Date: Tue, 27 Jan 2015 12:15:30 +0000
+Message-Id: <1422361031-19364-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,73 +29,186 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Konstantin Khlebnikov <koct9i@gmail.com>
 
-commit 3245d6acab981a2388ffb877c7ecc97e763c59d4 upstream.
+commit 7a3ef208e662f4b63d43a23f61a64a129c525bbc upstream.
 
-wait_consider_task() checks EXIT_ZOMBIE after EXIT_DEAD/EXIT_TRACE and
-both checks can fail if we race with EXIT_ZOMBIE -> EXIT_DEAD/EXIT_TRACE
-change in between, gcc needs to reload p->exit_state after
-security_task_wait().  In this case ->notask_error will be wrongly
-cleared and do_wait() can hang forever if it was the last eligible
-child.
+Constantly forking task causes unlimited grow of anon_vma chain.  Each
+next child allocates new level of anon_vmas and links vma to all
+previous levels because pages might be inherited from any level.
 
-Many thanks to Arne who carefully investigated the problem.
+This patch adds heuristic which decides to reuse existing anon_vma
+instead of forking new one.  It adds counter anon_vma->degree which
+counts linked vmas and directly descending anon_vmas and reuses anon_vma
+if counter is lower than two.  As a result each anon_vma has either vma
+or at least two descending anon_vmas.  In such trees half of nodes are
+leafs with alive vmas, thus count of anon_vmas is no more than two times
+bigger than count of vmas.
 
-Note: this bug is very old but it was pure theoretical until commit
-b3ab03160dfa ("wait: completely ignore the EXIT_DEAD tasks").  Before
-this commit "-O2" was probably enough to guarantee that compiler won't
-read ->exit_state twice.
+This heuristic reuses anon_vmas as few as possible because each reuse
+adds false aliasing among vmas and rmap walker ought to scan more ptes
+when it searches where page is might be mapped.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Arne Goedeke <el@laramies.com>
-Tested-by: Arne Goedeke <el@laramies.com>
+Link: http://lkml.kernel.org/r/20120816024610.GA5350@evergreen.ssec.wisc.edu
+Fixes: 5beb49305251 ("mm: change anon_vma linking to fix multi-process server scalability issue")
+[akpm@linux-foundation.org: fix typo, per Rik]
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Reported-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+Tested-by: Michal Hocko <mhocko@suse.cz>
+Tested-by: Jerome Marchand <jmarchan@redhat.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/exit.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ include/linux/rmap.h | 10 ++++++++++
+ mm/rmap.c            | 42 +++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 51 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index e5c4668f1799..ab2472332043 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1294,9 +1294,15 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
- static int wait_consider_task(struct wait_opts *wo, int ptrace,
- 				struct task_struct *p)
- {
-+	/*
-+	 * We can race with wait_task_zombie() from another thread.
-+	 * Ensure that EXIT_ZOMBIE -> EXIT_DEAD/EXIT_TRACE transition
-+	 * can't confuse the checks below.
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index be574506e6a9..28349a8fd08b 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -37,6 +37,16 @@ struct anon_vma {
+ 	atomic_t refcount;
+ 
+ 	/*
++	 * Count of child anon_vmas and VMAs which points to this anon_vma.
++	 *
++	 * This counter is used for making decision about reusing anon_vma
++	 * instead of forking new one. See comments in function anon_vma_clone.
 +	 */
-+	int exit_state = ACCESS_ONCE(p->exit_state);
- 	int ret;
- 
--	if (unlikely(p->exit_state == EXIT_DEAD))
-+	if (unlikely(exit_state == EXIT_DEAD))
- 		return 0;
- 
- 	ret = eligible_child(wo, p);
-@@ -1317,7 +1323,7 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
- 		return 0;
- 	}
- 
--	if (unlikely(p->exit_state == EXIT_TRACE)) {
-+	if (unlikely(exit_state == EXIT_TRACE)) {
++	unsigned degree;
++
++	struct anon_vma *parent;	/* Parent of this anon_vma */
++
++	/*
+ 	 * NOTE: the LSB of the rb_root.rb_node is set by
+ 	 * mm_take_all_locks() _after_ taking the above lock. So the
+ 	 * rb_root must only be read/written after taking the above lock
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 78274432b48f..ab8e7984fa19 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -72,6 +72,8 @@ static inline struct anon_vma *anon_vma_alloc(void)
+ 	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
+ 	if (anon_vma) {
+ 		atomic_set(&anon_vma->refcount, 1);
++		anon_vma->degree = 1;	/* Reference for first vma */
++		anon_vma->parent = anon_vma;
  		/*
- 		 * ptrace == 0 means we are the natural parent. In this case
- 		 * we should clear notask_error, debugger will notify us.
-@@ -1344,7 +1350,7 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
+ 		 * Initialise the anon_vma root to point to itself. If called
+ 		 * from fork, the root will be reset to the parents anon_vma.
+@@ -188,6 +190,8 @@ int anon_vma_prepare(struct vm_area_struct *vma)
+ 		if (likely(!vma->anon_vma)) {
+ 			vma->anon_vma = anon_vma;
+ 			anon_vma_chain_link(vma, avc, anon_vma);
++			/* vma reference or self-parent link for new root */
++			anon_vma->degree++;
+ 			allocated = NULL;
+ 			avc = NULL;
+ 		}
+@@ -236,6 +240,14 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
+ /*
+  * Attach the anon_vmas from src to dst.
+  * Returns 0 on success, -ENOMEM on failure.
++ *
++ * If dst->anon_vma is NULL this function tries to find and reuse existing
++ * anon_vma which has no vmas and only one child anon_vma. This prevents
++ * degradation of anon_vma hierarchy to endless linear chain in case of
++ * constantly forking task. On the other hand, an anon_vma with more than one
++ * child isn't reused even if there was no alive vma, thus rmap walker has a
++ * good chance of avoiding scanning the whole hierarchy when it searches where
++ * page is mapped.
+  */
+ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+ {
+@@ -256,7 +268,21 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+ 		anon_vma = pavc->anon_vma;
+ 		root = lock_anon_vma_root(root, anon_vma);
+ 		anon_vma_chain_link(dst, avc, anon_vma);
++
++		/*
++		 * Reuse existing anon_vma if its degree lower than two,
++		 * that means it has no vma and only one anon_vma child.
++		 *
++		 * Do not chose parent anon_vma, otherwise first child
++		 * will always reuse it. Root anon_vma is never reused:
++		 * it has self-parent reference and at least one child.
++		 */
++		if (!dst->anon_vma && anon_vma != src->anon_vma &&
++				anon_vma->degree < 2)
++			dst->anon_vma = anon_vma;
  	}
++	if (dst->anon_vma)
++		dst->anon_vma->degree++;
+ 	unlock_anon_vma_root(root);
+ 	return 0;
  
- 	/* slay zombie? */
--	if (p->exit_state == EXIT_ZOMBIE) {
-+	if (exit_state == EXIT_ZOMBIE) {
- 		/* we don't reap group leaders with subthreads */
- 		if (!delay_group_leader(p)) {
- 			/*
+@@ -280,6 +306,9 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	if (!pvma->anon_vma)
+ 		return 0;
+ 
++	/* Drop inherited anon_vma, we'll reuse existing or allocate new. */
++	vma->anon_vma = NULL;
++
+ 	/*
+ 	 * First, attach the new VMA to the parent VMA's anon_vmas,
+ 	 * so rmap can find non-COWed pages in child processes.
+@@ -288,6 +317,10 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	if (error)
+ 		return error;
+ 
++	/* An existing anon_vma has been reused, all done then. */
++	if (vma->anon_vma)
++		return 0;
++
+ 	/* Then add our own anon_vma. */
+ 	anon_vma = anon_vma_alloc();
+ 	if (!anon_vma)
+@@ -301,6 +334,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	 * lock any of the anon_vmas in this anon_vma tree.
+ 	 */
+ 	anon_vma->root = pvma->anon_vma->root;
++	anon_vma->parent = pvma->anon_vma;
+ 	/*
+ 	 * With refcounts, an anon_vma can stay around longer than the
+ 	 * process it belongs to. The root anon_vma needs to be pinned until
+@@ -311,6 +345,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	vma->anon_vma = anon_vma;
+ 	anon_vma_lock_write(anon_vma);
+ 	anon_vma_chain_link(vma, avc, anon_vma);
++	anon_vma->parent->degree++;
+ 	anon_vma_unlock_write(anon_vma);
+ 
+ 	return 0;
+@@ -341,12 +376,16 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
+ 		 * Leave empty anon_vmas on the list - we'll need
+ 		 * to free them outside the lock.
+ 		 */
+-		if (RB_EMPTY_ROOT(&anon_vma->rb_root))
++		if (RB_EMPTY_ROOT(&anon_vma->rb_root)) {
++			anon_vma->parent->degree--;
+ 			continue;
++		}
+ 
+ 		list_del(&avc->same_vma);
+ 		anon_vma_chain_free(avc);
+ 	}
++	if (vma->anon_vma)
++		vma->anon_vma->degree--;
+ 	unlock_anon_vma_root(root);
+ 
+ 	/*
+@@ -357,6 +396,7 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
+ 	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
+ 		struct anon_vma *anon_vma = avc->anon_vma;
+ 
++		BUG_ON(anon_vma->degree);
+ 		put_anon_vma(anon_vma);
+ 
+ 		list_del(&avc->same_vma);
 -- 
 2.1.4
 
