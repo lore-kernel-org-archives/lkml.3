@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbbA0Gqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 01:46:53 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:52662 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbbA0Gqu (ORCPT
+	id S1752612AbbA0Gt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:49:29 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:47641 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427AbbA0Gt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 01:46:50 -0500
-Date: Tue, 27 Jan 2015 09:46:47 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Calvin Owens <calvinowens@fb.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-team@fb.com,
-        Pavel Emelyanov <xemul@openvz.org>, linux-api@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [RFC][PATCH v2] procfs: Always expose /proc/<pid>/map_files/ and
- make it readable
-Message-ID: <20150127064647.GH651@moon>
-References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
- <20150114152501.GB9820@node.dhcp.inet.fi>
- <20150114153323.GF2253@moon>
- <20150114204653.GA26698@mail.thefacebook.com>
- <20150114211613.GH2253@moon>
- <20150122024554.GB23762@mail.thefacebook.com>
- <20150124031544.GA1992748@mail.thefacebook.com>
- <20150126124731.GA26916@node.dhcp.inet.fi>
- <20150126210054.GG651@moon>
- <20150126154346.c63c512e5821e9e0ea31f759@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126154346.c63c512e5821e9e0ea31f759@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 27 Jan 2015 01:49:28 -0500
+Message-ID: <1422341364.5145.11.camel@marge.simpson.net>
+Subject: Re: [PATCH -rt] rtmutex: enable deadlock detection in the
+ ww_mutex_lock functions
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Gustavo Bittencourt <gbitten@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 27 Jan 2015 07:49:24 +0100
+In-Reply-To: <54C727DA.4040601@gmail.com>
+References: <54C727DA.4040601@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 03:43:46PM -0800, Andrew Morton wrote:
-> > 
-> > Looks good to me, thanks! Though I would really appreciate if someone
-> > from security camp take a look as well.
-> 
-> hm, who's that.  Kees comes to mind.
+You should probably CC -rt maintainers when submitting a -rt patch.
 
-yup, I managed to forget CC him.
+On Tue, 2015-01-27 at 03:53 -0200, Gustavo Bittencourt wrote: 
+> According the ww-mutex-design.txt documentation,  the ww_mutex_lock_interruptible and ww_mutex_lock functions should return -EDEADLK when faced with a deadlock. To do so, the flag detect_deadlock in the rt_mutex_slowlock calls should be enabled. This patch corrects potential deadlocks when running PREEMPT_RT with nouveau driver.
+> 
+> Kernel v3.14-rt
+> 
+> Signed-off-by: Gustavo Bittencourt<gbitten@gmail.com>
+> ---
+>   kernel/locking/rtmutex.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+> index 6c40660..3f6ef91 100644
+> --- a/kernel/locking/rtmutex.c
+> +++ b/kernel/locking/rtmutex.c
+> @@ -1965,7 +1965,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ww_c
+>   	might_sleep();
+>   
+>   	mutex_acquire(&lock->base.dep_map, 0, 0,_RET_IP_);
+> -	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 0, ww_ctx);
+> +	ret = rt_mutex_slowlock(&lock->base.lock, TASK_INTERRUPTIBLE, NULL, 1, ww_ctx);
+>   	if (ret)
+>   		mutex_release(&lock->base.dep_map, 1,_RET_IP_);
+>   	else if (!ret && ww_ctx->acquired > 1)
+> @@ -1984,7 +1984,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ww_ctx)
+>   
+>   	mutex_acquire_nest(&lock->base.dep_map, 0, 0, &ww_ctx->dep_map,
+>   			_RET_IP_);
+> -	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 0, ww_ctx);
+> +	ret = rt_mutex_slowlock(&lock->base.lock, TASK_UNINTERRUPTIBLE, NULL, 1, ww_ctx);
+>   	if (ret)
+>   		mutex_release(&lock->base.dep_map, 1,_RET_IP_);
+>   	else if (!ret && ww_ctx->acquired > 1)
+> -- 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> 
-> And reviewers' task would be a heck of a lot easier if they knew what
-> /proc/pid/map_files actually does.  This:
-> 
-> akpm3:/usr/src/25> grep -r map_files Documentation 
-> akpm3:/usr/src/25> 
-> 
-> does not help.
 
-Sigh. Imagine, for some reason I though we've the docs for that
-entry, probably i though that way because of many fdinfo snippets
-i've putted into /proc docs. my bad, sorry. I'll try to prepare
-docs today.
-
-> The 640708a2cff7f81 changelog says:
-> 
-> :     This one behaves similarly to the /proc/<pid>/fd/ one - it contains
-> :     symlinks one for each mapping with file, the name of a symlink is
-> :     "vma->vm_start-vma->vm_end", the target is the file.  Opening a symlink
-> :     results in a file that point exactly to the same inode as them vma's one.
-> :     
-> :     For example the ls -l of some arbitrary /proc/<pid>/map_files/
-> :     
-> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80403000-7f8f80404000 -> /lib64/libc-2.5.so
-> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f8061e000-7f8f80620000 -> /lib64/libselinux.so.1
-> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80826000-7f8f80827000 -> /lib64/libacl.so.1.1.0
-> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a2f000-7f8f80a30000 -> /lib64/librt-2.5.so
-> :      | lr-x------ 1 root root 64 Aug 26 06:40 7f8f80a30000-7f8f80a4c000 -> /lib64/ld-2.5.so
-> 
-> afacit this info is also available in /proc/pid/maps, so things
-> shouldn't get worse if the /proc/pid/map_files permissions are at least
-> as restrictive as the /proc/pid/maps permissions.  Is that the case? 
-> (Please add to changelog).
-> 
-> There's one other problem here: we're assuming that the map_files
-> implementation doesn't have bugs.  If it does have bugs then relaxing
-> permissions like this will create new vulnerabilities.  And the
-> map_files implementation is surprisingly complex.  Is it bug-free?
-
-I didn't find any bugs in map-files (and we use it for long time already)
-so I think it is safe.
