@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557AbbA0OVp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 09:21:45 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:50026 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758526AbbA0OVl (ORCPT
+	id S1758278AbbA0OXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:23:42 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41081 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855AbbA0OXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 09:21:41 -0500
-Date: Tue, 27 Jan 2015 15:21:36 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Xunlei Pang <pang.xunlei@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Juri Lelli <juri.lelli@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 5/5] sched/rt: Optimize find_lowest_rq() to select a
- cache hot cpu
-Message-ID: <20150127142136.GE21418@twins.programming.kicks-ass.net>
-References: <1421642980-10045-1-git-send-email-pang.xunlei@linaro.org>
- <1421642980-10045-5-git-send-email-pang.xunlei@linaro.org>
+	Tue, 27 Jan 2015 09:23:40 -0500
+Message-ID: <54C79F57.9050902@roeck-us.net>
+Date: Tue, 27 Jan 2015 06:23:19 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421642980-10045-5-git-send-email-pang.xunlei@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Jean Delvare <jdelvare@suse.de>,
+        Robert Rosengren <robert.rosengren@axis.com>
+CC: lm-sensors <lm-sensors@lm-sensors.org>, Johan Adolfsson <johana@axis.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval configurable
+References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>	 <54B92596.2040206@roeck-us.net> <20150116183020.GA6262@roeck-us.net>	 <54C74567.9020201@axis.com> <1422355070.4499.136.camel@chaos.site>
+In-Reply-To: <1422355070.4499.136.camel@chaos.site>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54C79F5A.0215,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 04:49:40AM +0000, Xunlei Pang wrote:
-> In find_lowest_rq(), if we can't find a wake_affine cpu from
-> sched_domain, then we can actually determine a cache hot cpu
-> instead of simply calling "cpumask_any(lowest_mask)" which
-> always returns the first cpu in the mask.
-> 
-> So, we can determine the cache hot cpu during the interation of
-> sched_domain() in passing.
+On 01/27/2015 02:37 AM, Jean Delvare wrote:
+> Hi Robert,
+>
+> Le Tuesday 27 January 2015 à 08:59 +0100, Robert Rosengren a écrit :
+>> On 01/16/2015 07:30 PM, Guenter Roeck wrote:
+>>> I sent a couple of patches a minute ago which should take care of the issue.
+>>> Would be great if you can test it.
+>> I applied the v2 versions of the patches for a quick test, but it was
+>> not successful. Haven't done any further investigation on what the
+>> problem might be, but when trying to read the sysfs driver I get "read
+>> error: No such device or address".
+>>
+>> The sysfs path have moved with the REGMAP settings, from
+>> /sys/bus/i2c/devices/<x>/in0_input to
+>> /sys/bus/i2c/devices/<x>/hwmon/hwmon0/in0_input.
+>
+> This is expected, shouldn't be an issue if you are using a
+> libsensors-based application with a recent enough version of libsensors.
+>
 
-Steve, I'm not getting this. Why are we using WAKE_AFFINE here?
+Odd though, thinking about it, since the move was done with a separate
+patch, not with the regmap patch.
 
+Guenter
 
-
-> Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
-> ---
->  kernel/sched/rt.c | 17 +++++++++++++----
->  1 file changed, 13 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index d28cfa4..e6a42e6 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1535,6 +1535,7 @@ static int find_lowest_rq(struct task_struct *task)
->  	struct cpumask *lowest_mask = this_cpu_cpumask_var_ptr(local_cpu_mask);
->  	int this_cpu = smp_processor_id();
->  	int cpu      = task_cpu(task);
-> +	int cachehot_cpu = nr_cpu_ids;
->  
->  	/* Make sure the mask is initialized first */
->  	if (unlikely(!lowest_mask))
-> @@ -1566,8 +1567,12 @@ static int find_lowest_rq(struct task_struct *task)
->  
->  	rcu_read_lock();
->  	for_each_domain(cpu, sd) {
-> +		if (cachehot_cpu >= nr_cpu_ids)
-> +			cachehot_cpu = cpumask_first_and(lowest_mask,
-> +						   sched_domain_span(sd));
-> +
->  		if (sd->flags & SD_WAKE_AFFINE) {
-> -			int best_cpu;
-> +			int wakeaffine_cpu;
->  
->  			/*
->  			 * "this_cpu" is cheaper to preempt than a
-> @@ -1579,16 +1584,20 @@ static int find_lowest_rq(struct task_struct *task)
->  				return this_cpu;
->  			}
->  
-> -			best_cpu = cpumask_first_and(lowest_mask,
-> +			wakeaffine_cpu = cpumask_first_and(lowest_mask,
->  						     sched_domain_span(sd));
-> -			if (best_cpu < nr_cpu_ids) {
-> +			if (wakeaffine_cpu < nr_cpu_ids) {
->  				rcu_read_unlock();
-> -				return best_cpu;
-> +				return wakeaffine_cpu;
->  			}
->  		}
->  	}
->  	rcu_read_unlock();
->  
-> +	/* most likely cache-hot */
-> +	if (cachehot_cpu < nr_cpu_ids)
-> +		return cachehot_cpu;
-> +
->  	/*
->  	 * And finally, if there were no matches within the domains
->  	 * just give the caller *something* to work with from the compatible
-> -- 
-> 1.9.1
-> 
