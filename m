@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327AbbA0NNj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 08:13:39 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36215 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202AbbA0NNh (ORCPT
+	id S1758403AbbA0NVc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 08:21:32 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44396 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbbA0NV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 08:13:37 -0500
-Date: Tue, 27 Jan 2015 13:13:27 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Bintian Wang <bintian.wang@huawei.com>
-Cc: linux-kernel@vger.kernel.org, srinivas.kandagatla@st.com,
-        huxinwei@huawei.com
-Message-ID: <20150127131327.GV21293@sirena.org.uk>
-References: <1422363029-19476-1-git-send-email-bintian.wang@huawei.com>
+	Tue, 27 Jan 2015 08:21:29 -0500
+Date: Tue, 27 Jan 2015 14:21:27 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Message-ID: <20150127132127.GA869@amd>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <201412041857.49341@pali>
+ <CAL_JsqJ9i0jwaL1cyeomQG=bhhcnEgdGWYOqkcwidyk5xOUukg@mail.gmail.com>
+ <201501262016.52079@pali>
+ <CAL_JsqL_EEg7tC-q8wV5v8jAfPSiri4z19iJfz2r7zntRwPyOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="Pzq24Sl94SYEqopo"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1422363029-19476-1-git-send-email-bintian.wang@huawei.com>
-X-Cookie: My LESLIE GORE record is BROKEN ...
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAL_JsqL_EEg7tC-q8wV5v8jAfPSiri4z19iJfz2r7zntRwPyOg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap.h: correct the description of structure element
- in reg_field
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 2015-01-26 14:33:21, Rob Herring wrote:
+> On Mon, Jan 26, 2015 at 1:16 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
+> > This patch will cause that decompressor store full ATAG structure into DT tree ("/atags"):
+> >
 
---Pzq24Sl94SYEqopo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > +       /* include the terminating ATAG_NONE */
+> > +       atag_size = (char *)atag - (char *)atag_list + sizeof(struct tag_header);
+> > +       setprop(fdt, "/", "atags", atag_list, atag_size);
+> > +
+> >         if (memcount) {
+> >                 setprop(fdt, "/memory", "reg", mem_reg_property,
+> >                         4 * memcount * memsize);
+> >
+> >
+> >
+> > And this patch will export ATAG structure from DT tree ("/atags") into /proc/atags file:
+> 
+> Please properly send your patches.
 
-On Tue, Jan 27, 2015 at 08:50:29PM +0800, Bintian Wang wrote:
-> Fix incorrect description of structure element "msb", which is
-> described as "reg".
+Actually, when sending patches for discussion, this is format easier
+to read.
 
-Applied, thanks.  Please use subject lines matching the style for the
-subsystem.
+> > Some userspace applications needs access to ATAG structure where can be stored some information passed
+> > from bootloader to kernel. Example is Nokia N900 device and NOLO bootloader which provides information
+> > about bootreason (device was started by power button or by alarm or restarted...) and bootmode (normal
+> > mode or device update mode).
+> 
+> This goes in the commit message.
+> 
+> These would be non-standard fields which are not upstream. I don't
+> know that we care in that case...
 
---Pzq24Sl94SYEqopo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Other devices are going to care about boot reason, too, and we might
+as well be compatible...
+									Pavel
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUx472AAoJECTWi3JdVIfQ8CAH/Ax5aIIemriaRoyPuXp4Pc+2
-QDPErdn2/p3Z975Q0Ynux0RCkt/2KPfqrRzSDwu+ckJAe1QJQBkLPGMrzmaB7g+e
-ZpWqxUoZisa9a5qhQWMkH3y1VOUwb30oPabM05Ih17P7Xxx/MWcMt4UMAEVdluLn
-u+Ce3PfxuHXZU72LOjSOJe5+/ySyL/AF07KsF4Qz/cARHaR8ZxuqIU5MjXG5Ljf4
-Oo0CDm6nOEwCMgVCOERWUgamqO2cWavSgtZYwh2ZQ9ql8w10dAySGhzxeLdhKEZI
-htL8i7/aoBFEreI/sKLaAxF0hmeOUuQ3XZDv2OZsPYFvdi/o2WG8OcVcuBMZRZI=
-=0yO2
------END PGP SIGNATURE-----
-
---Pzq24Sl94SYEqopo--
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
