@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758829AbbA0RxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:53:23 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:30811 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812AbbA0RxV (ORCPT
+	id S1758958AbbA0Rxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:53:52 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:38696 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758824AbbA0Rxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:53:21 -0500
-X-IronPort-AV: E=Sophos;i="5.09,476,1418112000"; 
-   d="scan'208";a="55532566"
-Message-ID: <54C7D08E.8030309@broadcom.com>
-Date: Tue, 27 Jan 2015 18:53:18 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Tue, 27 Jan 2015 12:53:50 -0500
+Message-ID: <54C7D0A3.4000900@gmail.com>
+Date: Tue, 27 Jan 2015 18:53:39 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
-        Richard Weinberger <richard@nod.at>, <linux-mmc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
-References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de> <CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com> <54C77E69.7050600@ahsoftware.de> <20150127120855.GA9254@pd.tnic> <54C7816A.8050800@ahsoftware.de> <54C78524.3070901@nod.at> <54C7881F.6020501@ahsoftware.de> <20150127142120.GA3351@pd.tnic> <54C7C2EC.7010605@ahsoftware.de> <20150127172415.GC25043@home.goodmis.org> <54C7CD1C.1060601@ahsoftware.de>
-In-Reply-To: <54C7CD1C.1060601@ahsoftware.de>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: mtk.manpages@gmail.com, Tom Gundersen <teg@jklm.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
+        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>	<54BE5DC8.70706@gmail.com>	<54BE9D08.7010804@zonque.org>	<54BF805B.4000609@gmail.com>	<54BFDAAA.50203@zonque.org>	<54C0CE8A.5080805@gmail.com>	<20150123155402.GB2159@kroah.com>	<54C65267.7090905@gmail.com>	<CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>	<54C66F30.8050108@gmail.com> <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com>
+In-Reply-To: <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/15 18:38, Alexander Holler wrote:
-> Am 27.01.2015 um 18:24 schrieb Steven Rostedt:
->
->> For most people a message in dmesg is not very useful. What you are
->> asking for
->> is to print a characteristic of a device. Something that someone might
->> want to
->> check much later in boot, where, as Boris stated, the dmesg could have
->> been
->> flushed (by systemd, which loves to write stuff to the kernel
->> buffers), and
->> there's no way to find out this information. The print message is long
->> gone.
->> Having a static location like sysfs is the proper place, because user
->> space
->> tools can always access it.
+On 01/27/2015 04:23 PM, David Herrmann wrote:
+> Hi
+> 
+> On Mon, Jan 26, 2015 at 5:45 PM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+>> On 01/26/2015 04:26 PM, Tom Gundersen wrote:
+>>> On Mon, Jan 26, 2015 at 3:42 PM, Michael Kerrisk (man-pages)
+>>> <mtk.manpages@gmail.com> wrote:
+>>>> 2. Is the API to be invoked directly by applications or is intended to
+>>>>    be used only behind specific libraries? You seem to be saying that
+>>>>    the latter is the case (here, I'm referring to your comment above
+>>>>    about sd-bus). However, when I asked David Herrmann a similar
+>>>>    question I got this responser:
+>>>>
+>>>>       "kdbus is in no way bound to systemd. There are ongoing efforts
+>>>>        to port glib and qt to kdbus natively. The API is pretty simple
+>>>>        and I don't see how a libkdbus would simplify things. In fact,
+>>>>        even our tests only have slim wrappers around the ioctls to
+>>>>        simplify error-handling in test-scenarios."
+>>>>
+>>>>    To me, that implies that users will employ the raw kernel API.
+>>>
+>>> The way I read this is that there will (probably) be a handful of
+>>> users, namely the existing dbus libraries: libdus, sd-bus, glib, Qt,
+>>> ell, and maybe a few others. However, third-party developers will not
+>>> know/care about the details of kdbus, they'll just be coding against
+>>> the dbus libraries as before (might be minor changes, but they
+>>> certainly won't need to know anything about the kernel API). Similarly
+>>> to how userspace developers now code against their libc of choice,
+>>> rather than use kernel syscalls directly.
 >>
->> Is this something a tool would like to find out? If so, parsing dmesg
->> is not
->> the way to go. Looking it up in sysfs is.
->
-> Oh, systemd.
->
-> Anyway, I like(d) Linux because it didn't had a splash screen and used
-> to spit out all types of information on the screen where it could be
-> easily seen or found (in contrast other OS which try to hide all
-> technical details from users).
+>> Thanks, Tom, for the input. I'm still confused though, since elsewhere
+>> in this thread David Herrmann said in response to a question of mine:
+>>
+>>     I think we can agree that we want it to be generically useful,
+>>     like other ipc mechanisms, including UDS and netlink.
+>>
+>> Again, that sounds to me like the vision is not "a handful of users".
+>> Hopefully Greg and David can clarify.
+> 
+> I only expect a handful of users to call the ioctls directly. The
+> libraries that implement the payload-marshaling, in particular. It's a
+> similar situation with netlink.
 
-What ends up in kernel log is still a fraction of what is going on in 
-the kernel.
+Thanks, David, for the clarification. I think it would have been helpful
+to have that more clearly stated up front, especially as some comments 
+in this thread, such as the above, could be interpreted to mean quite 
+the opposite. Can I suggest that some text on this point be added to 
+kdbus.txt?
 
-> Of course, times are changing, including the amount of stuff printed on
-> screen. But I still find it much much easier to grep on the output of
-> dmesg than to search through thousands files in sysfs. Even if that can
-> be done with grep too (kind of). But it's much more complicated because
-> grep doesn't connect the file name with the content, so you need more
-> complicated stuff to combine both in order to search for and find
-> something in sysfs.
+Thanks,
 
-Ever used rgrep or grep -R. Anyway, if this is you use-case what about 
-the gazillion other pieces of info in the kernel. When moving in that 
-direction you can be sure dmesg will flush out.
+Michael
 
-Regards,
-Arend
-
-> Regards,
->
-> Alexander Holler
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at http://www.tux.org/lkml/
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
