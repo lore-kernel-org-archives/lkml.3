@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223AbbA0Le3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 06:34:29 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43883 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514AbbA0LeZ (ORCPT
+	id S1758250AbbA0Lf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:35:26 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:50589 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756113AbbA0LfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 06:34:25 -0500
-Date: Tue, 27 Jan 2015 11:34:16 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Robin Murphy <robin.murphy@arm.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH v4 6/6] arm: dma-mapping: updates to limit dma_mask and
- iommu mapping size
-Message-ID: <20150127113416.GB3226@e104818-lin.cambridge.arm.com>
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
- <1422052359-12384-7-git-send-email-m-karicheri2@ti.com>
- <54C772A0.2000203@arm.com>
+	Tue, 27 Jan 2015 06:35:23 -0500
+Date: Tue, 27 Jan 2015 11:35:20 +0000
+From: Matt Fleming <matt@codeblueprint.co.uk>
+To: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
+Cc: linux-kernel@vger.kernel.org, ard.biesheuvel@linaro.org,
+        dmidecode-devel@nongnu.org, grant.likely@linaro.org,
+        leif.lindholm@linaro.org, matt.fleming@intel.com
+Subject: Re: [Patch v2 0/2] firmware: dmi-sysfs: add SMBIOS entry point area
+ raw attribute
+Message-ID: <20150127113520.GG3320@codeblueprint.co.uk>
+References: <1422278918-31477-1-git-send-email-ivan.khoronzhuk@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C772A0.2000203@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1422278918-31477-1-git-send-email-ivan.khoronzhuk@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 11:12:32AM +0000, Robin Murphy wrote:
-> On 23/01/15 22:32, Murali Karicheri wrote:
-> > Limit the dma_mask to minimum of dma_mask and dma_base + size - 1.
-> >
-> > Also arm_iommu_create_mapping() has size parameter of size_t and
-> > arm_setup_iommu_dma_ops() can take a value higher than that. So
-> > limit the size to SIZE_MAX.
-> >
-> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> > ---
-> >   arch/arm/mm/dma-mapping.c |   10 ++++++++++
-> >   1 file changed, 10 insertions(+)
-> >
-> > diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> > index 7864797..a1f9030 100644
-> > --- a/arch/arm/mm/dma-mapping.c
-> > +++ b/arch/arm/mm/dma-mapping.c
-> > @@ -2004,6 +2004,13 @@ static bool arm_setup_iommu_dma_ops(struct device *dev, u64 dma_base, u64 size,
-> >   	if (!iommu)
-> >   		return false;
-> >
-> > +	/*
-> > +	 * currently arm_iommu_create_mapping() takes a max of size_t
-> > +	 * for size param. So check this limit for now.
-> > +	 */
-> > +	if (size > SIZE_MAX)
-> > +		return false;
-> > +
-> >   	mapping = arm_iommu_create_mapping(dev->bus, dma_base, size);
-> >   	if (IS_ERR(mapping)) {
-> >   		pr_warn("Failed to create %llu-byte IOMMU mapping for device %s\n",
-> > @@ -2053,6 +2060,9 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
-> >   {
-> >   	struct dma_map_ops *dma_ops;
-> >
-> > +	/* limit dma_mask to the lower of the two values */
-> > +	*dev->dma_mask = min((*dev->dma_mask), (dma_base + size - 1));
-> > +
+On Mon, 26 Jan, at 03:28:36PM, Ivan Khoronzhuk wrote:
+> Some utils, like dmidecode and smbios, needs to access SMBIOS entry
+> table area in order to get information like SMBIOS version, size, etc.
+> Currently it's done via /dev/mem. But for situation when /dev/mem
+> usage is disabled, the utils have to use dmi sysfs instead, which
+> doesn't represent SMBIOS entry. So this patch series adds SMBIOS
+> area to dmi sysfs in order to allow utils in question to work
+> correctly with dmi sysfs.
 > 
-> Is there any reason not to do this in of_dma_configure? It seems like 
-> something everyone could benefit from - I'd cooked up a dodgy workaround 
-> for the same issue in my arm64 IOMMU code, but handling it generically 
-> in common code would be much nicer.
+> v1: https://lkml.org/lkml/2015/1/23/643
+> 
+> v2..v1:
+>   firmware: dmi_scan: add symbol to get SMBIOS entry area
+> 	- used additional static var to hold SMBIOS raw table size
+> 	- changed format of get_smbios_entry_area symbol
+> 	  returned pointer on const smbios table
+> 
+>   firmware: dmi-sysfs: add SMBIOS entry point area attribute
+> 	- adopted to updated get_smbios_entry_area symbol
+>   	- removed redundant array to save smbios table
+> 
+> Ivan Khoronzhuk (2):
+>   firmware: dmi_scan: add symbol to get SMBIOS entry area
+>   firmware: dmi-sysfs: add SMBIOS entry point area attribute
+> 
+>  drivers/firmware/dmi-sysfs.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/firmware/dmi_scan.c  | 26 ++++++++++++++++++++++++++
+>  include/linux/dmi.h          |  3 +++
+>  3 files changed, 71 insertions(+)
 
-I agree. I started something here:
-
-http://article.gmane.org/gmane.linux.kernel/1835096
-
-but I don't remember to have got to a clear conclusion.
+Unless anyone beats me to it, I'll pickup these two patches.
 
 -- 
-Catalin
+Matt Fleming, Intel Open Source Technology Center
