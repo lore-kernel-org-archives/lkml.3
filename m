@@ -1,125 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759721AbbA0VJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:09:58 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:58209 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438AbbA0VJ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 16:09:57 -0500
-Date: Tue, 27 Jan 2015 21:09:44 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-Message-ID: <20150127210943.GN26493@n2100.arm.linux.org.uk>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <20150127132127.GA869@amd>
- <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
- <201501271532.25540@pali>
- <20150127174818.GM26493@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
+	id S1759859AbbA0VOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 16:14:08 -0500
+Received: from mail-bn1on0069.outbound.protection.outlook.com ([157.56.110.69]:22016
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753450AbbA0VOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 16:14:05 -0500
+Date: Tue, 27 Jan 2015 13:14:00 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "Dinh Nguyen (dinguyen@opensource.altera.com)" 
+	<dinguyen@opensource.altera.com>,
+        "lyz@rock-chips.com" <lyz@rock-chips.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: phy: make GPIOs optional for the generic phy
+References: <A2CA0424C0A6F04399FB9E1CD98E0304845078CE@US01WEMBX2.internal.synopsys.com>
+ <878uh3x9j4.fsf@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
+In-Reply-To: <878uh3x9j4.fsf@free.fr>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21288.002
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <b6e4f765d9514a94ac93a4057ed735f6@BL2FFO11FD054.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; vger.kernel.org; dkim=none (message
+ not signed) header.d=none;
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(24454002)(377424004)(51704005)(92726002)(62966003)(110136001)(76176999)(23676002)(77156002)(92566002)(50466002)(54356999)(50986999)(46102003)(85202003)(108616004)(74316001)(53416004)(85182001)(86362001)(19580405001)(6806004)(575784001)(104016003)(47776003)(2950100001)(87936001)(83506001)(106466001)(19580395003)(15866825004)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB019;H:xsj-pvapsmtpgw01;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB019;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB019;
+X-Forefront-PRVS: 046985391D
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB019;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 27 Jan 2015 21:14:03.1942
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB019
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 03:03:23PM -0500, Nicolas Pitre wrote:
-> On Tue, 27 Jan 2015, Russell King - ARM Linux wrote:
+On Fri, 2015-01-16 at 12:14PM +0100, Robert Jarzmik wrote:
+> Paul Zimmerman <Paul.Zimmerman@synopsys.com> writes:
 > 
-> > On Tue, Jan 27, 2015 at 03:32:25PM +0100, Pali Rohár wrote:
-> > > On Tuesday 27 January 2015 15:16:45 Rob Herring wrote:
-> > > > What other devices? Where is bootreason in the list of ATAGS:
-> > > > 
-> > > > #define ATAG_MEM        0x54410002
-> > > > #define ATAG_VIDEOTEXT  0x54410003
-> > > > #define ATAG_RAMDISK    0x54410004
-> > > > #define ATAG_INITRD     0x54410005
-> > > > #define ATAG_INITRD2    0x54420005
-> > > > #define ATAG_SERIAL     0x54410006
-> > > > #define ATAG_REVISION   0x54410007
-> > > > #define ATAG_VIDEOLFB   0x54410008
-> > > > #define ATAG_CMDLINE    0x54410009
-> > > > #define ATAG_ACORN      0x41000101
-> > > > #define ATAG_MEMCLK     0x41000402
-> > > > 
-> > > > Rob
-> > > 
-> > > Each device is using own proprietary atag (or other information) 
-> > > to pass bootreason from bootloader to kernel. No standard way :-(
-> 
-> So that's what Pavel was alluding to.
-> 
-> > The reason that happens is because people refuse to discuss their
-> > requirements here - just like people refuse to report userspace API
-> > regressions to kernel people.  This rather pisses me off, because
-> > it creates all sorts of horrid per-platform yuck.
-> > 
-> > We _could_ (and have in the past) turned round and refused to support
-> > these kinds of hacks - which IMHO is quite a reasonable stance to
-> > take: the message we should be sending is "if you wish to design
-> > new methods without discussing it with us, we reserve the right not
-> > to support them in mainline kernels; please discuss with us your
-> > requirements."
-> > 
-> > Each time that we accept one of these hacks, we're sending a message
-> > that says "it's okay to work in this crappy way".
-> > 
-> > Yes, I realise that the N900 has little in the way of support, and we
-> > can't exert that kind of back pressure (since there's no one to direct
-> > that onto to effect any change) so I guess we just have to live with it.
-> 
-> If the method is: "let's pass non-standard ATAGs around and have ad-hoc 
-> user space code interpret it in some arbitrary way" then it's a complete 
-> abomination.
-> 
-> > > I think this kind of information (how was board/computer started) 
-> > > can be useful also for other architectures. E.g. on laptop you 
-> > > would like to know if if was started by RTC, power button, 
-> > > WakeOnLan, another ACPI event, rebooted machine, watchdog, etc... 
-> > > And scripts can act depending on this event (when by RTC, you 
-> > > need to run some planned job, when by watchdog reset you should 
-> > > check what caused that reason...).
-> 
-> Useful when properly designed and generic enough to be shared.
-> 
-> I'd suggest a DT property be proposed for that purpose if it doesn't 
-> already exist.  That at least has a chance to be generically useful.
+> > From 47bd18e210fecf701d493c27884e13c69bc449ea Mon Sep 17 00:00:00 2001
+> > From: Paul Zimmerman <paulz@synopsys.com>
+> > Date: Wed, 14 Jan 2015 18:15:58 -0800
+> > Subject: [PATCH] usb: phy: make GPIOs optional for the generic phy
+> >
+> > The use of GPIOs should be optional for the generic phy, otherwise
+> > the Altera SOCFPGA platform at least is broken.
+> >
+> > Fixes breakage caused by a combination of e9f2cefb0cd "usb: phy: 
+> > generic: migrate to gpio_desc" and 135b3c4304d "usb: dwc2: platform: 
+> > add generic PHY framework support".
+> >
+> > Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+> Reviewed-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Tested-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-What this means is that we have to further augment the atags-to-dt code
-in the decompressor with the platform specific ATAGs to parse this
-information and merge it into the appended DT before passing the
-resulting DT blob to the kernel.
+Zynq suffers of the same problem.
 
-Or we pass both the ATAGs and wrapped DT to the kernel when both exist,
-and let the kernel deal with it in a much saner environment than the
-restricted decompressor environment.
-
-Or we /could/ say that mainline never supported it, and we aren't going
-to add support for "new" tags to the mainline kernel.  It wouldn't be
-a regression, because mainline hasn't ever supported them (that's been
-said before about such things on other platforms.)
-
-However, there's another consideration to be had here before we can say
-that: how many people out there want to run a mainline (or even an
-updated kernel derived from mainline) on this device?  If there's a
-sizable following for the device wanting updated support, then it's
-something we really need to consider supporting inspite of our
-disappointment with Nokia inventing these "proprietary" tags.
-
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+	SÃ¶ren
