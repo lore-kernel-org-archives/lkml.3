@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600AbbA0AJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 19:09:30 -0500
-Received: from 8bytes.org ([81.169.241.247]:51344 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757419AbbA0AJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 19:09:16 -0500
-From: Joerg Roedel <joro@8bytes.org>
-To: iommu@lists.linux-foundation.org
-Cc: Will Deacon <will.deacon@arm.com>, Kukjin Kim <kgene@kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Heiko Stuebner <heiko@sntech.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Robin Murphy <robin.murphy@arm.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <joro@8bytes.org>, jroedel@suse.de
-Subject: [PATCH 5/5] iommu: Add iommu_get_domain_for_dev function
-Date: Tue, 27 Jan 2015 01:08:59 +0100
-Message-Id: <1422317339-22620-6-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422317339-22620-1-git-send-email-joro@8bytes.org>
-References: <1422317339-22620-1-git-send-email-joro@8bytes.org>
+	id S1757400AbbA0AJP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 19:09:15 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35293 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462AbbA0AJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 19:09:13 -0500
+Date: Tue, 27 Jan 2015 00:09:03 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20150127000903.GM21293@sirena.org.uk>
+References: <1422029330-10971-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1422029330-10971-12-git-send-email-ricardo.ribalda@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="WGHZoVWEtLLpKyPH"
+Content-Disposition: inline
+In-Reply-To: <1422029330-10971-12-git-send-email-ricardo.ribalda@gmail.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 11/18] spi/xilinx: Remove rx_fn and tx_fn pointer
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <jroedel@suse.de>
 
-This function can be used to request the current domain a
-device is attached to.
+--WGHZoVWEtLLpKyPH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
----
- drivers/iommu/iommu.c | 18 ++++++++++++++++++
- include/linux/iommu.h |  6 ++++++
- 2 files changed, 24 insertions(+)
+On Fri, Jan 23, 2015 at 05:08:43PM +0100, Ricardo Ribalda Delgado wrote:
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 5080759..824442e 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -1022,6 +1022,24 @@ out_unlock:
- }
- EXPORT_SYMBOL_GPL(iommu_detach_device);
- 
-+struct iommu_domain *iommu_get_domain_for_dev(struct device *dev)
-+{
-+	struct iommu_domain *domain;
-+	struct iommu_group *group;
-+
-+	group = iommu_group_get(dev);
-+	/* FIXME: Remove this when groups a mandatory for iommu drivers */
-+	if (group == NULL)
-+		return NULL;
-+
-+	domain = group->domain;
-+
-+	iommu_group_put(group);
-+
-+	return domain;
-+}
-+EXPORT_SYMBOL_GPL(iommu_get_domain_for_dev);
-+
- /*
-  * IOMMU groups are really the natrual working unit of the IOMMU, but
-  * the IOMMU API works on domains and devices.  Bridge that gap by
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 2951dca..dc102ad 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -177,6 +177,7 @@ extern int iommu_attach_device(struct iommu_domain *domain,
- 			       struct device *dev);
- extern void iommu_detach_device(struct iommu_domain *domain,
- 				struct device *dev);
-+extern struct iommu_domain *iommu_get_domain_for_dev(struct device *dev);
- extern int iommu_map(struct iommu_domain *domain, unsigned long iova,
- 		     phys_addr_t paddr, size_t size, int prot);
- extern size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova,
-@@ -316,6 +317,11 @@ static inline void iommu_detach_device(struct iommu_domain *domain,
- {
- }
- 
-+static inline struct iommu_domain *iommu_get_domain_for_dev(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- static inline int iommu_map(struct iommu_domain *domain, unsigned long iova,
- 			    phys_addr_t paddr, int gfp_order, int prot)
- {
--- 
-1.9.1
+> +	switch (xspi->bits_per_word) {
+> +	case 8:
+> +		*(u8 *)(xspi->rx_ptr) = data;
+> +		break;
+> +	case 16:
+> +		*(u16 *)(xspi->rx_ptr) = data;
+> +		break;
+> +	case 32:
+>  		*(u32 *)(xspi->rx_ptr) = data;
+> -		xspi->rx_ptr += 4;
+> +		break;
+>  	}
 
+Perhaps I'm missing something here but we only seem to be incrementing
+rx_ptr for the 32 bit case here...
+
+> +	xspi->rx_ptr += xspi->bits_per_word/8;
+
+...which looks to duplicate this which handles all cases.  Also there's
+a coding style thing - spaces around the / please.
+
+--WGHZoVWEtLLpKyPH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUxtceAAoJECTWi3JdVIfQfvwH/Amez0zurXwIRYoOV8hzJoyg
+jZ4RRfoqe1Of9yn2RGxu1NNN6a4uwAAaXaBba6OkhufGY3/nJNRzp7HpQ2e/BE0T
+QjVwHfwKYNoVkjA+tL74NUzxdw7EDtfZnKshluE4TSar9zYFomAddgIl4hH2WFeL
+ubvncHsKki0a43m2dXpQhMHmIKe04sCoaAX0nZwB5LTGUUkkkNOC1klN0M8nZSTW
+Dtsp3ZP2kIWFhHMYMfXC3Hm6TaPLP1xBYuYv4CFoHFLIQTkMzTE+dqnrnyTMDRuw
+tDtCogi9pZV1CU2/TpZw1GqXYF/FQW0U1DX9GzedmPKgn+4yKR+qjG6WQ76ftGY=
+=cJT8
+-----END PGP SIGNATURE-----
+
+--WGHZoVWEtLLpKyPH--
