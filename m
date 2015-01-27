@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108AbbA0KN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 05:13:28 -0500
-Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:41909 "EHLO
-	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754109AbbA0KNZ (ORCPT
+	id S1757852AbbA0KPN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 05:15:13 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:43812 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174AbbA0KPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 05:13:25 -0500
-Date: Tue, 27 Jan 2015 11:13:22 +0100
-From: Sylvain Rochet <sylvain.rochet@finsecur.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Wenyou Yang <wenyou.yang@atmel.com>, nicolas.ferre@atmel.com,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, peda@axentia.se,
-        sergei.shtylyov@cogentembedded.com, linux@maxim.org.za
-Message-ID: <20150127101322.GD32121@gradator.net>
-References: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
- <1422338247-5945-1-git-send-email-wenyou.yang@atmel.com>
- <20150127095515.GB32121@gradator.net>
- <20150127100742.GA15829@piout.net>
+	Tue, 27 Jan 2015 05:15:10 -0500
+Date: Tue, 27 Jan 2015 10:14:40 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jon Masters <jcm@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "leif.lindholm@linaro.org" <leif.lindholm@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        andre.przywara@arm.com
+Subject: Re: inverse mapping from a struct console to device
+Message-ID: <20150127101440.GA17721@leverpostej>
+References: <54C6984A.20501@redhat.com>
+ <20150126205056.GA17169@leverpostej>
+ <54C700BB.5030200@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150127100742.GA15829@piout.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 172.16.8.13
-X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
-Subject: Re: [PATCH v3 07/13] pm: at91: remove the config item
- CONFIG_AT91_SLOW_CLOCK
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
+In-Reply-To: <54C700BB.5030200@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Jan 27, 2015 at 11:07:42AM +0100, Alexandre Belloni wrote:
-> Hi,
+On Tue, Jan 27, 2015 at 03:06:35AM +0000, Jon Masters wrote:
+> On 01/26/2015 03:50 PM, Mark Rutland wrote:
+> > On Mon, Jan 26, 2015 at 07:40:58PM +0000, Jon Masters wrote:
+> >> Hi Folks,
+> >>
+> >> TLDR: I need a back reference from a console struct to its device. I
+> >> can't see an easy way to do this right now without adding one?
+> > 
+> > I don't think that's quite what you need. All you need is to be able to
+> > refer to the SPCR at serial probe time (more on that below), when you
+> > should have the data you want.
 > 
-> On 27/01/2015 at 10:55:15 +0100, Sylvain Rochet wrote :
-> > Hello Wenyou,
-> > 
-> > On Tue, Jan 27, 2015 at 01:57:27PM +0800, Wenyou Yang wrote:
-> > >  
-> > >  static void __init at91_pm_init(void)
-> > >  {
-> > > -#ifdef CONFIG_AT91_SLOW_CLOCK
-> > >  	at91_pm_sram_init();
-> > > -#endif
-> > >  
-> > >  	pr_info("AT91: Power Management%s\n", (slow_clock ? " (with slow clock mode)" : ""));
-> > 
-> > Details, but the ternary operation can be removed here, slow_clock now 
-> > defines whether we have PM support at all, not whether we have 
-> > slow_clock mode available.
-> > 
-> > Maybe we should not even display this message on the console if we 
-> > failed to allocate sram for slow_clock, we already fired a message 
-> > saying that PM is not available at all in at91_pm_sram_init().
+> Hmm. I wanted to do it in console_register due to the existing logic for
+> adding a preferred console there. But that's a silly reason.
 > 
-> That is done in patch 10/13.
+> >> I've a quick question. I have prototype code that parses an ACPI table
+> >> known as the SPCR (Serial Port Console Redirection - exists on both x86
+> >> and ARM systems). It finds the correct serial device (but it's not a
+> >> Linux specific DT-style solution so there's no "console=" parameter
+> >> embedded in it or something)
+> > 
+> > In DT we have /chosen/stdout-path which offers analagous functionality.
+> > It is independent of the command line, and has a standard set of
+> > parameters (<baud>{<parity>{<bits>{<flow>}}}).
+> 
+> Hmm. I thought it was embedding a Linux specific console parameter, but
+> I see when I actually check the code and the Documentation (sorry) that
+> it is indeed similar in capability. Which is awesome. I'll do similar.
+> 
+> > To make this work we check against the stdout-path when we register the
+> > UART. Take a look at of_console check (called from uart_add_one_port).
+> 
+> Great. Thanks. I looked at modifying uart_add_one_port, but I wasn't
+> convinced it was called by every serial driver (for example, the
+> sbsauart driver). I don't know the tty/serial code as well as I'd like.
+> But I'll implement it the same way as in the OF case for the moment, and
+> if we need to fix up a driver or two we can always do that.
 
-Indeed… I missed that because 10/13 is a rename patch, this should be 
-done here IMHO :)
+The SBSA UART is a bit of a special case, given it cannot be
+reconfigured. While Andre's SBSA UART driver [1] will call
+uart_add_one_port (as the PL011 driver seems to currently), I believe
+any configuration is ignored.
 
-Sylvain
+In the DT case, we'd expect the SBSA UART node to have a current-speed
+property describing the fixed, preconfigured speed. This has no bearing
+on the operation of the driver (because there's nothing to configure)
+and is only used to report the speed to userspace.
+
+I guess we don't have something on the ACPI node, and you want to use
+the SPCR to determine the preconfigured rate in this case?
+
+> > Assuming your UART probing looks similar for ACPI, you can have an
+> > analagous function that goes and checks uport->dev.acpi_dev_node against
+> > entires in the SPCR, configuring the UART as required at this point at
+> > registration time.
+> 
+> > This requires that you parse the SPCR earlier, but presumably the SPCR
+> > is simple enough that this is possible (no AML, for instance).
+> 
+> I already parse it as an initcall early in boot and indeed have it prior
+> to the port being registered.
+> 
+> > Is there some reason that approach is unworkable?
+> 
+> Apparently not, just need to check a couple of drivers.
+> 
+> Thanks Mark. I'll post a patch later for SPCR setup.
+
+Great!
+
+Mark.
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/317146.html
