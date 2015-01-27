@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722AbbA0Mcm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:32:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35279 "EHLO
+	id S932649AbbA0McA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:32:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35283 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425AbbA0MTK (ORCPT
+	with ESMTP id S932440AbbA0MTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:19:10 -0500
+	Tue, 27 Jan 2015 07:19:12 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>,
+Cc: Eyal Shapira <eyalx.shapira@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 083/126] USB: keyspan: fix null-deref at probe
-Date: Tue, 27 Jan 2015 12:16:28 +0000
-Message-Id: <1422361031-19364-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 084/126] iwlwifi: mvm: fix Rx with both chains
+Date: Tue, 27 Jan 2015 12:16:29 +0000
+Message-Id: <1422361031-19364-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,118 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Eyal Shapira <eyal@wizery.com>
 
-commit b5122236bba8d7ef62153da5b55cc65d0944c61e upstream.
+commit c93edc639392df733c7d72db4376a9add775d18a upstream.
 
-Fix null-pointer dereference during probe if the interface-status
-completion handler is called before the individual ports have been set
-up.
+commit 5c90422439d6
+"iwlwifi: mvm: don't allow diversity if BT Coex / TT forbid it"
+broke Rx with 2 chains for diversity.
+This had an impact on throughput where we're using only a single
+stream (11a/b/g APs, single stream APs, static SMPS).
 
-Fixes: f79b2d0fe81e ("USB: keyspan: fix NULL-pointer dereferences and
-memory leaks")
-Reported-by: Richard <richjunk@pacbell.net>
-Tested-by: Richard <richjunk@pacbell.net>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Fixes: 5c90422439d6 ("iwlwifi: mvm: don't allow diversity if BT Coex / TT forbid it")
+Signed-off-by: Eyal Shapira <eyalx.shapira@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/keyspan.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/utils.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-index 077c714f1285..e07b15ed5814 100644
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -410,6 +410,8 @@ static void	usa26_instat_callback(struct urb *urb)
- 	}
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
+diff --git a/drivers/net/wireless/iwlwifi/mvm/utils.c b/drivers/net/wireless/iwlwifi/mvm/utils.c
+index aa9fc77e8413..3aba78dff0ba 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/utils.c
++++ b/drivers/net/wireless/iwlwifi/mvm/utils.c
+@@ -673,7 +673,7 @@ bool iwl_mvm_rx_diversity_allowed(struct iwl_mvm *mvm)
+ 	if (num_of_ant(mvm->fw->valid_rx_ant) == 1)
+ 		return false;
  
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -420,7 +422,7 @@ static void	usa26_instat_callback(struct urb *urb)
+-	if (!mvm->cfg->rx_with_siso_diversity)
++	if (mvm->cfg->rx_with_siso_diversity)
+ 		return false;
  
- 	if (old_dcd_state != p_priv->dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -527,6 +529,8 @@ static void	usa28_instat_callback(struct urb *urb)
- 	}
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -537,7 +541,7 @@ static void	usa28_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 		/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -607,6 +611,8 @@ static void	usa49_instat_callback(struct urb *urb)
- 	}
- 	port = serial->port[msg->portNumber];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -617,7 +623,7 @@ static void	usa49_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -855,6 +861,8 @@ static void	usa90_instat_callback(struct urb *urb)
- 
- 	port = serial->port[0];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -865,7 +873,7 @@ static void	usa90_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -926,6 +934,8 @@ static void	usa67_instat_callback(struct urb *urb)
- 
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -934,7 +944,7 @@ static void	usa67_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
+ 	ieee80211_iterate_active_interfaces_atomic(
 -- 
 2.1.4
 
