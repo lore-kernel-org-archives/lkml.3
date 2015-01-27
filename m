@@ -1,87 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050AbbA0KQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 05:16:18 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24833 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101AbbA0KQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 05:16:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,474,1418112000"; 
-   d="scan'208";a="676628159"
-Date: Tue, 27 Jan 2015 12:16:10 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+	id S1758082AbbA0KQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 05:16:47 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:53898 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754030AbbA0KQo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 05:16:44 -0500
+Message-ID: <1422353800.14015.35.camel@x220>
+Subject: Re: [PATCH v5 1/5] ARM: mediatek: Add config options for mediatek
+ SoCs.
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Joe. C" <yingjoe.chen@mediatek.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] HID: i2c-hid: Add support for GPIO interrupts
-Message-ID: <20150127101610.GK1451@lahna.fi.intel.com>
-References: <1422282573-18215-1-git-send-email-mika.westerberg@linux.intel.com>
- <1422282573-18215-2-git-send-email-mika.westerberg@linux.intel.com>
- <20150126143723.GI23313@leverpostej>
- <20150126144729.GG1451@lahna.fi.intel.com>
- <20150126145000.GJ23313@leverpostej>
- <20150126151637.GH1451@lahna.fi.intel.com>
- <20150126160044.GK23313@leverpostej>
- <20150126161356.GJ1451@lahna.fi.intel.com>
- <20150126163929.GL23313@leverpostej>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126163929.GL23313@leverpostej>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dandan.he@mediatek.com, alan.cheng@mediatek.com, toby.liu@mediatek.com,
+        maoguang.meng@mediatek.com, huang eddie <eddie.huang@mediatek.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrsoft.com>
+Date: Tue, 27 Jan 2015 11:16:40 +0100
+In-Reply-To: <CABuKBeJGigY5ym9cJy=PYK8jbdsOLLtkmovHq6xho4gYseCAWg@mail.gmail.com>
+References: <1421818097-9281-1-git-send-email-hongzhou.yang@mediatek.com>
+	 <1421818097-9281-2-git-send-email-hongzhou.yang@mediatek.com>
+	 <CABuKBeJGigY5ym9cJy=PYK8jbdsOLLtkmovHq6xho4gYseCAWg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Jan 2015 10:16:41.0137 (UTC) FILETIME=[57DC7210:01D03A1A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 04:39:30PM +0000, Mark Rutland wrote:
-> What I don't follow is why GpioInt seems to be translated as a GPIO
-> rather than as an interrupt which happens to be backed by a GPIO. Were
-> it not for that, the DT and ACPI cases would align better.
+Joe,
 
-Because it *is* a GPIO.
+On Thu, 2015-01-22 at 13:54 +0100, Matthias Brugger wrote:
+> 2015-01-21 6:28 GMT+01:00 Hongzhou Yang <hongzhou.yang@mediatek.com>:
+> > From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+> >
+> > The upcoming MTK pinctrl driver have a big pin table for each SoC
+> > and we don't want to bloat the kernel binary if we don't need it.
+> > Add config options so we can build for one SoC only.
+> >
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+> > Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+> 
+> Applied to v3.20-next/soc
 
-In my experience we have had two kinds of interrupts that the devices
-are connected to: pins connected directly to the interrupt controller
-(IO-APIC or whatever), and pins connected to the GPIO controller. This
-is the later.
+This became commit ad8a221e1f49 ("ARM: mediatek: Add config options for
+mediatek SoCs.") in today's linux-next (ie, next-20150127). I noticed
+because a script I use to check linux-next spotted a problem with it.
 
-Now, the device in question has following resources:
+> > ---
+> >  arch/arm/mach-mediatek/Kconfig | 22 +++++++++++++++++++++-
+> >  1 file changed, 21 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/arch/arm/mach-mediatek/Kconfig b/arch/arm/mach-mediatek/Kconfig
+> > index f73f588..f7e463c 100644
+> > --- a/arch/arm/mach-mediatek/Kconfig
+> > +++ b/arch/arm/mach-mediatek/Kconfig
+> > @@ -1,6 +1,26 @@
+> > -config ARCH_MEDIATEK
+> > +menuconfig ARCH_MEDIATEK
+> >         bool "Mediatek MT65xx & MT81xx SoC" if ARCH_MULTI_V7
+> >         select ARM_GIC
+> >         select MTK_TIMER
+> >         help
+> >           Support for Mediatek MT65xx & MT81xx SoCs
+> > +
+> > +if ARCH_MEDIATEK
+> > +
+> > +config MACH_MT6589
+> > +       bool "MediaTek MT6589 SoCs support"
+> > +       default ARCH_MEDIATEK
+> > +
+> > +config MACH_MT6592
+> > +       bool "MediaTek MT6592 SoCs support"
+> > +       default ARCH_MEDIATEK
+> > +
+> > +config MACH_MT8127
+> > +       bool "MediaTek MT8127 SoCs support"
+> > +       default ARCH_MEDIATEK
+> > +
+> > +config MACH_MT8135
+> > +       bool "MediaTek MT8135 SoCs support"
+> > +       default ARCH_MEDIATEK
+> > +
+> > +endif
 
-	Name (_CRS, ResourceTemplate () {
-		I2cSerialBus (0x004C, ControllerInitiated, 0x00061A80,
-		    AddressingMode7Bit, "\\_SB.PCI0.I2C6",
-		    0x00, ResourceConsumer,,)
-		GpioInt (Level, ActiveLow, Shared, PullDefault, 0x0000,
-		    "\\_SB.GPO0", 0x00, ResourceConsumer,,)
-		    {
-			0x004C
-		    }
-	})
+None of these four new MACH_MT* Kconfig symbols are currently used in
+linux-next. I assume that patches that actually use them (either as a
+Kconfig symbol or as a CONFIG_* macro) are still pending. Is that
+correct?
 
-The GpioInt() above refers to GPIO controller ("\_SB.GPO0") and its pin
-number 0x4c.
+Thanks,
 
-Normally I would do this in the driver regardless of where it is
-described (DT, ACPI, whatnot):
 
-	desc = gpiod_get(dev, NULL);
-	gpiod_direction_input(desc);
-	irq = gpiod_to_irq(desc);
+Paul Bolle
 
-Then the "irq" can be used for request_irq() and friends.
-
-Note how both DT and ACPI cases align just fine.
-
-If the above is not the right way to use GPIOs as interrupt, can you
-please tell me how it is done then?
-
-BTW, passing NULL to gpiod_get() implies property named "gpios" in DT
-(which is why I added it to the documentation).
