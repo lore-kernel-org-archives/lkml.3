@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760130AbbA0Vqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:46:35 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:5700 "EHLO
+	id S1760115AbbA0Vqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 16:46:32 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:51866 "EHLO
 	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759835AbbA0VqT (ORCPT
+	with ESMTP id S1759308AbbA0VqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 16:46:19 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: Ralf Baechle <ralf@linux-mips.org>, <linux-mips@linux-mips.org>
-CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 5/9] irqchip: mips-gic: Add missing definitions for FDC IRQ
-Date: Tue, 27 Jan 2015 21:45:51 +0000
-Message-ID: <1422395155-16511-6-git-send-email-james.hogan@imgtec.com>
+CC: <linux-kernel@vger.kernel.org>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 6/9] MIPS: cevt-r4k: Make interrupt handler shared
+Date: Tue, 27 Jan 2015 21:45:52 +0000
+Message-ID: <1422395155-16511-7-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 2.0.5
 In-Reply-To: <1422395155-16511-1-git-send-email-james.hogan@imgtec.com>
 References: <1422395155-16511-1-git-send-email-james.hogan@imgtec.com>
@@ -26,53 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing VPE_PEND, VPE_RMASK and VPE_SMASK definitions for the local
-FDC interrupt.
+Make the cevt-r4k interrupt handler shared so that other interrupt
+handlers (specifically the performance counter overflow handler and fast
+debug channel interrupt handler) can share the same interrupt line.
 
-These local interrupt definitions aren't directly used, but if they
-exist they should be complete.
+This simply imvolves returning IRQ_NONE when no timer interrupt has been
+handled to allow other handlers to run, and passing IRQF_SHARED when
+setting up the IRQ handler so that other handlers (with compatible
+flags) can be registered.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: linux-mips@linux-mips.org
 ---
- include/linux/irqchip/mips-gic.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/mips/kernel/cevt-r4k.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/irqchip/mips-gic.h b/include/linux/irqchip/mips-gic.h
-index 420f77b34d02..ff0e75f40ef5 100644
---- a/include/linux/irqchip/mips-gic.h
-+++ b/include/linux/irqchip/mips-gic.h
-@@ -165,6 +165,8 @@
- #define GIC_VPE_PEND_SWINT0_MSK		(MSK(1) << GIC_VPE_PEND_SWINT0_SHF)
- #define GIC_VPE_PEND_SWINT1_SHF		5
- #define GIC_VPE_PEND_SWINT1_MSK		(MSK(1) << GIC_VPE_PEND_SWINT1_SHF)
-+#define GIC_VPE_PEND_FDC_SHF		6
-+#define GIC_VPE_PEND_FDC_MSK		(MSK(1) << GIC_VPE_PEND_FDC_SHF)
+diff --git a/arch/mips/kernel/cevt-r4k.c b/arch/mips/kernel/cevt-r4k.c
+index d68a678b7e4e..8044981e9399 100644
+--- a/arch/mips/kernel/cevt-r4k.c
++++ b/arch/mips/kernel/cevt-r4k.c
+@@ -81,6 +81,8 @@ irqreturn_t c0_compare_interrupt(int irq, void *dev_id)
+ 		write_c0_compare(read_c0_compare());
+ 		cd = &per_cpu(mips_clockevent_device, cpu);
+ 		cd->event_handler(cd);
++	} else {
++		return IRQ_NONE;
+ 	}
  
- /* GIC_VPE_RMASK Masks */
- #define GIC_VPE_RMASK_WD_SHF		0
-@@ -179,6 +181,8 @@
- #define GIC_VPE_RMASK_SWINT0_MSK	(MSK(1) << GIC_VPE_RMASK_SWINT0_SHF)
- #define GIC_VPE_RMASK_SWINT1_SHF	5
- #define GIC_VPE_RMASK_SWINT1_MSK	(MSK(1) << GIC_VPE_RMASK_SWINT1_SHF)
-+#define GIC_VPE_RMASK_FDC_SHF		6
-+#define GIC_VPE_RMASK_FDC_MSK		(MSK(1) << GIC_VPE_RMASK_FDC_SHF)
+ out:
+@@ -89,7 +91,11 @@ out:
  
- /* GIC_VPE_SMASK Masks */
- #define GIC_VPE_SMASK_WD_SHF		0
-@@ -193,6 +197,8 @@
- #define GIC_VPE_SMASK_SWINT0_MSK	(MSK(1) << GIC_VPE_SMASK_SWINT0_SHF)
- #define GIC_VPE_SMASK_SWINT1_SHF	5
- #define GIC_VPE_SMASK_SWINT1_MSK	(MSK(1) << GIC_VPE_SMASK_SWINT1_SHF)
-+#define GIC_VPE_SMASK_FDC_SHF		6
-+#define GIC_VPE_SMASK_FDC_MSK		(MSK(1) << GIC_VPE_SMASK_FDC_SHF)
+ struct irqaction c0_compare_irqaction = {
+ 	.handler = c0_compare_interrupt,
+-	.flags = IRQF_PERCPU | IRQF_TIMER,
++	/*
++	 * IRQF_SHARED: The timer interrupt may be shared with other interrupts
++	 * such as perf counter and FDC interrupts.
++	 */
++	.flags = IRQF_PERCPU | IRQF_TIMER | IRQF_SHARED,
+ 	.name = "timer",
+ };
  
- /* GIC nomenclature for Core Interrupt Pins. */
- #define GIC_CPU_INT0		0 /* Core Interrupt 2 */
 -- 
 2.0.5
 
