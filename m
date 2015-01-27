@@ -1,209 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759509AbbA0Sqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:46:43 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45724 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751755AbbA0Sql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:46:41 -0500
-Message-ID: <54C7DCDA.4030809@ti.com>
-Date: Tue, 27 Jan 2015 13:45:46 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1759451AbbA0Ssv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:48:51 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36630 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbbA0Sss (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 13:48:48 -0500
+Date: Tue, 27 Jan 2015 18:48:08 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Inha Song <ideal.song@samsung.com>, alsa-devel@alsa-project.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, kgene@kernel.org, sbkim73@samsung.com,
+        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Message-ID: <20150127184808.GK21293@sirena.org.uk>
+References: <1421989410-12490-1-git-send-email-ideal.song@samsung.com>
+ <1421989410-12490-2-git-send-email-ideal.song@samsung.com>
+ <54C7C653.6080904@samsung.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH v4 4/6] of/pci: add of_pci_dma_configure() update dma
- configuration
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-5-git-send-email-m-karicheri2@ti.com> <20150123234124.GW29776@google.com> <54C6CCF3.7080308@ti.com> <CAErSpo4w0zVCmXk2D2Qk5W3kceS9Wk+=jqHBDwk6HUXWwXdq_Q@mail.gmail.com> <54C7D576.6030502@ti.com> <CAErSpo4Awgqu0ZtoMm0XSZzhnYtXh3xxH2OJMkyth5YDR9GUiA@mail.gmail.com>
-In-Reply-To: <CAErSpo4Awgqu0ZtoMm0XSZzhnYtXh3xxH2OJMkyth5YDR9GUiA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="I9EedR+SylB3Jyyc"
+Content-Disposition: inline
+In-Reply-To: <54C7C653.6080904@samsung.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH v4 1/3] ASoC: samsung: Add machine driver
+ for Trats2
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2015 01:42 PM, Bjorn Helgaas wrote:
-> On Tue, Jan 27, 2015 at 12:14 PM, Murali Karicheri<m-karicheri2@ti.com>  wrote:
->> On 01/26/2015 06:59 PM, Bjorn Helgaas wrote:
->>>
->>> On Mon, Jan 26, 2015 at 5:25 PM, Murali Karicheri<m-karicheri2@ti.com>
->>> wrote:
->>>>
->>>> On 01/23/2015 06:41 PM, Bjorn Helgaas wrote:
->>>>>
->>>>>
->>>>> On Fri, Jan 23, 2015 at 05:32:37PM -0500, Murali Karicheri wrote:
->>>>>>
->>>>>>
->>>>>> Add of_pci_dma_configure() to allow updating the dma configuration
->>>>>> of the pci device using the configuration from DT of the parent of
->>>>>> the root bridge device.
->>>>>>
->>    -- Cut ---
->>
->>>>>>
->>>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->>>>>> ---
->>>>>>     drivers/of/of_pci.c    |   39
->>>>>> +++++++++++++++++++++++++++++++++++++++
->>>>>>     include/linux/of_pci.h |   12 ++++++++++++
->>>>>>     2 files changed, 51 insertions(+)
->>>>>>
->>>>>> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
->>>>>> index 88471d3..34878c9 100644
->>>>>> --- a/drivers/of/of_pci.c
->>>>>> +++ b/drivers/of/of_pci.c
->>>>>> @@ -2,6 +2,7 @@
->>>>>>     #include<linux/export.h>
->>>>>>     #include<linux/of.h>
->>>>>>     #include<linux/of_address.h>
->>>>>> +#include<linux/of_device.h>
->>>>>>     #include<linux/of_pci.h>
->>>>>>     #include<linux/slab.h>
->>>>>>
->>>>>> @@ -229,6 +230,44 @@ parse_failed:
->>>>>>           return err;
->>>>>>     }
->>>>>>     EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
->>>>>> +
->>>>>> +/**
->>>>>> + * of_get_pci_root_bridge_parent - get the OF node of the root
->>>>>> bridge's
->>>>>> parent
->>>>>> + * @dev: ptr to pci_dev struct of the pci device
->>>>>> + *
->>>>>> + * This function will traverse the bus up to the root bus starting
->>>>>> with
->>>>>> + * the child and return the OF node ptr to root bridge device's parent
->>>>>> device.
->>>>>> + */
->>>>>> +struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
->>>>>
->>>>>
->>>>>
->>>>> I'm not an OF person, but this interface seems like it might be too
->>>>> special-purpose.  Maybe it would be enough to add
->>>>> "of_get_pci_root_bridge()", and the caller could do this:
->>>>>
->>>>>        struct device *bridge = of_get_pci_root_bridge(dev);
->>>>>        struct device_node *parent_np = bridge->parent->of_node;
->>>>>
->>>>> Also, the name "of_get_..." suggests that it increments a refcount, as
->>>>> of_get_parent() does.  But you aren't doing anything with the refcount.
->>>>>
->>>>> But I guess an "of_get_pci_root_bridge()" isn't doing anything
->>>>> OF-related,
->>>>> so maybe we should just add a "pci_get_host_bridge(struct pci_dev *)"
->>>>> to PCI instead.
->>>>
->>>>
->>>>
->>>> Bjorn,
->>>>
->>>> Thanks for the comment.
->>>>
->>>> I think adding pci_get_host_bridge() is a good idea. There is already
->>>> similar function in host-bridge.c. I have added this function re-using
->>>> existing function find_pci_root_bus(). See the incremental diff below
->>>> after
->>>> this change. Does this look good?
->>>
->>>
->>> I like the implementation, but I think either we need to take a
->>> reference on the host bridge, or change the name to  something like
->>> "pci_find_host_bridge()", because using "_get_" is conventional for
->>> functions that acquire a reference.
->>>
->>> Since host bridges are hot-pluggable, at least in theory, I vote for
->>> taking a reference.  Then of course, you'd have to add code to drop
->>> the reference when you're finished with it.
->>>
->> Bjorn,
->>
->> Thanks. I agree with your suggestion even though the convention is not
->> followed fully :) of_pci_get_devfn(), of_get_pci_domain_nr(),
->> of_pci_get_host_bridge_resources() are some of those functions not following
->> the convention. I plan to change the function as below. Also want to name
->> functions as pci_get/put_host_bridge_device() as existing function
->> find_pci_host_bridge() is actually returning ptr to struct pci_host_bridge
->> vs the new function returning ptr to device. Here are the new functions and
->> how they will be used. Please review and respond so that I can avoid a
->> re-spin.
->>
->> in linux/include/pci.h add the prototypes of
->> pci_get/put_host_bridge_device().
->>
->> in drivers/pci/host-bridge.c add two new functions.
->>
->> struct device *pci_get_host_bridge_device(struct pci_dev *dev)
->> {
->>          struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
->>          struct device *bridge = root_bus->bridge;
->>
->>          kobject_get(&bridge->kobj);
->>          return bridge;
->> }
->
-> Looks good to me.
->
->> void  pci_put_host_bridge_device(struct pci_dev *dev)
->> {
->>          struct pci_bus *root_bus = find_pci_root_bus(dev->bus);
->>          struct device *bridge = root_bus->bridge;
->>
->>          kobject_put(&bridge->kobj);
->> }
->
-> I think I would pass in the "struct device *" here so we don't have to
-> call find_pci_root_bus() again.
->
->> drivers/of/of_pci.c
->>
->> void of_pci_dma_configure(struct pci_dev *pci_dev)
->> {
->>          struct device *dev =&pci_dev->dev;
->>          struct device *bridge = pci_get_host_bridge_device(pci_dev);
->>
->>          of_dma_configure(dev, bridge->parent->of_node);
->>          pci_put_host_bridge_device(pci_dev);
->
-> Then this would become "pci_put_host_bridge_device(bridge)"
 
-Agree with both. Will become part of my v5 of the series. I am adding 
-this as a separate commit.
+--I9EedR+SylB3Jyyc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Murali
->
->> }
->>
->> Murali
->>
->>> Bjorn
->>>
->>
->>>>>>
->>>>
->>>>
->>>> --
->>>> Murali Karicheri
->>>> Linux Kernel, Texas Instruments
->>
->>
->>
->> --
->> Murali Karicheri
->> Linux Kernel, Texas Instruments
+On Tue, Jan 27, 2015 at 06:09:39PM +0100, Sylwester Nawrocki wrote:
+> On 23/01/15 06:03, Inha Song wrote:
 
+> > +	priv->clk_mclk =  of_clk_get_by_name(codec_node, "MCLK1");
+> > +	if (IS_ERR(priv->clk_mclk)) {
+> > +		dev_err(&pdev->dev, "Failed to get mclk clock\n");
+> > +		of_node_put(codec_node);
+> > +		return PTR_ERR(priv->clk_mclk);
+> > +	}
 
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+> Wouldn't it also work if we added clock handling into the wm8994 codec
+> driver instead? Not sure if it is correct to retrieve the codec's clock
+> in the machine driver like this. Or perhaps the MCLK1 (SoC CLKOUT) clock
+> should be added to the sound DT node and handled only by the machine
+> driver, together with the other (MCLK2) clock?
+
+That's definitely where we should end up but there are practical issues
+with that approach since it involves coordination with all the machine
+drivers using the device.
+
+--I9EedR+SylB3Jyyc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUx91oAAoJECTWi3JdVIfQfyUH/0/oWbQKGTYoaMNAy1uPtrKY
+pUAkVYCcYAcFK/3izIRPB+blvAqT0+Pp/j85XTrlsh0W8bA950ZTnNu58tE4HPaX
+NY+EDq3gB+uYwoeHo5CmXmRvm2eTpNhQ9b48jN+9VlPkZlKrIZSUjbeAP9Hk/JKW
+ng68h5F9Dn0+KjVBdr0bsu3/zIUJ6ejDEe9zMrAZZ3TnR1H8QSCJ/w/u0rL1RnA/
+iDAPtWNM2ADajDOIXi7AdIjjNRwBcgqNbd/Z/vBkglz6naaydqIILqGjHEplPqzW
+K4VzPxCamup8wbS8X+ksKVsl3gnD4t0rYSyNbb4sKrJSbHPoAk+PrmjSatNwM18=
+=s2TA
+-----END PGP SIGNATURE-----
+
+--I9EedR+SylB3Jyyc--
