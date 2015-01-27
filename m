@@ -1,178 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257AbbA0ByC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 20:54:02 -0500
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:40179 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326AbbA0Bx5 convert rfc822-to-8bit (ORCPT
+	id S932362AbbA0ByX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 20:54:23 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:23861 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161AbbA0ByU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 20:53:57 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Stable <stable@vger.kernel.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Peter Feiner <pfeiner@google.com>
-Subject: Re: [PATCH] proc/pagemap: walk page tables under pte lock
-Thread-Topic: [PATCH] proc/pagemap: walk page tables under pte lock
-Thread-Index: AQHQOXewvt2BvvN/iUKQku0+xQNh/5zSncsA
-Date: Tue, 27 Jan 2015 01:51:56 +0000
-Message-ID: <20150127015144.GB23118@hori1.linux.bs1.fc.nec.co.jp>
-References: <20150126145214.11053.5670.stgit@buzz>
-In-Reply-To: <20150126145214.11053.5670.stgit@buzz>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.101.21]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-ID: <46AD7A66E14D614EAD8582B1703EE92C@gisp.nec.co.jp>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 26 Jan 2015 20:54:20 -0500
+X-AuditID: cbfee68f-f791c6d000004834-f8-54c6efc99254
+Message-id: <54C6EFC8.1090601@samsung.com>
+Date: Tue, 27 Jan 2015 10:54:16 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Roger Quadros <rogerq@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>, tony@atomide.com,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        george.cherian@ti.com, nsekhar@ti.com,
+        devicetree <devicetree@vger.kernel.org>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/7] extcon: usb-gpio: Introduce gpio usb extcon driver
+References: <1422274532-9488-1-git-send-email-rogerq@ti.com>
+ <1422274532-9488-2-git-send-email-rogerq@ti.com>
+ <CAGTfZH3nmpUGgFJ6RU+xH8tuDkGBFA-NbXWa0CSXZXR+DXrbkQ@mail.gmail.com>
+ <54C66B0D.9040109@ti.com>
+In-reply-to: <54C66B0D.9040109@ti.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsWyRsSkRPfk+2MhBi0beCwO3q+3mH/kHKvF
+	qYPLWS0u75rDZjF7ST+LxaJlrcwWtxtXsFns793AZNHzSMti/xUvBy6Pb18nsXj0bVnF6HH8
+	xnYmj8+b5AJYorhsUlJzMstSi/TtErgymuf1sBacNqk4dHUZawPjMbUuRk4OCQETia9rN7ND
+	2GISF+6tZ+ti5OIQEljKKHG6dz8rTNHinqnsEInpjBJHN9yFcl4zSlz7eRisnVdAS2JBx1wm
+	EJtFQFXi/P13YDYbUHz/ixtsILaoQJjEyulXWCDqBSV+TL4HZosIKErcWwmxmllgCZPEzTnL
+	GEESwgJ+Evdb/0HddIlRYsv0G0A3cXBwCqhJdDaAnccsoC4xad4iZghbXmLzmrfMIPUSAtfY
+	Jebf2McCcZGAxLfJh1hAeiUEZCU2HWCGeE1S4uCKGywTGMVmIblpFpKxs5CMXcDIvIpRNLUg
+	uaA4Kb3IWK84Mbe4NC9dLzk/dxMjMBJP/3vWv4Px7gHrQ4wCHIxKPLwbbx4LEWJNLCuuzD3E
+	aAp0xURmKdHkfGC855XEGxqbGVmYmpgaG5lbmimJ8y6U+hksJJCeWJKanZpakFoUX1Sak1p8
+	iJGJg1OqgZHp+UWp22sm//1SHOe96eDDxunvekq3hPiJL4qbNyksdv/WT9o1xTKX2ouXbNB9
+	cDTK/kvy1MuOX+6/vpjuki03mW/Tub0TJEozLFR9P9zsFGzyutWZ9fx939Tvys3fYz59nV+T
+	eCu+RMemh+syn9xhr4eWzUsmRcbdylmuPdMlfyYn+/KNm68qsRRnJBpqMRcVJwIA7dAiQr8C	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t9jQd2T74+FGHw5x2px8H69xfwjQMap
+	g8tZLS7vmsNmMXtJP4vFomWtzBa3G1ewWezv3cBk0fNIy2L/FS8HLo9vXyexePRtWcXocfzG
+	diaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4DOUVIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmNM/rYS04bVJx
+	6Ooy1gbGY2pdjJwcEgImEot7prJD2GISF+6tZ+ti5OIQEpjOKHF0w112COc1o8S1n4fBqngF
+	tCQWdMxlArFZBFQlzt9/B2azAcX3v7jBBmKLCoRJrJx+hQWiXlDix+R7YLaIgKLEvZUQG5gF
+	ljBJ3JyzjBEkISzgJ3G/9R/U6kuMElum32DtYuTg4BRQk+hsYAWpYRZQl5g0bxEzhC0vsXnN
+	W+YJjAKzkOyYhaRsFpKyBYzMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGC4/yZ9A7GVQ0W
+	hxgFOBiVeHg33DwWIsSaWFZcmXuIUYKDWUmEd/IJoBBvSmJlVWpRfnxRaU5q8SFGU2AQTGSW
+	Ek3OB6agvJJ4Q2MTMyNLI3NDCyNjcyVxXiX7thAhgfTEktTs1NSC1CKYPiYOTqkGRuO4n1e8
+	gj6lZHn0BzRs3Poz89GZ5IdLHR45GeZWXL/SYutwSib11IzWs8KWT8XuvnPNP3nga9EG0bbX
+	lfVvLxTzXQqPPhR//pf59Y8SO1V+N59wEudkn+svFLh+61HGC/cqWboe7Dmzm2PhbZcim1N/
+	DfRuHbOd9+nh59aoFe0NSzdMOrUkWl6JpTgj0VCLuag4EQCOwZRuCQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 05:52:14PM +0300, Konstantin Khlebnikov wrote:
-> Lockless access to pte in pagemap_pte_range() might race with page migration
-> and trigger BUG_ON(!PageLocked()) in migration_entry_to_page():
-> 
-> CPU A (pagemap)                           CPU B (migration)
->                                           lock_page()
->                                           try_to_unmap(page, TTU_MIGRATION...)
->                                                make_migration_entry()
->                                                set_pte_at()
-> <read *pte>
-> pte_to_pagemap_entry()
->                                           remove_migration_ptes()
->                                           unlock_page()
->     if(is_migration_entry())
->         migration_entry_to_page()
->             BUG_ON(!PageLocked(page))
-> 
-> Also lockless read might be non-atomic if pte is larger than wordsize.
-> Other pte walkers (smaps, numa_maps, clear_refs) already lock ptes.
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
-> Reported-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> Fixes: 052fb0d635df ("proc: report file/anon bit in /proc/pid/pagemap")
-> Cc: Stable <stable@vger.kernel.org> (v3.5+)
+Hi Roger,
 
-Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+On 01/27/2015 01:27 AM, Roger Quadros wrote:
+> Hi Chanwoo,
+> 
+> All your comments are valid. Need some clarification on one comment.
+> 
+> On 26/01/15 15:56, Chanwoo Choi wrote:
+>> Hi Roger,
+>>
+>> This patch looks good to me. But I add some comment.
+>> If you modify some comment, I'll apply this patch on 3.21 queue.
+>>
+>> On Mon, Jan 26, 2015 at 9:15 PM, Roger Quadros <rogerq@ti.com> wrote:
+>>> This driver observes the USB ID pin connected over a GPIO and
+>>> updates the USB cable extcon states accordingly.
+>>>
+>>> The existing GPIO extcon driver is not suitable for this purpose
+>>> as it needs to be taught to understand USB cable states and it
+>>> can't handle more than one cable per instance.
+>>>
+>>> For the USB case we need to handle 2 cable states.
+>>> 1) USB (attach/detach)
+>>> 2) USB-Host (attach/detach)
+>>>
+>>> This driver can be easily updated in the future to handle VBUS
+>>> events in case it happens to be available on GPIO for any platform.
+>>>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>> ---
+>>>  .../devicetree/bindings/extcon/extcon-usb-gpio.txt |  20 ++
+>>>  drivers/extcon/Kconfig                             |   7 +
+>>>  drivers/extcon/Makefile                            |   1 +
+>>>  drivers/extcon/extcon-usb-gpio.c                   | 214 +++++++++++++++++++++
+>>>  4 files changed, 242 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-usb-gpio.txt
+>>>  create mode 100644 drivers/extcon/extcon-usb-gpio.c
+>>>
+> 
+> <snip>
+> 
+>>> +
+>>> +static int usb_extcon_probe(struct platform_device *pdev)
+>>> +{
+>>> +       struct device *dev = &pdev->dev;
+>>> +       struct device_node *np = dev->of_node;
+>>> +       struct usb_extcon_info *info;
+>>> +       int ret;
+>>> +
+>>> +       if (!np)
+>>> +               return -EINVAL;
+>>> +
+>>> +       info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+>>> +       if (!info)
+>>> +               return -ENOMEM;
+>>> +
+>>> +       info->dev = dev;
+>>> +       info->id_gpiod = devm_gpiod_get(&pdev->dev, "id");
+>>> +       if (IS_ERR(info->id_gpiod)) {
+>>> +               dev_err(dev, "failed to get ID GPIO\n");
+>>> +               return PTR_ERR(info->id_gpiod);
+>>> +       }
+>>> +
+>>> +       ret = gpiod_set_debounce(info->id_gpiod,
+>>> +                                USB_GPIO_DEBOUNCE_MS * 1000);
+>>> +       if (ret < 0)
+>>> +               info->debounce_jiffies = msecs_to_jiffies(USB_GPIO_DEBOUNCE_MS);
+>>> +
+>>> +       INIT_DELAYED_WORK(&info->wq_detcable, usb_extcon_detect_cable);
+>>> +
+>>> +       info->id_irq = gpiod_to_irq(info->id_gpiod);
+>>> +       if (info->id_irq < 0) {
+>>> +               dev_err(dev, "failed to get ID IRQ\n");
+>>> +               return info->id_irq;
+>>> +       }
+>>> +
+>>> +       ret = devm_request_threaded_irq(dev, info->id_irq, NULL,
+>>> +                                       usb_irq_handler,
+>>> +                                       IRQF_SHARED | IRQF_ONESHOT |
+>>> +                                       IRQF_NO_SUSPEND,
+>>> +                                       pdev->name, info);
+> 
+> use of IRQF_NO_SUSPEND is not recommended to be used together with IRQF_SHARED so
+> I'll remove IRQF_SHARED from here if we decide to stick with IRQF_NO_SUSPEND.
+> More on this below.
+> 
+>>> +       if (ret < 0) {
+>>> +               dev_err(dev, "failed to request handler for ID IRQ\n");
+>>> +               return ret;
+>>> +       }
+>>> +
+>>> +       info->edev = devm_extcon_dev_allocate(dev, usb_extcon_cable);
+>>> +       if (IS_ERR(info->edev)) {
+>>> +               dev_err(dev, "failed to allocate extcon device\n");
+>>> +               return -ENOMEM;
+>>> +       }
+>>> +
+>>> +       ret = devm_extcon_dev_register(dev, info->edev);
+>>> +       if (ret < 0) {
+>>> +               dev_err(dev, "failed to register extcon device\n");
+>>> +               return ret;
+>>> +       }
+>>> +
+>>> +       platform_set_drvdata(pdev, info);
+>>
+>> I prefer to execute the device_init_wakeup() function as following
+>> for suspend/resume function:
+>>             device_init_wakeup(&pdev->dev, 1);
+>>
+>>> +
+>>> +       /* Perform initial detection */
+>>> +       usb_extcon_detect_cable(&info->wq_detcable.work);
+>>> +
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +static int usb_extcon_remove(struct platform_device *pdev)
+>>> +{
+>>> +       struct usb_extcon_info *info = platform_get_drvdata(pdev);
+>>> +
+>>> +       cancel_delayed_work_sync(&info->wq_detcable);
+>>
+>> Need to add blank line.
+>>
+>>> +       return 0;
+>>> +}
+>>> +
+>>> +#ifdef CONFIG_PM_SLEEP
+>>> +static int usb_extcon_suspend(struct device *dev)
+>>> +{
+>>> +       struct usb_extcon_info *info = dev_get_drvdata(dev);
+>>> +
+>>> +       enable_irq_wake(info->id_irq);
+>>
+>> I prefer to use device_may_wakeup() function for whether
+>> executing enable_irq_wake() or not. Also, The disable_irq()
+>> in the suspend function would prevent us from discarding interrupt
+>> before wakeup from suspend completely.
+>>
+> 
+> I need more clarification here.
+> 
+> If we are going to use enable_irq_wake() here then what is the point of IRQF_NO_SUSPEND?
+> 
+>>From Documentation/power/suspend-and-interrupts.txt I see that interrupts marked
+> as IRQF_NO_SUSPEND should not be configured for system wakeup using enable_irq_wake().
+> 
+> what is your preference?
+> 
+> Is it good enough to not use IRQF_NO_SUSPEND but use enable_irq_wake() instead to
+> enable system wakeup for that IRQ.
 
-> ---
+I'm sorry for confusion about usage both IRQF_NO_SUSPEND and enable_irq_wake().
+If suspend() function in device driver executes the enable_irq_wake(),
+IRQF_NO_SUSPEND flag is not necessary.
+
+I think that we better use enable_irq_wake() instead of adding IRQF_NO_SUSPEND flag.
+I'll expect to remove IRQF_NO_SUSPEND flag when requesting gpio interrupt.
+
 > 
-> ------------[ cut here ]------------
-> kernel BUG at ../include/linux/swapops.h:131!
-> invalid opcode: 0000 [#1] PREEMPT SMP
-> Modules linked in:
-> CPU: 0 PID: 702 Comm: a.out Not tainted 3.19.0-rc1+ #16
-> Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS
-> rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org
-> 04/01/2014
-> task: ffff880001dc0dc0 ti: ffff88003dbd0000 task.ti: ffff88003dbd0000
-> RIP: pagemap_pte_range (include/linux/swapops.h:131 fs/proc/task_mmu.c:1136)
-> RSP: 0018:ffff88003dbd3d08  EFLAGS: 00010246
-> RAX: ffffea0000492b00 RBX: ffff88003dbd3e60 RCX: ffff880013bbe878
-> RDX: 0000000000000000 RSI: 000000000000001f RDI: 3e00000000000000
-> RBP: ffff88003dbd3d78 R08: 000000000024959f R09: ffff880001f5d000
-> R10: 0000000000000000 R11: 007fffffffffffff R12: 00007f6662000000
-> R13: ffff880001f5d000 R14: 00007f6661e8f000 R15: 0600000000000000
-> FS:  00007f666381d700(0000) GS:ffff88003fc00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00007f666333a520 CR3: 0000000013b7f000 CR4: 00000000000407b0
-> Stack:
-> 0000000000000000 0000000062000000 ffff88003dbd3e78 ffff880013bbe878
-> 007fffffffffffff 000000000003f65d ffffffff810d3710 0000000000000010
-> ffff88003dbd3d68 ffff88003dbd3e78 00007f6662000000 00007f6661e62000
-> Call Trace:
-> ? find_vma (mm/mmap.c:2046)
-> walk_page_range (mm/pagewalk.c:51 mm/pagewalk.c:92 mm/pagewalk.c:241)
-> pagemap_read (fs/proc/task_mmu.c:1297)
-> ? pid_maps_open (fs/proc/task_mmu.c:1068)
-> ? m_stop (kernel/module.c:621)
-> __vfs_read (fs/read_write.c:430)
-> vfs_read (fs/read_write.c:455)
-> SyS_pread64 (fs/read_write.c:619 fs/read_write.c:606)
-> system_call_fastpath (arch/x86/kernel/entry_64.S:423)
-> Code: a0 4c 89 f6 48 8b 78 30 e8 a1 10 f9 ff 48 8b 4d b8 49 89 c4 e9
-> 6d fc ff ff 0f 1f 44 00 00 49 39 ce 73 17 48 89 cf e9 7b fc ff ff <0f>
-> 0b 4c 89 c7 e8 a9 bc f9 ff e9 ea fb ff ff 44 8b 55 9c 44 89
-> All code
-> ========
->    0:   a0 4c 89 f6 48 8b 78    movabs 0xe830788b48f6894c,%al
->    7:   30 e8
->    9:   a1 10 f9 ff 48 8b 4d    movabs 0x49b84d8b48fff910,%eax
->   10:   b8 49
->   12:   89 c4                   mov    %eax,%esp
->   14:   e9 6d fc ff ff          jmpq   0xfffffffffffffc86
->   19:   0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
->   1e:   49 39 ce                cmp    %rcx,%r14
->   21:   73 17                   jae    0x3a
->   23:   48 89 cf                mov    %rcx,%rdi
->   26:   e9 7b fc ff ff          jmpq   0xfffffffffffffca6
->   2b:*  0f 0b                   ud2             <-- trapping instruction
->   2d:   4c 89 c7                mov    %r8,%rdi
->   30:   e8 a9 bc f9 ff          callq  0xfffffffffff9bcde
->   35:   e9 ea fb ff ff          jmpq   0xfffffffffffffc24
->   3a:   44 8b 55 9c             mov    -0x64(%rbp),%r10d
->   3e:   44                      rex.R
->   3f:   89                      .byte 0x89
+>>             if (device_may_wakeup(dev))
+>>                      enable_irq_wake(info->id_irq);
+>>             disable_irq(info->id_irq);
 > 
-> Code starting with the faulting instruction
-> ===========================================
->    0:   0f 0b                   ud2
->    2:   4c 89 c7                mov    %r8,%rdi
->    5:   e8 a9 bc f9 ff          callq  0xfffffffffff9bcb3
->    a:   e9 ea fb ff ff          jmpq   0xfffffffffffffbf9
->    f:   44 8b 55 9c             mov    -0x64(%rbp),%r10d
->   13:   44                      rex.R
->   14:   89                      .byte 0x89
-> RIP pagemap_pte_range (include/linux/swapops.h:131 fs/proc/task_mmu.c:1136)
-> RSP <ffff88003dbd3d08>
-> ------------[ cut here ]------------
-> ---
->  fs/proc/task_mmu.c |   14 +++++++++-----
->  1 file changed, 9 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 2464367..ff65557 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -1070,7 +1070,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->  	struct vm_area_struct *vma;
->  	struct pagemapread *pm = walk->private;
->  	spinlock_t *ptl;
-> -	pte_t *pte;
-> +	pte_t *pte, *orig_pte;
->  	int err = 0;
->  
->  	/* find the first VMA at or above 'addr' */
-> @@ -1131,15 +1131,19 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->  		BUG_ON(is_vm_hugetlb_page(vma));
->  
->  		/* Addresses in the VMA. */
-> -		for (; addr < min(end, vma->vm_end); addr += PAGE_SIZE) {
-> +		orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-> +		for (; addr < min(end, vma->vm_end); pte++, addr += PAGE_SIZE) {
->  			pagemap_entry_t pme;
-> -			pte = pte_offset_map(pmd, addr);
-> +
->  			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
-> -			pte_unmap(pte);
->  			err = add_to_pagemap(addr, &pme, pm);
->  			if (err)
-> -				return err;
-> +				break;
->  		}
-> +		pte_unmap_unlock(orig_pte, ptl);
-> +
-> +		if (err)
-> +			return err;
->  
->  		if (addr == end)
->  			break;
-> 
+> why do we need to disable irq here? How will the system wakeup if IRQ is disabled?
+
+The disable_irq() may make the interrupt as masking state.
+Although interrput is masking state(disable), interrup can happen.
+but, the interrupt may remain the pending state without discarding it.
+
+And then,
+When resume() function in extcon-usb-gpio.c executes enable_irq(info->id_irq),
+pending interrupt will happen and executes the interrupt handler(usb_irq_handler).
+
+If we don't execute disable_irq() in suspend function,
+info->id->irq interrupt might happen before completing the resume sequence
+of extcon-gpio-usb driver.
+
+Thanks,
+Chanwoo Choi
