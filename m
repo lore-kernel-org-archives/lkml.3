@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246AbbA0Ome (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 09:42:34 -0500
-Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:57724 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753728AbbA0Omc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 09:42:32 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3622:3865:3867:3871:3874:5007:6119:6120:6261:7875:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: show38_6d2265ce0d11d
-X-Filterd-Recvd-Size: 1544
-Date: Tue, 27 Jan 2015 09:42:28 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dominik Vogt <vogt@linux.vnet.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
-Message-ID: <20150127094228.50e642fc@gandalf.local.home>
-In-Reply-To: <20150127061941.GA4591@linux.vnet.ibm.com>
-References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
-	<1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
-	<20150126093701.699763dc@gandalf.local.home>
-	<20150127061941.GA4591@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S932307AbbA0OnZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:43:25 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40703 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932262AbbA0OnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 09:43:22 -0500
+Message-ID: <54C7A407.1080509@ti.com>
+Date: Tue, 27 Jan 2015 09:43:19 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [net-next] net: netcp: remove unused kconfig option and code
+References: <1421781756-11151-1-git-send-email-m-karicheri2@ti.com> <20150123.222120.467596005244092508.davem@davemloft.net>
+In-Reply-To: <20150123.222120.467596005244092508.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015 07:19:42 +0100
-Dominik Vogt <vogt@linux.vnet.ibm.com> wrote:
- 
-> While the kernel may use only profiling or hotpatch at the same
-> time, Gcc is able to generate both for the same function.
+On 01/24/2015 01:21 AM, David Miller wrote:
+> From: Murali Karicheri<m-karicheri2@ti.com>
+> Date: Tue, 20 Jan 2015 14:22:36 -0500
+>
+>> Currently CPTS is built into the netcp driver even though there is no
+>> call out to the CPTS driver. This patch removes the dependency in Kconfig
+>> and remove cpts.o from the Makefile for NetCP.
+>>
+>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>> ---
+>>   drivers/net/ethernet/ti/Kconfig  |    2 +-
+>>   drivers/net/ethernet/ti/Makefile |    2 +-
+>>   2 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
+>> index e11bcfa..824e376 100644
+>> --- a/drivers/net/ethernet/ti/Kconfig
+>> +++ b/drivers/net/ethernet/ti/Kconfig
+>> @@ -73,7 +73,7 @@ config TI_CPSW
+>>   config TI_CPTS
+>>   	boolean "TI Common Platform Time Sync (CPTS) Support"
+>>   	depends on TI_CPSW
+>> -	depends on TI_CPSW || TI_KEYSTONE_NET
+>> +	depends on TI_CPSW
+>
+> Just remove the second dependency line, it's redundant because you've
+> made it identical to the line before it.
+Ok. Will post it with the change
 
-Understood, but would that be useful for the kernel?
-
--- Steve
-
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
