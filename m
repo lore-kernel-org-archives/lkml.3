@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454AbbA0AA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 19:00:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36775 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757120AbbA0AAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 19:00:20 -0500
-Message-ID: <54C6D510.6090105@suse.de>
-Date: Tue, 27 Jan 2015 01:00:16 +0100
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1757497AbbA0AAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 19:00:36 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52891 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757120AbbA0AA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 19:00:28 -0500
+Date: Mon, 26 Jan 2015 16:00:20 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Primiano Tucci <primiano@chromium.org>
+cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Petr Cermak <petrcermak@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2 2/2] task_mmu: Add user-space support for resetting
+ mm->hiwater_rss (peak RSS)
+In-Reply-To: <CA+yH71e2ewvA41BNyb=TTPn+yx2zWzY6rn09hRVVgWKoeMgwXQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1501261552440.29252@chino.kir.corp.google.com>
+References: <20150107172452.GA7922@node.dhcp.inet.fi> <20150114152225.GB31484@google.com> <20150114233630.GA14615@node.dhcp.inet.fi> <alpine.DEB.2.10.1501211452580.2716@chino.kir.corp.google.com> <CA+yH71fNZSYVf1G+UUp3N6BhPhT0VJ4aGY=uPGbSD2raV55E3Q@mail.gmail.com>
+ <alpine.DEB.2.10.1501221523390.27807@chino.kir.corp.google.com> <CA+yH71e2ewvA41BNyb=TTPn+yx2zWzY6rn09hRVVgWKoeMgwXQ@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Heiko Stuebner <heiko@sntech.de>, Pawel Moll <pawel.moll@arm.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Beniamino Galvani <b.galvani@gmail.com>,
-        "ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH v4 6/7] ARM: zynq: DT: Add pinctrl information
-References: <1420818231-13451-1-git-send-email-soren.brinkmann@xilinx.com> <1420818231-13451-7-git-send-email-soren.brinkmann@xilinx.com> <CACRpkdZ1jfTUqfLKonJxar2Jn25+4wTF-D4XUXOszSsoJrA07w@mail.gmail.com> <1a749692196d406a8229d4891f3563f4@BN1BFFO11FD016.protection.gbl>
-In-Reply-To: <1a749692196d406a8229d4891f3563f4@BN1BFFO11FD016.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="8mQWRri3kJkN9UuGQwMJaJsDMH8oXU6vd"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---8mQWRri3kJkN9UuGQwMJaJsDMH8oXU6vd
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, 23 Jan 2015, Primiano Tucci wrote:
 
-Am 12.01.2015 um 08:27 schrieb Michal Simek:
-> On 01/11/2015 10:38 PM, Linus Walleij wrote:
->> On Fri, Jan 9, 2015 at 4:43 PM, Soren Brinkmann
->> <soren.brinkmann@xilinx.com> wrote:
->>
->>> Add pinctrl descriptions to the zc702 and zc706 device trees.
->>>
->>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->>> Tested-by: Andreas F=C3=A4rber <afaerber@suse.de>
->>
->> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> Beautiful and in line with how I want things to look.
->>
->> Yours,
->> Linus Walleij
->>
->=20
-> Applied to zynq/dt.
+> > If you reset the hwm for a process, rss grows to 100MB, another process
+> > resets the hwm, and you see a hwm of 2MB, that invalidates the hwm
+> > entirely.
+> 
+> Not sure I follow this scenario. Where does the 2MB come from?
 
-Did you maybe forget to push?
+It's a random number that the hwm gets reset to after the other process 
+clears it.
 
-https://github.com/Xilinx/linux-xlnx/commits/zynq/dt doesn't have it.
+> How can
+> you see a hwm of 2MB, under which conditions? HVM can never be < RSS.
+> Again, what you are talking about is the case of two profilers racing
+> for using the same interface (hwm).
+> This is the same case today of the PG_referenced bit.
+> 
 
-Regards,
-Andreas
+PG_referenced bit is not tracking the highest rss a process has ever 
+attained.  PG_referenced is understood to be clearable at any time and the 
+only guarantee is that it was at least cleared before returning from the 
+write.  It could be set again before the write returns as well, but we can 
+be sure that it was at least cleared.
 
---=20
-SUSE Linux GmbH, Maxfeldstr. 5, 90409 N=C3=BCrnberg, Germany
-GF: Felix Imend=C3=B6rffer, Jane Smithard, Jennifer Guild, Dilip Upmanyu,=
+With your approach, which completely invalidates the entire purpose of 
+hwm, the following is possible:
 
-Graham Norton; HRB 21284 (AG N=C3=BCrnberg)
+	process A			process B
+	---------			---------
+	read hwm = 50MB			read hwm = 50MB
+	write to clear hwm
+	rss goes to 100MB
+					write to clear hwm
+					rss goes to 2MB
+	read hwm = 2MB			read hwm = 2MB
 
-
---8mQWRri3kJkN9UuGQwMJaJsDMH8oXU6vd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUxtUQAAoJEPou0S0+fgE/RRMP/RZHAQiHg6u0mD61B6ST7w6S
-OMMxjzGLQGPlfOzh50cJS+7f2Ij/P8SXYAqV5deYS9QirMhM7IkDmFE1B72eyjs0
-QiIEb9Vwvk4nUpIqFCJq5jcRj+Ka/t3XACisbsE0H3U8jMHy2Qq6oSxnq1UR4wfR
-W5T2BeO6ih3imA9Y1NTuql7A8/xiyokBgN+ofx9R4a3yb9nrGXbNlzm2Nw5Alc8o
-K1Mf2FyOBVlbTNUKHMOT/UFfFYdHAoliJJsX+Dfp+Ow8OkaqzOjEQtmDWzpvKFOv
-G6XfJ8ay66LAoY8yHBIN6Vd2aEA9z/EY9u/BwKDi8dDLSVZ2av80LVQBnXeXCIUB
-HxAMH16IQr5eUe3RiaQvQCZoNWjH4kiGohS3UYT21tMxvE9M6iJXMdIRwukwE2KI
-646mlADhWBFo9NOELvXspTjS7AciVy6PQ1L7kzot4DX2KLJgR/LPj9hjzKv/lFsH
-f3y4jqBzhZASrQZZY6VyPUnxNZN3P4u66aD2PuVFvJ1ucwrr7TW1XBA+QjJpSBgm
-vrdoxM5jD+kbIdfB2Uk/LhAYpISY4flJgSb6kGQlAMsoj5fvZ6F6jNmuFpoz84b3
-kkzOUAe/n1q6T460ko4cgT4k3WDHBehwBpjliLVXoiwhbigNX2qQ/RNUT1WdoILI
-6XHQOxPJOl3bI9VL39CD
-=YBeu
------END PGP SIGNATURE-----
-
---8mQWRri3kJkN9UuGQwMJaJsDMH8oXU6vd--
+This is a result of allowing something external (process B) be able to 
+clear hwm so that you never knew the value went to 100MB.  That's the 
+definition of a race, I don't know how to explain it any better and making 
+any connection between clearing PG_referenced and mm->hiwater_rss is a 
+stretch.  This approach just makes mm->hiwater_rss meaningless.
