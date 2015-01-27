@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435AbbA0GFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 01:05:00 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:29168 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753385AbbA0GE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 01:04:57 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
-        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v3 13/13] pm: at91: amend the pm_suspend entry for at91_cpuidle_device
-Date: Tue, 27 Jan 2015 14:01:54 +0800
-Message-ID: <1422338514-8595-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
+	id S1757374AbbA0GE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:04:29 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:7342 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753071AbbA0GEZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 01:04:25 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>,
+        "'tranmanphong@gmail.com'" <tranmanphong@gmail.com>,
+        "'fabio.estevam@freescale.com'" <fabio.estevam@freescale.com>,
+        "'prime.zeng@huawei.com'" <prime.zeng@huawei.com>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+CC: "Gao, Neil" <Neil.Gao@sonymobile.com>
+Date: Tue, 27 Jan 2015 14:04:21 +0800
+Subject: [RFC] ion:change ion_cma_allocate return error value
+Thread-Topic: [RFC] ion:change ion_cma_allocate return error value
+Thread-Index: AdA59xeNaPys83UbSBCxEwQ2fVLbaQ==
+Message-ID: <35FD53F367049845BC99AC72306C23D1044A02027DF9@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the at91_xxx_standby() function is substitued by the at91_pm_suspend(),
-the pm_suspend entry for at91_cpuidle_device changes as well.
+This patch change the error return value from -1 to -ENOMEM,
+so that userspace can get the correct errno, otherwise,
+-1 will be -EPERM, userspace will print permission deny for allocation
+failure.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
 ---
- arch/arm/mach-at91/pm.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ drivers/staging/android/ion/ion_cma_heap.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index ab1a4d6..faa5d30 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -40,8 +40,6 @@ static struct {
- 	int memctrl;
- } at91_pm_data;
+diff --git a/drivers/staging/android/ion/ion_cma_heap.c b/drivers/staging/android/ion/ion_cma_heap.c
+index f4211f1..55bcaec2 100644
+--- a/drivers/staging/android/ion/ion_cma_heap.c
++++ b/drivers/staging/android/ion/ion_cma_heap.c
+@@ -24,8 +24,6 @@
+ #include "ion.h"
+ #include "ion_priv.h"
  
--static void (*at91_pm_standby)(void);
+-#define ION_CMA_ALLOCATE_FAILED -1
 -
- static int at91_pm_valid_state(suspend_state_t state)
- {
- 	switch (state) {
-@@ -214,12 +212,15 @@ static struct platform_device at91_cpuidle_device = {
- 	.name = "cpuidle-at91",
- };
+ struct ion_cma_heap {
+ 	struct ion_heap heap;
+ 	struct device *dev;
+@@ -59,7 +57,7 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
  
--void at91_pm_set_standby(void (*at91_standby)(void))
-+static void at91_cpuidle_suspend(void)
- {
--	if (at91_standby) {
--		at91_cpuidle_device.dev.platform_data = at91_standby;
--		at91_pm_standby = at91_standby;
--	}
-+	at91_pm_suspend(PM_SUSPEND_STANDBY);
-+}
-+
-+static void at91_cpuidle_set_suspend(void (*at91_suspend)(void))
-+{
-+	if (at91_suspend)
-+		at91_cpuidle_device.dev.platform_data = at91_suspend;
+ 	info = kzalloc(sizeof(struct ion_cma_buffer_info), GFP_KERNEL);
+ 	if (!info)
+-		return ION_CMA_ALLOCATE_FAILED;
++		return -ENOMEM;
+ 
+ 	info->cpu_addr = dma_alloc_coherent(dev, len, &(info->handle),
+ 						GFP_HIGHUSER | __GFP_ZERO);
+@@ -87,7 +85,7 @@ free_mem:
+ 	dma_free_coherent(dev, len, info->cpu_addr, info->handle);
+ err:
+ 	kfree(info);
+-	return ION_CMA_ALLOCATE_FAILED;
++	return -ENOMEM;
  }
  
- static void __init at91_pm_sram_init(void)
-@@ -270,6 +271,8 @@ static void __init at91_pm_init(void)
- {
- 	at91_pm_sram_init();
- 
-+	at91_cpuidle_set_suspend(at91_cpuidle_suspend);
-+
- 	if (at91_cpuidle_device.dev.platform_data)
- 		platform_device_register(&at91_cpuidle_device);
- 
+ static void ion_cma_free(struct ion_buffer *buffer)
 -- 
-1.7.9.5
-
+2.2.2
