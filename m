@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760145AbbA0V6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:58:20 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:56987 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759484AbbA0V6S (ORCPT
+	id S932976AbbA0WRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 17:17:45 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:54641 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932806AbbA0WRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 16:58:18 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Tue, 27 Jan 2015 16:58:17 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: =?ISO-8859-15?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-In-reply-to: <alpine.LFD.2.11.1501271614280.1322@knanqh.ubzr>
-Message-id: <alpine.LFD.2.11.1501271644570.1322@knanqh.ubzr>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <20150127132127.GA869@amd>
- <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
- <201501271532.25540@pali> <20150127174818.GM26493@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
- <20150127210943.GN26493@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1501271614280.1322@knanqh.ubzr>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 27 Jan 2015 17:17:42 -0500
+Message-ID: <1422396079.2493.62.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH 2/7] lib: Add huge I/O map capability interfaces
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, arnd@arndb.de,
+        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 27 Jan 2015 15:01:19 -0700
+In-Reply-To: <20150127133755.85fd18b4483d7554c083f99b@linux-foundation.org>
+References: <1422314009-31667-1-git-send-email-toshi.kani@hp.com>
+	 <1422314009-31667-3-git-send-email-toshi.kani@hp.com>
+	 <20150126155456.a40df49e42b1b7f8077421f4@linux-foundation.org>
+	 <1422320515.2493.53.camel@misato.fc.hp.com>
+	 <20150127133755.85fd18b4483d7554c083f99b@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015, Nicolas Pitre wrote:
+On Tue, 2015-01-27 at 13:37 -0800, Andrew Morton wrote:
+> On Mon, 26 Jan 2015 18:01:55 -0700 Toshi Kani <toshi.kani@hp.com> wrote:
+> 
+> > > >  static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
+> > > >  		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
+> > > >  {
+> > > > @@ -74,6 +112,12 @@ int ioremap_page_range(unsigned long addr,
+> > > >  	unsigned long start;
+> > > >  	unsigned long next;
+> > > >  	int err;
+> > > > +	static int ioremap_huge_init_done;
+> > > > +
+> > > > +	if (!ioremap_huge_init_done) {
+> > > > +		ioremap_huge_init_done = 1;
+> > > > +		ioremap_huge_init();
+> > > > +	}
+> > > 
+> > > Looks hacky.  Why can't we just get the startup ordering correct?  It
+> > > at least needs a comment which fully explains the situation.
+> > 
+> > How about calling it from mm_init() after vmalloc_init()?  
+> > 
+> > void __init mm_init(void)
+> > 		:
+> >         percpu_init_late();
+> >         pgtable_init();
+> >         vmalloc_init();
+> > +       ioremap_huge_init();
+> >  }
+> 
+> Sure, that would be better, assuming it can be made to work.
 
-> If there is indeed a sizable following for the device then someone 
-> should figure out how to cope with upstream kernels, either through the 
-> installation of some intermediate bootloader that can talk FDT directly, 
-> or via a shim layer.  None of that has to be performed by nor linked 
-> with the kernel binary, nor maintained in the kernel tree. And it's not 
-> even that hard to do: we have precedents on other platforms with crappy 
-> bootloaders where this just works.
+Yes, I verified that ioremap() works right after this point.
 
-For reference I recommend the following threads:
+> Don't forget to mark ioremap_huge_init() as __init.
 
-http://comments.gmane.org/gmane.linux.kbuild.devel/10722
+Right.
 
-http://www.spinics.net/lists/arm-kernel/msg249719.html
+Thanks,
+-Toshi
 
 
-Nicolas
