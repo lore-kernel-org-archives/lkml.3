@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758747AbbA0MUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:20:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35438 "EHLO
+	id S932695AbbA0MYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:24:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35443 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932544AbbA0MUE (ORCPT
+	with ESMTP id S932550AbbA0MUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:04 -0500
+	Tue, 27 Jan 2015 07:20:06 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jisheng Zhang <jszhang@marvell.com>,
-        Michael Turquette <mturquette@linaro.org>,
+Cc: Mugunthan V N <mugunthanvnm@ti.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 113/126] clk: berlin: bg2q: remove non-exist "smemc" gate clock
-Date: Tue, 27 Jan 2015 12:16:58 +0000
-Message-Id: <1422361031-19364-114-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 114/126] drivers: net: cpsw: fix multicast flush in dual emac mode
+Date: Tue, 27 Jan 2015 12:16:59 +0000
+Message-Id: <1422361031-19364-115-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +28,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jisheng Zhang <jszhang@marvell.com>
+From: Mugunthan V N <mugunthanvnm@ti.com>
 
-commit b71e8ecd57c8aae5b1815782c47b74ffe3efc09a upstream.
+commit 25906052d953d3fbdb7e19480b9de5e6bb949f3f upstream.
 
-The "smemc" clock is removed on BG2Q SoCs. In fact, bit19 of clkenable
-register is for nfc. Current code use bit19 for non-exist "smemc"
-incorrectly, this prevents eMMC from working due to the sdhci's
-"core" clk is still gated.
+Since ALE table is a common resource for both the interfaces in Dual EMAC
+mode and while bringing up the second interface in cpsw_ndo_set_rx_mode()
+all the multicast entries added by the first interface is flushed out and
+only second interface multicast addresses are added. Fixing this by
+flushing multicast addresses based on dual EMAC port vlans which will not
+affect the other emac port multicast addresses.
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Signed-off-by: Michael Turquette <mturquette@linaro.org>
+Fixes: d9ba8f9 (driver: net: ethernet: cpsw: dual emac interface implementation)
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/clk/berlin/bg2q.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/ethernet/ti/cpsw.c     | 11 +++++++++--
+ drivers/net/ethernet/ti/cpsw_ale.c | 10 +++++++++-
+ drivers/net/ethernet/ti/cpsw_ale.h |  2 +-
+ 3 files changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
-index 21784e4eb3f0..440ef81ab15c 100644
---- a/drivers/clk/berlin/bg2q.c
-+++ b/drivers/clk/berlin/bg2q.c
-@@ -285,7 +285,6 @@ static const struct berlin2_gate_data bg2q_gates[] __initconst = {
- 	{ "pbridge",	"perif",	15, CLK_IGNORE_UNUSED },
- 	{ "sdio",	"perif",	16, CLK_IGNORE_UNUSED },
- 	{ "nfc",	"perif",	18 },
--	{ "smemc",	"perif",	19 },
- 	{ "pcie",	"perif",	22 },
- };
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index 869a0d43dbe5..c944fbd0e30c 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -606,7 +606,7 @@ static void cpsw_set_promiscious(struct net_device *ndev, bool enable)
  
+ 			/* Clear all mcast from ALE */
+ 			cpsw_ale_flush_multicast(ale, ALE_ALL_PORTS <<
+-						 priv->host_port);
++						 priv->host_port, -1);
+ 
+ 			/* Flood All Unicast Packets to Host port */
+ 			cpsw_ale_control_set(ale, 0, ALE_P0_UNI_FLOOD, 1);
+@@ -630,6 +630,12 @@ static void cpsw_set_promiscious(struct net_device *ndev, bool enable)
+ static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
+ {
+ 	struct cpsw_priv *priv = netdev_priv(ndev);
++	int vid;
++
++	if (priv->data.dual_emac)
++		vid = priv->slaves[priv->emac_port].port_vlan;
++	else
++		vid = priv->data.default_vlan;
+ 
+ 	if (ndev->flags & IFF_PROMISC) {
+ 		/* Enable promiscuous mode */
+@@ -641,7 +647,8 @@ static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
+ 	}
+ 
+ 	/* Clear all mcast from ALE */
+-	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port);
++	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port,
++				 vid);
+ 
+ 	if (!netdev_mc_empty(ndev)) {
+ 		struct netdev_hw_addr *ha;
+diff --git a/drivers/net/ethernet/ti/cpsw_ale.c b/drivers/net/ethernet/ti/cpsw_ale.c
+index 7f893069c418..4eceb7e42c80 100644
+--- a/drivers/net/ethernet/ti/cpsw_ale.c
++++ b/drivers/net/ethernet/ti/cpsw_ale.c
+@@ -236,7 +236,7 @@ static void cpsw_ale_flush_mcast(struct cpsw_ale *ale, u32 *ale_entry,
+ 		cpsw_ale_set_entry_type(ale_entry, ALE_TYPE_FREE);
+ }
+ 
+-int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
++int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid)
+ {
+ 	u32 ale_entry[ALE_ENTRY_WORDS];
+ 	int ret, idx;
+@@ -247,6 +247,14 @@ int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
+ 		if (ret != ALE_TYPE_ADDR && ret != ALE_TYPE_VLAN_ADDR)
+ 			continue;
+ 
++		/* if vid passed is -1 then remove all multicast entry from
++		 * the table irrespective of vlan id, if a valid vlan id is
++		 * passed then remove only multicast added to that vlan id.
++		 * if vlan id doesn't match then move on to next entry.
++		 */
++		if (vid != -1 && cpsw_ale_get_vlan_id(ale_entry) != vid)
++			continue;
++
+ 		if (cpsw_ale_get_mcast(ale_entry)) {
+ 			u8 addr[6];
+ 
+diff --git a/drivers/net/ethernet/ti/cpsw_ale.h b/drivers/net/ethernet/ti/cpsw_ale.h
+index de409c33b250..e701358fd00b 100644
+--- a/drivers/net/ethernet/ti/cpsw_ale.h
++++ b/drivers/net/ethernet/ti/cpsw_ale.h
+@@ -88,7 +88,7 @@ void cpsw_ale_stop(struct cpsw_ale *ale);
+ 
+ int cpsw_ale_set_ageout(struct cpsw_ale *ale, int ageout);
+ int cpsw_ale_flush(struct cpsw_ale *ale, int port_mask);
+-int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask);
++int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid);
+ int cpsw_ale_add_ucast(struct cpsw_ale *ale, u8 *addr, int port,
+ 		       int flags, u16 vid);
+ int cpsw_ale_del_ucast(struct cpsw_ale *ale, u8 *addr, int port,
 -- 
 2.1.4
 
