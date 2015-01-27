@@ -1,168 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478AbbA0Bvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 20:51:43 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:34428 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757519AbbA0BvX (ORCPT
+	id S932257AbbA0ByC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 20:54:02 -0500
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:40179 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326AbbA0Bx5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 20:51:23 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: david.vrabel@citrix.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, kvm@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com, rostedt@goodmis.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Andy Lutomirski <luto@amacapital.net>, Borislav Petkov <bp@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: [PATCH v5 2/2] x86/xen: allow privcmd hypercalls to be preempted on 64-bit
-Date: Mon, 26 Jan 2015 17:51:07 -0800
-Message-Id: <1422323467-16713-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1422323467-16713-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1422323467-16713-1-git-send-email-mcgrof@do-not-panic.com>
+	Mon, 26 Jan 2015 20:53:57 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Stable <stable@vger.kernel.org>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Peter Feiner <pfeiner@google.com>
+Subject: Re: [PATCH] proc/pagemap: walk page tables under pte lock
+Thread-Topic: [PATCH] proc/pagemap: walk page tables under pte lock
+Thread-Index: AQHQOXewvt2BvvN/iUKQku0+xQNh/5zSncsA
+Date: Tue, 27 Jan 2015 01:51:56 +0000
+Message-ID: <20150127015144.GB23118@hori1.linux.bs1.fc.nec.co.jp>
+References: <20150126145214.11053.5670.stgit@buzz>
+In-Reply-To: <20150126145214.11053.5670.stgit@buzz>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.128.101.21]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-ID: <46AD7A66E14D614EAD8582B1703EE92C@gisp.nec.co.jp>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Mon, Jan 26, 2015 at 05:52:14PM +0300, Konstantin Khlebnikov wrote:
+> Lockless access to pte in pagemap_pte_range() might race with page migration
+> and trigger BUG_ON(!PageLocked()) in migration_entry_to_page():
+> 
+> CPU A (pagemap)                           CPU B (migration)
+>                                           lock_page()
+>                                           try_to_unmap(page, TTU_MIGRATION...)
+>                                                make_migration_entry()
+>                                                set_pte_at()
+> <read *pte>
+> pte_to_pagemap_entry()
+>                                           remove_migration_ptes()
+>                                           unlock_page()
+>     if(is_migration_entry())
+>         migration_entry_to_page()
+>             BUG_ON(!PageLocked(page))
+> 
+> Also lockless read might be non-atomic if pte is larger than wordsize.
+> Other pte walkers (smaps, numa_maps, clear_refs) already lock ptes.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+> Reported-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> Fixes: 052fb0d635df ("proc: report file/anon bit in /proc/pid/pagemap")
+> Cc: Stable <stable@vger.kernel.org> (v3.5+)
 
-Xen has support for splitting heavy work work into a series
-of hypercalls, called multicalls, and preempting them through
-what Xen calls continuation [0]. Despite this though without
-CONFIG_PREEMPT preemption won't happen, without preemption
-a system can become pretty useless on heavy handed hypercalls.
-Such is the case for example when creating a > 50 GiB HVM guest,
-we can get softlockups [1] with:.
+Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
-
-The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
-(default 120 seconds), on the Xen side in this particular case
-this happens when the following Xen hypervisor code is used:
-
-xc_domain_set_pod_target() -->
-  do_memory_op() -->
-    arch_memory_op() -->
-      p2m_pod_set_mem_target()
-	-- long delay (real or emulated) --
-
-This happens on arch_memory_op() on the XENMEM_set_pod_target memory
-op even though arch_memory_op() can handle continuation via
-hypercall_create_continuation() for example.
-
-Machines over 50 GiB of memory are on high demand and hard to come
-by so to help replicate this sort of issue long delays on select
-hypercalls have been emulated in order to be able to test this on
-smaller machines [2].
-
-On one hand this issue can be considered as expected given that
-CONFIG_PREEMPT=n is used however we have forced voluntary preemption
-precedent practices in the kernel even for CONFIG_PREEMPT=n through
-the usage of cond_resched() sprinkled in many places. To address
-this issue with Xen hypercalls though we need to find a way to aid
-to the schedular in the middle of hypercalls. We are motivated to
-address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
-rather unresponsive for long periods of time; in the worst case, at least
-only currently by emulating long delays on select io disk bound
-hypercalls, this can lead to filesystem corruption if the delay happens
-for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
-
-We can address this problem by trying to check if we should schedule
-on the xen timer in the middle of a hypercall on the return from the
-timer interrupt. We want to be careful to not always force voluntary
-preemption though so to do this we only selectively enable preemption
-on very specific xen hypercalls.
-
-This enables hypercall preemption by selectively forcing checks for
-voluntary preempting only on ioctl initiated private hypercalls
-where we know some folks have run into reported issues [1].
-
-[0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
-[1] https://bugzilla.novell.com/show_bug.cgi?id=861093
-[2] http://ftp.suse.com/pub/people/mcgrof/xen/emulate-long-xen-hypercalls.patch
-
-Based on original work by: David Vrabel <david.vrabel@citrix.com>
-Suggested-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: linux-kernel@vger.kernel.org
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- arch/x86/kernel/entry_64.S       |  2 ++
- drivers/xen/events/events_base.c | 14 ++++++++++++++
- include/xen/events.h             |  1 +
- 3 files changed, 17 insertions(+)
-
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 9ebaf63..ee28733 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1198,6 +1198,8 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
- 	popq %rsp
- 	CFI_DEF_CFA_REGISTER rsp
- 	decl PER_CPU_VAR(irq_count)
-+	movq %rsp, %rdi  /* pass pt_regs as first argument */
-+	call xen_end_upcall
- 	jmp  error_exit
- 	CFI_ENDPROC
- END(xen_do_hypervisor_callback)
-diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
-index b4bca2d..bf207f2 100644
---- a/drivers/xen/events/events_base.c
-+++ b/drivers/xen/events/events_base.c
-@@ -32,6 +32,8 @@
- #include <linux/slab.h>
- #include <linux/irqnr.h>
- #include <linux/pci.h>
-+#include <linux/sched.h>
-+#include <linux/kprobes.h>
- 
- #ifdef CONFIG_X86
- #include <asm/desc.h>
-@@ -1243,6 +1245,18 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
- 	set_irq_regs(old_regs);
- }
- 
-+/*
-+ * Some hypercalls issued by the toolstack can take many 10s of
-+ * seconds. Allow tasks running hypercalls via the privcmd driver to be
-+ * voluntarily preempted even if full kernel preemption is disabled.
-+ */
-+void xen_end_upcall(struct pt_regs *regs)
-+{
-+	if (xen_is_preemptible_hypercall(regs))
-+		_cond_resched();
-+}
-+NOKPROBE_SYMBOL(xen_end_upcall);
-+
- void xen_hvm_evtchn_do_upcall(void)
- {
- 	__xen_evtchn_do_upcall();
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 5321cd9..f08df87 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -95,6 +95,7 @@ void xen_hvm_callback_vector(void);
- extern int xen_have_vector_callback;
- int xen_set_callback_via(uint64_t via);
- void xen_evtchn_do_upcall(struct pt_regs *regs);
-+void xen_end_upcall(struct pt_regs *regs);
- void xen_hvm_evtchn_do_upcall(void);
- 
- /* Bind a pirq for a physical interrupt to an irq. */
--- 
-2.1.1
-
+> ---
+> 
+> ------------[ cut here ]------------
+> kernel BUG at ../include/linux/swapops.h:131!
+> invalid opcode: 0000 [#1] PREEMPT SMP
+> Modules linked in:
+> CPU: 0 PID: 702 Comm: a.out Not tainted 3.19.0-rc1+ #16
+> Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS
+> rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org
+> 04/01/2014
+> task: ffff880001dc0dc0 ti: ffff88003dbd0000 task.ti: ffff88003dbd0000
+> RIP: pagemap_pte_range (include/linux/swapops.h:131 fs/proc/task_mmu.c:1136)
+> RSP: 0018:ffff88003dbd3d08  EFLAGS: 00010246
+> RAX: ffffea0000492b00 RBX: ffff88003dbd3e60 RCX: ffff880013bbe878
+> RDX: 0000000000000000 RSI: 000000000000001f RDI: 3e00000000000000
+> RBP: ffff88003dbd3d78 R08: 000000000024959f R09: ffff880001f5d000
+> R10: 0000000000000000 R11: 007fffffffffffff R12: 00007f6662000000
+> R13: ffff880001f5d000 R14: 00007f6661e8f000 R15: 0600000000000000
+> FS:  00007f666381d700(0000) GS:ffff88003fc00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007f666333a520 CR3: 0000000013b7f000 CR4: 00000000000407b0
+> Stack:
+> 0000000000000000 0000000062000000 ffff88003dbd3e78 ffff880013bbe878
+> 007fffffffffffff 000000000003f65d ffffffff810d3710 0000000000000010
+> ffff88003dbd3d68 ffff88003dbd3e78 00007f6662000000 00007f6661e62000
+> Call Trace:
+> ? find_vma (mm/mmap.c:2046)
+> walk_page_range (mm/pagewalk.c:51 mm/pagewalk.c:92 mm/pagewalk.c:241)
+> pagemap_read (fs/proc/task_mmu.c:1297)
+> ? pid_maps_open (fs/proc/task_mmu.c:1068)
+> ? m_stop (kernel/module.c:621)
+> __vfs_read (fs/read_write.c:430)
+> vfs_read (fs/read_write.c:455)
+> SyS_pread64 (fs/read_write.c:619 fs/read_write.c:606)
+> system_call_fastpath (arch/x86/kernel/entry_64.S:423)
+> Code: a0 4c 89 f6 48 8b 78 30 e8 a1 10 f9 ff 48 8b 4d b8 49 89 c4 e9
+> 6d fc ff ff 0f 1f 44 00 00 49 39 ce 73 17 48 89 cf e9 7b fc ff ff <0f>
+> 0b 4c 89 c7 e8 a9 bc f9 ff e9 ea fb ff ff 44 8b 55 9c 44 89
+> All code
+> ========
+>    0:   a0 4c 89 f6 48 8b 78    movabs 0xe830788b48f6894c,%al
+>    7:   30 e8
+>    9:   a1 10 f9 ff 48 8b 4d    movabs 0x49b84d8b48fff910,%eax
+>   10:   b8 49
+>   12:   89 c4                   mov    %eax,%esp
+>   14:   e9 6d fc ff ff          jmpq   0xfffffffffffffc86
+>   19:   0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
+>   1e:   49 39 ce                cmp    %rcx,%r14
+>   21:   73 17                   jae    0x3a
+>   23:   48 89 cf                mov    %rcx,%rdi
+>   26:   e9 7b fc ff ff          jmpq   0xfffffffffffffca6
+>   2b:*  0f 0b                   ud2             <-- trapping instruction
+>   2d:   4c 89 c7                mov    %r8,%rdi
+>   30:   e8 a9 bc f9 ff          callq  0xfffffffffff9bcde
+>   35:   e9 ea fb ff ff          jmpq   0xfffffffffffffc24
+>   3a:   44 8b 55 9c             mov    -0x64(%rbp),%r10d
+>   3e:   44                      rex.R
+>   3f:   89                      .byte 0x89
+> 
+> Code starting with the faulting instruction
+> ===========================================
+>    0:   0f 0b                   ud2
+>    2:   4c 89 c7                mov    %r8,%rdi
+>    5:   e8 a9 bc f9 ff          callq  0xfffffffffff9bcb3
+>    a:   e9 ea fb ff ff          jmpq   0xfffffffffffffbf9
+>    f:   44 8b 55 9c             mov    -0x64(%rbp),%r10d
+>   13:   44                      rex.R
+>   14:   89                      .byte 0x89
+> RIP pagemap_pte_range (include/linux/swapops.h:131 fs/proc/task_mmu.c:1136)
+> RSP <ffff88003dbd3d08>
+> ------------[ cut here ]------------
+> ---
+>  fs/proc/task_mmu.c |   14 +++++++++-----
+>  1 file changed, 9 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 2464367..ff65557 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -1070,7 +1070,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  	struct vm_area_struct *vma;
+>  	struct pagemapread *pm = walk->private;
+>  	spinlock_t *ptl;
+> -	pte_t *pte;
+> +	pte_t *pte, *orig_pte;
+>  	int err = 0;
+>  
+>  	/* find the first VMA at or above 'addr' */
+> @@ -1131,15 +1131,19 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  		BUG_ON(is_vm_hugetlb_page(vma));
+>  
+>  		/* Addresses in the VMA. */
+> -		for (; addr < min(end, vma->vm_end); addr += PAGE_SIZE) {
+> +		orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+> +		for (; addr < min(end, vma->vm_end); pte++, addr += PAGE_SIZE) {
+>  			pagemap_entry_t pme;
+> -			pte = pte_offset_map(pmd, addr);
+> +
+>  			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
+> -			pte_unmap(pte);
+>  			err = add_to_pagemap(addr, &pme, pm);
+>  			if (err)
+> -				return err;
+> +				break;
+>  		}
+> +		pte_unmap_unlock(orig_pte, ptl);
+> +
+> +		if (err)
+> +			return err;
+>  
+>  		if (addr == end)
+>  			break;
+> 
