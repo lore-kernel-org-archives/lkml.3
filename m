@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757988AbbA0ED5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 23:03:57 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:54143 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757926AbbA0EDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 23:03:51 -0500
-Message-ID: <54C70E07.9040204@fb.com>
-Date: Mon, 26 Jan 2015 21:03:19 -0700
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1757958AbbA0EDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 23:03:42 -0500
+Received: from ozlabs.org ([103.22.144.67]:54852 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757926AbbA0EDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 23:03:39 -0500
+Date: Tue, 27 Jan 2015 15:03:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shaohua Li <shli@fb.com>, Dan Williams <dan.j.williams@intel.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: linux-next: manual merge of the block tree with Linus' tree
+Message-ID: <20150127150332.64d614da@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Christoph Hellwig <hch@infradead.org>
-CC: <dedekind1@gmail.com>, <dwmw2@infradead.org>,
-        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <tom.leiming@gmail.com>
-Subject: Re: [PATCH 2/2 v2] UBI: Block: Add blk-mq support
-References: <1420926734-16417-1-git-send-email-richard@nod.at> <1420926734-16417-2-git-send-email-richard@nod.at> <20150113162553.GA24351@infradead.org> <54B5A188.2000001@nod.at> <54B5A213.1090502@fb.com> <54B5A77C.9040405@nod.at> <54B5AA84.9010306@fb.com> <54B5AC10.6070102@nod.at> <54B5B6E4.4020400@fb.com> <54B62B2A.7010109@nod.at> <54C6D408.5050704@nod.at>
-In-Reply-To: <54C6D408.5050704@nod.at>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-27_02:2015-01-27,2015-01-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=5.55111512312578e-17 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.12498974524102
- urlsuspect_oldscore=0.12498974524102 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.12498974524102 spamscore=0
- recipient_to_sender_domain_totalscore=4 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501270044
-X-FB-Internal: deliver
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/XQJwcs.KCeg6e3Ull1r8MF3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015 04:55 PM, Richard Weinberger wrote:
-> Am 14.01.2015 um 09:39 schrieb Richard Weinberger:
->> Am 14.01.2015 um 01:23 schrieb Jens Axboe:
->>> Which is as I suspected, you'll do each segment to the length specified,
->>> hence you don't need to track the returned count from blk_rq_map_sg().
->>
->> Thanks a lot for the kind explanation, Jens!
->> I'll add a comment the usage of blk_rq_map_sg() to avoid further confusion.
->> Am I allowed to add your Reviewed-by too?
->
-> Ping?
-> I'd like to add a Reviewed-by to this patch.
+--Sig_/XQJwcs.KCeg6e3Ull1r8MF3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yup sorry, looks OK to go in from my point of view. You can add my 
-reviewed-by.
+Hi Jens,
 
+Today's linux-next merge of the block tree got a conflict in
+drivers/ata/libata-core.c between commit 72dd299d5039 ("libata: allow
+sata_sil24 to opt-out of tag ordered submission") from Linus' tree and
+commit 98bd4be1ba95 ("libata: move sas ata tag allocation to
+libata-scsi.c") from the block tree.
 
--- 
-Jens Axboe
+I fixed it up (I used the version from the block tree and then added
+the following patch) and can carry the fix as necessary (no action is
+required).
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 27 Jan 2015 14:59:51 +1100
+Subject: [PATCH] libata: fix for move of sas tag allocation code
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/ata/libata-scsi.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index fd9be1756f0d..055e75d2176e 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -4240,7 +4240,10 @@ int ata_sas_allocate_tag(struct ata_port *ap)
+ 	unsigned int i, tag;
+=20
+ 	for (i =3D 0, tag =3D ap->sas_last_tag + 1; i < max_queue; i++, tag++) {
+-		tag =3D tag < max_queue ? tag : 0;
++		if (ap->flags & ATA_FLAG_LOWTAG)
++			tag =3D i;
++		else
++			tag =3D tag < max_queue ? tag : 0;
+=20
+ 		/* the last tag is reserved for internal command. */
+ 		if (tag =3D=3D ATA_TAG_INTERNAL)
+--=20
+2.1.4
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/XQJwcs.KCeg6e3Ull1r8MF3
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUxw4ZAAoJEMDTa8Ir7ZwVYjgQAIldHKHuOcmjxId42fG1E59j
+iLpNP5ie2niIoaUrlpKQ7xaiAxQc18etOSkt6m8L8UowSCiYW4/h6d0qvhmNX+sW
+5ZtSmM4D4dRtWBuoLGpn1bD8VhGv8+5vuYVJ5n1BFVYQZpc2T8jyD58QzQAMPYfq
+u0A/JK2GQWxWCG4DbQygO6kSGGLAEktL7s39p8YOZXBeTFElj5G4/8x/dFfEYfZw
+qnIqSKyHMLA8xrn/T+31k9IyfuBe6xWkttppFHdmG3oehtvY8yNe2SRUw7byLVWi
+P61K9/T3ag9sIhzQW6nQKJcQUWwAZ3tLzKMXlnREqlIP/KK5+LIrqAjFk5JGgkRz
+zUNZuVNZbUM8PkTGvLsrNk7MRUFFUoimSmLef3PmvOxI6TbNXkIr5iFcgvwrH8SR
+UDZ4ju4XMxsz2iOP7BWsg4mKOndaPB+RIKSWzfcmkhYVSOH+MpspxruFRd8QEMt9
+zuNS2y39baszQC4Sy4QpKfGM1PxI4Uh7iZqfXMLmfokVDVMBKOsYWYdqHsl/1Ihz
+9rK7zocWCkqwgEgg+FtuOzuxwRniqiqPdqcicCqDQPz085V8aedOkIe5raYY12P3
+8FFr7evg11Fw2xNK7tGIQ/hlu/oz76y0RGtrQnsa/VZddfnjHvkReJMcvl4scm8a
+jaDdEGYiOdpUAqOp6vEi
+=MMMN
+-----END PGP SIGNATURE-----
+
+--Sig_/XQJwcs.KCeg6e3Ull1r8MF3--
