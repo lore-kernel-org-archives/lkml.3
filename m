@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758958AbbA0Rxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:53:52 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:38696 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758824AbbA0Rxu (ORCPT
+	id S1758986AbbA0RyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:54:16 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:57835 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758243AbbA0RyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:53:50 -0500
-Message-ID: <54C7D0A3.4000900@gmail.com>
-Date: Tue, 27 Jan 2015 18:53:39 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 27 Jan 2015 12:54:14 -0500
+Date: Tue, 27 Jan 2015 17:53:59 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Tony Lindgren <tony@atomide.com>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Sebastian Reichel <sre@kernel.org>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Laura Abbott <lauraa@codeaurora.org>
+Subject: Re: N900 v3.19-rc5 arm atags_to_fdt.c is broken
+Message-ID: <20150127175359.GE11502@n2100.arm.linux.org.uk>
+References: <201501232239.55801@pali>
+ <201501232336.36187@pali>
+ <20150126161454.GE28663@atomide.com>
+ <201501261723.10505@pali>
+ <20150126170323.GF28663@atomide.com>
+ <alpine.LFD.2.11.1501261318590.1322@knanqh.ubzr>
+ <20150127133739.GB25306@amd>
+ <alpine.LFD.2.11.1501271014160.1322@knanqh.ubzr>
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>
-CC: mtk.manpages@gmail.com, Tom Gundersen <teg@jklm.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Mack <daniel@zonque.org>, Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
-        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>	<54BE5DC8.70706@gmail.com>	<54BE9D08.7010804@zonque.org>	<54BF805B.4000609@gmail.com>	<54BFDAAA.50203@zonque.org>	<54C0CE8A.5080805@gmail.com>	<20150123155402.GB2159@kroah.com>	<54C65267.7090905@gmail.com>	<CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>	<54C66F30.8050108@gmail.com> <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com>
-In-Reply-To: <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1501271014160.1322@knanqh.ubzr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2015 04:23 PM, David Herrmann wrote:
-> Hi
+On Tue, Jan 27, 2015 at 10:16:24AM -0500, Nicolas Pitre wrote:
+> On Tue, 27 Jan 2015, Pavel Machek wrote:
+> > (Note, that in 3.19 dts for n900 got too big, so we are actually
+> > triggering old bugs. That means that this is a regression fix, and
+> > should go in ASAP).
 > 
-> On Mon, Jan 26, 2015 at 5:45 PM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
->> On 01/26/2015 04:26 PM, Tom Gundersen wrote:
->>> On Mon, Jan 26, 2015 at 3:42 PM, Michael Kerrisk (man-pages)
->>> <mtk.manpages@gmail.com> wrote:
->>>> 2. Is the API to be invoked directly by applications or is intended to
->>>>    be used only behind specific libraries? You seem to be saying that
->>>>    the latter is the case (here, I'm referring to your comment above
->>>>    about sd-bus). However, when I asked David Herrmann a similar
->>>>    question I got this responser:
->>>>
->>>>       "kdbus is in no way bound to systemd. There are ongoing efforts
->>>>        to port glib and qt to kdbus natively. The API is pretty simple
->>>>        and I don't see how a libkdbus would simplify things. In fact,
->>>>        even our tests only have slim wrappers around the ioctls to
->>>>        simplify error-handling in test-scenarios."
->>>>
->>>>    To me, that implies that users will employ the raw kernel API.
->>>
->>> The way I read this is that there will (probably) be a handful of
->>> users, namely the existing dbus libraries: libdus, sd-bus, glib, Qt,
->>> ell, and maybe a few others. However, third-party developers will not
->>> know/care about the details of kdbus, they'll just be coding against
->>> the dbus libraries as before (might be minor changes, but they
->>> certainly won't need to know anything about the kernel API). Similarly
->>> to how userspace developers now code against their libc of choice,
->>> rather than use kernel syscalls directly.
->>
->> Thanks, Tom, for the input. I'm still confused though, since elsewhere
->> in this thread David Herrmann said in response to a question of mine:
->>
->>     I think we can agree that we want it to be generically useful,
->>     like other ipc mechanisms, including UDS and netlink.
->>
->> Again, that sounds to me like the vision is not "a handful of users".
->> Hopefully Greg and David can clarify.
-> 
-> I only expect a handful of users to call the ioctls directly. The
-> libraries that implement the payload-marshaling, in particular. It's a
-> similar situation with netlink.
+> It is queued here:
+> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8294/1
 
-Thanks, David, for the clarification. I think it would have been helpful
-to have that more clearly stated up front, especially as some comments 
-in this thread, such as the above, could be interpreted to mean quite 
-the opposite. Can I suggest that some text on this point be added to 
-kdbus.txt?
+Irrespective of that patch, I commented on another thread (about adding
+the serial number to DT):
 
-Thanks,
+| How about something a little more radical.
+| 
+| Rather than trying to squeeze various ATAGs into DT, why don't we add a
+| standard ATAG to contain the DT and pass that through into the kernel.
+| This is IMHO how we _should_ have done the ATAG compatibility from the
+| start.
+| 
+| That means we could get rid of most of the libfdt in the decompressor,
+| and instead resolve the differences in the kernel.
 
-Michael
+That would allow us to get rid of all the FDT compatibility code in the
+decompressor, and when we encounter these special ATAGs, we can deal with
+them in the kernel instead of having to mess around with the DT.  I'd
+also assume (although I haven't checked) that it would be much easier to
+add additional DT properties in the kernel environment, rather than in
+the rather restrictive decompressor environment.
+
+We'd need to be careful about how we deal with the atags vs DT.  I'd
+suggest (as above) that we have a tag which points at the DT in
+physical memory, and its size, and pre-scan the atag list for that.
+When we find it, we kick off the DT based stuff as we would normally
+do, and follow it with a parse of the atags.  This would cause the
+atags to override whatever is in the DT, which afaics is the behaviour
+that we actually want.
+
+We could augment that with code to update DT too so that we can export
+just the DT based information to kexec'd kernels.
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
