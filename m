@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758375AbbA0MRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:17:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34926 "EHLO
+	id S932950AbbA0Mpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:45:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34961 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758350AbbA0MRc (ORCPT
+	with ESMTP id S1758382AbbA0MRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:32 -0500
+	Tue, 27 Jan 2015 07:17:40 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlastimil Babka <vbabka@suse.cz>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Luca Abeni <luca.abeni@unitn.it>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Dario Faggioli <raistlin@linux.it>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 027/126] mm, vmscan: prevent kswapd livelock due to pfmemalloc-throttled process being killed
-Date: Tue, 27 Jan 2015 12:15:32 +0000
-Message-Id: <1422361031-19364-28-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 028/126] sched/deadline: Fix migration of SCHED_DEADLINE tasks
+Date: Tue, 27 Jan 2015 12:15:33 +0000
+Message-Id: <1422361031-19364-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -31,110 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Luca Abeni <luca.abeni@unitn.it>
 
-commit 9e5e3661727eaf960d3480213f8e87c8d67b6956 upstream.
+commit 6a503c3be937d275113b702e0421e5b0720abe8a upstream.
 
-Charles Shirron and Paul Cassella from Cray Inc have reported kswapd
-stuck in a busy loop with nothing left to balance, but
-kswapd_try_to_sleep() failing to sleep.  Their analysis found the cause
-to be a combination of several factors:
+According to global EDF, tasks should be migrated between runqueues
+without checking if their scheduling deadlines and runtimes are valid.
+However, SCHED_DEADLINE currently performs such a check:
+a migration happens doing:
 
-1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
+	deactivate_task(rq, next_task, 0);
+	set_task_cpu(next_task, later_rq->cpu);
+	activate_task(later_rq, next_task, 0);
 
-2. The process has been killed (by OOM in this case), but has not yet been
-   scheduled to remove itself from the waitqueue and die.
+which ends up calling dequeue_task_dl(), setting the new CPU, and then
+calling enqueue_task_dl().
 
-3. kswapd checks for throttled processes in prepare_kswapd_sleep():
+enqueue_task_dl() then calls enqueue_dl_entity(), which calls
+update_dl_entity(), which can modify scheduling deadline and runtime,
+breaking global EDF scheduling.
 
-        if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
-                wake_up(&pgdat->pfmemalloc_wait);
-		return false; // kswapd will not go to sleep
-	}
+As a result, some of the properties of global EDF are not respected:
+for example, a taskset {(30, 80), (40, 80), (120, 170)} scheduled on
+two cores can have unbounded response times for the third task even
+if 30/80+40/80+120/170 = 1.5809 < 2
 
-   However, for a process that was already killed, wake_up() does not remove
-   the process from the waitqueue, since try_to_wake_up() checks its state
-   first and returns false when the process is no longer waiting.
+This can be fixed by invoking update_dl_entity() only in case of
+wakeup, or if this is a new SCHED_DEADLINE task.
 
-4. kswapd is running on the same CPU as the only CPU that the process is
-   allowed to run on (through cpus_allowed, or possibly single-cpu system).
-
-5. CONFIG_PREEMPT_NONE=y kernel is used. If there's nothing to balance, kswapd
-   encounters no voluntary preemption points and repeatedly fails
-   prepare_kswapd_sleep(), blocking the process from running and removing
-   itself from the waitqueue, which would let kswapd sleep.
-
-So, the source of the problem is that we prevent kswapd from going to
-sleep until there are processes waiting on the pfmemalloc_wait queue,
-and a process waiting on a queue is guaranteed to be removed from the
-queue only when it gets scheduled.  This was done to make sure that no
-process is left sleeping on pfmemalloc_wait when kswapd itself goes to
-sleep.
-
-However, it isn't necessary to postpone kswapd sleep until the
-pfmemalloc_wait queue actually empties.  To prevent processes from being
-left sleeping, it's actually enough to guarantee that all processes
-waiting on pfmemalloc_wait queue have been woken up by the time we put
-kswapd to sleep.
-
-This patch therefore fixes this issue by substituting 'wake_up' with
-'wake_up_all' and removing 'return false' in the code snippet from
-prepare_kswapd_sleep() above.  Note that if any process puts itself in
-the queue after this waitqueue_active() check, or after the wake up
-itself, it means that the process will also wake up kswapd - and since
-we are under prepare_to_wait(), the wake up won't be missed.  Also we
-update the comment prepare_kswapd_sleep() to hopefully more clearly
-describe the races it is preventing.
-
-Fixes: 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves are low and swap is backed by network storage")
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Acked-by: Juri Lelli <juri.lelli@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1418813432-20797-2-git-send-email-luca.abeni@unitn.it
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/vmscan.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ kernel/sched/deadline.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0f16ffe8eb67..4e4e0b893ca6 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2903,18 +2903,20 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- 		return false;
- 
- 	/*
--	 * There is a potential race between when kswapd checks its watermarks
--	 * and a process gets throttled. There is also a potential race if
--	 * processes get throttled, kswapd wakes, a large process exits therby
--	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
--	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
--	 * so wake them now if necessary. If necessary, processes will wake
--	 * kswapd and get throttled again
-+	 * The throttled processes are normally woken up in balance_pgdat() as
-+	 * soon as pfmemalloc_watermark_ok() is true. But there is a potential
-+	 * race between when kswapd checks the watermarks and a process gets
-+	 * throttled. There is also a potential race if processes get
-+	 * throttled, kswapd wakes, a large process exits thereby balancing the
-+	 * zones, which causes kswapd to exit balance_pgdat() before reaching
-+	 * the wake up checks. If kswapd is going to sleep, no process should
-+	 * be sleeping on pfmemalloc_wait, so wake them now if necessary. If
-+	 * the wake up is premature, processes will wake kswapd and get
-+	 * throttled again. The difference from wake ups in balance_pgdat() is
-+	 * that here we are under prepare_to_wait().
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index fc4f98b1258f..a07b08ce8307 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -823,10 +823,10 @@ enqueue_dl_entity(struct sched_dl_entity *dl_se,
+ 	 * parameters of the task might need updating. Otherwise,
+ 	 * we want a replenishment of its runtime.
  	 */
--	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
--		wake_up(&pgdat->pfmemalloc_wait);
--		return false;
--	}
-+	if (waitqueue_active(&pgdat->pfmemalloc_wait))
-+		wake_up_all(&pgdat->pfmemalloc_wait);
+-	if (!dl_se->dl_new && flags & ENQUEUE_REPLENISH)
+-		replenish_dl_entity(dl_se, pi_se);
+-	else
++	if (dl_se->dl_new || flags & ENQUEUE_WAKEUP)
+ 		update_dl_entity(dl_se, pi_se);
++	else if (flags & ENQUEUE_REPLENISH)
++		replenish_dl_entity(dl_se, pi_se);
  
- 	return pgdat_balanced(pgdat, order, classzone_idx);
+ 	__enqueue_dl_entity(dl_se);
  }
 -- 
 2.1.4
