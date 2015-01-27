@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516AbbA0OVf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 09:21:35 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39475 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758182AbbA0OVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 09:21:33 -0500
-Date: Tue, 27 Jan 2015 15:21:20 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Richard Weinberger <richard@nod.at>, linux-mmc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
-Message-ID: <20150127142120.GA3351@pd.tnic>
-References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de>
- <CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com>
- <54C77E69.7050600@ahsoftware.de>
- <20150127120855.GA9254@pd.tnic>
- <54C7816A.8050800@ahsoftware.de>
- <54C78524.3070901@nod.at>
- <54C7881F.6020501@ahsoftware.de>
+	id S1758557AbbA0OVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 09:21:45 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:50026 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758526AbbA0OVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 09:21:41 -0500
+Date: Tue, 27 Jan 2015 15:21:36 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Xunlei Pang <pang.xunlei@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Juri Lelli <juri.lelli@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 5/5] sched/rt: Optimize find_lowest_rq() to select a
+ cache hot cpu
+Message-ID: <20150127142136.GE21418@twins.programming.kicks-ass.net>
+References: <1421642980-10045-1-git-send-email-pang.xunlei@linaro.org>
+ <1421642980-10045-5-git-send-email-pang.xunlei@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C7881F.6020501@ahsoftware.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421642980-10045-5-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 01:44:15PM +0100, Alexander Holler wrote:
-> Yes. Sorry, but I had so many bad experiences with maintainers.
+On Mon, Jan 19, 2015 at 04:49:40AM +0000, Xunlei Pang wrote:
+> In find_lowest_rq(), if we can't find a wake_affine cpu from
+> sched_domain, then we can actually determine a cache hot cpu
+> instead of simply calling "cpumask_any(lowest_mask)" which
+> always returns the first cpu in the mask.
+> 
+> So, we can determine the cache hot cpu during the interation of
+> sched_domain() in passing.
 
-Well, I can't comment on your experience for the simple reason that I
-haven't followed those discussions. In their defence, though, you have
-to know that those people get to review your code, apply it and then
-deal with it long after you've gone on about doing other things.
+Steve, I'm not getting this. Why are we using WAKE_AFFINE here?
 
-So, even if you don't always agree with them, you need to realize that
-those are the people responsible for that code and if they request a
-reasonable change in your submission, you have to do it. It is that
-simple.
 
- [ Unless you have a good argument against it but that's a different
-   story and this is what is called the "review" process. ]
 
-But this is how basically linux kernel development is done. It is not
-about simply doing something but about doing it right. And as long as
-you get *reasonable* change requests for your patch, you go and change
-it.
-
-And yes, not only *you* but *we* all have to redo our patches. And it
-is not unheard of people working on a single feature for months if not
-years, doing changes, doing changes again, testing variants and so on
-and so on. Simply reading lkml would give you lots of examples.
-
-And yet we still do it because it is simply great fun and one gets to
-learn tons of new things when working with the community (don't listen
-to all that bullshit about the kernel community being unfriendly - the
-real problem there is most of the time somewhere else).
-
-But instead of having fun, you're frustrated. And people should not be
-frustrated because that is generally bad for their health. So maybe you
-should sit down, take a quiet minute and think about what you actually
-want to do. And if kernel development doesn't give you any fun, then
-you're probably on the right track with not wanting to do it anymore.
-
-If it were me, I'd stop doing it too if it is not fun anymore - life's
-too short to be frustrated and not have fun. It is cheesy but it is
-true.
-
-I sincerely hope that helps in any way.
-
--- 
-Regards/Gruss,
-    Boris.
-
-ECO tip #101: Trim your mails when you reply.
---
+> Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
+> ---
+>  kernel/sched/rt.c | 17 +++++++++++++----
+>  1 file changed, 13 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+> index d28cfa4..e6a42e6 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -1535,6 +1535,7 @@ static int find_lowest_rq(struct task_struct *task)
+>  	struct cpumask *lowest_mask = this_cpu_cpumask_var_ptr(local_cpu_mask);
+>  	int this_cpu = smp_processor_id();
+>  	int cpu      = task_cpu(task);
+> +	int cachehot_cpu = nr_cpu_ids;
+>  
+>  	/* Make sure the mask is initialized first */
+>  	if (unlikely(!lowest_mask))
+> @@ -1566,8 +1567,12 @@ static int find_lowest_rq(struct task_struct *task)
+>  
+>  	rcu_read_lock();
+>  	for_each_domain(cpu, sd) {
+> +		if (cachehot_cpu >= nr_cpu_ids)
+> +			cachehot_cpu = cpumask_first_and(lowest_mask,
+> +						   sched_domain_span(sd));
+> +
+>  		if (sd->flags & SD_WAKE_AFFINE) {
+> -			int best_cpu;
+> +			int wakeaffine_cpu;
+>  
+>  			/*
+>  			 * "this_cpu" is cheaper to preempt than a
+> @@ -1579,16 +1584,20 @@ static int find_lowest_rq(struct task_struct *task)
+>  				return this_cpu;
+>  			}
+>  
+> -			best_cpu = cpumask_first_and(lowest_mask,
+> +			wakeaffine_cpu = cpumask_first_and(lowest_mask,
+>  						     sched_domain_span(sd));
+> -			if (best_cpu < nr_cpu_ids) {
+> +			if (wakeaffine_cpu < nr_cpu_ids) {
+>  				rcu_read_unlock();
+> -				return best_cpu;
+> +				return wakeaffine_cpu;
+>  			}
+>  		}
+>  	}
+>  	rcu_read_unlock();
+>  
+> +	/* most likely cache-hot */
+> +	if (cachehot_cpu < nr_cpu_ids)
+> +		return cachehot_cpu;
+> +
+>  	/*
+>  	 * And finally, if there were no matches within the domains
+>  	 * just give the caller *something* to work with from the compatible
+> -- 
+> 1.9.1
+> 
