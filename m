@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734AbbA0GuA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 01:50:00 -0500
-Received: from gn237.zone.eu ([217.146.67.237]:31842 "EHLO gn237.zone.eu"
+	id S1757467AbbA0GvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:51:25 -0500
+Received: from gn237.zone.eu ([217.146.67.237]:31874 "EHLO gn237.zone.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179AbbA0Gtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 01:49:52 -0500
+	id S1753202AbbA0Gty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 01:49:54 -0500
 From: Priit Laes <plaes@plaes.org>
 To: Larry Finger <Larry.Finger@lwfinger.net>,
         Chaoming Li <chaoming_li@realsil.com.cn>,
         Kalle Valo <kvalo@codeaurora.org>
 Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Priit Laes <plaes@plaes.org>
-Subject: [PATCH 3/7] rtlwifi: Remove unused RF6052_MAX_REG define
-Date: Tue, 27 Jan 2015 08:49:29 +0200
-Message-Id: <1422341373-22196-3-git-send-email-plaes@plaes.org>
+Subject: [PATCH 4/7] rtlwifi: Remove unused RTL_SUPPORTED_CTRL_FILTER define
+Date: Tue, 27 Jan 2015 08:49:30 +0200
+Message-Id: <1422341373-22196-4-git-send-email-plaes@plaes.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1422341373-22196-1-git-send-email-plaes@plaes.org>
 References: <1422341373-22196-1-git-send-email-plaes@plaes.org>
@@ -24,112 +24,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Priit Laes <plaes@plaes.org>
 ---
- drivers/net/wireless/rtlwifi/rtl8188ee/rf.h  | 1 -
- drivers/net/wireless/rtlwifi/rtl8192ce/rf.h  | 1 -
- drivers/net/wireless/rtlwifi/rtl8192cu/rf.h  | 1 -
- drivers/net/wireless/rtlwifi/rtl8192de/def.h | 1 -
- drivers/net/wireless/rtlwifi/rtl8192ee/rf.h  | 1 -
- drivers/net/wireless/rtlwifi/rtl8723ae/rf.h  | 1 -
- drivers/net/wireless/rtlwifi/rtl8723be/rf.h  | 1 -
- drivers/net/wireless/rtlwifi/rtl8821ae/rf.h  | 1 -
- 8 files changed, 8 deletions(-)
+ drivers/net/wireless/rtlwifi/core.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/rf.h b/drivers/net/wireless/rtlwifi/rtl8188ee/rf.h
-index 5c1472d..0eca030 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/rf.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/rf.h
-@@ -27,7 +27,6 @@
- #define __RTL92C_RF_H__
+diff --git a/drivers/net/wireless/rtlwifi/core.h b/drivers/net/wireless/rtlwifi/core.h
+index 624e1dc..3b37557 100644
+--- a/drivers/net/wireless/rtlwifi/core.h
++++ b/drivers/net/wireless/rtlwifi/core.h
+@@ -33,8 +33,6 @@
+ 	FIF_FCSFAIL | \
+ 	FIF_BCN_PRBRESP_PROMISC)
  
- #define RF6052_MAX_TX_PWR		0x3F
--#define RF6052_MAX_REG			0x3F
- 
- void rtl88e_phy_rf6052_set_bandwidth(struct ieee80211_hw *hw,
- 				     u8 bandwidth);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/rf.h b/drivers/net/wireless/rtlwifi/rtl8192ce/rf.h
-index d8fe68b..ebd72ca 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/rf.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/rf.h
-@@ -31,7 +31,6 @@
- #define __RTL92C_RF_H__
- 
- #define RF6052_MAX_TX_PWR		0x3F
--#define RF6052_MAX_REG			0x3F
- #define RF6052_MAX_PATH			2
- 
- void rtl92ce_phy_rf6052_set_bandwidth(struct ieee80211_hw *hw, u8 bandwidth);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.h b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.h
-index 11b439d..6f987de 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.h
-@@ -31,7 +31,6 @@
- #define __RTL92CU_RF_H__
- 
- #define RF6052_MAX_TX_PWR		0x3F
--#define RF6052_MAX_REG			0x3F
- #define RF6052_MAX_PATH			2
- 
- void rtl92cu_phy_rf6052_set_bandwidth(struct ieee80211_hw *hw, u8 bandwidth);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/def.h b/drivers/net/wireless/rtlwifi/rtl8192de/def.h
-index 4ca1fe1..0a443ed 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192de/def.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192de/def.h
-@@ -35,7 +35,6 @@
- #define	MAX_MSS_DENSITY_1T				0x0A
- 
- #define RF6052_MAX_TX_PWR				0x3F
--#define RF6052_MAX_REG					0x3F
- #define RF6052_MAX_PATH					2
- 
- #define	PHY_RSSI_SLID_WIN_MAX				100
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ee/rf.h b/drivers/net/wireless/rtlwifi/rtl8192ee/rf.h
-index 8bdeed3..039c013 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ee/rf.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ee/rf.h
-@@ -27,7 +27,6 @@
- #define __RTL92E_RF_H__
- 
- #define RF6052_MAX_TX_PWR		0x3F
--#define RF6052_MAX_REG			0x3F
- 
- void rtl92ee_phy_rf6052_set_bandwidth(struct ieee80211_hw *hw,
- 				      u8 bandwidth);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/rf.h b/drivers/net/wireless/rtlwifi/rtl8723ae/rf.h
-index f3f45b1..7b44ebc 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/rf.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/rf.h
-@@ -27,7 +27,6 @@
- #define __RTL8723E_RF_H__
- 
- #define RF6052_MAX_TX_PWR		0x3F
--#define RF6052_MAX_REG			0x3F
- 
- void rtl8723e_phy_rf6052_set_bandwidth(struct ieee80211_hw *hw,
- 				       u8 bandwidth);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723be/rf.h b/drivers/net/wireless/rtlwifi/rtl8723be/rf.h
-index a6fea10..f423e15 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723be/rf.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8723be/rf.h
-@@ -27,7 +27,6 @@
- #define __RTL8723BE_RF_H__
- 
- #define RF6052_MAX_TX_PWR		0x3F
--#define RF6052_MAX_REG			0x3F
- 
- void rtl8723be_phy_rf6052_set_bandwidth(struct ieee80211_hw *hw,
- 					u8 bandwidth);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8821ae/rf.h b/drivers/net/wireless/rtlwifi/rtl8821ae/rf.h
-index d9582ee..efd22bd 100644
---- a/drivers/net/wireless/rtlwifi/rtl8821ae/rf.h
-+++ b/drivers/net/wireless/rtlwifi/rtl8821ae/rf.h
-@@ -27,7 +27,6 @@
- #define __RTL8821AE_RF_H__
- 
- #define RF6052_MAX_TX_PWR		0x3F
--#define RF6052_MAX_REG			0x3F
- 
- void rtl8821ae_phy_rf6052_set_bandwidth(struct ieee80211_hw *hw,
- 					u8 bandwidth);
+-#define RTL_SUPPORTED_CTRL_FILTER	0xFF
+-
+ extern const struct ieee80211_ops rtl_ops;
+ void rtl_fw_cb(const struct firmware *firmware, void *context);
+ void rtl_addr_delay(u32 addr);
 -- 
 2.2.2
 
