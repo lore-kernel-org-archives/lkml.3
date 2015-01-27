@@ -1,102 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759482AbbA0VGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:06:16 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:34725 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290AbbA0VGN (ORCPT
+	id S1759721AbbA0VJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 16:09:58 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:58209 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438AbbA0VJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 16:06:13 -0500
+	Tue, 27 Jan 2015 16:09:57 -0500
+Date: Tue, 27 Jan 2015 21:09:44 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Message-ID: <20150127210943.GN26493@n2100.arm.linux.org.uk>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <20150127132127.GA869@amd>
+ <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
+ <201501271532.25540@pali>
+ <20150127174818.GM26493@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
 MIME-Version: 1.0
-In-Reply-To: <1422358221-13199-2-git-send-email-k.kozlowski@samsung.com>
-References: <1422358221-13199-1-git-send-email-k.kozlowski@samsung.com>
-	<1422358221-13199-2-git-send-email-k.kozlowski@samsung.com>
-Date: Tue, 27 Jan 2015 22:06:12 +0100
-Message-ID: <CAAfyv34YoUG8dyq10mFZRQ-uf6-oT_KAbwZ1UQQ0FvFrs10BrQ@mail.gmail.com>
-Subject: Re: [RFT PATCH 1/4] power_supply: twl4030_madc: Check return value of power_supply_register
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>,
-        Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
-        Darren Hart <dvhart@infradead.org>, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzystof,
+On Tue, Jan 27, 2015 at 03:03:23PM -0500, Nicolas Pitre wrote:
+> On Tue, 27 Jan 2015, Russell King - ARM Linux wrote:
+> 
+> > On Tue, Jan 27, 2015 at 03:32:25PM +0100, Pali Rohár wrote:
+> > > On Tuesday 27 January 2015 15:16:45 Rob Herring wrote:
+> > > > What other devices? Where is bootreason in the list of ATAGS:
+> > > > 
+> > > > #define ATAG_MEM        0x54410002
+> > > > #define ATAG_VIDEOTEXT  0x54410003
+> > > > #define ATAG_RAMDISK    0x54410004
+> > > > #define ATAG_INITRD     0x54410005
+> > > > #define ATAG_INITRD2    0x54420005
+> > > > #define ATAG_SERIAL     0x54410006
+> > > > #define ATAG_REVISION   0x54410007
+> > > > #define ATAG_VIDEOLFB   0x54410008
+> > > > #define ATAG_CMDLINE    0x54410009
+> > > > #define ATAG_ACORN      0x41000101
+> > > > #define ATAG_MEMCLK     0x41000402
+> > > > 
+> > > > Rob
+> > > 
+> > > Each device is using own proprietary atag (or other information) 
+> > > to pass bootreason from bootloader to kernel. No standard way :-(
+> 
+> So that's what Pavel was alluding to.
+> 
+> > The reason that happens is because people refuse to discuss their
+> > requirements here - just like people refuse to report userspace API
+> > regressions to kernel people.  This rather pisses me off, because
+> > it creates all sorts of horrid per-platform yuck.
+> > 
+> > We _could_ (and have in the past) turned round and refused to support
+> > these kinds of hacks - which IMHO is quite a reasonable stance to
+> > take: the message we should be sending is "if you wish to design
+> > new methods without discussing it with us, we reserve the right not
+> > to support them in mainline kernels; please discuss with us your
+> > requirements."
+> > 
+> > Each time that we accept one of these hacks, we're sending a message
+> > that says "it's okay to work in this crappy way".
+> > 
+> > Yes, I realise that the N900 has little in the way of support, and we
+> > can't exert that kind of back pressure (since there's no one to direct
+> > that onto to effect any change) so I guess we just have to live with it.
+> 
+> If the method is: "let's pass non-standard ATAGs around and have ad-hoc 
+> user space code interpret it in some arbitrary way" then it's a complete 
+> abomination.
+> 
+> > > I think this kind of information (how was board/computer started) 
+> > > can be useful also for other architectures. E.g. on laptop you 
+> > > would like to know if if was started by RTC, power button, 
+> > > WakeOnLan, another ACPI event, rebooted machine, watchdog, etc... 
+> > > And scripts can act depending on this event (when by RTC, you 
+> > > need to run some planned job, when by watchdog reset you should 
+> > > check what caused that reason...).
+> 
+> Useful when properly designed and generic enough to be shared.
+> 
+> I'd suggest a DT property be proposed for that purpose if it doesn't 
+> already exist.  That at least has a chance to be generically useful.
 
-On Tue, Jan 27, 2015 at 12:30 PM, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> The return value of power_supply_register() call was not checked and
-> even on error probe() function returned 0. If registering failed then
-> during unbind the driver tried to unregister power supply which was not
-> actually registered.
->
-> This could lead to memory corruption because power_supply_unregister()
-> unconditionally cleans up given power supply.
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Fixes: da0a00ebc239 ("power: Add twl4030_madc battery driver.")
-> Cc: <stable@vger.kernel.org>
-> ---
->  drivers/power/twl4030_madc_battery.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/power/twl4030_madc_battery.c b/drivers/power/twl4030_madc_battery.c
-> index 7ef445a6cfa6..cf907609ec49 100644
-> --- a/drivers/power/twl4030_madc_battery.c
-> +++ b/drivers/power/twl4030_madc_battery.c
-> @@ -192,6 +192,7 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
->  {
->         struct twl4030_madc_battery *twl4030_madc_bat;
->         struct twl4030_madc_bat_platform_data *pdata = pdev->dev.platform_data;
-> +       int ret = 0;
->
->         twl4030_madc_bat = kzalloc(sizeof(*twl4030_madc_bat), GFP_KERNEL);
->         if (!twl4030_madc_bat)
-> @@ -216,9 +217,11 @@ static int twl4030_madc_battery_probe(struct platform_device *pdev)
->
->         twl4030_madc_bat->pdata = pdata;
->         platform_set_drvdata(pdev, twl4030_madc_bat);
-> -       power_supply_register(&pdev->dev, &twl4030_madc_bat->psy);
-> +       ret = power_supply_register(&pdev->dev, &twl4030_madc_bat->psy);
-> +       if (ret < 0)
-> +               kfree(twl4030_madc_bat);
-I post update twl4030_madc to iio some time ago [1] where this change
-was incorporated.
-I plan to respin in next week so we can drop this one (or take and
-I'll rebase on top).
->
-> -       return 0;
-> +       return ret;
->  }
->
->  static int twl4030_madc_battery_remove(struct platform_device *pdev)
-> --
-> 1.9.1
->
+What this means is that we have to further augment the atags-to-dt code
+in the decompressor with the platform specific ATAGs to parse this
+information and merge it into the appended DT before passing the
+resulting DT blob to the kernel.
 
-[1] - https://lkml.org/lkml/2014/3/5/284
+Or we pass both the ATAGs and wrapped DT to the kernel when both exist,
+and let the kernel deal with it in a much saner environment than the
+restricted decompressor environment.
 
-BR,
+Or we /could/ say that mainline never supported it, and we aren't going
+to add support for "new" tags to the mainline kernel.  It wouldn't be
+a regression, because mainline hasn't ever supported them (that's been
+said before about such things on other platforms.)
 
-marek
+However, there's another consideration to be had here before we can say
+that: how many people out there want to run a mainline (or even an
+updated kernel derived from mainline) on this device?  If there's a
+sizable following for the device wanting updated support, then it's
+something we really need to consider supporting inspite of our
+disappointment with Nokia inventing these "proprietary" tags.
 
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
