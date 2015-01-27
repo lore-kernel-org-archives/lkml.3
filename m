@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757417AbbA0Eqy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 23:46:54 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:56205 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757223AbbA0EqY (ORCPT
+	id S1757353AbbA0Eqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 23:46:31 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42660 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756757AbbA0Eq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 23:46:24 -0500
-From: Rob Herring <robh@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh@kernel.org>, Jing Xiang <jxiang@marvell.com>,
-        Xiangzhan Meng <mengxzh@marvell.com>
-Subject: [PATCH 3/3] gpio: pxa: add PXA1928 gpio type support
-Date: Mon, 26 Jan 2015 22:46:06 -0600
-Message-Id: <1422333966-18338-4-git-send-email-robh@kernel.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1422333966-18338-1-git-send-email-robh@kernel.org>
-References: <1422333966-18338-1-git-send-email-robh@kernel.org>
+	Mon, 26 Jan 2015 23:46:27 -0500
+Date: Tue, 27 Jan 2015 04:46:25 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 00/16 v3] tracing: Add new file system tracefs
+Message-ID: <20150127044625.GX29656@ZenIV.linux.org.uk>
+References: <20150126150913.653681560@goodmis.org>
+ <20150126193049.GN29656@ZenIV.linux.org.uk>
+ <20150126214020.GO29656@ZenIV.linux.org.uk>
+ <20150126183739.1d17fd82@gandalf.local.home>
+ <20150126213419.531774eb@grimm.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150126213419.531774eb@grimm.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for PXA1928 GPIOs. The PXA1928 adds a 6th bank from previous
-generations.
+On Mon, Jan 26, 2015 at 09:34:19PM -0500, Steven Rostedt wrote:
+> On Mon, 26 Jan 2015 18:37:39 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> 
+> > > the first call of tracing_init_dentry().  Prior to that it's NULL.
+> > > BTW, may I politely inquire what the fuck are those contortions in
+> > > tracing_init_dentry_tr() about?  Looks like a stunningly convoluted
+> > > way to trigger that automount point creation early in
+> > > tracer_init_tracefs(). Why not do that right there explicitly?
+> > 
+> > Yeah, that could be cleaned up. Before the tracefs code, it made much
+> > more sense to keep that as a single function. Now that
+> > global_array.dir is treated differently as the subdirs, it does make
+> > sense to have global_arry.dir initialized in a separate function.
+> > 
+> > I'll update my patch series to do this.
+> 
+> Now I remember why I did this (as I changed the code and everything
+> blew up). The files in the tracing directory can be created by several
+> users (do a grep for fs_initcall() in kernel/trace/*.c). The first
+> caller to add a file initializes the tracing directory.
+> 
+> I guess I can have all the other callers use fs_initcall_sync(). I'm
+> assuming those come after fs_initcall().
 
-Signed-off-by: Jing Xiang <jxiang@marvell.com>
-Signed-off-by: Xiangzhan Meng <mengxzh@marvell.com>
-[robh: ported to 3.19 from vendor kernel]
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>
----
- drivers/gpio/gpio-pxa.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+Ah...  That explains some of the oddities of that kind (not all of them,
+though - your trace_options_init_dentry() is called by
+create_trace_option_dirs() and create_trace_option_core_file(), which is
+called only by create_trace_option_dirs(), and that - quite a few times,
+each time calling trace_options_init_dentry()).
 
-diff --git a/drivers/gpio/gpio-pxa.c b/drivers/gpio/gpio-pxa.c
-index b4fb8de..2fdb04b 100644
---- a/drivers/gpio/gpio-pxa.c
-+++ b/drivers/gpio/gpio-pxa.c
-@@ -41,9 +41,12 @@
-  * BANK 4 - 0x0104  0x0110  0x011C  0x0128  0x0134  0x0140  0x014C
-  * BANK 5 - 0x0108  0x0114  0x0120  0x012C  0x0138  0x0144  0x0150
-  *
-+ * BANK 6 - 0x0200  0x020C  0x0218  0x0224  0x0230  0x023C  0x0248
-+ *
-  * NOTE:
-  *   BANK 3 is only available on PXA27x and later processors.
-- *   BANK 4 and 5 are only available on PXA935
-+ *   BANK 4 and 5 are only available on PXA935, PXA1928
-+ *   BANK 6 is only available on PXA1928
-  */
- 
- #define GPLR_OFFSET	0x00
-@@ -56,7 +59,8 @@
- #define GAFR_OFFSET	0x54
- #define ED_MASK_OFFSET	0x9C	/* GPIO edge detection for AP side */
- 
--#define BANK_OFF(n)	(((n) < 3) ? (n) << 2 : 0x100 + (((n) - 3) << 2))
-+#define BANK_OFF(n)	(((n) < 3) ? (n) << 2 : ((n) > 5 ? 0x200 : 0x100)	\
-+			+ (((n) % 3) << 2))
- 
- int pxa_last_gpio;
- static int irq_base;
-@@ -92,6 +96,7 @@ enum pxa_gpio_type {
- 	PXA93X_GPIO,
- 	MMP_GPIO = 0x10,
- 	MMP2_GPIO,
-+	PXA1928_GPIO,
- };
- 
- struct pxa_gpio_id {
-@@ -139,6 +144,11 @@ static struct pxa_gpio_id mmp2_id = {
- 	.gpio_nums	= 192,
- };
- 
-+static struct pxa_gpio_id pxa1928_id = {
-+	.type		= PXA1928_GPIO,
-+	.gpio_nums	= 224,
-+};
-+
- #define for_each_gpio_chip(i, c)			\
- 	for (i = 0, c = &pxa_gpio_chips[0]; i <= pxa_last_gpio; i += 32, c++)
- 
-@@ -486,6 +496,7 @@ static int pxa_gpio_nums(struct platform_device *pdev)
- 	case PXA93X_GPIO:
- 	case MMP_GPIO:
- 	case MMP2_GPIO:
-+	case PXA1928_GPIO:
- 		gpio_type = pxa_id->type;
- 		count = pxa_id->gpio_nums - 1;
- 		break;
-@@ -505,6 +516,7 @@ static const struct of_device_id pxa_gpio_dt_ids[] = {
- 	{ .compatible = "marvell,pxa93x-gpio",	.data = &pxa93x_id, },
- 	{ .compatible = "marvell,mmp-gpio",	.data = &mmp_id, },
- 	{ .compatible = "marvell,mmp2-gpio",	.data = &mmp2_id, },
-+	{ .compatible = "marvell,pxa1928-gpio",	.data = &pxa1928_id, },
- 	{}
- };
- 
-@@ -666,6 +678,7 @@ static const struct platform_device_id gpio_id_table[] = {
- 	{ "pxa93x-gpio",	(unsigned long)&pxa93x_id },
- 	{ "mmp-gpio",		(unsigned long)&mmp_id },
- 	{ "mmp2-gpio",		(unsigned long)&mmp2_id },
-+	{ "pxa1928-gpio",	(unsigned long)&pxa1928_id },
- 	{ },
- };
- 
--- 
-2.1.0
-
+Strange style, IMO.  Frankly, I'd rather have the ordering as explicit as it
+gets...
