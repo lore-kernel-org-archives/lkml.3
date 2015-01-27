@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758688AbbA0MTe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:19:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35325 "EHLO
+	id S932489AbbA0MTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:19:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35333 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758661AbbA0MT1 (ORCPT
+	with ESMTP id S1758665AbbA0MT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:19:27 -0500
+	Tue, 27 Jan 2015 07:19:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Peterson <david.peterson@cel.com>, Johan Hovold <johan@kernel.org>,
+Cc: Christoph Hellwig <hch@lst.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 091/126] USB: cp210x: add IDs for CEL USB sticks and MeshWorks devices
-Date: Tue, 27 Jan 2015 12:16:36 +0000
-Message-Id: <1422361031-19364-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 092/126] vhost-scsi: Add missing virtio-scsi -> TCM attribute conversion
+Date: Tue, 27 Jan 2015 12:16:37 +0000
+Message-Id: <1422361031-19364-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,38 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Peterson <david.peterson@cel.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 1ae78a4870989a354028cb17dabf819b595e70e3 upstream.
+commit 46243860806bdc2756f3ce8ac86b4d7c616bcd6c upstream.
 
-Added virtual com port VID/PID entries for CEL USB sticks and MeshWorks
-devices.
+While looking at hch's recent conversion to drop the MSG_*_TAG
+definitions, I noticed a long standing bug in vhost-scsi where
+the VIRTIO_SCSI_S_* attribute definitions where incorrectly
+being passed directly into target_submit_cmd_map_sgls().
 
-Signed-off-by: David Peterson <david.peterson@cel.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+This patch adds the missing virtio-scsi to TCM/SAM task attribute
+conversion.
+
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ luis: backported to 3.16:
+  - replaced TCM_*_TAG by MSG_*_TAG ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/cp210x.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/vhost/scsi.c | 24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 74d6587f643a..9e8708c5cbfa 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -120,10 +120,12 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
--	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL MeshConnect USB Stick */
-+	{ USB_DEVICE(0x10C4, 0x8856) },	/* CEL EM357 ZigBee USB Stick - LR */
-+	{ USB_DEVICE(0x10C4, 0x8857) },	/* CEL EM357 ZigBee USB Stick */
- 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
-+	{ USB_DEVICE(0x10C4, 0x8977) },	/* CEL MeshWorks DevKit Device */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index a17f11850669..befe07b1e71d 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -909,6 +909,23 @@ vhost_scsi_map_iov_to_prot(struct tcm_vhost_cmd *cmd,
+ 	return 0;
+ }
+ 
++static int vhost_scsi_to_tcm_attr(int attr)
++{
++	switch (attr) {
++	case VIRTIO_SCSI_S_SIMPLE:
++		return MSG_SIMPLE_TAG;
++	case VIRTIO_SCSI_S_ORDERED:
++		return MSG_ORDERED_TAG;
++	case VIRTIO_SCSI_S_HEAD:
++		return MSG_HEAD_TAG;
++	case VIRTIO_SCSI_S_ACA:
++		return MSG_ACA_TAG;
++	default:
++		break;
++	}
++	return MSG_SIMPLE_TAG;
++}
++
+ static void tcm_vhost_submission_work(struct work_struct *work)
+ {
+ 	struct tcm_vhost_cmd *cmd =
+@@ -934,9 +951,10 @@ static void tcm_vhost_submission_work(struct work_struct *work)
+ 	rc = target_submit_cmd_map_sgls(se_cmd, tv_nexus->tvn_se_sess,
+ 			cmd->tvc_cdb, &cmd->tvc_sense_buf[0],
+ 			cmd->tvc_lun, cmd->tvc_exp_data_len,
+-			cmd->tvc_task_attr, cmd->tvc_data_direction,
+-			TARGET_SCF_ACK_KREF, sg_ptr, cmd->tvc_sgl_count,
+-			NULL, 0, sg_prot_ptr, cmd->tvc_prot_sgl_count);
++			vhost_scsi_to_tcm_attr(cmd->tvc_task_attr),
++			cmd->tvc_data_direction, TARGET_SCF_ACK_KREF,
++			sg_ptr, cmd->tvc_sgl_count, NULL, 0, sg_prot_ptr,
++			cmd->tvc_prot_sgl_count);
+ 	if (rc < 0) {
+ 		transport_send_check_condition_and_sense(se_cmd,
+ 				TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE, 0);
 -- 
 2.1.4
 
