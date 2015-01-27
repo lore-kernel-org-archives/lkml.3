@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613AbbA0Is4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 03:48:56 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:44919 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbbA0Isx (ORCPT
+	id S1757789AbbA0Its (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 03:49:48 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:50556 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757648AbbA0Itp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 03:48:53 -0500
-Date: Tue, 27 Jan 2015 09:48:42 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Burke Libbey <burke.libbey@shopify.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH] sched: Fix race between task_group and sched_task_group
-Message-ID: <20150127084842.GO2896@worktop.programming.kicks-ass.net>
-References: <1414405105.19914.169.camel@tkhai>
- <54C6D1C4.4070802@oracle.com>
+	Tue, 27 Jan 2015 03:49:45 -0500
+Message-ID: <54C75126.5070905@linaro.org>
+Date: Tue, 27 Jan 2015 09:49:42 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C6D1C4.4070802@oracle.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Oleksij Rempel <linux@rempel-privat.de>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+Subject: Re: [PATCH] ARM: clocksource: fix compile of asm9260_timer driver
+ on ARCH=parisc
+References: <54BE5E9A.8070502@linaro.org> <1422343624-9764-1-git-send-email-linux@rempel-privat.de>
+In-Reply-To: <1422343624-9764-1-git-send-email-linux@rempel-privat.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 06:46:12PM -0500, Sasha Levin wrote:
-> This seems to cause the following lockdep warning:
+On 01/27/2015 08:27 AM, Oleksij Rempel wrote:
+> make sure this driver depends on GENERIC_CLOCKEVENTS
+>
+> compiler error was found by kbuild test robot:
+>
+>>> drivers/clocksource/asm9260_timer.c:114:14: warning: its scope is only this definition or declaration, which is probably not what you want
+>>> drivers/clocksource/asm9260_timer.c:124:16: warning: 'struct clock_event_device' declared inside parameter list
+>              struct clock_event_device *evt)
+>
+>>> drivers/clocksource/asm9260_timer.c:124:16: warning: 'enum clock_event_mode' declared inside parameter list
+>>> drivers/clocksource/asm9260_timer.c:123:58: error: parameter 1 ('mode') has incomplete type
+>      static void asm9260_timer_set_mode(enum clock_event_mode mode,
+>
+> Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
 
-unlikely, the fork -> sched_move_task() was only used to establish that
-rq->lock nests inside p->pi_lock, and there's a gazillion other ways to
-establish that.
+I would like to fold this patch with the asm9260 timer patch in order to 
+prevent git bisecting breakage. Ok for you ?
 
-That said, its a right mess indeed. Let me stare a wee bit more at this
-rats nets.
+> ---
+>   drivers/clocksource/Kconfig | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index 13b8152..bfaaae4 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -231,6 +231,7 @@ config CLKSRC_MIPS_GIC
+>
+>   config ASM9260_TIMER
+>   	bool "Alphascale ASM9260 timer driver"
+> +	depends on GENERIC_CLOCKEVENTS
+>   	select CLKSRC_MMIO
+>   	select CLKSRC_OF
+>   	default y if MACH_ASM9260
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
