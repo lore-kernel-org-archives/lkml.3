@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506AbbA0HtA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 02:49:00 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:64730 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757439AbbA0Hs5 convert rfc822-to-8bit (ORCPT
+	id S1757507AbbA0HwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 02:52:22 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:35900 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677AbbA0HwS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 02:48:57 -0500
+	Tue, 27 Jan 2015 02:52:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <1421583604-27256-2-git-send-email-niso@kth.se>
-References: <1421583604-27256-1-git-send-email-niso@kth.se>
-	<1421583604-27256-2-git-send-email-niso@kth.se>
-Date: Tue, 27 Jan 2015 08:48:56 +0100
-Message-ID: <CACRpkdbwyyN8qY8LuowbWtyz7JZg8Ki3Rrg0g0J6xQ5Px5MUoQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] sh-pfc: add macro to define pinmux without function
+In-Reply-To: <1422193792-15970-1-git-send-email-niso@kth.se>
+References: <1564701.sT8vso17XV@avalon>
+	<1422193792-15970-1-git-send-email-niso@kth.se>
+Date: Tue, 27 Jan 2015 08:52:18 +0100
+Message-ID: <CACRpkdZ4pCTz7kU6mCGqPUUtOr66NP84gkaQB++Ojkh-61PHWA@mail.gmail.com>
+Subject: Re: [PATCH v3] sh-pfc: Add emev2 pinmux support
 From: Linus Walleij <linus.walleij@linaro.org>
 To: =?UTF-8?Q?Niklas_S=C3=B6derlund?= <niso@kth.se>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
         Magnus Damm <magnus.damm@gmail.com>
@@ -27,15 +27,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 1:20 PM, Niklas Söderlund <niso@kth.se> wrote:
+On Sun, Jan 25, 2015 at 2:49 PM, Niklas Söderlund <niso@kth.se> wrote:
 
-> Used to define pinmux configurations where the pinmux function have no
-> representation in the configuration registers but instead solely depends
-> on a group selection.
+> Add PFC support for the EMMA Mobile EV2 SoC including pin groups for
+> on-chip devices.
 >
 > Signed-off-by: Niklas Söderlund <niso@kth.se>
 
-Patch applied with Laurent's ACK.
+This v3 version applied with Laurent's ACK.
 
 Yours,
 Linus Walleij
