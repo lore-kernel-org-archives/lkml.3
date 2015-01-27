@@ -1,235 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593AbbA0PHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:07:44 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:52874 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701AbbA0PHm (ORCPT
+	id S1758603AbbA0PIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:08:51 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:33898 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754801AbbA0PIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:07:42 -0500
-Date: Tue, 27 Jan 2015 11:07:39 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH] thermal: Fix examples in DT documentation
-Message-ID: <20150127150737.GC29600@developer.hsd1.ca.comcast.net>
-References: <1422355847-23549-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Tue, 27 Jan 2015 10:08:49 -0500
+Message-ID: <54C7A9F6.1080500@oracle.com>
+Date: Tue, 27 Jan 2015 10:08:38 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mJm6k4Vb/yFcL9ZU"
-Content-Disposition: inline
-In-Reply-To: <1422355847-23549-1-git-send-email-srinivas.kandagatla@linaro.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        akpm@linux-foundation.org, lauraa@codeaurora.org
+Subject: Re: [PATCH v2 2/3] mm: cma: allocation trigger
+References: <1422282365-20015-1-git-send-email-sasha.levin@oracle.com> <1422282365-20015-3-git-send-email-sasha.levin@oracle.com> <20150127080603.GC11358@js1304-P5Q-DELUXE>
+In-Reply-To: <20150127080603.GC11358@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/27/2015 03:06 AM, Joonsoo Kim wrote:
+> On Mon, Jan 26, 2015 at 09:26:04AM -0500, Sasha Levin wrote:
+>> Provides a userspace interface to trigger a CMA allocation.
+>>
+>> Usage:
+>>
+>> 	echo [pages] > alloc
+>>
+>> This would provide testing/fuzzing access to the CMA allocation paths.
+>>
+>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>> ---
+>>  mm/cma_debug.c |   60 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>>  1 file changed, 58 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/mm/cma_debug.c b/mm/cma_debug.c
+>> index 3a25413..39c7116 100644
+>> --- a/mm/cma_debug.c
+>> +++ b/mm/cma_debug.c
+>> @@ -7,9 +7,22 @@
+>>  
+>>  #include <linux/debugfs.h>
+>>  #include <linux/cma.h>
+>> +#include <linux/list.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/dma-contiguous.h>
+> 
+> dma-contiguous.h doesn't needed now.
 
---mJm6k4Vb/yFcL9ZU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right.
 
-Hello Srinivas,
+>> +#include <linux/slab.h>
+>>  
+>>  #include "cma.h"
+>>  
+>> +struct cma_mem {
+>> +	struct hlist_node node;
+>> +	struct page *p;
+>> +	unsigned long n;
+>> +};
+>> +
+>> +static HLIST_HEAD(cma_mem_head);
+>> +static DEFINE_SPINLOCK(cma_mem_head_lock);
+>> +
+>>  static struct dentry *cma_debugfs_root;
+> 
+> How about keeping cma_mem_head on each cma area separately?
 
-On Tue, Jan 27, 2015 at 10:50:47AM +0000, Srinivas Kandagatla wrote:
-> There are various issues with the examples in this documentation, some
-> of the DT labels are invalid and one of the macro THERMAL_NO_LIMITS
-> referenced is not available as well.
->=20
-> As Its highly likely that people would pick some samples from the
-> documentation, I though fixing these would be best rather than giving
-> starter a challenge to figure out whats going wrong with examples.
->=20
-> This patch attempts to fix such errors in the documentation.
->=20
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Good point, we're mixing allocations here.
 
-Thanks for doing this. It's been a while that I want to make these small
-fixes in the of thermal example section and I always forget.
+>>  static int cma_debugfs_get(void *data, u64 *val)
+>> @@ -23,8 +36,48 @@ static int cma_debugfs_get(void *data, u64 *val)
+>>  
+>>  DEFINE_SIMPLE_ATTRIBUTE(cma_debugfs_fops, cma_debugfs_get, NULL, "%llu\n");
+>>  
+>> -static void cma_debugfs_add_one(struct cma *cma, int idx)
+>> +static void cma_add_to_cma_mem_list(struct cma_mem *mem)
+>> +{
+>> +	spin_lock(&cma_mem_head_lock);
+>> +	hlist_add_head(&mem->node, &cma_mem_head);
+>> +	spin_unlock(&cma_mem_head_lock);
+>> +}
+>> +
+>> +static int cma_alloc_mem(struct cma *cma, int count)
+>>  {
+>> +	struct cma_mem *mem;
+>> +	struct page *p;
+>> +
+>> +	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
+>> +	if (!mem)
+>> +		return -ENOMEM;
+>> +
+>> +	p = cma_alloc(cma, count, CONFIG_CMA_ALIGNMENT);
+>> +	if (!p) {
+>> +		kfree(mem);
+>> +		return -ENOMEM;
+>> +	}
+> 
+> CONFIG_CMA_ALIGNMENT looks not good. It means just maximum aligment
+> so it is odd to use this value in testing. Is there special meaning
+> to use it here?
 
-Just a minor request in the end:
+No good reason, I stole that from a different piece of code.
 
-> ---
->  .../devicetree/bindings/thermal/thermal.txt        | 44 +++++++++++-----=
-------
->  1 file changed, 22 insertions(+), 22 deletions(-)
->=20
-> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Docu=
-mentation/devicetree/bindings/thermal/thermal.txt
-> index f5db6b7..97ed14e 100644
-> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
-> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
-> @@ -251,24 +251,24 @@ ocp {
->  };
-> =20
->  thermal-zones {
-> -	cpu-thermal: cpu-thermal {
-> +	cpu_thermal: cpu-thermal {
->  		polling-delay-passive =3D <250>; /* milliseconds */
->  		polling-delay =3D <1000>; /* milliseconds */
-> =20
->  		thermal-sensors =3D <&bandgap0>;
-> =20
->  		trips {
-> -			cpu-alert0: cpu-alert {
-> +			cpu_alert0: cpu-alert0 {
->  				temperature =3D <90000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "active";
->  			};
-> -			cpu-alert1: cpu-alert {
-> +			cpu_alert1: cpu-alert1 {
->  				temperature =3D <100000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "passive";
->  			};
-> -			cpu-crit: cpu-crit {
-> +			cpu_crit: cpu-crit {
->  				temperature =3D <125000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "critical";
-> @@ -277,17 +277,17 @@ thermal-zones {
-> =20
->  		cooling-maps {
->  			map0 {
-> -				trip =3D <&cpu-alert0>;
-> -				cooling-device =3D <&fan0 THERMAL_NO_LIMITS 4>;
-> +				trip =3D <&cpu_alert0>;
-> +				cooling-device =3D <&fan0 THERMAL_NO_LIMIT 4>;
->  			};
->  			map1 {
-> -				trip =3D <&cpu-alert1>;
-> -				cooling-device =3D <&fan0 5 THERMAL_NO_LIMITS>;
-> +				trip =3D <&cpu_alert1>;
-> +				cooling-device =3D <&fan0 5 THERMAL_NO_LIMIT>;
->  			};
->  			map2 {
-> -				trip =3D <&cpu-alert1>;
-> +				trip =3D <&cpu_alert1>;
->  				cooling-device =3D
-> -				    <&cpu0 THERMAL_NO_LIMITS THERMAL_NO_LIMITS>;
-> +				    <&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
->  			};
->  		};
->  	};
-> @@ -298,13 +298,13 @@ used to monitor the zone 'cpu-thermal' using its so=
-le sensor. A fan
->  device (fan0) is controlled via I2C bus 1, at address 0x48, and has ten
->  different cooling states 0-9. It is used to remove the heat out of
->  the thermal zone 'cpu-thermal' using its cooling states
-> -from its minimum to 4, when it reaches trip point 'cpu-alert0'
-> +from its minimum to 4, when it reaches trip point 'cpu_alert0'
->  at 90C, as an example of active cooling. The same cooling device is used=
- at
-> -'cpu-alert1', but from 5 to its maximum state. The cpu@0 device is also
-> +'cpu_alert1', but from 5 to its maximum state. The cpu@0 device is also
->  linked to the same thermal zone, 'cpu-thermal', as a passive cooling dev=
-ice,
-> -using all its cooling states at trip point 'cpu-alert1',
-> +using all its cooling states at trip point 'cpu_alert1',
->  which is a trip point at 100C. On the thermal zone 'cpu-thermal', at the
-> -temperature of 125C, represented by the trip point 'cpu-crit', the silic=
-on
-> +temperature of 125C, represented by the trip point 'cpu_crit', the silic=
-on
->  is not reliable anymore.
-> =20
->  (b) - IC with several internal sensors
-> @@ -329,7 +329,7 @@ ocp {
->  };
-> =20
->  thermal-zones {
-> -	cpu-thermal: cpu-thermal {
-> +	cpu_thermal: cpu-thermal {
->  		polling-delay-passive =3D <250>; /* milliseconds */
->  		polling-delay =3D <1000>; /* milliseconds */
-> =20
-> @@ -338,12 +338,12 @@ thermal-zones {
-> =20
->  		trips {
->  			/* each zone within the SoC may have its own trips */
-> -			cpu-alert: cpu-alert {
-> +			cpu_alert: cpu-alert {
->  				temperature =3D <100000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "passive";
->  			};
-> -			cpu-crit: cpu-crit {
-> +			cpu_crit: cpu-crit {
->  				temperature =3D <125000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "critical";
-> @@ -365,12 +365,12 @@ thermal-zones {
-> =20
->  		trips {
->  			/* each zone within the SoC may have its own trips */
-> -			gpu-alert: gpu-alert {
-> +			gpu_alert: gpu-alert {
->  				temperature =3D <90000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "passive";
->  			};
-> -			gpu-crit: gpu-crit {
-> +			gpu_crit: gpu-crit {
->  				temperature =3D <105000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "critical";
-> @@ -392,12 +392,12 @@ thermal-zones {
-> =20
->  		trips {
->  			/* each zone within the SoC may have its own trips */
-> -			dsp-alert: gpu-alert {
-> +			dsp_alert: gpu-alert {
+> Could we also get alignment parameter from user? Something like below.
+> 
+> echo "4 1" > alloc
+> 4 for number of pages
+> 1 for alignment.
+> 
+> If it is impossible, just 0 looks better than CONFIG_CMA_ALIGNMENT.
 
-I suppose the original text has a typo, it should be:
+I'd rather keep it simple and use a single parameter for now.
 
-+			dsp_alert: dsp-alert {
 
->  				temperature =3D <90000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "passive";
->  			};
-> -			dsp-crit: gpu-crit {
-> +			dsp_crit: gpu-crit {
->  				temperature =3D <135000>; /* millicelsius */
->  				hysteresis =3D <2000>; /* millicelsius */
->  				type =3D "critical";
-> @@ -457,7 +457,7 @@ ocp {
->  };
-> =20
->  thermal-zones {
-> -	cpu-thermal: cpu-thermal {
-> +	cpu_thermal: cpu-thermal {
->  		polling-delay-passive =3D <250>; /* milliseconds */
->  		polling-delay =3D <1000>; /* milliseconds */
-> =20
-
-While here, can you please include in your patch fixes for remaining
-examples? From quick look, 'board-thermal', 'adc-dummy', and
-'dsp-thermal' are occurrences of the same problem you fixing in other
-parts of the file.=20
-
-> --=20
-> 1.9.1
->=20
-
---mJm6k4Vb/yFcL9ZU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUx6mxAAoJEMLUO4d9pOJWWZUIAIXo7Cjp+THFJpc7H4Yxl6yv
-YFavesqG11a6ZEQZyp2LpgGakl0i3IMLSVTjJwe8JZamtAxsDUIR9hb8DxtmdwFG
-56Xt+LOqP8XNtjYqD/UMxL2wRYhEdM+TDfgz5cMqyG91iF9eypNcFC75Pue6UlqZ
-9LzwFO7i4mK4NEomF8ObH4DJuKogVn8qt08o0qOUR+GHzNtJBS4FZJUo+vLAcgxy
-EAZCeoz4fj94E6eBvnygF24rj2xHPmwP8NElvUOTP3BI9+qAWAAPM1xx1dj6f9Cp
-hrSIVr+Ua8qNfuYMt4hRNuIZI2BriTaUhqgEAsXq11/C4Uc3A+9GZBB138RVvGY=
-=a8n6
------END PGP SIGNATURE-----
-
---mJm6k4Vb/yFcL9ZU--
+Thanks,
+Sasha
