@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257AbbA0MRM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:17:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34840 "EHLO
+	id S1758236AbbA0MRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:17:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34846 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758201AbbA0MRD (ORCPT
+	with ESMTP id S1758205AbbA0MRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:03 -0500
+	Tue, 27 Jan 2015 07:17:04 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 010/126] SCSI: fix regression in scsi_send_eh_cmnd()
-Date: Tue, 27 Jan 2015 12:15:15 +0000
-Message-Id: <1422361031-19364-11-git-send-email-luis.henriques@canonical.com>
+Cc: Chris Mason <clm@fb.com>, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 011/126] Btrfs: don't delay inode ref updates during log replay
+Date: Tue, 27 Jan 2015 12:15:16 +0000
+Message-Id: <1422361031-19364-12-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,57 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Chris Mason <clm@fb.com>
 
-commit 511833acfc06c013d453e288f483c682c60ffbff upstream.
+commit 6f8960541b1eb6054a642da48daae2320fddba93 upstream.
 
-Commit ac61d1955934 (scsi: set correct completion code in
-scsi_send_eh_cmnd()) introduced a bug.  It changed the stored return
-value from a queuecommand call, but it didn't take into account that
-the return value was used again later on.  This patch fixes the bug by
-changing the later usage.
+Commit 1d52c78afbb (Btrfs: try not to ENOSPC on log replay) added a
+check to skip delayed inode updates during log replay because it
+confuses the enospc code.  But the delayed processing will end up
+ignoring delayed refs from log replay because the inode itself wasn't
+put through the delayed code.
 
-There is a big comment in the middle of scsi_send_eh_cmnd() which
-does a good job of explaining how the routine works.  But it mentions
-a "rtn = FAILURE" value that doesn't exist in the code.  This patch
-adjusts the code to match the comment (I assume the comment is right
-and the code is wrong).
+This can end up triggering a warning at commit time:
 
-This fixes Bugzilla #88341.
+WARNING: CPU: 2 PID: 778 at fs/btrfs/delayed-inode.c:1410 btrfs_assert_delayed_root_empty+0x32/0x34()
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Андрей Аладьев <aladjev.andrew@gmail.com>
-Tested-by: Андрей Аладьев <aladjev.andrew@gmail.com>
-Fixes: ac61d19559349e205dad7b5122b281419aa74a82
-Acked-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Which is repeated for each commit because we never process the delayed
+inode ref update.
+
+The fix used here is to change btrfs_delayed_delete_inode_ref to return
+an error if we're currently in log replay.  The caller will do the ref
+deletion immediately and everything will work properly.
+
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/scsi_error.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/btrfs/delayed-inode.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index b350eb8ec898..f0c7a970547f 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -1026,7 +1026,7 @@ retry:
- 		}
- 		/* signal not to enter either branch of the if () below */
- 		timeleft = 0;
--		rtn = NEEDS_RETRY;
-+		rtn = FAILED;
- 	} else {
- 		timeleft = wait_for_completion_timeout(&done, timeout);
- 		rtn = SUCCESS;
-@@ -1067,7 +1067,7 @@ retry:
- 			rtn = FAILED;
- 			break;
- 		}
--	} else if (!rtn) {
-+	} else if (rtn != FAILED) {
- 		scsi_abort_eh_cmnd(scmd);
- 		rtn = FAILED;
- 	}
+diff --git a/fs/btrfs/delayed-inode.c b/fs/btrfs/delayed-inode.c
+index a2e90f855d7d..e5856d792f8b 100644
+--- a/fs/btrfs/delayed-inode.c
++++ b/fs/btrfs/delayed-inode.c
+@@ -1857,6 +1857,14 @@ int btrfs_delayed_delete_inode_ref(struct inode *inode)
+ {
+ 	struct btrfs_delayed_node *delayed_node;
+ 
++	/*
++	 * we don't do delayed inode updates during log recovery because it
++	 * leads to enospc problems.  This means we also can't do
++	 * delayed inode refs
++	 */
++	if (BTRFS_I(inode)->root->fs_info->log_root_recovering)
++		return -EAGAIN;
++
+ 	delayed_node = btrfs_get_or_create_delayed_node(inode);
+ 	if (IS_ERR(delayed_node))
+ 		return PTR_ERR(delayed_node);
 -- 
 2.1.4
 
