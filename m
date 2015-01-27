@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072AbbA0Bjs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 20:39:48 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:35710 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757749AbbA0BhE (ORCPT
+	id S1758045AbbA0BjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 20:39:17 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:34010 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757665AbbA0BhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 20:37:04 -0500
+	Mon, 26 Jan 2015 20:37:06 -0500
 From: David Decotigny <ddecotig@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <ben@decadent.org.uk>, Amir Vadai <amirv@mellanox.com>,
@@ -22,9 +22,9 @@ Cc: Eric Dumazet <edumazet@google.com>,
         Eyal Perry <eyalpe@mellanox.com>, Pravin B Shelar <pshelar@nicira.com>,
         Ed Swierk <eswierk@skyportsystems.com>,
         David Decotigny <decot@googlers.com>
-Subject: [PATCH net-next v1 12/18] net: rdma: use __ethtool_get_ksettings
-Date: Mon, 26 Jan 2015 17:36:08 -0800
-Message-Id: <1422322574-6188-13-git-send-email-ddecotig@gmail.com>
+Subject: [PATCH net-next v1 13/18] net: 8021q: use __ethtool_get_ksettings
+Date: Mon, 26 Jan 2015 17:36:09 -0800
+Message-Id: <1422322574-6188-14-git-send-email-ddecotig@gmail.com>
 X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 In-Reply-To: <1422322574-6188-1-git-send-email-ddecotig@gmail.com>
 References: <1422322574-6188-1-git-send-email-ddecotig@gmail.com>
@@ -36,44 +36,38 @@ From: David Decotigny <decot@googlers.com>
 
 Signed-off-by: David Decotigny <decot@googlers.com>
 ---
- include/rdma/ib_addr.h | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ net/8021q/vlan_dev.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/rdma/ib_addr.h b/include/rdma/ib_addr.h
-index ce55906..782bb8c 100644
---- a/include/rdma/ib_addr.h
-+++ b/include/rdma/ib_addr.h
-@@ -241,24 +241,22 @@ static inline enum ib_mtu iboe_get_mtu(int mtu)
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 1189564..b301bf6 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -655,12 +655,12 @@ static netdev_features_t vlan_dev_fix_features(struct net_device *dev,
+ 	return features;
+ }
  
- static inline int iboe_get_rate(struct net_device *dev)
+-static int vlan_ethtool_get_settings(struct net_device *dev,
+-				     struct ethtool_cmd *cmd)
++static int vlan_ethtool_get_ksettings(struct net_device *dev,
++				      struct ethtool_ksettings *cmd)
  {
--	struct ethtool_cmd cmd;
--	u32 speed;
-+	struct ethtool_ksettings cmd;
- 	int err;
+ 	const struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
  
- 	rtnl_lock();
--	err = __ethtool_get_settings(dev, &cmd);
-+	err = __ethtool_get_ksettings(dev, &cmd);
- 	rtnl_unlock();
- 	if (err)
- 		return IB_RATE_PORT_CURRENT;
+-	return __ethtool_get_settings(vlan->real_dev, cmd);
++	return __ethtool_get_ksettings(vlan->real_dev, cmd);
+ }
  
--	speed = ethtool_cmd_speed(&cmd);
--	if (speed >= 40000)
-+	if (cmd.parent.speed >= 40000)
- 		return IB_RATE_40_GBPS;
--	else if (speed >= 30000)
-+	else if (cmd.parent.speed >= 30000)
- 		return IB_RATE_30_GBPS;
--	else if (speed >= 20000)
-+	else if (cmd.parent.speed >= 20000)
- 		return IB_RATE_20_GBPS;
--	else if (speed >= 10000)
-+	else if (cmd.parent.speed >= 10000)
- 		return IB_RATE_10_GBPS;
- 	else
- 		return IB_RATE_PORT_CURRENT;
+ static void vlan_ethtool_get_drvinfo(struct net_device *dev,
+@@ -768,7 +768,7 @@ static void vlan_dev_netpoll_cleanup(struct net_device *dev)
+ #endif /* CONFIG_NET_POLL_CONTROLLER */
+ 
+ static const struct ethtool_ops vlan_ethtool_ops = {
+-	.get_settings	        = vlan_ethtool_get_settings,
++	.get_ksettings	        = vlan_ethtool_get_ksettings,
+ 	.get_drvinfo	        = vlan_ethtool_get_drvinfo,
+ 	.get_link		= ethtool_op_get_link,
+ 	.get_ts_info		= vlan_ethtool_get_ts_info,
 -- 
 2.2.0.rc0.207.ga3a616c
 
