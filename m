@@ -1,98 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501AbbA0WBe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 17:01:34 -0500
-Received: from smtprelay0199.hostedemail.com ([216.40.44.199]:48346 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752609AbbA0WBd (ORCPT
+	id S932740AbbA0WDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 17:03:38 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33955 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143AbbA0WDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 17:01:33 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:973:981:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3354:3622:3653:3865:3866:3867:3868:3871:3872:3874:4321:4362:4605:5007:6117:6119:6120:6261:7875:7901:7903:9040:9108:10004:10400:10848:10967:11232:11658:11914:12043:12296:12517:12519:12555:12663:12740:14130:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crime39_d400d2c5183b
-X-Filterd-Recvd-Size: 3214
-Date: Tue, 27 Jan 2015 17:01:29 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ktest: restore tty settings after closing console
-Message-ID: <20150127170129.7db53047@gandalf.local.home>
-In-Reply-To: <1bb89abc0025cf1d6da657c7ba58bbeb4381a515.1422382008.git.jpoimboe@redhat.com>
-References: <1bb89abc0025cf1d6da657c7ba58bbeb4381a515.1422382008.git.jpoimboe@redhat.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 27 Jan 2015 17:03:37 -0500
+Date: Tue, 27 Jan 2015 14:03:29 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "davej@codemonkey.org.uk >> Dave Jones" <davej@codemonkey.org.uk>
+Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at
+ kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
+Message-ID: <20150127220329.GF19109@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20150122004305.GJ9719@linux.vnet.ibm.com>
+ <54C1BFFD.9060707@oracle.com>
+ <20150123035158.GP9719@linux.vnet.ibm.com>
+ <54C1C7D2.906@oracle.com>
+ <54C1C899.8000106@oracle.com>
+ <20150123065542.GQ9719@linux.vnet.ibm.com>
+ <20150123093644.GA11175@linux.vnet.ibm.com>
+ <54C300DD.9070608@cn.fujitsu.com>
+ <20150124211834.GD9719@linux.vnet.ibm.com>
+ <54C5A184.20105@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C5A184.20105@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012722-0021-0000-0000-0000081C7779
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015 12:10:04 -0600
-Josh Poimboeuf <jpoimboe@redhat.com> wrote:
-
-> When ktest runs the console program as a child process, the parent and
-> child share the same tty for stdin and stderr.  This is problematic when
-> using a libvirt target.  The "virsh console" program makes a lot of
-> changes to the tty settings, making ktest's output hard to read
-> (carriage returns don't work).  After ktest exits, the terminal is
-> unusable (CRs broken, stdin isn't echoed).
+On Mon, Jan 26, 2015 at 10:08:04AM +0800, Lai Jiangshan wrote:
+> On 01/25/2015 05:18 AM, Paul E. McKenney wrote:
 > 
-> I think the best way to fix this issue would be to create a
-> pseudoterminal (pty pair) so the child process would have a dedicated
-> tty, and then use pipes to connect the two ttys.  I'm not sure if that's
-> overkill, but it's far beyond my current Perl abilities.
-
-And beyond mine too. I tried to get that right a few times, and it
-never worked out. Maybe someone with more oyster skilz can fix this.
-
+> > 
+> > Good point!  In my scenario, CPU 0 would not yet have switched away from
+> > Task A.  Hmmm...  Yet Sasha really does see this failure.  Will give it
+> > some more thought.
+> > 
+> > Any ideas?
 > 
-> This patch is a much easier way to (partially) fix this issue.  It saves
-> the tty settings before opening the console and restores them after
-> closing it.  There are still a few places where ktest prints mangled
-> output while the console is open, but the output is much more legible
-> overall, and the terminal works just fine after ktest exits.
+> I don't known which commit was merged from the rcu-git-tree in Sasha's test
+> I try to review it.
 
-Thanks, I'll add this, and make sure that it doesn't break anything, as
-I use ktest daily.
+If I had to guess, it would be 1d082fd06188 (Remove local_irq_disable()
+in rcu_preempt_note_context_switch()), though his finding this might be
+more directly related to increases in trinity's levels of stress.
 
--- Steve
+> We can fallback to git-bitsect if the reviews fails.
 
+One (very unlikely) possibility is that Sasha's compiler is ignoring the
+barrier() in rcu_preempt_qs().
+
+							Thanx, Paul
+
+> Thanks,
+> Lai
 > 
-> Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
-> ---
->  tools/testing/ktest/ktest.pl | 7 +++++++
->  1 file changed, 7 insertions(+)
+> > 
+> > 							Thanx, Paul
+> > 
+> >> Thanks,
+> >> Lai
+> >>
+> >>>     
+> >>> 6.	Once in rcu_read_unlock_special(), the fact that
+> >>>     	current->rcu_read_unlock_special.b.need_qs is true becomes
+> >>>     	apparent, so rcu_read_unlock_special() invokes rcu_preempt_qs().
+> >>>     	Recursively, given that we interrupted out of that same
+> >>>     	function in the preceding step.
+> >>>     
+> >>> 7.	Because rcu_preempt_data.passed_quiesce is now true,
+> >>>     	rcu_preempt_qs() does nothing, and simply returns.
+> >>>     
+> >>> 8.	Upon return to rcu_read_unlock_special(), it is noted that
+> >>>     	current->rcu_read_unlock_special is still nonzero (because
+> >>>     	the interrupted rcu_preempt_qs() had not yet gotten around
+> >>>     	to clearing current->rcu_read_unlock_special.b.need_qs).
+> >>>     
+> >>> 9.	Execution proceeds to the WARN_ON_ONCE(), which notes that
+> >>>     	we are in an interrupt handler and thus duly splats.
+> >>>
+> >>> The solution, as noted above, is to make rcu_read_unlock_special()
+> >>> clear out current->rcu_read_unlock_special.b.need_qs after calling
+> >>> rcu_preempt_qs().  The interrupted rcu_preempt_qs() will clear it again,
+> >>> but this is harmless.  The worst that happens is that we clobber another
+> >>> attempt to set this field, but this is not a problem because we just
+> >>> got done reporting a quiescent state.
+> >>>
+> >>> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> >>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >>>
+> >>> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> >>> index 8669de884445..ec99dc16aa38 100644
+> >>> --- a/kernel/rcu/tree_plugin.h
+> >>> +++ b/kernel/rcu/tree_plugin.h
+> >>> @@ -322,6 +322,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+> >>>  	special = t->rcu_read_unlock_special;
+> >>>  	if (special.b.need_qs) {
+> >>>  		rcu_preempt_qs();
+> >>> +		t->rcu_read_unlock_special.need_qs = false;
+> >>>  		if (!t->rcu_read_unlock_special.s) {
+> >>>  			local_irq_restore(flags);
+> >>>  			return;
+> >>>
+> >>> .
+> >>>
+> >>
+> > 
+> > .
+> > 
 > 
-> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-> index b9cd036..ba20f89 100755
-> --- a/tools/testing/ktest/ktest.pl
-> +++ b/tools/testing/ktest/ktest.pl
-> @@ -178,6 +178,7 @@ my $checkout;
->  my $localversion;
->  my $iteration = 0;
->  my $successes = 0;
-> +my $stty;
->  
->  my $bisect_good;
->  my $bisect_bad;
-> @@ -1349,6 +1350,9 @@ sub open_console {
->  
->      my $flags;
->  
-> +    # save terminal settings
-> +    $stty = `stty -g`;
-> +
->      my $pid = open($fp, "$console|") or
->  	dodie "Can't open console $console";
->  
-> @@ -1368,6 +1372,9 @@ sub close_console {
->  
->      print "closing!\n";
->      close($fp);
-> +
-> +    # restore terminal settings
-> +    system("stty $stty");
->  }
->  
->  sub start_monitor {
 
