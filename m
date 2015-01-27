@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900AbbA0Moq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:44:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35003 "EHLO
+	id S932220AbbA0MR7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:17:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35013 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758427AbbA0MRv (ORCPT
+	with ESMTP id S1758447AbbA0MRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:51 -0500
+	Tue, 27 Jan 2015 07:17:53 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Jiri Kosina <jkosina@suse.cz>,
+Cc: Takashi Sakamoto <o-takashi@sakamocchi.jp>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 038/126] HID: i2c-hid: Do not free buffers in i2c_hid_stop()
-Date: Tue, 27 Jan 2015 12:15:43 +0000
-Message-Id: <1422361031-19364-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 039/126] ALSA: fireworks: fix an endianness bug for transaction length
+Date: Tue, 27 Jan 2015 12:15:44 +0000
+Message-Id: <1422361031-19364-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,67 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
 
-commit 5b44c53aeb791757072be4a267255cedfff594fd upstream.
+commit 92cb46584e104e2f4b14a44959109ffe13524a26 upstream.
 
-When a hid driver that uses i2c-hid as transport is unloaded, the hid core
-will call i2c_hid_stop() which releases all the buffers associated with the
-device. This includes also the command buffer.
+Although the 't->length' is a big-endian value, it's used without any
+conversion. This means that the driver always uses 'length' parameter.
 
-Now, when the i2c-hid driver itself is unloaded it tries to power down the
-device by sending it PWR_SLEEP command. Since the command buffer is already
-released we get following crash:
-
- [   79.691459] BUG: unable to handle kernel NULL pointer dereference at           (null)
- [   79.691532] IP: [<ffffffffa05bc049>] __i2c_hid_command+0x49/0x310 [i2c_hid]
- ...
- [   79.693467] Call Trace:
- [   79.693494]  [<ffffffff810424e1>] ? __unmask_ioapic+0x21/0x30
- [   79.693537]  [<ffffffff81042855>] ? unmask_ioapic+0x25/0x40
- [   79.693581]  [<ffffffffa05bc35b>] ? i2c_hid_set_power+0x4b/0xa0 [i2c_hid]
- [   79.693632]  [<ffffffffa05bc3cf>] ? i2c_hid_runtime_resume+0x1f/0x30 [i2c_hid]
- [   79.693689]  [<ffffffff814c08fb>] ? __rpm_callback+0x2b/0x70
- [   79.693733]  [<ffffffff814c0961>] ? rpm_callback+0x21/0x90
- [   79.693776]  [<ffffffff814c0dec>] ? rpm_resume+0x41c/0x600
- [   79.693820]  [<ffffffff814c1e1c>] ? __pm_runtime_resume+0x4c/0x80
- [   79.693868]  [<ffffffff814b8588>] ? __device_release_driver+0x28/0x100
- [   79.693917]  [<ffffffff814b8d90>] ? driver_detach+0xa0/0xb0
- [   79.693959]  [<ffffffff814b82cc>] ? bus_remove_driver+0x4c/0xb0
- [   79.694006]  [<ffffffff810d1cfd>] ? SyS_delete_module+0x11d/0x1d0
- [   79.694054]  [<ffffffff8165f107>] ? int_signal+0x12/0x17
- [   79.694095]  [<ffffffff8165ee69>] ? system_call_fastpath+0x12/0x17
-
-Fix this so that we only free buffers when the i2c-hid driver itself is
-removed.
-
-Fixes: 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
-Reported-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Fixes: 555e8a8f7f14("ALSA: fireworks: Add command/response functionality into hwdep interface")
+Reported-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/i2c-hid/i2c-hid.c | 5 -----
- 1 file changed, 5 deletions(-)
+ sound/firewire/fireworks/fireworks_transaction.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 9bce5bf4182d..c56c7388d2d6 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -706,12 +706,7 @@ static int i2c_hid_start(struct hid_device *hid)
+diff --git a/sound/firewire/fireworks/fireworks_transaction.c b/sound/firewire/fireworks/fireworks_transaction.c
+index 255dabc6fc33..2a85e4209f0b 100644
+--- a/sound/firewire/fireworks/fireworks_transaction.c
++++ b/sound/firewire/fireworks/fireworks_transaction.c
+@@ -124,7 +124,7 @@ copy_resp_to_buf(struct snd_efw *efw, void *data, size_t length, int *rcode)
+ 	spin_lock_irq(&efw->lock);
  
- static void i2c_hid_stop(struct hid_device *hid)
- {
--	struct i2c_client *client = hid->driver_data;
--	struct i2c_hid *ihid = i2c_get_clientdata(client);
--
- 	hid->claimed = 0;
--
--	i2c_hid_free_buffers(ihid);
- }
+ 	t = (struct snd_efw_transaction *)data;
+-	length = min_t(size_t, t->length * sizeof(t->length), length);
++	length = min_t(size_t, be32_to_cpu(t->length) * sizeof(u32), length);
  
- static int i2c_hid_open(struct hid_device *hid)
+ 	if (efw->push_ptr < efw->pull_ptr)
+ 		capacity = (unsigned int)(efw->pull_ptr - efw->push_ptr);
 -- 
 2.1.4
 
