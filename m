@@ -1,127 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbbA0Eog (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 23:44:36 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:7116 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbbA0Eod convert rfc822-to-8bit (ORCPT
+	id S1755890AbbA0EpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 23:45:22 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:34339 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751453AbbA0EpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 23:44:33 -0500
+	Mon, 26 Jan 2015 23:45:17 -0500
 From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "sylvain.rochet@finsecur.com" <sylvain.rochet@finsecur.com>,
-        "Vilchez, Patrice" <Patrice.VILCHEZ@atmel.com>,
+To: Sylvain Rochet <sylvain.rochet@finsecur.com>
+CC: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "alexandre.belloni@free-electrons.com" 
 	<alexandre.belloni@free-electrons.com>,
-        "peda@axentia.se" <peda@axentia.se>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
-Thread-Topic: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
-Thread-Index: AQHQOU/HdMw+T88Z+Em9nd3GGfCtCpzR2LYAgAF2HsA=
-Date: Tue, 27 Jan 2015 04:44:02 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BFD35CC6@penmbx01>
-References: <1422266617-24381-1-git-send-email-wenyou.yang@atmel.com>
- <1422266761-24487-1-git-send-email-wenyou.yang@atmel.com>
- <54C63B8A.9000702@cogentembedded.com>
-In-Reply-To: <54C63B8A.9000702@cogentembedded.com>
+        "peda@axentia.se" <peda@axentia.se>
+Subject: RE: [PATCH v2 07/12] pm: at91: the standby mode uses the same sram
+ function as the suspend to memory mode
+Thread-Topic: [PATCH v2 07/12] pm: at91: the standby mode uses the same sram
+ function as the suspend to memory mode
+Thread-Index: AQHQOUxyTnpH/62fwEiwJ0QmCwHiipzRp8GAgAGmv5A=
+Date: Tue, 27 Jan 2015 04:44:59 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641BFD35CD3@penmbx01>
+References: <1422265005-22937-1-git-send-email-wenyou.yang@atmel.com>
+ <1422265331-23236-1-git-send-email-wenyou.yang@atmel.com>
+ <20150126100955.GA18907@gradator.net>
+In-Reply-To: <20150126100955.GA18907@gradator.net>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0R4jQXh022829
 
-Hi Sergei,
-
-Thank you for your review.
+Hi Sylvain,
 
 > -----Original Message-----
-> From: Sergei Shtylyov [mailto:sergei.shtylyov@cogentembedded.com]
-> Sent: Monday, January 26, 2015 9:05 PM
-> To: Yang, Wenyou; Ferre, Nicolas; linux@arm.linux.org.uk
-> Cc: sylvain.rochet@finsecur.com; Vilchez, Patrice; linux-kernel@vger.kernel.org;
-> alexandre.belloni@free-electrons.com; peda@axentia.se; linux-arm-
-> kernel@lists.infradead.org
-> Subject: Re: [PATCH 2/7] pm: at91: pm_suspend: add the WFI support for ARMv7
+> From: Sylvain Rochet [mailto:sylvain.rochet@finsecur.com]
+> Sent: Monday, January 26, 2015 6:10 PM
+> To: Yang, Wenyou
+> Cc: Ferre, Nicolas; linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
+> linux-kernel@vger.kernel.org; alexandre.belloni@free-electrons.com;
+> peda@axentia.se
+> Subject: Re: [PATCH v2 07/12] pm: at91: the standby mode uses the same sram
+> function as the suspend to memory mode
 > 
-> Hello.
+> Hello Wenyou,
 > 
-> On 1/26/2015 1:06 PM, Wenyou Yang wrote:
 > 
-> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> > ---
-> >   arch/arm/mach-at91/pm_suspend.S |   54
-> ++++++++++++++++++++++++++++++++++++++-
-> >   1 file changed, 53 insertions(+), 1 deletion(-)
-> 
-> > diff --git a/arch/arm/mach-at91/pm_suspend.S
-> > b/arch/arm/mach-at91/pm_suspend.S index 122a3f1..e796722 100644
-> > --- a/arch/arm/mach-at91/pm_suspend.S
-> > +++ b/arch/arm/mach-at91/pm_suspend.S
-> > @@ -53,6 +53,58 @@ mode	.req	r6
-> >   	beq	1b
-> >   	.endm
+> On Mon, Jan 26, 2015 at 05:42:11PM +0800, Wenyou Yang wrote:
+> > +static int at91_pm_verify_clocks(suspend_state_t state)
+> >  {
+> >  	unsigned long scsr;
+> >  	int i;
 > >
-> > +/*
-> > + * Put the processor to enter the WFI state  */
-> > +	.macro _do_wfi
+> > +	/* For PM_SUSPEND_STANDBY, skip verifying the clock */
+> > +	if (state == PM_SUSPEND_STANDBY)
+> > +		return 1;
 > > +
-> > +#if defined(CONFIG_CPU_V7)
-> > +	/*
-> > +	 * Execute an ISB instruction to flush the pipeline to ensure
-> > +	 * that all of operations have beem completed.
 > 
->     Been.
-> 
-> > +	 */
-> > +	isb
-> > +
-> > +	/*
-> > +	 * Execute an ISB instruction to ensure that all of the
-> 
->     ISB again, while you're executing DSB/DMB?
->
-Thank you for your pointing.
- 
-> > +	 * CP15 register changes have been committed.
-> > +	 */
-> > +	dsb
-> > +	dmb
-> > +
-> > +	/* Disable the processor's clock */
-> > +	mov	tmp1, #AT91_PMC_PCK
-> 
->     What's 'tmp1'? Is that a register name?
-Yes, a register name defined at the head of file.
+> In my opinion we should use the select() already in place in
+> at91_pm_enter() to do that:
+Accepted. Thanks
 
 > 
-> > +	str	tmp1, [pmc, #AT91_PMC_SCDR]
-> > +
-> > +	/* Execute a WFI instruction */
+> >  static int at91_pm_enter(suspend_state_t state)  {
+> >  	at91_pinctrl_gpio_suspend();
+> >
+> >  	switch (state) {
+>      (...)
+> > +	case PM_SUSPEND_MEM:
 > 
->     Self-obvious comment, I'd say...
+> 	/*
+> 	 * Ensure that clocks are in a valid state.
+> 	 */
+> 	if (!at91_pm_verify_clocks())
+> 		goto error;
+> 	/* FALLTHROUGH */
 > 
-> > +	wfi	@ Wait For Interrupt
-> > +
-> > +	/*
-> > +	 * CPU can specualatively prefetch the instructions
+> > +	case PM_SUSPEND_STANDBY:
+> >  		/*
+> > -		 * Suspend-to-RAM is like STANDBY plus slow clock mode, so
 > 
->     Speculatively.
-Thanks.
 > 
-> [...]
-> 
-> WBR, Sergei
-
+> Sylvain
 
 Best Regards,
 Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
