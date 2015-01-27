@@ -1,71 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103AbbA0W2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 17:28:55 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:58962 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbbA0W2x (ORCPT
+	id S933087AbbA0Wdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 17:33:46 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:58347 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933060AbbA0Wdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 17:28:53 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: David Miller <davem@davemloft.net>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH net-next v8 0/4] net: Add Keystone NetCP ethernet driver support
-Date: Tue, 27 Jan 2015 23:28:42 +0100
-Message-ID: <25883654.BLFxICW9P0@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54BE7A00.2020205@ti.com>
-References: <1421367007-19744-1-git-send-email-m-karicheri2@ti.com> <20150119.151106.822126941934010309.davem@davemloft.net> <54BE7A00.2020205@ti.com>
+	Tue, 27 Jan 2015 17:33:43 -0500
+Date: Tue, 27 Jan 2015 22:33:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Message-ID: <20150127223331.GP26493@n2100.arm.linux.org.uk>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
+ <20150127132127.GA869@amd>
+ <CAL_JsqKM+2PtX_EpWXyOQHVXwf=jqVj8SroUGPO1Y2=Zj8_kMg@mail.gmail.com>
+ <201501271532.25540@pali>
+ <20150127174818.GM26493@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
+ <20150127210943.GN26493@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1501271614280.1322@knanqh.ubzr>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:HMwlm9+ghKHxT9jxqwJW8o9A2iyU2nMLhCBScvgJl5DCcmlNKLG
- 8RKGnKcZEkeDC1ycRuwkxqA5fbG5y6s9Zhw6vDKDTyDz7GhTWMRtIJ/uLkoSYaGZwkiRLSn
- YKe0DCIaBqPtiuZS2n3hDJPaumhmTUsmg1pQYGLX8v9nb8iaNSkySR44rkBDcjMgTFub139
- mxGvfjcpA6yWdneJPyM4A==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1501271614280.1322@knanqh.ubzr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 January 2015 10:53:36 Murali Karicheri wrote:
-> On 01/19/2015 03:11 PM, David Miller wrote:
-> > From: Murali Karicheri<m-karicheri2@ti.com>
-> > Date: Thu, 15 Jan 2015 19:10:03 -0500
-> >
-> >> The Network Coprocessor (NetCP) is a hardware accelerator that processes
-> >> Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
-> >> switch sub-module to send and receive packets. NetCP also includes a packet
-> >> accelerator (PA) module to perform packet classification operations such as
-> >> header matching, and packet modification operations such as checksum
-> >> generation. NetCP can also optionally include a Security Accelerator(SA)
-> >> capable of performing IPSec operations on ingress/egress packets.
-> >>
-> >> Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
-> >> includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
-> >> 1Gb/s rates per Ethernet port.
-> >>
-> >> Both GBE and XGBE network processors supported using common driver. It
-> >> is also designed to handle future variants of NetCP.
-> >
-> > Series applied to net-next, thanks.
-> David,
+On Tue, Jan 27, 2015 at 04:34:47PM -0500, Nicolas Pitre wrote:
+> On Tue, 27 Jan 2015, Russell King - ARM Linux wrote:
+> > Or we pass both the ATAGs and wrapped DT to the kernel when both exist,
+> > and let the kernel deal with it in a much saner environment than the
+> > restricted decompressor environment.
 > 
-> Thanks a lot for applying this series. This helps us move forward to 
-> work on the next set of patches.
+> ... which would be a step backward in the context of the transition to 
+> DT we accepted.  People will have even less of an incentive to fix their 
+> stuff.
 
-Hi Murali,
+Where's the people fixing their stuff today?  I think your position is
+something of an idealist rather than a realist - the reality is that
+five years down the line of DT, the platforms which have not converted
+are now *never* going to convert, irrespective of how much "incentive"
+we may think we should apply to the situation.
 
-Building an ARM 'allmodconfig' kernel now runs into two separate problems
-from your driver:
+So, at some point we have to start thinking as a realist rather than
+an idealist, and realise that there are platforms out there which are
+/never/ going to convert.
 
-- you have two module_init() instances in one module, which conflict.
+Most of my platforms here are /never/ going to convert to DT-only
+booting quite simply because they don't have anyone working on that
+stuff, and no one is willing to put the effort in.
 
-- you have two files that are linked into more than one module, so building
-  both TI_CPSW and TI_KEYSTONE_NETCP in the same kernel fails.
+The only platforms which I have which have converted are:
+- OMAP SDP4430
+- Versatile Express
+- SolidRun Hummingboard & Cubox-i
 
-The answer to both of these is probably to have separate loadable modules,
-but you might be able to come up with a different solution.
+Quite literally everything else is *never* going to support native DT
+booting - and I'd go as far as to say that if I ever wanted to put the
+effort in, I probably couldn't, because the boot loader sources aren't
+available anymore.  (eg, the LDP3430 situation is such a mess that even
+if the boot loader source is still available, identifying the correct
+board version is near on impossible given the multitude of different
+variants of the same product.)
 
-	Arnd
+The older Versatile and Integrator platforms, for example, are going
+to be booting with the appended DTB for as long as they're around.
+Most likely all the PXA platforms too, and, the IOP32x based N2100
+boxes (which already need their kernels wrapped because the provided
+boot loader has had environment saving disabled.)
+
+As much as you may not like it, ATAGs are here to stay now, at least
+on the older platforms, and no amount of "incentives" will change that.
+
+> > However, there's another consideration to be had here before we can say
+> > that: how many people out there want to run a mainline (or even an
+> > updated kernel derived from mainline) on this device?  If there's a
+> > sizable following for the device wanting updated support, then it's
+> > something we really need to consider supporting inspite of our
+> > disappointment with Nokia inventing these "proprietary" tags.
+> 
+> If there is indeed a sizable following for the device then someone 
+> should figure out how to cope with upstream kernels, either through the 
+> installation of some intermediate bootloader that can talk FDT directly, 
+> or via a shim layer.  None of that has to be performed by nor linked 
+> with the kernel binary, nor maintained in the kernel tree. And it's not 
+> even that hard to do: we have precedents on other platforms with crappy 
+> bootloaders where this just works.
+
+That's a rediculous position if you want something which "just works"
+on as much hardware as possible, which is, after all, what the single
+zImage project is all about.
+
+To be pro single-zImage, and anti popular hardware is quite contradictory.
+
+You only have to look at x86 for this: just because ACPI came along does
+not mean that the Linux kernel started demanding that ACPI is the only
+way to describe the world.  Linux continues to directly support all the
+old boot protocols that it did since the days of i386, such as the e820
+memory interface and doesn't convert these to an ACPI table just because
+it can.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
