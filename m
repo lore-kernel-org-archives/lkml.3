@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932595AbbA0PxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 10:53:12 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:33854 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753855AbbA0PxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 10:53:08 -0500
-Date: Tue, 27 Jan 2015 16:50:47 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, ezequiel.garcia@free-electrons.com,
-        dwmw2@infradead.org, computersforpeace@gmail.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/9] mtd: pxa3xx_nand: add a non mandatory ECC clock
-Message-ID: <20150127155047.GB16546@lunn.ch>
-References: <1422367816-4257-1-git-send-email-antoine.tenart@free-electrons.com>
- <1422367816-4257-3-git-send-email-antoine.tenart@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422367816-4257-3-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932549AbbA0PwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 10:52:12 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:49919 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932305AbbA0PwG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 10:52:06 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-e9-54c7b3924eae
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH] power_supply: 88pm860x: Fix leaked power supply on probe fail
+Date: Tue, 27 Jan 2015 16:51:54 +0100
+Message-id: <1422373914-17235-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t/xa7qTNh8PMfj3wMRi0pP3zBYTV05m
+	tnj9wtDi8q45bBafe48wWpzeXWKxYOMjRgd2j52z7rJ7bF6h5bFpVSebR9+WVYwenzfJBbBG
+	cdmkpOZklqUW6dslcGWcmdzAXrCHrWLOt6+sDYyHWbsYOTkkBEwk7u/qZIawxSQu3FvP1sXI
+	xSEksJRR4sn0ZawQTh+TxLslG9lBqtgEjCU2L18CViUisJtRYsLU5SwgCWYBT4l3fx+CFQkL
+	+El8nt8FFOfgYBFQlXh5PQgkzCvgLjH71zs2iG1yEiePTWadwMi9gJFhFaNoamlyQXFSeq6h
+	XnFibnFpXrpecn7uJkZIgHzZwbj4mNUhRgEORiUeXo6i4yFCrIllxZW5hxglOJiVRHj/bwAK
+	8aYkVlalFuXHF5XmpBYfYmTi4JRqYDSxLwk4tfRd+987Vq6+0yVYg47XvpzHcNHw+uIgTcNv
+	rhsaShUsTml+K1FxF5t4+9Ts1IOm6yIz7iyb757xLOvLxy/WzE4JodOXqge7v15z+ewBwTkf
+	o/x9E62ZnsxrYP1zXUpmOfe3yZdOtiitUpjHk7f59ju7WfsFTzBeXLD78SGGKTbrL95TYinO
+	SDTUYi4qTgQAyMvpO+4BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 03:10:09PM +0100, Antoine Tenart wrote:
-> Some controllers (as the coming Berlin nand controller) need to enable
-> an ECC clock. Add support for this clock in the pxa3xx nand driver, and
-> leave it as non mandatory.
+Driver forgot to unregister power supply if request_threaded_irq()
+failed in probe(). In such case the memory associated with power supply
+leaked.
 
-Hi Antoine
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: a830d28b48bf ("power_supply: Enable battery-charger for 88pm860x")
+Cc: <stable@vger.kernel.org>
+---
+ drivers/power/88pm860x_charger.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-It would be good to document this clock in the device tree binding.
+diff --git a/drivers/power/88pm860x_charger.c b/drivers/power/88pm860x_charger.c
+index 650930e4fa79..734ec4afa14d 100644
+--- a/drivers/power/88pm860x_charger.c
++++ b/drivers/power/88pm860x_charger.c
+@@ -711,6 +711,7 @@ static int pm860x_charger_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ out_irq:
++	power_supply_unregister(&info->usb);
+ 	while (--i >= 0)
+ 		free_irq(info->irq[i], info);
+ out:
+-- 
+1.9.1
 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/mtd/nand/pxa3xx_nand.c | 26 +++++++++++++++++++-------
->  1 file changed, 19 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-> index d00ac392d1c4..2681ec4abafa 100644
-> --- a/drivers/mtd/nand/pxa3xx_nand.c
-> +++ b/drivers/mtd/nand/pxa3xx_nand.c
-> @@ -180,7 +180,7 @@ struct pxa3xx_nand_info {
->  	struct nand_hw_control	controller;
->  	struct platform_device	 *pdev;
->  
-> -	struct clk		*clk;
-> +	struct clk		*clk, *ecc_clk;
->  	void __iomem		*mmio_base;
->  	unsigned long		mmio_phys;
->  	struct completion	cmd_complete, dev_ready;
-> @@ -1608,7 +1608,7 @@ static int alloc_nand_resource(struct platform_device *pdev)
->  
->  	spin_lock_init(&chip->controller->lock);
->  	init_waitqueue_head(&chip->controller->wq);
-> -	info->clk = devm_clk_get(&pdev->dev, NULL);
-> +	info->clk = devm_clk_get(&pdev->dev, "nfc");
-
-Does this keep backwards compatibility? Not all the existing users
-have there clocks named. What i think happens here is that
-of_clk_get_by_name() calls of_property_match_string(np, "clock-names",
-name); That returns -EINVAL, and then we ask of_clk_get() to get the
--EINVAL'th clock. I don't think that is going to end well.
-
-I think you need to keep the NULL here, but should use "ecc" for the
-second clock and require the use of the clock-names property when an
-ecc clock is required.
-
-    Andrew
