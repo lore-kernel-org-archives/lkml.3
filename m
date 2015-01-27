@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658AbbA0MWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:22:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35462 "EHLO
+	id S932571AbbA0MUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:20:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35469 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758741AbbA0MUN (ORCPT
+	with ESMTP id S1758748AbbA0MUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:13 -0500
+	Tue, 27 Jan 2015 07:20:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tyler Baker <tyler.baker@linaro.org>, Kevin Hilman <khilman@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
+Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Michael Turquette <mturquette@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 118/126] reset: sunxi: fix spinlock initialization
-Date: Tue, 27 Jan 2015 12:17:03 +0000
-Message-Id: <1422361031-19364-119-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 119/126] clk: Don't try to use a struct clk* after it could have been freed
+Date: Tue, 27 Jan 2015 12:17:04 +0000
+Message-Id: <1422361031-19364-120-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,51 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Baker <tyler.baker@linaro.org>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-commit 41544f9f38f19cb46dc9a8fa37c58677a0300899 upstream.
+commit 10cdfe54dab034311c8e2fad9ba2dffbe616caa9 upstream.
 
-Call spin_lock_init() before the spinlocks are used, both in early init
-and probe functions preventing a lockdep splat.
+As __clk_release could call kfree on clk and then we wouldn't have a safe way
+of getting the module that owns the clock.
 
-I have been observing lockdep complaining [1] during boot on my a80 optimus [2]
-when CONFIG_PROVE_LOCKING has been enabled. This patch resolves the splat,
-and has been tested on a few other sunxi platforms without issue.
-
-[1] http://storage.kernelci.org/next/next-20150107/arm-multi_v7_defconfig+CONFIG_PROVE_LOCKING=y/lab-tbaker/boot-sun9i-a80-optimus.html
-[2] http://kernelci.org/boot/?a80-optimus
-
-Signed-off-by: Tyler Baker <tyler.baker@linaro.org>
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Fixes: fcb0ee6a3d33 ("clk: Implement clk_unregister")
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Michael Turquette <mturquette@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/reset/reset-sunxi.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/clk/clk.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/reset/reset-sunxi.c b/drivers/reset/reset-sunxi.c
-index a94e7a7820b4..51272b5d7552 100644
---- a/drivers/reset/reset-sunxi.c
-+++ b/drivers/reset/reset-sunxi.c
-@@ -102,6 +102,8 @@ static int sunxi_reset_init(struct device_node *np)
- 		goto err_alloc;
- 	}
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 4cc83ef7ef61..1dee8d2086fb 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -2234,14 +2234,17 @@ int __clk_get(struct clk *clk)
  
-+	spin_lock_init(&data->lock);
+ void __clk_put(struct clk *clk)
+ {
++	struct module *owner;
 +
- 	data->rcdev.owner = THIS_MODULE;
- 	data->rcdev.nr_resets = size * 32;
- 	data->rcdev.ops = &sunxi_reset_ops;
-@@ -157,6 +159,8 @@ static int sunxi_reset_probe(struct platform_device *pdev)
- 	if (IS_ERR(data->membase))
- 		return PTR_ERR(data->membase);
+ 	if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
+ 		return;
  
-+	spin_lock_init(&data->lock);
-+
- 	data->rcdev.owner = THIS_MODULE;
- 	data->rcdev.nr_resets = resource_size(res) * 32;
- 	data->rcdev.ops = &sunxi_reset_ops;
+ 	clk_prepare_lock();
++	owner = clk->owner;
+ 	kref_put(&clk->ref, __clk_release);
+ 	clk_prepare_unlock();
+ 
+-	module_put(clk->owner);
++	module_put(owner);
+ }
+ 
+ /***        clk rate change notifiers        ***/
 -- 
 2.1.4
 
