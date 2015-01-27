@@ -1,133 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463AbbA0QQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:16:43 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.107]:34176 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932436AbbA0QQi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:16:38 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-14.tower-193.messagelabs.com!1422375393!31746282!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.5; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Varka Bhadram <varkabhadram@gmail.com>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>
-Subject: RE: [PATCH v6 5/7] power: Add support for DA9150 Charger
-Thread-Topic: [PATCH v6 5/7] power: Add support for DA9150 Charger
-Thread-Index: AQHQNZGAcklmPzY0TkS8pve6Tv5mWJzKv5YAgAlnhLA=
-Date: Tue, 27 Jan 2015 16:16:31 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A0337AB529E6E@SW-EX-MBX01.diasemi.com>
-References: <cover.1421854282.git.Adam.Thomson.Opensource@diasemi.com>
- <d9c5c61443e266880cab3cbe7502142439fe9886.1421854282.git.Adam.Thomson.Opensource@diasemi.com>
- <54BFD072.8000707@gmail.com>
-In-Reply-To: <54BFD072.8000707@gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.15]
-Content-Type: text/plain; charset="utf-8"
+	id S932520AbbA0QRZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:17:25 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:41163 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752056AbbA0QRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 11:17:21 -0500
+Date: Tue, 27 Jan 2015 18:16:57 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, mhocko@suse.cz,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
+ page tables to the process'
+Message-ID: <20150127161657.GA7155@node.dhcp.inet.fi>
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
+ <20150123050445.GA22751@roeck-us.net>
+ <20150123111304.GA5975@node.dhcp.inet.fi>
+ <54C263CC.1060904@roeck-us.net>
+ <20150123135519.9f1061caf875f41f89298d59@linux-foundation.org>
+ <20150124055207.GA8926@roeck-us.net>
+ <20150126122944.GE25833@node.dhcp.inet.fi>
+ <54C6494D.80802@roeck-us.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C6494D.80802@roeck-us.net>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0RGGkqK027047
 
-On January 21, 2015 16:15, Varka Bhadram wrote:
-
-> On Wednesday 21 January 2015 09:16 PM, Adam Thomson wrote:
-> > This patch adds support for DA9150 Charger & Fuel-Gauge IC Charger.
+On Mon, Jan 26, 2015 at 06:03:57AM -0800, Guenter Roeck wrote:
+> On 01/26/2015 04:29 AM, Kirill A. Shutemov wrote:
+> >On Fri, Jan 23, 2015 at 09:52:07PM -0800, Guenter Roeck wrote:
+> >>On Fri, Jan 23, 2015 at 01:55:19PM -0800, Andrew Morton wrote:
+> >>>On Fri, 23 Jan 2015 07:07:56 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
+> >>>
+> >>>>>>
+> >>>>>>qemu:microblaze generates warnings to the console.
+> >>>>>>
+> >>>>>>WARNING: CPU: 0 PID: 32 at mm/mmap.c:2858 exit_mmap+0x184/0x1a4()
+> >>>>>>
+> >>>>>>with various call stacks. See
+> >>>>>>http://server.roeck-us.net:8010/builders/qemu-microblaze-mmotm/builds/15/steps/qemubuildcommand/logs/stdio
+> >>>>>>for details.
+> >>>>>
+> >>>>>Could you try patch below? Completely untested.
+> >>>>>
+> >>>>>>From b584bb8d493794f67484c0b57c161d61c02599bc Mon Sep 17 00:00:00 2001
+> >>>>>From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >>>>>Date: Fri, 23 Jan 2015 13:08:26 +0200
+> >>>>>Subject: [PATCH] microblaze: define __PAGETABLE_PMD_FOLDED
+> >>>>>
+> >>>>>Microblaze uses custom implementation of PMD folding, but doesn't define
+> >>>>>__PAGETABLE_PMD_FOLDED, which generic code expects to see. Let's fix it.
+> >>>>>
+> >>>>>Defining __PAGETABLE_PMD_FOLDED will drop out unused __pmd_alloc().
+> >>>>>It also fixes problems with recently-introduced pmd accounting.
+> >>>>>
+> >>>>>Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> >>>>>Reported-by: Guenter Roeck <linux@roeck-us.net>
+> >>>>
+> >>>>Tested working.
+> >>>>
+> >>>>Tested-by: Guenter Roeck <linux@roeck-us.net>
+> >>>>
+> >>>>Any idea how to fix the sh problem ?
+> >>>
+> >>>Can you tell us more about it?  All I'm seeing is "qemu:sh fails to
+> >>>shut down", which isn't very clear.
+> >>
+> >>Turns out that the include file defining __PAGETABLE_PMD_FOLDED
+> >>was not always included where used, resulting in a messed up mm_struct.
 > >
-> > Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-> > ---
-> 
-> (...)
-> 
-> > +static int da9150_charger_register_irq(struct platform_device *pdev,
-> > +				       irq_handler_t handler,
-> > +				       const char *irq_name)
-> > +{
-> > +	struct device *dev = &pdev->dev;
-> > +	struct da9150_charger *charger = platform_get_drvdata(pdev);
-> > +	int irq, ret;
-> > +
-> > +	irq = platform_get_irq_byname(pdev, irq_name);
-> > +	if (irq < 0) {
-> > +		dev_err(dev, "Failed to get IRQ CHG_STATUS: %d\n", irq);
-> > +		return irq;
-> > +	}
-> > +
-> > +	ret = request_threaded_irq(irq, NULL, handler, IRQF_ONESHOT, irq_name,
-> > +				   charger);
-> 
-> Why don you use devm_* API..?
+> >What means "messed up" here? It should only affect size of mm_struct.
+> >
+> Plus the offset of all variables after the #ifndef.
 
-As mentioned in previous discussions, the order of tidy up is important so 
-devm_* functions cannot be used here.
+Okay, I guess the problem is that different parts of the kernel see
+different mm_struct depending on include ordering.
 
-> 
-> > +	if (ret)
-> > +		dev_err(dev, "Failed to request IRQ %d: %d\n", irq, ret);
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static void da9150_charger_unregister_irq(struct platform_device *pdev,
-> > +					  const char *irq_name)
-> > +{
-> > +	struct device *dev = &pdev->dev;
-> > +	struct da9150_charger *charger = platform_get_drvdata(pdev);
-> > +	int irq;
-> > +
-> > +	irq = platform_get_irq_byname(pdev, irq_name);
-> > +	if (irq < 0) {
-> > +		dev_err(dev, "Failed to get IRQ CHG_STATUS: %d\n", irq);
-> > +		return;
-> > +	}
-> > +
-> > +	free_irq(irq, charger);
-> > +}
-> > +
-> > +static int da9150_charger_probe(struct platform_device *pdev)
-> > +{
-> > +	struct device *dev = &pdev->dev;
-> > +	struct da9150 *da9150 = dev_get_drvdata(dev->parent);
-> > +	struct da9150_charger *charger;
-> > +	struct power_supply *usb, *battery;
-> > +	u8 reg;
-> > +	int ret;
-> > +
-> > +	charger = devm_kzalloc(dev, sizeof(struct da9150_charger), GFP_KERNEL);
-> > +	if (charger == NULL)
-> > +		return -ENOMEM;
-> 
-> sizeof(struct da9150_charger) can be replaced with sizeof(*charger)...
-> 
-> *!* operator can be used in comparison with NULL...
-> 
+Tried to look for options, but don't see anything better than patch below.
+Andrew, is it okay to you?
 
-Yes, but functionally no different. Can maybe change this around later, but
-would like to avoid changing current patch set right now.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>From 0f113e16a058d47f3bc63a3b6ced5296afb934a6 Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Tue, 27 Jan 2015 17:59:55 +0200
+Subject: [PATCH] mm: add nr_pmds into mm_struct unconditionally
+
+__PAGETABLE_PMD_FOLDED is defined during <asm/pgtable.h> which is not
+included into <linux/mm_types.h>. And we cannot include it here since
+many of <asm/pgtables> needs <linux/mm_types.h> to define struct page.
+
+I failed to come up with better solution rather than put nr_pmds into
+mm_struct unconditionally.
+
+One possible solution would be to expose number of page table levels
+architecture has via Kconfig, but that's ugly and requires changes to
+all architectures.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ include/linux/mm_types.h | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 79cdf6f5c746..199a03aab8dc 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -364,9 +364,7 @@ struct mm_struct {
+ 	atomic_t mm_users;			/* How many users with user space? */
+ 	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
+ 	atomic_long_t nr_ptes;			/* PTE page table pages */
+-#ifndef __PAGETABLE_PMD_FOLDED
+ 	atomic_long_t nr_pmds;			/* PMD page table pages */
+-#endif
+ 	int map_count;				/* number of VMAs */
+ 
+ 	spinlock_t page_table_lock;		/* Protects page tables and some counters */
+-- 
+ Kirill A. Shutemov
