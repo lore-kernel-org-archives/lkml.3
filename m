@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606AbbA0MbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:31:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35296 "EHLO
+	id S932586AbbA0MbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:31:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35298 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459AbbA0MTR (ORCPT
+	with ESMTP id S932464AbbA0MTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:19:17 -0500
+	Tue, 27 Jan 2015 07:19:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Len Sorensen <lsorense@csclub.uwaterloo.ca>,
         Tony Lindgren <tony@atomide.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 086/126] ARM: omap5/dra7xx: Fix frequency typos
-Date: Tue, 27 Jan 2015 12:16:31 +0000
-Message-Id: <1422361031-19364-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 087/126] ARM: omap5/dra7xx: Enable booting secondary CPU in HYP mode
+Date: Tue, 27 Jan 2015 12:16:32 +0000
+Message-Id: <1422361031-19364-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -30,53 +30,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
 
-commit 572b24e6d85d98cdc552f07e9fb9870d9460d81b upstream.
+commit 999f934de195a1506089b52c77429fdba25da688 upstream.
 
-The switch statement of the possible list of SYSCLK1 frequencies is
-missing a 0 in 4 out of the 7 frequencies.
+If the boot loader enables HYP mode on the boot CPU, the secondary CPU
+also needs to call into the ROM to switch to HYP mode before booting.
+The firmwares on the omap5 and dra7xx unfortunately do not take care
+of this, so it has to be handled by the kernel.
 
-Fixes: fa6d79d27614 ("ARM: OMAP: Add initialisation for the real-time counter")
+This patch is based on "[PATCH 2/2] ARM: OMAP5: Add HYP mode entry support
+for secondary CPUs" by Santosh Shilimkar <santosh.shilimkar@ti.com>,
+except this version does not require a compile time CONFIG to control
+if it should enable HYP mode or not, it simply does it based on the mode
+of the boot CPU, so it works whether the CPU boots in SVC or HYP mode,
+and should even work as a guest kernel inside kvm if qemu decides to
+support emulating the omap5 or dra7xx.
+
 Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Reviewed-by: Lokesh Vutla <lokeshvutla@ti.com>
-Acked-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-omap2/timer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mach-omap2/common.h       |  1 +
+ arch/arm/mach-omap2/omap-headsmp.S | 21 +++++++++++++++++++++
+ arch/arm/mach-omap2/omap-smp.c     | 13 +++++++++++--
+ 3 files changed, 33 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index 43d03fbf4c0b..b1418a2c06e5 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -513,11 +513,11 @@ static void __init realtime_counter_init(void)
- 	rate = clk_get_rate(sys_clk);
- 	/* Numerator/denumerator values refer TRM Realtime Counter section */
- 	switch (rate) {
--	case 1200000:
-+	case 12000000:
- 		num = 64;
- 		den = 125;
- 		break;
--	case 1300000:
-+	case 13000000:
- 		num = 768;
- 		den = 1625;
- 		break;
-@@ -529,11 +529,11 @@ static void __init realtime_counter_init(void)
- 		num = 192;
- 		den = 625;
- 		break;
--	case 2600000:
-+	case 26000000:
- 		num = 384;
- 		den = 1625;
- 		break;
--	case 2700000:
-+	case 27000000:
- 		num = 256;
- 		den = 1125;
- 		break;
+diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
+index dc571f1d3b8a..1582eb03e8b0 100644
+--- a/arch/arm/mach-omap2/common.h
++++ b/arch/arm/mach-omap2/common.h
+@@ -270,6 +270,7 @@ extern void omap4_cpu_die(unsigned int cpu);
+ extern struct smp_operations omap4_smp_ops;
+ 
+ extern void omap5_secondary_startup(void);
++extern void omap5_secondary_hyp_startup(void);
+ #endif
+ 
+ #if defined(CONFIG_SMP) && defined(CONFIG_PM)
+diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
+index 4993d4bfe9b2..6d1dffca6c7b 100644
+--- a/arch/arm/mach-omap2/omap-headsmp.S
++++ b/arch/arm/mach-omap2/omap-headsmp.S
+@@ -22,6 +22,7 @@
+ 
+ /* Physical address needed since MMU not enabled yet on secondary core */
+ #define AUX_CORE_BOOT0_PA			0x48281800
++#define API_HYP_ENTRY				0x102
+ 
+ /*
+  * OMAP5 specific entry point for secondary CPU to jump from ROM
+@@ -41,6 +42,26 @@ wait:	ldr	r2, =AUX_CORE_BOOT0_PA	@ read from AuxCoreBoot0
+ 	b	secondary_startup
+ ENDPROC(omap5_secondary_startup)
+ /*
++ * Same as omap5_secondary_startup except we call into the ROM to
++ * enable HYP mode first.  This is called instead of
++ * omap5_secondary_startup if the primary CPU was put into HYP mode by
++ * the boot loader.
++ */
++ENTRY(omap5_secondary_hyp_startup)
++wait_2:	ldr	r2, =AUX_CORE_BOOT0_PA	@ read from AuxCoreBoot0
++	ldr	r0, [r2]
++	mov	r0, r0, lsr #5
++	mrc	p15, 0, r4, c0, c0, 5
++	and	r4, r4, #0x0f
++	cmp	r0, r4
++	bne	wait_2
++	ldr	r12, =API_HYP_ENTRY
++	adr	r0, hyp_boot
++	smc	#0
++hyp_boot:
++	b	secondary_startup
++ENDPROC(omap5_secondary_hyp_startup)
++/*
+  * OMAP4 specific entry point for secondary CPU to jump from ROM
+  * code.  This routine also provides a holding flag into which
+  * secondary core is held until we're ready for it to initialise.
+diff --git a/arch/arm/mach-omap2/omap-smp.c b/arch/arm/mach-omap2/omap-smp.c
+index 256e84ef0f67..5305ec7341ec 100644
+--- a/arch/arm/mach-omap2/omap-smp.c
++++ b/arch/arm/mach-omap2/omap-smp.c
+@@ -22,6 +22,7 @@
+ #include <linux/irqchip/arm-gic.h>
+ 
+ #include <asm/smp_scu.h>
++#include <asm/virt.h>
+ 
+ #include "omap-secure.h"
+ #include "omap-wakeupgen.h"
+@@ -227,8 +228,16 @@ static void __init omap4_smp_prepare_cpus(unsigned int max_cpus)
+ 	if (omap_secure_apis_support())
+ 		omap_auxcoreboot_addr(virt_to_phys(startup_addr));
+ 	else
+-		writel_relaxed(virt_to_phys(omap5_secondary_startup),
+-			       base + OMAP_AUX_CORE_BOOT_1);
++		/*
++		 * If the boot CPU is in HYP mode then start secondary
++		 * CPU in HYP mode as well.
++		 */
++		if ((__boot_cpu_mode & MODE_MASK) == HYP_MODE)
++			writel_relaxed(virt_to_phys(omap5_secondary_hyp_startup),
++				       base + OMAP_AUX_CORE_BOOT_1);
++		else
++			writel_relaxed(virt_to_phys(omap5_secondary_startup),
++				       base + OMAP_AUX_CORE_BOOT_1);
+ 
+ }
+ 
 -- 
 2.1.4
 
