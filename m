@@ -1,107 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737AbbA0SQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:16:36 -0500
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:41507 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932442AbbA0SQe (ORCPT
+	id S1759104AbbA0SMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:12:30 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36566 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723AbbA0SM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:16:34 -0500
-Message-ID: <1422382304.6710.15.camel@j-VirtualBox>
-Subject: Re: [PATCH 6/6] locking/rwsem: Check for active lock before bailing
- on spinning
-From: Jason Low <jason.low2@hp.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <dbueso@suse.de>, jason.low2@hp.com
-Date: Tue, 27 Jan 2015 10:11:44 -0800
-In-Reply-To: <1422257769-14083-7-git-send-email-dave@stgolabs.net>
-References: <1422257769-14083-1-git-send-email-dave@stgolabs.net>
-	 <1422257769-14083-7-git-send-email-dave@stgolabs.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 27 Jan 2015 13:12:27 -0500
+Date: Tue, 27 Jan 2015 18:12:14 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Paul Osmialowski <p.osmialowsk@samsung.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Jonathan Corbet <corbet@lwn.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene@kernel.org>, linux-i2c@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Message-ID: <20150127181214.GD21293@sirena.org.uk>
+References: <1421419194-1849-1-git-send-email-p.osmialowsk@samsung.com>
+ <1421419194-1849-2-git-send-email-p.osmialowsk@samsung.com>
+ <20150116162314.GB3856@sirena.org.uk>
+ <alpine.DEB.2.10.1501161811280.21618@AMDC1262.digital.local>
+ <20150116183635.GH3856@sirena.org.uk>
+ <alpine.DEB.2.10.1501191031080.13777@AMDC1262.digital.local>
+ <20150119192557.GI2809@sirena.org.uk>
+ <alpine.DEB.2.10.1501201214200.8428@AMDC1262.digital.local>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="PQOEDtqHNYuC9sWW"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1501201214200.8428@AMDC1262.digital.local>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 2/3] regmap: Use the enhancement of i2c API to address
+ circular dependency problem
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-25 at 23:36 -0800, Davidlohr Bueso wrote:
-> 37e9562453b (locking/rwsem: Allow conservative optimistic
-> spinning when readers have lock) forced the default for
-> optimistic spinning to be disabled if the lock owner was
-> nil, which makes much sense for readers. However, while
-> it is not our priority, we can make some optimizations
-> for write-mostly workloads. We can bail the spinning step
-> and still be conservative if there are any active tasks,
-> otherwise there's really no reason not to spin, as the
-> semaphore is most likely unlocked.
-> 
-> This patch recovers most of a Unixbench 'execl' benchmark
-> throughput by sleeping less and making better average system
-> usage:
-> 
-> before:
-> CPU     %user     %nice   %system   %iowait    %steal     %idle
-> all      0.60      0.00      8.02      0.00      0.00     91.38
-> 
-> after:
-> CPU     %user     %nice   %system   %iowait    %steal     %idle
-> all      1.22      0.00     70.18      0.00      0.00     28.60
-> 
-> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> ---
->  kernel/locking/rwsem-xadd.c | 27 +++++++++++++++++----------
->  1 file changed, 17 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> index 88b3468..e0e9738 100644
-> --- a/kernel/locking/rwsem-xadd.c
-> +++ b/kernel/locking/rwsem-xadd.c
-> @@ -296,23 +296,30 @@ static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
->  static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
->  {
->  	struct task_struct *owner;
-> -	bool on_cpu = false;
-> +	bool ret = true;
->  
->  	if (need_resched())
->  		return false;
->  
->  	rcu_read_lock();
->  	owner = ACCESS_ONCE(sem->owner);
-> -	if (owner)
-> -		on_cpu = owner->on_cpu;
-> -	rcu_read_unlock();
-> +	if (!owner) {
-> +		long count = ACCESS_ONCE(sem->count);
-> +		/*
-> +		 * If sem->owner is not set, yet we have just recently entered the
-> +		 * slowpath with the lock being active, then there is a possibility
-> +		 * reader(s) may have the lock. To be safe, bail spinning in these
-> +		 * situations.
-> +		 */
-> +		if (count & RWSEM_ACTIVE_MASK)
-> +			ret = false;
-> +		goto done;
-> +	}
->  
-> -	/*
-> -	 * If sem->owner is not set, yet we have just recently entered the
-> -	 * slowpath, then there is a possibility reader(s) may have the lock.
-> -	 * To be safe, avoid spinning in these situations.
-> -	 */
-> -	return on_cpu;
-> +	ret = owner->on_cpu;
-> +done:
-> +	rcu_read_unlock();
-> +	return ret;
->  }
 
-Acked-by: Jason Low <jason.low2@hp.com>
+--PQOEDtqHNYuC9sWW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Jan 20, 2015 at 12:14:31PM +0100, Paul Osmialowski wrote:
+> On Mon, 19 Jan 2015, Mark Brown wrote:
 
+> >OK, so that's what should go in the changelog (along with an explanation
+> >of why this preparation is required at all) - but I still don't see the
+> >async bit of this I'm afraid.
 
+> I don't think preparation stage should be exposed for asynchronous transfer.
+> Due to its nature, it shouldn't cause circular lock dependency as we can
+> observe for synchronous io. Since i2c does not support async transfer anyway
+> (so (map->async && map->bus->async_write) will be always false for i2c
+> transfers), let's use spi as an example.
+
+Again I come back to explaining this out of the context of this
+particular issue in terms of something that's comprehensible at the
+regmap level.
+
+> With spi we have curious situation where both sync and async are handled by
+> the same __spi_async() function, though for sync transfer
+> wait_for_completion() is called soon after __spi_async() in order to ensure
+> that transfer is completed.
+
+That's not actually that strange really, in general synchronous
+operation can always be implemented as a simple wrapper around
+asynchronous operation.
+
+> Actual transfer is handled by spi_transfer_one_message() called from
+> spi_pump_messages(). Note that spi_pump_message() before it calls
+> spi_transfer_one_message() also calls prepare_message() callback (if
+> provided):
+
+We are *massively* into implementation details here, if we're relying on
+these things then they could change at any time (and in fact what you
+say above is partly specific and is not true even in the default case
+for current code).  Think in terms of abstractions and locking
+guarantees rather than the details of the current code.
+
+--PQOEDtqHNYuC9sWW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUx9T9AAoJECTWi3JdVIfQJvwH/RuGx4/yLYw+wCetvLdU1fwS
+/oPsQgtY10opH+KmQOH0CxWR26W76iFxOExdPcD7YOPQDsE45Lw6cl8zdSlYDHkW
+GcXWXKB0Qw6uPWbf3m3fcmx5LZSaaTbM5gxnifsi4oOnpJ6mx1eNCeM6w+inf5Cq
+rG58MPDNgS5timYqUyFmNAeMJ5WtqQ32ytnDuED0o2nqlF3sD9xr5/nWYlqcWmHI
+VT/uDY0qMiSzr2yCNuOd5v2Y/LXKaBR9oFM1PBA2Rd21AMKHoAAPdwOy6+wNXiCe
+hcyCZN2+pUa2agiAxhEp/fMvMxudazzF4OTuf+21hJRaCMdNemHGUiNzjES3EF0=
+=dlI5
+-----END PGP SIGNATURE-----
+
+--PQOEDtqHNYuC9sWW--
