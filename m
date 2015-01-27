@@ -1,76 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561AbbA0SMF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:12:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754735AbbA0SMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:12:03 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ktest: restore tty settings after closing console
-Date: Tue, 27 Jan 2015 12:10:04 -0600
-Message-Id: <1bb89abc0025cf1d6da657c7ba58bbeb4381a515.1422382008.git.jpoimboe@redhat.com>
+	id S932529AbbA0SLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:11:23 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:44415 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735AbbA0SLV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 13:11:21 -0500
+Date: Tue, 27 Jan 2015 23:41:13 +0530
+From: Vaishali Thakkar <vthakkar1994@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCH] Staging: rtl8192u: Use put_unaligned_le16 in rtl819x_BAProc.c
+Message-ID: <20150127181113.GA10077@vaishali-Ideapad-Z570>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ktest runs the console program as a child process, the parent and
-child share the same tty for stdin and stderr.  This is problematic when
-using a libvirt target.  The "virsh console" program makes a lot of
-changes to the tty settings, making ktest's output hard to read
-(carriage returns don't work).  After ktest exits, the terminal is
-unusable (CRs broken, stdin isn't echoed).
+This patch introduces the use of function put_unaligned_le16.
 
-I think the best way to fix this issue would be to create a
-pseudoterminal (pty pair) so the child process would have a dedicated
-tty, and then use pipes to connect the two ttys.  I'm not sure if that's
-overkill, but it's far beyond my current Perl abilities.
+This is done using Coccinelle and semantic patch used is as follows:
 
-This patch is a much easier way to (partially) fix this issue.  It saves
-the tty settings before opening the console and restores them after
-closing it.  There are still a few places where ktest prints mangled
-output while the console is open, but the output is much more legible
-overall, and the terminal works just fine after ktest exits.
+@a@
+typedef u16, __le16, uint16_t;
+{u16,__le16,uint16_t} e16;
+identifier tmp;
+expression ptr;
+expression y,e;
+type T;
+type T;
+@@
 
-Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
+- tmp = cpu_to_le16(y);
+
+<+... when != tmp
+(
+- memcpy(ptr, (T)&tmp, \(2\|sizeof(u16)\|sizeof(__le16)\|sizeof(uint16_t)\|sizeof(e16)\));
++ put_unaligned_le16(y,ptr);
+|
+- memcpy(ptr, (T)&tmp, ...);
++ put_unaligned_le16(y,ptr);
+)
+...+>
+? tmp = e
+
+@@ type T; identifier a.tmp; @@
+
+- T tmp;
+...when != tmp
+
+Signed-off-by: Vaishali Thakkar <vthakkar1994@gmail.com>
 ---
- tools/testing/ktest/ktest.pl | 7 +++++++
- 1 file changed, 7 insertions(+)
+ .../staging/rtl8192u/ieee80211/rtl819x_BAProc.c    | 24 +++++++++++-----------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index b9cd036..ba20f89 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -178,6 +178,7 @@ my $checkout;
- my $localversion;
- my $iteration = 0;
- my $successes = 0;
-+my $stty;
+diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c b/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
+index a9fd2cb..1b4623c 100644
+--- a/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
++++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
+@@ -4,6 +4,8 @@
+  * ADDBAREQ ADDBARSP and DELBA packet is still on consideration. Temporarily use MANAGE QUEUE instead of Normal Queue.
+  * WB 2008-05-27
+  * *****************************************************************************************************************************/
++#include <asm/byteorder.h>
++#include <asm/unaligned.h>
+ #include "ieee80211.h"
+ #include "rtl819x_BA.h"
  
- my $bisect_good;
- my $bisect_bad;
-@@ -1349,6 +1350,9 @@ sub open_console {
- 
-     my $flags;
- 
-+    # save terminal settings
-+    $stty = `stty -g`;
+@@ -110,7 +112,6 @@ static struct sk_buff *ieee80211_ADDBA(struct ieee80211_device *ieee, u8 *Dst, P
+ 	struct sk_buff *skb = NULL;
+ 	 struct ieee80211_hdr_3addr *BAReq = NULL;
+ 	u8 *tag = NULL;
+-	__le16 tmp = 0;
+ 	u16 len = ieee->tx_headroom + 9;
+ 	//category(1) + action field(1) + Dialog Token(1) + BA Parameter Set(2) +  BA Timeout Value(2) +  BA Start SeqCtrl(2)(or StatusCode(2))
+ 	IEEE80211_DEBUG(IEEE80211_DL_TRACE | IEEE80211_DL_BA, "========>%s(), frame(%d) sentd to:%pM, ieee->dev:%p\n", __func__, type, Dst, ieee->dev);
+@@ -149,17 +150,17 @@ static struct sk_buff *ieee80211_ADDBA(struct ieee80211_device *ieee, u8 *Dst, P
+ 	{
+ 		// Status Code
+ 		printk("=====>to send ADDBARSP\n");
+-		tmp = cpu_to_le16(StatusCode);
+-		memcpy(tag, (u8 *)&tmp, 2);
 +
-     my $pid = open($fp, "$console|") or
- 	dodie "Can't open console $console";
- 
-@@ -1368,6 +1372,9 @@ sub close_console {
- 
-     print "closing!\n";
-     close($fp);
++		put_unaligned_le16(StatusCode, tag);
+ 		tag += 2;
+ 	}
+ 	// BA Parameter Set
+-	tmp = cpu_to_le16(pBA->BaParamSet.shortData);
+-	memcpy(tag, (u8 *)&tmp, 2);
 +
-+    # restore terminal settings
-+    system("stty $stty");
- }
++	put_unaligned_le16(pBA->BaParamSet.shortData, tag);
+ 	tag += 2;
+ 	// BA Timeout Value
+-	tmp = cpu_to_le16(pBA->BaTimeoutValue);
+-	memcpy(tag, (u8 *)&tmp, 2);
++
++	put_unaligned_le16(pBA->BaTimeoutValue, tag);
+ 	tag += 2;
  
- sub start_monitor {
+ 	if (ACT_ADDBAREQ == type)
+@@ -196,7 +197,6 @@ static struct sk_buff *ieee80211_DELBA(
+ 	struct sk_buff *skb = NULL;
+ 	 struct ieee80211_hdr_3addr *Delba = NULL;
+ 	u8 *tag = NULL;
+-	__le16 tmp = 0;
+ 	//len = head len + DELBA Parameter Set(2) + Reason Code(2)
+ 	u16 len = 6 + ieee->tx_headroom;
+ 
+@@ -230,12 +230,12 @@ static struct sk_buff *ieee80211_DELBA(
+ 	*tag ++= ACT_DELBA;
+ 
+ 	// DELBA Parameter Set
+-	tmp = cpu_to_le16(DelbaParamSet.shortData);
+-	memcpy(tag, (u8 *)&tmp, 2);
++
++	put_unaligned_le16(DelbaParamSet.shortData, tag);
+ 	tag += 2;
+ 	// Reason Code
+-	tmp = cpu_to_le16(ReasonCode);
+-	memcpy(tag, (u8 *)&tmp, 2);
++
++	put_unaligned_le16(ReasonCode, tag);
+ 	tag += 2;
+ 
+ 	IEEE80211_DEBUG_DATA(IEEE80211_DL_DATA|IEEE80211_DL_BA, skb->data, skb->len);
 -- 
-2.1.0
+1.9.1
 
