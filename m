@@ -1,95 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbbA0Fx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 00:53:29 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:59828 "EHLO
+	id S1754504AbbA0Fy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 00:54:26 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:59914 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939AbbA0Fx0 (ORCPT
+	with ESMTP id S1751732AbbA0FyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 00:53:26 -0500
+	Tue, 27 Jan 2015 00:54:24 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
         <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
         <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v3 00/13] AT91 pm cleanup for 3.20
-Date: Tue, 27 Jan 2015 13:50:10 +0800
-Message-ID: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v3 01/13] pm: at91: pm_slowclock: fix suspend/resume hang up in timeouts
+Date: Tue, 27 Jan 2015 13:51:16 +0800
+Message-ID: <1422337876-3298-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
+References: <1422337810-3257-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+From: Sylvain Rochet <sylvain.rochet@finsecur.com>
 
-This version is rebased on the branch: at91-3.20-cleanup of the repository
-	git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git
+Removed timeout on XTAL, PLL lock and Master Clock Ready, hang if
+something went wrong instead of continuing in unknown condition. There
+is not much we can do if a PLL lock never ends, we are running in SRAM
+and we will not be able to connect back the sdram or ddram in order to
+be able to fire up a message or just panic.
 
-It is purpose to clean up the PM code, includes the patches from Peter Rosin and Sylvain Rochet.
+As a bonus, not decounting the timeout register in slow clock mode
+reduce cumulated suspend time and resume time from ~17ms to ~15ms.
 
-Since verifying the USB clock and USB PLL disabling before suspending to memory,
-it aslo depends on the following patch serials from Sylvain:
-	[PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
-	[PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
+Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
+---
+ arch/arm/mach-at91/pm_slowclock.S |   33 ++++-----------------------------
+ 1 file changed, 4 insertions(+), 29 deletions(-)
 
-Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
-The suspend to standby mode uses the same sram function as the suspend to memory mode.
-Remove some unused code.
-
-Alexandr & Sylvain, Thank you very much for so many feedbacks.
-
-Changes in v2:
- - Rebase on the at91-3.20-cleanup branch
- - Recover the verify clock condition, only for suspend to memory.
- - Collect ACK from Alexandre
- - Add the macro for PM mode
-
-Changes in v3
- - Sylvain splits the patch in two
- - Add handling if no sram allocated for PM
- - Retain the STANDBY and SUSPEND_MEM select in at91_pm_enter.
-
-Peter Rosin (1):
-  pm: at91: Workaround DDRSDRC self-refresh bug with LPDDR1 memories.
-
-Sylvain Rochet (2):
-  pm: at91: pm_slowclock: fix suspend/resume hang up in timeouts
-  pm: at91: pm_slowclock: remove clocks which are already stopped when
-    entering slow clock mode
-
-Wenyou Yang (10):
-  pm: at91: pm_slowclock: remove the unused code related with
-    SLOWDOWN_MASTER_CLOCK
-  pm: at91: move the copying the sram function to the sram
-    initializationi phase
-  ARM: at91: move select SRAM to ARCH_AT91
-  pm: at91: remove the config item CONFIG_AT91_SLOW_CLOCK
-  pm: at91: the standby mode uses the same sram function as the suspend
-    to memory mode
-  pm: at91: rename file name: pm_slowclock.S -->pm_suspend.S
-  pm: at91: rename function name:
-    at91_slow_clock()-->at91_pm_suspend_sram_fn
-  pm: at91: remove the at91_xxx_standby() function definitions in the
-    pm.h
-  pm: at91: setup: remove the struct ramc_ids .data at91_xxx_standby
-    members
-  pm: at91: amend the pm_suspend entry for at91_cpuidle_device
-
- arch/arm/mach-at91/Kconfig         |   17 +-
- arch/arm/mach-at91/Makefile        |    2 +-
- arch/arm/mach-at91/pm.c            |  150 ++++++++---------
- arch/arm/mach-at91/pm.h            |  100 +----------
- arch/arm/mach-at91/pm_slowclock.S  |  323 ------------------------------------
- arch/arm/mach-at91/pm_suspend.S    |  277 +++++++++++++++++++++++++++++++
- arch/arm/mach-at91/setup.c         |   19 +--
- include/soc/at91/at91sam9_ddrsdr.h |    2 +-
- 8 files changed, 367 insertions(+), 523 deletions(-)
- delete mode 100644 arch/arm/mach-at91/pm_slowclock.S
- create mode 100644 arch/arm/mach-at91/pm_suspend.S
-
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index 556151e..50744e7 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -25,11 +25,6 @@
+  */
+ #undef SLOWDOWN_MASTER_CLOCK
+ 
+-#define MCKRDY_TIMEOUT		1000
+-#define MOSCRDY_TIMEOUT 	1000
+-#define PLLALOCK_TIMEOUT	1000
+-#define PLLBLOCK_TIMEOUT	1000
+-
+ pmc	.req	r0
+ sdramc	.req	r1
+ ramc1	.req	r2
+@@ -41,56 +36,36 @@ tmp2	.req	r5
+  * Wait until master clock is ready (after switching master clock source)
+  */
+ 	.macro wait_mckrdy
+-	mov	tmp2, #MCKRDY_TIMEOUT
+-1:	sub	tmp2, tmp2, #1
+-	cmp	tmp2, #0
+-	beq	2f
+-	ldr	tmp1, [pmc, #AT91_PMC_SR]
++1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
+ 	tst	tmp1, #AT91_PMC_MCKRDY
+ 	beq	1b
+-2:
+ 	.endm
+ 
+ /*
+  * Wait until master oscillator has stabilized.
+  */
+ 	.macro wait_moscrdy
+-	mov	tmp2, #MOSCRDY_TIMEOUT
+-1:	sub	tmp2, tmp2, #1
+-	cmp	tmp2, #0
+-	beq	2f
+-	ldr	tmp1, [pmc, #AT91_PMC_SR]
++1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
+ 	tst	tmp1, #AT91_PMC_MOSCS
+ 	beq	1b
+-2:
+ 	.endm
+ 
+ /*
+  * Wait until PLLA has locked.
+  */
+ 	.macro wait_pllalock
+-	mov	tmp2, #PLLALOCK_TIMEOUT
+-1:	sub	tmp2, tmp2, #1
+-	cmp	tmp2, #0
+-	beq	2f
+-	ldr	tmp1, [pmc, #AT91_PMC_SR]
++1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
+ 	tst	tmp1, #AT91_PMC_LOCKA
+ 	beq	1b
+-2:
+ 	.endm
+ 
+ /*
+  * Wait until PLLB has locked.
+  */
+ 	.macro wait_pllblock
+-	mov	tmp2, #PLLBLOCK_TIMEOUT
+-1:	sub	tmp2, tmp2, #1
+-	cmp	tmp2, #0
+-	beq	2f
+-	ldr	tmp1, [pmc, #AT91_PMC_SR]
++1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
+ 	tst	tmp1, #AT91_PMC_LOCKB
+ 	beq	1b
+-2:
+ 	.endm
+ 
+ 	.text
 -- 
 1.7.9.5
 
