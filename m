@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760292AbbA0WOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 17:14:46 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:38098 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759868AbbA0WOo (ORCPT
+	id S1760299AbbA0WPu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 17:15:50 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61022 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754041AbbA0WPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 17:14:44 -0500
+	Tue, 27 Jan 2015 17:15:48 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        Michael Hennerich <Michael.Hennerich@analog.com>
+To: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
         Peter Meerwald <pmeerw@pmeerw.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: iio: impedance-analyzer: ad5933: Change type in printf format string
-Date: Tue, 27 Jan 2015 23:18:01 +0100
-Message-Id: <1422397081-8832-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Michael Welling <mwelling@ieee.org>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Aybuke Ozdemir <aybuke.147@gmail.com>,
+        Monam Agarwal <monamagarwal123@gmail.com>, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: iio: light: tsl2583: Change type in printf format string
+Date: Tue, 27 Jan 2015 23:19:05 +0100
+Message-Id: <1422397145-8957-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,27 +33,22 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/staging/iio/impedance-analyzer/ad5933.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/iio/light/tsl2583.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
-index b6bd609..4230a43 100644
---- a/drivers/staging/iio/impedance-analyzer/ad5933.c
-+++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
-@@ -360,11 +360,11 @@ static ssize_t ad5933_show(struct device *dev,
- 	mutex_lock(&indio_dev->mlock);
- 	switch ((u32) this_attr->address) {
- 	case AD5933_OUT_RANGE:
--		len = sprintf(buf, "%d\n",
-+		len = sprintf(buf, "%u\n",
- 			      st->range_avail[(st->ctrl_hb >> 1) & 0x3]);
- 		break;
- 	case AD5933_OUT_RANGE_AVAIL:
--		len = sprintf(buf, "%d %d %d %d\n", st->range_avail[0],
-+		len = sprintf(buf, "%u %u %u %u\n", st->range_avail[0],
- 			      st->range_avail[3], st->range_avail[2],
- 			      st->range_avail[1]);
- 		break;
+diff --git a/drivers/staging/iio/light/tsl2583.c b/drivers/staging/iio/light/tsl2583.c
+index cc4ddcc..8afae8e 100644
+--- a/drivers/staging/iio/light/tsl2583.c
++++ b/drivers/staging/iio/light/tsl2583.c
+@@ -692,7 +692,7 @@ static ssize_t taos_luxtable_show(struct device *dev,
+ 	int offset = 0;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(taos_device_lux); i++) {
+-		offset += sprintf(buf + offset, "%d,%d,%d,",
++		offset += sprintf(buf + offset, "%u,%u,%u,",
+ 				  taos_device_lux[i].ratio,
+ 				  taos_device_lux[i].ch0,
+ 				  taos_device_lux[i].ch1);
 -- 
 1.7.10.4
 
