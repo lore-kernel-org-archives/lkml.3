@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007AbbA0MrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:47:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34911 "EHLO
+	id S1758398AbbA0MRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:17:41 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34917 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758329AbbA0MR1 (ORCPT
+	with ESMTP id S1758339AbbA0MRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:17:27 -0500
+	Tue, 27 Jan 2015 07:17:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 025/126] mm: prevent endless growth of anon_vma hierarchy
-Date: Tue, 27 Jan 2015 12:15:30 +0000
-Message-Id: <1422361031-19364-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 026/126] mm: protect set_page_dirty() from ongoing truncation
+Date: Tue, 27 Jan 2015 12:15:31 +0000
+Message-Id: <1422361031-19364-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -29,186 +29,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <koct9i@gmail.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 7a3ef208e662f4b63d43a23f61a64a129c525bbc upstream.
+commit 2d6d7f98284648c5ed113fe22a132148950b140f upstream.
 
-Constantly forking task causes unlimited grow of anon_vma chain.  Each
-next child allocates new level of anon_vmas and links vma to all
-previous levels because pages might be inherited from any level.
+Tejun, while reviewing the code, spotted the following race condition
+between the dirtying and truncation of a page:
 
-This patch adds heuristic which decides to reuse existing anon_vma
-instead of forking new one.  It adds counter anon_vma->degree which
-counts linked vmas and directly descending anon_vmas and reuses anon_vma
-if counter is lower than two.  As a result each anon_vma has either vma
-or at least two descending anon_vmas.  In such trees half of nodes are
-leafs with alive vmas, thus count of anon_vmas is no more than two times
-bigger than count of vmas.
+__set_page_dirty_nobuffers()       __delete_from_page_cache()
+  if (TestSetPageDirty(page))
+                                     page->mapping = NULL
+				     if (PageDirty())
+				       dec_zone_page_state(page, NR_FILE_DIRTY);
+				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+    if (page->mapping)
+      account_page_dirtied(page)
+        __inc_zone_page_state(page, NR_FILE_DIRTY);
+	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
 
-This heuristic reuses anon_vmas as few as possible because each reuse
-adds false aliasing among vmas and rmap walker ought to scan more ptes
-when it searches where page is might be mapped.
+which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
 
-Link: http://lkml.kernel.org/r/20120816024610.GA5350@evergreen.ssec.wisc.edu
-Fixes: 5beb49305251 ("mm: change anon_vma linking to fix multi-process server scalability issue")
-[akpm@linux-foundation.org: fix typo, per Rik]
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-Reported-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Tested-by: Michal Hocko <mhocko@suse.cz>
-Tested-by: Jerome Marchand <jmarchan@redhat.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Dirtiers usually lock out truncation, either by holding the page lock
+directly, or in case of zap_pte_range(), by pinning the mapcount with
+the page table lock held.  The notable exception to this rule, though,
+is do_wp_page(), for which this race exists.  However, do_wp_page()
+already waits for a locked page to unlock before setting the dirty bit,
+in order to prevent a race where clear_page_dirty() misses the page bit
+in the presence of dirty ptes.  Upgrade that wait to a fully locked
+set_page_dirty() to also cover the situation explained above.
+
+Afterwards, the code in set_page_dirty() dealing with a truncation race
+is no longer needed.  Remove it.
+
+Reported-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/rmap.h | 10 ++++++++++
- mm/rmap.c            | 42 +++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 51 insertions(+), 1 deletion(-)
+ include/linux/writeback.h |  1 -
+ mm/memory.c               | 27 +++++++++++++++++----------
+ mm/page-writeback.c       | 43 ++++++++++++-------------------------------
+ 3 files changed, 29 insertions(+), 42 deletions(-)
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index be574506e6a9..28349a8fd08b 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -37,6 +37,16 @@ struct anon_vma {
- 	atomic_t refcount;
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index 5777c13849ba..0aa44e254a21 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -178,7 +178,6 @@ int write_cache_pages(struct address_space *mapping,
+ 		      struct writeback_control *wbc, writepage_t writepage,
+ 		      void *data);
+ int do_writepages(struct address_space *mapping, struct writeback_control *wbc);
+-void set_page_dirty_balance(struct page *page);
+ void writeback_set_ratelimit(void);
+ void tag_pages_for_writeback(struct address_space *mapping,
+ 			     pgoff_t start, pgoff_t end);
+diff --git a/mm/memory.c b/mm/memory.c
+index 49787747ca33..dda1dc6d92dd 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2148,17 +2148,24 @@ reuse:
+ 		if (!dirty_page)
+ 			return ret;
  
- 	/*
-+	 * Count of child anon_vmas and VMAs which points to this anon_vma.
-+	 *
-+	 * This counter is used for making decision about reusing anon_vma
-+	 * instead of forking new one. See comments in function anon_vma_clone.
-+	 */
-+	unsigned degree;
+-		/*
+-		 * Yes, Virginia, this is actually required to prevent a race
+-		 * with clear_page_dirty_for_io() from clearing the page dirty
+-		 * bit after it clear all dirty ptes, but before a racing
+-		 * do_wp_page installs a dirty pte.
+-		 *
+-		 * do_shared_fault is protected similarly.
+-		 */
+ 		if (!page_mkwrite) {
+-			wait_on_page_locked(dirty_page);
+-			set_page_dirty_balance(dirty_page);
++			struct address_space *mapping;
++			int dirtied;
 +
-+	struct anon_vma *parent;	/* Parent of this anon_vma */
++			lock_page(dirty_page);
++			dirtied = set_page_dirty(dirty_page);
++			VM_BUG_ON_PAGE(PageAnon(dirty_page), dirty_page);
++			mapping = dirty_page->mapping;
++			unlock_page(dirty_page);
 +
-+	/*
- 	 * NOTE: the LSB of the rb_root.rb_node is set by
- 	 * mm_take_all_locks() _after_ taking the above lock. So the
- 	 * rb_root must only be read/written after taking the above lock
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 78274432b48f..ab8e7984fa19 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -72,6 +72,8 @@ static inline struct anon_vma *anon_vma_alloc(void)
- 	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
- 	if (anon_vma) {
- 		atomic_set(&anon_vma->refcount, 1);
-+		anon_vma->degree = 1;	/* Reference for first vma */
-+		anon_vma->parent = anon_vma;
- 		/*
- 		 * Initialise the anon_vma root to point to itself. If called
- 		 * from fork, the root will be reset to the parents anon_vma.
-@@ -188,6 +190,8 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 		if (likely(!vma->anon_vma)) {
- 			vma->anon_vma = anon_vma;
- 			anon_vma_chain_link(vma, avc, anon_vma);
-+			/* vma reference or self-parent link for new root */
-+			anon_vma->degree++;
- 			allocated = NULL;
- 			avc = NULL;
- 		}
-@@ -236,6 +240,14 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
++			if (dirtied && mapping) {
++				/*
++				 * Some device drivers do not set page.mapping
++				 * but still dirty their pages
++				 */
++				balance_dirty_pages_ratelimited(mapping);
++			}
++
+ 			/* file_update_time outside page_lock */
+ 			if (vma->vm_file)
+ 				file_update_time(vma->vm_file);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index e0c943014eb7..dfe512e911c8 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1544,16 +1544,6 @@ pause:
+ 		bdi_start_background_writeback(bdi);
+ }
+ 
+-void set_page_dirty_balance(struct page *page)
+-{
+-	if (set_page_dirty(page)) {
+-		struct address_space *mapping = page_mapping(page);
+-
+-		if (mapping)
+-			balance_dirty_pages_ratelimited(mapping);
+-	}
+-}
+-
+ static DEFINE_PER_CPU(int, bdp_ratelimits);
+ 
  /*
-  * Attach the anon_vmas from src to dst.
-  * Returns 0 on success, -ENOMEM on failure.
-+ *
-+ * If dst->anon_vma is NULL this function tries to find and reuse existing
-+ * anon_vma which has no vmas and only one child anon_vma. This prevents
-+ * degradation of anon_vma hierarchy to endless linear chain in case of
-+ * constantly forking task. On the other hand, an anon_vma with more than one
-+ * child isn't reused even if there was no alive vma, thus rmap walker has a
-+ * good chance of avoiding scanning the whole hierarchy when it searches where
-+ * page is mapped.
+@@ -2143,32 +2133,25 @@ EXPORT_SYMBOL(account_page_writeback);
+  * page dirty in that case, but not all the buffers.  This is a "bottom-up"
+  * dirtying, whereas __set_page_dirty_buffers() is a "top-down" dirtying.
+  *
+- * Most callers have locked the page, which pins the address_space in memory.
+- * But zap_pte_range() does not lock the page, however in that case the
+- * mapping is pinned by the vma's ->vm_file reference.
+- *
+- * We take care to handle the case where the page was truncated from the
+- * mapping by re-checking page_mapping() inside tree_lock.
++ * The caller must ensure this doesn't race with truncation.  Most will simply
++ * hold the page lock, but e.g. zap_pte_range() calls with the page mapped and
++ * the pte lock held, which also locks out truncation.
   */
- int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+ int __set_page_dirty_nobuffers(struct page *page)
  {
-@@ -256,7 +268,21 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
- 		anon_vma = pavc->anon_vma;
- 		root = lock_anon_vma_root(root, anon_vma);
- 		anon_vma_chain_link(dst, avc, anon_vma);
-+
-+		/*
-+		 * Reuse existing anon_vma if its degree lower than two,
-+		 * that means it has no vma and only one anon_vma child.
-+		 *
-+		 * Do not chose parent anon_vma, otherwise first child
-+		 * will always reuse it. Root anon_vma is never reused:
-+		 * it has self-parent reference and at least one child.
-+		 */
-+		if (!dst->anon_vma && anon_vma != src->anon_vma &&
-+				anon_vma->degree < 2)
-+			dst->anon_vma = anon_vma;
- 	}
-+	if (dst->anon_vma)
-+		dst->anon_vma->degree++;
- 	unlock_anon_vma_root(root);
- 	return 0;
+ 	if (!TestSetPageDirty(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+-		struct address_space *mapping2;
+ 		unsigned long flags;
  
-@@ -280,6 +306,9 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	if (!pvma->anon_vma)
- 		return 0;
+ 		if (!mapping)
+ 			return 1;
  
-+	/* Drop inherited anon_vma, we'll reuse existing or allocate new. */
-+	vma->anon_vma = NULL;
-+
- 	/*
- 	 * First, attach the new VMA to the parent VMA's anon_vmas,
- 	 * so rmap can find non-COWed pages in child processes.
-@@ -288,6 +317,10 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	if (error)
- 		return error;
- 
-+	/* An existing anon_vma has been reused, all done then. */
-+	if (vma->anon_vma)
-+		return 0;
-+
- 	/* Then add our own anon_vma. */
- 	anon_vma = anon_vma_alloc();
- 	if (!anon_vma)
-@@ -301,6 +334,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	 * lock any of the anon_vmas in this anon_vma tree.
- 	 */
- 	anon_vma->root = pvma->anon_vma->root;
-+	anon_vma->parent = pvma->anon_vma;
- 	/*
- 	 * With refcounts, an anon_vma can stay around longer than the
- 	 * process it belongs to. The root anon_vma needs to be pinned until
-@@ -311,6 +345,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	vma->anon_vma = anon_vma;
- 	anon_vma_lock_write(anon_vma);
- 	anon_vma_chain_link(vma, avc, anon_vma);
-+	anon_vma->parent->degree++;
- 	anon_vma_unlock_write(anon_vma);
- 
- 	return 0;
-@@ -341,12 +376,16 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
- 		 * Leave empty anon_vmas on the list - we'll need
- 		 * to free them outside the lock.
+ 		spin_lock_irqsave(&mapping->tree_lock, flags);
+-		mapping2 = page_mapping(page);
+-		if (mapping2) { /* Race with truncate? */
+-			BUG_ON(mapping2 != mapping);
+-			WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
+-			account_page_dirtied(page, mapping);
+-			radix_tree_tag_set(&mapping->page_tree,
+-				page_index(page), PAGECACHE_TAG_DIRTY);
+-		}
++		BUG_ON(page_mapping(page) != mapping);
++		WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
++		account_page_dirtied(page, mapping);
++		radix_tree_tag_set(&mapping->page_tree, page_index(page),
++				   PAGECACHE_TAG_DIRTY);
+ 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 		if (mapping->host) {
+ 			/* !PageAnon && !swapper_space */
+@@ -2325,12 +2308,10 @@ int clear_page_dirty_for_io(struct page *page)
+ 		/*
+ 		 * We carefully synchronise fault handlers against
+ 		 * installing a dirty pte and marking the page dirty
+-		 * at this point. We do this by having them hold the
+-		 * page lock at some point after installing their
+-		 * pte, but before marking the page dirty.
+-		 * Pages are always locked coming in here, so we get
+-		 * the desired exclusion. See mm/memory.c:do_wp_page()
+-		 * for more comments.
++		 * at this point.  We do this by having them hold the
++		 * page lock while dirtying the page, and pages are
++		 * always locked coming in here, so we get the desired
++		 * exclusion.
  		 */
--		if (RB_EMPTY_ROOT(&anon_vma->rb_root))
-+		if (RB_EMPTY_ROOT(&anon_vma->rb_root)) {
-+			anon_vma->parent->degree--;
- 			continue;
-+		}
- 
- 		list_del(&avc->same_vma);
- 		anon_vma_chain_free(avc);
- 	}
-+	if (vma->anon_vma)
-+		vma->anon_vma->degree--;
- 	unlock_anon_vma_root(root);
- 
- 	/*
-@@ -357,6 +396,7 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
- 	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
- 		struct anon_vma *anon_vma = avc->anon_vma;
- 
-+		BUG_ON(anon_vma->degree);
- 		put_anon_vma(anon_vma);
- 
- 		list_del(&avc->same_vma);
+ 		if (TestClearPageDirty(page)) {
+ 			dec_zone_page_state(page, NR_FILE_DIRTY);
 -- 
 2.1.4
 
