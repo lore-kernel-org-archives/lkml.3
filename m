@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142AbbA0LQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 06:16:15 -0500
-Received: from mail.linn.co.uk ([195.59.102.251]:54305 "EHLO mail.linn.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203AbbA0LQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 06:16:12 -0500
-Message-ID: <54C7736C.8090704@linn.co.uk>
-Date: Tue, 27 Jan 2015 11:15:56 +0000
-From: Stathis Voukelatos <stathis.voukelatos@linn.co.uk>
+	id S1755455AbbA0L1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 06:27:25 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:49893 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514AbbA0L1X convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 06:27:23 -0500
+Message-ID: <54C77616.80301@arm.com>
+Date: Tue, 27 Jan 2015 11:27:18 +0000
+From: Robin Murphy <robin.murphy@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+To: Murali Karicheri <m-karicheri2@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "abrestic@chromium.org" <abrestic@chromium.org>
-Subject: Re: [PATCH] net: Linn Ethernet Packet Sniffer driver
-References: <1422007621-13567-1-git-send-email-stathis.voukelatos@linn.co.uk> <54C22E68.1080601@redhat.com> <54C60DB8.1060900@linn.co.uk> <54C612A5.2000208@redhat.com>
-In-Reply-To: <54C612A5.2000208@redhat.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.2.10.219]
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
+CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Will Deacon <Will.Deacon@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 3/6] of: fix size when dma-range is not used
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-4-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1422052359-12384-4-git-send-email-m-karicheri2@ti.com>
+X-OriginalArrivalTime: 27 Jan 2015 11:27:19.0292 (UTC) FILETIME=[35FF93C0:01D03A24]
+X-MC-Unique: 115012711272101201
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+Hi Murali,
 
-On 26/01/15 10:10, Daniel Borkmann wrote:
->> Hello Daniel. Thank you for your feedback.
->> Packet sockets could also be used for the driver interface to
->> user space, however I think that both approaches would require the same
->> amount of maintenance. We need to maintain a protocol consisting of
->> a set of messages or commands that user space can use to communicate
->> with the driver in order to configure the H/W and retrieve results.
->> We could use packet sockets to send those messages  too, but I thought
->> netlink already provides a message exchange framework that we could
->> make use of.
+On 23/01/15 22:32, Murali Karicheri wrote:
+> Fix the dma-range size when the DT attribute is missing. i.e  set size to
+> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. To detect
+> overflow when mask is set to max of u64, add a check, log error and return.
+> Some platform use mask format for size in DTS. So add a work around to
+> catch this and fix.
 >
-> When using packet sockets and your driver as a backend feeding them,
-> users can see that there's an extra capturing/monitoring netdev present,
-> all libpcap-based tools such as tcpdump et al would work out of the box
-> w/o adapting any code, and as an admin you can also see what users/tools
-> are making of use of the device through packet sockets. I couldn't parse
-> the exact motivation from the commit message of why avoiding all this is
-> better?
+> Cc: Joerg Roedel <joro@8bytes.org>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 >
-> Thanks,
-> Daniel
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+>   drivers/of/device.c |   14 +++++++++++++-
+>   1 file changed, 13 insertions(+), 1 deletion(-)
 >
+> diff --git a/drivers/of/device.c b/drivers/of/device.c
+> index 2de320d..0a5ff54 100644
+> --- a/drivers/of/device.c
+> +++ b/drivers/of/device.c
+> @@ -105,12 +105,24 @@ void of_dma_configure(struct device *dev, struct device_node *np)
+>   	ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
+>   	if (ret < 0) {
+>   		dma_addr = offset = 0;
+> -		size = dev->coherent_dma_mask;
+> +		size = dev->coherent_dma_mask + 1;
+>   	} else {
+>   		offset = PFN_DOWN(paddr - dma_addr);
+> +		/*
+> +		 * Add a work around to treat the size as mask + 1 in case
+> +		 * it is defined in DT as a mask.
+> +		 */
+> +		if (size & 1)
+> +			size = size + 1;
+>   		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
+>   	}
 >
-Just wanted to clarify some implementation details for your approach.
-- The driver would need to create and register two net_device instances.
-One for sniffing Ethernet TX packets and one for RX.
-- Would the control interface for the sniffer in that case need to be
-through private socket ioctls (ie SIOCDEVPRIVATE + x ioctl ids)?
-- For each ethernet packet that matches the command string the sniffer
-returns some data bytes and optionally a timestamp (depending on the
-command string). Would a new protocol need to be added in
-<linux/if_ether.h> in order to deliver that data to user space through
-a packet socket?
+> +	/* if size is 0, we have an overflow of u64 */
+> +	if (!size) {
+> +		dev_err(dev, "invalid size\n");
+> +		return;
+> +	}
+> +
 
-Thanks,
-Stathis
+This seems potentially fragile to dodgy DTs given that we might also be 
+using size to make a mask later. Would it make sense to double-up a 
+sanity check as mask-format detection? Something like:
+
+if is_power_of_2(size)
+	// use size
+else if is_power_of_2(size + 1)
+	// use size + 1
+else
+	// cry
+
+
+Robin.
+
+>   	dev->dma_pfn_offset = offset;
+>
+>   	coherent = of_dma_is_coherent(np);
+>
+
 
