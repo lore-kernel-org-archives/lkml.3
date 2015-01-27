@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758951AbbA0SZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 13:25:21 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36823 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbbA0SZT (ORCPT
+	id S1759335AbbA0S1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 13:27:09 -0500
+Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:57147 "EHLO
+	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757924AbbA0S1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 13:25:19 -0500
-Message-ID: <54C7D801.3070502@oracle.com>
-Date: Tue, 27 Jan 2015 13:25:05 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        akpm@linux-foundation.org, lauraa@codeaurora.org
-Subject: Re: [PATCH v2 3/3] mm: cma: release trigger
-References: <1422282365-20015-1-git-send-email-sasha.levin@oracle.com> <1422282365-20015-4-git-send-email-sasha.levin@oracle.com> <20150127081012.GD11358@js1304-P5Q-DELUXE>
-In-Reply-To: <20150127081012.GD11358@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 27 Jan 2015 13:27:08 -0500
+X-Sender-Id: abbotti@mev.co.uk
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <driverdev-devel@linuxdriverproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 3/6] staging: comedi: comedi_compat32.c: reformat copyright comment
+Date: Tue, 27 Jan 2015 18:26:55 +0000
+Message-Id: <1422383215-7892-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.4
+In-Reply-To: <1422382616-6884-4-git-send-email-abbotti@mev.co.uk>
+References: <1422382616-6884-4-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2015 03:10 AM, Joonsoo Kim wrote:
->> +		if (mem->n <= count) {
->> > +			cma_release(cma, mem->p, mem->n);
->> > +			count -= mem->n;
->> > +			kfree(mem);
->> > +		} else {
->> > +			cma_release(cma, mem->p, count);
->> > +			mem->p += count;
->> > +			mem->n -= count;
->> > +			count = 0;
->> > +			cma_add_to_cma_mem_list(mem);
->> > +		}
->> > +	}
-> If order_per_bit is not 0 and count used in cma_release() is
-> different with the count used in cma_alloc(), problem could
-> occur since bitmap management code can't handle that situation.
-> 
-> Could we just disable this case in this testing module?
+Use the usual block comment style.
 
-How should it behave then? Just free a max of 'count' pages and
-stop beforehand if we're going to go over it?
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+v2: no change
+v3: corrected commit summary line
+---
+ drivers/staging/comedi/comedi_compat32.c | 38 ++++++++++++++++----------------
+ 1 file changed, 19 insertions(+), 19 deletions(-)
 
+diff --git a/drivers/staging/comedi/comedi_compat32.c b/drivers/staging/comedi/comedi_compat32.c
+index 03a2d07..097fd4d 100644
+--- a/drivers/staging/comedi/comedi_compat32.c
++++ b/drivers/staging/comedi/comedi_compat32.c
+@@ -1,23 +1,23 @@
+ /*
+-    comedi/comedi_compat32.c
+-    32-bit ioctl compatibility for 64-bit comedi kernel module.
+-
+-    Author: Ian Abbott, MEV Ltd. <abbotti@mev.co.uk>
+-    Copyright (C) 2007 MEV Ltd. <http://www.mev.co.uk/>
+-
+-    COMEDI - Linux Control and Measurement Device Interface
+-    Copyright (C) 1997-2007 David A. Schleef <ds@schleef.org>
+-
+-    This program is free software; you can redistribute it and/or modify
+-    it under the terms of the GNU General Public License as published by
+-    the Free Software Foundation; either version 2 of the License, or
+-    (at your option) any later version.
+-
+-    This program is distributed in the hope that it will be useful,
+-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-    GNU General Public License for more details.
+-*/
++ * comedi/comedi_compat32.c
++ * 32-bit ioctl compatibility for 64-bit comedi kernel module.
++ *
++ * Author: Ian Abbott, MEV Ltd. <abbotti@mev.co.uk>
++ * Copyright (C) 2007 MEV Ltd. <http://www.mev.co.uk/>
++ *
++ * COMEDI - Linux Control and Measurement Device Interface
++ * Copyright (C) 1997-2007 David A. Schleef <ds@schleef.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
+ 
+ #include <linux/uaccess.h>
+ #include <linux/compat.h>
+-- 
+2.1.4
 
-Thanks,
-Sasha
