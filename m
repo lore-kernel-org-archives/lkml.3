@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757803AbbA0BhH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 20:37:07 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:36703 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757590AbbA0Bg5 (ORCPT
+	id S1758159AbbA0Blk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 20:41:40 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:45692 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757679AbbA0Bg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 20:36:57 -0500
+	Mon, 26 Jan 2015 20:36:59 -0500
 From: David Decotigny <ddecotig@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <ben@decadent.org.uk>, Amir Vadai <amirv@mellanox.com>,
@@ -22,9 +22,9 @@ Cc: Eric Dumazet <edumazet@google.com>,
         Eyal Perry <eyalpe@mellanox.com>, Pravin B Shelar <pshelar@nicira.com>,
         Ed Swierk <eswierk@skyportsystems.com>,
         David Decotigny <decot@googlers.com>
-Subject: [PATCH net-next v1 07/18] net: bonding: use __ethtool_get_ksettings
-Date: Mon, 26 Jan 2015 17:36:03 -0800
-Message-Id: <1422322574-6188-8-git-send-email-ddecotig@gmail.com>
+Subject: [PATCH net-next v1 08/18] net: ipvlan: use __ethtool_get_ksettings
+Date: Mon, 26 Jan 2015 17:36:04 -0800
+Message-Id: <1422322574-6188-9-git-send-email-ddecotig@gmail.com>
 X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 In-Reply-To: <1422322574-6188-1-git-send-email-ddecotig@gmail.com>
 References: <1422322574-6188-1-git-send-email-ddecotig@gmail.com>
@@ -36,51 +36,38 @@ From: David Decotigny <decot@googlers.com>
 
 Signed-off-by: David Decotigny <decot@googlers.com>
 ---
- drivers/net/bonding/bond_main.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/net/ipvlan/ipvlan_main.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index f47bc43..7710386 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -371,22 +371,20 @@ down:
- static void bond_update_speed_duplex(struct slave *slave)
+diff --git a/drivers/net/ipvlan/ipvlan_main.c b/drivers/net/ipvlan/ipvlan_main.c
+index 4f4099d..79e3516 100644
+--- a/drivers/net/ipvlan/ipvlan_main.c
++++ b/drivers/net/ipvlan/ipvlan_main.c
+@@ -342,12 +342,12 @@ static const struct header_ops ipvlan_header_ops = {
+ 	.cache_update	= eth_header_cache_update,
+ };
+ 
+-static int ipvlan_ethtool_get_settings(struct net_device *dev,
+-				       struct ethtool_cmd *cmd)
++static int ipvlan_ethtool_get_ksettings(struct net_device *dev,
++					struct ethtool_ksettings *cmd)
  {
- 	struct net_device *slave_dev = slave->dev;
--	struct ethtool_cmd ecmd;
--	u32 slave_speed;
-+	struct ethtool_ksettings ecmd;
- 	int res;
+ 	const struct ipvl_dev *ipvlan = netdev_priv(dev);
  
- 	slave->speed = SPEED_UNKNOWN;
- 	slave->duplex = DUPLEX_UNKNOWN;
- 
--	res = __ethtool_get_settings(slave_dev, &ecmd);
-+	res = __ethtool_get_ksettings(slave_dev, &ecmd);
- 	if (res < 0)
- 		return;
- 
--	slave_speed = ethtool_cmd_speed(&ecmd);
--	if (slave_speed == 0 || slave_speed == ((__u32) -1))
-+	if (ecmd.parent.speed == 0 || ecmd.parent.speed == ((__u32) -1))
- 		return;
- 
--	switch (ecmd.duplex) {
-+	switch (ecmd.parent.duplex) {
- 	case DUPLEX_FULL:
- 	case DUPLEX_HALF:
- 		break;
-@@ -394,8 +392,8 @@ static void bond_update_speed_duplex(struct slave *slave)
- 		return;
- 	}
- 
--	slave->speed = slave_speed;
--	slave->duplex = ecmd.duplex;
-+	slave->speed = ecmd.parent.speed;
-+	slave->duplex = ecmd.parent.duplex;
- 
- 	return;
+-	return __ethtool_get_settings(ipvlan->phy_dev, cmd);
++	return __ethtool_get_ksettings(ipvlan->phy_dev, cmd);
  }
+ 
+ static void ipvlan_ethtool_get_drvinfo(struct net_device *dev,
+@@ -373,7 +373,7 @@ static void ipvlan_ethtool_set_msglevel(struct net_device *dev, u32 value)
+ 
+ static const struct ethtool_ops ipvlan_ethtool_ops = {
+ 	.get_link	= ethtool_op_get_link,
+-	.get_settings	= ipvlan_ethtool_get_settings,
++	.get_ksettings	= ipvlan_ethtool_get_ksettings,
+ 	.get_drvinfo	= ipvlan_ethtool_get_drvinfo,
+ 	.get_msglevel	= ipvlan_ethtool_get_msglevel,
+ 	.set_msglevel	= ipvlan_ethtool_set_msglevel,
 -- 
 2.2.0.rc0.207.ga3a616c
 
