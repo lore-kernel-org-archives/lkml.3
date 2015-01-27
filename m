@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262AbbA0DW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 22:22:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50096 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbbA0DW5 (ORCPT
+	id S1757703AbbA0DXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 22:23:15 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:46892 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757517AbbA0DXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 22:22:57 -0500
-Date: Mon, 26 Jan 2015 19:22:56 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB fixes for v3.19-rc
-Message-ID: <20150127032256.GA1421@kroah.com>
-References: <1421955393-26400-1-git-send-email-balbi@ti.com>
+	Mon, 26 Jan 2015 22:23:14 -0500
+Date: Tue, 27 Jan 2015 12:23:07 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/zsmalloc: add log for module load/unload
+Message-ID: <20150127032307.GB16797@blaptop>
+References: <1422107321-9973-1-git-send-email-opensource.ganesh@gmail.com>
+ <20150126151942.2dd88d5221423e7379b43a06@linux-foundation.org>
+ <CADAEsF-QuUwdOFhjg9aCLZYPhmuNY-CdXQLgv1V1LXUkcJ8ugg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421955393-26400-1-git-send-email-balbi@ti.com>
+In-Reply-To: <CADAEsF-QuUwdOFhjg9aCLZYPhmuNY-CdXQLgv1V1LXUkcJ8ugg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 01:36:33PM -0600, Felipe Balbi wrote:
-> Hi Greg,
-> 
-> two more fixes needed from my side. Let me know if you prefer
-> to handle them differently.
-> 
-> cheers
-> 
-> The following changes since commit ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc:
-> 
->   Linux 3.19-rc5 (2015-01-18 18:02:20 +1200)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.19-rc6
+Hello Ganesh,
 
-Pulled and pushed out, thanks.
+On Tue, Jan 27, 2015 at 10:07:53AM +0800, Ganesh Mahendran wrote:
+> Hello, Andrew
+> 
+> 2015-01-27 7:19 GMT+08:00 Andrew Morton <akpm@linux-foundation.org>:
+> > On Sat, 24 Jan 2015 21:48:41 +0800 Ganesh Mahendran <opensource.ganesh@gmail.com> wrote:
+> >
+> >> Sometimes, we want to know whether a module is loaded or unloaded
+> >> from the log.
+> >
+> > Why?  What's special about zsmalloc?
+> >
+> > Please provide much better justification than this.
+> 
+> When I debug with the zsmalloc module built in kernel.
+> After system boots up, I did not see:
+> /sys/kernel/debug/zsmalloc dir.
+> 
+> Although the reason for this is that I made a mistake. I
+> forgot to add debugfs entry in /etc/fstab.
+> But I think it is suitable to add information for a module load/unload.
+> Then we can get this by:
+> dmesg | grep zsmalloc.
 
-greg k-h
+I understand your trouble but it's general problem, not zsmalloc specific.
+Then, if you really want to fix, you should approach more generic ways.
+
+Thanks.
+
+-- 
+Kind regards,
+Minchan Kim
