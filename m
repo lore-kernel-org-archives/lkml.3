@@ -1,181 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475AbbA0Xgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 18:36:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50832 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932305AbbA0Xgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 18:36:41 -0500
-From: NeilBrown <neilb@suse.de>
-To: Tony Lindgren <tony@atomide.com>, Ulf Hansson <ulf.hansson@linaro.org>
-Date: Wed, 28 Jan 2015 10:35:24 +1100
-Subject: [PATCH 3/3] mmc: omap_hsmmc: switch to 1-bit before turning off
- clocks if interrupts expected.
-Cc: Andreas Fenkart <afenkart@gmail.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, GTA04 owners <gta04-owner@goldelico.com>,
-        NeilBrown <neil@brown.name>, linux-omap@vger.kernel.org
-Message-ID: <20150127233524.32160.33438.stgit@notabene.brown>
-In-Reply-To: <20150127233118.32160.11899.stgit@notabene.brown>
-References: <20150127233118.32160.11899.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
+	id S932607AbbA0Xig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 18:38:36 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:38514 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403AbbA0Xif (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 18:38:35 -0500
+Message-ID: <54C820F9.6060602@vanguardiasur.com.ar>
+Date: Tue, 27 Jan 2015 20:36:25 -0300
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Organization: VanguardiaSur
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] UBI: Add initial support for scatter gather
+References: <1420926734-16417-1-git-send-email-richard@nod.at>
+In-Reply-To: <1420926734-16417-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to section 7.1.2 of
-
-http://www.sandisk.com/media/File/OEM/Manuals/SD_SDIO_specsv1.pdf
-
-    In the case where the interrupt mechanism is used to wake the host while
-    the card is in a low power state (i.e. no clocks), Both the card and the
-    host shall be placed into the 1-bit SD mode prior to stopping the clock.
 
 
-This is particularly important for the Marvell "libertas" wifi chip
-in the GTA04.  While in 4-bit mode it will only signal an interrupt
-when the clock is running (which is why setting CLKEXTFREE is
-important).
-In 1-bit mode, the interrupt is asynchronous (explained in OMAP3
-TRM description of the CIRQ flag to MMCHS_STAT:
+On 01/10/2015 06:52 PM, Richard Weinberger wrote:
+> Adds a new set of functions to deal with scatter gather.
+> ubi_eba_read_leb_sg() will read from a LEB into a scatter gather list.
+> The new data structure struct ubi_sgl will be used within UBI to
+> hold the scatter gather list itself and metadata to have a cursor
+> within the list.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> Tested-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
 
-  In 1-bit mode, interrupt source is asynchronous (can be a source of
-  asynchronous wakeup).
-  In 4-bit mode, interrupt source is sampled during the interrupt
-  cycle.
+Three nitpicks below, and my
 
-)
+Reviewed-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
 
-We cannot simply set 1-bit mode in omap_hsmmc_runtime_suspend
-as that is called under a spinlock, and setting 1-bit mode requires
-a sleeping call to the card.
+> ---
+>  drivers/mtd/ubi/eba.c   | 56 +++++++++++++++++++++++++++++
+>  drivers/mtd/ubi/kapi.c  | 95 +++++++++++++++++++++++++++++++++++++++++--------
+>  drivers/mtd/ubi/ubi.h   |  3 ++
+>  include/linux/mtd/ubi.h | 46 ++++++++++++++++++++++++
+>  4 files changed, 185 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/mtd/ubi/eba.c b/drivers/mtd/ubi/eba.c
+> index b698534..0aaf707 100644
+> --- a/drivers/mtd/ubi/eba.c
+> +++ b/drivers/mtd/ubi/eba.c
+> @@ -481,6 +481,62 @@ out_unlock:
+>  }
+>  
+>  /**
+> + * ubi_eba_read_leb_sg - read data into a scatter gather list.
+> + * @ubi: UBI device description object
+> + * @vol: volume description object
+> + * @lnum: logical eraseblock number
+> + * @sgl: UBI scatter gather list to store the read data
+> + * @offset: offset from where to read
+> + * @len: how many bytes to read
+> + * @check: data CRC check flag
+> + *
+> + * This function works exactly like ubi_eba_read_leb(). But instead of
+> + * storing the read data into a buffer it writes to an UBI scatter gather
+> + * list.
+> + */
+> +int ubi_eba_read_leb_sg(struct ubi_device *ubi, struct ubi_volume *vol,
+> +			struct ubi_sgl *sgl, int lnum, int offset, int len,
+> +			int check)
+> +{
+> +	int to_read;
+> +	int ret;
+> +	struct scatterlist *sg;
+> +
+> +	for (;;) {
+> +		ubi_assert(sgl->list_pos < UBI_MAX_SG_COUNT);
+> +		sg = &sgl->sg[sgl->list_pos];
+> +		if (len < sg->length - sgl->page_pos)
+> +			to_read = len;
+> +		else
+> +			to_read = sg->length - sgl->page_pos;
+> +
+> +		ret = ubi_eba_read_leb(ubi, vol, lnum,
+> +				       sg_virt(sg) + sgl->page_pos, offset,
+> +				       to_read, check);
+> +		if (ret < 0)
+> +			goto out;
 
-So:
- - use a work_struct to schedule setting of 1-bit mode
- - intro a 'force_narrow' state flag which transitions:
-     0 -> NARROW_PENDING -> NARROW_FORCED -> 0
- - have omap_hsmmc_runtime_suspend fail if interrupts are expected
-   but bus is not in 1-bit mode.  When it fails it schedules
-   the work to change the width. and sets NARROW_PENDING
- - when the host is claimed, if NARROW_FORCED is set, restore the
-   4-bit bus
- - When the host is released (disable_fclk), if NARROW_FORCED,
-   then suspend immediately, no autosuspend.  If NARROW_PENDING,
-   clear that flag as the device has obviously just been used.
+Matter of taste, but isn't it better to just return here?
 
-This all allows a graceful and race-free switch to 1-bit mode
-before switching off the clocks, if interrupts are enabled.
+> +
+> +		offset += to_read;
+> +		len -= to_read;
+> +		if (!len) {
+> +			sgl->page_pos += to_read;
+> +			if (sgl->page_pos == sg->length) {
+> +				sgl->list_pos++;
+> +				sgl->page_pos = 0;
+> +			}
+> +
+> +			break;
+> +		}
+> +
+> +		sgl->list_pos++;
+> +		sgl->page_pos = 0;
+> +	}
+> +
+> +out:
+> +	return ret;
+> +}
+> +
+> +/**
+>   * recover_peb - recover from write failure.
+>   * @ubi: UBI device description object
+>   * @pnum: the physical eraseblock to recover
+> diff --git a/drivers/mtd/ubi/kapi.c b/drivers/mtd/ubi/kapi.c
+> index f3bab66..d0055a2 100644
+> --- a/drivers/mtd/ubi/kapi.c
+> +++ b/drivers/mtd/ubi/kapi.c
+> @@ -355,6 +355,43 @@ void ubi_close_volume(struct ubi_volume_desc *desc)
+>  EXPORT_SYMBOL_GPL(ubi_close_volume);
+>  
+>  /**
+> + * leb_read_sanity_check - does sanity checks on read requests.
+> + * @desc: volume descriptor
+> + * @lnum: logical eraseblock number to read from
+> + * @offset: offset within the logical eraseblock to read from
+> + * @len: how many bytes to read
+> + *
+> + * This function is used by ubi_leb_read() and ubi_leb_read_sg()
+> + * to perfrom sanity checks.
 
-With this, I can use my libertas wifi with a 4-bit bus, with
-interrupts and runtime power-management enabled, and get around
-14Mb/sec throughput (which is the best I've seen).
+s/perfrom/perform
 
-Signed-off-by: NeilBrown <neil@brown.name>
----
- drivers/mmc/host/omap_hsmmc.c |   55 ++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 53 insertions(+), 2 deletions(-)
+> + */
+> +static int leb_read_sanity_check(struct ubi_volume_desc *desc, int lnum,
+> +				 int offset, int len)
+> +{
+> +	struct ubi_volume *vol = desc->vol;
+> +	struct ubi_device *ubi = vol->ubi;
+> +	int vol_id = vol->vol_id;
+> +
+> +	if (vol_id < 0 || vol_id >= ubi->vtbl_slots || lnum < 0 ||
+> +	    lnum >= vol->used_ebs || offset < 0 || len < 0 ||
+> +	    offset + len > vol->usable_leb_size)
+> +		return -EINVAL;
+> +
+> +	if (vol->vol_type == UBI_STATIC_VOLUME) {
+> +		if (vol->used_ebs == 0)
+> +			/* Empty static UBI volume */
+> +			return 0;
+> +		if (lnum == vol->used_ebs - 1 &&
+> +		    offset + len > vol->last_eb_bytes)
+> +			return -EINVAL;
+> +	}
+> +
+> +	if (vol->upd_marker)
+> +		return -EBADF;
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+>   * ubi_leb_read - read data.
+>   * @desc: volume descriptor
+>   * @lnum: logical eraseblock number to read from
+> @@ -390,22 +427,10 @@ int ubi_leb_read(struct ubi_volume_desc *desc, int lnum, char *buf, int offset,
+>  
+>  	dbg_gen("read %d bytes from LEB %d:%d:%d", len, vol_id, lnum, offset);
+>  
+> -	if (vol_id < 0 || vol_id >= ubi->vtbl_slots || lnum < 0 ||
+> -	    lnum >= vol->used_ebs || offset < 0 || len < 0 ||
+> -	    offset + len > vol->usable_leb_size)
+> -		return -EINVAL;
+> -
+> -	if (vol->vol_type == UBI_STATIC_VOLUME) {
+> -		if (vol->used_ebs == 0)
+> -			/* Empty static UBI volume */
+> -			return 0;
+> -		if (lnum == vol->used_ebs - 1 &&
+> -		    offset + len > vol->last_eb_bytes)
+> -			return -EINVAL;
+> -	}
+> +	err = leb_read_sanity_check(desc, lnum, offset, len);
+> +	if (err < 0)
+> +		return err;
+>  
+> -	if (vol->upd_marker)
+> -		return -EBADF;
+>  	if (len == 0)
+>  		return 0;
+>  
+> @@ -419,6 +444,46 @@ int ubi_leb_read(struct ubi_volume_desc *desc, int lnum, char *buf, int offset,
+>  }
+>  EXPORT_SYMBOL_GPL(ubi_leb_read);
+>  
+> +
+> +/**
+> + * ubi_leb_read_sg - read data into a scatter gather list.
+> + * @desc: volume descriptor
+> + * @lnum: logical eraseblock number to read from
+> + * @buf: buffer where to store the read data
+> + * @offset: offset within the logical eraseblock to read from
+> + * @len: how many bytes to read
+> + * @check: whether UBI has to check the read data's CRC or not.
+> + *
+> + * This function works exactly like ubi_leb_read_sg(). But instead of
+> + * storing the read data into a buffer it writes to an UBI scatter gather
+> + * list.
+> + */
+> +int ubi_leb_read_sg(struct ubi_volume_desc *desc, int lnum, struct ubi_sgl *sgl,
+> +		    int offset, int len, int check)
+> +{
+> +	struct ubi_volume *vol = desc->vol;
+> +	struct ubi_device *ubi = vol->ubi;
+> +	int err, vol_id = vol->vol_id;
+> +
+> +	dbg_gen("read %d bytes from LEB %d:%d:%d", len, vol_id, lnum, offset);
+> +
+> +	err = leb_read_sanity_check(desc, lnum, offset, len);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	if (len == 0)
+> +		return 0;
+> +
+> +	err = ubi_eba_read_leb_sg(ubi, vol, sgl, lnum, offset, len, check);
+> +	if (err && mtd_is_eccerr(err) && vol->vol_type == UBI_STATIC_VOLUME) {
+> +		ubi_warn(ubi, "mark volume %d as corrupted", vol_id);
+> +		vol->corrupted = 1;
+> +	}
+> +
+> +	return err;
+> +}
+> +EXPORT_SYMBOL_GPL(ubi_leb_read_sg);
+> +
+>  /**
+>   * ubi_leb_write - write data.
+>   * @desc: volume descriptor
+> diff --git a/drivers/mtd/ubi/ubi.h b/drivers/mtd/ubi/ubi.h
+> index ee7ac0b..a5283cf 100644
+> --- a/drivers/mtd/ubi/ubi.h
+> +++ b/drivers/mtd/ubi/ubi.h
+> @@ -791,6 +791,9 @@ int ubi_eba_unmap_leb(struct ubi_device *ubi, struct ubi_volume *vol,
+>  		      int lnum);
+>  int ubi_eba_read_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
+>  		     void *buf, int offset, int len, int check);
+> +int ubi_eba_read_leb_sg(struct ubi_device *ubi, struct ubi_volume *vol,
+> +			struct ubi_sgl *sgl, int lnum, int offset, int len,
+> +			int check);
+>  int ubi_eba_write_leb(struct ubi_device *ubi, struct ubi_volume *vol, int lnum,
+>  		      const void *buf, int offset, int len);
+>  int ubi_eba_write_leb_st(struct ubi_device *ubi, struct ubi_volume *vol,
+> diff --git a/include/linux/mtd/ubi.h b/include/linux/mtd/ubi.h
+> index c3918a0..3d5916d 100644
+> --- a/include/linux/mtd/ubi.h
+> +++ b/include/linux/mtd/ubi.h
+> @@ -23,11 +23,16 @@
+>  
+>  #include <linux/ioctl.h>
+>  #include <linux/types.h>
+> +#include <linux/scatterlist.h>
+>  #include <mtd/ubi-user.h>
+>  
+>  /* All voumes/LEBs */
+>  #define UBI_ALL -1
+>  
+> +/* Maximum number of scatter gather list entries,
+> + * we use only 64 to have a lower memory foot print. */
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index f84cfb01716d..91ddebbec8a3 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -214,6 +214,10 @@ struct omap_hsmmc_host {
- 	int			reqs_blocked;
- 	int			use_reg;
- 	int			req_in_progress;
-+	int			force_narrow;
-+#define NARROW_PENDING	1
-+#define NARROW_FORCED	2
-+	struct work_struct	width_work;
- 	unsigned long		clk_rate;
- 	unsigned int		flags;
- #define AUTO_CMD23		(1 << 0)        /* Auto CMD23 support */
-@@ -1778,12 +1782,43 @@ static void omap_hsmmc_conf_bus_power(struct omap_hsmmc_host *host)
- 	set_sd_bus_power(host);
- }
- 
-+static void omap_hsmmc_width_work(struct work_struct *work)
-+{
-+	struct omap_hsmmc_host *host = container_of(work,
-+						    struct omap_hsmmc_host,
-+						    width_work);
-+	atomic_t noblock;
-+
-+	atomic_set(&noblock, 1);
-+	if (__mmc_claim_host(host->mmc, &noblock)) {
-+		/* Device active again */
-+		host->force_narrow = 0;
-+		return;
-+	}
-+	if (host->force_narrow != NARROW_PENDING) {
-+		/* Someone claimed and released before we got here */
-+		mmc_release_host(host->mmc);
-+		return;
-+	}
-+	if (sdio_disable_wide(host->mmc->card) == 0)
-+		host->force_narrow = NARROW_FORCED;
-+	else
-+		host->force_narrow = 0;
-+	mmc_release_host(host->mmc);
-+}
-+
- static int omap_hsmmc_enable_fclk(struct mmc_host *mmc)
- {
- 	struct omap_hsmmc_host *host = mmc_priv(mmc);
- 
- 	pm_runtime_get_sync(host->dev);
- 
-+	if (host->force_narrow == NARROW_FORCED) {
-+		if (sdio_enable_4bit_bus(mmc->card) > 0)
-+			mmc_set_bus_width(mmc, MMC_BUS_WIDTH_4);
-+		host->force_narrow = 0;
-+	}
-+
- 	return 0;
- }
- 
-@@ -1791,8 +1826,13 @@ static int omap_hsmmc_disable_fclk(struct mmc_host *mmc)
- {
- 	struct omap_hsmmc_host *host = mmc_priv(mmc);
- 
--	pm_runtime_mark_last_busy(host->dev);
--	pm_runtime_put_autosuspend(host->dev);
-+	if (host->force_narrow == NARROW_FORCED) {
-+		pm_runtime_put_sync(host->dev);
-+	} else {
-+		host->force_narrow = 0;
-+		pm_runtime_mark_last_busy(host->dev);
-+		pm_runtime_put_autosuspend(host->dev);
-+	}
- 
- 	return 0;
- }
-@@ -2024,6 +2064,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	host->power_mode = MMC_POWER_OFF;
- 	host->next_data.cookie = 1;
- 	host->pbias_enabled = 0;
-+	INIT_WORK(&host->width_work, omap_hsmmc_width_work);
- 
- 	ret = omap_hsmmc_gpio_init(mmc, host, pdata);
- 	if (ret)
-@@ -2311,6 +2352,16 @@ static int omap_hsmmc_runtime_suspend(struct device *dev)
- 	spin_lock_irqsave(&host->irq_lock, flags);
- 	if ((host->mmc->caps & MMC_CAP_SDIO_IRQ) &&
- 	    (host->flags & HSMMC_SDIO_IRQ_ENABLED)) {
-+		if (host->mmc->ios.bus_width != MMC_BUS_WIDTH_1) {
-+			/* In 4-bit mode the card need the clock
-+			 * to deliver interrupts, so it isn't safe
-+			 * to turn it off.
-+			 */
-+			host->force_narrow = NARROW_PENDING;
-+			schedule_work(&host->width_work);
-+			ret = -EBUSY;
-+			goto abort;
-+		}
- 		/* disable sdio irq handling to prevent race */
- 		OMAP_HSMMC_WRITE(host->base, ISE, 0);
- 		OMAP_HSMMC_WRITE(host->base, IE, 0);
+Multilines comments style is:
+
+/*
+ *
+ */
+
+> +#define UBI_MAX_SG_COUNT 64
+> +
+>  /*
+>   * enum ubi_open_mode - UBI volume open mode constants.
+>   *
+> @@ -116,6 +121,35 @@ struct ubi_volume_info {
+>  };
+>  
+>  /**
+> + * struct ubi_sgl - UBI scatter gather list data structure.
+> + * @list_pos: current position in @sg[]
+> + * @page_pos: current position in @sg[@list_pos]
+> + * @sg: the scatter gather list itself
+> + *
+> + * ubi_sgl is a wrapper around a scatter list which keeps track of the
+> + * current position in the list and the current list item such that
+> + * it can be used across multiple ubi_leb_read_sg() calls.
+> + */
+> +struct ubi_sgl {
+> +	int list_pos;
+> +	int page_pos;
+> +	struct scatterlist sg[UBI_MAX_SG_COUNT];
+> +};
+> +
+> +/**
+> + * ubi_sgl_init - initialize an UBI scatter gather list data structure.
+> + * @usgl: the UBI scatter gather struct itself
+> + *
+> + * Please note that you still have to use sg_init_table() or any adequate
+> + * function to initialize the unterlaying struct scatterlist.
+> + */
+> +static inline void ubi_sgl_init(struct ubi_sgl *usgl)
+> +{
+> +	usgl->list_pos = 0;
+> +	usgl->page_pos = 0;
+> +}
+> +
+> +/**
+>   * struct ubi_device_info - UBI device description data structure.
+>   * @ubi_num: ubi device number
+>   * @leb_size: logical eraseblock size on this UBI device
+> @@ -210,6 +244,8 @@ int ubi_unregister_volume_notifier(struct notifier_block *nb);
+>  void ubi_close_volume(struct ubi_volume_desc *desc);
+>  int ubi_leb_read(struct ubi_volume_desc *desc, int lnum, char *buf, int offset,
+>  		 int len, int check);
+> +int ubi_leb_read_sg(struct ubi_volume_desc *desc, int lnum, struct ubi_sgl *sgl,
+> +		   int offset, int len, int check);
+>  int ubi_leb_write(struct ubi_volume_desc *desc, int lnum, const void *buf,
+>  		  int offset, int len);
+>  int ubi_leb_change(struct ubi_volume_desc *desc, int lnum, const void *buf,
+> @@ -230,4 +266,14 @@ static inline int ubi_read(struct ubi_volume_desc *desc, int lnum, char *buf,
+>  {
+>  	return ubi_leb_read(desc, lnum, buf, offset, len, 0);
+>  }
+> +
+> +/*
+> + * This function is the same as the 'ubi_leb_read_sg()' function, but it does
+> + * not provide the checking capability.
+> + */
+> +static inline int ubi_read_sg(struct ubi_volume_desc *desc, int lnum,
+> +			      struct ubi_sgl *sgl, int offset, int len)
+> +{
+> +	return ubi_leb_read_sg(desc, lnum, sgl, offset, len, 0);
+> +}
+>  #endif /* !__LINUX_UBI_H__ */
+> 
 
 
+-- 
+Ezequiel Garcia, VanguardiaSur
+www.vanguardiasur.com.ar
