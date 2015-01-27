@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758942AbbA0M2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:28:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35348 "EHLO
+	id S1758926AbbA0M22 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:28:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35353 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758685AbbA0MTd (ORCPT
+	with ESMTP id S1756007AbbA0MTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:19:33 -0500
+	Tue, 27 Jan 2015 07:19:36 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jisheng Zhang <jszhang@marvell.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 096/126] ARM: dts: berlin: correct BG2Q's SM GPIO location.
-Date: Tue, 27 Jan 2015 12:16:41 +0000
-Message-Id: <1422361031-19364-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 097/126] xhci: Check if slot is already in default state before moving it there
+Date: Tue, 27 Jan 2015 12:16:42 +0000
+Message-Id: <1422361031-19364-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -28,115 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jisheng Zhang <jszhang@marvell.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 5138d5c562e3bfe30964e20ab46eec9f8b89225d upstream.
+commit f161ead70fa6a62e432dff6e9dab8e3cfbeabea6 upstream.
 
-The gpio4 and gpio5 are in 0xf7fc0000 apb which is located in the SM domain.
-This patch moves gpio4 and gpio5 to the correct location. This patch also
-renames them as the following to match the names we internally used in
-marvell:
-	gpio4 -> sm_gpio1
-	gpio5 -> sm_gpio0
-	porte -> portf
-	portf -> porte
+Solves xhci error cases with debug messages:
+xhci_hcd 0000:00:14.0: Setup ERROR: setup context command for slot 1.
+usb 1-6: hub failed to enable device, error -22
 
-This also matches what we did for BG2 and BG2CD's SM GPIO.
+xhci will give a context state error if we try to set a slot in default
+state to the same default state with a special address device command.
 
-Fixes: cedf57fc4f2f ("ARM: dts: berlin: add the BG2Q GPIO nodes")
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-[ luis: backported to 3.16: adjusted context ]
+Turns out this happends in several cases:
+- retry reading the device rescriptor in hub_port_init()
+- usb_reset_device() is called for a slot in default state
+- in resume path, usb_port_resume() calls hub_port_init()
+
+The default state is usually reached from most states with a reset device
+command without any context state errors, but using the address device
+command with BSA bit set (block set address) only works from the enabled
+state and will otherwise cause context error.
+
+solve this by checking if we are already in the default state before issuing
+a address device BSA=1 command.
+
+Fixes: 48fc7dbd52c0 ("usb: xhci: change enumeration scheme to 'new scheme'")
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/berlin2q.dtsi | 60 ++++++++++++++++++++---------------------
- 1 file changed, 30 insertions(+), 30 deletions(-)
+ drivers/usb/host/xhci.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 39b181dc6fab..dc773bb4b6cd 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -264,36 +264,6 @@
- 				interrupt-parent = <&gic>;
- 				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
- 			};
--
--			gpio4: gpio@5000 {
--				compatible = "snps,dw-apb-gpio";
--				reg = <0x5000 0x400>;
--				#address-cells = <1>;
--				#size-cells = <0>;
--
--				porte: gpio-port@4 {
--					compatible = "snps,dw-apb-gpio-port";
--					gpio-controller;
--					#gpio-cells = <2>;
--					snps,nr-gpios = <32>;
--					reg = <0>;
--				};
--			};
--
--			gpio5: gpio@c000 {
--				compatible = "snps,dw-apb-gpio";
--				reg = <0xc000 0x400>;
--				#address-cells = <1>;
--				#size-cells = <0>;
--
--				portf: gpio-port@5 {
--					compatible = "snps,dw-apb-gpio-port";
--					gpio-controller;
--					#gpio-cells = <2>;
--					snps,nr-gpios = <32>;
--					reg = <0>;
--				};
--			};
- 		};
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 5e5f0c1b6613..b61913116fe2 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3812,6 +3812,15 @@ static int xhci_setup_device(struct usb_hcd *hcd, struct usb_device *udev,
+ 		return -EINVAL;
+ 	}
  
- 		chip: chip-control@ea0000 {
-@@ -312,6 +282,21 @@
- 			ranges = <0 0xfc0000 0x10000>;
- 			interrupt-parent = <&sic>;
- 
-+			sm_gpio1: gpio@5000 {
-+				compatible = "snps,dw-apb-gpio";
-+				reg = <0x5000 0x400>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
++	if (setup == SETUP_CONTEXT_ONLY) {
++		slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->out_ctx);
++		if (GET_SLOT_STATE(le32_to_cpu(slot_ctx->dev_state)) ==
++		    SLOT_STATE_DEFAULT) {
++			xhci_dbg(xhci, "Slot already in default state\n");
++			return 0;
++		}
++	}
 +
-+				portf: gpio-port@5 {
-+					compatible = "snps,dw-apb-gpio-port";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					snps,nr-gpios = <32>;
-+					reg = <0>;
-+				};
-+			};
-+
- 			uart0: uart@9000 {
- 				compatible = "snps,dw-apb-uart";
- 				reg = <0x9000 0x100>;
-@@ -336,6 +321,21 @@
- 				status = "disabled";
- 			};
- 
-+			sm_gpio0: gpio@c000 {
-+				compatible = "snps,dw-apb-gpio";
-+				reg = <0xc000 0x400>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				porte: gpio-port@4 {
-+					compatible = "snps,dw-apb-gpio-port";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					snps,nr-gpios = <32>;
-+					reg = <0>;
-+				};
-+			};
-+
- 			sysctrl: pin-controller@d000 {
- 				compatible = "marvell,berlin2q-system-ctrl";
- 				reg = <0xd000 0x100>;
+ 	command = xhci_alloc_command(xhci, false, false, GFP_KERNEL);
+ 	if (!command)
+ 		return -ENOMEM;
 -- 
 2.1.4
 
