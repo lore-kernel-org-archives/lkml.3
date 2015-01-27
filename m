@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758997AbbA0MfP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:35:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35216 "EHLO
+	id S932432AbbA0MTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:19:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35232 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758579AbbA0MSx (ORCPT
+	with ESMTP id S1758592AbbA0MS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:18:53 -0500
+	Tue, 27 Jan 2015 07:18:56 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zoltan Kiss <zoltan.kiss@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Paul Durrant <paul.durrant@citrix.com>, netdev@vger.kernel.org,
-        xen-devel@lists.xenproject.org,
+Cc: David Vrabel <david.vrabel@citrix.com>,
         "David S. Miller" <davem@davemloft.net>,
         Stefan Bader <stefan.bader@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 073/126] xen-netfront: Fix handling packets on compound pages with skb_linearize
-Date: Tue, 27 Jan 2015 12:16:18 +0000
-Message-Id: <1422361031-19364-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 074/126] xen-netfront: use correct linear area after linearizing an skb
+Date: Tue, 27 Jan 2015 12:16:19 +0000
+Message-Id: <1422361031-19364-75-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -32,60 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d upstream.
+commit 11d3d2a16cc1f05c6ece69a4392e99efb85666a6 upstream.
 
-There is a long known problem with the netfront/netback interface: if the guest
-tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
-it gets dropped. The reason is that netback maps these slots to a frag in the
-frags array, which is limited by size. Having so many slots can occur since
-compound pages were introduced, as the ring protocol slice them up into
-individual (non-compound) page aligned slots. The theoretical worst case
-scenario looks like this (note, skbs are limited to 64 Kb here):
-linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
-using 2 slots
-first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
-end and the beginning of a page, therefore they use 3 * 15 = 45 slots
-last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
-Although I don't think this 51 slots skb can really happen, we need a solution
-which can deal with every scenario. In real life there is only a few slots
-overdue, but usually it causes the TCP stream to be blocked, as the retry will
-most likely have the same buffer layout.
-This patch solves this problem by linearizing the packet. This is not the
-fastest way, and it can fail much easier as it tries to allocate a big linear
-area for the whole packet, but probably easier by an order of magnitude than
-anything else. Probably this code path is not touched very frequently anyway.
+Commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d (xen-netfront: Fix
+handling packets on compound pages with skb_linearize) attempted to
+fix a problem where an skb that would have required too many slots
+would be dropped causing TCP connections to stall.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Paul Durrant <paul.durrant@citrix.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
+However, it filled in the first slot using the original buffer and not
+the new one and would use the wrong offset and grant access to the
+wrong page.
+
+Netback would notice the malformed request and stop all traffic on the
+VIF, reporting:
+
+    vif vif-3-0 vif3.0: txreq.offset: 85e, size: 4002, end: 6144
+    vif vif-3-0 vif3.0: fatal error; disabling device
+
+Reported-by: Anthony Wright <anthony@overnetdata.com>
+Tested-by: Anthony Wright <anthony@overnetdata.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Cc: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/xen-netfront.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/xen-netfront.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 7a4cd11e6a07..3e0019503440 100644
+index 3e0019503440..fc49005ddb5d 100644
 --- a/drivers/net/xen-netfront.c
 +++ b/drivers/net/xen-netfront.c
-@@ -623,9 +623,10 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE) +
- 		xennet_count_skb_frag_slots(skb);
- 	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
--		net_alert_ratelimited(
--			"xennet: skb rides the rocket: %d slots\n", slots);
--		goto drop;
-+		net_dbg_ratelimited("xennet: skb rides the rocket: %d slots, %d bytes\n",
-+				    slots, skb->len);
-+		if (skb_linearize(skb))
-+			goto drop;
+@@ -627,6 +627,9 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 				    slots, skb->len);
+ 		if (skb_linearize(skb))
+ 			goto drop;
++		data = skb->data;
++		offset = offset_in_page(data);
++		len = skb_headlen(skb);
  	}
  
  	spin_lock_irqsave(&queue->tx_lock, flags);
