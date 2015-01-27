@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390AbbA0QzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 11:55:17 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:37535 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758682AbbA0QzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 11:55:15 -0500
-Message-ID: <54C7C2EC.7010605@ahsoftware.de>
-Date: Tue, 27 Jan 2015 17:55:08 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Richard Weinberger <richard@nod.at>, linux-mmc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH] mmc: print message if a card supports secure erase/trim
-References: <1422359304-30321-1-git-send-email-holler@ahsoftware.de> <CAFLxGvyuE8odPdNSD1PTccyBXFm=JO=ooikUOJfz41aFpsUAJg@mail.gmail.com> <54C77E69.7050600@ahsoftware.de> <20150127120855.GA9254@pd.tnic> <54C7816A.8050800@ahsoftware.de> <54C78524.3070901@nod.at> <54C7881F.6020501@ahsoftware.de> <20150127142120.GA3351@pd.tnic>
-In-Reply-To: <20150127142120.GA3351@pd.tnic>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932472AbbA0Q5b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 11:57:31 -0500
+Received: from mga02.intel.com ([134.134.136.20]:32847 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932446AbbA0Q52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 11:57:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,475,1418112000"; 
+   d="scan'208";a="518433647"
+Message-ID: <1422377842.2912.1.camel@linux.intel.com>
+Subject: Re: [tpmdd-devel] [PATCH] tpm: fix suspend/resume paths for TPM 2.0
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: peterhuewe@gmx.de, ashley@ashleylai.com, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net,
+        trousers-tech@lists.sourceforge.net
+Date: Tue, 27 Jan 2015 18:57:22 +0200
+In-Reply-To: <alpine.DEB.2.11.1501271620520.1725@localhost.localdomain>
+References: <1422356564-17312-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	 <alpine.DEB.2.11.1501271620520.1725@localhost.localdomain>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.10-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 27.01.2015 um 15:21 schrieb Borislav Petkov:
-> On Tue, Jan 27, 2015 at 01:44:15PM +0100, Alexander Holler wrote:
->> Yes. Sorry, but I had so many bad experiences with maintainers.
->
-> Well, I can't comment on your experience for the simple reason that I
-> haven't followed those discussions. In their defence, though, you have
-> to know that those people get to review your code, apply it and then
-> deal with it long after you've gone on about doing other things.
->
-> So, even if you don't always agree with them, you need to realize that
-> those are the people responsible for that code and if they request a
-> reasonable change in your submission, you have to do it. It is that
-> simple.
+On Tue, 2015-01-27 at 16:52 +0000, Scot Doyle wrote:
+> On Tue, 27 Jan 2015, Jarkko Sakkinen wrote:
+> > Fixed suspend/resume paths for TPM 2.0 and consolidated all the
+> > associated code to the tpm_pm_suspend() and tpm_pm_resume()
+> > functions. Resume path should be handled by the firmware, i.e.
+> > Startup(CLEAR) for hibernate and Startup(STATE) for suspend.
+> > 
+> > There might be some non-PC embedded devices in the future where
+> > Startup() is not the handled by the FW but fixing the code for
+> > those IMHO should be postponed until there is hardware available
+> > to test the fixes although extra Startup in the driver code is
+> > essentially a NOP.
+> > 
+> > Reported-by: Peter Hüwe <PeterHuewe@gmx.de>
+> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> > ---
+> 
+> ...
+> 
+> > --- a/drivers/char/tpm/tpm_tis.c
+> > +++ b/drivers/char/tpm/tpm_tis.c
+> > @@ -865,25 +865,23 @@ static void tpm_tis_reenable_interrupts(struct tpm_chip *chip)
+> >  static int tpm_tis_resume(struct device *dev)
+> >  {
+> 
+> ...
+> 
+> > +	/* TPM 1.2 requires self-test on resume. */
+> > +	if (!(chip->flags & TPM_CHIP_FLAG_TPM2)) {
+> > +		ret = tpm_do_selftest(chip);
+> > +		if (ret < 0)
+> > +			return ret;
+> 
+> Just to note, the return value from tpm_do_selftest() on TPM 1.2 chips was 
+> previously ignored. Mine does return 0.
 
-Totally wrong. I'm free to just stop discussion. That's the difference 
-between the old type of os communites and corporates where people do 
-what they've got instructed from above without discussion. I offered 
-something and wasn't paid to do something.
+Right. I can update the patch to ignore return value if the majority
+wants that.
 
-It was worth a try but I don't have to build a framework to achieve 
-something simple just because a maintainer requests it.
+/Jarkko
 
->   [ Unless you have a good argument against it but that's a different
->     story and this is what is called the "review" process. ]
-
-I want to see the mentionend information and want that it is seen and do 
-not want to hide it away deep in the sysfs where it actually must be 
-searched.
-
-Regards,
-
-Alexander Holler
