@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093AbbA0MUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 07:20:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35504 "EHLO
+	id S932626AbbA0MVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 07:21:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35510 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758781AbbA0MU0 (ORCPT
+	with ESMTP id S932584AbbA0MUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 07:20:26 -0500
+	Tue, 27 Jan 2015 07:20:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mugunthan V N <mugunthanvnm@ti.com>, Tony Lindgren <tony@atomide.com>,
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Simon Horman <horms+renesas@verge.net.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 125/126] ARM: dts: dra7-evm: fix qspi device tree partition size
-Date: Tue, 27 Jan 2015 12:17:10 +0000
-Message-Id: <1422361031-19364-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 126/126] ARM: shmobile: sh73a0 legacy: Set .control_parent for all irqpin instances
+Date: Tue, 27 Jan 2015 12:17:11 +0000
+Message-Id: <1422361031-19364-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
 References: <1422361031-19364-1-git-send-email-luis.henriques@canonical.com>
@@ -27,59 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-commit 69d2626f97b7f017ee4416b7dc071e9499c2c944 upstream.
+commit b0ddb319db3d7a1943445f0de0a45c07a7f3457a upstream.
 
-64KiB is allocated for qspi dtb partition which is not
-sufficient, so updating the partition table size to 512KiB
-for device tree partition.
+The sh73a0 INTC can't mask interrupts properly most likely due to a
+hardware bug. Set the .control_parent flag to delegate masking to the
+parent interrupt controller, like was already done for irqpin1.
 
-This also aligns the QSPI partition definitions between
-kernel and U-Boot.
+Without this, accessing the three-axis digital accelerometer ADXL345
+on kzm9g through /dev/input/event1 causes an interrupt storm, which
+requires a power-cycle to recover from.
 
-Fixes: dc2dd5b8 ("ARM: dts: dra7: Add qspi device")
+This was inspired by a patch for arch/arm/boot/dts/sh73a0.dtsi from
+Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>.
 
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Fixes: 341eb5465f67437a ("ARM: shmobile: INTC External IRQ pin driver on sh73a0")
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/boot/dts/dra7-evm.dts | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/arm/mach-shmobile/setup-sh73a0.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-index 780d66119f3c..6944a6e9e162 100644
---- a/arch/arm/boot/dts/dra7-evm.dts
-+++ b/arch/arm/boot/dts/dra7-evm.dts
-@@ -377,23 +377,23 @@
- 		};
- 		partition@5 {
- 			label = "QSPI.u-boot-spl-os";
--			reg = <0x00140000 0x00010000>;
-+			reg = <0x00140000 0x00080000>;
- 		};
- 		partition@6 {
- 			label = "QSPI.u-boot-env";
--			reg = <0x00150000 0x00010000>;
-+			reg = <0x001c0000 0x00010000>;
- 		};
- 		partition@7 {
- 			label = "QSPI.u-boot-env.backup1";
--			reg = <0x00160000 0x0010000>;
-+			reg = <0x001d0000 0x0010000>;
- 		};
- 		partition@8 {
- 			label = "QSPI.kernel";
--			reg = <0x00170000 0x0800000>;
-+			reg = <0x001e0000 0x0800000>;
- 		};
- 		partition@9 {
- 			label = "QSPI.file-system";
--			reg = <0x00970000 0x01690000>;
-+			reg = <0x009e0000 0x01620000>;
- 		};
- 	};
+diff --git a/arch/arm/mach-shmobile/setup-sh73a0.c b/arch/arm/mach-shmobile/setup-sh73a0.c
+index ad00724a2269..f8584664369a 100644
+--- a/arch/arm/mach-shmobile/setup-sh73a0.c
++++ b/arch/arm/mach-shmobile/setup-sh73a0.c
+@@ -576,6 +576,7 @@ static struct platform_device ipmmu_device = {
+ 
+ static struct renesas_intc_irqpin_config irqpin0_platform_data = {
+ 	.irq_base = irq_pin(0), /* IRQ0 -> IRQ7 */
++	.control_parent = true,
  };
+ 
+ static struct resource irqpin0_resources[] = {
+@@ -637,6 +638,7 @@ static struct platform_device irqpin1_device = {
+ 
+ static struct renesas_intc_irqpin_config irqpin2_platform_data = {
+ 	.irq_base = irq_pin(16), /* IRQ16 -> IRQ23 */
++	.control_parent = true,
+ };
+ 
+ static struct resource irqpin2_resources[] = {
+@@ -667,6 +669,7 @@ static struct platform_device irqpin2_device = {
+ 
+ static struct renesas_intc_irqpin_config irqpin3_platform_data = {
+ 	.irq_base = irq_pin(24), /* IRQ24 -> IRQ31 */
++	.control_parent = true,
+ };
+ 
+ static struct resource irqpin3_resources[] = {
 -- 
 2.1.4
 
