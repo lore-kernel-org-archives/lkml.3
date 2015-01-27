@@ -1,271 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869AbbA0Rj7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 12:39:59 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:49785 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754140AbbA0Rj5 (ORCPT
+	id S1758919AbbA0RmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 12:42:10 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:50596 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757384AbbA0RmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 12:39:57 -0500
-From: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-To: linux-mm@kvack.org
-Cc: akpm@linux-foundation.org, kirill@shutemov.name, mhocko@suse.cz,
-        mgorman@suse.de, rientjes@google.com, sasha.levin@oracle.com,
-        hughd@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
-        linux-kernel@vger.kernel.org, riel@redhat.com, aarcange@redhat.com,
-        zhangyanfei.linux@aliyun.com,
-        Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Subject: [PATCH v3] mm: incorporate read-only pages into transparent huge pages
-Date: Tue, 27 Jan 2015 19:39:13 +0200
-Message-Id: <1422380353-4407-1-git-send-email-ebru.akagunduz@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 27 Jan 2015 12:42:07 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Felipe Balbi <balbi@ti.com>,
+        Olof Johansson <olof@lixom.net>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/5] drivers: bus: Add Simple Power-Managed Bus
+References: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
+Date: Tue, 27 Jan 2015 09:42:03 -0800
+In-Reply-To: <1422288977-20353-1-git-send-email-geert+renesas@glider.be>
+	(Geert Uytterhoeven's message of "Mon, 26 Jan 2015 17:16:12 +0100")
+Message-ID: <7htwzcyvbo.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch aims to improve THP collapse rates, by allowing
-THP collapse in the presence of read-only ptes, like those
-left in place by do_swap_page after a read fault.
+Geert Uytterhoeven <geert+renesas@glider.be> writes:
 
-Currently THP can collapse 4kB pages into a THP when
-there are up to khugepaged_max_ptes_none pte_none ptes
-in a 2MB range. This patch applies the same limit for
-read-only ptes.
+>         Hi all,
+>
+> The Renesas Bus State Controller (BSC) provides an external bus for
+> connecting multiple external devices to an SoC, driving several chip
+> select lines, for e.g. NOR FLASH, Ethernet and USB.
+> On the kzm9g and ape6evm development boards, an smsc9220 Ethernet
+> controller is connnected to the BSC of an SH-Mobile AG5 (sh73a0) resp.
+> R-Mobile APE6 (r8a73a4) SoC.
+>
+> The BSC is a fairly simple memory-mapped bus, hence a "simple-bus"
+> compatibility seems suitable.  However, the BSC is special in two
+> ways:
+>   1. It is part of a PM domain (A4S on sh73a0),
+>   2. It has a gateable functional clock (ZB).
+> Before a device connected to the BSC can be accessed, the PM domain
+> containing the BSC must be powered on, and the functional clock
+> driving the BSC must be enabled.
+>
+> Both special properties can be described in DT in a standardized way
+> ("power-domains = <&pd_a4s>" and "clocks = <&zb_clk>", cfr. the
+> example in the DT binding documentation).  Externally connected
+> devices are described as children of the BSC node.
+>
+> Unfortunately this doesn't mean everything will work out-of-the-box.
+> There are two problems:
+>   1. Without a device driver bound to the bus device, this device is
+>      not attached to the PM domain. And although a child device is
+>      present and active, the PM domain may be powered down, as it's
+>      considered unused by the PM domain core.
+>   2. Without a device driver calling pm_runtime_enable(), its
+>      functional clock is not enabled. Once runtime PM is enabled, the
+>      R-Mobile PM domain platform driver manages the functional clock
+>      using runtime PM.
+>
+> As none of the above is really bus hardware-specific (PM domains and
+> functional clocks in clock domains are handled from genpd and platform
+> code), this series adds a Simple Power-Managed Bus driver for
+> transparent busses, which matches against "simple-pm-bus", enables
+> runtime PM for the bus device, and calls of_platform_populate() to
+> probe for child devices.
+> Due to the child-parent relationship of devices connected to the bus,
+> as long as the device drivers for the child devices are runtime PM
+> enabled, the bus's PM domain will be powered, and the bus's clock will
+> be enabled automatically when needed, for both runtime PM and s2ram.
+>
+> This was tested on sh73a0/kzm9g-multiplatform (by me), and (v3) on
+> r8a73a4/ape6evm-multiplatform (by Ulrich Hecht). Without this,
+> Ethernet doesn't work, as the ZB clock is disabled by
+> clk_disable_unused().
+>
+> Felipe: It looks like drivers/usb/musb/musb_am335x.c can be removed, if
+> "ti,am33xx-usb" claims compatibility with "simple-pm-bus"?
+>
+> As drivers/bus doesn't have a maintainer, and this driver is needed to
+> move two shmobile platforms away from legacy to multiplatform, I think
+> this can go in through Simon's shmobile tree.
+>
+> Changes compared to v3:
+>   - Replace "simple-bus" by "simple-pm-bus" in the bindings,
+>   - Move the "renesas,bsc" bindings to a separate document,
+>   - Bind against the generic "simple-pm-bus" instead of "renesas,bsc",
+>   - Explicitly call of_platform_populate() after pm_runtime_enable() to
+>     enforce ordering, instead of depending on claimed compatibility with
+>     "simple-bus".
+>
+> Changes compared to v2:
+>   - Document required properties inherited from "simple-bus",
+>   - Document required "reg" property for "renesas,bsc",
+>   - Move "ranges" before "reg" in the example,
+>   - Add Tested-by,
+>   - Split-off sh73a0/kzm9g and r8a73a4/ape6evm DTS updates.
+>
+> Changes compared to v1 (more detailed change logs in the individual
+> patches):
+>   - Added sorting of drivers/bus Kconfig and Makefile entries,
+>   - Added DT binding documentation,
+>   - Rename from "Renesas Bus State Controller Driver" (renesas-bsc) to
+>     "Simple Power-Managed Bus Driver" (simple-pm-bus),
+>   - Postponed adding power-domains properties to the dtsi,
+>   - Added updates for r8a73a4/ape6evm.
+>
+> Thanks for your comments!
 
-The patch was tested with a test program that allocates
-800MB of memory, writes to it, and then sleeps. I force
-the system to swap out all but 190MB of the program by
-touching other memory. Afterwards, the test program does
-a mix of reads and writes to its memory, and the memory
-gets swapped back in.
-
-Without the patch, only the memory that did not get
-swapped out remained in THPs, which corresponds to 24% of
-the memory of the program. The percentage did not increase
-over time.
-
-With this patch, after 5 minutes of waiting khugepaged had
-collapsed 50% of the program's memory back into THPs.
-
-Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
----
-Changes in v2:
- - Remove extra code indent (Vlastimil Babka)
- - Add comment line for check condition of page_count() (Vlastimil Babka)
- - Add fast path optimistic check to
-   __collapse_huge_page_isolate() (Andrea Arcangeli)
- - Move check condition of page_count() below to trylock_page() (Andrea Arcangeli)
-
-Changes in v3:
- - Add a at-least-one-writable-pte check (Zhang Yanfei)
- - Debug page count (Vlastimil Babka, Andrea Arcangeli)
- - Increase read-only pte counter if pte is none (Andrea Arcangeli)
-
-I've written down test results:
-With the patch:
-After swapped out:
-cat /proc/pid/smaps:
-Anonymous:      100464 kB
-AnonHugePages:  100352 kB
-Swap:           699540 kB
-Fraction:       99,88
-
-cat /proc/meminfo:
-AnonPages:      1754448 kB
-AnonHugePages:  1716224 kB
-Fraction:       97,82
-
-After swapped in:
-In a few seconds:
-cat /proc/pid/smaps:
-Anonymous:      800004 kB
-AnonHugePages:  145408 kB
-Swap:           0 kB
-Fraction:       18,17
-
-cat /proc/meminfo:
-AnonPages:      2455016 kB
-AnonHugePages:  1761280 kB
-Fraction:       71,74
-
-In 5 minutes:
-cat /proc/pid/smaps
-Anonymous:      800004 kB
-AnonHugePages:  407552 kB
-Swap:           0 kB
-Fraction:       50,94
-
-cat /proc/meminfo:
-AnonPages:      2456872 kB
-AnonHugePages:  2023424 kB
-Fraction:       82,35
-
-Without the patch:
-After swapped out:
-cat /proc/pid/smaps:
-Anonymous:      190660 kB
-AnonHugePages:  190464 kB
-Swap:           609344 kB
-Fraction:       99,89
-
-cat /proc/meminfo:
-AnonPages:      1740456 kB
-AnonHugePages:  1667072 kB
-Fraction:       95,78
-
-After swapped in:
-cat /proc/pid/smaps:
-Anonymous:      800004 kB
-AnonHugePages:  190464 kB
-Swap:           0 kB
-Fraction:       23,80
-
-cat /proc/meminfo:
-AnonPages:      2350032 kB
-AnonHugePages:  1667072 kB
-Fraction:       70,93
-
-I waited 10 minutes the fractions
-did not change without the patch.
-
- mm/huge_memory.c | 60 +++++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 49 insertions(+), 11 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 817a875..17d6e59 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2148,17 +2148,18 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- {
- 	struct page *page;
- 	pte_t *_pte;
--	int referenced = 0, none = 0;
-+	int referenced = 0, none = 0, ro = 0, writable = 0;
- 	for (_pte = pte; _pte < pte+HPAGE_PMD_NR;
- 	     _pte++, address += PAGE_SIZE) {
- 		pte_t pteval = *_pte;
- 		if (pte_none(pteval)) {
-+			ro++;
- 			if (++none <= khugepaged_max_ptes_none)
- 				continue;
- 			else
- 				goto out;
- 		}
--		if (!pte_present(pteval) || !pte_write(pteval))
-+		if (!pte_present(pteval))
- 			goto out;
- 		page = vm_normal_page(vma, address, pteval);
- 		if (unlikely(!page))
-@@ -2168,9 +2169,6 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 		VM_BUG_ON_PAGE(!PageAnon(page), page);
- 		VM_BUG_ON_PAGE(!PageSwapBacked(page), page);
- 
--		/* cannot use mapcount: can't collapse if there's a gup pin */
--		if (page_count(page) != 1)
--			goto out;
- 		/*
- 		 * We can do it before isolate_lru_page because the
- 		 * page can't be freed from under us. NOTE: PG_lock
-@@ -2179,6 +2177,34 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 		 */
- 		if (!trylock_page(page))
- 			goto out;
-+
-+		/*
-+		 * cannot use mapcount: can't collapse if there's a gup pin.
-+		 * The page must only be referenced by the scanned process
-+		 * and page swap cache.
-+		 */
-+		if (page_count(page) != 1 + !!PageSwapCache(page)) {
-+			unlock_page(page);
-+			goto out;
-+		}
-+		if (!pte_write(pteval)) {
-+			if (++ro > khugepaged_max_ptes_none) {
-+				unlock_page(page);
-+				goto out;
-+			}
-+			if (PageSwapCache(page) && !reuse_swap_page(page)) {
-+				unlock_page(page);
-+				goto out;
-+			}
-+			/*
-+			 * Page is not in the swap cache, and page count is
-+			 * one (see above). It can be collapsed into a THP.
-+			 */
-+			VM_BUG_ON(page_count(page) != 1);
-+		} else {
-+			writable = 1;
-+		}
-+
- 		/*
- 		 * Isolate the page to avoid collapsing an hugepage
- 		 * currently in use by the VM.
-@@ -2197,7 +2223,7 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
- 		    mmu_notifier_test_young(vma->vm_mm, address))
- 			referenced = 1;
- 	}
--	if (likely(referenced))
-+	if (likely(referenced && writable))
- 		return 1;
- out:
- 	release_pte_pages(pte, _pte);
-@@ -2550,7 +2576,7 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- {
- 	pmd_t *pmd;
- 	pte_t *pte, *_pte;
--	int ret = 0, referenced = 0, none = 0;
-+	int ret = 0, referenced = 0, none = 0, ro = 0, writable = 0;
- 	struct page *page;
- 	unsigned long _address;
- 	spinlock_t *ptl;
-@@ -2568,13 +2594,21 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 	     _pte++, _address += PAGE_SIZE) {
- 		pte_t pteval = *_pte;
- 		if (pte_none(pteval)) {
-+			ro++;
- 			if (++none <= khugepaged_max_ptes_none)
- 				continue;
- 			else
- 				goto out_unmap;
- 		}
--		if (!pte_present(pteval) || !pte_write(pteval))
-+		if (!pte_present(pteval))
- 			goto out_unmap;
-+		if (!pte_write(pteval)) {
-+			if (++ro > khugepaged_max_ptes_none)
-+				goto out_unmap;
-+		} else {
-+			writable = 1;
-+		}
-+
- 		page = vm_normal_page(vma, _address, pteval);
- 		if (unlikely(!page))
- 			goto out_unmap;
-@@ -2591,14 +2625,18 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
- 		VM_BUG_ON_PAGE(PageCompound(page), page);
- 		if (!PageLRU(page) || PageLocked(page) || !PageAnon(page))
- 			goto out_unmap;
--		/* cannot use mapcount: can't collapse if there's a gup pin */
--		if (page_count(page) != 1)
-+		/*
-+		 * cannot use mapcount: can't collapse if there's a gup pin.
-+		 * The page must only be referenced by the scanned process
-+		 * and page swap cache.
-+		 */
-+		if (page_count(page) != 1 + !!PageSwapCache(page))
- 			goto out_unmap;
- 		if (pte_young(pteval) || PageReferenced(page) ||
- 		    mmu_notifier_test_young(vma->vm_mm, address))
- 			referenced = 1;
- 	}
--	if (referenced)
-+	if (referenced && writable)
- 		ret = 1;
- out_unmap:
- 	pte_unmap_unlock(pte, ptl);
--- 
-1.9.1
-
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
