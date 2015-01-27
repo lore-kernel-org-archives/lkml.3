@@ -1,69 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437AbbA0GTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 01:19:51 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:53437 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007AbbA0GTt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 01:19:49 -0500
-Date: Tue, 27 Jan 2015 07:19:42 +0100
-From: Dominik Vogt <vogt@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
-Message-ID: <20150127061941.GA4591@linux.vnet.ibm.com>
-Reply-To: vogt@linux.vnet.ibm.com
-Mail-Followup-To: Steven Rostedt <rostedt@goodmis.org>,
-	Heiko Carstens <heiko.carstens@de.ibm.com>,
-	Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
-	Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-	Jiri Slaby <jslaby@suse.cz>,
-	Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-	Martin Schwidefsky <schwidefsky@de.ibm.com>,
-	linux-kernel@vger.kernel.org
-References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
- <1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
- <20150126093701.699763dc@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150126093701.699763dc@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012706-0009-0000-0000-000002E99342
+	id S1752007AbbA0G2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 01:28:16 -0500
+Received: from ozlabs.org ([103.22.144.67]:34750 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751001AbbA0G2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 01:28:13 -0500
+Message-ID: <1422340090.27133.4.camel@ellerman.id.au>
+Subject: Re: cpuidle/powernv: Read target_residency value of idle states
+ from DT if available
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: rafael.j.wysocki@intel.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Date: Tue, 27 Jan 2015 17:28:10 +1100
+In-Reply-To: <54C70DDD.9040408@linux.vnet.ibm.com>
+References: <20150123045906.D0086140297@ozlabs.org>
+	 <54C70DDD.9040408@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 09:37:01AM -0500, Steven Rostedt wrote:
-> On Mon, 26 Jan 2015 13:54:53 +0100
-> Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
-> > s390 will use the hotpatch attribute for function tracing, therefore
-> > introduce a nohotpatch define, depending on CC_USING_HOTPATCH, and add it
-> > to the existing notrace define.
+On Tue, 2015-01-27 at 09:32 +0530, Preeti U Murthy wrote:
+> On 01/23/2015 10:29 AM, Michael Ellerman wrote:
+> > On Tue, 2015-20-01 at 11:26:49 UTC, Preeti U Murthy wrote:
+> >> @@ -177,34 +178,39 @@ static int powernv_add_idle_states(void)
+> > 
+> >>  	for (i = 0; i < dt_idle_states; i++) {
+> >>  
+> >>  		flags = be32_to_cpu(idle_state_flags[i]);
+> >> -
+> >> -		/* Cpuidle accepts exit_latency in us and we estimate
+> >> -		 * target residency to be 10x exit_latency
+> >> +		/*
+> >> +		 * Cpuidle accepts exit_latency and target_residency in us.
+> >> +		 * Use default target_residency values if f/w does not expose it.
+> >>  		 */
+> >> -		latency_ns = be32_to_cpu(idle_state_latency[i]);
+> >>  		if (flags & OPAL_PM_NAP_ENABLED) {
+> >>  			/* Add NAP state */
+> >>  			strcpy(powernv_states[nr_idle_states].name, "Nap");
+> >>  			strcpy(powernv_states[nr_idle_states].desc, "Nap");
+> >>  			powernv_states[nr_idle_states].flags = 0;
+> >> -			powernv_states[nr_idle_states].exit_latency =
+> >> -					((unsigned int)latency_ns) / 1000;
+> >> -			powernv_states[nr_idle_states].target_residency =
+> >> -					((unsigned int)latency_ns / 100);
+> >> +			powernv_states[nr_idle_states].target_residency = 100;
+> >>  			powernv_states[nr_idle_states].enter = &nap_loop;
+> >> -			nr_idle_states++;
+> > 
+> > That looks wrong? Or do you mean to do that?
 > 
-> Are the two mutually exclusive? That is, can you have -pg and hotpatch
-> together? Reason why I ask is, if you have either -pg or hotpatch, then
-> we only need "no_instrument_function" or "hotpatch" in the notrace
-> define, not both. But I could be wrong.
+> If you are pointing at the lines that remove increment of
+> nr_idle_states, it has to be done so towards the end of the iteration
+> because we are yet to populate the exit_latency and target_residency
+> outside of these conditions using this index.
 
-While the kernel may use only profiling or hotpatch at the same
-time, Gcc is able to generate both for the same function.
+Oh OK I think I get it, it's not clear at all.
 
-Ciao
+The resulting code is:
 
-Dominik ^_^  ^_^
+	for (i = 0; i < dt_idle_states; i++) {
 
--- 
+		flags = be32_to_cpu(idle_state_flags[i]);
+		/*
+		 * Cpuidle accepts exit_latency and target_residency in us.
+		 * Use default target_residency values if f/w does not expose it.
+		 */
+		if (flags & OPAL_PM_NAP_ENABLED) {
+			/* Add NAP state */
+			strcpy(powernv_states[nr_idle_states].name, "Nap");
+			strcpy(powernv_states[nr_idle_states].desc, "Nap");
+			powernv_states[nr_idle_states].flags = 0;
+			powernv_states[nr_idle_states].target_residency = 100;
+			powernv_states[nr_idle_states].enter = &nap_loop;
+		}
 
-Dominik Vogt
-IBM Germany
+		if (flags & OPAL_PM_SLEEP_ENABLED ||
+			flags & OPAL_PM_SLEEP_ENABLED_ER1) {
+			/* Add FASTSLEEP state */
+			strcpy(powernv_states[nr_idle_states].name, "FastSleep");
+			strcpy(powernv_states[nr_idle_states].desc, "FastSleep");
+			powernv_states[nr_idle_states].flags = CPUIDLE_FLAG_TIMER_STOP;
+			powernv_states[nr_idle_states].target_residency = 300000;
+			powernv_states[nr_idle_states].enter = &fastsleep_loop;
+		}
+
+		powernv_states[nr_idle_states].exit_latency =
+				((unsigned int)latency_ns[i]) / 1000;
+
+		if (!rc) {
+			powernv_states[nr_idle_states].target_residency =
+				((unsigned int)residency_ns[i]) / 1000;
+		}
+
+		nr_idle_states++;
+	}
+
+
+Which looks like you could potentially overwrite the first set of values, "Nap"
+with "FastSleep". But I think what you're going to tell me is that flags can
+never satisfy both conditions, so we will only ever execute either the "Nap"
+case OR the "FastSleep".
+
+If so please change the code to make that obvious, ie. by using else if.
+
+cheers
+
 
