@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759886AbbA0VYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 16:24:14 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:65496 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762AbbA0VYM (ORCPT
+	id S1759971AbbA0VYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 16:24:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38049 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbbA0VYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 16:24:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
+	Tue, 27 Jan 2015 16:24:35 -0500
+Date: Tue, 27 Jan 2015 13:24:33 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
 To: Guenter Roeck <linux@roeck-us.net>
-Cc: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>, wim@iguana.be,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, paul@crapouillou.net
-Subject: Re: [PATCH 2/2] watchdog: jz4740: Add DT support
-Date: Tue, 27 Jan 2015 22:23:49 +0100
-Message-ID: <3983977.h1XXMbpmZb@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150127205430.GB6983@roeck-us.net>
-References: <1422371490-44402-1-git-send-email-Zubair.Kakakhel@imgtec.com> <2690526.hgsE0j4AZc@wuerfel> <20150127205430.GB6983@roeck-us.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:dAmRmPL8uNeTsy+MRZq1fL8eMREq+l3TgLGlm5jg9FFsuB0AFe5
- 4ijMI/H+OLfauO5vYf40MLXNJJiqi9cCvkIdtcDMgxm2SQZlGQ0z4uc7qEmhuBARpwQIOfw
- 6yyDExaoLIqOSLfW65c/mQC0jQj0m4Pz5uaREF6vuh98kQijWgIOflveWYTcwkITCb97mBl
- lulAemj2wJkhPBUNHVNnA==
-X-UI-Out-Filterresults: notjunk:1;
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: mmotm 2015-01-22-15-04: qemu failures due to 'mm: account pmd
+ page tables to the process'
+Message-Id: <20150127132433.dbe4461d9caeecdb50f28b42@linux-foundation.org>
+In-Reply-To: <20150127162428.GA21638@roeck-us.net>
+References: <54c1822d.RtdGfWPekQVAw8Ly%akpm@linux-foundation.org>
+	<20150123050445.GA22751@roeck-us.net>
+	<20150123111304.GA5975@node.dhcp.inet.fi>
+	<54C263CC.1060904@roeck-us.net>
+	<20150123135519.9f1061caf875f41f89298d59@linux-foundation.org>
+	<20150124055207.GA8926@roeck-us.net>
+	<20150126122944.GE25833@node.dhcp.inet.fi>
+	<54C6494D.80802@roeck-us.net>
+	<20150127161657.GA7155@node.dhcp.inet.fi>
+	<20150127162428.GA21638@roeck-us.net>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 January 2015 12:54:30 Guenter Roeck wrote:
-> On Tue, Jan 27, 2015 at 09:15:37PM +0100, Arnd Bergmann wrote:
-> > On Tuesday 27 January 2015 15:11:30 Zubair Lutfullah Kakakhel wrote:
-> > >  };
-> > >  
-> > > +#ifdef CONFIG_OF
-> > > +static const struct of_device_id jz4740_of_matches[] = {
-> > > +       { .compatible = "ingenic,jz4740-watchdog", },
-> > > +       { /* sentinel */ }
-> > > +};
-> > > +#endif
-> > > +
-> > >  static int jz4740_wdt_probe(struct platform_device *pdev)
-> > >  {
-> > >         struct jz4740_wdt_drvdata *drvdata;
-> > > @@ -211,6 +219,7 @@ static struct platform_driver jz4740_wdt_driver = {
-> > >         .remove = jz4740_wdt_remove,
-> > >         .driver = {
-> > >                 .name = "jz4740-wdt",
-> > > +               .of_match_table = of_match_ptr(jz4740_of_matches),
-> > >         },
-> > > 
-> > 
-> > Why the #ifdef? Presumably we want to move over jz4740 to DT-only in the
-> > long run, so you could just remove the #ifdef and the of_match_ptr()
-> > wrapper.
-> > 
-> Only if "depends on OF" is added to its Kconfig entry, or am I missing
-> something ?
-> 
+On Tue, 27 Jan 2015 08:24:28 -0800 Guenter Roeck <linux@roeck-us.net> wrote:
 
-I'm pretty sure you don't need that, it will still compile and link
-fine, the only downside being a few wasted bytes to store the compatible
-string and the array.
+> > __PAGETABLE_PMD_FOLDED is defined during <asm/pgtable.h> which is not
+> > included into <linux/mm_types.h>. And we cannot include it here since
+> > many of <asm/pgtables> needs <linux/mm_types.h> to define struct page.
+> > 
+> > I failed to come up with better solution rather than put nr_pmds into
+> > mm_struct unconditionally.
+> > 
+> > One possible solution would be to expose number of page table levels
+> > architecture has via Kconfig, but that's ugly and requires changes to
+> > all architectures.
+> > 
+> FWIW, I tried a number of approaches. Ultimately I gave up and concluded
+> that it has to be either this patch or, as you say here, we would have
+> to add something like PAGETABLE_PMD_FOLDED as a Kconfig option.
 
-	Arnd
+It's certainly a big mess.  Yes, I expect that moving
+__PAGETABLE_PMD_FOLDED and probably PAGETABLE_LEVELS into Kconfig logic
+would be a good fix.
+
+Adding 8 bytes to the mm_struct (sometimes) isn't a huge issue, but
+it does make the kernel just a little bit worse.
+
+Has anyone taken a look at what the Kconfig approach would look like?
+
+Possibly another fix for this would be to move mm_struct into its own
+header file, or something along those lines?
+
