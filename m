@@ -1,121 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757665AbbA0CFf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jan 2015 21:05:35 -0500
-Received: from mail-by2on0080.outbound.protection.outlook.com ([207.46.100.80]:55120
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755358AbbA0CFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jan 2015 21:05:32 -0500
-Date: Mon, 26 Jan 2015 18:05:23 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Andreas =?utf-8?Q?F=C3=A4rber?= <afaerber@suse.de>
-CC: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        <devicetree@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Heiko Stuebner <heiko@sntech.de>, <linux-sh@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        Beniamino Galvani <b.galvani@gmail.com>,
-        <linux-rockchip@lists.infradead.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH v4 6/7] ARM: zynq: DT: Add pinctrl information
-References: <1420818231-13451-1-git-send-email-soren.brinkmann@xilinx.com>
- <1420818231-13451-7-git-send-email-soren.brinkmann@xilinx.com>
- <54C6D44C.4060106@suse.de>
+	id S1757732AbbA0CG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jan 2015 21:06:26 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:46720 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913AbbA0CGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jan 2015 21:06:25 -0500
+Date: Tue, 27 Jan 2015 02:06:20 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1501270205210.966@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54C6D44C.4060106@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21286.003
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <95fcb833572949c9aa2f406c0b147d1f@BL2FFO11FD060.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; unipv.it; dkim=none (message not
- signed) header.d=none;
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(377424004)(51704005)(86362001)(19580405001)(104016003)(85182001)(53416004)(87936001)(19580395003)(83506001)(106466001)(6806004)(47776003)(74316001)(2950100001)(77156002)(92566002)(50466002)(62966003)(92726002)(110136001)(54356999)(85202003)(23676002)(76176999)(50986999)(108616004)(46102003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB019;H:xsj-pvapsmtpgw01;FPR:;SPF:None;MLV:sfv;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB019;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB019;
-X-Forefront-PRVS: 046985391D
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB019;
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 27 Jan 2015 02:05:30.2994
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB019
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1806753020-1422324380=:966"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-27 at 12:57AM +0100, Andreas Färber wrote:
-> Am 09.01.2015 um 16:43 schrieb Soren Brinkmann:
-> > Add pinctrl descriptions to the zc702 and zc706 device trees.
-> > 
-> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> > Tested-by: Andreas Färber <afaerber@suse.de>
-> > ---
-> > Changes since v1:
-> >  - remove 'pinctrl-' prefix for pinctrl sub-nodes
-> >  - separate config and mux nodes
-> > 
-> > Changes since RFC v2:
-> >  - add pinconf properties to zc702 mdio node
-> >  - remove arguments from bias-related props
-> > 
-> > Changes since RFC v1:
-> >  - separate DT changes into their own patch
-> > ---
-> >  arch/arm/boot/dts/zynq-7000.dtsi |   8 +-
-> >  arch/arm/boot/dts/zynq-zc702.dts | 181 +++++++++++++++++++++++++++++++++++++++
-> >  arch/arm/boot/dts/zynq-zc706.dts | 152 ++++++++++++++++++++++++++++++++
-> >  3 files changed, 340 insertions(+), 1 deletion(-)
-> [...]
-> > diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-> > index 280f02dd4ddc..4995412f116f 100644
-> > --- a/arch/arm/boot/dts/zynq-zc702.dts
-> > +++ b/arch/arm/boot/dts/zynq-zc702.dts
-> [...]
-> > @@ -50,15 +52,24 @@
-> >  	status = "okay";
-> >  	phy-mode = "rgmii-id";
-> >  	phy-handle = <&ethernet_phy>;
-> > +	pinctrl-names = "default";
-> > +	pinctrl-0 = <&pinctrl_gem0_default>;
-> >  
-> >  	ethernet_phy: ethernet-phy@7 {
-> >  		reg = <7>;
-> >  	};
-> >  };
-> >  
-> > +&gpio0 {
-> > +	pinctrl-names = "default";
-> > +	pinctrl-0 = <&pinctrl_gpio0_default>;
-> 
-> On linux-next the equivalent no longer works for the Parallella, with
-> gpio failing to probe.
-> 
-> If I move these two properties to the leds node (for which I am
-> configuring gpio 7) then I get a heartbeat as before.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I think for USB I have a fix (see other email with patch), but LEDs seem
-to be broken too. On my zc702 I get:
-   of_get_named_gpiod_flags: parsed 'gpios' property of node '/leds/ds23[0]' - status (-517)
+--29444707-1806753020-1422324380=:966
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-517 is probe deferral. Looks like the LED driver needs to learn to defer
-probing when the GPIO driver isn't available yet.
 
-	Sören
+Hi Linus,
+
+This feels larger than I'd like but its for three reasons.
+
+a) amdkfd finalising the API more, this is a new feature introduced last 
+merge window, and I'd prefer to make the tweaks
+to the API before it first gets into a stable release.
+
+b) radeon regression required splitting an internal API to fix properly,
+so it just changed a few more lines
+
+c) vmwgfx fix changes a lock from a mutex->spin lock, this is fallout
+from the new sleep checking.
+
+Otherwise there is just some tda998x fixes.
+
+Dave.
+
+The following changes since commit 26bc420b59a38e4e6685a73345a0def461136dce:
+
+  Linux 3.19-rc6 (2015-01-25 20:04:41 -0800)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 5159571ceb44eba9bf9f9a34ec625386d421de9c:
+
+  Merge branch 'drm-fixes-3.19' of git://people.freedesktop.org/~agd5f/linux into drm-fixes (2015-01-27 09:56:13 +1000)
+
+----------------------------------------------------------------
+
+Andrew Jackson (1):
+      drm/i2c: tda998x: set the CEC I2C address based on the slave I2C address
+
+Ben Goz (1):
+      drm/amdkfd: PQM handle queue creation fault
+
+Dave Airlie (5):
+      Merge branch 'vmwgfx-fixes-3.19' of git://people.freedesktop.org/~thomash/linux into drm-fixes
+      Merge branch 'drm-tda998x-fixes' of git://ftp.arm.linux.org.uk/~rmk/linux-arm into drm-fixes
+      Merge tag 'v3.19-rc6' into drm-fixes
+      Merge tag 'drm-amdkfd-fixes-2015-01-26' of git://people.freedesktop.org/~gabbayo/linux into drm-fixes
+      Merge branch 'drm-fixes-3.19' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+
+Jean-Francois Moine (2):
+      drm: tda998x: Protect the page register
+      drm: tda998x: Fix EDID read timeout on HDMI connect
+
+Michel D�nzer (3):
+      drm/radeon: Split off gart_get_page_entry ASIC hook from set_page_entry
+      drm/radeon: Restore GART table contents after pinning it in VRAM v3
+      drm/radeon: Remove rdev->gart.pages_addr array
+
+Oded Gabbay (4):
+      drm/amdkfd: Allow user to limit only queues per device
+      drm/radeon: Don't increment pipe_id in kgd_init_pipeline
+      drm/amdkfd: Fix bug in pipelines initialization
+      drm/amdkfd: Fix bug in call to init_pipelines()
+
+Thomas Hellstrom (1):
+      drm/vmwgfx: Replace the hw mutex with a hw spinlock
+
+ drivers/gpu/drm/amd/amdkfd/kfd_device.c            |  6 +-
+ .../gpu/drm/amd/amdkfd/kfd_device_queue_manager.c  | 78 +++++++++++++++++++++-
+ .../gpu/drm/amd/amdkfd/kfd_device_queue_manager.h  |  1 +
+ drivers/gpu/drm/amd/amdkfd/kfd_module.c            | 27 +++-----
+ drivers/gpu/drm/amd/amdkfd/kfd_pasid.c             |  2 +-
+ drivers/gpu/drm/amd/amdkfd/kfd_priv.h              | 17 +++--
+ .../gpu/drm/amd/amdkfd/kfd_process_queue_manager.c | 12 ++--
+ drivers/gpu/drm/i2c/tda998x_drv.c                  | 52 ++++++++++++---
+ drivers/gpu/drm/radeon/cik_sdma.c                  |  1 -
+ drivers/gpu/drm/radeon/ni_dma.c                    |  1 -
+ drivers/gpu/drm/radeon/r100.c                      | 10 ++-
+ drivers/gpu/drm/radeon/r300.c                      | 16 +++--
+ drivers/gpu/drm/radeon/radeon.h                    |  9 ++-
+ drivers/gpu/drm/radeon/radeon_asic.c               | 24 +++++++
+ drivers/gpu/drm/radeon/radeon_asic.h               | 12 ++--
+ drivers/gpu/drm/radeon/radeon_device.c             |  2 +
+ drivers/gpu/drm/radeon/radeon_gart.c               | 54 +++++++++------
+ drivers/gpu/drm/radeon/radeon_kfd.c                |  2 +-
+ drivers/gpu/drm/radeon/radeon_vm.c                 |  6 +-
+ drivers/gpu/drm/radeon/rs400.c                     | 14 ++--
+ drivers/gpu/drm/radeon/rs600.c                     | 14 ++--
+ drivers/gpu/drm/radeon/si_dma.c                    |  1 -
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c                | 28 ++------
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.h                | 25 +++++--
+ drivers/gpu/drm/vmwgfx/vmwgfx_fence.c              | 18 +----
+ drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c               | 36 +++++-----
+ drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c              |  8 +--
+ drivers/gpu/drm/vmwgfx/vmwgfx_irq.c                | 25 +++----
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c                |  2 -
+ 29 files changed, 315 insertions(+), 188 deletions(-)
+--29444707-1806753020-1422324380=:966--
