@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398AbbA1UM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:12:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42205 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbbA1UMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:12:21 -0500
-Date: Wed, 28 Jan 2015 09:42:22 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johan Hovold <johan@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH v2] gpio: sysfs: fix gpio device-attribute leak
-Message-ID: <20150128174222.GD7973@kroah.com>
-References: <20150128012627.464883057@linuxfoundation.org>
- <1422461105-815-1-git-send-email-johan@kernel.org>
+	id S1755978AbbA1UVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:21:06 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45797 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754575AbbA1UVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:21:02 -0500
+Message-ID: <54C91FDD.1000009@ti.com>
+Date: Wed, 28 Jan 2015 12:43:57 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422461105-815-1-git-send-email-johan@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: David Miller <davem@davemloft.net>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH net-next v8 0/4] net: Add Keystone NetCP ethernet driver
+ support
+References: <1421367007-19744-1-git-send-email-m-karicheri2@ti.com> <20150119.151106.822126941934010309.davem@davemloft.net> <54BE7A00.2020205@ti.com> <25883654.BLFxICW9P0@wuerfel> <54C91328.6030208@ti.com>
+In-Reply-To: <54C91328.6030208@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 05:05:05PM +0100, Johan Hovold wrote:
-> commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
-> 
-> The gpio device attributes were never destroyed when the gpio was
-> unexported (or on export failures).
-> 
-> Use device_create_with_groups() to create the default device attributes
-> of the gpio class device. Note that this also fixes the
-> attribute-creation race with userspace for these attributes.
-> 
-> Remove contingent attributes in export error path and on unexport.
-> 
-> Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-> Cc: stable <stable@vger.kernel.org> # v2.6.27+
-> Signed-off-by: Johan Hovold <johan@kernel.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> 
-> Backport to v3.10 (and earlier) which lacks device_create_with_groups().
-> 
-> Changes since v1
->  - fix mistake in backport, which removed the attributes while holding
->    the mutex in gpiod_unexport (reported by Luis Henriques)
+On 01/28/2015 11:49 AM, Murali Karicheri wrote:
+> On 01/27/2015 05:28 PM, Arnd Bergmann wrote:
+>> On Tuesday 20 January 2015 10:53:36 Murali Karicheri wrote:
+>>> On 01/19/2015 03:11 PM, David Miller wrote:
+>>>> From: Murali Karicheri<m-karicheri2@ti.com>
+>>>> Date: Thu, 15 Jan 2015 19:10:03 -0500
+>>>>
+>>>>> The Network Coprocessor (NetCP) is a hardware accelerator that
+>>>>> processes
+>>>>> Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with
+>>>>> a ethernet
+>>>>> switch sub-module to send and receive packets. NetCP also includes
+>>>>> a packet
+>>>>> accelerator (PA) module to perform packet classification operations
+>>>>> such as
+>>>>> header matching, and packet modification operations such as checksum
+>>>>> generation. NetCP can also optionally include a Security
+>>>>> Accelerator(SA)
+>>>>> capable of performing IPSec operations on ingress/egress packets.
+>>>>>
+>>>>> Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
+>>>>> includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
+>>>>> 1Gb/s rates per Ethernet port.
+>>>>>
+>>>>> Both GBE and XGBE network processors supported using common driver. It
+>>>>> is also designed to handle future variants of NetCP.
+>>>>
+>>>> Series applied to net-next, thanks.
+>>> David,
+>>>
+>>> Thanks a lot for applying this series. This helps us move forward to
+>>> work on the next set of patches.
+>>
+>> Hi Murali,
+>>
+>> Building an ARM 'allmodconfig' kernel now runs into two separate problems
+>> from your driver:
+>>
+>> - you have two module_init() instances in one module, which conflict.
+>>
+>> - you have two files that are linked into more than one module, so
+>> building
+>> both TI_CPSW and TI_KEYSTONE_NETCP in the same kernel fails.
+>>
+>> The answer to both of these is probably to have separate loadable
+>> modules,
+>> but you might be able to come up with a different solution.
+> Arnd,
+>
+> Thanks for letting us know. We will look into this.
+>
+> How do I reproduce this? Is there a defconfig used for allmodconfig? I
+> am unable to find one. Any details to reproduce this will be useful.
+>
+Ok I think I found it.
 
-Thanks for the updated patch, now replaced the old one with this one.
+I did this with next-next branch and it seems to work. I will make 
+kernel build to reproduce this.
 
-greg k-h
+make ARCH=arm allmodconfig
+make uImage;
+
+I am building it now.
+
+Murali
+> Thanks.
+>
+> Murali
+>>
+>> Arnd
+>
+>
+
+
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
