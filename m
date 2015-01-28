@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662AbbA1VQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:16:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760244AbbA1Uue (ORCPT
+	id S1759497AbbA2JEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:04:45 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44821 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932160AbbA2JE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:50:34 -0500
-Date: Wed, 28 Jan 2015 06:29:02 -0800
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-98b008dff8452653909d9263efda925873e8d8bb@git.kernel.org>
-Cc: peterz@infradead.org, eranian@google.com, torvalds@linux-foundation.org,
-        mingo@kernel.org, tglx@linutronix.de, acme@kernel.org,
-        vincent.weaver@maine.edu, hpa@zytor.com, linux-kernel@vger.kernel.org
-Reply-To: peterz@infradead.org, eranian@google.com, mingo@kernel.org,
-        tglx@linutronix.de, torvalds@linux-foundation.org, acme@kernel.org,
-        vincent.weaver@maine.edu, hpa@zytor.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20150122203834.GA10228@thinkpad>
-References: <20150122203834.GA10228@thinkpad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/rapl: Fix crash in rapl_scale()
-Git-Commit-ID: 98b008dff8452653909d9263efda925873e8d8bb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 29 Jan 2015 04:04:29 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 112/176] USB: console: fix uninitialised ldisc semaphore
+Date: Wed, 28 Jan 2015 15:29:02 +0100
+Message-Id: <005a854c60e8ae822423bad284d874866932b3a4.1422455352.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.2.2
+In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
+References: <cover.1422455352.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  98b008dff8452653909d9263efda925873e8d8bb
-Gitweb:     http://git.kernel.org/tip/98b008dff8452653909d9263efda925873e8d8bb
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 22 Jan 2015 21:38:34 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 28 Jan 2015 13:04:35 +0100
+From: Johan Hovold <johan@kernel.org>
 
-perf/rapl: Fix crash in rapl_scale()
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-This patch fixes a systematic crash in rapl_scale()
-due to an invalid pointer.
+===============
 
-The bug was introduced by commit:
+commit d269d4434c72ed0da3a9b1230c30da82c4918c63 upstream.
 
-  89cbc76768c2 ("x86: Replace __get_cpu_var uses")
+The USB console currently allocates a temporary fake tty which is used
+to pass terminal settings to the underlying serial driver.
 
-The fix is simple. Just put the parenthesis where it needs
-to be, i.e., around rapl_pmu. To my surprise, the compiler
-was not complaining about passing an integer instead of a
-pointer.
+The tty struct is not fully initialised, something which can lead to a
+lockdep warning (or worse) if a serial driver tries to acquire a
+line-discipline reference:
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Fixes: 89cbc76768c2 ("x86: Replace __get_cpu_var uses")
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: cl@linux.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20150122203834.GA10228@thinkpad
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+	usbserial: USB Serial support registered for pl2303
+	pl2303 1-2.1:1.0: pl2303 converter detected
+	usb 1-2.1: pl2303 converter now attached to ttyUSB0
+	INFO: trying to register non-static key.
+	the code is fine but needs lockdep annotation.
+	turning off the locking correctness validator.
+	CPU: 0 PID: 68 Comm: udevd Tainted: G        W      3.18.0-rc5 #10
+	[<c0016f04>] (unwind_backtrace) from [<c0013978>] (show_stack+0x20/0x24)
+	[<c0013978>] (show_stack) from [<c0449794>] (dump_stack+0x24/0x28)
+	[<c0449794>] (dump_stack) from [<c006f730>] (__lock_acquire+0x1e50/0x2004)
+	[<c006f730>] (__lock_acquire) from [<c0070128>] (lock_acquire+0xe4/0x18c)
+	[<c0070128>] (lock_acquire) from [<c027c6f8>] (ldsem_down_read_trylock+0x78/0x90)
+	[<c027c6f8>] (ldsem_down_read_trylock) from [<c027a1cc>] (tty_ldisc_ref+0x24/0x58)
+	[<c027a1cc>] (tty_ldisc_ref) from [<c0340760>] (usb_serial_handle_dcd_change+0x48/0xe8)
+	[<c0340760>] (usb_serial_handle_dcd_change) from [<bf000484>] (pl2303_read_int_callback+0x210/0x220 [pl2303])
+	[<bf000484>] (pl2303_read_int_callback [pl2303]) from [<c031624c>] (__usb_hcd_giveback_urb+0x80/0x140)
+	[<c031624c>] (__usb_hcd_giveback_urb) from [<c0316fc0>] (usb_giveback_urb_bh+0x98/0xd4)
+	[<c0316fc0>] (usb_giveback_urb_bh) from [<c0042e44>] (tasklet_hi_action+0x9c/0x108)
+	[<c0042e44>] (tasklet_hi_action) from [<c0042380>] (__do_softirq+0x148/0x42c)
+	[<c0042380>] (__do_softirq) from [<c00429cc>] (irq_exit+0xd8/0x114)
+	[<c00429cc>] (irq_exit) from [<c007ae58>] (__handle_domain_irq+0x84/0xdc)
+	[<c007ae58>] (__handle_domain_irq) from [<c000879c>] (omap_intc_handle_irq+0xd8/0xe0)
+	[<c000879c>] (omap_intc_handle_irq) from [<c0014544>] (__irq_svc+0x44/0x7c)
+	Exception stack(0xdf4e7f08 to 0xdf4e7f50)
+	7f00:                   debc0b80 df4e7f5c 00000000 00000000 debc0b80 be8da96c
+	7f20: 00000000 00000128 c000fc84 df4e6000 00000000 df4e7f94 00000004 df4e7f50
+	7f40: c038ebc0 c038d74c 600f0013 ffffffff
+	[<c0014544>] (__irq_svc) from [<c038d74c>] (___sys_sendmsg.part.29+0x0/0x2e0)
+	[<c038d74c>] (___sys_sendmsg.part.29) from [<c038ec08>] (SyS_sendmsg+0x18/0x1c)
+	[<c038ec08>] (SyS_sendmsg) from [<c000fa00>] (ret_fast_syscall+0x0/0x48)
+	console [ttyUSB0] enabled
+
+Fixes: 36697529b5bb ("tty: Replace ldisc locking with ldisc_sem")
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/kernel/cpu/perf_event_intel_rapl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/console.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index 6e434f8..c4bb8b8 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -142,7 +142,7 @@ static inline u64 rapl_scale(u64 v)
- 	 * or use ldexp(count, -32).
- 	 * Watts = Joules/Time delta
- 	 */
--	return v << (32 - __this_cpu_read(rapl_pmu->hw_unit));
-+	return v << (32 - __this_cpu_read(rapl_pmu)->hw_unit);
- }
- 
- static u64 rapl_event_update(struct perf_event *event)
+diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
+index c69bb50d4663..3cf2de433eb8 100644
+--- a/drivers/usb/serial/console.c
++++ b/drivers/usb/serial/console.c
+@@ -142,6 +142,7 @@ static int usb_console_setup(struct console *co, char *options)
+ 			tty_port_tty_set(&port->port, tty);
+ 			tty->driver = usb_serial_tty_driver;
+ 			tty->index = co->index;
++			init_ldsem(&tty->ldisc_sem);
+ 			if (tty_init_termios(tty)) {
+ 				retval = -ENOMEM;
+ 				dev_err(&port->dev, "no more memory\n");
+-- 
+2.2.2
+
