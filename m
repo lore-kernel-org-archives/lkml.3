@@ -1,123 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762083AbbA1WZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 17:25:09 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:64354 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697AbbA1ULj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:11:39 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Sylvain Rochet <sylvain.rochet@finsecur.com>
-CC: "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "peda@axentia.se" <peda@axentia.se>,
-        "sergei.shtylyov@cogentembedded.com" 
-	<sergei.shtylyov@cogentembedded.com>,
-        "linux@maxim.org.za" <linux@maxim.org.za>
-Subject: RE: [PATCH v4 00/13] AT91 pm cleanup for 3.20
-Thread-Topic: [PATCH v4 00/13] AT91 pm cleanup for 3.20
-Thread-Index: AQHQOptf4BMn4ugjt0GBFS6y1iLbf5zUtgyAgAAB6ACAAIbGkA==
-Date: Wed, 28 Jan 2015 09:12:07 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BFD377D3@penmbx01>
-References: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
- <20150128085913.GA7742@gradator.net> <20150128090602.GA19088@gradator.net>
-In-Reply-To: <20150128090602.GA19088@gradator.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="utf-8"
+	id S1757116AbbA1UYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:24:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58650 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757036AbbA1UYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:24:08 -0500
+Message-ID: <54C8A850.1000205@suse.cz>
+Date: Wed, 28 Jan 2015 10:13:52 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        Ebru Akagunduz <ebru.akagunduz@gmail.com>
+CC: linux-mm@kvack.org, akpm@linux-foundation.org, kirill@shutemov.name,
+        mhocko@suse.cz, mgorman@suse.de, rientjes@google.com,
+        sasha.levin@oracle.com, hughd@google.com, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        zhangyanfei.linux@aliyun.com
+Subject: Re: [PATCH v3] mm: incorporate read-only pages into transparent huge
+ pages
+References: <1422380353-4407-1-git-send-email-ebru.akagunduz@gmail.com> <20150128002711.GY11755@redhat.com>
+In-Reply-To: <20150128002711.GY11755@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SMPFTn008045
 
-Hi Sylvain,
+On 01/28/2015 01:27 AM, Andrea Arcangeli wrote:
+> On Tue, Jan 27, 2015 at 07:39:13PM +0200, Ebru Akagunduz wrote:
+>> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+>> index 817a875..17d6e59 100644
+>> --- a/mm/huge_memory.c
+>> +++ b/mm/huge_memory.c
+>> @@ -2148,17 +2148,18 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>>   {
+>>   	struct page *page;
+>>   	pte_t *_pte;
+>> -	int referenced = 0, none = 0;
+>> +	int referenced = 0, none = 0, ro = 0, writable = 0;
+>
+> So your "writable" addition is enough and simpler/better than "ro"
+> counting. Once "ro" is removed "writable" can actually start to make a
+> difference (at the moment it does not).
+>
+> I'd suggest to remove "ro".
+>
+> The sysctl was there only to reduce the memory footprint but
+> collapsing readonly swapcache won't reduce the memory footprint. So it
+> may have been handy before but this new "writable" looks better now
+> and keeping both doesn't help (keeping "ro" around prevents "writable"
+> to make a difference).
 
-> -----Original Message-----
-> From: Sylvain Rochet [mailto:sylvain.rochet@finsecur.com]
-> Sent: Wednesday, January 28, 2015 5:06 PM
-> To: Yang, Wenyou
-> Cc: Ferre, Nicolas; linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
-> linux-kernel@vger.kernel.org; alexandre.belloni@free-electrons.com;
-> peda@axentia.se; sergei.shtylyov@cogentembedded.com; linux@maxim.org.za
-> Subject: Re: [PATCH v4 00/13] AT91 pm cleanup for 3.20
-> 
-> Hello Wenyou,
-> 
-> On Wed, Jan 28, 2015 at 09:59:13AM +0100, Sylvain Rochet wrote:
-> > Hello Wenyou,
-> >
-> > On Wed, Jan 28, 2015 at 09:39:32AM +0800, Wenyou Yang wrote:
-> > > Hi Nicolas,
-> > >
-> > > This version is rebased on the branch: at91-3.20-cleanup of the repository
-> > > 	git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git
-> > >
-> > > It is purpose to clean up the PM code, includes the patches from Peter Rosin
-> and Sylvain Rochet.
-> > >
-> > > Since verifying the USB clock and USB PLL disabling before
-> > > suspending to memory, it aslo depends on the following patch serials from
-> Sylvain:
-> > > 	[PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
-> > > 	[PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
-> > >
-> > > Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
-> > > The suspend to standby mode uses the same sram function as the suspend to
-> memory mode.
-> > > Remove some unused code.
-> > >
-> > > Alexandr & Sylvain, Thank you very much for so many feedbacks.
-> > >
-> > > Changes in v2:
-> > >  - Rebase on the at91-3.20-cleanup branch
-> > >  - Recover the verify clock condition, only for suspend to memory.
-> > >  - Collect ACK from Alexandre
-> > >  - Add the macro for PM mode
-> > >
-> > > Changes in v3:
-> > >  - Clear unused state argument in at91_pm_verify_clocks()
-> > >  - Remove pr_info("AT91:... slow_clock ? ..") in patch 07/13.
-> >
-> > Changes in v4: ? :-)
+Agree.
 
-Yes, I am not careful.
+>> @@ -2179,6 +2177,34 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
+>>   		 */
+>>   		if (!trylock_page(page))
+>>   			goto out;
+>> +
+>> +		/*
+>> +		 * cannot use mapcount: can't collapse if there's a gup pin.
+>> +		 * The page must only be referenced by the scanned process
+>> +		 * and page swap cache.
+>> +		 */
+>> +		if (page_count(page) != 1 + !!PageSwapCache(page)) {
+>> +			unlock_page(page);
+>> +			goto out;
+>> +		}
+>> +		if (!pte_write(pteval)) {
+>> +			if (++ro > khugepaged_max_ptes_none) {
+>> +				unlock_page(page);
+>> +				goto out;
+>> +			}
+>> +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
+>> +				unlock_page(page);
+>> +				goto out;
+>> +			}
+>> +			/*
+>> +			 * Page is not in the swap cache, and page count is
+>> +			 * one (see above). It can be collapsed into a THP.
+>> +			 */
+>> +			VM_BUG_ON(page_count(page) != 1);
+>
+> In an earlier email I commented on this suggestion you received during
+> previous code review: the VM_BUG_ON is not ok because it can generate
+> false positives.
+>
+> It's perfectly ok if page_count is not 1 if the page is isolated by
+> another CPU (another cpu calling isolate_lru_page).
+>
+> The page_count check there is to ensure there are no gup-pins, and
+> that is achieved during the check. The VM may still mangle the
+> page_count and it's ok (the page count taken by the VM running in
+> another CPU doesn't need to be transferred to the collapsed THP).
+>
+> In short, the check "page_count(page) != 1 + !!PageSwapCache(page)"
+> doesn't imply that the page_count cannot change. It only means at any
+> given time there was no gup-pin at the very time of the check. It also
+> means there were no other VM pin, but what we care about is only the
+> gup-pin. The VM LRU pin can still be taken after the check and it's
+> ok. The GUP pin cannot be taken because we stopped all gup so we're
+> safe if the check passes.
+>
+> So you can simply delete the VM_BUG_ON, the earlier code there, was fine.
 
-Can I resend?
+There's still the comment that's IMHO misleading in light of your 
+explanation:
 
-> 
-> Actually, I guess it is:
-> 
-> Changes in v2:
->  - Rebase on the at91-3.20-cleanup branch
->  - Recover the verify clock condition, only for suspend to memory.
->  - Collect ACK from Alexandre
->  - Add the macro for PM mode
-> 
-> Changes in v3
->  - Sylvain splits the patch in two
->  - Add handling if no sram allocated for PM
->  - Retain the STANDBY and SUSPEND_MEM select in at91_pm_enter.
-> 
-> Changes in v4:
->  - Clear unused state argument in at91_pm_verify_clocks()
->  - Remove pr_info("AT91:... slow_clock ? ..") in patch 07/13.
-> 
-> 
-> (I prefer the reverse order, but, details)
-> 
-> Sylvain
+/*
+  * Page is not in the swap cache, and page count is
+  * one (see above). It can be collapsed into a THP.
+  */
 
-Best Regards,
-Wenyou Yang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Maybe just delete it too.
+
+>
+>> +		} else {
+>> +			writable = 1;
+>> +		}
+>> +
+>
+> I suggest to make writable a bool and use writable = false to init,
+> and writable = true above.
+>
+> When a value can only be 0|1 bool is better (it can be casted and
+> takes the same memory as an int, it just allows the compiler to be
+> more strict and the fact it makes the code more self explanatory).
+
+While at it, "referenced" is also used only as a bool, so convert it to 
+bool as well?
+
+>> +			if (++ro > khugepaged_max_ptes_none)
+>> +				goto out_unmap;
+>
+> As mentioned above the ro counting can go, and we can keep only
+> your new writable addition, as mentioned above.
+>
+> Thanks,
+> Andrea
+>
+
