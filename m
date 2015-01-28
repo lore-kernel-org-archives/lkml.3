@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608AbbA1U6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:58:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53892 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678AbbA1U57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:57:59 -0500
-Date: Wed, 28 Jan 2015 09:15:06 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ktest: restore tty settings after closing console
-Message-ID: <20150128151506.GB26843@treble.redhat.com>
-References: <1bb89abc0025cf1d6da657c7ba58bbeb4381a515.1422382008.git.jpoimboe@redhat.com>
- <20150127170129.7db53047@gandalf.local.home>
- <20150128145923.GA26843@treble.redhat.com>
- <20150128100831.18cdad60@gandalf.local.home>
+	id S1756066AbbA2Bgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:36:33 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:49644 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509AbbA2Bfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:35:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Hans de Goede <hdegoede@redhat.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Chen-Yu Tsai <wens@csie.org>
+Subject: [PATCH] Input: sun4i-ts: add thermal driver dependency
+Date: Wed, 28 Jan 2015 16:17:10 +0100
+Message-ID: <2265502.1m7jYBaqyh@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20150128100831.18cdad60@gandalf.local.home>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:ntJ1gzIvReVBSmq1gxgnX6rgshkehWPi3am8rKZPFswMUNd0h24
+ iRbAWmJU3dc9U8KzdXv4zvxvu2uNOeDXy9PlJo4Ky4s69yP/K03zmT5ufY4NcBYzO2HJLEU
+ ADappQ9DXGFdysPMHjlVpuYvaaXg+QCmSHM0g73QDedf9k3csJyc7be2fDwKzrdjCplWWM+
+ yDWavGzBzB3yknBXCTGtA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 10:08:31AM -0500, Steven Rostedt wrote:
-> On Wed, 28 Jan 2015 08:59:23 -0600
-> Josh Poimboeuf <jpoimboe@redhat.com> wrote:
-> 
-> > On Tue, Jan 27, 2015 at 05:01:29PM -0500, Steven Rostedt wrote:
-> > > On Tue, 27 Jan 2015 12:10:04 -0600
-> > > Josh Poimboeuf <jpoimboe@redhat.com> wrote:
-> > > 
-> > > > When ktest runs the console program as a child process, the parent and
-> > > > child share the same tty for stdin and stderr.  This is problematic when
-> > > > using a libvirt target.  The "virsh console" program makes a lot of
-> > > > changes to the tty settings, making ktest's output hard to read
-> > > > (carriage returns don't work).  After ktest exits, the terminal is
-> > > > unusable (CRs broken, stdin isn't echoed).
-> > > > 
-> > > > I think the best way to fix this issue would be to create a
-> > > > pseudoterminal (pty pair) so the child process would have a dedicated
-> > > > tty, and then use pipes to connect the two ttys.  I'm not sure if that's
-> > > > overkill, but it's far beyond my current Perl abilities.
-> > > 
-> > > And beyond mine too. I tried to get that right a few times, and it
-> > > never worked out. Maybe someone with more oyster skilz can fix this.
-> > 
-> > I decided to level up my oyster skilz.  I came up with this (to be
-> > applied instead of the original patch).  It's working well for me.
-> 
-> I already applied your other patch. If there's any other work, please
-> apply it on top. I in the process of testing other changes on top of
-> this too. I'll be pushing it soon to my for-next linux-ktest.git tree,
-> after I'm finished testing.
-> 
-> 
-> > Right now, stdin isn't hooked up, so the user can't mess with the
-> > console.  Is stdin needed?
-> 
-> Actually, I do. I found it's nice to move things along when the console
-> shows grub or syslinux options, and I can hit enter and it continues.
-> 
-> It's not critical, but it's a freebee for me.
+The sun4i-ts driver has had a dependency on the thermal code
+since it was first merged, but this is not currently enforced
+in Kconfig, so in some randconfig builds we get
 
-Ok, I'll add stdin for v2.
+drivers/built-in.o: In function `sun4i_ts_remove':
+:(.text+0x2376f4): undefined reference to `thermal_zone_of_sensor_unregister'
+drivers/built-in.o: In function `sun4i_ts_probe':
+:(.text+0x237a94): undefined reference to `thermal_zone_of_sensor_register'
+:(.text+0x237c00): undefined reference to `thermal_zone_of_sensor_unregister'
 
--- 
-Josh
+We need the dependency on THERMAL in order to ensure that this
+driver becomes a loadable module if the thermal support itself
+is modular, while the dependency on THERMAL_OF is a runtime dependency
+and the driver will still build but not work if it is missing.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 6decea7c5438e2 ("Input: add driver for Allwinner sunxi SoC's rtp controller")
+
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 58917525126e..e2447f0063b7 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -943,6 +943,8 @@ config TOUCHSCREEN_SUN4I
+ 	tristate "Allwinner sun4i resistive touchscreen controller support"
+ 	depends on ARCH_SUNXI || COMPILE_TEST
+ 	depends on HWMON
++	depends on THERMAL
++	depends on THERMAL_OF || COMPILE_TEST
+ 	help
+ 	  This selects support for the resistive touchscreen controller
+ 	  found on Allwinner sunxi SoCs.
+
