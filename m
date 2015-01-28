@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762867AbbA1F0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:26:05 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37230 "EHLO mail.kernel.org"
+	id S1762849AbbA1FZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:25:49 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37239 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933362AbbA1EPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:15:01 -0500
+	id S933369AbbA1EPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:15:02 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ross Lagerwall <ross.lagerwall@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 19/91] xen/manage: Always freeze/thaw processes when suspend/resuming
-Date: Wed, 28 Jan 2015 12:06:45 +0800
-Message-Id: <1422418236-12852-38-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 020/177] Drivers: hv: vmbus: Cleanup vmbus_close_internal()
+Date: Wed, 28 Jan 2015 12:06:46 +0800
+Message-Id: <1422418236-12852-39-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,67 +21,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ross Lagerwall <ross.lagerwall@citrix.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 61a734d305e16944b42730ef582a7171dc733321 upstream.
+commit 98d731bb064a9d1817a6ca9bf8b97051334a7cfe upstream.
 
-Always freeze processes when suspending and thaw processes when resuming
-to prevent a race noticeable with HVM guests.
+Eliminate calls to BUG_ON() in vmbus_close_internal().
+We have chosen to potentially leak memory, than crash the guest
+in case of failures.
 
-This prevents a deadlock where the khubd kthread (which is designed to
-be freezable) acquires a usb device lock and then tries to allocate
-memory which requires the disk which hasn't been resumed yet.
-Meanwhile, the xenwatch thread deadlocks waiting for the usb device
-lock.
+In this version of the patch I have addressed comments from
+Dan Carpenter (dan.carpenter@oracle.com).
 
-Freezing processes fixes this because the khubd thread is only thawed
-after the xenwatch thread finishes resuming all the devices.
-
-Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-[lizf: Backported to 3.4: adjust context]
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[lizf: Backported to 3.4: s/return ret/return/g]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/xen/manage.c | 7 -------
- 1 file changed, 7 deletions(-)
+ drivers/hv/channel.c | 27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 412b96c..8da1ed1 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -109,16 +109,11 @@ static void do_suspend(void)
+diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+index 7bbbb95..3c8b2c4 100644
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -531,11 +531,28 @@ void vmbus_close(struct vmbus_channel *channel)
  
- 	shutting_down = SHUTDOWN_SUSPEND;
+ 	ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel));
  
--#ifdef CONFIG_PREEMPT
--	/* If the kernel is preemptible, we need to freeze all the processes
--	   to prevent them from being in the middle of a pagetable update
--	   during suspend. */
- 	err = freeze_processes();
- 	if (err) {
- 		printk(KERN_ERR "xen suspend: freeze failed %d\n", err);
- 		goto out;
- 	}
--#endif
+-	BUG_ON(ret != 0);
++	if (ret) {
++		pr_err("Close failed: close post msg return is %d\n", ret);
++		/*
++		 * If we failed to post the close msg,
++		 * it is perhaps better to leak memory.
++		 */
++		return;
++	}
++
+ 	/* Tear down the gpadl for the channel's ring buffer */
+-	if (channel->ringbuffer_gpadlhandle)
+-		vmbus_teardown_gpadl(channel,
+-					  channel->ringbuffer_gpadlhandle);
++	if (channel->ringbuffer_gpadlhandle) {
++		ret = vmbus_teardown_gpadl(channel,
++					   channel->ringbuffer_gpadlhandle);
++		if (ret) {
++			pr_err("Close failed: teardown gpadl return %d\n", ret);
++			/*
++			 * If we failed to teardown gpadl,
++			 * it is perhaps better to leak memory.
++			 */
++			return;
++		}
++	}
  
- 	err = dpm_suspend_start(PMSG_FREEZE);
- 	if (err) {
-@@ -170,10 +165,8 @@ out_resume:
- 	clock_was_set();
+ 	/* Cleanup the ring buffers for this channel */
+ 	hv_ringbuffer_cleanup(&channel->outbound);
+@@ -543,8 +560,6 @@ void vmbus_close(struct vmbus_channel *channel)
  
- out_thaw:
--#ifdef CONFIG_PREEMPT
- 	thaw_processes();
- out:
--#endif
- 	shutting_down = SHUTDOWN_INVALID;
+ 	free_pages((unsigned long)channel->ringbuffer_pages,
+ 		get_order(channel->ringbuffer_pagecount * PAGE_SIZE));
+-
+-
  }
- #endif	/* CONFIG_HIBERNATE_CALLBACKS */
+ EXPORT_SYMBOL_GPL(vmbus_close);
+ 
 -- 
 1.9.1
 
