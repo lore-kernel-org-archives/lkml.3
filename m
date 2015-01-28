@@ -1,110 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761104AbbA2J3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:29:45 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:55577 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758354AbbA2J3l (ORCPT
+	id S1761235AbbA1Uiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:38:55 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:49344 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761191AbbA1Uix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:29:41 -0500
-Date: Wed, 28 Jan 2015 13:18:33 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dominik Vogt <vogt@linux.vnet.ibm.com>,
-        Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
-Message-ID: <20150128121833.GE4633@osiris>
-References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
- <1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
- <20150126093701.699763dc@gandalf.local.home>
- <20150127061941.GA4591@linux.vnet.ibm.com>
- <20150127094228.50e642fc@gandalf.local.home>
- <20150128053645.GA4633@osiris>
- <20150128065754.4466f07b@gandalf.local.home>
+	Wed, 28 Jan 2015 15:38:53 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Murali Karicheri <m-karicheri2@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Rob Herring <robh+dt@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to of_iommu_configure()
+Date: Wed, 28 Jan 2015 14:23:03 +0200
+Message-ID: <3953539.m9NpxSWcJ5@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150128113300.GF1569@arm.com>
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <54C68C1D.5030605@ti.com> <20150128113300.GF1569@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150128065754.4466f07b@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012812-0025-0000-0000-000003A48671
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 06:57:54AM -0500, Steven Rostedt wrote:
-> On Wed, 28 Jan 2015 06:36:45 +0100
-> Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+Hi Will,
+
+On Wednesday 28 January 2015 11:33:00 Will Deacon wrote:
+> On Mon, Jan 26, 2015 at 06:49:01PM +0000, Murali Karicheri wrote:
+> > On 01/25/2015 08:32 AM, Laurent Pinchart wrote:
+> >> On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
+> >>> Function of_iommu_configure() is called from of_dma_configure() to
+> >>> setup iommu ops using DT property. This API is currently used for
+> >>> platform devices for which DMA configuration (including iommu ops)
+> >>> may come from device's parent. To extend this functionality for PCI
+> >>> devices, this API need to take a parent node ptr as an argument
+> >>> instead of assuming device's parent. This is needed since for PCI, the
+> >>> dma configuration may be defined in the DT node of the root bus
+> >>> bridge's parent device. Currently only dma-range is used for PCI and
+> >>> iommu is not supported. So return error if the device is PCI.
+> >>> 
+> >>> Cc: Joerg Roedel<joro@8bytes.org>
+> >>> Cc: Grant Likely<grant.likely@linaro.org>
+> >>> Cc: Rob Herring<robh+dt@kernel.org>
+> >>> Cc: Bjorn Helgaas<bhelgaas@google.com>
+> >>> Cc: Will Deacon<will.deacon@arm.com>
+> >>> Cc: Russell King<linux@arm.linux.org.uk>
+> >>> Cc: Arnd Bergmann<arnd@arndb.de>
+> >>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
+> >>> 
+> >>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+> >>> ---
+> >>> 
+> >>>   drivers/iommu/of_iommu.c |   10 ++++++++--
+> >>>   drivers/of/platform.c    |    2 +-
+> >>>   include/linux/of_iommu.h |    6 ++++--
+> >>>   3 files changed, 13 insertions(+), 5 deletions(-)
+> >>> 
+> >>> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
+> >>> index af1dc6a..439235b 100644
+> >>> --- a/drivers/iommu/of_iommu.c
+> >>> +++ b/drivers/iommu/of_iommu.c
+> >>> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct
+> >>> device_node *np)
+> >>>   	return ops;
+> >>>  }
+> >>> 
+> >>> -struct iommu_ops *of_iommu_configure(struct device *dev)
+> >>> +struct iommu_ops *of_iommu_configure(struct device *dev,
+> >>> +				     struct device_node *iommu_np)
+> >>>  {
+> >>>   	struct of_phandle_args iommu_spec;
+> >>>   	struct device_node *np;
+> >>>   	struct iommu_ops *ops = NULL;
+> >>>   	int idx = 0;
+> >>> 
+> >>> +	if (dev_is_pci(dev)) {
+> >>> +		dev_err(dev, "iommu is currently not supported for PCI\n");
+> >>> +		return NULL;
+> >>> +	}
+> >>> +
+> >>>   	/*
+> >>>   	 * We don't currently walk up the tree looking for a parent IOMMU.
+> >>>   	 * See the `Notes:' section of
+> >>>   	 * Documentation/devicetree/bindings/iommu/iommu.txt
+> >>>   	 */
+> >> 
+> >> Wouldn't it be better to fix this rather than passing the device node
+> >> pointer to the function ? The solution would be more generic.
+> > 
+> > Laurent,
+> > 
+> > Will Deacon (Copied here) is working on this as we alteady discussed in
+> > this thread. So it will be addressed by him in another series.
 > 
-> > On Tue, Jan 27, 2015 at 09:42:28AM -0500, Steven Rostedt wrote:
-> > > On Tue, 27 Jan 2015 07:19:42 +0100
-> > > Dominik Vogt <vogt@linux.vnet.ibm.com> wrote:
-> > >  
-> > > > While the kernel may use only profiling or hotpatch at the same
-> > > > time, Gcc is able to generate both for the same function.
-> > > 
-> > > Understood, but would that be useful for the kernel?
-> > 
-> > Right now not. We may change that anyway in the future if needed.
-> > 
-> > Steven, how do we proceed with this small series?
-> > 
-> > Since there don't seem to be any objections, I'll repost with the
-> > changed notrace define. However I think the whole stuff should go
-> > upstream via the ftrace tree. Is that ok with you?
-> 
-> I can take it or you can, I'm fine either way. If you want to take it,
-> just add my Acked-by. If you prefer me to take it, just let me know.
+> Well, "working on this" equates to "has it somewhere near the bottom of
+> a very long list" :)
 
-Ok, then we'll put that on the s390 tree for the next merge window, so
-we can fix any potential fallout easier.
-I'll add your Acked-by to all three patches. The notrace patch is the
-only one that I changed (see below).
+What's your opinion on this patch then, do you think adding the iommu_np 
+argument makes sense as a temporary hack, or should we instead walk up the 
+tree looking for an iommus attribute in parent nodes ? I don't expect that to 
+be insanely difficult to code.
 
-Thanks!
-
->From a24aba18536b64f5395d4901499152191cbc4fae Mon Sep 17 00:00:00 2001
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-Date: Sun, 18 Jan 2015 16:45:42 +0100
-Subject: [PATCH 1/3] ftrace: let notrace function attribute disable
- hotpatching if necessary
-
-gcc supports an s390 specific function attribute called "hotpatch".
-It can be used to specify the number of halfwords that shall be added before
-and after a function and which shall be filled with nops for runtime patching.
-
-s390 will use the hotpatch attribute for function tracing, therefore make
-sure that the notrace function attribute either disables the mcount call
-or in case of hotpatch nop generation.
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- include/linux/compiler.h | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 33063f872ee3..1a31ab4fbdca 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -54,7 +54,11 @@ extern void __chk_io_ptr(const volatile void __iomem *);
- #include <linux/compiler-gcc.h>
- #endif
- 
-+#ifdef CC_USING_HOTPATCH
-+#define notrace __attribute__((hotpatch(0,0)))
-+#else
- #define notrace __attribute__((no_instrument_function))
-+#endif
- 
- /* Intel compiler defines __GNUC__. So we will overwrite implementations
-  * coming from above header files here
 -- 
-2.1.4
+Regards,
+
+Laurent Pinchart
 
