@@ -1,120 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760829AbbA1VgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:36:15 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45525 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761444AbbA1UnG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:43:06 -0500
-Date: Wed, 28 Jan 2015 12:24:03 +0000
-From: Javi Merino <javi.merino@arm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v4 1/3] tracing: Add array printing helpers
-Message-ID: <20150128122403.GA1542@e104805>
-References: <1422274311-19738-1-git-send-email-javi.merino@arm.com>
- <1422274311-19738-2-git-send-email-javi.merino@arm.com>
- <20150127223557.407f3a13@gandalf.local.home>
- <20150128112609.GA2938@e104805>
+	id S1752250AbbA1UwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:52:07 -0500
+Received: from mga09.intel.com ([134.134.136.24]:17180 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752130AbbA1UwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:52:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,480,1418112000"; 
+   d="scan'208";a="677304076"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Wincy Van <fanwenyi0529@gmail.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Subject: RE: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
+Thread-Topic: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
+Thread-Index: AQHQN79lT9Shw/DNlk+phY4fCFwl65zVMZZg//+J0gCAAKsDYP//gx4AgACHCkD//395AAAQ3TKA
+Date: Wed, 28 Jan 2015 12:26:05 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C8E6@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C563@SHSMSX104.ccr.corp.intel.com>
+ <CACzj_yVqDYyz5VwCX5d=Po2X_DdsHbqLmON8N=1PVLLocoHNpw@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C800@SHSMSX104.ccr.corp.intel.com>
+ <CACzj_yWZzhgjqBPNkxy39v6-uXnRpKb0Eo-YjEQwfSYL+tT-bQ@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C865@SHSMSX104.ccr.corp.intel.com>
+ <CACzj_yV+eQP1bZZ07MvECMrQ52DgkcrfsJTFDQ=uPz4j7LkEHg@mail.gmail.com>
+In-Reply-To: <CACzj_yV+eQP1bZZ07MvECMrQ52DgkcrfsJTFDQ=uPz4j7LkEHg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20150128112609.GA2938@e104805>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SLFXVJ006987
 
-On Wed, Jan 28, 2015 at 11:26:09AM +0000, Javi Merino wrote:
-> On Wed, Jan 28, 2015 at 03:35:57AM +0000, Steven Rostedt wrote:
-> > On Mon, 26 Jan 2015 12:11:49 +0000
-> > Javi Merino <javi.merino@arm.com> wrote:
-> > 
-> > > From: Dave Martin <Dave.Martin@arm.com>
-> > > 
-> > > If a trace event contains an array, there is currently no standard
-> > > way to format this for text output.  Drivers are currently hacking
-> > > around this by a) local hacks that use the trace_seq functionailty
-> > > directly, or b) just not printing that information.  For fixed size
-> > > arrays, formatting of the elements can be open-coded, but this gets
-> > > cumbersome for arrays of non-trivial size.
-> > > 
-> > > These approaches result in non-standard content of the event format
-> > > description delivered to userspace, so userland tools needs to be
-> > > taught to understand and parse each array printing method
-> > > individually.
-> > > 
-> > > This patch implements common __print_<type>_array() helpers that
-> > > tracepoint implementations can use instead of reinventing them.  A
-> > > simple C-style syntax is used to delimit the array and its elements
-> > > {like,this}.
-> > > 
-> > > So that the helpers can be used with large static arrays as well as
-> > > dynamic arrays, they take a pointer and element count: they can be
-> > > used with __get_dynamic_array() for use with dynamic arrays.
-> > > 
-> > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > Cc: Ingo Molnar <mingo@redhat.com>
-> > > Signed-off-by: Dave Martin <Dave.Martin@arm.com>
-> > > Signed-off-by: Javi Merino <javi.merino@arm.com>
-> > > ---
-> > >  include/linux/ftrace_event.h |  4 ++++
-> > >  include/trace/ftrace.h       |  9 +++++++++
-> > >  kernel/trace/trace_output.c  | 44 ++++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 57 insertions(+)
-> > > 
-> > > diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> > > index 0bebb5c348b8..5aa4a9269547 100644
-> > > --- a/include/linux/ftrace_event.h
-> > > +++ b/include/linux/ftrace_event.h
-> > > @@ -44,6 +44,10 @@ const char *ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
-> > >  const char *ftrace_print_hex_seq(struct trace_seq *p,
-> > >  				 const unsigned char *buf, int len);
-> > >  
-> > > +const char *ftrace_print_array_seq(struct trace_seq *p,
-> > > +				   const void *buf, int buf_len,
-> > > +				   size_t el_size);
-> > > +
-> > >  struct trace_iterator;
-> > >  struct trace_event;
-> > >  
-> > > diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> > > index 139b5067345b..36afd0ed3458 100644
-> > > --- a/include/trace/ftrace.h
-> > > +++ b/include/trace/ftrace.h
-> > > @@ -263,6 +263,14 @@
-> > >  #undef __print_hex
-> > >  #define __print_hex(buf, buf_len) ftrace_print_hex_seq(p, buf, buf_len)
-> > >  
-> > > +#undef __print_array
-> > > +#define __print_array(array, count, el_size)				\
-> > > +	({								\
-> > > +		BUILD_BUG_ON(el_size != 8 && el_size != 16 &&		\
-> > > +			el_size != 32 && el_size != 64);		\
-> > 
-> > I tried testing this patch by writing a print_array myself, and I kept
-> > hitting this BUILD_BUG_ON, and was wondering WTF? Then it dawned on me.
-> > 
-> > el_size should not be based on bits, it should be based on bytes. I
-> > passed in "sizeof()" which doesn't work with bits.
-
-Ugh.  If you use sizeof() in print_array() then trace-cmd won't be
-able to parse it since it doesn't have an implementation of sizeof().
-
-  [thermal_power_allocator:thermal_power_allocator] function sizeof not defined
-  Error: expected type 5 but read 0
-*** Error in `./trace-cmd': double free or corruption (fasttop): 0x0000000000e04980 ***
-
-Implementing a fully functional sizeof() in trace-cmd will be a huge
-beast, I guess you will have to limit it to only some types.
-
-> > Please update to "el_size < 1 || el_size > 8".
-> > 
-> > and adjust the rest accordingly.
+Wincy Van wrote on 2015-01-28:
+> On Wed, Jan 28, 2015 at 7:52 PM, Zhang, Yang Z <yang.z.zhang@intel.com>
+> wrote:
+>>>> 
+>>> 
+>>> If L0 wants to intercept a msr, we should set
+>>> vmx_msr_bitmap_legacy(_x2apic) and vmx_msr_bitmap_longmode(_x2apic),
+>>> and that bitmaps should only be loaded in non-nested entry. Currently
+>>> we only clear the corresponding bits if L1 enables virtualize x2apic
+>>> mode, all the other bits are all set. On nested entry, we load
+>>> nested_msr_bitmap, on nested vmexit, we will restore L0's bitmap. In
+>>> the nested entry, L0 only care about L2's msr access, not L1's. I
+>>> think that in nested entry, nested_msr_bitmap is "vmcs01->msr_bitmap"
+>>> as your mentioned above.
+>> 
+>> Mmm... I think if the bit is setting in vmcs01->msr_bitmap means
+>> whenever
+> the VCPU(no matter in nested guest mode or not) accesses this msr
+> should cause vmexit, not only L1. That's why need to construct the
+> vmcs02->msr_bitmap based on (vmcs01->msr_bitmap ORed
+> vmcs12->msr_bitmap).
+>> 
 > 
-> Done, I'm testing it now.  I'll send a v5 later today.
+> You are right, but this is not fit for all the cases, we should custom
+> the nested_msr_bitmap.
+> e.g.  Currently L0 wants to intercept some of the x2apic msrs' reading:
+>          if (enable_apicv) {
+>                 for (msr = 0x800; msr <= 0x8ff; msr++)
+>                         vmx_disable_intercept_msr_read_x2apic(msr);
+>                 /* According SDM, in x2apic mode, the whole id reg is used.
+>                  * But in KVM, it only use the highest eight bits. Need to
+>                  * intercept it */
+>                 vmx_enable_intercept_msr_read_x2apic(0x802); /* TMCCT */
+>                 vmx_enable_intercept_msr_read_x2apic(0x839); /* TPR */
+>                 vmx_disable_intercept_msr_write_x2apic(0x808); /* EOI */
+>                 vmx_disable_intercept_msr_write_x2apic(0x80b); /*
+>                 SELF-IPI */
+>                 vmx_disable_intercept_msr_write_x2apic(0x83f);
+>         }
+> But L1 may not want this. So I think we are better to deal with the
+
+Actually, from L0's point, it is totally unaware of the L2. The only thing L0 aware is that the CPU should follow L0's configuration when VCPU is running. So if L0 wants to trap a msr, then the read operation to this msr should cause vmexit unconditionally no matter who is running(who means L1, L2, L3.....).
+
+> msrs seperately, there is not a common way suit for all the cases. If
+> other features want to intercept a msr in nested entry, they can put
+> the custom code in nested_vmx_merge_msr_bitmap.
+
+Yes, if other features want to do it in 'nested' entry, they can fill nested_vmx_merge_msr_bitmap. But if in non-nested case, it should be our responsibly to handle it correctly, how about add following check:
+
+if (type & MSR_TYPE_R && !test_bit(msr, vmcs01_msr_bitmap) && !test_bit(msr, msr_bitmap_l1 + 0x000 / f))
+        __clear_bit(msr, msr_bitmap_nested + 0x000 / f);
+
+
 > 
-> Cheers,
-> Javi
+> 
+> Thanks,
+> Wincy
+
+
+Best regards,
+Yang
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
