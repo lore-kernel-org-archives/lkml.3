@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693AbbA1EPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:15:55 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37535 "EHLO mail.kernel.org"
+	id S1762673AbbA1FVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:21:37 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37558 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933663AbbA1EPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:15:51 -0500
+	id S933668AbbA1EPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:15:54 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
-        Willem Pinckaers <willem@lekkertech.net>,
-        "Don A. Bailey" <donb@securitymouse.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 028/177] Documentation: lzo: document part of the encoding
-Date: Wed, 28 Jan 2015 12:07:02 +0800
-Message-Id: <1422418236-12852-55-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 28/91] Input: synaptics - add support for ForcePads
+Date: Wed, 28 Jan 2015 12:07:03 +0800
+Message-Id: <1422418236-12852-56-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -23,199 +20,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Willy Tarreau <w@1wt.eu>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit d98a0526434d27e261f622cf9d2e0028b5ff1a00 upstream.
+commit 5715fc764f7753d464dbe094b5ef9cffa6e479a4 upstream.
 
-Add a complete description of the LZO format as processed by the
-decompressor. I have not found a public specification of this format
-hence this analysis, which will be used to better understand the code.
+ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
+physical buttons, instead they generate primary button click when user
+presses somewhat hard on the surface of the touchpad. Unfortunately they
+also report primary button click whenever there are 2 or more contacts
+on the pad, messing up all multi-finger gestures (2-finger scrolling,
+multi-finger tapping, etc). To cope with this behavior we introduce a
+delay (currently 50 msecs) in reporting primary press in case more
+contacts appear.
 
-Cc: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- Documentation/lzo.txt | 164 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 164 insertions(+)
- create mode 100644 Documentation/lzo.txt
+ drivers/input/mouse/synaptics.c | 68 +++++++++++++++++++++++++++++++----------
+ drivers/input/mouse/synaptics.h | 11 +++++++
+ 2 files changed, 63 insertions(+), 16 deletions(-)
 
-diff --git a/Documentation/lzo.txt b/Documentation/lzo.txt
-new file mode 100644
-index 0000000..ea45dd3
---- /dev/null
-+++ b/Documentation/lzo.txt
-@@ -0,0 +1,164 @@
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 326e194..32b1363 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -517,10 +517,61 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 			 ((buf[0] & 0x04) >> 1) |
+ 			 ((buf[3] & 0x04) >> 2));
+ 
++		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
++			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
++		    hw->w == 2) {
++			synaptics_parse_agm(buf, priv, hw);
++			return 1;
++		}
 +
-+LZO stream format as understood by Linux's LZO decompressor
-+===========================================================
++		hw->x = (((buf[3] & 0x10) << 8) |
++			 ((buf[1] & 0x0f) << 8) |
++			 buf[4]);
++		hw->y = (((buf[3] & 0x20) << 7) |
++			 ((buf[1] & 0xf0) << 4) |
++			 buf[5]);
++		hw->z = buf[2];
 +
-+Introduction
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 
+-		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
++		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
++			/*
++			 * ForcePads, like Clickpads, use middle button
++			 * bits to report primary button clicks.
++			 * Unfortunately they report primary button not
++			 * only when user presses on the pad above certain
++			 * threshold, but also when there are more than one
++			 * finger on the touchpad, which interferes with
++			 * out multi-finger gestures.
++			 */
++			if (hw->z == 0) {
++				/* No contacts */
++				priv->press = priv->report_press = false;
++			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
++				/*
++				 * Single-finger touch with pressure above
++				 * the threshold. If pressure stays long
++				 * enough, we'll start reporting primary
++				 * button. We rely on the device continuing
++				 * sending data even if finger does not
++				 * move.
++				 */
++				if  (!priv->press) {
++					priv->press_start = jiffies;
++					priv->press = true;
++				} else if (time_after(jiffies,
++						priv->press_start +
++							msecs_to_jiffies(50))) {
++					priv->report_press = true;
++				}
++			} else {
++				priv->press = false;
++			}
 +
-+  This is not a specification. No specification seems to be publicly available
-+  for the LZO stream format. This document describes what input format the LZO
-+  decompressor as implemented in the Linux kernel understands. The file subject
-+  of this analysis is lib/lzo/lzo1x_decompress_safe.c. No analysis was made on
-+  the compressor nor on any other implementations though it seems likely that
-+  the format matches the standard one. The purpose of this document is to
-+  better understand what the code does in order to propose more efficient fixes
-+  for future bug reports.
++			hw->left = priv->report_press;
 +
-+Description
++		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+ 			/*
+ 			 * Clickpad's button is transmitted as middle button,
+ 			 * however, since it is primary button, we will report
+@@ -539,21 +590,6 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
+ 		}
+ 
+-		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
+-			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
+-		    hw->w == 2) {
+-			synaptics_parse_agm(buf, priv, hw);
+-			return 1;
+-		}
+-
+-		hw->x = (((buf[3] & 0x10) << 8) |
+-			 ((buf[1] & 0x0f) << 8) |
+-			 buf[4]);
+-		hw->y = (((buf[3] & 0x20) << 7) |
+-			 ((buf[1] & 0xf0) << 4) |
+-			 buf[5]);
+-		hw->z = buf[2];
+-
+ 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
+ 		    ((buf[0] ^ buf[3]) & 0x02)) {
+ 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index fd26ccc..ac1b773 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -77,6 +77,11 @@
+  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
+  *					reports 2.
+  * 2	0x20	report min		query 0x0f gives min coord reported
++ * 2	0x80	forcepad		forcepad is a variant of clickpad that
++ *					does not have physical buttons but rather
++ *					uses pressure above certain threshold to
++ *					report primary clicks. Forcepads also have
++ *					clickpad bit set.
+  */
+ #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
+ #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
+@@ -85,6 +90,7 @@
+ #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
+ #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
+ #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
++#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
+ 
+ /* synaptics modes query bits */
+ #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
+@@ -174,6 +180,11 @@ struct synaptics_data {
+ 	 */
+ 	struct synaptics_hw_state agm;
+ 	bool agm_pending;			/* new AGM packet received */
 +
-+  The stream is composed of a series of instructions, operands, and data. The
-+  instructions consist in a few bits representing an opcode, and bits forming
-+  the operands for the instruction, whose size and position depend on the
-+  opcode and on the number of literals copied by previous instruction. The
-+  operands are used to indicate :
-+
-+    - a distance when copying data from the dictionary (past output buffer)
-+    - a length (number of bytes to copy from dictionary)
-+    - the number of literals to copy, which is retained in variable "state"
-+      as a piece of information for next instructions.
-+
-+  Optionally depending on the opcode and operands, extra data may follow. These
-+  extra data can be a complement for the operand (eg: a length or a distance
-+  encoded on larger values), or a literal to be copied to the output buffer.
-+
-+  The first byte of the block follows a different encoding from other bytes, it
-+  seems to be optimized for literal use only, since there is no dictionary yet
-+  prior to that byte.
-+
-+  Lengths are always encoded on a variable size starting with a small number
-+  of bits in the operand. If the number of bits isn't enough to represent the
-+  length, up to 255 may be added in increments by consuming more bytes with a
-+  rate of at most 255 per extra byte (thus the compression ratio cannot exceed
-+  around 255:1). The variable length encoding using #bits is always the same :
-+
-+       length = byte & ((1 << #bits) - 1)
-+       if (!length) {
-+               length = ((1 << #bits) - 1)
-+               length += 255*(number of zero bytes)
-+               length += first-non-zero-byte
-+       }
-+       length += constant (generally 2 or 3)
-+
-+  For references to the dictionary, distances are relative to the output
-+  pointer. Distances are encoded using very few bits belonging to certain
-+  ranges, resulting in multiple copy instructions using different encodings.
-+  Certain encodings involve one extra byte, others involve two extra bytes
-+  forming a little-endian 16-bit quantity (marked LE16 below).
-+
-+  After any instruction except the large literal copy, 0, 1, 2 or 3 literals
-+  are copied before starting the next instruction. The number of literals that
-+  were copied may change the meaning and behaviour of the next instruction. In
-+  practice, only one instruction needs to know whether 0, less than 4, or more
-+  literals were copied. This is the information stored in the <state> variable
-+  in this implementation. This number of immediate literals to be copied is
-+  generally encoded in the last two bits of the instruction but may also be
-+  taken from the last two bits of an extra operand (eg: distance).
-+
-+  End of stream is declared when a block copy of distance 0 is seen. Only one
-+  instruction may encode this distance (0001HLLL), it takes one LE16 operand
-+  for the distance, thus requiring 3 bytes.
-+
-+  IMPORTANT NOTE : in the code some length checks are missing because certain
-+  instructions are called under the assumption that a certain number of bytes
-+  follow because it has already been garanteed before parsing the instructions.
-+  They just have to "refill" this credit if they consume extra bytes. This is
-+  an implementation design choice independant on the algorithm or encoding.
-+
-+Byte sequences
-+
-+  First byte encoding :
-+
-+      0..17   : follow regular instruction encoding, see below. It is worth
-+                noting that codes 16 and 17 will represent a block copy from
-+                the dictionary which is empty, and that they will always be
-+                invalid at this place.
-+
-+      18..21  : copy 0..3 literals
-+                state = (byte - 17) = 0..3  [ copy <state> literals ]
-+                skip byte
-+
-+      22..255 : copy literal string
-+                length = (byte - 17) = 4..238
-+                state = 4 [ don't copy extra literals ]
-+                skip byte
-+
-+  Instruction encoding :
-+
-+      0 0 0 0 X X X X  (0..15)
-+        Depends on the number of literals copied by the last instruction.
-+        If last instruction did not copy any literal (state == 0), this
-+        encoding will be a copy of 4 or more literal, and must be interpreted
-+        like this :
-+
-+           0 0 0 0 L L L L  (0..15)  : copy long literal string
-+           length = 3 + (L ?: 15 + (zero_bytes * 255) + non_zero_byte)
-+           state = 4  (no extra literals are copied)
-+
-+        If last instruction used to copy between 1 to 3 literals (encoded in
-+        the instruction's opcode or distance), the instruction is a copy of a
-+        2-byte block from the dictionary within a 1kB distance. It is worth
-+        noting that this instruction provides little savings since it uses 2
-+        bytes to encode a copy of 2 other bytes but it encodes the number of
-+        following literals for free. It must be interpreted like this :
-+
-+           0 0 0 0 D D S S  (0..15)  : copy 2 bytes from <= 1kB distance
-+           length = 2
-+           state = S (copy S literals after this block)
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 2) + D + 1
-+
-+        If last instruction used to copy 4 or more literals (as detected by
-+        state == 4), the instruction becomes a copy of a 3-byte block from the
-+        dictionary from a 2..3kB distance, and must be interpreted like this :
-+
-+           0 0 0 0 D D S S  (0..15)  : copy 3 bytes from 2..3 kB distance
-+           length = 3
-+           state = S (copy S literals after this block)
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 2) + D + 2049
-+
-+      0 0 0 1 H L L L  (16..31)
-+           Copy of a block within 16..48kB distance (preferably less than 10B)
-+           length = 2 + (L ?: 7 + (zero_bytes * 255) + non_zero_byte)
-+        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
-+           distance = 16384 + (H << 14) + D
-+           state = S (copy S literals after this block)
-+           End of stream is reached if distance == 16384
-+
-+      0 0 1 L L L L L  (32..63)
-+           Copy of small block within 16kB distance (preferably less than 34B)
-+           length = 2 + (L ?: 31 + (zero_bytes * 255) + non_zero_byte)
-+        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
-+           distance = D + 1
-+           state = S (copy S literals after this block)
-+
-+      0 1 L D D D S S  (64..127)
-+           Copy 3-4 bytes from block within 2kB distance
-+           state = S (copy S literals after this block)
-+           length = 3 + L
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 3) + D + 1
-+
-+      1 L L D D D S S  (128..255)
-+           Copy 5-8 bytes from block within 2kB distance
-+           state = S (copy S literals after this block)
-+           length = 5 + L
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 3) + D + 1
-+
-+Authors
-+
-+  This document was written by Willy Tarreau <w@1wt.eu> on 2014/07/19 during an
-+  analysis of the decompression code available in Linux 3.16-rc5. The code is
-+  tricky, it is possible that this document contains mistakes or that a few
-+  corner cases were overlooked. In any case, please report any doubt, fix, or
-+  proposed updates to the author(s) so that the document can be updated.
++	/* ForcePad handling */
++	unsigned long				press_start;
++	bool					press;
++	bool					report_press;
+ };
+ 
+ void synaptics_module_init(void);
 -- 
 1.9.1
 
