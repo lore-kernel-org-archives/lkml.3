@@ -1,22 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933358AbbA1Big (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:38:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
+	id S933411AbbA1Bim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:38:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41534 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759052AbbA1Bi1 (ORCPT
+	with ESMTP id S1760020AbbA1Bi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org,
-        "stable@vger.kernel.org, Chris Ball" <chris@printf.net>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tyler Baker <tyler.baker@linaro.org>
-Subject: [PATCH 3.14 44/77] mmc: sdhci: Dont signal the sdio irq if its not setup
-Date: Tue, 27 Jan 2015 17:27:22 -0800
-Message-Id: <20150128012747.276871402@linuxfoundation.org>
+        Jianyu Zhan <nasa4836@gmail.com>, Minchan Kim <minchan@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Shaohua Li <shli@kernel.org>,
+        Bob Liu <bob.liu@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Rafael Aquini <aquini@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Khalid Aziz <khalid.aziz@oracle.com>, Christoph Hellwig <hch@lst.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 45/77] mm/swap.c: clean up *lru_cache_add* functions
+Date: Tue, 27 Jan 2015 17:27:23 -0800
+Message-Id: <20150128012747.306069863@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -31,63 +38,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+From: Jianyu Zhan <nasa4836@gmail.com>
 
-[Not needed in newer kernels due to refactoring fixing this issue.]
+commit 2329d3751b082b4fd354f334a88662d72abac52d upstream.
 
-With 3.14.29 (and older kernels) some of my I.mx6 Sabrelite boards were
-crashing with the following oops:
+In mm/swap.c, __lru_cache_add() is exported, but actually there are no
+users outside this file.
 
-  sdhci: Secure Digital Host Controller Interface driver
-  sdhci: Copyright(c) Pierre Ossman
-  sdhci-pltfm: SDHCI platform and OF driver helper
-  sdhci-esdhc-imx 2198000.usdhc: could not get ultra high speed state, work on normal mode
-  mmc0: no vqmmc regulator found
-  mmc0: SDHCI controller on 2198000.usdhc [2198000.usdhc] using ADMA
-  Unable to handle kernel NULL pointer dereference at virtual address 00000000
-  pgd = c0004000
-  [00000000] *pgd=00000000
-  Internal error: Oops: 5 [#1] SMP ARM
-  Modules linked in:
-  CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.29 #1
-  task: c08a7120 ti: c089c000 task.ti: c089c000
-  PC is at wake_up_process+0x8/0x40
-  LR is at sdhci_irq+0x748/0x9c4
+This patch unexports __lru_cache_add(), and makes it static.  It also
+exports lru_cache_add_file(), as it is use by cifs and fuse, which can
+loaded as modules.
 
-Full boot log can be found at:
-  http://storage.kernelci.org/stable/v3.14.29/arm-multi_v7_defconfig/lab-collabora/boot-imx6q-sabrelite.html
-
-This happens if the sdhci interrupt status contains SDHCI_INT_CARD_INT,
-while the sdio irq was never setup.  This patch fixes that in a minimal
-way by checking if the sdio irq was setup.
-
-In more recent kernels this bug went away due to refactoring done by
-Russel King. So an alternative (potentially better?) fix for this patch
-is to cherrypick the following patches from a recent kernel:
-
-18258f7239a6 - genirq: Provide synchronize_hardirq()
-bf3b5ec66bd0 - mmc: sdio_irq: rework sdio irq handling
-41005003bcaf - mmc: sdhci: clean up interrupt handling
-781e989cf593 - mmc: sdhci: convert to new SDIO IRQ handling
-
-Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Tyler Baker <tyler.baker@linaro.org>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: Bob Liu <bob.liu@oracle.com>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Rafael Aquini <aquini@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/mmc/host/sdhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2537,7 +2537,7 @@ out:
- 	/*
- 	 * We have to delay this as it calls back into the driver.
- 	 */
--	if (cardint)
-+	if (cardint && host->mmc->sdio_irqs)
- 		mmc_signal_sdio_irq(host->mmc);
+---
+ include/linux/swap.h |   19 ++-----------------
+ mm/swap.c            |   31 +++++++++++++++++++++++--------
+ 2 files changed, 25 insertions(+), 25 deletions(-)
+
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -268,8 +268,9 @@ extern unsigned long nr_free_pagecache_p
  
- 	return result;
+ 
+ /* linux/mm/swap.c */
+-extern void __lru_cache_add(struct page *);
+ extern void lru_cache_add(struct page *);
++extern void lru_cache_add_anon(struct page *page);
++extern void lru_cache_add_file(struct page *page);
+ extern void lru_add_page_tail(struct page *page, struct page *page_tail,
+ 			 struct lruvec *lruvec, struct list_head *head);
+ extern void activate_page(struct page *);
+@@ -283,22 +284,6 @@ extern void swap_setup(void);
+ 
+ extern void add_page_to_unevictable_list(struct page *page);
+ 
+-/**
+- * lru_cache_add: add a page to the page lists
+- * @page: the page to add
+- */
+-static inline void lru_cache_add_anon(struct page *page)
+-{
+-	ClearPageActive(page);
+-	__lru_cache_add(page);
+-}
+-
+-static inline void lru_cache_add_file(struct page *page)
+-{
+-	ClearPageActive(page);
+-	__lru_cache_add(page);
+-}
+-
+ /* linux/mm/vmscan.c */
+ extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+ 					gfp_t gfp_mask, nodemask_t *mask);
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -580,13 +580,7 @@ void mark_page_accessed(struct page *pag
+ }
+ EXPORT_SYMBOL(mark_page_accessed);
+ 
+-/*
+- * Queue the page for addition to the LRU via pagevec. The decision on whether
+- * to add the page to the [in]active [file|anon] list is deferred until the
+- * pagevec is drained. This gives a chance for the caller of __lru_cache_add()
+- * have the page added to the active list using mark_page_accessed().
+- */
+-void __lru_cache_add(struct page *page)
++static void __lru_cache_add(struct page *page)
+ {
+ 	struct pagevec *pvec = &get_cpu_var(lru_add_pvec);
+ 
+@@ -596,11 +590,32 @@ void __lru_cache_add(struct page *page)
+ 	pagevec_add(pvec, page);
+ 	put_cpu_var(lru_add_pvec);
+ }
+-EXPORT_SYMBOL(__lru_cache_add);
++
++/**
++ * lru_cache_add: add a page to the page lists
++ * @page: the page to add
++ */
++void lru_cache_add_anon(struct page *page)
++{
++	ClearPageActive(page);
++	__lru_cache_add(page);
++}
++
++void lru_cache_add_file(struct page *page)
++{
++	ClearPageActive(page);
++	__lru_cache_add(page);
++}
++EXPORT_SYMBOL(lru_cache_add_file);
+ 
+ /**
+  * lru_cache_add - add a page to a page list
+  * @page: the page to be added to the LRU.
++ *
++ * Queue the page for addition to the LRU via pagevec. The decision on whether
++ * to add the page to the [in]active [file|anon] list is deferred until the
++ * pagevec is drained. This gives a chance for the caller of lru_cache_add()
++ * have the page added to the active list using mark_page_accessed().
+  */
+ void lru_cache_add(struct page *page)
+ {
 
 
