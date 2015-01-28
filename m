@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761221AbbA2CGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:06:52 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:3297 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754295AbbA2CEq (ORCPT
+	id S1754880AbbA1U4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:56:38 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:56451 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754746AbbA1U4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:04:46 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 28 Jan 2015 08:43:47 -0800
-From: Rhyland Klein <rklein@nvidia.com>
-To: <ulf.hansson@linaro.org>, <chris@printf.net>
-CC: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <pkunapuli@nvidia.com>, <linux-mmc@vger.kernel.org>,
-        <gnurou@gmail.com>, Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH v2] mmc: tegra: Write xfer_mode, CMD regs in together
-Date: Wed, 28 Jan 2015 11:45:16 -0500
-Message-ID: <1422463516-19557-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Wed, 28 Jan 2015 15:56:32 -0500
+Message-ID: <54C9125D.5040706@mvista.com>
+Date: Wed, 28 Jan 2015 10:46:21 -0600
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Arnd Bergmann <arnd@arndb.de>, minyard@acm.org
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ipmi: avoid gcc warning
+References: <2457592.UIVPJ2WNL3@wuerfel>
+In-Reply-To: <2457592.UIVPJ2WNL3@wuerfel>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Kunapuli <pkunapuli@nvidia.com>
+Thanks, queued for 3.20.
 
-If there is a gap between xfer mode and command register writes,
-tegra SDMMC controller can sometimes issue a spurious command before
-the CMD register is written. To avoid this, these two registers need
-to be written together in a single write operation.
+-corey
 
-This is implemented as an NVQUIRK as it applies to T114, T124 and
-T132.
-
-Signed-off-by: Pavan Kunapuli <pkunapuli@nvidia.com>
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
-v2:
- - Fixed quirk flag check  s/*/&
- - Removed line clearing xfer_mode_shadow
- - Added explicit mention of which platforms this applies to in
-   description
-
- drivers/mmc/host/sdhci-tegra.c |   30 +++++++++++++++++++++++++++++-
- 1 file changed, 29 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
-index 59797106af93..f3778d58d1cd 100644
---- a/drivers/mmc/host/sdhci-tegra.c
-+++ b/drivers/mmc/host/sdhci-tegra.c
-@@ -41,6 +41,7 @@
- #define NVQUIRK_DISABLE_SDR50		BIT(3)
- #define NVQUIRK_DISABLE_SDR104		BIT(4)
- #define NVQUIRK_DISABLE_DDR50		BIT(5)
-+#define NVQUIRK_SHADOW_XFER_MODE_REG	BIT(6)
- 
- struct sdhci_tegra_soc_data {
- 	const struct sdhci_pltfm_data *pdata;
-@@ -67,6 +68,31 @@ static u16 tegra_sdhci_readw(struct sdhci_host *host, int reg)
- 	return readw(host->ioaddr + reg);
- }
- 
-+static void tegra_sdhci_writew(struct sdhci_host *host, u16 val, int reg)
-+{
-+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-+	struct sdhci_tegra *tegra_host = pltfm_host->priv;
-+	const struct sdhci_tegra_soc_data *soc_data = tegra_host->soc_data;
-+
-+	if (soc_data->nvquirks & NVQUIRK_SHADOW_XFER_MODE_REG) {
-+		switch (reg) {
-+		case SDHCI_TRANSFER_MODE:
-+			/*
-+			 * Postpone this write, we must do it together with a
-+			 * command write that is down below.
-+			 */
-+			pltfm_host->xfer_mode_shadow = val;
-+			return;
-+		case SDHCI_COMMAND:
-+			writel((val << 16) | pltfm_host->xfer_mode_shadow,
-+				host->ioaddr + SDHCI_TRANSFER_MODE);
-+			return;
-+		}
-+	}
-+
-+	writew(val, host->ioaddr + reg);
-+}
-+
- static void tegra_sdhci_writel(struct sdhci_host *host, u32 val, int reg)
- {
- 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-@@ -147,6 +173,7 @@ static void tegra_sdhci_set_bus_width(struct sdhci_host *host, int bus_width)
- static const struct sdhci_ops tegra_sdhci_ops = {
- 	.get_ro     = tegra_sdhci_get_ro,
- 	.read_w     = tegra_sdhci_readw,
-+	.write_w    = tegra_sdhci_writew,
- 	.write_l    = tegra_sdhci_writel,
- 	.set_clock  = sdhci_set_clock,
- 	.set_bus_width = tegra_sdhci_set_bus_width,
-@@ -201,7 +228,8 @@ static struct sdhci_tegra_soc_data soc_data_tegra114 = {
- 	.pdata = &sdhci_tegra114_pdata,
- 	.nvquirks = NVQUIRK_DISABLE_SDR50 |
- 		    NVQUIRK_DISABLE_DDR50 |
--		    NVQUIRK_DISABLE_SDR104,
-+		    NVQUIRK_DISABLE_SDR104 |
-+		    NVQUIRK_SHADOW_XFER_MODE_REG,
- };
- 
- static const struct of_device_id sdhci_tegra_dt_match[] = {
--- 
-1.7.9.5
+On 01/28/2015 09:00 AM, Arnd Bergmann wrote:
+> A new harmless warning has come up on ARM builds with gcc-4.9:
+>
+> drivers/char/ipmi/ipmi_msghandler.c: In function 'smi_send.isra.11':
+> include/linux/spinlock.h:372:95: warning: 'flags' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>   raw_spin_unlock_irqrestore(&lock->rlock, flags);
+>                                                                                                ^
+> drivers/char/ipmi/ipmi_msghandler.c:1490:16: note: 'flags' was declared here
+>   unsigned long flags;
+>                 ^
+>
+> This could be worked around by initializing the 'flags' variable, but it
+> seems better to rework the code to avoid this.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Fixes: 7ea0ed2b5be81 ("ipmi: Make the message handler easier to use for SMI interfaces")
+>
+> diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
+> index 6b65fa4e0c55..fb0f8eacd208 100644
+> --- a/drivers/char/ipmi/ipmi_msghandler.c
+> +++ b/drivers/char/ipmi/ipmi_msghandler.c
+> @@ -1483,14 +1483,10 @@ static inline void format_lan_msg(struct ipmi_smi_msg   *smi_msg,
+>  	smi_msg->msgid = msgid;
+>  }
+>  
+> -static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
+> -		     struct ipmi_smi_msg *smi_msg, int priority)
+> +static struct ipmi_smi_msg *smi_add_send_msg(ipmi_smi_t intf,
+> +					     struct ipmi_smi_msg *smi_msg,
+> +					     int priority)
+>  {
+> -	int run_to_completion = intf->run_to_completion;
+> -	unsigned long flags;
+> -
+> -	if (!run_to_completion)
+> -		spin_lock_irqsave(&intf->xmit_msgs_lock, flags);
+>  	if (intf->curr_msg) {
+>  		if (priority > 0)
+>  			list_add_tail(&smi_msg->link, &intf->hp_xmit_msgs);
+> @@ -1500,8 +1496,24 @@ static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
+>  	} else {
+>  		intf->curr_msg = smi_msg;
+>  	}
+> -	if (!run_to_completion)
+> +
+> +	return smi_msg;
+> +}
+> +
+> +
+> +static void smi_send(ipmi_smi_t intf, struct ipmi_smi_handlers *handlers,
+> +		     struct ipmi_smi_msg *smi_msg, int priority)
+> +{
+> +	int run_to_completion = intf->run_to_completion;
+> +
+> +	if (run_to_completion) {
+> +		smi_msg = smi_add_send_msg(intf, smi_msg, priority);
+> +	} else {
+> +		unsigned long flags;
+> +		spin_lock_irqsave(&intf->xmit_msgs_lock, flags);
+> +		smi_msg = smi_add_send_msg(intf, smi_msg, priority);
+>  		spin_unlock_irqrestore(&intf->xmit_msgs_lock, flags);
+> +	}
+>  
+>  	if (smi_msg)
+>  		handlers->sender(intf->send_info, smi_msg);
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
