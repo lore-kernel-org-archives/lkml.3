@@ -1,41 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409AbbA2BaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:30:07 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:55622 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330AbbA2B3C (ORCPT
+	id S1762004AbbA1WWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 17:22:14 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:58702 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912AbbA1ULv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:29:02 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tina Ruchandani <ruchandani.tina@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2] coredump: Use 64bit time for unix time of coredump
-Date: Wed, 28 Jan 2015 12:31:10 +0100
-Message-ID: <10182197.2ytoa1pSci@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150128051606.GA4659@tinar>
-References: <20150128051606.GA4659@tinar>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:+qoP2AHL+R8NjEbzuKDMaPk+y0EoB8YRoBnfWpLL3SdEc1hkj1j
- BmoWXZfyCf9gi/ksqGBuzNkrqEpbwQhEF8LhgYrvsStLV7w0tSxKxyDmwwRPg1v+cN41nmM
- J7fkNd0j9tt9lF66rhc6vIAdmmzoYfpj4PLbjxOhtMX4oN0xXPQqOF5NVlGyjP18u6nQ9W2
- KfpCJFKy6PrMwCulU0okA==
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 28 Jan 2015 15:11:51 -0500
+From: Kiran Raparthy <kiran.kumar@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Kiran Raparthy <kiran.kumar@linaro.org>
+Subject: [PATCH] debug: prevent entering debug mode on panic/exception.
+Date: Wed, 28 Jan 2015 17:02:14 +0530
+Message-Id: <1422444734-29510-1-git-send-email-kiran.kumar@linaro.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 January 2015 10:46:06 Tina Ruchandani wrote:
-> struct timeval on 32-bit systems will have its tv_sec
-> value overflow in year 2038 and beyond.
-> Use a 64 bit value to print time of the coredump in seconds.
-> ktime_get_real_seconds is chosen here for efficiency reasons.
-> 
-> Suggested by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
+From: Colin Cross <ccross@android.com>
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+debug: prevent entering debug mode on panic/exception.
+
+On non-developer devices, kgdb prevents the device from rebooting
+after a panic.
+
+Incase of panics and exceptions, to allow the device to reboot, prevent entering
+debug mode to avoid getting stuck waiting for the user to interact with debugger.
+
+To avoid entering the debugger on panic/exception without any extra configuration,
+panic_timeout is being used which can be set via /proc/sys/kernel/panic at run time
+and CONFIG_PANIC_TIMEOUT sets the default value.
+
+Setting panic_timeout indicates that the user requested machine to perform
+unattended reboot after panic. We dont want to get stuck waiting for the user
+input incase of panic.
+
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: kgdb-bugreport@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Signed-off-by: Colin Cross <ccross@android.com>
+[Kiran: Added context to commit message.
+panic_timeout is used instead of break_on_panic and
+break_on_exception to honor CONFIG_PANIC_TIMEOUT
+Modified the commit as per community feedback]
+Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+PATCH:
+Upgraded to PATCH from RFC.
+
+v5:
+Updated the commit message to indicate that panic_timeout indicates that user
+requested machine to perform unatteneded reboot after panic.
+
+v4:
+As per Andrew's comment, simplified the commit message so that someone who
+can't understand kgdb can understand the purpose of the patch
+
+v3:
+As per Daniel's comment,improved the comments to indicate how we are avoiding
+getting stuck waiting for user input.
+
+v2:
+used panic_timeout instead of module params used in original android patch.
+Updated the comments accordingly.
+
+v1:
+Initial patch sent for internal review.
+
+ kernel/debug/debug_core.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 1adf62b..0012a1f 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+ 
+ 	if (arch_kgdb_ops.enable_nmi)
+ 		arch_kgdb_ops.enable_nmi(0);
++	/*
++	 * Avoid entering the debugger if we were triggered due to an oops
++	 * but panic_timeout indicates the system should automatically
++	 * reboot on panic. We don't want to get stuck waiting for input
++	 * on such systems, especially if its "just" an oops.
++	 */
++	if (signo != SIGTRAP && panic_timeout)
++		return 1;
+ 
+ 	memset(ks, 0, sizeof(struct kgdb_state));
+ 	ks->cpu			= raw_smp_processor_id();
+@@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
+ 			    unsigned long val,
+ 			    void *data)
+ {
++	/*
++	 * Avoid entering the debugger if we were triggered due to a panic
++	 * We don't want to get stuck waiting for input from user in such case.
++	 * panic_timeout indicates the system should automatically
++	 * reboot on panic.
++	 */
++	if (panic_timeout)
++		return NOTIFY_DONE;
++
+ 	if (dbg_kdb_mode)
+ 		kdb_printf("PANIC: %s\n", (char *)data);
+ 	kgdb_breakpoint();
+-- 
+1.8.2.1
+
