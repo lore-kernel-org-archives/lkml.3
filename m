@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761732AbbA2Kr2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:47:28 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753792AbbA2I7i (ORCPT
+	id S1759226AbbA1VTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:19:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762142AbbA1UuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:59:38 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 154/176] can: dev: fix crtlmode_supported check
-Date: Wed, 28 Jan 2015 15:29:44 +0100
-Message-Id: <1d6e3205cb5d41a9ced10cfb61a13189e8e8e74e.1422455352.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
-References: <cover.1422455352.git.jslaby@suse.cz>
+	Wed, 28 Jan 2015 15:50:21 -0500
+Date: Wed, 28 Jan 2015 06:29:45 -0800
+From: tip-bot for Kan Liang <tipbot@zytor.com>
+Message-ID: <tip-ef454caeb740ee4e1b89aeb7f7692d5ddffb6830@git.kernel.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        torvalds@linux-foundation.org, kan.liang@intel.com,
+        peterz@infradead.org, acme@kernel.org, tglx@linutronix.de
+Reply-To: acme@kernel.org, tglx@linutronix.de, peterz@infradead.org,
+        torvalds@linux-foundation.org, kan.liang@intel.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org
+In-Reply-To: <1421913053-99803-1-git-send-email-kan.liang@intel.com>
+References: <1421913053-99803-1-git-send-email-kan.liang@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/x86/intel: Add model number for Airmont
+Git-Commit-ID: ef454caeb740ee4e1b89aeb7f7692d5ddffb6830
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+Commit-ID:  ef454caeb740ee4e1b89aeb7f7692d5ddffb6830
+Gitweb:     http://git.kernel.org/tip/ef454caeb740ee4e1b89aeb7f7692d5ddffb6830
+Author:     Kan Liang <kan.liang@intel.com>
+AuthorDate: Thu, 22 Jan 2015 07:50:53 +0000
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 28 Jan 2015 13:17:32 +0100
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+perf/x86/intel: Add model number for Airmont
 
-===============
+Intel Airmont supports the same architectural and non-architectural
+performance monitoring events as Silvermont.
 
-commit 9b1087aa5e86448fe6ad40a58964e35f3ba423d5 upstream.
-
-When changing flags in the CAN drivers ctrlmode the provided new content has to
-be checked whether the bits are allowed to be changed. The bits that are to be
-changed are given as a bitfield in cm->mask. Therefore checking against
-cm->flags is wrong as the content can hold any kind of values.
-
-The iproute2 tool sets the bits in cm->mask and cm->flags depending on the
-detected command line options. To be robust against bogus user space
-applications additionally sanitize the provided flags with the provided mask.
-
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1421913053-99803-1-git-send-email-kan.liang@intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/net/can/dev.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
-index 9bf47a064cdf..a4694aa20a3e 100644
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -643,10 +643,14 @@ static int can_changelink(struct net_device *dev,
- 		if (dev->flags & IFF_UP)
- 			return -EBUSY;
- 		cm = nla_data(data[IFLA_CAN_CTRLMODE]);
--		if (cm->flags & ~priv->ctrlmode_supported)
-+
-+		/* check whether changed bits are allowed to be modified */
-+		if (cm->mask & ~priv->ctrlmode_supported)
- 			return -EOPNOTSUPP;
-+
-+		/* clear bits to be modified and copy the flag values */
- 		priv->ctrlmode &= ~cm->mask;
--		priv->ctrlmode |= cm->flags;
-+		priv->ctrlmode |= (cm->flags & cm->mask);
- 	}
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 944bf01..498b6d9 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2431,6 +2431,7 @@ __init int intel_pmu_init(void)
+ 		break;
  
- 	if (data[IFLA_CAN_BITTIMING]) {
--- 
-2.2.2
-
+ 	case 55: /* 22nm Atom "Silvermont"                */
++	case 76: /* 14nm Atom "Airmont"                   */
+ 	case 77: /* 22nm Atom "Silvermont Avoton/Rangely" */
+ 		memcpy(hw_cache_event_ids, slm_hw_cache_event_ids,
+ 			sizeof(hw_cache_event_ids));
