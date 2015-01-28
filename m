@@ -1,95 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604AbbA2CPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:15:36 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:36229 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184AbbA2BzR (ORCPT
+	id S1761144AbbA2CGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:06:33 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:59905 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754389AbbA2CGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:55:17 -0500
+	Wed, 28 Jan 2015 21:06:30 -0500
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>,
         =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v2 00/15] spi/xilinx: Speed-up
-Date: Wed, 28 Jan 2015 13:23:39 +0100
-Message-Id: <1422447834-23116-1-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH v2 01/15] spi/xilinx: Simplify spi_fill_tx_fifo
+Date: Wed, 28 Jan 2015 13:23:40 +0100
+Message-Id: <1422447834-23116-2-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1422447834-23116-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1422447834-23116-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches has been developed after using the core to access a spi
-nor flash. The initial performance was not as desired. The following changes
-have been done.
+Instead of checking the TX_FULL flag for every transaction, find out the
+size of the buffer at probe time and use it.
 
--This series of patches add driver support for hardware implemented modes:
-LSB_FIRS, LOOP and CS_HIGH.
+To avoid situations where the core had some data on the buffer before
+initialization, the core is reseted before the buffer size is detected
 
--There is support for irq less operations.
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+v2: Changes Requested by Mark Brown <broonie@kernel.org>
 
--The buffer size of the core is detected at probe time, speeding up the
-operations.
+Before discovering the buffer size, reset the core.
 
--Code has been simplify and cleaned
+ drivers/spi/spi-xilinx.c | 46 +++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 33 insertions(+), 13 deletions(-)
 
-This are the results, before and after the patchet
-
-Original
-root@qt5022:~# dd if=/dev/mtd0 of=/dev/null
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 117.985 s, 71.1 kB/s
-
- 37:        107      82853  Xilinx INTC Level   1  b0010000.spi-flash
-
-After patchset (irq):
-root@qt5022:~# dd if=/dev/mtd0 of=/dev/null
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 49.009 s, 171 kB/s
-
-After patchset (polling):
-root@qt5022:~# dd if=/dev/mtd0 of=/dev/null
-16384+0 records in
-16384+0 records out
-8388608 bytes (8.4 MB) copied, 41.2526 s, 203 kB/s
-
-IRQS: ZERO
-
-Changelog v2:
-
--Add patch spi/xilinx: Use polling mode on small transfers
--Merge spi/xilinx: Reset core before buffer_size detection with spi/xilinx: 
-Simplify spi_fill_tx_fifo
--Fix codestyle on Remove rx_fn and tx_fn pointer
--Remove already merged patches
-
-Ricardo Ribalda Delgado (15):
-  spi/xilinx: Simplify spi_fill_tx_fifo
-  spi/xilinx: Leave the IRQ always enabled.
-  spi/xilinx: Code cleanup
-  spi/xilinx: Use cached value of register
-  spi/xilinx: Support cores with no interrupt
-  spi/xilinx: Do not inhibit transmission in polling mode
-  spi/xilinx: Support for spi mode CS_HIGH
-  spi/xilinx: Remove rx_fn and tx_fn pointer
-  spi/xilinx: Make spi_tx and spi_rx simmetric
-  spi/xilinx: Convert remainding_bytes in remaining words
-  spi/xilinx: Convert bits_per_word in bytes_per_word
-  spi/xilinx: Remove iowrite/ioread wrappers
-  spi/xilinx: Remove remaining_words driver data variable
-  spi/xilinx: Check number of slaves range
-  spi/xilinx: Use polling mode on small transfers
-
- drivers/spi/spi-xilinx.c | 337 ++++++++++++++++++++++-------------------------
- 1 file changed, 157 insertions(+), 180 deletions(-)
-
+diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
+index 416b227..1890af8 100644
+--- a/drivers/spi/spi-xilinx.c
++++ b/drivers/spi/spi-xilinx.c
+@@ -88,6 +88,7 @@ struct xilinx_spi {
+ 	const u8 *tx_ptr;	/* pointer in the Rx buffer */
+ 	int remaining_bytes;	/* the number of bytes left to transfer */
+ 	u8 bits_per_word;
++	int buffer_size;	/* buffer size in words */
+ 	unsigned int (*read_fn)(void __iomem *);
+ 	void (*write_fn)(u32, void __iomem *);
+ 	void (*tx_fn)(struct xilinx_spi *);
+@@ -221,24 +222,16 @@ static int xilinx_spi_setup_transfer(struct spi_device *spi,
+ 	return 0;
+ }
+ 
+-static int xilinx_spi_fill_tx_fifo(struct xilinx_spi *xspi)
++static void xilinx_spi_fill_tx_fifo(struct xilinx_spi *xspi, int n_words)
+ {
+-	u8 sr;
+-	int n_words = 0;
++	xspi->remaining_bytes -= n_words * xspi->bits_per_word / 8;
+ 
+-	/* Fill the Tx FIFO with as many bytes as possible */
+-	sr = xspi->read_fn(xspi->regs + XSPI_SR_OFFSET);
+-	while ((sr & XSPI_SR_TX_FULL_MASK) == 0 && xspi->remaining_bytes > 0) {
++	while (n_words--)
+ 		if (xspi->tx_ptr)
+ 			xspi->tx_fn(xspi);
+ 		else
+ 			xspi->write_fn(0, xspi->regs + XSPI_TXD_OFFSET);
+-		xspi->remaining_bytes -= xspi->bits_per_word / 8;
+-		sr = xspi->read_fn(xspi->regs + XSPI_SR_OFFSET);
+-		n_words++;
+-	}
+-
+-	return n_words;
++	return;
+ }
+ 
+ static int xilinx_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
+@@ -265,7 +258,10 @@ static int xilinx_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
+ 		u16 cr;
+ 		int n_words;
+ 
+-		n_words = xilinx_spi_fill_tx_fifo(xspi);
++		n_words = (xspi->remaining_bytes * 8) / xspi->bits_per_word;
++		n_words = min(n_words, xspi->buffer_size);
++
++		xilinx_spi_fill_tx_fifo(xspi, n_words);
+ 
+ 		/* Start the transfer by not inhibiting the transmitter any
+ 		 * longer
+@@ -322,6 +318,28 @@ static irqreturn_t xilinx_spi_irq(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
++static int xilinx_spi_find_buffer_size(struct xilinx_spi *xspi)
++{
++	u8 sr;
++	int n_words = 0;
++
++	/*
++	 * Before the buffer_size detection we reset the core
++	 * to make sure we start with a clean state.
++	 */
++	xspi->write_fn(XIPIF_V123B_RESET_MASK,
++		xspi->regs + XIPIF_V123B_RESETR_OFFSET);
++
++	/* Fill the Tx FIFO with as many words as possible */
++	do {
++		xspi->write_fn(0, xspi->regs + XSPI_TXD_OFFSET);
++		sr = xspi->read_fn(xspi->regs + XSPI_SR_OFFSET);
++		n_words++;
++	} while (!(sr & XSPI_SR_TX_FULL_MASK));
++
++	return n_words;
++}
++
+ static const struct of_device_id xilinx_spi_of_match[] = {
+ 	{ .compatible = "xlnx,xps-spi-2.00.a", },
+ 	{ .compatible = "xlnx,xps-spi-2.00.b", },
+@@ -413,6 +431,8 @@ static int xilinx_spi_probe(struct platform_device *pdev)
+ 		goto put_master;
+ 	}
+ 
++	xspi->buffer_size = xilinx_spi_find_buffer_size(xspi);
++
+ 	/* SPI controller initializations */
+ 	xspi_init_hw(xspi);
+ 
 -- 
 2.1.4
 
