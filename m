@@ -1,37 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbbA1ULl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:11:41 -0500
-Received: from tex.lwn.net ([70.33.254.29]:35191 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751251AbbA1UKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:10:50 -0500
-Date: Wed, 28 Jan 2015 12:08:17 -0700
-From: Jonathan Corbet <corbet@lwn.net>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, fengguang.wu@intel.com,
-        Steven Miao <realmz6@gmail.com>,
-        adi-buildroot-devel@lists.sourceforge.net
-Subject: Re: [PATCH] Documentation: fix blackfin gptimers-example build
- errors
-Message-ID: <20150128120817.79aa615d@lwn.net>
-In-Reply-To: <54B99244.8080404@infradead.org>
-References: <54B99244.8080404@infradead.org>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1761935AbbA1UqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:46:15 -0500
+Received: from skprod3.natinst.com ([130.164.80.24]:52733 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760246AbbA1UqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:46:12 -0500
+From: Xander Huff <xander.huff@ni.com>
+To: mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
+Cc: linux-rt-users@vger.kernel.org, josh.cartwright@ni.com,
+        gratian.crisan@ni.com, linux-kernel@vger.kernel.org,
+        jaeden.amero@ni.com, ben.shelton@ni.com, brad.mouring@ni.com,
+        rich.tollerton@ni.com, Xander Huff <xander.huff@ni.com>
+Subject: [PATCH -rt] lockdep: selftest: fix warnings due to missing PREEMPT_RT conditionals
+Date: Wed, 28 Jan 2015 13:08:45 -0600
+Message-Id: <1422472125-21979-1-git-send-email-xander.huff@ni.com>
+X-Mailer: git-send-email 1.9.1
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/28/2015 01:09:04 PM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/28/2015 01:09:04 PM,
+	Serialize complete at 01/28/2015 01:09:04 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-28_02:2015-01-28,2015-01-28,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015 14:35:48 -0800
-Randy Dunlap <rdunlap@infradead.org> wrote:
+From: Josh Cartwright <josh.cartwright@ni.com>
 
-> Don't build the blackfin gptimers-example module when BFIN_GPTIMERS
-> is not enabled. Allow the build when BFIN_GPTIMERS is =y or =m.
+"lockdep: Selftest: Only do hardirq context test for raw spinlock"
+disabled the execution of certain tests with PREEMPT_RT_FULL, but did
+not prevent the tests from still being defined.  This leads to warnings
+like:
 
-Applied to the docs tree, thanks.
+  ./linux/lib/locking-selftest.c:574:1: warning: 'irqsafe1_hard_rlock_12' defined but not used [-Wunused-function]
+  ./linux/lib/locking-selftest.c:574:1: warning: 'irqsafe1_hard_rlock_21' defined but not used [-Wunused-function]
+  ./linux/lib/locking-selftest.c:577:1: warning: 'irqsafe1_hard_wlock_12' defined but not used [-Wunused-function]
+  ./linux/lib/locking-selftest.c:577:1: warning: 'irqsafe1_hard_wlock_21' defined but not used [-Wunused-function]
+  ./linux/lib/locking-selftest.c:580:1: warning: 'irqsafe1_soft_spin_12' defined but not used [-Wunused-function]
+  ...
 
-jon
+Fixed by wrapping the test definitions in #ifndef CONFIG_PREEMPT_RT_FULL
+conditionals.
+
+Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+Signed-off-by: Xander Huff <xander.huff@ni.com>
+Acked-by: Gratian Crisan <gratian.crisan@ni.com>
+---
+ lib/locking-selftest.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
+index 507a22f..51e558f 100644
+--- a/lib/locking-selftest.c
++++ b/lib/locking-selftest.c
+@@ -570,6 +570,8 @@ GENERATE_TESTCASE(init_held_rsem)
+ #include "locking-selftest-spin-hardirq.h"
+ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe1_hard_spin)
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
++
+ #include "locking-selftest-rlock-hardirq.h"
+ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe1_hard_rlock)
+ 
+@@ -585,9 +587,12 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe1_soft_rlock)
+ #include "locking-selftest-wlock-softirq.h"
+ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe1_soft_wlock)
+ 
++#endif
++
+ #undef E1
+ #undef E2
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ /*
+  * Enabling hardirqs with a softirq-safe lock held:
+  */
+@@ -620,6 +625,8 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2A_rlock)
+ #undef E1
+ #undef E2
+ 
++#endif
++
+ /*
+  * Enabling irqs with an irq-safe lock held:
+  */
+@@ -643,6 +650,8 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2A_rlock)
+ #include "locking-selftest-spin-hardirq.h"
+ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_hard_spin)
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
++
+ #include "locking-selftest-rlock-hardirq.h"
+ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_hard_rlock)
+ 
+@@ -658,6 +667,8 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_soft_rlock)
+ #include "locking-selftest-wlock-softirq.h"
+ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_soft_wlock)
+ 
++#endif
++
+ #undef E1
+ #undef E2
+ 
+@@ -689,6 +700,8 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_soft_wlock)
+ #include "locking-selftest-spin-hardirq.h"
+ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_hard_spin)
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
++
+ #include "locking-selftest-rlock-hardirq.h"
+ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_hard_rlock)
+ 
+@@ -704,6 +717,8 @@ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_soft_rlock)
+ #include "locking-selftest-wlock-softirq.h"
+ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_soft_wlock)
+ 
++#endif
++
+ #undef E1
+ #undef E2
+ #undef E3
+@@ -737,6 +752,8 @@ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_soft_wlock)
+ #include "locking-selftest-spin-hardirq.h"
+ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe4_hard_spin)
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
++
+ #include "locking-selftest-rlock-hardirq.h"
+ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe4_hard_rlock)
+ 
+@@ -752,10 +769,14 @@ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe4_soft_rlock)
+ #include "locking-selftest-wlock-softirq.h"
+ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe4_soft_wlock)
+ 
++#endif
++
+ #undef E1
+ #undef E2
+ #undef E3
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
++
+ /*
+  * read-lock / write-lock irq inversion.
+  *
+@@ -818,6 +839,10 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_inversion_soft_wlock)
+ #undef E2
+ #undef E3
+ 
++#endif
++
++#ifndef CONFIG_PREEMPT_RT_FULL
++
+ /*
+  * read-lock / write-lock recursion that is actually safe.
+  */
+@@ -856,6 +881,8 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
+ #undef E2
+ #undef E3
+ 
++#endif
++
+ /*
+  * read-lock / write-lock recursion that is unsafe.
+  */
+-- 
+1.9.1
+
