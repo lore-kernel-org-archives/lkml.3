@@ -1,255 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763925AbbA2DPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:15:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46962 "EHLO
+	id S1763804AbbA2DMi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:12:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46973 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762182AbbA2CgX (ORCPT
+	with ESMTP id S965032AbbA2Cgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:23 -0500
+	Wed, 28 Jan 2015 21:36:44 -0500
 From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Hannes Reinecke <hare@suse.de>, Nicholas Bellinger <nab@linux-iscsi.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 065/139] tcm_loop: Fix wrong I_T nexus association
-Date: Wed, 28 Jan 2015 14:20:08 -0800
-Message-Id: <1422483682-15393-66-git-send-email-kamal@canonical.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>, Tony Luck <tony.luck@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
+Subject: [3.13.y-ckt stable] Patch "pstore-ram: Fix hangs by using write-combine mappings" has been added to staging queue
+Date: Wed, 28 Jan 2015 14:20:09 -0800
+Message-Id: <1422483609-13900-1-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
-References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt15 -stable review patch.  If anyone has any objections, please let me know.
+This is a note to let you know that I have just added a patch titled
 
-------------------
+    pstore-ram: Fix hangs by using write-combine mappings
 
-From: Hannes Reinecke <hare@suse.de>
+to the linux-3.13.y-queue branch of the 3.13.y-ckt extended stable tree 
+which can be found at:
 
-commit 506787a2c7daed45f0a213674ca706cbc83a9089 upstream.
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.13.y-queue
 
-tcm_loop has the I_T nexus associated with the HBA. This causes
-commands to become misdirected if the HBA has more than one
-target portal group; any command is then being sent to the
-first target portal group instead of the correct one.
+This patch is scheduled to be released in version 3.13.11-ckt15.
 
-The nexus needs to be associated with the target portal group
-instead.
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
 
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+For more information about the 3.13.y-ckt tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+Thanks.
+-Kamal
+
+------
+
+>From fb1b630b6dd09c791fc65d1228de6fd72610a85b Mon Sep 17 00:00:00 2001
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 12 Sep 2014 11:32:24 -0700
+Subject: pstore-ram: Fix hangs by using write-combine mappings
+
+commit 7ae9cb81933515dc7db1aa3c47ef7653717e3090 upstream.
+
+Currently trying to use pstore on at least ARMs can hang as we're
+mapping the peristent RAM with pgprot_noncached().
+
+On ARMs, pgprot_noncached() will actually make the memory strongly
+ordered, and as the atomic operations pstore uses are implementation
+defined for strongly ordered memory, they may not work. So basically
+atomic operations have undefined behavior on ARM for device or strongly
+ordered memory types.
+
+Let's fix the issue by using write-combine variants for mappings. This
+corresponds to normal, non-cacheable memory on ARM. For many other
+architectures, this change does not change the mapping type as by
+default we have:
+
+The reason why pgprot_noncached() was originaly used for pstore
+is because Colin Cross <ccross@android.com> had observed lost
+debug prints right before a device hanging write operation on some
+systems. For the platforms supporting pgprot_noncached(), we can
+add a an optional configuration option to support that. But let's
+get pstore working first before adding new features.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Colin Cross <ccross@android.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: linux-kernel@vger.kernel.org
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+[tony@atomide.com: updated description]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/loopback/tcm_loop.c | 66 +++++++++++++-------------------------
- drivers/target/loopback/tcm_loop.h |  7 +---
- 2 files changed, 24 insertions(+), 49 deletions(-)
+ fs/pstore/ram_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
-index 1b41e67..c5bccec 100644
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -197,7 +197,7 @@ static void tcm_loop_submission_work(struct work_struct *work)
- 		set_host_byte(sc, DID_TRANSPORT_DISRUPTED);
- 		goto out_done;
- 	}
--	tl_nexus = tl_hba->tl_nexus;
-+	tl_nexus = tl_tpg->tl_nexus;
- 	if (!tl_nexus) {
- 		scmd_printk(KERN_ERR, sc, "TCM_Loop I_T Nexus"
- 				" does not exist\n");
-@@ -262,16 +262,26 @@ static int tcm_loop_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
-  * to struct scsi_device
-  */
- static int tcm_loop_issue_tmr(struct tcm_loop_tpg *tl_tpg,
--			      struct tcm_loop_nexus *tl_nexus,
- 			      int lun, int task, enum tcm_tmreq_table tmr)
- {
- 	struct se_cmd *se_cmd = NULL;
- 	struct se_session *se_sess;
- 	struct se_portal_group *se_tpg;
-+	struct tcm_loop_nexus *tl_nexus;
- 	struct tcm_loop_cmd *tl_cmd = NULL;
- 	struct tcm_loop_tmr *tl_tmr = NULL;
- 	int ret = TMR_FUNCTION_FAILED, rc;
- 
-+	/*
-+	 * Locate the tl_nexus and se_sess pointers
-+	 */
-+	tl_nexus = tl_tpg->tl_nexus;
-+	if (!tl_nexus) {
-+		pr_err("Unable to perform device reset without"
-+				" active I_T Nexus\n");
-+		return ret;
-+	}
-+
- 	tl_cmd = kmem_cache_zalloc(tcm_loop_cmd_cache, GFP_KERNEL);
- 	if (!tl_cmd) {
- 		pr_err("Unable to allocate memory for tl_cmd\n");
-@@ -287,7 +297,7 @@ static int tcm_loop_issue_tmr(struct tcm_loop_tpg *tl_tpg,
- 
- 	se_cmd = &tl_cmd->tl_se_cmd;
- 	se_tpg = &tl_tpg->tl_se_tpg;
--	se_sess = tl_nexus->se_sess;
-+	se_sess = tl_tpg->tl_nexus->se_sess;
- 	/*
- 	 * Initialize struct se_cmd descriptor from target_core_mod infrastructure
- 	 */
-@@ -332,7 +342,6 @@ release:
- static int tcm_loop_abort_task(struct scsi_cmnd *sc)
- {
- 	struct tcm_loop_hba *tl_hba;
--	struct tcm_loop_nexus *tl_nexus;
- 	struct tcm_loop_tpg *tl_tpg;
- 	int ret = FAILED;
- 
-@@ -340,21 +349,8 @@ static int tcm_loop_abort_task(struct scsi_cmnd *sc)
- 	 * Locate the tcm_loop_hba_t pointer
- 	 */
- 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
--	/*
--	 * Locate the tl_nexus and se_sess pointers
--	 */
--	tl_nexus = tl_hba->tl_nexus;
--	if (!tl_nexus) {
--		pr_err("Unable to perform device reset without"
--				" active I_T Nexus\n");
--		return FAILED;
--	}
--
--	/*
--	 * Locate the tl_tpg pointer from TargetID in sc->device->id
--	 */
- 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
--	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
-+	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
- 				 sc->tag, TMR_ABORT_TASK);
- 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index de272d4..d058428 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -392,7 +392,7 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
+ 	page_start = start - offset_in_page(start);
+ 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
+
+-	prot = pgprot_noncached(PAGE_KERNEL);
++	prot = pgprot_writecombine(PAGE_KERNEL);
+
+ 	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
+ 	if (!pages) {
+@@ -422,7 +422,7 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size)
+ 	buffer_start_add = buffer_start_add_locked;
+ 	buffer_size_add = buffer_size_add_locked;
+
+-	return ioremap(start, size);
++	return ioremap_wc(start, size);
  }
-@@ -366,7 +362,6 @@ static int tcm_loop_abort_task(struct scsi_cmnd *sc)
- static int tcm_loop_device_reset(struct scsi_cmnd *sc)
- {
- 	struct tcm_loop_hba *tl_hba;
--	struct tcm_loop_nexus *tl_nexus;
- 	struct tcm_loop_tpg *tl_tpg;
- 	int ret = FAILED;
- 
-@@ -374,20 +369,9 @@ static int tcm_loop_device_reset(struct scsi_cmnd *sc)
- 	 * Locate the tcm_loop_hba_t pointer
- 	 */
- 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
--	/*
--	 * Locate the tl_nexus and se_sess pointers
--	 */
--	tl_nexus = tl_hba->tl_nexus;
--	if (!tl_nexus) {
--		pr_err("Unable to perform device reset without"
--				" active I_T Nexus\n");
--		return FAILED;
--	}
--	/*
--	 * Locate the tl_tpg pointer from TargetID in sc->device->id
--	 */
- 	tl_tpg = &tl_hba->tl_hba_tpgs[sc->device->id];
--	ret = tcm_loop_issue_tmr(tl_tpg, tl_nexus, sc->device->lun,
-+
-+	ret = tcm_loop_issue_tmr(tl_tpg, sc->device->lun,
- 				 0, TMR_LUN_RESET);
- 	return (ret == TMR_FUNCTION_COMPLETE) ? SUCCESS : FAILED;
- }
-@@ -987,8 +971,8 @@ static int tcm_loop_make_nexus(
- 	struct tcm_loop_nexus *tl_nexus;
- 	int ret = -ENOMEM;
- 
--	if (tl_tpg->tl_hba->tl_nexus) {
--		pr_debug("tl_tpg->tl_hba->tl_nexus already exists\n");
-+	if (tl_tpg->tl_nexus) {
-+		pr_debug("tl_tpg->tl_nexus already exists\n");
- 		return -EEXIST;
- 	}
- 	se_tpg = &tl_tpg->tl_se_tpg;
-@@ -1023,7 +1007,7 @@ static int tcm_loop_make_nexus(
- 	 */
- 	__transport_register_session(se_tpg, tl_nexus->se_sess->se_node_acl,
- 			tl_nexus->se_sess, tl_nexus);
--	tl_tpg->tl_hba->tl_nexus = tl_nexus;
-+	tl_tpg->tl_nexus = tl_nexus;
- 	pr_debug("TCM_Loop_ConfigFS: Established I_T Nexus to emulated"
- 		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
- 		name);
-@@ -1039,12 +1023,8 @@ static int tcm_loop_drop_nexus(
- {
- 	struct se_session *se_sess;
- 	struct tcm_loop_nexus *tl_nexus;
--	struct tcm_loop_hba *tl_hba = tpg->tl_hba;
- 
--	if (!tl_hba)
--		return -ENODEV;
--
--	tl_nexus = tl_hba->tl_nexus;
-+	tl_nexus = tpg->tl_nexus;
- 	if (!tl_nexus)
- 		return -ENODEV;
- 
-@@ -1060,13 +1040,13 @@ static int tcm_loop_drop_nexus(
- 	}
- 
- 	pr_debug("TCM_Loop_ConfigFS: Removing I_T Nexus to emulated"
--		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tl_hba),
-+		" %s Initiator Port: %s\n", tcm_loop_dump_proto_id(tpg->tl_hba),
- 		tl_nexus->se_sess->se_node_acl->initiatorname);
- 	/*
- 	 * Release the SCSI I_T Nexus to the emulated SAS Target Port
- 	 */
- 	transport_deregister_session(tl_nexus->se_sess);
--	tpg->tl_hba->tl_nexus = NULL;
-+	tpg->tl_nexus = NULL;
- 	kfree(tl_nexus);
- 	return 0;
- }
-@@ -1082,7 +1062,7 @@ static ssize_t tcm_loop_tpg_show_nexus(
- 	struct tcm_loop_nexus *tl_nexus;
- 	ssize_t ret;
- 
--	tl_nexus = tl_tpg->tl_hba->tl_nexus;
-+	tl_nexus = tl_tpg->tl_nexus;
- 	if (!tl_nexus)
- 		return -ENODEV;
- 
-diff --git a/drivers/target/loopback/tcm_loop.h b/drivers/target/loopback/tcm_loop.h
-index 54c59d0..6ae49f2 100644
---- a/drivers/target/loopback/tcm_loop.h
-+++ b/drivers/target/loopback/tcm_loop.h
-@@ -27,11 +27,6 @@ struct tcm_loop_tmr {
- };
- 
- struct tcm_loop_nexus {
--	int it_nexus_active;
--	/*
--	 * Pointer to Linux/SCSI HBA from linux/include/scsi_host.h
--	 */
--	struct scsi_host *sh;
- 	/*
- 	 * Pointer to TCM session for I_T Nexus
- 	 */
-@@ -51,6 +46,7 @@ struct tcm_loop_tpg {
- 	atomic_t tl_tpg_port_count;
- 	struct se_portal_group tl_se_tpg;
- 	struct tcm_loop_hba *tl_hba;
-+	struct tcm_loop_nexus *tl_nexus;
- };
- 
- struct tcm_loop_hba {
-@@ -59,7 +55,6 @@ struct tcm_loop_hba {
- 	struct se_hba_s *se_hba;
- 	struct se_lun *tl_hba_lun;
- 	struct se_port *tl_hba_lun_sep;
--	struct tcm_loop_nexus *tl_nexus;
- 	struct device dev;
- 	struct Scsi_Host *sh;
- 	struct tcm_loop_tpg tl_hba_tpgs[TL_TPGS_PER_HBA];
--- 
+
+ static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
+--
 1.9.1
 
