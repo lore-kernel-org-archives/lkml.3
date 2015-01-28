@@ -1,154 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759492AbbA2BzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:55:14 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:63453 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbbA2BzL (ORCPT
+	id S1763010AbbA1F35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:29:57 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:50910 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759610AbbA1F3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:55:11 -0500
-Date: Wed, 28 Jan 2015 01:23:33 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Javi Merino <javi.merino@arm.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        punit.agrawal@arm.com, broonie@kernel.org,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH v6 6/9] thermal: cpu_cooling: implement the power
- cooling device API
-Message-ID: <20150128052330.GD29600@developer.hsd1.ca.comcast.net>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
- <1417806260-9264-7-git-send-email-javi.merino@arm.com>
+	Wed, 28 Jan 2015 00:29:54 -0500
+From: HuKeping <hukeping@huawei.com>
+To: <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <matt.fleming@intel.com>,
+        <cbouatmailru@gmail.com>, <ccross@android.com>,
+        <keescook@chromium.org>, <tony.luck@intel.com>,
+        <stable@vger.kernel.org>, <sdu.liu@huawei.com>, <wangnan0@huawei.com>,
+        <peifeiyue@huawei.com>
+Subject: [PATCH v2 0/2][request for stable inclusion] several pstore related bugfixs
+Date: Wed, 28 Jan 2015 13:23:39 +0800
+Message-ID: <1422422621-5003-1-git-send-email-hukeping@huawei.com>
+X-Mailer: git-send-email 1.8.5.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="10jrOL3x2xqLmOsH"
-Content-Disposition: inline
-In-Reply-To: <1417806260-9264-7-git-send-email-javi.merino@arm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020201.54C873CB.0163,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: b2a3d5fe6725a25d78dd0fffa5a37e3d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi greg,
+We want to use pstore on linux 3.10. But we found several bugfixs have not
+been merged yet. Most of them are obvious and can be cherry-picked cleanly.
+Would you please apply them to stable 3.10?
 
---10jrOL3x2xqLmOsH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Change from v1:
+ - remove d4bf205da618bbd0b038e404d646f14e76915718 which has already been merged
+ - adjust 0405a5cec3406f19e69da07c8111a6bf1088ac29
 
+PART 1: patches that can be cleanly applied:
 
-Hello Javi,
+ bf2883339a33b7544b92ea465b90c3de55082032
+ pstore: Fail to unlink if a driver has not defined pstore_erase
+ 
+ c39524e6744284452ef45480d3153bec28960c32
+ pstore: d_alloc_name() doesn't return an ERR_PTR
+ 
+ 57fd835385a043577457a385f28c08be693991bf
+ pstore: clarify clearing of _read_cnt in ramoops_context
+ 
+ aa9a4a1edfbd3d223af01db833da2f07850bc655
+ pstore: skip zero size persistent ram buffer in traverse
+ 
+ b0aa931fb84431394d995472d0af2a6c2b61064d
+ pstore: Fix NULL pointer fault if get NULL prz in ramoops_get_next_prz
+ 
+PART 2: pathes that should be adjusted:
 
-On Fri, Dec 05, 2014 at 07:04:17PM +0000, Javi Merino wrote:
-> Add a basic power model to the cpu cooling device to implement the
-> power cooling device API.  The power model uses the current frequency,
-> current load and OPPs for the power calculations.  The cpus must have
-> registered their OPPs using the OPP library.
->=20
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Eduardo Valentin <edubezval@gmail.com>
-> Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
-> Signed-off-by: Javi Merino <javi.merino@arm.com>
+ Rob Herring (1):
+  pstore/ram: avoid atomic accesses for ioremapped regions
 
-<big cut>
+ fs/pstore/ram_core.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 52 insertions(+), 2 deletions(-)
 
-> +
-> +/**
-> + * get_load() - get load for a cpu since last updated
-> + * @cpufreq_device:	&struct cpufreq_cooling_device for this cpu
-> + * @cpu:	cpu number
-> + *
-> + * Return: The average load of cpu @cpu in percentage since this
-> + * function was last called.
-> + */
-> +static u32 get_load(struct cpufreq_cooling_device *cpufreq_device, int c=
-pu)
-> +{
-> +	u32 load;
-> +	u64 now, now_idle, delta_time, delta_idle;
-> +
-> +	now_idle =3D get_cpu_idle_time(cpu, &now, 0);
-> +	delta_idle =3D now_idle - cpufreq_device->time_in_idle[cpu];
-> +	delta_time =3D now - cpufreq_device->time_in_idle_timestamp[cpu];
-> +
-> +	if (delta_time <=3D delta_idle)
-> +		load =3D 0;
-> +	else
-> +		load =3D div64_u64(100 * (delta_time - delta_idle), delta_time);
-> +
-> +	cpufreq_device->time_in_idle[cpu] =3D now_idle;
-> +	cpufreq_device->time_in_idle_timestamp[cpu] =3D now;
-> +
-> +	return load;
-> +}
+ Madper Xie (1):
+  efi-pstore: Make efi-pstore return a unique id
 
-<cut>
+ drivers/firmware/efi/efi-pstore.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-> =20
-> +/**
-> + * cpufreq_get_actual_power() - get the current power
-> + * @cdev:	&thermal_cooling_device pointer
-> + *
-> + * Return the current power consumption of the cpus in milliwatts.
-> + */
-> +static u32 cpufreq_get_actual_power(struct thermal_cooling_device *cdev)
-> +{
-> +	unsigned long freq;
-> +	int cpu;
-> +	u32 static_power, dynamic_power, total_load =3D 0;
-> +	struct cpufreq_cooling_device *cpufreq_device =3D cdev->devdata;
-> +
-> +	freq =3D cpufreq_quick_get(cpumask_any(&cpufreq_device->allowed_cpus));
-> +
-> +	for_each_cpu(cpu, &cpufreq_device->allowed_cpus) {
-> +		u32 load;
-> +
-> +		if (cpu_online(cpu))
-> +			load =3D get_load(cpufreq_device, cpu);
-> +		else
-> +			load =3D 0;
-> +
-> +		total_load +=3D load;
-> +	}
-> +
-> +	cpufreq_device->last_load =3D total_load;
-> +
-> +	static_power =3D get_static_power(cpufreq_device, freq);
-> +	dynamic_power =3D get_dynamic_power(cpufreq_device, freq);
-> +
-> +	return static_power + dynamic_power;
-> +}
+-- 
+1.8.5.5
 
-With respect to load computation vs. frequency usage vs. power
-estimation, while getting actual power for a given interval T. What if
-in interval T, we have used, say, 3 different cpu frequencies, and the
-load on the first was 50%, on the second 80%, and on the last frequency,
-the load was 60%, what should be the right load value for computing the
-actual power?=20
-
-I mean, we are using the total idle time for a given interval, but 1 -
-idle not always seams to reflect actual load on different opps, if opps
-change over time within T time interval window.
-
-BR,
-
-
-BR,
-
-Eduardo Valentin
-
---10jrOL3x2xqLmOsH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUyHI+AAoJEMLUO4d9pOJWV1MH/3puQbfDZv3Vzl8tdJGRnIhu
-Fuuz8r7rj7tHOuFlN/qzlQdnsPbs8dPZJRPlpzhVCImetlgZfIxKzodqFVoiBsix
-i249x8nMZftQrAu77lgSqAjhh6tGCnBQcxjKabiw7R0b0jS9iyJn5QVWxodMFOPP
-BP53HqTHObGN9P0ctfObzFSILCCw5lnwVAFK0K8Pw8cIQzmgPHXrjCX0WU5pDBMg
-ZdOks96vUWDhF3kM4Tf/GvPmWJ/6YNLQclncdRymjvXe9y5o1Tdouc8uDoJxEa7L
-DJbsTYMqGfOudGA/Io3Ak6ciqW8j/YiN0MMtDLiw4EXETMwsxhuET39NwAdBrHA=
-=PA2V
------END PGP SIGNATURE-----
-
---10jrOL3x2xqLmOsH--
