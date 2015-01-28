@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760080AbbA2JF7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:05:59 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44848 "EHLO
+	id S1762093AbbA2JtA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:49:00 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44816 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759895AbbA2JFi (ORCPT
+	by vger.kernel.org with ESMTP id S1752358AbbA2JER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:05:38 -0500
+	Thu, 29 Jan 2015 04:04:17 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 018/176] UBI: Fix double free after do_sync_erase()
-Date: Wed, 28 Jan 2015 15:27:28 +0100
-Message-Id: <d97a9dc7ab8bcad943464de5d27e1341bad3ccbb.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
+        Joerg Roedel <jroedel@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 019/176] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
+Date: Wed, 28 Jan 2015 15:27:29 +0100
+Message-Id: <b377e72cf3c79fcba0fad4b0925fde850d353a15.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,62 +23,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Weinberger <richard@nod.at>
+From: Jiang Liu <jiang.liu@linux.intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit aa5ad3b6eb8feb2399a5d26c8fb0060561bb9534 upstream.
+commit cc4f14aa170d895c9a43bdb56f62070c8a6da908 upstream.
 
-If the erase worker is unable to erase a PEB it will
-free the ubi_wl_entry itself.
-The failing ubi_wl_entry must not free()'d again after
-do_sync_erase() returns.
+There's an off-by-one bug in function __domain_mapping(), which may
+trigger the BUG_ON(nr_pages < lvl_pages) when
+	(nr_pages + 1) & superpage_mask == 0
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
+domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
+"nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
+
+It's safe to remove extra "+1" because sg_res is only used to calculate
+page size now.
+
+Reported-And-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-By: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/mtd/ubi/wl.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/iommu/intel-iommu.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-index c95bfb183c62..49e570abe58b 100644
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1209,7 +1209,6 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 911ecb230b5a..fd0516c9fbfe 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1796,7 +1796,7 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
+ 	struct dma_pte *first_pte = NULL, *pte = NULL;
+ 	phys_addr_t uninitialized_var(pteval);
+ 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+-	unsigned long sg_res;
++	unsigned long sg_res = 0;
+ 	unsigned int largepage_lvl = 0;
+ 	unsigned long lvl_pages = 0;
  
- 	err = do_sync_erase(ubi, e1, vol_id, lnum, 0);
- 	if (err) {
--		kmem_cache_free(ubi_wl_entry_slab, e1);
- 		if (e2)
- 			kmem_cache_free(ubi_wl_entry_slab, e2);
- 		goto out_ro;
-@@ -1223,10 +1222,8 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
- 		dbg_wl("PEB %d (LEB %d:%d) was put meanwhile, erase",
- 		       e2->pnum, vol_id, lnum);
- 		err = do_sync_erase(ubi, e2, vol_id, lnum, 0);
--		if (err) {
--			kmem_cache_free(ubi_wl_entry_slab, e2);
-+		if (err)
- 			goto out_ro;
--		}
+@@ -1807,10 +1807,8 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
+ 
+ 	prot &= DMA_PTE_READ | DMA_PTE_WRITE | DMA_PTE_SNP;
+ 
+-	if (sg)
+-		sg_res = 0;
+-	else {
+-		sg_res = nr_pages + 1;
++	if (!sg) {
++		sg_res = nr_pages;
+ 		pteval = ((phys_addr_t)phys_pfn << VTD_PAGE_SHIFT) | prot;
  	}
- 
- 	dbg_wl("done");
-@@ -1262,10 +1259,9 @@ out_not_moved:
- 
- 	ubi_free_vid_hdr(ubi, vid_hdr);
- 	err = do_sync_erase(ubi, e2, vol_id, lnum, torture);
--	if (err) {
--		kmem_cache_free(ubi_wl_entry_slab, e2);
-+	if (err)
- 		goto out_ro;
--	}
-+
- 	mutex_unlock(&ubi->move_mutex);
- 	return 0;
  
 -- 
 2.2.2
