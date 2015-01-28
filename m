@@ -1,258 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933046AbbA1EHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:07:42 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:49942 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756642AbbA1EGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:06:33 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 linux-trace 8/8] samples: bpf: simple kprobe example
-Date: Tue, 27 Jan 2015 20:06:13 -0800
-Message-Id: <1422417973-10195-9-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
-References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
+	id S1760322AbbA1ENh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:13:37 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36652 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759125AbbA1ENd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:13:33 -0500
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Duncan Laurie <dlaurie@chromium.org>, Jarod Wilson <jarod@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jani Nikula <jani.nikula@intel.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 03/91] drm/i915: Remove bogus __init annotation from DMI callbacks
+Date: Wed, 28 Jan 2015 12:06:13 +0800
+Message-Id: <1422418236-12852-6-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the logic of the example is similar to tracex2, but syscall 'write' statistics
-is capturead from kprobe placed at sys_write function instead of through
-syscall instrumentation.
-Also tracex4_kern.c has a different way of doing log2 in C.
-Note, unlike tracepoint and syscall programs, kprobe programs receive
-'struct pt_regs' as an input. It's responsibility of the program author
-or higher level dynamic tracing tool to match registers to function arguments.
-Since pt_regs are architecture dependent, programs are also arch dependent,
-unlike tracepoint/syscalls programs which are universal.
+From: Mathias Krause <minipli@googlemail.com>
 
-Usage:
-$ sudo tracex4
-writing bpf-6 -> /sys/kernel/debug/tracing/events/kprobes/sys_write/filter
-2216443+0 records in
-2216442+0 records out
-1134818304 bytes (1.1 GB) copied, 2.00746 s, 565 MB/s
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
-           kprobe sys_write() stats
-     byte_size       : count     distribution
-       1 -> 1        : 0        |                                      |
-       2 -> 3        : 0        |                                      |
-       4 -> 7        : 0        |                                      |
-       8 -> 15       : 0        |                                      |
-      16 -> 31       : 0        |                                      |
-      32 -> 63       : 0        |                                      |
-      64 -> 127      : 1        |                                      |
-     128 -> 255      : 0        |                                      |
-     256 -> 511      : 0        |                                      |
-     512 -> 1023     : 2214734  |************************************* |
+------------------
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+
+commit bbe1c2740d3a25aa1dbe5d842d2ff09cddcdde0a upstream.
+
+The __init annotations for the DMI callback functions are wrong as this
+code can be called even after the module has been initialized, e.g. like
+this:
+
+  # echo 1 > /sys/bus/pci/devices/0000:00:02.0/remove
+  # modprobe i915
+  # echo 1 > /sys/bus/pci/rescan
+
+The first command will remove the PCI device from the kernel's device
+list so the second command won't see it right away. But as it registers
+a PCI driver it'll see it on the third command. If the system happens to
+match one of the DMI table entries we'll try to call a function in long
+released memory and generate an Oops, at best.
+
+Fix this by removing the bogus annotation.
+
+Modpost should have caught that one but it ignores section reference
+mismatches from the .rodata section. :/
+
+Fixes: 25e341cfc33d ("drm/i915: quirk away broken OpRegion VBT")
+Fixes: 8ca4013d702d ("CHROMIUM: i915: Add DMI override to skip CRT...")
+Fixes: 425d244c8670 ("drm/i915: ignore LVDS on intel graphics systems...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Duncan Laurie <dlaurie@chromium.org>
+Cc: Jarod Wilson <jarod@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>	# Can modpost be fixed?
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- samples/bpf/Makefile       |    4 +++
- samples/bpf/bpf_load.c     |    3 ++
- samples/bpf/tracex4_kern.c |   36 +++++++++++++++++++
- samples/bpf/tracex4_user.c |   83 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 126 insertions(+)
- create mode 100644 samples/bpf/tracex4_kern.c
- create mode 100644 samples/bpf/tracex4_user.c
+ drivers/gpu/drm/i915/intel_bios.c | 2 +-
+ drivers/gpu/drm/i915/intel_crt.c  | 2 +-
+ drivers/gpu/drm/i915/intel_lvds.c | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index da0efd8032ab..22c7a38f3f95 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -10,6 +10,7 @@ hostprogs-y += dropmon
- hostprogs-y += tracex1
- hostprogs-y += tracex2
- hostprogs-y += tracex3
-+hostprogs-y += tracex4
+diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+index a2c9e56..d9e359a 100644
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -651,7 +651,7 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
+ 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
+ }
  
- dropmon-objs := dropmon.o libbpf.o
- test_verifier-objs := test_verifier.o libbpf.o
-@@ -20,6 +21,7 @@ sockex2-objs := bpf_load.o libbpf.o sockex2_user.o
- tracex1-objs := bpf_load.o libbpf.o tracex1_user.o
- tracex2-objs := bpf_load.o libbpf.o tracex2_user.o
- tracex3-objs := bpf_load.o libbpf.o tracex3_user.o
-+tracex4-objs := bpf_load.o libbpf.o tracex4_user.o
- 
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
-@@ -28,6 +30,7 @@ always += sockex2_kern.o
- always += tracex1_kern.o
- always += tracex2_kern.o
- always += tracex3_kern.o
-+always += tracex4_kern.o
- 
- HOSTCFLAGS += -I$(objtree)/usr/include
- 
-@@ -37,6 +40,7 @@ HOSTLOADLIBES_sockex2 += -lelf
- HOSTLOADLIBES_tracex1 += -lelf
- HOSTLOADLIBES_tracex2 += -lelf
- HOSTLOADLIBES_tracex3 += -lelf
-+HOSTLOADLIBES_tracex4 += -lelf
- 
- # point this to your LLVM backend with bpf support
- LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
-diff --git a/samples/bpf/bpf_load.c b/samples/bpf/bpf_load.c
-index 788ac51c1024..d8c5176f0564 100644
---- a/samples/bpf/bpf_load.c
-+++ b/samples/bpf/bpf_load.c
-@@ -25,6 +25,7 @@ int prog_cnt;
- static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
+-static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
++static int intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
  {
- 	bool is_socket = strncmp(event, "socket", 6) == 0;
-+	bool is_kprobe = strncmp(event, "events/kprobes/", 15) == 0;
- 	enum bpf_prog_type prog_type;
- 	char path[256] = DEBUGFS;
- 	char fmt[32];
-@@ -32,6 +33,8 @@ static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
+ 	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
+ 		      "VBIOS ROM for %s\n",
+diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
+index a83f7ac..b4f71c2 100644
+--- a/drivers/gpu/drm/i915/intel_crt.c
++++ b/drivers/gpu/drm/i915/intel_crt.c
+@@ -564,7 +564,7 @@ static const struct drm_encoder_funcs intel_crt_enc_funcs = {
+ 	.destroy = intel_encoder_destroy,
+ };
  
- 	if (is_socket)
- 		prog_type = BPF_PROG_TYPE_SOCKET_FILTER;
-+	else if (is_kprobe)
-+		prog_type = BPF_PROG_TYPE_KPROBE_FILTER;
- 	else
- 		prog_type = BPF_PROG_TYPE_TRACING_FILTER;
+-static int __init intel_no_crt_dmi_callback(const struct dmi_system_id *id)
++static int intel_no_crt_dmi_callback(const struct dmi_system_id *id)
+ {
+ 	DRM_DEBUG_KMS("Skipping CRT initialization for %s\n", id->ident);
+ 	return 1;
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index b695ab4..77190cc 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -619,7 +619,7 @@ static const struct drm_encoder_funcs intel_lvds_enc_funcs = {
+ 	.destroy = intel_encoder_destroy,
+ };
  
-diff --git a/samples/bpf/tracex4_kern.c b/samples/bpf/tracex4_kern.c
-new file mode 100644
-index 000000000000..9646f9e43417
---- /dev/null
-+++ b/samples/bpf/tracex4_kern.c
-@@ -0,0 +1,36 @@
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <uapi/linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+#include "bpf_helpers.h"
-+
-+static unsigned int log2l(unsigned long long n)
-+{
-+#define S(k) if (n >= (1ull << k)) { i += k; n >>= k; }
-+	int i = -(n == 0);
-+	S(32); S(16); S(8); S(4); S(2); S(1);
-+	return i;
-+#undef S
-+}
-+
-+struct bpf_map_def SEC("maps") my_hist_map = {
-+	.type = BPF_MAP_TYPE_ARRAY,
-+	.key_size = sizeof(u32),
-+	.value_size = sizeof(long),
-+	.max_entries = 64,
-+};
-+
-+SEC("events/kprobes/sys_write")
-+int bpf_prog4(struct pt_regs *regs)
-+{
-+	long write_size = regs->dx; /* $rdx contains 3rd argument to a function */
-+	long init_val = 1;
-+	void *value;
-+	u32 index = log2l(write_size);
-+
-+	value = bpf_map_lookup_elem(&my_hist_map, &index);
-+	if (value)
-+		__sync_fetch_and_add((long *)value, 1);
-+	return 0;
-+}
-+char _license[] SEC("license") = "GPL";
-diff --git a/samples/bpf/tracex4_user.c b/samples/bpf/tracex4_user.c
-new file mode 100644
-index 000000000000..47dde2791f9e
---- /dev/null
-+++ b/samples/bpf/tracex4_user.c
-@@ -0,0 +1,83 @@
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <signal.h>
-+#include <linux/bpf.h>
-+#include "libbpf.h"
-+#include "bpf_load.h"
-+
-+#define MAX_INDEX	64
-+#define MAX_STARS	38
-+
-+static void stars(char *str, long val, long max, int width)
-+{
-+	int i;
-+
-+	for (i = 0; i < (width * val / max) - 1 && i < width - 1; i++)
-+		str[i] = '*';
-+	if (val > max)
-+		str[i - 1] = '+';
-+	str[i] = '\0';
-+}
-+
-+static void print_hist(int fd)
-+{
-+	int key;
-+	long value;
-+	long data[MAX_INDEX] = {};
-+	char starstr[MAX_STARS];
-+	int i;
-+	int max_ind = -1;
-+	long max_value = 0;
-+
-+	for (key = 0; key < MAX_INDEX; key++) {
-+		bpf_lookup_elem(fd, &key, &value);
-+		data[key] = value;
-+		if (value && key > max_ind)
-+			max_ind = key;
-+		if (value > max_value)
-+			max_value = value;
-+	}
-+
-+	printf("\n           kprobe sys_write() stats\n");
-+	printf("     byte_size       : count     distribution\n");
-+	for (i = 1; i <= max_ind + 1; i++) {
-+		stars(starstr, data[i - 1], max_value, MAX_STARS);
-+		printf("%8ld -> %-8ld : %-8ld |%-*s|\n",
-+		       (1l << i) >> 1, (1l << i) - 1, data[i - 1],
-+		       MAX_STARS, starstr);
-+	}
-+}
-+static void int_exit(int sig)
-+{
-+	print_hist(map_fd[0]);
-+	exit(0);
-+}
-+
-+int main(int ac, char **argv)
-+{
-+	char filename[256];
-+	FILE *f;
-+	int i;
-+
-+	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
-+
-+	signal(SIGINT, int_exit);
-+
-+	i = system("echo 'p:sys_write sys_write' > /sys/kernel/debug/tracing/kprobe_events");
-+	(void) i;
-+	
-+	/* start 'dd' in the background to have plenty of 'write' syscalls */
-+	f = popen("dd if=/dev/zero of=/dev/null", "r");
-+	(void) f;
-+
-+	if (load_bpf_file(filename)) {
-+		printf("%s", bpf_log_buf);
-+		return 1;
-+	}
-+
-+	sleep(2);
-+	kill(0, SIGINT); /* send Ctrl-C to self and to 'dd' */
-+
-+	return 0;
-+}
+-static int __init intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
++static int intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
+ {
+ 	DRM_DEBUG_KMS("Skipping LVDS initialization for %s\n", id->ident);
+ 	return 1;
 -- 
-1.7.9.5
+1.9.1
 
