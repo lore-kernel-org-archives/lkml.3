@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759667AbbA2Bzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:55:52 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:35000 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759588AbbA2Bzu (ORCPT
+	id S932719AbbA1USy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:18:54 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36534 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755598AbbA1USu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:55:50 -0500
-Date: Wed, 28 Jan 2015 20:46:39 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm v2 2/3] slub: fix kmem_cache_shrink return value
-Message-ID: <20150128174639.GB16011@esperanza>
-References: <cover.1422461573.git.vdavydov@parallels.com>
- <7ee54d0d26f6c61e2ecf50300ee955610749b344.1422461573.git.vdavydov@parallels.com>
- <alpine.DEB.2.11.1501281032220.32147@gentwo.org>
+	Wed, 28 Jan 2015 15:18:50 -0500
+Date: Wed, 28 Jan 2015 09:48:17 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST
+ context
+Message-ID: <20150128174817.GQ19109@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <cover.1416604491.git.luto@amacapital.net>
+ <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <54C17139.1040706@oracle.com>
+ <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
+ <20150123180455.GA3192@pd.tnic>
+ <CALCETrXA+OKGfxV9M=1AxvBSBPAt_+VmjDH0A+Rq4Ss+tKmTBw@mail.gmail.com>
+ <54C2B396.9090106@oracle.com>
+ <CALCETrXtA-xbec2oGBXW6KUFMY8v=MN2gS5trn1J221OSDDuJA@mail.gmail.com>
+ <CALCETrVN0DyQw+7ArX1zrKJRqSso2py6xH2k7QCS_b6J9a=8Gg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501281032220.32147@gentwo.org>
+In-Reply-To: <CALCETrVN0DyQw+7ArX1zrKJRqSso2py6xH2k7QCS_b6J9a=8Gg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012817-0025-0000-0000-000008205267
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 10:33:50AM -0600, Christoph Lameter wrote:
-> On Wed, 28 Jan 2015, Vladimir Davydov wrote:
-> 
-> > @@ -3419,6 +3420,9 @@ int __kmem_cache_shrink(struct kmem_cache *s)
-> >  		for (i = SHRINK_PROMOTE_MAX - 1; i >= 0; i--)
-> >  			list_splice_init(promote + i, &n->partial);
+On Wed, Jan 28, 2015 at 08:33:06AM -0800, Andy Lutomirski wrote:
+> On Fri, Jan 23, 2015 at 5:25 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > On Fri, Jan 23, 2015 at 12:48 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> >> On 01/23/2015 01:34 PM, Andy Lutomirski wrote:
+> >>> On Fri, Jan 23, 2015 at 10:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+> >>>> On Fri, Jan 23, 2015 at 09:58:01AM -0800, Andy Lutomirski wrote:
+> >>>>>> [  543.999079] Call Trace:
+> >>>>>> [  543.999079] dump_stack (lib/dump_stack.c:52)
+> >>>>>> [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
+> >>>>>> [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
+> >>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
+> >>>>>> [  543.999079] notify_die (kernel/notifier.c:538)
+> >>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
+> >>>>>> [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+> >>>>>> [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
+> >>>>>> [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
+> >>>>>> [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
+> >>>>>> [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
+> >>>>>> [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
+> >>>>>
+> >>>>> I don't know how to read this stack trace.  Are we in do_int3,
+> >>>>> do_debug, or both?  I didn't change do_debug at all.
+> >>>>
+> >>>> It looks like we're in do_debug. do_int3 is only on the stack but not
+> >>>> part of the current frame if I can trust the '?' ...
+> >>>>
+> >>>
+> >>> It's possible that an int3 happened and I did something wrong on
+> >>> return that caused a subsequent do_debug to screw up, but I don't see
+> >>> how my patch would have caused that.
+> >>>
+> >>> Were there any earlier log messages?
+> >>
+> >> Nope, nothing odd before or after.
 > >
-> > +		if (n->nr_partial || slabs_node(s, node))
+> > Trinity just survived for a decent amount of time for me with my
+> > patches, other than a bunch of apparently expected OOM kills.  I have
+> > no idea how to tell trinity how much memory to use.
 > 
-> The total number of slabs obtained via slabs_node always contains the
-> number of partial ones. So no need to check n->nr_partial.
+> A longer trinity run on a larger VM survived (still with some OOM
+> kills, but no taint) with these patches.  I suspect that it's a
+> regression somewhere else in the RCU changes.  I have
+> CONFIG_PROVE_RCU=y, so I should have seen the failure if it was there,
+> I think.
 
-Yeah, right. In addition to that I misplaced the check - it should go
-after discard_slab, where we decrement nr_slabs. Here goes the updated
-patch:
+If by "RCU changes" you mean my changes to the RCU infrastructure, I am
+going to need more of a hint than I see in this thread thus far.  ;-)
 
-From: Vladimir Davydov <vdavydov@parallels.com>
-Subject: [PATCH] slub: fix kmem_cache_shrink return value
-
-It is supposed to return 0 if the cache has no remaining objects and 1
-otherwise, while currently it always returns 0. Fix it.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slub.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index dbf9334b6a5c..5626588db884 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3379,6 +3379,7 @@ int __kmem_cache_shrink(struct kmem_cache *s)
- 	LIST_HEAD(discard);
- 	struct list_head promote[SHRINK_PROMOTE_MAX];
- 	unsigned long flags;
-+	int ret = 0;
- 
- 	for (i = 0; i < SHRINK_PROMOTE_MAX; i++)
- 		INIT_LIST_HEAD(promote + i);
-@@ -3424,9 +3425,12 @@ int __kmem_cache_shrink(struct kmem_cache *s)
- 		/* Release empty slabs */
- 		list_for_each_entry_safe(page, t, &discard, lru)
- 			discard_slab(s, page);
-+
-+		if (slabs_node(s, node))
-+			ret = 1;
- 	}
- 
--	return 0;
-+	return ret;
- }
- 
- static int slab_mem_going_offline_callback(void *arg)
--- 
-1.7.10.4
+							Thanx, Paul
 
