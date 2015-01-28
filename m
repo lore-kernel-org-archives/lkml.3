@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760638AbbA1Bvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:51:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41534 "EHLO
+	id S1760612AbbA1BvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:51:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933322AbbA1Bic (ORCPT
+	with ESMTP id S933331AbbA1Bid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:32 -0500
+	Tue, 27 Jan 2015 20:38:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 56/77] mm: page_alloc: convert hot/cold parameter and immediate callers to bool
-Date: Tue, 27 Jan 2015 17:27:34 -0800
-Message-Id: <20150128012747.649115403@linuxfoundation.org>
+Subject: [PATCH 3.14 57/77] mm: page_alloc: lookup pageblock migratetype with IRQs enabled during free
+Date: Tue, 27 Jan 2015 17:27:35 -0800
+Message-Id: <20150128012747.678835516@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -38,16 +38,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit b745bc85f21ea707e4ea1a91948055fa3e72c77b upstream.
+commit cfc47a2803db42140167b92d991ef04018e162c7 upstream.
 
-cold is a bool, make it one.  Make the likely case the "if" part of the
-block instead of the else as according to the optimisation manual this is
-preferred.
+get_pageblock_migratetype() is called during free with IRQs disabled.
+This is unnecessary and disables IRQs for longer than necessary.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Hugh Dickins <hughd@google.com>
@@ -62,206 +61,21 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/mm/homecache.c |    2 +-
- fs/fuse/dev.c            |    2 +-
- include/linux/gfp.h      |    4 ++--
- include/linux/pagemap.h  |    2 +-
- include/linux/swap.h     |    2 +-
- mm/page_alloc.c          |   20 ++++++++++----------
- mm/swap.c                |    4 ++--
- mm/swap_state.c          |    2 +-
- mm/vmscan.c              |    6 +++---
- 9 files changed, 22 insertions(+), 22 deletions(-)
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/tile/mm/homecache.c
-+++ b/arch/tile/mm/homecache.c
-@@ -417,7 +417,7 @@ void __homecache_free_pages(struct page
- 	if (put_page_testzero(page)) {
- 		homecache_change_page_home(page, order, PAGE_HOME_HASH);
- 		if (order == 0) {
--			free_hot_cold_page(page, 0);
-+			free_hot_cold_page(page, false);
- 		} else {
- 			init_page_count(page);
- 			__free_pages(page, order);
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1614,7 +1614,7 @@ out_finish:
- 
- static void fuse_retrieve_end(struct fuse_conn *fc, struct fuse_req *req)
- {
--	release_pages(req->pages, req->num_pages, 0);
-+	release_pages(req->pages, req->num_pages, false);
- }
- 
- static int fuse_retrieve(struct fuse_conn *fc, struct inode *inode,
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -369,8 +369,8 @@ void *alloc_pages_exact_nid(int nid, siz
- 
- extern void __free_pages(struct page *page, unsigned int order);
- extern void free_pages(unsigned long addr, unsigned int order);
--extern void free_hot_cold_page(struct page *page, int cold);
--extern void free_hot_cold_page_list(struct list_head *list, int cold);
-+extern void free_hot_cold_page(struct page *page, bool cold);
-+extern void free_hot_cold_page_list(struct list_head *list, bool cold);
- 
- extern void __free_memcg_kmem_pages(struct page *page, unsigned int order);
- extern void free_memcg_kmem_pages(unsigned long addr, unsigned int order);
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -99,7 +99,7 @@ static inline void mapping_set_gfp_mask(
- 
- #define page_cache_get(page)		get_page(page)
- #define page_cache_release(page)	put_page(page)
--void release_pages(struct page **pages, int nr, int cold);
-+void release_pages(struct page **pages, int nr, bool cold);
- 
- /*
-  * speculatively take a reference to a page.
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -441,7 +441,7 @@ mem_cgroup_uncharge_swapcache(struct pag
- #define free_page_and_swap_cache(page) \
- 	page_cache_release(page)
- #define free_pages_and_swap_cache(pages, nr) \
--	release_pages((pages), (nr), 0);
-+	release_pages((pages), (nr), false);
- 
- static inline void show_swap_cache_info(void)
- {
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1210,7 +1210,7 @@ retry_reserve:
-  */
- static int rmqueue_bulk(struct zone *zone, unsigned int order,
- 			unsigned long count, struct list_head *list,
--			int migratetype, int cold)
-+			int migratetype, bool cold)
- {
- 	int i;
+@@ -774,9 +774,9 @@ static void __free_pages_ok(struct page
+ 	if (!free_pages_prepare(page, order))
+ 		return;
  
-@@ -1229,7 +1229,7 @@ static int rmqueue_bulk(struct zone *zon
- 		 * merge IO requests if the physical pages are ordered
- 		 * properly.
- 		 */
--		if (likely(cold == 0))
-+		if (likely(!cold))
- 			list_add(&page->lru, list);
- 		else
- 			list_add_tail(&page->lru, list);
-@@ -1390,9 +1390,9 @@ void mark_free_pages(struct zone *zone)
- 
- /*
-  * Free a 0-order page
-- * cold == 1 ? free a cold page : free a hot page
-+ * cold == true ? free a cold page : free a hot page
-  */
--void free_hot_cold_page(struct page *page, int cold)
-+void free_hot_cold_page(struct page *page, bool cold)
- {
- 	struct zone *zone = page_zone(page);
- 	struct per_cpu_pages *pcp;
-@@ -1424,10 +1424,10 @@ void free_hot_cold_page(struct page *pag
- 	}
- 
- 	pcp = &this_cpu_ptr(zone->pageset)->pcp;
--	if (cold)
--		list_add_tail(&page->lru, &pcp->lists[migratetype]);
--	else
-+	if (!cold)
- 		list_add(&page->lru, &pcp->lists[migratetype]);
-+	else
-+		list_add_tail(&page->lru, &pcp->lists[migratetype]);
- 	pcp->count++;
- 	if (pcp->count >= pcp->high) {
- 		unsigned long batch = ACCESS_ONCE(pcp->batch);
-@@ -1442,7 +1442,7 @@ out:
- /*
-  * Free a list of 0-order pages
-  */
--void free_hot_cold_page_list(struct list_head *list, int cold)
-+void free_hot_cold_page_list(struct list_head *list, bool cold)
- {
- 	struct page *page, *next;
- 
-@@ -1559,7 +1559,7 @@ struct page *buffered_rmqueue(struct zon
- {
- 	unsigned long flags;
- 	struct page *page;
--	int cold = !!(gfp_flags & __GFP_COLD);
-+	bool cold = ((gfp_flags & __GFP_COLD) != 0);
- 
- again:
- 	if (likely(order == 0)) {
-@@ -2868,7 +2868,7 @@ void __free_pages(struct page *page, uns
- {
- 	if (put_page_testzero(page)) {
- 		if (order == 0)
--			free_hot_cold_page(page, 0);
-+			free_hot_cold_page(page, false);
- 		else
- 			__free_pages_ok(page, order);
- 	}
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -67,7 +67,7 @@ static void __page_cache_release(struct
- static void __put_single_page(struct page *page)
- {
- 	__page_cache_release(page);
--	free_hot_cold_page(page, 0);
-+	free_hot_cold_page(page, false);
- }
- 
- static void __put_compound_page(struct page *page)
-@@ -826,7 +826,7 @@ void lru_add_drain_all(void)
-  * grabbed the page via the LRU.  If it did, give up: shrink_inactive_list()
-  * will free it.
-  */
--void release_pages(struct page **pages, int nr, int cold)
-+void release_pages(struct page **pages, int nr, bool cold)
- {
- 	int i;
- 	LIST_HEAD(pages_to_free);
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -270,7 +270,7 @@ void free_pages_and_swap_cache(struct pa
- 
- 		for (i = 0; i < todo; i++)
- 			free_swap_cache(pagep[i]);
--		release_pages(pagep, todo, 0);
-+		release_pages(pagep, todo, false);
- 		pagep += todo;
- 		nr -= todo;
- 	}
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1107,7 +1107,7 @@ keep:
- 		VM_BUG_ON_PAGE(PageLRU(page) || PageUnevictable(page), page);
- 	}
- 
--	free_hot_cold_page_list(&free_pages, 1);
-+	free_hot_cold_page_list(&free_pages, true);
- 
- 	list_splice(&ret_pages, page_list);
- 	count_vm_events(PGACTIVATE, pgactivate);
-@@ -1505,7 +1505,7 @@ shrink_inactive_list(unsigned long nr_to
- 
- 	spin_unlock_irq(&zone->lru_lock);
- 
--	free_hot_cold_page_list(&page_list, 1);
-+	free_hot_cold_page_list(&page_list, true);
- 
- 	/*
- 	 * If reclaim is isolating dirty pages under writeback, it implies
-@@ -1725,7 +1725,7 @@ static void shrink_active_list(unsigned
- 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
- 	spin_unlock_irq(&zone->lru_lock);
- 
--	free_hot_cold_page_list(&l_hold, 1);
-+	free_hot_cold_page_list(&l_hold, true);
- }
- 
- #ifdef CONFIG_SWAP
++	migratetype = get_pfnblock_migratetype(page, pfn);
+ 	local_irq_save(flags);
+ 	__count_vm_events(PGFREE, 1 << order);
+-	migratetype = get_pfnblock_migratetype(page, pfn);
+ 	set_freepage_migratetype(page, migratetype);
+ 	free_one_page(page_zone(page), page, pfn, order, migratetype);
+ 	local_irq_restore(flags);
 
 
