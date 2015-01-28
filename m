@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbbA1FuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:50:10 -0500
-Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:58259 "EHLO
-	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750869AbbA1FuI (ORCPT
+	id S1754164AbbA1Fyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:54:53 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:63301 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502AbbA1Fyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:50:08 -0500
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: Kalle Valo <kvalo@codeaurora.org>, John Linville <linville@tuxdriver.com>,
-        Michael Buesch <m@bues.ch>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org,
-        Pramod Gurav <pramod.gurav@smartplayin.com>
-Subject: [PATCH RESEND] ssb: Fix Sparse error in main
-Date: Wed, 28 Jan 2015 11:19:47 +0530
-Message-Id: <1422424187-19059-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 28 Jan 2015 00:54:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <54C80955.4070305@redhat.com>
+References: <CACzj_yWZSJkfn0JAJr9w6hLWtMbr3PpHQVxH_GkwmY8g3x1x8w@mail.gmail.com>
+ <54C80955.4070305@redhat.com>
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Wed, 28 Jan 2015 13:54:30 +0800
+Message-ID: <CACzj_yUn8yMY1iW2Umd_nYX29jw1vyuPd=m+jfx55ZwXXUPTBw@mail.gmail.com>
+Subject: Re: [PATCH v3 6/6] KVM: nVMX: Enable nested posted interrupt processing.
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "gleb@kernel.org" <gleb@kernel.org>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change fixes below sparse error:
-drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
-was not declared. Should it be static?
+On Wed, Jan 28, 2015 at 5:55 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>
+>
+> On 24/01/2015 11:24, Wincy Van wrote:
+>>         if (!nested_cpu_has_virt_x2apic_mode(vmcs12) &&
+>>             !nested_cpu_has_apic_reg_virt(vmcs12) &&
+>> -           !nested_cpu_has_vid(vmcs12))
+>> +           !nested_cpu_has_vid(vmcs12) &&
+>> +           !nested_cpu_has_posted_intr(vmcs12))
+>>                 return 0;
+>>
+>>         if (nested_cpu_has_virt_x2apic_mode(vmcs12))
+>>                 r = nested_vmx_check_virt_x2apic(vcpu, vmcs12);
+>>         if (nested_cpu_has_vid(vmcs12))
+>>                 r |= nested_vmx_check_vid(vcpu, vmcs12);
+>> +       if (nested_cpu_has_posted_intr(vmcs12))
+>> +               r |= nested_vmx_check_posted_intr(vcpu, vmcs12);
+>
+> These "if"s are always true.
+>
 
-Acked-by: Michael Buesch <m@bues.ch>
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/ssb/main.c |   19 -------------------
- 1 file changed, 19 deletions(-)
+Why? L1 may config these features seperately, we should check them one by one.
+e.g.  L1 may enable posted interrupt processing and virtual interrupt
+delivery, but leaving virtualize x2apic mode disabled, then
+nested_cpu_has_virt_x2apic_mode will return false.
 
-diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
-index 2fead38..1e180c4 100644
---- a/drivers/ssb/main.c
-+++ b/drivers/ssb/main.c
-@@ -90,25 +90,6 @@ found:
- }
- #endif /* CONFIG_SSB_PCMCIAHOST */
- 
--#ifdef CONFIG_SSB_SDIOHOST
--struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func)
--{
--	struct ssb_bus *bus;
--
--	ssb_buses_lock();
--	list_for_each_entry(bus, &buses, list) {
--		if (bus->bustype == SSB_BUSTYPE_SDIO &&
--		    bus->host_sdio == func)
--			goto found;
--	}
--	bus = NULL;
--found:
--	ssb_buses_unlock();
--
--	return bus;
--}
--#endif /* CONFIG_SSB_SDIOHOST */
--
- int ssb_for_each_bus_call(unsigned long data,
- 			  int (*func)(struct ssb_bus *bus, unsigned long data))
- {
--- 
-1.7.9.5
-
+> Paolo
