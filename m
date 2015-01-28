@@ -1,285 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760142AbbA1EJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:09:38 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:34292 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704AbbA1EG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:06:29 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 linux-trace 4/8] samples: bpf: simple tracing example in C
-Date: Tue, 27 Jan 2015 20:06:09 -0800
-Message-Id: <1422417973-10195-5-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
-References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
+	id S1759020AbbA1ENX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:13:23 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36568 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871AbbA1ENV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:13:21 -0500
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Matlack <dmatlack@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 001/177] kvm: x86: fix stale mmio cache bug
+Date: Wed, 28 Jan 2015 12:06:09 +0800
+Message-Id: <1422418236-12852-2-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tracex1_kern.c - C program which will be compiled into eBPF
-to filter netif_receive_skb events on skb->dev->name == "lo"
-The programs returns 1 to continue storing an event into trace buffer
-and returns 0 - to discard an event.
+From: David Matlack <dmatlack@google.com>
 
-tracex1_user.c - corresponding user space component that
-forever reads /sys/.../trace_pipe
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
-Usage:
-$ sudo tracex1
+------------------
 
-should see:
-writing bpf-4 -> /sys/kernel/debug/tracing/events/net/netif_receive_skb/filter
-  ping-364   [000] ..s2     8.089771: netif_receive_skb: dev=lo skbaddr=ffff88000dfcc100 len=84
-  ping-364   [000] ..s2     8.089889: netif_receive_skb: dev=lo skbaddr=ffff88000dfcc900 len=84
 
-Ctrl-C at any time, kernel will auto cleanup
+commit 56f17dd3fbc44adcdbc3340fe3988ddb833a47a7 upstream.
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
+up to userspace:
+
+(1) Guest accesses gpa X without a memory slot. The gfn is cached in
+struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
+the SPTE write-execute-noread so that future accesses cause
+EPT_MISCONFIGs.
+
+(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
+covering the page just accessed.
+
+(3) Guest attempts to read or write to gpa X again. On Intel, this
+generates an EPT_MISCONFIG. The memory slot generation number that
+was incremented in (2) would normally take care of this but we fast
+path mmio faults through quickly_check_mmio_pf(), which only checks
+the per-vcpu mmio cache. Since we hit the cache, KVM passes a
+KVM_EXIT_MMIO up to userspace.
+
+This patch fixes the issue by using the memslot generation number
+to validate the mmio cache.
+
+Signed-off-by: David Matlack <dmatlack@google.com>
+[xiaoguangrong: adjust the code to make it simpler for stable-tree fix.]
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Reviewed-by: David Matlack <dmatlack@google.com>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Tested-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- samples/bpf/Makefile       |    4 +++
- samples/bpf/bpf_helpers.h  |   14 +++++++++++
- samples/bpf/bpf_load.c     |   59 +++++++++++++++++++++++++++++++++++++++-----
- samples/bpf/bpf_load.h     |    3 +++
- samples/bpf/tracex1_kern.c |   28 +++++++++++++++++++++
- samples/bpf/tracex1_user.c |   24 ++++++++++++++++++
- 6 files changed, 126 insertions(+), 6 deletions(-)
- create mode 100644 samples/bpf/tracex1_kern.c
- create mode 100644 samples/bpf/tracex1_user.c
+ arch/x86/include/asm/kvm_host.h |  1 +
+ arch/x86/kvm/mmu.c              |  2 +-
+ arch/x86/kvm/x86.h              | 20 +++++++++++++++-----
+ 3 files changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index 789691374562..da28e1b6d3a6 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -7,6 +7,7 @@ hostprogs-y += sock_example
- hostprogs-y += sockex1
- hostprogs-y += sockex2
- hostprogs-y += dropmon
-+hostprogs-y += tracex1
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 944471f..c29677e 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -453,6 +453,7 @@ struct kvm_vcpu_arch {
+ 	u64 mmio_gva;
+ 	unsigned access;
+ 	gfn_t mmio_gfn;
++	u64 mmio_gen;
  
- dropmon-objs := dropmon.o libbpf.o
- test_verifier-objs := test_verifier.o libbpf.o
-@@ -14,17 +15,20 @@ test_maps-objs := test_maps.o libbpf.o
- sock_example-objs := sock_example.o libbpf.o
- sockex1-objs := bpf_load.o libbpf.o sockex1_user.o
- sockex2-objs := bpf_load.o libbpf.o sockex2_user.o
-+tracex1-objs := bpf_load.o libbpf.o tracex1_user.o
+ 	struct kvm_pmu pmu;
  
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
- always += sockex1_kern.o
- always += sockex2_kern.o
-+always += tracex1_kern.o
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index fd6dec6..84f4bca 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2842,7 +2842,7 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
+ 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ 		return;
  
- HOSTCFLAGS += -I$(objtree)/usr/include
- 
- HOSTCFLAGS_bpf_load.o += -I$(objtree)/usr/include -Wno-unused-variable
- HOSTLOADLIBES_sockex1 += -lelf
- HOSTLOADLIBES_sockex2 += -lelf
-+HOSTLOADLIBES_tracex1 += -lelf
- 
- # point this to your LLVM backend with bpf support
- LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
-diff --git a/samples/bpf/bpf_helpers.h b/samples/bpf/bpf_helpers.h
-index ca0333146006..9c385c2eacf8 100644
---- a/samples/bpf/bpf_helpers.h
-+++ b/samples/bpf/bpf_helpers.h
-@@ -15,6 +15,20 @@ static int (*bpf_map_update_elem)(void *map, void *key, void *value,
- 	(void *) BPF_FUNC_map_update_elem;
- static int (*bpf_map_delete_elem)(void *map, void *key) =
- 	(void *) BPF_FUNC_map_delete_elem;
-+static void *(*bpf_fetch_ptr)(void *unsafe_ptr) =
-+	(void *) BPF_FUNC_fetch_ptr;
-+static unsigned long long (*bpf_fetch_u64)(void *unsafe_ptr) =
-+	(void *) BPF_FUNC_fetch_u64;
-+static unsigned int (*bpf_fetch_u32)(void *unsafe_ptr) =
-+	(void *) BPF_FUNC_fetch_u32;
-+static unsigned short (*bpf_fetch_u16)(void *unsafe_ptr) =
-+	(void *) BPF_FUNC_fetch_u16;
-+static unsigned char (*bpf_fetch_u8)(void *unsafe_ptr) =
-+	(void *) BPF_FUNC_fetch_u8;
-+static int (*bpf_memcmp)(void *unsafe_ptr, void *safe_ptr, int size) =
-+	(void *) BPF_FUNC_memcmp;
-+static unsigned long long (*bpf_ktime_get_ns)(void) =
-+	(void *) BPF_FUNC_ktime_get_ns;
- 
- /* llvm builtin functions that eBPF C program may use to
-  * emit BPF_LD_ABS and BPF_LD_IND instructions
-diff --git a/samples/bpf/bpf_load.c b/samples/bpf/bpf_load.c
-index 1831d236382b..788ac51c1024 100644
---- a/samples/bpf/bpf_load.c
-+++ b/samples/bpf/bpf_load.c
-@@ -14,6 +14,8 @@
- #include "bpf_helpers.h"
- #include "bpf_load.h"
- 
-+#define DEBUGFS "/sys/kernel/debug/tracing/"
-+
- static char license[128];
- static bool processed_sec[128];
- int map_fd[MAX_MAPS];
-@@ -22,15 +24,18 @@ int prog_cnt;
- 
- static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
- {
--	int fd;
- 	bool is_socket = strncmp(event, "socket", 6) == 0;
-+	enum bpf_prog_type prog_type;
-+	char path[256] = DEBUGFS;
-+	char fmt[32];
-+	int fd, event_fd, err;
- 
--	if (!is_socket)
--		/* tracing events tbd */
--		return -1;
-+	if (is_socket)
-+		prog_type = BPF_PROG_TYPE_SOCKET_FILTER;
-+	else
-+		prog_type = BPF_PROG_TYPE_TRACING_FILTER;
- 
--	fd = bpf_prog_load(BPF_PROG_TYPE_SOCKET_FILTER,
--			   prog, size, license);
-+	fd = bpf_prog_load(prog_type, prog, size, license);
- 
- 	if (fd < 0) {
- 		printf("bpf_prog_load() err=%d\n%s", errno, bpf_log_buf);
-@@ -39,6 +44,28 @@ static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
- 
- 	prog_fd[prog_cnt++] = fd;
- 
-+	if (is_socket)
-+		return 0;
-+
-+	snprintf(fmt, sizeof(fmt), "bpf-%d", fd);
-+
-+	strcat(path, event);
-+	strcat(path, "/filter");
-+
-+	printf("writing %s -> %s\n", fmt, path);
-+
-+	event_fd = open(path, O_WRONLY, 0);
-+	if (event_fd < 0) {
-+		printf("failed to open event %s\n", event);
-+		return -1;
-+	}
-+
-+	err = write(event_fd, fmt, strlen(fmt));
-+	if (err < 0) {
-+		printf("write to '%s' failed '%s'\n", event, strerror(errno));
-+		return -1;
-+	}
-+
- 	return 0;
- }
- 
-@@ -201,3 +228,23 @@ int load_bpf_file(char *path)
- 	close(fd);
- 	return 0;
- }
-+
-+void read_trace_pipe(void)
-+{
-+	int trace_fd;
-+
-+	trace_fd = open(DEBUGFS "trace_pipe", O_RDONLY, 0);
-+	if (trace_fd < 0)
-+		return;
-+
-+	while (1) {
-+		static char buf[4096];
-+		ssize_t sz;
-+
-+		sz = read(trace_fd, buf, sizeof(buf));
-+		if (sz) {
-+			buf[sz] = 0;
-+			puts(buf);
-+		}
-+	}
+-	vcpu_clear_mmio_info(vcpu, ~0ul);
++	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
+ 	kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
+ 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
+ 		hpa_t root = vcpu->arch.mmu.root_hpa;
+diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+index cb80c29..1ce5611 100644
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -78,15 +78,23 @@ static inline void vcpu_cache_mmio_info(struct kvm_vcpu *vcpu,
+ 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
+ 	vcpu->arch.access = access;
+ 	vcpu->arch.mmio_gfn = gfn;
++	vcpu->arch.mmio_gen = kvm_memslots(vcpu->kvm)->generation;
 +}
-diff --git a/samples/bpf/bpf_load.h b/samples/bpf/bpf_load.h
-index 27789a34f5e6..d154fc2b0535 100644
---- a/samples/bpf/bpf_load.h
-+++ b/samples/bpf/bpf_load.h
-@@ -21,4 +21,7 @@ extern int prog_fd[MAX_PROGS];
++
++static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
++{
++	return vcpu->arch.mmio_gen == kvm_memslots(vcpu->kvm)->generation;
+ }
+ 
+ /*
+- * Clear the mmio cache info for the given gva,
+- * specially, if gva is ~0ul, we clear all mmio cache info.
++ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
++ * clear all mmio cache info.
   */
- int load_bpf_file(char *path);
++#define MMIO_GVA_ANY (~(gva_t)0)
++
+ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
+ {
+-	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
++	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
+ 		return;
  
-+/* forever reads /sys/.../trace_pipe */
-+void read_trace_pipe(void);
-+
- #endif
-diff --git a/samples/bpf/tracex1_kern.c b/samples/bpf/tracex1_kern.c
-new file mode 100644
-index 000000000000..7849ceb4bce6
---- /dev/null
-+++ b/samples/bpf/tracex1_kern.c
-@@ -0,0 +1,28 @@
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <uapi/linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+#include "bpf_helpers.h"
-+
-+SEC("events/net/netif_receive_skb")
-+int bpf_prog1(struct bpf_context *ctx)
-+{
-+	/*
-+	 * attaches to /sys/kernel/debug/tracing/events/net/netif_receive_skb
-+	 * prints events for loobpack device only
-+	 */
-+	char devname[] = "lo";
-+	struct net_device *dev;
-+	struct sk_buff *skb = 0;
-+
-+	skb = (struct sk_buff *) ctx->arg1;
-+	dev = bpf_fetch_ptr(&skb->dev);
-+	if (bpf_memcmp(dev->name, devname, 2) == 0)
-+		/* print event using default tracepoint format */
-+		return 1;
-+
-+	/* drop event */
-+	return 0;
-+}
-+
-+char _license[] SEC("license") = "GPL";
-diff --git a/samples/bpf/tracex1_user.c b/samples/bpf/tracex1_user.c
-new file mode 100644
-index 000000000000..e85c1b483f57
---- /dev/null
-+++ b/samples/bpf/tracex1_user.c
-@@ -0,0 +1,24 @@
-+#include <stdio.h>
-+#include <linux/bpf.h>
-+#include "libbpf.h"
-+#include "bpf_load.h"
-+
-+int main(int ac, char **argv)
-+{
-+	FILE *f;
-+	char filename[256];
-+
-+	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
-+
-+	if (load_bpf_file(filename)) {
-+		printf("%s", bpf_log_buf);
-+		return 1;
-+	}
-+
-+	f = popen("ping -c5 localhost", "r");
-+	(void) f;
-+
-+	read_trace_pipe();
-+
-+	return 0;
-+}
+ 	vcpu->arch.mmio_gva = 0;
+@@ -94,7 +102,8 @@ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
+ 
+ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
+ {
+-	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
++	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
+ 		return true;
+ 
+ 	return false;
+@@ -102,7 +111,8 @@ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
+ 
+ static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
+ {
+-	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
++	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
+ 		return true;
+ 
+ 	return false;
 -- 
-1.7.9.5
+1.9.1
 
