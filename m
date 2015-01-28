@@ -1,142 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764360AbbA2Dij (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:38:39 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:53414 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758099AbbA2Dif (ORCPT
+	id S1757218AbbA2EJI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 23:09:08 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:47759 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478AbbA2EJF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 22:38:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150128061250.GQ2555@sapphire.tkos.co.il>
-References: <1422413261-17184-1-git-send-email-chunyan.zhang@spreadtrum.com>
-	<1422413261-17184-3-git-send-email-chunyan.zhang@spreadtrum.com>
-	<20150128061250.GQ2555@sapphire.tkos.co.il>
-Date: Wed, 28 Jan 2015 16:46:33 +0800
-Message-ID: <CAAfSe-v4FGpHL3N3utiDwcoc7qus1XZZszuXBqB6LeE1frAfeA@mail.gmail.com>
-Subject: Re: [PATCH v9 2/2] tty/serial: Add Spreadtrum sc9836-uart driver support
-From: Lyra Zhang <zhang.lyra@gmail.com>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        "andrew@lunn.ch" <andrew@lunn.ch>, "jslaby@suse.cz" <jslaby@suse.cz>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Orson Zhai <orsonzhai@gmail.com>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Hayato Suzuki <hytszk@gmail.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 Jan 2015 23:09:05 -0500
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [PATCH 3.4 152/177] KVM: x86: Fix uninitialized op->type for some immediate values
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <1422418236-12852-243-git-send-email-lizf@kernel.org>
+Date: Wed, 28 Jan 2015 10:47:02 +0200
+Cc: stable@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <861C01D3-25A0-4411-9FBF-C72128CF3EBC@gmail.com>
+References: <1422418050-12581-1-git-send-email-lizf@kernel.org> <1422418236-12852-243-git-send-email-lizf@kernel.org>
+To: lizf@kernel.org
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Baruch
+This bug should have no effect on Linux 3.4. It shouldn’t hurt, but the
+problem it fixes was introduced in 3.16 or 3.17.
 
-I'm sorry that I didn't receive your previous email.
-and my explanations are below.
+Nadav
 
-On Wed, Jan 28, 2015 at 2:12 PM, Baruch Siach <baruch@tkos.co.il> wrote:
-> Hi Chunyan Zhang,
->
-> On Wed, Jan 28, 2015 at 10:47:41AM +0800, Chunyan Zhang wrote:
-> [...]
->> +static inline void sprd_rx(struct uart_port *port)
->> +{
->> +     struct tty_port *tty = &port->state->port;
->> +     unsigned int ch, flag, lsr, max_count = SPRD_TIMEOUT;
->> +
->> +     while ((serial_in(port, SPRD_STS1) & 0x00ff) && max_count--) {
->> +             lsr = serial_in(port, SPRD_LSR);
->> +             ch = serial_in(port, SPRD_RXD);
->> +             flag = TTY_NORMAL;
->> +             port->icount.rx++;
->> +
->> +             if (lsr & (SPRD_LSR_BI | SPRD_LSR_PE |
->> +                     SPRD_LSR_FE | SPRD_LSR_OE))
->> +                     if (handle_lsr_errors(port, &lsr, &flag))
->> +                             continue;
->> +             if (uart_handle_sysrq_char(port, ch))
->> +                     continue;
->
-> My comment[1] on a previous version of this patch still stands.
-> uart_handle_sysrq_char is a NOP when SUPPORT_SYSRQ is not defined.
->
+lizf@kernel.org wrote:
 
-yes, there are two definitions in serial_core.h, and it returns 0 when
-SUPPORT_SYSRQ is not defined.
-so, I think my code behavior does not hurt, right?
+> From: Nadav Amit <namit@cs.technion.ac.il>
+> 
+> 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> 
+> commit d29b9d7ed76c0b961603ca692b8a562556a20212 upstream.
+> 
+> The emulator could reuse an op->type from a previous instruction for some
+> immediate values.  If it mistakenly considers the operands as memory
+> operands, it will performs a memory read and overwrite op->val.
+> 
+> Consider for instance the ROR instruction - src2 (the number of times)
+> would be read from memory instead of being used as immediate.
+> 
+> Mark every immediate operand as such to avoid this problem.
+> 
+> Fixes: c44b4c6ab80eef3a9c52c7b3f0c632942e6489aa
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Zefan Li <lizefan@huawei.com>
+> ---
+> arch/x86/kvm/emulate.c | 8 ++++++++
+> 1 file changed, 8 insertions(+)
+> 
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index e125c3e..0a12507 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -3833,6 +3833,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+> 		fetch_register_operand(op);
+> 		break;
+> 	case OpCL:
+> +		op->type = OP_IMM;
+> 		op->bytes = 1;
+> 		op->val = ctxt->regs[VCPU_REGS_RCX] & 0xff;
+> 		break;
+> @@ -3840,6 +3841,7 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+> 		rc = decode_imm(ctxt, op, 1, true);
+> 		break;
+> 	case OpOne:
+> +		op->type = OP_IMM;
+> 		op->bytes = 1;
+> 		op->val = 1;
+> 		break;
+> @@ -3879,21 +3881,27 @@ static int decode_operand(struct x86_emulate_ctxt *ctxt, struct operand *op,
+> 		ctxt->memop.bytes = ctxt->op_bytes + 2;
+> 		goto mem_common;
+> 	case OpES:
+> +		op->type = OP_IMM;
+> 		op->val = VCPU_SREG_ES;
+> 		break;
+> 	case OpCS:
+> +		op->type = OP_IMM;
+> 		op->val = VCPU_SREG_CS;
+> 		break;
+> 	case OpSS:
+> +		op->type = OP_IMM;
+> 		op->val = VCPU_SREG_SS;
+> 		break;
+> 	case OpDS:
+> +		op->type = OP_IMM;
+> 		op->val = VCPU_SREG_DS;
+> 		break;
+> 	case OpFS:
+> +		op->type = OP_IMM;
+> 		op->val = VCPU_SREG_FS;
+> 		break;
+> 	case OpGS:
+> +		op->type = OP_IMM;
+> 		op->val = VCPU_SREG_GS;
+> 		break;
+> 	case OpImplicit:
+> -- 
+> 1.9.1
 
->> +
->> +             uart_insert_char(port, lsr, SPRD_LSR_OE, ch, flag);
->> +     }
->> +
->> +     tty_flip_buffer_push(tty);
->> +}
->
-> [...]
->
->> +static void sprd_console_write(struct console *co, const char *s,
->> +                                   unsigned int count)
->> +{
->> +     struct uart_port *port = &sprd_port[co->index]->port;
->> +     int locked = 1;
->> +     unsigned long flags;
->> +
->> +     if (port->sysrq)
->> +             locked = 0;
->
-> The sysrq field of struct uart_port is only defined when
-> CONFIG_SERIAL_CORE_CONSOLE or SUPPORT_SYSRQ are defined. You should #ifdef
-> this part accordingly to avoid build breakage.
->
 
-we have this part to been included under #ifdef
-CONFIG_SERIAL_SPRD_CONSOLE which is selected with SERIAL_CORE_CONSOLE.
-
-Thank you very much!
-
-Chunyan
-
->> +     else if (oops_in_progress)
->> +             locked = spin_trylock_irqsave(&port->lock, flags);
->> +     else
->> +             spin_lock_irqsave(&port->lock, flags);
->> +
->> +     uart_console_write(port, s, count, sprd_console_putchar);
->> +
->> +     /* wait for transmitter to become empty */
->> +     wait_for_xmitr(port);
->> +
->> +     if (locked)
->> +             spin_unlock_irqrestore(&port->lock, flags);
->> +}
->
-> [1]
->         http://article.gmane.org/gmane.linux.drivers.devicetree/106483
->
-> baruch
->
-> --
->      http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-> =}------------------------------------------------ooO--U--Ooo------------{=
->    - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
