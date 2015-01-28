@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbbA1UP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:15:57 -0500
-Received: from dehamd003.servertools24.de ([31.47.254.18]:52854 "EHLO
-	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755155AbbA1UPz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:15:55 -0500
-Message-ID: <54C9418F.1050600@ladisch.de>
-Date: Wed, 28 Jan 2015 21:07:43 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64;
-	rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-CC: Stefan Richter <stefanr@s5r6.in-berlin.de>, devel@driverdev.osuosl.org,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging/fwserial: use correct vendor/version IDs
-References: <54C940E0.5090906@ladisch.de>
-In-Reply-To: <54C940E0.5090906@ladisch.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-PPP-Message-ID: <20150128200255.317905.80820@dehamd003.servertools24.de>
-X-PPP-Vhost: ladisch.de
+	id S1751746AbbA2BHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:07:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53612 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751591AbbA2BHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:07:16 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] New Lenovos 2015 touchpads: party time!
+Date: Wed, 28 Jan 2015 15:10:03 -0500
+Message-Id: <1422475807-15033-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver was using the vendor ID 0xd00d1e from the FireWire core.
-However, this ID was not registered, and invalid.
+Hi Dmitry,
 
-Instead, use the vendor/version IDs that now are officially assigned to
-firewire-serial:
-https://ieee1394.wiki.kernel.org/index.php/IEEE_OUI_Assignments
+Lenovo released their new models, and believe it or not, some kernel
+work is required to support them!
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
----
- drivers/staging/fwserial/TODO       |    5 ++---
- drivers/staging/fwserial/fwserial.c |    4 ++--
- 2 files changed, 4 insertions(+), 5 deletions(-)
+We learned the lesson and we will try to maximize the effort in user space
+through udev rules instead of polluting the kernel with exceptions.
 
-diff --git a/drivers/staging/fwserial/TODO b/drivers/staging/fwserial/TODO
-index 382a795..c3d1d3a 100644
---- a/drivers/staging/fwserial/TODO
-+++ b/drivers/staging/fwserial/TODO
-@@ -9,6 +9,5 @@ TODOs prior to this driver moving out of staging
-    GUID-to-port matching/whitelist/blacklist.
+Patches 1 & 2 are general fixes for synaptics that have been unnoticed
+until this new models. They are marked as stable.
 
- -- Issues with firewire stack --
--1. This driver uses the same unregistered vendor id that the firewire core does
--     (0xd00d1e). Perhaps this could be exposed as a define in
--     firewire.h?
-+1. This driver uses the same ids that the firewire core does (001f11:0239xx).
-+   Perhaps this could be exposed as a define in firewire.h?
-diff --git a/drivers/staging/fwserial/fwserial.c b/drivers/staging/fwserial/fwserial.c
-index 73deae3..2964366 100644
---- a/drivers/staging/fwserial/fwserial.c
-+++ b/drivers/staging/fwserial/fwserial.c
-@@ -30,8 +30,8 @@
+Patch 3 is a generic way to fix the PnpId list that was hardcoded in the
+kernel. This one is also marked as stable so that distributions will not
+have the top software buttons on devices that do not require it.
 
- #define be32_to_u64(hi, lo)  ((u64)be32_to_cpu(hi) << 32 | be32_to_cpu(lo))
+Patch 4 is a nice to have. It is not mandatory, so not CC-ed to stable,
+it just reduced the PnpId list.
 
--#define LINUX_VENDOR_ID   0xd00d1eU  /* same id used in card root directory   */
--#define FWSERIAL_VERSION  0x00e81cU  /* must be unique within LINUX_VENDOR_ID */
-+#define LINUX_VENDOR_ID   0x001f11U  /* same id used in card root directory   */
-+#define FWSERIAL_VERSION  0x023953U  /* must be unique within LINUX_VENDOR_ID */
+The good thing is that the reported min/max are correct, so the problems
+with the first generation of the t440 touchpad have been fixed now (and
+synaptics assured us that they will keep checking the quality of the PS/2
+handling of their touchpads).
 
- /* configurable options */
- static int num_ttys = 4;	    /* # of std ttys to create per fw_card    */
+One last thing, I still did not manage to talk to the device over SMBus,
+so we are still stuck with the PS/2 protocol and its limitations for this
+series.
+
+Cheers,
+Benjamin
+
+Benjamin Tissoires (4):
+  Input - synaptics: fix middle button on Lenovo 2015 products
+  Input - synaptics: do not release extra buttons once they are pressed
+  Input - synaptics: remove TOPBUTTONPAD property for Lenovos 2015
+  Input - synaptics: Remove X1 Carbon 3rd gen from the topbuttonpad list
+
+ drivers/input/mouse/synaptics.c | 20 ++++++++++++++------
+ drivers/input/mouse/synaptics.h |  3 +++
+ 2 files changed, 17 insertions(+), 6 deletions(-)
+
+-- 
+2.1.0
+
