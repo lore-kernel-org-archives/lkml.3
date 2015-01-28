@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964791AbbA1CKR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:10:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41191 "EHLO
+	id S1760348AbbA1CP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:15:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439AbbA1B2X (ORCPT
+	with ESMTP id S1759305AbbA1B2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:23 -0500
+	Tue, 27 Jan 2015 20:28:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Carlos Soto <csotoalonso@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 3.18 32/61] ARM: dts: imx25: Fix PWM "per" clocks
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 14/32] can: dev: fix crtlmode_supported check
 Date: Tue, 27 Jan 2015 17:26:44 -0800
-Message-Id: <20150128012640.386249998@linuxfoundation.org>
+Message-Id: <20150128012629.203931892@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,70 +26,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 7ecd0bde5bfea524a843ad8fa8cb66ccbce68779 upstream.
+commit 9b1087aa5e86448fe6ad40a58964e35f3ba423d5 upstream.
 
-Currently PWM functionality is broken on mx25 due to the wrong assignment of the
-PWM "per" clock.
+When changing flags in the CAN drivers ctrlmode the provided new content has to
+be checked whether the bits are allowed to be changed. The bits that are to be
+changed are given as a bitfield in cm->mask. Therefore checking against
+cm->flags is wrong as the content can hold any kind of values.
 
-According to Documentation/devicetree/bindings/clock/imx25-clock.txt:
-	pwm_ipg_per		52
+The iproute2 tool sets the bits in cm->mask and cm->flags depending on the
+detected command line options. To be robust against bogus user space
+applications additionally sanitize the provided flags with the provided mask.
 
-,so update the pwm "per" to use 'pwm_ipg_per' instead of 'per10' clock.
-
-With this change PWM can work fine on mx25.
-
-Reported-by: Carlos Soto <csotoalonso@gmail.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/arm/boot/dts/imx25.dtsi |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/arm/boot/dts/imx25.dtsi
-+++ b/arch/arm/boot/dts/imx25.dtsi
-@@ -369,7 +369,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fa0000 0x4000>;
--				clocks = <&clks 106>, <&clks 36>;
-+				clocks = <&clks 106>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <36>;
- 			};
-@@ -388,7 +388,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fa8000 0x4000>;
--				clocks = <&clks 107>, <&clks 36>;
-+				clocks = <&clks 107>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <41>;
- 			};
-@@ -429,7 +429,7 @@
- 			pwm4: pwm@53fc8000 {
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				reg = <0x53fc8000 0x4000>;
--				clocks = <&clks 108>, <&clks 36>;
-+				clocks = <&clks 108>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <42>;
- 			};
-@@ -476,7 +476,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fe0000 0x4000>;
--				clocks = <&clks 105>, <&clks 36>;
-+				clocks = <&clks 105>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <26>;
- 			};
+---
+ drivers/net/can/dev.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -643,10 +643,14 @@ static int can_changelink(struct net_dev
+ 		if (dev->flags & IFF_UP)
+ 			return -EBUSY;
+ 		cm = nla_data(data[IFLA_CAN_CTRLMODE]);
+-		if (cm->flags & ~priv->ctrlmode_supported)
++
++		/* check whether changed bits are allowed to be modified */
++		if (cm->mask & ~priv->ctrlmode_supported)
+ 			return -EOPNOTSUPP;
++
++		/* clear bits to be modified and copy the flag values */
+ 		priv->ctrlmode &= ~cm->mask;
+-		priv->ctrlmode |= cm->flags;
++		priv->ctrlmode |= (cm->flags & cm->mask);
+ 	}
+ 
+ 	if (data[IFLA_CAN_BITTIMING]) {
 
 
