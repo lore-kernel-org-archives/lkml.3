@@ -1,204 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761847AbbA1WSg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 17:18:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152AbbA1UOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:14:09 -0500
-Date: Wed, 28 Jan 2015 09:17:13 +0100
-From: Jan Kara <jack@suse.cz>
-To: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Cc: Zhang Zhen <zhenzhang.zhang@huawei.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wang Nan <wangnan0@huawei.com>,
-        eparis@parisplace.org, rlove@rlove.org, john@johnmccutchan.com,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [RESEND PATCH] inotify: update documentation to reflect code
- changes
-Message-ID: <20150128081712.GB11548@quack.suse.cz>
-References: <1418785193-31576-1-git-send-email-zhenzhang.zhang@huawei.com>
- <54C78879.3010603@huawei.com>
- <54C808B7.3000705@gmx.de>
+	id S1763571AbbA2DBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:01:54 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:43674 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760683AbbA2DBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 22:01:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C808B7.3000705@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C547@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C547@SHSMSX104.ccr.corp.intel.com>
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Wed, 28 Jan 2015 16:24:28 +0800
+Message-ID: <CACzj_yXza_so5EPsJmLOkHMbk3bz9aXen09xCnj0O=KRZDd_Pw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+On Wed, Jan 28, 2015 at 4:00 PM, Zhang, Yang Z <yang.z.zhang@intel.com> wrote:
+>> @@ -5812,13 +5813,18 @@ static __init int hardware_setup(void)
+>>                                 (unsigned long
+>> *)__get_free_page(GFP_KERNEL);
+>>         if (!vmx_msr_bitmap_longmode_x2apic)
+>>                 goto out4;
+>> +
+>> +       vmx_msr_bitmap_nested = (unsigned long
+>> *)__get_free_page(GFP_KERNEL);
+>> +       if (!vmx_msr_bitmap_nested)
+>> +               goto out5;
+>> +
+>
+> Since the nested virtualization is off by default. It's better to allocate the page
+> only when nested is true. Maybe adding the following check is better:
+>
+> if (nested) {
+>         vmx_msr_bitmap_nested = (unsigned long *)__get_free_page(GFP_KERNEL);
+>         if (!vmx_msr_bitmap_nested)
+>                 goto out5;
+> }
 
-On Tue 27-01-15 22:52:55, Heinrich Schuchardt wrote:
-> Sections (i) and (ii) of Documentation/filesystems/inotify.txt have been
-> superseded by the inotify.7, inotify_init.2, inotify_rm_watch.2, and
-> inotify_add_watch.2 man-pages which are more detailed. In sections (i)
-> and (ii) the inotify_init1 system call is missing.
-> 
-> Zhang suggests to drop sections (iii) and (iv) as they are obsolete
-> since 2010.
-> 
-> Shouldn't we drop the whole file?
-  I think the 'Rationale' section is still useful and should stay. I'd
-remove the rest - just refer to manpages for user interface.
+Agreed. Will do.
 
-								Honza
-> 
-> Best regards
-> 
-> Heinrich Schuchardt
-> 
-> On 27.01.2015 13:45, Zhang Zhen wrote:
-> > The inotify kernel interface was removed by Eric Paris
-> > in this commit: 2dfc1ca inotify: remove inotify in
-> > kernel interface.
-> > 
-> > Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
-> > ---
-> >  Documentation/filesystems/inotify.txt | 120 +---------------------------------
-> >  1 file changed, 2 insertions(+), 118 deletions(-)
-> > 
-> > diff --git a/Documentation/filesystems/inotify.txt b/Documentation/filesystems/inotify.txt
-> > index cfd0271..9b74b45 100644
-> > --- a/Documentation/filesystems/inotify.txt
-> > +++ b/Documentation/filesystems/inotify.txt
-> > @@ -69,123 +69,7 @@ Prototypes:
-> >  	int inotify_rm_watch (int fd, __u32 mask);
-> > 
-> > 
-> > -(iii) Kernel Interface
-> > -
-> > -Inotify's kernel API consists a set of functions for managing watches and an
-> > -event callback.
-> > -
-> > -To use the kernel API, you must first initialize an inotify instance with a set
-> > -of inotify_operations.  You are given an opaque inotify_handle, which you use
-> > -for any further calls to inotify.
-> > -
-> > -    struct inotify_handle *ih = inotify_init(my_event_handler);
-> > -
-> > -You must provide a function for processing events and a function for destroying
-> > -the inotify watch.
-> > -
-> > -    void handle_event(struct inotify_watch *watch, u32 wd, u32 mask,
-> > -    	              u32 cookie, const char *name, struct inode *inode)
-> > -
-> > -	watch - the pointer to the inotify_watch that triggered this call
-> > -	wd - the watch descriptor
-> > -	mask - describes the event that occurred
-> > -	cookie - an identifier for synchronizing events
-> > -	name - the dentry name for affected files in a directory-based event
-> > -	inode - the affected inode in a directory-based event
-> > -
-> > -    void destroy_watch(struct inotify_watch *watch)
-> > -
-> > -You may add watches by providing a pre-allocated and initialized inotify_watch
-> > -structure and specifying the inode to watch along with an inotify event mask.
-> > -You must pin the inode during the call.  You will likely wish to embed the
-> > -inotify_watch structure in a structure of your own which contains other
-> > -information about the watch.  Once you add an inotify watch, it is immediately
-> > -subject to removal depending on filesystem events.  You must grab a reference if
-> > -you depend on the watch hanging around after the call.
-> > -
-> > -    inotify_init_watch(&my_watch->iwatch);
-> > -    inotify_get_watch(&my_watch->iwatch);	// optional
-> > -    s32 wd = inotify_add_watch(ih, &my_watch->iwatch, inode, mask);
-> > -    inotify_put_watch(&my_watch->iwatch);	// optional
-> > -
-> > -You may use the watch descriptor (wd) or the address of the inotify_watch for
-> > -other inotify operations.  You must not directly read or manipulate data in the
-> > -inotify_watch.  Additionally, you must not call inotify_add_watch() more than
-> > -once for a given inotify_watch structure, unless you have first called either
-> > -inotify_rm_watch() or inotify_rm_wd().
-> > -
-> > -To determine if you have already registered a watch for a given inode, you may
-> > -call inotify_find_watch(), which gives you both the wd and the watch pointer for
-> > -the inotify_watch, or an error if the watch does not exist.
-> > -
-> > -    wd = inotify_find_watch(ih, inode, &watchp);
-> > -
-> > -You may use container_of() on the watch pointer to access your own data
-> > -associated with a given watch.  When an existing watch is found,
-> > -inotify_find_watch() bumps the refcount before releasing its locks.  You must
-> > -put that reference with:
-> > -
-> > -    put_inotify_watch(watchp);
-> > -
-> > -Call inotify_find_update_watch() to update the event mask for an existing watch.
-> > -inotify_find_update_watch() returns the wd of the updated watch, or an error if
-> > -the watch does not exist.
-> > -
-> > -    wd = inotify_find_update_watch(ih, inode, mask);
-> > -
-> > -An existing watch may be removed by calling either inotify_rm_watch() or
-> > -inotify_rm_wd().
-> > -
-> > -    int ret = inotify_rm_watch(ih, &my_watch->iwatch);
-> > -    int ret = inotify_rm_wd(ih, wd);
-> > -
-> > -A watch may be removed while executing your event handler with the following:
-> > -
-> > -    inotify_remove_watch_locked(ih, iwatch);
-> > -
-> > -Call inotify_destroy() to remove all watches from your inotify instance and
-> > -release it.  If there are no outstanding references, inotify_destroy() will call
-> > -your destroy_watch op for each watch.
-> > -
-> > -    inotify_destroy(ih);
-> > -
-> > -When inotify removes a watch, it sends an IN_IGNORED event to your callback.
-> > -You may use this event as an indication to free the watch memory.  Note that
-> > -inotify may remove a watch due to filesystem events, as well as by your request.
-> > -If you use IN_ONESHOT, inotify will remove the watch after the first event, at
-> > -which point you may call the final inotify_put_watch.
-> > -
-> > -(iv) Kernel Interface Prototypes
-> > -
-> > -	struct inotify_handle *inotify_init(struct inotify_operations *ops);
-> > -
-> > -	inotify_init_watch(struct inotify_watch *watch);
-> > -
-> > -	s32 inotify_add_watch(struct inotify_handle *ih,
-> > -		              struct inotify_watch *watch,
-> > -			      struct inode *inode, u32 mask);
-> > -
-> > -	s32 inotify_find_watch(struct inotify_handle *ih, struct inode *inode,
-> > -			       struct inotify_watch **watchp);
-> > -
-> > -	s32 inotify_find_update_watch(struct inotify_handle *ih,
-> > -				      struct inode *inode, u32 mask);
-> > -
-> > -	int inotify_rm_wd(struct inotify_handle *ih, u32 wd);
-> > -
-> > -	int inotify_rm_watch(struct inotify_handle *ih,
-> > -			     struct inotify_watch *watch);
-> > -
-> > -	void inotify_remove_watch_locked(struct inotify_handle *ih,
-> > -					 struct inotify_watch *watch);
-> > -
-> > -	void inotify_destroy(struct inotify_handle *ih);
-> > -
-> > -	void get_inotify_watch(struct inotify_watch *watch);
-> > -	void put_inotify_watch(struct inotify_watch *watch);
-> > -
-> > -
-> > -(v) Internal Kernel Implementation
-> > +(iii) Internal Kernel Implementation
-> > 
-> >  Each inotify instance is represented by an inotify_handle structure.
-> >  Inotify's userspace consumers also have an inotify_device which is
-> > @@ -198,7 +82,7 @@ See fs/notify/inotify/inotify_fsnotify.c and fs/notify/inotify/inotify_user.c
-> >  for the locking and lifetime rules.
-> > 
-> > 
-> > -(vi) Rationale
-> > +(iv) Rationale
-> > 
-> >  Q: What is the design decision behind not tying the watch to the open fd of
-> >     the watched object?
-> > 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>
+> ...snip...
+>
+>> +
+>> +/*
+>> + * Merge L0's and L1's MSR bitmap, return false to indicate that
+>> + * we do not use the hardware.
+>> + */
+>> +static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
+>> +                                              struct vmcs12
+>> *vmcs12) {
+>> +       return false;
+>> +}
+>> +
+>
+> The following patches have nothing to do with the MSR control. Why leave the function empty here?
+>
+
+No. In patch "Enable nested virtualize x2apic mode", we will return
+false if L1 disabled virt_x2apic_mode, then the hardware MSR-bitmap
+control is disabled. This is faster than rebuilding the
+vmx_msr_bitmap_nested.
+This function returns false here to indicate that we do not use the
+hardware. Since It is not only virtualize x2apic mode using this,
+other features may use this either. I think it isn't suitable to
+introduce this function in other patches.
+
+
+> Best regards,
+> Yang
+>
+>
