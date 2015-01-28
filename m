@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934221AbbA1CON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:14:13 -0500
+	id S964911AbbA1C0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:26:30 -0500
 Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759870AbbA1B2S (ORCPT
+	with ESMTP id S1754745AbbA1B2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:18 -0500
+	Tue, 27 Jan 2015 20:28:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Kordik <kordikmarek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH 3.18 21/61] x86/PCI: Clip bridge windows to fit in upstream windows
+        Jim Lin <jilin@nvidia.com>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3.10 03/32] pinctrl: Fix two deadlocks
 Date: Tue, 27 Jan 2015 17:26:33 -0800
-Message-Id: <20150128012639.348288159@linuxfoundation.org>
+Message-Id: <20150128012627.609678910@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,47 +24,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Jim Lin <jilin@nvidia.com>
 
-commit 851b09369255a91e77f56d83e3643439ac5b209a upstream.
+commit db93facfb0ef542aa5d8079e47580b3e669a4d82 upstream.
 
-Every PCI-PCI bridge window should fit inside an upstream bridge window
-because orphaned address space is unreachable from the primary side of the
-upstream bridge.  If we inherit invalid bridge windows that overlap an
-upstream window from firmware, clip them to fit and update the bridge
-accordingly.
+This patch is to fix two deadlock cases.
+Deadlock 1:
+CPU #1
+ pinctrl_register-> pinctrl_get ->
+ create_pinctrl
+ (Holding lock pinctrl_maps_mutex)
+ -> get_pinctrl_dev_from_devname
+ (Trying to acquire lock pinctrldev_list_mutex)
+CPU #0
+ pinctrl_unregister
+ (Holding lock pinctrldev_list_mutex)
+ -> pinctrl_put ->> pinctrl_free ->
+ pinctrl_dt_free_maps -> pinctrl_unregister_map
+ (Trying to acquire lock pinctrl_maps_mutex)
 
-[bhelgaas: changelog]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
-Reported-by: Marek Kordik <kordikmarek@gmail.com>
-Tested-by: Marek Kordik <kordikmarek@gmail.com>
-Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org
+Simply to say
+CPU#1 is holding lock A and trying to acquire lock B,
+CPU#0 is holding lock B and trying to acquire lock A.
+
+Deadlock 2:
+CPU #3
+ pinctrl_register-> pinctrl_get ->
+ create_pinctrl
+ (Holding lock pinctrl_maps_mutex)
+ -> get_pinctrl_dev_from_devname
+ (Trying to acquire lock pinctrldev_list_mutex)
+CPU #2
+ pinctrl_unregister
+ (Holding lock pctldev->mutex)
+ -> pinctrl_put ->> pinctrl_free ->
+ pinctrl_dt_free_maps -> pinctrl_unregister_map
+ (Trying to acquire lock pinctrl_maps_mutex)
+CPU #0
+ tegra_gpio_request
+ (Holding lock pinctrldev_list_mutex)
+ -> pinctrl_get_device_gpio_range
+ (Trying to acquire lock pctldev->mutex)
+
+Simply to say
+CPU#3 is holding lock A and trying to acquire lock D,
+CPU#2 is holding lock B and trying to acquire lock A,
+CPU#0 is holding lock D and trying to acquire lock B.
+
+Signed-off-by: Jim Lin <jilin@nvidia.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/pci/i386.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pinctrl/core.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -216,7 +216,7 @@ static void pcibios_allocate_bridge_reso
- 			continue;
- 		if (r->parent)	/* Already allocated */
- 			continue;
--		if (!r->start || pci_claim_resource(dev, idx) < 0) {
-+		if (!r->start || pci_claim_bridge_resource(dev, idx) < 0) {
- 			/*
- 			 * Something is wrong with the region.
- 			 * Invalidate the resource to prevent
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1693,14 +1693,15 @@ void pinctrl_unregister(struct pinctrl_d
+ 	if (pctldev == NULL)
+ 		return;
+ 
+-	mutex_lock(&pinctrldev_list_mutex);
+ 	mutex_lock(&pctldev->mutex);
+-
+ 	pinctrl_remove_device_debugfs(pctldev);
++	mutex_unlock(&pctldev->mutex);
+ 
+ 	if (!IS_ERR(pctldev->p))
+ 		pinctrl_put(pctldev->p);
+ 
++	mutex_lock(&pinctrldev_list_mutex);
++	mutex_lock(&pctldev->mutex);
+ 	/* TODO: check that no pinmuxes are still active? */
+ 	list_del(&pctldev->node);
+ 	/* Destroy descriptor tree */
 
 
