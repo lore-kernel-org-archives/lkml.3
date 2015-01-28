@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760848AbbA2CD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:03:56 -0500
-Received: from mx1.scotdoyle.com ([23.226.141.211]:60230 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564AbbA2CD1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:03:27 -0500
-Date: Wed, 28 Jan 2015 21:14:03 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: Edited kexec_load(2) [kexec_file_load()] man page for review
-In-Reply-To: <20150128203402.GG15342@redhat.com>
-Message-ID: <alpine.DEB.2.11.1501282104490.9275@localhost.localdomain>
-References: <545FBDDD.9060801@gmail.com> <20141111213037.GA31445@redhat.com> <54ADA284.30502@gmail.com> <20150112221634.GD16162@redhat.com> <54B91271.3000600@gmail.com> <20150127142459.GA12851@redhat.com> <54C89816.8030709@gmail.com> <20150128144803.GC15342@redhat.com>
- <CAKgNAkhhVq5fuqwH0aPdgR1bKkAPPPuS84hfAFg3grGEJNxS4w@mail.gmail.com> <20150128203402.GG15342@redhat.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1760070AbbA2B6r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:58:47 -0500
+Received: from mta-out1.inet.fi ([62.71.2.227]:54611 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760017AbbA2B6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:58:45 -0500
+Date: Wed, 28 Jan 2015 23:16:47 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Introduce <linux/mm_struct.h>
+Message-ID: <20150128211647.GB15649@node.dhcp.inet.fi>
+References: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20150128185052.GA6118@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150128185052.GA6118@roeck-us.net>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015, Vivek Goyal wrote:
-> On Wed, Jan 28, 2015 at 04:49:34PM +0100, Michael Kerrisk (man-pages) wrote:
-> > Hello Vivek,
+On Wed, Jan 28, 2015 at 10:50:52AM -0800, Guenter Roeck wrote:
+> On Wed, Jan 28, 2015 at 03:17:40PM +0200, Kirill A. Shutemov wrote:
+> > This patchset moves definition of mm_struct into separate header file.
+> > It allows to get rid of nr_pmds if PMD page table level is folded.
+> > We cannot do it with current mm_types.h because we need
+> > __PAGETABLE_PMD_FOLDED from <asm/pgtable.h> which creates circular
+> > dependencies.
 > > 
-> > >> I've made various adjustments to the page in the light of your comments
-> > >> above. Thanks!
-> > >
-> > > Thank you for following it up and improving kexec man page.
+> > I've done few build tests and looks like it works, but I expect breakage
+> > on some configuration. Please test.
 > > 
-> > You're welcome. So, by now, I've made quite a lot of changes
-> > (including adding a number of cases under ERRORS). I think the revised
-> > kexec_load/kexec_file_load page is pretty much ready to go, but would
-> > you be willing to give the text below a check over first?
-> > 
+> Doesn't look good.
 > 
-> Hi Michael,
-> 
-> I had a quick look and it looks good to me.
-> 
-> Thanks
-> Vivek
+> Build results:
+> 	total: 134 pass: 63 fail: 71
+> Failed builds:
+> 	avr32:defconfig
+> 	avr32:merisc_defconfig
+> 	avr32:atngw100mkii_evklcd101_defconfig
 
-When I tested, kexec_file_load required CONFIG_RELOCATABLE. Is the same 
-true for kexec_load? Would it make sense to note this in the man pages 
-along with the need for CONFIG_KEXEC_FILE, etc? Or as an error message?
+Fixlet for AVR32:
 
-Thanks,
-Scot
-
+diff --git a/arch/avr32/include/asm/pgtable.h b/arch/avr32/include/asm/pgtable.h
+index 35800664076e..3af39532b25b 100644
+--- a/arch/avr32/include/asm/pgtable.h
++++ b/arch/avr32/include/asm/pgtable.h
+@@ -10,11 +10,6 @@
+ 
+ #include <asm/addrspace.h>
+ 
+-#ifndef __ASSEMBLY__
+-#include <linux/sched.h>
+-
+-#endif /* !__ASSEMBLY__ */
+-
+ /*
+  * Use two-level page tables just as the i386 (without PAE)
+  */
+diff --git a/arch/avr32/mm/tlb.c b/arch/avr32/mm/tlb.c
+index 0da23109f817..964130f8f89d 100644
+--- a/arch/avr32/mm/tlb.c
++++ b/arch/avr32/mm/tlb.c
+@@ -8,6 +8,7 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/mm.h>
++#include <linux/sched.h>
+ 
+ #include <asm/mmu_context.h>
+ 
+-- 
+ Kirill A. Shutemov
