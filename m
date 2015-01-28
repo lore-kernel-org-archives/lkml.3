@@ -1,78 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761973AbbA2CaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:30:10 -0500
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:35671 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792AbbA2CaE (ORCPT
+	id S1761517AbbA2DZB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:25:01 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:47610 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761520AbbA2DYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:30:04 -0500
+	Wed, 28 Jan 2015 22:24:55 -0500
+Message-ID: <54C8C017.4050202@linaro.org>
+Date: Wed, 28 Jan 2015 10:55:19 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <1422337703-11289-1-git-send-email-a.kesavan@samsung.com>
-References: <1422337703-11289-1-git-send-email-a.kesavan@samsung.com>
-Date: Wed, 28 Jan 2015 16:21:49 +0530
-Message-ID: <CAM4voan-aoVQtRCFaB2rLLOgm+CEXg+Mc2gwfokUTu5eeQDo+g@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] dts: Documentation: Add documentation for Exynos7
- SoC thermal bindings
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Zhang Rui <rui.zhang@intel.com>, Eduardo Valentin <edubezval@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Amit Kachhap <amit.daniel@samsung.com>,
-        Me2 <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kiran Raparthy <kiran.kumar@linaro.org>, linux-kernel@vger.kernel.org
+CC: kgdb-bugreport@lists.sourceforge.net, Colin Cross <ccross@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [Kgdb-bugreport] [RFC v5 - RESEND] debug: prevent entering debug
+ mode on panic/exception.
+References: <1422441574-24005-1-git-send-email-kiran.kumar@linaro.org>
+In-Reply-To: <1422441574-24005-1-git-send-email-kiran.kumar@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+On 28/01/15 10:39, Kiran Raparthy wrote:
+> From: Colin Cross <ccross@android.com>
+> 
+> debug: prevent entering debug mode on panic/exception.
+> 
+> On non-developer devices, kgdb prevents the device from rebooting
+> after a panic.
+> 
+> Incase of panics and exceptions, to allow the device to reboot, prevent entering
+> debug mode to avoid getting stuck waiting for the user to interact with debugger.
+> 
+> To avoid entering the debugger on panic/exception without any extra configuration,
+> panic_timeout is being used which can be set via /proc/sys/kernel/panic at run time
+> and CONFIG_PANIC_TIMEOUT sets the default value.
+> 
+> Setting panic_timeout indicates that the user requested machine to perform
+> unattended reboot after panic. We dont want to get stuck waiting for the user
+> input incase of panic.
 
-On Tue, Jan 27, 2015 at 11:18 AM, Abhilash Kesavan
-<a.kesavan@samsung.com> wrote:
-> Add documentation for exynos7 thermal bindings including compatible
-> name and special clock properties.
->
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+Some kind of changelog between the versions would have been nice. I
+*think* the difference between v4 and v5 was just the addition paragraph
+above but I had to put in extra work to check that and I'm still not
+100% sure that's the only change.
+
+Also you could start billing this as a PATCH rather than an RFC.
+
+
+Daniel.
+
+
+> Cc: Jason Wessel <jason.wessel@windriver.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: kgdb-bugreport@lists.sourceforge.net
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Sumit Semwal <sumit.semwal@linaro.org>
+> Signed-off-by: Colin Cross <ccross@android.com>
+> [Kiran: Added context to commit message.
+> panic_timeout is used instead of break_on_panic and
+> break_on_exception to honor CONFIG_PANIC_TIMEOUT
+> Modified the commit as per community feedback]
+> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
+> Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
 > ---
->  .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> index 0f44932..695150a 100644
-> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
-> @@ -12,6 +12,7 @@
->                "samsung,exynos5420-tmu-ext-triminfo" for TMU channels 2, 3 and 4
->                         Exynos5420 (Must pass triminfo base and triminfo clock)
->                "samsung,exynos5440-tmu"
-> +              "samsung,exynos7-tmu"
->  - interrupt-parent : The phandle for the interrupt controller
->  - reg : Address range of the thermal registers. For soc's which has multiple
->         instances of TMU and some registers are shared across all TMU's like
-> @@ -32,10 +33,13 @@
->  - clocks : The main clocks for TMU device
->         -- 1. operational clock for TMU channel
->         -- 2. optional clock to access the shared registers of TMU channel
-> +       -- 3. optional special clock for functional operation
->  - clock-names : Thermal system clock name
->         -- "tmu_apbif" operational clock for current TMU channel
->         -- "tmu_triminfo_apbif" clock to access the shared triminfo register
->                 for current TMU channel
-> +       -- "tmu_sclk" clock for functional operation of the current TMU
-> +               channel
->  - vtmu-supply: This entry is optional and provides the regulator node supplying
->                 voltage to TMU. If needed this entry can be placed inside
->                 board/platform specific dts file.
+>  kernel/debug/debug_core.c | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+> index 1adf62b..0012a1f 100644
+> --- a/kernel/debug/debug_core.c
+> +++ b/kernel/debug/debug_core.c
+> @@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
+>  
+>  	if (arch_kgdb_ops.enable_nmi)
+>  		arch_kgdb_ops.enable_nmi(0);
+> +	/*
+> +	 * Avoid entering the debugger if we were triggered due to an oops
+> +	 * but panic_timeout indicates the system should automatically
+> +	 * reboot on panic. We don't want to get stuck waiting for input
+> +	 * on such systems, especially if its "just" an oops.
+> +	 */
+> +	if (signo != SIGTRAP && panic_timeout)
+> +		return 1;
+>  
+>  	memset(ks, 0, sizeof(struct kgdb_state));
+>  	ks->cpu			= raw_smp_processor_id();
+> @@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
+>  			    unsigned long val,
+>  			    void *data)
+>  {
+> +	/*
+> +	 * Avoid entering the debugger if we were triggered due to a panic
+> +	 * We don't want to get stuck waiting for input from user in such case.
+> +	 * panic_timeout indicates the system should automatically
+> +	 * reboot on panic.
+> +	 */
+> +	if (panic_timeout)
+> +		return NOTIFY_DONE;
+> +
+>  	if (dbg_kdb_mode)
+>  		kdb_printf("PANIC: %s\n", (char *)data);
+>  	kgdb_breakpoint();
+> 
 
-Can you kindly consider applying these two patches to your next tree
-if they look OK ?
-
-Regards,
-Abhilash
-> --
-> 1.7.9.5
->
