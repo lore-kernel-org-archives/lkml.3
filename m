@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759063AbbA2BxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:53:04 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:53992 "EHLO
+	id S933662AbbA2CSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:18:44 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:52143 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178AbbA2BxA (ORCPT
+	with ESMTP id S1759157AbbA2Bx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:53:00 -0500
+	Wed, 28 Jan 2015 20:53:58 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Cc: linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 4/7] [media] siano: fix Kconfig dependencies
-Date: Wed, 28 Jan 2015 22:17:44 +0100
-Message-Id: <1422479867-3370921-5-git-send-email-arnd@arndb.de>
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 5/7] [media] gspca: add INPUT dependency
+Date: Wed, 28 Jan 2015 22:17:45 +0100
+Message-Id: <1422479867-3370921-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 2.1.0.rc2
 In-Reply-To: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
 References: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V03:K0:EsC1bAKZ5Jvxtuek0F18orvO0oPbsGu6V2kRKfNRO751Iw2XCTS
- r/Sm60WBMwhCQvREh6UYXjxZw9bXhRb9OjMfan4pTi5WU92Aknd4PqgLtb5Zp40ReaMmfX4
- mgzbp2wMdnhaZnZZfclsA5j0Q3KvqOhtenWOtvGwCdKbZo3lbsPy/RZCNAboKnWhG1gKMEU
- JGgzkRhqlF9X5dbYTUKmQ==
+X-Provags-ID: V03:K0:gj+DL5dUvP24g5PzeA+Tc6UlY4BI6r3ZKr525GcnwEN9lUjfHKB
+ bPIisP43JeUwy9frfpLf/q7bKEBeSgcwOm4qqdiyrp8WeO4j9+LE/Xjw440mE/xUYxkAIBb
+ ioc38H7Rns9F15Owmy2I9iEVOCD+NjKnuh9utPfjx4kSuaVZYlR2pc9HeZj/UnBRH684UJD
+ QRnSnzWiOtyAWmIC2y8yA==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB and MMC front-ends to the siano driver both only make
-sense when combined with the SMS_SIANO_MDTV driver. That driver
-already requires RC_CORE to not be a module, so we also need
-to add that dependency here.
+The gspca  driver uses the input_event infrastructure and fails
+to link if that is not available:
 
-drivers/built-in.o: In function `smssdio_remove':
-:(.text+0x155bd8): undefined reference to `smscore_putbuffer'
-:(.text+0x155bdc): undefined reference to `smscore_unregister_device'
-drivers/built-in.o: In function `smssdio_interrupt':
-:(.text+0x155e4c): undefined reference to `smsendian_handle_rx_message'
-:(.text+0x155e50): undefined reference to `smscore_onresponse'
-:(.text+0x155e54): undefined reference to `smscore_getbuffer'
-:(.text+0x155e58): undefined reference to `smscore_putbuffer'
-drivers/built-in.o: In function `smssdio_sendrequest':
-:(.text+0x155f20): undefined reference to `smsendian_handle_tx_message'
-drivers/built-in.o: In function `smssdio_probe':
-:(.text+0x15610c): undefined reference to `sms_get_board'
-:(.text+0x156114): undefined reference to `smscore_register_device'
-:(.text+0x156118): undefined reference to `smscore_set_board_id'
-:(.text+0x156128): undefined reference to `smscore_unregister_device'
-:(.text+0x156140): undefined reference to `smscore_start_device'
+drivers/built-in.o: In function `gspca_disconnect':
+media/usb/gspca/gspca.c:2171: undefined reference to `input_unregister_device'
+drivers/built-in.o: In function `gspca_dev_probe2':
+media/usb/gspca/gspca.c:2112: undefined reference to `input_allocate_device'
+media/usb/gspca/gspca.c:2112: undefined reference to `input_register_device'
+media/usb/gspca/gspca.c:2112: undefined reference to `input_unregister_device'
+media/usb/gspca/gspca.c:2112: undefined reference to `input_free_device'
+drivers/built-in.o: In function `sd_int_pkt_scan':
+media/usb/gspca/pac207.c:428: undefined reference to `input_event'
+drivers/built-in.o: In function `sd_int_pkt_scan':
+media/usb/gspca/pac7302.c:879: undefined reference to `input_event'
+drivers/built-in.o: In function `sd_int_pkt_scan':
+media/usb/gspca/se401.c:612: undefined reference to `input_event'
+drivers/built-in.o: In function `sd_stop0':
+media/usb/gspca/xirlink_cit.c:2742: undefined reference to `input_event'
+drivers/built-in.o: In function `cit_check_button':
+media/usb/gspca/xirlink_cit.c:2935: undefined reference to `input_event'
+drivers/built-in.o:/git/arm-soc/include/linux/input.h:414: more undefined references to `input_event' follow
+
+This adds an explicit dependency.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Hans de Goede <hdegoede@redhat.com>
 ---
- drivers/media/mmc/siano/Kconfig | 2 ++
- drivers/media/usb/siano/Kconfig | 2 ++
- 2 files changed, 4 insertions(+)
+ drivers/media/usb/gspca/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/media/mmc/siano/Kconfig b/drivers/media/mmc/siano/Kconfig
-index aa05ad3c1ccb..7693487e2f63 100644
---- a/drivers/media/mmc/siano/Kconfig
-+++ b/drivers/media/mmc/siano/Kconfig
-@@ -6,6 +6,8 @@ config SMS_SDIO_DRV
- 	tristate "Siano SMS1xxx based MDTV via SDIO interface"
- 	depends on DVB_CORE && HAS_DMA
- 	depends on MMC
-+	depends on !RC_CORE || RC_CORE
- 	select MEDIA_COMMON_OPTIONS
-+	select SMS_SIANO_MDTV
+diff --git a/drivers/media/usb/gspca/Kconfig b/drivers/media/usb/gspca/Kconfig
+index eed10d782535..2b23aad5a9f2 100644
+--- a/drivers/media/usb/gspca/Kconfig
++++ b/drivers/media/usb/gspca/Kconfig
+@@ -1,6 +1,7 @@
+ menuconfig USB_GSPCA
+ 	tristate "GSPCA based webcams"
+ 	depends on VIDEO_V4L2
++	depends on INPUT
+ 	default m
  	---help---
- 	  Choose if you would like to have Siano's support for SDIO interface
-diff --git a/drivers/media/usb/siano/Kconfig b/drivers/media/usb/siano/Kconfig
-index 5afbd9a4b55c..d37b742d4f7a 100644
---- a/drivers/media/usb/siano/Kconfig
-+++ b/drivers/media/usb/siano/Kconfig
-@@ -5,7 +5,9 @@
- config SMS_USB_DRV
- 	tristate "Siano SMS1xxx based MDTV receiver"
- 	depends on DVB_CORE && HAS_DMA
-+	depends on !RC_CORE || RC_CORE
- 	select MEDIA_COMMON_OPTIONS
-+	select SMS_SIANO_MDTV
- 	---help---
- 	  Choose if you would like to have Siano's support for USB interface
- 
+ 	  Say Y here if you want to enable selecting webcams based
 -- 
 2.1.0.rc2
 
