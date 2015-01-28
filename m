@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762246AbbA1FN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:13:59 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38138 "EHLO mail.kernel.org"
+	id S1761168AbbA1ERk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:17:40 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38161 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761115AbbA1ERe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:17:34 -0500
+	id S1761139AbbA1ERh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:17:37 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 44/91] ASoC: samsung-i2s: Check secondary DAI exists before referencing
-Date: Wed, 28 Jan 2015 12:07:34 +0800
-Message-Id: <1422418236-12852-87-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 044/177] x86: Reject x32 executables if x32 ABI not supported
+Date: Wed, 28 Jan 2015 12:07:35 +0800
+Message-Id: <1422418236-12852-88-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,41 +20,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 133c2681c4a0c1b589d138c2fdd0f131bdce20ed upstream.
+commit 0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1 upstream.
 
-In a couple of places the driver is missing a check to ensure there is a
-secondary DAI before it de-references the pointer to it, causing a null
-pointer de-reference. This patch adds a check to avoid this.
+It is currently possible to execve() an x32 executable on an x86_64
+kernel that has only ia32 compat enabled.  However all its syscalls
+will fail, even _exit().  This usually causes it to segfault.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-[lizf: Backported to 3.4: drop the changes to i2s_shutdown()]
+Change the ELF compat architecture check so that x32 executables are
+rejected if we don't support the x32 ABI.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Link: http://lkml.kernel.org/r/1410120305.6822.9.camel@decadent.org.uk
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- sound/soc/samsung/i2s.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/elf.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
-index 6ac7b82..9998719 100644
---- a/sound/soc/samsung/i2s.c
-+++ b/sound/soc/samsung/i2s.c
-@@ -392,7 +392,7 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
- 		if (dir == SND_SOC_CLOCK_IN)
- 			rfs = 0;
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index 5939f44..06ec1fe 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -155,8 +155,9 @@ do {						\
+ #define elf_check_arch(x)			\
+ 	((x)->e_machine == EM_X86_64)
  
--		if ((rfs && other->rfs && (other->rfs != rfs)) ||
-+		if ((rfs && other && other->rfs && (other->rfs != rfs)) ||
- 				(any_active(i2s) &&
- 				(((dir == SND_SOC_CLOCK_IN)
- 					&& !(mod & MOD_CDCLKCON)) ||
+-#define compat_elf_check_arch(x)		\
+-	(elf_check_arch_ia32(x) || (x)->e_machine == EM_X86_64)
++#define compat_elf_check_arch(x)					\
++	(elf_check_arch_ia32(x) ||					\
++	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine == EM_X86_64))
+ 
+ #if __USER32_DS != __USER_DS
+ # error "The following code assumes __USER32_DS == __USER_DS"
 -- 
 1.9.1
 
