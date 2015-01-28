@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759760AbbA1B3t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:29:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41199 "EHLO
+	id S964837AbbA1CME (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:12:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759686AbbA1B2f (ORCPT
+	with ESMTP id S932104AbbA1B2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:35 -0500
+	Tue, 27 Jan 2015 20:28:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3.14 01/77] gpio: sysfs: fix gpio-chip device-attribute leak
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.18 27/61] dm cache: share cache-metadata object across inactive and active DM tables
 Date: Tue, 27 Jan 2015 17:26:39 -0800
-Message-Id: <20150128012746.015151675@linuxfoundation.org>
+Message-Id: <20150128012639.917484125@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,72 +24,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 121b6a79955a3a3fd7bbb9b8cb88d5b9dad6283d upstream.
+commit 9b1cc9f251affdd27f29fe46d0989ba76c33faf6 upstream.
 
-The gpio-chip device attributes were never destroyed when the device was
-removed.
+If a DM table is reloaded with an inactive table when the device is not
+suspended (normal procedure for LVM2), then there will be two dm-bufio
+objects that can diverge.  This can lead to a situation where the
+inactive table uses bufio to read metadata at the same time the active
+table writes metadata -- resulting in the inactive table having stale
+metadata buffers once it is promoted to the active table slot.
 
-Fix by using device_create_with_groups() to create the device attributes
-of the chip class device.
+Fix this by using reference counting and a global list of cache metadata
+objects to ensure there is only one metadata object per metadata device.
 
-Note that this also fixes the attribute-creation race with userspace.
-
-Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/gpio/gpiolib.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/md/dm-cache-metadata.c |  101 ++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 95 insertions(+), 6 deletions(-)
 
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -680,16 +680,13 @@ static ssize_t chip_ngpio_show(struct de
- }
- static DEVICE_ATTR(ngpio, 0444, chip_ngpio_show, NULL);
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -94,6 +94,9 @@ struct cache_disk_superblock {
+ } __packed;
  
--static const struct attribute *gpiochip_attrs[] = {
-+static struct attribute *gpiochip_attrs[] = {
- 	&dev_attr_base.attr,
- 	&dev_attr_label.attr,
- 	&dev_attr_ngpio.attr,
- 	NULL,
- };
--
--static const struct attribute_group gpiochip_attr_group = {
--	.attrs = (struct attribute **) gpiochip_attrs,
--};
-+ATTRIBUTE_GROUPS(gpiochip);
+ struct dm_cache_metadata {
++	atomic_t ref_count;
++	struct list_head list;
++
+ 	struct block_device *bdev;
+ 	struct dm_block_manager *bm;
+ 	struct dm_space_map *metadata_sm;
+@@ -669,10 +672,10 @@ static void unpack_value(__le64 value_le
+ 
+ /*----------------------------------------------------------------*/
+ 
+-struct dm_cache_metadata *dm_cache_metadata_open(struct block_device *bdev,
+-						 sector_t data_block_size,
+-						 bool may_format_device,
+-						 size_t policy_hint_size)
++static struct dm_cache_metadata *metadata_open(struct block_device *bdev,
++					       sector_t data_block_size,
++					       bool may_format_device,
++					       size_t policy_hint_size)
+ {
+ 	int r;
+ 	struct dm_cache_metadata *cmd;
+@@ -683,6 +686,7 @@ struct dm_cache_metadata *dm_cache_metad
+ 		return NULL;
+ 	}
+ 
++	atomic_set(&cmd->ref_count, 1);
+ 	init_rwsem(&cmd->root_lock);
+ 	cmd->bdev = bdev;
+ 	cmd->data_block_size = data_block_size;
+@@ -705,10 +709,95 @@ struct dm_cache_metadata *dm_cache_metad
+ 	return cmd;
+ }
+ 
++/*
++ * We keep a little list of ref counted metadata objects to prevent two
++ * different target instances creating separate bufio instances.  This is
++ * an issue if a table is reloaded before the suspend.
++ */
++static DEFINE_MUTEX(table_lock);
++static LIST_HEAD(table);
++
++static struct dm_cache_metadata *lookup(struct block_device *bdev)
++{
++	struct dm_cache_metadata *cmd;
++
++	list_for_each_entry(cmd, &table, list)
++		if (cmd->bdev == bdev) {
++			atomic_inc(&cmd->ref_count);
++			return cmd;
++		}
++
++	return NULL;
++}
++
++static struct dm_cache_metadata *lookup_or_open(struct block_device *bdev,
++						sector_t data_block_size,
++						bool may_format_device,
++						size_t policy_hint_size)
++{
++	struct dm_cache_metadata *cmd, *cmd2;
++
++	mutex_lock(&table_lock);
++	cmd = lookup(bdev);
++	mutex_unlock(&table_lock);
++
++	if (cmd)
++		return cmd;
++
++	cmd = metadata_open(bdev, data_block_size, may_format_device, policy_hint_size);
++	if (cmd) {
++		mutex_lock(&table_lock);
++		cmd2 = lookup(bdev);
++		if (cmd2) {
++			mutex_unlock(&table_lock);
++			__destroy_persistent_data_objects(cmd);
++			kfree(cmd);
++			return cmd2;
++		}
++		list_add(&cmd->list, &table);
++		mutex_unlock(&table_lock);
++	}
++
++	return cmd;
++}
++
++static bool same_params(struct dm_cache_metadata *cmd, sector_t data_block_size)
++{
++	if (cmd->data_block_size != data_block_size) {
++		DMERR("data_block_size (%llu) different from that in metadata (%llu)\n",
++		      (unsigned long long) data_block_size,
++		      (unsigned long long) cmd->data_block_size);
++		return false;
++	}
++
++	return true;
++}
++
++struct dm_cache_metadata *dm_cache_metadata_open(struct block_device *bdev,
++						 sector_t data_block_size,
++						 bool may_format_device,
++						 size_t policy_hint_size)
++{
++	struct dm_cache_metadata *cmd = lookup_or_open(bdev, data_block_size,
++						       may_format_device, policy_hint_size);
++	if (cmd && !same_params(cmd, data_block_size)) {
++		dm_cache_metadata_close(cmd);
++		return NULL;
++	}
++
++	return cmd;
++}
++
+ void dm_cache_metadata_close(struct dm_cache_metadata *cmd)
+ {
+-	__destroy_persistent_data_objects(cmd);
+-	kfree(cmd);
++	if (atomic_dec_and_test(&cmd->ref_count)) {
++		mutex_lock(&table_lock);
++		list_del(&cmd->list);
++		mutex_unlock(&table_lock);
++
++		__destroy_persistent_data_objects(cmd);
++		kfree(cmd);
++	}
+ }
  
  /*
-  * /sys/class/gpio/export ... write-only
-@@ -1030,13 +1027,13 @@ static int gpiochip_export(struct gpio_c
- 
- 	/* use chip->base for the ID; it's already known to be unique */
- 	mutex_lock(&sysfs_lock);
--	dev = device_create(&gpio_class, chip->dev, MKDEV(0, 0), chip,
--				"gpiochip%d", chip->base);
--	if (!IS_ERR(dev)) {
--		status = sysfs_create_group(&dev->kobj,
--				&gpiochip_attr_group);
--	} else
-+	dev = device_create_with_groups(&gpio_class, chip->dev, MKDEV(0, 0),
-+					chip, gpiochip_groups,
-+					"gpiochip%d", chip->base);
-+	if (IS_ERR(dev))
- 		status = PTR_ERR(dev);
-+	else
-+		status = 0;
- 	chip->exported = (status == 0);
- 	mutex_unlock(&sysfs_lock);
- 
 
 
