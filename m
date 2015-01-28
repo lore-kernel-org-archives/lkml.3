@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614AbbA1AyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 19:54:16 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:47539 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919AbbA1AyN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 19:54:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+8MBbLVgfk3LEAnuAx_MRJpHkQO-cEQnuCrcbxcyOezr5RLcg@mail.gmail.com>
-References: <20150123203145.GA6691@google.com>
-	<CA+8MBbKnT=mE3kev8BRPq0GeTgHx8WVa6o54tJuBX_XXLpHdYQ@mail.gmail.com>
-	<CAErSpo7y1wWStjcEOH9xTiM-As8+QeMynZ5ENrL9v3X2PvQCcw@mail.gmail.com>
-	<CA+8MBb+bWiX2eayjBQHsvCjTp3t8H9=AviF9AkV6CC--cC_fYQ@mail.gmail.com>
-	<CAE9FiQXj07CtOJ6uBZomNyhAH9ANanbbUSo51td6G-UB5Rmmow@mail.gmail.com>
-	<CA+8MBbLVgfk3LEAnuAx_MRJpHkQO-cEQnuCrcbxcyOezr5RLcg@mail.gmail.com>
-Date: Tue, 27 Jan 2015 16:54:07 -0800
-X-Google-Sender-Auth: dYl-9bZ4bCP8Em7gtfQq0jklC9A
-Message-ID: <CAE9FiQXnTPO2tM252zvTGJF9Nmc-R+6z65Kq3aXC3jvxtAK2Qw@mail.gmail.com>
-Subject: Re: [GIT PULL] PCI fixes for v3.19
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Richard Zhu <Richard.Zhu@freescale.com>,
-        Marek Kordik <kordikmarek@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Andreas Hartmann <andihartmann@freenet.de>,
-        Alexey Voronkov <zermond@gmail.com>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1759266AbbA1Ayl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 19:54:41 -0500
+Received: from ozlabs.org ([103.22.144.67]:57572 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756671AbbA1Ayk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 19:54:40 -0500
+Message-ID: <1422406478.32234.0.camel@ellerman.id.au>
+Subject: Re: [PATCH v7 0/4] Add support for parametrized events
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, dev@codyps.com,
+        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Date: Wed, 28 Jan 2015 11:54:38 +1100
+In-Reply-To: <20150127100213.GC7810@krava.brq.redhat.com>
+References: <1422322990-9030-1-git-send-email-sukadev@linux.vnet.ibm.com>
+	 <20150127100213.GC7810@krava.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 3:24 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> On Mon, Jan 26, 2015 at 7:43 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> Can you please get boot bog with "debug ignore_logleve"?
->>
->> we should get print out from
->>
->> +               dev_printk(KERN_DEBUG, &dev->dev, "%pR clipped to %pR\n",
->> +                                &orig_res, res);
->
-> Attached ... but I don't see any "clipped" messages
+On Tue, 2015-01-27 at 11:02 +0100, Jiri Olsa wrote:
+> On Mon, Jan 26, 2015 at 05:43:03PM -0800, Sukadev Bhattiprolu wrote:
+> 
+> SNIP
+> 
+> > 
+> > 
+> > Cody P Schafer (6):
+> >   perf: provide sysfs_show for struct perf_pmu_events_attr
+> >   perf: add PMU_EVENT_ATTR_STRING() helper
+> >   powerpc/perf/hv-24x7: parse catalog and populate sysfs with events
+> >   powerpc/perf/{hv-gpci, hv-common}: generate requests with counters
+> >     annotated
+> >   powerpc/perf/hv-gpci: add the remaining gpci requests
+> >   powerpc/perf/hv-24x7: Document sysfs event description entries
+> > 
+> > Sukadev Bhattiprolu (1):
+> >   perf: define EVENT_DEFINE_RANGE_FORMAT_LITE helper
+> 
+> generic 'perf: *' patches look good to me.. cant say much about
+> the rest of the patchset though
 
-Good. so the system should just work as before but have annoying warnings.
+Is that an ACK ?
 
-Do we need to put the paper back to hide the warning?
+I'm happy to merge the rest through the powerpc tree, but I'd like an ACK on
+the first two from someone in perf land.
 
-Thanks
+cheers
 
-Yinghai
+
