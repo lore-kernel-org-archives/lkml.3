@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386AbbA2JCm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:02:42 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44776 "EHLO
+	id S1758988AbbA2JD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:03:29 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44794 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754198AbbA2JCd (ORCPT
+	by vger.kernel.org with ESMTP id S1758893AbbA2JDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:02:33 -0500
+	Thu, 29 Jan 2015 04:03:24 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Amit Virdi <amit.virdi@st.com>,
-        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 108/176] usb: dwc3: gadget: Stop TRB preparation after limit is reached
-Date: Wed, 28 Jan 2015 15:28:58 +0100
-Message-Id: <fc642bfa122cccd22b32f734bf7f10fc84a729ab.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Preston Fick <pffick@gmail.com>,
+        Johan Hovold <johan@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 109/176] USB: cp210x: fix ID for production CEL MeshConnect USB Stick
+Date: Wed, 28 Jan 2015 15:28:59 +0100
+Message-Id: <15e6fe01c5e20949dd665b9d49dc80851fed5794.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,50 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amit Virdi <amit.virdi@st.com>
+From: Preston Fick <pffick@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 39e60635a01520e8c8ed3946a28c2b98e6a46f79 upstream.
+commit 90441b4dbe90ba0c38111ea89fa093a8c9627801 upstream.
 
-DWC3 gadget sets up a pool of 32 TRBs for each EP during initialization. This
-means, the max TRBs that can be submitted for an EP is fixed to 32. Since the
-request queue for an EP is a linked list, any number of requests can be queued
-to it by the gadget layer.  However, the dwc3 driver must not submit TRBs more
-than the pool it has created for. This limit wasn't respected when SG was used
-resulting in submitting more than the max TRBs, eventually leading to
-non-transfer of the TRBs submitted over the max limit.
+Fixing typo for MeshConnect IDs. The original PID (0x8875) is not in
+production and is not needed. Instead it has been changed to the
+official production PID (0x8857).
 
-Root cause:
-When SG is used, there are two loops iterating to prepare TRBs:
- - Outer loop over the request_list
- - Inner loop over the SG list
-The code was missing break to get out of the outer loop.
-
-Fixes: eeb720fb21d6 (usb: dwc3: gadget: add support for SG lists)
-Signed-off-by: Amit Virdi <amit.virdi@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Preston Fick <pffick@gmail.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/dwc3/gadget.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/cp210x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 3a075d1fbf99..d19564d0f79a 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -905,6 +905,9 @@ static void dwc3_prepare_trbs(struct dwc3_ep *dep, bool starting)
- 				if (last_one)
- 					break;
- 			}
-+
-+			if (last_one)
-+				break;
- 		} else {
- 			dma = req->request.dma;
- 			length = req->request.length;
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 59fd7187daff..435a8123821b 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -120,7 +120,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+-	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
++	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL MeshConnect USB Stick */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
 -- 
 2.2.2
 
