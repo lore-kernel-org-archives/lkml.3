@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761209AbbA1CS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:18:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
+	id S933337AbbA1Bid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:38:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756678AbbA1B2L (ORCPT
+	with ESMTP id S1759067AbbA1BiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:11 -0500
+	Tue, 27 Jan 2015 20:38:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>, jasowang@redhat.com,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 16/32] x86, hyperv: Mark the Hyper-V clocksource as being continuous
-Date: Tue, 27 Jan 2015 17:26:46 -0800
-Message-Id: <20150128012629.476289991@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 09/77] drm/radeon: add si dpm quirk list
+Date: Tue, 27 Jan 2015 17:26:47 -0800
+Message-Id: <20150128012746.248872077@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,39 +24,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 32c6590d126836a062b3140ed52d898507987017 upstream.
+commit 5615f890bc6babdc2998dec62f3552326d06eb7b upstream.
 
-The Hyper-V clocksource is continuous; mark it accordingly.
+This adds a quirks list to fix stability problems with
+certain SI boards.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Acked-by: jasowang@redhat.com
-Cc: gregkh@linuxfoundation.org
-Cc: devel@linuxdriverproject.org
-Cc: olaf@aepfle.de
-Cc: apw@canonical.com
-Link: http://lkml.kernel.org/r/1421108762-3331-1-git-send-email-kys@microsoft.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=76490
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/mshyperv.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/si_dpm.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -60,6 +60,7 @@ static struct clocksource hyperv_cs = {
- 	.rating		= 400, /* use this when running on Hyperv*/
- 	.read		= read_hv_clock,
- 	.mask		= CLOCKSOURCE_MASK(64),
-+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
+--- a/drivers/gpu/drm/radeon/si_dpm.c
++++ b/drivers/gpu/drm/radeon/si_dpm.c
+@@ -2900,6 +2900,22 @@ static int si_init_smc_spll_table(struct
+ 	return ret;
+ }
  
- static void __init ms_hyperv_init_platform(void)
++struct si_dpm_quirk {
++	u32 chip_vendor;
++	u32 chip_device;
++	u32 subsys_vendor;
++	u32 subsys_device;
++	u32 max_sclk;
++	u32 max_mclk;
++};
++
++/* cards with dpm stability problems */
++static struct si_dpm_quirk si_dpm_quirk_list[] = {
++	/* PITCAIRN - https://bugs.freedesktop.org/show_bug.cgi?id=76490 */
++	{ PCI_VENDOR_ID_ATI, 0x6810, 0x1462, 0x3036, 0, 120000 },
++	{ 0, 0, 0, 0 },
++};
++
+ static void si_apply_state_adjust_rules(struct radeon_device *rdev,
+ 					struct radeon_ps *rps)
+ {
+@@ -2910,7 +2926,22 @@ static void si_apply_state_adjust_rules(
+ 	u32 mclk, sclk;
+ 	u16 vddc, vddci;
+ 	u32 max_sclk_vddc, max_mclk_vddci, max_mclk_vddc;
++	u32 max_sclk = 0, max_mclk = 0;
+ 	int i;
++	struct si_dpm_quirk *p = si_dpm_quirk_list;
++
++	/* Apply dpm quirks */
++	while (p && p->chip_device != 0) {
++		if (rdev->pdev->vendor == p->chip_vendor &&
++		    rdev->pdev->device == p->chip_device &&
++		    rdev->pdev->subsystem_vendor == p->subsys_vendor &&
++		    rdev->pdev->subsystem_device == p->subsys_device) {
++			max_sclk = p->max_sclk;
++			max_mclk = p->max_mclk;
++			break;
++		}
++		++p;
++	}
+ 
+ 	if ((rdev->pm.dpm.new_active_crtc_count > 1) ||
+ 	    ni_dpm_vblank_too_short(rdev))
+@@ -2964,6 +2995,14 @@ static void si_apply_state_adjust_rules(
+ 			if (ps->performance_levels[i].mclk > max_mclk_vddc)
+ 				ps->performance_levels[i].mclk = max_mclk_vddc;
+ 		}
++		if (max_mclk) {
++			if (ps->performance_levels[i].mclk > max_mclk)
++				ps->performance_levels[i].mclk = max_mclk;
++		}
++		if (max_sclk) {
++			if (ps->performance_levels[i].sclk > max_sclk)
++				ps->performance_levels[i].sclk = max_sclk;
++		}
+ 	}
+ 
+ 	/* XXX validate the min clocks required for display */
 
 
