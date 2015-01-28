@@ -1,146 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759020AbbA1ENX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:13:23 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36568 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871AbbA1ENV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:13:21 -0500
-From: lizf@kernel.org
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Matlack <dmatlack@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 001/177] kvm: x86: fix stale mmio cache bug
-Date: Wed, 28 Jan 2015 12:06:09 +0800
-Message-Id: <1422418236-12852-2-git-send-email-lizf@kernel.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
-References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+	id S1760013AbbA1EJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:09:36 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:57009 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754755AbbA1EG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:06:29 -0500
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 linux-trace 5/8] samples: bpf: counting example for kfree_skb tracepoint and write syscall
+Date: Tue, 27 Jan 2015 20:06:10 -0800
+Message-Id: <1422417973-10195-6-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
+References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Matlack <dmatlack@google.com>
+this example has two probes in one C file that attach to different tracepoints
+and use two different maps.
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+1st probe is the similar to dropmon.c. It attaches to kfree_skb tracepoint and
+count number of packet drops at different locations
 
-------------------
+2nd probe attaches to syscalls/sys_enter_write and computes a histogram of different
+write sizes
 
+Usage:
+$ sudo tracex2
+writing bpf-8 -> /sys/kernel/debug/tracing/events/skb/kfree_skb/filter
+writing bpf-10 -> /sys/kernel/debug/tracing/events/syscalls/sys_enter_write/filter
+location 0xffffffff816959a5 count 1
 
-commit 56f17dd3fbc44adcdbc3340fe3988ddb833a47a7 upstream.
+location 0xffffffff816959a5 count 2
 
-The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
-up to userspace:
+557145+0 records in
+557145+0 records out
+285258240 bytes (285 MB) copied, 1.02379 s, 279 MB/s
+           syscall write() stats
+     byte_size       : count     distribution
+       1 -> 1        : 3        |                                      |
+       2 -> 3        : 0        |                                      |
+       4 -> 7        : 0        |                                      |
+       8 -> 15       : 0        |                                      |
+      16 -> 31       : 2        |                                      |
+      32 -> 63       : 3        |                                      |
+      64 -> 127      : 1        |                                      |
+     128 -> 255      : 1        |                                      |
+     256 -> 511      : 0        |                                      |
+     512 -> 1023     : 1118968  |************************************* |
 
-(1) Guest accesses gpa X without a memory slot. The gfn is cached in
-struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
-the SPTE write-execute-noread so that future accesses cause
-EPT_MISCONFIGs.
+Ctrl-C at any time. Kernel will auto cleanup maps and programs
 
-(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
-covering the page just accessed.
-
-(3) Guest attempts to read or write to gpa X again. On Intel, this
-generates an EPT_MISCONFIG. The memory slot generation number that
-was incremented in (2) would normally take care of this but we fast
-path mmio faults through quickly_check_mmio_pf(), which only checks
-the per-vcpu mmio cache. Since we hit the cache, KVM passes a
-KVM_EXIT_MMIO up to userspace.
-
-This patch fixes the issue by using the memslot generation number
-to validate the mmio cache.
-
-Signed-off-by: David Matlack <dmatlack@google.com>
-[xiaoguangrong: adjust the code to make it simpler for stable-tree fix.]
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Reviewed-by: David Matlack <dmatlack@google.com>
-Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Tested-by: David Matlack <dmatlack@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Zefan Li <lizefan@huawei.com>
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- arch/x86/include/asm/kvm_host.h |  1 +
- arch/x86/kvm/mmu.c              |  2 +-
- arch/x86/kvm/x86.h              | 20 +++++++++++++++-----
- 3 files changed, 17 insertions(+), 6 deletions(-)
+ samples/bpf/Makefile       |    4 ++
+ samples/bpf/tracex2_kern.c |   71 +++++++++++++++++++++++++++++++++
+ samples/bpf/tracex2_user.c |   95 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 170 insertions(+)
+ create mode 100644 samples/bpf/tracex2_kern.c
+ create mode 100644 samples/bpf/tracex2_user.c
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 944471f..c29677e 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -453,6 +453,7 @@ struct kvm_vcpu_arch {
- 	u64 mmio_gva;
- 	unsigned access;
- 	gfn_t mmio_gfn;
-+	u64 mmio_gen;
+diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
+index da28e1b6d3a6..416af24b01fd 100644
+--- a/samples/bpf/Makefile
++++ b/samples/bpf/Makefile
+@@ -8,6 +8,7 @@ hostprogs-y += sockex1
+ hostprogs-y += sockex2
+ hostprogs-y += dropmon
+ hostprogs-y += tracex1
++hostprogs-y += tracex2
  
- 	struct kvm_pmu pmu;
+ dropmon-objs := dropmon.o libbpf.o
+ test_verifier-objs := test_verifier.o libbpf.o
+@@ -16,12 +17,14 @@ sock_example-objs := sock_example.o libbpf.o
+ sockex1-objs := bpf_load.o libbpf.o sockex1_user.o
+ sockex2-objs := bpf_load.o libbpf.o sockex2_user.o
+ tracex1-objs := bpf_load.o libbpf.o tracex1_user.o
++tracex2-objs := bpf_load.o libbpf.o tracex2_user.o
  
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index fd6dec6..84f4bca 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2842,7 +2842,7 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
- 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
- 		return;
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+ always += sockex1_kern.o
+ always += sockex2_kern.o
+ always += tracex1_kern.o
++always += tracex2_kern.o
  
--	vcpu_clear_mmio_info(vcpu, ~0ul);
-+	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
- 	kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
- 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
-diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-index cb80c29..1ce5611 100644
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -78,15 +78,23 @@ static inline void vcpu_cache_mmio_info(struct kvm_vcpu *vcpu,
- 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
- 	vcpu->arch.access = access;
- 	vcpu->arch.mmio_gfn = gfn;
-+	vcpu->arch.mmio_gen = kvm_memslots(vcpu->kvm)->generation;
+ HOSTCFLAGS += -I$(objtree)/usr/include
+ 
+@@ -29,6 +32,7 @@ HOSTCFLAGS_bpf_load.o += -I$(objtree)/usr/include -Wno-unused-variable
+ HOSTLOADLIBES_sockex1 += -lelf
+ HOSTLOADLIBES_sockex2 += -lelf
+ HOSTLOADLIBES_tracex1 += -lelf
++HOSTLOADLIBES_tracex2 += -lelf
+ 
+ # point this to your LLVM backend with bpf support
+ LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
+diff --git a/samples/bpf/tracex2_kern.c b/samples/bpf/tracex2_kern.c
+new file mode 100644
+index 000000000000..a789c456c1b4
+--- /dev/null
++++ b/samples/bpf/tracex2_kern.c
+@@ -0,0 +1,71 @@
++#include <linux/skbuff.h>
++#include <linux/netdevice.h>
++#include <uapi/linux/bpf.h>
++#include <trace/bpf_trace.h>
++#include "bpf_helpers.h"
++
++struct bpf_map_def SEC("maps") my_map = {
++	.type = BPF_MAP_TYPE_HASH,
++	.key_size = sizeof(long),
++	.value_size = sizeof(long),
++	.max_entries = 1024,
++};
++
++SEC("events/skb/kfree_skb")
++int bpf_prog2(struct bpf_context *ctx)
++{
++	long loc = ctx->arg2;
++	long init_val = 1;
++	long *value;
++
++	value = bpf_map_lookup_elem(&my_map, &loc);
++	if (value)
++		*value += 1;
++	else
++		bpf_map_update_elem(&my_map, &loc, &init_val, BPF_ANY);
++	return 0;
 +}
 +
-+static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
++static unsigned int log2(unsigned int v)
 +{
-+	return vcpu->arch.mmio_gen == kvm_memslots(vcpu->kvm)->generation;
- }
- 
- /*
-- * Clear the mmio cache info for the given gva,
-- * specially, if gva is ~0ul, we clear all mmio cache info.
-+ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
-+ * clear all mmio cache info.
-  */
-+#define MMIO_GVA_ANY (~(gva_t)0)
++	unsigned int r;
++	unsigned int shift;
 +
- static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
- {
--	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
-+	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
- 		return;
- 
- 	vcpu->arch.mmio_gva = 0;
-@@ -94,7 +102,8 @@ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
- 
- static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
- {
--	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
-+	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
-+	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
- 		return true;
- 
- 	return false;
-@@ -102,7 +111,8 @@ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
- 
- static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
- {
--	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
-+	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
-+	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
- 		return true;
- 
- 	return false;
++	r = (v > 0xFFFF) << 4; v >>= r;
++	shift = (v > 0xFF) << 3; v >>= shift; r |= shift;
++	shift = (v > 0xF) << 2; v >>= shift; r |= shift;
++	shift = (v > 0x3) << 1; v >>= shift; r |= shift;
++	r |= (v >> 1);
++	return r;
++}
++
++static unsigned int log2l(unsigned long v)
++{
++	unsigned int hi = v >> 32;
++	if (hi)
++		return log2(hi) + 32;
++	else
++		return log2(v);
++}
++
++struct bpf_map_def SEC("maps") my_hist_map = {
++	.type = BPF_MAP_TYPE_ARRAY,
++	.key_size = sizeof(u32),
++	.value_size = sizeof(long),
++	.max_entries = 64,
++};
++
++SEC("events/syscalls/sys_enter_write")
++int bpf_prog3(struct bpf_context *ctx)
++{
++	long write_size = ctx->arg3;
++	long init_val = 1;
++	long *value;
++	u32 index = log2l(write_size);
++
++	value = bpf_map_lookup_elem(&my_hist_map, &index);
++	if (value)
++		__sync_fetch_and_add(value, 1);
++	return 0;
++}
++char _license[] SEC("license") = "GPL";
+diff --git a/samples/bpf/tracex2_user.c b/samples/bpf/tracex2_user.c
+new file mode 100644
+index 000000000000..016a76e97cd7
+--- /dev/null
++++ b/samples/bpf/tracex2_user.c
+@@ -0,0 +1,95 @@
++#include <stdio.h>
++#include <unistd.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <linux/bpf.h>
++#include "libbpf.h"
++#include "bpf_load.h"
++
++#define MAX_INDEX	64
++#define MAX_STARS	38
++
++static void stars(char *str, long val, long max, int width)
++{
++	int i;
++
++	for (i = 0; i < (width * val / max) - 1 && i < width - 1; i++)
++		str[i] = '*';
++	if (val > max)
++		str[i - 1] = '+';
++	str[i] = '\0';
++}
++
++static void print_hist(int fd)
++{
++	int key;
++	long value;
++	long data[MAX_INDEX] = {};
++	char starstr[MAX_STARS];
++	int i;
++	int max_ind = -1;
++	long max_value = 0;
++
++	for (key = 0; key < MAX_INDEX; key++) {
++		bpf_lookup_elem(fd, &key, &value);
++		data[key] = value;
++		if (value && key > max_ind)
++			max_ind = key;
++		if (value > max_value)
++			max_value = value;
++	}
++
++	printf("           syscall write() stats\n");
++	printf("     byte_size       : count     distribution\n");
++	for (i = 1; i <= max_ind + 1; i++) {
++		stars(starstr, data[i - 1], max_value, MAX_STARS);
++		printf("%8ld -> %-8ld : %-8ld |%-*s|\n",
++		       (1l << i) >> 1, (1l << i) - 1, data[i - 1],
++		       MAX_STARS, starstr);
++	}
++}
++static void int_exit(int sig)
++{
++	print_hist(map_fd[1]);
++	exit(0);
++}
++
++int main(int ac, char **argv)
++{
++	char filename[256];
++	long key, next_key, value;
++	FILE *f;
++	int i;
++
++	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
++
++	signal(SIGINT, int_exit);
++
++	/* start 'ping' in the background to have some kfree_skb events */
++	f = popen("ping -c5 localhost", "r");
++	(void) f;
++
++	/* start 'dd' in the background to have plenty of 'write' syscalls */
++	f = popen("dd if=/dev/zero of=/dev/null", "r");
++	(void) f;
++
++	if (load_bpf_file(filename)) {
++		printf("%s", bpf_log_buf);
++		return 1;
++	}
++
++	for (i = 0; i < 5; i++) {
++		key = 0;
++		while (bpf_get_next_key(map_fd[0], &key, &next_key) == 0) {
++			bpf_lookup_elem(map_fd[0], &next_key, &value);
++			printf("location 0x%lx count %ld\n", next_key, value);
++			key = next_key;
++		}
++		if (key)
++			printf("\n");
++		sleep(1);
++	}
++	print_hist(map_fd[1]);
++
++	return 0;
++}
 -- 
-1.9.1
+1.7.9.5
 
