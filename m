@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248AbbA2K3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:29:52 -0500
+	id S1756838AbbA2JA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:00:56 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756178AbbA2JAe (ORCPT
+	by vger.kernel.org with ESMTP id S1756668AbbA2JAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:34 -0500
+	Thu, 29 Jan 2015 04:00:48 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Jeffery <djeffery@redhat.com>
-Subject: [PATCH 3.12 142/176] libata: prevent HSM state change race between ISR and PIO
-Date: Wed, 28 Jan 2015 15:29:32 +0100
-Message-Id: <52711216cd8337c65b6823d19496e3671b1a214a.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jason Lee Cragg <jcragg@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 143/176] ALSA: usb-audio: Add mic volume fix quirk for Logitech Webcam C210
+Date: Wed, 28 Jan 2015 15:29:33 +0100
+Message-Id: <2b53c0d413ab66c4a27a8b91306e45387970c5bd.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -22,79 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Jeffery <djeffery@redhat.com>
+From: Jason Lee Cragg <jcragg@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit ce7514526742c0898b837d4395f515b79dfb5a12 upstream.
+commit 6455931186bff407493135e74c5f32efd30860e2 upstream.
 
-It is possible for ata_sff_flush_pio_task() to set ap->hsm_task_state to
-HSM_ST_IDLE in between the time __ata_sff_port_intr() checks for HSM_ST_IDLE
-and before it calls ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
-
-This problem is hard to reproduce making this patch hard to verify, but this
-fix will prevent the race.
-
-I have not been able to reproduce the problem, but here is a crash dump from
-a 2.6.32 kernel.
-
-On examining the ata port's state, its hsm_task_state field has a value of HSM_ST_IDLE:
-
-crash> struct ata_port.hsm_task_state ffff881c1121c000
-  hsm_task_state = 0
-
-Normally, this should not be possible as ata_sff_hsm_move() was called from ata_sff_host_intr(),
-which checks hsm_task_state and won't call ata_sff_hsm_move() if it has a HSM_ST_IDLE value.
-
-PID: 11053  TASK: ffff8816e846cae0  CPU: 0   COMMAND: "sshd"
- #0 [ffff88008ba03960] machine_kexec at ffffffff81038f3b
- #1 [ffff88008ba039c0] crash_kexec at ffffffff810c5d92
- #2 [ffff88008ba03a90] oops_end at ffffffff8152b510
- #3 [ffff88008ba03ac0] die at ffffffff81010e0b
- #4 [ffff88008ba03af0] do_trap at ffffffff8152ad74
- #5 [ffff88008ba03b50] do_invalid_op at ffffffff8100cf95
- #6 [ffff88008ba03bf0] invalid_op at ffffffff8100bf9b
-    [exception RIP: ata_sff_hsm_move+317]
-    RIP: ffffffff813a77ad  RSP: ffff88008ba03ca0  RFLAGS: 00010097
-    RAX: 0000000000000000  RBX: ffff881c1121dc60  RCX: 0000000000000000
-    RDX: ffff881c1121dd10  RSI: ffff881c1121dc60  RDI: ffff881c1121c000
-    RBP: ffff88008ba03d00   R8: 0000000000000000   R9: 000000000000002e
-    R10: 000000000001003f  R11: 000000000000009b  R12: ffff881c1121c000
-    R13: 0000000000000000  R14: 0000000000000050  R15: ffff881c1121dd78
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #7 [ffff88008ba03d08] ata_sff_host_intr at ffffffff813a7fbd
- #8 [ffff88008ba03d38] ata_sff_interrupt at ffffffff813a821e
- #9 [ffff88008ba03d78] handle_IRQ_event at ffffffff810e6ec0
+Signed-off-by: Jason Lee Cragg <jcragg@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/ata/libata-sff.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ sound/usb/mixer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
-index 37acda6fa7e4..136803c47cdb 100644
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -1333,7 +1333,19 @@ void ata_sff_flush_pio_task(struct ata_port *ap)
- 	DPRINTK("ENTER\n");
- 
- 	cancel_delayed_work_sync(&ap->sff_pio_task);
-+
-+	/*
-+	 * We wanna reset the HSM state to IDLE.  If we do so without
-+	 * grabbing the port lock, critical sections protected by it which
-+	 * expect the HSM state to stay stable may get surprised.  For
-+	 * example, we may set IDLE in between the time
-+	 * __ata_sff_port_intr() checks for HSM_ST_IDLE and before it calls
-+	 * ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
-+	 */
-+	spin_lock_irq(ap->lock);
- 	ap->hsm_task_state = HSM_ST_IDLE;
-+	spin_unlock_irq(ap->lock);
-+
- 	ap->sff_pio_task_link = NULL;
- 
- 	if (ata_msg_ctl(ap))
+diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
+index be4db47cb2d9..061be0e5fa5a 100644
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -886,6 +886,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
+ 	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
++	case USB_ID(0x046d, 0x0819): /* Logitech Webcam C210 */
+ 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
+ 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
 -- 
 2.2.2
 
