@@ -1,120 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbbA1U7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:59:11 -0500
-Received: from mail-bl2on0098.outbound.protection.outlook.com ([65.55.169.98]:2690
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756116AbbA1U7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:59:06 -0500
-Date: Wed, 28 Jan 2015 15:22:55 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Heiko Stuebner <heiko@sntech.de>, Pawel Moll <pawel.moll@arm.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Beniamino Galvani" <b.galvani@gmail.com>,
-        "ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>
-Subject: Re: [PATCH v4 6/7] ARM: zynq: DT: Add pinctrl information
-References: <1420818231-13451-1-git-send-email-soren.brinkmann@xilinx.com>
- <1420818231-13451-7-git-send-email-soren.brinkmann@xilinx.com>
- <CACRpkdZ1jfTUqfLKonJxar2Jn25+4wTF-D4XUXOszSsoJrA07w@mail.gmail.com>
- <1a749692196d406a8229d4891f3563f4@BN1BFFO11FD016.protection.gbl>
- <54C6D510.6090105@suse.de>
-In-Reply-To: <54C6D510.6090105@suse.de>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="g11hhdKa1kOVO1p0GTnEo7Gkr3KLNnS9k"
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21288.007
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <41babf16a78d4d48855d80d61262e39a@BL2FFO11FD033.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; suse.de; dkim=none (message not
- signed) header.d=none;
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(377454003)(479174004)(24454002)(51704005)(164054003)(108616004)(568964001)(83506001)(19580395003)(62966003)(77156002)(104016003)(19580405001)(84326002)(106466001)(64126003)(87936001)(512874002)(65806001)(65956001)(92726002)(92566002)(50986999)(76176999)(15975445007)(74316001)(77096005)(2950100001)(54356999)(6806004)(46102003)(86362001)(93886004)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB051;H:xir-pvapsmtpgw01;FPR:;SPF:None;MLV:sfv;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB051;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB051;
-X-Forefront-PRVS: 047001DADA
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB051;
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 28 Jan 2015 14:23:20.6458
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB051
+	id S1762001AbbA2Jnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:43:33 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44834 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759707AbbA2JFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jan 2015 04:05:08 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jerry Hoemann <jerry.hoemann@hp.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ken Helias <kenhelias@firemail.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 001/176] fsnotify: next_i is freed during fsnotify_unmount_inodes.
+Date: Wed, 28 Jan 2015 15:27:11 +0100
+Message-Id: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.2.2
+In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
+References: <cover.1422455352.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---g11hhdKa1kOVO1p0GTnEo7Gkr3KLNnS9k
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+From: Jerry Hoemann <jerry.hoemann@hp.com>
 
-On 01/27/2015 01:00 AM, Andreas F=C3=A4rber wrote:
-> Am 12.01.2015 um 08:27 schrieb Michal Simek:
->> On 01/11/2015 10:38 PM, Linus Walleij wrote:
->>> On Fri, Jan 9, 2015 at 4:43 PM, Soren Brinkmann
->>> <soren.brinkmann@xilinx.com> wrote:
->>>
->>>> Add pinctrl descriptions to the zc702 and zc706 device trees.
->>>>
->>>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->>>> Tested-by: Andreas F=C3=A4rber <afaerber@suse.de>
->>>
->>> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
->>>
->>> Beautiful and in line with how I want things to look.
->>>
->>> Yours,
->>> Linus Walleij
->>>
->>
->> Applied to zynq/dt.
->=20
-> Did you maybe forget to push?
->=20
-> https://github.com/Xilinx/linux-xlnx/commits/zynq/dt doesn't have it.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Ah sorry - I have pushed it now.
+===============
 
-Thanks,
-Michal
+commit 6424babfd68dd8a83d9c60a5242d27038856599f upstream.
 
+During file system stress testing on 3.10 and 3.12 based kernels, the
+umount command occasionally hung in fsnotify_unmount_inodes in the
+section of code:
 
+                spin_lock(&inode->i_lock);
+                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
+                        spin_unlock(&inode->i_lock);
+                        continue;
+                }
 
---g11hhdKa1kOVO1p0GTnEo7Gkr3KLNnS9k
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+As this section of code holds the global inode_sb_list_lock, eventually
+the system hangs trying to acquire the lock.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Multiple crash dumps showed:
 
-iEYEARECAAYFAlTI8L8ACgkQykllyylKDCF0DQCdHsx8Riz6BWAsBfKkzbn+Qats
-QuIAoJrLL3ZvczibjyujdweDn64rBb7w
-=0WFN
------END PGP SIGNATURE-----
+The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
+back at itself.  As this is not the value of list upon entry to the
+function, the kernel never exits the loop.
 
---g11hhdKa1kOVO1p0GTnEo7Gkr3KLNnS9k--
+To help narrow down problem, the call to list_del_init in
+inode_sb_list_del was changed to list_del.  This poisons the pointers in
+the i_sb_list and causes a kernel to panic if it transverse a freed
+inode.
+
+Subsequent stress testing paniced in fsnotify_unmount_inodes at the
+bottom of the list_for_each_entry_safe loop showing next_i had become
+free.
+
+We believe the root cause of the problem is that next_i is being freed
+during the window of time that the list_for_each_entry_safe loop
+temporarily releases inode_sb_list_lock to call fsnotify and
+fsnotify_inode_delete.
+
+The code in fsnotify_unmount_inodes attempts to prevent the freeing of
+inode and next_i by calling __iget.  However, the code doesn't do the
+__iget call on next_i
+
+	if i_count == 0 or
+	if i_state & (I_FREEING | I_WILL_FREE)
+
+The patch addresses this issue by advancing next_i in the above two cases
+until we either find a next_i which we can __iget or we reach the end of
+the list.  This makes the handling of next_i more closely match the
+handling of the variable "inode."
+
+The time to reproduce the hang is highly variable (from hours to days.) We
+ran the stress test on a 3.10 kernel with the proposed patch for a week
+without failure.
+
+During list_for_each_entry_safe, next_i is becoming free causing
+the loop to never terminate.  Advance next_i in those cases where
+__iget is not done.
+
+Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Ken Helias <kenhelias@firemail.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/notify/inode_mark.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
+index 74825be65b7b..fbb9dfb7b1d2 100644
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -288,20 +288,25 @@ void fsnotify_unmount_inodes(struct list_head *list)
+ 		spin_unlock(&inode->i_lock);
+ 
+ 		/* In case the dropping of a reference would nuke next_i. */
+-		if ((&next_i->i_sb_list != list) &&
+-		    atomic_read(&next_i->i_count)) {
++		while (&next_i->i_sb_list != list) {
+ 			spin_lock(&next_i->i_lock);
+-			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
++			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE)) &&
++						atomic_read(&next_i->i_count)) {
+ 				__iget(next_i);
+ 				need_iput = next_i;
++				spin_unlock(&next_i->i_lock);
++				break;
+ 			}
+ 			spin_unlock(&next_i->i_lock);
++			next_i = list_entry(next_i->i_sb_list.next,
++						struct inode, i_sb_list);
+ 		}
+ 
+ 		/*
+-		 * We can safely drop inode_sb_list_lock here because we hold
+-		 * references on both inode and next_i.  Also no new inodes
+-		 * will be added since the umount has begun.
++		 * We can safely drop inode_sb_list_lock here because either
++		 * we actually hold references on both inode and next_i or
++		 * end of list.  Also no new inodes will be added since the
++		 * umount has begun.
+ 		 */
+ 		spin_unlock(&inode_sb_list_lock);
+ 
+-- 
+2.2.2
+
