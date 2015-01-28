@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143AbbA2FMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 00:12:34 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:38608 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755348AbbA2FMa (ORCPT
+	id S1752600AbbA1VJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:09:53 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:37633 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694AbbA1Uyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 00:12:30 -0500
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-To: <stern@rowland.harvard.edu>
-CC: <gregkh@linuxfoundation.org>, <lars@metafoo.de>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <Zubair.Kakakhel@imgtec.com>
-Subject: [PATCH_V3 3/3] usb: ohci: jz4740: prepare the clock before enabling it
-Date: Wed, 28 Jan 2015 13:26:05 +0000
-Message-ID: <1422451565-29096-4-git-send-email-Zubair.Kakakhel@imgtec.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422451565-29096-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-References: <1422451565-29096-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+	Wed, 28 Jan 2015 15:54:32 -0500
+Date: Wed, 28 Jan 2015 15:29:05 +0200
+From: Heba Aamer <heba93aamer@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: thomas.petazzoni@free-electrons.com, noralf@tronnes.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: fbtft: remove redundant .owner
+Message-ID: <20150128132905.GA11672@mohammed-Inspiron-3537>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.89]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Burton <paul.burton@imgtec.com>
+This patch fixes the following coccicheck warning:
+No need to set .owner here. The core will do it. 
 
-The clock must have been prepared before enabling it.
-
-Signed-off-by: Paul Burton <paul.burton@imgtec.com>
-Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-
---
-V2 changes. Add disable_unprepare as well
+Signed-off-by: Heba Aamer <heba93aamer@gmail.com>
 ---
- drivers/usb/host/ohci-jz4740.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/fbtft/flexfb.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/usb/host/ohci-jz4740.c b/drivers/usb/host/ohci-jz4740.c
-index bb69733..129f6b9 100644
---- a/drivers/usb/host/ohci-jz4740.c
-+++ b/drivers/usb/host/ohci-jz4740.c
-@@ -189,7 +189,7 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
- 
- 
- 	clk_set_rate(jz4740_ohci->clk, 48000000);
--	clk_enable(jz4740_ohci->clk);
-+	clk_prepare_enable(jz4740_ohci->clk);
- 	if (jz4740_ohci->vbus)
- 		ohci_jz4740_set_vbus_power(jz4740_ohci, true);
- 
-@@ -209,7 +209,7 @@ static int jz4740_ohci_probe(struct platform_device *pdev)
- err_disable:
- 	if (jz4740_ohci->vbus)
- 		regulator_disable(jz4740_ohci->vbus);
--	clk_disable(jz4740_ohci->clk);
-+	clk_disable_unprepare(jz4740_ohci->clk);
- 
- err_free:
- 	usb_put_hcd(hcd);
-@@ -227,7 +227,7 @@ static int jz4740_ohci_remove(struct platform_device *pdev)
- 	if (jz4740_ohci->vbus)
- 		regulator_disable(jz4740_ohci->vbus);
- 
--	clk_disable(jz4740_ohci->clk);
-+	clk_disable_unprepare(jz4740_ohci->clk);
- 
- 	usb_put_hcd(hcd);
- 
+diff --git a/drivers/staging/fbtft/flexfb.c b/drivers/staging/fbtft/flexfb.c
+index 45574a0..3f21cd2 100644
+--- a/drivers/staging/fbtft/flexfb.c
++++ b/drivers/staging/fbtft/flexfb.c
+@@ -559,7 +559,6 @@ static const struct platform_device_id flexfb_platform_ids[] = {
+ static struct platform_driver flexfb_platform_driver = {
+ 	.driver = {
+ 		.name   = DRVNAME,
+-		.owner  = THIS_MODULE,
+ 	},
+ 	.id_table = flexfb_platform_ids,
+ 	.probe  = flexfb_probe_pdev,
 -- 
-1.9.1
+1.7.9.5
 
