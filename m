@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763571AbbA2DBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:01:54 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:43674 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760683AbbA2DBu (ORCPT
+	id S1754258AbbA1UOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:14:14 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54227 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142AbbA1UOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 22:01:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C547@SHSMSX104.ccr.corp.intel.com>
-References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C547@SHSMSX104.ccr.corp.intel.com>
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Wed, 28 Jan 2015 16:24:28 +0800
-Message-ID: <CACzj_yXza_so5EPsJmLOkHMbk3bz9aXen09xCnj0O=KRZDd_Pw@mail.gmail.com>
-Subject: Re: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	Wed, 28 Jan 2015 15:14:07 -0500
+Date: Wed, 28 Jan 2015 09:25:36 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
+        Will Deacon <will.deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Content-Type: text/plain; charset=UTF-8
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Message-ID: <20150128082536.GA2270@amd>
+References: <201501271532.25540@pali>
+ <20150127174818.GM26493@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1501271446330.1322@knanqh.ubzr>
+ <20150127210943.GN26493@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1501271614280.1322@knanqh.ubzr>
+ <20150127223331.GP26493@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr>
+ <1FECE32B-0D63-4696-BED7-74FE5845C260@jcrosoft.com>
+ <20150128071950.GB29927@amd>
+ <F2E2E152-2054-4284-9DAC-67FEC30DF399@jcrosoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <F2E2E152-2054-4284-9DAC-67FEC30DF399@jcrosoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 4:00 PM, Zhang, Yang Z <yang.z.zhang@intel.com> wrote:
->> @@ -5812,13 +5813,18 @@ static __init int hardware_setup(void)
->>                                 (unsigned long
->> *)__get_free_page(GFP_KERNEL);
->>         if (!vmx_msr_bitmap_longmode_x2apic)
->>                 goto out4;
->> +
->> +       vmx_msr_bitmap_nested = (unsigned long
->> *)__get_free_page(GFP_KERNEL);
->> +       if (!vmx_msr_bitmap_nested)
->> +               goto out5;
->> +
->
-> Since the nested virtualization is off by default. It's better to allocate the page
-> only when nested is true. Maybe adding the following check is better:
->
-> if (nested) {
->         vmx_msr_bitmap_nested = (unsigned long *)__get_free_page(GFP_KERNEL);
->         if (!vmx_msr_bitmap_nested)
->                 goto out5;
-> }
+On Wed 2015-01-28 16:06:17, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> 
+> > On Jan 28, 2015, at 3:19 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > 
+> > Hi!
+> > 
+> >>> In other words, what prevents someone from creating, say, a custom 
+> >>> minimal Barebox version that sits on top of the existing N900 
+> >>> bootloader?  Wouldn't that provide a much better user experience?
+> >> 
+> >> I do agree with Nicolas
+> >> 
+> >> If I can get my hand on a phone I’ll put barebox on it
+> > 
+> > Grab it in the nearest "second hand cellphones" shop, and have fun! It
+> > should be less than $70.
+> 
+> will see if I can found one in Shanghai at the second hand market
+> 
+> Does it exist a qemu emulation?
 
-Agreed. Will do.
+Yes, linaro-qemu supports it. (But people are trying to break it
+"because it is not real hardware so it can be fixed").
 
->
-> ...snip...
->
->> +
->> +/*
->> + * Merge L0's and L1's MSR bitmap, return false to indicate that
->> + * we do not use the hardware.
->> + */
->> +static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
->> +                                              struct vmcs12
->> *vmcs12) {
->> +       return false;
->> +}
->> +
->
-> The following patches have nothing to do with the MSR control. Why leave the function empty here?
->
-
-No. In patch "Enable nested virtualize x2apic mode", we will return
-false if L1 disabled virt_x2apic_mode, then the hardware MSR-bitmap
-control is disabled. This is faster than rebuilding the
-vmx_msr_bitmap_nested.
-This function returns false here to indicate that we do not use the
-hardware. Since It is not only virtualize x2apic mode using this,
-other features may use this either. I think it isn't suitable to
-introduce this function in other patches.
-
-
-> Best regards,
-> Yang
->
->
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
