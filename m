@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762429AbbA2Ciu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:38:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47060 "EHLO
+	id S1763666AbbA2DJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:09:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46980 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762405AbbA2Ciq (ORCPT
+	with ESMTP id S965103AbbA2Cg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:46 -0500
+	Wed, 28 Jan 2015 21:36:57 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 131/139] rtlwifi: rtl8192ce: Set fw_ready flag
-Date: Wed, 28 Jan 2015 14:21:14 -0800
-Message-Id: <1422483682-15393-132-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 132/139] iscsi-target: Fail connection on short sendmsg writes
+Date: Wed, 28 Jan 2015 14:21:15 -0800
+Message-Id: <1422483682-15393-133-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,39 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 9a1dce3a059111a7289680f4b8c0ec4f8736b6ee upstream.
+commit 6bf6ca7515c1df06f5c03737537f5e0eb191e29e upstream.
 
-The setting of this flag was missed in previous modifications.
+This patch changes iscsit_do_tx_data() to fail on short writes
+when kernel_sendmsg() returns a value different than requested
+transfer length, returning -EPIPE and thus causing a connection
+reset to occur.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This avoids a potential bug in the original code where a short
+write would result in kernel_sendmsg() being called again with
+the original iovec base + length.
+
+In practice this has not been an issue because iscsit_do_tx_data()
+is only used for transferring 48 byte headers + 4 byte digests,
+along with seldom used control payloads from NOPIN + TEXT_RSP +
+REJECT with less than 32k of data.
+
+So following Al's audit of iovec consumers, go ahead and fail
+the connection on short writes for now, and remove the bogus
+logic ahead of his proper upstream fix.
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/target/iscsi/iscsi_target_util.c | 26 +++++++++++---------------
+ 1 file changed, 11 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-index 2eb0b38..24a80db 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -951,6 +951,7 @@ int rtl92ce_hw_init(struct ieee80211_hw *hw)
- 	local_save_flags(flags);
- 	local_irq_enable();
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+index ffa0eba3..09e3b0b 100644
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -1357,15 +1357,15 @@ static int iscsit_do_tx_data(
+ 	struct iscsi_conn *conn,
+ 	struct iscsi_data_count *count)
+ {
+-	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
++	int ret, iov_len;
+ 	struct kvec *iov_p;
+ 	struct msghdr msg;
  
-+	rtlhal->fw_ready = false;
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 	rtstatus = _rtl92ce_init_mac(hw);
- 	if (!rtstatus) {
-@@ -967,6 +968,7 @@ int rtl92ce_hw_init(struct ieee80211_hw *hw)
- 		goto exit;
+ 	if (!conn || !conn->sock || !conn->conn_ops)
+ 		return -1;
+ 
+-	if (data <= 0) {
+-		pr_err("Data length is: %d\n", data);
++	if (count->data_length <= 0) {
++		pr_err("Data length is: %d\n", count->data_length);
+ 		return -1;
  	}
  
-+	rtlhal->fw_ready = true;
- 	rtlhal->last_hmeboxnum = 0;
- 	rtl92c_phy_mac_config(hw);
- 	/* because last function modify RCR, so we update
+@@ -1374,20 +1374,16 @@ static int iscsit_do_tx_data(
+ 	iov_p = count->iov;
+ 	iov_len = count->iov_count;
+ 
+-	while (total_tx < data) {
+-		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
+-					(data - total_tx));
+-		if (tx_loop <= 0) {
+-			pr_debug("tx_loop: %d total_tx %d\n",
+-				tx_loop, total_tx);
+-			return tx_loop;
+-		}
+-		total_tx += tx_loop;
+-		pr_debug("tx_loop: %d, total_tx: %d, data: %d\n",
+-					tx_loop, total_tx, data);
++	ret = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
++			     count->data_length);
++	if (ret != count->data_length) {
++		pr_err("Unexpected ret: %d send data %d\n",
++		       ret, count->data_length);
++		return -EPIPE;
+ 	}
++	pr_debug("ret: %d, sent data: %d\n", ret, count->data_length);
+ 
+-	return total_tx;
++	return ret;
+ }
+ 
+ int rx_data(
 -- 
 1.9.1
 
