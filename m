@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933691AbbA1BnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:43:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41722 "EHLO
+	id S933676AbbA1BnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:43:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933375AbbA1Bij (ORCPT
+	with ESMTP id S933380AbbA1Bij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 69/77] memcg, vmscan: Fix forced scan of anonymous pages
-Date: Tue, 27 Jan 2015 17:27:47 -0800
-Message-Id: <20150128012748.035041623@linuxfoundation.org>
+Subject: [PATCH 3.14 70/77] mm: pagemap: avoid unnecessary overhead when tracepoints are deactivated
+Date: Tue, 27 Jan 2015 17:27:48 -0800
+Message-Id: <20150128012748.063401609@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -32,90 +30,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Marchand <jmarchan@redhat.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 2ab051e11bfa3cbb7b24177f3d6aaed10a0d743e upstream.
+commit 24b7e5819ad5cbef2b7c7376510862aa8319d240 upstream.
 
-When memory cgoups are enabled, the code that decides to force to scan
-anonymous pages in get_scan_count() compares global values (free,
-high_watermark) to a value that is restricted to a memory cgroup (file).
-It make the code over-eager to force anon scan.
+This was formerly the series "Improve sequential read throughput" which
+noted some major differences in performance of tiobench since 3.0.
+While there are a number of factors, two that dominated were the
+introduction of the fair zone allocation policy and changes to CFQ.
 
-For instance, it will force anon scan when scanning a memcg that is
-mainly populated by anonymous page, even when there is plenty of file
-pages to get rid of in others memcgs, even when swappiness == 0.  It
-breaks user's expectation about swappiness and hurts performance.
+The behaviour of fair zone allocation policy makes more sense than
+tiobench as a benchmark and CFQ defaults were not changed due to
+insufficient benchmarking.
 
-This patch makes sure that forced anon scan only happens when there not
-enough file pages for the all zone, not just in one random memcg.
+This series is what's left.  It's one functional fix to the fair zone
+allocation policy when used on NUMA machines and a reduction of overhead
+in general.  tiobench was used for the comparison despite its flaws as
+an IO benchmark as in this case we are primarily interested in the
+overhead of page allocator and page reclaim activity.
 
-[hannes@cmpxchg.org: cleanups]
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
+On UMA, it makes little difference to overhead
+
+          3.16.0-rc3   3.16.0-rc3
+             vanilla lowercost-v5
+User          383.61      386.77
+System        403.83      401.74
+Elapsed      5411.50     5413.11
+
+On a 4-socket NUMA machine it's a bit more noticable
+
+          3.16.0-rc3   3.16.0-rc3
+             vanilla lowercost-v5
+User          746.94      802.00
+System      65336.22    40852.33
+Elapsed     27553.52    27368.46
+
+This patch (of 6):
+
+The LRU insertion and activate tracepoints take PFN as a parameter
+forcing the overhead to the caller.  Move the overhead to the tracepoint
+fast-assign method to ensure the cost is only incurred when the
+tracepoint is active.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- mm/vmscan.c |   23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1847,7 +1847,7 @@ static void get_scan_count(struct lruvec
- 	struct zone *zone = lruvec_zone(lruvec);
- 	unsigned long anon_prio, file_prio;
- 	enum scan_balance scan_balance;
--	unsigned long anon, file, free;
-+	unsigned long anon, file;
- 	bool force_scan = false;
- 	unsigned long ap, fp;
- 	enum lru_list lru;
-@@ -1895,11 +1895,6 @@ static void get_scan_count(struct lruvec
- 		goto out;
- 	}
+---
+ include/trace/events/pagemap.h |   16 +++++++---------
+ mm/swap.c                      |    4 ++--
+ 2 files changed, 9 insertions(+), 11 deletions(-)
+
+--- a/include/trace/events/pagemap.h
++++ b/include/trace/events/pagemap.h
+@@ -28,12 +28,10 @@ TRACE_EVENT(mm_lru_insertion,
  
--	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
--		get_lru_size(lruvec, LRU_INACTIVE_ANON);
--	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
--		get_lru_size(lruvec, LRU_INACTIVE_FILE);
--
- 	/*
- 	 * If it's foreseeable that reclaiming the file cache won't be
- 	 * enough to get the zone back into a desirable shape, we have
-@@ -1907,8 +1902,14 @@ static void get_scan_count(struct lruvec
- 	 * thrashing - remaining file pages alone.
- 	 */
- 	if (global_reclaim(sc)) {
--		free = zone_page_state(zone, NR_FREE_PAGES);
--		if (unlikely(file + free <= high_wmark_pages(zone))) {
-+		unsigned long zonefile;
-+		unsigned long zonefree;
-+
-+		zonefree = zone_page_state(zone, NR_FREE_PAGES);
-+		zonefile = zone_page_state(zone, NR_ACTIVE_FILE) +
-+			   zone_page_state(zone, NR_INACTIVE_FILE);
-+
-+		if (unlikely(zonefile + zonefree <= high_wmark_pages(zone))) {
- 			scan_balance = SCAN_ANON;
- 			goto out;
- 		}
-@@ -1943,6 +1944,12 @@ static void get_scan_count(struct lruvec
- 	 *
- 	 * anon in [0], file in [1]
- 	 */
-+
-+	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
-+		get_lru_size(lruvec, LRU_INACTIVE_ANON);
-+	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
-+		get_lru_size(lruvec, LRU_INACTIVE_FILE);
-+
- 	spin_lock_irq(&zone->lru_lock);
- 	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
- 		reclaim_stat->recent_scanned[0] /= 2;
+ 	TP_PROTO(
+ 		struct page *page,
+-		unsigned long pfn,
+-		int lru,
+-		unsigned long flags
++		int lru
+ 	),
+ 
+-	TP_ARGS(page, pfn, lru, flags),
++	TP_ARGS(page, lru),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(struct page *,	page	)
+@@ -44,9 +42,9 @@ TRACE_EVENT(mm_lru_insertion,
+ 
+ 	TP_fast_assign(
+ 		__entry->page	= page;
+-		__entry->pfn	= pfn;
++		__entry->pfn	= page_to_pfn(page);
+ 		__entry->lru	= lru;
+-		__entry->flags	= flags;
++		__entry->flags	= trace_pagemap_flags(page);
+ 	),
+ 
+ 	/* Flag format is based on page-types.c formatting for pagemap */
+@@ -64,9 +62,9 @@ TRACE_EVENT(mm_lru_insertion,
+ 
+ TRACE_EVENT(mm_lru_activate,
+ 
+-	TP_PROTO(struct page *page, unsigned long pfn),
++	TP_PROTO(struct page *page),
+ 
+-	TP_ARGS(page, pfn),
++	TP_ARGS(page),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(struct page *,	page	)
+@@ -75,7 +73,7 @@ TRACE_EVENT(mm_lru_activate,
+ 
+ 	TP_fast_assign(
+ 		__entry->page	= page;
+-		__entry->pfn	= pfn;
++		__entry->pfn	= page_to_pfn(page);
+ 	),
+ 
+ 	/* Flag format is based on page-types.c formatting for pagemap */
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -469,7 +469,7 @@ static void __activate_page(struct page
+ 		SetPageActive(page);
+ 		lru += LRU_ACTIVE;
+ 		add_page_to_lru_list(page, lruvec, lru);
+-		trace_mm_lru_activate(page, page_to_pfn(page));
++		trace_mm_lru_activate(page);
+ 
+ 		__count_vm_event(PGACTIVATE);
+ 		update_page_reclaim_stat(lruvec, file, 1);
+@@ -962,7 +962,7 @@ static void __pagevec_lru_add_fn(struct
+ 	SetPageLRU(page);
+ 	add_page_to_lru_list(page, lruvec, lru);
+ 	update_page_reclaim_stat(lruvec, file, active);
+-	trace_mm_lru_insertion(page, page_to_pfn(page), lru, trace_pagemap_flags(page));
++	trace_mm_lru_insertion(page, lru);
+ }
+ 
+ /*
 
 
