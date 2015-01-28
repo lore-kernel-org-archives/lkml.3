@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660AbbA1UXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:23:07 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64038 "EHLO mga02.intel.com"
+	id S1756183AbbA1UVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:21:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:65013 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753645AbbA1UXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:23:01 -0500
+	id S1756133AbbA1UVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:21:49 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.09,480,1418112000"; 
-   d="scan'208";a="677269358"
+   d="scan'208";a="677269392"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Thomas Gleixner <tglx@linutronix.de>,
         Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
         Borislav Petkov <bp@alien8.de>, Lv Zheng <lv.zheng@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
+        Len Brown <lenb@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch v2 20/22] x86/PCI: Refine the way to release PCI IRQ resources
-Date: Wed, 28 Jan 2015 18:57:38 +0800
-Message-Id: <1422442660-455-21-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [Patch v2 21/22] ACPI: Add interfaces to parse IOAPIC ID for IOAPIC hotplug
+Date: Wed, 28 Jan 2015 18:57:39 +0800
+Message-Id: <1422442660-455-22-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1422442660-455-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1422442660-455-1-git-send-email-jiang.liu@linux.intel.com>
@@ -29,184 +33,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some PCI device drivers assume that pci_dev->irq won't change after
-calling pci_disable_device() and pci_enable_device() during suspend and
-resume.
+From: Yinghai Lu <yinghai@kernel.org>
 
-Commit c03b3b0738a56cf283b0d05256988d5e3c8bd719 ("x86, irq, mpparse:
-Release IOAPIC pin when PCI device is disabled") frees PCI IRQ
-resources when pci_disable_device() is called and reallocate IRQ
-resources when pci_enable_device() is called again. This breaks
-above assumption. So commit 3eec595235c1 ("x86, irq, PCI: Keep IRQ
-assignment for PCI devices during suspend/hibernation") and
-9eabc99a635a ("x86, irq, PCI: Keep IRQ assignment for runtime power
-management") fix the issue by avoiding freeing/reallocating IRQ
-resources during PCI device suspend/resume. They achieve this by
-checking dev.power.is_prepared and dev.power.runtime_status.
-PM maintainer, Rafael, then pointed out that it's really an ugly fix
-which leaking PM internal state information to IRQ subsystem.
+We need to parse APIC ID for IOAPIC registration for IOAPIC hotplug.
+ACPI _MAT method and MADT table are used to figure out IOAPIC ID, just
+like parsing CPU APIC ID for CPU hotplug.
 
-Recently David Vrabel <david.vrabel@citrix.com> also reports an
-regression in pciback driver caused by commit cffe0a2b5a34 ("x86, irq:
-Keep balance of IOAPIC pin reference count"). Please refer to:
-http://lkml.org/lkml/2015/1/14/546
+[ tglx: Fixed docbook comment ]
 
-So this patch refine the way to release PCI IRQ resources. Instead of
-releasing PCI IRQ resources in pci_disable_device()/
-pcibios_disable_device(), we now release it at driver unbinding
-notification BUS_NOTIFY_UNBOUND_DRIVER. In other word, we only release
-PCI IRQ resources when there's no driver bound to the PCI device, and
-it keeps the assumption that pci_dev->irq won't through multiple
-invocation of pci_enable_device()/pci_disable_device().
-
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Len Brown <lenb@kernel.org>
+Link: http://lkml.kernel.org/r/1414387308-27148-8-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/pci_x86.h |    2 --
- arch/x86/pci/common.c          |   30 ++++++++++++++++++++++++++++--
- arch/x86/pci/intel_mid_pci.c   |    4 ++--
- arch/x86/pci/irq.c             |   15 +--------------
- drivers/acpi/pci_irq.c         |    9 +--------
- 5 files changed, 32 insertions(+), 28 deletions(-)
+ drivers/acpi/processor_core.c |  123 ++++++++++++++++++++++++++++++++++++++---
+ include/linux/acpi.h          |    4 ++
+ 2 files changed, 118 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
-index 164e3f8d3c3d..fa1195dae425 100644
---- a/arch/x86/include/asm/pci_x86.h
-+++ b/arch/x86/include/asm/pci_x86.h
-@@ -93,8 +93,6 @@ extern raw_spinlock_t pci_config_lock;
- extern int (*pcibios_enable_irq)(struct pci_dev *dev);
- extern void (*pcibios_disable_irq)(struct pci_dev *dev);
+diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+index 02e48394276c..7962651cdbd4 100644
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -4,6 +4,10 @@
+  *
+  *	Alex Chiang <achiang@hp.com>
+  *	- Unified x86/ia64 implementations
++ *
++ * I/O APIC hotplug support
++ *	Yinghai Lu <yinghai@kernel.org>
++ *	Jiang Liu <jiang.liu@intel.com>
+  */
+ #include <linux/export.h>
+ #include <linux/acpi.h>
+@@ -12,6 +16,21 @@
+ #define _COMPONENT		ACPI_PROCESSOR_COMPONENT
+ ACPI_MODULE_NAME("processor_core");
  
--extern bool mp_should_keep_irq(struct device *dev);
--
- struct pci_raw_ops {
- 	int (*read)(unsigned int domain, unsigned int bus, unsigned int devfn,
- 						int reg, int len, u32 *val);
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 7b20bccf3648..99f15ed19f38 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -497,6 +497,25 @@ void __init pcibios_set_cache_line_size(void)
- 	}
- }
- 
-+static int pci_irq_notifier(struct notifier_block *nb, unsigned long action,
-+			    void *data)
++static struct acpi_table_madt *get_madt_table(void)
 +{
-+	struct pci_dev *dev = to_pci_dev(data);
++	static struct acpi_table_madt *madt;
++	static int read_madt;
 +
-+	if (action != BUS_NOTIFY_UNBOUND_DRIVER)
-+		return NOTIFY_DONE;
++	if (!read_madt) {
++		if (ACPI_FAILURE(acpi_get_table(ACPI_SIG_MADT, 0,
++					(struct acpi_table_header **)&madt)))
++			madt = NULL;
++		read_madt++;
++	}
 +
-+	if (pcibios_disable_irq)
-+		pcibios_disable_irq(dev);
-+
-+	return NOTIFY_OK;
++	return madt;
 +}
 +
-+static struct notifier_block pci_irq_nb = {
-+	.notifier_call = pci_irq_notifier,
-+	.priority = INT_MIN,
-+};
-+
- int __init pcibios_init(void)
+ static int map_lapic_id(struct acpi_subtable_header *entry,
+ 		 u32 acpi_id, int *apic_id)
  {
- 	if (!raw_pci_ops) {
-@@ -509,6 +528,9 @@ int __init pcibios_init(void)
- 
- 	if (pci_bf_sort >= pci_force_bf)
- 		pci_sort_breadthfirst();
-+
-+	bus_register_notifier(&pci_bus_type, &pci_irq_nb);
-+
- 	return 0;
- }
- 
-@@ -669,8 +691,12 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
- 
- void pcibios_disable_device (struct pci_dev *dev)
+@@ -67,17 +86,10 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
+ static int map_madt_entry(int type, u32 acpi_id)
  {
--	if (!pci_dev_msi_enabled(dev) && pcibios_disable_irq)
--		pcibios_disable_irq(dev);
-+	/*
-+	 * Some device drivers assume dev->irq won't change after calling
-+	 * pci_disable_device(). So delay releasing of IRQ resource to driver
-+	 * unbinding time. Otherwise it will break PM subsystem and drivers
-+	 * like xen-pciback etc.
-+	 */
- }
+ 	unsigned long madt_end, entry;
+-	static struct acpi_table_madt *madt;
+-	static int read_madt;
+ 	int phys_id = -1;	/* CPU hardware ID */
++	struct acpi_table_madt *madt;
  
- int pci_ext_cfg_avail(void)
-diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
-index 44b9271580b5..95c2471f6819 100644
---- a/arch/x86/pci/intel_mid_pci.c
-+++ b/arch/x86/pci/intel_mid_pci.c
-@@ -234,10 +234,10 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
- 
- static void intel_mid_pci_irq_disable(struct pci_dev *dev)
- {
--	if (!mp_should_keep_irq(&dev->dev) && dev->irq_managed &&
--	    dev->irq > 0) {
-+	if (dev->irq_managed && dev->irq > 0) {
- 		mp_unmap_irq(dev->irq);
- 		dev->irq_managed = 0;
-+		dev->irq = 0;
- 	}
- }
- 
-diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
-index 5dc6ca5e1741..e71b3dbd87b8 100644
---- a/arch/x86/pci/irq.c
-+++ b/arch/x86/pci/irq.c
-@@ -1256,22 +1256,9 @@ static int pirq_enable_irq(struct pci_dev *dev)
- 	return 0;
- }
- 
--bool mp_should_keep_irq(struct device *dev)
--{
--	if (dev->power.is_prepared)
--		return true;
--#ifdef CONFIG_PM
--	if (dev->power.runtime_status == RPM_SUSPENDING)
--		return true;
--#endif
+-	if (!read_madt) {
+-		if (ACPI_FAILURE(acpi_get_table(ACPI_SIG_MADT, 0,
+-					(struct acpi_table_header **)&madt)))
+-			madt = NULL;
+-		read_madt++;
+-	}
 -
--	return false;
--}
--
- static void pirq_disable_irq(struct pci_dev *dev)
- {
--	if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
--	    dev->irq_managed && dev->irq) {
-+	if (io_apic_assign_pci_irqs && dev->irq_managed && dev->irq) {
- 		mp_unmap_irq(dev->irq);
- 		dev->irq = 0;
- 		dev->irq_managed = 0;
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index b1def411c0b8..e7f718d6918a 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -485,14 +485,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
- 	if (!pin || !dev->irq_managed || dev->irq <= 0)
- 		return;
++	madt = get_madt_table();
+ 	if (!madt)
+ 		return phys_id;
  
--	/* Keep IOAPIC pin configuration when suspending */
--	if (dev->dev.power.is_prepared)
--		return;
--#ifdef	CONFIG_PM
--	if (dev->dev.power.runtime_status == RPM_SUSPENDING)
--		return;
--#endif
--
- 	entry = acpi_pci_irq_lookup(dev, pin);
- 	if (!entry)
- 		return;
-@@ -513,5 +505,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
- 	if (gsi >= 0) {
- 		acpi_unregister_gsi(gsi);
- 		dev->irq_managed = 0;
-+		dev->irq = 0;
- 	}
+@@ -203,3 +215,96 @@ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
+ 	return acpi_map_cpuid(phys_id, acpi_id);
  }
+ EXPORT_SYMBOL_GPL(acpi_get_cpuid);
++
++#ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
++static int get_ioapic_id(struct acpi_subtable_header *entry, u32 gsi_base,
++			 u64 *phys_addr, int *ioapic_id)
++{
++	struct acpi_madt_io_apic *ioapic = (struct acpi_madt_io_apic *)entry;
++
++	if (ioapic->global_irq_base != gsi_base)
++		return 0;
++
++	*phys_addr = ioapic->address;
++	*ioapic_id = ioapic->id;
++	return 1;
++}
++
++static int parse_madt_ioapic_entry(u32 gsi_base, u64 *phys_addr)
++{
++	struct acpi_subtable_header *hdr;
++	unsigned long madt_end, entry;
++	struct acpi_table_madt *madt;
++	int apic_id = -1;
++
++	madt = get_madt_table();
++	if (!madt)
++		return apic_id;
++
++	entry = (unsigned long)madt;
++	madt_end = entry + madt->header.length;
++
++	/* Parse all entries looking for a match. */
++	entry += sizeof(struct acpi_table_madt);
++	while (entry + sizeof(struct acpi_subtable_header) < madt_end) {
++		hdr = (struct acpi_subtable_header *)entry;
++		if (hdr->type == ACPI_MADT_TYPE_IO_APIC &&
++		    get_ioapic_id(hdr, gsi_base, phys_addr, &apic_id))
++			break;
++		else
++			entry += hdr->length;
++	}
++
++	return apic_id;
++}
++
++static int parse_mat_ioapic_entry(acpi_handle handle, u32 gsi_base,
++				  u64 *phys_addr)
++{
++	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
++	struct acpi_subtable_header *header;
++	union acpi_object *obj;
++	int apic_id = -1;
++
++	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_MAT", NULL, &buffer)))
++		goto exit;
++
++	if (!buffer.length || !buffer.pointer)
++		goto exit;
++
++	obj = buffer.pointer;
++	if (obj->type != ACPI_TYPE_BUFFER ||
++	    obj->buffer.length < sizeof(struct acpi_subtable_header))
++		goto exit;
++
++	header = (struct acpi_subtable_header *)obj->buffer.pointer;
++	if (header->type == ACPI_MADT_TYPE_IO_APIC)
++		get_ioapic_id(header, gsi_base, phys_addr, &apic_id);
++
++exit:
++	kfree(buffer.pointer);
++	return apic_id;
++}
++
++/**
++ * acpi_get_ioapic_id - Get IOAPIC ID and physical address matching @gsi_base
++ * @handle:	ACPI object for IOAPIC device
++ * @gsi_base:	GSI base to match with
++ * @phys_addr:	Pointer to store physical address of matching IOAPIC record
++ *
++ * Walk resources returned by ACPI_MAT method, then ACPI MADT table, to search
++ * for an ACPI IOAPIC record matching @gsi_base.
++ * Return IOAPIC id and store physical address in @phys_addr if found a match,
++ * otherwise return <0.
++ */
++int acpi_get_ioapic_id(acpi_handle handle, u32 gsi_base, u64 *phys_addr)
++{
++	int apic_id;
++
++	apic_id = parse_mat_ioapic_entry(handle, gsi_base, phys_addr);
++	if (apic_id == -1)
++		apic_id = parse_madt_ioapic_entry(gsi_base, phys_addr);
++
++	return apic_id;
++}
++#endif /* CONFIG_ACPI_HOTPLUG_IOAPIC */
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index e53822148b6a..24c7aa8b1d20 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -152,6 +152,10 @@ int acpi_map_cpu(acpi_handle handle, int physid, int *pcpu);
+ int acpi_unmap_cpu(int cpu);
+ #endif /* CONFIG_ACPI_HOTPLUG_CPU */
+ 
++#ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
++int acpi_get_ioapic_id(acpi_handle handle, u32 gsi_base, u64 *phys_addr);
++#endif
++
+ int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base);
+ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base);
+ int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base);
 -- 
 1.7.10.4
 
