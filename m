@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310AbbA2B2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:28:15 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:54274 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035AbbA2B2L (ORCPT
+	id S1752968AbbA2BLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:11:25 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:53721 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212AbbA2BLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:28:11 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincenzo Scotti <vinc94@gmail.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Roberta Dobrescu <roberta.dobrescu@gmail.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Ebru Akagunduz <ebru.akagunduz@gmail.com>,
-        Magnus Damm <damm+renesas@opensource.se>, devel@driverdev.osuosl.org,
+	Wed, 28 Jan 2015 20:11:18 -0500
+Date: Thu, 29 Jan 2015 00:43:17 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Vitor Braga <vitorpybraga@gmail.com>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Lubomir Rintel <lkundrak@v3.sk>,
+        Thomas Gummerer <t.gummerer@gmail.com>,
+        Brian Vandre <bvandre@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: emxx_udc: emxx_udc: Removed variables that is never used
-Date: Wed, 28 Jan 2015 23:42:40 +0100
-Message-Id: <1422484960-10266-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+Subject: Re: [PATCH] staging: xgifb: XGI_main_26: Change variables that is
+ never used
+Message-ID: <20150128224317.GC591@fuloong-minipc.musicnaut.iki.fi>
+References: <1422481087-30938-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422481087-30938-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variable ar assigned a value that is never used.
-I have also removed all the code that thereby serves no purpose.
+Hi,
 
-This was found using a static code analysis program called cppcheck
+On Wed, Jan 28, 2015 at 10:38:07PM +0100, Rickard Strandqvist wrote:
+> Variable ar assigned a value that is never used.
+> Instead use the struct variable of the same name.
+> 
+> This was found using a static code analysis program called cppcheck
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/staging/xgifb/XGI_main_26.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
+> index 709d49e..ecfdf34 100644
+> --- a/drivers/staging/xgifb/XGI_main_26.c
+> +++ b/drivers/staging/xgifb/XGI_main_26.c
+> @@ -1233,7 +1233,7 @@ static int XGIfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+>  	unsigned int vtotal = 0;
+>  	unsigned int drate = 0, hrate = 0;
+>  	int found_mode = 0;
+> -	int refresh_rate, search_idx;
+> +	int search_idx;
+>  
+>  	if ((var->vmode & FB_VMODE_MASK) == FB_VMODE_NONINTERLACED) {
+>  		vtotal = var->upper_margin + var->yres + var->lower_margin
+> @@ -1271,7 +1271,7 @@ static int XGIfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+>  
+>  	/* Calculation wrong for 1024x600 - force it to 60Hz */
+>  	if ((var->xres == 1024) && (var->yres == 600))
+> -		refresh_rate = 60;
+> +		xgifb_info->refresh_rate = 60;
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/emxx_udc/emxx_udc.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+You are changing behaviour here. Did you test it, is it fixing something?
+Otherwise you could just delete the whole if block...
 
-diff --git a/drivers/staging/emxx_udc/emxx_udc.c b/drivers/staging/emxx_udc/emxx_udc.c
-index eb178fc..b916fab 100644
---- a/drivers/staging/emxx_udc/emxx_udc.c
-+++ b/drivers/staging/emxx_udc/emxx_udc.c
-@@ -2974,10 +2974,10 @@ static int nbu2ss_ep_fifo_status(struct usb_ep *_ep)
- 	spin_lock_irqsave(&udc->lock, flags);
- 
- 	if (ep->epnum == 0) {
--		data = _nbu2ss_readl(&preg->EP0_LENGTH) & EP0_LDATA;
-+		_nbu2ss_readl(&preg->EP0_LENGTH) & EP0_LDATA;
- 
- 	} else {
--		data = _nbu2ss_readl(&preg->EP_REGS[ep->epnum-1].EP_LEN_DCNT)
-+		_nbu2ss_readl(&preg->EP_REGS[ep->epnum-1].EP_LEN_DCNT)
- 			& EPn_LDATA;
- 	}
- 
-@@ -3264,12 +3264,11 @@ static void __init nbu2ss_drv_set_ep_info(
- 	if (isdigit(name[2])) {
- 
- 		long	num;
--		int	res;
- 		char	tempbuf[2];
- 
- 		tempbuf[0] = name[2];
- 		tempbuf[1] = '\0';
--		res = kstrtol(tempbuf, 16, &num);
-+		kstrtol(tempbuf, 16, &num);
- 
- 		if (num == 0)
- 			ep->ep.maxpacket = EP0_PACKETSIZE;
--- 
-1.7.10.4
-
+A.
