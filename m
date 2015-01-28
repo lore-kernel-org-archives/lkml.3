@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933756AbbA1Bo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:44:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41752 "EHLO
+	id S933741AbbA1Bo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:44:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933366AbbA1Bii (ORCPT
+	with ESMTP id S933369AbbA1Bii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>,
-        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Richard Yao <ryao@gentoo.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3.14 67/77] mm: make copy_pte_range static again
-Date: Tue, 27 Jan 2015 17:27:45 -0800
-Message-Id: <20150128012747.976302843@linuxfoundation.org>
+Subject: [PATCH 3.14 68/77] vmalloc: use rcu list iterator to reduce vmap_area_lock contention
+Date: Tue, 27 Jan 2015 17:27:46 -0800
+Message-Id: <20150128012748.004727776@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -32,50 +35,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Marchand <jmarchan@redhat.com>
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-commit 21bda264f4243f61dfcc485174055f12ad0530b4 upstream.
+commit 474750aba88817c53f39424e5567b8e4acc4b39b upstream.
 
-Commit 71e3aac0724f ("thp: transparent hugepage core") adds
-copy_pte_range prototype to huge_mm.h.  I'm not sure why (or if) this
-function have been used outside of memory.c, but it currently isn't.
-This patch makes copy_pte_range() static again.
+Richard Yao reported a month ago that his system have a trouble with
+vmap_area_lock contention during performance analysis by /proc/meminfo.
+Andrew asked why his analysis checks /proc/meminfo stressfully, but he
+didn't answer it.
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
+  https://lkml.org/lkml/2014/4/10/416
+
+Although I'm not sure that this is right usage or not, there is a
+solution reducing vmap_area_lock contention with no side-effect.  That
+is just to use rcu list iterator in get_vmalloc_info().
+
+rcu can be used in this function because all RCU protocol is already
+respected by writers, since Nick Piggin commit db64fe02258f1 ("mm:
+rewrite vmap layer") back in linux-2.6.28
+
+Specifically :
+   insertions use list_add_rcu(),
+   deletions use list_del_rcu() and kfree_rcu().
+
+Note the rb tree is not used from rcu reader (it would not be safe),
+only the vmap_area_list has full RCU protection.
+
+Note that __purge_vmap_area_lazy() already uses this rcu protection.
+
+        rcu_read_lock();
+        list_for_each_entry_rcu(va, &vmap_area_list, list) {
+                if (va->flags & VM_LAZY_FREE) {
+                        if (va->va_start < *start)
+                                *start = va->va_start;
+                        if (va->va_end > *end)
+                                *end = va->va_end;
+                        nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
+                        list_add_tail(&va->purge_list, &valist);
+                        va->flags |= VM_LAZY_FREEING;
+                        va->flags &= ~VM_LAZY_FREE;
+                }
+        }
+        rcu_read_unlock();
+
+Peter:
+
+: While rcu list traversal over the vmap_area_list is safe, this may
+: arrive at different results than the spinlocked version. The rcu list
+: traversal version will not be a 'snapshot' of a single, valid instant
+: of the entire vmap_area_list, but rather a potential amalgam of
+: different list states.
+
+Joonsoo:
+
+: Yes, you are right, but I don't think that we should be strict here.
+: Meminfo is already not a 'snapshot' at specific time.  While we try to get
+: certain stats, the other stats can change.  And, although we may arrive at
+: different results than the spinlocked version, the difference would not be
+: large and would not make serious side-effect.
+
+[edumazet@google.com: add more commit description]
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Reported-by: Richard Yao <ryao@gentoo.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andi Kleen <andi@firstfloor.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/huge_mm.h |    4 ----
- mm/memory.c             |    2 +-
- 2 files changed, 1 insertion(+), 5 deletions(-)
+ mm/vmalloc.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -93,10 +93,6 @@ extern bool is_vma_temporary_stack(struc
- #endif /* CONFIG_DEBUG_VM */
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2681,14 +2681,14 @@ void get_vmalloc_info(struct vmalloc_inf
  
- extern unsigned long transparent_hugepage_flags;
--extern int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
--			  pmd_t *dst_pmd, pmd_t *src_pmd,
--			  struct vm_area_struct *vma,
--			  unsigned long addr, unsigned long end);
- extern int split_huge_page_to_list(struct page *page, struct list_head *list);
- static inline int split_huge_page(struct page *page)
- {
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -878,7 +878,7 @@ out_set_pte:
- 	return 0;
+ 	prev_end = VMALLOC_START;
+ 
+-	spin_lock(&vmap_area_lock);
++	rcu_read_lock();
+ 
+ 	if (list_empty(&vmap_area_list)) {
+ 		vmi->largest_chunk = VMALLOC_TOTAL;
+ 		goto out;
+ 	}
+ 
+-	list_for_each_entry(va, &vmap_area_list, list) {
++	list_for_each_entry_rcu(va, &vmap_area_list, list) {
+ 		unsigned long addr = va->va_start;
+ 
+ 		/*
+@@ -2715,7 +2715,7 @@ void get_vmalloc_info(struct vmalloc_inf
+ 		vmi->largest_chunk = VMALLOC_END - prev_end;
+ 
+ out:
+-	spin_unlock(&vmap_area_lock);
++	rcu_read_unlock();
  }
+ #endif
  
--int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
-+static int copy_pte_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		   pmd_t *dst_pmd, pmd_t *src_pmd, struct vm_area_struct *vma,
- 		   unsigned long addr, unsigned long end)
- {
 
 
