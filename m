@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979AbbA1VHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:07:41 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:52325 "EHLO
+	id S1756046AbbA2B5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:57:03 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:34980 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239AbbA1Uzu (ORCPT
+	with ESMTP id S1754293AbbA2Bzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:55:50 -0500
+	Wed, 28 Jan 2015 20:55:48 -0500
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
@@ -14,9 +14,9 @@ CC: Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         David Rientjes <rientjes@google.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
         <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm v2 1/3] slub: never fail to shrink cache
-Date: Wed, 28 Jan 2015 19:22:49 +0300
-Message-ID: <012683fc3a0f9fb20a288986fd63fe9f6d25e8ee.1422461573.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v2 2/3] slub: fix kmem_cache_shrink return value
+Date: Wed, 28 Jan 2015 19:22:50 +0300
+Message-ID: <7ee54d0d26f6c61e2ecf50300ee955610749b344.1422461573.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1422461573.git.vdavydov@parallels.com>
 References: <cover.1422461573.git.vdavydov@parallels.com>
@@ -26,143 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SLUB's version of __kmem_cache_shrink() not only removes empty slabs,
-but also tries to rearrange the partial lists to place slabs filled up
-most to the head to cope with fragmentation. To achieve that, it
-allocates a temporary array of lists used to sort slabs by the number of
-objects in use. If the allocation fails, the whole procedure is aborted.
-
-This is unacceptable for the kernel memory accounting extension of the
-memory cgroup, where we want to make sure that kmem_cache_shrink()
-successfully discarded empty slabs. Although the allocation failure is
-utterly unlikely with the current page allocator implementation, which
-retries GFP_KERNEL allocations of order <= 2 infinitely, it is better
-not to rely on that.
-
-This patch therefore makes __kmem_cache_shrink() allocate the array on
-stack instead of calling kmalloc, which may fail. The array size is
-chosen to be equal to 32, because most SLUB caches store not more than
-32 objects per slab page. Slab pages with <= 32 free objects are sorted
-using the array by the number of objects in use and promoted to the head
-of the partial list, while slab pages with > 32 free objects are left in
-the end of the list without any ordering imposed on them.
+It is supposed to return 0 if the cache has no remaining objects and 1
+otherwise, while currently it always returns 0. Fix it.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- mm/slub.c |   57 ++++++++++++++++++++++++++++++---------------------------
- 1 file changed, 30 insertions(+), 27 deletions(-)
+ mm/slub.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/mm/slub.c b/mm/slub.c
-index 1562955fe099..dbf9334b6a5c 100644
+index dbf9334b6a5c..63abe52c2951 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
-@@ -3358,11 +3358,12 @@ void kfree(const void *x)
- }
- EXPORT_SYMBOL(kfree);
- 
-+#define SHRINK_PROMOTE_MAX 32
-+
- /*
-- * kmem_cache_shrink removes empty slabs from the partial lists and sorts
-- * the remaining slabs by the number of items in use. The slabs with the
-- * most items in use come first. New allocations will then fill those up
-- * and thus they can be removed from the partial lists.
-+ * kmem_cache_shrink discards empty slabs and promotes the slabs filled
-+ * up most to the head of the partial lists. New allocations will then
-+ * fill those up and thus they can be removed from the partial lists.
-  *
-  * The slabs with the least items are placed last. This results in them
-  * being allocated from last increasing the chance that the last objects
-@@ -3375,51 +3376,56 @@ int __kmem_cache_shrink(struct kmem_cache *s)
- 	struct kmem_cache_node *n;
- 	struct page *page;
- 	struct page *t;
--	int objects = oo_objects(s->max);
--	struct list_head *slabs_by_inuse =
--		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
-+	LIST_HEAD(discard);
-+	struct list_head promote[SHRINK_PROMOTE_MAX];
+@@ -3379,6 +3379,7 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 	LIST_HEAD(discard);
+ 	struct list_head promote[SHRINK_PROMOTE_MAX];
  	unsigned long flags;
++	int ret = 0;
  
--	if (!slabs_by_inuse)
--		return -ENOMEM;
-+	for (i = 0; i < SHRINK_PROMOTE_MAX; i++)
-+		INIT_LIST_HEAD(promote + i);
+ 	for (i = 0; i < SHRINK_PROMOTE_MAX; i++)
+ 		INIT_LIST_HEAD(promote + i);
+@@ -3419,6 +3420,9 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 		for (i = SHRINK_PROMOTE_MAX - 1; i >= 0; i--)
+ 			list_splice_init(promote + i, &n->partial);
  
- 	flush_all(s);
- 	for_each_kmem_cache_node(s, node, n) {
- 		if (!n->nr_partial)
- 			continue;
- 
--		for (i = 0; i < objects; i++)
--			INIT_LIST_HEAD(slabs_by_inuse + i);
--
- 		spin_lock_irqsave(&n->list_lock, flags);
- 
- 		/*
--		 * Build lists indexed by the items in use in each slab.
-+		 * Build lists of slabs to discard or promote.
- 		 *
- 		 * Note that concurrent frees may occur while we hold the
- 		 * list_lock. page->inuse here is the upper limit.
- 		 */
- 		list_for_each_entry_safe(page, t, &n->partial, lru) {
--			list_move(&page->lru, slabs_by_inuse + page->inuse);
--			if (!page->inuse)
-+			int free = page->objects - page->inuse;
++		if (n->nr_partial || slabs_node(s, node))
++			ret = 1;
 +
-+			/* Do not reread page->inuse */
-+			barrier();
-+
-+			/* We do not keep full slabs on the list */
-+			BUG_ON(free <= 0);
-+
-+			if (free == page->objects) {
-+				list_move(&page->lru, &discard);
- 				n->nr_partial--;
-+			} else if (free <= SHRINK_PROMOTE_MAX)
-+				list_move(&page->lru, promote + free - 1);
- 		}
- 
- 		/*
--		 * Rebuild the partial list with the slabs filled up most
--		 * first and the least used slabs at the end.
-+		 * Promote the slabs filled up most to the head of the
-+		 * partial list.
- 		 */
--		for (i = objects - 1; i > 0; i--)
--			list_splice(slabs_by_inuse + i, n->partial.prev);
-+		for (i = SHRINK_PROMOTE_MAX - 1; i >= 0; i--)
-+			list_splice_init(promote + i, &n->partial);
- 
  		spin_unlock_irqrestore(&n->list_lock, flags);
  
  		/* Release empty slabs */
--		list_for_each_entry_safe(page, t, slabs_by_inuse, lru)
-+		list_for_each_entry_safe(page, t, &discard, lru)
+@@ -3426,7 +3430,7 @@ int __kmem_cache_shrink(struct kmem_cache *s)
  			discard_slab(s, page);
  	}
  
--	kfree(slabs_by_inuse);
- 	return 0;
+-	return 0;
++	return ret;
  }
  
-@@ -4682,12 +4688,9 @@ static ssize_t shrink_show(struct kmem_cache *s, char *buf)
- static ssize_t shrink_store(struct kmem_cache *s,
- 			const char *buf, size_t length)
- {
--	if (buf[0] == '1') {
--		int rc = kmem_cache_shrink(s);
--
--		if (rc)
--			return rc;
--	} else
-+	if (buf[0] == '1')
-+		kmem_cache_shrink(s);
-+	else
- 		return -EINVAL;
- 	return length;
- }
+ static int slab_mem_going_offline_callback(void *arg)
 -- 
 1.7.10.4
 
