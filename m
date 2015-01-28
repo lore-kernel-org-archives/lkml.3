@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296AbbA2I7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:59:44 -0500
+	id S1761213AbbA2KXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:23:41 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753965AbbA2I7j (ORCPT
+	by vger.kernel.org with ESMTP id S1752597AbbA2JAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:59:39 -0500
+	Thu, 29 Jan 2015 04:00:44 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
+        Kees Cook <keescook@chromium.org>,
         Herbert Xu <herbert@gondor.apana.org.au>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 168/176] crypto: include crypto- module prefix in template
-Date: Wed, 28 Jan 2015 15:29:58 +0100
-Message-Id: <d800d76ec786553088fdc8e4b03bacba29e85f78.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 169/176] crypto: add missing crypto module aliases
+Date: Wed, 28 Jan 2015 15:29:59 +0100
+Message-Id: <83279a01b02625618b09818f3207b104c60549be.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,269 +24,262 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <keescook@chromium.org>
+From: Mathias Krause <minipli@googlemail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4943ba16bbc2db05115707b3ff7b4874e9e3c560 upstream.
+commit 3e14dcf7cb80b34a1f38b55bc96f02d23fdaaaaf upstream.
 
-This adds the module loading prefix "crypto-" to the template lookup
-as well.
+Commit 5d26a105b5a7 ("crypto: prefix module autoloading with "crypto-"")
+changed the automatic module loading when requesting crypto algorithms
+to prefix all module requests with "crypto-". This requires all crypto
+modules to have a crypto specific module alias even if their file name
+would otherwise match the requested crypto algorithm.
 
-For example, attempting to load 'vfat(blowfish)' via AF_ALG now correctly
-includes the "crypto-" prefix at every level, correctly rejecting "vfat":
+Even though commit 5d26a105b5a7 added those aliases for a vast amount of
+modules, it was missing a few. Add the required MODULE_ALIAS_CRYPTO
+annotations to those files to make them get loaded automatically, again.
+This fixes, e.g., requesting 'ecb(blowfish-generic)', which used to work
+with kernels v3.18 and below.
 
-	net-pf-38
-	algif-hash
-	crypto-vfat(blowfish)
-	crypto-vfat(blowfish)-all
-	crypto-vfat
+Also change MODULE_ALIAS() lines to MODULE_ALIAS_CRYPTO(). The former
+won't work for crypto modules any more.
 
-Reported-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Mathias Krause <minipli@googlemail.com>
+Fixes: 5d26a105b5a7 ("crypto: prefix module autoloading with "crypto-"")
+Cc: Kees Cook <keescook@chromium.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/crypto/fpu.c | 3 +++
- crypto/algapi.c       | 4 ++--
- crypto/authenc.c      | 1 +
- crypto/authencesn.c   | 1 +
- crypto/cbc.c          | 1 +
- crypto/ccm.c          | 1 +
- crypto/chainiv.c      | 1 +
- crypto/cmac.c         | 1 +
- crypto/cryptd.c       | 1 +
- crypto/ctr.c          | 1 +
- crypto/cts.c          | 1 +
- crypto/ecb.c          | 1 +
- crypto/eseqiv.c       | 1 +
- crypto/gcm.c          | 1 +
- crypto/hmac.c         | 1 +
- crypto/lrw.c          | 1 +
- crypto/pcbc.c         | 1 +
- crypto/pcrypt.c       | 1 +
- crypto/seqiv.c        | 1 +
- crypto/vmac.c         | 1 +
- crypto/xcbc.c         | 1 +
- crypto/xts.c          | 1 +
- 22 files changed, 25 insertions(+), 2 deletions(-)
+ arch/powerpc/crypto/sha1.c | 1 +
+ crypto/aes_generic.c       | 1 +
+ crypto/ansi_cprng.c        | 1 +
+ crypto/blowfish_generic.c  | 1 +
+ crypto/camellia_generic.c  | 1 +
+ crypto/cast5_generic.c     | 1 +
+ crypto/cast6_generic.c     | 1 +
+ crypto/crct10dif_generic.c | 1 +
+ crypto/des_generic.c       | 5 +++--
+ crypto/ghash-generic.c     | 1 +
+ crypto/krng.c              | 1 +
+ crypto/salsa20_generic.c   | 1 +
+ crypto/serpent_generic.c   | 1 +
+ crypto/sha1_generic.c      | 1 +
+ crypto/sha256_generic.c    | 2 ++
+ crypto/sha512_generic.c    | 2 ++
+ crypto/tea.c               | 1 +
+ crypto/tgr192.c            | 1 +
+ crypto/twofish_generic.c   | 1 +
+ crypto/wp512.c             | 1 +
+ 20 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/crypto/fpu.c b/arch/x86/crypto/fpu.c
-index 98d7a188f46b..f368ba261739 100644
---- a/arch/x86/crypto/fpu.c
-+++ b/arch/x86/crypto/fpu.c
-@@ -17,6 +17,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <linux/crypto.h>
- #include <asm/i387.h>
- 
- struct crypto_fpu_ctx {
-@@ -159,3 +160,5 @@ void __exit crypto_fpu_exit(void)
- {
- 	crypto_unregister_template(&crypto_fpu_tmpl);
- }
-+
-+MODULE_ALIAS_CRYPTO("fpu");
-diff --git a/crypto/algapi.c b/crypto/algapi.c
-index 7a1ae87f1683..00d8d939733b 100644
---- a/crypto/algapi.c
-+++ b/crypto/algapi.c
-@@ -495,8 +495,8 @@ static struct crypto_template *__crypto_lookup_template(const char *name)
- 
- struct crypto_template *crypto_lookup_template(const char *name)
- {
--	return try_then_request_module(__crypto_lookup_template(name), "%s",
--				       name);
-+	return try_then_request_module(__crypto_lookup_template(name),
-+				       "crypto-%s", name);
- }
- EXPORT_SYMBOL_GPL(crypto_lookup_template);
- 
-diff --git a/crypto/authenc.c b/crypto/authenc.c
-index 528b00bc4769..a2cfae251dd5 100644
---- a/crypto/authenc.c
-+++ b/crypto/authenc.c
-@@ -709,3 +709,4 @@ module_exit(crypto_authenc_module_exit);
- 
+diff --git a/arch/powerpc/crypto/sha1.c b/arch/powerpc/crypto/sha1.c
+index 0f88c7b41119..b51da9132744 100644
+--- a/arch/powerpc/crypto/sha1.c
++++ b/arch/powerpc/crypto/sha1.c
+@@ -154,4 +154,5 @@ module_exit(sha1_powerpc_mod_fini);
  MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Simple AEAD wrapper for IPsec");
-+MODULE_ALIAS_CRYPTO("authenc");
-diff --git a/crypto/authencesn.c b/crypto/authencesn.c
-index ab53762fc309..16c225cb28c2 100644
---- a/crypto/authencesn.c
-+++ b/crypto/authencesn.c
-@@ -832,3 +832,4 @@ module_exit(crypto_authenc_esn_module_exit);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Steffen Klassert <steffen.klassert@secunet.com>");
- MODULE_DESCRIPTION("AEAD wrapper for IPsec with extended sequence numbers");
-+MODULE_ALIAS_CRYPTO("authencesn");
-diff --git a/crypto/cbc.c b/crypto/cbc.c
-index 61ac42e1e32b..780ee27b2d43 100644
---- a/crypto/cbc.c
-+++ b/crypto/cbc.c
-@@ -289,3 +289,4 @@ module_exit(crypto_cbc_module_exit);
+ MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("CBC block cipher algorithm");
-+MODULE_ALIAS_CRYPTO("cbc");
-diff --git a/crypto/ccm.c b/crypto/ccm.c
-index 389670d4ab75..c569c9c6afe3 100644
---- a/crypto/ccm.c
-+++ b/crypto/ccm.c
-@@ -881,3 +881,4 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Counter with CBC MAC");
- MODULE_ALIAS_CRYPTO("ccm_base");
- MODULE_ALIAS_CRYPTO("rfc4309");
-+MODULE_ALIAS_CRYPTO("ccm");
-diff --git a/crypto/chainiv.c b/crypto/chainiv.c
-index 834d8dd3d4fc..22b7e55b0e1b 100644
---- a/crypto/chainiv.c
-+++ b/crypto/chainiv.c
-@@ -359,3 +359,4 @@ module_exit(chainiv_module_exit);
- 
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Chain IV Generator");
-+MODULE_ALIAS_CRYPTO("chainiv");
-diff --git a/crypto/cmac.c b/crypto/cmac.c
-index 50880cf17fad..7a8bfbd548f6 100644
---- a/crypto/cmac.c
-+++ b/crypto/cmac.c
-@@ -313,3 +313,4 @@ module_exit(crypto_cmac_module_exit);
- 
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("CMAC keyed hash algorithm");
-+MODULE_ALIAS_CRYPTO("cmac");
-diff --git a/crypto/cryptd.c b/crypto/cryptd.c
-index 7bdd61b867c8..75c415d37086 100644
---- a/crypto/cryptd.c
-+++ b/crypto/cryptd.c
-@@ -955,3 +955,4 @@ module_exit(cryptd_exit);
- 
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Software async crypto daemon");
-+MODULE_ALIAS_CRYPTO("cryptd");
-diff --git a/crypto/ctr.c b/crypto/ctr.c
-index 3d81ff7e6b48..2386f7313952 100644
---- a/crypto/ctr.c
-+++ b/crypto/ctr.c
-@@ -467,3 +467,4 @@ module_exit(crypto_ctr_module_exit);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("CTR Counter block mode");
- MODULE_ALIAS_CRYPTO("rfc3686");
-+MODULE_ALIAS_CRYPTO("ctr");
-diff --git a/crypto/cts.c b/crypto/cts.c
-index 042223f8e733..60b9da3fa7c1 100644
---- a/crypto/cts.c
-+++ b/crypto/cts.c
-@@ -350,3 +350,4 @@ module_exit(crypto_cts_module_exit);
- 
++MODULE_ALIAS_CRYPTO("sha1");
+ MODULE_ALIAS_CRYPTO("sha1-powerpc");
+diff --git a/crypto/aes_generic.c b/crypto/aes_generic.c
+index 9b3c54c1cbe8..3dd101144a58 100644
+--- a/crypto/aes_generic.c
++++ b/crypto/aes_generic.c
+@@ -1475,3 +1475,4 @@ module_exit(aes_fini);
+ MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm");
  MODULE_LICENSE("Dual BSD/GPL");
- MODULE_DESCRIPTION("CTS-CBC CipherText Stealing for CBC");
-+MODULE_ALIAS_CRYPTO("cts");
-diff --git a/crypto/ecb.c b/crypto/ecb.c
-index 935cfef4aa84..12011aff0971 100644
---- a/crypto/ecb.c
-+++ b/crypto/ecb.c
-@@ -185,3 +185,4 @@ module_exit(crypto_ecb_module_exit);
+ MODULE_ALIAS_CRYPTO("aes");
++MODULE_ALIAS_CRYPTO("aes-generic");
+diff --git a/crypto/ansi_cprng.c b/crypto/ansi_cprng.c
+index b4485a108389..6f5bebc9bf01 100644
+--- a/crypto/ansi_cprng.c
++++ b/crypto/ansi_cprng.c
+@@ -477,3 +477,4 @@ MODULE_PARM_DESC(dbg, "Boolean to enable debugging (0/1 == off/on)");
+ module_init(prng_mod_init);
+ module_exit(prng_mod_fini);
+ MODULE_ALIAS_CRYPTO("stdrng");
++MODULE_ALIAS_CRYPTO("ansi_cprng");
+diff --git a/crypto/blowfish_generic.c b/crypto/blowfish_generic.c
+index 7bd71f02d0dd..87b392a77a93 100644
+--- a/crypto/blowfish_generic.c
++++ b/crypto/blowfish_generic.c
+@@ -139,3 +139,4 @@ module_exit(blowfish_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Blowfish Cipher Algorithm");
+ MODULE_ALIAS_CRYPTO("blowfish");
++MODULE_ALIAS_CRYPTO("blowfish-generic");
+diff --git a/crypto/camellia_generic.c b/crypto/camellia_generic.c
+index 1b74c5a3e891..a02286bf319e 100644
+--- a/crypto/camellia_generic.c
++++ b/crypto/camellia_generic.c
+@@ -1099,3 +1099,4 @@ module_exit(camellia_fini);
+ MODULE_DESCRIPTION("Camellia Cipher Algorithm");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS_CRYPTO("camellia");
++MODULE_ALIAS_CRYPTO("camellia-generic");
+diff --git a/crypto/cast5_generic.c b/crypto/cast5_generic.c
+index 84c86db67ec7..df5c72629383 100644
+--- a/crypto/cast5_generic.c
++++ b/crypto/cast5_generic.c
+@@ -550,3 +550,4 @@ module_exit(cast5_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Cast5 Cipher Algorithm");
+ MODULE_ALIAS_CRYPTO("cast5");
++MODULE_ALIAS_CRYPTO("cast5-generic");
+diff --git a/crypto/cast6_generic.c b/crypto/cast6_generic.c
+index f408f0bd8de2..058c8d755d03 100644
+--- a/crypto/cast6_generic.c
++++ b/crypto/cast6_generic.c
+@@ -292,3 +292,4 @@ module_exit(cast6_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Cast6 Cipher Algorithm");
+ MODULE_ALIAS_CRYPTO("cast6");
++MODULE_ALIAS_CRYPTO("cast6-generic");
+diff --git a/crypto/crct10dif_generic.c b/crypto/crct10dif_generic.c
+index 08bb4f504520..c1229614c7e3 100644
+--- a/crypto/crct10dif_generic.c
++++ b/crypto/crct10dif_generic.c
+@@ -125,3 +125,4 @@ MODULE_AUTHOR("Tim Chen <tim.c.chen@linux.intel.com>");
+ MODULE_DESCRIPTION("T10 DIF CRC calculation.");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS_CRYPTO("crct10dif");
++MODULE_ALIAS_CRYPTO("crct10dif-generic");
+diff --git a/crypto/des_generic.c b/crypto/des_generic.c
+index 5ec5ed544149..3ec6071309d9 100644
+--- a/crypto/des_generic.c
++++ b/crypto/des_generic.c
+@@ -971,8 +971,6 @@ static struct crypto_alg des_algs[2] = { {
+ 	.cia_decrypt		=	des3_ede_decrypt } }
+ } };
  
+-MODULE_ALIAS_CRYPTO("des3_ede");
+-
+ static int __init des_generic_mod_init(void)
+ {
+ 	return crypto_register_algs(des_algs, ARRAY_SIZE(des_algs));
+@@ -990,3 +988,6 @@ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("DES & Triple DES EDE Cipher Algorithms");
+ MODULE_AUTHOR("Dag Arne Osvik <da@osvik.no>");
+ MODULE_ALIAS_CRYPTO("des");
++MODULE_ALIAS_CRYPTO("des-generic");
++MODULE_ALIAS_CRYPTO("des3_ede");
++MODULE_ALIAS_CRYPTO("des3_ede-generic");
+diff --git a/crypto/ghash-generic.c b/crypto/ghash-generic.c
+index 4e97fae9666f..bac70995e064 100644
+--- a/crypto/ghash-generic.c
++++ b/crypto/ghash-generic.c
+@@ -173,3 +173,4 @@ module_exit(ghash_mod_exit);
  MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("ECB block cipher algorithm");
-+MODULE_ALIAS_CRYPTO("ecb");
-diff --git a/crypto/eseqiv.c b/crypto/eseqiv.c
-index 42ce9f570aec..388f582ab0b9 100644
---- a/crypto/eseqiv.c
-+++ b/crypto/eseqiv.c
-@@ -267,3 +267,4 @@ module_exit(eseqiv_module_exit);
+ MODULE_DESCRIPTION("GHASH Message Digest Algorithm");
+ MODULE_ALIAS_CRYPTO("ghash");
++MODULE_ALIAS_CRYPTO("ghash-generic");
+diff --git a/crypto/krng.c b/crypto/krng.c
+index 67c88b331210..0224841b6579 100644
+--- a/crypto/krng.c
++++ b/crypto/krng.c
+@@ -63,3 +63,4 @@ module_exit(krng_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Kernel Random Number Generator");
+ MODULE_ALIAS_CRYPTO("stdrng");
++MODULE_ALIAS_CRYPTO("krng");
+diff --git a/crypto/salsa20_generic.c b/crypto/salsa20_generic.c
+index 3d0f9df30ac9..f550b5d94630 100644
+--- a/crypto/salsa20_generic.c
++++ b/crypto/salsa20_generic.c
+@@ -249,3 +249,4 @@ module_exit(salsa20_generic_mod_fini);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION ("Salsa20 stream cipher algorithm");
+ MODULE_ALIAS_CRYPTO("salsa20");
++MODULE_ALIAS_CRYPTO("salsa20-generic");
+diff --git a/crypto/serpent_generic.c b/crypto/serpent_generic.c
+index a53b5e2af335..94970a794975 100644
+--- a/crypto/serpent_generic.c
++++ b/crypto/serpent_generic.c
+@@ -667,3 +667,4 @@ MODULE_DESCRIPTION("Serpent and tnepres (kerneli compatible serpent reversed) Ci
+ MODULE_AUTHOR("Dag Arne Osvik <osvik@ii.uib.no>");
+ MODULE_ALIAS_CRYPTO("tnepres");
+ MODULE_ALIAS_CRYPTO("serpent");
++MODULE_ALIAS_CRYPTO("serpent-generic");
+diff --git a/crypto/sha1_generic.c b/crypto/sha1_generic.c
+index 76d300fe968f..fdf7c00de4b0 100644
+--- a/crypto/sha1_generic.c
++++ b/crypto/sha1_generic.c
+@@ -154,3 +154,4 @@ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Encrypted Sequence Number IV Generator");
-+MODULE_ALIAS_CRYPTO("eseqiv");
-diff --git a/crypto/gcm.c b/crypto/gcm.c
-index 8dbd80f5fb0c..b4c252066f7b 100644
---- a/crypto/gcm.c
-+++ b/crypto/gcm.c
-@@ -1444,3 +1444,4 @@ MODULE_AUTHOR("Mikko Herranen <mh1@iki.fi>");
- MODULE_ALIAS_CRYPTO("gcm_base");
- MODULE_ALIAS_CRYPTO("rfc4106");
- MODULE_ALIAS_CRYPTO("rfc4543");
-+MODULE_ALIAS_CRYPTO("gcm");
-diff --git a/crypto/hmac.c b/crypto/hmac.c
-index 8d9544cf8169..ade790b454e9 100644
---- a/crypto/hmac.c
-+++ b/crypto/hmac.c
-@@ -271,3 +271,4 @@ module_exit(hmac_module_exit);
+ MODULE_ALIAS_CRYPTO("sha1");
++MODULE_ALIAS_CRYPTO("sha1-generic");
+diff --git a/crypto/sha256_generic.c b/crypto/sha256_generic.c
+index 8d7811a0031c..136381bdd48d 100644
+--- a/crypto/sha256_generic.c
++++ b/crypto/sha256_generic.c
+@@ -385,4 +385,6 @@ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA-224 and SHA-256 Secure Hash Algorithm");
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("HMAC hash algorithm");
-+MODULE_ALIAS_CRYPTO("hmac");
-diff --git a/crypto/lrw.c b/crypto/lrw.c
-index ba42acc4deba..6f9908a7ebcb 100644
---- a/crypto/lrw.c
-+++ b/crypto/lrw.c
-@@ -400,3 +400,4 @@ module_exit(crypto_module_exit);
+ MODULE_ALIAS_CRYPTO("sha224");
++MODULE_ALIAS_CRYPTO("sha224-generic");
+ MODULE_ALIAS_CRYPTO("sha256");
++MODULE_ALIAS_CRYPTO("sha256-generic");
+diff --git a/crypto/sha512_generic.c b/crypto/sha512_generic.c
+index 5479f302b757..6c6d901a7cc1 100644
+--- a/crypto/sha512_generic.c
++++ b/crypto/sha512_generic.c
+@@ -288,4 +288,6 @@ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("SHA-512 and SHA-384 Secure Hash Algorithms");
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("LRW block cipher mode");
-+MODULE_ALIAS_CRYPTO("lrw");
-diff --git a/crypto/pcbc.c b/crypto/pcbc.c
-index d1b8bdfb5855..f654965f0933 100644
---- a/crypto/pcbc.c
-+++ b/crypto/pcbc.c
-@@ -295,3 +295,4 @@ module_exit(crypto_pcbc_module_exit);
+ MODULE_ALIAS_CRYPTO("sha384");
++MODULE_ALIAS_CRYPTO("sha384-generic");
+ MODULE_ALIAS_CRYPTO("sha512");
++MODULE_ALIAS_CRYPTO("sha512-generic");
+diff --git a/crypto/tea.c b/crypto/tea.c
+index 495be2d0077d..b70b441c7d1e 100644
+--- a/crypto/tea.c
++++ b/crypto/tea.c
+@@ -270,6 +270,7 @@ static void __exit tea_mod_fini(void)
+ 	crypto_unregister_algs(tea_algs, ARRAY_SIZE(tea_algs));
+ }
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("PCBC block cipher algorithm");
-+MODULE_ALIAS_CRYPTO("pcbc");
-diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
-index f8c920cafe63..6bc736e2926a 100644
---- a/crypto/pcrypt.c
-+++ b/crypto/pcrypt.c
-@@ -565,3 +565,4 @@ module_exit(pcrypt_exit);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Steffen Klassert <steffen.klassert@secunet.com>");
- MODULE_DESCRIPTION("Parallel crypto wrapper");
-+MODULE_ALIAS_CRYPTO("pcrypt");
-diff --git a/crypto/seqiv.c b/crypto/seqiv.c
-index f2cba4ed6f25..49a4069ff453 100644
---- a/crypto/seqiv.c
-+++ b/crypto/seqiv.c
-@@ -362,3 +362,4 @@ module_exit(seqiv_module_exit);
++MODULE_ALIAS_CRYPTO("tea");
+ MODULE_ALIAS_CRYPTO("xtea");
+ MODULE_ALIAS_CRYPTO("xeta");
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Sequence Number IV Generator");
-+MODULE_ALIAS_CRYPTO("seqiv");
-diff --git a/crypto/vmac.c b/crypto/vmac.c
-index 2eb11a30c29c..bf2d3a89845f 100644
---- a/crypto/vmac.c
-+++ b/crypto/vmac.c
-@@ -713,3 +713,4 @@ module_exit(vmac_module_exit);
+diff --git a/crypto/tgr192.c b/crypto/tgr192.c
+index 5a5333f166ea..f7ed2fba396c 100644
+--- a/crypto/tgr192.c
++++ b/crypto/tgr192.c
+@@ -676,6 +676,7 @@ static void __exit tgr192_mod_fini(void)
+ 	crypto_unregister_shashes(tgr_algs, ARRAY_SIZE(tgr_algs));
+ }
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("VMAC hash algorithm");
-+MODULE_ALIAS_CRYPTO("vmac");
-diff --git a/crypto/xcbc.c b/crypto/xcbc.c
-index a5fbdf3738cf..df90b332554c 100644
---- a/crypto/xcbc.c
-+++ b/crypto/xcbc.c
-@@ -286,3 +286,4 @@ module_exit(crypto_xcbc_module_exit);
++MODULE_ALIAS_CRYPTO("tgr192");
+ MODULE_ALIAS_CRYPTO("tgr160");
+ MODULE_ALIAS_CRYPTO("tgr128");
  
+diff --git a/crypto/twofish_generic.c b/crypto/twofish_generic.c
+index 523ad8c4e359..ebf7a3efb572 100644
+--- a/crypto/twofish_generic.c
++++ b/crypto/twofish_generic.c
+@@ -212,3 +212,4 @@ module_exit(twofish_mod_fini);
  MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("XCBC keyed hash algorithm");
-+MODULE_ALIAS_CRYPTO("xcbc");
-diff --git a/crypto/xts.c b/crypto/xts.c
-index ca1608f44cb5..f6fd43f100c8 100644
---- a/crypto/xts.c
-+++ b/crypto/xts.c
-@@ -362,3 +362,4 @@ module_exit(crypto_module_exit);
+ MODULE_DESCRIPTION ("Twofish Cipher Algorithm");
+ MODULE_ALIAS_CRYPTO("twofish");
++MODULE_ALIAS_CRYPTO("twofish-generic");
+diff --git a/crypto/wp512.c b/crypto/wp512.c
+index 8d4076417e87..253db94b5479 100644
+--- a/crypto/wp512.c
++++ b/crypto/wp512.c
+@@ -1167,6 +1167,7 @@ static void __exit wp512_mod_fini(void)
+ 	crypto_unregister_shashes(wp_algs, ARRAY_SIZE(wp_algs));
+ }
  
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("XTS block cipher mode");
-+MODULE_ALIAS_CRYPTO("xts");
++MODULE_ALIAS_CRYPTO("wp512");
+ MODULE_ALIAS_CRYPTO("wp384");
+ MODULE_ALIAS_CRYPTO("wp256");
+ 
 -- 
 2.2.2
 
