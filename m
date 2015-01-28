@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314AbbA2BjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:39:08 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:59264 "EHLO
+	id S1756277AbbA2BjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:39:06 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:59261 "EHLO
 	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756241AbbA2BjD (ORCPT
+	with ESMTP id S1756237AbbA2BjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jan 2015 20:39:03 -0500
 MBOX-Line: From nobody Wed Jan 28 16:49:37 2015
-Subject: [PATCH 04/24] Documentation: DT bindings: add more chip compatible
- strings for Tegra timers
+Subject: [PATCH 05/24] Documentation: DT bindings: add more chip compatible
+ strings for Tegra AHB gizmo
 From: Paul Walmsley <paul@pwsan.com>
 Cc: Mark Rutland <mark.rutland@arm.com>, Alexandre Courbot <gnurou@gmail.com>,
         Pawel Moll <pawel.moll@arm.com>,
@@ -21,7 +21,7 @@ Cc: Mark Rutland <mark.rutland@arm.com>, Alexandre Courbot <gnurou@gmail.com>,
         Paul Walmsley <pwalmsley@nvidia.com>,
         Kumar Gala <galak@codeaurora.org>, linux-tegra@vger.kernel.org
 Date: Wed, 28 Jan 2015 16:49:37 -0700
-Message-ID: <20150128234937.20644.54294.stgit@dusk.lan>
+Message-ID: <20150128234937.20644.58615.stgit@dusk.lan>
 In-Reply-To: <20150128234935.20644.89300.stgit@dusk.lan>
 References: <20150128234935.20644.89300.stgit@dusk.lan>
 User-Agent: StGit/0.16-37-g27ac3
@@ -34,15 +34,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Add compatible strings for the timer IP blocks present on several
+Add compatible strings for the AHB "gizmo" IP block present on several
 Tegra chips.  The primary objective here is to avoid checkpatch
 warnings, per:
 
 http://marc.info/?l=linux-tegra&m=142201349727836&w=2
-
-N.B. The nvidia,tegra20-timer compatible string is removed from the
-nvidia,tegra30-timer.txt documentation file because it's already
-mentioned in the nvidia,tegra20-timer.txt documentation file.
 
 Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Cc: Rob Herring <robh+dt@kernel.org>
@@ -58,23 +54,25 @@ Cc: devicetree@vger.kernel.org
 Cc: linux-tegra@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- .../bindings/timer/nvidia,tegra30-timer.txt        |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ .../bindings/arm/tegra/nvidia,tegra20-ahb.txt      |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt b/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-index b5082a1cf461..bbf38d26605b 100644
---- a/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-+++ b/Documentation/devicetree/bindings/timer/nvidia,tegra30-timer.txt
-@@ -6,7 +6,9 @@ trigger a legacy watchdog reset.
+diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-ahb.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-ahb.txt
+index 234406d41c12..fef3a9ecb798 100644
+--- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-ahb.txt
++++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-ahb.txt
+@@ -1,7 +1,11 @@
+ NVIDIA Tegra AHB
  
  Required properties:
+-- compatible : "nvidia,tegra20-ahb" or "nvidia,tegra30-ahb"
++- compatible : "nvidia,tegra20-ahb"
++  "nvidia,tegra30-ahb"
++  "nvidia,tegra124-ahb" (not yet matched by the driver)
++  "nvidia,tegra132-ahb" (not yet matched by the driver)
++  "nvidia,tegra210-ahb" (not yet matched by the driver)
+ - reg : Should contain 1 register ranges(address and length)
  
--- compatible : should be "nvidia,tegra30-timer", "nvidia,tegra20-timer".
-+- compatible : "nvidia,tegra30-timer"
-+  "nvidia,tegra124-timer" (not yet matched in the driver)
-+  "nvidia,tegra132-timer" (not yet matched in the driver)
- - reg : Specifies base physical address and size of the registers.
- - interrupts : A list of 6 interrupts; one per each of timer channels 1
-     through 5, and one for the shared interrupt for the remaining channels.
+ Example:
 
 
