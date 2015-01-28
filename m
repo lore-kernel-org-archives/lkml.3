@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436AbbA1ByY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:54:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41511 "EHLO
+	id S933263AbbA1ByW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:54:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933303AbbA1Bi3 (ORCPT
+	with ESMTP id S1758867AbbA1Bia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:29 -0500
+	Tue, 27 Jan 2015 20:38:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Vlastimil Babka <vbabka@suse.cz>,
         Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
         Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
         Theodore Tso <tytso@mit.edu>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 50/77] mm: page_alloc: calculate classzone_idx once from the zonelist ref
-Date: Tue, 27 Jan 2015 17:27:28 -0800
-Message-Id: <20150128012747.472518137@linuxfoundation.org>
+Subject: [PATCH 3.14 51/77] mm: page_alloc: only check the zone id check if pages are buddies
+Date: Tue, 27 Jan 2015 17:27:29 -0800
+Message-Id: <20150128012747.501606482@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -40,15 +38,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit d8846374a85f4290a473a4e2a64c1ba046c4a0e1 upstream.
+commit d34c5fa06fade08a689fc171bf756fba2858ae73 upstream.
 
-There is no need to calculate zone_idx(preferred_zone) multiple times
-or use the pgdat to figure it out.
+A node/zone index is used to check if pages are compatible for merging
+but this happens unconditionally even if the buddy page is not free. Defer
+the calculation as long as possible. Ideally we would check the zone boundary
+but nodes can overlap.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
@@ -58,245 +57,46 @@ Cc: Theodore Ts'o <tytso@mit.edu>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |   60 ++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 35 insertions(+), 25 deletions(-)
+ mm/page_alloc.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1922,17 +1922,15 @@ static inline void init_zone_allows_recl
- static struct page *
- get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
- 		struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
--		struct zone *preferred_zone, int migratetype)
-+		struct zone *preferred_zone, int classzone_idx, int migratetype)
- {
- 	struct zoneref *z;
- 	struct page *page = NULL;
--	int classzone_idx;
- 	struct zone *zone;
- 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
- 	int zlc_active = 0;		/* set if using zonelist_cache */
- 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+@@ -508,16 +508,26 @@ static inline int page_is_buddy(struct p
+ 	if (!pfn_valid_within(page_to_pfn(buddy)))
+ 		return 0;
  
--	classzone_idx = zone_idx(preferred_zone);
- zonelist_scan:
- 	/*
- 	 * Scan zonelist, looking for a zone with enough free.
-@@ -2189,7 +2187,7 @@ static inline struct page *
- __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, struct zone *preferred_zone,
--	int migratetype)
-+	int classzone_idx, int migratetype)
- {
- 	struct page *page;
- 
-@@ -2215,7 +2213,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, un
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask,
- 		order, zonelist, high_zoneidx,
- 		ALLOC_WMARK_HIGH|ALLOC_CPUSET,
--		preferred_zone, migratetype);
-+		preferred_zone, classzone_idx, migratetype);
- 	if (page)
- 		goto out;
- 
-@@ -2250,7 +2248,7 @@ static struct page *
- __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, enum migrate_mode mode,
-+	int classzone_idx, int migratetype, enum migrate_mode mode,
- 	bool *contended_compaction, bool *deferred_compaction,
- 	unsigned long *did_some_progress)
- {
-@@ -2278,7 +2276,7 @@ __alloc_pages_direct_compact(gfp_t gfp_m
- 		page = get_page_from_freelist(gfp_mask, nodemask,
- 				order, zonelist, high_zoneidx,
- 				alloc_flags & ~ALLOC_NO_WATERMARKS,
--				preferred_zone, migratetype);
-+				preferred_zone, classzone_idx, migratetype);
- 		if (page) {
- 			preferred_zone->compact_blockskip_flush = false;
- 			compaction_defer_reset(preferred_zone, order, true);
-@@ -2310,7 +2308,8 @@ static inline struct page *
- __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, enum migrate_mode mode, bool *contended_compaction,
-+	int classzone_idx, int migratetype,
-+	enum migrate_mode mode, bool *contended_compaction,
- 	bool *deferred_compaction, unsigned long *did_some_progress)
- {
- 	return NULL;
-@@ -2350,7 +2349,7 @@ static inline struct page *
- __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
--	int migratetype, unsigned long *did_some_progress)
-+	int classzone_idx, int migratetype, unsigned long *did_some_progress)
- {
- 	struct page *page = NULL;
- 	bool drained = false;
-@@ -2368,7 +2367,8 @@ retry:
- 	page = get_page_from_freelist(gfp_mask, nodemask, order,
- 					zonelist, high_zoneidx,
- 					alloc_flags & ~ALLOC_NO_WATERMARKS,
--					preferred_zone, migratetype);
-+					preferred_zone, classzone_idx,
-+					migratetype);
- 
- 	/*
- 	 * If an allocation failed after direct reclaim, it could be because
-@@ -2391,14 +2391,14 @@ static inline struct page *
- __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, struct zone *preferred_zone,
--	int migratetype)
-+	int classzone_idx, int migratetype)
- {
- 	struct page *page;
- 
- 	do {
- 		page = get_page_from_freelist(gfp_mask, nodemask, order,
- 			zonelist, high_zoneidx, ALLOC_NO_WATERMARKS,
--			preferred_zone, migratetype);
-+			preferred_zone, classzone_idx, migratetype);
- 
- 		if (!page && gfp_mask & __GFP_NOFAIL)
- 			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
-@@ -2499,7 +2499,7 @@ static inline struct page *
- __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 	struct zonelist *zonelist, enum zone_type high_zoneidx,
- 	nodemask_t *nodemask, struct zone *preferred_zone,
--	int migratetype)
-+	int classzone_idx, int migratetype)
- {
- 	const gfp_t wait = gfp_mask & __GFP_WAIT;
- 	struct page *page = NULL;
-@@ -2548,15 +2548,19 @@ restart:
- 	 * Find the true preferred zone if the allocation is unconstrained by
- 	 * cpusets.
- 	 */
--	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask)
--		first_zones_zonelist(zonelist, high_zoneidx, NULL,
--					&preferred_zone);
-+	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask) {
-+		struct zoneref *preferred_zoneref;
-+		preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
-+				NULL,
-+				&preferred_zone);
-+		classzone_idx = zonelist_zone_idx(preferred_zoneref);
-+	}
- 
- rebalance:
- 	/* This is the last chance, in general, before the goto nopage. */
- 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
- 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
--			preferred_zone, migratetype);
-+			preferred_zone, classzone_idx, migratetype);
- 	if (page)
- 		goto got_pg;
- 
-@@ -2571,7 +2575,7 @@ rebalance:
- 
- 		page = __alloc_pages_high_priority(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
--				preferred_zone, migratetype);
-+				preferred_zone, classzone_idx, migratetype);
- 		if (page) {
- 			goto got_pg;
- 		}
-@@ -2602,7 +2606,8 @@ rebalance:
- 	 */
- 	page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
- 					high_zoneidx, nodemask, alloc_flags,
--					preferred_zone, migratetype,
-+					preferred_zone,
-+					classzone_idx, migratetype,
- 					migration_mode, &contended_compaction,
- 					&deferred_compaction,
- 					&did_some_progress);
-@@ -2625,7 +2630,8 @@ rebalance:
- 					zonelist, high_zoneidx,
- 					nodemask,
- 					alloc_flags, preferred_zone,
--					migratetype, &did_some_progress);
-+					classzone_idx, migratetype,
-+					&did_some_progress);
- 	if (page)
- 		goto got_pg;
- 
-@@ -2644,7 +2650,7 @@ rebalance:
- 			page = __alloc_pages_may_oom(gfp_mask, order,
- 					zonelist, high_zoneidx,
- 					nodemask, preferred_zone,
--					migratetype);
-+					classzone_idx, migratetype);
- 			if (page)
- 				goto got_pg;
- 
-@@ -2685,7 +2691,8 @@ rebalance:
- 		 */
- 		page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
- 					high_zoneidx, nodemask, alloc_flags,
--					preferred_zone, migratetype,
-+					preferred_zone,
-+					classzone_idx, migratetype,
- 					migration_mode, &contended_compaction,
- 					&deferred_compaction,
- 					&did_some_progress);
-@@ -2712,11 +2719,13 @@ __alloc_pages_nodemask(gfp_t gfp_mask, u
- {
- 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
- 	struct zone *preferred_zone;
-+	struct zoneref *preferred_zoneref;
- 	struct page *page = NULL;
- 	int migratetype = allocflags_to_migratetype(gfp_mask);
- 	unsigned int cpuset_mems_cookie;
- 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
- 	struct mem_cgroup *memcg = NULL;
-+	int classzone_idx;
- 
- 	gfp_mask &= gfp_allowed_mask;
- 
-@@ -2746,11 +2755,12 @@ retry_cpuset:
- 	cpuset_mems_cookie = read_mems_allowed_begin();
- 
- 	/* The preferred zone is used for statistics later */
--	first_zones_zonelist(zonelist, high_zoneidx,
-+	preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
- 				nodemask ? : &cpuset_current_mems_allowed,
- 				&preferred_zone);
- 	if (!preferred_zone)
- 		goto out;
-+	classzone_idx = zonelist_zone_idx(preferred_zoneref);
- 
- #ifdef CONFIG_CMA
- 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
-@@ -2760,7 +2770,7 @@ retry:
- 	/* First allocation attempt */
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
- 			zonelist, high_zoneidx, alloc_flags,
--			preferred_zone, migratetype);
-+			preferred_zone, classzone_idx, migratetype);
- 	if (unlikely(!page)) {
- 		/*
- 		 * The first pass makes sure allocations are spread
-@@ -2786,7 +2796,7 @@ retry:
- 		gfp_mask = memalloc_noio_flags(gfp_mask);
- 		page = __alloc_pages_slowpath(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
--				preferred_zone, migratetype);
-+				preferred_zone, classzone_idx, migratetype);
+-	if (page_zone_id(page) != page_zone_id(buddy))
+-		return 0;
+-
+ 	if (page_is_guard(buddy) && page_order(buddy) == order) {
+ 		VM_BUG_ON_PAGE(page_count(buddy) != 0, buddy);
++
++		if (page_zone_id(page) != page_zone_id(buddy))
++			return 0;
++
+ 		return 1;
  	}
  
- 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+ 	if (PageBuddy(buddy) && page_order(buddy) == order) {
+ 		VM_BUG_ON_PAGE(page_count(buddy) != 0, buddy);
++
++		/*
++		 * zone check is done late to avoid uselessly
++		 * calculating zone/node ids for pages that could
++		 * never merge.
++		 */
++		if (page_zone_id(page) != page_zone_id(buddy))
++			return 0;
++
+ 		return 1;
+ 	}
+ 	return 0;
 
 
