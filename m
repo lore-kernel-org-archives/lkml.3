@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761171AbbA1CRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:17:20 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18427 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761153AbbA1CRQ (ORCPT
+	id S933451AbbA1CYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:24:34 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:38553 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933147AbbA1CYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 21:17:16 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: bp@alien8.de
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, james@dingwall.me.uk,
-        boris.ostrovsky@oracle.com, stable@vger.kernel.org.#.3.18
-Subject: [PATCH] x86, microcode: Return error from driver init code when loader is disabled
-Date: Tue, 27 Jan 2015 21:21:09 -0500
-Message-Id: <1422411669-25147-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.9.3
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Tue, 27 Jan 2015 21:24:32 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
+        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
+Subject: [PATCH v2 0/3] AT91 pm improvements for 3.20
+Date: Wed, 28 Jan 2015 10:21:47 +0800
+Message-ID: <1422411707-10945-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commits 65cef1311d5d ("x86, microcode: Add a disable chicken bit") and
-a18a0f6850d4 ("x86, microcode: Don't initialize microcode code on
-paravirt") allow microcode driver skip initialization when microcode
-loading is not permitted.
+Hi Nicolas,
 
-However, they don't prevent the driver from being loaded since the
-init code returns 0. If at some point later the driver gets unloaded
-this will result in an oops while trying to deregister the (never
-registered) device.
+This patch set is to add the pm support for the ARMv7 SoCs.
 
-To avoid this, make init code return an error on paravirt or when
-microcode loading is disabled. The driver will then never be loaded.
+It is based on the following patch set,
+	[PATCH v4 00/12] AT91 pm cleanup for 3.20
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Reported-by: James Digwall <james@dingwall.me.uk>
-Cc: stable@vger.kernel.org # 3.18
----
- arch/x86/kernel/cpu/microcode/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Changes in v2.0
+ - Drop patch to enable the l2 cache controller.
+ - Remove patches to disable the mpddrc and DDR clock.
+ - Remove patch to change to get the memory type.
+ - Fix some commments
 
-diff --git a/arch/x86/kernel/cpu/microcode/core.c b/arch/x86/kernel/cpu/microcode/core.c
-index 15c2909..36a8361 100644
---- a/arch/x86/kernel/cpu/microcode/core.c
-+++ b/arch/x86/kernel/cpu/microcode/core.c
-@@ -552,7 +552,7 @@ static int __init microcode_init(void)
- 	int error;
- 
- 	if (paravirt_enabled() || dis_ucode_ldr)
--		return 0;
-+		return -EINVAL;
- 
- 	if (c->x86_vendor == X86_VENDOR_INTEL)
- 		microcode_ops = init_intel_microcode();
+Patrice Vilchez (1):
+  pm: at91: pm_suspend: MOR register KEY was missing
+
+Wenyou Yang (2):
+  pm: at91: pm_suspend: add the WFI support for ARMv7
+  pm: at91: add disable/enable the L1/L2 cache while suspend/resume
+
+ arch/arm/mach-at91/pm.c         |   12 +++
+ arch/arm/mach-at91/pm_suspend.S |  158 ++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 169 insertions(+), 1 deletion(-)
+
 -- 
-1.9.3
+1.7.9.5
 
