@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762150AbbA1FL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:11:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33286 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762138AbbA1FLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:11:55 -0500
-Message-ID: <54C86F97.1000907@suse.com>
-Date: Wed, 28 Jan 2015 06:11:51 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1762343AbbA1FQO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:16:14 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:55292 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762326AbbA1FQL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 00:16:11 -0500
+Date: Wed, 28 Jan 2015 10:46:06 +0530
+From: Tina Ruchandani <ruchandani.tina@gmail.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH v2] coredump: Use 64bit time for unix time of coredump
+Message-ID: <20150128051606.GA4659@tinar>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [RESEND Patch V2 1/4] xen: build infrastructure for generating
- hypercall depending symbols
-References: <1421826565-10826-1-git-send-email-jgross@suse.com> <1421826565-10826-2-git-send-email-jgross@suse.com>
-In-Reply-To: <1421826565-10826-2-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*Ping*
+struct timeval on 32-bit systems will have its tv_sec
+value overflow in year 2038 and beyond.
+Use a 64 bit value to print time of the coredump in seconds.
+ktime_get_real_seconds is chosen here for efficiency reasons.
 
-David wants a comment from the x86 maintainers.
+Suggested by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
+---
+Changes in v2:
+	- use ktime_get_real_seconds instead of getnstimeofday64
+	- fix printf format string:should work on 32-bit systems too.
+---
+ fs/coredump.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/fs/coredump.c b/fs/coredump.c
+index b5c86ff..d118c1d 100644
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -32,6 +32,7 @@
+ #include <linux/pipe_fs_i.h>
+ #include <linux/oom.h>
+ #include <linux/compat.h>
++#include <linux/timekeeping.h>
 
-Juergen
-
-On 01/21/2015 08:49 AM, Juergen Gross wrote:
-> Today there are several places in the kernel which build tables
-> containing one entry for each possible Xen hypercall. Create an
-> infrastructure to be able to generate these tables at build time.
->
-> Based-on-patch-by: Jan Beulich <jbeulich@suse.com>
-> Signed-off-by: Juergen Gross <jgross@suse.com>
-> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> ---
->   arch/x86/syscalls/Makefile |  9 +++++++++
->   scripts/xen-hypercalls.sh  | 12 ++++++++++++
->   2 files changed, 21 insertions(+)
->   create mode 100644 scripts/xen-hypercalls.sh
->
-> diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
-> index 3323c27..a55abb9 100644
-> --- a/arch/x86/syscalls/Makefile
-> +++ b/arch/x86/syscalls/Makefile
-> @@ -19,6 +19,9 @@ quiet_cmd_syshdr = SYSHDR  $@
->   quiet_cmd_systbl = SYSTBL  $@
->         cmd_systbl = $(CONFIG_SHELL) '$(systbl)' $< $@
->
-> +quiet_cmd_hypercalls = HYPERCALLS $@
-> +      cmd_hypercalls = $(CONFIG_SHELL) '$<' $@ $(filter-out $<,$^)
-> +
->   syshdr_abi_unistd_32 := i386
->   $(uapi)/unistd_32.h: $(syscall32) $(syshdr)
->   	$(call if_changed,syshdr)
-> @@ -47,10 +50,16 @@ $(out)/syscalls_32.h: $(syscall32) $(systbl)
->   $(out)/syscalls_64.h: $(syscall64) $(systbl)
->   	$(call if_changed,systbl)
->
-> +$(out)/xen-hypercalls.h: $(srctree)/scripts/xen-hypercalls.sh
-> +	$(call if_changed,hypercalls)
-> +
-> +$(out)/xen-hypercalls.h: $(srctree)/include/xen/interface/xen*.h
-> +
->   uapisyshdr-y			+= unistd_32.h unistd_64.h unistd_x32.h
->   syshdr-y			+= syscalls_32.h
->   syshdr-$(CONFIG_X86_64)		+= unistd_32_ia32.h unistd_64_x32.h
->   syshdr-$(CONFIG_X86_64)		+= syscalls_64.h
-> +syshdr-$(CONFIG_XEN)		+= xen-hypercalls.h
->
->   targets	+= $(uapisyshdr-y) $(syshdr-y)
->
-> diff --git a/scripts/xen-hypercalls.sh b/scripts/xen-hypercalls.sh
-> new file mode 100644
-> index 0000000..676d922
-> --- /dev/null
-> +++ b/scripts/xen-hypercalls.sh
-> @@ -0,0 +1,12 @@
-> +#!/bin/sh
-> +out="$1"
-> +shift
-> +in="$@"
-> +
-> +for i in $in; do
-> +	eval $CPP $LINUXINCLUDE -dD -imacros "$i" -x c /dev/null
-> +done | \
-> +awk '$1 == "#define" && $2 ~ /__HYPERVISOR_[a-z][a-z_0-9]*/ { v[$3] = $2 }
-> +	END {   print "/* auto-generated by scripts/xen-hypercall.sh */"
-> +		for (i in v) if (!(v[i] in v))
-> +			print "HYPERCALL("substr(v[i], 14)")"}' | sort -u >$out
->
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -225,9 +226,10 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
+ 				break;
+ 			/* UNIX time of coredump */
+ 			case 't': {
+-				struct timeval tv;
+-				do_gettimeofday(&tv);
+-				err = cn_printf(cn, "%lu", tv.tv_sec);
++				time64_t time;
++
++				time = ktime_get_real_seconds();
++				err = cn_printf(cn, "%lld", time);
+ 				break;
+ 			}
+ 			/* hostname */
+--
+2.2.0.rc0.207.ga3a616c
 
