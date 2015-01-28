@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352AbbA2JFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:05:23 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44836 "EHLO
+	id S932842AbbA2JIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:08:49 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44935 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932204AbbA2JFM (ORCPT
+	by vger.kernel.org with ESMTP id S932760AbbA2JIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:05:12 -0500
+	Thu, 29 Jan 2015 04:08:43 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Williamson <alex.williamson@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 028/176] driver core: Fix unbalanced device reference in drivers_probe
-Date: Wed, 28 Jan 2015 15:27:38 +0100
-Message-Id: <ce3740b1080853a3f6c879374b468ae8800028a8.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jiri Jaburek <jjaburek@redhat.com>,
+        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 029/176] ALSA: usb-audio: extend KEF X300A FU 10 tweak to Arcam rPAC
+Date: Wed, 28 Jan 2015 15:27:39 +0100
+Message-Id: <3d041411e3b467708e64f2bbb7b5d8b0885150aa.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,86 +23,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Jiri Jaburek <jjaburek@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit bb34cb6bbd287b57e955bc5cfd42fcde6aaca279 upstream.
+commit d70a1b9893f820fdbcdffac408c909c50f2e6b43 upstream.
 
-bus_find_device_by_name() acquires a device reference which is never
-released.  This results in an object leak, which on older kernels
-results in failure to release all resources of PCI devices.  libvirt
-uses drivers_probe to re-attach devices to the host after assignment
-and is therefore a common trigger for this leak.
+The Arcam rPAC seems to have the same problem - whenever anything
+(alsamixer, udevd, 3.9+ kernel from 60af3d037eb8c, ..) attempts to
+access mixer / control interface of the card, the firmware "locks up"
+the entire device, resulting in
+  SNDRV_PCM_IOCTL_HW_PARAMS failed (-5): Input/output error
+from alsa-lib.
 
-Example:
+Other operating systems can somehow read the mixer (there seems to be
+playback volume/mute), but any manipulation is ignored by the device
+(which has hardware volume controls).
 
-# cd /sys/bus/pci/
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_cleanup, parent           (null)
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): calling ktype release
- kobject: '0000:01:10.0': free name
-
-[kobject freed as expected]
-
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0000:01:10.0 > drivers_probe
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
-
-[no free]
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Jiri Jaburek <jjaburek@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/base/bus.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ sound/usb/mixer_maps.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 4c289ab91357..aed92e41f291 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -243,13 +243,15 @@ static ssize_t store_drivers_probe(struct bus_type *bus,
- 				   const char *buf, size_t count)
- {
- 	struct device *dev;
-+	int err = -EINVAL;
+diff --git a/sound/usb/mixer_maps.c b/sound/usb/mixer_maps.c
+index 0339d464791a..4df31b0f94a3 100644
+--- a/sound/usb/mixer_maps.c
++++ b/sound/usb/mixer_maps.c
+@@ -322,8 +322,11 @@ static struct usbmix_name_map hercules_usb51_map[] = {
+ 	{ 0 }				/* terminator */
+ };
  
- 	dev = bus_find_device_by_name(bus, NULL, buf);
- 	if (!dev)
- 		return -ENODEV;
--	if (bus_rescan_devices_helper(dev, NULL) != 0)
--		return -EINVAL;
--	return count;
-+	if (bus_rescan_devices_helper(dev, NULL) == 0)
-+		err = count;
-+	put_device(dev);
-+	return err;
- }
+-static const struct usbmix_name_map kef_x300a_map[] = {
+-	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
++/* some (all?) SCMS USB3318 devices are affected by a firmware lock up
++ * when anything attempts to access FU 10 (control)
++ */
++static const struct usbmix_name_map scms_usb3318_map[] = {
++	{ 10, NULL },
+ 	{ 0 }
+ };
  
- static struct device *next_device(struct klist_iter *i)
+@@ -415,8 +418,14 @@ static struct usbmix_ctl_map usbmix_ctl_maps[] = {
+ 		.map = ebox44_map,
+ 	},
+ 	{
++		/* KEF X300A */
+ 		.id = USB_ID(0x27ac, 0x1000),
+-		.map = kef_x300a_map,
++		.map = scms_usb3318_map,
++	},
++	{
++		/* Arcam rPAC */
++		.id = USB_ID(0x25c4, 0x0003),
++		.map = scms_usb3318_map,
+ 	},
+ 	{ 0 } /* terminator */
+ };
 -- 
 2.2.2
 
