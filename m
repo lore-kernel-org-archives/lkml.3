@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063AbbA1UUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:20:00 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:57269 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753071AbbA1UT6 (ORCPT
+	id S1753398AbbA1UM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:12:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42205 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbbA1UMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:19:58 -0500
-Message-ID: <54C91F25.9080507@linaro.org>
-Date: Wed, 28 Jan 2015 17:40:53 +0000
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 15:12:21 -0500
+Date: Wed, 28 Jan 2015 09:42:22 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johan Hovold <johan@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Luis Henriques <luis.henriques@canonical.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH v2] gpio: sysfs: fix gpio device-attribute leak
+Message-ID: <20150128174222.GD7973@kroah.com>
+References: <20150128012627.464883057@linuxfoundation.org>
+ <1422461105-815-1-git-send-email-johan@kernel.org>
 MIME-Version: 1.0
-To: Eduardo Valentin <edubezval@gmail.com>
-CC: linux-pm@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH v2] thermal: Fix examples in DT documentation
-References: <1422465215-12716-1-git-send-email-srinivas.kandagatla@linaro.org> <20150128172929.GA27003@developer.hsd1.ca.comcast.net>
-In-Reply-To: <20150128172929.GA27003@developer.hsd1.ca.comcast.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422461105-815-1-git-send-email-johan@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 28, 2015 at 05:05:05PM +0100, Johan Hovold wrote:
+> commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
+> 
+> The gpio device attributes were never destroyed when the gpio was
+> unexported (or on export failures).
+> 
+> Use device_create_with_groups() to create the default device attributes
+> of the gpio class device. Note that this also fixes the
+> attribute-creation race with userspace for these attributes.
+> 
+> Remove contingent attributes in export error path and on unexport.
+> 
+> Fixes: d8f388d8dc8d ("gpio: sysfs interface")
+> Cc: stable <stable@vger.kernel.org> # v2.6.27+
+> Signed-off-by: Johan Hovold <johan@kernel.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> 
+> Backport to v3.10 (and earlier) which lacks device_create_with_groups().
+> 
+> Changes since v1
+>  - fix mistake in backport, which removed the attributes while holding
+>    the mutex in gpiod_unexport (reported by Luis Henriques)
 
+Thanks for the updated patch, now replaced the old one with this one.
 
-On 28/01/15 17:29, Eduardo Valentin wrote:
-> Looks like there are still occurencies of adc-dummy after your patch.
-> But I am amending myself, no need to resend.
-
-Thanks for fixing.. :-)
-
---srini
+greg k-h
