@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727AbbA1BEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:04:39 -0500
-Received: from ozlabs.org ([103.22.144.67]:56538 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753514AbbA1BEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:04:37 -0500
-Message-ID: <1422407074.32234.2.camel@ellerman.id.au>
-Subject: Re: [PATCH 0/4] defconfigs: cleanup obsolete MTD configs
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: semen.protsenko@globallogic.com
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-mips@linux-mips.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-am33-list@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-mtd@lists.infradead.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Date: Wed, 28 Jan 2015 12:04:34 +1100
-In-Reply-To: <CAJOTznWHpRh8ysVxwSWyvZL1UAe-G9A64j=M6z0+zPeoycgkDg@mail.gmail.com>
-References: <1422117213-3130-1-git-send-email-semen.protsenko@globallogic.com>
-	 <1422118156.27947.7.camel@x220>
-	 <CAJOTznWHpRh8ysVxwSWyvZL1UAe-G9A64j=M6z0+zPeoycgkDg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759624AbbA1BNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:13:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40887 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755000AbbA1BNy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 20:13:54 -0500
+Date: Tue, 27 Jan 2015 17:13:53 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, Linux-Stable <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/97] Misc series of functional/performance fixes for
+ 3.12-stable
+Message-ID: <20150128011353.GA24412@kroah.com>
+References: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409250945-30874-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2015-01-24 at 22:54 +0200, Sam Protsenko wrote:
-> > That's news for me. I thought they are silently ignored. Do you have an
-> > example of such a warning?
+On Thu, Aug 28, 2014 at 07:34:08PM +0100, Mel Gorman wrote:
+> Kernel Summit 2014 had a topic on performance regressions and catching
+> them.  The situation relatively recently has been good but I believe this
+> is partially due to major distributions stabilising recently and hardware
+> vendors working on performance for their latest platforms. On thing I fear is
+> that we miss performance regressions because releases contains performance
+> gains and losses, some of which balance out. After a number of mainline
+> releases, the performance may look ok but in comparison to a distribution
+> kernel cherry-picking the picture is not as rosy.  The 3.0-longterm
+> included a number of performance-related patches so it could be used as
+> a good performance baseline for later releases. It is no longer maintained.
 > 
-> Not really. It was just assumption. It seems you are right, they are just
-> ignored silently. But item 2 is still relevant and it was actually confused
-> me when I tried to figure out MTD configuration for my platform.
-> Anyway, garbage should be taken out from time to time.
+> This series contains a large number of patches against 3.12-longterm that
+> never made it to stable as the bugs were not serious enough or they were
+> performance patches. 3.10-longterm may need other pre-requisites I did
+> not research and 3.14-longterm should be able to apply a subset although
+> I have not tested the result.
+> 
 
-The usual way that this gets dealt with is that arch maintainers (ir)regularly
-run make savedefconfig on all their defconfigs.
+I've finally applied the rest of these to the 3.14-stable queue, thanks
+again for providing them.
 
-As it happens we've done that on powerpc just recently, if you rebase onto next
-you should see that, so you can drop the powerpc hunks from your patches. 
-
-cheers
-
-
+greg k-h
