@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760655AbbA1Bek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:34:40 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:49080 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbbA1Beh (ORCPT
+	id S932930AbbA1Bf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:35:56 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:56661 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760002AbbA1Bfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:34:37 -0500
+	Tue, 27 Jan 2015 20:35:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <54C7A9F6.1080500@oracle.com>
+In-Reply-To: <54C7F180.1030505@oracle.com>
 References: <1422282365-20015-1-git-send-email-sasha.levin@oracle.com>
-	<1422282365-20015-3-git-send-email-sasha.levin@oracle.com>
-	<20150127080603.GC11358@js1304-P5Q-DELUXE>
-	<54C7A9F6.1080500@oracle.com>
-Date: Wed, 28 Jan 2015 10:34:36 +0900
-Message-ID: <CAAmzW4N3QSWuzmL24f_-u=u+J0dx5kABxiZEqf_CHotRn_5E5w@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] mm: cma: allocation trigger
+	<1422282365-20015-4-git-send-email-sasha.levin@oracle.com>
+	<20150127081012.GD11358@js1304-P5Q-DELUXE>
+	<54C7D801.3070502@oracle.com>
+	<54C7F180.1030505@oracle.com>
+Date: Wed, 28 Jan 2015 10:35:52 +0900
+Message-ID: <CAAmzW4PEMWh_dtbtbcNEn9eW6ucz-1Frt+yOgwQ=GfbyXMYONw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] mm: cma: release trigger
 From: Joonsoo Kim <js1304@gmail.com>
 To: Sasha Levin <sasha.levin@oracle.com>
 Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -27,101 +28,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-28 0:08 GMT+09:00 Sasha Levin <sasha.levin@oracle.com>:
-> On 01/27/2015 03:06 AM, Joonsoo Kim wrote:
->> On Mon, Jan 26, 2015 at 09:26:04AM -0500, Sasha Levin wrote:
->>> Provides a userspace interface to trigger a CMA allocation.
->>>
->>> Usage:
->>>
->>>      echo [pages] > alloc
->>>
->>> This would provide testing/fuzzing access to the CMA allocation paths.
->>>
->>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->>> ---
->>>  mm/cma_debug.c |   60 ++++++++++++++++++++++++++++++++++++++++++++++++++++++--
->>>  1 file changed, 58 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/mm/cma_debug.c b/mm/cma_debug.c
->>> index 3a25413..39c7116 100644
->>> --- a/mm/cma_debug.c
->>> +++ b/mm/cma_debug.c
->>> @@ -7,9 +7,22 @@
->>>
->>>  #include <linux/debugfs.h>
->>>  #include <linux/cma.h>
->>> +#include <linux/list.h>
->>> +#include <linux/kernel.h>
->>> +#include <linux/dma-contiguous.h>
->>
->> dma-contiguous.h doesn't needed now.
+2015-01-28 5:13 GMT+09:00 Sasha Levin <sasha.levin@oracle.com>:
+> On 01/27/2015 01:25 PM, Sasha Levin wrote:
+>> On 01/27/2015 03:10 AM, Joonsoo Kim wrote:
+>>>> >> +                if (mem->n <= count) {
+>>>>> >> > +                     cma_release(cma, mem->p, mem->n);
+>>>>> >> > +                     count -= mem->n;
+>>>>> >> > +                     kfree(mem);
+>>>>> >> > +             } else {
+>>>>> >> > +                     cma_release(cma, mem->p, count);
+>>>>> >> > +                     mem->p += count;
+>>>>> >> > +                     mem->n -= count;
+>>>>> >> > +                     count = 0;
+>>>>> >> > +                     cma_add_to_cma_mem_list(mem);
+>>>>> >> > +             }
+>>>>> >> > +     }
+>>> > If order_per_bit is not 0 and count used in cma_release() is
+>>> > different with the count used in cma_alloc(), problem could
+>>> > occur since bitmap management code can't handle that situation.
+>>> >
+>>> > Could we just disable this case in this testing module?
+>> How should it behave then? Just free a max of 'count' pages and
+>> stop beforehand if we're going to go over it?
 >
-> Right.
->
->>> +#include <linux/slab.h>
->>>
->>>  #include "cma.h"
->>>
->>> +struct cma_mem {
->>> +    struct hlist_node node;
->>> +    struct page *p;
->>> +    unsigned long n;
->>> +};
->>> +
->>> +static HLIST_HEAD(cma_mem_head);
->>> +static DEFINE_SPINLOCK(cma_mem_head_lock);
->>> +
->>>  static struct dentry *cma_debugfs_root;
->>
->> How about keeping cma_mem_head on each cma area separately?
->
-> Good point, we're mixing allocations here.
->
->>>  static int cma_debugfs_get(void *data, u64 *val)
->>> @@ -23,8 +36,48 @@ static int cma_debugfs_get(void *data, u64 *val)
->>>
->>>  DEFINE_SIMPLE_ATTRIBUTE(cma_debugfs_fops, cma_debugfs_get, NULL, "%llu\n");
->>>
->>> -static void cma_debugfs_add_one(struct cma *cma, int idx)
->>> +static void cma_add_to_cma_mem_list(struct cma_mem *mem)
->>> +{
->>> +    spin_lock(&cma_mem_head_lock);
->>> +    hlist_add_head(&mem->node, &cma_mem_head);
->>> +    spin_unlock(&cma_mem_head_lock);
->>> +}
->>> +
->>> +static int cma_alloc_mem(struct cma *cma, int count)
->>>  {
->>> +    struct cma_mem *mem;
->>> +    struct page *p;
->>> +
->>> +    mem = kzalloc(sizeof(*mem), GFP_KERNEL);
->>> +    if (!mem)
->>> +            return -ENOMEM;
->>> +
->>> +    p = cma_alloc(cma, count, CONFIG_CMA_ALIGNMENT);
->>> +    if (!p) {
->>> +            kfree(mem);
->>> +            return -ENOMEM;
->>> +    }
->>
->> CONFIG_CMA_ALIGNMENT looks not good. It means just maximum aligment
->> so it is odd to use this value in testing. Is there special meaning
->> to use it here?
->
-> No good reason, I stole that from a different piece of code.
->
->> Could we also get alignment parameter from user? Something like below.
->>
->> echo "4 1" > alloc
->> 4 for number of pages
->> 1 for alignment.
->>
->> If it is impossible, just 0 looks better than CONFIG_CMA_ALIGNMENT.
->
-> I'd rather keep it simple and use a single parameter for now.
+> Actually, Can I just check for order_per_bit == 0 and execute it
+> then? I don't want to avoid testing these paths.
 
-Okay, then use 0 rather than CONFIG_CMA_ALIGNMENT.
+Okay. I'm okay if you check order_per_bit == 0 in such case.
 
 Thanks.
