@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965654AbbA1E6F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:58:05 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39397 "EHLO mail.kernel.org"
+	id S965645AbbA1E5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:57:45 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39423 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964804AbbA1EVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:21:00 -0500
+	id S964815AbbA1EVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:21:03 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 077/177] KVM: x86: Check non-canonical addresses upon WRMSR
-Date: Wed, 28 Jan 2015 12:08:40 +0800
-Message-Id: <1422418236-12852-153-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 77/91] ext4: avoid trying to kfree an ERR_PTR pointer
+Date: Wed, 28 Jan 2015 12:08:41 +0800
+Message-Id: <1422418236-12852-154-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,156 +20,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Theodore Ts'o <tytso@mit.edu>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 854e8bb1aa06c578c2c9145fa6bfe3680ef63b23 upstream.
+commit a9cfcd63e8d206ce4235c355d857c4fbdf0f4587 upstream.
 
-Upon WRMSR, the CPU should inject #GP if a non-canonical value (address) is
-written to certain MSRs. The behavior is "almost" identical for AMD and Intel
-(ignoring MSRs that are not implemented in either architecture since they would
-anyhow #GP). However, IA32_SYSENTER_ESP and IA32_SYSENTER_EIP cause #GP if
-non-canonical address is written on Intel but not on AMD (which ignores the top
-32-bits).
+Thanks to Dan Carpenter for extending smatch to find bugs like this.
+(This was found using a development version of smatch.)
 
-Accordingly, this patch injects a #GP on the MSRs which behave identically on
-Intel and AMD.  To eliminate the differences between the architecutres, the
-value which is written to IA32_SYSENTER_ESP and IA32_SYSENTER_EIP is turned to
-canonical value before writing instead of injecting a #GP.
-
-Some references from Intel and AMD manuals:
-
-According to Intel SDM description of WRMSR instruction #GP is expected on
-WRMSR "If the source register contains a non-canonical address and ECX
-specifies one of the following MSRs: IA32_DS_AREA, IA32_FS_BASE, IA32_GS_BASE,
-IA32_KERNEL_GS_BASE, IA32_LSTAR, IA32_SYSENTER_EIP, IA32_SYSENTER_ESP."
-
-According to AMD manual instruction manual:
-LSTAR/CSTAR (SYSCALL): "The WRMSR instruction loads the target RIP into the
-LSTAR and CSTAR registers.  If an RIP written by WRMSR is not in canonical
-form, a general-protection exception (#GP) occurs."
-IA32_GS_BASE and IA32_FS_BASE (WRFSBASE/WRGSBASE): "The address written to the
-base field must be in canonical form or a #GP fault will occur."
-IA32_KERNEL_GS_BASE (SWAPGS): "The address stored in the KernelGSbase MSR must
-be in canonical form."
-
-This patch fixes CVE-2014-3610.
-
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Fixes: 36de928641ee48b2078d3fe9514242aaa2f92013
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 [lizf: Backported to 3.4:
- - adjust context
- - s/msr->index/msr_index and s/msr->data/data]
+- s/new.bh/new_bh/
+- drop the change to ext4_cross_rename()]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/include/asm/kvm_host.h | 14 ++++++++++++++
- arch/x86/kvm/svm.c              |  2 +-
- arch/x86/kvm/vmx.c              |  2 +-
- arch/x86/kvm/x86.c              | 27 ++++++++++++++++++++++++++-
- 4 files changed, 42 insertions(+), 3 deletions(-)
+ fs/ext4/namei.c  | 1 +
+ fs/ext4/resize.c | 2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index c29677e..c1e0ef0 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -882,6 +882,20 @@ static inline void kvm_inject_gp(struct kvm_vcpu *vcpu, u32 error_code)
- 	kvm_queue_exception_e(vcpu, GP_VECTOR, error_code);
- }
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index a2efbda..665e55c 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2452,6 +2452,7 @@ static int ext4_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	new_bh = ext4_find_entry(new_dir, &new_dentry->d_name, &new_de);
+ 	if (IS_ERR(new_bh)) {
+ 		retval = PTR_ERR(new_bh);
++		new_bh = NULL;
+ 		goto end_rename;
+ 	}
+ 	if (new_bh) {
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 50992c3..a43e43c 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -528,6 +528,7 @@ handle_bb:
+ 		bh = bclean(handle, sb, block);
+ 		if (IS_ERR(bh)) {
+ 			err = PTR_ERR(bh);
++			bh = NULL;
+ 			goto out;
+ 		}
+ 		if (ext4_bg_has_super(sb, group)) {
+@@ -556,6 +557,7 @@ handle_ib:
+ 		bh = bclean(handle, sb, block);
+ 		if (IS_ERR(bh)) {
+ 			err = PTR_ERR(bh);
++			bh = NULL;
+ 			goto out;
+ 		}
  
-+static inline u64 get_canonical(u64 la)
-+{
-+	return ((int64_t)la << 16) >> 16;
-+}
-+
-+static inline bool is_noncanonical_address(u64 la)
-+{
-+#ifdef CONFIG_X86_64
-+	return get_canonical(la) != la;
-+#else
-+	return false;
-+#endif
-+}
-+
- #define TSS_IOPB_BASE_OFFSET 0x66
- #define TSS_BASE_SIZE 0x68
- #define TSS_IOPB_SIZE (65536 / 8)
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index b567285..1cd908c 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3212,7 +3212,7 @@ static int wrmsr_interception(struct vcpu_svm *svm)
- 
- 
- 	svm->next_rip = kvm_rip_read(&svm->vcpu) + 2;
--	if (svm_set_msr(&svm->vcpu, ecx, data)) {
-+	if (kvm_set_msr(&svm->vcpu, ecx, data)) {
- 		trace_kvm_msr_write_ex(ecx, data);
- 		kvm_inject_gp(&svm->vcpu, 0);
- 	} else {
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 443635d..7806435 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -4545,7 +4545,7 @@ static int handle_wrmsr(struct kvm_vcpu *vcpu)
- 	u64 data = (vcpu->arch.regs[VCPU_REGS_RAX] & -1u)
- 		| ((u64)(vcpu->arch.regs[VCPU_REGS_RDX] & -1u) << 32);
- 
--	if (vmx_set_msr(vcpu, ecx, data) != 0) {
-+	if (kvm_set_msr(vcpu, ecx, data) != 0) {
- 		trace_kvm_msr_write_ex(ecx, data);
- 		kvm_inject_gp(vcpu, 0);
- 		return 1;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 4b1be29..51cc661 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -858,7 +858,6 @@ void kvm_enable_efer_bits(u64 mask)
- }
- EXPORT_SYMBOL_GPL(kvm_enable_efer_bits);
- 
--
- /*
-  * Writes msr value into into the appropriate "register".
-  * Returns 0 on success, non-0 otherwise.
-@@ -866,8 +865,34 @@ EXPORT_SYMBOL_GPL(kvm_enable_efer_bits);
-  */
- int kvm_set_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 data)
- {
-+	switch (msr_index) {
-+	case MSR_FS_BASE:
-+	case MSR_GS_BASE:
-+	case MSR_KERNEL_GS_BASE:
-+	case MSR_CSTAR:
-+	case MSR_LSTAR:
-+		if (is_noncanonical_address(data))
-+			return 1;
-+		break;
-+	case MSR_IA32_SYSENTER_EIP:
-+	case MSR_IA32_SYSENTER_ESP:
-+		/*
-+		 * IA32_SYSENTER_ESP and IA32_SYSENTER_EIP cause #GP if
-+		 * non-canonical address is written on Intel but not on
-+		 * AMD (which ignores the top 32-bits, because it does
-+		 * not implement 64-bit SYSENTER).
-+		 *
-+		 * 64-bit code should hence be able to write a non-canonical
-+		 * value on AMD.  Making the address canonical ensures that
-+		 * vmentry does not fail on Intel after writing a non-canonical
-+		 * value, and that something deterministic happens if the guest
-+		 * invokes 64-bit SYSENTER.
-+		 */
-+		data = get_canonical(data);
-+	}
- 	return kvm_x86_ops->set_msr(vcpu, msr_index, data);
- }
-+EXPORT_SYMBOL_GPL(kvm_set_msr);
- 
- /*
-  * Adapt set_msr() to msr_io()'s calling convention
 -- 
 1.9.1
 
