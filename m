@@ -1,234 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759537AbbA1VW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:22:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964955AbbA1UuC (ORCPT
+	id S965031AbbA2Dcy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:32:54 -0500
+Received: from smtprelay0050.hostedemail.com ([216.40.44.50]:49481 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755159AbbA2Bo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:50:02 -0500
-Date: Wed, 28 Jan 2015 07:08:25 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-566b5cfb035fb496280be61f976b5281563bfa27@git.kernel.org>
-Cc: acme@redhat.com, tglx@linutronix.de, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, kan.liang@intel.com, mingo@kernel.org, hpa@zytor.com,
-        namhyung@kernel.org, jolsa@kernel.org, linux-kernel@vger.kernel.org
-Reply-To: jolsa@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        acme@redhat.com, kan.liang@intel.com, namhyung@kernel.org,
-        jolsa@kernel.org, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1420677949-6719-8-git-send-email-namhyung@kernel.org>
-References: <1420677949-6719-8-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf diff: Fix -o/--order option behavior
-Git-Commit-ID: 566b5cfb035fb496280be61f976b5281563bfa27
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 28 Jan 2015 20:44:29 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2553:2559:2562:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3874:4385:5007:6119:6120:6261:7875:7901:7903:9108:10004:10400:10848:10967:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357:14096:14097:14130:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: lake89_67b350208ea4a
+X-Filterd-Recvd-Size: 2782
+Date: Wed, 28 Jan 2015 10:08:31 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ktest: restore tty settings after closing console
+Message-ID: <20150128100831.18cdad60@gandalf.local.home>
+In-Reply-To: <20150128145923.GA26843@treble.redhat.com>
+References: <1bb89abc0025cf1d6da657c7ba58bbeb4381a515.1422382008.git.jpoimboe@redhat.com>
+	<20150127170129.7db53047@gandalf.local.home>
+	<20150128145923.GA26843@treble.redhat.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  566b5cfb035fb496280be61f976b5281563bfa27
-Gitweb:     http://git.kernel.org/tip/566b5cfb035fb496280be61f976b5281563bfa27
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Thu, 8 Jan 2015 09:45:48 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 21 Jan 2015 13:24:35 -0300
+On Wed, 28 Jan 2015 08:59:23 -0600
+Josh Poimboeuf <jpoimboe@redhat.com> wrote:
 
-perf diff: Fix -o/--order option behavior
+> On Tue, Jan 27, 2015 at 05:01:29PM -0500, Steven Rostedt wrote:
+> > On Tue, 27 Jan 2015 12:10:04 -0600
+> > Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+> > 
+> > > When ktest runs the console program as a child process, the parent and
+> > > child share the same tty for stdin and stderr.  This is problematic when
+> > > using a libvirt target.  The "virsh console" program makes a lot of
+> > > changes to the tty settings, making ktest's output hard to read
+> > > (carriage returns don't work).  After ktest exits, the terminal is
+> > > unusable (CRs broken, stdin isn't echoed).
+> > > 
+> > > I think the best way to fix this issue would be to create a
+> > > pseudoterminal (pty pair) so the child process would have a dedicated
+> > > tty, and then use pipes to connect the two ttys.  I'm not sure if that's
+> > > overkill, but it's far beyond my current Perl abilities.
+> > 
+> > And beyond mine too. I tried to get that right a few times, and it
+> > never worked out. Maybe someone with more oyster skilz can fix this.
+> 
+> I decided to level up my oyster skilz.  I came up with this (to be
+> applied instead of the original patch).  It's working well for me.
 
-The prior change fixes default output ordering with each column but it
-breaks -o/--order option.  This patch prepends a new hpp fmt struct to
-sort list but not to output field list so that it can affect ordering
-without adding a new output column.
+I already applied your other patch. If there's any other work, please
+apply it on top. I in the process of testing other changes on top of
+this too. I'll be pushing it soon to my for-next linux-ktest.git tree,
+after I'm finished testing.
 
-The new hpp fmt uses its own compare functions which treats dummy
-entries (which have no baseline) little differently - the delta field
-can be computed without baseline but others (ratio and wdiff) are not.
 
-The new output will look like below:
+> Right now, stdin isn't hooked up, so the user can't mess with the
+> console.  Is stdin needed?
 
-  $ perf diff -o 2 perf.data.{old,cur,new}
-  ...
-  # Baseline/0  Delta/1  Delta/2  Shared Object      Symbol
-  # ..........  .......  .......  .................  ..........................................
-        22.98%   +0.51%   +0.52%  libc-2.20.so       [.] _int_malloc
-         5.70%   +0.28%   +0.30%  libc-2.20.so       [.] free
-         4.38%   -0.21%   +0.25%  a.out              [.] main
-         1.32%   -0.15%   +0.05%  a.out              [.] free@plt
-                          +0.01%  [kernel.kallsyms]  [k] intel_pstate_timer_func
-                          +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-                          +0.01%  [kernel.kallsyms]  [k] timekeeping_update.constprop.8
-                 +0.01%   +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
-         0.01%            -0.00%  [kernel.kallsyms]  [k] native_read_msr_safe
-         0.01%   -0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
-         1.31%   +0.03%   -0.06%  a.out              [.] malloc@plt
-        31.50%   -0.74%   -0.23%  libc-2.20.so       [.] _int_free
-        32.75%   +0.28%   -0.83%  libc-2.20.so       [.] malloc
-         0.01%                    [kernel.kallsyms]  [k] scheduler_tick
-                 +0.01%           [kernel.kallsyms]  [k] read_tsc
-                 +0.01%           [kernel.kallsyms]  [k] perf_adjust_freq_unthr_context.part.82
+Actually, I do. I found it's nice to move things along when the console
+shows grub or syslinux options, and I can hit enter and it continues.
 
-In above example, the output was sorted by 'Delta/2' column first, and
-then 'Baseline/0' and finally 'Delta/1'.
+It's not critical, but it's a freebee for me.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Kan Liang <kan.liang@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1420677949-6719-8-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-diff.c | 101 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 99 insertions(+), 2 deletions(-)
+-- Steve
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 9844456..74aada5 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -558,6 +558,37 @@ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
- }
- 
- static int64_t
-+hist_entry__cmp_compute_idx(struct hist_entry *left, struct hist_entry *right,
-+			    int c, int sort_idx)
-+{
-+	struct hist_entry *p_right, *p_left;
-+
-+	p_left  = get_pair_data(left,  &data__files[sort_idx]);
-+	p_right = get_pair_data(right, &data__files[sort_idx]);
-+
-+	if (!p_left && !p_right)
-+		return 0;
-+
-+	if (!p_left || !p_right)
-+		return p_left ? -1 : 1;
-+
-+	if (c != COMPUTE_DELTA) {
-+		/*
-+		 * The delta can be computed without the baseline, but
-+		 * others are not.  Put those entries which have no
-+		 * values below.
-+		 */
-+		if (left->dummy && right->dummy)
-+			return 0;
-+
-+		if (left->dummy || right->dummy)
-+			return left->dummy ? 1 : -1;
-+	}
-+
-+	return __hist_entry__cmp_compute(p_left, p_right, c);
-+}
-+
-+static int64_t
- hist_entry__cmp_nop(struct perf_hpp_fmt *fmt __maybe_unused,
- 		    struct hist_entry *left __maybe_unused,
- 		    struct hist_entry *right __maybe_unused)
-@@ -601,6 +632,30 @@ hist_entry__cmp_wdiff(struct perf_hpp_fmt *fmt,
- 	return hist_entry__cmp_compute(right, left, COMPUTE_WEIGHTED_DIFF, d->idx);
- }
- 
-+static int64_t
-+hist_entry__cmp_delta_idx(struct perf_hpp_fmt *fmt __maybe_unused,
-+			  struct hist_entry *left, struct hist_entry *right)
-+{
-+	return hist_entry__cmp_compute_idx(right, left, COMPUTE_DELTA,
-+					   sort_compute);
-+}
-+
-+static int64_t
-+hist_entry__cmp_ratio_idx(struct perf_hpp_fmt *fmt __maybe_unused,
-+			  struct hist_entry *left, struct hist_entry *right)
-+{
-+	return hist_entry__cmp_compute_idx(right, left, COMPUTE_RATIO,
-+					   sort_compute);
-+}
-+
-+static int64_t
-+hist_entry__cmp_wdiff_idx(struct perf_hpp_fmt *fmt __maybe_unused,
-+			  struct hist_entry *left, struct hist_entry *right)
-+{
-+	return hist_entry__cmp_compute_idx(right, left, COMPUTE_WEIGHTED_DIFF,
-+					   sort_compute);
-+}
-+
- static void hists__process(struct hists *hists)
- {
- 	if (show_baseline_only)
-@@ -1074,9 +1129,10 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	perf_hpp__register_sort_field(fmt);
- }
- 
--static void ui_init(void)
-+static int ui_init(void)
- {
- 	struct data__file *d;
-+	struct perf_hpp_fmt *fmt;
- 	int i;
- 
- 	data__for_each_file(i, d) {
-@@ -1106,6 +1162,46 @@ static void ui_init(void)
- 			data__hpp_register(d, i ? PERF_HPP_DIFF__PERIOD :
- 						  PERF_HPP_DIFF__PERIOD_BASELINE);
- 	}
-+
-+	if (!sort_compute)
-+		return 0;
-+
-+	/*
-+	 * Prepend an fmt to sort on columns at 'sort_compute' first.
-+	 * This fmt is added only to the sort list but not to the
-+	 * output fields list.
-+	 *
-+	 * Note that this column (data) can be compared twice - one
-+	 * for this 'sort_compute' fmt and another for the normal
-+	 * diff_hpp_fmt.  But it shouldn't a problem as most entries
-+	 * will be sorted out by first try or baseline and comparing
-+	 * is not a costly operation.
-+	 */
-+	fmt = zalloc(sizeof(*fmt));
-+	if (fmt == NULL) {
-+		pr_err("Memory allocation failed\n");
-+		return -1;
-+	}
-+
-+	fmt->cmp      = hist_entry__cmp_nop;
-+	fmt->collapse = hist_entry__cmp_nop;
-+
-+	switch (compute) {
-+	case COMPUTE_DELTA:
-+		fmt->sort = hist_entry__cmp_delta_idx;
-+		break;
-+	case COMPUTE_RATIO:
-+		fmt->sort = hist_entry__cmp_ratio_idx;
-+		break;
-+	case COMPUTE_WEIGHTED_DIFF:
-+		fmt->sort = hist_entry__cmp_wdiff_idx;
-+		break;
-+	default:
-+		BUG_ON(1);
-+	}
-+
-+	list_add(&fmt->sort_list, &perf_hpp__sort_list);
-+	return 0;
- }
- 
- static int data_init(int argc, const char **argv)
-@@ -1171,7 +1267,8 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (data_init(argc, argv) < 0)
- 		return -1;
- 
--	ui_init();
-+	if (ui_init() < 0)
-+		return -1;
- 
- 	sort__mode = SORT_MODE__DIFF;
- 
