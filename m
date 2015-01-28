@@ -1,44 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757084AbbA2BnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:43:05 -0500
-Received: from smtprelay0158.hostedemail.com ([216.40.44.158]:59101 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757045AbbA2BnB (ORCPT
+	id S1752000AbbA1Uuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:50:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569AbbA1Uua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:43:01 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::,RULES_HIT:41:355:379:541:599:800:960:988:989:1260:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1536:1559:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3622:3867:3872:4362:5007:6261:7875:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: mom16_4fe4e7059e14c
-X-Filterd-Recvd-Size: 1043
-Date: Wed, 28 Jan 2015 10:05:48 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tina Ruchandani <ruchandani.tina@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v4] trace: Use 64-bit timekeeping
-Message-ID: <20150128100548.2ff27c08@gandalf.local.home>
-In-Reply-To: <13699348.kjuUqHkb9Z@wuerfel>
-References: <20150128141611.GA2701@tinar>
-	<20150128095349.6a3537a2@gandalf.local.home>
-	<13699348.kjuUqHkb9Z@wuerfel>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 28 Jan 2015 15:50:30 -0500
+Date: Wed, 28 Jan 2015 07:05:55 -0800
+From: tip-bot for Cody P Schafer <tipbot@zytor.com>
+Message-ID: <tip-98a43e0e9917059da32db89829b0eb95453a11ee@git.kernel.org>
+Cc: sukadev@linux.vnet.ibm.com, dev@codyps.com, peterz@infradead.org,
+        mingo@kernel.org, acme@redhat.com, tglx@linutronix.de,
+        jolsa@kernel.org, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mpe@ellerman.id.au, cody@linux.vnet.ibm.com, jolsa@redhat.com,
+        hbabu@us.ibm.com, hpa@zytor.com
+Reply-To: sukadev@linux.vnet.ibm.com, dev@codyps.com, peterz@infradead.org,
+        mingo@kernel.org, tglx@linutronix.de, jolsa@kernel.org,
+        acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mpe@ellerman.id.au, cody@linux.vnet.ibm.com, jolsa@redhat.com,
+        hpa@zytor.com, hbabu@us.ibm.com
+In-Reply-To: <1420679633-28856-4-git-send-email-sukadev@linux.vnet.ibm.com>
+References: <1420679633-28856-4-git-send-email-sukadev@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf Documentation: Add event parameters
+Git-Commit-ID: 98a43e0e9917059da32db89829b0eb95453a11ee
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015 15:55:39 +0100
-Arnd Bergmann <arnd@arndb.de> wrote:
+Commit-ID:  98a43e0e9917059da32db89829b0eb95453a11ee
+Gitweb:     http://git.kernel.org/tip/98a43e0e9917059da32db89829b0eb95453a11ee
+Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
+AuthorDate: Wed, 7 Jan 2015 17:13:52 -0800
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 21 Jan 2015 13:24:33 -0300
 
+perf Documentation: Add event parameters
 
-> Please apply it to your tree.
+Event parameters are a basic way for partial events to be specified in
+sysfs with per-event names given to the fields that need to be filled in
+when using a particular event.
 
-Will do.
+It is intended for supporting cases where the single 'cpu' parameter is
+insufficient. For example, POWER 8 has events for physical
+sockets/cores/cpus that are accessible from with virtual machines. To
+keep using the single 'cpu' parameter we'd need to perform a mapping
+between Linux's cpus and the physical machine's cpus (in this case Linux
+is running under a hypervisor). This isn't possible because bindings
+between our cpus and physical cpus may not be fixed, and we probably
+won't have a "cpu" on each physical cpu.
 
-Thanks,
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Cody P Schafer <dev@codyps.com>
+Cc: Haren Myneni <hbabu@us.ibm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org
+Link: http://lkml.kernel.org/r/1420679633-28856-4-git-send-email-sukadev@linux.vnet.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ Documentation/ABI/testing/sysfs-bus-event_source-devices-events | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
--- Steve
-
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+index 20979f8..505f080 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -52,12 +52,18 @@ Description:	Per-pmu performance monitoring events specific to the running syste
+ 			event=0x2abc
+ 			event=0x423,inv,cmask=0x3
+ 			domain=0x1,offset=0x8,starting_index=0xffff
++			domain=0x1,offset=0x8,core=?
+ 
+ 		Each of the assignments indicates a value to be assigned to a
+ 		particular set of bits (as defined by the format file
+ 		corresponding to the <term>) in the perf_event structure passed
+ 		to the perf_open syscall.
+ 
++		In the case of the last example, a value replacing "?" would
++		need to be provided by the user selecting the particular event.
++		This is referred to as "event parameterization". Event
++		parameters have the format 'param=?'.
++
+ What: /sys/bus/event_source/devices/<pmu>/events/<event>.unit
+ Date: 2014/02/24
+ Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
