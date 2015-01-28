@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760322AbbA1ENh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:13:37 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36652 "EHLO mail.kernel.org"
+	id S965090AbbA1Fe2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:34:28 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36670 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759125AbbA1ENd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:13:33 -0500
+	id S1759403AbbA1ENf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:13:35 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Duncan Laurie <dlaurie@chromium.org>, Jarod Wilson <jarod@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jani Nikula <jani.nikula@intel.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 03/91] drm/i915: Remove bogus __init annotation from DMI callbacks
-Date: Wed, 28 Jan 2015 12:06:13 +0800
-Message-Id: <1422418236-12852-6-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 004/177] UBIFS: fix free log space calculation
+Date: Wed, 28 Jan 2015 12:06:14 +0800
+Message-Id: <1422418236-12852-7-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -23,89 +21,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit bbe1c2740d3a25aa1dbe5d842d2ff09cddcdde0a upstream.
+commit ba29e721eb2df6df8f33c1f248388bb037a47914 upstream.
 
-The __init annotations for the DMI callback functions are wrong as this
-code can be called even after the module has been initialized, e.g. like
-this:
+Hu (hujianyang <hujianyang@huawei.com>) discovered an issue in the
+'empty_log_bytes()' function, which calculates how many bytes are left in the
+log:
 
-  # echo 1 > /sys/bus/pci/devices/0000:00:02.0/remove
-  # modprobe i915
-  # echo 1 > /sys/bus/pci/rescan
+"
+If 'c->lhead_lnum + 1 == c->ltail_lnum' and 'c->lhead_offs == c->leb_size', 'h'
+would equalent to 't' and 'empty_log_bytes()' would return 'c->log_bytes'
+instead of 0.
+"
 
-The first command will remove the PCI device from the kernel's device
-list so the second command won't see it right away. But as it registers
-a PCI driver it'll see it on the third command. If the system happens to
-match one of the DMI table entries we'll try to call a function in long
-released memory and generate an Oops, at best.
+At this point it is not clear what would be the consequences of this, and
+whether this may lead to any problems, but this patch addresses the issue just
+in case.
 
-Fix this by removing the bogus annotation.
-
-Modpost should have caught that one but it ignores section reference
-mismatches from the .rodata section. :/
-
-Fixes: 25e341cfc33d ("drm/i915: quirk away broken OpRegion VBT")
-Fixes: 8ca4013d702d ("CHROMIUM: i915: Add DMI override to skip CRT...")
-Fixes: 425d244c8670 ("drm/i915: ignore LVDS on intel graphics systems...")
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Duncan Laurie <dlaurie@chromium.org>
-Cc: Jarod Wilson <jarod@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>	# Can modpost be fixed?
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: hujianyang <hujianyang@huawei.com>
+Reported-by: hujianyang <hujianyang@huawei.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/gpu/drm/i915/intel_bios.c | 2 +-
- drivers/gpu/drm/i915/intel_crt.c  | 2 +-
- drivers/gpu/drm/i915/intel_lvds.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ fs/ubifs/log.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-index a2c9e56..d9e359a 100644
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -651,7 +651,7 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
- 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
+diff --git a/fs/ubifs/log.c b/fs/ubifs/log.c
+index 7ed9a37..843beda 100644
+--- a/fs/ubifs/log.c
++++ b/fs/ubifs/log.c
+@@ -110,10 +110,14 @@ static inline long long empty_log_bytes(const struct ubifs_info *c)
+ 	h = (long long)c->lhead_lnum * c->leb_size + c->lhead_offs;
+ 	t = (long long)c->ltail_lnum * c->leb_size;
+ 
+-	if (h >= t)
++	if (h > t)
+ 		return c->log_bytes - h + t;
+-	else
++	else if (h != t)
+ 		return t - h;
++	else if (c->lhead_lnum != c->ltail_lnum)
++		return 0;
++	else
++		return c->log_bytes;
  }
  
--static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
-+static int intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
- {
- 	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
- 		      "VBIOS ROM for %s\n",
-diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
-index a83f7ac..b4f71c2 100644
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -564,7 +564,7 @@ static const struct drm_encoder_funcs intel_crt_enc_funcs = {
- 	.destroy = intel_encoder_destroy,
- };
- 
--static int __init intel_no_crt_dmi_callback(const struct dmi_system_id *id)
-+static int intel_no_crt_dmi_callback(const struct dmi_system_id *id)
- {
- 	DRM_DEBUG_KMS("Skipping CRT initialization for %s\n", id->ident);
- 	return 1;
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index b695ab4..77190cc 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -619,7 +619,7 @@ static const struct drm_encoder_funcs intel_lvds_enc_funcs = {
- 	.destroy = intel_encoder_destroy,
- };
- 
--static int __init intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
-+static int intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
- {
- 	DRM_DEBUG_KMS("Skipping LVDS initialization for %s\n", id->ident);
- 	return 1;
+ /**
 -- 
 1.9.1
 
