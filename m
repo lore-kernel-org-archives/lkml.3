@@ -1,211 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764019AbbA2DSb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:18:31 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:63557 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757562AbbA2DS1 (ORCPT
+	id S1755447AbbA1UR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:17:56 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:61400 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755404AbbA1URv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 22:18:27 -0500
+	Wed, 28 Jan 2015 15:17:51 -0500
+Message-ID: <54C905CA.80908@i2se.com>
+Date: Wed, 28 Jan 2015 16:52:42 +0100
+From: Stefan Wahren <stefan.wahren@i2se.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <CACzj_yW2j7Bqs=9iOgQ0Wh6SwAHNkH3SYMboKFaWzRT+yarfwA@mail.gmail.com>
-References: <CACzj_yW2j7Bqs=9iOgQ0Wh6SwAHNkH3SYMboKFaWzRT+yarfwA@mail.gmail.com>
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Wed, 28 Jan 2015 23:52:25 +0800
-Message-ID: <CACzj_yVAyAm1UHtqV6TbZ-Qa5w4GH723JF_+4ptZTm+JE1yj3g@mail.gmail.com>
-Subject: Re: [PATCH v4 1/6] KVM: nVMX: Use hardware MSR bitmap
-To: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Zhi Li <lznuaa@gmail.com>, Mike Turquette <mturquette@linaro.org>
+CC: Marek Vasut <marex@denx.de>, kernel list <linux-kernel@vger.kernel.org>,
+        Sascha Hauer <kernel@pengutronix.de>, harald@ccbib.org,
+        Shawn Guo <shawn.guo@linaro.org>, Fabio Estevam <festevam@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2] clk: mxs: Fix invalid 32-bit access to frac registers
+References: <1419762402-4548-1-git-send-email-stefan.wahren@i2se.com>	<CAHrpEqQ-eoqM3W1hYcS6EPTmur1FSfm8TeEjYrtZ+PquavL86w@mail.gmail.com>	<201501220039.02073.marex@denx.de>	<20150128015131.22722.22882@quantum> <CAHrpEqSFfdWsCif_wZO2ToRpwOuC2yt45+HwOpGgv+B=EwKTCw@mail.gmail.com>
+In-Reply-To: <CAHrpEqSFfdWsCif_wZO2ToRpwOuC2yt45+HwOpGgv+B=EwKTCw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:tVlu2O8M1CzqBcNQM5bIaZWFbO1x92qdzuPCNyhe5nkcKo60sA4
+ y/puOJyV69uaX6LH3XBibAEfohBBDPERxddiEocuoqdsGYpbbrW/Q8E0e+cRjLvZfniB251
+ lm4LtE8a2Om7IYvuPmzA2DYdFkN8ggemjHJPkOLSEbL2bOL5SlGjGnXO1EHmS3uJS+qfnhJ
+ K0yugTSZ1blS0FA+EtEfg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, please ignore this mail, the subject is wrong : (
+Hi,
 
-On Wed, Jan 28, 2015 at 11:50 PM, Wincy Van <fanwenyi0529@gmail.com> wrote:
-> Currently, if L1 enables MSR_BITMAP, we will emulate this feature,
-> all of L2's msr access is intercepted by L0. Since many features
-> like virtualize x2apic mode has a complicated logic and it is
-> difficult for us to emulate, we should use hardware and merge
-> the bitmap.
+Am 28.01.2015 um 04:36 schrieb Zhi Li:
+> On Tue, Jan 27, 2015 at 7:51 PM, Mike Turquette <mturquette@linaro.org> wrote:
+>> Quoting Marek Vasut (2015-01-21 15:39:01)
+>>> On Wednesday, January 21, 2015 at 05:16:03 PM, Zhi Li wrote:
+>>>> On Sun, Dec 28, 2014 at 4:26 AM, Stefan Wahren <stefan.wahren@i2se.com> wrote:
+>>>>> According to i.MX23 and i.MX28 reference manual the fractional
+>>>>> clock control registers must be addressed by byte instructions.
+>>>> I don't think mx23 and mx28 have such limitation. I will double check
+>>>> with IC team about this.
+>>>> RTL is generated from a xml file. All registers implement is unified.
+>>>> I don't think only clock control register have such limitation and
+>>>> other registers not.
+>>> Hi,
+>>>
+>>> Section 10.8.24 in the MX28 datasheet (Fractional Clock Control Register 0)
+>>> states otherwise, but maybe the documentation is simply not matching the
+>>> silicon.
+>>>
+>>> Here's a quote:
+>>> "
+>>> This register controls the 9-phase fractional clock dividers. The fractional
+>>> clock frequencies are a product of the values in these registers. NOTE: This
+>>> register can only be addressed by byte instructions. Addressing word or half-
+>>> word are not allowed.
+>>> "
+>>>
+>>> I also recall seeing weird behavior when these registers were accessed by word
+>>> access in U-Boot, so I believe the datasheet is correct.
+>> Hi Frank,
+>>
+>> Are you satisfied with this patch?
+> I asked IC designer about this.
+> They will check RTL code.
+> I will check their status again.
+> Our released BSP code used 32bit WORD access.
+
+i want to point out that the 32bit WORD is divided in 4 parts (IO0FRAC,
+IO1FRAC, EMIFRAC, CPUFRAC). Yes, it's true that BSP code access the
+register as 32bit, but it's never modify the complete 32bit at once just
+only 1 part (8bit) at a time.
+
+So here is my theory about Fractional Clock Control Register:
+
+Reading as 32bit WORD => safe
+Modify only 1 part (8bit) of the 32bit WORD => safe
+Modify more than 1 part of the 32bit WORD => unsafe !!!
+
+Best regards
+Stefan
+
 >
-> This patch introduces nested_vmx_merge_msr_bitmap for future use.
->
-> Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
-> ---
->  arch/x86/kvm/vmx.c |   77 ++++++++++++++++++++++++++++++++++++++++++++-------
->  1 files changed, 66 insertions(+), 11 deletions(-)
->
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index c987374..787f886 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -798,6 +798,7 @@ static unsigned long *vmx_msr_bitmap_legacy;
->  static unsigned long *vmx_msr_bitmap_longmode;
->  static unsigned long *vmx_msr_bitmap_legacy_x2apic;
->  static unsigned long *vmx_msr_bitmap_longmode_x2apic;
-> +static unsigned long *vmx_msr_bitmap_nested;
->  static unsigned long *vmx_vmread_bitmap;
->  static unsigned long *vmx_vmwrite_bitmap;
->
-> @@ -5812,13 +5813,21 @@ static __init int hardware_setup(void)
->                                 (unsigned long *)__get_free_page(GFP_KERNEL);
->         if (!vmx_msr_bitmap_longmode_x2apic)
->                 goto out4;
-> +
-> +       if (nested) {
-> +               vmx_msr_bitmap_nested =
-> +                       (unsigned long *)__get_free_page(GFP_KERNEL);
-> +               if (!vmx_msr_bitmap_nested)
-> +                       goto out5;
-> +       }
-> +
->         vmx_vmread_bitmap = (unsigned long *)__get_free_page(GFP_KERNEL);
->         if (!vmx_vmread_bitmap)
-> -               goto out5;
-> +               goto out6;
->
->         vmx_vmwrite_bitmap = (unsigned long *)__get_free_page(GFP_KERNEL);
->         if (!vmx_vmwrite_bitmap)
-> -               goto out6;
-> +               goto out7;
->
->         memset(vmx_vmread_bitmap, 0xff, PAGE_SIZE);
->         memset(vmx_vmwrite_bitmap, 0xff, PAGE_SIZE);
-> @@ -5834,10 +5843,12 @@ static __init int hardware_setup(void)
->
->         memset(vmx_msr_bitmap_legacy, 0xff, PAGE_SIZE);
->         memset(vmx_msr_bitmap_longmode, 0xff, PAGE_SIZE);
-> +       if (nested)
-> +               memset(vmx_msr_bitmap_nested, 0xff, PAGE_SIZE);
->
->         if (setup_vmcs_config(&vmcs_config) < 0) {
->                 r = -EIO;
-> -               goto out7;
-> +               goto out8;
->         }
->
->         if (boot_cpu_has(X86_FEATURE_NX))
-> @@ -5944,10 +5955,13 @@ static __init int hardware_setup(void)
->
->         return alloc_kvm_area();
->
-> -out7:
-> +out8:
->         free_page((unsigned long)vmx_vmwrite_bitmap);
-> -out6:
-> +out7:
->         free_page((unsigned long)vmx_vmread_bitmap);
-> +out6:
-> +       if (nested)
-> +               free_page((unsigned long)vmx_msr_bitmap_nested);
->  out5:
->         free_page((unsigned long)vmx_msr_bitmap_longmode_x2apic);
->  out4:
-> @@ -5974,6 +5988,8 @@ static __exit void hardware_unsetup(void)
->         free_page((unsigned long)vmx_io_bitmap_a);
->         free_page((unsigned long)vmx_vmwrite_bitmap);
->         free_page((unsigned long)vmx_vmread_bitmap);
-> +       if (nested)
-> +               free_page((unsigned long)vmx_msr_bitmap_nested);
->
->         free_kvm_area();
->  }
-> @@ -8305,6 +8321,38 @@ static void vmx_start_preemption_timer(struct
-> kvm_vcpu *vcpu)
->                       ns_to_ktime(preemption_timeout), HRTIMER_MODE_REL);
->  }
->
-> +static int nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,
-> +                                               struct vmcs12 *vmcs12)
-> +{
-> +       int maxphyaddr;
-> +       u64 addr;
-> +
-> +       if (!nested_cpu_has(vmcs12, CPU_BASED_USE_MSR_BITMAPS))
-> +               return 0;
-> +
-> +       if (vmcs12_read_any(vcpu, MSR_BITMAP, &addr)) {
-> +               WARN_ON(1);
-> +               return -EINVAL;
-> +       }
-> +       maxphyaddr = cpuid_maxphyaddr(vcpu);
-> +
-> +       if (!PAGE_ALIGNED(vmcs12->msr_bitmap) ||
-> +          ((addr + PAGE_SIZE) >> maxphyaddr))
-> +               return -EINVAL;
-> +
-> +       return 0;
-> +}
-> +
-> +/*
-> + * Merge L0's and L1's MSR bitmap, return false to indicate that
-> + * we do not use the hardware.
-> + */
-> +static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
-> +                                              struct vmcs12 *vmcs12)
-> +{
-> +       return false;
-> +}
-> +
->  static int nested_vmx_check_msr_switch(struct kvm_vcpu *vcpu,
->                                        unsigned long count_field,
->                                        unsigned long addr_field,
-> @@ -8637,11 +8685,17 @@ static void prepare_vmcs02(struct kvm_vcpu
-> *vcpu, struct vmcs12 *vmcs12)
->                 vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
->         }
->
-> +       if (cpu_has_vmx_msr_bitmap() &&
-> +           exec_control & CPU_BASED_USE_MSR_BITMAPS &&
-> +           nested_vmx_merge_msr_bitmap(vcpu, vmcs12)) {
-> +               vmcs_write64(MSR_BITMAP, __pa(vmx_msr_bitmap_nested));
-> +       } else
-> +               exec_control &= ~CPU_BASED_USE_MSR_BITMAPS;
-> +
->         /*
-> -        * Merging of IO and MSR bitmaps not currently supported.
-> +        * Merging of IO bitmap not currently supported.
->          * Rather, exit every time.
->          */
-> -       exec_control &= ~CPU_BASED_USE_MSR_BITMAPS;
->         exec_control &= ~CPU_BASED_USE_IO_BITMAPS;
->         exec_control |= CPU_BASED_UNCOND_IO_EXITING;
->
-> @@ -8792,15 +8846,13 @@ static int nested_vmx_run(struct kvm_vcpu
-> *vcpu, bool launch)
->                 return 1;
->         }
->
-> -       if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
-> -                       !PAGE_ALIGNED(vmcs12->msr_bitmap)) {
-> +       if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
->                 /*TODO: Also verify bits beyond physical address width are 0*/
->                 nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
->                 return 1;
->         }
->
-> -       if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
-> -               /*TODO: Also verify bits beyond physical address width are 0*/
-> +       if (nested_vmx_check_msr_bitmap_controls(vcpu, vmcs12)) {
->                 nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
->                 return 1;
->         }
-> @@ -9356,6 +9408,9 @@ static void load_vmcs12_host_state(struct kvm_vcpu *vcpu,
->         kvm_set_dr(vcpu, 7, 0x400);
->         vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
->
-> +       if (cpu_has_vmx_msr_bitmap())
-> +               vmx_set_msr_bitmap(vcpu);
-> +
->         if (nested_vmx_load_msr(vcpu, vmcs12->vm_exit_msr_load_addr,
->                                 vmcs12->vm_exit_msr_load_count))
->                 nested_vmx_abort(vcpu, VMX_ABORT_LOAD_HOST_MSR_FAIL);
-> --
-> 1.7.1
+> best regards
+> Frank Li
+>> Regards,
+>> Mike
+>>
+>>> Best regards,
+>>> Marek Vasut
+
+
