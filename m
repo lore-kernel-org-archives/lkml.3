@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452AbbA1UZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:25:30 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:60217 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757414AbbA1UZY (ORCPT
+	id S1760499AbbA1Ue5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:34:57 -0500
+Received: from resqmta-ch2-12v.sys.comcast.net ([69.252.207.44]:43510 "EHLO
+	resqmta-ch2-12v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757305AbbA1Uey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:25:24 -0500
-Message-ID: <54C9364C.3010406@kernel.dk>
-Date: Wed, 28 Jan 2015 12:19:40 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Markus Pargmann <mpa@pengutronix.de>
-CC: Paul Clements <paul.clements@steeleye.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, nbd-general@lists.sourceforge.net
-Subject: Re: [PATCH] MAINTAINERS: Update NBD maintainer
-References: <1422470138-8352-1-git-send-email-mpa@pengutronix.de>
-In-Reply-To: <1422470138-8352-1-git-send-email-mpa@pengutronix.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jan 2015 15:34:54 -0500
+Date: Wed, 28 Jan 2015 13:19:54 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm v2 2/3] slub: fix kmem_cache_shrink return value
+In-Reply-To: <20150128174639.GB16011@esperanza>
+Message-ID: <alpine.DEB.2.11.1501281319350.32767@gentwo.org>
+References: <cover.1422461573.git.vdavydov@parallels.com> <7ee54d0d26f6c61e2ecf50300ee955610749b344.1422461573.git.vdavydov@parallels.com> <alpine.DEB.2.11.1501281032220.32147@gentwo.org> <20150128174639.GB16011@esperanza>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2015 11:35 AM, Markus Pargmann wrote:
-> Paul stops maintining NBD and I will take his place from now on.
+On Wed, 28 Jan 2015, Vladimir Davydov wrote:
+
+> Yeah, right. In addition to that I misplaced the check - it should go
+> after discard_slab, where we decrement nr_slabs. Here goes the updated
+> patch:
 >
-> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+> From: Vladimir Davydov <vdavydov@parallels.com>
+> Subject: [PATCH] slub: fix kmem_cache_shrink return value
+>
+> It is supposed to return 0 if the cache has no remaining objects and 1
+> otherwise, while currently it always returns 0. Fix it.
 
-Applied, with the typo that Paul pointed out fixed.
-
--- 
-Jens Axboe
-
+Acked-by: Christoph Lameter <cl@linux.com>
