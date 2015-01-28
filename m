@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760894AbbA2CEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:04:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45566 "EHLO mx2.suse.de"
+	id S1760930AbbA2CEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:04:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45565 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753446AbbA2CEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754343AbbA2CEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jan 2015 21:04:02 -0500
-Date: Wed, 28 Jan 2015 22:26:28 +0100
-Message-ID: <s5hmw52fvgb.wl-tiwai@suse.de>
+Date: Wed, 28 Jan 2015 22:27:25 +0100
+Message-ID: <s5hlhkmfveq.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] Add device_create_files() and device_remove_files() helpers
-In-Reply-To: <20150128210547.GA18649@kroah.com>
+Subject: Re: [PATCH 2/2] drivers/base/node: Use device_create_files() and device_remove_files()
+In-Reply-To: <20150128210623.GB18649@kroah.com>
 References: <1422477974-8369-1-git-send-email-tiwai@suse.de>
-	<20150128210547.GA18649@kroah.com>
+	<1422477974-8369-3-git-send-email-tiwai@suse.de>
+	<20150128210623.GB18649@kroah.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,44 +25,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 28 Jan 2015 13:05:47 -0800,
+At Wed, 28 Jan 2015 13:06:23 -0800,
 Greg Kroah-Hartman wrote:
 > 
-> On Wed, Jan 28, 2015 at 09:46:12PM +0100, Takashi Iwai wrote:
-> > Hi,
+> On Wed, Jan 28, 2015 at 09:46:14PM +0100, Takashi Iwai wrote:
+> > Use the new helper functions to simplify the code.
 > > 
-> > this is a simple patch to add device_create_files() and
-> > device_remove_files() to replace multiple device_create_file() or
-> > _remove() calls with a single shot with the device_attr list.
+> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> > ---
+> >  drivers/base/node.c | 24 ++++++++++++------------
+> >  1 file changed, 12 insertions(+), 12 deletions(-)
 > > 
-> > It's basically just a clean up, but also helps to simplify the error
-> > handling a lot in many existing codes since the function itself does
-> > rollback at error.
-> > 
-> > The series contains a patch to apply these to drivers/base/node.c.
-> > I have lots of patches (up to 30) to use these in the whole tree, but
-> > maybe it'd be easier too apply once after this stuff is merged at
-> > first.  It's just a cleanup so no urgent task, after all.
+> > diff --git a/drivers/base/node.c b/drivers/base/node.c
+> > index a3b82e9c7f20..e567e7bde333 100644
+> > --- a/drivers/base/node.c
+> > +++ b/drivers/base/node.c
+> > @@ -200,6 +200,16 @@ static ssize_t node_read_distance(struct device *dev,
+> >  }
+> >  static DEVICE_ATTR(distance, S_IRUGO, node_read_distance, NULL);
+> >  
+> > +static const struct device_attribute *node_dev_attrs[] = {
+> > +	&dev_attr_cpumap,
+> > +	&dev_attr_cpulist,
+> > +	&dev_attr_meminfo,
+> > +	&dev_attr_numastat,
+> > +	&dev_attr_distance,
+> > +	&dev_attr_vmstat,
+> > +	NULL
+> > +};
+> > +
+> >  #ifdef CONFIG_HUGETLBFS
+> >  /*
+> >   * hugetlbfs per node attributes registration interface:
+> > @@ -276,12 +286,7 @@ static int register_node(struct node *node, int num, struct node *parent)
+> >  	error = device_register(&node->dev);
+> >  
+> >  	if (!error){
+> > -		device_create_file(&node->dev, &dev_attr_cpumap);
+> > -		device_create_file(&node->dev, &dev_attr_cpulist);
+> > -		device_create_file(&node->dev, &dev_attr_meminfo);
+> > -		device_create_file(&node->dev, &dev_attr_numastat);
+> > -		device_create_file(&node->dev, &dev_attr_distance);
+> > -		device_create_file(&node->dev, &dev_attr_vmstat);
+> > +		device_create_files(&node->dev, node_dev_attrs);
 > 
-> I'd like to some day be able to drop device_create_file entirely, as it
-> is almost always used in a racy way (but not always, so we can't get rid
-> of it today.)
-> 
-> A driver should be using an attribute group and be created/registered
-> with it if they want any files associated with it, so giving people the
-> ability to add large numbers of files all at once seems like the wrong
-> thing to do :)
+> This should just be using an attribute group instead of these files all
+> being created at once, care to switch the code to use that instead?
 
-Well, through the glance over many codes using device_create_file(),
-I think the problem of the attribute group is that there is little
-help for generating the entries dynamically.  For example, if you have
-two groups you want to enable conditionally, what would be the best
-way to implement?
+OK, this would be relatively easily converted to attribute group.
+Let me check later...
 
-I don't mean that my device_create_files() is best, but to me it looks
-like that proper tools are still missing.
-
-
-thanks,
 
 Takashi
