@@ -1,90 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbbA1EGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:06:21 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:54728 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbbA1EGT (ORCPT
+	id S933046AbbA1EHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:07:42 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:49942 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756642AbbA1EGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:06:19 -0500
-Message-ID: <54C86035.9080605@roeck-us.net>
+	Tue, 27 Jan 2015 23:06:33 -0500
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 linux-trace 8/8] samples: bpf: simple kprobe example
 Date: Tue, 27 Jan 2015 20:06:13 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Jean Delvare <jdelvare@suse.de>
-CC: Robert Rosengren <robert.rosengren@axis.com>, lm-sensors@lm-sensors.org,
-        Johan Adolfsson <johana@axis.com>, linux-kernel@vger.kernel.org
-Subject: Re: [lm-sensors] [PATCH] hwmon: (ads7828) Make sample interval configurable
-References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>	<54B92596.2040206@roeck-us.net>	<20150116183020.GA6262@roeck-us.net>	<54C74567.9020201@axis.com>	<54C79B87.8040607@roeck-us.net>	<4BEA3FF3CAA35E408EA55C7BE2E61D05943B6DD753@xmail3.se.axis.com>	<20150127200553.GA5689@roeck-us.net> <20150127233455.0c62457e@endymion.delvare>
-In-Reply-To: <20150127233455.0c62457e@endymion.delvare>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54C86039.0188,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Message-Id: <1422417973-10195-9-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
+References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2015 02:34 PM, Jean Delvare wrote:
-> On Tue, 27 Jan 2015 12:05:53 -0800, Guenter Roeck wrote:
->> On Tue, Jan 27, 2015 at 08:54:34PM +0100, Robert Rosengren wrote:
->>> Guenter and Jean,
->>>
->>> To sum up, my problems was related my kernel and hardware configuration, and it now works. Many thanks for your input!
->>>
->>> However, the values retrieved from hwmon sysfs is not the same as before the regmap patch. Guenter, the byte swap for the regval retrieved by regmap_read. In what order is the bits returned from that function, because it seems as if I disabled that code I get values as I expect (i.e. before the regmap patch).
->>>
->> Trying to understand. Are you saying everything works as expected
->> if you keep byte_swap set to false ?
->>
->> That might well be, though it might mean that regmap has a bug
->> in how it treats i2c word read operations. I'll have to look into it
->> some more.
->
-> Remember that SMBus specifies that the LSB comes first (and i2c-core
-> implement things that way) while real I2C devices typically send the MSB
-> first. This has always caused confusion. This is why a lot of drivers
-> need byte-swapping.
->
+the logic of the example is similar to tracex2, but syscall 'write' statistics
+is capturead from kprobe placed at sys_write function instead of through
+syscall instrumentation.
+Also tracex4_kern.c has a different way of doing log2 in C.
+Note, unlike tracepoint and syscall programs, kprobe programs receive
+'struct pt_regs' as an input. It's responsibility of the program author
+or higher level dynamic tracing tool to match registers to function arguments.
+Since pt_regs are architecture dependent, programs are also arch dependent,
+unlike tracepoint/syscalls programs which are universal.
 
-regmap specifies "normal" i2c accesses as MSB first. When SMBus accesses
-are used, it specifies LSB first. I guess that means that regmap assumes
-the more common case of MSB first, meaning the driver would not need a byte
-swap since the chip reports data with MSB first.
+Usage:
+$ sudo tracex4
+writing bpf-6 -> /sys/kernel/debug/tracing/events/kprobes/sys_write/filter
+2216443+0 records in
+2216442+0 records out
+1134818304 bytes (1.1 GB) copied, 2.00746 s, 565 MB/s
 
-I just hope I interpret it correctly this time.
+           kprobe sys_write() stats
+     byte_size       : count     distribution
+       1 -> 1        : 0        |                                      |
+       2 -> 3        : 0        |                                      |
+       4 -> 7        : 0        |                                      |
+       8 -> 15       : 0        |                                      |
+      16 -> 31       : 0        |                                      |
+      32 -> 63       : 0        |                                      |
+      64 -> 127      : 1        |                                      |
+     128 -> 255      : 0        |                                      |
+     256 -> 511      : 0        |                                      |
+     512 -> 1023     : 2214734  |************************************* |
 
-There is also a configuration flag "val_format_endian" which can be set to
-REGMAP_ENDIAN_BIG or REGMAP_ENDIAN_LITTLE. Maybe that can be used as well
-if needed. Either case I'll wait for the samples before I send an updated
-version of the patch.
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ samples/bpf/Makefile       |    4 +++
+ samples/bpf/bpf_load.c     |    3 ++
+ samples/bpf/tracex4_kern.c |   36 +++++++++++++++++++
+ samples/bpf/tracex4_user.c |   83 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 126 insertions(+)
+ create mode 100644 samples/bpf/tracex4_kern.c
+ create mode 100644 samples/bpf/tracex4_user.c
 
-Guenter
+diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
+index da0efd8032ab..22c7a38f3f95 100644
+--- a/samples/bpf/Makefile
++++ b/samples/bpf/Makefile
+@@ -10,6 +10,7 @@ hostprogs-y += dropmon
+ hostprogs-y += tracex1
+ hostprogs-y += tracex2
+ hostprogs-y += tracex3
++hostprogs-y += tracex4
+ 
+ dropmon-objs := dropmon.o libbpf.o
+ test_verifier-objs := test_verifier.o libbpf.o
+@@ -20,6 +21,7 @@ sockex2-objs := bpf_load.o libbpf.o sockex2_user.o
+ tracex1-objs := bpf_load.o libbpf.o tracex1_user.o
+ tracex2-objs := bpf_load.o libbpf.o tracex2_user.o
+ tracex3-objs := bpf_load.o libbpf.o tracex3_user.o
++tracex4-objs := bpf_load.o libbpf.o tracex4_user.o
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
+@@ -28,6 +30,7 @@ always += sockex2_kern.o
+ always += tracex1_kern.o
+ always += tracex2_kern.o
+ always += tracex3_kern.o
++always += tracex4_kern.o
+ 
+ HOSTCFLAGS += -I$(objtree)/usr/include
+ 
+@@ -37,6 +40,7 @@ HOSTLOADLIBES_sockex2 += -lelf
+ HOSTLOADLIBES_tracex1 += -lelf
+ HOSTLOADLIBES_tracex2 += -lelf
+ HOSTLOADLIBES_tracex3 += -lelf
++HOSTLOADLIBES_tracex4 += -lelf
+ 
+ # point this to your LLVM backend with bpf support
+ LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
+diff --git a/samples/bpf/bpf_load.c b/samples/bpf/bpf_load.c
+index 788ac51c1024..d8c5176f0564 100644
+--- a/samples/bpf/bpf_load.c
++++ b/samples/bpf/bpf_load.c
+@@ -25,6 +25,7 @@ int prog_cnt;
+ static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
+ {
+ 	bool is_socket = strncmp(event, "socket", 6) == 0;
++	bool is_kprobe = strncmp(event, "events/kprobes/", 15) == 0;
+ 	enum bpf_prog_type prog_type;
+ 	char path[256] = DEBUGFS;
+ 	char fmt[32];
+@@ -32,6 +33,8 @@ static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
+ 
+ 	if (is_socket)
+ 		prog_type = BPF_PROG_TYPE_SOCKET_FILTER;
++	else if (is_kprobe)
++		prog_type = BPF_PROG_TYPE_KPROBE_FILTER;
+ 	else
+ 		prog_type = BPF_PROG_TYPE_TRACING_FILTER;
+ 
+diff --git a/samples/bpf/tracex4_kern.c b/samples/bpf/tracex4_kern.c
+new file mode 100644
+index 000000000000..9646f9e43417
+--- /dev/null
++++ b/samples/bpf/tracex4_kern.c
+@@ -0,0 +1,36 @@
++#include <linux/skbuff.h>
++#include <linux/netdevice.h>
++#include <uapi/linux/bpf.h>
++#include <trace/bpf_trace.h>
++#include "bpf_helpers.h"
++
++static unsigned int log2l(unsigned long long n)
++{
++#define S(k) if (n >= (1ull << k)) { i += k; n >>= k; }
++	int i = -(n == 0);
++	S(32); S(16); S(8); S(4); S(2); S(1);
++	return i;
++#undef S
++}
++
++struct bpf_map_def SEC("maps") my_hist_map = {
++	.type = BPF_MAP_TYPE_ARRAY,
++	.key_size = sizeof(u32),
++	.value_size = sizeof(long),
++	.max_entries = 64,
++};
++
++SEC("events/kprobes/sys_write")
++int bpf_prog4(struct pt_regs *regs)
++{
++	long write_size = regs->dx; /* $rdx contains 3rd argument to a function */
++	long init_val = 1;
++	void *value;
++	u32 index = log2l(write_size);
++
++	value = bpf_map_lookup_elem(&my_hist_map, &index);
++	if (value)
++		__sync_fetch_and_add((long *)value, 1);
++	return 0;
++}
++char _license[] SEC("license") = "GPL";
+diff --git a/samples/bpf/tracex4_user.c b/samples/bpf/tracex4_user.c
+new file mode 100644
+index 000000000000..47dde2791f9e
+--- /dev/null
++++ b/samples/bpf/tracex4_user.c
+@@ -0,0 +1,83 @@
++#include <stdio.h>
++#include <unistd.h>
++#include <stdlib.h>
++#include <signal.h>
++#include <linux/bpf.h>
++#include "libbpf.h"
++#include "bpf_load.h"
++
++#define MAX_INDEX	64
++#define MAX_STARS	38
++
++static void stars(char *str, long val, long max, int width)
++{
++	int i;
++
++	for (i = 0; i < (width * val / max) - 1 && i < width - 1; i++)
++		str[i] = '*';
++	if (val > max)
++		str[i - 1] = '+';
++	str[i] = '\0';
++}
++
++static void print_hist(int fd)
++{
++	int key;
++	long value;
++	long data[MAX_INDEX] = {};
++	char starstr[MAX_STARS];
++	int i;
++	int max_ind = -1;
++	long max_value = 0;
++
++	for (key = 0; key < MAX_INDEX; key++) {
++		bpf_lookup_elem(fd, &key, &value);
++		data[key] = value;
++		if (value && key > max_ind)
++			max_ind = key;
++		if (value > max_value)
++			max_value = value;
++	}
++
++	printf("\n           kprobe sys_write() stats\n");
++	printf("     byte_size       : count     distribution\n");
++	for (i = 1; i <= max_ind + 1; i++) {
++		stars(starstr, data[i - 1], max_value, MAX_STARS);
++		printf("%8ld -> %-8ld : %-8ld |%-*s|\n",
++		       (1l << i) >> 1, (1l << i) - 1, data[i - 1],
++		       MAX_STARS, starstr);
++	}
++}
++static void int_exit(int sig)
++{
++	print_hist(map_fd[0]);
++	exit(0);
++}
++
++int main(int ac, char **argv)
++{
++	char filename[256];
++	FILE *f;
++	int i;
++
++	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
++
++	signal(SIGINT, int_exit);
++
++	i = system("echo 'p:sys_write sys_write' > /sys/kernel/debug/tracing/kprobe_events");
++	(void) i;
++	
++	/* start 'dd' in the background to have plenty of 'write' syscalls */
++	f = popen("dd if=/dev/zero of=/dev/null", "r");
++	(void) f;
++
++	if (load_bpf_file(filename)) {
++		printf("%s", bpf_log_buf);
++		return 1;
++	}
++
++	sleep(2);
++	kill(0, SIGINT); /* send Ctrl-C to self and to 'dd' */
++
++	return 0;
++}
+-- 
+1.7.9.5
 
