@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964826AbbA1CLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:11:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41182 "EHLO
+	id S1756657AbbA1B2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:28:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41015 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932619AbbA1B2W (ORCPT
+	with ESMTP id S1752531AbbA1B2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:22 -0500
+	Tue, 27 Jan 2015 20:28:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.18 30/61] time: settimeofday: Validate the values of tv from user
+        Carlos Soto <csotoalonso@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.10 12/32] ARM: dts: imx25: Fix PWM "per" clocks
 Date: Tue, 27 Jan 2015 17:26:42 -0800
-Message-Id: <20150128012640.166388515@linuxfoundation.org>
+Message-Id: <20150128012628.919541447@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,65 +26,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 6ada1fc0e1c4775de0e043e1bd3ae9d065491aa5 upstream.
+commit 7ecd0bde5bfea524a843ad8fa8cb66ccbce68779 upstream.
 
-An unvalidated user input is multiplied by a constant, which can result in
-an undefined behaviour for large values. While this is validated later,
-we should avoid triggering undefined behaviour.
+Currently PWM functionality is broken on mx25 due to the wrong assignment of the
+PWM "per" clock.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-[jstultz: include trivial milisecond->microsecond correction noticed
-by Andy]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+According to Documentation/devicetree/bindings/clock/imx25-clock.txt:
+	pwm_ipg_per		52
+
+,so update the pwm "per" to use 'pwm_ipg_per' instead of 'per10' clock.
+
+With this change PWM can work fine on mx25.
+
+Reported-by: Carlos Soto <csotoalonso@gmail.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/time.h |   13 +++++++++++++
- kernel/time/time.c   |    4 ++++
- 2 files changed, 17 insertions(+)
+ arch/arm/boot/dts/imx25.dtsi |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -99,6 +99,19 @@ static inline bool timespec_valid_strict
- 	return true;
- }
- 
-+static inline bool timeval_valid(const struct timeval *tv)
-+{
-+	/* Dates before 1970 are bogus */
-+	if (tv->tv_sec < 0)
-+		return false;
-+
-+	/* Can't have more microseconds then a second */
-+	if (tv->tv_usec < 0 || tv->tv_usec >= USEC_PER_SEC)
-+		return false;
-+
-+	return true;
-+}
-+
- extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
- 
- #define CURRENT_TIME		(current_kernel_time())
---- a/kernel/time/time.c
-+++ b/kernel/time/time.c
-@@ -196,6 +196,10 @@ SYSCALL_DEFINE2(settimeofday, struct tim
- 	if (tv) {
- 		if (copy_from_user(&user_tv, tv, sizeof(*tv)))
- 			return -EFAULT;
-+
-+		if (!timeval_valid(&user_tv))
-+			return -EINVAL;
-+
- 		new_ts.tv_sec = user_tv.tv_sec;
- 		new_ts.tv_nsec = user_tv.tv_usec * NSEC_PER_USEC;
- 	}
+--- a/arch/arm/boot/dts/imx25.dtsi
++++ b/arch/arm/boot/dts/imx25.dtsi
+@@ -335,7 +335,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fa0000 0x4000>;
+-				clocks = <&clks 106>, <&clks 36>;
++				clocks = <&clks 106>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <36>;
+ 			};
+@@ -354,7 +354,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fa8000 0x4000>;
+-				clocks = <&clks 107>, <&clks 36>;
++				clocks = <&clks 107>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <41>;
+ 			};
+@@ -394,7 +394,7 @@
+ 			pwm4: pwm@53fc8000 {
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				reg = <0x53fc8000 0x4000>;
+-				clocks = <&clks 108>, <&clks 36>;
++				clocks = <&clks 108>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <42>;
+ 			};
+@@ -439,7 +439,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fe0000 0x4000>;
+-				clocks = <&clks 105>, <&clks 36>;
++				clocks = <&clks 105>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <26>;
+ 			};
 
 
