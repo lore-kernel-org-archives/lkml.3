@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680AbbA1U0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:26:33 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37060 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932142AbbA1U0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:26:24 -0500
-Date: Wed, 28 Jan 2015 09:50:40 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-Message-ID: <20150128095040.GI14516@opensource.wolfsonmicro.com>
-References: <20150128130047.2311c637@canb.auug.org.au> <20150128090935.GH14516@opensource.wolfsonmicro.com>
+	id S1760125AbbA1UdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:33:04 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:57504 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755793AbbA1Uc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:32:59 -0500
+Date: Wed, 28 Jan 2015 11:54:01 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Lyra Zhang <zhang.lyra@gmail.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        "andrew@lunn.ch" <andrew@lunn.ch>, "jslaby@suse.cz" <jslaby@suse.cz>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Orson Zhai <orsonzhai@gmail.com>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Wei Qiao =?utf-8?B?KOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v9 2/2] tty/serial: Add Spreadtrum sc9836-uart driver
+ support
+Message-ID: <20150128095401.GC14175@tarshish>
+References: <1422413261-17184-1-git-send-email-chunyan.zhang@spreadtrum.com>
+ <1422413261-17184-3-git-send-email-chunyan.zhang@spreadtrum.com>
+ <20150128061250.GQ2555@sapphire.tkos.co.il>
+ <CAAfSe-v4FGpHL3N3utiDwcoc7qus1XZZszuXBqB6LeE1frAfeA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150128090935.GH14516@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <CAAfSe-v4FGpHL3N3utiDwcoc7qus1XZZszuXBqB6LeE1frAfeA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 09:09:35AM +0000, Charles Keepax wrote:
-> On Wed, Jan 28, 2015 at 01:00:47PM +1100, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > After merging the sound-asoc tree, today's linux-next build (x86_64 allmodconfig)
-> > failed like this:
-> > 
-> > sound/soc/codecs/arizona.c: In function 'arizona_out_ev':
-> > sound/soc/codecs/arizona.c:738:57: error: 'struct snd_soc_dapm_widget' has no member named 'codec'
-> >   struct arizona_priv *priv = snd_soc_codec_get_drvdata(w->codec);
-> >                                                          ^
-> > 
-> > Caused by commit 054e1b489227 ("ASoC: arizona: Add delay for output
-> > disable") interacting with commit 96da4e5b2e1d ("ASoC: Remove codec
-> > field from snd_soc_dapm_widget").  It needed to be fixed up in merge
-> > commit 7659e0ab1afa ("Merge remote-tracking branches
-> > 'asoc/topic/ad193x', 'asoc/topic/alc5632', 'asoc/topic/arizona' and
-> > 'asoc/topic/atmel' into asoc-next").
-> > 
-> > I have used the sound-asoc tree from next-20150127 for today.
-> > -- 
+Hi Lyra Zhang,
+
+On Wed, Jan 28, 2015 at 04:46:33PM +0800, Lyra Zhang wrote:
+> On Wed, Jan 28, 2015 at 2:12 PM, Baruch Siach <baruch@tkos.co.il> wrote:
+> > On Wed, Jan 28, 2015 at 10:47:41AM +0800, Chunyan Zhang wrote:
+> >> +             if (uart_handle_sysrq_char(port, ch))
+> >> +                     continue;
+> >
+> > My comment[1] on a previous version of this patch still stands.
+> > uart_handle_sysrq_char is a NOP when SUPPORT_SYSRQ is not defined.
 > 
-> Very sorry guys my fault, not sure how that slipped through. Mark
-> do you want an incremental fix or shall I respin the two patches
-> in question?
+> yes, there are two definitions in serial_core.h, and it returns 0 when
+> SUPPORT_SYSRQ is not defined.
+> so, I think my code behavior does not hurt, right?
 
-Ah... ok I think I just timed my patch very badly in relation to
-Lar's changes and it was building here so I failed to notice the
-error. I see you have fixed it in the merge are you happy to go
-with that solution?
+Right. I just wanted to point out that you can easily define SUPPORT_SYSRQ as 
+appropriate like many other serial drivers do to get sysrq support.
 
-Thanks,
-Charles
+baruch
+
+-- 
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
