@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121AbbA2BsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:48:05 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45669 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982AbbA2BsC (ORCPT
+	id S1759623AbbA2Bzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:55:49 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:34936 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759588AbbA2Bzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:48:02 -0500
-Date: Wed, 28 Jan 2015 16:19:13 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Herring <robherring2@gmail.com>, Nicolas Pitre <nico@fluxnic.net>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-Message-ID: <20150128161913.GU1569@arm.com>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <20150127174818.GM26493@n2100.arm.linux.org.uk>
- <20150128005032.GK28663@atomide.com>
- <201501281458.22088@pali>
- <alpine.LFD.2.11.1501280925400.1322@knanqh.ubzr>
- <CAL_Jsq+rESm8q44ABRbh9hqMsfcMNx0kcXJ5ONbn1=ue-RvHFg@mail.gmail.com>
- <20150128161316.GS26493@n2100.arm.linux.org.uk>
+	Wed, 28 Jan 2015 20:55:46 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm v2 0/3] slub: make dead caches discard free slabs immediately
+Date: Wed, 28 Jan 2015 19:22:48 +0300
+Message-ID: <cover.1422461573.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150128161316.GS26493@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 04:13:17PM +0000, Russell King - ARM Linux wrote:
-> On Wed, Jan 28, 2015 at 09:57:18AM -0600, Rob Herring wrote:
-> > I'm fine with that, but we just need to have a standard kernel
-> > userspace interface in addition to something like
-> > /proc/device-tree/bootreason. Perhaps this can be the default
-> > implementation for the watchdog dev. Someday when we decide DT is crap
-> > and have a new boot interface, we'll have people relying on
-> > /proc/device-tree. I hope to be retired when that happens...
-> 
-> Anyone who thinks that DT can be replaced in the same way that we made
-> the mistake with ATAGs would really need their head examined.
-> 
-> As you point out, removing DT removes the /proc/device-tree/ sub-tree.
-> Whether we like it or not, that is a userspace API, one which we have
-> users of already.  That pretty much means that we can't remove DT for
-> existing platforms or any platform we have now converted to DT.
+Hi,
 
-<ok, I'll go there!>
+The kmem extension of the memory cgroup is almost usable now. There is,
+in fact, the only serious issue left: per memcg kmem caches may pin the
+owner cgroup for indefinitely long. This is, because a slab cache may
+keep empty slab pages in its private structures to optimize performance,
+while we take a css reference per each charged kmem page.
 
-... and for platforms that can also be booted via ACPI? If we have to
-convert the ACPI tables into a device-tree purely for /proc/device-tree,
-then we may as well boot with the thing too :)
+The issue is only relevant to SLUB, because SLAB periodically reaps
+empty slabs. This patch set fixes this issue for SLUB. For details,
+please see patch 3.
 
-Seriously though, I don't see how we can maintain this directory for
-ACPI, regardless of whether or not it's ABI.
+Changes in v2:
+ - address Christoph's concerns regarding kmem_cache_shrink
+ - fix race between put_cpu_partial reading ->cpu_partial and
+   kmem_cache_shrink updating it as proposed by Joonsoo
 
-Will
+v1: https://lkml.org/lkml/2015/1/26/317
+
+Thanks,
+
+Vladimir Davydov (3):
+  slub: never fail to shrink cache
+  slub: fix kmem_cache_shrink return value
+  slub: make dead caches discard free slabs immediately
+
+ mm/slab.c        |    4 +--
+ mm/slab.h        |    2 +-
+ mm/slab_common.c |   15 +++++++--
+ mm/slob.c        |    2 +-
+ mm/slub.c        |   94 +++++++++++++++++++++++++++++++++++-------------------
+ 5 files changed, 78 insertions(+), 39 deletions(-)
+
+-- 
+1.7.10.4
+
