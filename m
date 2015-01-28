@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933543AbbA1Bk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:40:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41752 "EHLO
+	id S1761254AbbA1CTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:19:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933392AbbA1Bik (ORCPT
+	with ESMTP id S1756549AbbA1B2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:40 -0500
+	Tue, 27 Jan 2015 20:28:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandre Demers <alexandre.f.demers@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 24/77] x86/tsc: Change Fast TSC calibration failed from error to info
+        Henry Cai <henryplusplus@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 32/32] md/raid5: fetch_block must fetch all the blocks handle_stripe_dirtying wants.
 Date: Tue, 27 Jan 2015 17:27:02 -0800
-Message-Id: <20150128012746.690387470@linuxfoundation.org>
+Message-Id: <20150128012631.529758868@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,48 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alexandre Demers <alexandre.f.demers@gmail.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 520452172e6b318f3a8bd9d4fe1e25066393de25 upstream.
+commit 108cef3aa41669610e1836fe638812dd067d72de upstream.
 
-Many users see this message when booting without knowning that it is
-of no importance and that TSC calibration may have succeeded by
-another way.
+It is critical that fetch_block() and handle_stripe_dirtying()
+are consistent in their analysis of what needs to be loaded.
+Otherwise raid5 can wait forever for a block that won't be loaded.
 
-As explained by Paul Bolle in
-http://lkml.kernel.org/r/1348488259.1436.22.camel@x61.thuisdomein
+Currently when writing to a RAID5 that is resyncing, to a location
+beyond the resync offset, handle_stripe_dirtying chooses a
+reconstruct-write cycle, but fetch_block() assumes a
+read-modify-write, and a lockup can happen.
 
-  "Fast TSC calibration failed" should not be considered as an error
-  since other calibration methods are being tried afterward. At most,
-  those send a warning if they fail (not an error). So let's change
-  the message from error to warning.
+So treat that case just like RAID6, just as we do in
+handle_stripe_dirtying.  RAID6 always does reconstruct-write.
 
-[ tglx: Make if pr_info. It's really not important at all ]
+This bug was introduced when the behaviour of handle_stripe_dirtying
+was changed in 3.7, so the patch is suitable for any kernel since,
+though it will need careful merging for some versions.
 
-Fixes: c767a54ba065 x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
-Signed-off-by: Alexandre Demers <alexandre.f.demers@gmail.com>
-Link: http://lkml.kernel.org/r/1418106470-6906-1-git-send-email-alexandre.f.demers@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org (v3.7+)
+Fixes: a7854487cd7128a30a7f4f5259de9f67d5efb95f
+Reported-by: Henry Cai <henryplusplus@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/tsc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid5.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -618,7 +618,7 @@ static unsigned long quick_pit_calibrate
- 			goto success;
- 		}
- 	}
--	pr_err("Fast TSC calibration failed\n");
-+	pr_info("Fast TSC calibration failed\n");
- 	return 0;
- 
- success:
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -2678,7 +2678,8 @@ static int fetch_block(struct stripe_hea
+ 	     (s->failed >= 2 && fdev[1]->toread) ||
+ 	     (sh->raid_conf->level <= 5 && s->failed && fdev[0]->towrite &&
+ 	      !test_bit(R5_OVERWRITE, &fdev[0]->flags)) ||
+-	     (sh->raid_conf->level == 6 && s->failed && s->to_write))) {
++	     ((sh->raid_conf->level == 6 || sh->sector >= sh->raid_conf->mddev->recovery_cp)
++	      && s->failed && s->to_write))) {
+ 		/* we would like to get this block, possibly by computing it,
+ 		 * otherwise read it if the backing disk is insync
+ 		 */
 
 
