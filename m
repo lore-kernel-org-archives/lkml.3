@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965348AbbA2Cht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:37:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47009 "EHLO
+	id S1763647AbbA2DEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:04:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47002 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965326AbbA2Chp (ORCPT
+	with ESMTP id S965198AbbA2Che (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:45 -0500
+	Wed, 28 Jan 2015 21:37:34 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@fb.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 025/139] writeback: fix a subtle race condition in I_DIRTY clearing
-Date: Wed, 28 Jan 2015 14:19:28 -0800
-Message-Id: <1422483682-15393-26-git-send-email-kamal@canonical.com>
+Cc: Kazuya Mizuguchi <kazuya.mizuguchi.ks@renesas.com>,
+        Takeshi Kihara <takeshi.kihara.df@renesas.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 026/139] usb: renesas_usbhs: gadget: fix NULL pointer dereference in ep_disable()
+Date: Wed, 28 Jan 2015 14:19:29 -0800
+Message-Id: <1422483682-15393-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -29,127 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Kazuya Mizuguchi <kazuya.mizuguchi.ks@renesas.com>
 
-commit 9c6ac78eb3521c5937b2dd8a7d1b300f41092f45 upstream.
+commit 11432050f070810ba139d0226344eef120c3a559 upstream.
 
-After invoking ->dirty_inode(), __mark_inode_dirty() does smp_mb() and
-tests inode->i_state locklessly to see whether it already has all the
-necessary I_DIRTY bits set.  The comment above the barrier doesn't
-contain any useful information - memory barriers can't ensure "changes
-are seen by all cpus" by itself.
+This patch fixes an issue that the NULL pointer dereference happens
+when we uses g_audio driver. Since the g_audio driver will call
+usb_ep_disable() in afunc_set_alt() before it calls usb_ep_enable(),
+the uep->pipe of renesas usbhs driver will be NULL. So, this patch
+adds a condition to avoid the oops.
 
-And it sure enough was broken.  Please consider the following
-scenario.
-
- CPU 0					CPU 1
- -------------------------------------------------------------------------------
-
-					enters __writeback_single_inode()
-					grabs inode->i_lock
-					tests PAGECACHE_TAG_DIRTY which is clear
- enters __set_page_dirty()
- grabs mapping->tree_lock
- sets PAGECACHE_TAG_DIRTY
- releases mapping->tree_lock
- leaves __set_page_dirty()
-
- enters __mark_inode_dirty()
- smp_mb()
- sees I_DIRTY_PAGES set
- leaves __mark_inode_dirty()
-					clears I_DIRTY_PAGES
-					releases inode->i_lock
-
-Now @inode has dirty pages w/ I_DIRTY_PAGES clear.  This doesn't seem
-to lead to an immediately critical problem because requeue_inode()
-later checks PAGECACHE_TAG_DIRTY instead of I_DIRTY_PAGES when
-deciding whether the inode needs to be requeued for IO and there are
-enough unintentional memory barriers inbetween, so while the inode
-ends up with inconsistent I_DIRTY_PAGES flag, it doesn't fall off the
-IO list.
-
-The lack of explicit barrier may also theoretically affect the other
-I_DIRTY bits which deal with metadata dirtiness.  There is no
-guarantee that a strong enough barrier exists between
-I_DIRTY_[DATA]SYNC clearing and write_inode() writing out the dirtied
-inode.  Filesystem inode writeout path likely has enough stuff which
-can behave as full barrier but it's theoretically possible that the
-writeout may not see all the updates from ->dirty_inode().
-
-Fix it by adding an explicit smp_mb() after I_DIRTY clearing.  Note
-that I_DIRTY_PAGES needs a special treatment as it always needs to be
-cleared to be interlocked with the lockless test on
-__mark_inode_dirty() side.  It's cleared unconditionally and
-reinstated after smp_mb() if the mapping still has dirty pages.
-
-Also add comments explaining how and why the barriers are paired.
-
-Lightly tested.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Kazuya Mizuguchi <kazuya.mizuguchi.ks@renesas.com>
+Signed-off-by: Takeshi Kihara <takeshi.kihara.df@renesas.com>
+Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+Fixes: 2f98382dc (usb: renesas_usbhs: Add Renesas USBHS Gadget)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ kamal: backport to 3.13-stable ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/fs-writeback.c | 29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+ drivers/usb/renesas_usbhs/mod_gadget.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index a163159..23a51f0 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -476,12 +476,28 @@ __writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- 	 * write_inode()
- 	 */
- 	spin_lock(&inode->i_lock);
--	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
--	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
--		inode->i_state &= ~I_DIRTY_PAGES;
+diff --git a/drivers/usb/renesas_usbhs/mod_gadget.c b/drivers/usb/renesas_usbhs/mod_gadget.c
+index 3385aeb..c3bb467 100644
+--- a/drivers/usb/renesas_usbhs/mod_gadget.c
++++ b/drivers/usb/renesas_usbhs/mod_gadget.c
+@@ -600,6 +600,10 @@ static int usbhsg_ep_enable(struct usb_ep *ep,
+ static int usbhsg_ep_disable(struct usb_ep *ep)
+ {
+ 	struct usbhsg_uep *uep = usbhsg_ep_to_uep(ep);
++	struct usbhs_pipe *pipe = usbhsg_uep_to_pipe(uep);
 +
- 	dirty = inode->i_state & I_DIRTY;
--	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
-+	inode->i_state &= ~I_DIRTY;
-+
-+	/*
-+	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
-+	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
-+	 * either they see the I_DIRTY bits cleared or we see the dirtied
-+	 * inode.
-+	 *
-+	 * I_DIRTY_PAGES is always cleared together above even if @mapping
-+	 * still has dirty pages.  The flag is reinstated after smp_mb() if
-+	 * necessary.  This guarantees that either __mark_inode_dirty()
-+	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
-+	 */
-+	smp_mb();
-+
-+	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-+		inode->i_state |= I_DIRTY_PAGES;
-+
- 	spin_unlock(&inode->i_lock);
-+
- 	/* Don't write the inode if only I_DIRTY_PAGES was set */
- 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
- 		int err = write_inode(inode, wbc);
-@@ -1145,12 +1161,11 @@ void __mark_inode_dirty(struct inode *inode, int flags)
- 	}
++	if (!pipe)
++		return -EINVAL;
  
- 	/*
--	 * make sure that changes are seen by all cpus before we test i_state
--	 * -- mikulas
-+	 * Paired with smp_mb() in __writeback_single_inode() for the
-+	 * following lockless i_state test.  See there for details.
- 	 */
- 	smp_mb();
- 
--	/* avoid the locking if we can */
- 	if ((inode->i_state & flags) == flags)
- 		return;
+ 	usbhsg_pipe_disable(uep);
  
 -- 
 1.9.1
