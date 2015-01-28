@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218AbbA2Bm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:42:58 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37648 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756995AbbA2Bmx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:42:53 -0500
-Date: Wed, 28 Jan 2015 11:27:27 -0600
-From: Andy Gross <agross@codeaurora.org>
-To: Stanimir Varbanov <svarbanov@mm-sol.com>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        devicetree@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        linux-soc@vger.kernel.org
-Subject: Re: [PATCH 1/6] soc: qcom: gsbi: Add support for ADM CRCI muxing
-Message-ID: <20150128172727.GB17315@qualcomm.com>
-References: <1422396644-21714-1-git-send-email-agross@codeaurora.org>
- <1422396644-21714-2-git-send-email-agross@codeaurora.org>
- <54C8A66E.3070306@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C8A66E.3070306@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753369AbbA1Ux4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:53:56 -0500
+Received: from mga14.intel.com ([192.55.52.115]:44922 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753124AbbA1Uxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:53:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
+   d="scan'208";a="644036909"
+Message-ID: <1422466075.14725.7.camel@theros.lm.intel.com>
+Subject: Re: [PATCH v3 1/2] x86: Add support for the pcommit instruction
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        H Peter Anvin <h.peter.anvin@intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "Knippers, Linda" <linda.knippers@hp.com>
+Date: Wed, 28 Jan 2015 10:27:55 -0700
+In-Reply-To: <20150128172127.GF7569@pd.tnic>
+References: <1422377631-8986-1-git-send-email-ross.zwisler@linux.intel.com>
+	 <1422377631-8986-2-git-send-email-ross.zwisler@linux.intel.com>
+	 <94D0CD8314A33A4D9D801C0FE68B40295A75C517@G9W0745.americas.hpqcorp.net>
+	 <20150128172127.GF7569@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20.rez) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 11:05:50AM +0200, Stanimir Varbanov wrote:
-> <snip>
+On Wed, 2015-01-28 at 18:21 +0100, Borislav Petkov wrote:
+> On Wed, Jan 28, 2015 at 05:10:46PM +0000, Elliott, Robert (Server Storage) wrote:
+> > Should this patch series also add defines for the virtual 
+> > machine control data structure changes?
+> > 
+> > 1. Add the new VM-Execution Controls bit 21 as
+> >     SECONDARY_EXEC_PCOMMIT_EXITING 0x00200000
+> > to arch/x86/include/asm/vmx.h.
+> > 
+> > 2. Add the new exit reason of 64 (0x41) as
+> > 	EXIT_REASON_PCOMMIT  64
+> > to arch/x86/include/uapi/asm/vmx.h and (with a
+> > VMX_EXIT_REASONS string) to usr/include/asm/vmx.h.
+> > 
+> > 3. Add a kvm_vmx_exit_handler to arch/x86/kvm/vmx.c.
 > 
-> > diff --git a/drivers/soc/qcom/Kconfig b/drivers/soc/qcom/Kconfig
-> > index 7bd2c94..32f20be 100644
-> > --- a/drivers/soc/qcom/Kconfig
-> > +++ b/drivers/soc/qcom/Kconfig
-> > @@ -4,6 +4,7 @@
-> >  config QCOM_GSBI
-> >          tristate "QCOM General Serial Bus Interface"
-> >          depends on ARCH_QCOM
-> > +	select MFD_SYSCON
-> 
-> Wrong indentation? In fact the original Kconfig entry has spaces instead
-> of tabs, could you prepare a cleanup patch for this.
+> These look like a separate patchset for kvm enablement to me.
 
-yeah I'll switch to spaces since the Kconfig is using spaces.
-
-> >          help
-> >            Say y here to enable GSBI support.  The GSBI provides control
-> >            functions for connecting the underlying serial UART, SPI, and I2C
-
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+Agreed, I think they are a separate patch set.
 
