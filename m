@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920AbbA1V43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:56:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54064 "EHLO mga02.intel.com"
+	id S1755660AbbA1UXH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:23:07 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64038 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753071AbbA1U1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:27:54 -0500
+	id S1753645AbbA1UXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:23:01 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.09,480,1418112000"; 
-   d="scan'208";a="677269289"
+   d="scan'208";a="677269358"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Thomas Gleixner <tglx@linutronix.de>,
         Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
         Borislav Petkov <bp@alien8.de>, Lv Zheng <lv.zheng@intel.com>,
         Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
+        x86@kernel.org, Len Brown <lenb@kernel.org>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch v2 19/22] x86/PCI/ACPI: Use common ACPI resource interfaces to simplify implementation
-Date: Wed, 28 Jan 2015 18:57:37 +0800
-Message-Id: <1422442660-455-20-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch v2 20/22] x86/PCI: Refine the way to release PCI IRQ resources
+Date: Wed, 28 Jan 2015 18:57:38 +0800
+Message-Id: <1422442660-455-21-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1422442660-455-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1422442660-455-1-git-send-email-jiang.liu@linux.intel.com>
@@ -29,410 +29,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use common ACPI resource discovery interfaces to simplify PCI host bridge
-resource enumeration.
+Some PCI device drivers assume that pci_dev->irq won't change after
+calling pci_disable_device() and pci_enable_device() during suspend and
+resume.
 
-It also fixes the issue discovered by Thomas that function setup_resource()
-incorrectly validates IO port resources against iomem_resource.
+Commit c03b3b0738a56cf283b0d05256988d5e3c8bd719 ("x86, irq, mpparse:
+Release IOAPIC pin when PCI device is disabled") frees PCI IRQ
+resources when pci_disable_device() is called and reallocate IRQ
+resources when pci_enable_device() is called again. This breaks
+above assumption. So commit 3eec595235c1 ("x86, irq, PCI: Keep IRQ
+assignment for PCI devices during suspend/hibernation") and
+9eabc99a635a ("x86, irq, PCI: Keep IRQ assignment for runtime power
+management") fix the issue by avoiding freeing/reallocating IRQ
+resources during PCI device suspend/resume. They achieve this by
+checking dev.power.is_prepared and dev.power.runtime_status.
+PM maintainer, Rafael, then pointed out that it's really an ugly fix
+which leaking PM internal state information to IRQ subsystem.
+
+Recently David Vrabel <david.vrabel@citrix.com> also reports an
+regression in pciback driver caused by commit cffe0a2b5a34 ("x86, irq:
+Keep balance of IOAPIC pin reference count"). Please refer to:
+http://lkml.org/lkml/2015/1/14/546
+
+So this patch refine the way to release PCI IRQ resources. Instead of
+releasing PCI IRQ resources in pci_disable_device()/
+pcibios_disable_device(), we now release it at driver unbinding
+notification BUS_NOTIFY_UNBOUND_DRIVER. In other word, we only release
+PCI IRQ resources when there's no driver bound to the PCI device, and
+it keeps the assumption that pci_dev->irq won't through multiple
+invocation of pci_enable_device()/pci_disable_device().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/pci/acpi.c |  296 ++++++++++++++++-----------------------------------
- 1 file changed, 94 insertions(+), 202 deletions(-)
+ arch/x86/include/asm/pci_x86.h |    2 --
+ arch/x86/pci/common.c          |   30 ++++++++++++++++++++++++++++--
+ arch/x86/pci/intel_mid_pci.c   |    4 ++--
+ arch/x86/pci/irq.c             |   15 +--------------
+ drivers/acpi/pci_irq.c         |    9 +--------
+ 5 files changed, 32 insertions(+), 28 deletions(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index bb98afd0591e..3404ea703ecc 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -10,9 +10,6 @@
- struct pci_root_info {
- 	struct acpi_device *bridge;
- 	char name[16];
--	unsigned int res_num;
--	struct resource *res;
--	resource_size_t *res_offset;
- 	struct pci_sysdata sd;
- #ifdef	CONFIG_PCI_MMCONFIG
- 	bool mcfg_added;
-@@ -218,130 +215,44 @@ static void teardown_mcfg_map(struct pci_root_info *info)
+diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
+index 164e3f8d3c3d..fa1195dae425 100644
+--- a/arch/x86/include/asm/pci_x86.h
++++ b/arch/x86/include/asm/pci_x86.h
+@@ -93,8 +93,6 @@ extern raw_spinlock_t pci_config_lock;
+ extern int (*pcibios_enable_irq)(struct pci_dev *dev);
+ extern void (*pcibios_disable_irq)(struct pci_dev *dev);
+ 
+-extern bool mp_should_keep_irq(struct device *dev);
+-
+ struct pci_raw_ops {
+ 	int (*read)(unsigned int domain, unsigned int bus, unsigned int devfn,
+ 						int reg, int len, u32 *val);
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 7b20bccf3648..99f15ed19f38 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -497,6 +497,25 @@ void __init pcibios_set_cache_line_size(void)
+ 	}
  }
- #endif
  
--static acpi_status resource_to_addr(struct acpi_resource *resource,
--				    struct acpi_resource_address64 *addr)
--{
--	acpi_status status;
--	struct acpi_resource_memory24 *memory24;
--	struct acpi_resource_memory32 *memory32;
--	struct acpi_resource_fixed_memory32 *fixed_memory32;
--
--	memset(addr, 0, sizeof(*addr));
--	switch (resource->type) {
--	case ACPI_RESOURCE_TYPE_MEMORY24:
--		memory24 = &resource->data.memory24;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->address.minimum = memory24->minimum;
--		addr->address.address_length = memory24->address_length;
--		addr->address.maximum = addr->address.minimum + addr->address.address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_MEMORY32:
--		memory32 = &resource->data.memory32;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->address.minimum = memory32->minimum;
--		addr->address.address_length = memory32->address_length;
--		addr->address.maximum = addr->address.minimum + addr->address.address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
--		fixed_memory32 = &resource->data.fixed_memory32;
--		addr->resource_type = ACPI_MEMORY_RANGE;
--		addr->address.minimum = fixed_memory32->address;
--		addr->address.address_length = fixed_memory32->address_length;
--		addr->address.maximum = addr->address.minimum + addr->address.address_length - 1;
--		return AE_OK;
--	case ACPI_RESOURCE_TYPE_ADDRESS16:
--	case ACPI_RESOURCE_TYPE_ADDRESS32:
--	case ACPI_RESOURCE_TYPE_ADDRESS64:
--		status = acpi_resource_to_address64(resource, addr);
--		if (ACPI_SUCCESS(status) &&
--		    (addr->resource_type == ACPI_MEMORY_RANGE ||
--		    addr->resource_type == ACPI_IO_RANGE) &&
--		    addr->address.address_length > 0) {
--			return AE_OK;
--		}
--		break;
--	}
--	return AE_ERROR;
--}
--
--static acpi_status count_resource(struct acpi_resource *acpi_res, void *data)
-+static void validate_resources(struct device *dev, struct list_head *crs_res,
-+			       unsigned long type)
- {
--	struct pci_root_info *info = data;
--	struct acpi_resource_address64 addr;
--	acpi_status status;
--
--	status = resource_to_addr(acpi_res, &addr);
--	if (ACPI_SUCCESS(status))
--		info->res_num++;
--	return AE_OK;
--}
--
--static acpi_status setup_resource(struct acpi_resource *acpi_res, void *data)
--{
--	struct pci_root_info *info = data;
--	struct resource *res;
--	struct acpi_resource_address64 addr;
--	acpi_status status;
--	unsigned long flags;
--	u64 start, orig_end, end;
--
--	status = resource_to_addr(acpi_res, &addr);
--	if (!ACPI_SUCCESS(status))
--		return AE_OK;
--
--	if (addr.resource_type == ACPI_MEMORY_RANGE) {
--		flags = IORESOURCE_MEM;
--		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
--			flags |= IORESOURCE_PREFETCH;
--	} else if (addr.resource_type == ACPI_IO_RANGE) {
--		flags = IORESOURCE_IO;
--	} else
--		return AE_OK;
--
--	start = addr.address.minimum + addr.address.translation_offset;
--	orig_end = end = addr.address.maximum + addr.address.translation_offset;
--
--	/* Exclude non-addressable range or non-addressable portion of range */
--	end = min(end, (u64)iomem_resource.end);
--	if (end <= start) {
--		dev_info(&info->bridge->dev,
--			"host bridge window [%#llx-%#llx] "
--			"(ignored, not CPU addressable)\n", start, orig_end);
--		return AE_OK;
--	} else if (orig_end != end) {
--		dev_info(&info->bridge->dev,
--			"host bridge window [%#llx-%#llx] "
--			"([%#llx-%#llx] ignored, not CPU addressable)\n", 
--			start, orig_end, end + 1, orig_end);
--	}
-+	LIST_HEAD(list);
-+	struct resource *res1, *res2, *root = NULL;
-+	struct resource_list_entry *tmp, *entry, *entry2;
- 
--	res = &info->res[info->res_num];
--	res->name = info->name;
--	res->flags = flags;
--	res->start = start;
--	res->end = end;
--	info->res_offset[info->res_num] = addr.address.translation_offset;
--	info->res_num++;
-+	BUG_ON((type & (IORESOURCE_MEM | IORESOURCE_IO)) == 0);
-+	root = (type & IORESOURCE_MEM) ? &iomem_resource : &ioport_resource;
- 
--	if (!pci_use_crs)
--		dev_printk(KERN_DEBUG, &info->bridge->dev,
--			   "host bridge window %pR (ignored)\n", res);
-+	list_splice_init(crs_res, &list);
-+	resource_list_for_each_entry_safe(entry, tmp, &list) {
-+		bool free = false;
-+		resource_size_t end;
- 
--	return AE_OK;
--}
--
--static void coalesce_windows(struct pci_root_info *info, unsigned long type)
--{
--	int i, j;
--	struct resource *res1, *res2;
--
--	for (i = 0; i < info->res_num; i++) {
--		res1 = &info->res[i];
-+		res1 = entry->res;
- 		if (!(res1->flags & type))
--			continue;
-+			goto next;
++static int pci_irq_notifier(struct notifier_block *nb, unsigned long action,
++			    void *data)
++{
++	struct pci_dev *dev = to_pci_dev(data);
 +
-+		/* Exclude non-addressable range or non-addressable portion */
-+		end = min(res1->end, root->end);
-+		if (end <= res1->start) {
-+			dev_info(dev, "host bridge window [%#llx-%#llx] (ignored, not CPU addressable)\n",
-+				 (unsigned long long)res1->start,
-+				 (unsigned long long)res1->end);
-+			free = true;
-+			goto next;
-+		} else if (res1->end != end) {
-+			dev_info(dev, "host bridge window [%#llx-%#llx] ([%#llx-%#llx] ignored, not CPU addressable)\n",
-+				 (unsigned long long)res1->start,
-+				 (unsigned long long)res1->end,
-+				 (unsigned long long)end + 1,
-+				 (unsigned long long)res1->end);
-+			res1->end = end;
-+		}
- 
--		for (j = i + 1; j < info->res_num; j++) {
--			res2 = &info->res[j];
-+		resource_list_for_each_entry(entry2, crs_res) {
-+			res2 = entry2->res;
- 			if (!(res2->flags & type))
- 				continue;
- 
-@@ -353,118 +264,92 @@ static void coalesce_windows(struct pci_root_info *info, unsigned long type)
- 			if (resource_overlaps(res1, res2)) {
- 				res2->start = min(res1->start, res2->start);
- 				res2->end = max(res1->end, res2->end);
--				dev_info(&info->bridge->dev,
--					 "host bridge window expanded to %pR; %pR ignored\n",
-+				dev_info(dev, "host bridge window expanded to %pR; %pR ignored\n",
- 					 res2, res1);
--				res1->flags = 0;
-+				free = true;
-+				goto next;
- 			}
- 		}
++	if (action != BUS_NOTIFY_UNBOUND_DRIVER)
++		return NOTIFY_DONE;
 +
-+next:
-+		resource_list_del(entry);
-+		if (free)
-+			resource_list_free_entry(entry);
-+		else
-+			resource_list_add_tail(entry, crs_res);
- 	}
- }
- 
- static void add_resources(struct pci_root_info *info,
--			  struct list_head *resources)
-+			  struct list_head *resources,
-+			  struct list_head *crs_res)
++	if (pcibios_disable_irq)
++		pcibios_disable_irq(dev);
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block pci_irq_nb = {
++	.notifier_call = pci_irq_notifier,
++	.priority = INT_MIN,
++};
++
+ int __init pcibios_init(void)
  {
--	int i;
--	struct resource *res, *root, *conflict;
--
--	coalesce_windows(info, IORESOURCE_MEM);
--	coalesce_windows(info, IORESOURCE_IO);
-+	struct resource_list_entry *entry, *tmp;
-+	struct resource *res, *conflict, *root = NULL;
+ 	if (!raw_pci_ops) {
+@@ -509,6 +528,9 @@ int __init pcibios_init(void)
  
--	for (i = 0; i < info->res_num; i++) {
--		res = &info->res[i];
-+	validate_resources(&info->bridge->dev, crs_res, IORESOURCE_MEM);
-+	validate_resources(&info->bridge->dev, crs_res, IORESOURCE_IO);
- 
-+	resource_list_for_each_entry_safe(entry, tmp, crs_res) {
-+		res = entry->res;
- 		if (res->flags & IORESOURCE_MEM)
- 			root = &iomem_resource;
- 		else if (res->flags & IORESOURCE_IO)
- 			root = &ioport_resource;
- 		else
--			continue;
-+			BUG_ON(res);
- 
- 		conflict = insert_resource_conflict(root, res);
--		if (conflict)
-+		if (conflict) {
- 			dev_info(&info->bridge->dev,
- 				 "ignoring host bridge window %pR (conflicts with %s %pR)\n",
- 				 res, conflict->name, conflict);
--		else
--			pci_add_resource_offset(resources, res,
--					info->res_offset[i]);
-+			resource_list_destroy_entry(entry);
-+		}
- 	}
--}
- 
--static void free_pci_root_info_res(struct pci_root_info *info)
--{
--	kfree(info->res);
--	info->res = NULL;
--	kfree(info->res_offset);
--	info->res_offset = NULL;
--	info->res_num = 0;
-+	list_splice_tail(crs_res, resources);
+ 	if (pci_bf_sort >= pci_force_bf)
+ 		pci_sort_breadthfirst();
++
++	bus_register_notifier(&pci_bus_type, &pci_irq_nb);
++
+ 	return 0;
  }
  
--static void __release_pci_root_info(struct pci_root_info *info)
-+static void release_pci_root_info(struct pci_host_bridge *bridge)
+@@ -669,8 +691,12 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+ 
+ void pcibios_disable_device (struct pci_dev *dev)
  {
--	int i;
- 	struct resource *res;
-+	struct resource_list_entry *entry;
-+	struct pci_root_info *info = bridge->release_data;
- 
--	for (i = 0; i < info->res_num; i++) {
--		res = &info->res[i];
--
--		if (!res->parent)
--			continue;
--
--		if (!(res->flags & (IORESOURCE_MEM | IORESOURCE_IO)))
--			continue;
--
--		release_resource(res);
-+	resource_list_for_each_entry(entry, &bridge->windows) {
-+		res = entry->res;
-+		if (res->parent &&
-+		    (res->flags & (IORESOURCE_MEM | IORESOURCE_IO)))
-+			release_resource(res);
- 	}
- 
--	free_pci_root_info_res(info);
--
- 	teardown_mcfg_map(info);
--
- 	kfree(info);
+-	if (!pci_dev_msi_enabled(dev) && pcibios_disable_irq)
+-		pcibios_disable_irq(dev);
++	/*
++	 * Some device drivers assume dev->irq won't change after calling
++	 * pci_disable_device(). So delay releasing of IRQ resource to driver
++	 * unbinding time. Otherwise it will break PM subsystem and drivers
++	 * like xen-pciback etc.
++	 */
  }
  
--static void release_pci_root_info(struct pci_host_bridge *bridge)
+ int pci_ext_cfg_avail(void)
+diff --git a/arch/x86/pci/intel_mid_pci.c b/arch/x86/pci/intel_mid_pci.c
+index 44b9271580b5..95c2471f6819 100644
+--- a/arch/x86/pci/intel_mid_pci.c
++++ b/arch/x86/pci/intel_mid_pci.c
+@@ -234,10 +234,10 @@ static int intel_mid_pci_irq_enable(struct pci_dev *dev)
+ 
+ static void intel_mid_pci_irq_disable(struct pci_dev *dev)
+ {
+-	if (!mp_should_keep_irq(&dev->dev) && dev->irq_managed &&
+-	    dev->irq > 0) {
++	if (dev->irq_managed && dev->irq > 0) {
+ 		mp_unmap_irq(dev->irq);
+ 		dev->irq_managed = 0;
++		dev->irq = 0;
+ 	}
+ }
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index 5dc6ca5e1741..e71b3dbd87b8 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1256,22 +1256,9 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 	return 0;
+ }
+ 
+-bool mp_should_keep_irq(struct device *dev)
 -{
--	struct pci_root_info *info = bridge->release_data;
+-	if (dev->power.is_prepared)
+-		return true;
+-#ifdef CONFIG_PM
+-	if (dev->power.runtime_status == RPM_SUSPENDING)
+-		return true;
+-#endif
 -
--	__release_pci_root_info(info);
+-	return false;
 -}
 -
- static void probe_pci_root_info(struct pci_root_info *info,
- 				struct acpi_device *device,
--				int busnum, int domain)
-+				int busnum, int domain,
-+				struct list_head *list)
+ static void pirq_disable_irq(struct pci_dev *dev)
  {
--	size_t size;
-+	int ret;
-+	struct resource_list_entry *entry;
+-	if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
+-	    dev->irq_managed && dev->irq) {
++	if (io_apic_assign_pci_irqs && dev->irq_managed && dev->irq) {
+ 		mp_unmap_irq(dev->irq);
+ 		dev->irq = 0;
+ 		dev->irq_managed = 0;
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index b1def411c0b8..e7f718d6918a 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -485,14 +485,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	if (!pin || !dev->irq_managed || dev->irq <= 0)
+ 		return;
  
- 	sprintf(info->name, "PCI Bus %04x:%02x", domain, busnum);
- 	info->bridge = device;
--
--	info->res_num = 0;
--	acpi_walk_resources(device->handle, METHOD_NAME__CRS, count_resource,
--				info);
--	if (!info->res_num)
+-	/* Keep IOAPIC pin configuration when suspending */
+-	if (dev->dev.power.is_prepared)
 -		return;
--
--	size = sizeof(*info->res) * info->res_num;
--	info->res = kzalloc_node(size, GFP_KERNEL, info->sd.node);
--	if (!info->res) {
--		info->res_num = 0;
+-#ifdef	CONFIG_PM
+-	if (dev->dev.power.runtime_status == RPM_SUSPENDING)
 -		return;
--	}
+-#endif
 -
--	size = sizeof(*info->res_offset) * info->res_num;
--	info->res_num = 0;
--	info->res_offset = kzalloc_node(size, GFP_KERNEL, info->sd.node);
--	if (!info->res_offset) {
--		kfree(info->res);
--		info->res = NULL;
--		return;
--	}
--
--	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
--				info);
-+	ret = acpi_dev_get_resources(device, list,
-+				     acpi_dev_filter_resource_type_cb,
-+				     (void *)(IORESOURCE_IO | IORESOURCE_MEM));
-+	if (ret < 0)
-+		dev_warn(&device->dev,
-+			 "failed to parse _CRS method, error code %d.\n", ret);
-+	else if (ret == 0)
-+		dev_dbg(&device->dev,
-+			"no IO and memory resources present in _CRS.\n");
-+	else
-+		resource_list_for_each_entry(entry, list)
-+			entry->res->name = info->name;
- }
- 
- struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
-@@ -473,6 +358,8 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
- 	struct pci_root_info *info;
- 	int domain = root->segment;
- 	int busnum = root->secondary.start;
-+	struct resource_list_entry *res_entry;
-+	LIST_HEAD(crs_res);
- 	LIST_HEAD(resources);
- 	struct pci_bus *bus;
- 	struct pci_sysdata *sd;
-@@ -520,18 +407,22 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
- 		memcpy(bus->sysdata, sd, sizeof(*sd));
- 		kfree(info);
- 	} else {
--		probe_pci_root_info(info, device, busnum, domain);
--
- 		/* insert busn res at first */
- 		pci_add_resource(&resources,  &root->secondary);
-+
- 		/*
- 		 * _CRS with no apertures is normal, so only fall back to
- 		 * defaults or native bridge info if we're ignoring _CRS.
- 		 */
--		if (pci_use_crs)
--			add_resources(info, &resources);
--		else {
--			free_pci_root_info_res(info);
-+		probe_pci_root_info(info, device, busnum, domain, &crs_res);
-+		if (pci_use_crs) {
-+			add_resources(info, &resources, &crs_res);
-+		} else {
-+			resource_list_for_each_entry(res_entry, &crs_res)
-+				dev_printk(KERN_DEBUG, &device->dev,
-+					   "host bridge window %pR (ignored)\n",
-+					   res_entry->res);
-+			resource_list_free(&crs_res);
- 			x86_pci_root_bus_resources(busnum, &resources);
- 		}
- 
-@@ -546,8 +437,9 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
- 				to_pci_host_bridge(bus->bridge),
- 				release_pci_root_info, info);
- 		} else {
--			pci_free_resource_list(&resources);
--			__release_pci_root_info(info);
-+			resource_list_free(&resources);
-+			teardown_mcfg_map(info);
-+			kfree(info);
- 		}
+ 	entry = acpi_pci_irq_lookup(dev, pin);
+ 	if (!entry)
+ 		return;
+@@ -513,5 +505,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
+ 	if (gsi >= 0) {
+ 		acpi_unregister_gsi(gsi);
+ 		dev->irq_managed = 0;
++		dev->irq = 0;
  	}
- 
+ }
 -- 
 1.7.10.4
 
