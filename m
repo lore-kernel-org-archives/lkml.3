@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964802AbbA1EU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:20:57 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39344 "EHLO mail.kernel.org"
+	id S965659AbbA1E6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:58:39 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39371 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755729AbbA1EUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:20:51 -0500
+	id S934113AbbA1EUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:20:54 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 75/91] nl80211: clear skb cb before passing to netlink
-Date: Wed, 28 Jan 2015 12:08:37 +0800
-Message-Id: <1422418236-12852-150-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 076/177] cpufreq: expose scaling_cur_freq sysfs file for set_policy() drivers
+Date: Wed, 28 Jan 2015 12:08:38 +0800
+Message-Id: <1422418236-12852-151-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,58 +21,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit bd8c78e78d5011d8111bc2533ee73b13a3bd6c42 upstream.
+commit c034b02e213d271b98c45c4a7b54af8f69aaac1e upstream.
 
-In testmode and vendor command reply/event SKBs we use the
-skb cb data to store nl80211 parameters between allocation
-and sending. This causes the code for CONFIG_NETLINK_MMAP
-to get confused, because it takes ownership of the skb cb
-data when the SKB is handed off to netlink, and it doesn't
-explicitly clear it.
+Currently the core does not expose scaling_cur_freq for set_policy()
+drivers this breaks some userspace monitoring tools.
+Change the core to expose this file for all drivers and if the
+set_policy() driver supports the get() callback use it to retrieve the
+current frequency.
 
-Clear the skb cb explicitly when we're done and before it
-gets passed to netlink to avoid this issue.
-
-Reported-by: Assaf Azulay <assaf.azulay@intel.com>
-Reported-by: David Spinadel <david.spinadel@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=73741
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 [lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- net/wireless/nl80211.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/cpufreq/cpufreq.c | 23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index add9f94..52646f9 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -5059,6 +5059,9 @@ int cfg80211_testmode_reply(struct sk_buff *skb)
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
- 
-+	/* clear CB data for netlink core to own from now on */
-+	memset(skb->cb, 0, sizeof(skb->cb));
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 7f2f149..cf864ef 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -371,7 +371,18 @@ show_one(cpuinfo_max_freq, cpuinfo.max_freq);
+ show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
+ show_one(scaling_min_freq, min);
+ show_one(scaling_max_freq, max);
+-show_one(scaling_cur_freq, cur);
 +
- 	if (WARN_ON(!rdev->testmode_info)) {
- 		kfree_skb(skb);
- 		return -EINVAL;
-@@ -5085,6 +5088,9 @@ void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
- 
-+	/* clear CB data for netlink core to own from now on */
-+	memset(skb->cb, 0, sizeof(skb->cb));
++static ssize_t show_scaling_cur_freq(
++	struct cpufreq_policy *policy, char *buf)
++{
++	ssize_t ret;
 +
- 	nla_nest_end(skb, data);
- 	genlmsg_end(skb, hdr);
- 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
++	if (cpufreq_driver && cpufreq_driver->setpolicy && cpufreq_driver->get)
++		ret = sprintf(buf, "%u\n", cpufreq_driver->get(policy->cpu));
++	else
++		ret = sprintf(buf, "%u\n", policy->cur);
++	return ret;
++}
+ 
+ static int __cpufreq_set_policy(struct cpufreq_policy *data,
+ 				struct cpufreq_policy *policy);
+@@ -818,11 +829,11 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
+ 		if (ret)
+ 			goto err_out_kobj_put;
+ 	}
+-	if (cpufreq_driver->target) {
+-		ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
+-		if (ret)
+-			goto err_out_kobj_put;
+-	}
++
++	ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
++	if (ret)
++		goto err_out_kobj_put;
++
+ 	if (cpufreq_driver->bios_limit) {
+ 		ret = sysfs_create_file(&policy->kobj, &bios_limit.attr);
+ 		if (ret)
 -- 
 1.9.1
 
