@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759689AbbA1Vjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:39:48 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:60818 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759522AbbA1Ulj (ORCPT
+	id S1760987AbbA2CFP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:05:15 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41812 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760971AbbA2CFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:41:39 -0500
-Date: Wed, 28 Jan 2015 17:01:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Rob Herring <robherring2@gmail.com>, Nicolas Pitre <nico@fluxnic.net>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-Message-ID: <20150128170136.GT26493@n2100.arm.linux.org.uk>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com>
- <20150127174818.GM26493@n2100.arm.linux.org.uk>
- <20150128005032.GK28663@atomide.com>
- <201501281458.22088@pali>
- <alpine.LFD.2.11.1501280925400.1322@knanqh.ubzr>
- <CAL_Jsq+rESm8q44ABRbh9hqMsfcMNx0kcXJ5ONbn1=ue-RvHFg@mail.gmail.com>
- <20150128161316.GS26493@n2100.arm.linux.org.uk>
- <20150128161913.GU1569@arm.com>
+	Wed, 28 Jan 2015 21:05:00 -0500
+Date: Wed, 28 Jan 2015 09:06:00 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Introduce <linux/mm_struct.h>
+Message-ID: <20150128170600.GA28310@roeck-us.net>
+References: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150128161913.GU1569@arm.com>
+In-Reply-To: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.54C916FE.000D,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 04:19:13PM +0000, Will Deacon wrote:
-> On Wed, Jan 28, 2015 at 04:13:17PM +0000, Russell King - ARM Linux wrote:
-> > On Wed, Jan 28, 2015 at 09:57:18AM -0600, Rob Herring wrote:
-> > > I'm fine with that, but we just need to have a standard kernel
-> > > userspace interface in addition to something like
-> > > /proc/device-tree/bootreason. Perhaps this can be the default
-> > > implementation for the watchdog dev. Someday when we decide DT is crap
-> > > and have a new boot interface, we'll have people relying on
-> > > /proc/device-tree. I hope to be retired when that happens...
-> > 
-> > Anyone who thinks that DT can be replaced in the same way that we made
-> > the mistake with ATAGs would really need their head examined.
-> > 
-> > As you point out, removing DT removes the /proc/device-tree/ sub-tree.
-> > Whether we like it or not, that is a userspace API, one which we have
-> > users of already.  That pretty much means that we can't remove DT for
-> > existing platforms or any platform we have now converted to DT.
+On Wed, Jan 28, 2015 at 03:17:40PM +0200, Kirill A. Shutemov wrote:
+> This patchset moves definition of mm_struct into separate header file.
+> It allows to get rid of nr_pmds if PMD page table level is folded.
+> We cannot do it with current mm_types.h because we need
+> __PAGETABLE_PMD_FOLDED from <asm/pgtable.h> which creates circular
+> dependencies.
 > 
-> <ok, I'll go there!>
+> I've done few build tests and looks like it works, but I expect breakage
+> on some configuration. Please test.
 > 
-> ... and for platforms that can also be booted via ACPI? If we have to
-> convert the ACPI tables into a device-tree purely for /proc/device-tree,
-> then we may as well boot with the thing too :)
-> 
-> Seriously though, I don't see how we can maintain this directory for
-> ACPI, regardless of whether or not it's ABI.
+I applied your patches on top of the current mmotm and pushed into 
+my 'testing' branch. I'll send out test results after the test cycle
+is complete.
 
-Welcome to the problem that exporting information to userspace creates.
-The same problem is also true where ACPI is exported to userspace too.
-As soon as ACPI is exported to userspace, it also becomes part of the
-userspace API that the kernel provides - even if it is merely passing
-through the data that it received from the firmware.
-
-(I'm not saying that the kernel is ultimately responsible for the
-contents of the blob.)
-
-If we took the idea that the kernel receives a blob from the firmware,
-and it parses it to discover whatever it needs using the appropriate
-parser for that blob, and then passes the blob to userspace, then it's
-pretty clear that where a platform switches between providing DT or
-ACPI tables is neither here nor there, and can't cause a kernel
-regression.  The specification for such an API is that the kernel
-provides userspace with whatever data the firmware provided it.
-
-If we take the idea that the kernel receives a blob from the firmware,
-decodes it, and then provides the decoded form to userspace, then we're
-vulnerable to changes in firmware providers causing regressions for us
-because they've changed the way that that information is provided to us.
-
-That's the difference, and this is why I feel that a lack of thought has
-been put into stuff like the /sys/firmware/device-tree and similar which
-provides the decoded forms of the "blob".  It's far too easy to export
-a string or number to userspace, which then becomes part of the user API,
-and which can then later become quite a headache later.
-
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Guenter
