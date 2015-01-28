@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760070AbbA2B6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:58:47 -0500
-Received: from mta-out1.inet.fi ([62.71.2.227]:54611 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760017AbbA2B6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:58:45 -0500
-Date: Wed, 28 Jan 2015 23:16:47 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Introduce <linux/mm_struct.h>
-Message-ID: <20150128211647.GB15649@node.dhcp.inet.fi>
-References: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20150128185052.GA6118@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150128185052.GA6118@roeck-us.net>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+	id S933672AbbA2CVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:21:47 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:51467 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758955AbbA2BwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:52:10 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 0/7] [media] ARM randconfig fixes
+Date: Wed, 28 Jan 2015 22:17:40 +0100
+Message-Id: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 2.1.0.rc2
+X-Provags-ID: V03:K0:LylgDjsiDH4KOBapIMmHq8DOgseCaSnEWYqUPY6ViJFj4RGr4SH
+ zF/KcVWWOnQPvTTztN70boBASvLZvo7qO6mk066BvSjvXV3PNHdoM9AVA39RXjG+2+/mhVR
+ vSEASkCgr7QLG2GKxshzqcC+I2Yy9DHRCxxtc54/uxZI1Kt1xugXngWFYMEUP/2aX1cdQQ5
+ TA9ZAO6q35mVz/PcnmvvQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 10:50:52AM -0800, Guenter Roeck wrote:
-> On Wed, Jan 28, 2015 at 03:17:40PM +0200, Kirill A. Shutemov wrote:
-> > This patchset moves definition of mm_struct into separate header file.
-> > It allows to get rid of nr_pmds if PMD page table level is folded.
-> > We cannot do it with current mm_types.h because we need
-> > __PAGETABLE_PMD_FOLDED from <asm/pgtable.h> which creates circular
-> > dependencies.
-> > 
-> > I've done few build tests and looks like it works, but I expect breakage
-> > on some configuration. Please test.
-> > 
-> Doesn't look good.
-> 
-> Build results:
-> 	total: 134 pass: 63 fail: 71
-> Failed builds:
-> 	avr32:defconfig
-> 	avr32:merisc_defconfig
-> 	avr32:atngw100mkii_evklcd101_defconfig
+Hi Mauro,
 
-Fixlet for AVR32:
+This is one set of randconfig fixes that I've been carrying in
+a local branch for a long time. I have made sure that they are
+all still required, but there are others that I have not been
+able to reproduce yet, so I will probably send them out once
+I get the errors again.
 
-diff --git a/arch/avr32/include/asm/pgtable.h b/arch/avr32/include/asm/pgtable.h
-index 35800664076e..3af39532b25b 100644
---- a/arch/avr32/include/asm/pgtable.h
-+++ b/arch/avr32/include/asm/pgtable.h
-@@ -10,11 +10,6 @@
- 
- #include <asm/addrspace.h>
- 
--#ifndef __ASSEMBLY__
--#include <linux/sched.h>
--
--#endif /* !__ASSEMBLY__ */
--
- /*
-  * Use two-level page tables just as the i386 (without PAE)
-  */
-diff --git a/arch/avr32/mm/tlb.c b/arch/avr32/mm/tlb.c
-index 0da23109f817..964130f8f89d 100644
---- a/arch/avr32/mm/tlb.c
-+++ b/arch/avr32/mm/tlb.c
-@@ -8,6 +8,7 @@
-  * published by the Free Software Foundation.
-  */
- #include <linux/mm.h>
-+#include <linux/sched.h>
- 
- #include <asm/mmu_context.h>
- 
+The ones here are all trivial, mostly adding missing dependencies.
+
+Please apply.
+
+Arnd Bergmann (7):
+  [media] timberdale: do not select TIMB_DMA
+  [media] radio/aimslab: use mdelay instead of udelay
+  [media] staging/davinci/vpfe/dm365: add missing dependencies
+  [media] siano: fix Kconfig dependencies
+  [media] gspca: add INPUT dependency
+  [media] marvell-ccic: MMP_CAMERA never worked
+  [media] marvell-ccic needs VIDEOBUF2_DMA_SG
+
+ drivers/media/mmc/siano/Kconfig             | 2 ++
+ drivers/media/platform/Kconfig              | 6 ++----
+ drivers/media/platform/marvell-ccic/Kconfig | 3 ++-
+ drivers/media/radio/radio-aimslab.c         | 4 ++--
+ drivers/media/usb/gspca/Kconfig             | 1 +
+ drivers/media/usb/siano/Kconfig             | 2 ++
+ drivers/staging/media/davinci_vpfe/Kconfig  | 2 ++
+ 7 files changed, 13 insertions(+), 7 deletions(-)
+
 -- 
- Kirill A. Shutemov
+2.1.0.rc2
+
