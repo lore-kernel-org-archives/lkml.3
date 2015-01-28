@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110AbbA1U3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:29:12 -0500
-Received: from mx-guillaumet.finsecur.com ([91.217.234.131]:59341 "EHLO
-	guillaumet.finsecur.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602AbbA1U3I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:29:08 -0500
-Date: Wed, 28 Jan 2015 09:59:13 +0100
-From: Sylvain Rochet <sylvain.rochet@finsecur.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, peda@axentia.se,
-        sergei.shtylyov@cogentembedded.com, linux@maxim.org.za
-Message-ID: <20150128085913.GA7742@gradator.net>
-References: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
+	id S1753608AbbA1UyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:54:25 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:39636 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753482AbbA1UyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:54:19 -0500
+Message-ID: <54C8A66E.3070306@mm-sol.com>
+Date: Wed, 28 Jan 2015 11:05:50 +0200
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 172.16.8.13
-X-SA-Exim-Mail-From: sylvain.rochet@finsecur.com
-Subject: Re: [PATCH v4 00/13] AT91 pm cleanup for 3.20
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on guillaumet.finsecur.com)
+To: Andy Gross <agross@codeaurora.org>
+CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        devicetree@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        linux-soc@vger.kernel.org
+Subject: Re: [PATCH 1/6] soc: qcom: gsbi: Add support for ADM CRCI muxing
+References: <1422396644-21714-1-git-send-email-agross@codeaurora.org> <1422396644-21714-2-git-send-email-agross@codeaurora.org>
+In-Reply-To: <1422396644-21714-2-git-send-email-agross@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wenyou,
+Hi Andy,
 
-On Wed, Jan 28, 2015 at 09:39:32AM +0800, Wenyou Yang wrote:
-> Hi Nicolas,
+On 01/28/2015 12:10 AM, Andy Gross wrote:
+> This patch adds automatic configuration for the ADM CRCI muxing required to
+> support DMA operations for GSBI clients.  The GSBI mode and instance determine
+> the correct TCSR ADM CRCI MUX value that must be programmed so that the DMA
+> works properly.
 > 
-> This version is rebased on the branch: at91-3.20-cleanup of the repository
-> 	git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
+> ---
+>  .../devicetree/bindings/soc/qcom/qcom,gsbi.txt     |   17 ++-
+>  drivers/soc/qcom/Kconfig                           |    1 +
+>  drivers/soc/qcom/qcom_gsbi.c                       |  148 +++++++++++++++++++-
+>  3 files changed, 158 insertions(+), 8 deletions(-)
 > 
-> It is purpose to clean up the PM code, includes the patches from Peter Rosin and Sylvain Rochet.
-> 
-> Since verifying the USB clock and USB PLL disabling before suspending to memory,
-> it aslo depends on the following patch serials from Sylvain:
-> 	[PATCHv6 0/5] USB: gadget: atmel_usba_udc: Driver improvements
-> 	[PATCHv7 0/6] USB: host: Atmel OHCI and EHCI drivers improvements
-> 
-> Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
-> The suspend to standby mode uses the same sram function as the suspend to memory mode.
-> Remove some unused code.
-> 
-> Alexandr & Sylvain, Thank you very much for so many feedbacks.
-> 
-> Changes in v2:
->  - Rebase on the at91-3.20-cleanup branch
->  - Recover the verify clock condition, only for suspend to memory.
->  - Collect ACK from Alexandre
->  - Add the macro for PM mode
-> 
-> Changes in v3:
->  - Clear unused state argument in at91_pm_verify_clocks()
->  - Remove pr_info("AT91:... slow_clock ? ..") in patch 07/13.
 
-Changes in v4: ? :-)
+<snip>
 
-Sylvain
+> diff --git a/drivers/soc/qcom/Kconfig b/drivers/soc/qcom/Kconfig
+> index 7bd2c94..32f20be 100644
+> --- a/drivers/soc/qcom/Kconfig
+> +++ b/drivers/soc/qcom/Kconfig
+> @@ -4,6 +4,7 @@
+>  config QCOM_GSBI
+>          tristate "QCOM General Serial Bus Interface"
+>          depends on ARCH_QCOM
+> +	select MFD_SYSCON
+
+Wrong indentation? In fact the original Kconfig entry has spaces instead
+of tabs, could you prepare a cleanup patch for this.
+
+>          help
+>            Say y here to enable GSBI support.  The GSBI provides control
+>            functions for connecting the underlying serial UART, SPI, and I2C
+
+<snip>
+
+-- 
+regards,
+Stan
