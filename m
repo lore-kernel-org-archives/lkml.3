@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933887AbbA1ERM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:17:12 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37983 "EHLO mail.kernel.org"
+	id S1762309AbbA1FPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:15:40 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37993 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933857AbbA1ERH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:17:07 -0500
+	id S933855AbbA1ERK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:17:10 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Joe Thornber <ejt@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 040/177] dm bufio: update last_accessed when relinking a buffer
-Date: Wed, 28 Jan 2015 12:07:26 +0800
-Message-Id: <1422418236-12852-79-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 40/91] don't bugger nd->seq on set_root_rcu() from follow_dotdot_rcu()
+Date: Wed, 28 Jan 2015 12:07:27 +0800
+Message-Id: <1422418236-12852-80-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,47 +20,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Thornber <ejt@redhat.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit eb76faf53b1ff7a77ce3f78cc98ad392ac70c2a0 upstream.
+commit 7bd88377d482e1eae3c5329b12e33cfd664fa6a9 upstream.
 
-The 'last_accessed' member of the dm_buffer structure was only set when
-the the buffer was created.  This led to each buffer being discarded
-after dm_bufio_max_age time even if it was used recently.  In practice
-this resulted in all thinp metadata being evicted soon after being read
--- this is particularly problematic for metadata intensive workloads
-like multithreaded small random IO.
+return the value instead, and have path_init() do the assignment.  Broken by
+"vfs: Fix absolute RCU path walk failures due to uninitialized seq number",
+which was Cc-stable with 2.6.38+ as destination.  This one should go where
+it went.
 
-'last_accessed' is now updated each time the buffer is moved to the head
-of the LRU list, so the buffer is now properly discarded if it was not
-used in dm_bufio_max_age time.
+To avoid dummy value returned in case when root is already set (it would do
+no harm, actually, since the only caller that doesn't ignore the return value
+is guaranteed to have nd->root *not* set, but it's more obvious that way),
+lift the check into callers.  And do the same to set_root(), to keep them
+in sync.
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[lizf: Backported to 3.4: adjust context]
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[lizf: Backported to 3.4:
+ - remove the changes to follow_link() as it doesn't call set_root()]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/md/dm-bufio.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/namei.c | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index 6f99500..5abc8d6 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -467,6 +467,7 @@ static void __relink_lru(struct dm_buffer *b, int dirty)
- 	b->list_mode = dirty;
- 	list_del(&b->lru_list);
- 	list_add(&b->lru_list, &c->lru[dirty]);
-+	b->last_accessed = jiffies;
+diff --git a/fs/namei.c b/fs/namei.c
+index c427919..5974fb5 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -553,24 +553,22 @@ static int complete_walk(struct nameidata *nd)
+ 
+ static __always_inline void set_root(struct nameidata *nd)
+ {
+-	if (!nd->root.mnt)
+-		get_fs_root(current->fs, &nd->root);
++	get_fs_root(current->fs, &nd->root);
  }
  
- /*----------------------------------------------------------------
+ static int link_path_walk(const char *, struct nameidata *);
+ 
+-static __always_inline void set_root_rcu(struct nameidata *nd)
++static __always_inline unsigned set_root_rcu(struct nameidata *nd)
+ {
+-	if (!nd->root.mnt) {
+-		struct fs_struct *fs = current->fs;
+-		unsigned seq;
++	struct fs_struct *fs = current->fs;
++	unsigned seq, res;
+ 
+-		do {
+-			seq = read_seqcount_begin(&fs->seq);
+-			nd->root = fs->root;
+-			nd->seq = __read_seqcount_begin(&nd->root.dentry->d_seq);
+-		} while (read_seqcount_retry(&fs->seq, seq));
+-	}
++	do {
++		seq = read_seqcount_begin(&fs->seq);
++		nd->root = fs->root;
++		res = __read_seqcount_begin(&nd->root.dentry->d_seq);
++	} while (read_seqcount_retry(&fs->seq, seq));
++	return res;
+ }
+ 
+ static __always_inline int __vfs_follow_link(struct nameidata *nd, const char *link)
+@@ -928,7 +926,8 @@ static void follow_mount_rcu(struct nameidata *nd)
+ 
+ static int follow_dotdot_rcu(struct nameidata *nd)
+ {
+-	set_root_rcu(nd);
++	if (!nd->root.mnt)
++		set_root_rcu(nd);
+ 
+ 	while (1) {
+ 		if (nd->path.dentry == nd->root.dentry &&
+@@ -1031,7 +1030,8 @@ static void follow_mount(struct path *path)
+ 
+ static void follow_dotdot(struct nameidata *nd)
+ {
+-	set_root(nd);
++	if (!nd->root.mnt)
++		set_root(nd);
+ 
+ 	while(1) {
+ 		struct dentry *old = nd->path.dentry;
+@@ -1633,7 +1633,7 @@ static int path_init(int dfd, const char *name, unsigned int flags,
+ 		if (flags & LOOKUP_RCU) {
+ 			br_read_lock(vfsmount_lock);
+ 			rcu_read_lock();
+-			set_root_rcu(nd);
++			nd->seq = set_root_rcu(nd);
+ 		} else {
+ 			set_root(nd);
+ 			path_get(&nd->root);
 -- 
 1.9.1
 
