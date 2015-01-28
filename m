@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691AbbA2JII (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:08:08 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44914 "EHLO
+	id S932625AbbA2KSr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:18:47 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932545AbbA2JHx (ORCPT
+	by vger.kernel.org with ESMTP id S1756935AbbA2JBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:07:53 -0500
+	Thu, 29 Jan 2015 04:01:06 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 098/176] sound: Update au0828 quirks table
-Date: Wed, 28 Jan 2015 15:28:48 +0100
-Message-Id: <b6f8e9abd99f7f03d53944a0ff5f7d0f389f4eaf.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 099/176] uvcvideo: Fix destruction order in uvc_delete()
+Date: Wed, 28 Jan 2015 15:28:49 +0100
+Message-Id: <5a075f4ad9eb2ad70c6f941aba1474fba56f9b3f.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,55 +25,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+From: Takashi Iwai <tiwai@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 678fa12fb8e75c6dc1e781a02e3ddbbba7e1a904 upstream.
+commit 2228d80dd05a4fc5a410fde847677b8fb3eb23d7 upstream.
 
-The au0828 quirks table is currently not in sync with the au0828
-media driver.
+We've got a bug report at disconnecting a Webcam, where the kernel
+spews warnings like below:
+  WARNING: CPU: 0 PID: 8385 at ../fs/sysfs/group.c:219 sysfs_remove_group+0x87/0x90()
+  sysfs group c0b2350c not found for kobject 'event3'
+  CPU: 0 PID: 8385 Comm: queue2:src Not tainted 3.16.2-1.gdcee397-default #1
+  Hardware name: ASUSTeK Computer INC. A7N8X-E/A7N8X-E, BIOS ASUS A7N8X-E Deluxe ACPI BIOS Rev 1013  11/12/2004
+    c08d0705 ddc75cbc c0718c5b ddc75ccc c024b654 c08c6d44 ddc75ce8 000020c1
+    c08d0705 000000db c03d1ec7 c03d1ec7 00000009 00000000 c0b2350c d62c9064
+    ddc75cd4 c024b6a3 00000009 ddc75ccc c08c6d44 ddc75ce8 ddc75cfc c03d1ec7
+  Call Trace:
+    [<c0205ba6>] try_stack_unwind+0x156/0x170
+    [<c02046f3>] dump_trace+0x53/0x180
+    [<c0205c06>] show_trace_log_lvl+0x46/0x50
+    [<c0204871>] show_stack_log_lvl+0x51/0xe0
+    [<c0205c67>] show_stack+0x27/0x50
+    [<c0718c5b>] dump_stack+0x3e/0x4e
+    [<c024b654>] warn_slowpath_common+0x84/0xa0
+    [<c024b6a3>] warn_slowpath_fmt+0x33/0x40
+    [<c03d1ec7>] sysfs_remove_group+0x87/0x90
+    [<c05a2c54>] device_del+0x34/0x180
+    [<c05e3989>] evdev_disconnect+0x19/0x50
+    [<c05e06fa>] __input_unregister_device+0x9a/0x140
+    [<c05e0845>] input_unregister_device+0x45/0x80
+    [<f854b1d6>] uvc_delete+0x26/0x110 [uvcvideo]
+    [<f84d66f8>] v4l2_device_release+0x98/0xc0 [videodev]
+    [<c05a25bb>] device_release+0x2b/0x90
+    [<c04ad8bf>] kobject_cleanup+0x6f/0x1a0
+    [<f84d5453>] v4l2_release+0x43/0x70 [videodev]
+    [<c0372f31>] __fput+0xb1/0x1b0
+    [<c02650c1>] task_work_run+0x91/0xb0
+    [<c024d845>] do_exit+0x265/0x910
+    [<c024df64>] do_group_exit+0x34/0xa0
+    [<c025a76f>] get_signal_to_deliver+0x17f/0x590
+    [<c0201b6a>] do_signal+0x3a/0x960
+    [<c02024f7>] do_notify_resume+0x67/0x90
+    [<c071ebb5>] work_notifysig+0x30/0x3b
+    [<b7739e60>] 0xb7739e5f
+   ---[ end trace b1e56095a485b631 ]---
 
-Syncronize it and put them on the same order as found at au0828
-driver, as all the au0828 devices with analog TV need the
-same quirks.
+The cause is that uvc_status_cleanup() is called after usb_put_*() in
+uvc_delete().  usb_put_*() removes the sysfs parent and eventually
+removes the children recursively, so the later device_del() can't find
+its sysfs.  The fix is simply rearrange the call orders in
+uvc_delete() so that the child is removed before the parent.
 
+Bugzilla: https://bugzilla.suse.com/show_bug.cgi?id=897736
+Reported-and-tested-by: Martin Pluskal <mpluskal@suse.com>
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/usb/quirks-table.h | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/media/usb/uvc/uvc_driver.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
-index 8f3e2bf100eb..83bddbdb90e9 100644
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -2827,14 +2827,22 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- }
- 
- AU0828_DEVICE(0x2040, 0x7200, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x7240, "Hauppauge", "HVR-850"),
- AU0828_DEVICE(0x2040, 0x7210, "Hauppauge", "HVR-950Q"),
- AU0828_DEVICE(0x2040, 0x7217, "Hauppauge", "HVR-950Q"),
- AU0828_DEVICE(0x2040, 0x721b, "Hauppauge", "HVR-950Q"),
- AU0828_DEVICE(0x2040, 0x721e, "Hauppauge", "HVR-950Q"),
- AU0828_DEVICE(0x2040, 0x721f, "Hauppauge", "HVR-950Q"),
--AU0828_DEVICE(0x2040, 0x7240, "Hauppauge", "HVR-850"),
- AU0828_DEVICE(0x2040, 0x7280, "Hauppauge", "HVR-950Q"),
- AU0828_DEVICE(0x0fd9, 0x0008, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x7201, "Hauppauge", "HVR-950Q-MXL"),
-+AU0828_DEVICE(0x2040, 0x7211, "Hauppauge", "HVR-950Q-MXL"),
-+AU0828_DEVICE(0x2040, 0x7281, "Hauppauge", "HVR-950Q-MXL"),
-+AU0828_DEVICE(0x05e1, 0x0480, "Hauppauge", "Woodbury"),
-+AU0828_DEVICE(0x2040, 0x8200, "Hauppauge", "Woodbury"),
-+AU0828_DEVICE(0x2040, 0x7260, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x7213, "Hauppauge", "HVR-950Q"),
-+AU0828_DEVICE(0x2040, 0x7270, "Hauppauge", "HVR-950Q"),
- 
- /* Digidesign Mbox */
+diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
+index 753ad4cfc118..45314412b4a3 100644
+--- a/drivers/media/usb/uvc/uvc_driver.c
++++ b/drivers/media/usb/uvc/uvc_driver.c
+@@ -1603,12 +1603,12 @@ static void uvc_delete(struct uvc_device *dev)
  {
+ 	struct list_head *p, *n;
+ 
+-	usb_put_intf(dev->intf);
+-	usb_put_dev(dev->udev);
+-
+ 	uvc_status_cleanup(dev);
+ 	uvc_ctrl_cleanup_device(dev);
+ 
++	usb_put_intf(dev->intf);
++	usb_put_dev(dev->udev);
++
+ 	if (dev->vdev.dev)
+ 		v4l2_device_unregister(&dev->vdev);
+ #ifdef CONFIG_MEDIA_CONTROLLER
 -- 
 2.2.2
 
