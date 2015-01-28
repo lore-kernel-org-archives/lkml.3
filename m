@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058AbbA1Uhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:37:51 -0500
-Received: from mga03.intel.com ([134.134.136.65]:30945 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759420AbbA1Uhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:37:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
-   d="scan'208";a="669123904"
-Message-ID: <1422457545.31903.301.camel@linux.intel.com>
-Subject: Re: [PATCH 2/2] string_helpers: Change semantics of
- string_escape_mem
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, netdev@vger.kernel.org
-Date: Wed, 28 Jan 2015 17:05:45 +0200
-In-Reply-To: <1422451543-12401-3-git-send-email-linux@rasmusvillemoes.dk>
-References: <1422451543-12401-1-git-send-email-linux@rasmusvillemoes.dk>
-	 <1422451543-12401-3-git-send-email-linux@rasmusvillemoes.dk>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
+	id S1757084AbbA2BnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:43:05 -0500
+Received: from smtprelay0158.hostedemail.com ([216.40.44.158]:59101 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757045AbbA2BnB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:43:01 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::,RULES_HIT:41:355:379:541:599:800:960:988:989:1260:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1536:1559:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3622:3867:3872:4362:5007:6261:7875:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mom16_4fe4e7059e14c
+X-Filterd-Recvd-Size: 1043
+Date: Wed, 28 Jan 2015 10:05:48 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tina Ruchandani <ruchandani.tina@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v4] trace: Use 64-bit timekeeping
+Message-ID: <20150128100548.2ff27c08@gandalf.local.home>
+In-Reply-To: <13699348.kjuUqHkb9Z@wuerfel>
+References: <20150128141611.GA2701@tinar>
+	<20150128095349.6a3537a2@gandalf.local.home>
+	<13699348.kjuUqHkb9Z@wuerfel>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-28 at 14:25 +0100, Rasmus Villemoes wrote:
-> The current semantics of string_escape_mem are inadequate for one of
-> its two current users, vsnprintf(). If that is to honour its contract,
-> it must know how much space would be needed for the entire escaped
-> buffer, and string_escape_mem provides no way of obtaining that (short
-> of allocating a large enough buffer (~4 times input string) to let it
-> play with, and that's definitely a big no-no inside vsnprintf).
-> 
-> So change the semantics for string_escape_mem to be more
-> snprintf-like: Return the size of the output that would be generated
-> if the destination buffer was big enough, but of course still only
-> write to the part of dst it is allowed to, and don't do
-> '\0'-termination. It is then up to the caller to detect whether output
-> was truncated and to append a '\0' if desired.
-> 
-> This also fixes a bug in the escaped_string() helper function, which
-> used to unconditionally pass a length of "end-buf" to
-> string_escape_mem(); since the latter doesn't check osz for being
-> insanely large, it would happily write to dst. For example,
-> kasprintf(GFP_KERNEL, "something and then %pE", ...); is an easy way
-> to trigger an oops.
-
-> The patch is somewhat larger than I'd like, but I couldn't find a way
-> of splitting it into smaller pieces. Implementation-wise, I changed
-> the various escape_* helpers to return true if they handled the
-> character, updating dst appropriately, false otherwise. Maybe there's
-> a more elegant way, but this seems to work.
-
-Can we split this to at least two parts: internal API changes to
-string_escape_mem() and the rest?
-
-> In test-string_helpers.c, I removed the now meaningless -ENOMEM test,
-> and replaced it with testing for getting the expected return value
-> even if the buffer is too small. Also ensure that nothing is written
-> when osz==0.
-> 
-> In net/sunrpc/cache.c, I think qword_add still has the same
-> semantics. Someone should definitely double-check this.
+On Wed, 28 Jan 2015 15:55:39 +0100
+Arnd Bergmann <arnd@arndb.de> wrote:
 
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+> Please apply it to your tree.
+
+Will do.
+
+Thanks,
+
+-- Steve
 
