@@ -1,110 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbbA2BIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:08:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53612 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752177AbbA2BIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:08:21 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Dexuan Cui <decui@microsoft.com>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        "devel\@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Wang <jasowang@redhat.com>,
-        Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind offer
-References: <1421768706-5363-1-git-send-email-vkuznets@redhat.com>
-	<1421768706-5363-4-git-send-email-vkuznets@redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C61EA94FB7@SIXPRD3002MB028.064d.mgd.msft.net>
-	<8761br9kfd.fsf@vitty.brq.redhat.com>
-	<F792CF86EFE20D4AB8064279AFBA51C61EA9510B@SIXPRD3002MB028.064d.mgd.msft.net>
-Date: Wed, 28 Jan 2015 14:09:57 +0100
-In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C61EA9510B@SIXPRD3002MB028.064d.mgd.msft.net>
-	(Dexuan Cui's message of "Wed, 28 Jan 2015 12:51:42 +0000")
-Message-ID: <87egqf8316.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756980AbbA1UX4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:23:56 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:49335 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471AbbA1UXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:23:53 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Murali Karicheri <m-karicheri2@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Rob Herring <robh+dt@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to of_iommu_configure()
+Date: Wed, 28 Jan 2015 15:15:10 +0200
+Message-ID: <13812499.ICbNgSDOae@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150128122941.GK1569@arm.com>
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <3953539.m9NpxSWcJ5@avalon> <20150128122941.GK1569@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dexuan Cui <decui@microsoft.com> writes:
+On Wednesday 28 January 2015 12:29:42 Will Deacon wrote:
+> On Wed, Jan 28, 2015 at 12:23:03PM +0000, Laurent Pinchart wrote:
+> > On Wednesday 28 January 2015 11:33:00 Will Deacon wrote:
+> >> On Mon, Jan 26, 2015 at 06:49:01PM +0000, Murali Karicheri wrote:
+> >>> On 01/25/2015 08:32 AM, Laurent Pinchart wrote:
+> >>>> On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
+> >>>>> Function of_iommu_configure() is called from of_dma_configure() to
+> >>>>> setup iommu ops using DT property. This API is currently used for
+> >>>>> platform devices for which DMA configuration (including iommu ops)
+> >>>>> may come from device's parent. To extend this functionality for PCI
+> >>>>> devices, this API need to take a parent node ptr as an argument
+> >>>>> instead of assuming device's parent. This is needed since for PCI,
+> >>>>> the dma configuration may be defined in the DT node of the root bus
+> >>>>> bridge's parent device. Currently only dma-range is used for PCI and
+> >>>>> iommu is not supported. So return error if the device is PCI.
+> >>>>> 
+> >>>>> Cc: Joerg Roedel<joro@8bytes.org>
+> >>>>> Cc: Grant Likely<grant.likely@linaro.org>
+> >>>>> Cc: Rob Herring<robh+dt@kernel.org>
+> >>>>> Cc: Bjorn Helgaas<bhelgaas@google.com>
+> >>>>> Cc: Will Deacon<will.deacon@arm.com>
+> >>>>> Cc: Russell King<linux@arm.linux.org.uk>
+> >>>>> Cc: Arnd Bergmann<arnd@arndb.de>
+> >>>>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
+> >>>>> 
+> >>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+> >>>>> ---
+> >>>>> 
+> >>>>>   drivers/iommu/of_iommu.c |   10 ++++++++--
+> >>>>>   drivers/of/platform.c    |    2 +-
+> >>>>>   include/linux/of_iommu.h |    6 ++++--
+> >>>>>   3 files changed, 13 insertions(+), 5 deletions(-)
+> >>>>> 
+> >>>>> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
+> >>>>> index af1dc6a..439235b 100644
+> >>>>> --- a/drivers/iommu/of_iommu.c
+> >>>>> +++ b/drivers/iommu/of_iommu.c
+> >>>>> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct
+> >>>>> device_node *np)
+> >>>>>   	return ops;
+> >>>>>  }
+> >>>>> 
+> >>>>> -struct iommu_ops *of_iommu_configure(struct device *dev)
+> >>>>> +struct iommu_ops *of_iommu_configure(struct device *dev,
+> >>>>> +				     struct device_node *iommu_np)
+> >>>>>  {
+> >>>>>   	struct of_phandle_args iommu_spec;
+> >>>>>   	struct device_node *np;
+> >>>>>   	struct iommu_ops *ops = NULL;
+> >>>>>   	int idx = 0;
+> >>>>> 
+> >>>>> +	if (dev_is_pci(dev)) {
+> >>>>> +		dev_err(dev, "iommu is currently not supported for PCI\n");
+> >>>>> +		return NULL;
+> >>>>> +	}
+> >>>>> +
+> >>>>>   	/*
+> >>>>>   	 * We don't currently walk up the tree looking for a parent
+> >>>>>   	 IOMMU.
+> >>>>>   	 * See the `Notes:' section of
+> >>>>>   	 * Documentation/devicetree/bindings/iommu/iommu.txt
+> >>>>>   	 */
+> >>>> 
+> >>>> Wouldn't it be better to fix this rather than passing the device node
+> >>>> pointer to the function ? The solution would be more generic.
+> >>> 
+> >>> Will Deacon (Copied here) is working on this as we alteady discussed
+> >>> in this thread. So it will be addressed by him in another series.
+> >> 
+> >> Well, "working on this" equates to "has it somewhere near the bottom of
+> >> a very long list" :)
+> > 
+> > What's your opinion on this patch then, do you think adding the iommu_np
+> > argument makes sense as a temporary hack, or should we instead walk up the
+> > tree looking for an iommus attribute in parent nodes ? I don't expect that
+> > to be insanely difficult to code.
+> 
+> If walking up the tree is useful, then I think we should do that and update
+> the Documentation to reflect the new behaviour.
 
->> -----Original Message-----
->> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
->> Sent: Wednesday, January 28, 2015 20:09 PM
->> To: Dexuan Cui
->> Cc: KY Srinivasan; devel@linuxdriverproject.org; Haiyang Zhang; linux-
->> kernel@vger.kernel.org; Jason Wang; Radim Krčmář; Dan Carpenter
->> Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
->> offer
->> 
->> Dexuan Cui <decui@microsoft.com> writes:
->> 
->> >> -----Original Message-----
->> >> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
->> >> Sent: Tuesday, January 20, 2015 23:45 PM
->> >> To: KY Srinivasan; devel@linuxdriverproject.org
->> >> Cc: Haiyang Zhang; linux-kernel@vger.kernel.org; Dexuan Cui; Jason Wang;
->> >> Radim Krčmář; Dan Carpenter
->> >> Subject: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
->> offer
->> ...
->> >
->> > Hi Vitaly and all,
->> > I have 2 questions:
->> > In vmbus_process_offer(),  in the cases of "goto err_free_chan",
->> > should we consider the possibility a rescind message could be pending for
->> > the new channel?
->> > In the cases,  because we don't run
->> > "INIT_WORK(&newchannel->work, vmbus_process_rescind_offer); ",
->> > vmbus_onoffer_rescind() will do nothing and as a result,
->> > vmbus_process_rescind_offer() won't be invoked.
->> 
->> Yes, but processing the rescind offer results in freeing the channel
->> (and this processing supposes the channel wasn't freed before) so
->> there is no difference... or is it?
->> 
->> >
->> > Question 2: in vmbus_process_offer(), in the case
->> > vmbus_device_register() fails, we'll run
->> > "list_del(&newchannel->listentry);" -- just after this line,
->> >  what will happen at this time if relid2channel() returns NULL
->> > in vmbus_onoffer_rescind()?
->> >
->> > I think we'll lose the rescind message.
->> >
->> 
->> Yes, but same logic applies - we already freed the channes so no rescind
->> proccessing required.
-> free_channel() and vmbus_process_rescind_offer() are different, because
->  the latter does more work, e.g., sending the host a message 
-> CHANNELMSG_RELID_RELEASED.
->
-> In the cases of "goto err_free_chan" + "a pending rescind message",
-> the host may expect the message CHANNELMSG_RELID_RELEASED and
-> could reoffer the channel once the message is received.
->
-> It would be better if the VM doesn't lose the rescind message
-> here. :-)
+If I understand Murali's patch set right (please correct me if that's not the 
+case) the PCI code walks up the DT nodes hierarchy to the parent node that 
+contains the iommus attribute and passes a pointer to that node to this 
+function. It's thus a PCI-specific solution. As a temporary hack that's OK I 
+suppose, but if implementing it right straight away isn't difficult that would 
+be better.
 
-Ah, I see, CHANNELMSG_RELID_RELEASED is expected from us in any
-case. I'll doing that in a separate patch is noone objects.
-
-Thanks for the review,
-
->
->>  If we still need to do something we need to
->> add support for already freed channel to the rescind offer processing path.
->> 
->
-> Thanks,
-> -- Dexuan
+> The only reason that I didn't code that in of_iommu_configure originally is
+> because I didn't want to go against the binding spec for the initial
+> version, especially as we didn't have a reason to look at parent nodes.
+> 
+> The only thing to double-check is that we don't break any existing users
+> of the binding with this change, but I don't think that we do.
 
 -- 
-  Vitaly
+Regards,
+
+Laurent Pinchart
+
