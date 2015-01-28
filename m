@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965144AbbA1Ffu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:35:50 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:56511 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964851AbbA1Fft (ORCPT
+	id S1761642AbbA1Fgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:36:53 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:54327 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650AbbA1Fgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:35:49 -0500
-Date: Wed, 28 Jan 2015 14:35:42 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
-Message-ID: <20150128053541.GE32712@blaptop>
-References: <20150127031823.GA16797@blaptop>
- <20150127040305.GB665@swordfish>
- <20150128001526.GA25828@blaptop>
- <20150128002203.GB25828@blaptop>
- <20150128020759.GA343@swordfish>
- <20150128025707.GB32712@blaptop>
- <20150128035354.GA7790@swordfish>
- <20150128040757.GA577@swordfish>
- <20150128045028.GB577@swordfish>
- <20150128045855.GD32712@blaptop>
+	Wed, 28 Jan 2015 00:36:52 -0500
+Date: Wed, 28 Jan 2015 06:36:45 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dominik Vogt <vogt@linux.vnet.ibm.com>,
+        Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
+Message-ID: <20150128053645.GA4633@osiris>
+References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
+ <1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
+ <20150126093701.699763dc@gandalf.local.home>
+ <20150127061941.GA4591@linux.vnet.ibm.com>
+ <20150127094228.50e642fc@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150128045855.GD32712@blaptop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150127094228.50e642fc@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012805-0021-0000-0000-000002B35F47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 01:58:55PM +0900, Minchan Kim wrote:
-> On Wed, Jan 28, 2015 at 01:50:28PM +0900, Sergey Senozhatsky wrote:
-> > On (01/28/15 13:07), Sergey Senozhatsky wrote:
-> > > On (01/28/15 12:53), Sergey Senozhatsky wrote:
-> > > > > So, I want to go with srcu. Do you agree? or another suggestion?
-> > > > 
-> > > > yes, I think we need to take a second look on srcu approach.
-> > > > 
-> > > 
-> > > ... or we can ask lockdep to stop false alarming us and leave it as is.
-> > > I wouldn't say that ->init_lock is so hard to understand.
-> > > just as an option.
-> > > 
-> > 
-> > so... returning back to barriers performance implications.
-> > 
-> > x86_64, lzo, 4 comp streams, 2G zram, ext4, mount -o rw,relatime,data=ordered
-> > 
-> >  ./iozone -t 3 -R -r 16K -s 60M -I +Z
-> > 
-> >        test           base          srcu
-> > "  Initial write " 1299639.75   1277621.03
-> > "        Rewrite " 2139387.50   2004663.94
-> > "           Read " 6193415.00   5091000.00
-> > "        Re-read " 6199050.38   4814297.88
-> > "   Reverse Read " 4693868.88   4367201.75
-> > "    Stride read " 4470633.75   4247550.00
-> > "    Random read " 5115339.50   4517352.75
-> > " Mixed workload " 4340747.06   3880517.31
-> > "   Random write " 1982369.75   1892456.25
-> > "         Pwrite " 1352550.22   1248667.78
-> > "          Pread " 2853150.06   2445154.41
-> > "         Fwrite " 2367397.81   2262384.56
-> > "          Fread " 8100746.50   7578071.75
-> > 
-> > not good.
-> > 
+On Tue, Jan 27, 2015 at 09:42:28AM -0500, Steven Rostedt wrote:
+> On Tue, 27 Jan 2015 07:19:42 +0100
+> Dominik Vogt <vogt@linux.vnet.ibm.com> wrote:
+>  
+> > While the kernel may use only profiling or hotpatch at the same
+> > time, Gcc is able to generate both for the same function.
 > 
-> Oops, I never thought it could make mesurable performance.
-> I will investigate it.
-> 
-> Thanks a lot, Sergey!
+> Understood, but would that be useful for the kernel?
 
-Sergey, the data is consistent for repeated work?
+Right now not. We may change that anyway in the future if needed.
 
-I tested it with dd on /dev/zram0 without any FS on my KVM
-and I cannot see any measureable performance gap.
-Hmm, I will try it on real machine.
+Steven, how do we proceed with this small series?
 
--- 
-Kind regards,
-Minchan Kim
+Since there don't seem to be any objections, I'll repost with the
+changed notrace define. However I think the whole stuff should go
+upstream via the ftrace tree. Is that ok with you?
+
+FWIW, the s390 gcc hotpatch feature was merged in the meantime:
+https://gcc.gnu.org/git/?p=gcc.git;a=commit;h=11762b8363737591bfb9c66093bc2edf289b917f
+
