@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965498AbbA1E2f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:28:35 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41492 "EHLO mail.kernel.org"
+	id S965394AbbA1E0l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:26:41 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41511 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965366AbbA1E0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:26:32 -0500
+	id S965327AbbA1E0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:26:35 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
         Ben Hutchings <ben@decadent.org.uk>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 172/177] x86_64, traps: Rework bad_iret
-Date: Wed, 28 Jan 2015 12:10:30 +0800
-Message-Id: <1422418236-12852-263-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 173/177] x86/asm/traps: Disable tracing and kprobes in fixup_bad_iret and sync_regs
+Date: Wed, 28 Jan 2015 12:10:31 +0800
+Message-Id: <1422418236-12852-264-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -28,168 +29,48 @@ From: Andy Lutomirski <luto@amacapital.net>
 ------------------
 
 
-commit b645af2d5905c4e32399005b867987919cbfc3ae upstream.
+commit 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87 upstream.
 
-It's possible for iretq to userspace to fail.  This can happen because
-of a bad CS, SS, or RIP.
+These functions can be executed on the int3 stack, so kprobes
+are dangerous. Tracing is probably a bad idea, too.
 
-Historically, we've handled it by fixing up an exception from iretq to
-land at bad_iret, which pretends that the failed iret frame was really
-the hardware part of #GP(0) from userspace.  To make this work, there's
-an extra fixup to fudge the gs base into a usable state.
-
-This is suboptimal because it loses the original exception.  It's also
-buggy because there's no guarantee that we were on the kernel stack to
-begin with.  For example, if the failing iret happened on return from an
-NMI, then we'll end up executing general_protection on the NMI stack.
-This is bad for several reasons, the most immediate of which is that
-general_protection, as a non-paranoid idtentry, will try to deliver
-signals and/or schedule from the wrong stack.
-
-This patch throws out bad_iret entirely.  As a replacement, it augments
-the existing swapgs fudge into a full-blown iret fixup, mostly written
-in C.  It's should be clearer and more correct.
-
+Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 [bwh: Backported to 3.2:
- - We didn't use the _ASM_EXTABLE macro
+ - Use __kprobes instead of NOKPROBE_SYMBOL()
  - Don't use __visible]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/kernel/entry_64.S | 48 ++++++++++++++++++----------------------------
- arch/x86/kernel/traps.c    | 29 ++++++++++++++++++++++++++++
- 2 files changed, 48 insertions(+), 29 deletions(-)
+ arch/x86/kernel/traps.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index d720885..45f9c70 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -914,12 +914,14 @@ ENTRY(native_iret)
- 
- .global native_irq_return_iret
- native_irq_return_iret:
-+	/*
-+	 * This may fault.  Non-paranoid faults on return to userspace are
-+	 * handled by fixup_bad_iret.  These include #SS, #GP, and #NP.
-+	 * Double-faults due to espfix64 are handled in do_double_fault.
-+	 * Other faults here are fatal.
-+	 */
- 	iretq
- 
--	.section __ex_table,"a"
--	.quad native_irq_return_iret, bad_iret
--	.previous
--
- #ifdef CONFIG_X86_ESPFIX64
- native_irq_return_ldt:
- 	pushq_cfi %rax
-@@ -946,25 +948,6 @@ native_irq_return_ldt:
- 	jmp native_irq_return_iret
- #endif
- 
--	.section .fixup,"ax"
--bad_iret:
--	/*
--	 * The iret traps when the %cs or %ss being restored is bogus.
--	 * We've lost the original trap vector and error code.
--	 * #GPF is the most likely one to get for an invalid selector.
--	 * So pretend we completed the iret and took the #GPF in user mode.
--	 *
--	 * We are now running with the kernel GS after exception recovery.
--	 * But error_entry expects us to have user GS to match the user %cs,
--	 * so swap back.
--	 */
--	pushq $0
--
--	SWAPGS
--	jmp general_protection
--
--	.previous
--
- 	/* edi: workmask, edx: work */
- retint_careful:
- 	CFI_RESTORE_STATE
-@@ -1511,16 +1494,15 @@ error_sti:
- 
- /*
-  * There are two places in the kernel that can potentially fault with
-- * usergs. Handle them here. The exception handlers after iret run with
-- * kernel gs again, so don't set the user space flag. B stepping K8s
-- * sometimes report an truncated RIP for IRET exceptions returning to
-- * compat mode. Check for these here too.
-+ * usergs. Handle them here.  B stepping K8s sometimes report a
-+ * truncated RIP for IRET exceptions returning to compat mode. Check
-+ * for these here too.
-  */
- error_kernelspace:
- 	incl %ebx
- 	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
--	je error_swapgs
-+	je error_bad_iret
- 	movl %ecx,%eax	/* zero extend */
- 	cmpq %rax,RIP+8(%rsp)
- 	je bstep_iret
-@@ -1531,7 +1513,15 @@ error_kernelspace:
- bstep_iret:
- 	/* Fix truncated RIP */
- 	movq %rcx,RIP+8(%rsp)
--	jmp error_swapgs
-+	/* fall through */
-+
-+error_bad_iret:
-+	SWAPGS
-+	mov %rsp,%rdi
-+	call fixup_bad_iret
-+	mov %rax,%rsp
-+	decl %ebx	/* Return to usergs */
-+	jmp error_sti
- 	CFI_ENDPROC
- END(error_entry)
- 
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index ed904b9..30f2677 100644
+index 30f2677..9bfe95f 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -363,6 +363,35 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
- 		*regs = *eregs;
- 	return regs;
- }
-+
-+struct bad_iret_stack {
-+	void *error_entry_ret;
-+	struct pt_regs regs;
-+};
-+
-+asmlinkage
-+struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
-+{
-+	/*
-+	 * This is called from entry_64.S early in handling a fault
-+	 * caused by a bad iret to user mode.  To handle the fault
-+	 * correctly, we want move our stack frame to task_pt_regs
-+	 * and we want to pretend that the exception came from the
-+	 * iret target.
-+	 */
-+	struct bad_iret_stack *new_stack =
-+		container_of(task_pt_regs(current),
-+			     struct bad_iret_stack, regs);
-+
-+	/* Copy the IRET target to the new stack. */
-+	memmove(&new_stack->regs.ip, (void *)s->regs.sp, 5*8);
-+
-+	/* Copy the remainder of the stack from the current stack. */
-+	memmove(new_stack, s, offsetof(struct bad_iret_stack, regs.ip));
-+
-+	BUG_ON(!user_mode_vm(&new_stack->regs));
-+	return new_stack;
-+}
- #endif
+@@ -344,7 +344,7 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
+  * for scheduling or signal handling. The actual stack switch is done in
+  * entry.S
+  */
+-asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
++asmlinkage notrace __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
+ {
+ 	struct pt_regs *regs = eregs;
+ 	/* Did already sync */
+@@ -369,7 +369,7 @@ struct bad_iret_stack {
+ 	struct pt_regs regs;
+ };
  
- /*
+-asmlinkage
++asmlinkage notrace __kprobes
+ struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ {
+ 	/*
 -- 
 1.9.1
 
