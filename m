@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911AbbA1Ul2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:41:28 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62005 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728AbbA1UlX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:41:23 -0500
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-To: linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH 2/2] mmc: pwrseq: Update document with multiple gpios support
-Date: Wed, 28 Jan 2015 13:17:08 +0000
-Message-Id: <1422451028-9417-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422450981-9328-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1422450981-9328-1-git-send-email-srinivas.kandagatla@linaro.org>
+	id S932373AbbA1URN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:17:13 -0500
+Received: from mga14.intel.com ([192.55.52.115]:57091 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753953AbbA1URA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:17:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
+   d="scan'208";a="643837203"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 0/4] Introduce <linux/mm_struct.h>
+Date: Wed, 28 Jan 2015 15:17:40 +0200
+Message-Id: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the text and examples the mmc pwrseq document with multiple
-gpios support. Typical example is WLAN and BT chips on SDIO bus.
+This patchset moves definition of mm_struct into separate header file.
+It allows to get rid of nr_pmds if PMD page table level is folded.
+We cannot do it with current mm_types.h because we need
+__PAGETABLE_PMD_FOLDED from <asm/pgtable.h> which creates circular
+dependencies.
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
----
- Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+I've done few build tests and looks like it works, but I expect breakage
+on some configuration. Please test.
 
-diff --git a/Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt b/Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt
-index da333d9..1a86efa 100644
---- a/Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt
-+++ b/Documentation/devicetree/bindings/mmc/mmc-pwrseq-simple.txt
-@@ -8,13 +8,14 @@ Required properties:
- - compatible : contains "mmc-pwrseq-simple".
- 
- Optional properties:
--- reset-gpios : contains a GPIO specifier. The reset GPIO is asserted at
--	initialization and prior we start the power up procedure of the card. It
-+- reset-gpios : contains list of GPIO specifiers. The reset GPIOs are asserted at
-+	initialization and prior we start the power up procedure of the card. They
- 	will be de-asserted right after the power has been provided to the card.
- 
- Example:
- 
- 	sdhci0_pwrseq {
- 		compatible = "mmc-pwrseq-simple";
--		reset-gpios = <&gpio1 12 0>;
-+		/* WLAN and BT reset */
-+		reset-gpios = <&gpio1 12 0>, <&gpio1 14 0>;
- 	}
+I hope one day we would rely on LTO for inlining instead of this header
+mess :-/
+
+Kirill A. Shutemov (4):
+  mm: move enum tlb_flush_reason into <trace/events/tlb.h>
+  mm: split up mm_struct to separate header file
+  mm: define __PAGETABLE_{PMD,PUD}_FOLDED to zero or one
+  mm: do not add nr_pmds into mm_struct if PMD is folded
+
+ arch/arm/include/asm/pgtable-2level.h |   2 +-
+ arch/arm64/include/asm/kvm_mmu.h      |   4 +-
+ arch/arm64/kernel/efi.c               |   1 +
+ arch/arm64/mm/hugetlbpage.c           |   6 +-
+ arch/c6x/kernel/dma.c                 |   1 -
+ arch/microblaze/include/asm/pgtable.h |   2 +-
+ arch/mips/include/asm/pgalloc.h       |   4 +-
+ arch/mips/kernel/asm-offsets.c        |   4 +-
+ arch/mips/mm/init.c                   |   2 +-
+ arch/mips/mm/pgtable-64.c             |   6 +-
+ arch/mips/mm/tlbex.c                  |   8 +-
+ arch/powerpc/mm/pgtable_64.c          |   2 +-
+ arch/s390/include/asm/pgtable.h       |   1 +
+ arch/sh/mm/init.c                     |   2 +-
+ arch/tile/mm/hugetlbpage.c            |   4 +-
+ arch/tile/mm/pgtable.c                |   4 +-
+ arch/x86/include/asm/mmu_context.h    |   1 +
+ arch/x86/include/asm/pgtable.h        |  15 +--
+ arch/x86/include/asm/xen/page.h       |   2 +-
+ drivers/iommu/amd_iommu_v2.c          |   1 +
+ drivers/staging/android/ion/ion.c     |   1 -
+ include/asm-generic/4level-fixup.h    |   2 +-
+ include/asm-generic/pgtable-nopmd.h   |   2 +-
+ include/asm-generic/pgtable-nopud.h   |   2 +-
+ include/asm-generic/pgtable.h         |   8 ++
+ include/linux/mm.h                    |   5 +-
+ include/linux/mm_struct.h             | 217 ++++++++++++++++++++++++++++++++
+ include/linux/mm_types.h              | 226 ++--------------------------------
+ include/linux/mmu_notifier.h          |   1 +
+ include/linux/sched.h                 |   1 +
+ include/trace/events/tlb.h            |  15 ++-
+ kernel/fork.c                         |   2 +-
+ mm/init-mm.c                          |   1 +
+ mm/kmemcheck.c                        |   1 -
+ mm/memory.c                           |   4 +-
+ 35 files changed, 289 insertions(+), 271 deletions(-)
+ create mode 100644 include/linux/mm_struct.h
+
 -- 
-1.9.1
-
+2.1.4
