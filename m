@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760700AbbA1Vqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:46:48 -0500
-Received: from smtp3.ore.mailhop.org ([54.149.88.251]:54202 "EHLO
-	smtp3.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834AbbA1UfF (ORCPT
+	id S933992AbbA2C6D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:58:03 -0500
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:46700 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561AbbA2C56 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:35:05 -0500
-X-Mail-Handler: DuoCircle Outbound SMTP
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+P5y+BXwI4ri8G1ZX5OJ79
-Date: Wed, 28 Jan 2015 09:09:55 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        george.cherian@ti.com, nsekhar@ti.com,
-        devicetree <devicetree@vger.kernel.org>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/7] extcon: usb-gpio: Introduce gpio usb extcon driver
-Message-ID: <20150128170954.GQ28663@atomide.com>
-References: <1422274532-9488-1-git-send-email-rogerq@ti.com>
- <1422274532-9488-2-git-send-email-rogerq@ti.com>
- <CAGTfZH3nmpUGgFJ6RU+xH8tuDkGBFA-NbXWa0CSXZXR+DXrbkQ@mail.gmail.com>
- <54C66B0D.9040109@ti.com>
- <54C6EFC8.1090601@samsung.com>
- <54C7B0E5.20101@ti.com>
- <54C8472B.6070302@samsung.com>
- <54C8D238.4080001@ti.com>
+	Wed, 28 Jan 2015 21:57:58 -0500
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: H Peter Anvin <h.peter.anvin@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        "Kani, Toshimitsu" <toshi.kani@hp.com>,
+        "Knippers, Linda" <linda.knippers@hp.com>
+Subject: RE: [PATCH v3 1/2] x86: Add support for the pcommit instruction
+Thread-Topic: [PATCH v3 1/2] x86: Add support for the pcommit instruction
+Thread-Index: AQHQOlH6sqYv8X65A0C5xMaJVRwyCpzVvIHw
+Date: Wed, 28 Jan 2015 17:10:46 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B40295A75C517@G9W0745.americas.hpqcorp.net>
+References: <1422377631-8986-1-git-send-email-ross.zwisler@linux.intel.com>
+ <1422377631-8986-2-git-send-email-ross.zwisler@linux.intel.com>
+In-Reply-To: <1422377631-8986-2-git-send-email-ross.zwisler@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54C8D238.4080001@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [150128 04:15]:
-> On 28/01/15 04:19, Chanwoo Choi wrote:
-> >>
-> >> I still fail to understand that we need to call disable_irq() in .suspend() and
-> >> enable_irq() in .resume()
-> >>
-> >> can you point me to any other drivers doing so?
-> > 
-> > You can refer the suspend function in drivers/mfd/max14577.c or drivers/mfd/max77693.c.
-> > The max14577_suspend() includes the detailed comment for why using disable_irq() in suspend function.
-> > 
-> > In max14577 case, max14577_suspend() use disable_irq() function because of i2c dependency.
-> > If max14577 device is wake-up from suspend state before completing the resume sequence
-> > of i2c, max14577 may fail to read/write i2c communication.
+
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Ross Zwisler
+> Sent: Tuesday, 27 January, 2015 10:54 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: Ross Zwisler; H Peter Anvin; Ingo Molnar; Thomas Gleixner; Borislav
+> Petkov
+> Subject: [PATCH v3 1/2] x86: Add support for the pcommit instruction
 > 
-> Thanks for this information. I will add disable/enable_irq() in suspend/resume().
+> Add support for the new pcommit (persistent commit) instruction.  This
+> instruction was announced in the document "Intel Architecture
+> Instruction Set Extensions Programming Reference" with reference number
+> 319433-022.
+> 
+> https://software.intel.com/sites/default/files/managed/0d/53/319433-
+> 022.pdf
+> 
+...
+> ---
+>  arch/x86/include/asm/cpufeature.h    | 1 +
+>  arch/x86/include/asm/special_insns.h | 8 ++++++++
+>  2 files changed, 9 insertions(+)
 
-Are the .dts changes safe for me to apply already?
+Should this patch series also add defines for the virtual 
+machine control data structure changes?
 
-Regards,
+1. Add the new VM-Execution Controls bit 21 as
+    SECONDARY_EXEC_PCOMMIT_EXITING 0x00200000
+to arch/x86/include/asm/vmx.h.
 
-Tony
+2. Add the new exit reason of 64 (0x41) as
+	EXIT_REASON_PCOMMIT  64
+to arch/x86/include/uapi/asm/vmx.h and (with a
+VMX_EXIT_REASONS string) to usr/include/asm/vmx.h.
+
+3. Add a kvm_vmx_exit_handler to arch/x86/kvm/vmx.c.
+
+
+---
+Rob Elliott    HP Server Storage
+
+
