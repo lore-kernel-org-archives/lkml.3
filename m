@@ -1,174 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933859AbbA1Bud (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:50:33 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:2236 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754965AbbA1Bua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:50:30 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="56726975"
-Message-ID: <54C840BA.7020207@cn.fujitsu.com>
-Date: Wed, 28 Jan 2015 09:51:54 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <stable@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH 3.18 11/61] workqueue: fix subtle pool management issue
- which can stall whole worker_pool
-References: <20150128012636.936333725@linuxfoundation.org> <20150128012638.187292688@linuxfoundation.org>
-In-Reply-To: <20150128012638.187292688@linuxfoundation.org>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+	id S933099AbbA1Bx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:53:56 -0500
+Received: from mga03.intel.com ([134.134.136.65]:47006 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760745AbbA1Bxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 20:53:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,478,1418112000"; 
+   d="scan'208";a="643599630"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Dimitri Sivanich <sivanich@sgi.com>,
+        x86@kernel.org, Joerg Roedel <joro@8bytes.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [Patch Part2 v4] x86/irq: Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
+Date: Wed, 28 Jan 2015 09:56:11 +0800
+Message-Id: <1422410185-24982-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1421733113-15704-7-git-send-email-jiang.liu@linux.intel.com>
+References: <1421733113-15704-7-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2015 09:26 AM, Greg Kroah-Hartman wrote:
-> 3.18-stable review patch.  If anyone has any objections, please let me know.
+Now there is no user of x86_io_apic_ops.eoi_ioapic_pin anymore, so kill
+it.
 
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: iommu@lists.linux-foundation.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Link: http://lkml.kernel.org/r/1416901802-24211-16-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Joerg Roedel <jroedel@suse.de>
+---
+Hi Thomas,
+	This update fixes build failure when IOAPIC is disabled, which
+is introduced when rebasing the patch set.
+Regards,
+Gerry
+---
+ arch/x86/include/asm/io_apic.h  |    7 -------
+ arch/x86/include/asm/x86_init.h |    1 -
+ arch/x86/kernel/apic/io_apic.c  |   20 ++++----------------
+ arch/x86/kernel/x86_init.c      |    1 -
+ drivers/iommu/irq_remapping.c   |   19 -------------------
+ 5 files changed, 4 insertions(+), 44 deletions(-)
 
-I don't think it is a bug-fix.
-It is just a good cleanup.
-
-> 
-> ------------------
-> 
-> From: Tejun Heo <tj@kernel.org>
-> 
-> commit 29187a9eeaf362d8422e62e17a22a6e115277a49 upstream.
-> 
-> A worker_pool's forward progress is guaranteed by the fact that the
-> last idle worker assumes the manager role to create more workers and
-> summon the rescuers if creating workers doesn't succeed in timely
-> manner before proceeding to execute work items.
-> 
-> This manager role is implemented in manage_workers(), which indicates
-> whether the worker may proceed to work item execution with its return
-> value.  This is necessary because multiple workers may contend for the
-> manager role, and, if there already is a manager, others should
-> proceed to work item execution.
-> 
-> Unfortunately, the function also indicates that the worker may proceed
-> to work item execution if need_to_create_worker() is false at the head
-> of the function.  need_to_create_worker() tests the following
-> conditions.
-> 
-> 	pending work items && !nr_running && !nr_idle
-> 
-> The first and third conditions are protected by pool->lock and thus
-> won't change while holding pool->lock; however, nr_running can change
-> asynchronously as other workers block and resume and while it's likely
-> to be zero, as someone woke this worker up in the first place, some
-> other workers could have become runnable inbetween making it non-zero.
-> 
-> If this happens, manage_worker() could return false even with zero
-> nr_idle making the worker, the last idle one, proceed to execute work
-> items.  If then all workers of the pool end up blocking on a resource
-> which can only be released by a work item which is pending on that
-> pool, the whole pool can deadlock as there's no one to create more
-> workers or summon the rescuers.
-> 
-> This patch fixes the problem by removing the early exit condition from
-> maybe_create_worker() and making manage_workers() return false iff
-> there's already another manager, which ensures that the last worker
-> doesn't start executing work items.
-> 
-> We can leave the early exit condition alone and just ignore the return
-> value but the only reason it was put there is because the
-> manage_workers() used to perform both creations and destructions of
-> workers and thus the function may be invoked while the pool is trying
-> to reduce the number of workers.  Now that manage_workers() is called
-> only when more workers are needed, the only case this early exit
-> condition is triggered is rare race conditions rendering it pointless.
-> 
-> Tested with simulated workload and modified workqueue code which
-> trigger the pool deadlock reliably without this patch.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Eric Sandeen <sandeen@sandeen.net>
-> Link: http://lkml.kernel.org/g/54B019F4.8030009@sandeen.net
-> Cc: Dave Chinner <david@fromorbit.com>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  kernel/workqueue.c |   25 ++++++++-----------------
->  1 file changed, 8 insertions(+), 17 deletions(-)
-> 
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1841,17 +1841,11 @@ static void pool_mayday_timeout(unsigned
->   * spin_lock_irq(pool->lock) which may be released and regrabbed
->   * multiple times.  Does GFP_KERNEL allocations.  Called only from
->   * manager.
-> - *
-> - * Return:
-> - * %false if no action was taken and pool->lock stayed locked, %true
-> - * otherwise.
->   */
-> -static bool maybe_create_worker(struct worker_pool *pool)
-> +static void maybe_create_worker(struct worker_pool *pool)
->  __releases(&pool->lock)
->  __acquires(&pool->lock)
->  {
-> -	if (!need_to_create_worker(pool))
-> -		return false;
->  restart:
->  	spin_unlock_irq(&pool->lock);
->  
-> @@ -1877,7 +1871,6 @@ restart:
->  	 */
->  	if (need_to_create_worker(pool))
->  		goto restart;
-> -	return true;
->  }
->  
->  /**
-> @@ -1897,16 +1890,14 @@ restart:
->   * multiple times.  Does GFP_KERNEL allocations.
->   *
->   * Return:
-> - * %false if the pool don't need management and the caller can safely start
-> - * processing works, %true indicates that the function released pool->lock
-> - * and reacquired it to perform some management function and that the
-> - * conditions that the caller verified while holding the lock before
-> - * calling the function might no longer be true.
-> + * %false if the pool doesn't need management and the caller can safely
-> + * start processing works, %true if management function was performed and
-> + * the conditions that the caller verified before calling the function may
-> + * no longer be true.
->   */
->  static bool manage_workers(struct worker *worker)
->  {
->  	struct worker_pool *pool = worker->pool;
-> -	bool ret = false;
->  
->  	/*
->  	 * Anyone who successfully grabs manager_arb wins the arbitration
-> @@ -1919,12 +1910,12 @@ static bool manage_workers(struct worker
->  	 * actual management, the pool may stall indefinitely.
->  	 */
->  	if (!mutex_trylock(&pool->manager_arb))
-> -		return ret;
-> +		return false;
->  
-> -	ret |= maybe_create_worker(pool);
-> +	maybe_create_worker(pool);
->  
->  	mutex_unlock(&pool->manager_arb);
-> -	return ret;
-> +	return true;
->  }
->  
->  /**
-> 
-> 
-> .
-> 
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 0ff68daa9949..fa4b25ebd658 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -150,10 +150,6 @@ struct irq_cfg;
+ extern void ioapic_insert_resources(void);
+ extern int arch_early_ioapic_init(void);
+ 
+-extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
+-
+-extern void native_eoi_ioapic_pin(int apic, int pin, int vector);
+-
+ extern int save_ioapic_entries(void);
+ extern void mask_ioapic_entries(void);
+ extern int restore_ioapic_entries(void);
+@@ -237,8 +233,6 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+ 	x86_io_apic_ops.modify(apic, reg, value);
+ }
+ 
+-extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+-
+ extern void setup_IO_APIC(void);
+ extern void enable_IO_APIC(void);
+ extern void disable_IO_APIC(void);
+@@ -282,7 +276,6 @@ static inline void disable_ioapic_support(void) { }
+ #define native_io_apic_write		NULL
+ #define native_io_apic_modify		NULL
+ #define native_disable_io_apic		NULL
+-#define native_eoi_ioapic_pin		NULL
+ 
+ static inline void setup_IO_APIC(void) { }
+ static inline void enable_IO_APIC(void) { }
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index f9f83cfabcaa..4ada3d3a0e86 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -191,7 +191,6 @@ struct x86_io_apic_ops {
+ 	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
+ 	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
+ 	void		(*disable)(void);
+-	void		(*eoi_ioapic_pin)(int apic, int pin, int vector);
+ };
+ 
+ extern struct x86_init_ops x86_init;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fff17afdfe5d..8690334ad40c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -273,7 +273,7 @@ static __attribute_const__ struct io_apic __iomem *io_apic_base(int idx)
+ 		+ (mpc_ioapic_addr(idx) & ~PAGE_MASK);
+ }
+ 
+-void io_apic_eoi(unsigned int apic, unsigned int vector)
++static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
+ {
+ 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 	writel(vector, &io_apic->eoi);
+@@ -529,7 +529,7 @@ static void unmask_ioapic_irq(struct irq_data *data)
+  * Otherwise, we simulate the EOI message manually by changing the trigger
+  * mode to edge and then back to level, with RTE being masked during this.
+  */
+-void native_eoi_ioapic_pin(int apic, int pin, int vector)
++static void __eoi_ioapic_pin(int apic, int pin, int vector)
+ {
+ 	if (mpc_ioapic_ver(apic) >= 0x20) {
+ 		io_apic_eoi(apic, vector);
+@@ -560,19 +560,7 @@ void eoi_ioapic_pin(int vector, struct irq_cfg *cfg)
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+ 	for_each_irq_pin(entry, cfg->irq_2_pin)
+-		native_eoi_ioapic_pin(entry->apic, entry->pin, vector);
+-	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+-}
+-
+-void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
+-{
+-	struct irq_pin_list *entry;
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	for_each_irq_pin(entry, cfg->irq_2_pin)
+-		x86_io_apic_ops.eoi_ioapic_pin(entry->apic, entry->pin,
+-					       cfg->vector);
++		__eoi_ioapic_pin(entry->apic, entry->pin, vector);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ }
+ 
+@@ -608,7 +596,7 @@ static void clear_IO_APIC_pin(unsigned int apic, unsigned int pin)
+ 			ioapic_write_entry(apic, pin, entry);
+ 		}
+ 		raw_spin_lock_irqsave(&ioapic_lock, flags);
+-		native_eoi_ioapic_pin(apic, pin, entry.vector);
++		__eoi_ioapic_pin(apic, pin, entry.vector);
+ 		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 	}
+ 
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index f7e8eab3a7c4..f612dc018fb6 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -144,5 +144,4 @@ struct x86_io_apic_ops x86_io_apic_ops = {
+ 	.write			= native_io_apic_write,
+ 	.modify			= native_io_apic_modify,
+ 	.disable		= native_disable_io_apic,
+-	.eoi_ioapic_pin		= native_eoi_ioapic_pin,
+ };
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 7baa54a13921..bca42550b1ad 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -43,21 +43,9 @@ static void irq_remapping_disable_io_apic(void)
+ 		disconnect_bsp_APIC(0);
+ }
+ 
+-static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
+-{
+-	/*
+-	 * Intr-remapping uses pin number as the virtual vector
+-	 * in the RTE. Actual vector is programmed in
+-	 * intr-remapping table entry. Hence for the io-apic
+-	 * EOI we use the pin number.
+-	 */
+-	io_apic_eoi(apic, pin);
+-}
+-
+ static void __init irq_remapping_modify_x86_ops(void)
+ {
+ 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
+-	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
+ }
+ 
+ static __init int setup_nointremap(char *str)
+@@ -171,12 +159,6 @@ void ir_ack_apic_edge(struct irq_data *data)
+ 	ack_APIC_irq();
+ }
+ 
+-static void ir_ack_apic_level(struct irq_data *data)
+-{
+-	ack_APIC_irq();
+-	eoi_ioapic_irq(data->irq, irqd_cfg(data));
+-}
+-
+ static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
+ {
+ 	seq_printf(p, " IR-%s", data->chip->name);
+@@ -186,7 +168,6 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+ {
+ 	chip->irq_print_chip = ir_print_prefix;
+ 	chip->irq_ack = ir_ack_apic_edge;
+-	chip->irq_eoi = ir_ack_apic_level;
+ }
+ 
+ bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
+-- 
+1.7.10.4
 
