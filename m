@@ -1,189 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588AbbA1DpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 22:45:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42305 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754927AbbA1DpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 22:45:08 -0500
-Message-ID: <1422416668.22865.91.camel@redhat.com>
-Subject: Re: [v3 00/26] Add VT-d Posted-Interrupts support
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Wu, Feng" <feng.wu@intel.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "eric.auger@linaro.org" <eric.auger@linaro.org>,
+	id S1756063AbbA1Doc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 22:44:32 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:43210 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754996AbbA1Doa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 22:44:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <1422412229-23640-1-git-send-email-chao.xie@marvell.com>
+References: <1422412229-23640-1-git-send-email-chao.xie@marvell.com>
+Date: Wed, 28 Jan 2015 09:14:29 +0530
+Message-ID: <CAEUmHyaNEO_kZ1+m2JKbWEwMvujkkQRdQqKwbZyad_8eqWvM8Q@mail.gmail.com>
+Subject: Re: [PATCH] gpio: mmp: add GPIO driver for Marvell MMP series
+From: Varka Bhadram <varkabhadram@gmail.com>
+To: Chao Xie <chao.xie@marvell.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Date: Tue, 27 Jan 2015 20:44:28 -0700
-In-Reply-To: <E959C4978C3B6342920538CF579893F0023826A5@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
-	 <E959C4978C3B6342920538CF579893F00236670C@SHSMSX104.ccr.corp.intel.com>
-	 <E959C4978C3B6342920538CF579893F0023826A5@SHSMSX104.ccr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        xiechao_mail@163.com, haojian.zhuang@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-28 at 03:01 +0000, Wu, Feng wrote:
-> 
-> > -----Original Message-----
-> > From: Wu, Feng
-> > Sent: Wednesday, January 21, 2015 10:26 AM
-> > To: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
-> > gleb@kernel.org; pbonzini@redhat.com; dwmw2@infradead.org;
-> > joro@8bytes.org; alex.williamson@redhat.com; jiang.liu@linux.intel.com
-> > Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
-> > iommu@lists.linux-foundation.org; kvm@vger.kernel.org; Wu, Feng
-> > Subject: RE: [v3 00/26] Add VT-d Posted-Interrupts support
-> > 
-> > 
-> > > -----Original Message-----
-> > > From: Wu, Feng
-> > > Sent: Friday, December 12, 2014 11:15 PM
-> > > To: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
-> > x86@kernel.org;
-> > > gleb@kernel.org; pbonzini@redhat.com; dwmw2@infradead.org;
-> > > joro@8bytes.org; alex.williamson@redhat.com; jiang.liu@linux.intel.com
-> > > Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
-> > > iommu@lists.linux-foundation.org; kvm@vger.kernel.org; Wu, Feng
-> > > Subject: [v3 00/26] Add VT-d Posted-Interrupts support
-> > >
-> > > VT-d Posted-Interrupts is an enhancement to CPU side Posted-Interrupt.
-> > > With VT-d Posted-Interrupts enabled, external interrupts from
-> > > direct-assigned devices can be delivered to guests without VMM
-> > > intervention when guest is running in non-root mode.
-> > >
-> > > You can find the VT-d Posted-Interrtups Spec. in the following URL:
-> > >
-> > http://www.intel.com/content/www/us/en/intelligent-systems/intel-technolog
-> > > y/vt-directed-io-spec.html
-> > >
-> > > v1->v2:
-> > > * Use VFIO framework to enable this feature, the VFIO part of this series is
-> > >   base on Eric's patch "[PATCH v3 0/8] KVM-VFIO IRQ forward control"
-> > > * Rebase this patchset on
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git,
-> > >   then revise some irq logic based on the new hierarchy irqdomain patches
-> > > provided
-> > >   by Jiang Liu <jiang.liu@linux.intel.com>
-> > >
-> > > v2->v3:
-> > > * Adjust the Posted-interrupts Descriptor updating logic when vCPU is
-> > >   preempted or blocked.
-> > > * KVM_DEV_VFIO_DEVICE_POSTING_IRQ -->
-> > > KVM_DEV_VFIO_DEVICE_POST_IRQ
-> > > * __KVM_HAVE_ARCH_KVM_VFIO_POSTING -->
-> > > __KVM_HAVE_ARCH_KVM_VFIO_POST
-> > > * Add KVM_DEV_VFIO_DEVICE_UNPOST_IRQ attribute for VFIO irq, which
-> > >   can be used to change back to remapping mode.
-> > > * Fix typo
-> > >
-> > > This patch series is made of the following groups:
-> > > 1-6: Some preparation changes in iommu and irq component, this is based on
-> > > the
-> > >      new hierarchy irqdomain logic.
-> > > 7-9, 26: IOMMU changes for VT-d Posted-Interrupts, such as, feature
-> > > detection,
-> > >           command line parameter.
-> > > 10-17, 22-25: Changes related to KVM itself.
-> > > 18-20: Changes in VFIO component, this part was previously sent out as
-> > > "[RFC PATCH v2 0/2] kvm-vfio: implement the vfio skeleton for VT-d
-> > > Posted-Interrupts"
-> > > 21: x86 irq related changes
-> > >
-> > > Feng Wu (26):
-> > >   genirq: Introduce irq_set_vcpu_affinity() to target an interrupt to a
-> > >     VCPU
-> > >   iommu: Add new member capability to struct irq_remap_ops
-> > >   iommu, x86: Define new irte structure for VT-d Posted-Interrupts
-> > >   iommu, x86: Implement irq_set_vcpu_affinity for intel_ir_chip
-> > >   x86, irq: Implement irq_set_vcpu_affinity for pci_msi_ir_controller
-> > >   iommu, x86: No need to migrating irq for VT-d Posted-Interrupts
-> > >   iommu, x86: Add cap_pi_support() to detect VT-d PI capability
-> > >   iommu, x86: Add intel_irq_remapping_capability() for Intel
-> > >   iommu, x86: define irq_remapping_cap()
-> > >   KVM: change struct pi_desc for VT-d Posted-Interrupts
-> > >   KVM: Add some helper functions for Posted-Interrupts
-> > >   KVM: Initialize VT-d Posted-Interrupts Descriptor
-> > >   KVM: Define a new interface kvm_find_dest_vcpu() for VT-d PI
-> > >   KVM: Get Posted-Interrupts descriptor address from struct kvm_vcpu
-> > >   KVM: add interfaces to control PI outside vmx
-> > >   KVM: Make struct kvm_irq_routing_table accessible
-> > >   KVM: make kvm_set_msi_irq() public
-> > >   KVM: kvm-vfio: User API for VT-d Posted-Interrupts
-> > >   KVM: kvm-vfio: implement the VFIO skeleton for VT-d Posted-Interrupts
-> > >   KVM: x86: kvm-vfio: VT-d posted-interrupts setup
-> > >   x86, irq: Define a global vector for VT-d Posted-Interrupts
-> > >   KVM: Define a wakeup worker thread for vCPU
-> > >   KVM: Update Posted-Interrupts Descriptor when vCPU is preempted
-> > >   KVM: Update Posted-Interrupts Descriptor when vCPU is blocked
-> > >   KVM: Suppress posted-interrupt when 'SN' is set
-> > >   iommu/vt-d: Add a command line parameter for VT-d posted-interrupts
-> > >
-> > >  Documentation/kernel-parameters.txt        |   1 +
-> > >  Documentation/virtual/kvm/devices/vfio.txt |   9 ++
-> > >  arch/x86/include/asm/entry_arch.h          |   2 +
-> > >  arch/x86/include/asm/hardirq.h             |   1 +
-> > >  arch/x86/include/asm/hw_irq.h              |   2 +
-> > >  arch/x86/include/asm/irq_remapping.h       |  11 ++
-> > >  arch/x86/include/asm/irq_vectors.h         |   1 +
-> > >  arch/x86/include/asm/kvm_host.h            |  12 ++
-> > >  arch/x86/kernel/apic/msi.c                 |   1 +
-> > >  arch/x86/kernel/entry_64.S                 |   2 +
-> > >  arch/x86/kernel/irq.c                      |  27 ++++
-> > >  arch/x86/kernel/irqinit.c                  |   2 +
-> > >  arch/x86/kvm/Makefile                      |   2 +-
-> > >  arch/x86/kvm/kvm_vfio_x86.c                |  77 +++++++++
-> > >  arch/x86/kvm/vmx.c                         | 244
-> > > ++++++++++++++++++++++++++++-
-> > >  arch/x86/kvm/x86.c                         |  22 ++-
-> > >  drivers/iommu/intel_irq_remapping.c        |  68 +++++++-
-> > >  drivers/iommu/irq_remapping.c              |  24 ++-
-> > >  drivers/iommu/irq_remapping.h              |   8 +
-> > >  include/linux/dmar.h                       |  32 ++++
-> > >  include/linux/intel-iommu.h                |   1 +
-> > >  include/linux/irq.h                        |   7 +
-> > >  include/linux/kvm_host.h                   |  46 ++++++
-> > >  include/uapi/linux/kvm.h                   |  11 ++
-> > >  kernel/irq/chip.c                          |  14 ++
-> > >  kernel/irq/manage.c                        |  20 +++
-> > >  virt/kvm/irq_comm.c                        |  43 ++++-
-> > >  virt/kvm/irqchip.c                         |  11 --
-> > >  virt/kvm/kvm_main.c                        |  15 ++
-> > >  virt/kvm/vfio.c                            | 107 +++++++++++++
-> > >  30 files changed, 795 insertions(+), 28 deletions(-)
-> > >  create mode 100644 arch/x86/kvm/kvm_vfio_x86.c
-> > >
-> > 
-> > Hi Paolo, Alex, and other maintainers,
-> > 
-> > Since this series contain multiple subsystems, IOMMU, irq, x86, VFIO, KVM, etc.
-> > I am wondering how you guys handled this case before? If all the patches are
-> > reviewed and acked by the associated maintainer, are you only merge the
-> > patches
-> > related to your own subsystem to your tree? However, you may also need get
-> > other
-> > patches to make the build successful, so I am a little curious about how you guys
-> > handle this? Thanks a lot!
-> 
-> Can anyone share some experiences about this?
+On Wed, Jan 28, 2015 at 8:00 AM, Chao Xie <chao.xie@marvell.com> wrote:
+> From: Chao Xie <chao.xie@marvell.com>
+>
+> For some old PXA series, they used PXA GPIO driver.
+> The IP of GPIO changes since PXA988 which is Marvell MMP
+> series.
+> It will use new way to control the GPIO level, direction
+> and edge status.
+>
+> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> ---
+>  drivers/gpio/Kconfig    |   7 +
+>  drivers/gpio/Makefile   |   1 +
+>  drivers/gpio/gpio-mmp.c | 444 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 452 insertions(+)
+>  create mode 100644 drivers/gpio/gpio-mmp.c
 
-Generally you need to split the patches into logical changes per
-subsystem and submit them separately through the mailing list and
-maintainer.  This helps to make sure the changes make sense and stand on
-their own and aren't simply a hack to reach the end goal.  Submit what
-you can in parallel, but expect that if you send patches dependent on
-other, unmerged series, they will get ignored and will need to be resent
-when the dependencies are resolved in -next.  Thanks,
+(...)
 
-Alex
+> +static int mmp_gpio_probe(struct platform_device *pdev)
+> +{
+> +       struct device *dev = &pdev->dev;
+> +       struct mmp_gpio_platform_data *pdata;
+> +       struct device_node *np;
+> +       struct mmp_gpio_chip *mmp_chip;
+> +       struct mmp_gpio_bank *bank;
+> +       struct resource *res;
+> +       struct irq_domain *domain;
+> +       struct clk *clk;
+> +       int irq, i, ret;
+> +       void __iomem *base;
+> +
+> +       pdata = dev_get_platdata(dev);
+> +       np = pdev->dev.of_node;
+> +       if (!np && !pdata)
+> +               return -EINVAL;
+> +
+> +       mmp_chip = devm_kzalloc(dev, sizeof(*mmp_chip), GFP_KERNEL);
+> +       if (mmp_chip == NULL)
+> +               return -ENOMEM;
+> +
 
+Using ! operator preffred instead of comparing with NULL.
+
+> +       irq = platform_get_irq(pdev, 0);
+> +       if (irq < 0)
+> +               return irq;
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       if (!res)
+> +               return -EINVAL;
+
+This check is not required.. Check on resource happenning with
+devm_ioremap_resource.
+
+> +       base = devm_ioremap_resource(dev, res);
+> +       if (!base)
+> +               return -EINVAL;
+
+I dont think this the correct return value.. return PTR_ERR(base)
+
+> +
+> +       mmp_chip->irq = irq;
+> +       mmp_chip->reg_base = base;
+> +
+> +       if (pdata)
+> +               ret = mmp_gpio_probe_pdata(pdev, mmp_chip, pdata);
+> +       else
+> +               ret = mmp_gpio_probe_dt(pdev, mmp_chip);
+> +
+> +       if (ret) {
+> +               dev_err(dev, "Fail to initialize gpio unit, error %d.\n", ret);
+> +               return ret;
+> +       }
+> +
+> +       clk = devm_clk_get(dev, NULL);
+> +       if (IS_ERR(clk)) {
+> +               dev_err(dev, "Fail to get gpio clock, error %ld.\n",
+> +                       PTR_ERR(clk));
+> +               return PTR_ERR(clk);
+> +       }
+> +       ret = clk_prepare_enable(clk);
+> +       if (ret) {
+> +               dev_err(dev, "Fail to enable gpio clock, error %d.\n", ret);
+> +               return ret;
+> +       }
+> +
+> +       domain = irq_domain_add_linear(np, mmp_chip->ngpio,
+> +                                       &mmp_gpio_irq_domain_ops, mmp_chip);
+> +       if (domain == NULL)
+
+Using ! operator preferred instead of comparing with NULL.
+
+
+
+
+-- 
+Thanks and Regards,
+Varka Bhadram.
