@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759349AbbA2JEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:04:14 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44811 "EHLO
+	id S932352AbbA2JFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:05:23 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44836 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752358AbbA2JEF (ORCPT
+	by vger.kernel.org with ESMTP id S932204AbbA2JFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:04:05 -0500
+	Thu, 29 Jan 2015 04:05:12 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 027/176] x86, vdso: Use asm volatile in __getcpu
-Date: Wed, 28 Jan 2015 15:27:37 +0100
-Message-Id: <779cf1d93e1194b041cd139b8e71e0baae4884a6.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Alex Williamson <alex.williamson@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 028/176] driver core: Fix unbalanced device reference in drivers_probe
+Date: Wed, 28 Jan 2015 15:27:38 +0100
+Message-Id: <ce3740b1080853a3f6c879374b468ae8800028a8.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,68 +23,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Alex Williamson <alex.williamson@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1ddf0b1b11aa8a90cef6706e935fc31c75c406ba upstream.
+commit bb34cb6bbd287b57e955bc5cfd42fcde6aaca279 upstream.
 
-In Linux 3.18 and below, GCC hoists the lsl instructions in the
-pvclock code all the way to the beginning of __vdso_clock_gettime,
-slowing the non-paravirt case significantly.  For unknown reasons,
-presumably related to the removal of a branch, the performance issue
-is gone as of
+bus_find_device_by_name() acquires a device reference which is never
+released.  This results in an object leak, which on older kernels
+results in failure to release all resources of PCI devices.  libvirt
+uses drivers_probe to re-attach devices to the host after assignment
+and is therefore a common trigger for this leak.
 
-e76b027e6408 x86,vdso: Use LSL unconditionally for vgetcpu
+Example:
 
-but I don't trust GCC enough to expect the problem to stay fixed.
+# cd /sys/bus/pci/
+# dmesg -C
+# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
+# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
+# dmesg | grep 01:10
+ pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_cleanup, parent           (null)
+ kobject: '0000:01:10.0' (ffff8801d79cd0a8): calling ktype release
+ kobject: '0000:01:10.0': free name
 
-There should be no correctness issue, because the __getcpu calls in
-__vdso_vlock_gettime were never necessary in the first place.
+[kobject freed as expected]
 
-Note to stable maintainers: In 3.18 and below, depending on
-configuration, gcc 4.9.2 generates code like this:
+# dmesg -C
+# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
+# echo 0000:01:10.0 > drivers_probe
+# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
+# dmesg | grep 01:10
+ pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
+ kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
 
-     9c3:       44 0f 03 e8             lsl    %ax,%r13d
-     9c7:       45 89 eb                mov    %r13d,%r11d
-     9ca:       0f 03 d8                lsl    %ax,%ebx
+[no free]
 
-This patch won't apply as is to any released kernel, but I'll send a
-trivial backported version if needed.
-
-[
- Backported by Andy Lutomirski.  Should apply to all affected
- versions.  This fixes a functionality bug as well as a performance
- bug: buggy kernels can infinite loop in __vdso_clock_gettime on
- affected compilers.  See, for exammple:
-
- https://bugzilla.redhat.com/show_bug.cgi?id=1178975
-]
-
-Fixes: 51c19b4f5927 x86: vdso: pvclock gettime support
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/vsyscall.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/bus.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/vsyscall.h b/arch/x86/include/asm/vsyscall.h
-index 2a46ca720afc..2874be9aef0a 100644
---- a/arch/x86/include/asm/vsyscall.h
-+++ b/arch/x86/include/asm/vsyscall.h
-@@ -34,7 +34,7 @@ static inline unsigned int __getcpu(void)
- 		native_read_tscp(&p);
- 	} else {
- 		/* Load per CPU data from GDT */
--		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
-+		asm volatile ("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
- 	}
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 4c289ab91357..aed92e41f291 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -243,13 +243,15 @@ static ssize_t store_drivers_probe(struct bus_type *bus,
+ 				   const char *buf, size_t count)
+ {
+ 	struct device *dev;
++	int err = -EINVAL;
  
- 	return p;
+ 	dev = bus_find_device_by_name(bus, NULL, buf);
+ 	if (!dev)
+ 		return -ENODEV;
+-	if (bus_rescan_devices_helper(dev, NULL) != 0)
+-		return -EINVAL;
+-	return count;
++	if (bus_rescan_devices_helper(dev, NULL) == 0)
++		err = count;
++	put_device(dev);
++	return err;
+ }
+ 
+ static struct device *next_device(struct klist_iter *i)
 -- 
 2.2.2
 
