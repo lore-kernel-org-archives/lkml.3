@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942AbbA1B6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:58:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
+	id S1760514AbbA1Bcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:32:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933235AbbA1BiX (ORCPT
+	with ESMTP id S1760111AbbA1B2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:23 -0500
+	Tue, 27 Jan 2015 20:28:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Baoquan He <bhe@redhat.com>, Kees Cook <keescook@chromium.org>,
-        "Thomas D." <whissi@whissi.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Jan Beulich <JBeulich@suse.com>, Junjie Mao <eternal.n08@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 25/77] x86, boot: Skip relocs when load address unchanged
-Date: Tue, 27 Jan 2015 17:27:03 -0800
-Message-Id: <20150128012746.725341230@linuxfoundation.org>
+        Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.18 52/61] netfilter: nf_tables: fix flush ruleset chain dependencies
+Date: Tue, 27 Jan 2015 17:27:04 -0800
+Message-Id: <20150128012642.623051200@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,57 +25,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit f285f4a21c3253887caceed493089ece17579d59 upstream.
+commit a2f18db0c68fec96631c10cad9384c196e9008ac upstream.
 
-On 64-bit, relocation is not required unless the load address gets
-changed. Without this, relocations do unexpected things when the kernel
-is above 4G.
+Jumping between chains doesn't mix well with flush ruleset. Rules
+from a different chain and set elements may still refer to us.
 
-Reported-by: Baoquan He <bhe@redhat.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Tested-by: Thomas D. <whissi@whissi.de>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Junjie Mao <eternal.n08@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/20150116005146.GA4212@www.outflux.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[  353.373791] ------------[ cut here ]------------
+[  353.373845] kernel BUG at net/netfilter/nf_tables_api.c:1159!
+[  353.373896] invalid opcode: 0000 [#1] SMP
+[  353.373942] Modules linked in: intel_powerclamp uas iwldvm iwlwifi
+[  353.374017] CPU: 0 PID: 6445 Comm: 31c3.nft Not tainted 3.18.0 #98
+[  353.374069] Hardware name: LENOVO 5129CTO/5129CTO, BIOS 6QET47WW (1.17 ) 07/14/2010
+[...]
+[  353.375018] Call Trace:
+[  353.375046]  [<ffffffff81964c31>] ? nf_tables_commit+0x381/0x540
+[  353.375101]  [<ffffffff81949118>] nfnetlink_rcv+0x3d8/0x4b0
+[  353.375150]  [<ffffffff81943fc5>] netlink_unicast+0x105/0x1a0
+[  353.375200]  [<ffffffff8194438e>] netlink_sendmsg+0x32e/0x790
+[  353.375253]  [<ffffffff818f398e>] sock_sendmsg+0x8e/0xc0
+[  353.375300]  [<ffffffff818f36b9>] ? move_addr_to_kernel.part.20+0x19/0x70
+[  353.375357]  [<ffffffff818f44f9>] ? move_addr_to_kernel+0x19/0x30
+[  353.375410]  [<ffffffff819016d2>] ? verify_iovec+0x42/0xd0
+[  353.375459]  [<ffffffff818f3e10>] ___sys_sendmsg+0x3f0/0x400
+[  353.375510]  [<ffffffff810615fa>] ? native_sched_clock+0x2a/0x90
+[  353.375563]  [<ffffffff81176697>] ? acct_account_cputime+0x17/0x20
+[  353.375616]  [<ffffffff8110dc78>] ? account_user_time+0x88/0xa0
+[  353.375667]  [<ffffffff818f4bbd>] __sys_sendmsg+0x3d/0x80
+[  353.375719]  [<ffffffff81b184f4>] ? int_check_syscall_exit_work+0x34/0x3d
+[  353.375776]  [<ffffffff818f4c0d>] SyS_sendmsg+0xd/0x20
+[  353.375823]  [<ffffffff81b1826d>] system_call_fastpath+0x16/0x1b
+
+Release objects in this order: rules -> sets -> chains -> tables, to
+make sure no references to chains are held anymore.
+
+Reported-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/misc.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ net/netfilter/nf_tables_api.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -396,6 +396,8 @@ asmlinkage void *decompress_kernel(void
- 				  unsigned long output_len,
- 				  unsigned long run_size)
- {
-+	unsigned char *output_orig = output;
-+
- 	real_mode = rmode;
+--- a/net/netfilter/nf_tables_api.c
++++ b/net/netfilter/nf_tables_api.c
+@@ -713,16 +713,12 @@ static int nft_flush_table(struct nft_ct
+ 	struct nft_chain *chain, *nc;
+ 	struct nft_set *set, *ns;
  
- 	sanitize_boot_params(real_mode);
-@@ -444,7 +446,12 @@ asmlinkage void *decompress_kernel(void
- 	debug_putstr("\nDecompressing Linux... ");
- 	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
- 	parse_elf(output);
--	handle_relocations(output, output_len);
-+	/*
-+	 * 32-bit always performs relocations. 64-bit relocations are only
-+	 * needed if kASLR has chosen a different load address.
-+	 */
-+	if (!IS_ENABLED(CONFIG_X86_64) || output != output_orig)
-+		handle_relocations(output, output_len);
- 	debug_putstr("done.\nBooting the kernel.\n");
- 	return output;
- }
+-	list_for_each_entry_safe(chain, nc, &ctx->table->chains, list) {
++	list_for_each_entry(chain, &ctx->table->chains, list) {
+ 		ctx->chain = chain;
+ 
+ 		err = nft_delrule_by_chain(ctx);
+ 		if (err < 0)
+ 			goto out;
+-
+-		err = nft_delchain(ctx);
+-		if (err < 0)
+-			goto out;
+ 	}
+ 
+ 	list_for_each_entry_safe(set, ns, &ctx->table->sets, list) {
+@@ -734,6 +730,14 @@ static int nft_flush_table(struct nft_ct
+ 		if (err < 0)
+ 			goto out;
+ 	}
++
++	list_for_each_entry_safe(chain, nc, &ctx->table->chains, list) {
++		ctx->chain = chain;
++
++		err = nft_delchain(ctx);
++		if (err < 0)
++			goto out;
++	}
+ 
+ 	err = nft_deltable(ctx);
+ out:
 
 
