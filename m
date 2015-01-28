@@ -1,88 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802AbbA2BeU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:34:20 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:50733 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710AbbA2BeR (ORCPT
+	id S1752729AbbA2BK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:10:26 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33456 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbbA2BJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:34:17 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: dgnc: dgnc_tty: Removed variables that is never used
-Date: Wed, 28 Jan 2015 23:41:32 +0100
-Message-Id: <1422484892-10146-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 28 Jan 2015 20:09:08 -0500
+Date: Wed, 28 Jan 2015 23:41:44 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, pali.rohar@gmail.com,
+        sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+Message-ID: <20150128224144.GA28956@amd>
+References: <20150106170433.GA5408@amd>
+ <20150118120139.GA1509@amd>
+ <54C63F1C.6010703@ti.com>
+ <54C92752.9000004@bitmer.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54C92752.9000004@bitmer.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variable ar assigned a value that is never used.
-I have also removed all the code that thereby serves no purpose.
+On Wed 2015-01-28 20:15:46, Jarkko Nikula wrote:
+> On 01/26/2015 03:20 PM, Peter Ujfalusi wrote:
+> > On 01/18/2015 02:01 PM, Pavel Machek wrote:
+> >> In 2.6.28-nokia, it is neccessary to set "Input select" na "digital
+> >> mic", then it works. Input select being in "playback" option makes it
+> >> easy to miss.
+> >>
+> >> In 3.18 and 3.19-rc3, all I can record are zeros.
+> >>
+> >> Does playback/recording work for you on OMAP 3430-based machines?
+> > 
+> > Same codec (tlv320aic3106) works fine on my am335x and omap-l138 boards.
+> > BeagleBoard-xM also fine with twl4030 codec.
+> > 
+> > I don't have my n900 in hacking mode (it is still in use time-to-time) but
+> > looking at the dts file: you might want to add ai3x-micbias-vg property to the
+> > aic3x nodes to select the correct mic bias voltage. I can't recall what is
+> > appropriate for n900, but 2.6.28-nokia sources might give you the answer.
+> > 
+> No need to go that far. N900 has been supported in mainline since 2.6.39
+> or so. Part A of AIC34 (which is basically dual AIC33 in a same package)
+> drives 2 V for the digital microphone bias and part B 2.5 V for the headset.
 
-This was found using a static code analysis program called cppcheck
+Let me try... Umm, no change here :-(
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/dgnc/dgnc_tty.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+root@n900:/tmp# arecord delme
+Recording WAVE 'delme' : Unsigned 8 bit, Rate 8000 Hz, Mono
+^CAborted by signal Interrupt...
+root@n900:/tmp# hexdump delme
+0000000 4952 4646 987c 0000 4157 4556 6d66 2074
+0000010 0010 0000 0001 0001 1f40 0000 1f40 0000
+0000020 0001 0008 6164 6174 9858 0000 8080 8080
+0000030 8080 8080 8080 8080 8080 8080 8080 8080
+*
+0009880
+root@n900:/tmp# aplay delme
+Playing WAVE 'delme' : Unsigned 8 bit, Rate 8000 Hz, Mono
+root@n900:/tmp#
 
-diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
-index f81a375..bca2c07 100644
---- a/drivers/staging/dgnc/dgnc_tty.c
-+++ b/drivers/staging/dgnc/dgnc_tty.c
-@@ -1386,12 +1386,10 @@ static void dgnc_tty_hangup(struct tty_struct *tty)
-  */
- static void dgnc_tty_close(struct tty_struct *tty, struct file *file)
- {
--	struct ktermios *ts;
- 	struct dgnc_board *bd;
- 	struct channel_t *ch;
- 	struct un_t *un;
- 	unsigned long flags;
--	int rc = 0;
+I did this:
+
+I'm not sure which one is "main" microphone and which is headset, but
+I guess 2V should be "close enough" to 2.5V to produce something
+different from zeros..?
+
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index 48b0987..f18a5b0 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -491,6 +491,8 @@
+ 		DRVDD-supply = <&vmmc2>;
+ 		IOVDD-supply = <&vio>;
+ 		DVDD-supply = <&vio>;
++
++		ai3x-micbias-vg = <1>;
+ 	};
  
- 	if (!tty || tty->magic != TTY_MAGIC)
- 		return;
-@@ -1408,8 +1406,6 @@ static void dgnc_tty_close(struct tty_struct *tty, struct file *file)
- 	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
- 		return;
+ 	tlv320aic3x_aux: tlv320aic3x@19 {
+@@ -502,6 +504,8 @@
+ 		DRVDD-supply = <&vmmc2>;
+ 		IOVDD-supply = <&vio>;
+ 		DVDD-supply = <&vio>;
++
++		ai3x-micbias-vg = <1>;
+ 	};
  
--	ts = &tty->termios;
--
- 	spin_lock_irqsave(&ch->ch_lock, flags);
- 
- 	/*
-@@ -1471,7 +1467,7 @@ static void dgnc_tty_close(struct tty_struct *tty, struct file *file)
- 		/* wait for output to drain */
- 		/* This will also return if we take an interrupt */
- 
--		rc = bd->bd_ops->drain(tty, 0);
-+		bd->bd_ops->drain(tty, 0);
- 
- 		dgnc_tty_flush_buffer(tty);
- 		tty_ldisc_flush(tty);
-@@ -2059,7 +2055,6 @@ static void dgnc_tty_wait_until_sent(struct tty_struct *tty, int timeout)
- 	struct dgnc_board *bd;
- 	struct channel_t *ch;
- 	struct un_t *un;
--	int rc;
- 
- 	if (!tty || tty->magic != TTY_MAGIC)
- 		return;
-@@ -2076,7 +2071,7 @@ static void dgnc_tty_wait_until_sent(struct tty_struct *tty, int timeout)
- 	if (!bd || bd->magic != DGNC_BOARD_MAGIC)
- 		return;
- 
--	rc = bd->bd_ops->drain(tty, 0);
-+	bd->bd_ops->drain(tty, 0);
- }
- 
- 
+ 	tsl2563: tsl2563@29 {
+
+> Unfortunately I haven't had time recently to try what might have caused
+> that regression after 3.18.
+
+Thanks,
+									Pavel
 -- 
-1.7.10.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
