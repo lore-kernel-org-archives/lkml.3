@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761676AbbA1FCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:02:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33010 "EHLO mx2.suse.de"
+	id S1762150AbbA1FL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:11:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33286 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761478AbbA1FCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:02:41 -0500
-Date: Wed, 28 Jan 2015 16:02:31 +1100
-From: NeilBrown <neilb@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, hpa@zytor.com,
-        james.t.kukunas@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86/raid6: correctly check for assembler capabilities
-Message-ID: <20150128160231.58be1f9b@notabene.brown>
-In-Reply-To: <alpine.DEB.2.11.1501231716090.5526@nanos>
-References: <54C2148E02000078000588FB@mail.emea.novell.com>
-	<alpine.DEB.2.11.1501231716090.5526@nanos>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
+	id S1762138AbbA1FLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 00:11:55 -0500
+Message-ID: <54C86F97.1000907@suse.com>
+Date: Wed, 28 Jan 2015 06:11:51 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/k_Ja2rlFitG//3Y5qmlZZQc"; protocol="application/pgp-signature"
+To: linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mmarek@suse.cz,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [RESEND Patch V2 1/4] xen: build infrastructure for generating
+ hypercall depending symbols
+References: <1421826565-10826-1-git-send-email-jgross@suse.com> <1421826565-10826-2-git-send-email-jgross@suse.com>
+In-Reply-To: <1421826565-10826-2-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/k_Ja2rlFitG//3Y5qmlZZQc
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+*Ping*
 
-On Fri, 23 Jan 2015 17:16:59 +0100 (CET) Thomas Gleixner <tglx@linutronix.d=
-e>
-wrote:
-
-> On Fri, 23 Jan 2015, Jan Beulich wrote:
->=20
-> > Just like for AVX2 (which simply needs an #if -> #ifdef conversion),
-> > SSSE3 assembler support should be checked for before using it.
-> >=20
-> > Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> > Cc: Jim Kukunas <james.t.kukunas@linux.intel.com>
-> > Cc: Neil Brown <neilb@suse.de>
-> > ---
-> >  arch/x86/Makefile       |    1 +
->=20
-> For the x86 part:
->=20
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
->=20
-> This should go through the raid tree.
-
-Thanks.  Applied to the raid tree.
-
-NeilBrown
+David wants a comment from the x86 maintainers.
 
 
---Sig_/k_Ja2rlFitG//3Y5qmlZZQc
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+Juergen
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+On 01/21/2015 08:49 AM, Juergen Gross wrote:
+> Today there are several places in the kernel which build tables
+> containing one entry for each possible Xen hypercall. Create an
+> infrastructure to be able to generate these tables at build time.
+>
+> Based-on-patch-by: Jan Beulich <jbeulich@suse.com>
+> Signed-off-by: Juergen Gross <jgross@suse.com>
+> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+> ---
+>   arch/x86/syscalls/Makefile |  9 +++++++++
+>   scripts/xen-hypercalls.sh  | 12 ++++++++++++
+>   2 files changed, 21 insertions(+)
+>   create mode 100644 scripts/xen-hypercalls.sh
+>
+> diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
+> index 3323c27..a55abb9 100644
+> --- a/arch/x86/syscalls/Makefile
+> +++ b/arch/x86/syscalls/Makefile
+> @@ -19,6 +19,9 @@ quiet_cmd_syshdr = SYSHDR  $@
+>   quiet_cmd_systbl = SYSTBL  $@
+>         cmd_systbl = $(CONFIG_SHELL) '$(systbl)' $< $@
+>
+> +quiet_cmd_hypercalls = HYPERCALLS $@
+> +      cmd_hypercalls = $(CONFIG_SHELL) '$<' $@ $(filter-out $<,$^)
+> +
+>   syshdr_abi_unistd_32 := i386
+>   $(uapi)/unistd_32.h: $(syscall32) $(syshdr)
+>   	$(call if_changed,syshdr)
+> @@ -47,10 +50,16 @@ $(out)/syscalls_32.h: $(syscall32) $(systbl)
+>   $(out)/syscalls_64.h: $(syscall64) $(systbl)
+>   	$(call if_changed,systbl)
+>
+> +$(out)/xen-hypercalls.h: $(srctree)/scripts/xen-hypercalls.sh
+> +	$(call if_changed,hypercalls)
+> +
+> +$(out)/xen-hypercalls.h: $(srctree)/include/xen/interface/xen*.h
+> +
+>   uapisyshdr-y			+= unistd_32.h unistd_64.h unistd_x32.h
+>   syshdr-y			+= syscalls_32.h
+>   syshdr-$(CONFIG_X86_64)		+= unistd_32_ia32.h unistd_64_x32.h
+>   syshdr-$(CONFIG_X86_64)		+= syscalls_64.h
+> +syshdr-$(CONFIG_XEN)		+= xen-hypercalls.h
+>
+>   targets	+= $(uapisyshdr-y) $(syshdr-y)
+>
+> diff --git a/scripts/xen-hypercalls.sh b/scripts/xen-hypercalls.sh
+> new file mode 100644
+> index 0000000..676d922
+> --- /dev/null
+> +++ b/scripts/xen-hypercalls.sh
+> @@ -0,0 +1,12 @@
+> +#!/bin/sh
+> +out="$1"
+> +shift
+> +in="$@"
+> +
+> +for i in $in; do
+> +	eval $CPP $LINUXINCLUDE -dD -imacros "$i" -x c /dev/null
+> +done | \
+> +awk '$1 == "#define" && $2 ~ /__HYPERVISOR_[a-z][a-z_0-9]*/ { v[$3] = $2 }
+> +	END {   print "/* auto-generated by scripts/xen-hypercall.sh */"
+> +		for (i in v) if (!(v[i] in v))
+> +			print "HYPERCALL("substr(v[i], 14)")"}' | sort -u >$out
+>
 
-iQIVAwUBVMhtZznsnt1WYoG5AQLwohAAvnzdzyd60sWrFcn9Bxdop5xKvibfmCVw
-XQgTHyIVMnH1L3/r8/dtT17UrTZraB6drC/+SGfjs2pHm2NkyXConEplxBHB0UBx
-JG+P/Qsn6Fa2T99ib3xJVr1Sx4zL9EtCt1re6mv7EBr6NYcxeWZ3f6DRcKJnnxtQ
-+Zcl+bv/b1Mt56AjH7D+Bz0N1+zh7skrypHUzcmqJmoYeh7KyN/kV3QkxxqHYfTL
-RZYcEDPLMhxuX5agbMManMfvAM3L2/iQ01jfNgjAbcT2wOybQoO9GmNVtpYQ1HgV
-zqN8ABr7aVkET5UcikH6MIJpjHq9UsS3yfEWo1lcKg6XuSrMCning6Hg1LkSIxeQ
-8Ex9JyM93kyh3PZeDPUgQMInHs0lCFAsgYkY5asYss9YOIvvIZIyYeh2loTSjMTi
-rhShz6JY936I8BES6DnRAgBxdX1xK8rhu8Pl6kTTFFrX9AsmLH3kF/wd7asQtDqA
-xndBXPmv3x2PNuBbHUmfFzjwgjc9LDQV37GzJl7nkxm5+i4e6A2ktxFTQvi1IWsy
-ozXspOsKTY7oLbqZyO8lqpzYiq5UQLW+x4cmcFa/JMqB/MCsuaqy14BN0QHVDOBv
-Zike8DX8Nw/XKfQe60CTCtjPl6udqDgyARRoePKvfGG6Z2QVOk0g9yHsf2Pz4ek0
-M/b9jECyBso=
-=vg0C
------END PGP SIGNATURE-----
-
---Sig_/k_Ja2rlFitG//3Y5qmlZZQc--
