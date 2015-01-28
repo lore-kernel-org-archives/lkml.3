@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760487AbbA2Cor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:44:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47055 "EHLO
+	id S965499AbbA2CiR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:38:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47026 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762370AbbA2Cim (ORCPT
+	with ESMTP id S965460AbbA2CiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:42 -0500
+	Wed, 28 Jan 2015 21:38:12 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Andreas=20M=C3=BCller?= <goo@stapelspeicher.org>,
+Cc: Arik Nemtsov <arikx.nemtsov@intel.com>,
         Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 115/139] mac80211: fix multicast LED blinking and counter
-Date: Wed, 28 Jan 2015 14:20:58 -0800
-Message-Id: <1422483682-15393-116-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 116/139] cfg80211: avoid mem leak on driver hint set
+Date: Wed, 28 Jan 2015 14:20:59 -0800
+Message-Id: <1422483682-15393-117-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,62 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Andreas=20M=C3=BCller?= <goo@stapelspeicher.org>
+From: Arik Nemtsov <arik@wizery.com>
 
-commit d025933e29872cb1fe19fc54d80e4dfa4ee5779c upstream.
+commit 34f05f543f02350e920bddb7660ffdd4697aaf60 upstream.
 
-As multicast-frames can't be fragmented, "dot11MulticastReceivedFrameCount"
-stopped being incremented after the use-after-free fix. Furthermore, the
-RX-LED will be triggered by every multicast frame (which wouldn't happen
-before) which wouldn't allow the LED to rest at all.
+In the already-set and intersect case of a driver-hint, the previous
+wiphy regdomain was not freed before being reset with a copy of the
+cfg80211 regdomain.
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=89431 which also had the
-patch.
-
-Fixes: b8fff407a180 ("mac80211: fix use-after-free in defragmentation")
-Signed-off-by: Andreas Müller <goo@stapelspeicher.org>
-[rewrite commit message]
+Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
+Acked-by: Luis R. Rodriguez <mcgrof@suse.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/rx.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ net/wireless/reg.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index 7b9e78a..10109f4 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1647,14 +1647,14 @@ ieee80211_rx_h_defragment(struct ieee80211_rx_data *rx)
- 	sc = le16_to_cpu(hdr->seq_ctrl);
- 	frag = sc & IEEE80211_SCTL_FRAG;
- 
--	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
--		goto out;
--
- 	if (is_multicast_ether_addr(hdr->addr1)) {
- 		rx->local->dot11MulticastReceivedFrameCount++;
--		goto out;
-+		goto out_no_led;
- 	}
- 
-+	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
-+		goto out;
-+
- 	I802_DEBUG_INC(rx->local->rx_handlers_fragments);
- 
- 	if (skb_linearize(rx->skb))
-@@ -1745,9 +1745,10 @@ ieee80211_rx_h_defragment(struct ieee80211_rx_data *rx)
- 	status->rx_flags |= IEEE80211_RX_FRAGMENTED;
- 
-  out:
-+	ieee80211_led_rx(rx->local);
-+ out_no_led:
- 	if (rx->sta)
- 		rx->sta->rx_packets++;
--	ieee80211_led_rx(rx->local);
- 	return RX_CONTINUE;
- }
- 
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index 7da67fd..e90e22f 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -1455,7 +1455,7 @@ static enum reg_request_treatment
+ __regulatory_hint(struct wiphy *wiphy,
+ 		  struct regulatory_request *pending_request)
+ {
+-	const struct ieee80211_regdomain *regd;
++	const struct ieee80211_regdomain *regd, *tmp;
+ 	bool intersect = false;
+ 	enum reg_request_treatment treatment;
+ 	struct regulatory_request *lr;
+@@ -1491,7 +1491,9 @@ __regulatory_hint(struct wiphy *wiphy,
+ 				return REG_REQ_IGNORE;
+ 			}
+ 			treatment = REG_REQ_ALREADY_SET;
++			tmp = get_wiphy_regdom(wiphy);
+ 			rcu_assign_pointer(wiphy->regd, regd);
++			rcu_free_regdom(tmp);
+ 			goto new_request;
+ 		}
+ 		kfree(pending_request);
 -- 
 1.9.1
 
