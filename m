@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933493AbbA1Bjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:39:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41811 "EHLO
+	id S933478AbbA1Bji (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:39:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933404AbbA1Bil (ORCPT
+	with ESMTP id S933403AbbA1Bil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 74/77] mm: page_alloc: abort fair zone allocation policy when remotes nodes are encountered
-Date: Tue, 27 Jan 2015 17:27:52 -0800
-Message-Id: <20150128012748.178691108@linuxfoundation.org>
+Subject: [PATCH 3.14 75/77] mm: page_alloc: reduce cost of the fair zone allocation policy
+Date: Tue, 27 Jan 2015 17:27:53 -0800
+Message-Id: <20150128012748.207832838@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -32,17 +32,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit f7b5d647946aae1647bf5cd26c16b3a793c1ac49 upstream.
+commit 4ffeaf3560a52b4a69cc7909873d08c0ef5909d4 upstream.
 
-The purpose of numa_zonelist_order=zone is to preserve lower zones for
-use with 32-bit devices.  If locality is preferred then the
-numa_zonelist_order=node policy should be used.
+The fair zone allocation policy round-robins allocations between zones
+within a node to avoid age inversion problems during reclaim.  If the
+first allocation fails, the batch counts are reset and a second attempt
+made before entering the slow path.
 
-Unfortunately, the fair zone allocation policy overrides this by
-skipping zones on remote nodes until the lower one is found.  While this
-makes sense from a page aging and performance perspective, it breaks the
-expected zonelist policy.  This patch restores the expected behaviour
-for zone-list ordering.
+One assumption made with this scheme is that batches expire at roughly
+the same time and the resets each time are justified.  This assumption
+does not hold when zones reach their low watermark as the batches will
+be consumed at uneven rates.  Allocation failure due to watermark
+depletion result in additional zonelist scans for the reset and another
+watermark check before hitting the slowpath.
+
+On UMA, the benefit is negligible -- around 0.25%.  On 4-socket NUMA
+machine it's variable due to the variability of measuring overhead with
+the vmstat changes.  The system CPU overhead comparison looks like
+
+          3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
+             vanilla   vmstat-v5 lowercost-v5
+User          746.94      774.56      802.00
+System      65336.22    32847.27    40852.33
+Elapsed     27553.52    27415.04    27368.46
+
+However it is worth noting that the overall benchmark still completed
+faster and intuitively it makes sense to take as few passes as possible
+through the zonelists.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
@@ -51,19 +67,200 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mmzone.h |    6 ++
+ mm/page_alloc.c        |  101 +++++++++++++++++++++++++------------------------
+ 2 files changed, 59 insertions(+), 48 deletions(-)
 
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -529,6 +529,7 @@ typedef enum {
+ 	ZONE_WRITEBACK,			/* reclaim scanning has recently found
+ 					 * many pages under writeback
+ 					 */
++	ZONE_FAIR_DEPLETED,		/* fair zone policy batch depleted */
+ } zone_flags_t;
+ 
+ static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
+@@ -566,6 +567,11 @@ static inline int zone_is_reclaim_locked
+ 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
+ }
+ 
++static inline int zone_is_fair_depleted(const struct zone *zone)
++{
++	return test_bit(ZONE_FAIR_DEPLETED, &zone->flags);
++}
++
+ static inline int zone_is_oom_locked(const struct zone *zone)
+ {
+ 	return test_bit(ZONE_OOM_LOCKED, &zone->flags);
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1980,7 +1980,7 @@ zonelist_scan:
- 		 */
+@@ -1614,6 +1614,9 @@ again:
+ 	}
+ 
+ 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++	if (zone_page_state(zone, NR_ALLOC_BATCH) == 0 &&
++	    !zone_is_fair_depleted(zone))
++		zone_set_flag(zone, ZONE_FAIR_DEPLETED);
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1938,6 +1941,18 @@ static inline void init_zone_allows_recl
+ }
+ #endif	/* CONFIG_NUMA */
+ 
++static void reset_alloc_batches(struct zone *preferred_zone)
++{
++	struct zone *zone = preferred_zone->zone_pgdat->node_zones;
++
++	do {
++		mod_zone_page_state(zone, NR_ALLOC_BATCH,
++			high_wmark_pages(zone) - low_wmark_pages(zone) -
++			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
++		zone_clear_flag(zone, ZONE_FAIR_DEPLETED);
++	} while (zone++ != preferred_zone);
++}
++
+ /*
+  * get_page_from_freelist goes through the zonelist trying to allocate
+  * a page.
+@@ -1955,8 +1970,12 @@ get_page_from_freelist(gfp_t gfp_mask, n
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+ 	bool consider_zone_dirty = (alloc_flags & ALLOC_WMARK_LOW) &&
+ 				(gfp_mask & __GFP_WRITE);
++	int nr_fair_skipped = 0;
++	bool zonelist_rescan;
+ 
+ zonelist_scan:
++	zonelist_rescan = false;
++
+ 	/*
+ 	 * Scan zonelist, looking for a zone with enough free.
+ 	 * See also __cpuset_node_allowed_softwall() comment in kernel/cpuset.c.
+@@ -1981,8 +2000,10 @@ zonelist_scan:
  		if (alloc_flags & ALLOC_FAIR) {
  			if (!zone_local(preferred_zone, zone))
--				continue;
-+				break;
- 			if (atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]) <= 0)
+ 				break;
+-			if (atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]) <= 0)
++			if (zone_is_fair_depleted(zone)) {
++				nr_fair_skipped++;
  				continue;
++			}
  		}
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+@@ -2088,13 +2109,7 @@ this_zone_full:
+ 			zlc_mark_zone_full(zonelist, z);
+ 	}
+ 
+-	if (unlikely(IS_ENABLED(CONFIG_NUMA) && page == NULL && zlc_active)) {
+-		/* Disable zlc cache for second zonelist scan */
+-		zlc_active = 0;
+-		goto zonelist_scan;
+-	}
+-
+-	if (page)
++	if (page) {
+ 		/*
+ 		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
+ 		 * necessary to allocate the page. The expectation is
+@@ -2103,8 +2118,37 @@ this_zone_full:
+ 		 * for !PFMEMALLOC purposes.
+ 		 */
+ 		page->pfmemalloc = !!(alloc_flags & ALLOC_NO_WATERMARKS);
++		return page;
++	}
+ 
+-	return page;
++	/*
++	 * The first pass makes sure allocations are spread fairly within the
++	 * local node.  However, the local node might have free pages left
++	 * after the fairness batches are exhausted, and remote zones haven't
++	 * even been considered yet.  Try once more without fairness, and
++	 * include remote zones now, before entering the slowpath and waking
++	 * kswapd: prefer spilling to a remote zone over swapping locally.
++	 */
++	if (alloc_flags & ALLOC_FAIR) {
++		alloc_flags &= ~ALLOC_FAIR;
++		if (nr_fair_skipped) {
++			zonelist_rescan = true;
++			reset_alloc_batches(preferred_zone);
++		}
++		if (nr_online_nodes > 1)
++			zonelist_rescan = true;
++	}
++
++	if (unlikely(IS_ENABLED(CONFIG_NUMA) && zlc_active)) {
++		/* Disable zlc cache for second zonelist scan */
++		zlc_active = 0;
++		zonelist_rescan = true;
++	}
++
++	if (zonelist_rescan)
++		goto zonelist_scan;
++
++	return NULL;
+ }
+ 
+ /*
+@@ -2433,28 +2477,6 @@ __alloc_pages_high_priority(gfp_t gfp_ma
+ 	return page;
+ }
+ 
+-static void reset_alloc_batches(struct zonelist *zonelist,
+-				enum zone_type high_zoneidx,
+-				struct zone *preferred_zone)
+-{
+-	struct zoneref *z;
+-	struct zone *zone;
+-
+-	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+-		/*
+-		 * Only reset the batches of zones that were actually
+-		 * considered in the fairness pass, we don't want to
+-		 * trash fairness information for zones that are not
+-		 * actually part of this zonelist's round-robin cycle.
+-		 */
+-		if (!zone_local(preferred_zone, zone))
+-			continue;
+-		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+-			high_wmark_pages(zone) - low_wmark_pages(zone) -
+-			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+-	}
+-}
+-
+ static void wake_all_kswapds(unsigned int order,
+ 			     struct zonelist *zonelist,
+ 			     enum zone_type high_zoneidx,
+@@ -2792,29 +2814,12 @@ retry_cpuset:
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
+ #endif
+-retry:
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, classzone_idx, migratetype);
+ 	if (unlikely(!page)) {
+ 		/*
+-		 * The first pass makes sure allocations are spread
+-		 * fairly within the local node.  However, the local
+-		 * node might have free pages left after the fairness
+-		 * batches are exhausted, and remote zones haven't
+-		 * even been considered yet.  Try once more without
+-		 * fairness, and include remote zones now, before
+-		 * entering the slowpath and waking kswapd: prefer
+-		 * spilling to a remote zone over swapping locally.
+-		 */
+-		if (alloc_flags & ALLOC_FAIR) {
+-			reset_alloc_batches(zonelist, high_zoneidx,
+-					    preferred_zone);
+-			alloc_flags &= ~ALLOC_FAIR;
+-			goto retry;
+-		}
+-		/*
+ 		 * Runtime PM, block IO and its error handling path
+ 		 * can deadlock because I/O on the device might not
+ 		 * complete.
 
 
