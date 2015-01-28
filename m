@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933997AbbA1CAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:00:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41430 "EHLO
+	id S964810AbbA1CLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:11:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933211AbbA1BiV (ORCPT
+	with ESMTP id S1759606AbbA1B2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:21 -0500
+	Tue, 27 Jan 2015 20:28:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Lee Cragg <jcragg@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 05/77] ALSA: usb-audio: Add mic volume fix quirk for Logitech Webcam C210
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.18 31/61] time: adjtimex: Validate the ADJ_FREQUENCY values
 Date: Tue, 27 Jan 2015 17:26:43 -0800
-Message-Id: <20150128012746.128348730@linuxfoundation.org>
+Message-Id: <20150128012640.263058861@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,31 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jason Lee Cragg <jcragg@gmail.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 6455931186bff407493135e74c5f32efd30860e2 upstream.
+commit 5e5aeb4367b450a28f447f6d5ab57d8f2ab16a5f upstream.
 
-Signed-off-by: Jason Lee Cragg <jcragg@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Verify that the frequency value from userspace is valid and makes sense.
+
+Unverified values can cause overflows later on.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+[jstultz: Fix up bug for negative values and drop redunent cap check]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/ntp.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -886,6 +886,7 @@ static void volume_control_quirks(struct
- 	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
-+	case USB_ID(0x046d, 0x0819): /* Logitech Webcam C210 */
- 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
- 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
- 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -633,6 +633,13 @@ int ntp_validate_timex(struct timex *txc
+ 	if ((txc->modes & ADJ_SETOFFSET) && (!capable(CAP_SYS_TIME)))
+ 		return -EPERM;
+ 
++	if (txc->modes & ADJ_FREQUENCY) {
++		if (LONG_MIN / PPM_SCALE > txc->freq)
++			return -EINVAL;
++		if (LONG_MAX / PPM_SCALE < txc->freq)
++			return -EINVAL;
++	}
++
+ 	return 0;
+ }
+ 
 
 
