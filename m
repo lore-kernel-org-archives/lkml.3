@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbbA2BOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:14:44 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:51090 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979AbbA2BOm convert rfc822-to-8bit (ORCPT
+	id S933692AbbA2CW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:22:26 -0500
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:39261 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757752AbbA2CWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:14:42 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: David Miller <davem@davemloft.net>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH net-next v8 0/4] net: Add Keystone NetCP ethernet driver support
-Date: Wed, 28 Jan 2015 22:03:09 +0100
-Message-ID: <20343006.1NmdQEM9nn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54C94A0D.9050505@ti.com>
-References: <1421367007-19744-1-git-send-email-m-karicheri2@ti.com> <54C92878.3030207@ti.com> <54C94A0D.9050505@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V03:K0:o3BBv4W+lbJoIFeWcHZp+CZKd5sYRK7+qQLlfY2bSs9/319dPwk
- mgkXno7RMqkBP2M4u8kM8pOPlaOLowrvyIxBJlsWbAc+QTqX29XnsAI9+WE6AXKzBXcsQVr
- Um96rnSp+510CAfQRYSFBxbNFeRRObZt6VWLldvN9Zo1Alg2LZcGBWsgzZNOFaJJTiodVms
- 7bbtBbBWeQv0lEYdONi/Q==
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 28 Jan 2015 21:22:23 -0500
+Message-ID: <1422479028.4111.34.camel@j-VirtualBox>
+Subject: Re: [PATCH 4/6] locking/rwsem: Avoid deceiving lock spinners
+From: Jason Low <jason.low2@hp.com>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        jason.low2@hp.com
+Date: Wed, 28 Jan 2015 13:03:48 -0800
+In-Reply-To: <1422417294.4604.15.camel@stgolabs.net>
+References: <1422257769-14083-1-git-send-email-dave@stgolabs.net>
+	 <1422257769-14083-5-git-send-email-dave@stgolabs.net>
+	 <1422379430.6710.6.camel@j-VirtualBox>
+	 <1422417294.4604.15.camel@stgolabs.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 January 2015 15:43:57 Murali Karicheri wrote:
-> > this. Hope I am on the right track.
+On Tue, 2015-01-27 at 19:54 -0800, Davidlohr Bueso wrote:
+> On Tue, 2015-01-27 at 09:23 -0800, Jason Low wrote:
+> > On Sun, 2015-01-25 at 23:36 -0800, Davidlohr Bueso wrote:
+> > > When readers hold the semaphore, the ->owner is nil. As such,
+> > > and unlike mutexes, '!owner' does not necessarily imply that
+> > > the lock is free. This will cause writer spinners to potentially
+> > > spin excessively as they've been mislead to thinking they have
+> > > a chance of acquiring the lock, instead of blocking.
+> > > 
+> > > This patch therefore replaces this bogus check to solely rely on
+> > > the counter to know if the lock is available. Because we don't
+> > > hold the wait lock, we can obviously do this in an unqueued
+> > > manner.
+> > > 
+> > > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> > > ---
+> > >  kernel/locking/rwsem-xadd.c | 8 ++++++--
+> > >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+> > > index 5e425d8..18a50da 100644
+> > > --- a/kernel/locking/rwsem-xadd.c
+> > > +++ b/kernel/locking/rwsem-xadd.c
+> > > @@ -335,6 +335,8 @@ static inline bool owner_running(struct rw_semaphore *sem,
+> > >  static noinline
+> > >  bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+> > >  {
+> > > +	long count;
+> > > +
+> > >  	rcu_read_lock();
+> > >  	while (owner_running(sem, owner)) {
+> > >  		if (need_resched())
+> > > @@ -347,9 +349,11 @@ bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
+> > >  	/*
+> > >  	 * We break out the loop above on need_resched() or when the
+> > >  	 * owner changed, which is a sign for heavy contention. Return
+> > > -	 * success only when sem->owner is NULL.
+> > > +	 * success only when the lock is available in order to attempt
+> > > +	 * another trylock.
+> > >  	 */
+> > > -	return sem->owner == NULL;
+> > > +	count = READ_ONCE(sem->count);
+> > > +	return count == 0 || count == RWSEM_WAITING_BIAS;
+> > 
+> > If we clear the owner field right before unlocking, would this cause
+> > some situations where we spin until the owner is cleared (about to
+> > release the lock), and then the spinner return false from
+> > rwsem_spin_on_owner?
 > 
-> Reproduced this. Following errors seen when building the modules.
-> 
->    LD [M]  drivers/net/ethernet/ti/keystone_netcp.o
-> drivers/net/ethernet/ti/netcp_ethss.o: In function `init_module':
-> netcp_ethss.c:(.init.text+0x0): multiple definition of `init_module'
-> drivers/net/ethernet/ti/netcp_core.o:netcp_core.c:(.init.text+0x0): 
-> first defined here
-> drivers/net/ethernet/ti/netcp_ethss.o: In function `cleanup_module':
-> netcp_ethss.c:(.exit.text+0x0): multiple definition of `cleanup_module'
-> drivers/net/ethernet/ti/netcp_core.o:netcp_core.c:(.exit.text+0x0): 
-> first defined here
-> make[4]: *** [drivers/net/ethernet/ti/keystone_netcp.o] Error 1
->
-> BTW, I had to disable cpsw_ale.c to get to build keystone NetCP. I am 
-> assuming someone from TI is addressing this.
-> 
-> drivers/net/ethernet/ti/cpsw_ale.c: In function ‘cpsw_ale_start’:
-> drivers/net/ethernet/ti/cpsw_ale.c:759:2: error: ‘KBUILD_MODNAME’ 
-> undeclared (first use in this function)
-> drivers/net/ethernet/ti/cpsw_ale.c:759:2: note: each undeclared 
-> identifier is reported only once for each function it appears in
+> I'm not sure I understand your concern ;) could you rephrase that? 
 
-I think both problems are nontrivial to fix. The first one is obviously
-that there are multiple init_module functions in one module. You have
-to either split the driver into multiple loadable modules with at most
-one init_module/cleanup_module pair each, or call one of the functions
-from the other one in the right order.
+Sure, let me try to elaborate on that  :)
 
-The second problem is where I got stuck myself: cpsw_ale.c (also cpts.c)
-is getting linked into both modules, which is not allowed: It is
-impossible for the kernel to compile these if one driver is a module
-and the other one is not, and any use of KBUILD_MODNAME fails because
-it is unclear what the modname is if the file is compiled once to
-be linked into two drivers.
+Since the unlocker clears the owner field before actually unlocking, I'm
+thinking that with this patch, the spinner in rwsem_spin_on_owner()
+would often read the count before the unlocker sets count.
 
-	Arnd
+When the owner releases the lock, it sets the owner field to NULL. This
+causes the spinner to break out of the loop as the owner changed. The
+spinner would then proceed to read sem->count, but before the owner
+modifies sem->count.
+
+Thread 1(owner)		Thread 2 (spinning on owner)
+---------------		----------------------------
+up_write()
+  rwsem_clear_owner()
+			owner_running() // returns false
+			count = READ_ONCE(sem->count)
+  __up_write()
+			return (count == 0 || count == RWSEM_WAITING_BIAS) // returns false
+			// going to slowpath
+
+
