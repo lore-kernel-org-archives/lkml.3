@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760425AbbA1CQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:16:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
+	id S1760786AbbA1Cnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:43:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549AbbA1B2O (ORCPT
+	with ESMTP id S1754747AbbA1Cny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:14 -0500
+	Tue, 27 Jan 2015 21:43:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH 3.10 23/32] KEYS: close race between key lookup and freeing
+        Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.14 15/77] dm cache: fix problematic dual use of a single migration count variable
 Date: Tue, 27 Jan 2015 17:26:53 -0800
-Message-Id: <20150128012630.406330266@linuxfoundation.org>
+Message-Id: <20150128012746.426128061@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,52 +24,288 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit a3a8784454692dd72e5d5d34dcdab17b4420e74c upstream.
+commit a59db67656021fa212e9b95a583f13c34eb67cd9 upstream.
 
-When a key is being garbage collected, it's key->user would get put before
-the ->destroy() callback is called, where the key is removed from it's
-respective tracking structures.
+Introduce a new variable to count the number of allocated migration
+structures.  The existing variable cache->nr_migrations became
+overloaded.  It was used to:
 
-This leaves a key hanging in a semi-invalid state which leaves a window open
-for a different task to try an access key->user. An example is
-find_keyring_by_name() which would dereference key->user for a key that is
-in the process of being garbage collected (where key->user was freed but
-->destroy() wasn't called yet - so it's still present in the linked list).
+ i) track of the number of migrations in flight for the purposes of
+    quiescing during suspend.
 
-This would cause either a panic, or corrupt memory.
+ ii) to estimate the amount of background IO occuring.
 
-Fixes CVE-2014-9529.
+Recent discard changes meant that REQ_DISCARD bios are processed with
+a migration.  Discards are not background IO so nr_migrations was not
+incremented.  However this could cause quiescing to complete early.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+(i) is now handled with a new variable cache->nr_allocated_migrations.
+cache->nr_migrations has been renamed cache->nr_io_migrations.
+cleanup_migration() is now called free_io_migration(), since it
+decrements that variable.
+
+Also, remove the unused cache->next_migration variable that got replaced
+with with prealloc_structs a while ago.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/keys/gc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/dm-cache-target.c |   89 ++++++++++++++++++++++++-------------------
+ 1 file changed, 50 insertions(+), 39 deletions(-)
 
---- a/security/keys/gc.c
-+++ b/security/keys/gc.c
-@@ -201,12 +201,12 @@ static noinline void key_gc_unused_keys(
- 		if (test_bit(KEY_FLAG_INSTANTIATED, &key->flags))
- 			atomic_dec(&key->user->nikeys);
- 
--		key_user_put(key->user);
--
- 		/* now throw away the key memory */
- 		if (key->type->destroy)
- 			key->type->destroy(key);
- 
-+		key_user_put(key->user);
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -222,7 +222,13 @@ struct cache {
+ 	struct list_head need_commit_migrations;
+ 	sector_t migration_threshold;
+ 	wait_queue_head_t migration_wait;
+-	atomic_t nr_migrations;
++	atomic_t nr_allocated_migrations;
 +
- 		kfree(key->description);
++	/*
++	 * The number of in flight migrations that are performing
++	 * background io. eg, promotion, writeback.
++	 */
++	atomic_t nr_io_migrations;
  
- #ifdef KEY_DEBUGGING
+ 	wait_queue_head_t quiescing_wait;
+ 	atomic_t quiescing;
+@@ -259,7 +265,6 @@ struct cache {
+ 	struct dm_deferred_set *all_io_ds;
+ 
+ 	mempool_t *migration_pool;
+-	struct dm_cache_migration *next_migration;
+ 
+ 	struct dm_cache_policy *policy;
+ 	unsigned policy_nr_args;
+@@ -350,10 +355,31 @@ static void free_prison_cell(struct cach
+ 	dm_bio_prison_free_cell(cache->prison, cell);
+ }
+ 
++static struct dm_cache_migration *alloc_migration(struct cache *cache)
++{
++	struct dm_cache_migration *mg;
++
++	mg = mempool_alloc(cache->migration_pool, GFP_NOWAIT);
++	if (mg) {
++		mg->cache = cache;
++		atomic_inc(&mg->cache->nr_allocated_migrations);
++	}
++
++	return mg;
++}
++
++static void free_migration(struct dm_cache_migration *mg)
++{
++	if (atomic_dec_and_test(&mg->cache->nr_allocated_migrations))
++		wake_up(&mg->cache->migration_wait);
++
++	mempool_free(mg, mg->cache->migration_pool);
++}
++
+ static int prealloc_data_structs(struct cache *cache, struct prealloc *p)
+ {
+ 	if (!p->mg) {
+-		p->mg = mempool_alloc(cache->migration_pool, GFP_NOWAIT);
++		p->mg = alloc_migration(cache);
+ 		if (!p->mg)
+ 			return -ENOMEM;
+ 	}
+@@ -382,7 +408,7 @@ static void prealloc_free_structs(struct
+ 		free_prison_cell(cache, p->cell1);
+ 
+ 	if (p->mg)
+-		mempool_free(p->mg, cache->migration_pool);
++		free_migration(p->mg);
+ }
+ 
+ static struct dm_cache_migration *prealloc_get_migration(struct prealloc *p)
+@@ -812,24 +838,14 @@ static void remap_to_origin_then_cache(s
+  * Migration covers moving data from the origin device to the cache, or
+  * vice versa.
+  *--------------------------------------------------------------*/
+-static void free_migration(struct dm_cache_migration *mg)
+-{
+-	mempool_free(mg, mg->cache->migration_pool);
+-}
+-
+-static void inc_nr_migrations(struct cache *cache)
++static void inc_io_migrations(struct cache *cache)
+ {
+-	atomic_inc(&cache->nr_migrations);
++	atomic_inc(&cache->nr_io_migrations);
+ }
+ 
+-static void dec_nr_migrations(struct cache *cache)
++static void dec_io_migrations(struct cache *cache)
+ {
+-	atomic_dec(&cache->nr_migrations);
+-
+-	/*
+-	 * Wake the worker in case we're suspending the target.
+-	 */
+-	wake_up(&cache->migration_wait);
++	atomic_dec(&cache->nr_io_migrations);
+ }
+ 
+ static void __cell_defer(struct cache *cache, struct dm_bio_prison_cell *cell,
+@@ -852,11 +868,10 @@ static void cell_defer(struct cache *cac
+ 	wake_worker(cache);
+ }
+ 
+-static void cleanup_migration(struct dm_cache_migration *mg)
++static void free_io_migration(struct dm_cache_migration *mg)
+ {
+-	struct cache *cache = mg->cache;
++	dec_io_migrations(mg->cache);
+ 	free_migration(mg);
+-	dec_nr_migrations(cache);
+ }
+ 
+ static void migration_failure(struct dm_cache_migration *mg)
+@@ -881,7 +896,7 @@ static void migration_failure(struct dm_
+ 		cell_defer(cache, mg->new_ocell, true);
+ 	}
+ 
+-	cleanup_migration(mg);
++	free_io_migration(mg);
+ }
+ 
+ static void migration_success_pre_commit(struct dm_cache_migration *mg)
+@@ -892,7 +907,7 @@ static void migration_success_pre_commit
+ 	if (mg->writeback) {
+ 		clear_dirty(cache, mg->old_oblock, mg->cblock);
+ 		cell_defer(cache, mg->old_ocell, false);
+-		cleanup_migration(mg);
++		free_io_migration(mg);
+ 		return;
+ 
+ 	} else if (mg->demote) {
+@@ -902,14 +917,14 @@ static void migration_success_pre_commit
+ 					     mg->old_oblock);
+ 			if (mg->promote)
+ 				cell_defer(cache, mg->new_ocell, true);
+-			cleanup_migration(mg);
++			free_io_migration(mg);
+ 			return;
+ 		}
+ 	} else {
+ 		if (dm_cache_insert_mapping(cache->cmd, mg->cblock, mg->new_oblock)) {
+ 			DMWARN_LIMIT("promotion failed; couldn't update on disk metadata");
+ 			policy_remove_mapping(cache->policy, mg->new_oblock);
+-			cleanup_migration(mg);
++			free_io_migration(mg);
+ 			return;
+ 		}
+ 	}
+@@ -942,7 +957,7 @@ static void migration_success_post_commi
+ 		} else {
+ 			if (mg->invalidate)
+ 				policy_remove_mapping(cache->policy, mg->old_oblock);
+-			cleanup_migration(mg);
++			free_io_migration(mg);
+ 		}
+ 
+ 	} else {
+@@ -957,7 +972,7 @@ static void migration_success_post_commi
+ 			bio_endio(mg->new_ocell->holder, 0);
+ 			cell_defer(cache, mg->new_ocell, false);
+ 		}
+-		cleanup_migration(mg);
++		free_io_migration(mg);
+ 	}
+ }
+ 
+@@ -1169,7 +1184,7 @@ static void promote(struct cache *cache,
+ 	mg->new_ocell = cell;
+ 	mg->start_jiffies = jiffies;
+ 
+-	inc_nr_migrations(cache);
++	inc_io_migrations(cache);
+ 	quiesce_migration(mg);
+ }
+ 
+@@ -1192,7 +1207,7 @@ static void writeback(struct cache *cach
+ 	mg->new_ocell = NULL;
+ 	mg->start_jiffies = jiffies;
+ 
+-	inc_nr_migrations(cache);
++	inc_io_migrations(cache);
+ 	quiesce_migration(mg);
+ }
+ 
+@@ -1218,7 +1233,7 @@ static void demote_then_promote(struct c
+ 	mg->new_ocell = new_ocell;
+ 	mg->start_jiffies = jiffies;
+ 
+-	inc_nr_migrations(cache);
++	inc_io_migrations(cache);
+ 	quiesce_migration(mg);
+ }
+ 
+@@ -1245,7 +1260,7 @@ static void invalidate(struct cache *cac
+ 	mg->new_ocell = NULL;
+ 	mg->start_jiffies = jiffies;
+ 
+-	inc_nr_migrations(cache);
++	inc_io_migrations(cache);
+ 	quiesce_migration(mg);
+ }
+ 
+@@ -1306,7 +1321,7 @@ static void process_discard_bio(struct c
+ 
+ static bool spare_migration_bandwidth(struct cache *cache)
+ {
+-	sector_t current_volume = (atomic_read(&cache->nr_migrations) + 1) *
++	sector_t current_volume = (atomic_read(&cache->nr_io_migrations) + 1) *
+ 		cache->sectors_per_block;
+ 	return current_volume < cache->migration_threshold;
+ }
+@@ -1661,7 +1676,7 @@ static void stop_quiescing(struct cache
+ 
+ static void wait_for_migrations(struct cache *cache)
+ {
+-	wait_event(cache->migration_wait, !atomic_read(&cache->nr_migrations));
++	wait_event(cache->migration_wait, !atomic_read(&cache->nr_allocated_migrations));
+ }
+ 
+ static void stop_worker(struct cache *cache)
+@@ -1772,9 +1787,6 @@ static void destroy(struct cache *cache)
+ {
+ 	unsigned i;
+ 
+-	if (cache->next_migration)
+-		mempool_free(cache->next_migration, cache->migration_pool);
+-
+ 	if (cache->migration_pool)
+ 		mempool_destroy(cache->migration_pool);
+ 
+@@ -2282,7 +2294,8 @@ static int cache_create(struct cache_arg
+ 	INIT_LIST_HEAD(&cache->quiesced_migrations);
+ 	INIT_LIST_HEAD(&cache->completed_migrations);
+ 	INIT_LIST_HEAD(&cache->need_commit_migrations);
+-	atomic_set(&cache->nr_migrations, 0);
++	atomic_set(&cache->nr_allocated_migrations, 0);
++	atomic_set(&cache->nr_io_migrations, 0);
+ 	init_waitqueue_head(&cache->migration_wait);
+ 
+ 	init_waitqueue_head(&cache->quiescing_wait);
+@@ -2342,8 +2355,6 @@ static int cache_create(struct cache_arg
+ 		goto bad;
+ 	}
+ 
+-	cache->next_migration = NULL;
+-
+ 	cache->need_tick_bio = true;
+ 	cache->sized = false;
+ 	cache->invalidate = false;
 
 
