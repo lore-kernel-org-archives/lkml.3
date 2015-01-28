@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760116AbbA2KUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:20:40 -0500
+	id S1756786AbbA2JAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:00:53 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756803AbbA2JAz (ORCPT
+	by vger.kernel.org with ESMTP id S1752481AbbA2JAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:55 -0500
+	Thu, 29 Jan 2015 04:00:49 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
         Linus Walleij <linus.walleij@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 139/176] gpio: sysfs: fix gpio-chip device-attribute leak
-Date: Wed, 28 Jan 2015 15:29:29 +0100
-Message-Id: <475d5e6757dbc30fab3b0ed54aa5ae0a7afac194.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 140/176] gpio: sysfs: fix gpio device-attribute leak
+Date: Wed, 28 Jan 2015 15:29:30 +0100
+Message-Id: <e66a96f38a5a35c96eadcabbe20921ad32ed087a.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -29,67 +29,109 @@ From: Johan Hovold <johan@kernel.org>
 
 ===============
 
-commit 121b6a79955a3a3fd7bbb9b8cb88d5b9dad6283d upstream.
+commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
 
-The gpio-chip device attributes were never destroyed when the device was
-removed.
+The gpio device attributes were never destroyed when the gpio was
+unexported (or on export failures).
 
-Fix by using device_create_with_groups() to create the device attributes
-of the chip class device.
+Use device_create_with_groups() to create the default device attributes
+of the gpio class device. Note that this also fixes the
+attribute-creation race with userspace for these attributes.
 
-Note that this also fixes the attribute-creation race with userspace.
+Remove contingent attributes in export error path and on unexport.
 
 Fixes: d8f388d8dc8d ("gpio: sysfs interface")
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpio/gpiolib.c | 19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/gpio/gpiolib.c | 27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index aed1a6216b6b..b5d0fff2cd5a 100644
+index b5d0fff2cd5a..1cd034e428b5 100644
 --- a/drivers/gpio/gpiolib.c
 +++ b/drivers/gpio/gpiolib.c
-@@ -627,16 +627,13 @@ static ssize_t chip_ngpio_show(struct device *dev,
+@@ -362,7 +362,7 @@ static ssize_t gpio_value_store(struct device *dev,
+ 	return status;
  }
- static DEVICE_ATTR(ngpio, 0444, chip_ngpio_show, NULL);
  
--static const struct attribute *gpiochip_attrs[] = {
-+static struct attribute *gpiochip_attrs[] = {
- 	&dev_attr_base.attr,
- 	&dev_attr_label.attr,
- 	&dev_attr_ngpio.attr,
+-static const DEVICE_ATTR(value, 0644,
++static DEVICE_ATTR(value, 0644,
+ 		gpio_value_show, gpio_value_store);
+ 
+ static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
+@@ -580,18 +580,16 @@ static ssize_t gpio_active_low_store(struct device *dev,
+ 	return status ? : size;
+ }
+ 
+-static const DEVICE_ATTR(active_low, 0644,
++static DEVICE_ATTR(active_low, 0644,
+ 		gpio_active_low_show, gpio_active_low_store);
+ 
+-static const struct attribute *gpio_attrs[] = {
++static struct attribute *gpio_attrs[] = {
+ 	&dev_attr_value.attr,
+ 	&dev_attr_active_low.attr,
  	NULL,
  };
--
--static const struct attribute_group gpiochip_attr_group = {
--	.attrs = (struct attribute **) gpiochip_attrs,
+ 
+-static const struct attribute_group gpio_attr_group = {
+-	.attrs = (struct attribute **) gpio_attrs,
 -};
-+ATTRIBUTE_GROUPS(gpiochip);
++ATTRIBUTE_GROUPS(gpio);
  
  /*
-  * /sys/class/gpio/export ... write-only
-@@ -1001,13 +998,13 @@ static int gpiochip_export(struct gpio_chip *chip)
+  * /sys/class/gpio/gpiochipN/
+@@ -788,18 +786,15 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+ 	if (desc->chip->names && desc->chip->names[offset])
+ 		ioname = desc->chip->names[offset];
  
- 	/* use chip->base for the ID; it's already known to be unique */
- 	mutex_lock(&sysfs_lock);
--	dev = device_create(&gpio_class, chip->dev, MKDEV(0, 0), chip,
--				"gpiochip%d", chip->base);
--	if (!IS_ERR(dev)) {
--		status = sysfs_create_group(&dev->kobj,
--				&gpiochip_attr_group);
--	} else
-+	dev = device_create_with_groups(&gpio_class, chip->dev, MKDEV(0, 0),
-+					chip, gpiochip_groups,
-+					"gpiochip%d", chip->base);
-+	if (IS_ERR(dev))
+-	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
+-			    desc, ioname ? ioname : "gpio%u",
+-			    desc_to_gpio(desc));
++	dev = device_create_with_groups(&gpio_class, desc->chip->dev,
++					MKDEV(0, 0), desc, gpio_groups,
++					ioname ? ioname : "gpio%u",
++					desc_to_gpio(desc));
+ 	if (IS_ERR(dev)) {
  		status = PTR_ERR(dev);
-+	else
-+		status = 0;
- 	chip->exported = (status == 0);
- 	mutex_unlock(&sysfs_lock);
+ 		goto fail_unlock;
+ 	}
  
+-	status = sysfs_create_group(&dev->kobj, &gpio_attr_group);
+-	if (status)
+-		goto fail_unregister_device;
+-
+ 	if (direction_may_change) {
+ 		status = device_create_file(dev, &dev_attr_direction);
+ 		if (status)
+@@ -810,13 +805,15 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+ 				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
+ 		status = device_create_file(dev, &dev_attr_edge);
+ 		if (status)
+-			goto fail_unregister_device;
++			goto fail_remove_attr_direction;
+ 	}
+ 
+ 	set_bit(FLAG_EXPORT, &desc->flags);
+ 	mutex_unlock(&sysfs_lock);
+ 	return 0;
+ 
++fail_remove_attr_direction:
++	device_remove_file(dev, &dev_attr_direction);
+ fail_unregister_device:
+ 	device_unregister(dev);
+ fail_unlock:
+@@ -959,6 +956,8 @@ static void gpiod_unexport(struct gpio_desc *desc)
+ 
+ 		dev = class_find_device(&gpio_class, NULL, desc, match_export);
+ 		if (dev) {
++			device_remove_file(dev, &dev_attr_edge);
++			device_remove_file(dev, &dev_attr_direction);
+ 			gpio_setup_irq(desc, dev, 0);
+ 			clear_bit(FLAG_EXPORT, &desc->flags);
+ 		} else
 -- 
 2.2.2
 
