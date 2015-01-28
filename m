@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761140AbbA1UuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:50:20 -0500
+	id S1758677AbbA1VRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:17:18 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964984AbbA1UuN (ORCPT
+	with ESMTP id S1759021AbbA1Uuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:50:13 -0500
-Date: Wed, 28 Jan 2015 07:05:01 -0800
-From: tip-bot for Rickard Strandqvist <tipbot@zytor.com>
-Message-ID: <tip-c8defe249460b6fa3103797273f590372cc62efc@git.kernel.org>
-Cc: a.p.zijlstra@chello.nl, namhyung@kernel.org, acme@redhat.com,
-        mingo@redhat.com, artagnon@gmail.com, jolsa@redhat.com,
-        linux-kernel@vger.kernel.org, paulus@samba.org, tglx@linutronix.de,
-        rickard_strandqvist@spectrumdigital.se, mingo@kernel.org,
-        hpa@zytor.com
-Reply-To: mingo@kernel.org, hpa@zytor.com,
-        rickard_strandqvist@spectrumdigital.se, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, paulus@samba.org, jolsa@redhat.com,
-        artagnon@gmail.com, acme@redhat.com, mingo@redhat.com,
-        namhyung@kernel.org, a.p.zijlstra@chello.nl
-In-Reply-To: <1419079865-354-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419079865-354-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Wed, 28 Jan 2015 15:50:32 -0500
+Date: Wed, 28 Jan 2015 07:05:19 -0800
+From: tip-bot for Cody P Schafer <tipbot@zytor.com>
+Message-ID: <tip-688d4dfcdd624192cbf03c08402e444d1d11f294@git.kernel.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, mpe@ellerman.id.au,
+        peterz@infradead.org, hbabu@us.ibm.com, cody@linux.vnet.ibm.com,
+        hpa@zytor.com, dev@codyps.com, jolsa@kernel.org, jolsa@redhat.com,
+        acme@redhat.com, sukadev@linux.vnet.ibm.com, tglx@linutronix.de,
+        paulus@samba.org
+Reply-To: jolsa@kernel.org, dev@codyps.com, hpa@zytor.com, paulus@samba.org,
+        tglx@linutronix.de, sukadev@linux.vnet.ibm.com, acme@redhat.com,
+        jolsa@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        mpe@ellerman.id.au, mingo@kernel.org, cody@linux.vnet.ibm.com,
+        hbabu@us.ibm.com
+In-Reply-To: <1420679633-28856-2-git-send-email-sukadev@linux.vnet.ibm.com>
+References: <1420679633-28856-2-git-send-email-sukadev@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Remove some unused functions from color.c
-Git-Commit-ID: c8defe249460b6fa3103797273f590372cc62efc
+Subject: [tip:perf/core] perf tools: Support parsing parameterized events
+Git-Commit-ID: 688d4dfcdd624192cbf03c08402e444d1d11f294
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,184 +37,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c8defe249460b6fa3103797273f590372cc62efc
-Gitweb:     http://git.kernel.org/tip/c8defe249460b6fa3103797273f590372cc62efc
-Author:     Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-AuthorDate: Sat, 20 Dec 2014 13:51:05 +0100
+Commit-ID:  688d4dfcdd624192cbf03c08402e444d1d11f294
+Gitweb:     http://git.kernel.org/tip/688d4dfcdd624192cbf03c08402e444d1d11f294
+Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
+AuthorDate: Wed, 7 Jan 2015 17:13:50 -0800
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 21 Jan 2015 13:24:32 -0300
 
-perf tools: Remove some unused functions from color.c
+perf tools: Support parsing parameterized events
 
-Removes some functions that are not used anywhere:
+Enable event specification like:
 
- color_parse_mem()
- color_parse()
+	pmu/event_name,param1=0x1,param2=0x4/
 
-This was partially found by using a static code analysis program called cppcheck.
+Assuming that
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Ingo Molnar <mingo@redhat.com>
+	/sys/bus/event_source/devices/pmu/events/event_name
+
+Contains something like
+
+	param2=?,bar=1,param1=?
+
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Cody P Schafer <dev@codyps.com>
+Cc: Haren Myneni <hbabu@us.ibm.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-Link: http://lkml.kernel.org/r/1419079865-354-1-git-send-email-rickard_strandqvist@spectrumdigital.se
-[ Remove now unused parse_{attr,color} routines too ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+Link: http://lkml.kernel.org/r/1420679633-28856-2-git-send-email-sukadev@linux.vnet.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/color.c | 126 ------------------------------------------------
- tools/perf/util/color.h |   2 -
- 2 files changed, 128 deletions(-)
+ tools/perf/util/parse-events.h |  1 +
+ tools/perf/util/pmu.c          | 74 +++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 64 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
-index f465418..55355b3 100644
---- a/tools/perf/util/color.c
-+++ b/tools/perf/util/color.c
-@@ -5,132 +5,6 @@
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index db2cf78..ca226ce 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -71,6 +71,7 @@ struct parse_events_term {
+ 	int type_val;
+ 	int type_term;
+ 	struct list_head list;
++	bool used;
+ };
  
- int perf_use_color_default = -1;
+ struct parse_events_evlist {
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 5c9c494..bfbecf7 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -551,31 +551,68 @@ static void pmu_format_value(unsigned long *format, __u64 value, __u64 *v,
+ }
  
--static int parse_color(const char *name, int len)
--{
--	static const char * const color_names[] = {
--		"normal", "black", "red", "green", "yellow",
--		"blue", "magenta", "cyan", "white"
--	};
--	char *end;
--	int i;
--
--	for (i = 0; i < (int)ARRAY_SIZE(color_names); i++) {
--		const char *str = color_names[i];
--		if (!strncasecmp(name, str, len) && !str[len])
--			return i - 1;
--	}
--	i = strtol(name, &end, 10);
--	if (end - name == len && i >= -1 && i <= 255)
--		return i;
--	return -2;
--}
--
--static int parse_attr(const char *name, int len)
--{
--	static const int attr_values[] = { 1, 2, 4, 5, 7 };
--	static const char * const attr_names[] = {
--		"bold", "dim", "ul", "blink", "reverse"
--	};
--	unsigned int i;
--
--	for (i = 0; i < ARRAY_SIZE(attr_names); i++) {
--		const char *str = attr_names[i];
--		if (!strncasecmp(name, str, len) && !str[len])
--			return attr_values[i];
--	}
--	return -1;
--}
--
--void color_parse(const char *value, const char *var, char *dst)
--{
--	color_parse_mem(value, strlen(value), var, dst);
--}
--
--void color_parse_mem(const char *value, int value_len, const char *var,
--		char *dst)
--{
--	const char *ptr = value;
--	int len = value_len;
--	int attr = -1;
--	int fg = -2;
--	int bg = -2;
--
--	if (!strncasecmp(value, "reset", len)) {
--		strcpy(dst, PERF_COLOR_RESET);
--		return;
--	}
--
--	/* [fg [bg]] [attr] */
--	while (len > 0) {
--		const char *word = ptr;
--		int val, wordlen = 0;
--
--		while (len > 0 && !isspace(word[wordlen])) {
--			wordlen++;
--			len--;
--		}
--
--		ptr = word + wordlen;
--		while (len > 0 && isspace(*ptr)) {
--			ptr++;
--			len--;
--		}
--
--		val = parse_color(word, wordlen);
--		if (val >= -1) {
--			if (fg == -2) {
--				fg = val;
--				continue;
--			}
--			if (bg == -2) {
--				bg = val;
--				continue;
--			}
--			goto bad;
--		}
--		val = parse_attr(word, wordlen);
--		if (val < 0 || attr != -1)
--			goto bad;
--		attr = val;
--	}
--
--	if (attr >= 0 || fg >= 0 || bg >= 0) {
--		int sep = 0;
--
--		*dst++ = '\033';
--		*dst++ = '[';
--		if (attr >= 0) {
--			*dst++ = '0' + attr;
--			sep++;
--		}
--		if (fg >= 0) {
--			if (sep++)
--				*dst++ = ';';
--			if (fg < 8) {
--				*dst++ = '3';
--				*dst++ = '0' + fg;
--			} else {
--				dst += sprintf(dst, "38;5;%d", fg);
--			}
--		}
--		if (bg >= 0) {
--			if (sep++)
--				*dst++ = ';';
--			if (bg < 8) {
--				*dst++ = '4';
--				*dst++ = '0' + bg;
--			} else {
--				dst += sprintf(dst, "48;5;%d", bg);
--			}
--		}
--		*dst++ = 'm';
--	}
--	*dst = 0;
--	return;
--bad:
--	die("bad color value '%.*s' for variable '%s'", value_len, value, var);
--}
--
- int perf_config_colorbool(const char *var, const char *value, int stdout_is_tty)
+ /*
++ * Term is a string term, and might be a param-term. Try to look up it's value
++ * in the remaining terms.
++ * - We have a term like "base-or-format-term=param-term",
++ * - We need to find the value supplied for "param-term" (with param-term named
++ *   in a config string) later on in the term list.
++ */
++static int pmu_resolve_param_term(struct parse_events_term *term,
++				  struct list_head *head_terms,
++				  __u64 *value)
++{
++	struct parse_events_term *t;
++
++	list_for_each_entry(t, head_terms, list) {
++		if (t->type_val == PARSE_EVENTS__TERM_TYPE_NUM) {
++			if (!strcmp(t->config, term->config)) {
++				t->used = true;
++				*value = t->val.num;
++				return 0;
++			}
++		}
++	}
++
++	if (verbose)
++		printf("Required parameter '%s' not specified\n", term->config);
++
++	return -1;
++}
++
++/*
+  * Setup one of config[12] attr members based on the
+  * user input data - term parameter.
+  */
+ static int pmu_config_term(struct list_head *formats,
+ 			   struct perf_event_attr *attr,
+ 			   struct parse_events_term *term,
++			   struct list_head *head_terms,
+ 			   bool zero)
  {
- 	if (value) {
-diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
-index 0a594b8..38146f9 100644
---- a/tools/perf/util/color.h
-+++ b/tools/perf/util/color.h
-@@ -30,8 +30,6 @@ extern int perf_use_color_default;
- int perf_color_default_config(const char *var, const char *value, void *cb);
+ 	struct perf_pmu_format *format;
+ 	__u64 *vp;
++	__u64 val;
++
++	/*
++	 * If this is a parameter we've already used for parameterized-eval,
++	 * skip it in normal eval.
++	 */
++	if (term->used)
++		return 0;
  
- int perf_config_colorbool(const char *var, const char *value, int stdout_is_tty);
--void color_parse(const char *value, const char *var, char *dst);
--void color_parse_mem(const char *value, int len, const char *var, char *dst);
- int color_vsnprintf(char *bf, size_t size, const char *color,
- 		    const char *fmt, va_list args);
- int color_vfprintf(FILE *fp, const char *color, const char *fmt, va_list args);
+ 	/*
+-	 * Support only for hardcoded and numnerial terms.
+ 	 * Hardcoded terms should be already in, so nothing
+ 	 * to be done for them.
+ 	 */
+ 	if (parse_events__is_hardcoded_term(term))
+ 		return 0;
+ 
+-	if (term->type_val != PARSE_EVENTS__TERM_TYPE_NUM)
+-		return -EINVAL;
+-
+ 	format = pmu_find_format(formats, term->config);
+-	if (!format)
++	if (!format) {
++		if (verbose)
++			printf("Invalid event/parameter '%s'\n", term->config);
+ 		return -EINVAL;
++	}
+ 
+ 	switch (format->value) {
+ 	case PERF_PMU_FORMAT_VALUE_CONFIG:
+@@ -592,11 +629,25 @@ static int pmu_config_term(struct list_head *formats,
+ 	}
+ 
+ 	/*
+-	 * XXX If we ever decide to go with string values for
+-	 * non-hardcoded terms, here's the place to translate
+-	 * them into value.
++	 * Either directly use a numeric term, or try to translate string terms
++	 * using event parameters.
+ 	 */
+-	pmu_format_value(format->bits, term->val.num, vp, zero);
++	if (term->type_val == PARSE_EVENTS__TERM_TYPE_NUM)
++		val = term->val.num;
++	else if (term->type_val == PARSE_EVENTS__TERM_TYPE_STR) {
++		if (strcmp(term->val.str, "?")) {
++			if (verbose)
++				pr_info("Invalid sysfs entry %s=%s\n",
++						term->config, term->val.str);
++			return -EINVAL;
++		}
++
++		if (pmu_resolve_param_term(term, head_terms, &val))
++			return -EINVAL;
++	} else
++		return -EINVAL;
++
++	pmu_format_value(format->bits, val, vp, zero);
+ 	return 0;
+ }
+ 
+@@ -607,9 +658,10 @@ int perf_pmu__config_terms(struct list_head *formats,
+ {
+ 	struct parse_events_term *term;
+ 
+-	list_for_each_entry(term, head_terms, list)
+-		if (pmu_config_term(formats, attr, term, zero))
++	list_for_each_entry(term, head_terms, list) {
++		if (pmu_config_term(formats, attr, term, head_terms, zero))
+ 			return -EINVAL;
++	}
+ 
+ 	return 0;
+ }
