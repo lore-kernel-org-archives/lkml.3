@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934378AbbA1EhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:37:20 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40918 "EHLO mail.kernel.org"
+	id S965391AbbA1Egp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:36:45 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40935 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934488AbbA1EZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:25:03 -0500
+	id S933897AbbA1EZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:25:06 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Imre Deak <imre.deak@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Yijing Wang <wangyijing@huawei.com>,
+        Weng Meiling <wengmeiling.weng@huawei.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 142/177] tty/vt: don't set font mappings on vc not supporting this
-Date: Wed, 28 Jan 2015 12:10:00 +0800
-Message-Id: <1422418236-12852-233-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 143/177] sysfs: driver core: Fix glue dir race condition by gdp_mutex
+Date: Wed, 28 Jan 2015 12:10:01 +0800
+Message-Id: <1422418236-12852-234-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,43 +22,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Imre Deak <imre.deak@intel.com>
+From: Yijing Wang <wangyijing@huawei.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 9e326f78713a4421fe11afc2ddeac07698fac131 upstream.
+commit e4a60d139060975eb956717e4f63ae348d4d8cc5 upstream.
 
-We can call this function for a dummy console that doesn't support
-setting the font mapping, which will result in a null ptr BUG. So check
-for this case and return error for consoles w/o font mapping support.
+There is a race condition when removing glue directory.
+It can be reproduced in following test:
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=59321
-Signed-off-by: Imre Deak <imre.deak@intel.com>
+path 1: Add first child device
+device_add()
+    get_device_parent()
+            /*find parent from glue_dirs.list*/
+            list_for_each_entry(k, &dev->class->p->glue_dirs.list, entry)
+                    if (k->parent == parent_kobj) {
+                            kobj = kobject_get(k);
+                            break;
+                    }
+            ....
+            class_dir_create_and_add()
+
+path2: Remove last child device under glue dir
+device_del()
+    cleanup_device_parent()
+            cleanup_glue_dir()
+                    kobject_put(glue_dir);
+
+If path2 has been called cleanup_glue_dir(), but not
+call kobject_put(glue_dir), the glue dir is still
+in parent's kset list. Meanwhile, path1 find the glue
+dir from the glue_dirs.list. Path2 may release glue dir
+before path1 call kobject_get(). So kernel will report
+the warning and bug_on.
+
+This is a "classic" problem we have of a kref in a list
+that can be found while the last instance could be removed
+at the same time.
+
+This patch reuse gdp_mutex to fix this race condition.
+
+The following calltrace is captured in kernel 3.4, but
+the latest kernel still has this bug.
+
+-----------------------------------------------------
+<4>[ 3965.441471] WARNING: at ...include/linux/kref.h:41 kobject_get+0x33/0x40()
+<4>[ 3965.441474] Hardware name: Romley
+<4>[ 3965.441475] Modules linked in: isd_iop(O) isd_xda(O)...
+...
+<4>[ 3965.441605] Call Trace:
+<4>[ 3965.441611]  [<ffffffff8103717a>] warn_slowpath_common+0x7a/0xb0
+<4>[ 3965.441615]  [<ffffffff810371c5>] warn_slowpath_null+0x15/0x20
+<4>[ 3965.441618]  [<ffffffff81215963>] kobject_get+0x33/0x40
+<4>[ 3965.441624]  [<ffffffff812d1e45>] get_device_parent.isra.11+0x135/0x1f0
+<4>[ 3965.441627]  [<ffffffff812d22d4>] device_add+0xd4/0x6d0
+<4>[ 3965.441631]  [<ffffffff812d0dbc>] ? dev_set_name+0x3c/0x40
+....
+<2>[ 3965.441912] kernel BUG at ..../fs/sysfs/group.c:65!
+<4>[ 3965.441915] invalid opcode: 0000 [#1] SMP
+...
+<4>[ 3965.686743]  [<ffffffff811a677e>] sysfs_create_group+0xe/0x10
+<4>[ 3965.686748]  [<ffffffff810cfb04>] blk_trace_init_sysfs+0x14/0x20
+<4>[ 3965.686753]  [<ffffffff811fcabb>] blk_register_queue+0x3b/0x120
+<4>[ 3965.686756]  [<ffffffff812030bc>] add_disk+0x1cc/0x490
+....
+-------------------------------------------------------
+
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[lizf: Backported to 3.4: just return -EINVAL as we don't need to unlock]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/tty/vt/consolemap.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/base/core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
-index 8308fc7..87025d0 100644
---- a/drivers/tty/vt/consolemap.c
-+++ b/drivers/tty/vt/consolemap.c
-@@ -518,6 +518,10 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index e28ce98..32e86d6 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -718,12 +718,12 @@ class_dir_create_and_add(struct class *class, struct kobject *parent_kobj)
+ 	return &dir->kobj;
+ }
  
- 	/* Save original vc_unipagdir_loc in case we allocate a new one */
- 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
-+
-+	if (!p)
-+		return -EINVAL;
-+
- 	if (p->readonly) return -EIO;
- 	
- 	if (!ct) return 0;
++static DEFINE_MUTEX(gdp_mutex);
+ 
+ static struct kobject *get_device_parent(struct device *dev,
+ 					 struct device *parent)
+ {
+ 	if (dev->class) {
+-		static DEFINE_MUTEX(gdp_mutex);
+ 		struct kobject *kobj = NULL;
+ 		struct kobject *parent_kobj;
+ 		struct kobject *k;
+@@ -787,7 +787,9 @@ static void cleanup_glue_dir(struct device *dev, struct kobject *glue_dir)
+ 	    glue_dir->kset != &dev->class->p->glue_dirs)
+ 		return;
+ 
++	mutex_lock(&gdp_mutex);
+ 	kobject_put(glue_dir);
++	mutex_unlock(&gdp_mutex);
+ }
+ 
+ static void cleanup_device_parent(struct device *dev)
 -- 
 1.9.1
 
