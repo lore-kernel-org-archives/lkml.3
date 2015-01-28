@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762814AbbA1FYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:24:40 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37281 "EHLO mail.kernel.org"
+	id S1753240AbbA1EPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:15:19 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37324 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933425AbbA1EPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:15:13 -0500
+	id S933456AbbA1EPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:15:16 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Murali Karicheri <m-karicheri2@ti.com>,
-        Tejun Heo <tj@kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 22/91] ahci: add pcid for Marvel 0x9182 controller
-Date: Wed, 28 Jan 2015 12:06:50 +0800
-Message-Id: <1422418236-12852-43-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 022/177] spi: dw-mid: terminate ongoing transfers at exit
+Date: Wed, 28 Jan 2015 12:06:51 +0800
+Message-Id: <1422418236-12852-44-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -22,42 +21,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Murali Karicheri <m-karicheri2@ti.com>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit c5edfff9db6f4d2c35c802acb4abe0df178becee upstream.
+commit 8e45ef682cb31fda62ed4eeede5d9745a0a1b1e2 upstream.
 
-Keystone K2E EVM uses Marvel 0x9182 controller. This requires support
-for the ID in the ahci driver.
+Do full clean up at exit, means terminate all ongoing DMA transfers.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-[lizf: Backported to 3.4:
- - adjust context
- - s/PCI_VENDOR_ID_MARVELL_EXT/0x1b4b/]
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/ata/ahci.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/spi/spi-dw-mid.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 009a097..d366a75 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -443,6 +443,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
- 	{ PCI_DEVICE(0x1b4b, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
-+	{ PCI_DEVICE(0x1b4b, 0x9182),
-+	  .driver_data = board_ahci_yes_fbs },                  /* 88se9182 */
- 	{ PCI_DEVICE(0x1b4b, 0x9192),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
- 	{ PCI_DEVICE(0x1b4b, 0x91a3),
+diff --git a/drivers/spi/spi-dw-mid.c b/drivers/spi/spi-dw-mid.c
+index 58fa14d..efc494a 100644
+--- a/drivers/spi/spi-dw-mid.c
++++ b/drivers/spi/spi-dw-mid.c
+@@ -89,7 +89,10 @@ err_exit:
+ 
+ static void mid_spi_dma_exit(struct dw_spi *dws)
+ {
++	dmaengine_terminate_all(dws->txchan);
+ 	dma_release_channel(dws->txchan);
++
++	dmaengine_terminate_all(dws->rxchan);
+ 	dma_release_channel(dws->rxchan);
+ }
+ 
 -- 
 1.9.1
 
