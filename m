@@ -1,212 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761835AbbA2C1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:27:46 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45670 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398AbbA2BsE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:48:04 -0500
-From: Javi Merino <javi.merino@arm.com>
-To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Cc: Javi Merino <javi.merino@arm.com>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH v5 3/3] tools lib traceevent: Add support for __print_array()
-Date: Wed, 28 Jan 2015 12:48:55 +0000
-Message-Id: <1422449335-8289-4-git-send-email-javi.merino@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1422449335-8289-1-git-send-email-javi.merino@arm.com>
-References: <1422449335-8289-1-git-send-email-javi.merino@arm.com>
+	id S1757921AbbA1WBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 17:01:05 -0500
+Received: from mail-bn1bbn0104.outbound.protection.outlook.com ([157.56.111.104]:42439
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757190AbbA1UYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:24:36 -0500
+From: Dexuan Cui <decui@microsoft.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+CC: KY Srinivasan <kys@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Wang <jasowang@redhat.com>,
+        =?utf-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: RE: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+ offer
+Thread-Topic: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+ offer
+Thread-Index: AQHQOvMvpKTJmOaTDEmNPuquIq7yQJzVecfA
+Date: Wed, 28 Jan 2015 12:51:42 +0000
+Message-ID: <F792CF86EFE20D4AB8064279AFBA51C61EA9510B@SIXPRD3002MB028.064d.mgd.msft.net>
+References: <1421768706-5363-1-git-send-email-vkuznets@redhat.com>
+	<1421768706-5363-4-git-send-email-vkuznets@redhat.com>
+	<F792CF86EFE20D4AB8064279AFBA51C61EA94FB7@SIXPRD3002MB028.064d.mgd.msft.net>
+ <8761br9kfd.fsf@vitty.brq.redhat.com>
+In-Reply-To: <8761br9kfd.fsf@vitty.brq.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [141.251.55.69]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 206.191.229.84)
+ smtp.mailfrom=decui@microsoft.com; oracle.com; dkim=none (message not signed)
+ header.d=none;oracle.com; dmarc=pass action=none header.from=microsoft.com;
+X-Forefront-Antispam-Report: CIP:206.191.229.84;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(164054003)(377454003)(51704005)(47776003)(106466001)(106116001)(62966003)(77156002)(110136001)(46102003)(33656002)(66066001)(55846006)(86362001)(22746005)(87936001)(86612001)(23676002)(19580405001)(19580395003)(6806004)(92566002)(22756005)(2900100001)(102836002)(2656002)(2920100001)(104016003)(2950100001)(50466002)(93886004)(54356999)(86146001)(50986999)(76176999)(79686002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0848;H:064-smtp-out.microsoft.com;FPR:;SPF:None;MLV:sfv;LANG:en;
+X-DmarcAction-Test: None
+X-DmarcStatus-Test: Passed
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004)(3003004);SRVR:DM2PR0301MB0848;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0848;
+X-Forefront-PRVS: 047001DADA
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0848;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 28 Jan 2015 12:51:51.0873
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=72f988bf-86f1-41af-91ab-2d7cd011db47;Ip=[206.191.229.84]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0848
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SM1COB007680
 
-Trace can now generate traces with variable element size arrays.  Add
-support to parse them.
+> -----Original Message-----
+> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> Sent: Wednesday, January 28, 2015 20:09 PM
+> To: Dexuan Cui
+> Cc: KY Srinivasan; devel@linuxdriverproject.org; Haiyang Zhang; linux-
+> kernel@vger.kernel.org; Jason Wang; Radim Krƒçm√°≈ô; Dan Carpenter
+> Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+> offer
+> 
+> Dexuan Cui <decui@microsoft.com> writes:
+> 
+> >> -----Original Message-----
+> >> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> >> Sent: Tuesday, January 20, 2015 23:45 PM
+> >> To: KY Srinivasan; devel@linuxdriverproject.org
+> >> Cc: Haiyang Zhang; linux-kernel@vger.kernel.org; Dexuan Cui; Jason Wang;
+> >> Radim Krƒçm√°≈ô; Dan Carpenter
+> >> Subject: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+> offer
+> ...
+> >
+> > Hi Vitaly and all,
+> > I have 2 questions:
+> > In vmbus_process_offer(),  in the cases of "goto err_free_chan",
+> > should we consider the possibility a rescind message could be pending for
+> > the new channel?
+> > In the cases,  because we don't run
+> > "INIT_WORK(&newchannel->work, vmbus_process_rescind_offer); ",
+> > vmbus_onoffer_rescind() will do nothing and as a result,
+> > vmbus_process_rescind_offer() won't be invoked.
+> 
+> Yes, but processing the rescind offer results in freeing the channel
+> (and this processing supposes the channel wasn't freed before) so
+> there is no difference... or is it?
+> 
+> >
+> > Question 2: in vmbus_process_offer(), in the case
+> > vmbus_device_register() fails, we'll run
+> > "list_del(&newchannel->listentry);" -- just after this line,
+> >  what will happen at this time if relid2channel() returns NULL
+> > in vmbus_onoffer_rescind()?
+> >
+> > I think we'll lose the rescind message.
+> >
+> 
+> Yes, but same logic applies - we already freed the channes so no rescind
+> proccessing required.
+free_channel() and vmbus_process_rescind_offer() are different, because
+ the latter does more work, e.g., sending the host a message 
+CHANNELMSG_RELID_RELEASED.
 
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
----
- tools/lib/traceevent/event-parse.c | 93 ++++++++++++++++++++++++++++++++++++++
- tools/lib/traceevent/event-parse.h |  8 ++++
- 2 files changed, 101 insertions(+)
+In the cases of "goto err_free_chan" + "a pending rescind message",
+the host may expect the message CHANNELMSG_RELID_RELEASED and
+could reoffer the channel once the message is received.
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index dabd8f5c6398..ab5a4998d54b 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -757,6 +757,11 @@ static void free_arg(struct print_arg *arg)
- 		free_arg(arg->hex.field);
- 		free_arg(arg->hex.size);
- 		break;
-+	case PRINT_INT_ARRAY:
-+		free_arg(arg->int_array.field);
-+		free_arg(arg->int_array.size);
-+		free_arg(arg->int_array.el_size);
-+		break;
- 	case PRINT_TYPE:
- 		free(arg->typecast.type);
- 		free_arg(arg->typecast.item);
-@@ -2536,6 +2541,32 @@ out:
- }
- 
- static enum event_type
-+process_int_array(struct event_format *event, struct print_arg *arg, char **tok)
-+{
-+	memset(arg, 0, sizeof(*arg));
-+	arg->type = PRINT_INT_ARRAY;
-+
-+	if (alloc_and_process_arg(event, ",", &arg->int_array.field))
-+		goto out;
-+
-+	if (alloc_and_process_arg(event, ",", &arg->int_array.size))
-+		goto free_field;
-+
-+	if (alloc_and_process_arg(event, ")", &arg->int_array.el_size))
-+		goto free_size;
-+
-+	return read_token_item(tok);
-+
-+free_size:
-+	free_arg(arg->int_array.size);
-+free_field:
-+	free_arg(arg->int_array.field);
-+out:
-+	*tok = NULL;
-+	return EVENT_ERROR;
-+}
-+
-+static enum event_type
- process_dynamic_array(struct event_format *event, struct print_arg *arg, char **tok)
- {
- 	struct format_field *field;
-@@ -2830,6 +2861,10 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		free_token(token);
- 		return process_hex(event, arg, tok);
- 	}
-+	if (strcmp(token, "__print_array") == 0) {
-+		free_token(token);
-+		return process_int_array(event, arg, tok);
-+	}
- 	if (strcmp(token, "__get_str") == 0) {
- 		free_token(token);
- 		return process_str(event, arg, tok);
-@@ -3358,6 +3393,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 		break;
- 	case PRINT_FLAGS:
- 	case PRINT_SYMBOL:
-+	case PRINT_INT_ARRAY:
- 	case PRINT_HEX:
- 		break;
- 	case PRINT_TYPE:
-@@ -3768,6 +3804,54 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 		}
- 		break;
- 
-+	case PRINT_INT_ARRAY: {
-+		void *num;
-+		int el_size;
-+
-+		if (arg->int_array.field->type == PRINT_DYNAMIC_ARRAY) {
-+			unsigned long offset;
-+			struct format_field *field =
-+				arg->int_array.field->dynarray.field;
-+			offset = pevent_read_number(pevent,
-+						    data + field->offset,
-+						    field->size);
-+			num = data + (offset & 0xffff);
-+		} else {
-+			field = arg->int_array.field->field.field;
-+			if (!field) {
-+				str = arg->int_array.field->field.name;
-+				field = pevent_find_any_field(event, str);
-+				if (!field)
-+					goto out_warning_field;
-+				arg->int_array.field->field.field = field;
-+			}
-+			num = data + field->offset;
-+		}
-+		len = eval_num_arg(data, size, event, arg->int_array.size);
-+		el_size = eval_num_arg(data, size, event,
-+				       arg->int_array.el_size);
-+		for (i = 0; i < len; i++) {
-+			if (i)
-+				trace_seq_putc(s, ' ');
-+
-+			if (el_size == 1) {
-+				trace_seq_printf(s, "%u", *(uint8_t *)num);
-+			} else if (el_size == 2) {
-+				trace_seq_printf(s, "%u", *(uint16_t *)num);
-+			} else if (el_size == 4) {
-+				trace_seq_printf(s, "%u", *(uint32_t *)num);
-+			} else if (el_size == 8) {
-+				trace_seq_printf(s, "%llu", *(uint64_t *)num);
-+			} else {
-+				trace_seq_printf(s, "BAD SIZE:%d 0x%x",
-+						 el_size, *(uint8_t *)num);
-+				el_size = 1;
-+			}
-+
-+			num += el_size;
-+		}
-+		break;
-+	}
- 	case PRINT_TYPE:
- 		break;
- 	case PRINT_STRING: {
-@@ -4931,6 +5015,15 @@ static void print_args(struct print_arg *args)
- 		print_args(args->hex.size);
- 		printf(")");
- 		break;
-+	case PRINT_INT_ARRAY:
-+		printf("__print_array(");
-+		print_args(args->int_array.field);
-+		printf(", ");
-+		print_args(args->int_array.size);
-+		printf(", ");
-+		print_args(args->int_array.el_size);
-+		printf(")");
-+		break;
- 	case PRINT_STRING:
- 	case PRINT_BSTRING:
- 		printf("__get_str(%s)", args->string.string);
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 7a3873ff9a4f..5ac3e3c00389 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -245,6 +245,12 @@ struct print_arg_hex {
- 	struct print_arg	*size;
- };
- 
-+struct print_arg_int_array {
-+	struct print_arg	*field;
-+	struct print_arg	*size;
-+	struct print_arg	*el_size;
-+};
-+
- struct print_arg_dynarray {
- 	struct format_field	*field;
- 	struct print_arg	*index;
-@@ -273,6 +279,7 @@ enum print_arg_type {
- 	PRINT_FLAGS,
- 	PRINT_SYMBOL,
- 	PRINT_HEX,
-+	PRINT_INT_ARRAY,
- 	PRINT_TYPE,
- 	PRINT_STRING,
- 	PRINT_BSTRING,
-@@ -292,6 +299,7 @@ struct print_arg {
- 		struct print_arg_flags		flags;
- 		struct print_arg_symbol		symbol;
- 		struct print_arg_hex		hex;
-+		struct print_arg_int_array	int_array;
- 		struct print_arg_func		func;
- 		struct print_arg_string		string;
- 		struct print_arg_bitmask	bitmask;
--- 
-1.9.1
+It would be better if the VM doesn't lose the rescind message here. :-)
 
+>  If we still need to do something we need to
+> add support for already freed channel to the rescind offer processing path.
+> 
+
+Thanks,
+-- Dexuan
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
