@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934293AbbA1EWc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:22:32 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39992 "EHLO mail.kernel.org"
+	id S934694AbbA1Euy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:50:54 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40001 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933217AbbA1EW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:22:26 -0500
+	id S934282AbbA1EW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:22:28 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Guillaume Nault <g.nault@alphalink.fr>,
-        "David S. Miller" <davem@davemloft.net>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 91/91] l2tp: fix race while getting PMTU on PPP pseudo-wire
-Date: Wed, 28 Jan 2015 12:09:08 +0800
-Message-Id: <1422418236-12852-181-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 091/177] usb: dwc3: gadget: fix set_halt() bug with pending transfers
+Date: Wed, 28 Jan 2015 12:09:09 +0800
+Message-Id: <1422418236-12852-182-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,85 +20,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guillaume Nault <g.nault@alphalink.fr>
+From: Felipe Balbi <balbi@ti.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit eed4d839b0cdf9d84b0a9bc63de90fd5e1e886fb upstream.
+commit 7a60855972f0d3c014093046cb6f013a1ee5bb19 upstream.
 
-Use dst_entry held by sk_dst_get() to retrieve tunnel's PMTU.
+According to our Gadget Framework API documentation,
+->set_halt() *must* return -EAGAIN if we have pending
+transfers (on either direction) or FIFO isn't empty (on
+TX endpoints).
 
-The dst_mtu(__sk_dst_get(tunnel->sock)) call was racy. __sk_dst_get()
-could return NULL if tunnel->sock->sk_dst_cache was reset just before the
-call, thus making dst_mtu() dereference a NULL pointer:
+Fix this bug so that the mass storage gadget can be used
+without stall=0 parameter.
 
-[ 1937.661598] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-[ 1937.664005] IP: [<ffffffffa049db88>] pppol2tp_connect+0x33d/0x41e [l2tp_ppp]
-[ 1937.664005] PGD daf0c067 PUD d9f93067 PMD 0
-[ 1937.664005] Oops: 0000 [#1] SMP
-[ 1937.664005] Modules linked in: l2tp_ppp l2tp_netlink l2tp_core ip6table_filter ip6_tables iptable_filter ip_tables ebtable_nat ebtables x_tables udp_tunnel pppoe pppox ppp_generic slhc deflate ctr twofish_generic twofish_x86_64_3way xts lrw gf128mul glue_helper twofish_x86_64 twofish_common blowfish_generic blowfish_x86_64 blowfish_common des_generic cbc xcbc rmd160 sha512_generic hmac crypto_null af_key xfrm_algo 8021q garp bridge stp llc tun atmtcp clip atm ext3 mbcache jbd iTCO_wdt coretemp kvm_intel iTCO_vendor_support kvm pcspkr evdev ehci_pci lpc_ich mfd_core i5400_edac edac_core i5k_amb shpchp button processor thermal_sys xfs crc32c_generic libcrc32c dm_mod usbhid sg hid sr_mod sd_mod cdrom crc_t10dif crct10dif_common ata_generic ahci ata_piix tg3 libahci libata uhci_hcd ptp ehci_hcd pps_core usbcore scsi_mod libphy usb_common [last unloaded: l2tp_core]
-[ 1937.664005] CPU: 0 PID: 10022 Comm: l2tpstress Tainted: G           O   3.17.0-rc1 #1
-[ 1937.664005] Hardware name: HP ProLiant DL160 G5, BIOS O12 08/22/2008
-[ 1937.664005] task: ffff8800d8fda790 ti: ffff8800c43c4000 task.ti: ffff8800c43c4000
-[ 1937.664005] RIP: 0010:[<ffffffffa049db88>]  [<ffffffffa049db88>] pppol2tp_connect+0x33d/0x41e [l2tp_ppp]
-[ 1937.664005] RSP: 0018:ffff8800c43c7de8  EFLAGS: 00010282
-[ 1937.664005] RAX: ffff8800da8a7240 RBX: ffff8800d8c64600 RCX: 000001c325a137b5
-[ 1937.664005] RDX: 8c6318c6318c6320 RSI: 000000000000010c RDI: 0000000000000000
-[ 1937.664005] RBP: ffff8800c43c7ea8 R08: 0000000000000000 R09: 0000000000000000
-[ 1937.664005] R10: ffffffffa048e2c0 R11: ffff8800d8c64600 R12: ffff8800ca7a5000
-[ 1937.664005] R13: ffff8800c439bf40 R14: 000000000000000c R15: 0000000000000009
-[ 1937.664005] FS:  00007fd7f610f700(0000) GS:ffff88011a600000(0000) knlGS:0000000000000000
-[ 1937.664005] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1937.664005] CR2: 0000000000000020 CR3: 00000000d9d75000 CR4: 00000000000027e0
-[ 1937.664005] Stack:
-[ 1937.664005]  ffffffffa049da80 ffff8800d8fda790 000000000000005b ffff880000000009
-[ 1937.664005]  ffff8800daf3f200 0000000000000003 ffff8800c43c7e48 ffffffff81109b57
-[ 1937.664005]  ffffffff81109b0e ffffffff8114c566 0000000000000000 0000000000000000
-[ 1937.664005] Call Trace:
-[ 1937.664005]  [<ffffffffa049da80>] ? pppol2tp_connect+0x235/0x41e [l2tp_ppp]
-[ 1937.664005]  [<ffffffff81109b57>] ? might_fault+0x9e/0xa5
-[ 1937.664005]  [<ffffffff81109b0e>] ? might_fault+0x55/0xa5
-[ 1937.664005]  [<ffffffff8114c566>] ? rcu_read_unlock+0x1c/0x26
-[ 1937.664005]  [<ffffffff81309196>] SYSC_connect+0x87/0xb1
-[ 1937.664005]  [<ffffffff813e56f7>] ? sysret_check+0x1b/0x56
-[ 1937.664005]  [<ffffffff8107590d>] ? trace_hardirqs_on_caller+0x145/0x1a1
-[ 1937.664005]  [<ffffffff81213dee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[ 1937.664005]  [<ffffffff8114c262>] ? spin_lock+0x9/0xb
-[ 1937.664005]  [<ffffffff813092b4>] SyS_connect+0x9/0xb
-[ 1937.664005]  [<ffffffff813e56d2>] system_call_fastpath+0x16/0x1b
-[ 1937.664005] Code: 10 2a 84 81 e8 65 76 bd e0 65 ff 0c 25 10 bb 00 00 4d 85 ed 74 37 48 8b 85 60 ff ff ff 48 8b 80 88 01 00 00 48 8b b8 10 02 00 00 <48> 8b 47 20 ff 50 20 85 c0 74 0f 83 e8 28 89 83 10 01 00 00 89
-[ 1937.664005] RIP  [<ffffffffa049db88>] pppol2tp_connect+0x33d/0x41e [l2tp_ppp]
-[ 1937.664005]  RSP <ffff8800c43c7de8>
-[ 1937.664005] CR2: 0000000000000020
-[ 1939.559375] ---[ end trace 82d44500f28f8708 ]---
+This patch should be backported to all kernels since v3.2.
 
-Fixes: f34c4a35d879 ("l2tp: take PMTU from tunnel UDP socket")
-Signed-off-by: Guillaume Nault <g.nault@alphalink.fr>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Guillaume Nault <g.nault@alphalink.fr>
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[lizf: Backported to 3.4:
+ - adjust context
+ - drop the change to dwc3_gadget_ep_set_wedge()]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- net/l2tp/l2tp_ppp.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/dwc3/ep0.c    |  4 ++--
+ drivers/usb/dwc3/gadget.c | 14 +++++++++++---
+ drivers/usb/dwc3/gadget.h |  2 +-
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 82ed7df..cf7821b7 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -774,7 +774,8 @@ static int pppol2tp_connect(struct socket *sock, struct sockaddr *uservaddr,
- 	/* If PMTU discovery was enabled, use the MTU that was discovered */
- 	dst = sk_dst_get(tunnel->sock);
- 	if (dst != NULL) {
--		u32 pmtu = dst_mtu(__sk_dst_get(tunnel->sock));
-+		u32 pmtu = dst_mtu(dst);
+diff --git a/drivers/usb/dwc3/ep0.c b/drivers/usb/dwc3/ep0.c
+index 5bf2bc0..8a7a8ee 100644
+--- a/drivers/usb/dwc3/ep0.c
++++ b/drivers/usb/dwc3/ep0.c
+@@ -209,7 +209,7 @@ static void dwc3_ep0_stall_and_restart(struct dwc3 *dwc)
+ 	struct dwc3_ep		*dep = dwc->eps[0];
+ 
+ 	/* stall is always issued on EP0 */
+-	__dwc3_gadget_ep_set_halt(dep, 1);
++	__dwc3_gadget_ep_set_halt(dep, 1, false);
+ 	dep->flags = DWC3_EP_ENABLED;
+ 	dwc->delayed_status = false;
+ 
+@@ -382,7 +382,7 @@ static int dwc3_ep0_handle_feature(struct dwc3 *dwc,
+ 				return -EINVAL;
+ 			if (set == 0 && (dep->flags & DWC3_EP_WEDGE))
+ 				break;
+-			ret = __dwc3_gadget_ep_set_halt(dep, set);
++			ret = __dwc3_gadget_ep_set_halt(dep, set, true);
+ 			if (ret)
+ 				return -EINVAL;
+ 			break;
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index 895497d..3ceb8da 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -533,7 +533,7 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
+ 
+ 	/* make sure HW endpoint isn't stalled */
+ 	if (dep->flags & DWC3_EP_STALL)
+-		__dwc3_gadget_ep_set_halt(dep, 0);
++		__dwc3_gadget_ep_set_halt(dep, 0, false);
+ 
+ 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
+ 	reg &= ~DWC3_DALEPENA_EP(dep->number);
+@@ -1078,7 +1078,7 @@ out0:
+ 	return ret;
+ }
+ 
+-int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
++int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol)
+ {
+ 	struct dwc3_gadget_ep_cmd_params	params;
+ 	struct dwc3				*dwc = dep->dwc;
+@@ -1087,6 +1087,14 @@ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value)
+ 	memset(&params, 0x00, sizeof(params));
+ 
+ 	if (value) {
++		if (!protocol && ((dep->direction && dep->flags & DWC3_EP_BUSY) ||
++				(!list_empty(&dep->req_queued) ||
++				 !list_empty(&dep->request_list)))) {
++			dev_dbg(dwc->dev, "%s: pending request, cannot halt\n",
++					dep->name);
++			return -EAGAIN;
++		}
 +
- 		if (pmtu != 0)
- 			session->mtu = session->mru = pmtu -
- 				PPPOL2TP_HEADER_OVERHEAD;
+ 		if (dep->number == 0 || dep->number == 1) {
+ 			/*
+ 			 * Whenever EP0 is stalled, we will restart
+@@ -1135,7 +1143,7 @@ static int dwc3_gadget_ep_set_halt(struct usb_ep *ep, int value)
+ 		goto out;
+ 	}
+ 
+-	ret = __dwc3_gadget_ep_set_halt(dep, value);
++	ret = __dwc3_gadget_ep_set_halt(dep, value, false);
+ out:
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ 
+diff --git a/drivers/usb/dwc3/gadget.h b/drivers/usb/dwc3/gadget.h
+index a860008..6f498fc 100644
+--- a/drivers/usb/dwc3/gadget.h
++++ b/drivers/usb/dwc3/gadget.h
+@@ -108,7 +108,7 @@ void dwc3_ep0_interrupt(struct dwc3 *dwc,
+ void dwc3_ep0_out_start(struct dwc3 *dwc);
+ int dwc3_gadget_ep0_queue(struct usb_ep *ep, struct usb_request *request,
+ 		gfp_t gfp_flags);
+-int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value);
++int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol);
+ int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
+ 		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params);
+ 
 -- 
 1.9.1
 
