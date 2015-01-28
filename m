@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933881AbbA1B4G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:56:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41511 "EHLO
+	id S933358AbbA1Big (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:38:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933278AbbA1Bi1 (ORCPT
+	with ESMTP id S1759052AbbA1Bi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org,
+        "stable@vger.kernel.org, Chris Ball" <chris@printf.net>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Francesco Ruggeri <fruggeri@arista.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.14 43/77] tty: Fix pty master poll() after slave closes v2
-Date: Tue, 27 Jan 2015 17:27:21 -0800
-Message-Id: <20150128012747.248627243@linuxfoundation.org>
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tyler Baker <tyler.baker@linaro.org>
+Subject: [PATCH 3.14 44/77] mmc: sdhci: Dont signal the sdio irq if its not setup
+Date: Tue, 27 Jan 2015 17:27:22 -0800
+Message-Id: <20150128012747.276871402@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -29,69 +31,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Francesco Ruggeri <fruggeri@aristanetworks.com>
+From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 
-commit c4dc304677e8d566572c4738d95c48be150c6606 upstream.
+[Not needed in newer kernels due to refactoring fixing this issue.]
 
-Commit f95499c3030f ("n_tty: Don't wait for buffer work in read() loop")
-introduces a race window where a pty master can be signalled that the pty
-slave was closed before all the data that the slave wrote is delivered.
-Commit f8747d4a466a ("tty: Fix pty master read() after slave closes") fixed the
-problem in case of n_tty_read, but the problem still exists for n_tty_poll.
-This can be seen by running 'for ((i=0; i<100;i++));do ./test.py ;done'
-where test.py is:
+With 3.14.29 (and older kernels) some of my I.mx6 Sabrelite boards were
+crashing with the following oops:
 
-import os, select, pty
+  sdhci: Secure Digital Host Controller Interface driver
+  sdhci: Copyright(c) Pierre Ossman
+  sdhci-pltfm: SDHCI platform and OF driver helper
+  sdhci-esdhc-imx 2198000.usdhc: could not get ultra high speed state, work on normal mode
+  mmc0: no vqmmc regulator found
+  mmc0: SDHCI controller on 2198000.usdhc [2198000.usdhc] using ADMA
+  Unable to handle kernel NULL pointer dereference at virtual address 00000000
+  pgd = c0004000
+  [00000000] *pgd=00000000
+  Internal error: Oops: 5 [#1] SMP ARM
+  Modules linked in:
+  CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.29 #1
+  task: c08a7120 ti: c089c000 task.ti: c089c000
+  PC is at wake_up_process+0x8/0x40
+  LR is at sdhci_irq+0x748/0x9c4
 
-(pid, pty_fd) = pty.fork()
+Full boot log can be found at:
+  http://storage.kernelci.org/stable/v3.14.29/arm-multi_v7_defconfig/lab-collabora/boot-imx6q-sabrelite.html
 
-if pid == 0:
-   os.write(1, 'This string should be received by parent')
-else:
-   poller = select.epoll()
-   poller.register( pty_fd, select.EPOLLIN )
-   ready = poller.poll( 1 * 1000 )
-   for fd, events in ready:
-      if not events & select.EPOLLIN:
-         print 'missed POLLIN event'
-      else:
-         print os.read(fd, 100)
-   poller.close()
+This happens if the sdhci interrupt status contains SDHCI_INT_CARD_INT,
+while the sdio irq was never setup.  This patch fixes that in a minimal
+way by checking if the sdio irq was setup.
 
-The string from the slave is missed several times.
-This patch takes the same approach as the fix for read and special cases
-this condition for poll.
-Tested on 3.16.
+In more recent kernels this bug went away due to refactoring done by
+Russel King. So an alternative (potentially better?) fix for this patch
+is to cherrypick the following patches from a recent kernel:
 
-Signed-off-by: Francesco Ruggeri <fruggeri@arista.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>
+18258f7239a6 - genirq: Provide synchronize_hardirq()
+bf3b5ec66bd0 - mmc: sdio_irq: rework sdio irq handling
+41005003bcaf - mmc: sdhci: clean up interrupt handling
+781e989cf593 - mmc: sdhci: convert to new SDIO IRQ handling
+
+Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tyler Baker <tyler.baker@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/tty/n_tty.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2417,12 +2417,17 @@ static unsigned int n_tty_poll(struct tt
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2537,7 +2537,7 @@ out:
+ 	/*
+ 	 * We have to delay this as it calls back into the driver.
+ 	 */
+-	if (cardint)
++	if (cardint && host->mmc->sdio_irqs)
+ 		mmc_signal_sdio_irq(host->mmc);
  
- 	poll_wait(file, &tty->read_wait, wait);
- 	poll_wait(file, &tty->write_wait, wait);
-+	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
-+		mask |= POLLHUP;
- 	if (input_available_p(tty, 1))
- 		mask |= POLLIN | POLLRDNORM;
-+	else if (mask & POLLHUP) {
-+		tty_flush_to_ldisc(tty);
-+		if (input_available_p(tty, 1))
-+			mask |= POLLIN | POLLRDNORM;
-+	}
- 	if (tty->packet && tty->link->ctrl_status)
- 		mask |= POLLPRI | POLLIN | POLLRDNORM;
--	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
--		mask |= POLLHUP;
- 	if (tty_hung_up_p(file))
- 		mask |= POLLHUP;
- 	if (!(mask & (POLLHUP | POLLIN | POLLRDNORM))) {
+ 	return result;
 
 
