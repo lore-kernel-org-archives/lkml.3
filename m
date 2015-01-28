@@ -1,191 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932AbbA1U4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:56:40 -0500
-Received: from service88.mimecast.com ([195.130.217.12]:34044 "EHLO
-	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754761AbbA1U42 convert rfc822-to-8bit (ORCPT
+	id S1753266AbbA2BNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:13:08 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:33511 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277AbbA2BNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:56:28 -0500
-Message-ID: <54C9068D.8050701@arm.com>
-Date: Wed, 28 Jan 2015 15:55:57 +0000
-From: Robin Murphy <robin.murphy@arm.com>
+	Wed, 28 Jan 2015 20:13:04 -0500
+Message-ID: <54C906A9.1050001@linaro.org>
+Date: Wed, 28 Jan 2015 17:56:25 +0200
+From: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Murali Karicheri <m-karicheri2@ti.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 3/6] of: fix size when dma-range is not used
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <1422052359-12384-4-git-send-email-m-karicheri2@ti.com> <54C77616.80301@arm.com> <54C7DF13.20402@ti.com> <20150128110523.GC6646@e104818-lin.cambridge.arm.com>
-In-Reply-To: <20150128110523.GC6646@e104818-lin.cambridge.arm.com>
-X-OriginalArrivalTime: 28 Jan 2015 15:55:57.0868 (UTC) FILETIME=[E7D4D6C0:01D03B12]
-X-MC-Unique: 115012815560001101
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org, ard.biesheuvel@linaro.org,
+        grant.likely@linaro.org, matt.fleming@intel.com,
+        linux-api@vger.kernel.org,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+CC: dmidecode-devel@nongnu.org, leif.lindholm@linaro.org
+Subject: Re: [Patch v3] firmware: dmi-sysfs: add SMBIOS entry point area raw
+ attribute
+References: <1422448763-17583-1-git-send-email-ivan.khoronzhuk@linaro.org>
+In-Reply-To: <1422448763-17583-1-git-send-email-ivan.khoronzhuk@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/15 11:05, Catalin Marinas wrote:
-> On Tue, Jan 27, 2015 at 06:55:15PM +0000, Murali Karicheri wrote:
->> On 01/27/2015 06:27 AM, Robin Murphy wrote:
->>> On 23/01/15 22:32, Murali Karicheri wrote:
->>>> Fix the dma-range size when the DT attribute is missing. i.e set size to
->>>> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. To detect
->>>> overflow when mask is set to max of u64, add a check, log error and
->>>> return.
->>>> Some platform use mask format for size in DTS. So add a work around to
->>>> catch this and fix.
->>>>
->>>> Cc: Joerg Roedel <joro@8bytes.org>
->>>> Cc: Grant Likely <grant.likely@linaro.org>
->>>> Cc: Rob Herring <robh+dt@kernel.org>
->>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
->>>> Cc: Will Deacon <will.deacon@arm.com>
->>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->>>>
->>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->>>> ---
->>>> drivers/of/device.c | 14 +++++++++++++-
->>>> 1 file changed, 13 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/of/device.c b/drivers/of/device.c
->>>> index 2de320d..0a5ff54 100644
->>>> --- a/drivers/of/device.c
->>>> +++ b/drivers/of/device.c
->>>> @@ -105,12 +105,24 @@ void of_dma_configure(struct device *dev, struct
->>>> device_node *np)
->>>> ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
->>>> if (ret < 0) {
->>>> dma_addr = offset = 0;
->>>> - size = dev->coherent_dma_mask;
->>>> + size = dev->coherent_dma_mask + 1;
->>>> } else {
->>>> offset = PFN_DOWN(paddr - dma_addr);
->>>> + /*
->>>> + * Add a work around to treat the size as mask + 1 in case
->>>> + * it is defined in DT as a mask.
->>>> + */
->>>> + if (size & 1)
->>>> + size = size + 1;
->>>> dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
->>>> }
->>>>
->>>> + /* if size is 0, we have an overflow of u64 */
->>>> + if (!size) {
->>>> + dev_err(dev, "invalid size\n");
->>>> + return;
->>>> + }
->>>> +
->>>
->>> This seems potentially fragile to dodgy DTs given that we might also be
->>> using size to make a mask later. Would it make sense to double-up a
->>> sanity check as mask-format detection? Something like:
->>>
->>> if is_power_of_2(size)
->>> // use size
->>> else if is_power_of_2(size + 1)
->>> // use size + 1
->>> else
->>> // cry
->>
->> How about having the logic like this?
->>
->> 	ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
->> 	if (ret < 0) {
->> 		dma_addr = offset = 0;
->> 		size = dev->coherent_dma_mask + 1;
->> 	} else {
->> 		offset = PFN_DOWN(paddr - dma_addr);
->> 		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
->> 	}
->>
->> 	if (is_power_of_2(size + 1))
->> 		size = size + 1;
->> 	else if (!is_power_of_2(size))
->> 	{
->> 		dev_err(dev, "invalid size\n");
->> 		return;
->> 	}
++ linux-api@vger.kernel.org
++ linux-doc@vger.kernel.org
+
+On 01/28/2015 02:39 PM, Ivan Khoronzhuk wrote:
+> Some utils, like dmidecode and smbios, needs to access SMBIOS entry
+> table area in order to get information like SMBIOS version, size, etc.
+> Currently it's done via /dev/mem. But for situation when /dev/mem
+> usage is disabled, the utils have to use dmi sysfs instead, which
+> doesn't represent SMBIOS entry. So this patch adds SMBIOS area to
+> dmi-sysfs in order to allow utils in question to work correctly with
+> dmi sysfs interface.
 >
-> In of_dma_configure(), we currently assume that the default coherent
-> mask is 32-bit. In this thread:
+> Reviewed-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
+> ---
 >
-> http://article.gmane.org/gmane.linux.kernel/1835096
+> v1: https://lkml.org/lkml/2015/1/23/643
+> v2: https://lkml.org/lkml/2015/1/26/345
 >
-> we talked about setting the coherent mask based on size automatically.
-> I'm not sure about the size but I think we can assume is 32-bit mask + 1
-> if it is not specified in the DT. Instead of just assuming a default
-> mask, let's assume a default size and create the mask based on this
-> (untested):
+> v3..v2:
+>    firmware: dmi_scan: add symbol to get SMBIOS entry area
+>    firmware: dmi-sysfs: add SMBIOS entry point area attribute
+> 	combined in one patch
+> 	added SMBIOS information to ABI sysfs-dmi documentaton
 >
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 5b33c6a21807..9ff8d1286b44 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -170,10 +170,10 @@ static void of_dma_configure(struct device *dev)
->   	struct iommu_ops *iommu;
+> v2..v1:
+>    firmware: dmi_scan: add symbol to get SMBIOS entry area
+> 	- used additional static var to hold SMBIOS raw table size
+> 	- changed format of get_smbios_entry_area symbol
+> 	  returned pointer on const smbios table
 >
->   	/*
-> -	 * Set default dma-mask to 32 bit. Drivers are expected to setup
-> -	 * the correct supported dma_mask.
-> +	 * Set default size to cover the 32-bit. Drivers are expected to setup
-> +	 * the correct size and dma_mask.
->   	 */
-> -	dev->coherent_dma_mask = DMA_BIT_MASK(32);
-> +	size = 1ULL << 32;
+>    firmware: dmi-sysfs: add SMBIOS entry point area attribute
+> 	- adopted to updated get_smbios_entry_area symbol
+>    	- removed redundant array to save smbios table
 >
->   	/*
->   	 * Set it to coherent_dma_mask by default if the architecture
-> @@ -185,13 +185,24 @@ static void of_dma_configure(struct device *dev)
->   	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
->   	if (ret < 0) {
->   		dma_addr = offset = 0;
-> -		size = dev->coherent_dma_mask;
->   	} else {
->   		offset = PFN_DOWN(paddr - dma_addr);
->   		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
+>
+>   Documentation/ABI/testing/sysfs-firmware-dmi | 10 +++++++
+>   drivers/firmware/dmi-sysfs.c                 | 42 ++++++++++++++++++++++++++++
+>   drivers/firmware/dmi_scan.c                  | 26 +++++++++++++++++
+>   include/linux/dmi.h                          |  3 ++
+>   4 files changed, 81 insertions(+)
+>
+> diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
+> index c78f9ab..3a9ffe8 100644
+> --- a/Documentation/ABI/testing/sysfs-firmware-dmi
+> +++ b/Documentation/ABI/testing/sysfs-firmware-dmi
+> @@ -12,6 +12,16 @@ Description:
+>   		cannot ensure that the data as exported to userland is
+>   		without error either.
+>   
+> +		The firmware provides DMI structures as a packed list of
+> +		data referenced by a SMBIOS table entry point. The SMBIOS
+> +		entry point contains general information, like SMBIOS
+> +		version, DMI table size, etc. The structure, content and
+> +		size of SMBIOS entry point is dependent on SMBIOS version.
+> +		That's why SMBIOS entry point is represented in dmi sysfs
+> +		like a raw attribute and is accessible via
+> +		/sys/firmware/dmi/smbios_raw_header. The format of SMBIOS
+> +		entry point header can be read in SMBIOS specification.
+> +
+>   		DMI is structured as a large table of entries, where
+>   		each entry has a common header indicating the type and
+>   		length of the entry, as well as a firmware-provided
+> diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
+> index e0f1cb3..61b6a38 100644
+> --- a/drivers/firmware/dmi-sysfs.c
+> +++ b/drivers/firmware/dmi-sysfs.c
+> @@ -29,6 +29,8 @@
+>   #define MAX_ENTRY_TYPE 255 /* Most of these aren't used, but we consider
+>   			      the top entry type is only 8 bits */
+>   
+> +static const u8 *smbios_raw_header;
+> +
+>   struct dmi_sysfs_entry {
+>   	struct dmi_header dh;
+>   	struct kobject kobj;
+> @@ -646,9 +648,37 @@ static void cleanup_entry_list(void)
 >   	}
->   	dev->dma_pfn_offset = offset;
->
-> +	/*
-> +	 * Workaround for DTs setting the size to a mask or 0.
-> +	 */
-> +	if (is_power_of_2(size + 1))
-> +		size += 1;
-
-In fact, since the ilog2 below ends up effectively rounding down, we 
-might as well do away with this check as well and just add 1 
-unconditionally. The only time it makes any difference is when we want 
-it to anyway!
-
-I like this approach, it ends up looking a lot neater.
-
-Robin.
-
+>   }
+>   
+> +static ssize_t smbios_entry_area_raw_read(struct file *filp,
+> +					  struct kobject *kobj,
+> +					  struct bin_attribute *bin_attr,
+> +					  char *buf, loff_t pos, size_t count)
+> +{
+> +	ssize_t size;
 > +
-> +	/*
-> +	 * Coherent DMA masks larger than 32-bit must be explicitly set by the
-> +	 * driver.
-> +	 */
-> +	dev->coherent_dma_mask = min(DMA_BIT_MASK(32), DMA_BIT_MASK(ilog2(size)));
+> +	size = bin_attr->size;
 > +
->   	coherent = of_dma_is_coherent(dev->of_node);
->   	dev_dbg(dev, "device is%sdma coherent\n",
->   		coherent ? " " : " not ");
->
-
+> +	if (size > pos)
+> +		size -= pos;
+> +	else
+> +		return 0;
+> +
+> +	if (count < size)
+> +		size = count;
+> +
+> +	memcpy(buf, &smbios_raw_header[pos], size);
+> +
+> +	return size;
+> +}
+> +
+> +static struct bin_attribute smbios_raw_area_attr = {
+> +	.read = smbios_entry_area_raw_read,
+> +	.attr = {.name = "smbios_raw_header", .mode = 0400},
+> +};
+> +
+>   static int __init dmi_sysfs_init(void)
+>   {
+>   	int error = -ENOMEM;
+> +	int size;
+>   	int val;
+>   
+>   	/* Set up our directory */
+> @@ -669,6 +699,18 @@ static int __init dmi_sysfs_init(void)
+>   		goto err;
+>   	}
+>   
+> +	smbios_raw_header = dmi_get_smbios_entry_area(&size);
+> +	if (!smbios_raw_header) {
+> +		pr_debug("dmi-sysfs: SMBIOS raw data is not available.\n");
+> +		error = -ENODATA;
+> +		goto err;
+> +	}
+> +
+> +	/* Create the raw binary file to access the entry area */
+> +	smbios_raw_area_attr.size = size;
+> +	if (sysfs_create_bin_file(dmi_kobj, &smbios_raw_area_attr))
+> +		goto err;
+> +
+>   	pr_debug("dmi-sysfs: loaded.\n");
+>   
+>   	return 0;
+> diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+> index 420c8d8..d94c6b7 100644
+> --- a/drivers/firmware/dmi_scan.c
+> +++ b/drivers/firmware/dmi_scan.c
+> @@ -113,6 +113,8 @@ static void dmi_table(u8 *buf, int len, int num,
+>   	}
+>   }
+>   
+> +static unsigned char smbios_header[32];
+> +static int smbios_header_size;
+>   static phys_addr_t dmi_base;
+>   static u16 dmi_len;
+>   static u16 dmi_num;
+> @@ -474,6 +476,8 @@ static int __init dmi_present(const u8 *buf)
+>   	if (memcmp(buf, "_SM_", 4) == 0 &&
+>   	    buf[5] < 32 && dmi_checksum(buf, buf[5])) {
+>   		smbios_ver = get_unaligned_be16(buf + 6);
+> +		smbios_header_size = buf[5];
+> +		memcpy(smbios_header, buf, smbios_header_size);
+>   
+>   		/* Some BIOS report weird SMBIOS version, fix that up */
+>   		switch (smbios_ver) {
+> @@ -505,6 +509,8 @@ static int __init dmi_present(const u8 *buf)
+>   				pr_info("SMBIOS %d.%d present.\n",
+>   				       dmi_ver >> 8, dmi_ver & 0xFF);
+>   			} else {
+> +				smbios_header_size = 15;
+> +				memcpy(smbios_header, buf, smbios_header_size);
+>   				dmi_ver = (buf[14] & 0xF0) << 4 |
+>   					   (buf[14] & 0x0F);
+>   				pr_info("Legacy DMI %d.%d present.\n",
+> @@ -531,6 +537,8 @@ static int __init dmi_smbios3_present(const u8 *buf)
+>   		dmi_ver &= 0xFFFFFF;
+>   		dmi_len = get_unaligned_le32(buf + 12);
+>   		dmi_base = get_unaligned_le64(buf + 16);
+> +		smbios_header_size = buf[6];
+> +		memcpy(smbios_header, buf, smbios_header_size);
+>   
+>   		/*
+>   		 * The 64-bit SMBIOS 3.0 entry point no longer has a field
+> @@ -944,3 +952,21 @@ void dmi_memdev_name(u16 handle, const char **bank, const char **device)
+>   	}
+>   }
+>   EXPORT_SYMBOL_GPL(dmi_memdev_name);
+> +
+> +/**
+> + * dmi_get_smbios_entry_area - copy SMBIOS entry point area to array.
+> + * @size - pointer to assign actual size of SMBIOS entry point area.
+> + *
+> + * returns NULL if table is not available, otherwise returns pointer on
+> + * SMBIOS entry point area array.
+> + */
+> +const u8 *dmi_get_smbios_entry_area(int *size)
+> +{
+> +	if (!smbios_header_size || !dmi_available)
+> +		return NULL;
+> +
+> +	*size = smbios_header_size;
+> +
+> +	return smbios_header;
+> +}
+> +EXPORT_SYMBOL_GPL(dmi_get_smbios_entry_area);
+> diff --git a/include/linux/dmi.h b/include/linux/dmi.h
+> index f820f0a..8e1a28d 100644
+> --- a/include/linux/dmi.h
+> +++ b/include/linux/dmi.h
+> @@ -109,6 +109,7 @@ extern int dmi_walk(void (*decode)(const struct dmi_header *, void *),
+>   	void *private_data);
+>   extern bool dmi_match(enum dmi_field f, const char *str);
+>   extern void dmi_memdev_name(u16 handle, const char **bank, const char **device);
+> +const u8 *dmi_get_smbios_entry_area(int *size);
+>   
+>   #else
+>   
+> @@ -140,6 +141,8 @@ static inline void dmi_memdev_name(u16 handle, const char **bank,
+>   		const char **device) { }
+>   static inline const struct dmi_system_id *
+>   	dmi_first_match(const struct dmi_system_id *list) { return NULL; }
+> +static inline const u8 *dmi_get_smbios_entry_area(int *size)
+> +	{ return NULL; }
+>   
+>   #endif
+>   
 
