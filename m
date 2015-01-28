@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182AbbA1CRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:17:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
+	id S1760461AbbA1Bbv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:31:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758675AbbA1B2M (ORCPT
+	with ESMTP id S1760422AbbA1Bbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:12 -0500
+	Tue, 27 Jan 2015 20:31:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>, torvalds@linux-foundation.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 19/32] x86, tls, ldt: Stop checking lm in LDT_empty
-Date: Tue, 27 Jan 2015 17:26:49 -0800
-Message-Id: <20150128012629.890226663@linuxfoundation.org>
+        Andreas Hartmann <andihartmann@freenet.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.14 12/77] PCI: Mark Atheros AR93xx to avoid bus reset
+Date: Tue, 27 Jan 2015 17:26:50 -0800
+Message-Id: <20150128012746.337622078@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,56 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit e30ab185c490e9a9381385529e0fd32f0a399495 upstream.
+commit c3e59ee4e76686b0c84ca8faa1011d10cd4ca1b8 upstream.
 
-32-bit programs don't have an lm bit in their ABI, so they can't
-reliably cause LDT_empty to return true without resorting to memset.
-They shouldn't need to do this.
+Reports against the TL-WDN4800 card indicate that PCI bus reset of this
+Atheros device cause system lock-ups and resets.  I've also been able to
+confirm this behavior on multiple systems.  The device never returns from
+reset and attempts to access config space of the device after reset result
+in hangs.  Blacklist bus reset for the device to avoid this issue.
 
-This should fix a longstanding, if minor, issue in all 64-bit kernels
-as well as a potential regression in the TLS hardening code.
+[bhelgaas: This regression appeared in v3.14.  Andreas bisected it to
+425c1b223dac ("PCI: Add Virtual Channel to save/restore support"), but we
+don't understand the mechanism by which that commit affects the reset
+path.]
 
-Fixes: 41bdc78544b8 x86/tls: Validate TLS entries to protect espfix
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: torvalds@linux-foundation.org
-Link: http://lkml.kernel.org/r/72a059de55e86ad5e2935c80aa91880ddf19d07c.1421954363.git.luto@amacapital.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bhelgaas: changelog, references]
+Link: http://lkml.kernel.org/r/20140923210318.498dacbd@dualc.maya.org
+Reported-by: Andreas Hartmann <andihartmann@freenet.de>
+Tested-by: Andreas Hartmann <andihartmann@freenet.de>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/desc.h |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ drivers/pci/quirks.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/arch/x86/include/asm/desc.h
-+++ b/arch/x86/include/asm/desc.h
-@@ -251,7 +251,8 @@ static inline void native_load_tls(struc
- 		gdt[GDT_ENTRY_TLS_MIN + i] = t->tls_array[i];
- }
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3008,6 +3008,20 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_C
+ DECLARE_PCI_FIXUP_HEADER(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
+ 			 quirk_broken_intx_masking);
  
--#define _LDT_empty(info)				\
-+/* This intentionally ignores lm, since 32-bit apps don't have that field. */
-+#define LDT_empty(info)					\
- 	((info)->base_addr		== 0	&&	\
- 	 (info)->limit			== 0	&&	\
- 	 (info)->contents		== 0	&&	\
-@@ -261,12 +262,6 @@ static inline void native_load_tls(struc
- 	 (info)->seg_not_present	== 1	&&	\
- 	 (info)->useable		== 0)
- 
--#ifdef CONFIG_X86_64
--#define LDT_empty(info) (_LDT_empty(info) && ((info)->lm == 0))
--#else
--#define LDT_empty(info) (_LDT_empty(info))
--#endif
--
- static inline void clear_LDT(void)
++static void quirk_no_bus_reset(struct pci_dev *dev)
++{
++	dev->dev_flags |= PCI_DEV_FLAGS_NO_BUS_RESET;
++}
++
++/*
++ * Atheros AR93xx chips do not behave after a bus reset.  The device will
++ * throw a Link Down error on AER-capable systems and regardless of AER,
++ * config space of the device is never accessible again and typically
++ * causes the system to hang or reset when access is attempted.
++ * http://www.spinics.net/lists/linux-pci/msg34797.html
++ */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATHEROS, 0x0030, quirk_no_bus_reset);
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
  {
- 	set_ldt(NULL, 0);
 
 
