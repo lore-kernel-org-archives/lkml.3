@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763743AbbA2DLi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:11:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46976 "EHLO
+	id S1763756AbbA2DLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:11:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46974 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965054AbbA2Cgt (ORCPT
+	with ESMTP id S965038AbbA2Cgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:49 -0500
+	Wed, 28 Jan 2015 21:36:45 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Ilya Dryomov <idryomov@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 134/139] ceph: do_sync is never initialized
-Date: Wed, 28 Jan 2015 14:21:17 -0800
-Message-Id: <1422483682-15393-135-git-send-email-kamal@canonical.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 135/139] x86/tls: Don't validate lm in set_thread_area() after all
+Date: Wed, 28 Jan 2015 14:21:18 -0800
+Message-Id: <1422483682-15393-136-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,33 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 021b77bee210843bed1ea91b5cad58235ff9c8e5 upstream.
+commit 3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0 upstream.
 
-Probably this code was syncing a lot more often then intended because
-the do_sync variable wasn't set to zero.
+It turns out that there's a lurking ABI issue.  GCC, when
+compiling this in a 32-bit program:
 
-Fixes: c62988ec0910 ('ceph: avoid meaningless calling ceph_caps_revoking if sync_mode == WB_SYNC_ALL.')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Ilya Dryomov <idryomov@redhat.com>
+struct user_desc desc = {
+	.entry_number    = idx,
+	.base_addr       = base,
+	.limit           = 0xfffff,
+	.seg_32bit       = 1,
+	.contents        = 0, /* Data, grow-up */
+	.read_exec_only  = 0,
+	.limit_in_pages  = 1,
+	.seg_not_present = 0,
+	.useable         = 0,
+};
+
+will leave .lm uninitialized.  This means that anything in the
+kernel that reads user_desc.lm for 32-bit tasks is unreliable.
+
+Revert the .lm check in set_thread_area().  The value never did
+anything in the first place.
+
+Fixes: 0e58af4e1d21 ("x86/tls: Disallow unusual TLS segments")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ceph/addr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/uapi/asm/ldt.h | 7 +++++++
+ arch/x86/kernel/tls.c           | 6 ------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index ec3ba43..f757dff 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -672,7 +672,7 @@ static int ceph_writepages_start(struct address_space *mapping,
- 	int rc = 0;
- 	unsigned wsize = 1 << inode->i_blkbits;
- 	struct ceph_osd_request *req = NULL;
--	int do_sync;
-+	int do_sync = 0;
- 	u64 truncate_size, snap_size;
- 	u32 truncate_seq;
+diff --git a/arch/x86/include/uapi/asm/ldt.h b/arch/x86/include/uapi/asm/ldt.h
+index 46727eb..6e1aaf7 100644
+--- a/arch/x86/include/uapi/asm/ldt.h
++++ b/arch/x86/include/uapi/asm/ldt.h
+@@ -28,6 +28,13 @@ struct user_desc {
+ 	unsigned int  seg_not_present:1;
+ 	unsigned int  useable:1;
+ #ifdef __x86_64__
++	/*
++	 * Because this bit is not present in 32-bit user code, user
++	 * programs can pass uninitialized values here.  Therefore, in
++	 * any context in which a user_desc comes from a 32-bit program,
++	 * the kernel must act as though lm == 0, regardless of the
++	 * actual value.
++	 */
+ 	unsigned int  lm:1;
+ #endif
+ };
+diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
+index 3e551ee..4e942f3 100644
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -55,12 +55,6 @@ static bool tls_desc_okay(const struct user_desc *info)
+ 	if (info->seg_not_present)
+ 		return false;
+ 
+-#ifdef CONFIG_X86_64
+-	/* The L bit makes no sense for data. */
+-	if (info->lm)
+-		return false;
+-#endif
+-
+ 	return true;
+ }
  
 -- 
 1.9.1
