@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965286AbbA1Ekk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:40:40 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40667 "EHLO mail.kernel.org"
+	id S934467AbbA1EY3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:24:29 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40683 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965108AbbA1EYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:24:23 -0500
+	id S965066AbbA1EYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:24:25 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 129/177] usb-storage: handle a skipped data phase
-Date: Wed, 28 Jan 2015 12:09:47 +0800
-Message-Id: <1422418236-12852-220-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 130/177] USB: core: add device-qualifier quirk
+Date: Wed, 28 Jan 2015 12:09:48 +0800
+Message-Id: <1422418236-12852-221-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Johan Hovold <johan@kernel.org>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 93c9bf4d1838d5851a18ca398b0ad66397f05056 upstream.
+commit 2a159389bf5d962359349a76827b2f683276a1c7 upstream.
 
-Sometimes mass-storage devices using the Bulk-only transport will
-mistakenly skip the data phase of a command.  Rather than sending the
-data expected by the host or sending a zero-length packet, they go
-directly to the status phase and send the CSW.
+Add new quirk for devices that cannot handle requests for the
+device_qualifier descriptor.
 
-This causes problems for usb-storage, for obvious reasons.  The driver
-will interpret the CSW as a short data transfer and will wait to
-receive a CSW.  The device won't have anything left to send, so the
-command eventually times out.
+A USB-2.0 compliant device must respond to requests for the
+device_qualifier descriptor (even if it's with a request error), but at
+least one device is known to misbehave after such a request.
 
-The SCSI layer doesn't retry commands after they time out (this is a
-relatively recent change).  Therefore we should do our best to detect
-a skipped data phase and handle it promptly.
-
-This patch adds code to do that.  If usb-storage receives a short
-13-byte data transfer from the device, and if the first four bytes of
-the data match the CSW signature, the driver will set the residue to
-the full transfer length and interpret the data as a CSW.
-
-This fixes Bugzilla #86611.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Tested-by: Paul Osmialowski <newchief@king.net.pl>
+Suggested-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[lizf: Backported to 3.4: change usb_stor_dbg() to US_DEBUGP()]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/usb/storage/transport.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ drivers/usb/core/hub.c     | 3 +++
+ include/linux/usb/quirks.h | 3 +++
+ 2 files changed, 6 insertions(+)
 
-diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
-index c70109e..d8d26f4 100644
---- a/drivers/usb/storage/transport.c
-+++ b/drivers/usb/storage/transport.c
-@@ -1120,6 +1120,31 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
- 		 */
- 		if (result == USB_STOR_XFER_LONG)
- 			fake_sense = 1;
-+
-+		/*
-+		 * Sometimes a device will mistakenly skip the data phase
-+		 * and go directly to the status phase without sending a
-+		 * zero-length packet.  If we get a 13-byte response here,
-+		 * check whether it really is a CSW.
-+		 */
-+		if (result == USB_STOR_XFER_SHORT &&
-+				srb->sc_data_direction == DMA_FROM_DEVICE &&
-+				transfer_length - scsi_get_resid(srb) ==
-+					US_BULK_CS_WRAP_LEN) {
-+			struct scatterlist *sg = NULL;
-+			unsigned int offset = 0;
-+
-+			if (usb_stor_access_xfer_buf((unsigned char *) bcs,
-+					US_BULK_CS_WRAP_LEN, srb, &sg,
-+					&offset, FROM_XFER_BUF) ==
-+						US_BULK_CS_WRAP_LEN &&
-+					bcs->Signature ==
-+						cpu_to_le32(US_BULK_CS_SIGN)) {
-+				US_DEBUGP("Device skipped data phase\n");
-+				scsi_set_resid(srb, transfer_length);
-+				goto skipped_data_phase;
-+			}
-+		}
- 	}
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 2d5177a..93f2538 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3361,6 +3361,9 @@ check_highspeed (struct usb_hub *hub, struct usb_device *udev, int port1)
+ 	struct usb_qualifier_descriptor	*qual;
+ 	int				status;
  
- 	/* See flow chart on pg 15 of the Bulk Only Transport spec for
-@@ -1155,6 +1180,7 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
- 	if (result != USB_STOR_XFER_GOOD)
- 		return USB_STOR_TRANSPORT_ERROR;
++	if (udev->quirks & USB_QUIRK_DEVICE_QUALIFIER)
++		return;
++
+ 	qual = kmalloc (sizeof *qual, GFP_KERNEL);
+ 	if (qual == NULL)
+ 		return;
+diff --git a/include/linux/usb/quirks.h b/include/linux/usb/quirks.h
+index 8eeeb87..d0d2af0 100644
+--- a/include/linux/usb/quirks.h
++++ b/include/linux/usb/quirks.h
+@@ -33,4 +33,7 @@
+ /* device generates spurious wakeup, ignore remote wakeup capability */
+ #define USB_QUIRK_IGNORE_REMOTE_WAKEUP	0x00000200
  
-+ skipped_data_phase:
- 	/* check bulk status */
- 	residue = le32_to_cpu(bcs->Residue);
- 	US_DEBUGP("Bulk Status S 0x%x T 0x%x R %u Stat 0x%x\n",
++/* device can't handle device_qualifier descriptor requests */
++#define USB_QUIRK_DEVICE_QUALIFIER	0x00000100
++
+ #endif /* __LINUX_USB_QUIRKS_H */
 -- 
 1.9.1
 
