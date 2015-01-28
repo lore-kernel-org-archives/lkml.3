@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762697AbbA2Cmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:42:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47057 "EHLO
+	id S1762650AbbA2Cl4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:41:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47062 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010AbbA2Cio (ORCPT
+	with ESMTP id S1762406AbbA2Cis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:44 -0500
+	Wed, 28 Jan 2015 21:38:48 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Bandan Das <bsd@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 106/139] perf: Fix events installation during moving group
-Date: Wed, 28 Jan 2015 14:20:49 -0800
-Message-Id: <1422483682-15393-107-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 107/139] KVM: nVMX: Disable unrestricted mode if ept=0
+Date: Wed, 28 Jan 2015 14:20:50 -0800
+Message-Id: <1422483682-15393-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -32,78 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Bandan Das <bsd@redhat.com>
 
-commit 9fc81d87420d0d3fd62d5e5529972c0ad9eab9cc upstream.
+commit 78051e3b7e35722ad3f31dd611f1b34770bddab8 upstream.
 
-We allow PMU driver to change the cpu on which the event
-should be installed to. This happened in patch:
+If L0 has disabled EPT, don't advertise unrestricted
+mode at all since it depends on EPT to run real mode code.
 
-  e2d37cd213dc ("perf: Allow the PMU driver to choose the CPU on which to install events")
-
-This patch also forces all the group members to follow
-the currently opened events cpu if the group happened
-to be moved.
-
-This and the change of event->cpu in perf_install_in_context()
-function introduced in:
-
-  0cda4c023132 ("perf: Introduce perf_pmu_migrate_context()")
-
-forces group members to change their event->cpu,
-if the currently-opened-event's PMU changed the cpu
-and there is a group move.
-
-Above behaviour causes problem for breakpoint events,
-which uses event->cpu to touch cpu specific data for
-breakpoints accounting. By changing event->cpu, some
-breakpoints slots were wrongly accounted for given
-cpu.
-
-Vinces's perf fuzzer hit this issue and caused following
-WARN on my setup:
-
-   WARNING: CPU: 0 PID: 20214 at arch/x86/kernel/hw_breakpoint.c:119 arch_install_hw_breakpoint+0x142/0x150()
-   Can't find any breakpoint slot
-   [...]
-
-This patch changes the group moving code to keep the event's
-original cpu.
-
-Reported-by: Vince Weaver <vince@deater.net>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>
-Cc: Yan, Zheng <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/1418243031-20367-3-git-send-email-jolsa@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Fixes: 92fbc7b195b824e201d9f06f2b93105f72384d65
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Bandan Das <bsd@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/events/core.c | 4 ++--
+ arch/x86/kvm/vmx.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 6acd7d9..5f06486 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7185,11 +7185,11 @@ SYSCALL_DEFINE5(perf_event_open,
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index f5c384c..2ff437d 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2256,12 +2256,12 @@ static __init void nested_vmx_setup_ctls_msrs(void)
+ 	nested_vmx_secondary_ctls_low = 0;
+ 	nested_vmx_secondary_ctls_high &=
+ 		SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
+-		SECONDARY_EXEC_UNRESTRICTED_GUEST |
+ 		SECONDARY_EXEC_WBINVD_EXITING;
  
- 	if (move_group) {
- 		synchronize_rcu();
--		perf_install_in_context(ctx, group_leader, event->cpu);
-+		perf_install_in_context(ctx, group_leader, group_leader->cpu);
- 		get_ctx(ctx);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_install_in_context(ctx, sibling, event->cpu);
-+			perf_install_in_context(ctx, sibling, sibling->cpu);
- 			get_ctx(ctx);
- 		}
- 	}
+ 	if (enable_ept) {
+ 		/* nested EPT: emulate EPT also to L1 */
+-		nested_vmx_secondary_ctls_high |= SECONDARY_EXEC_ENABLE_EPT;
++		nested_vmx_secondary_ctls_high |= SECONDARY_EXEC_ENABLE_EPT |
++			SECONDARY_EXEC_UNRESTRICTED_GUEST;
+ 		nested_vmx_ept_caps = VMX_EPT_PAGE_WALK_4_BIT |
+ 			 VMX_EPTP_WB_BIT | VMX_EPT_2MB_PAGE_BIT |
+ 			 VMX_EPT_INVEPT_BIT;
 -- 
 1.9.1
 
