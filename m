@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761755AbbA1UpK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:45:10 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:33345 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759415AbbA1UpG (ORCPT
+	id S1754215AbbA1UOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:14:11 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54228 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754135AbbA1UOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:45:06 -0500
-From: Liu Hua <sdu.liu@huawei.com>
-To: <tglx@linutronix.de>, <marc.zyngier@arm.com>, <will.deacon@arm.com>
-CC: <peifeiyue@huawei.com>, <liusdu@126.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] irqchip: mark the irq status in handle_percpu_devid_irq
-Date: Wed, 28 Jan 2015 17:30:46 +0800
-Message-ID: <1422437446-31909-1-git-send-email-sdu.liu@huawei.com>
-X-Mailer: git-send-email 1.9.0
+	Wed, 28 Jan 2015 15:14:08 -0500
+Date: Wed, 28 Jan 2015 10:35:01 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: marcel@holtmann.org
+Subject: [PATCH] Devicetree binding for omap3-serial & bcm2048 combination
+Message-ID: <20150128093501.GA17338@amd>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function handle_percpu_devid_irq lacks of irq's state
-changing. The handler may fail. So we should mark this
-irq's status. It is very useful when we deploy kdump
-and the handler fails with panic. The kdump can deal
-with this situaton in machine_kexec_mask_interrupts,
-which will do some works to the interrupt controller
-(write EOI..).
+Nokia N900 contains bluetooth module connected on serial
+port. Unfortunately, serial and bluetooth are rather closely coupled,
+so standard serial driver can not be used, and we really don't want
+/dev/ttyS1 to be published for internal port of bluetooth
+stack... Hence solution below.
 
-Without this patch, kdump can not go through if first
-kernel panics in per-cpu interrupt handler(like hrtimers).
-I can reduce this bugs on ARM SMP platform with per cpu
-timers.
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-I have send a related patchset. But I think that is not the
-best way to solve this problem.
-
-  link:lkml.org/lkml/2014/8/4/18
-
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
----
- kernel/irq/chip.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 6f1c7a5..3328a45 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -710,10 +710,18 @@ void handle_percpu_devid_irq(unsigned int irq, struct irq_desc *desc)
- 	if (chip->irq_ack)
- 		chip->irq_ack(&desc->irq_data);
+diff --git a/Documentation/devicetree/bindings/serial/omap_serial.txt b/Documentation/devicetree/bindings/serial/omap_serial.txt
+index 342eedd..e9fde42 100644
+--- a/Documentation/devicetree/bindings/serial/omap_serial.txt
++++ b/Documentation/devicetree/bindings/serial/omap_serial.txt
+@@ -4,7 +4,14 @@ Required properties:
+ - compatible : should be "ti,omap2-uart" for OMAP2 controllers
+ - compatible : should be "ti,omap3-uart" for OMAP3 controllers
+ - compatible : should be "ti,omap4-uart" for OMAP4 controllers
++- compatible : should be "ti+brcm,omap3-uart,bcm2048" for bcm2048
++	       bluetooth connected to OMAP3 serial
+ - ti,hwmods : Must be "uart<n>", n being the instance number (1-based)
  
-+	raw_spin_lock(&desc->lock);
-+	irqd_set(&desc->irq_data, IRQD_IRQ_INPROGRESS);
-+	raw_spin_unlock(&desc->lock);
+ Optional properties:
+ - clock-frequency : frequency of the clock input to the UART
 +
- 	trace_irq_handler_entry(irq, action);
- 	res = action->handler(irq, dev_id);
- 	trace_irq_handler_exit(irq, action, res);
- 
-+	raw_spin_lock(&desc->lock);
-+	irqd_clear(&desc->irq_data, IRQD_IRQ_INPROGRESS);
-+	raw_spin_unlock(&desc->lock);
-+
- 	if (chip->irq_eoi)
- 		chip->irq_eoi(&desc->irq_data);
- }
++Required properties for ti+brcm,omap3-uart,bcm2048:
++- reset-gpios : gpio for reset pin
++- host-wakeup-gpios : gpio for host wakeup
++- bluetooth-wakeup-gpios : gpio for bluetooth wakeup
+
 -- 
-1.9.0
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
