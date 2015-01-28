@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258AbbA1BiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:38:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41415 "EHLO
+	id S1760974AbbA1CFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:05:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759053AbbA1BiS (ORCPT
+	with ESMTP id S932644AbbA1B21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:18 -0500
+	Tue, 27 Jan 2015 20:28:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Carlos Soto <csotoalonso@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 3.14 18/77] ARM: dts: imx25: Fix PWM "per" clocks
+        Andy Lutomirski <luto@amacapital.net>, torvalds@linux-foundation.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.18 44/61] x86, tls, ldt: Stop checking lm in LDT_empty
 Date: Tue, 27 Jan 2015 17:26:56 -0800
-Message-Id: <20150128012746.508262189@linuxfoundation.org>
+Message-Id: <20150128012641.752557656@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,70 +25,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 7ecd0bde5bfea524a843ad8fa8cb66ccbce68779 upstream.
+commit e30ab185c490e9a9381385529e0fd32f0a399495 upstream.
 
-Currently PWM functionality is broken on mx25 due to the wrong assignment of the
-PWM "per" clock.
+32-bit programs don't have an lm bit in their ABI, so they can't
+reliably cause LDT_empty to return true without resorting to memset.
+They shouldn't need to do this.
 
-According to Documentation/devicetree/bindings/clock/imx25-clock.txt:
-	pwm_ipg_per		52
+This should fix a longstanding, if minor, issue in all 64-bit kernels
+as well as a potential regression in the TLS hardening code.
 
-,so update the pwm "per" to use 'pwm_ipg_per' instead of 'per10' clock.
-
-With this change PWM can work fine on mx25.
-
-Reported-by: Carlos Soto <csotoalonso@gmail.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Fixes: 41bdc78544b8 x86/tls: Validate TLS entries to protect espfix
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: torvalds@linux-foundation.org
+Link: http://lkml.kernel.org/r/72a059de55e86ad5e2935c80aa91880ddf19d07c.1421954363.git.luto@amacapital.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/imx25.dtsi |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/desc.h |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
---- a/arch/arm/boot/dts/imx25.dtsi
-+++ b/arch/arm/boot/dts/imx25.dtsi
-@@ -352,7 +352,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fa0000 0x4000>;
--				clocks = <&clks 106>, <&clks 36>;
-+				clocks = <&clks 106>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <36>;
- 			};
-@@ -371,7 +371,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fa8000 0x4000>;
--				clocks = <&clks 107>, <&clks 36>;
-+				clocks = <&clks 107>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <41>;
- 			};
-@@ -412,7 +412,7 @@
- 			pwm4: pwm@53fc8000 {
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				reg = <0x53fc8000 0x4000>;
--				clocks = <&clks 108>, <&clks 36>;
-+				clocks = <&clks 108>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <42>;
- 			};
-@@ -458,7 +458,7 @@
- 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
- 				#pwm-cells = <2>;
- 				reg = <0x53fe0000 0x4000>;
--				clocks = <&clks 105>, <&clks 36>;
-+				clocks = <&clks 105>, <&clks 52>;
- 				clock-names = "ipg", "per";
- 				interrupts = <26>;
- 			};
+--- a/arch/x86/include/asm/desc.h
++++ b/arch/x86/include/asm/desc.h
+@@ -251,7 +251,8 @@ static inline void native_load_tls(struc
+ 		gdt[GDT_ENTRY_TLS_MIN + i] = t->tls_array[i];
+ }
+ 
+-#define _LDT_empty(info)				\
++/* This intentionally ignores lm, since 32-bit apps don't have that field. */
++#define LDT_empty(info)					\
+ 	((info)->base_addr		== 0	&&	\
+ 	 (info)->limit			== 0	&&	\
+ 	 (info)->contents		== 0	&&	\
+@@ -261,12 +262,6 @@ static inline void native_load_tls(struc
+ 	 (info)->seg_not_present	== 1	&&	\
+ 	 (info)->useable		== 0)
+ 
+-#ifdef CONFIG_X86_64
+-#define LDT_empty(info) (_LDT_empty(info) && ((info)->lm == 0))
+-#else
+-#define LDT_empty(info) (_LDT_empty(info))
+-#endif
+-
+ static inline void clear_LDT(void)
+ {
+ 	set_ldt(NULL, 0);
 
 
