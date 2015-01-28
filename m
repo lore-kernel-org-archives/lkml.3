@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761527AbbA1ETS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:19:18 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38745 "EHLO mail.kernel.org"
+	id S1761979AbbA1FGP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:06:15 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38756 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759882AbbA1ETO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:14 -0500
+	id S1761516AbbA1ETR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:17 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 060/177] ext4: don't check quota format when there are no quota files
-Date: Wed, 28 Jan 2015 12:08:07 +0800
-Message-Id: <1422418236-12852-120-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, John David Anglin <dave.anglin@bell.net>,
+        Helge Deller <deller@gmx.de>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 61/91] parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
+Date: Wed, 28 Jan 2015 12:08:08 +0800
+Message-Id: <1422418236-12852-121-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,45 +20,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: John David Anglin <dave.anglin@bell.net>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 279bf6d390933d5353ab298fcc306c391a961469 upstream.
+commit d26a7730b5874a5fa6779c62f4ad7c5065a94723 upstream.
 
-The check whether quota format is set even though there are no
-quota files with journalled quota is pointless and it actually
-makes it impossible to turn off journalled quotas (as there's
-no way to unset journalled quota format). Just remove the check.
+In spite of what the GCC manual says, the -mfast-indirect-calls has
+never been supported in the 64-bit parisc compiler. Indirect calls have
+always been done using function descriptors irrespective of the
+-mfast-indirect-calls option.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Recently, it was noticed that a function descriptor was always requested
+when the -mfast-indirect-calls option was specified. This caused
+problems when the option was used in  application code and doesn't make
+any sense because the whole point of the option is to avoid using a
+function descriptor for indirect calls.
+
+Fixing this broke 64-bit kernel builds.
+
+I will fix GCC but for now we need the attached change. This results in
+the same kernel code as before.
+
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/ext4/super.c | 7 -------
- 1 file changed, 7 deletions(-)
+ arch/parisc/Makefile | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index f0e4e46..481f924 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1642,13 +1642,6 @@ static int parse_options(char *options, struct super_block *sb,
- 					"not specified");
- 			return 0;
- 		}
--	} else {
--		if (sbi->s_jquota_fmt) {
--			ext4_msg(sb, KERN_ERR, "journaled quota format "
--					"specified with no journaling "
--					"enabled");
--			return 0;
--		}
- 	}
- #endif
- 	if (test_opt(sb, DIOREAD_NOLOCK)) {
+diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
+index 19ab7b2..ac93ca2 100644
+--- a/arch/parisc/Makefile
++++ b/arch/parisc/Makefile
+@@ -51,7 +51,12 @@ cflags-y	:= -pipe
+ 
+ # These flags should be implied by an hppa-linux configuration, but they
+ # are not in gcc 3.2.
+-cflags-y	+= -mno-space-regs -mfast-indirect-calls
++cflags-y	+= -mno-space-regs
++
++# -mfast-indirect-calls is only relevant for 32-bit kernels.
++ifndef CONFIG_64BIT
++cflags-y	+= -mfast-indirect-calls
++endif
+ 
+ # Currently we save and restore fpregs on all kernel entry/interruption paths.
+ # If that gets optimized, we might need to disable the use of fpregs in the
 -- 
 1.9.1
 
