@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760784AbbA1CB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:01:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41419 "EHLO
+	id S1761297AbbA1CUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:20:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760079AbbA1BiU (ORCPT
+	with ESMTP id S1756459AbbA1B2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:20 -0500
+	Tue, 27 Jan 2015 20:28:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, GP Orcullo <kinsamanka@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Tobias Jakobi <tjakobi@math.uni-bielefeld.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: [PATCH 3.14 22/77] clocksource: exynos_mct: Fix bitmask regression for exynos4_mct_write
+        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>,
+        Josh Hunt <johunt@akamai.com>
+Subject: [PATCH 3.10 30/32] quota: provide interface for readding allocated space into reserved space
 Date: Tue, 27 Jan 2015 17:27:00 -0800
-Message-Id: <20150128012746.625932370@linuxfoundation.org>
+Message-Id: <20150128012631.246242343@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,46 +25,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
+From: Jan Kara <jack@suse.cz>
 
-commit 8c38d28ba8da98f7102c31d35359b4dbe9d1f329 upstream.
+commit 1c8924eb106c1ac755d5d35ce9b3ff42e89e2511 upstream.
 
-EXYNOS4_MCT_L_MASK is defined as 0xffffff00, so applying this bitmask
-produces a number outside the range 0x00 to 0xff, which always results
-in execution of the default switch statement.
+ext4 needs to convert allocated (metadata) blocks back into blocks
+reserved for delayed allocation. Add functions into quota code for
+supporting such operation.
 
-Obviously this is wrong and git history shows that the bitmask inversion
-was incorrectly set during a refactoring of the MCT code.
-
-Fix this by putting the inversion at the correct position again.
-
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Reported-by: GP Orcullo <kinsamanka@gmail.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Tobias Jakobi <tjakobi@math.uni-bielefeld.de>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Josh Hunt <johunt@akamai.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clocksource/exynos_mct.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/quota/dquot.c         |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ fs/stat.c                |   11 +++++++++--
+ include/linux/fs.h       |    1 +
+ include/linux/quotaops.h |   15 +++++++++++++++
+ 4 files changed, 71 insertions(+), 2 deletions(-)
 
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -98,8 +98,8 @@ static void exynos4_mct_write(unsigned i
- 	__raw_writel(value, reg_base + offset);
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -1102,6 +1102,14 @@ static void dquot_claim_reserved_space(s
+ 	dquot->dq_dqb.dqb_rsvspace -= number;
+ }
  
- 	if (likely(offset >= EXYNOS4_MCT_L_BASE(0))) {
--		stat_addr = (offset & ~EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
--		switch (offset & EXYNOS4_MCT_L_MASK) {
-+		stat_addr = (offset & EXYNOS4_MCT_L_MASK) + MCT_L_WSTAT_OFFSET;
-+		switch (offset & ~EXYNOS4_MCT_L_MASK) {
- 		case MCT_L_TCON_OFFSET:
- 			mask = 1 << 3;		/* L_TCON write status */
- 			break;
++static void dquot_reclaim_reserved_space(struct dquot *dquot, qsize_t number)
++{
++	if (WARN_ON_ONCE(dquot->dq_dqb.dqb_curspace < number))
++		number = dquot->dq_dqb.dqb_curspace;
++	dquot->dq_dqb.dqb_rsvspace += number;
++	dquot->dq_dqb.dqb_curspace -= number;
++}
++
+ static inline
+ void dquot_free_reserved_space(struct dquot *dquot, qsize_t number)
+ {
+@@ -1536,6 +1544,15 @@ void inode_claim_rsv_space(struct inode
+ }
+ EXPORT_SYMBOL(inode_claim_rsv_space);
+ 
++void inode_reclaim_rsv_space(struct inode *inode, qsize_t number)
++{
++	spin_lock(&inode->i_lock);
++	*inode_reserved_space(inode) += number;
++	__inode_sub_bytes(inode, number);
++	spin_unlock(&inode->i_lock);
++}
++EXPORT_SYMBOL(inode_reclaim_rsv_space);
++
+ void inode_sub_rsv_space(struct inode *inode, qsize_t number)
+ {
+ 	spin_lock(&inode->i_lock);
+@@ -1710,6 +1727,35 @@ int dquot_claim_space_nodirty(struct ino
+ EXPORT_SYMBOL(dquot_claim_space_nodirty);
+ 
+ /*
++ * Convert allocated space back to in-memory reserved quotas
++ */
++void dquot_reclaim_space_nodirty(struct inode *inode, qsize_t number)
++{
++	int cnt;
++
++	if (!dquot_active(inode)) {
++		inode_reclaim_rsv_space(inode, number);
++		return;
++	}
++
++	down_read(&sb_dqopt(inode->i_sb)->dqptr_sem);
++	spin_lock(&dq_data_lock);
++	/* Claim reserved quotas to allocated quotas */
++	for (cnt = 0; cnt < MAXQUOTAS; cnt++) {
++		if (inode->i_dquot[cnt])
++			dquot_reclaim_reserved_space(inode->i_dquot[cnt],
++						     number);
++	}
++	/* Update inode bytes */
++	inode_reclaim_rsv_space(inode, number);
++	spin_unlock(&dq_data_lock);
++	mark_all_dquot_dirty(inode->i_dquot);
++	up_read(&sb_dqopt(inode->i_sb)->dqptr_sem);
++	return;
++}
++EXPORT_SYMBOL(dquot_reclaim_space_nodirty);
++
++/*
+  * This operation can block, but only after everything is updated
+  */
+ void __dquot_free_space(struct inode *inode, qsize_t number, int flags)
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -447,9 +447,8 @@ void inode_add_bytes(struct inode *inode
+ 
+ EXPORT_SYMBOL(inode_add_bytes);
+ 
+-void inode_sub_bytes(struct inode *inode, loff_t bytes)
++void __inode_sub_bytes(struct inode *inode, loff_t bytes)
+ {
+-	spin_lock(&inode->i_lock);
+ 	inode->i_blocks -= bytes >> 9;
+ 	bytes &= 511;
+ 	if (inode->i_bytes < bytes) {
+@@ -457,6 +456,14 @@ void inode_sub_bytes(struct inode *inode
+ 		inode->i_bytes += 512;
+ 	}
+ 	inode->i_bytes -= bytes;
++}
++
++EXPORT_SYMBOL(__inode_sub_bytes);
++
++void inode_sub_bytes(struct inode *inode, loff_t bytes)
++{
++	spin_lock(&inode->i_lock);
++	__inode_sub_bytes(inode, bytes);
+ 	spin_unlock(&inode->i_lock);
+ }
+ 
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2489,6 +2489,7 @@ extern void generic_fillattr(struct inod
+ extern int vfs_getattr(struct path *, struct kstat *);
+ void __inode_add_bytes(struct inode *inode, loff_t bytes);
+ void inode_add_bytes(struct inode *inode, loff_t bytes);
++void __inode_sub_bytes(struct inode *inode, loff_t bytes);
+ void inode_sub_bytes(struct inode *inode, loff_t bytes);
+ loff_t inode_get_bytes(struct inode *inode);
+ void inode_set_bytes(struct inode *inode, loff_t bytes);
+--- a/include/linux/quotaops.h
++++ b/include/linux/quotaops.h
+@@ -41,6 +41,7 @@ void __quota_error(struct super_block *s
+ void inode_add_rsv_space(struct inode *inode, qsize_t number);
+ void inode_claim_rsv_space(struct inode *inode, qsize_t number);
+ void inode_sub_rsv_space(struct inode *inode, qsize_t number);
++void inode_reclaim_rsv_space(struct inode *inode, qsize_t number);
+ 
+ void dquot_initialize(struct inode *inode);
+ void dquot_drop(struct inode *inode);
+@@ -59,6 +60,7 @@ int dquot_alloc_inode(const struct inode
+ 
+ int dquot_claim_space_nodirty(struct inode *inode, qsize_t number);
+ void dquot_free_inode(const struct inode *inode);
++void dquot_reclaim_space_nodirty(struct inode *inode, qsize_t number);
+ 
+ int dquot_disable(struct super_block *sb, int type, unsigned int flags);
+ /* Suspend quotas on remount RO */
+@@ -238,6 +240,13 @@ static inline int dquot_claim_space_nodi
+ 	return 0;
+ }
+ 
++static inline int dquot_reclaim_space_nodirty(struct inode *inode,
++					      qsize_t number)
++{
++	inode_sub_bytes(inode, number);
++	return 0;
++}
++
+ static inline int dquot_disable(struct super_block *sb, int type,
+ 		unsigned int flags)
+ {
+@@ -336,6 +345,12 @@ static inline int dquot_claim_block(stru
+ 	return ret;
+ }
+ 
++static inline void dquot_reclaim_block(struct inode *inode, qsize_t nr)
++{
++	dquot_reclaim_space_nodirty(inode, nr << inode->i_blkbits);
++	mark_inode_dirty_sync(inode);
++}
++
+ static inline void dquot_free_space_nodirty(struct inode *inode, qsize_t nr)
+ {
+ 	__dquot_free_space(inode, nr, 0);
 
 
