@@ -1,117 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763804AbbA2DMi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:12:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46973 "EHLO
+	id S1760038AbbA2DM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:12:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46972 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965032AbbA2Cgo (ORCPT
+	with ESMTP id S1762217AbbA2Cgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:44 -0500
+	Wed, 28 Jan 2015 21:36:40 -0500
 From: Kamal Mostafa <kamal@canonical.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Anton Vorontsov <cbouatmailru@gmail.com>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Tony Lindgren <tony@atomide.com>, Tony Luck <tony.luck@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
-Subject: [3.13.y-ckt stable] Patch "pstore-ram: Fix hangs by using write-combine mappings" has been added to staging queue
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 066/139] iwlwifi: dvm: fix flush support for old firmware
 Date: Wed, 28 Jan 2015 14:20:09 -0800
-Message-Id: <1422483609-13900-1-git-send-email-kamal@canonical.com>
+Message-Id: <1422483682-15393-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
+References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+3.13.11-ckt15 -stable review patch.  If anyone has any objections, please let me know.
 
-    pstore-ram: Fix hangs by using write-combine mappings
+------------------
 
-to the linux-3.13.y-queue branch of the 3.13.y-ckt extended stable tree 
-which can be found at:
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.13.y-queue
+commit 5a12a07e4495d1e4d79382e05c9d6e8b4d9fa4ec upstream.
 
-This patch is scheduled to be released in version 3.13.11-ckt15.
+Since the commit below, iwldvm sends the FLUSH command to
+the firmware. All the devices that use iwldvm have a
+firmware that expects the _v3 version of this command,
+besides 5150.
+5150's latest available firmware still expects a _v2 version
+of the FLUSH command.
+This means that since the commit below, we had a mismatch for
+this specific device only.
+This mismatch led to the NMI below:
 
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
+Loaded firmware version: 8.24.2.2
+Start IWL Error Log Dump:
+Status: 0x0000004C, count: 5
+0x00000004 | NMI_INTERRUPT_WDG
+0x000006F4 | uPc
+0x000005BA | branchlink1
+0x000006F8 | branchlink2
+0x000008C2 | interruptlink1
+0x00005B02 | interruptlink2
+0x00000002 | data1
+0x07030000 | data2
+0x00000068 | line
+0x3E80510C | beacon time
+0x728A0EF4 | tsf low
+0x0000002A | tsf hi
+0x00000000 | time gp1
+0x01BDC977 | time gp2
+0x00000000 | time gp3
+0x00010818 | uCode version
+0x00000000 | hw version
+0x00484704 | board version
+0x00000002 | hcmd
+0x2FF23080 | isr0
+0x0103E000 | isr1
+0x0000001A | isr2
+0x1443FCC3 | isr3
+0x11800112 | isr4
+0x00000068 | isr_pref
+0x000000D4 | wait_event
+0x00000000 | l2p_control
+0x00000007 | l2p_duration
+0x00103040 | l2p_mhvalid
+0x00000007 | l2p_addr_match
+0x00000000 | lmpm_pmg_sel
+0x00000000 | timestamp
+0x00000200 | flow_handler
 
-For more information about the 3.13.y-ckt tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+This was reported here:
+https://bugzilla.kernel.org/show_bug.cgi?id=88961
 
-Thanks.
--Kamal
-
-------
-
->From fb1b630b6dd09c791fc65d1228de6fd72610a85b Mon Sep 17 00:00:00 2001
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 12 Sep 2014 11:32:24 -0700
-Subject: pstore-ram: Fix hangs by using write-combine mappings
-
-commit 7ae9cb81933515dc7db1aa3c47ef7653717e3090 upstream.
-
-Currently trying to use pstore on at least ARMs can hang as we're
-mapping the peristent RAM with pgprot_noncached().
-
-On ARMs, pgprot_noncached() will actually make the memory strongly
-ordered, and as the atomic operations pstore uses are implementation
-defined for strongly ordered memory, they may not work. So basically
-atomic operations have undefined behavior on ARM for device or strongly
-ordered memory types.
-
-Let's fix the issue by using write-combine variants for mappings. This
-corresponds to normal, non-cacheable memory on ARM. For many other
-architectures, this change does not change the mapping type as by
-default we have:
-
-The reason why pgprot_noncached() was originaly used for pstore
-is because Colin Cross <ccross@android.com> had observed lost
-debug prints right before a device hanging write operation on some
-systems. For the platforms supporting pgprot_noncached(), we can
-add a an optional configuration option to support that. But let's
-get pstore working first before adding new features.
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Colin Cross <ccross@android.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: linux-kernel@vger.kernel.org
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-[tony@atomide.com: updated description]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-
+Fixes: a0855054e59b ("iwlwifi: dvm: drop non VO frames when flushing")
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/pstore/ram_core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/commands.h | 31 +++++++++++--------
+ drivers/net/wireless/iwlwifi/dvm/lib.c      | 48 ++++++++++++++---------------
+ 2 files changed, 42 insertions(+), 37 deletions(-)
 
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index de272d4..d058428 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -392,7 +392,7 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
- 	page_start = start - offset_in_page(start);
- 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
-
--	prot = pgprot_noncached(PAGE_KERNEL);
-+	prot = pgprot_writecombine(PAGE_KERNEL);
-
- 	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
- 	if (!pages) {
-@@ -422,7 +422,7 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size)
- 	buffer_start_add = buffer_start_add_locked;
- 	buffer_size_add = buffer_size_add_locked;
-
--	return ioremap(start, size);
-+	return ioremap_wc(start, size);
+diff --git a/drivers/net/wireless/iwlwifi/dvm/commands.h b/drivers/net/wireless/iwlwifi/dvm/commands.h
+index ebdac90..e65ac8e 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/commands.h
++++ b/drivers/net/wireless/iwlwifi/dvm/commands.h
+@@ -966,21 +966,21 @@ struct iwl_rem_sta_cmd {
+ 
+ 
+ /* WiFi queues mask */
+-#define IWL_SCD_BK_MSK			cpu_to_le32(BIT(0))
+-#define IWL_SCD_BE_MSK			cpu_to_le32(BIT(1))
+-#define IWL_SCD_VI_MSK			cpu_to_le32(BIT(2))
+-#define IWL_SCD_VO_MSK			cpu_to_le32(BIT(3))
+-#define IWL_SCD_MGMT_MSK		cpu_to_le32(BIT(3))
++#define IWL_SCD_BK_MSK			BIT(0)
++#define IWL_SCD_BE_MSK			BIT(1)
++#define IWL_SCD_VI_MSK			BIT(2)
++#define IWL_SCD_VO_MSK			BIT(3)
++#define IWL_SCD_MGMT_MSK		BIT(3)
+ 
+ /* PAN queues mask */
+-#define IWL_PAN_SCD_BK_MSK		cpu_to_le32(BIT(4))
+-#define IWL_PAN_SCD_BE_MSK		cpu_to_le32(BIT(5))
+-#define IWL_PAN_SCD_VI_MSK		cpu_to_le32(BIT(6))
+-#define IWL_PAN_SCD_VO_MSK		cpu_to_le32(BIT(7))
+-#define IWL_PAN_SCD_MGMT_MSK		cpu_to_le32(BIT(7))
+-#define IWL_PAN_SCD_MULTICAST_MSK	cpu_to_le32(BIT(8))
++#define IWL_PAN_SCD_BK_MSK		BIT(4)
++#define IWL_PAN_SCD_BE_MSK		BIT(5)
++#define IWL_PAN_SCD_VI_MSK		BIT(6)
++#define IWL_PAN_SCD_VO_MSK		BIT(7)
++#define IWL_PAN_SCD_MGMT_MSK		BIT(7)
++#define IWL_PAN_SCD_MULTICAST_MSK	BIT(8)
+ 
+-#define IWL_AGG_TX_QUEUE_MSK		cpu_to_le32(0xffc00)
++#define IWL_AGG_TX_QUEUE_MSK		0xffc00
+ 
+ #define IWL_DROP_ALL			BIT(1)
+ 
+@@ -1005,12 +1005,17 @@ struct iwl_rem_sta_cmd {
+  *	1: Dump multiple MSDU according to PS, INVALID STA, TTL, TID disable.
+  *	2: Dump all FIFO
+  */
+-struct iwl_txfifo_flush_cmd {
++struct iwl_txfifo_flush_cmd_v3 {
+ 	__le32 queue_control;
+ 	__le16 flush_control;
+ 	__le16 reserved;
+ } __packed;
+ 
++struct iwl_txfifo_flush_cmd_v2 {
++	__le16 queue_control;
++	__le16 flush_control;
++} __packed;
++
+ /*
+  * REPLY_WEP_KEY = 0x20
+  */
+diff --git a/drivers/net/wireless/iwlwifi/dvm/lib.c b/drivers/net/wireless/iwlwifi/dvm/lib.c
+index 3d5bdc4..9f2ea1e 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/lib.c
++++ b/drivers/net/wireless/iwlwifi/dvm/lib.c
+@@ -138,38 +138,38 @@ int iwlagn_manage_ibss_station(struct iwl_priv *priv,
+  */
+ int iwlagn_txfifo_flush(struct iwl_priv *priv, u32 scd_q_msk)
+ {
+-	struct iwl_txfifo_flush_cmd flush_cmd;
+-	struct iwl_host_cmd cmd = {
+-		.id = REPLY_TXFIFO_FLUSH,
+-		.len = { sizeof(struct iwl_txfifo_flush_cmd), },
+-		.flags = CMD_SYNC,
+-		.data = { &flush_cmd, },
++	struct iwl_txfifo_flush_cmd_v3 flush_cmd_v3 = {
++		.flush_control = cpu_to_le16(IWL_DROP_ALL),
++	};
++	struct iwl_txfifo_flush_cmd_v2 flush_cmd_v2 = {
++		.flush_control = cpu_to_le16(IWL_DROP_ALL),
+ 	};
+ 
+-	memset(&flush_cmd, 0, sizeof(flush_cmd));
++	u32 queue_control = IWL_SCD_VO_MSK | IWL_SCD_VI_MSK |
++			    IWL_SCD_BE_MSK | IWL_SCD_BK_MSK | IWL_SCD_MGMT_MSK;
+ 
+-	flush_cmd.queue_control = IWL_SCD_VO_MSK | IWL_SCD_VI_MSK |
+-				  IWL_SCD_BE_MSK | IWL_SCD_BK_MSK |
+-				  IWL_SCD_MGMT_MSK;
+ 	if ((priv->valid_contexts != BIT(IWL_RXON_CTX_BSS)))
+-		flush_cmd.queue_control |= IWL_PAN_SCD_VO_MSK |
+-					   IWL_PAN_SCD_VI_MSK |
+-					   IWL_PAN_SCD_BE_MSK |
+-					   IWL_PAN_SCD_BK_MSK |
+-					   IWL_PAN_SCD_MGMT_MSK |
+-					   IWL_PAN_SCD_MULTICAST_MSK;
++		queue_control |= IWL_PAN_SCD_VO_MSK | IWL_PAN_SCD_VI_MSK |
++				 IWL_PAN_SCD_BE_MSK | IWL_PAN_SCD_BK_MSK |
++				 IWL_PAN_SCD_MGMT_MSK |
++				 IWL_PAN_SCD_MULTICAST_MSK;
+ 
+ 	if (priv->nvm_data->sku_cap_11n_enable)
+-		flush_cmd.queue_control |= IWL_AGG_TX_QUEUE_MSK;
++		queue_control |= IWL_AGG_TX_QUEUE_MSK;
+ 
+ 	if (scd_q_msk)
+-		flush_cmd.queue_control = cpu_to_le32(scd_q_msk);
+-
+-	IWL_DEBUG_INFO(priv, "queue control: 0x%x\n",
+-		       flush_cmd.queue_control);
+-	flush_cmd.flush_control = cpu_to_le16(IWL_DROP_ALL);
+-
+-	return iwl_dvm_send_cmd(priv, &cmd);
++		queue_control = scd_q_msk;
++
++	IWL_DEBUG_INFO(priv, "queue control: 0x%x\n", queue_control);
++	flush_cmd_v3.queue_control = cpu_to_le32(queue_control);
++	flush_cmd_v2.queue_control = cpu_to_le16((u16)queue_control);
++
++	if (IWL_UCODE_API(priv->fw->ucode_ver) > 2)
++		return iwl_dvm_send_cmd_pdu(priv, REPLY_TXFIFO_FLUSH, 0,
++					    sizeof(flush_cmd_v3),
++					    &flush_cmd_v3);
++	return iwl_dvm_send_cmd_pdu(priv, REPLY_TXFIFO_FLUSH, 0,
++				    sizeof(flush_cmd_v2), &flush_cmd_v2);
  }
-
- static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
---
+ 
+ void iwlagn_dev_txfifo_flush(struct iwl_priv *priv)
+-- 
 1.9.1
 
