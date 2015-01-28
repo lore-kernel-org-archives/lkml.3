@@ -1,108 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546AbbA1USM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:18:12 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45498 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516AbbA1USH (ORCPT
+	id S1759505AbbA1Uah (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:30:37 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43236 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756175AbbA1Ua0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:18:07 -0500
-Date: Wed, 28 Jan 2015 14:19:34 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Kukjin Kim <kgene@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        Heiko Stuebner <heiko@sntech.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-rockchip@lists.infradead.org" 
-	<linux-rockchip@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "jroedel@suse.de" <jroedel@suse.de>
-Subject: Re: [PATCH 02/15] iommu: Introduce iommu domain types
-Message-ID: <20150128141934.GP1569@arm.com>
-References: <1422316305-19216-1-git-send-email-joro@8bytes.org>
- <1422316305-19216-3-git-send-email-joro@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422316305-19216-3-git-send-email-joro@8bytes.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 28 Jan 2015 15:30:26 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-15-54c8ef8b0023
+Message-id: <54C8F01B.5030300@samsung.com>
+Date: Wed, 28 Jan 2015 15:20:11 +0100
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: lee.jones@linaro.org, dmitry.torokhov@gmail.com, a.zummo@towertech.it
+Cc: sameo@linux.intel.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        cooloney@gmail.com, rpurdie@rpsys.net, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, lgirdwood@gmail.com,
+        broonie@kernel.org, paul.gortmaker@windriver.com,
+        sachin.kamat@linaro.org, k.kozlowski@samsung.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-pm@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH v5 0/3] mfd: max8997: add regmap support
+References: <1415776996-11569-1-git-send-email-r.baldyga@samsung.com>
+In-reply-to: <1415776996-11569-1-git-send-email-r.baldyga@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t/xa7rd70+EGDz5Y2ix5OJVdoupD5+w
+	WRzdOZHJ4vqX56wWk568Z7Y4vOgFo8XElZOZLV6/MLS4//Uoo8W3Kx1MFjc/fWO1uLxrDpvF
+	1jfrGC0+9x5htLjduILN4tre48wWu3c9ZbXY39nBaHHyTy+jxeluVovTu0scRD12zrrL7rFn
+	4kk2j80rtDw2repk87hzbQ+bx7yTgR575v9g9ejbsorRY/q8n0wenzfJeazfspUpgDuKyyYl
+	NSezLLVI3y6BK6Nz0j7WgqnCFW923WNvYHzG18XIwSEhYCLx7796FyMnkCkmceHeerYuRi4O
+	IYGljBLN7/eyQjgfGSVuvp7AAlLFK6Al8bX/GxuIzSKgKnG2+T07iM0moCOx5fsERhBbVCBC
+	4sOqr2wQ9YISPybfA+sVEfCU6Ox/wQxiMwvsY5ZYs1kPxBYWsJE403+eFcQWEnCVmPfsHVgv
+	p4CbRN+tgywghzIL6Encv6gF0SovsXnNW+YJjAKzkGyYhVA1C0nVAkbmVYyiqaXJBcVJ6blG
+	esWJucWleel6yfm5mxgh8fl1B+PSY1aHGAU4GJV4eBl8ToQIsSaWFVfmHmKU4GBWEuENegkU
+	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwFgjkKN14lli9tszapEXN//bcWQ2n6JtjXW/X1fC24UM
+	y7P3KFz2+1o13ymxfQ+TaJnx5ItX/a/uZ/3V9ffuYa/4OjnxKHbZmG87pL2+dzwwyK/gjDuV
+	ZNa05aiiXXAte661W+O6+9el2uI+dAlrrz+osf7K+cLiPW93/Zls+fOzdHDl+x/9JkosxRmJ
+	hlrMRcWJAOKahZ+tAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+Hi,
 
-Thanks for posting this!
+The first version of this patchset was send to kernel list almost 9
+months ago and still I don't have all needed Acks. The missing ones are
+for changes in INPUT and RTC subsystems.
 
-On Mon, Jan 26, 2015 at 11:51:32PM +0000, Joerg Roedel wrote:
-> From: Joerg Roedel <jroedel@suse.de>
+Dmitry, Alessandro, could you please have a look at this patches and
+give your Acks?
+
+Best regards,
+Robert Baldyga
+
+On 11/12/2014 08:23 AM, Robert Baldyga wrote:
+> This patchset modifies max8997 driver and associated function drivers to use
+> register maps instead of operating directly on i2c bus. This change allowed
+> to simplify irq handling, and to move some initializations to individual
+> function drivers. Hence now when some functions are not enabled, their i2c
+> clients, regmaps and irqs are not registered.
 > 
-> This allows to handle domains differently based on their
-> type in the future. An IOMMU driver can implement certain
-> optimizations for DMA-API domains for example.
+> Because patches are under review for very long time and I still don't have
+> all needed Acks, I'm resending this series rebased to the latest next branch.
 > 
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  drivers/iommu/iommu.c |  5 +++--
->  include/linux/iommu.h | 11 ++++++++++-
->  2 files changed, 13 insertions(+), 3 deletions(-)
+> Best regards
+> Robert Baldyga
+> Samsung R&D Institute Poland
 > 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index 684efc0..ab24d77 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -909,14 +909,15 @@ struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
->  	ops = bus->iommu_ops;
->  
->  	if (ops->domain_alloc)
-> -		domain = ops->domain_alloc();
-> +		domain = ops->domain_alloc(IOMMU_DOMAIN_UNMANAGED);
->  	else
->  		domain = kzalloc(sizeof(*domain), GFP_KERNEL);
->  
->  	if (!domain)
->  		return NULL;
->  
-> -	domain->ops = bus->iommu_ops;
-> +	domain->ops  = bus->iommu_ops;
-> +	domain->type = IOMMU_DOMAIN_UNMANAGED;
->  
->  	if (ops->domain_init && domain->ops->domain_init(domain))
->  		goto out_free;
-> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> index 69d1d12..0b67f65 100644
-> --- a/include/linux/iommu.h
-> +++ b/include/linux/iommu.h
-> @@ -51,7 +51,16 @@ struct iommu_domain_geometry {
->  	bool force_aperture;       /* DMA only allowed in mappable range? */
->  };
->  
-> +/* This are the possible domain-types */
-> +enum iommu_domain_type {
-> +	IOMMU_DOMAIN_DMA,	/* Domain used for DMA-API */
-> +	IOMMU_DOMAIN_IDENTITY,	/* Identity mapped domain  */
+> Changelog:
+> 
+> v5:
+> - rebase patches to last next branch
+> 
+> v4:
+> - remove patch moving regmap handling to function drivers
+> 
+> v3: https://lkml.org/lkml/2014/3/13/101
+> - fix error handling
+> - fix deinitializations order
+> - move muic irq enum values renaming to separate patch
+> 
+> v2: https://lkml.org/lkml/2014/3/12/237
+> - rebase patches on Lee Jones' MFD tree
+> - add missing selects in Kconfig
+> - add missing deinitializations
+> - add interrupt disabling when suspend
+> - few minor changes and typo fixes
+> 
+> v1: https://lkml.org/lkml/2014/3/11/291
+> 
+> Robert Baldyga (3):
+>   mfd: max8997: use regmap to access registers
+>   mfd: max8997: handle IRQs using regmap
+>   mfd: max8997: change irq names to upper case
+> 
+>  drivers/extcon/extcon-max8997.c     |  66 +++---
+>  drivers/input/misc/max8997_haptic.c |  34 ++--
+>  drivers/leds/leds-max8997.c         |  13 +-
+>  drivers/mfd/Kconfig                 |   3 +-
+>  drivers/mfd/Makefile                |   2 +-
+>  drivers/mfd/max8997-irq.c           | 387 ------------------------------------
+>  drivers/mfd/max8997.c               | 245 +++++++++++++++--------
+>  drivers/power/max8997_charger.c     |  33 +--
+>  drivers/regulator/max8997.c         |  87 ++++----
+>  drivers/rtc/rtc-max8997.c           |  58 +++---
+>  include/linux/mfd/max8997-private.h |  82 ++++++--
+>  11 files changed, 381 insertions(+), 629 deletions(-)
+>  delete mode 100644 drivers/mfd/max8997-irq.c
+> 
 
-What happens if somebody calls map or unmap on an identity-mapping domain?
-Can we catch that in the IOMMU core before calling the IOMMU driver? That
-also implies we need something extra to parameterise the attributes for
-the mapping (e.g. cacheable, read-only) and also potentially the address
-range.
-
-> +	IOMMU_DOMAIN_UNMANAGED, /* Domain mappings are managed by a third party
-> +				   user (like KVM or VFIO) */
-
-We already have the domain attributes (iommu_attr) to describe features
-of a domain. Is there really a need for this extra type, or can we extend
-the attribute set and allow for domain allocation with attributes?
-
-Will
