@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761168AbbA1ERk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:17:40 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38161 "EHLO mail.kernel.org"
+	id S1761229AbbA1ERs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:17:48 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38185 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761139AbbA1ERh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:17:37 -0500
+	id S1761161AbbA1ERk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:17:40 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 044/177] x86: Reject x32 executables if x32 ABI not supported
-Date: Wed, 28 Jan 2015 12:07:35 +0800
-Message-Id: <1422418236-12852-88-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 45/91] Input: i8042 - add Fujitsu U574 to no_timeout dmi table
+Date: Wed, 28 Jan 2015 12:07:36 +0800
+Message-Id: <1422418236-12852-89-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,46 +21,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Hans de Goede <hdegoede@redhat.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1 upstream.
+commit cc18a69c92d0972bc2fc5a047ee3be1e8398171b upstream.
 
-It is currently possible to execve() an x32 executable on an x86_64
-kernel that has only ia32 compat enabled.  However all its syscalls
-will fail, even _exit().  This usually causes it to segfault.
+https://bugzilla.kernel.org/show_bug.cgi?id=69731
 
-Change the ELF compat architecture check so that x32 executables are
-rejected if we don't support the x32 ABI.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Link: http://lkml.kernel.org/r/1410120305.6822.9.camel@decadent.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Jason Robinson <mail@jasonrobinson.me>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/include/asm/elf.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
-index 5939f44..06ec1fe 100644
---- a/arch/x86/include/asm/elf.h
-+++ b/arch/x86/include/asm/elf.h
-@@ -155,8 +155,9 @@ do {						\
- #define elf_check_arch(x)			\
- 	((x)->e_machine == EM_X86_64)
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 0ec9abb..dc37b32 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -601,6 +601,14 @@ static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
+ 		},
+ 	},
++	{
++		/* Fujitsu U574 laptop */
++		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U574"),
++		},
++	},
+ 	{ }
+ };
  
--#define compat_elf_check_arch(x)		\
--	(elf_check_arch_ia32(x) || (x)->e_machine == EM_X86_64)
-+#define compat_elf_check_arch(x)					\
-+	(elf_check_arch_ia32(x) ||					\
-+	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine == EM_X86_64))
- 
- #if __USER32_DS != __USER_DS
- # error "The following code assumes __USER32_DS == __USER_DS"
 -- 
 1.9.1
 
