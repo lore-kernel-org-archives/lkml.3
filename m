@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470AbbA2DNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:13:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46971 "EHLO
+	id S1762228AbbA2Cgb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:36:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46964 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762257AbbA2Cgi (ORCPT
+	with ESMTP id S1762210AbbA2Cg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:38 -0500
+	Wed, 28 Jan 2015 21:36:27 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 073/139] md/raid5: avoid livelock caused by non-aligned writes.
-Date: Wed, 28 Jan 2015 14:20:16 -0800
-Message-Id: <1422483682-15393-74-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 074/139] md/raid5: fetch_block must fetch all the blocks handle_stripe_dirtying wants.
+Date: Wed, 28 Jan 2015 14:20:17 -0800
+Message-Id: <1422483682-15393-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,41 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit a40687ff73a5b14909d6aa522f7d778b158911c5 upstream.
+commit 108cef3aa41669610e1836fe638812dd067d72de upstream.
 
-If a stripe in a raid6 array received a write to each data block while
-the array is degraded, and if any of these writes to a missing device
-are not page-aligned, then a live-lock happens.
+It is critical that fetch_block() and handle_stripe_dirtying()
+are consistent in their analysis of what needs to be loaded.
+Otherwise raid5 can wait forever for a block that won't be loaded.
 
-In this case the P and Q blocks need to be read so that the part of
-the missing block which is *not* being updated by the write can be
-constructed.  Due to a logic error, these blocks are not loaded, so
-the update cannot proceed and the stripe is 'handled' repeatedly in an
-infinite loop.
+Currently when writing to a RAID5 that is resyncing, to a location
+beyond the resync offset, handle_stripe_dirtying chooses a
+reconstruct-write cycle, but fetch_block() assumes a
+read-modify-write, and a lockup can happen.
 
-This bug is unlikely as most writes are page aligned.  However as it
-can lead to a livelock it is suitable for -stable.  It was introduced
-in 3.16.
+So treat that case just like RAID6, just as we do in
+handle_stripe_dirtying.  RAID6 always does reconstruct-write.
 
-Fixed: 67f455486d2ea20b2d94d6adf5b9b783d079e321
+This bug was introduced when the behaviour of handle_stripe_dirtying
+was changed in 3.7, so the patch is suitable for any kernel since,
+though it will need careful merging for some versions.
+
+Fixes: a7854487cd7128a30a7f4f5259de9f67d5efb95f
+Reported-by: Henry Cai <henryplusplus@gmail.com>
 Signed-off-by: NeilBrown <neilb@suse.de>
-[ kamal: 3.13-stable preqreq for
-  108cef3 "md/raid5: fetch_block must fetch all the blocks ..." ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid5.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid5.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 0b3fe80..2c2a3e4 100644
+index 2c2a3e4..3782c2f 100644
 --- a/drivers/md/raid5.c
 +++ b/drivers/md/raid5.c
-@@ -2901,7 +2901,7 @@ static int fetch_block(struct stripe_head *sh, struct stripe_head_state *s,
+@@ -2900,8 +2900,11 @@ static int fetch_block(struct stripe_head *sh, struct stripe_head_state *s,
+ 	     (sh->raid_conf->level <= 5 && s->failed && fdev[0]->towrite &&
  	      (!test_bit(R5_Insync, &dev->flags) || test_bit(STRIPE_PREREAD_ACTIVE, &sh->state)) &&
  	      !test_bit(R5_OVERWRITE, &fdev[0]->flags)) ||
- 	     (sh->raid_conf->level == 6 && s->failed && s->to_write &&
--	      s->to_write < sh->raid_conf->raid_disks - 2 &&
-+	      s->to_write - s->non_overwrite < sh->raid_conf->raid_disks - 2 &&
+-	     (sh->raid_conf->level == 6 && s->failed && s->to_write &&
+-	      s->to_write - s->non_overwrite < sh->raid_conf->raid_disks - 2 &&
++	     ((sh->raid_conf->level == 6 ||
++	       sh->sector >= sh->raid_conf->mddev->recovery_cp)
++	      && s->failed && s->to_write &&
++	      (s->to_write - s->non_overwrite <
++	       sh->raid_conf->raid_disks - sh->raid_conf->max_degraded) &&
  	      (!test_bit(R5_Insync, &dev->flags) || test_bit(STRIPE_PREREAD_ACTIVE, &sh->state))))) {
  		/* we would like to get this block, possibly by computing it,
  		 * otherwise read it if the backing disk is insync
