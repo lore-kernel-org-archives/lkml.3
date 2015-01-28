@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640AbbA1Bmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:42:45 -0500
-Received: from smtprelay0113.hostedemail.com ([216.40.44.113]:55142 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933624AbbA1Bmm (ORCPT
+	id S1760267AbbA1BrI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:47:08 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:13744 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760084AbbA1BrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:42:42 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2692:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3873:3874:4605:5007:6120:6261:7514:7875:7903:9040:9121:10004:10400:10848:10967:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:12663:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rail85_3481a08e4ca23
-X-Filterd-Recvd-Size: 2243
-Date: Tue, 27 Jan 2015 20:42:39 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 2/4] sched: Use traced preempt count operations to
- toggle PREEMPT_ACTIVE
-Message-ID: <20150127204239.3d3bc2e4@gandalf.local.home>
-In-Reply-To: <1422404652-29067-3-git-send-email-fweisbec@gmail.com>
-References: <1422404652-29067-1-git-send-email-fweisbec@gmail.com>
-	<1422404652-29067-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 27 Jan 2015 20:47:04 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
+        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
+Subject: [PATCH v4 05/13] pm: at91: move the copying the sram function to the sram initializationi phase
+Date: Wed, 28 Jan 2015 09:43:16 +0800
+Message-ID: <1422409396-24394-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
+References: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015 01:24:10 +0100
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
+To decrease the suspend time, move the copying the sram function
+to the sram initialization phase, instead of every time go to suspend.
 
-> d1f74e20b5b064a130cd0743a256c2d3cfe84010 turned PREEMPT_ACTIVE modifiers
-> to use raw untraced preempt count operations. Meanwhile this prevents
-> from debugging and tracing preemption disabled if we pull that
-> responsibility to schedule() callers (see following patches).
-> 
-> Is there anything we can do about that?
-> 
+In the meanwhile, if there is no sram allocated for PM, the PM is not supported.
 
-I'm trying to understand how you solved the recursion issue with
-preempt_schedule()?
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/pm.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-Here's what happens:
-
-preempt_schedule()
-  preempt_count_add() -> gets traced by function tracer
-     function_trace_call()
-         preempt_disable_notrace()
-         [...]
-         preempt_enable_notrace() -> sees NEED_RESCHED set
-             preempt_schedule()
-                preempt_count_add() -> gets traced
-                   function_trace_call()
-                       preempt_disable_notrace()
-                       preempt_enable_notrace() -> sees NEED_RESCHED set
-
-                          [etc etc until BOOM!]
-
-Perhaps if you can find a way to clear NEED_RECHED before disabling
-preemption, then it would work. But I don't see that in the patch
-series.
-
--- Steve
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 5dd4e41..6b08098 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -161,10 +161,6 @@ static int at91_pm_enter(suspend_state_t state)
+ 			 * turning off the main oscillator; reverse on wakeup.
+ 			 */
+ 			if (slow_clock) {
+-#ifdef CONFIG_AT91_SLOW_CLOCK
+-				/* copy slow_clock handler to SRAM, and call it */
+-				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+-#endif
+ 				slow_clock(at91_pmc_base, at91_ramc_base[0],
+ 					   at91_ramc_base[1],
+ 					   at91_pm_data.memctrl);
+@@ -272,6 +268,9 @@ static void __init at91_pm_sram_init(void)
+ 	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
+ 	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
+ 
++	/* Copy the slow_clock handler to SRAM */
++	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
++
+ put_node:
+ 	of_node_put(node);
+ }
+@@ -289,7 +288,10 @@ static void __init at91_pm_init(void)
+ 	if (at91_cpuidle_device.dev.platform_data)
+ 		platform_device_register(&at91_cpuidle_device);
+ 
+-	suspend_set_ops(&at91_pm_ops);
++	if (slow_clock)
++		suspend_set_ops(&at91_pm_ops);
++	else
++		pr_info("AT91: PM : Not supported, due to no sram allocated\n");
+ }
+ 
+ void __init at91_rm9200_pm_init(void)
+-- 
+1.7.9.5
 
