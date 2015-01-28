@@ -1,150 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761182AbbA1Uif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:38:35 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60311 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933781AbbA1Ui2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:38:28 -0500
-Message-ID: <54C8FE72.3060409@ti.com>
-Date: Wed, 28 Jan 2015 10:21:22 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Rob Herring <robh+dt@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to of_iommu_configure()
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <3953539.m9NpxSWcJ5@avalon> <20150128122941.GK1569@arm.com> <13812499.ICbNgSDOae@avalon> <20150128133219.GM1569@arm.com>
-In-Reply-To: <20150128133219.GM1569@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933776AbbA2Dgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:36:44 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51070 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756756AbbA2Blg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:41:36 -0500
+Message-ID: <1422458557.5293.51.camel@infradead.org>
+Subject: Re: [v3 02/26] iommu: Add new member capability to struct
+ irq_remap_ops
+From: David Woodhouse <dwmw2@infradead.org>
+To: Feng Wu <feng.wu@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@kernel.org, pbonzini@redhat.com, joro@8bytes.org,
+        alex.williamson@redhat.com, jiang.liu@linux.intel.com,
+        eric.auger@linaro.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, kvm@vger.kernel.org
+Date: Wed, 28 Jan 2015 15:22:37 +0000
+In-Reply-To: <1418397300-10870-3-git-send-email-feng.wu@intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	 <1418397300-10870-3-git-send-email-feng.wu@intel.com>
+Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
+	boundary="=-h28e/ghe/CHG07Q4OA5u"
+X-Mailer: Evolution 3.12.10 (3.12.10-1.fc21) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2015 08:32 AM, Will Deacon wrote:
-> On Wed, Jan 28, 2015 at 01:15:10PM +0000, Laurent Pinchart wrote:
->> On Wednesday 28 January 2015 12:29:42 Will Deacon wrote:
->>> On Wed, Jan 28, 2015 at 12:23:03PM +0000, Laurent Pinchart wrote:
->>>> On Wednesday 28 January 2015 11:33:00 Will Deacon wrote:
->>>>> On Mon, Jan 26, 2015 at 06:49:01PM +0000, Murali Karicheri wrote:
->>>>>> On 01/25/2015 08:32 AM, Laurent Pinchart wrote:
->>>>>>> On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
->>>>>>>> Function of_iommu_configure() is called from of_dma_configure() to
->>>>>>>> setup iommu ops using DT property. This API is currently used for
->>>>>>>> platform devices for which DMA configuration (including iommu ops)
->>>>>>>> may come from device's parent. To extend this functionality for PCI
->>>>>>>> devices, this API need to take a parent node ptr as an argument
->>>>>>>> instead of assuming device's parent. This is needed since for PCI,
->>>>>>>> the dma configuration may be defined in the DT node of the root bus
->>>>>>>> bridge's parent device. Currently only dma-range is used for PCI and
->>>>>>>> iommu is not supported. So return error if the device is PCI.
->>>>>>>>
->>>>>>>> Cc: Joerg Roedel<joro@8bytes.org>
->>>>>>>> Cc: Grant Likely<grant.likely@linaro.org>
->>>>>>>> Cc: Rob Herring<robh+dt@kernel.org>
->>>>>>>> Cc: Bjorn Helgaas<bhelgaas@google.com>
->>>>>>>> Cc: Will Deacon<will.deacon@arm.com>
->>>>>>>> Cc: Russell King<linux@arm.linux.org.uk>
->>>>>>>> Cc: Arnd Bergmann<arnd@arndb.de>
->>>>>>>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
->>>>>>>>
->>>>>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->>>>>>>> ---
->>>>>>>>
->>>>>>>>    drivers/iommu/of_iommu.c |   10 ++++++++--
->>>>>>>>    drivers/of/platform.c    |    2 +-
->>>>>>>>    include/linux/of_iommu.h |    6 ++++--
->>>>>>>>    3 files changed, 13 insertions(+), 5 deletions(-)
->>>>>>>>
->>>>>>>> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
->>>>>>>> index af1dc6a..439235b 100644
->>>>>>>> --- a/drivers/iommu/of_iommu.c
->>>>>>>> +++ b/drivers/iommu/of_iommu.c
->>>>>>>> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct
->>>>>>>> device_node *np)
->>>>>>>>    	return ops;
->>>>>>>>   }
->>>>>>>>
->>>>>>>> -struct iommu_ops *of_iommu_configure(struct device *dev)
->>>>>>>> +struct iommu_ops *of_iommu_configure(struct device *dev,
->>>>>>>> +				     struct device_node *iommu_np)
->>>>>>>>   {
->>>>>>>>    	struct of_phandle_args iommu_spec;
->>>>>>>>    	struct device_node *np;
->>>>>>>>    	struct iommu_ops *ops = NULL;
->>>>>>>>    	int idx = 0;
->>>>>>>>
->>>>>>>> +	if (dev_is_pci(dev)) {
->>>>>>>> +		dev_err(dev, "iommu is currently not supported for PCI\n");
->>>>>>>> +		return NULL;
->>>>>>>> +	}
->>>>>>>> +
->>>>>>>>    	/*
->>>>>>>>    	 * We don't currently walk up the tree looking for a parent
->>>>>>>>    	 IOMMU.
->>>>>>>>    	 * See the `Notes:' section of
->>>>>>>>    	 * Documentation/devicetree/bindings/iommu/iommu.txt
->>>>>>>>    	 */
->>>>>>>
->>>>>>> Wouldn't it be better to fix this rather than passing the device node
->>>>>>> pointer to the function ? The solution would be more generic.
->>>>>>
->>>>>> Will Deacon (Copied here) is working on this as we alteady discussed
->>>>>> in this thread. So it will be addressed by him in another series.
->>>>>
->>>>> Well, "working on this" equates to "has it somewhere near the bottom of
->>>>> a very long list" :)
->>>>
->>>> What's your opinion on this patch then, do you think adding the iommu_np
->>>> argument makes sense as a temporary hack, or should we instead walk up the
->>>> tree looking for an iommus attribute in parent nodes ? I don't expect that
->>>> to be insanely difficult to code.
->>>
->>> If walking up the tree is useful, then I think we should do that and update
->>> the Documentation to reflect the new behaviour.
->>
->> If I understand Murali's patch set right (please correct me if that's not the
->> case) the PCI code walks up the DT nodes hierarchy to the parent node that
->> contains the iommus attribute and passes a pointer to that node to this
->> function. It's thus a PCI-specific solution. As a temporary hack that's OK I
->> suppose, but if implementing it right straight away isn't difficult that would
->> be better.
->
-> It looks to me like the code walks the PCI topology to get the DT node for
-> the host controller, and passes *that* to of_dma_configure. That sounds
-> like the right thing to do to me, especially since the PCI topology is
-> likely not encoded in the device-tree. So actually, it is passing the
-> first parent node afaict.
->
-Laurent, Will,
 
-I don't have an IOMMU hardware to do more work on this. My patch series 
-has been on this list for long and it is also increasing in scope :(
+--=-h28e/ghe/CHG07Q4OA5u
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I would suggest a follow up patch to this from someone (probably Will) 
-and my patch goes as is with out further update. Hope this is reasonable.
+On Fri, 2014-12-12 at 23:14 +0800, Feng Wu wrote:
+> This patch adds a new member capability to struct irq_remap_ops,
+> this new function ops can be used to check whether some
+> features are supported, such as VT-d Posted-Interrupts.
 
-Murali
-> The part I'm more interested in is the mapping of RequesterID (PCI dma
-> alias) to IOMMU ID when we transition from the PCI topology to the DT
-> topology. Currently, it seems to be 1:1 on the platforms I have, but I
-> doubt this will always be the case.
->
-> Will
+> +	/* Check some capability is supported */
+> +	bool (*capability)(enum irq_remap_cap);
+> +
+
+Does this need to be a function call? Or could we just have a set of
+flags in the irq_remap_ops instead, with less overhead to check them?
+
+--=20
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
+--=-h28e/ghe/CHG07Q4OA5u
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISxDCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGQjCCBSqg
+AwIBAgIDCdkyMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTQwNTA0MTczMDIyWhcNMTUwNTA0MjM0MTAxWjBdMRkwFwYDVQQNExAzODNCMTVkSHFQSUR0cDZO
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy7K+t+REIdZGFUfgR8Io
+QrJ/VLZil9I00JcwqTo8BiGy1dqSIB2y923siya5SDKMh1YurtCPsX96cNzwPmmN2cs0MKeVPQWz
+iQhHk3uKcB6LvvS7pzTahRWMRmTyW3CH+RphRM9plvyClY23GEeEnpBnGz4GaJJiPcJjGgzyZ/tI
+q473pOlSrDPZnZk43vt/5CJN46nIZOZ2I+PzlgINI+EbiwsXVn3VohHB7nVTwGaRLk5oywGt8ZT7
+tDdxn3BQ3inO1sr5MtkV1o2cHlenIC8mlU8nL/mrqqVve7Vib1YQUycW+Pj4CBYm4FTeuctAvNzK
+U/daeBclOZ8ofgQe2wIDAQABo4IC2TCCAtUwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBRAjCSCV70BpLBeXge5DXi+mPhHTTAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASowLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0
+YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdh
+cyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRz
+IG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
+ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMu
+MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmww
+gY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9z
+dWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20v
+Y2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3Rh
+cnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEAWS2KNN7O3vZVtNHXVqgbmijeptKwt+8b6yiF
+wT3kJoywInPl5U+OeKRZfQKTHghM4Ohof6lF244ZMxhir/xp7l/zkZ/BUbxLwp6kIL27Gi5pgP4D
+KLnTZheQL9N5Yi/vMONxMWcpcW+ZNv5hnDCfEsfVcLXC8sNLPjx2ezfMIhSSPwBuJpmOun70te4E
+P0YBqjSalPfvc5fC5KgaYtqTDFwo9Mw25X5HHDC0r6BK5aNrF1nD/xYTX7cdvZZWl7cUApr4PCrn
+uI2DEn7OWQ/rY407ytV1c5pjvmuv/IT/ZUb/kXV6Q47UvrJp2Ifi2VhsBcnHHasKavjtRCmpDsGM
+rTCCBkIwggUqoAMCAQICAwnZMjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
+BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
+ZW50IENBMB4XDTE0MDUwNDE3MzAyMloXDTE1MDUwNDIzNDEwMVowXTEZMBcGA1UEDRMQMzgzQjE1
+ZEhxUElEdHA2TjEcMBoGA1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYT
+ZHdtdzJAaW5mcmFkZWFkLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMuyvrfk
+RCHWRhVH4EfCKEKyf1S2YpfSNNCXMKk6PAYhstXakiAdsvdt7IsmuUgyjIdWLq7Qj7F/enDc8D5p
+jdnLNDCnlT0Fs4kIR5N7inAei770u6c02oUVjEZk8ltwh/kaYUTPaZb8gpWNtxhHhJ6QZxs+BmiS
+Yj3CYxoM8mf7SKuO96TpUqwz2Z2ZON77f+QiTeOpyGTmdiPj85YCDSPhG4sLF1Z91aIRwe51U8Bm
+kS5OaMsBrfGU+7Q3cZ9wUN4pztbK+TLZFdaNnB5XpyAvJpVPJy/5q6qlb3u1Ym9WEFMnFvj4+AgW
+JuBU3rnLQLzcylP3WngXJTmfKH4EHtsCAwEAAaOCAtkwggLVMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUQIwkgle9AaSwXl4H
+uQ14vpj4R00wHwYDVR0jBBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdt
+dzJAaW5mcmFkZWFkLm9yZzCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4G
+CCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcC
+AjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0
+aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJl
+cXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
+aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9i
+bGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1
+MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFy
+dHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
+cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAFktijTezt72VbTR11aoG5oo
+3qbSsLfvG+sohcE95CaMsCJz5eVPjnikWX0Ckx4ITODoaH+pRduOGTMYYq/8ae5f85GfwVG8S8Ke
+pCC9uxouaYD+Ayi502YXkC/TeWIv7zDjcTFnKXFvmTb+YZwwnxLH1XC1wvLDSz48dns3zCIUkj8A
+biaZjrp+9LXuBD9GAao0mpT373OXwuSoGmLakwxcKPTMNuV+RxwwtK+gSuWjaxdZw/8WE1+3Hb2W
+Vpe3FAKa+Dwq57iNgxJ+zlkP62ONO8rVdXOaY75rr/yE/2VG/5F1ekOO1L6yadiH4tlYbAXJxx2r
+Cmr47UQpqQ7BjK0xggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMJ
+2TIwCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTUwMTI4MTUyMjM3WjAjBgkqhkiG9w0BCQQxFgQUuPwmTyF7J5LfcgVbWYB/8OCHqHAwgaUG
+CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
+KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
+YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMJ2TIwgacGCyqG
+SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
+cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwnZMjANBgkqhkiG
+9w0BAQEFAASCAQAawvAI6lK7agtNlNrmNYOTNQ5oU2QBGK3VEfWq2ATnTaWeDPuKrk3Z6VKGTYCh
+pGsXCqVGty1LDVYkP/LuoLnKNAdvmrV8PGDTQg0tuCovX9XZUm5NKOdxJJmCVTDb+YynW26O8F3P
+X5FkDOwvKTN4LVU4QTPmgtOVXKwAZmazEMo6LFdCZK+RzcexD8PiX3wLLk9PRcOcuKV6DHR6oJZ5
+HWwYK0jfeXZ7JYLGOkfoQRMo04PW8VsB5ufuAscAYlic+rMOZYPGRlA07jwddaiWLdznV3hEn6eK
+ns7V9z4mJ76aqcr7IKAaspIfKYaeVoY9EHMFZT1UMQAFpHn/dnDmAAAAAAAA
 
 
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+--=-h28e/ghe/CHG07Q4OA5u--
+
