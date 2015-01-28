@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933271AbbA1ETn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:19:43 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38919 "EHLO mail.kernel.org"
+	id S1761929AbbA1FEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:04:12 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38932 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761603AbbA1ETj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:39 -0500
+	id S1761612AbbA1ETl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:41 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zefan Li <lizefan@huawei.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Miao Xie <miaox@cn.fujitsu.com>, Kees Cook <keescook@chromium.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.4 64/91] cpuset: PF_SPREAD_PAGE and PF_SPREAD_SLAB should be atomic flags
-Date: Wed, 28 Jan 2015 12:08:14 +0800
-Message-Id: <1422418236-12852-127-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 064/177] ext4: add ext4_iget_normal() which is to be used for dir tree lookups
+Date: Wed, 28 Jan 2015 12:08:15 +0800
+Message-Id: <1422418236-12852-128-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -22,176 +20,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zefan Li <lizefan@huawei.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 2ad654bc5e2b211e92f66da1d819e47d79a866f0 upstream.
+commit f4bb2981024fc91b23b4d09a8817c415396dbabb upstream.
 
-When we change cpuset.memory_spread_{page,slab}, cpuset will flip
-PF_SPREAD_{PAGE,SLAB} bit of tsk->flags for each task in that cpuset.
-This should be done using atomic bitops, but currently we don't,
-which is broken.
+If there is a corrupted file system which has directory entries that
+point at reserved, metadata inodes, prohibit them from being used by
+treating them the same way we treat Boot Loader inodes --- that is,
+mark them to be bad inodes.  This prohibits them from being opened,
+deleted, or modified via chmod, chown, utimes, etc.
 
-Tetsuo reported a hard-to-reproduce kernel crash on RHEL6, which happened
-when one thread tried to clear PF_USED_MATH while at the same time another
-thread tried to flip PF_SPREAD_PAGE/PF_SPREAD_SLAB. They both operate on
-the same task.
+In particular, this prevents a corrupted file system which has a
+directory entry which points at the journal inode from being deleted
+and its blocks released, after which point Much Hilarity Ensues.
 
-Here's the full report:
-https://lkml.org/lkml/2014/9/19/230
-
-To fix this, we make PF_SPREAD_PAGE and PF_SPREAD_SLAB atomic flags.
-
-v4:
-- updated mm/slab.c. (Fengguang Wu)
-- updated Documentation.
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Kees Cook <keescook@chromium.org>
-Fixes: 950592f7b991 ("cpusets: update tasks' page/slab spread flags in time")
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Reported-by: Sami Liedes <sami.liedes@iki.fi>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[lizf: Backported to 3.4:
- - adjust context
- - check current->flags & PF_MEMPOLICY rather than current->mempolicy]
 ---
- Documentation/cgroups/cpusets.txt |  6 +++---
- include/linux/cpuset.h            |  4 ++--
- include/linux/sched.h             | 12 ++++++++++--
- kernel/cpuset.c                   |  9 +++++----
- mm/slab.c                         |  4 ++--
- 5 files changed, 22 insertions(+), 13 deletions(-)
+ fs/ext4/ext4.h  | 1 +
+ fs/ext4/inode.c | 7 +++++++
+ fs/ext4/namei.c | 4 ++--
+ fs/ext4/super.c | 2 +-
+ 4 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt
-index cefd3d8..a52a39f 100644
---- a/Documentation/cgroups/cpusets.txt
-+++ b/Documentation/cgroups/cpusets.txt
-@@ -345,14 +345,14 @@ the named feature on.
- The implementation is simple.
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 521ba9d..b9cdb6d 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1891,6 +1891,7 @@ int ext4_get_block(struct inode *inode, sector_t iblock,
+ 				struct buffer_head *bh_result, int create);
  
- Setting the flag 'cpuset.memory_spread_page' turns on a per-process flag
--PF_SPREAD_PAGE for each task that is in that cpuset or subsequently
-+PFA_SPREAD_PAGE for each task that is in that cpuset or subsequently
- joins that cpuset.  The page allocation calls for the page cache
--is modified to perform an inline check for this PF_SPREAD_PAGE task
-+is modified to perform an inline check for this PFA_SPREAD_PAGE task
- flag, and if set, a call to a new routine cpuset_mem_spread_node()
- returns the node to prefer for the allocation.
- 
- Similarly, setting 'cpuset.memory_spread_slab' turns on the flag
--PF_SPREAD_SLAB, and appropriately marked slab caches will allocate
-+PFA_SPREAD_SLAB, and appropriately marked slab caches will allocate
- pages from the node returned by cpuset_mem_spread_node().
- 
- The cpuset_mem_spread_node() routine is also simple.  It uses the
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index 668f66b..bb48be7 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -74,12 +74,12 @@ extern int cpuset_slab_spread_node(void);
- 
- static inline int cpuset_do_page_mem_spread(void)
- {
--	return current->flags & PF_SPREAD_PAGE;
-+	return task_spread_page(current);
+ extern struct inode *ext4_iget(struct super_block *, unsigned long);
++extern struct inode *ext4_iget_normal(struct super_block *, unsigned long);
+ extern int  ext4_write_inode(struct inode *, struct writeback_control *);
+ extern int  ext4_setattr(struct dentry *, struct iattr *);
+ extern int  ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index b9c3995..c3598f1 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3838,6 +3838,13 @@ bad_inode:
+ 	return ERR_PTR(ret);
  }
  
- static inline int cpuset_do_slab_mem_spread(void)
- {
--	return current->flags & PF_SPREAD_SLAB;
-+	return task_spread_slab(current);
- }
- 
- extern int current_cpuset_is_being_rebound(void);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index b85b719..56d8233 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1834,8 +1834,6 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define PF_KTHREAD	0x00200000	/* I am a kernel thread */
- #define PF_RANDOMIZE	0x00400000	/* randomize virtual address space */
- #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
--#define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
--#define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
- #define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
- #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
- #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
-@@ -1868,6 +1866,8 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define used_math() tsk_used_math(current)
- 
- /* Per-process atomic flags. */
-+#define PFA_SPREAD_PAGE  1      /* Spread page cache over cpuset */
-+#define PFA_SPREAD_SLAB  2      /* Spread some slab caches over cpuset */
- 
- #define TASK_PFA_TEST(name, func)					\
- 	static inline bool task_##func(struct task_struct *p)		\
-@@ -1970,6 +1970,14 @@ static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
- }
- #endif
- 
-+TASK_PFA_TEST(SPREAD_PAGE, spread_page)
-+TASK_PFA_SET(SPREAD_PAGE, spread_page)
-+TASK_PFA_CLEAR(SPREAD_PAGE, spread_page)
++struct inode *ext4_iget_normal(struct super_block *sb, unsigned long ino)
++{
++	if (ino < EXT4_FIRST_INO(sb) && ino != EXT4_ROOT_INO)
++		return ERR_PTR(-EIO);
++	return ext4_iget(sb, ino);
++}
 +
-+TASK_PFA_TEST(SPREAD_SLAB, spread_slab)
-+TASK_PFA_SET(SPREAD_SLAB, spread_slab)
-+TASK_PFA_CLEAR(SPREAD_SLAB, spread_slab)
-+
- /*
-  * Do not use outside of architecture code which knows its limitations.
-  *
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 9cb82b9..7f3bde5 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -326,13 +326,14 @@ static void cpuset_update_task_spread_flag(struct cpuset *cs,
- 					struct task_struct *tsk)
- {
- 	if (is_spread_page(cs))
--		tsk->flags |= PF_SPREAD_PAGE;
-+		task_set_spread_page(tsk);
- 	else
--		tsk->flags &= ~PF_SPREAD_PAGE;
-+		task_clear_spread_page(tsk);
-+
- 	if (is_spread_slab(cs))
--		tsk->flags |= PF_SPREAD_SLAB;
-+		task_set_spread_slab(tsk);
- 	else
--		tsk->flags &= ~PF_SPREAD_SLAB;
-+		task_clear_spread_slab(tsk);
+ static int ext4_inode_blocks_set(handle_t *handle,
+ 				struct ext4_inode *raw_inode,
+ 				struct ext4_inode_info *ei)
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 11566d7..c6dd936 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1051,7 +1051,7 @@ static struct dentry *ext4_lookup(struct inode *dir, struct dentry *dentry, stru
+ 					 dentry->d_name.name);
+ 			return ERR_PTR(-EIO);
+ 		}
+-		inode = ext4_iget(dir->i_sb, ino);
++		inode = ext4_iget_normal(dir->i_sb, ino);
+ 		if (inode == ERR_PTR(-ESTALE)) {
+ 			EXT4_ERROR_INODE(dir,
+ 					 "deleted inode referenced: %u",
+@@ -1087,7 +1087,7 @@ struct dentry *ext4_get_parent(struct dentry *child)
+ 		return ERR_PTR(-EIO);
+ 	}
+ 
+-	return d_obtain_alias(ext4_iget(child->d_inode->i_sb, ino));
++	return d_obtain_alias(ext4_iget_normal(child->d_inode->i_sb, ino));
  }
  
- /*
-diff --git a/mm/slab.c b/mm/slab.c
-index 3eb1c38..3714dd9 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3321,7 +3321,7 @@ static inline void *____cache_alloc(struct kmem_cache *cachep, gfp_t flags)
- 
- #ifdef CONFIG_NUMA
- /*
-- * Try allocating on another node if PF_SPREAD_SLAB|PF_MEMPOLICY.
-+ * Try allocating on another node if PFA_SPREAD_SLAB|PF_MEMPOLICY.
-  *
-  * If we are in_interrupt, then process context, including cpusets and
-  * mempolicy, may not apply and should not be used for allocation policy.
-@@ -3562,7 +3562,7 @@ __do_cache_alloc(struct kmem_cache *cache, gfp_t flags)
- {
- 	void *objp;
- 
--	if (unlikely(current->flags & (PF_SPREAD_SLAB | PF_MEMPOLICY))) {
-+	if (unlikely((current->flags & PF_MEMPOLICY) || cpuset_do_slab_mem_spread())) {
- 		objp = alternate_node_alloc(cache, flags);
- 		if (objp)
- 			goto out;
+ #define S_SHIFT 12
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 481f924..92ea560 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1041,7 +1041,7 @@ static struct inode *ext4_nfs_get_inode(struct super_block *sb,
+ 	 * Currently we don't know the generation for parent directory, so
+ 	 * a generation of 0 means "accept any"
+ 	 */
+-	inode = ext4_iget(sb, ino);
++	inode = ext4_iget_normal(sb, ino);
+ 	if (IS_ERR(inode))
+ 		return ERR_CAST(inode);
+ 	if (generation && inode->i_generation != generation) {
 -- 
 1.9.1
 
