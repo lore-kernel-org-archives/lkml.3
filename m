@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763362AbbA2C5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:57:31 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37324 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505AbbA2C53 (ORCPT
+	id S964845AbbA2Cdj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:33:39 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:43485 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757939AbbA2Cde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:57:29 -0500
-Message-ID: <54C8BDF9.7080802@gmail.com>
-Date: Wed, 28 Jan 2015 11:46:17 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 28 Jan 2015 21:33:34 -0500
 MIME-Version: 1.0
-To: Daniel Mack <daniel@zonque.org>, David Herrmann <dh.herrmann@gmail.com>
-CC: mtk.manpages@gmail.com, Tom Gundersen <teg@jklm.no>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+In-Reply-To: <20150128095401.GC14175@tarshish>
+References: <1422413261-17184-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1422413261-17184-3-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20150128061250.GQ2555@sapphire.tkos.co.il>
+	<CAAfSe-v4FGpHL3N3utiDwcoc7qus1XZZszuXBqB6LeE1frAfeA@mail.gmail.com>
+	<20150128095401.GC14175@tarshish>
+Date: Wed, 28 Jan 2015 18:46:53 +0800
+Message-ID: <CAAfSe-t-to3=KrUH2cWQXy710H8Lr3Nd7Za1yoaxio4i70c51w@mail.gmail.com>
+Subject: Re: [PATCH v9 2/2] tty/serial: Add Spreadtrum sc9836-uart driver support
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        "andrew@lunn.ch" <andrew@lunn.ch>, "jslaby@suse.cz" <jslaby@suse.cz>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
         Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
-        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>	<54BE5DC8.70706@gmail.com>	<54BE9D08.7010804@zonque.org>	<54BF805B.4000609@gmail.com>	<54BFDAAA.50203@zonque.org>	<54C0CE8A.5080805@gmail.com>	<20150123155402.GB2159@kroah.com>	<54C65267.7090905@gmail.com>	<CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>	<54C66F30.8050108@gmail.com> <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com> <54C7D0A3.4000900@gmail.com> <54C7D573.7080809@zonque.org>
-In-Reply-To: <54C7D573.7080809@zonque.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Orson Zhai <orsonzhai@gmail.com>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Daniel,
-
-On 01/27/2015 07:14 PM, Daniel Mack wrote:
-> Hi Michael,
-> 
-> On 01/27/2015 06:53 PM, Michael Kerrisk (man-pages) wrote:
->> On 01/27/2015 04:23 PM, David Herrmann wrote:
-> 
->>> I only expect a handful of users to call the ioctls directly. The
->>> libraries that implement the payload-marshaling, in particular. It's a
->>> similar situation with netlink.
+On Wed, Jan 28, 2015 at 5:54 PM, Baruch Siach <baruch@tkos.co.il> wrote:
+> Hi Lyra Zhang,
+>
+> On Wed, Jan 28, 2015 at 04:46:33PM +0800, Lyra Zhang wrote:
+>> On Wed, Jan 28, 2015 at 2:12 PM, Baruch Siach <baruch@tkos.co.il> wrote:
+>> > On Wed, Jan 28, 2015 at 10:47:41AM +0800, Chunyan Zhang wrote:
+>> >> +             if (uart_handle_sysrq_char(port, ch))
+>> >> +                     continue;
+>> >
+>> > My comment[1] on a previous version of this patch still stands.
+>> > uart_handle_sysrq_char is a NOP when SUPPORT_SYSRQ is not defined.
 >>
->> Thanks, David, for the clarification. I think it would have been helpful
->> to have that more clearly stated up front, especially as some comments 
->> in this thread, such as the above, could be interpreted to mean quite 
->> the opposite. Can I suggest that some text on this point be added to 
->> kdbus.txt?
-> 
-> We're currently working on an a set of comprehensive man pages to
-> document all the commands in the API, along with every struct, enum etc.
-> We do that so that developers are able to actually understand every
-> detail of the API, even though most people - as David explained - will
-> not use that interface directly in the first place but let one of the
-> high-level libraries help them integrate D-Bus functionality into their
-> applications.
+>> yes, there are two definitions in serial_core.h, and it returns 0 when
+>> SUPPORT_SYSRQ is not defined.
+>> so, I think my code behavior does not hurt, right?
+>
+> Right. I just wanted to point out that you can easily define SUPPORT_SYSRQ as
+> appropriate like many other serial drivers do to get sysrq support.
+>
 
-(I suggest that some text about this text go into the kdbus(7) page.)
+Ok, I got it. I'll add SUPPORT_SYSRQ definition, and send v10 to Greg.
 
-> If you want, have a look at the upstream repository for a 	preliminary
-> version of the new docs.
+thanks,
+Chunyan
 
-That's at https://code.google.com/p/d-bus/ , right? This looks like a 
-good direction to go in. Thanks for tackling that.
-
-I hope to take a longer look sometime soon, but a few general conventions
-for man-pages that you might want to consider following:
-
-* When listing errors, I think you should change your 
-  language/formatting somewhat. Examples here from kdbus.endpoint.7:
-   
-  (1) The man page says
-
-          RETURN VALUE
-               On success, all mentioned ioctl commands return 0.
-
-       Better to write this from a user-space point of view:
-
-          RETURN VALUE
-               On success, all mentioned ioctl commands return 0; on 
-               error, -1 is returned, and errno is set to indicate 
-               the error.
-
-  (2) I would change the wording in the ERRORS sections from
-       "may return the following errors"
-       to
-       "may fail with the following errors"
-
-  (3) When listing the errors, drop the minus signs; that's not 
-      what user-space sees. They see a positive value in errno.
-
-  (4) The usual formatting convention for constants, including 
-      error constants in man pages is boldface, rather than 
-      underline/emphasis.
-
-  (5) Insofar as it's possible, it would be good to make all
-      pages format nicely within 80 columns. Some of the literal
-      text and ASCII art could, I think, be narrowed.
-
-Thanks,
-
-Michael
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+> baruch
+>
+> --
+>      http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+> =}------------------------------------------------ooO--U--Ooo------------{=
+>    - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
