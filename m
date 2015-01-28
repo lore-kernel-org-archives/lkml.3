@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761017AbbA1EQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:16:58 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37900 "EHLO mail.kernel.org"
+	id S933825AbbA1ERE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:17:04 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37919 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760988AbbA1EQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:16:55 -0500
+	id S1761013AbbA1EQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:16:58 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 038/177] NFSv4.1: Fix an NFSv4.1 state renewal regression
-Date: Wed, 28 Jan 2015 12:07:22 +0800
-Message-Id: <1422418236-12852-75-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Richard Larocque <rlarocque@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        John Stultz <john.stultz@linaro.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 38/91] alarmtimer: Do not signal SIGEV_NONE timers
+Date: Wed, 28 Jan 2015 12:07:23 +0800
+Message-Id: <1422418236-12852-76-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,101 +24,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Adamson <andros@netapp.com>
+From: Richard Larocque <rlarocque@google.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
+commit 265b81d23a46c39df0a735a3af4238954b41a4c2 upstream.
 
-Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
-not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
-call, on the wire to renew the NFSv4.1 state if the flag was not set.
+Avoids sending a signal to alarm timers created with sigev_notify set to
+SIGEV_NONE by checking for that special case in the timeout callback.
 
-The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
-(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
-sometimes does the following:
+The regular posix timers avoid sending signals to SIGEV_NONE timers by
+not scheduling any callbacks for them in the first place.  Although it
+would be possible to do something similar for alarm timers, it's simpler
+to handle this as a special case in the timeout.
 
-In normal operation, the only way a future state renewal call is put on the
-wire is via a call to nfs4_schedule_state_renewal, which schedules a
-nfs4_renew_state workqueue task. nfs4_renew_state determines if the
-NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
-which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
-Then the nfs41_proc_async_sequence rpc_release function schedules
-another state remewal via nfs4_schedule_state_renewal.
+Prior to this patch, the alarm timer would ignore the sigev_notify value
+and try to deliver signals to the process anyway.  Even worse, the
+sanity check for the value of sigev_signo is skipped when SIGEV_NONE was
+specified, so the signal number could be bogus.  If sigev_signo was an
+unitialized value (as it often would be if SIGEV_NONE is used), then
+it's hard to predict which signal will be sent.
 
-Without this change we can get into a state where an application stops
-accessing the NFSv4.1 share, state renewal calls stop due to the
-NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
-from this situation is with a clientid re-establishment, once the application
-resumes and the server has timed out the lease and so returns
-NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
-
-An example application:
-open, lock, write a file.
-
-sleep for 6 * lease (could be less)
-
-ulock, close.
-
-In the above example with NFSv4.1 delegations enabled, without this change,
-there are no OP_SEQUENCE state renewal calls during the sleep, and the
-clientid is recovered due to lease expiration on the close.
-
-This issue does not occur with NFSv4.1 delegations disabled, nor with
-NFSv4.0, with or without delegations enabled.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
-Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-[lizf: Backported to 3.4: adjust context]
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/nfs/nfs4proc.c   |  2 +-
- fs/nfs/nfs4renewd.c | 12 ++++++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ kernel/time/alarmtimer.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 527a4fc..37ab4e1 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -5796,7 +5796,7 @@ static int nfs41_proc_async_sequence(struct nfs_client *clp, struct rpc_cred *cr
- 	int ret = 0;
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index c72d3dd..c870118 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -456,8 +456,10 @@ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
+ {
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
+-	if (posix_timer_event(ptr, 0) != 0)
+-		ptr->it_overrun++;
++	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
++		if (posix_timer_event(ptr, 0) != 0)
++			ptr->it_overrun++;
++	}
  
- 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
--		return 0;
-+		return -EAGAIN;
- 	task = _nfs41_proc_sequence(clp, cred, &nfs41_sequence_ops);
- 	if (IS_ERR(task))
- 		ret = PTR_ERR(task);
-diff --git a/fs/nfs/nfs4renewd.c b/fs/nfs/nfs4renewd.c
-index dc484c0..78071cf9 100644
---- a/fs/nfs/nfs4renewd.c
-+++ b/fs/nfs/nfs4renewd.c
-@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *work)
- 			}
- 			nfs_expire_all_delegations(clp);
- 		} else {
-+			int ret;
-+
- 			/* Queue an asynchronous RENEW. */
--			ops->sched_state_renewal(clp, cred, renew_flags);
-+			ret = ops->sched_state_renewal(clp, cred, renew_flags);
- 			put_rpccred(cred);
--			goto out_exp;
-+			switch (ret) {
-+			default:
-+				goto out_exp;
-+			case -EAGAIN:
-+			case -ENOMEM:
-+				break;
-+			}
- 		}
- 	} else {
- 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
+ 	/* Re-add periodic timers */
+ 	if (ptr->it.alarm.interval.tv64) {
 -- 
 1.9.1
 
