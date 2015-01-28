@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476AbbA1Byy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:54:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41534 "EHLO
+	id S933436AbbA1ByY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:54:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41511 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933293AbbA1Bi3 (ORCPT
+	with ESMTP id S933303AbbA1Bi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
         Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
         Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
         Theodore Tso <tytso@mit.edu>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 49/77] mm: page_alloc: use jump labels to avoid checking number_of_cpusets
-Date: Tue, 27 Jan 2015 17:27:27 -0800
-Message-Id: <20150128012747.442546723@linuxfoundation.org>
+Subject: [PATCH 3.14 50/77] mm: page_alloc: calculate classzone_idx once from the zonelist ref
+Date: Tue, 27 Jan 2015 17:27:28 -0800
+Message-Id: <20150128012747.472518137@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -39,13 +40,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit 664eeddeef6539247691197c1ac124d4aa872ab6 upstream.
+commit d8846374a85f4290a473a4e2a64c1ba046c4a0e1 upstream.
 
-If cpusets are not in use then we still check a global variable on every
-page allocation.  Use jump labels to avoid the overhead.
+There is no need to calculate zone_idx(preferred_zone) multiple times
+or use the pgdat to figure it out.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
@@ -56,140 +58,245 @@ Cc: Theodore Ts'o <tytso@mit.edu>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/cpuset.h |   29 ++++++++++++++++++++++++++---
- kernel/cpuset.c        |   14 ++++----------
- mm/page_alloc.c        |    3 ++-
- 3 files changed, 32 insertions(+), 14 deletions(-)
+ mm/page_alloc.c |   60 ++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 35 insertions(+), 25 deletions(-)
 
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -12,10 +12,31 @@
- #include <linux/cpumask.h>
- #include <linux/nodemask.h>
- #include <linux/mm.h>
-+#include <linux/jump_label.h>
- 
- #ifdef CONFIG_CPUSETS
- 
--extern int number_of_cpusets;	/* How many cpusets are defined in system? */
-+extern struct static_key cpusets_enabled_key;
-+static inline bool cpusets_enabled(void)
-+{
-+	return static_key_false(&cpusets_enabled_key);
-+}
-+
-+static inline int nr_cpusets(void)
-+{
-+	/* jump label reference count + the top-level cpuset */
-+	return static_key_count(&cpusets_enabled_key) + 1;
-+}
-+
-+static inline void cpuset_inc(void)
-+{
-+	static_key_slow_inc(&cpusets_enabled_key);
-+}
-+
-+static inline void cpuset_dec(void)
-+{
-+	static_key_slow_dec(&cpusets_enabled_key);
-+}
- 
- extern int cpuset_init(void);
- extern void cpuset_init_smp(void);
-@@ -32,13 +53,13 @@ extern int __cpuset_node_allowed_hardwal
- 
- static inline int cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
- {
--	return number_of_cpusets <= 1 ||
-+	return nr_cpusets() <= 1 ||
- 		__cpuset_node_allowed_softwall(node, gfp_mask);
- }
- 
- static inline int cpuset_node_allowed_hardwall(int node, gfp_t gfp_mask)
- {
--	return number_of_cpusets <= 1 ||
-+	return nr_cpusets() <= 1 ||
- 		__cpuset_node_allowed_hardwall(node, gfp_mask);
- }
- 
-@@ -124,6 +145,8 @@ static inline void set_mems_allowed(node
- 
- #else /* !CONFIG_CPUSETS */
- 
-+static inline bool cpusets_enabled(void) { return false; }
-+
- static inline int cpuset_init(void) { return 0; }
- static inline void cpuset_init_smp(void) {}
- 
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -61,12 +61,7 @@
- #include <linux/cgroup.h>
- #include <linux/wait.h>
- 
--/*
-- * Tracks how many cpusets are currently defined in system.
-- * When there is only one cpuset (the root cpuset) we can
-- * short circuit some hooks.
-- */
--int number_of_cpusets __read_mostly;
-+struct static_key cpusets_enabled_key __read_mostly = STATIC_KEY_INIT_FALSE;
- 
- /* See "Frequency meter" comments, below. */
- 
-@@ -611,7 +606,7 @@ static int generate_sched_domains(cpumas
- 		goto done;
- 	}
- 
--	csa = kmalloc(number_of_cpusets * sizeof(cp), GFP_KERNEL);
-+	csa = kmalloc(nr_cpusets() * sizeof(cp), GFP_KERNEL);
- 	if (!csa)
- 		goto done;
- 	csn = 0;
-@@ -1961,7 +1956,7 @@ static int cpuset_css_online(struct cgro
- 	if (is_spread_slab(parent))
- 		set_bit(CS_SPREAD_SLAB, &cs->flags);
- 
--	number_of_cpusets++;
-+	cpuset_inc();
- 
- 	if (!test_bit(CGRP_CPUSET_CLONE_CHILDREN, &css->cgroup->flags))
- 		goto out_unlock;
-@@ -2012,7 +2007,7 @@ static void cpuset_css_offline(struct cg
- 	if (is_sched_load_balance(cs))
- 		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
- 
--	number_of_cpusets--;
-+	cpuset_dec();
- 	clear_bit(CS_ONLINE, &cs->flags);
- 
- 	mutex_unlock(&cpuset_mutex);
-@@ -2067,7 +2062,6 @@ int __init cpuset_init(void)
- 	if (!alloc_cpumask_var(&cpus_attach, GFP_KERNEL))
- 		BUG();
- 
--	number_of_cpusets = 1;
- 	return 0;
- }
- 
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1945,7 +1945,8 @@ zonelist_scan:
- 		if (IS_ENABLED(CONFIG_NUMA) && zlc_active &&
- 			!zlc_zone_worth_trying(zonelist, z, allowednodes))
- 				continue;
--		if ((alloc_flags & ALLOC_CPUSET) &&
-+		if (cpusets_enabled() &&
-+			(alloc_flags & ALLOC_CPUSET) &&
- 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
- 				continue;
- 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
+@@ -1922,17 +1922,15 @@ static inline void init_zone_allows_recl
+ static struct page *
+ get_page_from_freelist(gfp_t gfp_mask, nodemask_t *nodemask, unsigned int order,
+ 		struct zonelist *zonelist, int high_zoneidx, int alloc_flags,
+-		struct zone *preferred_zone, int migratetype)
++		struct zone *preferred_zone, int classzone_idx, int migratetype)
+ {
+ 	struct zoneref *z;
+ 	struct page *page = NULL;
+-	int classzone_idx;
+ 	struct zone *zone;
+ 	nodemask_t *allowednodes = NULL;/* zonelist_cache approximation */
+ 	int zlc_active = 0;		/* set if using zonelist_cache */
+ 	int did_zlc_setup = 0;		/* just call zlc_setup() one time */
+ 
+-	classzone_idx = zone_idx(preferred_zone);
+ zonelist_scan:
+ 	/*
+ 	 * Scan zonelist, looking for a zone with enough free.
+@@ -2189,7 +2187,7 @@ static inline struct page *
+ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, struct zone *preferred_zone,
+-	int migratetype)
++	int classzone_idx, int migratetype)
+ {
+ 	struct page *page;
+ 
+@@ -2215,7 +2213,7 @@ __alloc_pages_may_oom(gfp_t gfp_mask, un
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask,
+ 		order, zonelist, high_zoneidx,
+ 		ALLOC_WMARK_HIGH|ALLOC_CPUSET,
+-		preferred_zone, migratetype);
++		preferred_zone, classzone_idx, migratetype);
+ 	if (page)
+ 		goto out;
+ 
+@@ -2250,7 +2248,7 @@ static struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, enum migrate_mode mode,
++	int classzone_idx, int migratetype, enum migrate_mode mode,
+ 	bool *contended_compaction, bool *deferred_compaction,
+ 	unsigned long *did_some_progress)
+ {
+@@ -2278,7 +2276,7 @@ __alloc_pages_direct_compact(gfp_t gfp_m
+ 		page = get_page_from_freelist(gfp_mask, nodemask,
+ 				order, zonelist, high_zoneidx,
+ 				alloc_flags & ~ALLOC_NO_WATERMARKS,
+-				preferred_zone, migratetype);
++				preferred_zone, classzone_idx, migratetype);
+ 		if (page) {
+ 			preferred_zone->compact_blockskip_flush = false;
+ 			compaction_defer_reset(preferred_zone, order, true);
+@@ -2310,7 +2308,8 @@ static inline struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, enum migrate_mode mode, bool *contended_compaction,
++	int classzone_idx, int migratetype,
++	enum migrate_mode mode, bool *contended_compaction,
+ 	bool *deferred_compaction, unsigned long *did_some_progress)
+ {
+ 	return NULL;
+@@ -2350,7 +2349,7 @@ static inline struct page *
+ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, unsigned long *did_some_progress)
++	int classzone_idx, int migratetype, unsigned long *did_some_progress)
+ {
+ 	struct page *page = NULL;
+ 	bool drained = false;
+@@ -2368,7 +2367,8 @@ retry:
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order,
+ 					zonelist, high_zoneidx,
+ 					alloc_flags & ~ALLOC_NO_WATERMARKS,
+-					preferred_zone, migratetype);
++					preferred_zone, classzone_idx,
++					migratetype);
+ 
+ 	/*
+ 	 * If an allocation failed after direct reclaim, it could be because
+@@ -2391,14 +2391,14 @@ static inline struct page *
+ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, struct zone *preferred_zone,
+-	int migratetype)
++	int classzone_idx, int migratetype)
+ {
+ 	struct page *page;
+ 
+ 	do {
+ 		page = get_page_from_freelist(gfp_mask, nodemask, order,
+ 			zonelist, high_zoneidx, ALLOC_NO_WATERMARKS,
+-			preferred_zone, migratetype);
++			preferred_zone, classzone_idx, migratetype);
+ 
+ 		if (!page && gfp_mask & __GFP_NOFAIL)
+ 			wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
+@@ -2499,7 +2499,7 @@ static inline struct page *
+ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, struct zone *preferred_zone,
+-	int migratetype)
++	int classzone_idx, int migratetype)
+ {
+ 	const gfp_t wait = gfp_mask & __GFP_WAIT;
+ 	struct page *page = NULL;
+@@ -2548,15 +2548,19 @@ restart:
+ 	 * Find the true preferred zone if the allocation is unconstrained by
+ 	 * cpusets.
+ 	 */
+-	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask)
+-		first_zones_zonelist(zonelist, high_zoneidx, NULL,
+-					&preferred_zone);
++	if (!(alloc_flags & ALLOC_CPUSET) && !nodemask) {
++		struct zoneref *preferred_zoneref;
++		preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
++				NULL,
++				&preferred_zone);
++		classzone_idx = zonelist_zone_idx(preferred_zoneref);
++	}
+ 
+ rebalance:
+ 	/* This is the last chance, in general, before the goto nopage. */
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+ 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+-			preferred_zone, migratetype);
++			preferred_zone, classzone_idx, migratetype);
+ 	if (page)
+ 		goto got_pg;
+ 
+@@ -2571,7 +2575,7 @@ rebalance:
+ 
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+-				preferred_zone, migratetype);
++				preferred_zone, classzone_idx, migratetype);
+ 		if (page) {
+ 			goto got_pg;
+ 		}
+@@ -2602,7 +2606,8 @@ rebalance:
+ 	 */
+ 	page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
+ 					high_zoneidx, nodemask, alloc_flags,
+-					preferred_zone, migratetype,
++					preferred_zone,
++					classzone_idx, migratetype,
+ 					migration_mode, &contended_compaction,
+ 					&deferred_compaction,
+ 					&did_some_progress);
+@@ -2625,7 +2630,8 @@ rebalance:
+ 					zonelist, high_zoneidx,
+ 					nodemask,
+ 					alloc_flags, preferred_zone,
+-					migratetype, &did_some_progress);
++					classzone_idx, migratetype,
++					&did_some_progress);
+ 	if (page)
+ 		goto got_pg;
+ 
+@@ -2644,7 +2650,7 @@ rebalance:
+ 			page = __alloc_pages_may_oom(gfp_mask, order,
+ 					zonelist, high_zoneidx,
+ 					nodemask, preferred_zone,
+-					migratetype);
++					classzone_idx, migratetype);
+ 			if (page)
+ 				goto got_pg;
+ 
+@@ -2685,7 +2691,8 @@ rebalance:
+ 		 */
+ 		page = __alloc_pages_direct_compact(gfp_mask, order, zonelist,
+ 					high_zoneidx, nodemask, alloc_flags,
+-					preferred_zone, migratetype,
++					preferred_zone,
++					classzone_idx, migratetype,
+ 					migration_mode, &contended_compaction,
+ 					&deferred_compaction,
+ 					&did_some_progress);
+@@ -2712,11 +2719,13 @@ __alloc_pages_nodemask(gfp_t gfp_mask, u
+ {
+ 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+ 	struct zone *preferred_zone;
++	struct zoneref *preferred_zoneref;
+ 	struct page *page = NULL;
+ 	int migratetype = allocflags_to_migratetype(gfp_mask);
+ 	unsigned int cpuset_mems_cookie;
+ 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+ 	struct mem_cgroup *memcg = NULL;
++	int classzone_idx;
+ 
+ 	gfp_mask &= gfp_allowed_mask;
+ 
+@@ -2746,11 +2755,12 @@ retry_cpuset:
+ 	cpuset_mems_cookie = read_mems_allowed_begin();
+ 
+ 	/* The preferred zone is used for statistics later */
+-	first_zones_zonelist(zonelist, high_zoneidx,
++	preferred_zoneref = first_zones_zonelist(zonelist, high_zoneidx,
+ 				nodemask ? : &cpuset_current_mems_allowed,
+ 				&preferred_zone);
+ 	if (!preferred_zone)
+ 		goto out;
++	classzone_idx = zonelist_zone_idx(preferred_zoneref);
+ 
+ #ifdef CONFIG_CMA
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+@@ -2760,7 +2770,7 @@ retry:
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+-			preferred_zone, migratetype);
++			preferred_zone, classzone_idx, migratetype);
+ 	if (unlikely(!page)) {
+ 		/*
+ 		 * The first pass makes sure allocations are spread
+@@ -2786,7 +2796,7 @@ retry:
+ 		gfp_mask = memalloc_noio_flags(gfp_mask);
+ 		page = __alloc_pages_slowpath(gfp_mask, order,
+ 				zonelist, high_zoneidx, nodemask,
+-				preferred_zone, migratetype);
++				preferred_zone, classzone_idx, migratetype);
+ 	}
+ 
+ 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
 
 
