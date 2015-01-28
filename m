@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760514AbbA1Bcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:32:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
+	id S933346AbbA1Bij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:38:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760111AbbA1B2d (ORCPT
+	with ESMTP id S933281AbbA1Bi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:33 -0500
+	Tue, 27 Jan 2015 20:38:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.18 52/61] netfilter: nf_tables: fix flush ruleset chain dependencies
+        Nadav Amit <namit@cs.technion.ac.il>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 26/77] KVM: x86: Fix of previously incomplete fix for CVE-2014-8480
 Date: Tue, 27 Jan 2015 17:27:04 -0800
-Message-Id: <20150128012642.623051200@linuxfoundation.org>
+Message-Id: <20150128012746.755133889@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,87 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Nadav Amit <nadav.amit@gmail.com>
 
-commit a2f18db0c68fec96631c10cad9384c196e9008ac upstream.
+commit 63ea0a49ae0b145b91ff2b070c01b66fc75854b9 upstream.
 
-Jumping between chains doesn't mix well with flush ruleset. Rules
-from a different chain and set elements may still refer to us.
+STR and SLDT with rip-relative operand can cause a host kernel oops.
+Mark them as DstMem as well.
 
-[  353.373791] ------------[ cut here ]------------
-[  353.373845] kernel BUG at net/netfilter/nf_tables_api.c:1159!
-[  353.373896] invalid opcode: 0000 [#1] SMP
-[  353.373942] Modules linked in: intel_powerclamp uas iwldvm iwlwifi
-[  353.374017] CPU: 0 PID: 6445 Comm: 31c3.nft Not tainted 3.18.0 #98
-[  353.374069] Hardware name: LENOVO 5129CTO/5129CTO, BIOS 6QET47WW (1.17 ) 07/14/2010
-[...]
-[  353.375018] Call Trace:
-[  353.375046]  [<ffffffff81964c31>] ? nf_tables_commit+0x381/0x540
-[  353.375101]  [<ffffffff81949118>] nfnetlink_rcv+0x3d8/0x4b0
-[  353.375150]  [<ffffffff81943fc5>] netlink_unicast+0x105/0x1a0
-[  353.375200]  [<ffffffff8194438e>] netlink_sendmsg+0x32e/0x790
-[  353.375253]  [<ffffffff818f398e>] sock_sendmsg+0x8e/0xc0
-[  353.375300]  [<ffffffff818f36b9>] ? move_addr_to_kernel.part.20+0x19/0x70
-[  353.375357]  [<ffffffff818f44f9>] ? move_addr_to_kernel+0x19/0x30
-[  353.375410]  [<ffffffff819016d2>] ? verify_iovec+0x42/0xd0
-[  353.375459]  [<ffffffff818f3e10>] ___sys_sendmsg+0x3f0/0x400
-[  353.375510]  [<ffffffff810615fa>] ? native_sched_clock+0x2a/0x90
-[  353.375563]  [<ffffffff81176697>] ? acct_account_cputime+0x17/0x20
-[  353.375616]  [<ffffffff8110dc78>] ? account_user_time+0x88/0xa0
-[  353.375667]  [<ffffffff818f4bbd>] __sys_sendmsg+0x3d/0x80
-[  353.375719]  [<ffffffff81b184f4>] ? int_check_syscall_exit_work+0x34/0x3d
-[  353.375776]  [<ffffffff818f4c0d>] SyS_sendmsg+0xd/0x20
-[  353.375823]  [<ffffffff81b1826d>] system_call_fastpath+0x16/0x1b
-
-Release objects in this order: rules -> sets -> chains -> tables, to
-make sure no references to chains are held anymore.
-
-Reported-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_tables_api.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ arch/x86/kvm/emulate.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/netfilter/nf_tables_api.c
-+++ b/net/netfilter/nf_tables_api.c
-@@ -713,16 +713,12 @@ static int nft_flush_table(struct nft_ct
- 	struct nft_chain *chain, *nc;
- 	struct nft_set *set, *ns;
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3668,8 +3668,8 @@ static const struct opcode group5[] = {
+ };
  
--	list_for_each_entry_safe(chain, nc, &ctx->table->chains, list) {
-+	list_for_each_entry(chain, &ctx->table->chains, list) {
- 		ctx->chain = chain;
- 
- 		err = nft_delrule_by_chain(ctx);
- 		if (err < 0)
- 			goto out;
--
--		err = nft_delchain(ctx);
--		if (err < 0)
--			goto out;
- 	}
- 
- 	list_for_each_entry_safe(set, ns, &ctx->table->sets, list) {
-@@ -734,6 +730,14 @@ static int nft_flush_table(struct nft_ct
- 		if (err < 0)
- 			goto out;
- 	}
-+
-+	list_for_each_entry_safe(chain, nc, &ctx->table->chains, list) {
-+		ctx->chain = chain;
-+
-+		err = nft_delchain(ctx);
-+		if (err < 0)
-+			goto out;
-+	}
- 
- 	err = nft_deltable(ctx);
- out:
+ static const struct opcode group6[] = {
+-	DI(Prot,	sldt),
+-	DI(Prot,	str),
++	DI(Prot | DstMem,	sldt),
++	DI(Prot | DstMem,	str),
+ 	II(Prot | Priv | SrcMem16, em_lldt, lldt),
+ 	II(Prot | Priv | SrcMem16, em_ltr, ltr),
+ 	N, N, N, N,
 
 
