@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761397AbbA1Chi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:37:38 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:51569 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754900AbbA1Chg (ORCPT
+	id S1761411AbbA1Chz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:37:55 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:52329 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761399AbbA1Chs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 21:37:36 -0500
+	Tue, 27 Jan 2015 21:37:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <1422392405-32196-4-git-send-email-m-karicheri2@ti.com>
-References: <1422392405-32196-1-git-send-email-m-karicheri2@ti.com> <1422392405-32196-4-git-send-email-m-karicheri2@ti.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 27 Jan 2015 20:37:14 -0600
-Message-ID: <CAL_JsqJCE2c7PjwN_ynC5_hufe=Xo55E0j=EW5GbuX9saf82dQ@mail.gmail.com>
-Subject: Re: [PATCH v5 3/8] of: fix size when dma-range is not used
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+In-Reply-To: <20150125113959.GA22997@kroah.com>
+References: <1421546666-21461-1-git-send-email-mathieu.poirier@linaro.org>
+	<1421546666-21461-2-git-send-email-mathieu.poirier@linaro.org>
+	<20150125113959.GA22997@kroah.com>
+Date: Tue, 27 Jan 2015 19:37:47 -0700
+Message-ID: <CANLsYkyQydrVR1ukr6MW8uzn4C_rkext3ZnbY5PUMA=Uo416Ww@mail.gmail.com>
+Subject: Re: [PATCH 1/4] staging: vt6655: correcting function declaration
+ sparse error
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 3:00 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> Fix the dma-range size when the DT attribute is missing. i.e  set size to
-> dev->coherent_dma_mask + 1 instead of dev->coherent_dma_mask. Also add
-> code to check invalid values of size configured in DT and log error.
+On 25 January 2015 at 04:39, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sat, Jan 17, 2015 at 07:04:23PM -0700, mathieu.poirier@linaro.org wrote:
+>> From: Mathieu Poirier <mathieu.poirier@linaro.org>
+>>
+>> mpoirier@t430:~/work/kernel1$ make C=1 M=drivers/staging/vt6655/
+>>   LD      drivers/staging/vt6655/built-in.o
+>>   CHECK   drivers/staging/vt6655/device_main.c
+>> drivers/staging/vt6655/device_main.c:1672:5: warning: symbol 'vnt_init' was not declared. Should it be static?
+>>   CC [M]  drivers/staging/vt6655/device_main.o
+>>
+>> Function @vnt_init is only called by @vt6655_probe, in turn is declared "static".
+>> As sparse suggest, @vnt_init should very likely be declared static as well.  At
+>> least nothing in the file indicate that it should be otherwise.
+>>
+>> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+>> ---
+>>  drivers/staging/vt6655/device_main.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Cc: Joerg Roedel <joro@8bytes.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> This whole series does not apply to my staging-next branch, of
+> staging.git, please refresh against it and resend if it is still needed
+> (hint, I don't think they all are...)
+
+Turns out none of them are necessary anymore.
+
+Regards,
+Mathieu
+
 >
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> ---
->  drivers/of/device.c |    9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
+> thanks,
 >
-> diff --git a/drivers/of/device.c b/drivers/of/device.c
-> index 2de320d..17504f4 100644
-> --- a/drivers/of/device.c
-> +++ b/drivers/of/device.c
-> @@ -105,12 +105,19 @@ void of_dma_configure(struct device *dev, struct device_node *np)
->         ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
->         if (ret < 0) {
->                 dma_addr = offset = 0;
-> -               size = dev->coherent_dma_mask;
-> +               size = dev->coherent_dma_mask + 1;
-
-This is fine since coherent_dma_mask will always be 4G - 1 in this case.
-
->         } else {
->                 offset = PFN_DOWN(paddr - dma_addr);
->                 dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
->         }
->
-> +       if (is_power_of_2(size + 1))
-> +               size = size + 1;
-> +       else if (!is_power_of_2(size)) {
-> +               dev_err(dev, "invalid size\n");
-> +               return;
-
-I think this is too restrictive. I think checking bit 0 is 1 is enough
-to tell the size is a mask.
-
-I would like it to be a WARN if detected and just add 1.
-
-Rob
+> greg k-h
