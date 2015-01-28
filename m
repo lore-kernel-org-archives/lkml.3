@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761297AbbA1CUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:20:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
+	id S1760657AbbA1BfB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:35:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459AbbA1B2K (ORCPT
+	with ESMTP id S1760096AbbA1B2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:10 -0500
+	Tue, 27 Jan 2015 20:28:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>,
-        Josh Hunt <johunt@akamai.com>
-Subject: [PATCH 3.10 30/32] quota: provide interface for readding allocated space into reserved space
-Date: Tue, 27 Jan 2015 17:27:00 -0800
-Message-Id: <20150128012631.246242343@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH 3.18 49/61] KEYS: close race between key lookup and freeing
+Date: Tue, 27 Jan 2015 17:27:01 -0800
+Message-Id: <20150128012642.249594645@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,181 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 1c8924eb106c1ac755d5d35ce9b3ff42e89e2511 upstream.
+commit a3a8784454692dd72e5d5d34dcdab17b4420e74c upstream.
 
-ext4 needs to convert allocated (metadata) blocks back into blocks
-reserved for delayed allocation. Add functions into quota code for
-supporting such operation.
+When a key is being garbage collected, it's key->user would get put before
+the ->destroy() callback is called, where the key is removed from it's
+respective tracking structures.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Josh Hunt <johunt@akamai.com>
+This leaves a key hanging in a semi-invalid state which leaves a window open
+for a different task to try an access key->user. An example is
+find_keyring_by_name() which would dereference key->user for a key that is
+in the process of being garbage collected (where key->user was freed but
+->destroy() wasn't called yet - so it's still present in the linked list).
+
+This would cause either a panic, or corrupt memory.
+
+Fixes CVE-2014-9529.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/quota/dquot.c         |   46 ++++++++++++++++++++++++++++++++++++++++++++++
- fs/stat.c                |   11 +++++++++--
- include/linux/fs.h       |    1 +
- include/linux/quotaops.h |   15 +++++++++++++++
- 4 files changed, 71 insertions(+), 2 deletions(-)
+ security/keys/gc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -1102,6 +1102,14 @@ static void dquot_claim_reserved_space(s
- 	dquot->dq_dqb.dqb_rsvspace -= number;
- }
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -148,12 +148,12 @@ static noinline void key_gc_unused_keys(
+ 		if (test_bit(KEY_FLAG_INSTANTIATED, &key->flags))
+ 			atomic_dec(&key->user->nikeys);
  
-+static void dquot_reclaim_reserved_space(struct dquot *dquot, qsize_t number)
-+{
-+	if (WARN_ON_ONCE(dquot->dq_dqb.dqb_curspace < number))
-+		number = dquot->dq_dqb.dqb_curspace;
-+	dquot->dq_dqb.dqb_rsvspace += number;
-+	dquot->dq_dqb.dqb_curspace -= number;
-+}
+-		key_user_put(key->user);
+-
+ 		/* now throw away the key memory */
+ 		if (key->type->destroy)
+ 			key->type->destroy(key);
+ 
++		key_user_put(key->user);
 +
- static inline
- void dquot_free_reserved_space(struct dquot *dquot, qsize_t number)
- {
-@@ -1536,6 +1544,15 @@ void inode_claim_rsv_space(struct inode
- }
- EXPORT_SYMBOL(inode_claim_rsv_space);
+ 		kfree(key->description);
  
-+void inode_reclaim_rsv_space(struct inode *inode, qsize_t number)
-+{
-+	spin_lock(&inode->i_lock);
-+	*inode_reserved_space(inode) += number;
-+	__inode_sub_bytes(inode, number);
-+	spin_unlock(&inode->i_lock);
-+}
-+EXPORT_SYMBOL(inode_reclaim_rsv_space);
-+
- void inode_sub_rsv_space(struct inode *inode, qsize_t number)
- {
- 	spin_lock(&inode->i_lock);
-@@ -1710,6 +1727,35 @@ int dquot_claim_space_nodirty(struct ino
- EXPORT_SYMBOL(dquot_claim_space_nodirty);
- 
- /*
-+ * Convert allocated space back to in-memory reserved quotas
-+ */
-+void dquot_reclaim_space_nodirty(struct inode *inode, qsize_t number)
-+{
-+	int cnt;
-+
-+	if (!dquot_active(inode)) {
-+		inode_reclaim_rsv_space(inode, number);
-+		return;
-+	}
-+
-+	down_read(&sb_dqopt(inode->i_sb)->dqptr_sem);
-+	spin_lock(&dq_data_lock);
-+	/* Claim reserved quotas to allocated quotas */
-+	for (cnt = 0; cnt < MAXQUOTAS; cnt++) {
-+		if (inode->i_dquot[cnt])
-+			dquot_reclaim_reserved_space(inode->i_dquot[cnt],
-+						     number);
-+	}
-+	/* Update inode bytes */
-+	inode_reclaim_rsv_space(inode, number);
-+	spin_unlock(&dq_data_lock);
-+	mark_all_dquot_dirty(inode->i_dquot);
-+	up_read(&sb_dqopt(inode->i_sb)->dqptr_sem);
-+	return;
-+}
-+EXPORT_SYMBOL(dquot_reclaim_space_nodirty);
-+
-+/*
-  * This operation can block, but only after everything is updated
-  */
- void __dquot_free_space(struct inode *inode, qsize_t number, int flags)
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -447,9 +447,8 @@ void inode_add_bytes(struct inode *inode
- 
- EXPORT_SYMBOL(inode_add_bytes);
- 
--void inode_sub_bytes(struct inode *inode, loff_t bytes)
-+void __inode_sub_bytes(struct inode *inode, loff_t bytes)
- {
--	spin_lock(&inode->i_lock);
- 	inode->i_blocks -= bytes >> 9;
- 	bytes &= 511;
- 	if (inode->i_bytes < bytes) {
-@@ -457,6 +456,14 @@ void inode_sub_bytes(struct inode *inode
- 		inode->i_bytes += 512;
- 	}
- 	inode->i_bytes -= bytes;
-+}
-+
-+EXPORT_SYMBOL(__inode_sub_bytes);
-+
-+void inode_sub_bytes(struct inode *inode, loff_t bytes)
-+{
-+	spin_lock(&inode->i_lock);
-+	__inode_sub_bytes(inode, bytes);
- 	spin_unlock(&inode->i_lock);
- }
- 
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2489,6 +2489,7 @@ extern void generic_fillattr(struct inod
- extern int vfs_getattr(struct path *, struct kstat *);
- void __inode_add_bytes(struct inode *inode, loff_t bytes);
- void inode_add_bytes(struct inode *inode, loff_t bytes);
-+void __inode_sub_bytes(struct inode *inode, loff_t bytes);
- void inode_sub_bytes(struct inode *inode, loff_t bytes);
- loff_t inode_get_bytes(struct inode *inode);
- void inode_set_bytes(struct inode *inode, loff_t bytes);
---- a/include/linux/quotaops.h
-+++ b/include/linux/quotaops.h
-@@ -41,6 +41,7 @@ void __quota_error(struct super_block *s
- void inode_add_rsv_space(struct inode *inode, qsize_t number);
- void inode_claim_rsv_space(struct inode *inode, qsize_t number);
- void inode_sub_rsv_space(struct inode *inode, qsize_t number);
-+void inode_reclaim_rsv_space(struct inode *inode, qsize_t number);
- 
- void dquot_initialize(struct inode *inode);
- void dquot_drop(struct inode *inode);
-@@ -59,6 +60,7 @@ int dquot_alloc_inode(const struct inode
- 
- int dquot_claim_space_nodirty(struct inode *inode, qsize_t number);
- void dquot_free_inode(const struct inode *inode);
-+void dquot_reclaim_space_nodirty(struct inode *inode, qsize_t number);
- 
- int dquot_disable(struct super_block *sb, int type, unsigned int flags);
- /* Suspend quotas on remount RO */
-@@ -238,6 +240,13 @@ static inline int dquot_claim_space_nodi
- 	return 0;
- }
- 
-+static inline int dquot_reclaim_space_nodirty(struct inode *inode,
-+					      qsize_t number)
-+{
-+	inode_sub_bytes(inode, number);
-+	return 0;
-+}
-+
- static inline int dquot_disable(struct super_block *sb, int type,
- 		unsigned int flags)
- {
-@@ -336,6 +345,12 @@ static inline int dquot_claim_block(stru
- 	return ret;
- }
- 
-+static inline void dquot_reclaim_block(struct inode *inode, qsize_t nr)
-+{
-+	dquot_reclaim_space_nodirty(inode, nr << inode->i_blkbits);
-+	mark_inode_dirty_sync(inode);
-+}
-+
- static inline void dquot_free_space_nodirty(struct inode *inode, qsize_t nr)
- {
- 	__dquot_free_space(inode, nr, 0);
+ #ifdef KEY_DEBUGGING
 
 
