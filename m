@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965465AbbA2CiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:38:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47021 "EHLO
+	id S1763378AbbA2C5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:57:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47020 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965382AbbA2CiI (ORCPT
+	with ESMTP id S965400AbbA2CiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:08 -0500
+	Wed, 28 Jan 2015 21:38:06 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 126/139] x86/tls: Disallow unusual TLS segments
-Date: Wed, 28 Jan 2015 14:21:09 -0800
-Message-Id: <1422483682-15393-127-git-send-email-kamal@canonical.com>
+Cc: Paul Mackerras <paulus@samba.org>,
+        "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 127/139] powerpc/powernv: Switch off MMU before entering nap/sleep/rvwinkle mode
+Date: Wed, 28 Jan 2015 14:21:10 -0800
+Message-Id: <1422483682-15393-128-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -30,69 +30,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 0e58af4e1d2166e9e33375a0f121e4867010d4f8 upstream.
+commit 8117ac6a6c2fa0f847ff6a21a1f32c8d2c8501d0 upstream.
 
-Users have no business installing custom code segments into the
-GDT, and segments that are not present but are otherwise valid
-are a historical source of interesting attacks.
+Currently, when going idle, we set the flag indicating that we are in
+nap mode (paca->kvm_hstate.hwthread_state) and then execute the nap
+(or sleep or rvwinkle) instruction, all with the MMU on.  This is bad
+for two reasons: (a) the architecture specifies that those instructions
+must be executed with the MMU off, and in fact with only the SF, HV, ME
+and possibly RI bits set, and (b) this introduces a race, because as
+soon as we set the flag, another thread can switch the MMU to a guest
+context.  If the race is lost, this thread will typically start looping
+on relocation-on ISIs at 0xc...4400.
 
-For completeness, block attempts to set the L bit.  (Prior to
-this patch, the L bit would have been silently dropped.)
+This fixes it by setting the MSR as required by the architecture before
+setting the flag or executing the nap/sleep/rvwinkle instruction.
 
-This is an ABI break.  I've checked glibc, musl, and Wine, and
-none of them look like they'll have any trouble.
-
-Note to stable maintainers: this is a hardening patch that fixes
-no known bugs.  Given the possibility of ABI issues, this
-probably shouldn't be backported quickly.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: security@kernel.org <security@kernel.org>
-Cc: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[ shreyas@linux.vnet.ibm.com: Edited to handle LE ]
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: linuxppc-dev@lists.ozlabs.org
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/tls.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ arch/powerpc/include/asm/reg.h    |  2 ++
+ arch/powerpc/kernel/idle_power7.S | 17 +++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
-diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
-index e7650bd..3e551ee 100644
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -39,6 +39,28 @@ static bool tls_desc_okay(const struct user_desc *info)
- 	if (!info->seg_32bit)
- 		return false;
+diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
+index 637f513..663e5c2 100644
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -118,8 +118,10 @@
+ #define __MSR		(MSR_ME | MSR_RI | MSR_IR | MSR_DR | MSR_ISF |MSR_HV)
+ #ifdef __BIG_ENDIAN__
+ #define MSR_		__MSR
++#define MSR_IDLE	(MSR_ME | MSR_SF | MSR_HV)
+ #else
+ #define MSR_		(__MSR | MSR_LE)
++#define MSR_IDLE	(MSR_ME | MSR_SF | MSR_HV | MSR_LE)
+ #endif
+ #define MSR_KERNEL	(MSR_ | MSR_64BIT)
+ #define MSR_USER32	(MSR_ | MSR_PR | MSR_EE)
+diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
+index 847e40e..1fb7fee 100644
+--- a/arch/powerpc/kernel/idle_power7.S
++++ b/arch/powerpc/kernel/idle_power7.S
+@@ -84,6 +84,23 @@ _GLOBAL(power7_nap)
+ 	std	r9,_MSR(r1)
+ 	std	r1,PACAR1(r13)
  
-+	/* Only allow data segments in the TLS array. */
-+	if (info->contents > 1)
-+		return false;
-+
 +	/*
-+	 * Non-present segments with DPL 3 present an interesting attack
-+	 * surface.  The kernel should handle such segments correctly,
-+	 * but TLS is very difficult to protect in a sandbox, so prevent
-+	 * such segments from being created.
-+	 *
-+	 * If userspace needs to remove a TLS entry, it can still delete
-+	 * it outright.
++	 * Go to real mode to do the nap, as required by the architecture.
++	 * Also, we need to be in real mode before setting hwthread_state,
++	 * because as soon as we do that, another thread can switch
++	 * the MMU context to the guest.
 +	 */
-+	if (info->seg_not_present)
-+		return false;
++	LOAD_REG_IMMEDIATE(r5, MSR_IDLE)
++	li	r6, MSR_RI
++	andc	r6, r9, r6
++	LOAD_REG_ADDR(r7, power7_enter_nap_mode)
++	mtmsrd	r6, 1		/* clear RI before setting SRR0/1 */
++	mtspr	SPRN_SRR0, r7
++	mtspr	SPRN_SRR1, r5
++	rfid
 +
-+#ifdef CONFIG_X86_64
-+	/* The L bit makes no sense for data. */
-+	if (info->lm)
-+		return false;
-+#endif
-+
- 	return true;
- }
- 
++	.globl	power7_enter_nap_mode
++power7_enter_nap_mode:
+ #ifdef CONFIG_KVM_BOOK3S_HV_POSSIBLE
+ 	/* Tell KVM we're napping */
+ 	li	r4,KVM_HWTHREAD_IN_NAP
 -- 
 1.9.1
 
