@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761145AbbA2JVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:21:45 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44888 "EHLO
+	id S933076AbbA2Jzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:55:38 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44793 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760380AbbA2JHS (ORCPT
+	by vger.kernel.org with ESMTP id S1751787AbbA2JDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:07:18 -0500
+	Thu, 29 Jan 2015 04:03:21 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 105/176] gpio: fix memory and reference leaks in gpiochip_add error path
-Date: Wed, 28 Jan 2015 15:28:55 +0100
-Message-Id: <5d0a558e5ff4a3a9bc8ba8f5da1a66606ee502a2.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Arseny Solokha <asolokha@kb.kras.ru>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 106/176] OHCI: add a quirk for ULi M5237 blocking on reset
+Date: Wed, 28 Jan 2015 15:28:56 +0100
+Message-Id: <a6f25626d9f61c46ec3160c055fc72645294ead8.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,59 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <johan@kernel.org>
+From: Arseny Solokha <asolokha@kb.kras.ru>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 5539b3c938d64a60cb1fc442ac3ce9263d52de0c upstream.
+commit 56abcab833fafcfaeb2f5b25e0364c1dec45f53e upstream.
 
-Memory allocated and references taken by of_gpiochip_add and
-acpi_gpiochip_add were never released on errors in gpiochip_add (e.g.
-failure to find free gpio range).
+Commit 8dccddbc2368 ("OHCI: final fix for NVIDIA problems (I hope)")
+introduced into 3.1.9 broke boot on e.g. Freescale P2020DS development
+board. The code path that was previously specific to NVIDIA controllers
+had then become taken for all chips.
 
-Fixes: 391c970c0dd1 ("of/gpio: add default of_xlate function if device
-has a node pointer")
-Fixes: 664e3e5ac64c ("gpio / ACPI: register to ACPI events
-automatically")
+However, the M5237 installed on the board wedges solid when accessing
+its base+OHCI_FMINTERVAL register, making it impossible to boot any
+kernel newer than 3.1.8 on this particular and apparently other similar
+machines.
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Don't readl() and writel() base+OHCI_FMINTERVAL on PCI ID 10b9:5237.
+
+The patch is suitable for the -next tree as well as all maintained
+kernels up to 3.2 inclusive.
+
+Signed-off-by: Arseny Solokha <asolokha@kb.kras.ru>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpio/gpiolib.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/host/pci-quirks.c | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 0dee0e0c247a..aed1a6216b6b 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1216,18 +1216,20 @@ int gpiochip_add(struct gpio_chip *chip)
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 877f87f9513b..5a45437da097 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -560,7 +560,8 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ {
+ 	void __iomem *base;
+ 	u32 control;
+-	u32 fminterval;
++	u32 fminterval = 0;
++	bool no_fminterval = false;
+ 	int cnt;
  
- 	spin_unlock_irqrestore(&gpio_lock, flags);
+ 	if (!mmio_resource_enabled(pdev, 0))
+@@ -570,6 +571,13 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 	if (base == NULL)
+ 		return;
  
-+	if (status)
-+		goto fail;
++	/*
++	 * ULi M5237 OHCI controller locks the whole system when accessing
++	 * the OHCI_FMINTERVAL offset.
++	 */
++	if (pdev->vendor == PCI_VENDOR_ID_AL && pdev->device == 0x5237)
++		no_fminterval = true;
 +
- #ifdef CONFIG_PINCTRL
- 	INIT_LIST_HEAD(&chip->pin_ranges);
- #endif
+ 	control = readl(base + OHCI_CONTROL);
  
- 	of_gpiochip_add(chip);
+ /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
+@@ -608,7 +616,9 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 	}
  
--	if (status)
--		goto fail;
--
- 	status = gpiochip_export(chip);
--	if (status)
-+	if (status) {
-+		of_gpiochip_remove(chip);
- 		goto fail;
-+	}
+ 	/* software reset of the controller, preserving HcFmInterval */
+-	fminterval = readl(base + OHCI_FMINTERVAL);
++	if (!no_fminterval)
++		fminterval = readl(base + OHCI_FMINTERVAL);
++
+ 	writel(OHCI_HCR, base + OHCI_CMDSTATUS);
  
- 	pr_debug("gpiochip_add: registered GPIOs %d to %d on device: %s\n",
- 		chip->base, chip->base + chip->ngpio - 1,
+ 	/* reset requires max 10 us delay */
+@@ -617,7 +627,9 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 			break;
+ 		udelay(1);
+ 	}
+-	writel(fminterval, base + OHCI_FMINTERVAL);
++
++	if (!no_fminterval)
++		writel(fminterval, base + OHCI_FMINTERVAL);
+ 
+ 	/* Now the controller is safely in SUSPEND and nothing can wake it up */
+ 	iounmap(base);
 -- 
 2.2.2
 
