@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965052AbbA2Cgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:36:46 -0500
-Received: from bitmer.com ([213.157.87.50]:51872 "EHLO bitmer.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965031AbbA2Cgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:43 -0500
-X-Greylist: delayed 21599 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Jan 2015 21:36:43 EST
-Message-ID: <54C92752.9000004@bitmer.com>
-Date: Wed, 28 Jan 2015 20:15:46 +0200
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Pavel Machek <pavel@ucw.cz>,
-        pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
-Subject: Re: 3.19 on Nokia n900: audio quality awful
-References: <20150106170433.GA5408@amd> <20150118120139.GA1509@amd> <54C63F1C.6010703@ti.com>
-In-Reply-To: <54C63F1C.6010703@ti.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1761326AbbA1Umr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:42:47 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:46207 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934102AbbA1Uml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:42:41 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Kukjin Kim <kgene@kernel.org>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Arend van Spriel <arend@broadcom.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 0/6] Add multiple GPIO and external clock to MMC pwrseq_simple
+Date: Wed, 28 Jan 2015 19:15:47 +0100
+Message-Id: <1422468953-7594-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2015 03:20 PM, Peter Ujfalusi wrote:
-> On 01/18/2015 02:01 PM, Pavel Machek wrote:
->> In 2.6.28-nokia, it is neccessary to set "Input select" na "digital
->> mic", then it works. Input select being in "playback" option makes it
->> easy to miss.
->>
->> In 3.18 and 3.19-rc3, all I can record are zeros.
->>
->> Does playback/recording work for you on OMAP 3430-based machines?
-> 
-> Same codec (tlv320aic3106) works fine on my am335x and omap-l138 boards.
-> BeagleBoard-xM also fine with twl4030 codec.
-> 
-> I don't have my n900 in hacking mode (it is still in use time-to-time) but
-> looking at the dts file: you might want to add ai3x-micbias-vg property to the
-> aic3x nodes to select the correct mic bias voltage. I can't recall what is
-> appropriate for n900, but 2.6.28-nokia sources might give you the answer.
-> 
-No need to go that far. N900 has been supported in mainline since 2.6.39
-or so. Part A of AIC34 (which is basically dual AIC33 in a same package)
-drives 2 V for the digital microphone bias and part B 2.5 V for the headset.
+Hello Ulf,
 
-Unfortunately I haven't had time recently to try what might have caused
-that regression after 3.18.
+Many WLAN chips attached to an SDIO interface needs more than one GPIO
+for their reset sequence and also an external clock to be operational.
 
--- 
-Jarkko
+Since this is very common, this series extend the simple MMC power sequence
+to support more than one reset GPIO and also an optional external clock.
+
+This is the second version of the series that addressed issues pointed out
+by Arend van Spriel and Srinivas Kandagatla.
+
+The series depend on v4 "mmc: core: Add support for MMC power sequences":
+
+http://comments.gmane.org/gmane.linux.kernel.mmc/30665
+
+Javier Martinez Canillas (6):
+  mmc: pwrseq: Document that simple sequence support more than one GPIO
+  mmc: pwrseq_simple: Extend to support more pins
+  mmc: pwrseq: Document optional clock for the simple power sequence
+  mmc: pwrseq_simple: Add optional reference clock support
+  ARM: dts: exynos5250-snow: Enable wifi power-on
+  ARM: dts: exynos5250-snow: Add cap-sdio-irq to wifi mmc node
+
+ .../devicetree/bindings/mmc/mmc-pwrseq-simple.txt  | 11 ++-
+ arch/arm/boot/dts/exynos5250-snow.dts              | 26 ++++++-
+ drivers/mmc/core/pwrseq_simple.c                   | 85 ++++++++++++++++++----
+ 3 files changed, 103 insertions(+), 19 deletions(-)
+
+Patch #1 extends the simple MMC power sequence DT binding to support more
+than one GPIO and patch #2 adds the actual implementation.
+
+In the same way, patch #3 and #4 extend the simple MMC power sequence DT
+binding and pwrseq_simple driver to support an optional external clock.
+
+Finally as an example, patch #5 and patch #6 adds support for the wifi
+chip in the Exynos5250 Snow that needs all these resources. These two
+patches were added to the series only for completeness.
+
+Best regards,
+Javier
