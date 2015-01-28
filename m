@@ -1,55 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616AbbA1VEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:04:44 -0500
-Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:49291 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754716AbbA1U4V (ORCPT
+	id S1760879AbbA2CEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:04:05 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39131 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564AbbA2CEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:56:21 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3622:3865:3867:3871:3874:5007:6120:6261:7875:10004:10400:10848:10967:11232:11658:11914:12295:12517:12519:12740:13069:13153:13228:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fire16_6a0a30cd0b14f
-X-Filterd-Recvd-Size: 1766
-Date: Wed, 28 Jan 2015 07:38:47 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Dominik Vogt <vogt@linux.vnet.ibm.com>,
-        Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Andreas Krebbel <krebbel@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 2/3] ftrace: introduce nohotpatch function attribute
-Message-ID: <20150128073847.69e18766@gandalf.local.home>
-In-Reply-To: <20150128121833.GE4633@osiris>
-References: <1422276894-31302-1-git-send-email-heiko.carstens@de.ibm.com>
-	<1422276894-31302-3-git-send-email-heiko.carstens@de.ibm.com>
-	<20150126093701.699763dc@gandalf.local.home>
-	<20150127061941.GA4591@linux.vnet.ibm.com>
-	<20150127094228.50e642fc@gandalf.local.home>
-	<20150128053645.GA4633@osiris>
-	<20150128065754.4466f07b@gandalf.local.home>
-	<20150128121833.GE4633@osiris>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jan 2015 21:04:00 -0500
+From: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
+To: linux-kernel@vger.kernel.org, ard.biesheuvel@linaro.org,
+        grant.likely@linaro.org, matt.fleming@intel.com
+Cc: dmidecode-devel@nongnu.org, leif.lindholm@linaro.org,
+        Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
+Subject: [Patch v3] firmware: dmi-sysfs: add SMBIOS entry point area raw attribute
+Date: Wed, 28 Jan 2015 14:39:23 +0200
+Message-Id: <1422448763-17583-1-git-send-email-ivan.khoronzhuk@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015 13:18:33 +0100
-Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+Some utils, like dmidecode and smbios, needs to access SMBIOS entry
+table area in order to get information like SMBIOS version, size, etc.
+Currently it's done via /dev/mem. But for situation when /dev/mem
+usage is disabled, the utils have to use dmi sysfs instead, which
+doesn't represent SMBIOS entry. So this patch adds SMBIOS area to
+dmi-sysfs in order to allow utils in question to work correctly with
+dmi sysfs interface.
+
+Reviewed-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
+---
+
+v1: https://lkml.org/lkml/2015/1/23/643
+v2: https://lkml.org/lkml/2015/1/26/345
+
+v3..v2:
+  firmware: dmi_scan: add symbol to get SMBIOS entry area
+  firmware: dmi-sysfs: add SMBIOS entry point area attribute
+	combined in one patch
+	added SMBIOS information to ABI sysfs-dmi documentaton
+
+v2..v1:
+  firmware: dmi_scan: add symbol to get SMBIOS entry area
+	- used additional static var to hold SMBIOS raw table size
+	- changed format of get_smbios_entry_area symbol
+	  returned pointer on const smbios table
+
+  firmware: dmi-sysfs: add SMBIOS entry point area attribute
+	- adopted to updated get_smbios_entry_area symbol
+  	- removed redundant array to save smbios table
 
 
-> Ok, then we'll put that on the s390 tree for the next merge window, so
-> we can fix any potential fallout easier.
-> I'll add your Acked-by to all three patches. The notrace patch is the
-> only one that I changed (see below).
-> 
+ Documentation/ABI/testing/sysfs-firmware-dmi | 10 +++++++
+ drivers/firmware/dmi-sysfs.c                 | 42 ++++++++++++++++++++++++++++
+ drivers/firmware/dmi_scan.c                  | 26 +++++++++++++++++
+ include/linux/dmi.h                          |  3 ++
+ 4 files changed, 81 insertions(+)
 
-Yep, looks fine.
+diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
+index c78f9ab..3a9ffe8 100644
+--- a/Documentation/ABI/testing/sysfs-firmware-dmi
++++ b/Documentation/ABI/testing/sysfs-firmware-dmi
+@@ -12,6 +12,16 @@ Description:
+ 		cannot ensure that the data as exported to userland is
+ 		without error either.
+ 
++		The firmware provides DMI structures as a packed list of
++		data referenced by a SMBIOS table entry point. The SMBIOS
++		entry point contains general information, like SMBIOS
++		version, DMI table size, etc. The structure, content and
++		size of SMBIOS entry point is dependent on SMBIOS version.
++		That's why SMBIOS entry point is represented in dmi sysfs
++		like a raw attribute and is accessible via
++		/sys/firmware/dmi/smbios_raw_header. The format of SMBIOS
++		entry point header can be read in SMBIOS specification.
++
+ 		DMI is structured as a large table of entries, where
+ 		each entry has a common header indicating the type and
+ 		length of the entry, as well as a firmware-provided
+diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
+index e0f1cb3..61b6a38 100644
+--- a/drivers/firmware/dmi-sysfs.c
++++ b/drivers/firmware/dmi-sysfs.c
+@@ -29,6 +29,8 @@
+ #define MAX_ENTRY_TYPE 255 /* Most of these aren't used, but we consider
+ 			      the top entry type is only 8 bits */
+ 
++static const u8 *smbios_raw_header;
++
+ struct dmi_sysfs_entry {
+ 	struct dmi_header dh;
+ 	struct kobject kobj;
+@@ -646,9 +648,37 @@ static void cleanup_entry_list(void)
+ 	}
+ }
+ 
++static ssize_t smbios_entry_area_raw_read(struct file *filp,
++					  struct kobject *kobj,
++					  struct bin_attribute *bin_attr,
++					  char *buf, loff_t pos, size_t count)
++{
++	ssize_t size;
++
++	size = bin_attr->size;
++
++	if (size > pos)
++		size -= pos;
++	else
++		return 0;
++
++	if (count < size)
++		size = count;
++
++	memcpy(buf, &smbios_raw_header[pos], size);
++
++	return size;
++}
++
++static struct bin_attribute smbios_raw_area_attr = {
++	.read = smbios_entry_area_raw_read,
++	.attr = {.name = "smbios_raw_header", .mode = 0400},
++};
++
+ static int __init dmi_sysfs_init(void)
+ {
+ 	int error = -ENOMEM;
++	int size;
+ 	int val;
+ 
+ 	/* Set up our directory */
+@@ -669,6 +699,18 @@ static int __init dmi_sysfs_init(void)
+ 		goto err;
+ 	}
+ 
++	smbios_raw_header = dmi_get_smbios_entry_area(&size);
++	if (!smbios_raw_header) {
++		pr_debug("dmi-sysfs: SMBIOS raw data is not available.\n");
++		error = -ENODATA;
++		goto err;
++	}
++
++	/* Create the raw binary file to access the entry area */
++	smbios_raw_area_attr.size = size;
++	if (sysfs_create_bin_file(dmi_kobj, &smbios_raw_area_attr))
++		goto err;
++
+ 	pr_debug("dmi-sysfs: loaded.\n");
+ 
+ 	return 0;
+diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+index 420c8d8..d94c6b7 100644
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -113,6 +113,8 @@ static void dmi_table(u8 *buf, int len, int num,
+ 	}
+ }
+ 
++static unsigned char smbios_header[32];
++static int smbios_header_size;
+ static phys_addr_t dmi_base;
+ static u16 dmi_len;
+ static u16 dmi_num;
+@@ -474,6 +476,8 @@ static int __init dmi_present(const u8 *buf)
+ 	if (memcmp(buf, "_SM_", 4) == 0 &&
+ 	    buf[5] < 32 && dmi_checksum(buf, buf[5])) {
+ 		smbios_ver = get_unaligned_be16(buf + 6);
++		smbios_header_size = buf[5];
++		memcpy(smbios_header, buf, smbios_header_size);
+ 
+ 		/* Some BIOS report weird SMBIOS version, fix that up */
+ 		switch (smbios_ver) {
+@@ -505,6 +509,8 @@ static int __init dmi_present(const u8 *buf)
+ 				pr_info("SMBIOS %d.%d present.\n",
+ 				       dmi_ver >> 8, dmi_ver & 0xFF);
+ 			} else {
++				smbios_header_size = 15;
++				memcpy(smbios_header, buf, smbios_header_size);
+ 				dmi_ver = (buf[14] & 0xF0) << 4 |
+ 					   (buf[14] & 0x0F);
+ 				pr_info("Legacy DMI %d.%d present.\n",
+@@ -531,6 +537,8 @@ static int __init dmi_smbios3_present(const u8 *buf)
+ 		dmi_ver &= 0xFFFFFF;
+ 		dmi_len = get_unaligned_le32(buf + 12);
+ 		dmi_base = get_unaligned_le64(buf + 16);
++		smbios_header_size = buf[6];
++		memcpy(smbios_header, buf, smbios_header_size);
+ 
+ 		/*
+ 		 * The 64-bit SMBIOS 3.0 entry point no longer has a field
+@@ -944,3 +952,21 @@ void dmi_memdev_name(u16 handle, const char **bank, const char **device)
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(dmi_memdev_name);
++
++/**
++ * dmi_get_smbios_entry_area - copy SMBIOS entry point area to array.
++ * @size - pointer to assign actual size of SMBIOS entry point area.
++ *
++ * returns NULL if table is not available, otherwise returns pointer on
++ * SMBIOS entry point area array.
++ */
++const u8 *dmi_get_smbios_entry_area(int *size)
++{
++	if (!smbios_header_size || !dmi_available)
++		return NULL;
++
++	*size = smbios_header_size;
++
++	return smbios_header;
++}
++EXPORT_SYMBOL_GPL(dmi_get_smbios_entry_area);
+diff --git a/include/linux/dmi.h b/include/linux/dmi.h
+index f820f0a..8e1a28d 100644
+--- a/include/linux/dmi.h
++++ b/include/linux/dmi.h
+@@ -109,6 +109,7 @@ extern int dmi_walk(void (*decode)(const struct dmi_header *, void *),
+ 	void *private_data);
+ extern bool dmi_match(enum dmi_field f, const char *str);
+ extern void dmi_memdev_name(u16 handle, const char **bank, const char **device);
++const u8 *dmi_get_smbios_entry_area(int *size);
+ 
+ #else
+ 
+@@ -140,6 +141,8 @@ static inline void dmi_memdev_name(u16 handle, const char **bank,
+ 		const char **device) { }
+ static inline const struct dmi_system_id *
+ 	dmi_first_match(const struct dmi_system_id *list) { return NULL; }
++static inline const u8 *dmi_get_smbios_entry_area(int *size)
++	{ return NULL; }
+ 
+ #endif
+ 
+-- 
+1.9.1
 
--- Steve
