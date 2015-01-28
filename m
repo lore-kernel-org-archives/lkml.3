@@ -1,69 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932872AbbA2CVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:21:09 -0500
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:43887 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761521AbbA2CVF convert rfc822-to-8bit (ORCPT
+	id S1761990AbbA1UsQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:48:16 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45528 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760422AbbA1UsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:21:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <54C8C612.1030701@linaro.org>
-References: <1422424845-14906-1-git-send-email-sumit.semwal@linaro.org> <54C8C612.1030701@linaro.org>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Wed, 28 Jan 2015 17:57:28 +0530
-Message-ID: <CAO_48GF7CQvY4dF4RoXytSkAQPf-AMsO9Co_UvpS4hr4TY_Wig@mail.gmail.com>
-Subject: Re: [PATCH v2] dma-buf: cleanup dma_buf_export() to make it easily extensible
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG Mailman List <linaro-mm-sig@lists.linaro.org>,
+	Wed, 28 Jan 2015 15:48:12 -0500
+Date: Wed, 28 Jan 2015 12:29:42 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Murali Karicheri <m-karicheri2@ti.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        rmk+kernel@arm.linux.org.uk, Dave Airlie <airlied@linux.ie>,
-        kgene@kernel.org, daniel.vetter@intel.com,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linaro Kernel Mailman List <linaro-kernel@lists.linaro.org>,
-        intel-gfx@lists.freedesktop.org, linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Rob Herring <robh+dt@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to
+ of_iommu_configure()
+Message-ID: <20150128122941.GK1569@arm.com>
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
+ <54C68C1D.5030605@ti.com>
+ <20150128113300.GF1569@arm.com>
+ <3953539.m9NpxSWcJ5@avalon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3953539.m9NpxSWcJ5@avalon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2015 at 16:50, Daniel Thompson <daniel.thompson@linaro.org> wrote:
-> On 28/01/15 06:00, Sumit Semwal wrote:
-<snip>
->> +/**
->> + * helper macro for exporters; zeros and fills in most common values
->> + */
->> +#define DEFINE_DMA_BUF_EXPORT_INFO(a)                        \
->> +     struct dma_buf_export_info a = {0};             \
->> +     exp_info.exp_name = KBUILD_MODNAME
->> +
->
-> This risks generating C99 warnings unless used with care (and only once
-> per function). Shouldn't this be more like:
->
-> #define DEFINE_DMA_BUF_EXPORT_INFO(a) \
->     struct dma_buf_export_info a = { .exp_name = KBUILD_MODNAME }
->
+On Wed, Jan 28, 2015 at 12:23:03PM +0000, Laurent Pinchart wrote:
+> On Wednesday 28 January 2015 11:33:00 Will Deacon wrote:
+> > On Mon, Jan 26, 2015 at 06:49:01PM +0000, Murali Karicheri wrote:
+> > > On 01/25/2015 08:32 AM, Laurent Pinchart wrote:
+> > >> On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
+> > >>> Function of_iommu_configure() is called from of_dma_configure() to
+> > >>> setup iommu ops using DT property. This API is currently used for
+> > >>> platform devices for which DMA configuration (including iommu ops)
+> > >>> may come from device's parent. To extend this functionality for PCI
+> > >>> devices, this API need to take a parent node ptr as an argument
+> > >>> instead of assuming device's parent. This is needed since for PCI, the
+> > >>> dma configuration may be defined in the DT node of the root bus
+> > >>> bridge's parent device. Currently only dma-range is used for PCI and
+> > >>> iommu is not supported. So return error if the device is PCI.
+> > >>> 
+> > >>> Cc: Joerg Roedel<joro@8bytes.org>
+> > >>> Cc: Grant Likely<grant.likely@linaro.org>
+> > >>> Cc: Rob Herring<robh+dt@kernel.org>
+> > >>> Cc: Bjorn Helgaas<bhelgaas@google.com>
+> > >>> Cc: Will Deacon<will.deacon@arm.com>
+> > >>> Cc: Russell King<linux@arm.linux.org.uk>
+> > >>> Cc: Arnd Bergmann<arnd@arndb.de>
+> > >>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
+> > >>> 
+> > >>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+> > >>> ---
+> > >>> 
+> > >>>   drivers/iommu/of_iommu.c |   10 ++++++++--
+> > >>>   drivers/of/platform.c    |    2 +-
+> > >>>   include/linux/of_iommu.h |    6 ++++--
+> > >>>   3 files changed, 13 insertions(+), 5 deletions(-)
+> > >>> 
+> > >>> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
+> > >>> index af1dc6a..439235b 100644
+> > >>> --- a/drivers/iommu/of_iommu.c
+> > >>> +++ b/drivers/iommu/of_iommu.c
+> > >>> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct
+> > >>> device_node *np)
+> > >>>   	return ops;
+> > >>>  }
+> > >>> 
+> > >>> -struct iommu_ops *of_iommu_configure(struct device *dev)
+> > >>> +struct iommu_ops *of_iommu_configure(struct device *dev,
+> > >>> +				     struct device_node *iommu_np)
+> > >>>  {
+> > >>>   	struct of_phandle_args iommu_spec;
+> > >>>   	struct device_node *np;
+> > >>>   	struct iommu_ops *ops = NULL;
+> > >>>   	int idx = 0;
+> > >>> 
+> > >>> +	if (dev_is_pci(dev)) {
+> > >>> +		dev_err(dev, "iommu is currently not supported for PCI\n");
+> > >>> +		return NULL;
+> > >>> +	}
+> > >>> +
+> > >>>   	/*
+> > >>>   	 * We don't currently walk up the tree looking for a parent IOMMU.
+> > >>>   	 * See the `Notes:' section of
+> > >>>   	 * Documentation/devicetree/bindings/iommu/iommu.txt
+> > >>>   	 */
+> > >> 
+> > >> Wouldn't it be better to fix this rather than passing the device node
+> > >> pointer to the function ? The solution would be more generic.
+> > > 
+> > > Will Deacon (Copied here) is working on this as we alteady discussed in
+> > > this thread. So it will be addressed by him in another series.
+> > 
+> > Well, "working on this" equates to "has it somewhere near the bottom of
+> > a very long list" :)
+> 
+> What's your opinion on this patch then, do you think adding the iommu_np 
+> argument makes sense as a temporary hack, or should we instead walk up the 
+> tree looking for an iommus attribute in parent nodes ? I don't expect that to 
+> be insanely difficult to code.
 
-Ah! My bad; thanks for catching this, Daniel; I'll send out the
-updated patch in a minute!
-> Daniel.
->
+If walking up the tree is useful, then I think we should do that and update
+the Documentation to reflect the new behaviour. The only reason that I
+didn't code that in of_iommu_configure originally is because I didn't want
+to go against the binding spec for the initial version, especially as we
+didn't have a reason to look at parent nodes.
 
+The only thing to double-check is that we don't break any existing users
+of the binding with this change, but I don't think that we do.
 
-
--- 
-Thanks and regards,
-
-Sumit Semwal
-Kernel Team Lead - Linaro Mobile Group
-Linaro.org │ Open source software for ARM SoCs
+Will
