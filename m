@@ -1,405 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759079AbbA2CfB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:35:01 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:54886 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759757AbbA2Ce6 (ORCPT
+	id S1753667AbbA2BQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:16:10 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:56178 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567AbbA2BQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:34:58 -0500
+	Wed, 28 Jan 2015 20:16:07 -0500
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20150128144803.GC15342@redhat.com>
-References: <545FBDDD.9060801@gmail.com> <20141111213037.GA31445@redhat.com>
- <54ADA284.30502@gmail.com> <20150112221634.GD16162@redhat.com>
- <54B91271.3000600@gmail.com> <20150127142459.GA12851@redhat.com>
- <54C89816.8030709@gmail.com> <20150128144803.GC15342@redhat.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Wed, 28 Jan 2015 16:49:34 +0100
-Message-ID: <CAKgNAkhhVq5fuqwH0aPdgR1bKkAPPPuS84hfAFg3grGEJNxS4w@mail.gmail.com>
-Subject: Re: Edited kexec_load(2) [kexec_file_load()] man page for review
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Kexec Mailing List <kexec@lists.infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andi Kleen <andi@firstfloor.org>
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Wed, 28 Jan 2015 23:50:35 +0800
+Message-ID: <CACzj_yW2j7Bqs=9iOgQ0Wh6SwAHNkH3SYMboKFaWzRT+yarfwA@mail.gmail.com>
+Subject: [PATCH v4 1/6] KVM: nVMX: Use hardware MSR bitmap
+To: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Dropping Andi into CC, which I should have done to start with, since
-he wrote the original page, and might also have some comments]
+Currently, if L1 enables MSR_BITMAP, we will emulate this feature,
+all of L2's msr access is intercepted by L0. Since many features
+like virtualize x2apic mode has a complicated logic and it is
+difficult for us to emulate, we should use hardware and merge
+the bitmap.
 
-Hello Vivek,
+This patch introduces nested_vmx_merge_msr_bitmap for future use.
 
->> I've made various adjustments to the page in the light of your comments
->> above. Thanks!
->
-> Thank you for following it up and improving kexec man page.
+Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
+---
+ arch/x86/kvm/vmx.c |   77 ++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 66 insertions(+), 11 deletions(-)
 
-You're welcome. So, by now, I've made quite a lot of changes
-(including adding a number of cases under ERRORS). I think the revised
-kexec_load/kexec_file_load page is pretty much ready to go, but would
-you be willing to give the text below a check over first?
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index c987374..787f886 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -798,6 +798,7 @@ static unsigned long *vmx_msr_bitmap_legacy;
+ static unsigned long *vmx_msr_bitmap_longmode;
+ static unsigned long *vmx_msr_bitmap_legacy_x2apic;
+ static unsigned long *vmx_msr_bitmap_longmode_x2apic;
++static unsigned long *vmx_msr_bitmap_nested;
+ static unsigned long *vmx_vmread_bitmap;
+ static unsigned long *vmx_vmwrite_bitmap;
 
-Thanks
+@@ -5812,13 +5813,21 @@ static __init int hardware_setup(void)
+                                (unsigned long *)__get_free_page(GFP_KERNEL);
+        if (!vmx_msr_bitmap_longmode_x2apic)
+                goto out4;
++
++       if (nested) {
++               vmx_msr_bitmap_nested =
++                       (unsigned long *)__get_free_page(GFP_KERNEL);
++               if (!vmx_msr_bitmap_nested)
++                       goto out5;
++       }
++
+        vmx_vmread_bitmap = (unsigned long *)__get_free_page(GFP_KERNEL);
+        if (!vmx_vmread_bitmap)
+-               goto out5;
++               goto out6;
 
-Michael
+        vmx_vmwrite_bitmap = (unsigned long *)__get_free_page(GFP_KERNEL);
+        if (!vmx_vmwrite_bitmap)
+-               goto out6;
++               goto out7;
 
-====
+        memset(vmx_vmread_bitmap, 0xff, PAGE_SIZE);
+        memset(vmx_vmwrite_bitmap, 0xff, PAGE_SIZE);
+@@ -5834,10 +5843,12 @@ static __init int hardware_setup(void)
 
-.\" Copyright (C) 2010 Intel Corporation, Author: Andi Kleen
-.\" and Copyright 2014, Vivek Goyal <vgoyal@redhat.com>
-.\" and Copyright (c) 2015, Michael Kerrisk <mtk.manpages@gmail.com>
-.\"
-.\" %%%LICENSE_START(VERBATIM)
-.\" Permission is granted to make and distribute verbatim copies of this
-.\" manual provided the copyright notice and this permission notice are
-.\" preserved on all copies.
-.\"
-.\" Permission is granted to copy and distribute modified versions of this
-.\" manual under the conditions for verbatim copying, provided that the
-.\" entire resulting derived work is distributed under the terms of a
-.\" permission notice identical to this one.
-.\"
-.\" Since the Linux kernel and libraries are constantly changing, this
-.\" manual page may be incorrect or out-of-date.  The author(s) assume no
-.\" responsibility for errors or omissions, or for damages resulting from
-.\" the use of the information contained herein.  The author(s) may not
-.\" have taken the same level of care in the production of this manual,
-.\" which is licensed free of charge, as they might when working
-.\" professionally.
-.\"
-.\" Formatted or processed versions of this manual, if unaccompanied by
-.\" the source, must acknowledge the copyright and authors of this work.
-.\" %%%LICENSE_END
-.\"
-.TH KEXEC_LOAD 2 2014-08-19 "Linux" "Linux Programmer's Manual"
-.SH NAME
-kexec_load, kexec_file_load \- load a new kernel for later execution
-.SH SYNOPSIS
-.nf
-.B #include <linux/kexec.h>
+        memset(vmx_msr_bitmap_legacy, 0xff, PAGE_SIZE);
+        memset(vmx_msr_bitmap_longmode, 0xff, PAGE_SIZE);
++       if (nested)
++               memset(vmx_msr_bitmap_nested, 0xff, PAGE_SIZE);
 
-.BI "long kexec_load(unsigned long " entry ", unsigned long " nr_segments ","
-.BI "                struct kexec_segment *" segments \
-", unsigned long " flags ");"
+        if (setup_vmcs_config(&vmcs_config) < 0) {
+                r = -EIO;
+-               goto out7;
++               goto out8;
+        }
 
-.BI "long kexec_file_load(int " kernel_fd ", int " initrd_fd ","
-.br
-.BI "                    unsigned long " cmdline_len  \
-", const char *" cmdline ","
-.BI "                    unsigned long " flags ");"
+        if (boot_cpu_has(X86_FEATURE_NX))
+@@ -5944,10 +5955,13 @@ static __init int hardware_setup(void)
 
-.fi
-.IR Note :
-There are no glibc wrappers for these system calls; see NOTES.
-.SH DESCRIPTION
-The
-.BR kexec_load ()
-system call loads a new kernel that can be executed later by
-.BR reboot (2).
-.PP
-The
-.I flags
-argument is a bit mask that controls the operation of the call.
-The following values can be specified in
-.IR flags :
-.TP
-.BR KEXEC_ON_CRASH " (since Linux 2.6.13)"
-Execute the new kernel automatically on a system crash.
-This "crash kernel" is loaded into an area of reserved memory that
-is determined at boot time using the
-.I craskkernel
-kernel command-line parameter.
-The location of this reserved memory is exported to user space via the
-.I /proc/iomem
-file, in an entry labeled "Crash kernel".
-A user-space application can parse this file and prepare a list of
-segments (see below) that specify this reserved memory as destination.
-If this flag is specified, the kernel checks that the
-target segments specified in
-.I segments
-fall within the reserved region.
-.TP
-.BR KEXEC_PRESERVE_CONTEXT " (since Linux 2.6.27)"
-Preserve the system hardware and
-software states before executing the new kernel.
-This could be used for system suspend.
-This flag is available only if the kernel was configured with
-.BR CONFIG_KEXEC_JUMP ,
-and is effective only if
-.I nr_segments
-is greater than 0.
-.PP
-The high-order bits (corresponding to the mask 0xffff0000) of
-.I flags
-contain the architecture of the to-be-executed kernel.
-Specify (OR) the constant
-.B KEXEC_ARCH_DEFAULT
-to use the current architecture,
-or one of the following architecture constants
-.BR KEXEC_ARCH_386 ,
-.BR KEXEC_ARCH_68K ,
-.BR KEXEC_ARCH_X86_64 ,
-.BR KEXEC_ARCH_PPC ,
-.BR KEXEC_ARCH_PPC64 ,
-.BR KEXEC_ARCH_IA_64 ,
-.BR KEXEC_ARCH_ARM ,
-.BR KEXEC_ARCH_S390 ,
-.BR KEXEC_ARCH_SH ,
-.BR KEXEC_ARCH_MIPS ,
-and
-.BR KEXEC_ARCH_MIPS_LE .
-The architecture must be executable on the CPU of the system.
+        return alloc_kvm_area();
 
-The
-.I entry
-argument is the physical entry address in the kernel image.
-The
-.I nr_segments
-argument is the number of segments pointed to by the
-.I segments
-pointer;
-the kernel imposes an (arbitrary) limit of 16 on the number of segments.
-The
-.I segments
-argument is an array of
-.I kexec_segment
-structures which define the kernel layout:
-.in +4n
-.nf
+-out7:
++out8:
+        free_page((unsigned long)vmx_vmwrite_bitmap);
+-out6:
++out7:
+        free_page((unsigned long)vmx_vmread_bitmap);
++out6:
++       if (nested)
++               free_page((unsigned long)vmx_msr_bitmap_nested);
+ out5:
+        free_page((unsigned long)vmx_msr_bitmap_longmode_x2apic);
+ out4:
+@@ -5974,6 +5988,8 @@ static __exit void hardware_unsetup(void)
+        free_page((unsigned long)vmx_io_bitmap_a);
+        free_page((unsigned long)vmx_vmwrite_bitmap);
+        free_page((unsigned long)vmx_vmread_bitmap);
++       if (nested)
++               free_page((unsigned long)vmx_msr_bitmap_nested);
 
-struct kexec_segment {
-    void   *buf;        /* Buffer in user space */
-    size_t  bufsz;      /* Buffer length in user space */
-    void   *mem;        /* Physical address of kernel */
-    size_t  memsz;      /* Physical address length */
-};
-.fi
-.in
-.PP
-The kernel image defined by
-.I segments
-is copied from the calling process into
-the kernel either in regular
-memory or in reserved memory (if
-.BR KEXEC_ON_CRASH
-is set).
-The kernel first performs various sanity checks on the
-information passed in
-.IR segments .
-If these checks pass, the kernel copies the segment data to kernel memory.
-Each segment specified in
-.I segments
-is copied as follows:
-.IP * 3
-.I buf
-and
-.I bufsz
-identify a memory region in the caller's virtual address space
-that is the source of the copy.
-The value in
-.I bufsz
-may not exceed the value in the
-.I memsz
-field.
-.IP *
-.I mem
-and
-.I memsz
-specify a physical address range that is the target of the copy.
-The values specified in both fields must be multiples of
-the system page size.
-.IP *
-.I bufsz
-bytes are copied from the source buffer to the target kernel buffer.
-If
-.I bufsz
-is less than
-.IR memsz ,
-then the excess bytes in the kernel buffer are zeroed out.
-.PP
-In case of a normal kexec (i.e., the
-.BR KEXEC_ON_CRASH
-flag is not set), the segment data is loaded in any available memory
-and is moved to the final destination at kexec reboot time (e.g., when the
-.BR kexec (8)
-command is executed with the
-.I \-e
-option).
+        free_kvm_area();
+ }
+@@ -8305,6 +8321,38 @@ static void vmx_start_preemption_timer(struct
+kvm_vcpu *vcpu)
+                      ns_to_ktime(preemption_timeout), HRTIMER_MODE_REL);
+ }
 
-In case of kexec on panic (i.e., the
-.BR KEXEC_ON_CRASH
-flag is set), the segment data is
-loaded to reserved memory at the time of the call, and, after a crash,
-the kexec mechanism simply passes control to that kernel.
++static int nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,
++                                               struct vmcs12 *vmcs12)
++{
++       int maxphyaddr;
++       u64 addr;
++
++       if (!nested_cpu_has(vmcs12, CPU_BASED_USE_MSR_BITMAPS))
++               return 0;
++
++       if (vmcs12_read_any(vcpu, MSR_BITMAP, &addr)) {
++               WARN_ON(1);
++               return -EINVAL;
++       }
++       maxphyaddr = cpuid_maxphyaddr(vcpu);
++
++       if (!PAGE_ALIGNED(vmcs12->msr_bitmap) ||
++          ((addr + PAGE_SIZE) >> maxphyaddr))
++               return -EINVAL;
++
++       return 0;
++}
++
++/*
++ * Merge L0's and L1's MSR bitmap, return false to indicate that
++ * we do not use the hardware.
++ */
++static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
++                                              struct vmcs12 *vmcs12)
++{
++       return false;
++}
++
+ static int nested_vmx_check_msr_switch(struct kvm_vcpu *vcpu,
+                                       unsigned long count_field,
+                                       unsigned long addr_field,
+@@ -8637,11 +8685,17 @@ static void prepare_vmcs02(struct kvm_vcpu
+*vcpu, struct vmcs12 *vmcs12)
+                vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+        }
 
-The
-.BR kexec_load ()
-system call is available only if the kernel was configured with
-.BR CONFIG_KEXEC .
-.SS kexec_file_load()
-The
-.BR kexec_file_load ()
-system call is similar to
-.BR kexec_load (),
-but it takes a different set of arguments.
-It reads the kernel to be loaded from the file referred to by the descriptor
-.IR kernel_fd ,
-and the initrd (initial RAM disk)
-to be loaded from file referred to by the descriptor
-.IR initrd_fd .
-The
-.IR cmdline
-argument is a pointer to a buffer containing the command line
-for the new kernel.
-The
-.IR cmdline_len
-argument specifies size of the buffer.
-The last byte in the buffer must be a null byte (\(aq\\0\(aq).
++       if (cpu_has_vmx_msr_bitmap() &&
++           exec_control & CPU_BASED_USE_MSR_BITMAPS &&
++           nested_vmx_merge_msr_bitmap(vcpu, vmcs12)) {
++               vmcs_write64(MSR_BITMAP, __pa(vmx_msr_bitmap_nested));
++       } else
++               exec_control &= ~CPU_BASED_USE_MSR_BITMAPS;
++
+        /*
+-        * Merging of IO and MSR bitmaps not currently supported.
++        * Merging of IO bitmap not currently supported.
+         * Rather, exit every time.
+         */
+-       exec_control &= ~CPU_BASED_USE_MSR_BITMAPS;
+        exec_control &= ~CPU_BASED_USE_IO_BITMAPS;
+        exec_control |= CPU_BASED_UNCOND_IO_EXITING;
 
-The
-.IR flags
-argument is a bit mask which modifies the behavior of the call.
-The following values can be specified in
-.IR flags :
-.TP
-.BR KEXEC_FILE_UNLOAD
-Unload the currently loaded kernel.
-.TP
-.BR KEXEC_FILE_ON_CRASH
-Load the new kernel in the memory region reserved for the crash kernel
-(as for
-.BR KEXEC_ON_CRASH).
-This kernel is booted if the currently running kernel crashes.
-.TP
-.BR KEXEC_FILE_NO_INITRAMFS
-Loading initrd/initramfs is optional.
-Specify this flag if no initramfs is being loaded.
-If this flag is set, the value passed in
-.IR initrd_fd
-is ignored.
-.PP
-The
-.BR kexec_file_load ()
-.\" See also http://lwn.net/Articles/603116/
-system call was added to provide support for systems
-where "kexec" loading should be restricted to
-only kernels that are signed.
-This system call is available only if the kernel was configured with
-.BR CONFIG_KEXEC_FILE .
-.SH RETURN VALUE
-On success, these system calls returns 0.
-On error, \-1 is returned and
-.I errno
-is set to indicate the error.
-.SH ERRORS
-.TP
-.B EADDRNOTAVAIL
-.\" See kernel/kexec.::sanity_check_segment_list in the 3.19 kernel source
-The
-.B KEXEC_ON_CRASH
-flags was specified, but the region specified by the
-.I mem
-and
-.I memsz
-fields of one of the
-.I segments
-entries lies outside the range of memory reserved for the crash kernel.
-.TP
-.B EADDRNOTAVAIL
-The value in a
-.I mem
-or
-.I memsz
-field in one of the
-.I segments
-entries is not a multiple of the system page size.
-.TP
-.B EBADF
-.I kernel_fd
-or
-.I initrd_fd
-is not a valid file descriptor.
-.TP
-.B EBUSY
-Another crash kernel is already being loaded
-or a crash kernel is already in use.
-.TP
-.B EINVAL
-.I flags
-is invalid.
-.TP
-.B EINVAL
-The value of a
-.I bufsz
-field in one of the
-.I segments
-entries exceeds the value in the corresponding
-.I memsz
-field.
-.TP
-.B EINVAL
-.IR nr_segments
-exceeds
-.BR KEXEC_SEGMENT_MAX
-(16).
-.TP
-.B EINVAL
-Two or more of the kernel target buffers overlap.
-.TP
-.B EINVAL
-The value in
-.I cmdline[cmdline_len-1]
-is not \(aq\\0\(aq.
-.TP
-.B EINVAL
-The file referred to by
-.I kernel_fd
-or
-.I initrd_fd
-is empty (length zero).
-.TP
-.B ENOMEM
-Could not allocate memory.
-.TP
-.B ENOEXEC
-.I kernel_fd
-does not refer to an open file, or the kernel can't load this file.
-.TP
-.B EPERM
-The caller does not have the
-.BR CAP_SYS_BOOT
-capability.
-.SH VERSIONS
-The
-.BR kexec_load ()
-system call first appeared in Linux 2.6.13.
-The
-.BR kexec_file_load ()
-system call first appeared in Linux 3.17.
-.SH CONFORMING TO
-These system calls are Linux-specific.
-.SH NOTES
-Currently, there is no glibc support for these system calls.
-Call them using
-.BR syscall (2).
-.SH SEE ALSO
-.BR reboot (2),
-.BR syscall (2),
-.BR kexec (8)
+@@ -8792,15 +8846,13 @@ static int nested_vmx_run(struct kvm_vcpu
+*vcpu, bool launch)
+                return 1;
+        }
 
-The kernel source files
-.IR Documentation/kdump/kdump.txt
-and
-.IR Documentation/kernel-parameters.txt .
+-       if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
+-                       !PAGE_ALIGNED(vmcs12->msr_bitmap)) {
++       if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
+                /*TODO: Also verify bits beyond physical address width are 0*/
+                nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+                return 1;
+        }
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+-       if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
+-               /*TODO: Also verify bits beyond physical address width are 0*/
++       if (nested_vmx_check_msr_bitmap_controls(vcpu, vmcs12)) {
+                nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+                return 1;
+        }
+@@ -9356,6 +9408,9 @@ static void load_vmcs12_host_state(struct kvm_vcpu *vcpu,
+        kvm_set_dr(vcpu, 7, 0x400);
+        vmcs_write64(GUEST_IA32_DEBUGCTL, 0);
+
++       if (cpu_has_vmx_msr_bitmap())
++               vmx_set_msr_bitmap(vcpu);
++
+        if (nested_vmx_load_msr(vcpu, vmcs12->vm_exit_msr_load_addr,
+                                vmcs12->vm_exit_msr_load_count))
+                nested_vmx_abort(vcpu, VMX_ABORT_LOAD_HOST_MSR_FAIL);
+--
+1.7.1
