@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934123AbbA1CNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:13:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41199 "EHLO
+	id S1761352AbbA1CW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:22:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759888AbbA1B2V (ORCPT
+	with ESMTP id S1755034AbbA1B2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:21 -0500
+	Tue, 27 Jan 2015 20:28:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthias Schwarzott <zzam@gentoo.org>, Antti Palosaari <crope@iki.fi>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.18 25/61] [media] cx23885: Split Hauppauge WinTV Starburst from HVR4400 card entry
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.10 07/32] drm/i915: Fix mutex->owner inspection race under DEBUG_MUTEXES
 Date: Tue, 27 Jan 2015 17:26:37 -0800
-Message-Id: <20150128012639.782923312@linuxfoundation.org>
+Message-Id: <20150128012628.133066845@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,141 +26,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Matthias Schwarzott <zzam@gentoo.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 721f3223f26bbe81c7e55f84188e74d99df50a16 upstream.
+commit 226e5ae9e5f9108beb0bde4ac69f68fe6210fed9 upstream.
 
-Unconditionally attaching Si2161/Si2165 demod driver
-breaks Hauppauge WinTV Starburst.
-So create own card entry for this.
+If CONFIG_DEBUG_MUTEXES is set, the mutex->owner field is only cleared
+if the mutex debugging is enabled which introduces a race in our
+mutex_is_locked_by() - i.e. we may inspect the old owner value before it
+is acquired by the new task.
 
-Add card name comments to the subsystem ids.
+This is the root cause of this error:
 
-This fixes a regression introduced in 3.17 by
-36efec48e2e6016e05364906720a0ec350a5d768 ([media] cx23885: Add si2165 support for HVR-5500)
+# diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
+# index 5cf6731..3ef3736 100644
+# --- a/kernel/locking/mutex-debug.c
+# +++ b/kernel/locking/mutex-debug.c
+# @@ -80,13 +80,13 @@ void debug_mutex_unlock(struct mutex *lock)
+# 			DEBUG_LOCKS_WARN_ON(lock->owner != current);
+#
+# 		DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+# -		mutex_clear_owner(lock);
+# 	}
+#
+# 	/*
+# 	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
+# 	 * mutexes so that we can do it here after we've verified state.
+# 	 */
+# +	mutex_clear_owner(lock);
+# 	atomic_set(&lock->count, 1);
+#  }
 
-Signed-off-by: Matthias Schwarzott <zzam@gentoo.org>
-Tested-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=87955
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/cx23885/cx23885-cards.c |   23 +++++++++++++++++------
- drivers/media/pci/cx23885/cx23885-dvb.c   |   11 +++++++++++
- drivers/media/pci/cx23885/cx23885.h       |    1 +
- 3 files changed, 29 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/pci/cx23885/cx23885-cards.c
-+++ b/drivers/media/pci/cx23885/cx23885-cards.c
-@@ -614,7 +614,7 @@ struct cx23885_board cx23885_boards[] =
- 		.portb		= CX23885_MPEG_DVB,
- 	},
- 	[CX23885_BOARD_HAUPPAUGE_HVR4400] = {
--		.name		= "Hauppauge WinTV-HVR4400",
-+		.name		= "Hauppauge WinTV-HVR4400/HVR5500",
- 		.porta		= CX23885_ANALOG_VIDEO,
- 		.portb		= CX23885_MPEG_DVB,
- 		.portc		= CX23885_MPEG_DVB,
-@@ -622,6 +622,10 @@ struct cx23885_board cx23885_boards[] =
- 		.tuner_addr	= 0x60, /* 0xc0 >> 1 */
- 		.tuner_bus	= 1,
- 	},
-+	[CX23885_BOARD_HAUPPAUGE_STARBURST] = {
-+		.name		= "Hauppauge WinTV Starburst",
-+		.portb		= CX23885_MPEG_DVB,
-+	},
- 	[CX23885_BOARD_AVERMEDIA_HC81R] = {
- 		.name		= "AVerTV Hybrid Express Slim HC81R",
- 		.tuner_type	= TUNER_XC2028,
-@@ -910,19 +914,19 @@ struct cx23885_subid cx23885_subids[] =
- 	}, {
- 		.subvendor = 0x0070,
- 		.subdevice = 0xc108,
--		.card      = CX23885_BOARD_HAUPPAUGE_HVR4400,
-+		.card      = CX23885_BOARD_HAUPPAUGE_HVR4400, /* Hauppauge WinTV HVR-4400 (Model 121xxx, Hybrid DVB-T/S2, IR) */
- 	}, {
- 		.subvendor = 0x0070,
- 		.subdevice = 0xc138,
--		.card      = CX23885_BOARD_HAUPPAUGE_HVR4400,
-+		.card      = CX23885_BOARD_HAUPPAUGE_HVR4400, /* Hauppauge WinTV HVR-5500 (Model 121xxx, Hybrid DVB-T/C/S2, IR) */
- 	}, {
- 		.subvendor = 0x0070,
- 		.subdevice = 0xc12a,
--		.card      = CX23885_BOARD_HAUPPAUGE_HVR4400,
-+		.card      = CX23885_BOARD_HAUPPAUGE_STARBURST, /* Hauppauge WinTV Starburst (Model 121x00, DVB-S2, IR) */
- 	}, {
- 		.subvendor = 0x0070,
- 		.subdevice = 0xc1f8,
--		.card      = CX23885_BOARD_HAUPPAUGE_HVR4400,
-+		.card      = CX23885_BOARD_HAUPPAUGE_HVR4400, /* Hauppauge WinTV HVR-5500 (Model 121xxx, Hybrid DVB-T/C/S2, IR) */
- 	}, {
- 		.subvendor = 0x1461,
- 		.subdevice = 0xd939,
-@@ -1495,8 +1499,9 @@ void cx23885_gpio_setup(struct cx23885_d
- 		cx_write(GPIO_ISM, 0x00000000);/* INTERRUPTS active low*/
- 		break;
- 	case CX23885_BOARD_HAUPPAUGE_HVR4400:
-+	case CX23885_BOARD_HAUPPAUGE_STARBURST:
- 		/* GPIO-8 tda10071 demod reset */
--		/* GPIO-9 si2165 demod reset */
-+		/* GPIO-9 si2165 demod reset (only HVR4400/HVR5500)*/
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -4449,7 +4449,7 @@ static bool mutex_is_locked_by(struct mu
+ 	if (!mutex_is_locked(mutex))
+ 		return false;
  
- 		/* Put the parts into reset and back */
- 		cx23885_gpio_enable(dev, GPIO_8 | GPIO_9, 1);
-@@ -1760,6 +1765,7 @@ void cx23885_card_setup(struct cx23885_d
- 	case CX23885_BOARD_HAUPPAUGE_HVR1850:
- 	case CX23885_BOARD_HAUPPAUGE_HVR1290:
- 	case CX23885_BOARD_HAUPPAUGE_HVR4400:
-+	case CX23885_BOARD_HAUPPAUGE_STARBURST:
- 	case CX23885_BOARD_HAUPPAUGE_IMPACTVCBE:
- 		if (dev->i2c_bus[0].i2c_rc == 0)
- 			hauppauge_eeprom(dev, eeprom+0xc0);
-@@ -1864,6 +1870,11 @@ void cx23885_card_setup(struct cx23885_d
- 		ts2->ts_clk_en_val = 0x1; /* Enable TS_CLK */
- 		ts2->src_sel_val   = CX23885_SRC_SEL_PARALLEL_MPEG_VIDEO;
- 		break;
-+	case CX23885_BOARD_HAUPPAUGE_STARBURST:
-+		ts1->gen_ctrl_val  = 0xc; /* Serial bus + punctured clock */
-+		ts1->ts_clk_en_val = 0x1; /* Enable TS_CLK */
-+		ts1->src_sel_val   = CX23885_SRC_SEL_PARALLEL_MPEG_VIDEO;
-+		break;
- 	case CX23885_BOARD_DVBSKY_T9580:
- 		ts1->gen_ctrl_val  = 0x5; /* Parallel */
- 		ts1->ts_clk_en_val = 0x1; /* Enable TS_CLK */
---- a/drivers/media/pci/cx23885/cx23885-dvb.c
-+++ b/drivers/media/pci/cx23885/cx23885-dvb.c
-@@ -1586,6 +1586,17 @@ static int dvb_register(struct cx23885_t
- 			break;
- 		}
- 		break;
-+	case CX23885_BOARD_HAUPPAUGE_STARBURST:
-+		i2c_bus = &dev->i2c_bus[0];
-+		fe0->dvb.frontend = dvb_attach(tda10071_attach,
-+						&hauppauge_tda10071_config,
-+						&i2c_bus->i2c_adap);
-+		if (fe0->dvb.frontend != NULL) {
-+			dvb_attach(a8293_attach, fe0->dvb.frontend,
-+				   &i2c_bus->i2c_adap,
-+				   &hauppauge_a8293_config);
-+		}
-+		break;
- 	case CX23885_BOARD_DVBSKY_T9580:
- 		i2c_bus = &dev->i2c_bus[0];
- 		i2c_bus2 = &dev->i2c_bus[1];
---- a/drivers/media/pci/cx23885/cx23885.h
-+++ b/drivers/media/pci/cx23885/cx23885.h
-@@ -93,6 +93,7 @@
- #define CX23885_BOARD_HAUPPAUGE_IMPACTVCBE     43
- #define CX23885_BOARD_DVICO_FUSIONHDTV_DVB_T_DUAL_EXP2 44
- #define CX23885_BOARD_DVBSKY_T9580             45
-+#define CX23885_BOARD_HAUPPAUGE_STARBURST      52
- 
- #define GPIO_0 0x00000001
- #define GPIO_1 0x00000002
+-#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_MUTEXES)
++#if defined(CONFIG_SMP) && !defined(CONFIG_DEBUG_MUTEXES)
+ 	return mutex->owner == task;
+ #else
+ 	/* Since UP may be pre-empted, we cannot assume that we own the lock */
 
 
