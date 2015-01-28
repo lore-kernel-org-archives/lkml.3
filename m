@@ -1,256 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840AbbA1UPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:15:07 -0500
-Received: from mail.lysator.liu.se ([130.236.254.3]:53541 "EHLO
-	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603AbbA1UO5 (ORCPT
+	id S1759346AbbA2Byl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:54:41 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:59166 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479AbbA2ByV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:14:57 -0500
-From: Peter Rosin <peda@lysator.liu.se>
-To: alsa-devel@alsa-project.org
-Cc: Peter Rosin <peda@axentia.se>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Clemens Ladisch <clemens@ladisch.de>,
-        Lars-Peter Clausen <lars@metafoo.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 6/7] ASoC: pcm512x: Avoid the PLL for the DAC clock, if possible
-Date: Wed, 28 Jan 2015 15:16:11 +0100
-Message-Id: <1422454572-7847-7-git-send-email-peda@lysator.liu.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1422454572-7847-1-git-send-email-peda@lysator.liu.se>
-References: <1422454572-7847-1-git-send-email-peda@lysator.liu.se>
+	Wed, 28 Jan 2015 20:54:21 -0500
+Date: Wed, 28 Jan 2015 19:46:11 +0530
+From: Tina Ruchandani <ruchandani.tina@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v4] trace: Use 64-bit timekeeping
+Message-ID: <20150128141611.GA2701@tinar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Rosin <peda@axentia.se>
+The ring_buffer_producer uses 'struct timeval' to measure
+its start and end times. 'struct timeval' on 32-bit systems
+will have its tv_sec value overflow in year 2038 and beyond.
+This patch replaces struct timeval with 'ktime_t' which uses
+64-bit representation for nanoseconds.
 
-The PLL introduces jitter, which in turn introduces noice if used
-to clock the DAC. Thus, avoid the PLL output, and use the PLL input
-to drive the DAC clock, if possible.
-
-This is described for the PCM5142/PCM5242 chips in the answers to the
-forum post "PCM5142/PCM5242 DAC clock source" at the TI E2E community
-pages (1).
-
-(1) http://e2e.ti.com/support/data_converters/audio_converters/f/64/t/389994
-
-Signed-off-by: Peter Rosin <peda@axentia.se>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
 ---
- sound/soc/codecs/pcm512x.c |  119 ++++++++++++++++++++++++++++++++++----------
- sound/soc/codecs/pcm512x.h |    4 +-
- 2 files changed, 96 insertions(+), 27 deletions(-)
+Changes in v4:
+	- Fix typo in commit message.
+	- Avoid typecast to 'long long' by defining RUN_TIME as '10ULL'
+	  instead of '10'.
+Changes in v3:
+	- Use a more efficient way to compute condition for exiting loop.
+	- Fix variable naming - all caps is only for macros.
+Changes in v2:
+	- Use ktime_t instead of timespec64 for efficiency reasons.
+---
+ kernel/trace/ring_buffer_benchmark.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-diff --git a/sound/soc/codecs/pcm512x.c b/sound/soc/codecs/pcm512x.c
-index f0c7ec2a2f31..d46d6cdb6b87 100644
---- a/sound/soc/codecs/pcm512x.c
-+++ b/sound/soc/codecs/pcm512x.c
-@@ -105,6 +105,7 @@ static const struct reg_default pcm512x_reg_defaults[] = {
- 	{ PCM512x_VCOM_CTRL_2,       0x01 },
- 	{ PCM512x_BCLK_LRCLK_CFG,    0x00 },
- 	{ PCM512x_MASTER_MODE,       0x7c },
-+	{ PCM512x_GPIO_DACIN,        0x00 },
- 	{ PCM512x_GPIO_PLLIN,        0x00 },
- 	{ PCM512x_SYNCHRONIZE,       0x10 },
- 	{ PCM512x_PLL_COEFF_0,       0x00 },
-@@ -138,6 +139,7 @@ static bool pcm512x_readable(struct device *dev, unsigned int reg)
- 	case PCM512x_MASTER_MODE:
- 	case PCM512x_PLL_REF:
- 	case PCM512x_DAC_REF:
-+	case PCM512x_GPIO_DACIN:
- 	case PCM512x_GPIO_PLLIN:
- 	case PCM512x_SYNCHRONIZE:
- 	case PCM512x_PLL_COEFF_0:
-@@ -659,6 +661,37 @@ done:
- 	return 0;
- }
+diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
+index 3f9e328..13d945c 100644
+--- a/kernel/trace/ring_buffer_benchmark.c
++++ b/kernel/trace/ring_buffer_benchmark.c
+@@ -7,7 +7,7 @@
+ #include <linux/completion.h>
+ #include <linux/kthread.h>
+ #include <linux/module.h>
+-#include <linux/time.h>
++#include <linux/ktime.h>
+ #include <asm/local.h>
  
-+static unsigned long pcm512x_pllin_dac_rate(struct snd_soc_dai *dai,
-+					    unsigned long osr_rate,
-+					    unsigned long pllin_rate)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+	struct pcm512x_priv *pcm512x = snd_soc_codec_get_drvdata(codec);
-+	unsigned long dac_rate;
-+
-+	if (!pcm512x->pll_out)
-+		return 0; /* no PLL to bypass, force SCK as DAC input */
-+
-+	if (pllin_rate % osr_rate)
-+		return 0; /* futile, quit early */
-+
-+	/* run DAC no faster than 6144000 Hz */
-+	for (dac_rate = rounddown(6144000, osr_rate);
-+	     dac_rate;
-+	     dac_rate -= osr_rate) {
-+
-+		if (pllin_rate / dac_rate > 128)
-+			return 0; /* DAC divider would be too big */
-+
-+		if (!(pllin_rate % dac_rate))
-+			return dac_rate;
-+
-+		dac_rate -= osr_rate;
-+	}
-+
-+	return 0;
-+}
-+
- static int pcm512x_set_dividers(struct snd_soc_dai *dai,
- 				struct snd_pcm_hw_params *params)
+ struct rb_page {
+@@ -17,7 +17,7 @@ struct rb_page {
+ };
+ 
+ /* run time and sleep time in seconds */
+-#define RUN_TIME	10
++#define RUN_TIME	10ULL
+ #define SLEEP_TIME	10
+ 
+ /* number of events for writer to wake up the reader */
+@@ -212,8 +212,7 @@ static void ring_buffer_consumer(void)
+ 
+ static void ring_buffer_producer(void)
  {
-@@ -672,6 +705,7 @@ static int pcm512x_set_dividers(struct snd_soc_dai *dai,
- 	unsigned long bclk_rate;
- 	unsigned long sample_rate;
- 	unsigned long osr_rate;
-+	unsigned long dacsrc_rate;
- 	int bclk_div;
- 	int lrclk_div;
- 	int dsp_div;
-@@ -679,11 +713,10 @@ static int pcm512x_set_dividers(struct snd_soc_dai *dai,
- 	unsigned long dac_rate;
- 	int ncp_div;
- 	int osr_div;
--	unsigned long dac_mul;
--	unsigned long sck_mul;
- 	int ret;
- 	int idac;
- 	int fssp;
-+	int gpio;
+-	struct timeval start_tv;
+-	struct timeval end_tv;
++	ktime_t start_time, end_time, timeout;
+ 	unsigned long long time;
+ 	unsigned long long entries;
+ 	unsigned long long overruns;
+@@ -227,7 +226,8 @@ static void ring_buffer_producer(void)
+ 	 * make the system stall)
+ 	 */
+ 	trace_printk("Starting ring buffer hammer\n");
+-	do_gettimeofday(&start_tv);
++	start_time = ktime_get();
++	timeout = ktime_add_ns(start_time, RUN_TIME * NSEC_PER_SEC);
+ 	do {
+ 		struct ring_buffer_event *event;
+ 		int *entry;
+@@ -244,7 +244,7 @@ static void ring_buffer_producer(void)
+ 				ring_buffer_unlock_commit(buffer, event);
+ 			}
+ 		}
+-		do_gettimeofday(&end_tv);
++		end_time = ktime_get();
  
- 	lrclk_div = snd_soc_params_to_frame_size(params);
- 	if (lrclk_div == 0) {
-@@ -772,31 +805,72 @@ static int pcm512x_set_dividers(struct snd_soc_dai *dai,
- 	/* run DSP no faster than 50 MHz */
- 	dsp_div = mck_rate > 50000000 ? 2 : 1;
+ 		cnt++;
+ 		if (consumer && !(cnt % wakeup_interval))
+@@ -264,7 +264,7 @@ static void ring_buffer_producer(void)
+ 			cond_resched();
+ #endif
  
--	/* run DAC no faster than 6144000 Hz */
--	dac_mul = 6144000 / osr_rate;
--	sck_mul = sck_rate / osr_rate;
--	for (; dac_mul; dac_mul--) {
--		if (!(sck_mul % dac_mul))
--			break;
--	}
--	if (!dac_mul) {
--		dev_err(dev, "Failed to find DAC rate\n");
--		return -EINVAL;
--	}
-+	dac_rate = pcm512x_pllin_dac_rate(dai, osr_rate, pllin_rate);
-+	if (dac_rate) {
-+		/* the desired clock rate is "compatible" with the pll input
-+		 * clock, so use that clock as dac input instead of the pll
-+		 * output clock since the pll will introduce jitter and thus
-+		 * noise.
-+		 */
-+		dev_dbg(dev, "using pll input as dac input\n");
-+		ret = regmap_update_bits(pcm512x->regmap, PCM512x_DAC_REF,
-+					 PCM512x_SDAC, PCM512x_SDAC_GPIO);
-+		if (ret != 0) {
-+			dev_err(codec->dev,
-+				"Failed to set gpio as dacref: %d\n", ret);
-+			return ret;
-+		}
+-	} while (end_tv.tv_sec < (start_tv.tv_sec + RUN_TIME) && !kill_test);
++	} while (ktime_before(end_time, timeout) && !kill_test);
+ 	trace_printk("End ring buffer hammer\n");
  
--	dac_rate = dac_mul * osr_rate;
--	dev_dbg(dev, "dac_rate %lu sample_rate %lu\n", dac_rate, sample_rate);
-+		gpio = PCM512x_GREF_GPIO1 + pcm512x->pll_in - 1;
-+		ret = regmap_update_bits(pcm512x->regmap, PCM512x_GPIO_DACIN,
-+					 PCM512x_GREF, gpio);
-+		if (ret != 0) {
-+			dev_err(codec->dev,
-+				"Failed to set gpio %d as dacin: %d\n",
-+				pcm512x->pll_in, ret);
-+			return ret;
-+		}
-+
-+		dacsrc_rate = pllin_rate;
-+	} else {
-+		/* run DAC no faster than 6144000 Hz */
-+		unsigned long dac_mul = 6144000 / osr_rate;
-+		unsigned long sck_mul = sck_rate / osr_rate;
-+
-+		for (; dac_mul; dac_mul--) {
-+			if (!(sck_mul % dac_mul))
-+				break;
-+		}
-+		if (!dac_mul) {
-+			dev_err(dev, "Failed to find DAC rate\n");
-+			return -EINVAL;
-+		}
- 
--	dac_div = DIV_ROUND_CLOSEST(sck_rate, dac_rate);
-+		dac_rate = dac_mul * osr_rate;
-+		dev_dbg(dev, "dac_rate %lu sample_rate %lu\n",
-+			dac_rate, sample_rate);
-+
-+		ret = regmap_update_bits(pcm512x->regmap, PCM512x_DAC_REF,
-+					 PCM512x_SDAC, PCM512x_SDAC_SCK);
-+		if (ret != 0) {
-+			dev_err(codec->dev,
-+				"Failed to set sck as dacref: %d\n", ret);
-+			return ret;
-+		}
-+
-+		dacsrc_rate = sck_rate;
-+	}
-+
-+	dac_div = DIV_ROUND_CLOSEST(dacsrc_rate, dac_rate);
- 	if (dac_div > 128) {
- 		dev_err(dev, "Failed to find DAC divider\n");
- 		return -EINVAL;
+ 	if (consumer) {
+@@ -280,9 +280,7 @@ static void ring_buffer_producer(void)
+ 		wait_for_completion(&read_done);
  	}
  
--	ncp_div = DIV_ROUND_CLOSEST(sck_rate / dac_div, 1536000);
--	if (ncp_div > 128 || sck_rate / dac_div / ncp_div > 2048000) {
-+	ncp_div = DIV_ROUND_CLOSEST(dacsrc_rate / dac_div, 1536000);
-+	if (ncp_div > 128 || dacsrc_rate / dac_div / ncp_div > 2048000) {
- 		/* run NCP no faster than 2048000 Hz, but why? */
--		ncp_div = DIV_ROUND_UP(sck_rate / dac_div, 2048000);
-+		ncp_div = DIV_ROUND_UP(dacsrc_rate / dac_div, 2048000);
- 		if (ncp_div > 128) {
- 			dev_err(dev, "Failed to find NCP divider\n");
- 			return -EINVAL;
-@@ -1011,13 +1085,6 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 	if (ret != 0)
- 		return ret;
+-	time = end_tv.tv_sec - start_tv.tv_sec;
+-	time *= USEC_PER_SEC;
+-	time += (long long)((long)end_tv.tv_usec - (long)start_tv.tv_usec);
++	time = ktime_us_delta(end_time, start_time);
  
--	ret = regmap_update_bits(pcm512x->regmap, PCM512x_DAC_REF,
--				 PCM512x_SDAC, PCM512x_SDAC_SCK);
--	if (ret != 0) {
--		dev_err(codec->dev, "Failed to set sck as dacref: %d\n", ret);
--		return ret;
--	}
--
- 	if (pcm512x->pll_out) {
- 		ret = regmap_update_bits(pcm512x->regmap, PCM512x_PLL_REF,
- 					 PCM512x_SREF, PCM512x_SREF_GPIO);
-diff --git a/sound/soc/codecs/pcm512x.h b/sound/soc/codecs/pcm512x.h
-index eba5adc2cdb1..b7c310207223 100644
---- a/sound/soc/codecs/pcm512x.h
-+++ b/sound/soc/codecs/pcm512x.h
-@@ -38,6 +38,7 @@
- #define PCM512x_MASTER_MODE       (PCM512x_PAGE_BASE(0) +  12)
- #define PCM512x_PLL_REF           (PCM512x_PAGE_BASE(0) +  13)
- #define PCM512x_DAC_REF           (PCM512x_PAGE_BASE(0) +  14)
-+#define PCM512x_GPIO_DACIN        (PCM512x_PAGE_BASE(0) +  16)
- #define PCM512x_GPIO_PLLIN        (PCM512x_PAGE_BASE(0) +  18)
- #define PCM512x_SYNCHRONIZE       (PCM512x_PAGE_BASE(0) +  19)
- #define PCM512x_PLL_COEFF_0       (PCM512x_PAGE_BASE(0) +  20)
-@@ -162,8 +163,9 @@
- #define PCM512x_SDAC_PLL    (1 << 4)
- #define PCM512x_SDAC_SCK    (3 << 4)
- #define PCM512x_SDAC_BCK    (4 << 4)
-+#define PCM512x_SDAC_GPIO   (5 << 4)
- 
--/* Page 0, Register 18 - GPIO source for PLL */
-+/* Page 0, Register 16, 18 - GPIO source for DAC, PLL */
- #define PCM512x_GREF        (7 << 0)
- #define PCM512x_GREF_SHIFT  0
- #define PCM512x_GREF_GPIO1  (0 << 0)
+ 	entries = ring_buffer_entries(buffer);
+ 	overruns = ring_buffer_overruns(buffer);
 -- 
-1.7.10.4
+2.2.0.rc0.207.ga3a616c
 
