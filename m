@@ -1,83 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbbA1Uya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:54:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517AbbA1UyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:54:21 -0500
-Date: Wed, 28 Jan 2015 09:48:03 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        kexec@lists.infradead.org, Andy Lutomirski <luto@amacapital.net>,
-        Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: Edited kexec_load(2) [kexec_file_load()] man page for review
-Message-ID: <20150128144803.GC15342@redhat.com>
-References: <545FBDDD.9060801@gmail.com>
- <20141111213037.GA31445@redhat.com>
- <54ADA284.30502@gmail.com>
- <20150112221634.GD16162@redhat.com>
- <54B91271.3000600@gmail.com>
- <20150127142459.GA12851@redhat.com>
- <54C89816.8030709@gmail.com>
+	id S1756584AbbA1UWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:22:52 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:49238 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446AbbA1UWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:22:45 -0500
+Date: Wed, 28 Jan 2015 15:50:15 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Haren Myneni <hbabu@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Kan Liang <kan.liang@intel.com>,
+        linuxppc-dev@lists.ozlabs.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Richard Fowles <rfowles@redhat.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/26] perf/core improvements and fixes
+Message-ID: <20150128145015.GB6559@gmail.com>
+References: <1422294449-12735-1-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54C89816.8030709@gmail.com>
+In-Reply-To: <1422294449-12735-1-git-send-email-acme@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 09:04:38AM +0100, Michael Kerrisk (man-pages) wrote:
 
-Hi Michael,
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-[..]
-> >> * the number of bytes copied from userspace is min(bufsz, memsz)
-> > 
-> > Yes. bufsz can not be more than memsz. There is a check to validate
-> > this in kernel.
-> > 
-> > 	result = -EINVAL;
-> > 	for (i = 0; i < nr_segments; i++) {
-> > 		if (image->segment[i].bufsz > image->segment[i].memsz)
-> > 			return result;
-> > 	}
+> Hi Ingo,
 > 
-> Okay. So it's more precise to leave discussion of min(bufz, memsz) 
-> out of the man page just to say: bufsz bytes are transferred; 
-> if bufsz < memsz, then the excess bytes in the target region are 
-> filled with zeros. Right?
-
-Sounds good.
-
-[..]
-> > Both mem and memsz need to be page aligned.
+> 	Please consider pulling, it has my latest perf/urgent pull content,
+> please let me know if you don't want it to be submitted like that, i.e. if
+> you have any problems with my latest perf/urgent pull request and I'll try
+> to address it ASAP.
 > 
-> And the error if not is EADDRNOTAVAIL, right?
-
-Yes.
-
+> - Arnaldo
 > 
-> >> And one further question. Other than the fact that they are used with 
-> >> different system calls, what is the difference between KEXEC_ON_CRASH 
-> >> and KEXEC_FILE_ON_CRASH?
-> > 
-> > Right now I can't think of any other difference. They both tell respective
-> > system call that this kernel needs to be loaded in reserved memory region
-> > for crash kernel.
+> The following changes since commit 25dd9171f51c482eb7c4dc8618766ae733756e2d:
 > 
-> Okay.
+>   perf probe: Fix probing kretprobes (2015-01-21 10:06:24 -0300)
 > 
-> I've made various adjustments to the page in the light of your comments 
-> above. Thanks!
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 3d199b5be53348bef84883013c484b414adf0a2e:
+> 
+>   tools lib traceevent: Add support for IP address formats (2015-01-26 12:04:41 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> User visible:
+> 
+> - Enable sampling loads and stores simultaneously in 'perf mem' (Stephane Eranian)
+> 
+> - 'perf diff' output improvements (Namhyung Kim)
+> 
+> - Fix error reporting for evsel pgfault constructor (Arnaldo Carvalho de Melo)
+> 
+> Infrastructure:
+> 
+> - Move debugfs sterrno like method to tools/lib/ so that it may be used by
+>   other tools, as 'perf probe' will be soon (Arnaldo Carvalho de Melo)
+> 
+> - Introduce function fro deleting/removing hist_entry to avoid code duplication
+>   (Arnaldo Carvalho de Melo)
+> 
+> - Support parsing parameterized events (Cody P Schafer)
+> 
+> - Add support for IP address formats in libtraceevent (David Ahern)
+> 
+> - Fix typo in sample-parsing.c 'perf test' entry (Rasmus Villemoes)
+> 
+> - Remove some unused functions from color.c (Rickard Strandqvist)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (9):
+>       perf mem: Move the mem_operations global to struct perf_mem
+>       perf tools: Remove EOL whitespaces
+>       perf hists: Rename hist_entry__free to __delete
+>       perf hists: Introduce function for deleting/removing hist_entry
+>       tools lib fs: Adopt debugfs open strerrno method
+>       tools lib fs: Pass filename to debugfs__strerror_open
+>       perf trace: Fix error reporting for evsel pgfault constructor
+>       tools lib fs debugfs: Introduce debugfs__strerror_open_tp
+>       tools lib fs debugfs: Check if debugfs is mounted when handling ENOENT
+> 
+> Cody P Schafer (4):
+>       perf tools: Support parsing parameterized events
+>       perf tools: Extend format_alias() to include event parameters
+>       perf Documentation: Add event parameters
+>       perf tools: Document parameterized and symbolic events
+> 
+> David Ahern (1):
+>       tools lib traceevent: Add support for IP address formats
+> 
+> Namhyung Kim (9):
+>       perf report: Get rid of report__inc_stat()
+>       perf tools: Allow use of an exclusive option more than once
+>       perf diff: Get rid of hists__compute_resort()
+>       perf diff: Print diff result more precisely
+>       perf diff: Introduce fmt_to_data_file() helper
+>       perf tools: Pass struct perf_hpp_fmt to its callbacks
+>       perf diff: Fix output ordering to honor next column
+>       perf diff: Fix -o/--order option behavior
+>       perf ui/tui: Show fatal error message only if exists
+> 
+> Rasmus Villemoes (1):
+>       perf tests: Fix typo in sample-parsing.c
+> 
+> Rickard Strandqvist (1):
+>       perf tools: Remove some unused functions from color.c
+> 
+> Stephane Eranian (1):
+>       perf mem: Enable sampling loads and stores simultaneously
+> 
+>  .../testing/sysfs-bus-event_source-devices-events  |   6 +
+>  tools/lib/api/fs/debugfs.c                         |  43 +++
+>  tools/lib/api/fs/debugfs.h                         |   3 +
+>  tools/lib/traceevent/event-parse.c                 | 328 +++++++++++++++++++++
+>  tools/perf/Documentation/perf-buildid-cache.txt    |   2 +-
+>  tools/perf/Documentation/perf-list.txt             |  13 +
+>  tools/perf/Documentation/perf-mem.txt              |   9 +-
+>  tools/perf/Documentation/perf-record.txt           |  12 +
+>  tools/perf/Documentation/perf-script.txt           |  28 +-
+>  tools/perf/Documentation/perf-stat.txt             |  20 +-
+>  tools/perf/builtin-buildid-cache.c                 |   4 +-
+>  tools/perf/builtin-diff.c                          | 248 ++++++++++------
+>  tools/perf/builtin-mem.c                           | 131 ++++++--
+>  tools/perf/builtin-report.c                        |  16 +-
+>  tools/perf/builtin-stat.c                          |   2 +-
+>  tools/perf/builtin-top.c                           |   2 +-
+>  tools/perf/builtin-trace.c                         | 106 ++++---
+>  tools/perf/tests/attr.py                           |   1 -
+>  tools/perf/tests/hists_cumulate.c                  |   2 +-
+>  tools/perf/tests/hists_output.c                    |   2 +-
+>  tools/perf/tests/make                              |   1 -
+>  tools/perf/tests/parse-events.c                    |   2 +-
+>  tools/perf/tests/sample-parsing.c                  |   2 +-
+>  tools/perf/ui/browsers/annotate.c                  |   3 +-
+>  tools/perf/ui/hist.c                               |  12 +-
+>  tools/perf/ui/progress.h                           |   4 +-
+>  tools/perf/ui/tui/helpline.c                       |   3 +
+>  tools/perf/ui/tui/setup.c                          |   3 +-
+>  tools/perf/util/annotate.c                         |   2 +-
+>  tools/perf/util/color.c                            | 126 --------
+>  tools/perf/util/color.h                            |   2 -
+>  tools/perf/util/evlist.c                           |  27 --
+>  tools/perf/util/evlist.h                           |   1 -
+>  tools/perf/util/hist.c                             |  48 ++-
+>  tools/perf/util/hist.h                             |  11 +-
+>  tools/perf/util/parse-events.c                     |   6 +-
+>  tools/perf/util/parse-events.h                     |   1 +
+>  tools/perf/util/parse-options.c                    |   2 +-
+>  tools/perf/util/pmu.c                              | 102 ++++++-
+>  tools/perf/util/python.c                           |   2 +-
+>  .../util/scripting-engines/trace-event-python.c    |   2 +-
+>  tools/perf/util/session.c                          |   2 +-
+>  tools/perf/util/sort.c                             |  37 ++-
+>  tools/perf/util/symbol.c                           |   2 +-
+>  44 files changed, 950 insertions(+), 431 deletions(-)
 
-Thank you for following it up and improving kexec man page.
+Pulled, thanks a lot Arnaldo!
 
-Thanks
-Vivek
+Note that there was some minimal interaction with Frederic's 
+pending perf/hw_breakpoint work, in tools/perf/Documentation/perf-record.txt.
+
+I resolved the conflict and merged perf/hw_breakpoint into 
+perf/core as well, to avoid future complications. (Once I've 
+pushed it all out you guys might want to double check what I did 
+there though, just to make sure.)
+
+Thanks,
+
+	Ingo
