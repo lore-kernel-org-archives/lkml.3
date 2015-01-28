@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759481AbbA1WKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 17:10:48 -0500
-Received: from mail.kernel.org ([198.145.29.136]:52901 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932376AbbA1URO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:17:14 -0500
-Date: Wed, 28 Jan 2015 12:29:07 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Michael Ellerman <mpe@ellerman.id.au>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
-        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v7 0/4] Add support for parametrized events
-Message-ID: <20150128152907.GB25018@kernel.org>
-References: <1422322990-9030-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <20150127100213.GC7810@krava.brq.redhat.com>
- <1422406478.32234.0.camel@ellerman.id.au>
- <20150128103753.GA4584@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150128103753.GA4584@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753218AbbA2BNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:13:00 -0500
+Received: from resqmta-ch2-12v.sys.comcast.net ([69.252.207.44]:55172 "EHLO
+	resqmta-ch2-12v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751300AbbA2BM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:12:56 -0500
+Date: Wed, 28 Jan 2015 09:30:56 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <js1304@gmail.com>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, akpm@linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, iamjoonsoo@lge.com,
+        Jesper Dangaard Brouer <brouer@redhat.com>
+Subject: Re: [RFC 1/3] Slab infrastructure for array operations
+In-Reply-To: <CAAmzW4MzNfcRucHeTxJtXLks5T-Def=O1sRpQY6fo5ybTzKsBA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1501280923410.31753@gentwo.org>
+References: <20150123213727.142554068@linux.com> <20150123213735.590610697@linux.com> <20150127082132.GE11358@js1304-P5Q-DELUXE> <alpine.DEB.2.11.1501271054310.25124@gentwo.org> <CAAmzW4MzNfcRucHeTxJtXLks5T-Def=O1sRpQY6fo5ybTzKsBA@mail.gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 28, 2015 at 11:37:53AM +0100, Jiri Olsa escreveu:
-> On Wed, Jan 28, 2015 at 11:54:38AM +1100, Michael Ellerman wrote:
-> > On Tue, 2015-01-27 at 11:02 +0100, Jiri Olsa wrote:
-> > > On Mon, Jan 26, 2015 at 05:43:03PM -0800, Sukadev Bhattiprolu wrote:
-> > > 
-> > > SNIP
-> > > 
-> > > > 
-> > > > 
-> > > > Cody P Schafer (6):
-> > > >   perf: provide sysfs_show for struct perf_pmu_events_attr
-> > > >   perf: add PMU_EVENT_ATTR_STRING() helper
-> > > >   powerpc/perf/hv-24x7: parse catalog and populate sysfs with events
-> > > >   powerpc/perf/{hv-gpci, hv-common}: generate requests with counters
-> > > >     annotated
-> > > >   powerpc/perf/hv-gpci: add the remaining gpci requests
-> > > >   powerpc/perf/hv-24x7: Document sysfs event description entries
-> > > > 
-> > > > Sukadev Bhattiprolu (1):
-> > > >   perf: define EVENT_DEFINE_RANGE_FORMAT_LITE helper
-> > > 
-> > > generic 'perf: *' patches look good to me.. cant say much about
-> > > the rest of the patchset though
-> > 
-> > Is that an ACK ?
-> 
-> ah right, sry ;-)
-> 
-> Acked-by: Jiri Olsa <jolsa@kernel.org>
+On Wed, 28 Jan 2015, Joonsoo Kim wrote:
 
-Thanks, I'll try and collect the tools/ bits since Michael already took
-the other bits, right?
+> > GFP_SLAB_ARRAY new is best for large quantities in either allocator since
+> > SLAB also has to construct local metadata structures.
+>
+> In case of SLAB, there is just a little more work to construct local metadata so
+> GFP_SLAB_ARRAY_NEW would not show better performance
+> than GFP_SLAB_ARRAY_LOCAL, because it would cause more overhead due to
+> more page allocations. Because of this characteristic, I said that
+> which option is
+> the best is implementation specific and therefore we should not expose it.
 
-- Arnaldo
+For large amounts of objects (hundreds or higher) GFP_SLAB_ARRAY_LOCAL
+will never have enough objects. GFP_SLAB_ARRAY_NEW will go to the page
+allocator and bypass free table creation and all the queuing that objects
+go through normally in SLAB. AFAICT its going to be a significant win.
+
+A similar situation is true for the freeing operation. If the freeing
+operation results in all objects in a page being freed then we can also
+bypass that and put the page directly back into the page allocator (to be
+implemented once we agree on an approach).
+
+> Even if we narrow down the problem to the SLUB, choosing correct option is
+> difficult enough. User should know how many objects are cached in this
+> kmem_cache
+> in order to choose best option since relative quantity would make
+> performance difference.
+
+Ok we can add a function call to calculate the number of objects cached
+per cpu and per node? But then that is rather fluid and could change any
+moment.
+
+> And, how many objects are cached in this kmem_cache could be changed
+> whenever implementation changed.
+
+The default when no options are specified is to first exhaust the node
+partial objects, then allocate new slabs as long as we have more than
+objects per page left and only then satisfy from cpu local object. I think
+that is satisfactory for the majority of the cases.
+
+The detailed control options were requested at the meeting in Auckland at
+the LCA. I am fine with dropping those if they do not make sense. Makes
+the API and implementation simpler. Jesper, are you ok with this?
