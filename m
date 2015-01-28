@@ -1,103 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759975AbbA1Uon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:44:43 -0500
-Received: from mail.kernel.org ([198.145.29.136]:56904 "EHLO mail.kernel.org"
+	id S1761927AbbA1UqG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:46:06 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:60028 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754968AbbA1Uoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:44:37 -0500
-Date: Wed, 28 Jan 2015 17:44:40 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 linux-trace 4/8] samples: bpf: simple tracing example
- in C
-Message-ID: <20150128204440.GQ7220@kernel.org>
-References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
- <1422417973-10195-5-git-send-email-ast@plumgrid.com>
- <20150128162415.GO7220@kernel.org>
- <20150128162557.GP7220@kernel.org>
- <CAMEtUuxRXEPOaX3rksqQKdz4THMmtLR3=uHymEKaMSNkjMBhxw@mail.gmail.com>
+	id S1760246AbbA1UqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:46:00 -0500
+Date: Wed, 28 Jan 2015 22:45:44 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Introduce <linux/mm_struct.h>
+Message-ID: <20150128204544.GA15649@node.dhcp.inet.fi>
+References: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20150128185052.GA6118@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMEtUuxRXEPOaX3rksqQKdz4THMmtLR3=uHymEKaMSNkjMBhxw@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150128185052.GA6118@roeck-us.net>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 28, 2015 at 08:42:29AM -0800, Alexei Starovoitov escreveu:
-> On Wed, Jan 28, 2015 at 8:25 AM, Arnaldo Carvalho de Melo
-> <acme@kernel.org> wrote:
-> > Em Wed, Jan 28, 2015 at 01:24:15PM -0300, Arnaldo Carvalho de Melo escreveu:
-> >> Em Tue, Jan 27, 2015 at 08:06:09PM -0800, Alexei Starovoitov escreveu:
-> >> > +   if (bpf_memcmp(dev->name, devname, 2) == 0)
-
-> >> I'm only starting to look at all this, so bear with me... But why do we
-> >> need to have it as "bpf_memcmp"? Can't we simply use it as "memcmp" and
-> >> have it use the right function?
-
-> >> Less typing, perhaps we would need to have a:
-
-> >> #define memcmp bpf_memcmp(s1, s2, n) bpf_memcmp(s1, s2, n)
-
-> > Argh, like this:
-
-> > #define memcmp(s1, s2, n) bpf_memcmp(s1, s2, n)
-
-> >> in bpf_helpers.h to have it work?
-
-> yes, that will work just fine.
-> Since it's an example I made it explicit that bpf_memcmp()
-> has memcmp() semantics, but little bit different:
-> int bpf_memcmp(void *unsafe_ptr, void *safe_ptr, int size)
-
-Not knowing about the safe/unsafe pointers (at this point in my
-conceptual eBPF learning process), I would think that it would be easier
-to understand if it would reuse another well known idiom:
-
-#define memcmp_from_user(kernel, user, n) bpf_memcmp(user, kernel, n)
-
-That would be similar to:
-
- copy_from_user(void *to, const void __user *from, unsigned long n)
-
-But here, again bear with me, I'm just brainstorming, as from just
-looking at:
-
-  bpf_memcmp(a, b, n)
-
-I don't reuse anything I've learned before trying to understand eBPF,
-not I see any well known marker (__user) that would help me understand
-that that pointer needs special treatment/belongs to a different "domain".
-
-> meaning that one of the pointers can point anywhere and
-> the function will be doing probe_kernel_read() underneath
-> similar to bpf_fetch_*() helpers.
-
-> If it was plain memcmp() it would give a wrong impression
-> that vanilla memcmp() can be used.
-
-Since that is not the case, I agree that the 'memcmp' semantic can't be
-used, as the two pointers are not on the same "domain", so to say.
-
-> In general the programs cannot use any library functions
-> outside of helpers defined in uapi/linux/bpf.h
+On Wed, Jan 28, 2015 at 10:50:52AM -0800, Guenter Roeck wrote:
+> On Wed, Jan 28, 2015 at 03:17:40PM +0200, Kirill A. Shutemov wrote:
+> > This patchset moves definition of mm_struct into separate header file.
+> > It allows to get rid of nr_pmds if PMD page table level is folded.
+> > We cannot do it with current mm_types.h because we need
+> > __PAGETABLE_PMD_FOLDED from <asm/pgtable.h> which creates circular
+> > dependencies.
+> > 
+> > I've done few build tests and looks like it works, but I expect breakage
+> > on some configuration. Please test.
+> > 
+> Doesn't look good.
 > 
-> bpf_fetch_*() helpers are also explicit in examples.
-> If one need to do a lot of pointer walking, then macro like
-> #define D(P) ((typeof(P))bpf_fetch_ptr(&P))
-> would be easier to use: p = D(D(skb->dev)->ifalias)
-> multiple pointer derefs would look more natural...
+> Build results:
+> 	total: 134 pass: 63 fail: 71
+> Failed builds:
+> 	arm:s3c2410_defconfig
+> 	arm:omap2plus_defconfig
+> 	arm:imx_v6_v7_defconfig
+> 	arm:ixp4xx_defconfig
+> 	arm:u8500_defconfig
+> 	arm:multi_v5_defconfig
+> 	arm:multi_v7_defconfig
+> 	arm:omap1_defconfig
+> 	arm:footbridge_defconfig
+> 	arm:davinci_all_defconfig
+> 	arm:mini2440_defconfig
+> 	arm:rpc_defconfig
+> 	arm:axm55xx_defconfig
+> 	arm:mxs_defconfig
+> 	arm:keystone_defconfig
+> 	arm:vexpress_defconfig
+> 	arm:imx_v4_v5_defconfig
+> 	arm:at91_dt_defconfig
+> 	arm:s3c6400_defconfig
+> 	arm:lpc32xx_defconfig
+> 	arm:shmobile_defconfig
+> 	arm:nhk8815_defconfig
+> 	arm:bcm2835_defconfig
+> 	arm:sama5_defconfig
+> 	arm:orion5x_defconfig
+> 	arm:exynos_defconfig
+> 	arm:cm_x2xx_defconfig
+> 	arm:s5pv210_defconfig
+> 	arm:integrator_defconfig
+> 	arm:msm_defconfig
+> 	arm:pxa910_defconfig
+> 	arm:clps711x_defconfig
 
-And if possible, i.e. if the eBPF compiler would take care of that
-somehow, would indeed be preferred as it looks more natural :-)
+Could you try this for arm?
 
-- Arnaldo
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index f40354198bad..bb4ae035e5e3 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -24,9 +24,6 @@
+ #include <asm/memory.h>
+ #include <asm/pgtable-hwdef.h>
+ 
+-
+-#include <asm/tlbflush.h>
+-
+ #ifdef CONFIG_ARM_LPAE
+ #include <asm/pgtable-3level.h>
+ #else
+diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+index ce727d47275c..b5e764e0d5a8 100644
+--- a/arch/arm/mm/mm.h
++++ b/arch/arm/mm/mm.h
+@@ -3,6 +3,7 @@
+ #include <linux/vmalloc.h>
+ 
+ #include <asm/pgtable.h>
++#include <asm/tlbflush.h>
+ 
+ /* the upper-most page table pointer */
+ extern pmd_t *top_pmd;
+-- 
+ Kirill A. Shutemov
