@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760260AbbA1UdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:33:22 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1757 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760159AbbA1UdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:33:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,479,1418112000"; 
-   d="scan'208";a="677203498"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Wincy Van <fanwenyi0529@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "gleb@kernel.org" <gleb@kernel.org>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Subject: RE: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-Thread-Topic: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
-Thread-Index: AQHQN79lT9Shw/DNlk+phY4fCFwl65zVMZZggAABYeA=
-Date: Wed, 28 Jan 2015 08:06:19 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C56F@SHSMSX104.ccr.corp.intel.com>
-References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S933130AbbA1UUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:20:14 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:30034 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933080AbbA1UUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:20:06 -0500
+From: HuKeping <hukeping@huawei.com>
+To: <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <matt.fleming@intel.com>,
+        <cbouatmailru@gmail.com>, <ccross@android.com>,
+        <keescook@chromium.org>, <tony.luck@intel.com>,
+        <stable@vger.kernel.org>, <rob.herring@calxeda.com>, <cxie@redhat.com>,
+        <sdu.liu@huawei.com>, <wangnan0@huawei.com>, <peifeiyue@huawei.com>
+Subject: [PATCH v3 0/2][request for stable inclusion] several pstore related bugfixs
+Date: Wed, 28 Jan 2015 16:06:24 +0800
+Message-ID: <1422432386-15761-1-git-send-email-hukeping@huawei.com>
+X-Mailer: git-send-email 1.8.5.5
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SKXWIg006146
 
-Zhang, Yang Z wrote on 2015-01-28:
-> Wincy Van wrote on 2015-01-24:
->> When L2 is using x2apic, we can use virtualize x2apic mode to gain
->> higher performance, especially in apicv case.
->> 
->> This patch also introduces nested_vmx_check_apicv_controls for the
->> nested apicv patches.
+Hi greg,
+We want to use pstore on linux 3.10. But we found several bugfixs have not
+been merged yet. Most of them are obvious and can be cherry-picked cleanly.
+Would you please apply them to stable 3.10?
 
-Sorry, replied on the wrong thread.:(
+v1 -> v2:
+ - remove d4bf205da618bbd0b038e404d646f14e76915718 which has already been merged
+ - adjust 0405a5cec3406f19e69da07c8111a6bf1088ac29
 
->> 
->> Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
->> ---
-> 
-> ...snip...
-> 
->>  static void vmx_disable_intercept_for_msr(u32 msr, bool
->> longmode_only)
-> {
->>         if (!longmode_only)
->> @@ -8344,7 +8394,68 @@ static int
->> nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,  static
->> inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
->>                                                struct vmcs12
->> *vmcs12)  {
->> -       return false;
->> +       struct page *page;
->> +       unsigned long *msr_bitmap;
->> +
->> +       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
->> +               return false;
->> +
->> +       page = nested_get_page(vcpu, vmcs12->msr_bitmap);
->> +       if (!page) {
->> +               WARN_ON(1);
->> +               return false;
->> +       }
->> +       msr_bitmap = (unsigned long *)kmap(page);
->> +       if (!msr_bitmap) {
->> +               nested_release_page_clean(page);
->> +               WARN_ON(1);
->> +               return false;
->> +       }
->> +
->> +       memset(vmx_msr_bitmap_nested, 0xff, PAGE_SIZE);
->> +
->> +       if (nested_cpu_has_virt_x2apic_mode(vmcs12))
->> +               /* TPR is allowed */
->> +               nested_vmx_disable_intercept_for_msr(msr_bitmap,
->> +                               vmx_msr_bitmap_nested,
->> +                               APIC_BASE_MSR + (APIC_TASKPRI >>
->> 4),
->> +                               MSR_TYPE_R | MSR_TYPE_W);
-> 
-> I didn't understand what this function does? Per my understanding, you
-> only need to set the (vmx_msr_bitmap_nested = vmcs01->msr_bitmap |
-> vmcs12->msr_bitmap) and inject the nested vmexit to L1 if the bit in
-> vmcs12->msr_bitmap is setting. Am I missing some patches?
-> 
-> Best regards,
-> Yang
->
+v2 -> v3:
+ - attach commit to pstore/ram: avoid atomic accesses for ioremapped regions
 
+PART 1: patches that can be cleanly applied:
 
-Best regards,
-Yang
+ bf2883339a33b7544b92ea465b90c3de55082032
+ pstore: Fail to unlink if a driver has not defined pstore_erase
+ 
+ c39524e6744284452ef45480d3153bec28960c32
+ pstore: d_alloc_name() doesn't return an ERR_PTR
+ 
+ 57fd835385a043577457a385f28c08be693991bf
+ pstore: clarify clearing of _read_cnt in ramoops_context
+ 
+ aa9a4a1edfbd3d223af01db833da2f07850bc655
+ pstore: skip zero size persistent ram buffer in traverse
+ 
+ b0aa931fb84431394d995472d0af2a6c2b61064d
+ pstore: Fix NULL pointer fault if get NULL prz in ramoops_get_next_prz
+ 
+PART 2: pathes that should be adjusted:
 
+ Rob Herring (1):
+  pstore/ram: avoid atomic accesses for ioremapped regions
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ fs/pstore/ram_core.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 52 insertions(+), 2 deletions(-)
+
+ Madper Xie (1):
+  efi-pstore: Make efi-pstore return a unique id
+
+ drivers/firmware/efi/efi-pstore.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+-- 
+1.8.5.5
+
