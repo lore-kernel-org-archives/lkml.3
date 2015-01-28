@@ -1,43 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282AbbA1U5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:57:38 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:42001 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219AbbA1U5g (ORCPT
+	id S1756002AbbA2Bfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:35:45 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33597 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195AbbA2Bfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:57:36 -0500
-From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+	Wed, 28 Jan 2015 20:35:38 -0500
+Date: Wed, 28 Jan 2015 16:05:33 +0200
+From: Heba Aamer <heba93aamer@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: oleg.drokin@intel.com, andreas.dilger@intel.com,
+        gregkh@linuxfoundation.org, gdonald@gmail.com, dmitry.eremin@intel.com,
+        brilliantov@inbox.ru, tristan@lelong.xyz, HPDD-discuss@ml01.01.org,
         linux-kernel@vger.kernel.org
-Cc: Andrey Skvortsov <andrej.skvortzov@gmail.com>
-Subject: [PATCH] x86/vdso: teach 'make clean' remove vdso64 binaries
-Date: Wed, 28 Jan 2015 17:04:27 +0300
-Message-Id: <1422453867-17326-1-git-send-email-andrej.skvortzov@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+Subject: [PATCH] staging: lustre: lustre: osc: fix Prefer seq_puts to
+ seq_printf
+Message-ID: <20150128140533.GA14301@mohammed-Inspiron-3537>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After 'make clean' vdso64.so and vdso64.dbg.so were left in arch/x86/vdso/.
+This patch fixes the following checkpatch.pl warning:
+Prefer seq_puts to seq_printf
 
-Signed-off-by: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+Signed-off-by: Heba Aamer <heba93aamer@gmail.com>
 ---
- arch/x86/vdso/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/lustre/lustre/osc/lproc_osc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index 5a4affe..09297c8 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -205,4 +205,4 @@ $(vdso_img_insttargets): install_%: $(obj)/%.dbg $(MODLIB)/vdso FORCE
- PHONY += vdso_install $(vdso_img_insttargets)
- vdso_install: $(vdso_img_insttargets) FORCE
+diff --git a/drivers/staging/lustre/lustre/osc/lproc_osc.c b/drivers/staging/lustre/lustre/osc/lproc_osc.c
+index 8e22e45..4da837e 100644
+--- a/drivers/staging/lustre/lustre/osc/lproc_osc.c
++++ b/drivers/staging/lustre/lustre/osc/lproc_osc.c
+@@ -364,7 +364,7 @@ static int osc_checksum_type_seq_show(struct seq_file *m, void *v)
+ 		else
+ 			seq_printf(m, "%s ", cksum_name[i]);
+ 	}
+-	seq_printf(m, "\n");
++	seq_puts(m, "\n");
+ 	return 0;
+ }
  
--clean-files := vdso32-syscall* vdso32-sysenter* vdso32-int80*
-+clean-files := vdso32-syscall* vdso32-sysenter* vdso32-int80* vdso64*
+@@ -601,7 +601,7 @@ static int osc_rpc_stats_seq_show(struct seq_file *seq, void *v)
+ 	seq_printf(seq, "pending read pages:   %d\n",
+ 		   atomic_read(&cli->cl_pending_r_pages));
+ 
+-	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
++	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
+ 	seq_printf(seq, "pages per rpc	 rpcs   %% cum %% |");
+ 	seq_printf(seq, "       rpcs   %% cum %%\n");
+ 
+@@ -624,7 +624,7 @@ static int osc_rpc_stats_seq_show(struct seq_file *seq, void *v)
+ 			break;
+ 	}
+ 
+-	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
++	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
+ 	seq_printf(seq, "rpcs in flight	rpcs   %% cum %% |");
+ 	seq_printf(seq, "       rpcs   %% cum %%\n");
+ 
+@@ -647,7 +647,7 @@ static int osc_rpc_stats_seq_show(struct seq_file *seq, void *v)
+ 			break;
+ 	}
+ 
+-	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
++	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
+ 	seq_printf(seq, "offset		rpcs   %% cum %% |");
+ 	seq_printf(seq, "       rpcs   %% cum %%\n");
+ 
 -- 
-1.7.10.4
+1.7.9.5
 
