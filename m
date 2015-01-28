@@ -1,101 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761514AbbA2CUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:20:38 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:40513 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181AbbA2CUf (ORCPT
+	id S1763362AbbA2C5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:57:31 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37324 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756505AbbA2C53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:20:35 -0500
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Subject: [RFC v5 - RESEND] debug: prevent entering debug mode on panic/exception.
-Date: Wed, 28 Jan 2015 16:09:34 +0530
-Message-Id: <1422441574-24005-1-git-send-email-kiran.kumar@linaro.org>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 28 Jan 2015 21:57:29 -0500
+Message-ID: <54C8BDF9.7080802@gmail.com>
+Date: Wed, 28 Jan 2015 11:46:17 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Daniel Mack <daniel@zonque.org>, David Herrmann <dh.herrmann@gmail.com>
+CC: mtk.manpages@gmail.com, Tom Gundersen <teg@jklm.no>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
+        "Theodore T'so" <tytso@mit.edu>, christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>	<54BE5DC8.70706@gmail.com>	<54BE9D08.7010804@zonque.org>	<54BF805B.4000609@gmail.com>	<54BFDAAA.50203@zonque.org>	<54C0CE8A.5080805@gmail.com>	<20150123155402.GB2159@kroah.com>	<54C65267.7090905@gmail.com>	<CAG-2HqUCZjc4Ucc-L21uG6e-di4UcLJAT5mW_-5-c-uqmoJyzA@mail.gmail.com>	<54C66F30.8050108@gmail.com> <CANq1E4TtBhA6Ygu9qMU8xVxbL9q+ZBqnfdU0ceeTTfam9aT+=w@mail.gmail.com> <54C7D0A3.4000900@gmail.com> <54C7D573.7080809@zonque.org>
+In-Reply-To: <54C7D573.7080809@zonque.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
+Hello Daniel,
 
-debug: prevent entering debug mode on panic/exception.
+On 01/27/2015 07:14 PM, Daniel Mack wrote:
+> Hi Michael,
+> 
+> On 01/27/2015 06:53 PM, Michael Kerrisk (man-pages) wrote:
+>> On 01/27/2015 04:23 PM, David Herrmann wrote:
+> 
+>>> I only expect a handful of users to call the ioctls directly. The
+>>> libraries that implement the payload-marshaling, in particular. It's a
+>>> similar situation with netlink.
+>>
+>> Thanks, David, for the clarification. I think it would have been helpful
+>> to have that more clearly stated up front, especially as some comments 
+>> in this thread, such as the above, could be interpreted to mean quite 
+>> the opposite. Can I suggest that some text on this point be added to 
+>> kdbus.txt?
+> 
+> We're currently working on an a set of comprehensive man pages to
+> document all the commands in the API, along with every struct, enum etc.
+> We do that so that developers are able to actually understand every
+> detail of the API, even though most people - as David explained - will
+> not use that interface directly in the first place but let one of the
+> high-level libraries help them integrate D-Bus functionality into their
+> applications.
 
-On non-developer devices, kgdb prevents the device from rebooting
-after a panic.
+(I suggest that some text about this text go into the kdbus(7) page.)
 
-Incase of panics and exceptions, to allow the device to reboot, prevent entering
-debug mode to avoid getting stuck waiting for the user to interact with debugger.
+> If you want, have a look at the upstream repository for a 	preliminary
+> version of the new docs.
 
-To avoid entering the debugger on panic/exception without any extra configuration,
-panic_timeout is being used which can be set via /proc/sys/kernel/panic at run time
-and CONFIG_PANIC_TIMEOUT sets the default value.
+That's at https://code.google.com/p/d-bus/ , right? This looks like a 
+good direction to go in. Thanks for tackling that.
 
-Setting panic_timeout indicates that the user requested machine to perform
-unattended reboot after panic. We dont want to get stuck waiting for the user
-input incase of panic.
+I hope to take a longer look sometime soon, but a few general conventions
+for man-pages that you might want to consider following:
 
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: kgdb-bugreport@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sumit Semwal <sumit.semwal@linaro.org>
-Signed-off-by: Colin Cross <ccross@android.com>
-[Kiran: Added context to commit message.
-panic_timeout is used instead of break_on_panic and
-break_on_exception to honor CONFIG_PANIC_TIMEOUT
-Modified the commit as per community feedback]
-Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
-Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- kernel/debug/debug_core.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+* When listing errors, I think you should change your 
+  language/formatting somewhat. Examples here from kdbus.endpoint.7:
+   
+  (1) The man page says
 
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 1adf62b..0012a1f 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
- 
- 	if (arch_kgdb_ops.enable_nmi)
- 		arch_kgdb_ops.enable_nmi(0);
-+	/*
-+	 * Avoid entering the debugger if we were triggered due to an oops
-+	 * but panic_timeout indicates the system should automatically
-+	 * reboot on panic. We don't want to get stuck waiting for input
-+	 * on such systems, especially if its "just" an oops.
-+	 */
-+	if (signo != SIGTRAP && panic_timeout)
-+		return 1;
- 
- 	memset(ks, 0, sizeof(struct kgdb_state));
- 	ks->cpu			= raw_smp_processor_id();
-@@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
- 			    unsigned long val,
- 			    void *data)
- {
-+	/*
-+	 * Avoid entering the debugger if we were triggered due to a panic
-+	 * We don't want to get stuck waiting for input from user in such case.
-+	 * panic_timeout indicates the system should automatically
-+	 * reboot on panic.
-+	 */
-+	if (panic_timeout)
-+		return NOTIFY_DONE;
-+
- 	if (dbg_kdb_mode)
- 		kdb_printf("PANIC: %s\n", (char *)data);
- 	kgdb_breakpoint();
+          RETURN VALUE
+               On success, all mentioned ioctl commands return 0.
+
+       Better to write this from a user-space point of view:
+
+          RETURN VALUE
+               On success, all mentioned ioctl commands return 0; on 
+               error, -1 is returned, and errno is set to indicate 
+               the error.
+
+  (2) I would change the wording in the ERRORS sections from
+       "may return the following errors"
+       to
+       "may fail with the following errors"
+
+  (3) When listing the errors, drop the minus signs; that's not 
+      what user-space sees. They see a positive value in errno.
+
+  (4) The usual formatting convention for constants, including 
+      error constants in man pages is boldface, rather than 
+      underline/emphasis.
+
+  (5) Insofar as it's possible, it would be good to make all
+      pages format nicely within 80 columns. Some of the literal
+      text and ASCII art could, I think, be narrowed.
+
+Thanks,
+
+Michael
 -- 
-1.8.2.1
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
