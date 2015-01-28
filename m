@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671AbbA1BCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:02:23 -0500
-Received: from ozlabs.org ([103.22.144.67]:41156 "EHLO ozlabs.org"
+	id S1754727AbbA1BEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:04:39 -0500
+Received: from ozlabs.org ([103.22.144.67]:56538 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932361AbbA1BCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:02:20 -0500
-Date: Wed, 28 Jan 2015 12:02:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Pirko <jiri@resnulli.us>, Daniel Borkmann <dborkman@redhat.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-ID: <20150128120214.3307aed8@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/v5QETUCmRZ_IMpURaH4AOKB"; protocol="application/pgp-signature"
+	id S1753514AbbA1BEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 20:04:37 -0500
+Message-ID: <1422407074.32234.2.camel@ellerman.id.au>
+Subject: Re: [PATCH 0/4] defconfigs: cleanup obsolete MTD configs
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: semen.protsenko@globallogic.com
+Cc: Paul Bolle <pebolle@tiscali.nl>, linux-mips@linux-mips.org,
+        Brian Norris <computersforpeace@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-am33-list@redhat.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-mtd@lists.infradead.org, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Date: Wed, 28 Jan 2015 12:04:34 +1100
+In-Reply-To: <CAJOTznWHpRh8ysVxwSWyvZL1UAe-G9A64j=M6z0+zPeoycgkDg@mail.gmail.com>
+References: <1422117213-3130-1-git-send-email-semen.protsenko@globallogic.com>
+	 <1422118156.27947.7.camel@x220>
+	 <CAJOTznWHpRh8ysVxwSWyvZL1UAe-G9A64j=M6z0+zPeoycgkDg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/v5QETUCmRZ_IMpURaH4AOKB
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2015-01-24 at 22:54 +0200, Sam Protsenko wrote:
+> > That's news for me. I thought they are silently ignored. Do you have an
+> > example of such a warning?
+> 
+> Not really. It was just assumption. It seems you are right, they are just
+> ignored silently. But item 2 is still relevant and it was actually confused
+> me when I tried to figure out MTD configuration for my platform.
+> Anyway, garbage should be taken out from time to time.
 
-Hi all,
+The usual way that this gets dealt with is that arch maintainers (ir)regularly
+run make savedefconfig on all their defconfigs.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/sched/cls_bpf.c between commit 7913ecf69e24 ("net: cls_bpf: fix
-size mismatch on filter preparation") from the net tree and commit
-33e9fcc666e2 ("tc: cls_bpf: rename bpf_len to bpf_num_ops") from the
-net-next tree.
+As it happens we've done that on powerpc just recently, if you rebase onto next
+you should see that, so you can drop the powerpc hunks from your patches. 
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+cheers
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc net/sched/cls_bpf.c
-index f59adf8a4cd7,1029923f9e86..000000000000
---- a/net/sched/cls_bpf.c
-+++ b/net/sched/cls_bpf.c
-@@@ -179,12 -179,7 +179,12 @@@ static int cls_bpf_modify_existing(stru
-  		goto errout;
-  	}
- =20
-- 	bpf_size =3D bpf_len * sizeof(*bpf_ops);
-+ 	bpf_size =3D bpf_num_ops * sizeof(*bpf_ops);
- +	if (bpf_size !=3D nla_len(tb[TCA_BPF_OPS])) {
- +		ret =3D -EINVAL;
- +		goto errout;
- +	}
- +
-  	bpf_ops =3D kzalloc(bpf_size, GFP_KERNEL);
-  	if (bpf_ops =3D=3D NULL) {
-  		ret =3D -ENOMEM;
-
---Sig_/v5QETUCmRZ_IMpURaH4AOKB
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUyDUbAAoJEMDTa8Ir7ZwVuRAP/ie41nenjL9DDo2tInUFgOUo
-JHndd8fflr3OD8YYxe/n6gmH3e2OvD6x+aSddf1eIinEOQBUxn6e6KgubJkACBol
-N1Ngqe/3UW0lg3I5RiXa8bW1JHgZ1P6kRcpzcZewQLKVRFlE61Xtu3ZvViRJfTGM
-q6EX3MiW8Ix8EeLQrguwT+ZzkzzD+h9Sh1UJ0COK89y77rYEa7/D3o7wehkn8ske
-10EaORLlQ5S9xsUyeUmZs4sB5IRokCYobsnXnOmBpyTLutwvAxIlO5jPDXk/LH+T
-az9/7cOGfrPvgRNNU5QF34IP2ra6iVroqAsi4xEDOxR+QqHpDU87NRSAoZfWZKIq
-338wyepUn7GDeB4VBjdOHpcBYvuKnFiO9+sggV+zQgFq6X+hmmROaqH6m4iMbhsw
-U2o+5BJOXuIxXzEmYmgD/CN+dnJBGbSvX8QgC1NA9hzs814d86MZstYyHoAkxKET
-PybimCeF11GkGvQtvcNEfgXZb8NiKMBgeHCJYNp/5ioBf59+yUGXvJ6ZdN3VzoLd
-oaj2Fkoyg1jj1XTK0v7QeUKDNItfhr61Z5XJWW/D1g9yvnJxFbqjc0M7VSMEEFkB
-eQirXrF5wE701c1LQFxBbJ1vK7BPaqy1arSvg16yM45yDOlI0DHyed3I+OoiHCF+
-WO2DkQXuuD/luwVmbhtX
-=6kyK
------END PGP SIGNATURE-----
-
---Sig_/v5QETUCmRZ_IMpURaH4AOKB--
