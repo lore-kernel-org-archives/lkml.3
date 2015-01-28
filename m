@@ -1,80 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933992AbbA2C6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:58:03 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:46700 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561AbbA2C56 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:57:58 -0500
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: H Peter Anvin <h.peter.anvin@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        "Kani, Toshimitsu" <toshi.kani@hp.com>,
-        "Knippers, Linda" <linda.knippers@hp.com>
-Subject: RE: [PATCH v3 1/2] x86: Add support for the pcommit instruction
-Thread-Topic: [PATCH v3 1/2] x86: Add support for the pcommit instruction
-Thread-Index: AQHQOlH6sqYv8X65A0C5xMaJVRwyCpzVvIHw
-Date: Wed, 28 Jan 2015 17:10:46 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B40295A75C517@G9W0745.americas.hpqcorp.net>
-References: <1422377631-8986-1-git-send-email-ross.zwisler@linux.intel.com>
- <1422377631-8986-2-git-send-email-ross.zwisler@linux.intel.com>
-In-Reply-To: <1422377631-8986-2-git-send-email-ross.zwisler@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932588AbbA1VS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:18:27 -0500
+Received: from verein.lst.de ([213.95.11.211]:34484 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762182AbbA1Uu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:50:28 -0500
+Date: Wed, 28 Jan 2015 18:11:02 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jens Axboe <axboe@kernel.dk>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>, Ming Lei <ming.lei@canonical.com>
+Subject: Re: linux-next: manual merge of the block tree with the vfs tree
+Message-ID: <20150128171102.GC17528@lst.de>
+References: <20150127145754.03e711a3@canb.auug.org.au> <54C70D52.6030208@kernel.dk> <20150127045422.GY29656@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150127045422.GY29656@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 27, 2015 at 04:54:22AM +0000, Al Viro wrote:
+> I don't mind opening a never-rebased branch for generic iov_iter-related stuff;
+> if you prefer to handle it that way - just tell.  The first two patches
+> from that series would definitely go there; as for the rest... no preferences
+> here.
 
-
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Ross Zwisler
-> Sent: Tuesday, 27 January, 2015 10:54 AM
-> To: linux-kernel@vger.kernel.org
-> Cc: Ross Zwisler; H Peter Anvin; Ingo Molnar; Thomas Gleixner; Borislav
-> Petkov
-> Subject: [PATCH v3 1/2] x86: Add support for the pcommit instruction
-> 
-> Add support for the new pcommit (persistent commit) instruction.  This
-> instruction was announced in the document "Intel Architecture
-> Instruction Set Extensions Programming Reference" with reference number
-> 319433-022.
-> 
-> https://software.intel.com/sites/default/files/managed/0d/53/319433-
-> 022.pdf
-> 
-...
-> ---
->  arch/x86/include/asm/cpufeature.h    | 1 +
->  arch/x86/include/asm/special_insns.h | 8 ++++++++
->  2 files changed, 9 insertions(+)
-
-Should this patch series also add defines for the virtual 
-machine control data structure changes?
-
-1. Add the new VM-Execution Controls bit 21 as
-    SECONDARY_EXEC_PCOMMIT_EXITING 0x00200000
-to arch/x86/include/asm/vmx.h.
-
-2. Add the new exit reason of 64 (0x41) as
-	EXIT_REASON_PCOMMIT  64
-to arch/x86/include/uapi/asm/vmx.h and (with a
-VMX_EXIT_REASONS string) to usr/include/asm/vmx.h.
-
-3. Add a kvm_vmx_exit_handler to arch/x86/kvm/vmx.c.
-
-
----
-Rob Elliott    HP Server Storage
-
-
+It might make sense to just keep the VFS patches in your tree.
+The target ones also are something I'd prefer if it goes through Nic
+with additional review.  In addition they aren't really critical,
+so if you merge the prep patches now we can feed the rest through
+the proper trees in the .21 merge window.
