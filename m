@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760580AbbA1Btc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:49:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
+	id S1760509AbbA1Bsu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:48:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933341AbbA1Bif (ORCPT
+	with ESMTP id S933349AbbA1Bif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 60/77] mm: do not use unnecessary atomic operations when adding pages to the LRU
-Date: Tue, 27 Jan 2015 17:27:38 -0800
-Message-Id: <20150128012747.767246625@linuxfoundation.org>
+Subject: [PATCH 3.14 61/77] fs: buffer: do not use unnecessary atomic operations when discarding buffers
+Date: Tue, 27 Jan 2015 17:27:39 -0800
+Message-Id: <20150128012747.796039292@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -38,22 +38,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit 6fb81a17d21f2a138b8f424af4cf379f2b694060 upstream.
+commit e7470ee89f003634a88e7b5e5a7b65b3025987de upstream.
 
-When adding pages to the LRU we clear the active bit unconditionally.
-As the page could be reachable from other paths we cannot use unlocked
-operations without risk of corruption such as a parallel
-mark_page_accessed.  This patch tests if is necessary to clear the
-active flag before using an atomic operation.  This potentially opens a
-tiny race when PageActive is checked as mark_page_accessed could be
-called after PageActive was checked.  The race already exists but this
-patch changes it slightly.  The consequence is that that the page may be
-promoted to the active list that might have been left on the inactive
-list before the patch.  It's too tiny a race and too marginal a
-consequence to always use atomic operations for.
+Discarding buffers uses a bunch of atomic operations when discarding
+buffers because ......  I can't think of a reason.  Use a cmpxchg loop to
+clear all the necessary flags.  In most (all?) cases this will be a single
+atomic operations.
 
+[akpm@linux-foundation.org: move BUFFER_FLAGS_DISCARD into the .c file]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
@@ -70,28 +64,43 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/swap.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/buffer.c |   21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
 
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -597,13 +597,15 @@ static void __lru_cache_add(struct page
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1485,16 +1485,27 @@ EXPORT_SYMBOL(set_bh_page);
+ /*
+  * Called when truncating a buffer on a page completely.
   */
- void lru_cache_add_anon(struct page *page)
++
++/* Bits that are cleared during an invalidate */
++#define BUFFER_FLAGS_DISCARD \
++	(1 << BH_Mapped | 1 << BH_New | 1 << BH_Req | \
++	 1 << BH_Delay | 1 << BH_Unwritten)
++
+ static void discard_buffer(struct buffer_head * bh)
  {
--	ClearPageActive(page);
-+	if (PageActive(page))
-+		ClearPageActive(page);
- 	__lru_cache_add(page);
++	unsigned long b_state, b_state_old;
++
+ 	lock_buffer(bh);
+ 	clear_buffer_dirty(bh);
+ 	bh->b_bdev = NULL;
+-	clear_buffer_mapped(bh);
+-	clear_buffer_req(bh);
+-	clear_buffer_new(bh);
+-	clear_buffer_delay(bh);
+-	clear_buffer_unwritten(bh);
++	b_state = bh->b_state;
++	for (;;) {
++		b_state_old = cmpxchg(&bh->b_state, b_state,
++				      (b_state & ~BUFFER_FLAGS_DISCARD));
++		if (b_state_old == b_state)
++			break;
++		b_state = b_state_old;
++	}
+ 	unlock_buffer(bh);
  }
  
- void lru_cache_add_file(struct page *page)
- {
--	ClearPageActive(page);
-+	if (PageActive(page))
-+		ClearPageActive(page);
- 	__lru_cache_add(page);
- }
- EXPORT_SYMBOL(lru_cache_add_file);
 
 
