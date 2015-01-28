@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761626AbbA1Goc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 01:44:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36014 "EHLO mx2.suse.de"
+	id S1761854AbbA1Gp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 01:45:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36017 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753973AbbA1Gob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760753AbbA1Gob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jan 2015 01:44:31 -0500
 From: Juergen Gross <jgross@suse.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         konrad.wilk@oracle.com, david.vrabel@citrix.com,
         boris.ostrovsky@oracle.com
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 3/5] xen: add some __init and static annotations in arch/x86/xen/setup.c
-Date: Wed, 28 Jan 2015 07:44:23 +0100
-Message-Id: <1422427465-25239-4-git-send-email-jgross@suse.com>
+Subject: [PATCH 4/5] xen: add some __init annotations in arch/x86/xen/mmu.c
+Date: Wed, 28 Jan 2015 07:44:24 +0100
+Message-Id: <1422427465-25239-5-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1422427465-25239-1-git-send-email-jgross@suse.com>
 References: <1422427465-25239-1-git-send-email-jgross@suse.com>
@@ -21,38 +21,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some more functions in arch/x86/xen/setup.c can be made "__init".
-xen_ignore_unusable() can be made "static".
+The file arch/x86/xen/mmu.c has some functions that can be annotated
+with "__init".
 
 Signed-off-by: Juergen Gross <jgross@suse.com>
 ---
- arch/x86/xen/setup.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/xen/mmu.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 4dcc608..55f388e 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -535,8 +535,8 @@ static unsigned long __init xen_get_max_pages(void)
- 	return min(max_pages, MAX_DOMAIN_PAGES);
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 5c1f9ac..6a8bbf4 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1489,7 +1489,7 @@ static void __init xen_set_pte_init(pte_t *ptep, pte_t pte)
+ 	native_set_pte(ptep, pte);
  }
  
--static void xen_align_and_add_e820_region(phys_addr_t start, phys_addr_t size,
--					  int type)
-+static void __init xen_align_and_add_e820_region(phys_addr_t start,
-+						 phys_addr_t size, int type)
+-static void pin_pagetable_pfn(unsigned cmd, unsigned long pfn)
++static void __init pin_pagetable_pfn(unsigned cmd, unsigned long pfn)
  {
- 	phys_addr_t end = start + size;
- 
-@@ -549,7 +549,7 @@ static void xen_align_and_add_e820_region(phys_addr_t start, phys_addr_t size,
- 	e820_add_region(start, end - start, type);
+ 	struct mmuext_op op;
+ 	op.cmd = cmd;
+@@ -1657,7 +1657,7 @@ void __init xen_reserve_top(void)
+  * Like __va(), but returns address in the kernel mapping (which is
+  * all we have until the physical memory mapping has been set up.
+  */
+-static void *__ka(phys_addr_t paddr)
++static void * __init __ka(phys_addr_t paddr)
+ {
+ #ifdef CONFIG_X86_64
+ 	return (void *)(paddr + __START_KERNEL_map);
+@@ -1667,7 +1667,7 @@ static void *__ka(phys_addr_t paddr)
  }
  
--void xen_ignore_unusable(struct e820entry *list, size_t map_size)
-+static void __init xen_ignore_unusable(struct e820entry *list, size_t map_size)
+ /* Convert a machine address to physical address */
+-static unsigned long m2p(phys_addr_t maddr)
++static unsigned long __init m2p(phys_addr_t maddr)
  {
- 	struct e820entry *entry;
- 	unsigned int i;
+ 	phys_addr_t paddr;
+ 
+@@ -1678,13 +1678,14 @@ static unsigned long m2p(phys_addr_t maddr)
+ }
+ 
+ /* Convert a machine address to kernel virtual */
+-static void *m2v(phys_addr_t maddr)
++static void * __init m2v(phys_addr_t maddr)
+ {
+ 	return __ka(m2p(maddr));
+ }
+ 
+ /* Set the page permissions on an identity-mapped pages */
+-static void set_page_prot_flags(void *addr, pgprot_t prot, unsigned long flags)
++static void __init set_page_prot_flags(void *addr, pgprot_t prot,
++				       unsigned long flags)
+ {
+ 	unsigned long pfn = __pa(addr) >> PAGE_SHIFT;
+ 	pte_t pte = pfn_pte(pfn, prot);
+@@ -1696,7 +1697,7 @@ static void set_page_prot_flags(void *addr, pgprot_t prot, unsigned long flags)
+ 	if (HYPERVISOR_update_va_mapping((unsigned long)addr, pte, flags))
+ 		BUG();
+ }
+-static void set_page_prot(void *addr, pgprot_t prot)
++static void __init set_page_prot(void *addr, pgprot_t prot)
+ {
+ 	return set_page_prot_flags(addr, prot, UVMF_NONE);
+ }
+@@ -1769,7 +1770,7 @@ void __init xen_setup_machphys_mapping(void)
+ }
+ 
+ #ifdef CONFIG_X86_64
+-static void convert_pfn_mfn(void *v)
++static void __init convert_pfn_mfn(void *v)
+ {
+ 	pte_t *pte = v;
+ 	int i;
 -- 
 2.1.2
 
