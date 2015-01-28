@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921AbbA1UVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:21:00 -0500
-Received: from mga02.intel.com ([134.134.136.20]:64857 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755870AbbA1UUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:20:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
-   d="scan'208";a="669116724"
-Message-ID: <1422456824.31903.298.camel@linux.intel.com>
-Subject: Re: [PATCH 1/2] lib/vsprintf.c: Fix potential NULL deref in
- hex_string
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Fabian Frederick <fabf@skynet.be>, Bjorn Helgaas <bhelgaas@google.com>,
-        Ryan Mallon <rmallon@gmail.com>, Masanari Iida <standby24x7@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 Jan 2015 16:53:44 +0200
-In-Reply-To: <1422451543-12401-2-git-send-email-linux@rasmusvillemoes.dk>
-References: <1422451543-12401-1-git-send-email-linux@rasmusvillemoes.dk>
-	 <1422451543-12401-2-git-send-email-linux@rasmusvillemoes.dk>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
+	id S964874AbbA1UtD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:49:03 -0500
+Received: from smtprelay0194.hostedemail.com ([216.40.44.194]:46510 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S964828AbbA1Us5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:48:57 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2912:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:5007:6261:7514:7875:7903:10004:10400:10848:10967:11026:11232:11658:11914:12296:12438:12517:12519:12740:13069:13095:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: trees29_78cef088c710b
+X-Filterd-Recvd-Size: 1898
+Date: Wed, 28 Jan 2015 09:53:49 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Tina Ruchandani <ruchandani.tina@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v4] trace: Use 64-bit timekeeping
+Message-ID: <20150128095349.6a3537a2@gandalf.local.home>
+In-Reply-To: <20150128141611.GA2701@tinar>
+References: <20150128141611.GA2701@tinar>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-28 at 14:25 +0100, Rasmus Villemoes wrote:
-> The helper hex_string() is broken in two ways. First, it doesn't
-> increment buf regardless of whether there is room to print, so callers
-> such as kasprintf() that try to probe the correct storage to allocate
-> will get a too small return value. But even worse, kasprintf() (and
-> likely anyone else trying to find the size of the result) pass NULL
-> for buf and 0 for size, so we also have end == NULL. But this means
-> that the end-1 in hex_string() is (char*)-1, so buf < end-1 is true
-> and we get a NULL pointer deref. I double-checked this with a trivial
-> kernel module that just did a kasprintf(GFP_KERNEL, "%14ph",
-> "CrashBoomBang").
+On Wed, 28 Jan 2015 19:46:11 +0530
+Tina Ruchandani <ruchandani.tina@gmail.com> wrote:
 
-Good catch, though I don't like the implementation of fix.
+> The ring_buffer_producer uses 'struct timeval' to measure
+> its start and end times. 'struct timeval' on 32-bit systems
+> will have its tv_sec value overflow in year 2038 and beyond.
+> This patch replaces struct timeval with 'ktime_t' which uses
+> 64-bit representation for nanoseconds.
+> 
+> Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Tina Ruchandani <ruchandani.tina@gmail.com>
+> ---
+> Changes in v4:
+> 	- Fix typo in commit message.
+> 	- Avoid typecast to 'long long' by defining RUN_TIME as '10ULL'
+> 	  instead of '10'.
 
-What about the following?
+Although I have not tested this, this patch looks fine to me. Is this
+going to go through some cleanup tree or should I just pull it?
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 8690798..47b36ddd 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -783,11 +783,20 @@ char *hex_string(char *buf, char *end, u8 *addr,
-struct printf_spec spec,
-        if (spec.field_width > 0)
-                len = min_t(int, spec.field_width, 64);
- 
--       for (i = 0; i < len && buf < end - 1; i++) {
--               buf = hex_byte_pack(buf, addr[i]);
-+       for (i = 0; i < len; i++) {
-+               if (buf < end)
-+                       *buf = hex_asc_hi(addr[i]);
-+               ++buf;
-+
-+               if (buf < end)
-+                       *buf = hex_asc_lo(addr[i]);
-+               ++buf;
- 
--               if (buf < end && separator && i != len - 1)
--                       *buf++ = separator;
-+               if (separator && i != len - 1) {
-+                       if (buf < end)
-+                               *buf = separator;
-+                       ++buf;
-+               }
-        }
- 
-        return buf;
+-- Steve
 
 
-> Nobody seems to be using %ph with kasprintf, but we might as well fix
-> it before it hits someone.
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+> Changes in v3:
+> 	- Use a more efficient way to compute condition for exiting loop.
+> 	- Fix variable naming - all caps is only for macros.
+> Changes in v2:
+> 	- Use ktime_t instead of timespec64 for efficiency reasons.
