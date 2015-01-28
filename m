@@ -1,94 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313AbbA2Bo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:44:26 -0500
-Received: from mga14.intel.com ([192.55.52.115]:32072 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753060AbbA2BoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:44:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,483,1418112000"; 
-   d="scan'208";a="658308132"
-Date: Wed, 28 Jan 2015 15:17:03 -0800 (PST)
-From: Vikas Shivappa <vikas.shivappa@intel.com>
-X-X-Sender: vikas@vshiva-Udesk
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: Vikas Shivappa <vikas.shivappa@linux.intel.com>,
-        linux-kernel@vger.kernel.org, vikas.shivappa@intel.com, hpa@zytor.com,
-        tglx@linutronix.de, mingo@kernel.org, tj@kernel.org,
-        peterz@infradead.org, Matt Fleming <matt.fleming@intel.com>,
-        "Auld, Will" <will.auld@intel.com>
-Subject: Re: [PATCH 1/6] x86/intel_cat: Intel Cache Allocation Technology
- detection
-In-Reply-To: <1422483088.3621.56.camel@x220>
-Message-ID: <alpine.DEB.2.10.1501281510190.3500@vshiva-Udesk>
-References: <1422403209-15533-1-git-send-email-vikas.shivappa@linux.intel.com>  <1422403209-15533-2-git-send-email-vikas.shivappa@linux.intel.com> <1422483088.3621.56.camel@x220>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S933742AbbA2CXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:23:45 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:46848 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758273AbbA2BtP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:49:15 -0500
+Date: Thu, 29 Jan 2015 08:17:23 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Ganesh Mahendran <opensource.ganesh@gmail.com>,
+        sergey.senozhatsky.work@gmail.com
+Subject: Re: [PATCH 1/2] zram: free meta table in zram_meta_free
+Message-ID: <20150128231723.GB4706@blaptop>
+References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
+ <20150128141916.GA14062@swordfish>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150128141916.GA14062@swordfish>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 28, 2015 at 11:19:17PM +0900, Sergey Senozhatsky wrote:
+> On (01/28/15 17:15), Minchan Kim wrote:
+> > zram_meta_alloc() and zram_meta_free() are a pair.
+> > In zram_meta_alloc(), meta table is allocated. So it it better to free
+> > it in zram_meta_free().
+> > 
+> > Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  drivers/block/zram/zram_drv.c | 30 ++++++++++++++----------------
+> >  drivers/block/zram/zram_drv.h |  1 +
+> >  2 files changed, 15 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index 9250b3f54a8f..a598ada817f0 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -309,6 +309,18 @@ static inline int valid_io_request(struct zram *zram,
+> >  
+> >  static void zram_meta_free(struct zram_meta *meta)
+> >  {
+> > +	size_t index;
+> 
+> 
+> I don't like how we bloat structs w/o any need.
+> zram keeps ->disksize, so let's use `zram->disksize >> PAGE_SHIFT'
+> instead of introducing ->num_pages.
 
+Right. I overlooked it. I just want to send my patch[2/2] and I thought
+it would be better ganesh's patch to merge first although it's orthogonal.
 
-On Wed, 28 Jan 2015, Paul Bolle wrote:
+Ganesh, I hope you resend this patch with Sergey's suggestion.
+If you are busy, please tell me. I will do it instead of you.
 
-> Trivial nit below.
->
-> On Tue, 2015-01-27 at 16:00 -0800, Vikas Shivappa wrote:
->> This patch adds support for the new Cache Allocation Technology (CAT)
->> feature found in future Intel Xeon processors.  It includes CPUID
->> enumeration routines for CAT and new values to track CAT resources to
->> the cpuinfo_x86 structure.
->>
->> Cache Allocation Technology(CAT) provides a way for the Software
->> (OS/VMM) to restrict cache allocation to a defined 'subset' of cache
->> which may be overlapping with other 'subsets'.  This feature is used
->> when allocating a line in cache ie when pulling new data into the cache.
->> The programming of the h/w is done via programming  MSRs.
->>
->> More information about CAT be found in the Intel (R) x86 Architecture
->> Software Developer Manual, section 17.15.
->>
->> Signed-off-by: Vikas Shivappa <vikas.shivappa@linux.intel.com>
->
-> [...]
->
->> diff --git a/init/Kconfig b/init/Kconfig
->> index 9afb971..475b7b7 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -961,6 +961,17 @@ config CPUSETS
->>
->>  	  Say N if unsure.
->>
->> +config CGROUP_CAT
->> +  bool "Cache Allocation Technology cgroup subsystem"
->> +  depends on X86_64
->
-> Odd indentation. Just make it a tab (as I suppose the indentation of
-> "help" already is).
+> 
+> 	-ss
+> 
+> > +	/* Free all pages that are still in this zram device */
+> > +	for (index = 0; index < meta->num_pages; index++) {
+> > +		unsigned long handle = meta->table[index].handle;
+> > +
+> > +		if (!handle)
+> > +			continue;
+> > +
+> > +		zs_free(meta->mem_pool, handle);
+> > +	}
+> > +
+> >  	zs_destroy_pool(meta->mem_pool);
+> >  	vfree(meta->table);
+> >  	kfree(meta);
+> > @@ -316,15 +328,14 @@ static void zram_meta_free(struct zram_meta *meta)
+> >  
+> >  static struct zram_meta *zram_meta_alloc(int device_id, u64 disksize)
+> >  {
+> > -	size_t num_pages;
+> >  	char pool_name[8];
+> >  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
+> >  
+> >  	if (!meta)
+> >  		return NULL;
+> >  
+> > -	num_pages = disksize >> PAGE_SHIFT;
+> > -	meta->table = vzalloc(num_pages * sizeof(*meta->table));
+> > +	meta->num_pages = disksize >> PAGE_SHIFT;
+> > +	meta->table = vzalloc(meta->num_pages * sizeof(*meta->table));
+> >  	if (!meta->table) {
+> >  		pr_err("Error allocating zram address table\n");
+> >  		goto out_error;
+> > @@ -706,9 +717,6 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+> >  
+> >  static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  {
+> > -	size_t index;
+> > -	struct zram_meta *meta;
+> > -
+> >  	down_write(&zram->init_lock);
+> >  
+> >  	zram->limit_pages = 0;
+> > @@ -718,16 +726,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  		return;
+> >  	}
+> >  
+> > -	meta = zram->meta;
+> > -	/* Free all pages that are still in this zram device */
+> > -	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> > -		unsigned long handle = meta->table[index].handle;
+> > -		if (!handle)
+> > -			continue;
+> > -
+> > -		zs_free(meta->mem_pool, handle);
+> > -	}
+> > -
+> >  	zcomp_destroy(zram->comp);
+> >  	zram->max_comp_streams = 1;
+> >  
+> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > index b05a816b09ac..e492f6bf11f1 100644
+> > --- a/drivers/block/zram/zram_drv.h
+> > +++ b/drivers/block/zram/zram_drv.h
+> > @@ -96,6 +96,7 @@ struct zram_stats {
+> >  struct zram_meta {
+> >  	struct zram_table_entry *table;
+> >  	struct zs_pool *mem_pool;
+> > +	size_t num_pages;
+> >  };
+> >  
+> >  struct zram {
+> > -- 
+> > 1.9.1
+> > 
 
-ok , Will fix. Wish the checkpatch.pl caught that :)
-
-Thanks,
-Vikas
-
->
->> +	help
->> +	  This option provides framework to allocate cache lines when
->> +	  applications fill cache.
->> +	  This can be used by users to configure how much cache that can be
->> +	  allocated to different PIDs.
->> +
->> +	  Say N if unsure.
->> +
->>  config PROC_PID_CPUSET
->>  	bool "Include legacy /proc/<pid>/cpuset file"
->>  	depends on CPUSETS
->
->
-> Paul Bolle
->
->
+-- 
+Kind regards,
+Minchan Kim
