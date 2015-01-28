@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbbA2I7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:59:48 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
+	id S1757879AbbA2JBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:01:48 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44747 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754271AbbA2I7o (ORCPT
+	by vger.kernel.org with ESMTP id S1757655AbbA2JBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:59:44 -0500
+	Thu, 29 Jan 2015 04:01:41 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        Pan Jacob jun <jacob.jun.pan@intel.com>, LKP <lkp@01.org>,
-        Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 082/176] tick/powerclamp: Remove tick_nohz_idle abuse
-Date: Wed, 28 Jan 2015 15:28:32 +0100
-Message-Id: <1ff5b9fb934888276864a6cd98c98d0b07741f78.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 083/176] genirq: Prevent proc race against freeing of irq descriptors
+Date: Wed, 28 Jan 2015 15:28:33 +0100
+Message-Id: <b3bc17d5bf7eb79e2c84ed93cfc5972239f61dfb.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -36,88 +29,237 @@ From: Thomas Gleixner <tglx@linutronix.de>
 
 ===============
 
-commit a5fd9733a30d18d7ac23f17080e7e07bb3205b69 upstream.
+commit c291ee622165cb2c8d4e7af63fffd499354a23be upstream.
 
-commit 4dbd27711cd9 "tick: export nohz tick idle symbols for module
-use" was merged via the thermal tree without an explicit ack from the
-relevant maintainers.
+Since the rework of the sparse interrupt code to actually free the
+unused interrupt descriptors there exists a race between the /proc
+interfaces to the irq subsystem and the code which frees the interrupt
+descriptor.
 
-The exports are abused by the intel powerclamp driver which implements
-a fake idle state from a sched FIFO task. This causes all kinds of
-wreckage in the NOHZ core code which rightfully assumes that
-tick_nohz_idle_enter/exit() are only called from the idle task itself.
+CPU0				CPU1
+				show_interrupts()
+				  desc = irq_to_desc(X);
+free_desc(desc)
+  remove_from_radix_tree();
+  kfree(desc);
+				  raw_spinlock_irq(&desc->lock);
 
-Recent changes in the NOHZ core lead to a failure of the powerclamp
-driver and now people try to hack completely broken and backwards
-workarounds into the NOHZ core code. This is completely unacceptable
-and just papers over the real problem. There are way more subtle
-issues lurking around the corner.
+/proc/interrupts is the only interface which can actively corrupt
+kernel memory via the lock access. /proc/stat can only read from freed
+memory. Extremly hard to trigger, but possible.
 
-The real solution is to fix the powerclamp driver by rewriting it with
-a sane concept, but that's beyond the scope of this.
+The interfaces in /proc/irq/N/ are not affected by this because the
+removal of the proc file is serialized in procfs against concurrent
+readers/writers. The removal happens before the descriptor is freed.
 
-So the only solution for now is to remove the calls into the core NOHZ
-code from the powerclamp trainwreck along with the exports.
+For architectures which have CONFIG_SPARSE_IRQ=n this is a non issue
+as the descriptor is never freed. It's merely cleared out with the irq
+descriptor lock held. So any concurrent proc access will either see
+the old correct value or the cleared out ones.
 
-Fixes: d6d71ee4a14a "PM: Introduce Intel PowerClamp Driver"
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Frederic Weisbecker <frederic@kernel.org>
-Cc: Pan Jacob jun <jacob.jun.pan@intel.com>
-Cc: LKP <lkp@01.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412181110110.17382@nanos
+Protect the lookup and access to the irq descriptor in
+show_interrupts() with the sparse_irq_lock.
+
+Provide kstat_irqs_usr() which is protecting the lookup and access
+with sparse_irq_lock and switch /proc/stat to use it.
+
+Document the existing kstat_irqs interfaces so it's clear that the
+caller needs to take care about protection. The users of these
+interfaces are either not affected due to SPARSE_IRQ=n or already
+protected against removal.
+
+Fixes: 1f5a5b87f78f "genirq: Implement a sane sparse_irq allocator"
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/thermal/intel_powerclamp.c | 2 --
- kernel/time/tick-sched.c           | 2 --
- 2 files changed, 4 deletions(-)
+ fs/proc/stat.c              |  2 +-
+ include/linux/kernel_stat.h |  1 +
+ kernel/irq/internals.h      |  8 +++++++
+ kernel/irq/irqdesc.c        | 52 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/irq/proc.c           | 22 ++++++++++++++++++-
+ 5 files changed, 83 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
-index b40b37cd25e0..d54388a53637 100644
---- a/drivers/thermal/intel_powerclamp.c
-+++ b/drivers/thermal/intel_powerclamp.c
-@@ -426,7 +426,6 @@ static int clamp_thread(void *arg)
- 		 * allowed. thus jiffies are updated properly.
- 		 */
- 		preempt_disable();
--		tick_nohz_idle_enter();
- 		/* mwait until target jiffies is reached */
- 		while (time_before(jiffies, target_jiffies)) {
- 			unsigned long ecx = 1;
-@@ -444,7 +443,6 @@ static int clamp_thread(void *arg)
- 			start_critical_timings();
- 			atomic_inc(&idle_wakeup_counter);
- 		}
--		tick_nohz_idle_exit();
- 		preempt_enable_no_resched();
- 	}
- 	del_timer_sync(&wakeup_timer);
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 29b063b32ff0..67673ca12a19 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -806,7 +806,6 @@ void tick_nohz_idle_enter(void)
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 1cf86c0e8689..b5c72a3be359 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -159,7 +159,7 @@ static int show_stat(struct seq_file *p, void *v)
  
- 	local_irq_enable();
- }
--EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+ 	/* sum again ? it could be updated? */
+ 	for_each_irq_nr(j)
+-		seq_put_decimal_ull(p, ' ', kstat_irqs(j));
++		seq_put_decimal_ull(p, ' ', kstat_irqs_usr(j));
  
- /**
-  * tick_nohz_irq_exit - update next tick event from interrupt exit
-@@ -934,7 +933,6 @@ void tick_nohz_idle_exit(void)
+ 	seq_printf(p,
+ 		"\nctxt %llu\n"
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index 51c72be4a7c3..4b2053a232c9 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -74,6 +74,7 @@ static inline unsigned int kstat_softirqs_cpu(unsigned int irq, int cpu)
+  * Number of interrupts per specific IRQ source, since bootup
+  */
+ extern unsigned int kstat_irqs(unsigned int irq);
++extern unsigned int kstat_irqs_usr(unsigned int irq);
  
- 	local_irq_enable();
- }
--EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
+ /*
+  * Number of interrupts per cpu, since bootup
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index 001fa5bab490..8a160e8a44e8 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -74,6 +74,14 @@ extern void irq_percpu_disable(struct irq_desc *desc, unsigned int cpu);
+ extern void mask_irq(struct irq_desc *desc);
+ extern void unmask_irq(struct irq_desc *desc);
  
- static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
++#ifdef CONFIG_SPARSE_IRQ
++extern void irq_lock_sparse(void);
++extern void irq_unlock_sparse(void);
++#else
++static inline void irq_lock_sparse(void) { }
++static inline void irq_unlock_sparse(void) { }
++#endif
++
+ extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
+ 
+ irqreturn_t handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action);
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 8ab8e9390297..07d45516b540 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -131,6 +131,16 @@ static void free_masks(struct irq_desc *desc)
+ static inline void free_masks(struct irq_desc *desc) { }
+ #endif
+ 
++void irq_lock_sparse(void)
++{
++	mutex_lock(&sparse_irq_lock);
++}
++
++void irq_unlock_sparse(void)
++{
++	mutex_unlock(&sparse_irq_lock);
++}
++
+ static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
  {
+ 	struct irq_desc *desc;
+@@ -167,6 +177,12 @@ static void free_desc(unsigned int irq)
+ 
+ 	unregister_irq_proc(irq, desc);
+ 
++	/*
++	 * sparse_irq_lock protects also show_interrupts() and
++	 * kstat_irq_usr(). Once we deleted the descriptor from the
++	 * sparse tree we can free it. Access in proc will fail to
++	 * lookup the descriptor.
++	 */
+ 	mutex_lock(&sparse_irq_lock);
+ 	delete_irq_desc(irq);
+ 	mutex_unlock(&sparse_irq_lock);
+@@ -489,6 +505,15 @@ void dynamic_irq_cleanup(unsigned int irq)
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ }
+ 
++/**
++ * kstat_irqs_cpu - Get the statistics for an interrupt on a cpu
++ * @irq:	The interrupt number
++ * @cpu:	The cpu number
++ *
++ * Returns the sum of interrupt counts on @cpu since boot for
++ * @irq. The caller must ensure that the interrupt is not removed
++ * concurrently.
++ */
+ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+@@ -497,6 +522,14 @@ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
+ 			*per_cpu_ptr(desc->kstat_irqs, cpu) : 0;
+ }
+ 
++/**
++ * kstat_irqs - Get the statistics for an interrupt
++ * @irq:	The interrupt number
++ *
++ * Returns the sum of interrupt counts on all cpus since boot for
++ * @irq. The caller must ensure that the interrupt is not removed
++ * concurrently.
++ */
+ unsigned int kstat_irqs(unsigned int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+@@ -509,3 +542,22 @@ unsigned int kstat_irqs(unsigned int irq)
+ 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
+ 	return sum;
+ }
++
++/**
++ * kstat_irqs_usr - Get the statistics for an interrupt
++ * @irq:	The interrupt number
++ *
++ * Returns the sum of interrupt counts on all cpus since boot for
++ * @irq. Contrary to kstat_irqs() this can be called from any
++ * preemptible context. It's protected against concurrent removal of
++ * an interrupt descriptor when sparse irqs are enabled.
++ */
++unsigned int kstat_irqs_usr(unsigned int irq)
++{
++	int sum;
++
++	irq_lock_sparse();
++	sum = kstat_irqs(irq);
++	irq_unlock_sparse();
++	return sum;
++}
+diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
+index 36f6ee181b0c..095cd7230aef 100644
+--- a/kernel/irq/proc.c
++++ b/kernel/irq/proc.c
+@@ -15,6 +15,23 @@
+ 
+ #include "internals.h"
+ 
++/*
++ * Access rules:
++ *
++ * procfs protects read/write of /proc/irq/N/ files against a
++ * concurrent free of the interrupt descriptor. remove_proc_entry()
++ * immediately prevents new read/writes to happen and waits for
++ * already running read/write functions to complete.
++ *
++ * We remove the proc entries first and then delete the interrupt
++ * descriptor from the radix tree and free it. So it is guaranteed
++ * that irq_to_desc(N) is valid as long as the read/writes are
++ * permitted by procfs.
++ *
++ * The read from /proc/interrupts is a different problem because there
++ * is no protection. So the lookup and the access to irqdesc
++ * information must be protected by sparse_irq_lock.
++ */
+ static struct proc_dir_entry *root_irq_dir;
+ 
+ #ifdef CONFIG_SMP
+@@ -437,9 +454,10 @@ int show_interrupts(struct seq_file *p, void *v)
+ 		seq_putc(p, '\n');
+ 	}
+ 
++	irq_lock_sparse();
+ 	desc = irq_to_desc(i);
+ 	if (!desc)
+-		return 0;
++		goto outsparse;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+ 	for_each_online_cpu(j)
+@@ -479,6 +497,8 @@ int show_interrupts(struct seq_file *p, void *v)
+ 	seq_putc(p, '\n');
+ out:
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
++outsparse:
++	irq_unlock_sparse();
+ 	return 0;
+ }
+ #endif
 -- 
 2.2.2
 
