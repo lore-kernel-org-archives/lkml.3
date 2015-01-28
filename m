@@ -1,112 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933032AbbA2BwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:52:12 -0500
-Received: from smtp65.iad3a.emailsrvr.com ([173.203.187.65]:49016 "EHLO
-	smtp65.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932973AbbA2BwH (ORCPT
+	id S1753474AbbA2Bwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:52:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46064 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755340AbbA2BwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:52:07 -0500
-X-Sender-Id: abbotti@mev.co.uk
-From: Ian Abbott <abbotti@mev.co.uk>
-To: <driverdev-devel@linuxdriverproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/6] staging: comedi: comedi_fops.c: reformat remaining block comments
-Date: Wed, 28 Jan 2015 18:41:50 +0000
-Message-Id: <1422470510-9309-7-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1422470510-9309-1-git-send-email-abbotti@mev.co.uk>
-References: <1422470510-9309-1-git-send-email-abbotti@mev.co.uk>
+	Wed, 28 Jan 2015 20:52:21 -0500
+Date: Wed, 28 Jan 2015 10:45:09 -0800
+From: "'gregkh@linuxfoundation.org'" <gregkh@linuxfoundation.org>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'tranmanphong@gmail.com'" <tranmanphong@gmail.com>,
+        "'fabio.estevam@freescale.com'" <fabio.estevam@freescale.com>,
+        "'prime.zeng@huawei.com'" <prime.zeng@huawei.com>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Gao, Neil" <Neil.Gao@sonymobile.com>
+Subject: Re: [RFC] ion:change ion_cma_allocate return error value
+Message-ID: <20150128184509.GB1178@kroah.com>
+References: <35FD53F367049845BC99AC72306C23D1044A02027DF9@CNBJMBX05.corpusers.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D1044A02027DF9@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reformat remaining block comments to use the usual block comment style.
+On Tue, Jan 27, 2015 at 02:04:21PM +0800, Wang, Yalin wrote:
+> This patch change the error return value from -1 to -ENOMEM,
+> so that userspace can get the correct errno, otherwise,
+> -1 will be -EPERM, userspace will print permission deny for allocation
+> failure.
+> 
+> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+> ---
+>  drivers/staging/android/ion/ion_cma_heap.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/comedi_fops.c | 29 ++++++++++++++++++-----------
- 1 file changed, 18 insertions(+), 11 deletions(-)
+Don't you also need to now change userspace code to properly handle
+these errors?
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 5403af1..727640e 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -347,8 +347,7 @@ static int resize_async_buffer(struct comedi_device *dev,
- 		return -EBUSY;
- 	}
- 
--	/* make sure buffer is an integral number of pages
--	 * (we round up) */
-+	/* make sure buffer is an integral number of pages (we round up) */
- 	new_size = (new_size + PAGE_SIZE - 1) & PAGE_MASK;
- 
- 	retval = comedi_buf_alloc(dev, s, new_size);
-@@ -671,7 +670,7 @@ void *comedi_alloc_spriv(struct comedi_subdevice *s, size_t size)
- EXPORT_SYMBOL_GPL(comedi_alloc_spriv);
- 
- /*
--   This function restores a subdevice to an idle state.
-+ * This function restores a subdevice to an idle state.
-  */
- static void do_become_nonbusy(struct comedi_device *dev,
- 			      struct comedi_subdevice *s)
-@@ -1162,8 +1161,10 @@ static int check_insn_config_length(struct comedi_insn *insn,
- 		if (insn->n == 6)
- 			return 0;
- 		break;
--		/* by default we allow the insn since we don't have checks for
--		 * all possible cases yet */
-+		/*
-+		 * by default we allow the insn since we don't have checks for
-+		 * all possible cases yet
-+		 */
- 	default:
- 		pr_warn("No check for data length of config insn id %i is implemented\n",
- 			data[0]);
-@@ -1314,9 +1315,11 @@ static int parse_insn(struct comedi_device *dev, struct comedi_insn *insn,
- 			if (insn->n != 2) {
- 				ret = -EINVAL;
- 			} else {
--				/* Most drivers ignore the base channel in
-+				/*
-+				 * Most drivers ignore the base channel in
- 				 * insn->chanspec.  Fix this here if
--				 * the subdevice has <= 32 channels.  */
-+				 * the subdevice has <= 32 channels.
-+				 */
- 				unsigned int orig_mask = data[0];
- 				unsigned int shift = 0;
- 
-@@ -1977,8 +1980,10 @@ static long comedi_unlocked_ioctl(struct file *file, unsigned int cmd,
- 
- 	mutex_lock(&dev->mutex);
- 
--	/* Device config is special, because it must work on
--	 * an unconfigured device. */
-+	/*
-+	 * Device config is special, because it must work on
-+	 * an unconfigured device.
-+	 */
- 	if (cmd == COMEDI_DEVCONFIG) {
- 		if (minor >= COMEDI_NUM_BOARD_MINORS) {
- 			/* Device config not appropriate on non-board minors. */
-@@ -1990,8 +1995,10 @@ static long comedi_unlocked_ioctl(struct file *file, unsigned int cmd,
- 		if (rc == 0) {
- 			if (arg == 0 &&
- 			    dev->minor >= comedi_num_legacy_minors) {
--				/* Successfully unconfigured a dynamically
--				 * allocated device.  Try and remove it. */
-+				/*
-+				 * Successfully unconfigured a dynamically
-+				 * allocated device.  Try and remove it.
-+				 */
- 				if (comedi_clear_board_dev(dev)) {
- 					mutex_unlock(&dev->mutex);
- 					comedi_free_board_dev(dev);
--- 
-2.1.4
-
+greg k-h
