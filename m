@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbbA2BK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:10:56 -0500
-Received: from tex.lwn.net ([70.33.254.29]:35862 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752750AbbA2BKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:10:51 -0500
-Date: Wed, 28 Jan 2015 14:57:41 -0700
-From: Jonathan Corbet <corbet@lwn.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Libin Yang <lbyang@marvell.com>
-Subject: Re: [PATCH 6/7] [media] marvell-ccic: MMP_CAMERA never worked
-Message-ID: <20150128145741.02812a8f@lwn.net>
-In-Reply-To: <1422479867-3370921-7-git-send-email-arnd@arndb.de>
-References: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
-	<1422479867-3370921-7-git-send-email-arnd@arndb.de>
-Organization: LWN.net
-MIME-Version: 1.0
+	id S1756139AbbA2Bh1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:37:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45726 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202AbbA2BhV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:37:21 -0500
+Date: Wed, 28 Jan 2015 13:57:52 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm v2 1/3] slub: never fail to shrink cache
+Message-Id: <20150128135752.afcb196d6ded7c16a79ed6fd@linux-foundation.org>
+In-Reply-To: <012683fc3a0f9fb20a288986fd63fe9f6d25e8ee.1422461573.git.vdavydov@parallels.com>
+References: <cover.1422461573.git.vdavydov@parallels.com>
+	<012683fc3a0f9fb20a288986fd63fe9f6d25e8ee.1422461573.git.vdavydov@parallels.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015 22:17:46 +0100
-Arnd Bergmann <arnd@arndb.de> wrote:
+On Wed, 28 Jan 2015 19:22:49 +0300 Vladimir Davydov <vdavydov@parallels.com> wrote:
 
-> The mmp ccic driver uses a platform_data structure that has never
-> existed in an upstream kernel and always fails to build:
+> SLUB's version of __kmem_cache_shrink() not only removes empty slabs,
+> but also tries to rearrange the partial lists to place slabs filled up
+> most to the head to cope with fragmentation. To achieve that, it
+> allocates a temporary array of lists used to sort slabs by the number of
+> objects in use. If the allocation fails, the whole procedure is aborted.
+> 
+> This is unacceptable for the kernel memory accounting extension of the
+> memory cgroup, where we want to make sure that kmem_cache_shrink()
+> successfully discarded empty slabs. Although the allocation failure is
+> utterly unlikely with the current page allocator implementation, which
+> retries GFP_KERNEL allocations of order <= 2 infinitely, it is better
+> not to rely on that.
+> 
+> This patch therefore makes __kmem_cache_shrink() allocate the array on
+> stack instead of calling kmalloc, which may fail. The array size is
+> chosen to be equal to 32, because most SLUB caches store not more than
+> 32 objects per slab page. Slab pages with <= 32 free objects are sorted
+> using the array by the number of objects in use and promoted to the head
+> of the partial list, while slab pages with > 32 free objects are left in
+> the end of the list without any ordering imposed on them.
+> 
+> ...
+>
+> @@ -3375,51 +3376,56 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+>  	struct kmem_cache_node *n;
+>  	struct page *page;
+>  	struct page *t;
+> -	int objects = oo_objects(s->max);
+> -	struct list_head *slabs_by_inuse =
+> -		kmalloc(sizeof(struct list_head) * objects, GFP_KERNEL);
+> +	LIST_HEAD(discard);
+> +	struct list_head promote[SHRINK_PROMOTE_MAX];
 
-This driver most assuredly did work on XO 1.75 machines, and the
-platform_data structure does exist; it's the stuff added by Libin
-afterward that apparently broke things.  Strange that it only came out now,
-though, nearly two years later. Libin, any thoughts on this?
+512 bytes of stack.  The call paths leading to __kmem_cache_shrink()
+are many and twisty.  How do we know this isn't a problem?
 
-Meanwhile, it is clearly broken, and I don't have an immediate fix, so,
+The logic behind choosing "32" sounds rather rubbery.  What goes wrong
+if we use, say, "4"?
 
-Acked-by: Jonathan Corbet <corbet@lwn.net>
-
-(Though I would like a different patch subject, since the current one is
-wrong).
-
-I think the right thing to do, alas, might be to back out all of Libin's
-changes.  They clearly are not being used by anybody and do not seem to be
-getting any further development attention.  It would like to keep this
-driver working for XO systems for a while yet...but I won't get to it
-right away.
-
-Thanks,
-
-jon
