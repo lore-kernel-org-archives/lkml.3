@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933741AbbA1Bo0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:44:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
+	id S933691AbbA1BnR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:43:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933369AbbA1Bii (ORCPT
+	with ESMTP id S933375AbbA1Bij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:38 -0500
+	Tue, 27 Jan 2015 20:38:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Richard Yao <ryao@gentoo.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Andi Kleen <andi@firstfloor.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3.14 68/77] vmalloc: use rcu list iterator to reduce vmap_area_lock contention
-Date: Tue, 27 Jan 2015 17:27:46 -0800
-Message-Id: <20150128012748.004727776@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 69/77] memcg, vmscan: Fix forced scan of anonymous pages
+Date: Tue, 27 Jan 2015 17:27:47 -0800
+Message-Id: <20150128012748.035041623@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -35,109 +32,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Jerome Marchand <jmarchan@redhat.com>
 
-commit 474750aba88817c53f39424e5567b8e4acc4b39b upstream.
+commit 2ab051e11bfa3cbb7b24177f3d6aaed10a0d743e upstream.
 
-Richard Yao reported a month ago that his system have a trouble with
-vmap_area_lock contention during performance analysis by /proc/meminfo.
-Andrew asked why his analysis checks /proc/meminfo stressfully, but he
-didn't answer it.
+When memory cgoups are enabled, the code that decides to force to scan
+anonymous pages in get_scan_count() compares global values (free,
+high_watermark) to a value that is restricted to a memory cgroup (file).
+It make the code over-eager to force anon scan.
 
-  https://lkml.org/lkml/2014/4/10/416
+For instance, it will force anon scan when scanning a memcg that is
+mainly populated by anonymous page, even when there is plenty of file
+pages to get rid of in others memcgs, even when swappiness == 0.  It
+breaks user's expectation about swappiness and hurts performance.
 
-Although I'm not sure that this is right usage or not, there is a
-solution reducing vmap_area_lock contention with no side-effect.  That
-is just to use rcu list iterator in get_vmalloc_info().
+This patch makes sure that forced anon scan only happens when there not
+enough file pages for the all zone, not just in one random memcg.
 
-rcu can be used in this function because all RCU protocol is already
-respected by writers, since Nick Piggin commit db64fe02258f1 ("mm:
-rewrite vmap layer") back in linux-2.6.28
-
-Specifically :
-   insertions use list_add_rcu(),
-   deletions use list_del_rcu() and kfree_rcu().
-
-Note the rb tree is not used from rcu reader (it would not be safe),
-only the vmap_area_list has full RCU protection.
-
-Note that __purge_vmap_area_lazy() already uses this rcu protection.
-
-        rcu_read_lock();
-        list_for_each_entry_rcu(va, &vmap_area_list, list) {
-                if (va->flags & VM_LAZY_FREE) {
-                        if (va->va_start < *start)
-                                *start = va->va_start;
-                        if (va->va_end > *end)
-                                *end = va->va_end;
-                        nr += (va->va_end - va->va_start) >> PAGE_SHIFT;
-                        list_add_tail(&va->purge_list, &valist);
-                        va->flags |= VM_LAZY_FREEING;
-                        va->flags &= ~VM_LAZY_FREE;
-                }
-        }
-        rcu_read_unlock();
-
-Peter:
-
-: While rcu list traversal over the vmap_area_list is safe, this may
-: arrive at different results than the spinlocked version. The rcu list
-: traversal version will not be a 'snapshot' of a single, valid instant
-: of the entire vmap_area_list, but rather a potential amalgam of
-: different list states.
-
-Joonsoo:
-
-: Yes, you are right, but I don't think that we should be strict here.
-: Meminfo is already not a 'snapshot' at specific time.  While we try to get
-: certain stats, the other stats can change.  And, although we may arrive at
-: different results than the spinlocked version, the difference would not be
-: large and would not make serious side-effect.
-
-[edumazet@google.com: add more commit description]
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Reported-by: Richard Yao <ryao@gentoo.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andi Kleen <andi@firstfloor.org>
+[hannes@cmpxchg.org: cleanups]
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/vmalloc.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ mm/vmscan.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2681,14 +2681,14 @@ void get_vmalloc_info(struct vmalloc_inf
- 
- 	prev_end = VMALLOC_START;
- 
--	spin_lock(&vmap_area_lock);
-+	rcu_read_lock();
- 
- 	if (list_empty(&vmap_area_list)) {
- 		vmi->largest_chunk = VMALLOC_TOTAL;
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1847,7 +1847,7 @@ static void get_scan_count(struct lruvec
+ 	struct zone *zone = lruvec_zone(lruvec);
+ 	unsigned long anon_prio, file_prio;
+ 	enum scan_balance scan_balance;
+-	unsigned long anon, file, free;
++	unsigned long anon, file;
+ 	bool force_scan = false;
+ 	unsigned long ap, fp;
+ 	enum lru_list lru;
+@@ -1895,11 +1895,6 @@ static void get_scan_count(struct lruvec
  		goto out;
  	}
  
--	list_for_each_entry(va, &vmap_area_list, list) {
-+	list_for_each_entry_rcu(va, &vmap_area_list, list) {
- 		unsigned long addr = va->va_start;
- 
- 		/*
-@@ -2715,7 +2715,7 @@ void get_vmalloc_info(struct vmalloc_inf
- 		vmi->largest_chunk = VMALLOC_END - prev_end;
- 
- out:
--	spin_unlock(&vmap_area_lock);
-+	rcu_read_unlock();
- }
- #endif
- 
+-	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
+-		get_lru_size(lruvec, LRU_INACTIVE_ANON);
+-	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
+-		get_lru_size(lruvec, LRU_INACTIVE_FILE);
+-
+ 	/*
+ 	 * If it's foreseeable that reclaiming the file cache won't be
+ 	 * enough to get the zone back into a desirable shape, we have
+@@ -1907,8 +1902,14 @@ static void get_scan_count(struct lruvec
+ 	 * thrashing - remaining file pages alone.
+ 	 */
+ 	if (global_reclaim(sc)) {
+-		free = zone_page_state(zone, NR_FREE_PAGES);
+-		if (unlikely(file + free <= high_wmark_pages(zone))) {
++		unsigned long zonefile;
++		unsigned long zonefree;
++
++		zonefree = zone_page_state(zone, NR_FREE_PAGES);
++		zonefile = zone_page_state(zone, NR_ACTIVE_FILE) +
++			   zone_page_state(zone, NR_INACTIVE_FILE);
++
++		if (unlikely(zonefile + zonefree <= high_wmark_pages(zone))) {
+ 			scan_balance = SCAN_ANON;
+ 			goto out;
+ 		}
+@@ -1943,6 +1944,12 @@ static void get_scan_count(struct lruvec
+ 	 *
+ 	 * anon in [0], file in [1]
+ 	 */
++
++	anon  = get_lru_size(lruvec, LRU_ACTIVE_ANON) +
++		get_lru_size(lruvec, LRU_INACTIVE_ANON);
++	file  = get_lru_size(lruvec, LRU_ACTIVE_FILE) +
++		get_lru_size(lruvec, LRU_INACTIVE_FILE);
++
+ 	spin_lock_irq(&zone->lru_lock);
+ 	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
+ 		reclaim_stat->recent_scanned[0] /= 2;
 
 
