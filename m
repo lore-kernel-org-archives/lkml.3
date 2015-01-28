@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964934AbbA1Fbw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:31:52 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36881 "EHLO mail.kernel.org"
+	id S1760596AbbA1EOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:14:16 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36891 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756792AbbA1EOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:14:08 -0500
+	id S1760575AbbA1EOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:14:11 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Tejun Heo <tj@kernel.org>, Honggang Li <enjoymindful@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 010/177] Revert "percpu: free percpu allocation info for uniprocessor system"
-Date: Wed, 28 Jan 2015 12:06:26 +0800
-Message-Id: <1422418236-12852-19-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 10/91] percpu: perform tlb flush after pcpu_map_pages() failure
+Date: Wed, 28 Jan 2015 12:06:27 +0800
+Message-Id: <1422418236-12852-20-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,45 +20,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Tejun Heo <tj@kernel.org>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit bb2e226b3bef596dd56be97df655d857b4603923 upstream.
+commit 849f5169097e1ba35b90ac9df76b5bb6f9c0aabd upstream.
 
-This reverts commit 3189eddbcafc ("percpu: free percpu allocation info for
-uniprocessor system").
+If pcpu_map_pages() fails midway, it unmaps the already mapped pages.
+Currently, it doesn't flush tlb after the partial unmapping.  This may
+be okay in most cases as the established mapping hasn't been used at
+that point but it can go wrong and when it goes wrong it'd be
+extremely difficult to track down.
 
-The commit causes a hang with a crisv32 image. This may be an architecture
-problem, but at least for now the revert is necessary to be able to boot a
-crisv32 image.
+Flush tlb after the partial unmapping.
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Honggang Li <enjoymindful@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Fixes: 3189eddbcafc ("percpu: free percpu allocation info for uniprocessor system")
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- mm/percpu.c | 2 --
- 1 file changed, 2 deletions(-)
+ mm/percpu-vm.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/percpu.c b/mm/percpu.c
-index 5f6042b..13b2eef 100644
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1907,8 +1907,6 @@ void __init setup_per_cpu_areas(void)
- 
- 	if (pcpu_setup_first_chunk(ai, fc) < 0)
- 		panic("Failed to initialize percpu areas.");
--
--	pcpu_free_alloc_info(ai);
+diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
+index 6c055e4..6f3db37 100644
+--- a/mm/percpu-vm.c
++++ b/mm/percpu-vm.c
+@@ -272,6 +272,7 @@ err:
+ 		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, tcpu, page_start),
+ 				   page_end - page_start);
+ 	}
++	pcpu_post_unmap_tlb_flush(chunk, page_start, page_end);
+ 	return err;
  }
  
- #endif	/* CONFIG_SMP */
 -- 
 1.9.1
 
