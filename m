@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765AbbA1UPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:15:01 -0500
-Received: from mail.lysator.liu.se ([130.236.254.3]:44061 "EHLO
-	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691AbbA1UO5 (ORCPT
+	id S1757340AbbA1VNL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:13:11 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:54608 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752836AbbA1UxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:14:57 -0500
-From: Peter Rosin <peda@lysator.liu.se>
-To: alsa-devel@alsa-project.org
-Cc: Peter Rosin <peda@axentia.se>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Clemens Ladisch <clemens@ladisch.de>,
-        Lars-Peter Clausen <lars@metafoo.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 7/7] ASoC: pcm512x: Support SND_SOC_DAIFMT_CBM_CFS
-Date: Wed, 28 Jan 2015 15:16:12 +0100
-Message-Id: <1422454572-7847-8-git-send-email-peda@lysator.liu.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1422454572-7847-1-git-send-email-peda@lysator.liu.se>
-References: <1422454572-7847-1-git-send-email-peda@lysator.liu.se>
+	Wed, 28 Jan 2015 15:53:05 -0500
+Date: Wed, 28 Jan 2015 15:17:42 +0100
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/9] mtd: pxa3xx_nand: add a non mandatory ECC clock
+Message-ID: <20150128141742.GB11705@kwain>
+References: <1422367816-4257-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1422367816-4257-3-git-send-email-antoine.tenart@free-electrons.com>
+ <20150128113552.5dd3edc4@xhacker>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150128113552.5dd3edc4@xhacker>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Rosin <peda@axentia.se>
+Hi Jisheng!
 
-Signed-off-by: Peter Rosin <peda@axentia.se>
----
- sound/soc/codecs/pcm512x.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+On Wed, Jan 28, 2015 at 11:35:52AM +0800, Jisheng Zhang wrote:
+> On Tue, 27 Jan 2015 06:10:09 -0800
+> Antoine Tenart <antoine.tenart@free-electrons.com> wrote:
+> 
+> > diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
+> > index d00ac392d1c4..2681ec4abafa 100644
+> > --- a/drivers/mtd/nand/pxa3xx_nand.c
+> > +++ b/drivers/mtd/nand/pxa3xx_nand.c
+> > @@ -180,7 +180,7 @@ struct pxa3xx_nand_info {
+> >  	struct nand_hw_control	controller;
+> >  	struct platform_device	 *pdev;
+> >  
+> > -	struct clk		*clk;
+> > +	struct clk		*clk, *ecc_clk;
+> >  	void __iomem		*mmio_base;
+> >  	unsigned long		mmio_phys;
+> >  	struct completion	cmd_complete, dev_ready;
+> > @@ -1608,7 +1608,7 @@ static int alloc_nand_resource(struct platform_device
+> > *pdev) 
+> >  	spin_lock_init(&chip->controller->lock);
+> >  	init_waitqueue_head(&chip->controller->wq);
+> > -	info->clk = devm_clk_get(&pdev->dev, NULL);
+> > +	info->clk = devm_clk_get(&pdev->dev, "nfc");
+> >  	if (IS_ERR(info->clk)) {
+> 
+> Do we need to fall back to unnamed clock here? Otherwise I guess it will break
+> other platforms.
 
-diff --git a/sound/soc/codecs/pcm512x.c b/sound/soc/codecs/pcm512x.c
-index d46d6cdb6b87..64be85fb2748 100644
---- a/sound/soc/codecs/pcm512x.c
-+++ b/sound/soc/codecs/pcm512x.c
-@@ -464,6 +464,7 @@ static int pcm512x_dai_startup(struct snd_pcm_substream *substream,
- 
- 	switch (pcm512x->fmt & SND_SOC_DAIFMT_MASTER_MASK) {
- 	case SND_SOC_DAIFMT_CBM_CFM:
-+	case SND_SOC_DAIFMT_CBM_CFS:
- 		return pcm512x_dai_startup_master(substream, dai);
- 
- 	case SND_SOC_DAIFMT_CBS_CFS:
-@@ -970,6 +971,8 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 	struct pcm512x_priv *pcm512x = snd_soc_codec_get_drvdata(codec);
- 	int alen;
- 	int gpio;
-+	int clock_output;
-+	int master_mode;
- 	int ret;
- 
- 	dev_dbg(codec->dev, "hw_params %u Hz, %u channels\n",
-@@ -1018,6 +1021,12 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 		}
- 		return 0;
- 	case SND_SOC_DAIFMT_CBM_CFM:
-+		clock_output = PCM512x_BCKO | PCM512x_LRKO;
-+		master_mode = PCM512x_RLRK | PCM512x_RBCK;
-+		break;
-+	case SND_SOC_DAIFMT_CBM_CFS:
-+		clock_output = PCM512x_BCKO;
-+		master_mode = PCM512x_RBCK;
- 		break;
- 	default:
- 		return -EINVAL;
-@@ -1114,7 +1123,7 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 
- 	ret = regmap_update_bits(pcm512x->regmap, PCM512x_BCLK_LRCLK_CFG,
- 				 PCM512x_BCKP | PCM512x_BCKO | PCM512x_LRKO,
--				 PCM512x_BCKO | PCM512x_LRKO);
-+				 clock_output);
- 	if (ret != 0) {
- 		dev_err(codec->dev, "Failed to enable clock output: %d\n", ret);
- 		return ret;
-@@ -1122,7 +1131,7 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 
- 	ret = regmap_update_bits(pcm512x->regmap, PCM512x_MASTER_MODE,
- 				 PCM512x_RLRK | PCM512x_RBCK,
--				 PCM512x_RLRK | PCM512x_RBCK);
-+				 master_mode);
- 	if (ret != 0) {
- 		dev_err(codec->dev, "Failed to enable master mode: %d\n", ret);
- 		return ret;
+Yes, as Andrew pointed out we need to keep the NULL here to avoid
+breaking other platforms.
+
+> >  
+> >  	/* initialize all interrupts to be disabled */
+> > @@ -1687,6 +1694,9 @@ static int alloc_nand_resource(struct platform_device
+> > *pdev) fail_free_buf:
+> >  	free_irq(irq, info);
+> >  	kfree(info->data_buff);
+> > +fail_disable_ecc_clk:
+> > +	if (!IS_ERR(info->ecc_clk))
+> > +		clk_disable_unprepare(info->ecc_clk);
+> 
+> we can remove the IS_ERR check to simplify this error path since commit
+> 63589e92c2d9("clk: Ignore error and NULL pointers passed to clk_{unprepare, disable}()")
+> 
+> >  fail_disable_clk:
+> >  	clk_disable_unprepare(info->clk);
+> >  	return ret;
+> > @@ -1709,6 +1719,8 @@ static int pxa3xx_nand_remove(struct platform_device
+> > *pdev) pxa3xx_nand_free_buff(info);
+> >  
+> >  	clk_disable_unprepare(info->clk);
+> > +	if (!IS_ERR(info->ecc_clk))
+> > +		clk_disable_unprepare(info->ecc_clk);
+> 
+> we can remove the IS_ERR check too.
+
+Yes! Thanks for the hint, I'll remove these useless checks in v2.
+
+Thanks!
+
+Antoine
+
 -- 
-1.7.10.4
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
