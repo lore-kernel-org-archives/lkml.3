@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761423AbbA1ESl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:18:41 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38540 "EHLO mail.kernel.org"
+	id S1761438AbbA1ESo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:18:44 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38565 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761381AbbA1ESh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:18:37 -0500
+	id S1761420AbbA1ESl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:18:41 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andy Lutomirski <luto@amacapital.net>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 054/177] mnt: Prevent pivot_root from creating a loop in the mount tree
-Date: Wed, 28 Jan 2015 12:07:55 +0800
-Message-Id: <1422418236-12852-108-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Jander <david@protonic.nl>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 55/91] can: flexcan: correctly initialize mailboxes
+Date: Wed, 28 Jan 2015 12:07:56 +0800
+Message-Id: <1422418236-12852-109-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,55 +20,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: David Jander <david@protonic.nl>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 0d0826019e529f21c84687521d03f60cd241ca7d upstream.
+commit fc05b884a31dbf259cc73cc856e634ec3acbebb6 upstream.
 
-Andy Lutomirski recently demonstrated that when chroot is used to set
-the root path below the path for the new ``root'' passed to pivot_root
-the pivot_root system call succeeds and leaks mounts.
+Apparently mailboxes may contain random data at startup, causing some of them
+being prepared for message reception. This causes overruns being missed or even
+confusing the IRQ check for trasmitted messages, increasing the transmit
+counter instead of the error counter.
 
-In examining the code I see that starting with a new root that is
-below the current root in the mount tree will result in a loop in the
-mount tree after the mounts are detached and then reattached to one
-another.  Resulting in all kinds of ugliness including a leak of that
-mounts involved in the leak of the mount loop.
+This patch initializes all mailboxes after the FIFO as RX_INACTIVE.
 
-Prevent this problem by ensuring that the new mount is reachable from
-the current root of the mount tree.
-
-[Added stable cc.  Fixes CVE-2014-7970.  --Andy]
-
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/87bnpmihks.fsf@x220.int.ebiederm.org
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-[lizf: Backported to 3.4: adjust context]
+Signed-off-by: David Jander <david@protonic.nl>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/namespace.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/can/flexcan.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index f0f2e06..f7be8d9 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2508,6 +2508,9 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
- 	/* make sure we can reach put_old from new_root */
- 	if (!is_path_reachable(real_mount(old.mnt), old.dentry, &new))
- 		goto out4;
-+	/* make certain new is below the root */
-+	if (!is_path_reachable(new_mnt, new.dentry, &root))
-+		goto out4;
- 	br_write_lock(vfsmount_lock);
- 	detach_mnt(new_mnt, &parent_path);
- 	detach_mnt(root_mnt, &root_parent);
+diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
+index 062bbe2..1331558 100644
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -680,6 +680,7 @@ static int flexcan_chip_start(struct net_device *dev)
+ 	struct flexcan_regs __iomem *regs = priv->base;
+ 	int err;
+ 	u32 reg_mcr, reg_ctrl;
++	int i;
+ 
+ 	/* enable module */
+ 	flexcan_chip_enable(priv);
+@@ -745,6 +746,12 @@ static int flexcan_chip_start(struct net_device *dev)
+ 	netdev_dbg(dev, "%s: writing ctrl=0x%08x", __func__, reg_ctrl);
+ 	flexcan_write(reg_ctrl, &regs->ctrl);
+ 
++	/* clear and invalidate all mailboxes first */
++	for (i = FLEXCAN_TX_BUF_ID; i < ARRAY_SIZE(regs->cantxfg); i++) {
++		flexcan_write(FLEXCAN_MB_CODE_RX_INACTIVE,
++			      &regs->cantxfg[i].can_ctrl);
++	}
++
+ 	/* mark TX mailbox as INACTIVE */
+ 	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
+ 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
 -- 
 1.9.1
 
