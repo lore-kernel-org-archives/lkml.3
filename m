@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746AbbA2BHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:07:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53612 "EHLO mx1.redhat.com"
+	id S1753322AbbA1Uxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:53:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54168 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751591AbbA2BHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:07:16 -0500
+	id S1753124AbbA1Uxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:53:42 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Hans de Goede <hdegoede@redhat.com>,
         Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] New Lenovos 2015 touchpads: party time!
-Date: Wed, 28 Jan 2015 15:10:03 -0500
-Message-Id: <1422475807-15033-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 1/4] Input - synaptics: fix middle button on Lenovo 2015 products
+Date: Wed, 28 Jan 2015 15:10:04 -0500
+Message-Id: <1422475807-15033-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1422475807-15033-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1422475807-15033-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On the X1 Carbon 3rd gen (with a 2015 broadwell cpu), the physical middle
+button of the trackstick (attached to the touchpad serio device, of course)
+seems to get lost.
 
-Lenovo released their new models, and believe it or not, some kernel
-work is required to support them!
+Actually, the touchpads reports 3 extra buttons, which falls in the switch
+below to the '2' case. Let's handle the case of odd numbers also, so that
+the middle button finds its way back.
 
-We learned the lesson and we will try to maximize the effort in user space
-through udev rules instead of polluting the kernel with exceptions.
+Cc: stable@vger.kernel.org
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/input/mouse/synaptics.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Patches 1 & 2 are general fixes for synaptics that have been unnoticed
-until this new models. They are marked as stable.
-
-Patch 3 is a generic way to fix the PnpId list that was hardcoded in the
-kernel. This one is also marked as stable so that distributions will not
-have the top software buttons on devices that do not require it.
-
-Patch 4 is a nice to have. It is not mandatory, so not CC-ed to stable,
-it just reduced the PnpId list.
-
-The good thing is that the reported min/max are correct, so the problems
-with the first generation of the t440 touchpad have been fixed now (and
-synaptics assured us that they will keep checking the quality of the PS/2
-handling of their touchpads).
-
-One last thing, I still did not manage to talk to the device over SMBus,
-so we are still stuck with the PS/2 protocol and its limitations for this
-series.
-
-Cheers,
-Benjamin
-
-Benjamin Tissoires (4):
-  Input - synaptics: fix middle button on Lenovo 2015 products
-  Input - synaptics: do not release extra buttons once they are pressed
-  Input - synaptics: remove TOPBUTTONPAD property for Lenovos 2015
-  Input - synaptics: Remove X1 Carbon 3rd gen from the topbuttonpad list
-
- drivers/input/mouse/synaptics.c | 20 ++++++++++++++------
- drivers/input/mouse/synaptics.h |  3 +++
- 2 files changed, 17 insertions(+), 6 deletions(-)
-
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index f89de89..0d12664 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -689,7 +689,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 
+ 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
+ 		    ((buf[0] ^ buf[3]) & 0x02)) {
+-			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
++			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap)) {
+ 			default:
+ 				/*
+ 				 * if nExtBtn is greater than 8 it should be
+@@ -698,15 +698,19 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 				break;
+ 			case 8:
+ 				hw->ext_buttons |= ((buf[5] & 0x08)) ? 0x80 : 0;
++			case 7:
+ 				hw->ext_buttons |= ((buf[4] & 0x08)) ? 0x40 : 0;
+ 			case 6:
+ 				hw->ext_buttons |= ((buf[5] & 0x04)) ? 0x20 : 0;
++			case 5:
+ 				hw->ext_buttons |= ((buf[4] & 0x04)) ? 0x10 : 0;
+ 			case 4:
+ 				hw->ext_buttons |= ((buf[5] & 0x02)) ? 0x08 : 0;
++			case 3:
+ 				hw->ext_buttons |= ((buf[4] & 0x02)) ? 0x04 : 0;
+ 			case 2:
+ 				hw->ext_buttons |= ((buf[5] & 0x01)) ? 0x02 : 0;
++			case 1:
+ 				hw->ext_buttons |= ((buf[4] & 0x01)) ? 0x01 : 0;
+ 			}
+ 		}
 -- 
 2.1.0
 
