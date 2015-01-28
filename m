@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934306AbbA1C0H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:26:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41028 "EHLO
+	id S934153AbbA1CNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:13:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41186 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754804AbbA1B2G (ORCPT
+	with ESMTP id S1759549AbbA1B2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:06 -0500
+	Tue, 27 Jan 2015 20:28:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
-Subject: [PATCH 3.10 04/32] libata: prevent HSM state change race between ISR and PIO
-Date: Tue, 27 Jan 2015 17:26:34 -0800
-Message-Id: <20150128012627.754444469@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andreas Hartmann <andihartmann@freenet.de>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.18 23/61] PCI: Mark Atheros AR93xx to avoid bus reset
+Date: Tue, 27 Jan 2015 17:26:35 -0800
+Message-Id: <20150128012639.579709491@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -23,76 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit ce7514526742c0898b837d4395f515b79dfb5a12 upstream.
+commit c3e59ee4e76686b0c84ca8faa1011d10cd4ca1b8 upstream.
 
-It is possible for ata_sff_flush_pio_task() to set ap->hsm_task_state to
-HSM_ST_IDLE in between the time __ata_sff_port_intr() checks for HSM_ST_IDLE
-and before it calls ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
+Reports against the TL-WDN4800 card indicate that PCI bus reset of this
+Atheros device cause system lock-ups and resets.  I've also been able to
+confirm this behavior on multiple systems.  The device never returns from
+reset and attempts to access config space of the device after reset result
+in hangs.  Blacklist bus reset for the device to avoid this issue.
 
-This problem is hard to reproduce making this patch hard to verify, but this
-fix will prevent the race.
+[bhelgaas: This regression appeared in v3.14.  Andreas bisected it to
+425c1b223dac ("PCI: Add Virtual Channel to save/restore support"), but we
+don't understand the mechanism by which that commit affects the reset
+path.]
 
-I have not been able to reproduce the problem, but here is a crash dump from
-a 2.6.32 kernel.
+[bhelgaas: changelog, references]
+Link: http://lkml.kernel.org/r/20140923210318.498dacbd@dualc.maya.org
+Reported-by: Andreas Hartmann <andihartmann@freenet.de>
+Tested-by: Andreas Hartmann <andihartmann@freenet.de>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-On examining the ata port's state, its hsm_task_state field has a value of HSM_ST_IDLE:
-
-crash> struct ata_port.hsm_task_state ffff881c1121c000
-  hsm_task_state = 0
-
-Normally, this should not be possible as ata_sff_hsm_move() was called from ata_sff_host_intr(),
-which checks hsm_task_state and won't call ata_sff_hsm_move() if it has a HSM_ST_IDLE value.
-
-PID: 11053  TASK: ffff8816e846cae0  CPU: 0   COMMAND: "sshd"
- #0 [ffff88008ba03960] machine_kexec at ffffffff81038f3b
- #1 [ffff88008ba039c0] crash_kexec at ffffffff810c5d92
- #2 [ffff88008ba03a90] oops_end at ffffffff8152b510
- #3 [ffff88008ba03ac0] die at ffffffff81010e0b
- #4 [ffff88008ba03af0] do_trap at ffffffff8152ad74
- #5 [ffff88008ba03b50] do_invalid_op at ffffffff8100cf95
- #6 [ffff88008ba03bf0] invalid_op at ffffffff8100bf9b
-    [exception RIP: ata_sff_hsm_move+317]
-    RIP: ffffffff813a77ad  RSP: ffff88008ba03ca0  RFLAGS: 00010097
-    RAX: 0000000000000000  RBX: ffff881c1121dc60  RCX: 0000000000000000
-    RDX: ffff881c1121dd10  RSI: ffff881c1121dc60  RDI: ffff881c1121c000
-    RBP: ffff88008ba03d00   R8: 0000000000000000   R9: 000000000000002e
-    R10: 000000000001003f  R11: 000000000000009b  R12: ffff881c1121c000
-    R13: 0000000000000000  R14: 0000000000000050  R15: ffff881c1121dd78
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #7 [ffff88008ba03d08] ata_sff_host_intr at ffffffff813a7fbd
- #8 [ffff88008ba03d38] ata_sff_interrupt at ffffffff813a821e
- #9 [ffff88008ba03d78] handle_IRQ_event at ffffffff810e6ec0
 ---
- drivers/ata/libata-sff.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/pci/quirks.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -1333,7 +1333,19 @@ void ata_sff_flush_pio_task(struct ata_p
- 	DPRINTK("ENTER\n");
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3008,6 +3008,20 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_R
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_MELLANOX, PCI_ANY_ID,
+ 			 quirk_broken_intx_masking);
  
- 	cancel_delayed_work_sync(&ap->sff_pio_task);
++static void quirk_no_bus_reset(struct pci_dev *dev)
++{
++	dev->dev_flags |= PCI_DEV_FLAGS_NO_BUS_RESET;
++}
 +
-+	/*
-+	 * We wanna reset the HSM state to IDLE.  If we do so without
-+	 * grabbing the port lock, critical sections protected by it which
-+	 * expect the HSM state to stay stable may get surprised.  For
-+	 * example, we may set IDLE in between the time
-+	 * __ata_sff_port_intr() checks for HSM_ST_IDLE and before it calls
-+	 * ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
-+	 */
-+	spin_lock_irq(ap->lock);
- 	ap->hsm_task_state = HSM_ST_IDLE;
-+	spin_unlock_irq(ap->lock);
++/*
++ * Atheros AR93xx chips do not behave after a bus reset.  The device will
++ * throw a Link Down error on AER-capable systems and regardless of AER,
++ * config space of the device is never accessible again and typically
++ * causes the system to hang or reset when access is attempted.
++ * http://www.spinics.net/lists/linux-pci/msg34797.html
++ */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATHEROS, 0x0030, quirk_no_bus_reset);
 +
- 	ap->sff_pio_task_link = NULL;
- 
- 	if (ata_msg_ctl(ap))
+ #ifdef CONFIG_ACPI
+ /*
+  * Apple: Shutdown Cactus Ridge Thunderbolt controller.
 
 
