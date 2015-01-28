@@ -1,124 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423AbbA2Bog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:44:36 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:46244 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910AbbA2Boa (ORCPT
+	id S1764701AbbA2Dsl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:48:41 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33401 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753370AbbA2BZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:44:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <1422481377-31112-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1422481377-31112-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Wed, 28 Jan 2015 22:44:15 +0100
-Message-ID: <CAKXHbyMoH-EQFwOhaMRixdcEkzsxCDqFW95jcyRabb3WeoOqcA@mail.gmail.com>
-Subject: Re: [PATCH] staging: comedi: drivers: addi-data: hwdrv_apci1500:
- Change variables that is never used
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chase Southwood <chase.southwood@gmail.com>,
-        Conrad Meyer <cemeyer@uw.edu>, Fred Akers <knivey@botops.net>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 Jan 2015 20:25:11 -0500
+Message-ID: <1422481550.2086.16.camel@HansenPartnership.com>
+Subject: Re: module: fix module_refcount() return when running in a module
+ exit routine
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Bart Van Assche <bart.vanassche@sandisk.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Wed, 28 Jan 2015 13:45:50 -0800
+In-Reply-To: <54C8AAA9.7060300@sandisk.com>
+References: <1421600146.2080.8.camel@HansenPartnership.com>
+	 <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au>
+	 <1421683701.2080.25.camel@HansenPartnership.com>
+	 <871tmqcmau.fsf@rustcorp.com.au>
+	 <1421774615.2080.88.camel@HansenPartnership.com>
+	 <20150122165018.GA27377@infradead.org>
+	 <1421946175.2093.1.camel@HansenPartnership.com>
+	 <87iofyurzc.fsf@rustcorp.com.au> <20150123131758.GC8045@infradead.org>
+	 <1422038567.2126.14.camel@HansenPartnership.com>
+	 <54C8AAA9.7060300@sandisk.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-28 22:42 GMT+01:00 Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se>:
-> Variable ar assigned a value that is never used.
-> Instead use the struct variable of the same name.
->
-> This was found using a static code analysis program called cppcheck
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c |   12 ++----------
->  1 file changed, 2 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
-> index bfa9228..faa71a9 100644
-> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
-> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
-> @@ -467,8 +467,6 @@ static int apci1500_di_write(struct comedi_device *dev,
->                              unsigned int *data)
->  {
->         struct apci1500_private *devpriv = dev->private;
-> -       int i_Event1InterruptStatus = 0, i_Event2InterruptStatus =
-> -               0, i_RegValue;
->
->         switch (data[0]) {
->         case START:
-> @@ -499,11 +497,9 @@ static int apci1500_di_write(struct comedi_device *dev,
->                                         outb(0xF4,
->                                                 devpriv->iobase +
->                                                 APCI1500_Z8536_CONTROL_REGISTER);
-> -                                       i_Event1InterruptStatus = 1;
->                                         outb(APCI1500_RW_PORT_A_SPECIFICATION,
->                                                 devpriv->iobase +
->                                                 APCI1500_Z8536_CONTROL_REGISTER);
-> -                                       i_RegValue =
->                                                 inb(devpriv->iobase +
->                                                 APCI1500_Z8536_CONTROL_REGISTER);
->
-> @@ -549,7 +545,6 @@ static int apci1500_di_write(struct comedi_device *dev,
->                                         outb(0xD0,
->                                                 devpriv->iobase +
->                                                 APCI1500_Z8536_CONTROL_REGISTER);
-> -                                       i_Event2InterruptStatus = 1;
->                                 } else {
->                                         dev_warn(dev->class_dev,
->                                                 "Event 2 not initialised\n");
-> @@ -592,7 +587,6 @@ static int apci1500_di_write(struct comedi_device *dev,
->                                         outb(0xF4,
->                                                 devpriv->iobase +
->                                                 APCI1500_Z8536_CONTROL_REGISTER);
-> -                                       i_Event1InterruptStatus = 0;
->                                 } else {
->                                         dev_warn(dev->class_dev,
->                                                 "Event 1 not initialised\n");
-> @@ -621,7 +615,6 @@ static int apci1500_di_write(struct comedi_device *dev,
->                                         outb(0xF4,
->                                                 devpriv->iobase +
->                                                 APCI1500_Z8536_CONTROL_REGISTER);
-> -                                       i_Event2InterruptStatus = 0;
->                                 } else {
->
->                                         dev_warn(dev->class_dev,
-> @@ -1896,7 +1889,6 @@ static int apci1500_do_bits(struct comedi_device *dev,
->                             unsigned int *data)
->  {
->         struct apci1500_private *devpriv = dev->private;
-> -       unsigned int ui_Status;
->         int i_RegValue;
->         int i_Constant;
->
-> @@ -2004,8 +1996,8 @@ static int apci1500_do_bits(struct comedi_device *dev,
->
->         /* Enables the PCI interrupt */
->         outl(0x3000, devpriv->i_IobaseAmcc + 0x38);
-> -       ui_Status = inl(devpriv->i_IobaseAmcc + 0x10);
-> -       ui_Status = inl(devpriv->i_IobaseAmcc + 0x38);
-> +       inl(devpriv->i_IobaseAmcc + 0x10);
-> +       inl(devpriv->i_IobaseAmcc + 0x38);
->         outl(0x23000, devpriv->i_IobaseAmcc + 0x38);
->
->         return insn->n;
-> --
-> 1.7.10.4
->
+On Wed, 2015-01-28 at 10:23 +0100, Bart Van Assche wrote:
+> On 01/23/15 19:42, James Bottomley wrote:
+> > diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> > index 08c90a7..31ba254 100644
+> > --- a/drivers/scsi/scsi.c
+> > +++ b/drivers/scsi/scsi.c
+> > @@ -965,6 +965,15 @@ int scsi_report_opcode(struct scsi_device *sdev, unsigned char *buffer,
+> >  }
+> >  EXPORT_SYMBOL(scsi_report_opcode);
+> >  
+> > +static int __scsi_device_get_common(struct scsi_device *sdev)
+> > +{
+> > +	if (sdev->sdev_state == SDEV_DEL)
+> > +		return -ENXIO;
+> > +	if (!get_device(&sdev->sdev_gendev))
+> > +		return -ENXIO;
+> > +	return 0;
+> > +}
+> > +
+> >  /**
+> >   * scsi_device_get  -  get an additional reference to a scsi_device
+> >   * @sdev:	device to get a reference to
+> > @@ -975,19 +984,45 @@ EXPORT_SYMBOL(scsi_report_opcode);
+> >   */
+> >  int scsi_device_get(struct scsi_device *sdev)
+> >  {
+> > -	if (sdev->sdev_state == SDEV_DEL)
+> > -		return -ENXIO;
+> > -	if (!get_device(&sdev->sdev_gendev))
+> > -		return -ENXIO;
+> > -	/* We can fail this if we're doing SCSI operations
+> > -	 * from module exit (like cache flush) */
+> > -	try_module_get(sdev->host->hostt->module);
+> > +	int ret;
+> >  
+> > -	return 0;
+> > +	ret = __scsi_device_get_common(sdev);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	ret = try_module_get(sdev->host->hostt->module);
+> > +
+> > +	if (ret)
+> > +		put_device(&sdev->sdev_gendev);
+> > +
+> > +	return ret;
+> >  }
+> >  EXPORT_SYMBOL(scsi_device_get);
+> >  
+> >  /**
+> > + * scsi_device_get_in_module_exit() - get an additional reference to a scsi_device
+> > + * @sdev:	device to get a reference to
+> > + *
+> > + * Functions identically to scsi_device_get() except that it unconditionally
+> > + * gets the module reference.  This allows it to be called from module exit
+> > + * routines where scsi_device_get() will fail.  This routine is still paired
+> > + * with scsi_device_put().
+> > + */
+> > +int scsi_device_get_in_module_exit(struct scsi_device *sdev)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = __scsi_device_get_common(sdev);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	__module_get(sdev->host->hostt->module);
+> > +
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL(scsi_device_get_in_module_exit);
+> > +
+> > +/**
+> >   * scsi_device_put  -  release a reference to a scsi_device
+> >   * @sdev:	device to release a reference on.
+> >   *
+> > diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> > index ebf35cb6..057604e 100644
+> > --- a/drivers/scsi/sd.c
+> > +++ b/drivers/scsi/sd.c
+> > @@ -564,16 +564,22 @@ static int sd_major(int major_idx)
+> >  	}
+> >  }
+> >  
+> > -static struct scsi_disk *__scsi_disk_get(struct gendisk *disk)
+> > +static struct scsi_disk *__scsi_disk_get(struct gendisk *disk, int in_exit)
+> >  {
+> >  	struct scsi_disk *sdkp = NULL;
+> >  
+> >  	if (disk->private_data) {
+> > +		int ret;
+> > +
+> >  		sdkp = scsi_disk(disk);
+> > -		if (scsi_device_get(sdkp->device) == 0)
+> > -			get_device(&sdkp->dev);
+> > +		if (in_exit)
+> > +			ret = scsi_device_get_in_module_exit(sdkp->device);
+> >  		else
+> > +			ret = scsi_device_get(sdkp->device);
+> > +		if (unlikely(ret))
+> >  			sdkp = NULL;
+> > +		else
+> > +			get_device(&sdkp->dev);
+> >  	}
+> >  	return sdkp;
+> >  }
+> > @@ -583,19 +589,19 @@ static struct scsi_disk *scsi_disk_get(struct gendisk *disk)
+> >  	struct scsi_disk *sdkp;
+> >  
+> >  	mutex_lock(&sd_ref_mutex);
+> > -	sdkp = __scsi_disk_get(disk);
+> > +	sdkp = __scsi_disk_get(disk, 0);
+> >  	mutex_unlock(&sd_ref_mutex);
+> >  	return sdkp;
+> >  }
+> >  
+> > -static struct scsi_disk *scsi_disk_get_from_dev(struct device *dev)
+> > +static struct scsi_disk *scsi_disk_get_from_dev(struct device *dev, int in_exit)
+> >  {
+> >  	struct scsi_disk *sdkp;
+> >  
+> >  	mutex_lock(&sd_ref_mutex);
+> >  	sdkp = dev_get_drvdata(dev);
+> >  	if (sdkp)
+> > -		sdkp = __scsi_disk_get(sdkp->disk);
+> > +		sdkp = __scsi_disk_get(sdkp->disk, in_exit);
+> >  	mutex_unlock(&sd_ref_mutex);
+> >  	return sdkp;
+> >  }
+> > @@ -1525,7 +1531,7 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+> >  
+> >  static void sd_rescan(struct device *dev)
+> >  {
+> > -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> > +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
+> >  
+> >  	if (sdkp) {
+> >  		revalidate_disk(sdkp->disk);
+> > @@ -3147,7 +3153,7 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
+> >   */
+> >  static void sd_shutdown(struct device *dev)
+> >  {
+> > -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> > +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 1);
+> >  
+> >  	if (!sdkp)
+> >  		return;         /* this can happen */
+> > @@ -3171,7 +3177,7 @@ exit:
+> >  
+> >  static int sd_suspend_common(struct device *dev, bool ignore_stop_errors)
+> >  {
+> > -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> > +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
+> >  	int ret = 0;
+> >  
+> >  	if (!sdkp)
+> > @@ -3213,7 +3219,7 @@ static int sd_suspend_runtime(struct device *dev)
+> >  
+> >  static int sd_resume(struct device *dev)
+> >  {
+> > -	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> > +	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev, 0);
+> >  	int ret = 0;
+> >  
+> >  	if (!sdkp->device->manage_start_stop)
+> > diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+> > index 2e0281e..0bad37c 100644
+> > --- a/include/scsi/scsi_device.h
+> > +++ b/include/scsi/scsi_device.h
+> > @@ -327,6 +327,7 @@ extern int scsi_unregister_device_handler(struct scsi_device_handler *scsi_dh);
+> >  void scsi_attach_vpd(struct scsi_device *sdev);
+> >  
+> >  extern int scsi_device_get(struct scsi_device *);
+> > +extern int scsi_device_get_in_module_exit(struct scsi_device *);
+> >  extern void scsi_device_put(struct scsi_device *);
+> >  extern struct scsi_device *scsi_device_lookup(struct Scsi_Host *,
+> >  					      uint, uint, u64);
+> 
+> Hello James,
+> 
+> Is this the latest version of this patch that is available ? I have
+> tried to test the above patch. However, I couldn't test the impact of
+> this patch on the SRP initiator driver since my test system didn't boot
+> anymore with the above patch applied. That test system boots from an ATA
+> disk managed by the SCSI subsystem:
+> $ lsscsi | head -n1
+> [0:0:0:0]    disk    ATA      KINGSTON SH103S3 BBF0  /dev/sda
+
+Not yet, since I knew it would need a bit of testing to identify all the
+potential in_exit acquisitions.  However, you could help me by
+diagnosing the current failure.
+
+Thanks,
+
+James
 
 
-
-Hi
-
-Sorry,  ignore this!
-
-Wrong commit message, sending a new patch.
-
-Kind regards
-Rickard Strandqvist
