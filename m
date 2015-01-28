@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761804AbbA1Gpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 01:45:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36031 "EHLO mx2.suse.de"
+	id S1760587AbbA1GwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 01:52:19 -0500
+Received: from 1wt.eu ([62.212.114.60]:16875 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761612AbbA1Goc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 01:44:32 -0500
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH 5/5] xen: cleanup arch/x86/xen/mmu.c
-Date: Wed, 28 Jan 2015 07:44:25 +0100
-Message-Id: <1422427465-25239-6-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1422427465-25239-1-git-send-email-jgross@suse.com>
-References: <1422427465-25239-1-git-send-email-jgross@suse.com>
+	id S1759875AbbA1GwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 01:52:17 -0500
+Date: Wed, 28 Jan 2015 07:51:15 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: lizf@kernel.org
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: Re: [PATCH 3.4 177/177] x86/tls: Validate TLS entries to protect espfix
+Message-ID: <20150128065115.GA9007@1wt.eu>
+References: <1422418050-12581-1-git-send-email-lizf@kernel.org> <1422418236-12852-268-git-send-email-lizf@kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422418236-12852-268-git-send-email-lizf@kernel.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove a nested ifdef.
+Hi Li,
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/xen/mmu.c | 2 --
- 1 file changed, 2 deletions(-)
+On Wed, Jan 28, 2015 at 12:10:35PM +0800, lizf@kernel.org wrote:
+> From: Andy Lutomirski <luto@amacapital.net>
+> 
+> 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> 
+> commit 41bdc78544b8a93a9c6814b8bbbfef966272abbe upstream.
+> 
+> Installing a 16-bit RW data segment into the GDT defeats espfix.
+> AFAICT this will not affect glibc, Wine, or dosemu at all.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> Acked-by: H. Peter Anvin <hpa@zytor.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: security@kernel.org <security@kernel.org>
+> Cc: Willy Tarreau <w@1wt.eu>
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Zefan Li <lizefan@huawei.com>
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 6a8bbf4..adca9e2 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1734,10 +1734,8 @@ static void __init xen_map_identity_early(pmd_t *pmd, unsigned long max_pfn)
- 		for (pteidx = 0; pteidx < PTRS_PER_PTE; pteidx++, pfn++) {
- 			pte_t pte;
- 
--#ifdef CONFIG_X86_32
- 			if (pfn > max_pfn_mapped)
- 				max_pfn_mapped = pfn;
--#endif
- 
- 			if (!pte_none(pte_page[pteidx]))
- 				continue;
--- 
-2.1.2
+This patch has introduced a few minor regressions for which Andy has
+provided fixes already pending in latest stable previews, so maybe it
+could make sense to either pick them as well or delay all of them for
+another round. Greg has queued them in his latest preview if you are
+interested (eg: 19/32 and 20/32 for 3.10.67) :
+
+- e30ab18 ("x86, tls, ldt: Stop checking lm in LDT_empty")
+- 3669ef9 ("x86, tls: Interpret an all-zero struct user_desc as "no segment"")
+
+Best regards,
+Willy
 
