@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762329AbbA2D5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:57:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:49512 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128AbbA2BIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:08:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
-   d="scan'208";a="669194028"
-Date: Wed, 28 Jan 2015 08:43:26 -0800
-From: Jesse Brandeburg <jesse.brandeburg@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:irq/core] genirq: Set initial affinity in
- irq_set_affinity_hint()
-Message-ID: <20150128084326.00003e74@unknown>
-In-Reply-To: <CAE9FiQWiUF4Rs4+f3q3nww1iNNbVSAZcZX5akYyQa=3Avf1fqg@mail.gmail.com>
-References: <20141219012206.4220.27491.stgit@jbrandeb-cp2.jf.intel.com>
-	<tip-e2e64a932556cdfae455497dbe94a8db151fc9fa@git.kernel.org>
-	<CAE9FiQWiUF4Rs4+f3q3nww1iNNbVSAZcZX5akYyQa=3Avf1fqg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.10cvs7 (GTK+ 2.16.6; i586-pc-mingw32msvc)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1761221AbbA2CGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:06:52 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3297 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754295AbbA2CEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 21:04:46 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 28 Jan 2015 08:43:47 -0800
+From: Rhyland Klein <rklein@nvidia.com>
+To: <ulf.hansson@linaro.org>, <chris@printf.net>
+CC: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <pkunapuli@nvidia.com>, <linux-mmc@vger.kernel.org>,
+        <gnurou@gmail.com>, Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH v2] mmc: tegra: Write xfer_mode, CMD regs in together
+Date: Wed, 28 Jan 2015 11:45:16 -0500
+Message-ID: <1422463516-19557-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jan 2015 22:36:23 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+From: Pavan Kunapuli <pkunapuli@nvidia.com>
 
-> On Fri, Jan 23, 2015 at 2:42 AM, tip-bot for Jesse Brandeburg
-> <tipbot@zytor.com> wrote:
-> > Commit-ID:  e2e64a932556cdfae455497dbe94a8db151fc9fa
-> > Gitweb:     http://git.kernel.org/tip/e2e64a932556cdfae455497dbe94a8db151fc9fa
-> > Author:     Jesse Brandeburg <jesse.brandeburg@intel.com>
-> > AuthorDate: Thu, 18 Dec 2014 17:22:06 -0800
-> > Committer:  Thomas Gleixner <tglx@linutronix.de>
-> > CommitDate: Fri, 23 Jan 2015 11:38:25 +0100
-> >
-> > genirq: Set initial affinity in irq_set_affinity_hint()
+If there is a gap between xfer mode and command register writes,
+tegra SDMMC controller can sometimes issue a spurious command before
+the CMD register is written. To avoid this, these two registers need
+to be written together in a single write operation.
 
-<snip>
+This is implemented as an NVQUIRK as it applies to T114, T124 and
+T132.
+
+Signed-off-by: Pavan Kunapuli <pkunapuli@nvidia.com>
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+v2:
+ - Fixed quirk flag check  s/*/&
+ - Removed line clearing xfer_mode_shadow
+ - Added explicit mention of which platforms this applies to in
+   description
+
+ drivers/mmc/host/sdhci-tegra.c |   30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+index 59797106af93..f3778d58d1cd 100644
+--- a/drivers/mmc/host/sdhci-tegra.c
++++ b/drivers/mmc/host/sdhci-tegra.c
+@@ -41,6 +41,7 @@
+ #define NVQUIRK_DISABLE_SDR50		BIT(3)
+ #define NVQUIRK_DISABLE_SDR104		BIT(4)
+ #define NVQUIRK_DISABLE_DDR50		BIT(5)
++#define NVQUIRK_SHADOW_XFER_MODE_REG	BIT(6)
  
-> there are lots of irq_set_affinity_hint(irq, NULL);
-> 
-> git grep -A 1 irq_set_affinity_hint | grep NULL | wc -l
-> 26
-> 
-> You may need to add check ...in irq_set_affinity_hint()
+ struct sdhci_tegra_soc_data {
+ 	const struct sdhci_pltfm_data *pdata;
+@@ -67,6 +68,31 @@ static u16 tegra_sdhci_readw(struct sdhci_host *host, int reg)
+ 	return readw(host->ioaddr + reg);
+ }
+ 
++static void tegra_sdhci_writew(struct sdhci_host *host, u16 val, int reg)
++{
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_tegra *tegra_host = pltfm_host->priv;
++	const struct sdhci_tegra_soc_data *soc_data = tegra_host->soc_data;
++
++	if (soc_data->nvquirks & NVQUIRK_SHADOW_XFER_MODE_REG) {
++		switch (reg) {
++		case SDHCI_TRANSFER_MODE:
++			/*
++			 * Postpone this write, we must do it together with a
++			 * command write that is down below.
++			 */
++			pltfm_host->xfer_mode_shadow = val;
++			return;
++		case SDHCI_COMMAND:
++			writel((val << 16) | pltfm_host->xfer_mode_shadow,
++				host->ioaddr + SDHCI_TRANSFER_MODE);
++			return;
++		}
++	}
++
++	writew(val, host->ioaddr + reg);
++}
++
+ static void tegra_sdhci_writel(struct sdhci_host *host, u32 val, int reg)
+ {
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+@@ -147,6 +173,7 @@ static void tegra_sdhci_set_bus_width(struct sdhci_host *host, int bus_width)
+ static const struct sdhci_ops tegra_sdhci_ops = {
+ 	.get_ro     = tegra_sdhci_get_ro,
+ 	.read_w     = tegra_sdhci_readw,
++	.write_w    = tegra_sdhci_writew,
+ 	.write_l    = tegra_sdhci_writel,
+ 	.set_clock  = sdhci_set_clock,
+ 	.set_bus_width = tegra_sdhci_set_bus_width,
+@@ -201,7 +228,8 @@ static struct sdhci_tegra_soc_data soc_data_tegra114 = {
+ 	.pdata = &sdhci_tegra114_pdata,
+ 	.nvquirks = NVQUIRK_DISABLE_SDR50 |
+ 		    NVQUIRK_DISABLE_DDR50 |
+-		    NVQUIRK_DISABLE_SDR104,
++		    NVQUIRK_DISABLE_SDR104 |
++		    NVQUIRK_SHADOW_XFER_MODE_REG,
+ };
+ 
+ static const struct of_device_id sdhci_tegra_dt_match[] = {
+-- 
+1.7.9.5
 
-I'm looking at this now.  Thanks for the report.
