@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933587AbbA2DJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:09:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46982 "EHLO
+	id S1763721AbbA2DLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:11:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46978 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965110AbbA2Cg7 (ORCPT
+	with ESMTP id S965075AbbA2Cgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:59 -0500
+	Wed, 28 Jan 2015 21:36:53 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Jaburek <jjaburek@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 136/139] ALSA: usb-audio: extend KEF X300A FU 10 tweak to Arcam rPAC
-Date: Wed, 28 Jan 2015 14:21:19 -0800
-Message-Id: <1422483682-15393-137-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 137/139] mnt: Fix a memory stomp in umount
+Date: Wed, 28 Jan 2015 14:21:20 -0800
+Message-Id: <1422483682-15393-138-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -27,62 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Jaburek <jjaburek@redhat.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit d70a1b9893f820fdbcdffac408c909c50f2e6b43 upstream.
+commit c297abfdf15b4480704d6b566ca5ca9438b12456 upstream.
 
-The Arcam rPAC seems to have the same problem - whenever anything
-(alsamixer, udevd, 3.9+ kernel from 60af3d037eb8c, ..) attempts to
-access mixer / control interface of the card, the firmware "locks up"
-the entire device, resulting in
-  SNDRV_PCM_IOCTL_HW_PARAMS failed (-5): Input/output error
-from alsa-lib.
+While reviewing the code of umount_tree I realized that when we append
+to a preexisting unmounted list we do not change pprev of the former
+first item in the list.
 
-Other operating systems can somehow read the mixer (there seems to be
-playback volume/mute), but any manipulation is ignored by the device
-(which has hardware volume controls).
+Which means later in namespace_unlock hlist_del_init(&mnt->mnt_hash) on
+the former first item of the list will stomp unmounted.first leaving
+it set to some random mount point which we are likely to free soon.
 
-Signed-off-by: Jiri Jaburek <jjaburek@redhat.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This isn't likely to hit, but if it does I don't know how anyone could
+track it down.
+
+[ This happened because we don't have all the same operations for
+  hlist's as we do for normal doubly-linked lists. In particular,
+  list_splice() is easy on our standard doubly-linked lists, while
+  hlist_splice() doesn't exist and needs both start/end entries of the
+  hlist.  And commit 38129a13e6e7 incorrectly open-coded that missing
+  hlist_splice().
+
+  We should think about making these kinds of "mindless" conversions
+  easier to get right by adding the missing hlist helpers   - Linus ]
+
+Fixes: 38129a13e6e71f666e0468e99fdd932a687b4d7e switch mnt_hash to hlist
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/mixer_maps.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ fs/namespace.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/sound/usb/mixer_maps.c b/sound/usb/mixer_maps.c
-index 0339d46..4df31b0 100644
---- a/sound/usb/mixer_maps.c
-+++ b/sound/usb/mixer_maps.c
-@@ -322,8 +322,11 @@ static struct usbmix_name_map hercules_usb51_map[] = {
- 	{ 0 }				/* terminator */
- };
- 
--static const struct usbmix_name_map kef_x300a_map[] = {
--	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
-+/* some (all?) SCMS USB3318 devices are affected by a firmware lock up
-+ * when anything attempts to access FU 10 (control)
-+ */
-+static const struct usbmix_name_map scms_usb3318_map[] = {
-+	{ 10, NULL },
- 	{ 0 }
- };
- 
-@@ -415,8 +418,14 @@ static struct usbmix_ctl_map usbmix_ctl_maps[] = {
- 		.map = ebox44_map,
- 	},
- 	{
-+		/* KEF X300A */
- 		.id = USB_ID(0x27ac, 0x1000),
--		.map = kef_x300a_map,
-+		.map = scms_usb3318_map,
-+	},
-+	{
-+		/* Arcam rPAC */
-+		.id = USB_ID(0x25c4, 0x0003),
-+		.map = scms_usb3318_map,
- 	},
- 	{ 0 } /* terminator */
- };
+diff --git a/fs/namespace.c b/fs/namespace.c
+index a67e3c0..289c216 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1286,6 +1286,8 @@ void umount_tree(struct mount *mnt, int how)
+ 	}
+ 	if (last) {
+ 		last->mnt_hash.next = unmounted.first;
++		if (unmounted.first)
++			unmounted.first->pprev = &last->mnt_hash.next;
+ 		unmounted.first = tmp_list.first;
+ 		unmounted.first->pprev = &unmounted.first;
+ 	}
 -- 
 1.9.1
 
