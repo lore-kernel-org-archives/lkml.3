@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964987AbbA1Fci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:32:38 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36789 "EHLO mail.kernel.org"
+	id S1760535AbbA1EOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:14:05 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36825 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760466AbbA1EN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:13:57 -0500
+	id S1760501AbbA1EOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:14:01 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Douglas Lehr <dllehr@us.ibm.com>,
-        Anton Blanchard <anton@samba.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 008/177] PCI: Increase IBM ipr SAS Crocodile BARs to at least system page size
-Date: Wed, 28 Jan 2015 12:06:22 +0800
-Message-Id: <1422418236-12852-15-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Eliad Peller <eliad@wizery.com>,
+        Eliad Peller <eliadx.peller@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 08/91] regulatory: add NUL to alpha2
+Date: Wed, 28 Jan 2015 12:06:23 +0800
+Message-Id: <1422418236-12852-16-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,72 +21,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Douglas Lehr <dllehr@us.ibm.com>
+From: Eliad Peller <eliad@wizery.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 9fe373f9997b48fcd6222b95baf4a20c134b587a upstream.
+commit a5fe8e7695dc3f547e955ad2b662e3e72969e506 upstream.
 
-The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.  Due to
-an erratum, setting the SR-IOV page size causes the physical function BARs
-to expand to the system page size.  Since ppc64 uses 64k pages, when Linux
-tries to assign the smaller resource sizes to the now 64k BARs the address
-will be truncated and the BARs will overlap.
+alpha2 is defined as 2-chars array, but is used in multiple
+places as string (e.g. with nla_put_string calls), which
+might leak kernel data.
 
-Force Linux to allocate the resource as a full page, which avoids the
-overlap.
+Solve it by simply adding an extra char for the NULL
+terminator, making such operations safe.
 
-[bhelgaas: print expanded resource, too]
-Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Milton Miller <miltonm@us.ibm.com>
+Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/pci/quirks.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ include/net/regulatory.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 61bc33e..e587d00 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -28,6 +28,7 @@
- #include <linux/ioport.h>
- #include <linux/sched.h>
- #include <linux/ktime.h>
-+#include <linux/mm.h>
- #include <asm/dma.h>	/* isa_dma_bridge_buggy */
- #include "pci.h"
+diff --git a/include/net/regulatory.h b/include/net/regulatory.h
+index a5f7993..8d64abf 100644
+--- a/include/net/regulatory.h
++++ b/include/net/regulatory.h
+@@ -97,7 +97,7 @@ struct ieee80211_reg_rule {
  
-@@ -291,6 +292,25 @@ static void __devinit quirk_citrine(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
- 
-+/*  On IBM Crocodile ipr SAS adapters, expand BAR to system page size */
-+static void quirk_extend_bar_to_page(struct pci_dev *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
-+		struct resource *r = &dev->resource[i];
-+
-+		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
-+			r->end = PAGE_SIZE - 1;
-+			r->start = 0;
-+			r->flags |= IORESOURCE_UNSET;
-+			dev_info(&dev->dev, "expanded BAR %d to page size: %pR\n",
-+				 i, r);
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
-+
- /*
-  *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
-  *  If it's needed, re-allocate the region.
+ struct ieee80211_regdomain {
+ 	u32 n_reg_rules;
+-	char alpha2[2];
++	char alpha2[3];
+ 	u8 dfs_region;
+ 	struct ieee80211_reg_rule reg_rules[];
+ };
 -- 
 1.9.1
 
