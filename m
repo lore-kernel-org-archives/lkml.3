@@ -1,38 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499AbbA2DwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:52:00 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:43365 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716AbbA2BRX (ORCPT
+	id S933785AbbA2CY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:24:57 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:52362 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105AbbA2CYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:17:23 -0500
+	Wed, 28 Jan 2015 21:24:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150128193247.GH2570@ti.com>
-References: <1422260488-380-1-git-send-email-prabhakar.csengg@gmail.com> <20150128193247.GH2570@ti.com>
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Date: Wed, 28 Jan 2015 21:01:04 +0000
-Message-ID: <CA+V-a8vC3Pt+hwYr_3oOgq9DN5NUb=Dh0vWKs9KpsccmSz6TGw@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: AM43xx: hwmod: add VPFE hwmod entries
-To: Benoit Parrot <bparrot@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Darren Etheridge <detheridge@ti.com>, Felipe Balbi <balbi@ti.com>
+In-Reply-To: <20150128174817.GQ19109@linux.vnet.ibm.com>
+References: <cover.1416604491.git.luto@amacapital.net> <7665538633a500255d7da9ca5985547f6a2aa191.1416604491.git.luto@amacapital.net>
+ <54C17139.1040706@oracle.com> <CALCETrWEUXHOaG-WzDkteoMP=6=tAvyNLfrbg=Xf8ybvMumAow@mail.gmail.com>
+ <20150123180455.GA3192@pd.tnic> <CALCETrXA+OKGfxV9M=1AxvBSBPAt_+VmjDH0A+Rq4Ss+tKmTBw@mail.gmail.com>
+ <54C2B396.9090106@oracle.com> <CALCETrXtA-xbec2oGBXW6KUFMY8v=MN2gS5trn1J221OSDDuJA@mail.gmail.com>
+ <CALCETrVN0DyQw+7ArX1zrKJRqSso2py6xH2k7QCS_b6J9a=8Gg@mail.gmail.com> <20150128174817.GQ19109@linux.vnet.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 28 Jan 2015 13:02:33 -0800
+Message-ID: <CALCETrUsas-TGs9sKDV5e7usUXsL+35tZNXRN6dhbXQFTWfq+w@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Borislav Petkov <bp@alien8.de>,
+        X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tony Luck <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
-
-On Wed, Jan 28, 2015 at 7:32 PM, Benoit Parrot <bparrot@ti.com> wrote:
-> Suspend/resume is functional with this patch.
+On Wed, Jan 28, 2015 at 9:48 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Jan 28, 2015 at 08:33:06AM -0800, Andy Lutomirski wrote:
+>> On Fri, Jan 23, 2015 at 5:25 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> > On Fri, Jan 23, 2015 at 12:48 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>> >> On 01/23/2015 01:34 PM, Andy Lutomirski wrote:
+>> >>> On Fri, Jan 23, 2015 at 10:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+>> >>>> On Fri, Jan 23, 2015 at 09:58:01AM -0800, Andy Lutomirski wrote:
+>> >>>>>> [  543.999079] Call Trace:
+>> >>>>>> [  543.999079] dump_stack (lib/dump_stack.c:52)
+>> >>>>>> [  543.999079] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4259)
+>> >>>>>> [  543.999079] atomic_notifier_call_chain (include/linux/rcupdate.h:892 kernel/notifier.c:182 kernel/notifier.c:193)
+>> >>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:192)
+>> >>>>>> [  543.999079] notify_die (kernel/notifier.c:538)
+>> >>>>>> [  543.999079] ? atomic_notifier_call_chain (kernel/notifier.c:538)
+>> >>>>>> [  543.999079] ? debug_smp_processor_id (lib/smp_processor_id.c:57)
+>> >>>>>> [  543.999079] do_debug (arch/x86/kernel/traps.c:652)
+>> >>>>>> [  543.999079] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
+>> >>>>>> [  543.999079] ? do_int3 (arch/x86/kernel/traps.c:610)
+>> >>>>>> [  543.999079] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2554 kernel/locking/lockdep.c:2601)
+>> >>>>>> [  543.999079] debug (arch/x86/kernel/entry_64.S:1310)
+>> >>>>>
+>> >>>>> I don't know how to read this stack trace.  Are we in do_int3,
+>> >>>>> do_debug, or both?  I didn't change do_debug at all.
+>> >>>>
+>> >>>> It looks like we're in do_debug. do_int3 is only on the stack but not
+>> >>>> part of the current frame if I can trust the '?' ...
+>> >>>>
+>> >>>
+>> >>> It's possible that an int3 happened and I did something wrong on
+>> >>> return that caused a subsequent do_debug to screw up, but I don't see
+>> >>> how my patch would have caused that.
+>> >>>
+>> >>> Were there any earlier log messages?
+>> >>
+>> >> Nope, nothing odd before or after.
+>> >
+>> > Trinity just survived for a decent amount of time for me with my
+>> > patches, other than a bunch of apparently expected OOM kills.  I have
+>> > no idea how to tell trinity how much memory to use.
+>>
+>> A longer trinity run on a larger VM survived (still with some OOM
+>> kills, but no taint) with these patches.  I suspect that it's a
+>> regression somewhere else in the RCU changes.  I have
+>> CONFIG_PROVE_RCU=y, so I should have seen the failure if it was there,
+>> I think.
 >
-> Tested-by: Benoit Parrot <bparrot@ti.com>
+> If by "RCU changes" you mean my changes to the RCU infrastructure, I am
+> going to need more of a hint than I see in this thread thus far.  ;-)
 >
-Thanks for the test, I was facing issues with loading the pm firmware.
 
-Cheers,
---Prabhakar Lad
+I can't help much, since I can't reproduce the problem.  Presumably if
+it's a bug in -tip, someone else will trigger it, too.
+
+--Andy
