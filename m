@@ -1,202 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759950AbbA1EIa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:08:30 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:46969 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226AbbA1EGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:06:32 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 linux-trace 7/8] tracing: attach eBPF programs to kprobe/kretprobe
-Date: Tue, 27 Jan 2015 20:06:12 -0800
-Message-Id: <1422417973-10195-8-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
-References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
+	id S965115AbbA1Fet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:34:49 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36633 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759122AbbA1EN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:13:29 -0500
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 003/177] UBIFS: fix a race condition
+Date: Wed, 28 Jan 2015 12:06:12 +0800
+Message-Id: <1422418236-12852-5-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-introduce new type of eBPF programs BPF_PROG_TYPE_KPROBE_FILTER.
-Such programs are allowed to call the same helper functions
-as tracing filters, but bpf_context is different:
-For tracing filters bpf_context is 6 arguments of tracepoints or syscalls
-For kprobe filters bpf_context == pt_regs
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+
+commit 052c28073ff26f771d44ef33952a41d18dadd255 upstream.
+
+Hu (hujianyang@huawei.com) discovered a race condition which may lead to a
+situation when UBIFS is unable to mount the file-system after an unclean
+reboot. The problem is theoretical, though.
+
+In UBIFS, we have the log, which basically a set of LEBs in a certain area. The
+log has the tail and the head.
+
+Every time user writes data to the file-system, the UBIFS journal grows, and
+the log grows as well, because we append new reference nodes to the head of the
+log. So the head moves forward all the time, while the log tail stays at the
+same position.
+
+At any time, the UBIFS master node points to the tail of the log. When we mount
+the file-system, we scan the log, and we always start from its tail, because
+this is where the master node points to. The only occasion when the tail of the
+log changes is the commit operation.
+
+The commit operation has 2 phases - "commit start" and "commit end". The former
+is relatively short, and does not involve much I/O. During this phase we mostly
+just build various in-memory lists of the things which have to be written to
+the flash media during "commit end" phase.
+
+During the commit start phase, what we do is we "clean" the log. Indeed, the
+commit operation will index all the data in the journal, so the entire journal
+"disappears", and therefore the data in the log become unneeded. So we just
+move the head of the log to the next LEB, and write the CS node there. This LEB
+will be the tail of the new log when the commit operation finishes.
+
+When the "commit start" phase finishes, users may write more data to the
+file-system, in parallel with the ongoing "commit end" operation. At this point
+the log tail was not changed yet, it is the same as it had been before we
+started the commit. The log head keeps moving forward, though.
+
+The commit operation now needs to write the new master node, and the new master
+node should point to the new log tail. After this the LEBs between the old log
+tail and the new log tail can be unmapped and re-used again.
+
+And here is the possible problem. We do 2 operations: (a) We first update the
+log tail position in memory (see 'ubifs_log_end_commit()'). (b) And then we
+write the master node (see the big lock of code in 'do_commit()').
+
+But nothing prevents the log head from moving forward between (a) and (b), and
+the log head may "wrap" now to the old log tail. And when the "wrap" happens,
+the contends of the log tail gets erased. Now a power cut happens and we are in
+trouble. We end up with the old master node pointing to the old tail, which was
+erased. And replay fails because it expects the master node to point to the
+correct log tail at all times.
+
+This patch merges the abovementioned (a) and (b) operations by moving the master
+node change code to the 'ubifs_log_end_commit()' function, so that it runs with
+the log mutex locked, which will prevent the log from being changed benween
+operations (a) and (b).
+
+Reported-by: hujianyang <hujianyang@huawei.com>
+Tested-by: hujianyang <hujianyang@huawei.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- include/linux/ftrace_event.h       |    2 ++
- include/uapi/linux/bpf.h           |    1 +
- kernel/trace/bpf_trace.c           |   39 ++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_events_filter.c |   10 ++++++---
- kernel/trace/trace_kprobe.c        |   11 +++++++++-
- 5 files changed, 59 insertions(+), 4 deletions(-)
+ fs/ubifs/commit.c |  8 +++-----
+ fs/ubifs/log.c    | 11 ++++++++---
+ 2 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 79de230b7df3..b057ca0c5539 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -249,6 +249,7 @@ enum {
- 	TRACE_EVENT_FL_USE_CALL_FILTER_BIT,
- 	TRACE_EVENT_FL_TRACEPOINT_BIT,
- 	TRACE_EVENT_FL_BPF_BIT,
-+	TRACE_EVENT_FL_KPROBE_BIT,
- };
+diff --git a/fs/ubifs/commit.c b/fs/ubifs/commit.c
+index 3920dc1..b2ca12f 100644
+--- a/fs/ubifs/commit.c
++++ b/fs/ubifs/commit.c
+@@ -166,10 +166,6 @@ static int do_commit(struct ubifs_info *c)
+ 	err = ubifs_orphan_end_commit(c);
+ 	if (err)
+ 		goto out;
+-	old_ltail_lnum = c->ltail_lnum;
+-	err = ubifs_log_end_commit(c, new_ltail_lnum);
+-	if (err)
+-		goto out;
+ 	err = dbg_check_old_index(c, &zroot);
+ 	if (err)
+ 		goto out;
+@@ -202,7 +198,9 @@ static int do_commit(struct ubifs_info *c)
+ 		c->mst_node->flags |= cpu_to_le32(UBIFS_MST_NO_ORPHS);
+ 	else
+ 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
+-	err = ubifs_write_master(c);
++
++	old_ltail_lnum = c->ltail_lnum;
++	err = ubifs_log_end_commit(c, new_ltail_lnum);
+ 	if (err)
+ 		goto out;
  
- /*
-@@ -272,6 +273,7 @@ enum {
- 	TRACE_EVENT_FL_USE_CALL_FILTER	= (1 << TRACE_EVENT_FL_USE_CALL_FILTER_BIT),
- 	TRACE_EVENT_FL_TRACEPOINT	= (1 << TRACE_EVENT_FL_TRACEPOINT_BIT),
- 	TRACE_EVENT_FL_BPF		= (1 << TRACE_EVENT_FL_BPF_BIT),
-+	TRACE_EVENT_FL_KPROBE		= (1 << TRACE_EVENT_FL_KPROBE_BIT),
- };
+diff --git a/fs/ubifs/log.c b/fs/ubifs/log.c
+index f9fd068..7ed9a37 100644
+--- a/fs/ubifs/log.c
++++ b/fs/ubifs/log.c
+@@ -453,9 +453,9 @@ out:
+  * @ltail_lnum: new log tail LEB number
+  *
+  * This function is called on when the commit operation was finished. It
+- * moves log tail to new position and unmaps LEBs which contain obsolete data.
+- * Returns zero in case of success and a negative error code in case of
+- * failure.
++ * moves log tail to new position and updates the master node so that it stores
++ * the new log tail LEB number. Returns zero in case of success and a negative
++ * error code in case of failure.
+  */
+ int ubifs_log_end_commit(struct ubifs_info *c, int ltail_lnum)
+ {
+@@ -483,7 +483,12 @@ int ubifs_log_end_commit(struct ubifs_info *c, int ltail_lnum)
+ 	spin_unlock(&c->buds_lock);
  
- struct ftrace_event_call {
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index 227a4e404726..974932b8b5c6 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -119,6 +119,7 @@ enum bpf_prog_type {
- 	BPF_PROG_TYPE_UNSPEC,
- 	BPF_PROG_TYPE_SOCKET_FILTER,
- 	BPF_PROG_TYPE_TRACING_FILTER,
-+	BPF_PROG_TYPE_KPROBE_FILTER,
- };
+ 	err = dbg_check_bud_bytes(c);
++	if (err)
++		goto out;
  
- /* flags for BPF_MAP_UPDATE_ELEM command */
-diff --git a/kernel/trace/bpf_trace.c b/kernel/trace/bpf_trace.c
-index 1c07f55702d6..0fc50d3ecde1 100644
---- a/kernel/trace/bpf_trace.c
-+++ b/kernel/trace/bpf_trace.c
-@@ -137,3 +137,42 @@ static int __init register_tracing_filter_ops(void)
- 	return 0;
- }
- late_initcall(register_tracing_filter_ops);
++	err = ubifs_write_master(c);
 +
-+/* check access to fields of 'struct pt_regs' from BPF program */
-+static bool kprobe_filter_is_valid_access(int off, int size, enum bpf_access_type type)
-+{
-+	/* check bounds */
-+	if (off < 0 || off >= sizeof(struct pt_regs))
-+		return false;
-+
-+	/* only read is allowed */
-+	if (type != BPF_READ)
-+		return false;
-+
-+	/* disallow misaligned access */
-+	if (off % size != 0)
-+		return false;
-+
-+	return true;
-+}
-+/* kprobe filter programs are allowed to call the same helper functions
-+ * as tracing filters, but bpf_context is different:
-+ * For tracing filters bpf_context is 6 arguments of tracepoints or syscalls
-+ * For kprobe filters bpf_context == pt_regs
-+ */
-+static struct bpf_verifier_ops kprobe_filter_ops = {
-+	.get_func_proto = tracing_filter_func_proto,
-+	.is_valid_access = kprobe_filter_is_valid_access,
-+};
-+
-+static struct bpf_prog_type_list kprobe_tl = {
-+	.ops = &kprobe_filter_ops,
-+	.type = BPF_PROG_TYPE_KPROBE_FILTER,
-+};
-+
-+static int __init register_kprobe_filter_ops(void)
-+{
-+	bpf_register_prog_type(&kprobe_tl);
-+	return 0;
-+}
-+late_initcall(register_kprobe_filter_ops);
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index e0303b3cc9fb..e4a0268f2810 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -1894,7 +1894,8 @@ static int create_filter_start(char *filter_str, bool set_str,
++out:
+ 	mutex_unlock(&c->log_mutex);
  	return err;
  }
- 
--static int create_filter_bpf(char *filter_str, struct event_filter **filterp)
-+static int create_filter_bpf(struct ftrace_event_call *call, char *filter_str,
-+			     struct event_filter **filterp)
- {
- 	struct event_filter *filter;
- 	struct bpf_prog *prog;
-@@ -1923,7 +1924,10 @@ static int create_filter_bpf(char *filter_str, struct event_filter **filterp)
- 
- 	filter->prog = prog;
- 
--	if (prog->aux->prog_type != BPF_PROG_TYPE_TRACING_FILTER) {
-+	if (((call->flags & TRACE_EVENT_FL_KPROBE) &&
-+	     prog->aux->prog_type != BPF_PROG_TYPE_KPROBE_FILTER) ||
-+	    (!(call->flags & TRACE_EVENT_FL_KPROBE) &&
-+	     prog->aux->prog_type != BPF_PROG_TYPE_TRACING_FILTER)) {
- 		/* valid fd, but invalid bpf program type */
- 		err = -EINVAL;
- 		goto free_filter;
-@@ -2054,7 +2058,7 @@ int apply_event_filter(struct ftrace_event_file *file, char *filter_string)
- 	 */
- 	if (memcmp(filter_string, "bpf", 3) == 0 && filter_string[3] != 0 &&
- 	    filter_string[4] != 0) {
--		err = create_filter_bpf(filter_string, &filter);
-+		err = create_filter_bpf(call, filter_string, &filter);
- 		if (!err)
- 			file->flags |= TRACE_EVENT_FL_BPF;
- 	} else {
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 5edb518be345..ec62dd8cb35f 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -19,6 +19,7 @@
- 
- #include <linux/module.h>
- #include <linux/uaccess.h>
-+#include <trace/bpf_trace.h>
- 
- #include "trace_probe.h"
- 
-@@ -930,6 +931,10 @@ __kprobe_trace_func(struct trace_kprobe *tk, struct pt_regs *regs,
- 	if (ftrace_trigger_soft_disabled(ftrace_file))
- 		return;
- 
-+	if (ftrace_file->flags & TRACE_EVENT_FL_BPF)
-+		if (!trace_filter_call_bpf(ftrace_file->filter, regs))
-+			return;
-+
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
-@@ -978,6 +983,10 @@ __kretprobe_trace_func(struct trace_kprobe *tk, struct kretprobe_instance *ri,
- 	if (ftrace_trigger_soft_disabled(ftrace_file))
- 		return;
- 
-+	if (ftrace_file->flags & TRACE_EVENT_FL_BPF)
-+		if (!trace_filter_call_bpf(ftrace_file->filter, regs))
-+			return;
-+
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
-@@ -1286,7 +1295,7 @@ static int register_kprobe_event(struct trace_kprobe *tk)
- 		kfree(call->print_fmt);
- 		return -ENODEV;
- 	}
--	call->flags = 0;
-+	call->flags = TRACE_EVENT_FL_KPROBE;
- 	call->class->reg = kprobe_register;
- 	call->data = tk;
- 	ret = trace_add_event_call(call);
 -- 
-1.7.9.5
+1.9.1
 
