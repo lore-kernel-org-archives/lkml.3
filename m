@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965359AbbA1E01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:26:27 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41429 "EHLO mail.kernel.org"
+	id S965504AbbA1E26 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:28:58 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41445 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965327AbbA1E0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:26:23 -0500
+	id S965349AbbA1E00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:26:26 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@nsn.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 169/177] MIPS: oprofile: Fix backtrace on 64-bit kernel
-Date: Wed, 28 Jan 2015 12:10:27 +0800
-Message-Id: <1422418236-12852-260-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 170/177] x86_64, traps: Stop using IST for #SS
+Date: Wed, 28 Jan 2015 12:10:28 +0800
+Message-Id: <1422418236-12852-261-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,40 +21,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaro Koskinen <aaro.koskinen@nsn.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit bbaf113a481b6ce32444c125807ad3618643ce57 upstream.
+commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
 
-Fix incorrect cast that always results in wrong address for the new
-frame on 64-bit kernels.
+On a 32-bit kernel, this has no effect, since there are no IST stacks.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/8110/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+On a 64-bit kernel, #SS can only happen in user code, on a failed iret
+to user space, a canonical violation on access via RSP or RBP, or a
+genuine stack segment violation in 32-bit kernel code.  The first two
+cases don't need IST, and the latter two cases are unlikely fatal bugs,
+and promoting them to double faults would be fine.
+
+This fixes a bug in which the espfix64 code mishandles a stack segment
+violation.
+
+This saves 4k of memory per CPU and a tiny bit of code.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - No need to define trace_stack_segment
+ - Use the errorentry macro to generate #SS asm code
+ - Adjust context
+ - Checked that this matches Luis's backport for Ubuntu]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/mips/oprofile/backtrace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/page_32_types.h |  1 -
+ arch/x86/include/asm/page_64_types.h | 11 +++++------
+ arch/x86/kernel/dumpstack_64.c       |  1 -
+ arch/x86/kernel/entry_64.S           |  2 +-
+ arch/x86/kernel/traps.c              | 14 +-------------
+ 5 files changed, 7 insertions(+), 22 deletions(-)
 
-diff --git a/arch/mips/oprofile/backtrace.c b/arch/mips/oprofile/backtrace.c
-index 6854ed5..83a1dfd 100644
---- a/arch/mips/oprofile/backtrace.c
-+++ b/arch/mips/oprofile/backtrace.c
-@@ -92,7 +92,7 @@ static inline int unwind_user_frame(struct stackframe *old_frame,
- 				/* This marks the end of the previous function,
- 				   which means we overran. */
- 				break;
--			stack_size = (unsigned) stack_adjustment;
-+			stack_size = (unsigned long) stack_adjustment;
- 		} else if (is_ra_save_ins(&ip)) {
- 			int ra_slot = ip.i_format.simmediate;
- 			if (ra_slot < 0)
+diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
+index ade619f..88dae6b3 100644
+--- a/arch/x86/include/asm/page_32_types.h
++++ b/arch/x86/include/asm/page_32_types.h
+@@ -18,7 +18,6 @@
+ #define THREAD_ORDER	1
+ #define THREAD_SIZE 	(PAGE_SIZE << THREAD_ORDER)
+ 
+-#define STACKFAULT_STACK 0
+ #define DOUBLEFAULT_STACK 1
+ #define NMI_STACK 0
+ #define DEBUG_STACK 0
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 7639dbf..a9e9937 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -14,12 +14,11 @@
+ #define IRQ_STACK_ORDER 2
+ #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+ 
+-#define STACKFAULT_STACK 1
+-#define DOUBLEFAULT_STACK 2
+-#define NMI_STACK 3
+-#define DEBUG_STACK 4
+-#define MCE_STACK 5
+-#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
++#define DOUBLEFAULT_STACK 1
++#define NMI_STACK 2
++#define DEBUG_STACK 3
++#define MCE_STACK 4
++#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
+ 
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+ #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 17107bd..e820606 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
+ 		[ DEBUG_STACK-1			]	= "#DB",
+ 		[ NMI_STACK-1			]	= "NMI",
+ 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+-		[ STACKFAULT_STACK-1		]	= "#SS",
+ 		[ MCE_STACK-1			]	= "#MC",
+ #if DEBUG_STKSZ > EXCEPTION_STKSZ
+ 		[ N_EXCEPTION_STACKS ...
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 42b055e..07db230 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1431,7 +1431,7 @@ apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
+ 
+ paranoidzeroentry_ist debug do_debug DEBUG_STACK
+ paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
+-paranoiderrorentry stack_segment do_stack_segment
++errorentry stack_segment do_stack_segment
+ #ifdef CONFIG_XEN
+ zeroentry xen_debug do_debug
+ zeroentry xen_int3 do_int3
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index ff9281f1..a4643d2 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -213,24 +213,12 @@ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "coprocessor segment overrun",
+ 		coprocessor_segment_overrun)
+ DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
+ DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
+-#ifdef CONFIG_X86_32
+ DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
+-#endif
+ DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
+ 		BUS_ADRALN, 0)
+ 
+ #ifdef CONFIG_X86_64
+ /* Runs on IST stack */
+-dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+-{
+-	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
+-			X86_TRAP_SS, SIGBUS) == NOTIFY_STOP)
+-		return;
+-	preempt_conditional_sti(regs);
+-	do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
+-	preempt_conditional_cli(regs);
+-}
+-
+ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ {
+ 	static const char str[] = "double fault";
+@@ -694,7 +682,7 @@ void __init trap_init(void)
+ 	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
+ 	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
+ 	set_intr_gate(X86_TRAP_NP, &segment_not_present);
+-	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
++	set_intr_gate(X86_TRAP_SS, stack_segment);
+ 	set_intr_gate(X86_TRAP_GP, &general_protection);
+ 	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
+ 	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
 -- 
 1.9.1
 
