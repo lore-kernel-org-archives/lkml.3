@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760694AbbA1Bw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:52:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
+	id S1760638AbbA1Bvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:51:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41534 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760257AbbA1Bic (ORCPT
+	with ESMTP id S933322AbbA1Bic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 55/77] mm: page_alloc: reduce number of times page_to_pfn is called
-Date: Tue, 27 Jan 2015 17:27:33 -0800
-Message-Id: <20150128012747.619157854@linuxfoundation.org>
+Subject: [PATCH 3.14 56/77] mm: page_alloc: convert hot/cold parameter and immediate callers to bool
+Date: Tue, 27 Jan 2015 17:27:34 -0800
+Message-Id: <20150128012747.649115403@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -38,14 +38,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit dc4b0caff24d9b2918e9f27bc65499ee63187eba upstream.
+commit b745bc85f21ea707e4ea1a91948055fa3e72c77b upstream.
 
-In the free path we calculate page_to_pfn multiple times. Reduce that.
+cold is a bool, make it one.  Make the likely case the "if" part of the
+block instead of the else as according to the optimisation manual this is
+preferred.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Hugh Dickins <hughd@google.com>
@@ -60,218 +62,206 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h          |    9 +++++++--
- include/linux/pageblock-flags.h |   33 +++++++++++++--------------------
- mm/page_alloc.c                 |   34 +++++++++++++++++++---------------
- 3 files changed, 39 insertions(+), 37 deletions(-)
+ arch/tile/mm/homecache.c |    2 +-
+ fs/fuse/dev.c            |    2 +-
+ include/linux/gfp.h      |    4 ++--
+ include/linux/pagemap.h  |    2 +-
+ include/linux/swap.h     |    2 +-
+ mm/page_alloc.c          |   20 ++++++++++----------
+ mm/swap.c                |    4 ++--
+ mm/swap_state.c          |    2 +-
+ mm/vmscan.c              |    6 +++---
+ 9 files changed, 22 insertions(+), 22 deletions(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -78,10 +78,15 @@ extern int page_group_by_mobility_disabl
- #define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
- #define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
+--- a/arch/tile/mm/homecache.c
++++ b/arch/tile/mm/homecache.c
+@@ -417,7 +417,7 @@ void __homecache_free_pages(struct page
+ 	if (put_page_testzero(page)) {
+ 		homecache_change_page_home(page, order, PAGE_HOME_HASH);
+ 		if (order == 0) {
+-			free_hot_cold_page(page, 0);
++			free_hot_cold_page(page, false);
+ 		} else {
+ 			init_page_count(page);
+ 			__free_pages(page, order);
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1614,7 +1614,7 @@ out_finish:
  
--static inline int get_pageblock_migratetype(struct page *page)
-+#define get_pageblock_migratetype(page)					\
-+	get_pfnblock_flags_mask(page, page_to_pfn(page),		\
-+			PB_migrate_end, MIGRATETYPE_MASK)
-+
-+static inline int get_pfnblock_migratetype(struct page *page, unsigned long pfn)
+ static void fuse_retrieve_end(struct fuse_conn *fc, struct fuse_req *req)
  {
- 	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
--	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
-+	return get_pfnblock_flags_mask(page, pfn, PB_migrate_end,
-+					MIGRATETYPE_MASK);
+-	release_pages(req->pages, req->num_pages, 0);
++	release_pages(req->pages, req->num_pages, false);
  }
  
- struct free_area {
---- a/include/linux/pageblock-flags.h
-+++ b/include/linux/pageblock-flags.h
-@@ -65,33 +65,26 @@ extern int pageblock_order;
- /* Forward declaration */
- struct page;
+ static int fuse_retrieve(struct fuse_conn *fc, struct inode *inode,
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -369,8 +369,8 @@ void *alloc_pages_exact_nid(int nid, siz
  
--unsigned long get_pageblock_flags_mask(struct page *page,
-+unsigned long get_pfnblock_flags_mask(struct page *page,
-+				unsigned long pfn,
- 				unsigned long end_bitidx,
- 				unsigned long mask);
--void set_pageblock_flags_mask(struct page *page,
-+
-+void set_pfnblock_flags_mask(struct page *page,
- 				unsigned long flags,
-+				unsigned long pfn,
- 				unsigned long end_bitidx,
- 				unsigned long mask);
+ extern void __free_pages(struct page *page, unsigned int order);
+ extern void free_pages(unsigned long addr, unsigned int order);
+-extern void free_hot_cold_page(struct page *page, int cold);
+-extern void free_hot_cold_page_list(struct list_head *list, int cold);
++extern void free_hot_cold_page(struct page *page, bool cold);
++extern void free_hot_cold_page_list(struct list_head *list, bool cold);
  
- /* Declarations for getting and setting flags. See mm/page_alloc.c */
--static inline unsigned long get_pageblock_flags_group(struct page *page,
--					int start_bitidx, int end_bitidx)
--{
--	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
--	unsigned long mask = (1 << nr_flag_bits) - 1;
--
--	return get_pageblock_flags_mask(page, end_bitidx, mask);
--}
--
--static inline void set_pageblock_flags_group(struct page *page,
--					unsigned long flags,
--					int start_bitidx, int end_bitidx)
--{
--	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
--	unsigned long mask = (1 << nr_flag_bits) - 1;
--
--	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
--}
-+#define get_pageblock_flags_group(page, start_bitidx, end_bitidx) \
-+	get_pfnblock_flags_mask(page, page_to_pfn(page),		\
-+			end_bitidx,					\
-+			(1 << (end_bitidx - start_bitidx + 1)) - 1)
-+#define set_pageblock_flags_group(page, flags, start_bitidx, end_bitidx) \
-+	set_pfnblock_flags_mask(page, flags, page_to_pfn(page),		\
-+			end_bitidx,					\
-+			(1 << (end_bitidx - start_bitidx + 1)) - 1)
+ extern void __free_memcg_kmem_pages(struct page *page, unsigned int order);
+ extern void free_memcg_kmem_pages(unsigned long addr, unsigned int order);
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -99,7 +99,7 @@ static inline void mapping_set_gfp_mask(
  
- #ifdef CONFIG_COMPACTION
- #define get_pageblock_skip(page) \
+ #define page_cache_get(page)		get_page(page)
+ #define page_cache_release(page)	put_page(page)
+-void release_pages(struct page **pages, int nr, int cold);
++void release_pages(struct page **pages, int nr, bool cold);
+ 
+ /*
+  * speculatively take a reference to a page.
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -441,7 +441,7 @@ mem_cgroup_uncharge_swapcache(struct pag
+ #define free_page_and_swap_cache(page) \
+ 	page_cache_release(page)
+ #define free_pages_and_swap_cache(pages, nr) \
+-	release_pages((pages), (nr), 0);
++	release_pages((pages), (nr), false);
+ 
+ static inline void show_swap_cache_info(void)
+ {
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -560,6 +560,7 @@ static inline int page_is_buddy(struct p
+@@ -1210,7 +1210,7 @@ retry_reserve:
   */
- 
- static inline void __free_one_page(struct page *page,
-+		unsigned long pfn,
- 		struct zone *zone, unsigned int order,
- 		int migratetype)
+ static int rmqueue_bulk(struct zone *zone, unsigned int order,
+ 			unsigned long count, struct list_head *list,
+-			int migratetype, int cold)
++			int migratetype, bool cold)
  {
-@@ -576,7 +577,7 @@ static inline void __free_one_page(struc
+ 	int i;
  
- 	VM_BUG_ON(migratetype == -1);
+@@ -1229,7 +1229,7 @@ static int rmqueue_bulk(struct zone *zon
+ 		 * merge IO requests if the physical pages are ordered
+ 		 * properly.
+ 		 */
+-		if (likely(cold == 0))
++		if (likely(!cold))
+ 			list_add(&page->lru, list);
+ 		else
+ 			list_add_tail(&page->lru, list);
+@@ -1390,9 +1390,9 @@ void mark_free_pages(struct zone *zone)
  
--	page_idx = page_to_pfn(page) & ((1 << MAX_ORDER) - 1);
-+	page_idx = pfn & ((1 << MAX_ORDER) - 1);
- 
- 	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
- 	VM_BUG_ON_PAGE(bad_range(zone, page), page);
-@@ -711,7 +712,7 @@ static void free_pcppages_bulk(struct zo
- 			list_del(&page->lru);
- 			mt = get_freepage_migratetype(page);
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
--			__free_one_page(page, zone, 0, mt);
-+			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
- 			trace_mm_page_pcpu_drain(page, 0, mt);
- 			if (likely(!is_migrate_isolate_page(page))) {
- 				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
-@@ -723,13 +724,15 @@ static void free_pcppages_bulk(struct zo
- 	spin_unlock(&zone->lock);
- }
- 
--static void free_one_page(struct zone *zone, struct page *page, unsigned int order,
-+static void free_one_page(struct zone *zone,
-+				struct page *page, unsigned long pfn,
-+				unsigned int order,
- 				int migratetype)
+ /*
+  * Free a 0-order page
+- * cold == 1 ? free a cold page : free a hot page
++ * cold == true ? free a cold page : free a hot page
+  */
+-void free_hot_cold_page(struct page *page, int cold)
++void free_hot_cold_page(struct page *page, bool cold)
  {
- 	spin_lock(&zone->lock);
- 	zone->pages_scanned = 0;
- 
--	__free_one_page(page, zone, order, migratetype);
-+	__free_one_page(page, pfn, zone, order, migratetype);
- 	if (unlikely(!is_migrate_isolate(migratetype)))
- 		__mod_zone_freepage_state(zone, 1 << order, migratetype);
- 	spin_unlock(&zone->lock);
-@@ -766,15 +769,16 @@ static void __free_pages_ok(struct page
- {
- 	unsigned long flags;
- 	int migratetype;
-+	unsigned long pfn = page_to_pfn(page);
- 
- 	if (!free_pages_prepare(page, order))
- 		return;
- 
- 	local_irq_save(flags);
- 	__count_vm_events(PGFREE, 1 << order);
--	migratetype = get_pageblock_migratetype(page);
-+	migratetype = get_pfnblock_migratetype(page, pfn);
- 	set_freepage_migratetype(page, migratetype);
--	free_one_page(page_zone(page), page, order, migratetype);
-+	free_one_page(page_zone(page), page, pfn, order, migratetype);
- 	local_irq_restore(flags);
- }
- 
-@@ -1393,12 +1397,13 @@ void free_hot_cold_page(struct page *pag
  	struct zone *zone = page_zone(page);
  	struct per_cpu_pages *pcp;
- 	unsigned long flags;
-+	unsigned long pfn = page_to_pfn(page);
- 	int migratetype;
+@@ -1424,10 +1424,10 @@ void free_hot_cold_page(struct page *pag
+ 	}
  
- 	if (!free_pages_prepare(page, 0))
- 		return;
- 
--	migratetype = get_pageblock_migratetype(page);
-+	migratetype = get_pfnblock_migratetype(page, pfn);
- 	set_freepage_migratetype(page, migratetype);
- 	local_irq_save(flags);
- 	__count_vm_event(PGFREE);
-@@ -1412,7 +1417,7 @@ void free_hot_cold_page(struct page *pag
- 	 */
- 	if (migratetype >= MIGRATE_PCPTYPES) {
- 		if (unlikely(is_migrate_isolate(migratetype))) {
--			free_one_page(zone, page, 0, migratetype);
-+			free_one_page(zone, page, pfn, 0, migratetype);
- 			goto out;
- 		}
- 		migratetype = MIGRATE_MOVABLE;
-@@ -6068,17 +6073,16 @@ static inline int pfn_to_bitidx(struct z
-  * @end_bitidx: The last bit of interest
-  * returns pageblock_bits flags
+ 	pcp = &this_cpu_ptr(zone->pageset)->pcp;
+-	if (cold)
+-		list_add_tail(&page->lru, &pcp->lists[migratetype]);
+-	else
++	if (!cold)
+ 		list_add(&page->lru, &pcp->lists[migratetype]);
++	else
++		list_add_tail(&page->lru, &pcp->lists[migratetype]);
+ 	pcp->count++;
+ 	if (pcp->count >= pcp->high) {
+ 		unsigned long batch = ACCESS_ONCE(pcp->batch);
+@@ -1442,7 +1442,7 @@ out:
+ /*
+  * Free a list of 0-order pages
   */
--unsigned long get_pageblock_flags_mask(struct page *page,
-+unsigned long get_pfnblock_flags_mask(struct page *page, unsigned long pfn,
- 					unsigned long end_bitidx,
- 					unsigned long mask)
+-void free_hot_cold_page_list(struct list_head *list, int cold)
++void free_hot_cold_page_list(struct list_head *list, bool cold)
  {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long bitidx, word_bitidx;
- 	unsigned long word;
+ 	struct page *page, *next;
  
- 	zone = page_zone(page);
--	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
- 	word_bitidx = bitidx / BITS_PER_LONG;
-@@ -6090,25 +6094,25 @@ unsigned long get_pageblock_flags_mask(s
+@@ -1559,7 +1559,7 @@ struct page *buffered_rmqueue(struct zon
+ {
+ 	unsigned long flags;
+ 	struct page *page;
+-	int cold = !!(gfp_flags & __GFP_COLD);
++	bool cold = ((gfp_flags & __GFP_COLD) != 0);
+ 
+ again:
+ 	if (likely(order == 0)) {
+@@ -2868,7 +2868,7 @@ void __free_pages(struct page *page, uns
+ {
+ 	if (put_page_testzero(page)) {
+ 		if (order == 0)
+-			free_hot_cold_page(page, 0);
++			free_hot_cold_page(page, false);
+ 		else
+ 			__free_pages_ok(page, order);
+ 	}
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -67,7 +67,7 @@ static void __page_cache_release(struct
+ static void __put_single_page(struct page *page)
+ {
+ 	__page_cache_release(page);
+-	free_hot_cold_page(page, 0);
++	free_hot_cold_page(page, false);
  }
  
- /**
-- * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
-+ * set_pfnblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
-  * @page: The page within the block of interest
-  * @start_bitidx: The first bit of interest
-  * @end_bitidx: The last bit of interest
-  * @flags: The flags to set
+ static void __put_compound_page(struct page *page)
+@@ -826,7 +826,7 @@ void lru_add_drain_all(void)
+  * grabbed the page via the LRU.  If it did, give up: shrink_inactive_list()
+  * will free it.
   */
--void set_pageblock_flags_mask(struct page *page, unsigned long flags,
-+void set_pfnblock_flags_mask(struct page *page, unsigned long flags,
-+					unsigned long pfn,
- 					unsigned long end_bitidx,
- 					unsigned long mask)
+-void release_pages(struct page **pages, int nr, int cold)
++void release_pages(struct page **pages, int nr, bool cold)
  {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long bitidx, word_bitidx;
- 	unsigned long old_word, word;
+ 	int i;
+ 	LIST_HEAD(pages_to_free);
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -270,7 +270,7 @@ void free_pages_and_swap_cache(struct pa
  
- 	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
+ 		for (i = 0; i < todo; i++)
+ 			free_swap_cache(pagep[i]);
+-		release_pages(pagep, todo, 0);
++		release_pages(pagep, todo, false);
+ 		pagep += todo;
+ 		nr -= todo;
+ 	}
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1107,7 +1107,7 @@ keep:
+ 		VM_BUG_ON_PAGE(PageLRU(page) || PageUnevictable(page), page);
+ 	}
  
- 	zone = page_zone(page);
--	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
- 	word_bitidx = bitidx / BITS_PER_LONG;
+-	free_hot_cold_page_list(&free_pages, 1);
++	free_hot_cold_page_list(&free_pages, true);
+ 
+ 	list_splice(&ret_pages, page_list);
+ 	count_vm_events(PGACTIVATE, pgactivate);
+@@ -1505,7 +1505,7 @@ shrink_inactive_list(unsigned long nr_to
+ 
+ 	spin_unlock_irq(&zone->lru_lock);
+ 
+-	free_hot_cold_page_list(&page_list, 1);
++	free_hot_cold_page_list(&page_list, true);
+ 
+ 	/*
+ 	 * If reclaim is isolating dirty pages under writeback, it implies
+@@ -1725,7 +1725,7 @@ static void shrink_active_list(unsigned
+ 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
+ 	spin_unlock_irq(&zone->lru_lock);
+ 
+-	free_hot_cold_page_list(&l_hold, 1);
++	free_hot_cold_page_list(&l_hold, true);
+ }
+ 
+ #ifdef CONFIG_SWAP
 
 
