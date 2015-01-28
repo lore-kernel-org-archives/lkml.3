@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964857AbbA1EVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:21:44 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39643 "EHLO mail.kernel.org"
+	id S934737AbbA1EyC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:54:02 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39681 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934199AbbA1EVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:21:39 -0500
+	id S934202AbbA1EVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:21:42 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 083/177] KVM: x86: Handle errors when RIP is set during far jumps
-Date: Wed, 28 Jan 2015 12:08:53 +0800
-Message-Id: <1422418236-12852-166-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 84/91] ipv4: move route garbage collector to work queue
+Date: Wed, 28 Jan 2015 12:08:54 +0800
+Message-Id: <1422418236-12852-167-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,256 +21,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Marcelo Ricardo Leitner <mleitner@redhat.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit d1442d85cc30ea75f7d399474ca738e0bc96f715 upstream.
+Currently the route garbage collector gets called by dst_alloc() if it
+have more entries than the threshold. But it's an expensive call, that
+don't really need to be done by then.
 
-Far jmp/call/ret may fault while loading a new RIP.  Currently KVM does not
-handle this case, and may result in failed vm-entry once the assignment is
-done.  The tricky part of doing so is that loading the new CS affects the
-VMCS/VMCB state, so if we fail during loading the new RIP, we are left in
-unconsistent state.  Therefore, this patch saves on 64-bit the old CS
-descriptor and restores it if loading RIP failed.
+Another issue with current way is that it allows running the garbage
+collector with the same start parameters on multiple CPUs at once, which
+is not optimal. A system may even soft lockup if the cache is big enough
+as the garbage collectors will be fighting over the hash lock entries.
 
-This fixes CVE-2014-3647.
+This patch thus moves the garbage collector to run asynchronously on a
+work queue, much similar to how rt_expire_check runs.
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[lizf: Backported to 3.4:
- - adjust context
- - __load_segment_descriptor() doesn't take in_task_switch parameter]
+There is one condition left that allows multiple executions, which is
+handled by the next patch.
+
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/kvm/emulate.c | 118 ++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 88 insertions(+), 30 deletions(-)
+ net/ipv4/route.c | 43 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 29 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 1089e43..e125c3e 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1252,7 +1252,9 @@ static int write_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index fd68433..90de2f9 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -150,6 +150,9 @@ static void		 ipv4_link_failure(struct sk_buff *skb);
+ static void		 ip_rt_update_pmtu(struct dst_entry *dst, u32 mtu);
+ static int rt_garbage_collect(struct dst_ops *ops);
  
- /* Does not support long mode */
- static int __load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
--				     u16 selector, int seg, u8 cpl)
-+				     u16 selector, int seg, u8 cpl,
-+				     bool in_task_switch,
-+				     struct desc_struct *desc)
++static void __rt_garbage_collect(struct work_struct *w);
++static DECLARE_WORK(rt_gc_worker, __rt_garbage_collect);
++
+ static void ipv4_dst_ifdown(struct dst_entry *dst, struct net_device *dev,
+ 			    int how)
  {
- 	struct desc_struct seg_desc;
- 	u8 dpl, rpl;
-@@ -1362,6 +1364,8 @@ static int __load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+@@ -977,7 +980,7 @@ static void rt_emergency_hash_rebuild(struct net *net)
+    and when load increases it reduces to limit cache size.
+  */
+ 
+-static int rt_garbage_collect(struct dst_ops *ops)
++static void __do_rt_garbage_collect(int elasticity, int min_interval)
+ {
+ 	static unsigned long expire = RT_GC_TIMEOUT;
+ 	static unsigned long last_gc;
+@@ -996,7 +999,7 @@ static int rt_garbage_collect(struct dst_ops *ops)
+ 
+ 	RT_CACHE_STAT_INC(gc_total);
+ 
+-	if (now - last_gc < ip_rt_gc_min_interval &&
++	if (now - last_gc < min_interval &&
+ 	    entries < ip_rt_max_size) {
+ 		RT_CACHE_STAT_INC(gc_ignored);
+ 		goto out;
+@@ -1004,7 +1007,7 @@ static int rt_garbage_collect(struct dst_ops *ops)
+ 
+ 	entries = dst_entries_get_slow(&ipv4_dst_ops);
+ 	/* Calculate number of entries, which we want to expire now. */
+-	goal = entries - (ip_rt_gc_elasticity << rt_hash_log);
++	goal = entries - (elasticity << rt_hash_log);
+ 	if (goal <= 0) {
+ 		if (equilibrium < ipv4_dst_ops.gc_thresh)
+ 			equilibrium = ipv4_dst_ops.gc_thresh;
+@@ -1021,7 +1024,7 @@ static int rt_garbage_collect(struct dst_ops *ops)
+ 		equilibrium = entries - goal;
  	}
- load:
- 	ctxt->ops->set_segment(ctxt, selector, &seg_desc, 0, seg);
-+	if (desc)
-+		*desc = seg_desc;
- 	return X86EMUL_CONTINUE;
- exception:
- 	emulate_exception(ctxt, err_vec, err_code, true);
-@@ -1372,7 +1376,7 @@ static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
- 				   u16 selector, int seg)
- {
- 	u8 cpl = ctxt->ops->cpl(ctxt);
--	return __load_segment_descriptor(ctxt, selector, seg, cpl);
-+	return __load_segment_descriptor(ctxt, selector, seg, cpl, false, NULL);
- }
  
- static void write_register_operand(struct operand *op)
-@@ -1714,17 +1718,31 @@ static int em_iret(struct x86_emulate_ctxt *ctxt)
- static int em_jmp_far(struct x86_emulate_ctxt *ctxt)
- {
- 	int rc;
--	unsigned short sel;
-+	unsigned short sel, old_sel;
-+	struct desc_struct old_desc, new_desc;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
-+	u8 cpl = ctxt->ops->cpl(ctxt);
+-	if (now - last_gc >= ip_rt_gc_min_interval)
++	if (now - last_gc >= min_interval)
+ 		last_gc = now;
+ 
+ 	if (goal <= 0) {
+@@ -1086,15 +1089,33 @@ static int rt_garbage_collect(struct dst_ops *ops)
+ 	if (net_ratelimit())
+ 		pr_warn("dst cache overflow\n");
+ 	RT_CACHE_STAT_INC(gc_dst_overflow);
+-	return 1;
++	return;
+ 
+ work_done:
+-	expire += ip_rt_gc_min_interval;
++	expire += min_interval;
+ 	if (expire > ip_rt_gc_timeout ||
+ 	    dst_entries_get_fast(&ipv4_dst_ops) < ipv4_dst_ops.gc_thresh ||
+ 	    dst_entries_get_slow(&ipv4_dst_ops) < ipv4_dst_ops.gc_thresh)
+ 		expire = ip_rt_gc_timeout;
+-out:	return 0;
++out:	return;
++}
 +
-+	/* Assignment of RIP may only fail in 64-bit mode */
-+	if (ctxt->mode == X86EMUL_MODE_PROT64)
-+		ops->get_segment(ctxt, &old_sel, &old_desc, NULL,
-+				 VCPU_SREG_CS);
- 
- 	memcpy(&sel, ctxt->src.valptr + ctxt->op_bytes, 2);
- 
--	rc = load_segment_descriptor(ctxt, sel, VCPU_SREG_CS);
-+	rc = __load_segment_descriptor(ctxt, sel, VCPU_SREG_CS, cpl, false,
-+				       &new_desc);
- 	if (rc != X86EMUL_CONTINUE)
- 		return rc;
- 
--	ctxt->_eip = 0;
--	memcpy(&ctxt->_eip, ctxt->src.valptr, ctxt->op_bytes);
--	return X86EMUL_CONTINUE;
-+	rc = assign_eip_far(ctxt, ctxt->src.val, new_desc.l);
-+	if (rc != X86EMUL_CONTINUE) {
-+		WARN_ON(!ctxt->mode != X86EMUL_MODE_PROT64);
-+		/* assigning eip failed; restore the old cs */
-+		ops->set_segment(ctxt, old_sel, &old_desc, 0, VCPU_SREG_CS);
-+		return rc;
++static void __rt_garbage_collect(struct work_struct *w)
++{
++	__do_rt_garbage_collect(ip_rt_gc_elasticity, ip_rt_gc_min_interval);
++}
++
++static int rt_garbage_collect(struct dst_ops *ops)
++{
++	if (!work_pending(&rt_gc_worker))
++		schedule_work(&rt_gc_worker);
++
++	if (dst_entries_get_fast(&ipv4_dst_ops) >= ip_rt_max_size ||
++	    dst_entries_get_slow(&ipv4_dst_ops) >= ip_rt_max_size) {
++		RT_CACHE_STAT_INC(gc_dst_overflow);
++		return 1;
 +	}
-+	return rc;
++	return 0;
  }
  
- static int em_grp2(struct x86_emulate_ctxt *ctxt)
-@@ -1871,17 +1889,30 @@ static int em_ret(struct x86_emulate_ctxt *ctxt)
- static int em_ret_far(struct x86_emulate_ctxt *ctxt)
- {
- 	int rc;
--	unsigned long cs;
-+	unsigned long eip, cs;
-+	u16 old_cs;
-+	struct desc_struct old_desc, new_desc;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
-+
-+	if (ctxt->mode == X86EMUL_MODE_PROT64)
-+		ops->get_segment(ctxt, &old_cs, &old_desc, NULL,
-+				 VCPU_SREG_CS);
+ /*
+@@ -1288,13 +1309,7 @@ restart:
+ 			   it is most likely it holds some neighbour records.
+ 			 */
+ 			if (attempts-- > 0) {
+-				int saved_elasticity = ip_rt_gc_elasticity;
+-				int saved_int = ip_rt_gc_min_interval;
+-				ip_rt_gc_elasticity	= 1;
+-				ip_rt_gc_min_interval	= 0;
+-				rt_garbage_collect(&ipv4_dst_ops);
+-				ip_rt_gc_min_interval	= saved_int;
+-				ip_rt_gc_elasticity	= saved_elasticity;
++				__do_rt_garbage_collect(1, 0);
+ 				goto restart;
+ 			}
  
--	rc = emulate_pop(ctxt, &ctxt->_eip, ctxt->op_bytes);
-+	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
- 	if (rc != X86EMUL_CONTINUE)
- 		return rc;
--	if (ctxt->op_bytes == 4)
--		ctxt->_eip = (u32)ctxt->_eip;
- 	rc = emulate_pop(ctxt, &cs, ctxt->op_bytes);
- 	if (rc != X86EMUL_CONTINUE)
- 		return rc;
--	rc = load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS);
-+	rc = __load_segment_descriptor(ctxt, (u16)cs, VCPU_SREG_CS, 0, false,
-+				       &new_desc);
-+	if (rc != X86EMUL_CONTINUE)
-+		return rc;
-+	rc = assign_eip_far(ctxt, eip, new_desc.l);
-+	if (rc != X86EMUL_CONTINUE) {
-+		WARN_ON(!ctxt->mode != X86EMUL_MODE_PROT64);
-+		ops->set_segment(ctxt, old_cs, &old_desc, 0, VCPU_SREG_CS);
-+	}
- 	return rc;
- }
- 
-@@ -2296,19 +2327,24 @@ static int load_state_from_tss16(struct x86_emulate_ctxt *ctxt,
- 	 * Now load segment descriptors. If fault happenes at this stage
- 	 * it is handled in a context of new task
- 	 */
--	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
- 
-@@ -2434,25 +2470,32 @@ static int load_state_from_tss32(struct x86_emulate_ctxt *ctxt,
- 	 * Now load segment descriptors. If fault happenes at this stage
- 	 * it is handled in a context of new task
- 	 */
--	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR,
-+					cpl, true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl);
-+	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl,
-+					true, NULL);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
- 
-@@ -2689,24 +2732,39 @@ static int em_call_far(struct x86_emulate_ctxt *ctxt)
- 	u16 sel, old_cs;
- 	ulong old_eip;
- 	int rc;
-+	struct desc_struct old_desc, new_desc;
-+	const struct x86_emulate_ops *ops = ctxt->ops;
-+	int cpl = ctxt->ops->cpl(ctxt);
- 
--	old_cs = get_segment_selector(ctxt, VCPU_SREG_CS);
- 	old_eip = ctxt->_eip;
-+	ops->get_segment(ctxt, &old_cs, &old_desc, NULL, VCPU_SREG_CS);
- 
- 	memcpy(&sel, ctxt->src.valptr + ctxt->op_bytes, 2);
--	if (load_segment_descriptor(ctxt, sel, VCPU_SREG_CS))
-+	rc = __load_segment_descriptor(ctxt, sel, VCPU_SREG_CS, cpl, false,
-+				       &new_desc);
-+	if (rc != X86EMUL_CONTINUE)
- 		return X86EMUL_CONTINUE;
- 
--	ctxt->_eip = 0;
--	memcpy(&ctxt->_eip, ctxt->src.valptr, ctxt->op_bytes);
-+	rc = assign_eip_far(ctxt, ctxt->src.val, new_desc.l);
-+	if (rc != X86EMUL_CONTINUE)
-+		goto fail;
- 
- 	ctxt->src.val = old_cs;
- 	rc = em_push(ctxt);
- 	if (rc != X86EMUL_CONTINUE)
--		return rc;
-+		goto fail;
- 
- 	ctxt->src.val = old_eip;
--	return em_push(ctxt);
-+	rc = em_push(ctxt);
-+	/* If we failed, we tainted the memory, but the very least we should
-+	   restore cs */
-+	if (rc != X86EMUL_CONTINUE)
-+		goto fail;
-+	return rc;
-+fail:
-+	ops->set_segment(ctxt, old_cs, &old_desc, 0, VCPU_SREG_CS);
-+	return rc;
-+
- }
- 
- static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
 -- 
 1.9.1
 
