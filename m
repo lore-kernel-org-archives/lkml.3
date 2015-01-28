@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760679AbbA1Bv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:51:59 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:12992 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759285AbbA1Bv4 (ORCPT
+	id S1760662AbbA1Bvt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:51:49 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:46740 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760640AbbA1Bvq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:51:56 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
-        <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
-        <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v4 13/13] pm: at91: amend the pm_suspend entry for at91_cpuidle_device
-Date: Wed, 28 Jan 2015 09:48:59 +0800
-Message-ID: <1422409739-24707-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
-References: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
+	Tue, 27 Jan 2015 20:51:46 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+To: Marek Vasut <marex@denx.de>, "Zhi Li" <lznuaa@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <201501220039.02073.marex@denx.de>
+Cc: "Stefan Wahren" <stefan.wahren@i2se.com>,
+        "kernel list" <linux-kernel@vger.kernel.org>,
+        "Sascha Hauer" <kernel@pengutronix.de>, harald@ccbib.org,
+        "Shawn Guo" <shawn.guo@linaro.org>,
+        "Fabio Estevam" <festevam@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1419762402-4548-1-git-send-email-stefan.wahren@i2se.com>
+ <CAHrpEqQ-eoqM3W1hYcS6EPTmur1FSfm8TeEjYrtZ+PquavL86w@mail.gmail.com>
+ <201501220039.02073.marex@denx.de>
+Message-ID: <20150128015131.22722.22882@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH V2] clk: mxs: Fix invalid 32-bit access to frac registers
+Date: Tue, 27 Jan 2015 17:51:31 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the at91_xxx_standby() function is substitued by the at91_pm_suspend(),
-the pm_suspend entry for at91_cpuidle_device changes as well.
+Quoting Marek Vasut (2015-01-21 15:39:01)
+> On Wednesday, January 21, 2015 at 05:16:03 PM, Zhi Li wrote:
+> > On Sun, Dec 28, 2014 at 4:26 AM, Stefan Wahren <stefan.wahren@i2se.com> wrote:
+> > > According to i.MX23 and i.MX28 reference manual the fractional
+> > > clock control registers must be addressed by byte instructions.
+> > 
+> > I don't think mx23 and mx28 have such limitation. I will double check
+> > with IC team about this.
+> > RTL is generated from a xml file. All registers implement is unified.
+> > I don't think only clock control register have such limitation and
+> > other registers not.
+> 
+> Hi,
+> 
+> Section 10.8.24 in the MX28 datasheet (Fractional Clock Control Register 0) 
+> states otherwise, but maybe the documentation is simply not matching the
+> silicon.
+> 
+> Here's a quote:
+> "
+> This register controls the 9-phase fractional clock dividers. The fractional 
+> clock frequencies are a product of the values in these registers. NOTE: This 
+> register can only be addressed by byte instructions. Addressing word or half-
+> word are not allowed.
+> "
+> 
+> I also recall seeing weird behavior when these registers were accessed by word
+> access in U-Boot, so I believe the datasheet is correct.
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/pm.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+Hi Frank,
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 144521d..c547038 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -40,8 +40,6 @@ static struct {
- 	int memctrl;
- } at91_pm_data;
- 
--static void (*at91_pm_standby)(void);
--
- static int at91_pm_valid_state(suspend_state_t state)
- {
- 	switch (state) {
-@@ -214,12 +212,15 @@ static struct platform_device at91_cpuidle_device = {
- 	.name = "cpuidle-at91",
- };
- 
--void at91_pm_set_standby(void (*at91_standby)(void))
-+static void at91_cpuidle_suspend(void)
- {
--	if (at91_standby) {
--		at91_cpuidle_device.dev.platform_data = at91_standby;
--		at91_pm_standby = at91_standby;
--	}
-+	at91_pm_suspend(PM_SUSPEND_STANDBY);
-+}
-+
-+static void at91_cpuidle_set_suspend(void (*at91_suspend)(void))
-+{
-+	if (at91_suspend)
-+		at91_cpuidle_device.dev.platform_data = at91_suspend;
- }
- 
- static void __init at91_pm_sram_init(void)
-@@ -270,6 +271,8 @@ static void __init at91_pm_init(void)
- {
- 	at91_pm_sram_init();
- 
-+	at91_cpuidle_set_suspend(at91_cpuidle_suspend);
-+
- 	if (at91_cpuidle_device.dev.platform_data)
- 		platform_device_register(&at91_cpuidle_device);
- 
--- 
-1.7.9.5
+Are you satisfied with this patch?
 
+Regards,
+Mike
+
+> 
+> Best regards,
+> Marek Vasut
