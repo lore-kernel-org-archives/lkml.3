@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761701AbbA1EfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:35:23 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41075 "EHLO mail.kernel.org"
+	id S965210AbbA1EZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:25:30 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41092 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934554AbbA1EZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:25:23 -0500
+	id S934567AbbA1EZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:25:25 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@fb.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 149/177] block: Fix computation of merged request priority
-Date: Wed, 28 Jan 2015 12:10:07 +0800
-Message-Id: <1422418236-12852-240-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 150/177] mac80211: fix use-after-free in defragmentation
+Date: Wed, 28 Jan 2015 12:10:08 +0800
+Message-Id: <1422418236-12852-241-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,58 +20,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Johannes Berg <johannes.berg@intel.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit ece9c72accdc45c3a9484dacb1125ce572647288 upstream.
+commit b8fff407a180286aa683d543d878d98d9fc57b13 upstream.
 
-Priority of a merged request is computed by ioprio_best(). If one of the
-requests has undefined priority (IOPRIO_CLASS_NONE) and another request
-has priority from IOPRIO_CLASS_BE, the function will return the
-undefined priority which is wrong. Fix the function to properly return
-priority of a request with the defined priority.
+Upon receiving the last fragment, all but the first fragment
+are freed, but the multicast check for statistics at the end
+of the function refers to the current skb (the last fragment)
+causing a use-after-free bug.
 
-Fixes: d58cdfb89ce0c6bd5f81ae931a984ef298dbda20
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
-[lizf: Backported to 3.4: adjust filename]
+Since multicast frames cannot be fragmented and we check for
+this early in the function, just modify that check to also
+do the accounting to fix the issue.
+
+Reported-by: Yosef Khyal <yosefx.khyal@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/ioprio.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ net/mac80211/rx.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/ioprio.c b/fs/ioprio.c
-index 0f1b951..0dd6a2a 100644
---- a/fs/ioprio.c
-+++ b/fs/ioprio.c
-@@ -153,14 +153,16 @@ out:
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index f5ed863..32929b0 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1486,11 +1486,14 @@ ieee80211_rx_h_defragment(struct ieee80211_rx_data *rx)
+ 	sc = le16_to_cpu(hdr->seq_ctrl);
+ 	frag = sc & IEEE80211_SCTL_FRAG;
  
- int ioprio_best(unsigned short aprio, unsigned short bprio)
- {
--	unsigned short aclass = IOPRIO_PRIO_CLASS(aprio);
--	unsigned short bclass = IOPRIO_PRIO_CLASS(bprio);
-+	unsigned short aclass;
-+	unsigned short bclass;
+-	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
+-		   is_multicast_ether_addr(hdr->addr1))) {
+-		/* not fragmented */
++	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
++		goto out;
++
++	if (is_multicast_ether_addr(hdr->addr1)) {
++		rx->local->dot11MulticastReceivedFrameCount++;
+ 		goto out;
+ 	}
++
+ 	I802_DEBUG_INC(rx->local->rx_handlers_fragments);
  
--	if (aclass == IOPRIO_CLASS_NONE)
--		aclass = IOPRIO_CLASS_BE;
--	if (bclass == IOPRIO_CLASS_NONE)
--		bclass = IOPRIO_CLASS_BE;
-+	if (!ioprio_valid(aprio))
-+		aprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
-+	if (!ioprio_valid(bprio))
-+		bprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, IOPRIO_NORM);
+ 	if (skb_linearize(rx->skb))
+@@ -1583,10 +1586,7 @@ ieee80211_rx_h_defragment(struct ieee80211_rx_data *rx)
+  out:
+ 	if (rx->sta)
+ 		rx->sta->rx_packets++;
+-	if (is_multicast_ether_addr(hdr->addr1))
+-		rx->local->dot11MulticastReceivedFrameCount++;
+-	else
+-		ieee80211_led_rx(rx->local);
++	ieee80211_led_rx(rx->local);
+ 	return RX_CONTINUE;
+ }
  
-+	aclass = IOPRIO_PRIO_CLASS(aprio);
-+	bclass = IOPRIO_PRIO_CLASS(bprio);
- 	if (aclass == bclass)
- 		return min(aprio, bprio);
- 	if (aclass > bclass)
 -- 
 1.9.1
 
