@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841AbbA1U6g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:58:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755737AbbA1U6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:58:30 -0500
-Message-ID: <54C8B7F8.6070009@redhat.com>
-Date: Wed, 28 Jan 2015 11:20:40 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S932860AbbA2Btq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:49:46 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:53630 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764AbbA2Btn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:49:43 -0500
+Date: Wed, 28 Jan 2015 19:22:08 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: JBottomley@parallels.com
+Cc: hch@lst.de, hare@suse.de, michaelc@cs.wisc.edu, martin.petersen@oracle.com,
+        daeseok.youn@gmail.com, ben@decadent.org.uk,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH] scsi: missing iounmap for mvi->regs_ex
+Message-ID: <20150128102208.GA16509@devel.8.8.4.4>
 MIME-Version: 1.0
-To: Wincy Van <fanwenyi0529@gmail.com>
-CC: "gleb@kernel.org" <gleb@kernel.org>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Subject: Re: [PATCH v3 2/6] KVM: nVMX: Enable nested virtualize x2apic mode.
-References: <CACzj_yXLgAKaRzXx4Y=ZQN=QXK8EnX4fvcSTJmKSXSywN2Kb8Q@mail.gmail.com> <54C804FD.6060108@redhat.com> <CACzj_yUdLy5QjpNTqesWbvR6ytTixszJNNOZvH=bw-SOhrjapw@mail.gmail.com> <54C89044.2090104@redhat.com> <CACzj_yXN5EAHzy_RfYbjgD2a8e4trJ-j78R4vU3Q6+6KbAm=Vw@mail.gmail.com>
-In-Reply-To: <CACzj_yXN5EAHzy_RfYbjgD2a8e4trJ-j78R4vU3Q6+6KbAm=Vw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It also need to call iounmap() when it fails to get res_start and
+res_len from pci_resource_start{len}(pdev, bar).
 
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/scsi/mvsas/mv_init.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-On 28/01/2015 11:19, Wincy Van wrote:
-> > Most of the functions are just used once.  If you want to keep them,
-> > please place them all close to the existing ones.
->
-> Yep, I will inline the functions like nested_vmx_check_virt_x2apic and keep
-> the nested_cpu_has series.
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index 53030b0..2508db2 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -348,15 +348,15 @@ int mvs_ioremap(struct mvs_info *mvi, int bar, int bar_ex)
+ 	else
+ 		mvi->regs = ioremap_nocache(res_start, res_len);
+ 
+-	if (!mvi->regs) {
+-		if (mvi->regs_ex && (res_flag_ex & IORESOURCE_MEM))
+-			iounmap(mvi->regs_ex);
+-		mvi->regs_ex = NULL;
++	if (!mvi->regs)
+ 		goto err_out;
+-	}
+ 
+ 	return 0;
+ err_out:
++	if (mvi->regs_ex && (res_flag_ex & IORESOURCE_MEM))
++		iounmap(mvi->regs_ex);
++	mvi->regs_ex = NULL;
++
+ 	return -1;
+ }
+ 
+-- 
+1.7.1
 
-Okay, thanks!
-
-Paolo
