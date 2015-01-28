@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762290AbbA1FOx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:14:53 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38058 "EHLO mail.kernel.org"
+	id S1761102AbbA1ERa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:17:30 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38093 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761050AbbA1ERV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:17:21 -0500
+	id S1760701AbbA1ERY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:17:24 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Aurelien Jarno <aurelien@aurel32.net>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 42/91] MIPS: ZBOOT: add missing <linux/string.h> include
-Date: Wed, 28 Jan 2015 12:07:30 +0800
-Message-Id: <1422418236-12852-83-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Chao Yu <chao2.yu@samsung.com>,
+        Tyler Hicks <tyhicks@canonical.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 042/177] ecryptfs: avoid to access NULL pointer when write metadata in xattr
+Date: Wed, 28 Jan 2015 12:07:31 +0800
+Message-Id: <1422418236-12852-84-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,59 +20,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aurelien Jarno <aurelien@aurel32.net>
+From: Chao Yu <chao2.yu@samsung.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 29593fd5a8149462ed6fad0d522234facdaee6c8 upstream.
+commit 35425ea2492175fd39f6116481fe98b2b3ddd4ca upstream.
 
-Commit dc4d7b37 (MIPS: ZBOOT: gather string functions into string.c)
-moved the string related functions into a separate file, which might
-cause the following build error, depending on the configuration:
+Christopher Head 2014-06-28 05:26:20 UTC described:
+"I tried to reproduce this on 3.12.21. Instead, when I do "echo hello > foo"
+in an ecryptfs mount with ecryptfs_xattr specified, I get a kernel crash:
 
-| CC      arch/mips/boot/compressed/decompress.o
-| In file included from linux/arch/mips/boot/compressed/../../../../lib/decompress_unxz.c:234:0,
-|                  from linux/arch/mips/boot/compressed/decompress.c:67:
-| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c: In function 'fill_temp':
-| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c:162:2: error: implicit declaration of function 'memcpy' [-Werror=implicit-function-declaration]
-| cc1: some warnings being treated as errors
-| linux/scripts/Makefile.build:308: recipe for target 'arch/mips/boot/compressed/decompress.o' failed
-| make[6]: *** [arch/mips/boot/compressed/decompress.o] Error 1
-| linux/arch/mips/Makefile:308: recipe for target 'vmlinuz' failed
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+PGD d7840067 PUD b2c3c067 PMD 0
+Oops: 0002 [#1] SMP
+Modules linked in: nvidia(PO)
+CPU: 3 PID: 3566 Comm: bash Tainted: P           O 3.12.21-gentoo-r1 #2
+Hardware name: ASUSTek Computer Inc. G60JX/G60JX, BIOS 206 03/15/2010
+task: ffff8801948944c0 ti: ffff8800bad70000 task.ti: ffff8800bad70000
+RIP: 0010:[<ffffffff8110eb39>]  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+RSP: 0018:ffff8800bad71c10  EFLAGS: 00010246
+RAX: 00000000000181a4 RBX: ffff880198648480 RCX: 0000000000000000
+RDX: 0000000000000004 RSI: ffff880172010450 RDI: 0000000000000000
+RBP: ffff880198490e40 R08: 0000000000000000 R09: 0000000000000000
+R10: ffff880172010450 R11: ffffea0002c51e80 R12: 0000000000002000
+R13: 000000000000001a R14: 0000000000000000 R15: ffff880198490e40
+FS:  00007ff224caa700(0000) GS:ffff88019fcc0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 00000000bb07f000 CR4: 00000000000007e0
+Stack:
+ffffffff811826e8 ffff8800a39d8000 0000000000000000 000000000000001a
+ffff8800a01d0000 ffff8800a39d8000 ffffffff81185fd5 ffffffff81082c2c
+00000001a39d8000 53d0abbc98490e40 0000000000000037 ffff8800a39d8220
+Call Trace:
+[<ffffffff811826e8>] ? ecryptfs_setxattr+0x40/0x52
+[<ffffffff81185fd5>] ? ecryptfs_write_metadata+0x1b3/0x223
+[<ffffffff81082c2c>] ? should_resched+0x5/0x23
+[<ffffffff8118322b>] ? ecryptfs_initialize_file+0xaf/0xd4
+[<ffffffff81183344>] ? ecryptfs_create+0xf4/0x142
+[<ffffffff810f8c0d>] ? vfs_create+0x48/0x71
+[<ffffffff810f9c86>] ? do_last.isra.68+0x559/0x952
+[<ffffffff810f7ce7>] ? link_path_walk+0xbd/0x458
+[<ffffffff810fa2a3>] ? path_openat+0x224/0x472
+[<ffffffff810fa7bd>] ? do_filp_open+0x2b/0x6f
+[<ffffffff81103606>] ? __alloc_fd+0xd6/0xe7
+[<ffffffff810ee6ab>] ? do_sys_open+0x65/0xe9
+[<ffffffff8157d022>] ? system_call_fastpath+0x16/0x1b
+RIP  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+RSP <ffff8800bad71c10>
+CR2: 0000000000000000
+---[ end trace df9dba5f1ddb8565 ]---"
 
-It does not fail with the standard configuration, as when
-CONFIG_DYNAMIC_DEBUG is not enabled <linux/string.h> gets included in
-include/linux/dynamic_debug.h. There might be other ways for it to
-get indirectly included.
+If we create a file when we mount with ecryptfs_xattr_metadata option, we will
+encounter a crash in this path:
+->ecryptfs_create
+  ->ecryptfs_initialize_file
+    ->ecryptfs_write_metadata
+      ->ecryptfs_write_metadata_to_xattr
+        ->ecryptfs_setxattr
+          ->fsstack_copy_attr_all
+It's because our dentry->d_inode used in fsstack_copy_attr_all is NULL, and it
+will be initialized when ecryptfs_initialize_file finish.
 
-We can't add the include directly in xz_dec_stream.c as some
-architectures might want to use a different version for the boot/
-directory (see for example arch/x86/boot/string.h).
+So we should skip copying attr from lower inode when the value of ->d_inode is
+invalid.
 
-Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7420/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/mips/boot/compressed/decompress.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ecryptfs/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/mips/boot/compressed/decompress.c b/arch/mips/boot/compressed/decompress.c
-index 5cad0fa..ca51d69 100644
---- a/arch/mips/boot/compressed/decompress.c
-+++ b/arch/mips/boot/compressed/decompress.c
-@@ -13,6 +13,7 @@
+diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+index 11030b2..b5b9b40 100644
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -1093,7 +1093,7 @@ ecryptfs_setxattr(struct dentry *dentry, const char *name, const void *value,
+ 	}
  
- #include <linux/types.h>
- #include <linux/kernel.h>
-+#include <linux/string.h>
- 
- #include <asm/addrspace.h>
- 
+ 	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
+-	if (!rc)
++	if (!rc && dentry->d_inode)
+ 		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
+ out:
+ 	return rc;
 -- 
 1.9.1
 
