@@ -1,18 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762264AbbA1FO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:14:29 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38110 "EHLO mail.kernel.org"
+	id S1761138AbbA1ERh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:17:37 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38124 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761080AbbA1ER2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:17:28 -0500
+	id S1761106AbbA1ERc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:17:32 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Scott Carter <ccscott@funsoft.com>,
-        Tejun Heo <tj@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 043/177] pata_serverworks: disable 64-KB DMA transfers on Broadcom OSB4 IDE Controller
-Date: Wed, 28 Jan 2015 12:07:32 +0800
-Message-Id: <1422418236-12852-85-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Cong Wang <cwang@twopensource.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 43/91] perf: Fix a race condition in perf_remove_from_context()
+Date: Wed, 28 Jan 2015 12:07:33 +0800
+Message-Id: <1422418236-12852-86-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,169 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Scott Carter <ccscott@funsoft.com>
+From: Cong Wang <cwang@twopensource.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 37017ac6849e772e67dd187ba2fbd056c4afa533 upstream.
+commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
 
-The Broadcom OSB4 IDE Controller (vendor and device IDs: 1166:0211)
-does not support 64-KB DMA transfers.
-Whenever a 64-KB DMA transfer is attempted,
-the transfer fails and messages similar to the following
-are written to the console log:
+We saw a kernel soft lockup in perf_remove_from_context(),
+it looks like the `perf` process, when exiting, could not go
+out of the retry loop. Meanwhile, the target process was forking
+a child. So either the target process should execute the smp
+function call to deactive the event (if it was running) or it should
+do a context switch which deactives the event.
 
-   [ 2431.851125] sr 0:0:0:0: [sr0] Unhandled sense code
-   [ 2431.851139] sr 0:0:0:0: [sr0]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-   [ 2431.851152] sr 0:0:0:0: [sr0]  Sense Key : Hardware Error [current]
-   [ 2431.851166] sr 0:0:0:0: [sr0]  Add. Sense: Logical unit communication time-out
-   [ 2431.851182] sr 0:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 76 f4 00 00 40 00
-   [ 2431.851210] end_request: I/O error, dev sr0, sector 121808
+It seems we optimize out a context switch in perf_event_context_sched_out(),
+and what's more important, we still test an obsolete task pointer when
+retrying, so no one actually would deactive that event in this situation.
+Fix it directly by reloading the task pointer in perf_remove_from_context().
 
-When the libata and pata_serverworks modules
-are recompiled with ATA_DEBUG and ATA_VERBOSE_DEBUG defined in libata.h,
-the 64-KB transfer size in the scatter-gather list can be seen
-in the console log:
+This should cure the above soft lockup.
 
-   [ 2664.897267] sr 9:0:0:0: [sr0] Send:
-   [ 2664.897274] 0xf63d85e0
-   [ 2664.897283] sr 9:0:0:0: [sr0] CDB:
-   [ 2664.897288] Read(10): 28 00 00 00 7f b4 00 00 40 00
-   [ 2664.897319] buffer = 0xf6d6fbc0, bufflen = 131072, queuecommand 0xf81b7700
-   [ 2664.897331] ata_scsi_dump_cdb: CDB (1:0,0,0) 28 00 00 00 7f b4 00 00 40
-   [ 2664.897338] ata_scsi_translate: ENTER
-   [ 2664.897345] ata_sg_setup: ENTER, ata1
-   [ 2664.897356] ata_sg_setup: 3 sg elements mapped
-   [ 2664.897364] ata_bmdma_fill_sg: PRD[0] = (0x66FD2000, 0xE000)
-   [ 2664.897371] ata_bmdma_fill_sg: PRD[1] = (0x65000000, 0x10000)
-   ------------------------------------------------------> =======
-   [ 2664.897378] ata_bmdma_fill_sg: PRD[2] = (0x66A10000, 0x2000)
-   [ 2664.897386] ata1: ata_dev_select: ENTER, device 0, wait 1
-   [ 2664.897422] ata_sff_tf_load: feat 0x1 nsect 0x0 lba 0x0 0x0 0xFC
-   [ 2664.897428] ata_sff_tf_load: device 0xA0
-   [ 2664.897448] ata_sff_exec_command: ata1: cmd 0xA0
-   [ 2664.897457] ata_scsi_translate: EXIT
-   [ 2664.897462] leaving scsi_dispatch_cmnd()
-   [ 2664.897497] Doing sr request, dev = sr0, block = 0
-   [ 2664.897507] sr0 : reading 64/256 512 byte blocks.
-   [ 2664.897553] ata_sff_hsm_move: ata1: protocol 7 task_state 1 (dev_stat 0x58)
-   [ 2664.897560] atapi_send_cdb: send cdb
-   [ 2666.910058] ata_bmdma_port_intr: ata1: host_stat 0x64
-   [ 2666.910079] __ata_sff_port_intr: ata1: protocol 7 task_state 3
-   [ 2666.910093] ata_sff_hsm_move: ata1: protocol 7 task_state 3 (dev_stat 0x51)
-   [ 2666.910101] ata_sff_hsm_move: ata1: protocol 7 task_state 4 (dev_stat 0x51)
-   [ 2666.910129] sr 9:0:0:0: [sr0] Done:
-   [ 2666.910136] 0xf63d85e0 TIMEOUT
-
-lspci shows that the driver used for the Broadcom OSB4 IDE Controller is
-pata_serverworks:
-
-   00:0f.1 IDE interface: Broadcom OSB4 IDE Controller (prog-if 8e [Master SecP SecO PriP])
-           Flags: bus master, medium devsel, latency 64
-           [virtual] Memory at 000001f0 (32-bit, non-prefetchable) [size=8]
-           [virtual] Memory at 000003f0 (type 3, non-prefetchable) [size=1]
-           I/O ports at 0170 [size=8]
-           I/O ports at 0374 [size=4]
-           I/O ports at 1440 [size=16]
-           Kernel driver in use: pata_serverworks
-
-The pata_serverworks driver supports five distinct device IDs,
-one being the OSB4 and the other four belonging to the CSB series.
-The CSB series appears to support 64-KB DMA transfers,
-as tests on a machine with an SAI2 motherboard
-containing a Broadcom CSB5 IDE Controller (vendor and device IDs: 1166:0212)
-showed no problems with 64-KB DMA transfers.
-
-This problem was first discovered when attempting to install openSUSE
-from a DVD on a machine with an STL2 motherboard.
-Using the pata_serverworks module,
-older releases of openSUSE will not install at all due to the timeouts.
-Releases of openSUSE prior to 11.3 can be installed by disabling
-the pata_serverworks module using the brokenmodules boot parameter,
-which causes the serverworks module to be used instead.
-Recent releases of openSUSE (12.2 and later) include better error recovery and
-will install, though very slowly.
-On all openSUSE releases, the problem can be recreated
-on a machine containing a Broadcom OSB4 IDE Controller
-by mounting an install DVD and running a command similar to the following:
-
-   find /mnt -type f -print | xargs cat > /dev/null
-
-The patch below corrects the problem.
-Similar to the other ATA drivers that do not support 64-KB DMA transfers,
-the patch changes the ata_port_operations qc_prep vector to point to a routine
-that breaks any 64-KB segment into two 32-KB segments and
-changes the scsi_host_template sg_tablesize element to reduce by half
-the number of scatter/gather elements allowed.
-These two changes affect only the OSB4.
-
-Signed-off-by: Scott Carter <ccscott@funsoft.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/ata/pata_serverworks.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ kernel/events/core.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/ata/pata_serverworks.c b/drivers/ata/pata_serverworks.c
-index 71eaf385..5929dde 100644
---- a/drivers/ata/pata_serverworks.c
-+++ b/drivers/ata/pata_serverworks.c
-@@ -252,12 +252,18 @@ static void serverworks_set_dmamode(struct ata_port *ap, struct ata_device *adev
- 	pci_write_config_byte(pdev, 0x54, ultra_cfg);
- }
- 
--static struct scsi_host_template serverworks_sht = {
-+static struct scsi_host_template serverworks_osb4_sht = {
-+	ATA_BMDMA_SHT(DRV_NAME),
-+	.sg_tablesize	= LIBATA_DUMB_MAX_PRD,
-+};
-+
-+static struct scsi_host_template serverworks_csb_sht = {
- 	ATA_BMDMA_SHT(DRV_NAME),
- };
- 
- static struct ata_port_operations serverworks_osb4_port_ops = {
- 	.inherits	= &ata_bmdma_port_ops,
-+	.qc_prep	= ata_bmdma_dumb_qc_prep,
- 	.cable_detect	= serverworks_cable_detect,
- 	.mode_filter	= serverworks_osb4_filter,
- 	.set_piomode	= serverworks_set_piomode,
-@@ -266,6 +272,7 @@ static struct ata_port_operations serverworks_osb4_port_ops = {
- 
- static struct ata_port_operations serverworks_csb_port_ops = {
- 	.inherits	= &serverworks_osb4_port_ops,
-+	.qc_prep	= ata_bmdma_qc_prep,
- 	.mode_filter	= serverworks_csb_filter,
- };
- 
-@@ -405,6 +412,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
- 		}
- 	};
- 	const struct ata_port_info *ppi[] = { &info[id->driver_data], NULL };
-+	struct scsi_host_template *sht = &serverworks_csb_sht;
- 	int rc;
- 
- 	rc = pcim_enable_device(pdev);
-@@ -418,6 +426,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
- 		/* Select non UDMA capable OSB4 if we can't do fixups */
- 		if (rc < 0)
- 			ppi[0] = &info[1];
-+		sht = &serverworks_osb4_sht;
- 	}
- 	/* setup CSB5/CSB6 : South Bridge and IDE option RAID */
- 	else if ((pdev->device == PCI_DEVICE_ID_SERVERWORKS_CSB5IDE) ||
-@@ -434,7 +443,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
- 			ppi[1] = &ata_dummy_port_info;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 685ce46..c958be1 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1702,6 +1702,16 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
+ 		goto retry;
  	}
  
--	return ata_pci_bmdma_init_one(pdev, ppi, &serverworks_sht, NULL, 0);
-+	return ata_pci_bmdma_init_one(pdev, ppi, sht, NULL, 0);
- }
- 
- #ifdef CONFIG_PM
 -- 
 1.9.1
 
