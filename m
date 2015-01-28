@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933702AbbA1UiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:38:16 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45517 "EHLO
+	id S1761069AbbA1VnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:43:08 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45513 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933576AbbA1UiL (ORCPT
+	with ESMTP id S1761155AbbA1UiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:38:11 -0500
+	Wed, 28 Jan 2015 15:38:02 -0500
 From: Javi Merino <javi.merino@arm.com>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: punit.agrawal@arm.com, broonie@kernel.org,
-        Javi Merino <javi.merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v1 5/7] thermal: add trace events to the power allocator governor
-Date: Wed, 28 Jan 2015 17:00:36 +0000
-Message-Id: <1422464438-16761-6-git-send-email-javi.merino@arm.com>
+Cc: punit.agrawal@arm.com, broonie@kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>
+Subject: [PATCH v1 6/7] of: thermal: Introduce sustainable power for a thermal zone
+Date: Wed, 28 Jan 2015 17:00:37 +0000
+Message-Id: <1422464438-16761-7-git-send-email-javi.merino@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422464438-16761-1-git-send-email-javi.merino@arm.com>
 References: <1422464438-16761-1-git-send-email-javi.merino@arm.com>
@@ -25,318 +21,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add trace events for the power allocator governor and the power actor
-interface of the cpu cooling device.
+From: Punit Agrawal <punit.agrawal@arm.com>
+
+Introduce an optional property called, sustainable-power, which
+represents the power (in mW) which the thermal zone can safely
+dissipate.
+
+If provided the property is parsed and associated with the thermal
+zone via the thermal zone parameters.
 
 Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: Eduardo Valentin <edubezval@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Javi Merino <javi.merino@arm.com>
+Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
 ---
- drivers/thermal/cpu_cooling.c                  | 31 +++++++++-
- drivers/thermal/power_allocator.c              | 22 ++++++-
- include/trace/events/thermal.h                 | 58 +++++++++++++++++++
- include/trace/events/thermal_power_allocator.h | 80 ++++++++++++++++++++++++++
- 4 files changed, 187 insertions(+), 4 deletions(-)
- create mode 100644 include/trace/events/thermal_power_allocator.h
+ Documentation/devicetree/bindings/thermal/thermal.txt | 9 +++++++++
+ drivers/thermal/of-thermal.c                          | 4 ++++
+ 2 files changed, 13 insertions(+)
 
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index a639aaf228f5..1ca8fe580721 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -31,6 +31,8 @@
- #include <linux/cpu.h>
- #include <linux/cpu_cooling.h>
+diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+index f5db6b72a36f..99d6608c9d5f 100644
+--- a/Documentation/devicetree/bindings/thermal/thermal.txt
++++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+@@ -167,6 +167,13 @@ Optional property:
+ 			by means of sensor ID. Additional coefficients are
+ 			interpreted as constant offset.
  
-+#include <trace/events/thermal.h>
++- sustainable-power:	An estimate of the sustainable power (in mW) that the
++  Type: unsigned	thermal zone can dissipate at the desired
++  Size: one cell	control temperature.  For reference, the
++			sustainable power of a 4'' phone is typically
++			2000mW, while on a 10'' tablet is around
++			4500mW.
 +
- /*
-  * Cooling state <-> CPUFreq frequency
-  *
-@@ -534,12 +536,20 @@ static int cpufreq_get_requested_power(struct thermal_cooling_device *cdev,
- 				       u32 *power)
- {
- 	unsigned long freq;
--	int cpu, ret;
-+	int i = 0, cpu, ret;
- 	u32 static_power, dynamic_power, total_load = 0;
- 	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
-+	u32 *load_cpu = NULL;
+ Note: The delay properties are bound to the maximum dT/dt (temperature
+ derivative over time) in two situations for a thermal zone:
+ (i)  - when passive cooling is activated (polling-delay-passive); and
+@@ -546,6 +553,8 @@ thermal-zones {
+ 		 */
+ 		coefficients =		<1200	-345	890>;
  
- 	freq = cpufreq_quick_get(cpumask_any(&cpufreq_device->allowed_cpus));
++		sustainable-power = <2500>;
++
+ 		trips {
+ 			/* Trips are based on resulting linear equation */
+ 			cpu-trip: cpu-trip {
+diff --git a/drivers/thermal/of-thermal.c b/drivers/thermal/of-thermal.c
+index d717f3dab6f1..b44296541938 100644
+--- a/drivers/thermal/of-thermal.c
++++ b/drivers/thermal/of-thermal.c
+@@ -862,6 +862,7 @@ int __init of_parse_thermal_zones(void)
+ 	for_each_child_of_node(np, child) {
+ 		struct thermal_zone_device *zone;
+ 		struct thermal_zone_params *tzp;
++		u32 prop;
  
-+	if (trace_thermal_power_cpu_get_power_enabled()) {
-+		u32 ncpus = cpumask_weight(&cpufreq_device->allowed_cpus);
-+
-+		load_cpu = devm_kcalloc(&cdev->device, ncpus, sizeof(*load_cpu),
-+					GFP_KERNEL);
-+	}
-+
- 	for_each_cpu(cpu, &cpufreq_device->allowed_cpus) {
- 		u32 load;
+ 		/* Check whether child is enabled or not */
+ 		if (!of_device_is_available(child))
+@@ -888,6 +889,9 @@ int __init of_parse_thermal_zones(void)
+ 		/* No hwmon because there might be hwmon drivers registering */
+ 		tzp->no_hwmon = true;
  
-@@ -549,14 +559,29 @@ static int cpufreq_get_requested_power(struct thermal_cooling_device *cdev,
- 			load = 0;
- 
- 		total_load += load;
-+		if (trace_thermal_power_cpu_limit_enabled() && load_cpu)
-+			load_cpu[i] = load;
++		if (!of_property_read_u32(child, "sustainable-power", &prop))
++			tzp->sustainable_power = prop;
 +
-+		i++;
- 	}
- 
- 	cpufreq_device->last_load = total_load;
- 
- 	dynamic_power = get_dynamic_power(cpufreq_device, freq);
- 	ret = get_static_power(cpufreq_device, tz, freq, &static_power);
--	if (ret)
-+	if (ret) {
-+		if (load_cpu)
-+			devm_kfree(&cdev->device, load_cpu);
- 		return ret;
-+	}
-+
-+	if (trace_thermal_power_cpu_limit_enabled() && load_cpu) {
-+		trace_thermal_power_cpu_get_power(
-+			&cpufreq_device->allowed_cpus,
-+			freq, load_cpu, i, dynamic_power, static_power);
-+
-+		devm_kfree(&cdev->device, load_cpu);
-+	}
- 
- 	*power = static_power + dynamic_power;
- 	return 0;
-@@ -664,6 +689,8 @@ static int cpufreq_power2state(struct thermal_cooling_device *cdev,
- 		return -EINVAL;
- 	}
- 
-+	trace_thermal_power_cpu_limit(&cpufreq_device->allowed_cpus,
-+				      target_freq, *state, power);
- 	return 0;
- }
- 
-diff --git a/drivers/thermal/power_allocator.c b/drivers/thermal/power_allocator.c
-index c929143aee67..34c9a9025c54 100644
---- a/drivers/thermal/power_allocator.c
-+++ b/drivers/thermal/power_allocator.c
-@@ -19,6 +19,9 @@
- #include <linux/slab.h>
- #include <linux/thermal.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/thermal_power_allocator.h>
-+
- #include "thermal_core.h"
- 
- #define FRAC_BITS 10
-@@ -124,7 +127,14 @@ static u32 pid_controller(struct thermal_zone_device *tz,
- 	/* feed-forward the known sustainable dissipatable power */
- 	power_range = tz->tzp->sustainable_power + frac_to_int(power_range);
- 
--	return clamp(power_range, (s64)0, (s64)max_allocatable_power);
-+	power_range = clamp(power_range, (s64)0, (s64)max_allocatable_power);
-+
-+	trace_thermal_power_allocator_pid(frac_to_int(err),
-+					  frac_to_int(params->err_integral),
-+					  frac_to_int(p), frac_to_int(i),
-+					  frac_to_int(d), power_range);
-+
-+	return power_range;
- }
- 
- /**
-@@ -201,7 +211,7 @@ static int allocate_power(struct thermal_zone_device *tz,
- 	struct thermal_instance *instance;
- 	u32 *req_power, *max_power, *granted_power;
- 	u32 total_req_power, max_allocatable_power;
--	u32 power_range;
-+	u32 total_granted_power, power_range;
- 	int i, num_actors, ret = 0;
- 
- 	mutex_lock(&tz->lock);
-@@ -266,6 +276,7 @@ static int allocate_power(struct thermal_zone_device *tz,
- 	divvy_up_power(req_power, max_power, num_actors, total_req_power,
- 		       power_range, granted_power);
- 
-+	total_granted_power = 0;
- 	i = 0;
- 	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
- 		if (instance->trip != TRIP_MAX_DESIRED_TEMPERATURE)
-@@ -276,10 +287,17 @@ static int allocate_power(struct thermal_zone_device *tz,
- 
- 		power_actor_set_power(instance->cdev, instance,
- 				      granted_power[i]);
-+		total_granted_power += granted_power[i];
- 
- 		i++;
- 	}
- 
-+	trace_thermal_power_allocator(req_power, total_req_power, granted_power,
-+				      total_granted_power, num_actors,
-+				      power_range, max_allocatable_power,
-+				      current_temp,
-+				      (s32)control_temp - (s32)current_temp);
-+
- 	devm_kfree(&tz->device, granted_power);
- free_max_power:
- 	devm_kfree(&tz->device, max_power);
-diff --git a/include/trace/events/thermal.h b/include/trace/events/thermal.h
-index 0f4f95d63c03..8b1f80682b80 100644
---- a/include/trace/events/thermal.h
-+++ b/include/trace/events/thermal.h
-@@ -77,6 +77,64 @@ TRACE_EVENT(thermal_zone_trip,
- 		__entry->trip_type)
- );
- 
-+TRACE_EVENT(thermal_power_cpu_get_power,
-+	TP_PROTO(const struct cpumask *cpus, unsigned long freq, u32 *load,
-+		size_t load_len, u32 dynamic_power, u32 static_power),
-+
-+	TP_ARGS(cpus, freq, load, load_len, dynamic_power, static_power),
-+
-+	TP_STRUCT__entry(
-+		__bitmask(cpumask, num_possible_cpus())
-+		__field(unsigned long, freq          )
-+		__dynamic_array(u32,   load, load_len)
-+		__field(size_t,        load_len      )
-+		__field(u32,           dynamic_power )
-+		__field(u32,           static_power  )
-+	),
-+
-+	TP_fast_assign(
-+		__assign_bitmask(cpumask, cpumask_bits(cpus),
-+				num_possible_cpus());
-+		__entry->freq = freq;
-+		memcpy(__get_dynamic_array(load), load,
-+			load_len * sizeof(*load));
-+		__entry->load_len = load_len;
-+		__entry->dynamic_power = dynamic_power;
-+		__entry->static_power = static_power;
-+	),
-+
-+	TP_printk("cpus=%s freq=%lu load={%s} dynamic_power=%d static_power=%d",
-+		__get_bitmask(cpumask), __entry->freq,
-+		__print_array(__get_dynamic_array(load), __entry->load_len, 4),
-+		__entry->dynamic_power, __entry->static_power)
-+);
-+
-+TRACE_EVENT(thermal_power_cpu_limit,
-+	TP_PROTO(const struct cpumask *cpus, unsigned int freq,
-+		unsigned long cdev_state, u32 power),
-+
-+	TP_ARGS(cpus, freq, cdev_state, power),
-+
-+	TP_STRUCT__entry(
-+		__bitmask(cpumask, num_possible_cpus())
-+		__field(unsigned int,  freq      )
-+		__field(unsigned long, cdev_state)
-+		__field(u32,           power     )
-+	),
-+
-+	TP_fast_assign(
-+		__assign_bitmask(cpumask, cpumask_bits(cpus),
-+				num_possible_cpus());
-+		__entry->freq = freq;
-+		__entry->cdev_state = cdev_state;
-+		__entry->power = power;
-+	),
-+
-+	TP_printk("cpus=%s freq=%u cdev_state=%lu power=%u",
-+		__get_bitmask(cpumask), __entry->freq, __entry->cdev_state,
-+		__entry->power)
-+);
-+
- #endif /* _TRACE_THERMAL_H */
- 
- /* This part must be outside protection */
-diff --git a/include/trace/events/thermal_power_allocator.h b/include/trace/events/thermal_power_allocator.h
-new file mode 100644
-index 000000000000..c6a6d34858ef
---- /dev/null
-+++ b/include/trace/events/thermal_power_allocator.h
-@@ -0,0 +1,80 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM thermal_power_allocator
-+
-+#if !defined(_TRACE_THERMAL_POWER_ALLOCATOR_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_THERMAL_POWER_ALLOCATOR_H
-+
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT(thermal_power_allocator,
-+	TP_PROTO(u32 *req_power, u32 total_req_power, u32 *granted_power,
-+		u32 total_granted_power, size_t num_actors, u32 power_range,
-+		u32 max_allocatable_power, unsigned long current_temp,
-+		s32 delta_temp),
-+	TP_ARGS(req_power, total_req_power, granted_power, total_granted_power,
-+		num_actors, power_range, max_allocatable_power, current_temp,
-+		delta_temp),
-+	TP_STRUCT__entry(
-+		__dynamic_array(u32,   req_power, num_actors    )
-+		__field(u32,           total_req_power          )
-+		__dynamic_array(u32,   granted_power, num_actors)
-+		__field(u32,           total_granted_power      )
-+		__field(size_t,        num_actors               )
-+		__field(u32,           power_range              )
-+		__field(u32,           max_allocatable_power    )
-+		__field(unsigned long, current_temp             )
-+		__field(s32,           delta_temp               )
-+	),
-+	TP_fast_assign(
-+		memcpy(__get_dynamic_array(req_power), req_power,
-+			num_actors * sizeof(*req_power));
-+		__entry->total_req_power = total_req_power;
-+		memcpy(__get_dynamic_array(granted_power), granted_power,
-+			num_actors * sizeof(*granted_power));
-+		__entry->total_granted_power = total_granted_power;
-+		__entry->num_actors = num_actors;
-+		__entry->power_range = power_range;
-+		__entry->max_allocatable_power = max_allocatable_power;
-+		__entry->current_temp = current_temp;
-+		__entry->delta_temp = delta_temp;
-+	),
-+
-+	TP_printk("req_power={%s} total_req_power=%u granted_power={%s} total_granted_power=%u power_range=%u max_allocatable_power=%u current_temperature=%lu delta_temperature=%d",
-+		__print_array(__get_dynamic_array(req_power),
-+                              __entry->num_actors, 4),
-+		__entry->total_req_power,
-+		__print_array(__get_dynamic_array(granted_power),
-+                              __entry->num_actors, 4),
-+		__entry->total_granted_power, __entry->power_range,
-+		__entry->max_allocatable_power, __entry->current_temp,
-+		__entry->delta_temp)
-+);
-+
-+TRACE_EVENT(thermal_power_allocator_pid,
-+	TP_PROTO(s32 err, s32 err_integral, s64 p, s64 i, s64 d, s32 output),
-+	TP_ARGS(err, err_integral, p, i, d, output),
-+	TP_STRUCT__entry(
-+		__field(s32, err         )
-+		__field(s32, err_integral)
-+		__field(s64, p           )
-+		__field(s64, i           )
-+		__field(s64, d           )
-+		__field(s32, output      )
-+	),
-+	TP_fast_assign(
-+		__entry->err = err;
-+		__entry->err_integral = err_integral;
-+		__entry->p = p;
-+		__entry->i = i;
-+		__entry->d = d;
-+		__entry->output = output;
-+	),
-+
-+	TP_printk("err=%d err_integral=%d p=%lld i=%lld d=%lld output=%d",
-+		__entry->err, __entry->err_integral,
-+		__entry->p, __entry->i, __entry->d, __entry->output)
-+);
-+#endif /* _TRACE_THERMAL_POWER_ALLOCATOR_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
+ 		zone = thermal_zone_device_register(child->name, tz->ntrips,
+ 						    0, tz,
+ 						    ops, tzp,
 -- 
 1.9.1
 
