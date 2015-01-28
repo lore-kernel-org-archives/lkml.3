@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762582AbbA2CkD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:40:03 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47068 "EHLO
+	id S1760378AbbA2CkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:40:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47067 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762453AbbA2Ciz (ORCPT
+	with ESMTP id S1762445AbbA2Ciz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jan 2015 21:38:55 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>,
+Cc: Jan Kara <jack@suse.cz>, Petr Vandrovec <petr@vandrovec.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 100/139] Btrfs: fix fs corruption on transaction abort if device supports discard
-Date: Wed, 28 Jan 2015 14:20:43 -0800
-Message-Id: <1422483682-15393-101-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 101/139] ncpfs: return proper error from NCP_IOC_SETROOT ioctl
+Date: Wed, 28 Jan 2015 14:20:44 -0800
+Message-Id: <1422483682-15393-102-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -27,176 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe Manana <fdmanana@suse.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 678886bdc6378c1cbd5072da2c5a3035000214e3 upstream.
+commit a682e9c28cac152e6e54c39efcf046e0c8cfcf63 upstream.
 
-When we abort a transaction we iterate over all the ranges marked as dirty
-in fs_info->freed_extents[0] and fs_info->freed_extents[1], clear them
-from those trees, add them back (unpin) to the free space caches and, if
-the fs was mounted with "-o discard", perform a discard on those regions.
-Also, after adding the regions to the free space caches, a fitrim ioctl call
-can see those ranges in a block group's free space cache and perform a discard
-on the ranges, so the same issue can happen without "-o discard" as well.
+If some error happens in NCP_IOC_SETROOT ioctl, the appropriate error
+return value is then (in most cases) just overwritten before we return.
+This can result in reporting success to userspace although error happened.
 
-This causes corruption, affecting one or multiple btree nodes (in the worst
-case leaving the fs unmountable) because some of those ranges (the ones in
-the fs_info->pinned_extents tree) correspond to btree nodes/leafs that are
-referred by the last committed super block - breaking the rule that anything
-that was committed by a transaction is untouched until the next transaction
-commits successfully.
+This bug was introduced by commit 2e54eb96e2c8 ("BKL: Remove BKL from
+ncpfs").  Propagate the errors correctly.
 
-I ran into this while running in a loop (for several hours) the fstest that
-I recently submitted:
+Coverity id: 1226925.
 
-  [PATCH] fstests: add btrfs test to stress chunk allocation/removal and fstrim
-
-The corruption always happened when a transaction aborted and then fsck complained
-like this:
-
-   _check_btrfs_filesystem: filesystem on /dev/sdc is inconsistent
-   *** fsck.btrfs output ***
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   Check tree block failed, want=94945280, have=0
-   read block failed check_tree_block
-   Couldn't open file system
-
-In this case 94945280 corresponded to the root of a tree.
-Using frace what I observed was the following sequence of steps happened:
-
-   1) transaction N started, fs_info->pinned_extents pointed to
-      fs_info->freed_extents[0];
-
-   2) node/eb 94945280 is created;
-
-   3) eb is persisted to disk;
-
-   4) transaction N commit starts, fs_info->pinned_extents now points to
-      fs_info->freed_extents[1], and transaction N completes;
-
-   5) transaction N + 1 starts;
-
-   6) eb is COWed, and btrfs_free_tree_block() called for this eb;
-
-   7) eb range (94945280 to 94945280 + 16Kb) is added to
-      fs_info->pinned_extents (fs_info->freed_extents[1]);
-
-   8) Something goes wrong in transaction N + 1, like hitting ENOSPC
-      for example, and the transaction is aborted, turning the fs into
-      readonly mode. The stack trace I got for example:
-
-      [112065.253935]  [<ffffffff8140c7b6>] dump_stack+0x4d/0x66
-      [112065.254271]  [<ffffffff81042984>] warn_slowpath_common+0x7f/0x98
-      [112065.254567]  [<ffffffffa0325990>] ? __btrfs_abort_transaction+0x50/0x10b [btrfs]
-      [112065.261674]  [<ffffffff810429e5>] warn_slowpath_fmt+0x48/0x50
-      [112065.261922]  [<ffffffffa032949e>] ? btrfs_free_path+0x26/0x29 [btrfs]
-      [112065.262211]  [<ffffffffa0325990>] __btrfs_abort_transaction+0x50/0x10b [btrfs]
-      [112065.262545]  [<ffffffffa036b1d6>] btrfs_remove_chunk+0x537/0x58b [btrfs]
-      [112065.262771]  [<ffffffffa033840f>] btrfs_delete_unused_bgs+0x1de/0x21b [btrfs]
-      [112065.263105]  [<ffffffffa0343106>] cleaner_kthread+0x100/0x12f [btrfs]
-      (...)
-      [112065.264493] ---[ end trace dd7903a975a31a08 ]---
-      [112065.264673] BTRFS: error (device sdc) in btrfs_remove_chunk:2625: errno=-28 No space left
-      [112065.264997] BTRFS info (device sdc): forced readonly
-
-   9) The clear kthread sees that the BTRFS_FS_STATE_ERROR bit is set in
-      fs_info->fs_state and calls btrfs_cleanup_transaction(), which in
-      turn calls btrfs_destroy_pinned_extent();
-
-   10) Then btrfs_destroy_pinned_extent() iterates over all the ranges
-       marked as dirty in fs_info->freed_extents[], and for each one
-       it calls discard, if the fs was mounted with "-o discard", and
-       adds the range to the free space cache of the respective block
-       group;
-
-   11) btrfs_trim_block_group(), invoked from the fitrim ioctl code path,
-       sees the free space entries and performs a discard;
-
-   12) After an umount and mount (or fsck), our eb's location on disk was full
-       of zeroes, and it should have been untouched, because it was marked as
-       dirty in the fs_info->pinned_extents tree, and therefore used by the
-       trees that the last committed superblock points to.
-
-Fix this by not performing a discard and not adding the ranges to the free space
-caches - it's useless from this point since the fs is now in readonly mode and
-we won't write free space caches to disk anymore (otherwise we would leak space)
-nor any new superblock. By not adding the ranges to the free space caches, it
-prevents other code paths from allocating that space and write to it as well,
-therefore being safer and simpler.
-
-This isn't a new problem, as it's been present since 2011 (git commit
-acce952b0263825da32cf10489413dec78053347).
-
-Signed-off-by: Filipe Manana <fdmanana@suse.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Fixes: 2e54eb96e2c80 ("BKL: Remove BKL from ncpfs")
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Petr Vandrovec <petr@vandrovec.name>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/btrfs/disk-io.c     |  6 ------
- fs/btrfs/extent-tree.c | 10 ++++++----
- 2 files changed, 6 insertions(+), 10 deletions(-)
+ fs/ncpfs/ioctl.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 7eb50f3..aae2276 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3968,12 +3968,6 @@ again:
- 		if (ret)
- 			break;
+diff --git a/fs/ncpfs/ioctl.c b/fs/ncpfs/ioctl.c
+index 60426cc..2f970de 100644
+--- a/fs/ncpfs/ioctl.c
++++ b/fs/ncpfs/ioctl.c
+@@ -448,7 +448,6 @@ static long __ncp_ioctl(struct inode *inode, unsigned int cmd, unsigned long arg
+ 						result = -EIO;
+ 					}
+ 				}
+-				result = 0;
+ 			}
+ 			mutex_unlock(&server->root_setup_lock);
  
--		/* opt_discard */
--		if (btrfs_test_opt(root, DISCARD))
--			ret = btrfs_error_discard_extent(root, start,
--							 end + 1 - start,
--							 NULL);
--
- 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
- 		btrfs_error_unpin_extent_range(root, start, end);
- 		cond_resched();
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index 72d7307..573da59 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -5532,7 +5532,8 @@ void btrfs_prepare_extent_commit(struct btrfs_trans_handle *trans,
- 	update_global_block_rsv(fs_info);
- }
- 
--static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
-+static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end,
-+			      const bool return_free_space)
- {
- 	struct btrfs_fs_info *fs_info = root->fs_info;
- 	struct btrfs_block_group_cache *cache = NULL;
-@@ -5556,7 +5557,8 @@ static int unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
- 
- 		if (start < cache->last_byte_to_unpin) {
- 			len = min(len, cache->last_byte_to_unpin - start);
--			btrfs_add_free_space(cache, start, len);
-+			if (return_free_space)
-+				btrfs_add_free_space(cache, start, len);
- 		}
- 
- 		start += len;
-@@ -5619,7 +5621,7 @@ int btrfs_finish_extent_commit(struct btrfs_trans_handle *trans,
- 						   end + 1 - start, NULL);
- 
- 		clear_extent_dirty(unpin, start, end, GFP_NOFS);
--		unpin_extent_range(root, start, end);
-+		unpin_extent_range(root, start, end, true);
- 		cond_resched();
- 	}
- 
-@@ -8870,7 +8872,7 @@ out:
- 
- int btrfs_error_unpin_extent_range(struct btrfs_root *root, u64 start, u64 end)
- {
--	return unpin_extent_range(root, start, end);
-+	return unpin_extent_range(root, start, end, false);
- }
- 
- int btrfs_error_discard_extent(struct btrfs_root *root, u64 bytenr,
 -- 
 1.9.1
 
