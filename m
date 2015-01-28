@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931AbbA2Jxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:53:50 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44798 "EHLO
+	id S1760240AbbA2JND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:13:03 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44932 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759007AbbA2JDd (ORCPT
+	by vger.kernel.org with ESMTP id S1760627AbbA2JIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:03:33 -0500
+	Thu, 29 Jan 2015 04:08:36 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 064/176] alx: fix alx_poll()
-Date: Wed, 28 Jan 2015 15:28:14 +0100
-Message-Id: <cbac92132ff61018792166045ce2c362cd7f48e0.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jiri Pirko <jiri@resnulli.us>,
+        Jiri Benc <jbenc@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 065/176] team: avoid possible underflow of count_pending value for notify_peers and mcast_rejoin
+Date: Wed, 28 Jan 2015 15:28:15 +0100
+Message-Id: <c18e1d2c062cf9909d10740f231c786bf7fab029.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,117 +24,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jiri Pirko <jiri@resnulli.us>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 7a05dc64e2e4c611d89007b125b20c0d2a4d31a5 ]
+[ Upstream commit b0d11b42785b70e19bc6a3122eead3f7969a7589 ]
 
-Commit d75b1ade567f ("net: less interrupt masking in NAPI") uncovered
-wrong alx_poll() behavior.
+This patch is fixing a race condition that may cause setting
+count_pending to -1, which results in unwanted big bulk of arp messages
+(in case of "notify peers").
 
-A NAPI poll() handler is supposed to return exactly the budget when/if
-napi_complete() has not been called.
+Consider following scenario:
 
-It is also supposed to return number of frames that were received, so
-that netdev_budget can have a meaning.
+count_pending == 2
+   CPU0                                           CPU1
+					team_notify_peers_work
+					  atomic_dec_and_test (dec count_pending to 1)
+					  schedule_delayed_work
+ team_notify_peers
+   atomic_add (adding 1 to count_pending)
+					team_notify_peers_work
+					  atomic_dec_and_test (dec count_pending to 1)
+					  schedule_delayed_work
+					team_notify_peers_work
+					  atomic_dec_and_test (dec count_pending to 0)
+   schedule_delayed_work
+					team_notify_peers_work
+					  atomic_dec_and_test (dec count_pending to -1)
 
-Also, in case of TX pressure, we still have to dequeue received
-packets : alx_clean_rx_irq() has to be called even if
-alx_clean_tx_irq(alx) returns false, otherwise device is half duplex.
+Fix this race by using atomic_dec_if_positive - that will prevent
+count_pending running under 0.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: d75b1ade567f ("net: less interrupt masking in NAPI")
-Reported-by: Oded Gabbay <oded.gabbay@amd.com>
-Bisected-by: Oded Gabbay <oded.gabbay@amd.com>
-Tested-by: Oded Gabbay <oded.gabbay@amd.com>
+Fixes: fc423ff00df3a1955441 ("team: add peer notification")
+Fixes: 492b200efdd20b8fcfd  ("team: add support for sending multicast rejoins")
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: Jiri Benc <jbenc@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/atheros/alx/main.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/net/team/team.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/alx/main.c b/drivers/net/ethernet/atheros/alx/main.c
-index 6305a5d29db2..754ac8ef2484 100644
---- a/drivers/net/ethernet/atheros/alx/main.c
-+++ b/drivers/net/ethernet/atheros/alx/main.c
-@@ -184,15 +184,16 @@ static void alx_schedule_reset(struct alx_priv *alx)
- 	schedule_work(&alx->reset_wk);
- }
- 
--static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
-+static int alx_clean_rx_irq(struct alx_priv *alx, int budget)
+diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
+index 75864dfaa1c2..258f65ba733f 100644
+--- a/drivers/net/team/team.c
++++ b/drivers/net/team/team.c
+@@ -629,6 +629,7 @@ static int team_change_mode(struct team *team, const char *kind)
+ static void team_notify_peers_work(struct work_struct *work)
  {
- 	struct alx_rx_queue *rxq = &alx->rxq;
- 	struct alx_rrd *rrd;
- 	struct alx_buffer *rxb;
- 	struct sk_buff *skb;
- 	u16 length, rfd_cleaned = 0;
-+	int work = 0;
+ 	struct team *team;
++	int val;
  
--	while (budget > 0) {
-+	while (work < budget) {
- 		rrd = &rxq->rrd[rxq->rrd_read_idx];
- 		if (!(rrd->word3 & cpu_to_le32(1 << RRD_UPDATED_SHIFT)))
- 			break;
-@@ -203,7 +204,7 @@ static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
- 		    ALX_GET_FIELD(le32_to_cpu(rrd->word0),
- 				  RRD_NOR) != 1) {
- 			alx_schedule_reset(alx);
--			return 0;
-+			return work;
- 		}
+ 	team = container_of(work, struct team, notify_peers.dw.work);
  
- 		rxb = &rxq->bufs[rxq->read_idx];
-@@ -243,7 +244,7 @@ static bool alx_clean_rx_irq(struct alx_priv *alx, int budget)
- 		}
- 
- 		napi_gro_receive(&alx->napi, skb);
--		budget--;
-+		work++;
- 
- next_pkt:
- 		if (++rxq->read_idx == alx->rx_ringsz)
-@@ -258,21 +259,22 @@ next_pkt:
- 	if (rfd_cleaned)
- 		alx_refill_rx_ring(alx, GFP_ATOMIC);
- 
--	return budget > 0;
-+	return work;
+@@ -636,9 +637,14 @@ static void team_notify_peers_work(struct work_struct *work)
+ 		schedule_delayed_work(&team->notify_peers.dw, 0);
+ 		return;
+ 	}
++	val = atomic_dec_if_positive(&team->notify_peers.count_pending);
++	if (val < 0) {
++		rtnl_unlock();
++		return;
++	}
+ 	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, team->dev);
+ 	rtnl_unlock();
+-	if (!atomic_dec_and_test(&team->notify_peers.count_pending))
++	if (val)
+ 		schedule_delayed_work(&team->notify_peers.dw,
+ 				      msecs_to_jiffies(team->notify_peers.interval));
  }
- 
- static int alx_poll(struct napi_struct *napi, int budget)
+@@ -669,6 +675,7 @@ static void team_notify_peers_fini(struct team *team)
+ static void team_mcast_rejoin_work(struct work_struct *work)
  {
- 	struct alx_priv *alx = container_of(napi, struct alx_priv, napi);
- 	struct alx_hw *hw = &alx->hw;
--	bool complete = true;
- 	unsigned long flags;
-+	bool tx_complete;
-+	int work;
+ 	struct team *team;
++	int val;
  
--	complete = alx_clean_tx_irq(alx) &&
--		   alx_clean_rx_irq(alx, budget);
-+	tx_complete = alx_clean_tx_irq(alx);
-+	work = alx_clean_rx_irq(alx, budget);
+ 	team = container_of(work, struct team, mcast_rejoin.dw.work);
  
--	if (!complete)
--		return 1;
-+	if (!tx_complete || work == budget)
-+		return budget;
- 
- 	napi_complete(&alx->napi);
- 
-@@ -284,7 +286,7 @@ static int alx_poll(struct napi_struct *napi, int budget)
- 
- 	alx_post_write(hw);
- 
--	return 0;
-+	return work;
+@@ -676,9 +683,14 @@ static void team_mcast_rejoin_work(struct work_struct *work)
+ 		schedule_delayed_work(&team->mcast_rejoin.dw, 0);
+ 		return;
+ 	}
++	val = atomic_dec_if_positive(&team->mcast_rejoin.count_pending);
++	if (val < 0) {
++		rtnl_unlock();
++		return;
++	}
+ 	call_netdevice_notifiers(NETDEV_RESEND_IGMP, team->dev);
+ 	rtnl_unlock();
+-	if (!atomic_dec_and_test(&team->mcast_rejoin.count_pending))
++	if (val)
+ 		schedule_delayed_work(&team->mcast_rejoin.dw,
+ 				      msecs_to_jiffies(team->mcast_rejoin.interval));
  }
- 
- static irqreturn_t alx_intr_handle(struct alx_priv *alx, u32 intr)
 -- 
 2.2.2
 
