@@ -1,131 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751AbbA2BYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:24:54 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:45802 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697AbbA2BYu (ORCPT
+	id S933698AbbA2DeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:34:14 -0500
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:53422 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205AbbA2DeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:24:50 -0500
+	Wed, 28 Jan 2015 22:34:10 -0500
 MIME-Version: 1.0
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Wed, 28 Jan 2015 23:59:26 +0800
-Message-ID: <CACzj_yWX6bvkqxuDz6uV2hhRszEhR=yzvVYAqgiZzjEdsLwBaw@mail.gmail.com>
-Subject: [PATCH v4 4/6] KVM: nVMX: Enable nested apic register virtualization
-To: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
+In-Reply-To: <alpine.DEB.2.11.1501241746210.5526@nanos>
+References: <1421928077-4698-1-git-send-email-pang.xunlei@linaro.org>
+	<1421928077-4698-3-git-send-email-pang.xunlei@linaro.org>
+	<alpine.DEB.2.11.1501222202420.5526@nanos>
+	<CADcy93UD1EHiHLsgCPjODZMu1fBpKhOXuN=4Egwu6gB2UZX0+w@mail.gmail.com>
+	<alpine.DEB.2.11.1501241746210.5526@nanos>
+Date: Thu, 29 Jan 2015 00:00:07 +0800
+Message-ID: <CADcy93VetnSr2ic_M37Zr+bwGfLzzW6-YgrC+q66s_nY5v0kuQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] time: clocksource: Add a comment to CLOCK_SOURCE_SUSPEND_NONSTOP
+From: Xunlei Pang <pang.xunlei@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can reduce apic register virtualization cost with this feature,
-it is also a requirement for virtual interrupt delivery and posted
-interrupt processing.
+Hi Thomas,
 
-Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
----
- arch/x86/kvm/vmx.c |   36 ++++++++++++++++++++++++++++++++----
- 1 files changed, 32 insertions(+), 4 deletions(-)
+On 25 January 2015 at 01:07, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Sat, 24 Jan 2015, Xunlei Pang wrote:
+>
+>> Before this, I tried to add some code to catch such problem at the
+>> time of registering the clocksource, like using the
+>> CLOCKSOURCE_MASK(), for example 64bit counter will never wrap for
+>> us. But there may be other values like CLOCKSOURCE_MASK(56), I just
+>> can't figure out exactly how to do this judge.
+>
+> I don't think there is a good way to do so. Registration time is the
+> wrong place anyway because the problem depends on:
+>
+>  - The width of the counter
+>  - The frequency of the counter
+>
+> The frequency of the counter might even change after registration. Now
+> add the unknown duration of the suspend to the picture and you're
+> completely lost.
+>
+> All we can do is provide information about the actual wraparound time,
+> if the CLOCK_SOURCE_SUSPEND_NONSTOP flag is set and the wraparound
+> time is less than some reasonable margin.
+>
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 55111ed..68783e0 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1130,6 +1130,11 @@ static inline bool
-nested_cpu_has_virt_x2apic_mode(struct vmcs12 *vmcs12)
-        return nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE);
- }
+Yes, we can only deal with it approximately. How about this?
 
-+static inline bool nested_cpu_has_apic_reg_virt(struct vmcs12 *vmcs12)
-+{
-+       return nested_cpu_has2(vmcs12, SECONDARY_EXEC_APIC_REGISTER_VIRT);
-+}
-+
- static inline bool is_exception(u32 intr_info)
- {
-        return (intr_info & (INTR_INFO_INTR_TYPE_MASK | INTR_INFO_VALID_MASK))
-@@ -2423,6 +2428,7 @@ static void nested_vmx_setup_ctls_msrs(struct
-vcpu_vmx *vmx)
-        vmx->nested.nested_vmx_secondary_ctls_high &=
-                SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
-                SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE |
-+               SECONDARY_EXEC_APIC_REGISTER_VIRT |
-                SECONDARY_EXEC_WBINVD_EXITING |
-                SECONDARY_EXEC_XSAVES;
+1) Add a new member about reference wraparound time(max system suspend
+period allowed) to struct  clocksource. In
+__clocksource_updatefreq_scale(), we can use  "sec" which already
+applys 12.5% margin as its value.
 
-@@ -8443,6 +8449,7 @@ static int
-nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,
- static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
-                                               struct vmcs12 *vmcs12)
- {
-+       int msr;
-        struct page *page;
-        unsigned long *msr_bitmap;
+2) Add a new tuneable sysctl threshold with a default time period
+value(for example, 365 days)
+    We can also printk its value when booting or changing its value to
+notice people about this.
 
-@@ -8462,16 +8469,35 @@ static inline bool
-nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
-        }
+3) then,  in timekeeping_resume(), we can compare the reference
+wraparound of the nonstop clocksource with the sysctl threshold to
+decide if it is dependable to use.
 
-        if (nested_cpu_has_virt_x2apic_mode(vmcs12)) {
-+               if (nested_cpu_has_apic_reg_virt(vmcs12))
-+                       for (msr = 0x800; msr <= 0x8ff; msr++)
-+                               nested_vmx_disable_intercept_for_msr(
-+                                       msr_bitmap,
-+                                       vmx_msr_bitmap_nested,
-+                                       msr, MSR_TYPE_R);
-                /* TPR is allowed */
-                nested_vmx_disable_intercept_for_msr(msr_bitmap,
-                                vmx_msr_bitmap_nested,
-                                APIC_BASE_MSR + (APIC_TASKPRI >> 4),
-                                MSR_TYPE_R | MSR_TYPE_W);
--       } else
-+       } else {
-+               /*
-+                * Enable reading intercept of all the x2apic
-+                * MSRs. We should not rely on vmcs12 to do any
-+                * optimizations here, it may have been modified
-+                * by L1.
-+                */
-+               for (msr = 0x800; msr <= 0x8ff; msr++)
-+                       __vmx_enable_intercept_for_msr(
-+                               vmx_msr_bitmap_nested,
-+                               msr,
-+                               MSR_TYPE_R);
-+
-                __vmx_enable_intercept_for_msr(
-                                vmx_msr_bitmap_nested,
-                                APIC_BASE_MSR + (APIC_TASKPRI >> 4),
--                               MSR_TYPE_R | MSR_TYPE_W);
-+                               MSR_TYPE_W);
-+       }
-        kunmap(page);
-        nested_release_page_clean(page);
+Thanks,
+Xunlei
 
-@@ -8481,14 +8507,16 @@ static inline bool
-nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
- static int nested_vmx_check_apicv_controls(struct kvm_vcpu *vcpu,
-                                           struct vmcs12 *vmcs12)
- {
--       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
-+       if (!nested_cpu_has_virt_x2apic_mode(vmcs12) &&
-+           !nested_cpu_has_apic_reg_virt(vmcs12))
-                return 0;
-
-        /*
-         * If virtualize x2apic mode is enabled,
-         * virtualize apic access must be disabled.
-         */
--       if (nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES))
-+       if (nested_cpu_has_virt_x2apic_mode(vmcs12) &&
-+           nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES))
-                return -EINVAL;
-
-        /* tpr shadow is needed by all apicv features. */
---
-1.7.1
+>
+>
+>
+>
