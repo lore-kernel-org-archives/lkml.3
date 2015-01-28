@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761213AbbA2KXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:23:41 -0500
+	id S1753749AbbA2I72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:59:28 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752597AbbA2JAo (ORCPT
+	by vger.kernel.org with ESMTP id S1753555AbbA2I70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:44 -0500
+	Thu, 29 Jan 2015 03:59:26 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 169/176] crypto: add missing crypto module aliases
-Date: Wed, 28 Jan 2015 15:29:59 +0100
-Message-Id: <83279a01b02625618b09818f3207b104c60549be.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tyler Baker <tyler.baker@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 170/176] mmc: sdhci: Don't signal the sdio irq if it's not setup
+Date: Wed, 28 Jan 2015 15:30:00 +0100
+Message-Id: <96972e2788b66ec3d99fa6b24fb96e0c275278a6.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,262 +25,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3e14dcf7cb80b34a1f38b55bc96f02d23fdaaaaf upstream.
+[Not needed in newer kernels due to refactoring fixing this issue.]
 
-Commit 5d26a105b5a7 ("crypto: prefix module autoloading with "crypto-"")
-changed the automatic module loading when requesting crypto algorithms
-to prefix all module requests with "crypto-". This requires all crypto
-modules to have a crypto specific module alias even if their file name
-would otherwise match the requested crypto algorithm.
+With 3.14.29 (and older kernels) some of my I.mx6 Sabrelite boards were
+crashing with the following oops:
 
-Even though commit 5d26a105b5a7 added those aliases for a vast amount of
-modules, it was missing a few. Add the required MODULE_ALIAS_CRYPTO
-annotations to those files to make them get loaded automatically, again.
-This fixes, e.g., requesting 'ecb(blowfish-generic)', which used to work
-with kernels v3.18 and below.
+  sdhci: Secure Digital Host Controller Interface driver
+  sdhci: Copyright(c) Pierre Ossman
+  sdhci-pltfm: SDHCI platform and OF driver helper
+  sdhci-esdhc-imx 2198000.usdhc: could not get ultra high speed state, work on normal mode
+  mmc0: no vqmmc regulator found
+  mmc0: SDHCI controller on 2198000.usdhc [2198000.usdhc] using ADMA
+  Unable to handle kernel NULL pointer dereference at virtual address 00000000
+  pgd = c0004000
+  [00000000] *pgd=00000000
+  Internal error: Oops: 5 [#1] SMP ARM
+  Modules linked in:
+  CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.29 #1
+  task: c08a7120 ti: c089c000 task.ti: c089c000
+  PC is at wake_up_process+0x8/0x40
+  LR is at sdhci_irq+0x748/0x9c4
 
-Also change MODULE_ALIAS() lines to MODULE_ALIAS_CRYPTO(). The former
-won't work for crypto modules any more.
+Full boot log can be found at:
+  http://storage.kernelci.org/stable/v3.14.29/arm-multi_v7_defconfig/lab-collabora/boot-imx6q-sabrelite.html
 
-Fixes: 5d26a105b5a7 ("crypto: prefix module autoloading with "crypto-"")
-Cc: Kees Cook <keescook@chromium.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+This happens if the sdhci interrupt status contains SDHCI_INT_CARD_INT,
+while the sdio irq was never setup.  This patch fixes that in a minimal
+way by checking if the sdio irq was setup.
+
+In more recent kernels this bug went away due to refactoring done by
+Russel King. So an alternative (potentially better?) fix for this patch
+is to cherrypick the following patches from a recent kernel:
+
+18258f7239a6 - genirq: Provide synchronize_hardirq()
+bf3b5ec66bd0 - mmc: sdio_irq: rework sdio irq handling
+41005003bcaf - mmc: sdhci: clean up interrupt handling
+781e989cf593 - mmc: sdhci: convert to new SDIO IRQ handling
+
+Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Tyler Baker <tyler.baker@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/crypto/sha1.c | 1 +
- crypto/aes_generic.c       | 1 +
- crypto/ansi_cprng.c        | 1 +
- crypto/blowfish_generic.c  | 1 +
- crypto/camellia_generic.c  | 1 +
- crypto/cast5_generic.c     | 1 +
- crypto/cast6_generic.c     | 1 +
- crypto/crct10dif_generic.c | 1 +
- crypto/des_generic.c       | 5 +++--
- crypto/ghash-generic.c     | 1 +
- crypto/krng.c              | 1 +
- crypto/salsa20_generic.c   | 1 +
- crypto/serpent_generic.c   | 1 +
- crypto/sha1_generic.c      | 1 +
- crypto/sha256_generic.c    | 2 ++
- crypto/sha512_generic.c    | 2 ++
- crypto/tea.c               | 1 +
- crypto/tgr192.c            | 1 +
- crypto/twofish_generic.c   | 1 +
- crypto/wp512.c             | 1 +
- 20 files changed, 24 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/crypto/sha1.c b/arch/powerpc/crypto/sha1.c
-index 0f88c7b41119..b51da9132744 100644
---- a/arch/powerpc/crypto/sha1.c
-+++ b/arch/powerpc/crypto/sha1.c
-@@ -154,4 +154,5 @@ module_exit(sha1_powerpc_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 6863e3274564..ff6e822d2b78 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2508,7 +2508,7 @@ out:
+ 	/*
+ 	 * We have to delay this as it calls back into the driver.
+ 	 */
+-	if (cardint)
++	if (cardint && host->mmc->sdio_irqs)
+ 		mmc_signal_sdio_irq(host->mmc);
  
-+MODULE_ALIAS_CRYPTO("sha1");
- MODULE_ALIAS_CRYPTO("sha1-powerpc");
-diff --git a/crypto/aes_generic.c b/crypto/aes_generic.c
-index 9b3c54c1cbe8..3dd101144a58 100644
---- a/crypto/aes_generic.c
-+++ b/crypto/aes_generic.c
-@@ -1475,3 +1475,4 @@ module_exit(aes_fini);
- MODULE_DESCRIPTION("Rijndael (AES) Cipher Algorithm");
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_ALIAS_CRYPTO("aes");
-+MODULE_ALIAS_CRYPTO("aes-generic");
-diff --git a/crypto/ansi_cprng.c b/crypto/ansi_cprng.c
-index b4485a108389..6f5bebc9bf01 100644
---- a/crypto/ansi_cprng.c
-+++ b/crypto/ansi_cprng.c
-@@ -477,3 +477,4 @@ MODULE_PARM_DESC(dbg, "Boolean to enable debugging (0/1 == off/on)");
- module_init(prng_mod_init);
- module_exit(prng_mod_fini);
- MODULE_ALIAS_CRYPTO("stdrng");
-+MODULE_ALIAS_CRYPTO("ansi_cprng");
-diff --git a/crypto/blowfish_generic.c b/crypto/blowfish_generic.c
-index 7bd71f02d0dd..87b392a77a93 100644
---- a/crypto/blowfish_generic.c
-+++ b/crypto/blowfish_generic.c
-@@ -139,3 +139,4 @@ module_exit(blowfish_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Blowfish Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("blowfish");
-+MODULE_ALIAS_CRYPTO("blowfish-generic");
-diff --git a/crypto/camellia_generic.c b/crypto/camellia_generic.c
-index 1b74c5a3e891..a02286bf319e 100644
---- a/crypto/camellia_generic.c
-+++ b/crypto/camellia_generic.c
-@@ -1099,3 +1099,4 @@ module_exit(camellia_fini);
- MODULE_DESCRIPTION("Camellia Cipher Algorithm");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_CRYPTO("camellia");
-+MODULE_ALIAS_CRYPTO("camellia-generic");
-diff --git a/crypto/cast5_generic.c b/crypto/cast5_generic.c
-index 84c86db67ec7..df5c72629383 100644
---- a/crypto/cast5_generic.c
-+++ b/crypto/cast5_generic.c
-@@ -550,3 +550,4 @@ module_exit(cast5_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Cast5 Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("cast5");
-+MODULE_ALIAS_CRYPTO("cast5-generic");
-diff --git a/crypto/cast6_generic.c b/crypto/cast6_generic.c
-index f408f0bd8de2..058c8d755d03 100644
---- a/crypto/cast6_generic.c
-+++ b/crypto/cast6_generic.c
-@@ -292,3 +292,4 @@ module_exit(cast6_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Cast6 Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("cast6");
-+MODULE_ALIAS_CRYPTO("cast6-generic");
-diff --git a/crypto/crct10dif_generic.c b/crypto/crct10dif_generic.c
-index 08bb4f504520..c1229614c7e3 100644
---- a/crypto/crct10dif_generic.c
-+++ b/crypto/crct10dif_generic.c
-@@ -125,3 +125,4 @@ MODULE_AUTHOR("Tim Chen <tim.c.chen@linux.intel.com>");
- MODULE_DESCRIPTION("T10 DIF CRC calculation.");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_CRYPTO("crct10dif");
-+MODULE_ALIAS_CRYPTO("crct10dif-generic");
-diff --git a/crypto/des_generic.c b/crypto/des_generic.c
-index 5ec5ed544149..3ec6071309d9 100644
---- a/crypto/des_generic.c
-+++ b/crypto/des_generic.c
-@@ -971,8 +971,6 @@ static struct crypto_alg des_algs[2] = { {
- 	.cia_decrypt		=	des3_ede_decrypt } }
- } };
- 
--MODULE_ALIAS_CRYPTO("des3_ede");
--
- static int __init des_generic_mod_init(void)
- {
- 	return crypto_register_algs(des_algs, ARRAY_SIZE(des_algs));
-@@ -990,3 +988,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("DES & Triple DES EDE Cipher Algorithms");
- MODULE_AUTHOR("Dag Arne Osvik <da@osvik.no>");
- MODULE_ALIAS_CRYPTO("des");
-+MODULE_ALIAS_CRYPTO("des-generic");
-+MODULE_ALIAS_CRYPTO("des3_ede");
-+MODULE_ALIAS_CRYPTO("des3_ede-generic");
-diff --git a/crypto/ghash-generic.c b/crypto/ghash-generic.c
-index 4e97fae9666f..bac70995e064 100644
---- a/crypto/ghash-generic.c
-+++ b/crypto/ghash-generic.c
-@@ -173,3 +173,4 @@ module_exit(ghash_mod_exit);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("GHASH Message Digest Algorithm");
- MODULE_ALIAS_CRYPTO("ghash");
-+MODULE_ALIAS_CRYPTO("ghash-generic");
-diff --git a/crypto/krng.c b/crypto/krng.c
-index 67c88b331210..0224841b6579 100644
---- a/crypto/krng.c
-+++ b/crypto/krng.c
-@@ -63,3 +63,4 @@ module_exit(krng_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Kernel Random Number Generator");
- MODULE_ALIAS_CRYPTO("stdrng");
-+MODULE_ALIAS_CRYPTO("krng");
-diff --git a/crypto/salsa20_generic.c b/crypto/salsa20_generic.c
-index 3d0f9df30ac9..f550b5d94630 100644
---- a/crypto/salsa20_generic.c
-+++ b/crypto/salsa20_generic.c
-@@ -249,3 +249,4 @@ module_exit(salsa20_generic_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION ("Salsa20 stream cipher algorithm");
- MODULE_ALIAS_CRYPTO("salsa20");
-+MODULE_ALIAS_CRYPTO("salsa20-generic");
-diff --git a/crypto/serpent_generic.c b/crypto/serpent_generic.c
-index a53b5e2af335..94970a794975 100644
---- a/crypto/serpent_generic.c
-+++ b/crypto/serpent_generic.c
-@@ -667,3 +667,4 @@ MODULE_DESCRIPTION("Serpent and tnepres (kerneli compatible serpent reversed) Ci
- MODULE_AUTHOR("Dag Arne Osvik <osvik@ii.uib.no>");
- MODULE_ALIAS_CRYPTO("tnepres");
- MODULE_ALIAS_CRYPTO("serpent");
-+MODULE_ALIAS_CRYPTO("serpent-generic");
-diff --git a/crypto/sha1_generic.c b/crypto/sha1_generic.c
-index 76d300fe968f..fdf7c00de4b0 100644
---- a/crypto/sha1_generic.c
-+++ b/crypto/sha1_generic.c
-@@ -154,3 +154,4 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA1 Secure Hash Algorithm");
- 
- MODULE_ALIAS_CRYPTO("sha1");
-+MODULE_ALIAS_CRYPTO("sha1-generic");
-diff --git a/crypto/sha256_generic.c b/crypto/sha256_generic.c
-index 8d7811a0031c..136381bdd48d 100644
---- a/crypto/sha256_generic.c
-+++ b/crypto/sha256_generic.c
-@@ -385,4 +385,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA-224 and SHA-256 Secure Hash Algorithm");
- 
- MODULE_ALIAS_CRYPTO("sha224");
-+MODULE_ALIAS_CRYPTO("sha224-generic");
- MODULE_ALIAS_CRYPTO("sha256");
-+MODULE_ALIAS_CRYPTO("sha256-generic");
-diff --git a/crypto/sha512_generic.c b/crypto/sha512_generic.c
-index 5479f302b757..6c6d901a7cc1 100644
---- a/crypto/sha512_generic.c
-+++ b/crypto/sha512_generic.c
-@@ -288,4 +288,6 @@ MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("SHA-512 and SHA-384 Secure Hash Algorithms");
- 
- MODULE_ALIAS_CRYPTO("sha384");
-+MODULE_ALIAS_CRYPTO("sha384-generic");
- MODULE_ALIAS_CRYPTO("sha512");
-+MODULE_ALIAS_CRYPTO("sha512-generic");
-diff --git a/crypto/tea.c b/crypto/tea.c
-index 495be2d0077d..b70b441c7d1e 100644
---- a/crypto/tea.c
-+++ b/crypto/tea.c
-@@ -270,6 +270,7 @@ static void __exit tea_mod_fini(void)
- 	crypto_unregister_algs(tea_algs, ARRAY_SIZE(tea_algs));
- }
- 
-+MODULE_ALIAS_CRYPTO("tea");
- MODULE_ALIAS_CRYPTO("xtea");
- MODULE_ALIAS_CRYPTO("xeta");
- 
-diff --git a/crypto/tgr192.c b/crypto/tgr192.c
-index 5a5333f166ea..f7ed2fba396c 100644
---- a/crypto/tgr192.c
-+++ b/crypto/tgr192.c
-@@ -676,6 +676,7 @@ static void __exit tgr192_mod_fini(void)
- 	crypto_unregister_shashes(tgr_algs, ARRAY_SIZE(tgr_algs));
- }
- 
-+MODULE_ALIAS_CRYPTO("tgr192");
- MODULE_ALIAS_CRYPTO("tgr160");
- MODULE_ALIAS_CRYPTO("tgr128");
- 
-diff --git a/crypto/twofish_generic.c b/crypto/twofish_generic.c
-index 523ad8c4e359..ebf7a3efb572 100644
---- a/crypto/twofish_generic.c
-+++ b/crypto/twofish_generic.c
-@@ -212,3 +212,4 @@ module_exit(twofish_mod_fini);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION ("Twofish Cipher Algorithm");
- MODULE_ALIAS_CRYPTO("twofish");
-+MODULE_ALIAS_CRYPTO("twofish-generic");
-diff --git a/crypto/wp512.c b/crypto/wp512.c
-index 8d4076417e87..253db94b5479 100644
---- a/crypto/wp512.c
-+++ b/crypto/wp512.c
-@@ -1167,6 +1167,7 @@ static void __exit wp512_mod_fini(void)
- 	crypto_unregister_shashes(wp_algs, ARRAY_SIZE(wp_algs));
- }
- 
-+MODULE_ALIAS_CRYPTO("wp512");
- MODULE_ALIAS_CRYPTO("wp384");
- MODULE_ALIAS_CRYPTO("wp256");
- 
+ 	return result;
 -- 
 2.2.2
 
