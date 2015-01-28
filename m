@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763226AbbA2Cxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:53:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47031 "EHLO
+	id S1762550AbbA2Cjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:39:44 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47069 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965488AbbA2CiQ (ORCPT
+	with ESMTP id S1755651AbbA2Ci5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:16 -0500
+	Wed, 28 Jan 2015 21:38:57 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Andy Lutomirski <luto@amacapital.net>, Paolo Bonzini <pbonzini@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 097/139] drm/i915: Don't complain about stolen conflicts on gen3
-Date: Wed, 28 Jan 2015 14:20:40 -0800
-Message-Id: <1422483682-15393-98-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 098/139] x86, kvm: Clear paravirt_enabled on KVM guests for espfix32's benefit
+Date: Wed, 28 Jan 2015 14:20:41 -0800
+Message-Id: <1422483682-15393-99-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,54 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 0b6d24c01932db99fc95304235e751e7f7625c41 upstream.
+commit 29fa6825463c97e5157284db80107d1bfac5d77b upstream.
 
-Apparently stuff works that way on those machines.
+paravirt_enabled has the following effects:
 
-I agree with Chris' concern that this is a bit risky but imo worth a
-shot in -next just for fun. Afaics all these machines have the pci
-resources allocated like that by the BIOS, so I suspect that it's all
-ok.
+ - Disables the F00F bug workaround warning.  There is no F00F bug
+   workaround any more because Linux's standard IDT handling already
+   works around the F00F bug, but the warning still exists.  This
+   is only cosmetic, and, in any event, there is no such thing as
+   KVM on a CPU with the F00F bug.
 
-This regression goes back to
+ - Disables 32-bit APM BIOS detection.  On a KVM paravirt system,
+   there should be no APM BIOS anyway.
 
-commit eaba1b8f3379b5d100bd146b9a41d28348bdfd09
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Jul 4 12:28:35 2013 +0100
+ - Disables tboot.  I think that the tboot code should check the
+   CPUID hypervisor bit directly if it matters.
 
-    drm/i915: Verify that our stolen memory doesn't conflict
+ - paravirt_enabled disables espfix32.  espfix32 should *not* be
+   disabled under KVM paravirt.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76983
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71031
-Tested-by: lu hua <huax.lu@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Tested-by: Paul Menzel <paulepanter@users.sourceforge.net>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+The last point is the purpose of this patch.  It fixes a leak of the
+high 16 bits of the kernel stack address on 32-bit KVM paravirt
+guests.  Fixes CVE-2014-8134.
+
+Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_gem_stolen.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/kernel/kvm.c      | 9 ++++++++-
+ arch/x86/kernel/kvmclock.c | 1 -
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
-index 6471872..59bc589 100644
---- a/drivers/gpu/drm/i915/i915_gem_stolen.c
-+++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
-@@ -125,7 +125,11 @@ static unsigned long i915_stolen_to_physical(struct drm_device *dev)
- 	 */
- 	r = devm_request_mem_region(dev->dev, base, dev_priv->gtt.stolen_size,
- 				    "Graphics Stolen Memory");
--	if (r == NULL) {
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index f81cade..5b8eff1 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -280,7 +280,14 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+ static void __init paravirt_ops_setup(void)
+ {
+ 	pv_info.name = "KVM";
+-	pv_info.paravirt_enabled = 1;
++
 +	/*
-+	 * GEN3 firmware likes to smash pci bridges into the stolen
-+	 * range. Apparently this works.
++	 * KVM isn't paravirt in the sense of paravirt_enabled.  A KVM
++	 * guest kernel works like a bare metal kernel with additional
++	 * features, and paravirt_enabled is about features that are
++	 * missing.
 +	 */
-+	if (r == NULL && !IS_GEN3(dev)) {
- 		DRM_ERROR("conflict detected with stolen region: [0x%08x - 0x%08x]\n",
- 			  base, base + (uint32_t)dev_priv->gtt.stolen_size);
- 		base = 0;
++	pv_info.paravirt_enabled = 0;
+ 
+ 	if (kvm_para_has_feature(KVM_FEATURE_NOP_IO_DELAY))
+ 		pv_cpu_ops.io_delay = kvm_io_delay;
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index e604109..c8e98cd 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -263,7 +263,6 @@ void __init kvmclock_init(void)
+ #endif
+ 	kvm_get_preset_lpj();
+ 	clocksource_register_hz(&kvm_clock, NSEC_PER_SEC);
+-	pv_info.paravirt_enabled = 1;
+ 	pv_info.name = "KVM";
+ 
+ 	if (kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE_STABLE_BIT))
 -- 
 1.9.1
 
