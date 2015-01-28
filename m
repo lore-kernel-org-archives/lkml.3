@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761453AbbA1FC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:02:26 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39107 "EHLO mail.kernel.org"
+	id S1761632AbbA1EUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:20:12 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39119 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933959AbbA1EUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:20:03 -0500
+	id S933965AbbA1EUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:20:06 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 068/177] ALSA: pcm: use the same dma mmap codepath both for arm and arm64
-Date: Wed, 28 Jan 2015 12:08:22 +0800
-Message-Id: <1422418236-12852-135-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 68/91] shmem: fix nlink for rename overwrite directory
+Date: Wed, 28 Jan 2015 12:08:23 +0800
+Message-Id: <1422418236-12852-136-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,45 +20,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit a011e213f3700233ed2a676f1ef0a74a052d7162 upstream.
+commit b928095b0a7cff7fb9fcf4c706348ceb8ab2c295 upstream.
 
-This avoids following kernel crash when try to playback on arm64
+If overwriting an empty directory with rename, then need to drop the extra
+nlink.
 
-[  107.497203] [<ffffffc00046b310>] snd_pcm_mmap_data_fault+0x90/0xd4
-[  107.503405] [<ffffffc0001541ac>] __do_fault+0xb0/0x498
-[  107.508565] [<ffffffc0001576a0>] handle_mm_fault+0x224/0x7b0
-[  107.514246] [<ffffffc000092640>] do_page_fault+0x11c/0x310
-[  107.519738] [<ffffffc000081100>] do_mem_abort+0x38/0x98
+Test prog:
 
-Tested: backported to 3.14 and tried to playback on arm64 machine
+#include <stdio.h>
+#include <fcntl.h>
+#include <err.h>
+#include <sys/stat.h>
 
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+int main(void)
+{
+	const char *test_dir1 = "test-dir1";
+	const char *test_dir2 = "test-dir2";
+	int res;
+	int fd;
+	struct stat statbuf;
+
+	res = mkdir(test_dir1, 0777);
+	if (res == -1)
+		err(1, "mkdir(\"%s\")", test_dir1);
+
+	res = mkdir(test_dir2, 0777);
+	if (res == -1)
+		err(1, "mkdir(\"%s\")", test_dir2);
+
+	fd = open(test_dir2, O_RDONLY);
+	if (fd == -1)
+		err(1, "open(\"%s\")", test_dir2);
+
+	res = rename(test_dir1, test_dir2);
+	if (res == -1)
+		err(1, "rename(\"%s\", \"%s\")", test_dir1, test_dir2);
+
+	res = fstat(fd, &statbuf);
+	if (res == -1)
+		err(1, "fstat(%i)", fd);
+
+	if (statbuf.st_nlink != 0) {
+		fprintf(stderr, "nlink is %lu, should be 0\n", statbuf.st_nlink);
+		return 1;
+	}
+
+	return 0;
+}
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- sound/core/pcm_native.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/shmem.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
-index d776291..3a90793 100644
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -3171,7 +3171,7 @@ static const struct vm_operations_struct snd_pcm_vm_ops_data_fault = {
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 4bb5a80..0b77082 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1725,8 +1725,10 @@ static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct
  
- #ifndef ARCH_HAS_DMA_MMAP_COHERENT
- /* This should be defined / handled globally! */
--#ifdef CONFIG_ARM
-+#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
- #define ARCH_HAS_DMA_MMAP_COHERENT
- #endif
- #endif
+ 	if (new_dentry->d_inode) {
+ 		(void) shmem_unlink(new_dir, new_dentry);
+-		if (they_are_dirs)
++		if (they_are_dirs) {
++			drop_nlink(new_dentry->d_inode);
+ 			drop_nlink(old_dir);
++		}
+ 	} else if (they_are_dirs) {
+ 		drop_nlink(old_dir);
+ 		inc_nlink(new_dir);
 -- 
 1.9.1
 
