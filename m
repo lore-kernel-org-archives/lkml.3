@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761138AbbA1ERh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:17:37 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38124 "EHLO mail.kernel.org"
+	id S1762246AbbA1FN7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:13:59 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38138 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761106AbbA1ERc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:17:32 -0500
+	id S1761115AbbA1ERe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:17:34 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 43/91] perf: Fix a race condition in perf_remove_from_context()
-Date: Wed, 28 Jan 2015 12:07:33 +0800
-Message-Id: <1422418236-12852-86-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 44/91] ASoC: samsung-i2s: Check secondary DAI exists before referencing
+Date: Wed, 28 Jan 2015 12:07:34 +0800
+Message-Id: <1422418236-12852-87-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -25,63 +21,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cong Wang <cwang@twopensource.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
+commit 133c2681c4a0c1b589d138c2fdd0f131bdce20ed upstream.
 
-We saw a kernel soft lockup in perf_remove_from_context(),
-it looks like the `perf` process, when exiting, could not go
-out of the retry loop. Meanwhile, the target process was forking
-a child. So either the target process should execute the smp
-function call to deactive the event (if it was running) or it should
-do a context switch which deactives the event.
+In a couple of places the driver is missing a check to ensure there is a
+secondary DAI before it de-references the pointer to it, causing a null
+pointer de-reference. This patch adds a check to avoid this.
 
-It seems we optimize out a context switch in perf_event_context_sched_out(),
-and what's more important, we still test an obsolete task pointer when
-retrying, so no one actually would deactive that event in this situation.
-Fix it directly by reloading the task pointer in perf_remove_from_context().
-
-This should cure the above soft lockup.
-
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+[lizf: Backported to 3.4: drop the changes to i2s_shutdown()]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/events/core.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ sound/soc/samsung/i2s.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 685ce46..c958be1 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1702,6 +1702,16 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
+diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
+index 6ac7b82..9998719 100644
+--- a/sound/soc/samsung/i2s.c
++++ b/sound/soc/samsung/i2s.c
+@@ -392,7 +392,7 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
+ 		if (dir == SND_SOC_CLOCK_IN)
+ 			rfs = 0;
  
+-		if ((rfs && other->rfs && (other->rfs != rfs)) ||
++		if ((rfs && other && other->rfs && (other->rfs != rfs)) ||
+ 				(any_active(i2s) &&
+ 				(((dir == SND_SOC_CLOCK_IN)
+ 					&& !(mod & MOD_CDCLKCON)) ||
 -- 
 1.9.1
 
