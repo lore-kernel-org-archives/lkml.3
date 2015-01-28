@@ -1,137 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120AbbA2BnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:43:14 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45665 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754996AbbA2BnK (ORCPT
+	id S932170AbbA2Bm5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:42:57 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37649 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757002AbbA2Bmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:43:10 -0500
-Date: Wed, 28 Jan 2015 17:23:31 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        Robin Murphy <Robin.Murphy@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>, Will Deacon <Will.Deacon@arm.com>,
+	Wed, 28 Jan 2015 20:42:53 -0500
+Date: Wed, 28 Jan 2015 11:26:21 -0600
+From: Andy Gross <agross@codeaurora.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-soc@vger.kernel.org" <linux-soc@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 3/6] of: fix size when dma-range is not used
-Message-ID: <20150128172330.GD31752@e104818-lin.cambridge.arm.com>
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
- <1422052359-12384-4-git-send-email-m-karicheri2@ti.com>
- <54C77616.80301@arm.com>
- <54C7DF13.20402@ti.com>
- <20150128110523.GC6646@e104818-lin.cambridge.arm.com>
- <CAL_JsqJiCKW0ny=_ueq=A7RH3octpEhN+KZuLZhbNEHusyjcig@mail.gmail.com>
+Subject: Re: [PATCH 1/6] soc: qcom: gsbi: Add support for ADM CRCI muxing
+Message-ID: <20150128172621.GA17315@qualcomm.com>
+References: <1422396644-21714-1-git-send-email-agross@codeaurora.org>
+ <1422396644-21714-2-git-send-email-agross@codeaurora.org>
+ <20150128031149.GM11960@sonymobile.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAL_JsqJiCKW0ny=_ueq=A7RH3octpEhN+KZuLZhbNEHusyjcig@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150128031149.GM11960@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 03:45:19PM +0000, Rob Herring wrote:
-> On Wed, Jan 28, 2015 at 5:05 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Tue, Jan 27, 2015 at 06:55:15PM +0000, Murali Karicheri wrote:
-> >> How about having the logic like this?
-> >>
-> >>       ret = of_dma_get_range(np, &dma_addr, &paddr, &size);
-> >>       if (ret < 0) {
-> >>               dma_addr = offset = 0;
-> >>               size = dev->coherent_dma_mask + 1;
-> >>       } else {
-> >>               offset = PFN_DOWN(paddr - dma_addr);
-> >>               dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
-> >>       }
-> >>
-> >>       if (is_power_of_2(size + 1))
-> >>               size = size + 1;
-> >>       else if (!is_power_of_2(size))
-> >>       {
-> >>               dev_err(dev, "invalid size\n");
-> >>               return;
-> >>       }
-> >
-> > In of_dma_configure(), we currently assume that the default coherent
-> > mask is 32-bit. In this thread:
-> >
-> > http://article.gmane.org/gmane.linux.kernel/1835096
-> >
-> > we talked about setting the coherent mask based on size automatically.
-> > I'm not sure about the size but I think we can assume is 32-bit mask + 1
-> > if it is not specified in the DT. Instead of just assuming a default
-> > mask, let's assume a default size and create the mask based on this
-> > (untested):
-> >
-> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> > index 5b33c6a21807..9ff8d1286b44 100644
-> > --- a/drivers/of/platform.c
-> > +++ b/drivers/of/platform.c
-> > @@ -170,10 +170,10 @@ static void of_dma_configure(struct device *dev)
-> >         struct iommu_ops *iommu;
-> >
-> >         /*
-> > -        * Set default dma-mask to 32 bit. Drivers are expected to setup
-> > -        * the correct supported dma_mask.
-> > +        * Set default size to cover the 32-bit. Drivers are expected to setup
-> > +        * the correct size and dma_mask.
-> >          */
-> > -       dev->coherent_dma_mask = DMA_BIT_MASK(32);
-> > +       size = 1ULL << 32;
-> >
-> >         /*
-> >          * Set it to coherent_dma_mask by default if the architecture
-> > @@ -185,13 +185,24 @@ static void of_dma_configure(struct device *dev)
-> >         ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
-> >         if (ret < 0) {
-> >                 dma_addr = offset = 0;
-> > -               size = dev->coherent_dma_mask;
+On Tue, Jan 27, 2015 at 07:11:50PM -0800, Bjorn Andersson wrote:
+> On Tue 27 Jan 14:10 PST 2015, Andy Gross wrote:
 > 
-> Are we assuming dma_addr, paddr and size are not touched on error? If
-> so, we can get rid of this clause entirely.
-
-We can if we initialise dma_addr and offset to 0 when declared in this
-function. The dma_addr and size variables are later passed to the
-arch_setup_dma_ops(), so they need to have some sane values independent
-of the presence of dma-ranges in the DT.
-
-> >         } else {
-> >                 offset = PFN_DOWN(paddr - dma_addr);
-> >                 dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
-> >         }
-> >         dev->dma_pfn_offset = offset;
-> >
-> > +       /*
-> > +        * Workaround for DTs setting the size to a mask or 0.
-> > +        */
-> > +       if (is_power_of_2(size + 1))
-> > +               size += 1;
+> This solution looks good, just some style things.
 > 
-> As I mentioned, I think power of 2 is too restrictive (from a DT
-> perspective even though the kernel may require a power of 2 here for
-> the mask). Just checking bit0 set should be enough.
+> > diff --git a/drivers/soc/qcom/qcom_gsbi.c b/drivers/soc/qcom/qcom_gsbi.c
+> [..]
+> > +#define MAX_GSBI		12
+> > +
+> > +#define TCSR_ADM_CRCI_BASE	0x70
+> > +
+> > +struct crci_config {
+> > +	u32 num_rows;
+> > +	const u32 *array;
+> 
+> Making this:
+>  const u32 (*array)[MAX_GSBI];
 
-The power of 2 was mainly to cover the case where the size is wrongly
-written as a mask in the DT. If the size is deliberately not a power of
-two and not a full mask, the above check won't change it. With my
-proposal, ilog2 gets rid of extra bits in size, only that if the size
-was a mask because of DT error, we lose a bit in the coherent_dma_mask.
+ok, i'll switch to do this instead and change the usage down below.
 
-> Also, we need a WARN here so DTs get fixed.
+<snip>
 
-I agree.
+> > +			else
+> > +				val = 0;
+> > +
+> > +			regmap_update_bits(gsbi->tcsr,
+> > +				TCSR_ADM_CRCI_BASE + 0x4*i,
+> > +				config->array[i*MAX_GSBI + gsbi_num - 1], val);
+> 
+> To me this would be cleaner:
+> 
+> mask = config->array[i][gsbi_num - 1];
+> if (gsbi->mode == GSBI_PRO_SPI)
+> 	regmap_update_bits(gsbi->tcsr, TCSR_ADM_CRCI_BASE + i * 4, mask, mask);
+> else
+> 	regmap_update_bits(gsbi->tcsr, TCSR_ADM_CRCI_BASE + i * 4, mask, 0);
+
+i had considered doing something similar.  It does make it cleaner, so I'll do
+this.
+
+> > +		}
+> > +
+> There should be an extra set of {} around the if statment body.
+
+done
+
 
 -- 
-Catalin
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
