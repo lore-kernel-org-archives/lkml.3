@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759105AbbA1AGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 19:06:10 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:34896 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755538AbbA1AGI (ORCPT
+	id S1758191AbbA1AKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 19:10:41 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:39790 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754708AbbA1AKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 19:06:08 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] x86: Fix and enforce max instruction size in the insn decoder
-Date: Tue, 27 Jan 2015 16:06:02 -0800
-Message-Id: <f8f0bc9b8c58cfd6830f7d88400bf1396cbdcd0f.1422403511.git.luto@amacapital.net>
-X-Mailer: git-send-email 2.1.0
+	Tue, 27 Jan 2015 19:10:40 -0500
+X-Sasl-enc: fYzzAhZh3jqgPQ4DiUO5WkXwJBkMRHkQWu/CuyftEi1i 1422403839
+Date: Tue, 27 Jan 2015 16:10:38 -0800
+From: Greg KH <greg@kroah.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xensource.com,
+        catalin.marinas@arm.com, Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: backport a4dba130891271084344c12537731542ec77cb85 to 3.16+
+Message-ID: <20150128001038.GB17677@kroah.com>
+References: <alpine.DEB.2.02.1501121704380.3058@kaball.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1501121704380.3058@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86 instructions cannot exceed 15 bytes, and the instruction decoder
-should enforce that.  Prior to 6ba48ff46f76, the instruction length
-limit was implicitly set to 16, which was an approximation of 15,
-but there is currently no limit at all.
+On Mon, Jan 12, 2015 at 06:09:33PM +0000, Stefano Stabellini wrote:
+> Hi all,
+> I would like to request a backport of the following commit:
+> 
+> 
+> commit a4dba130891271084344c12537731542ec77cb85
+> Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Date:   Fri Nov 21 11:07:39 2014 +0000
+> 
+>     xen/arm/arm64: introduce xen_arch_need_swiotlb
+> 
+> 
+> to stable trees from 3.16 onward (3.16 included).
+> 
+> 
+> The commit needs to be slightly modified because is_device_dma_coherent
+> is not available on kernels < 3.19, so I just removed the call,
+> thus assuming that the device is not coherent on arm (slower but safe):
 
-Fix MAX_INSN_SIZE (it should be 15, not 16), and fix the decoder to
-reject instructions that exceed MAX_INSN_SIZE.
+A diff of a diff is hard to apply, please send the reworked patch in a
+format that I can apply it in.
 
-Other than potentially confusing some of the decoder sanity checks,
-I'm not aware of any actual problems that omitting this check would
-cause, nor am I aware of any practical problems caused by the
-MAX_INSN_SIZE error.
+thanks,
 
-Fixes: 6ba48ff46f76 x86: Remove arbitrary instruction size limit in instruction decoder
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
-
-Changes from old versions: folded
-
-arch/x86/include/asm/insn.h | 2 +-
- arch/x86/lib/insn.c         | 7 +++++++
- 2 files changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/insn.h b/arch/x86/include/asm/insn.h
-index 47f29b1d1846..e7814b74caf8 100644
---- a/arch/x86/include/asm/insn.h
-+++ b/arch/x86/include/asm/insn.h
-@@ -69,7 +69,7 @@ struct insn {
- 	const insn_byte_t *next_byte;
- };
- 
--#define MAX_INSN_SIZE	16
-+#define MAX_INSN_SIZE	15
- 
- #define X86_MODRM_MOD(modrm) (((modrm) & 0xc0) >> 6)
- #define X86_MODRM_REG(modrm) (((modrm) & 0x38) >> 3)
-diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
-index 2480978b31cc..bf1f227cf706 100644
---- a/arch/x86/lib/insn.c
-+++ b/arch/x86/lib/insn.c
-@@ -52,6 +52,13 @@
-  */
- void insn_init(struct insn *insn, const void *kaddr, int buf_len, int x86_64)
- {
-+	/*
-+	 * Instructions longer than MAX_INSN_SIZE (15 bytes) are invalid
-+	 * even if the input buffer is long enough to hold them.
-+	 */
-+	if (buf_len > MAX_INSN_SIZE)
-+		buf_len = MAX_INSN_SIZE;
-+
- 	memset(insn, 0, sizeof(*insn));
- 	insn->kaddr = kaddr;
- 	insn->end_kaddr = kaddr + buf_len;
--- 
-2.1.0
-
+greg k-h
