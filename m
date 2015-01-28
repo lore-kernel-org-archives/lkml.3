@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030AbbA2JAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:00:07 -0500
+	id S932775AbbA2Kpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:45:42 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754553AbbA2I77 (ORCPT
+	by vger.kernel.org with ESMTP id S1754375AbbA2I7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:59:59 -0500
+	Thu, 29 Jan 2015 03:59:47 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
-        David Howells <dhowells@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 164/176] KEYS: close race between key lookup and freeing
-Date: Wed, 28 Jan 2015 15:29:54 +0100
-Message-Id: <3e0ae20f2dd1ff034e48efbbb989e495f4eef0b7.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 165/176] ipvs: uninitialized data with IP_VS_IPV6
+Date: Wed, 28 Jan 2015 15:29:55 +0100
+Message-Id: <40d4cb9082b333d247c1ebff9bb1bcf84b137f53.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,54 +23,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a3a8784454692dd72e5d5d34dcdab17b4420e74c upstream.
+commit 3b05ac3824ed9648c0d9c02d51d9b54e4e7e874f upstream.
 
-When a key is being garbage collected, it's key->user would get put before
-the ->destroy() callback is called, where the key is removed from it's
-respective tracking structures.
+The app_tcp_pkt_out() function expects "*diff" to be set and ends up
+using uninitialized data if CONFIG_IP_VS_IPV6 is turned on.
 
-This leaves a key hanging in a semi-invalid state which leaves a window open
-for a different task to try an access key->user. An example is
-find_keyring_by_name() which would dereference key->user for a key that is
-in the process of being garbage collected (where key->user was freed but
-->destroy() wasn't called yet - so it's still present in the linked list).
+The same issue is there in app_tcp_pkt_in().  Thanks to Julian Anastasov
+for noticing that.
 
-This would cause either a panic, or corrupt memory.
-
-Fixes CVE-2014-9529.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- security/keys/gc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/netfilter/ipvs/ip_vs_ftp.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/security/keys/gc.c b/security/keys/gc.c
-index d67c97bb1025..797818695c87 100644
---- a/security/keys/gc.c
-+++ b/security/keys/gc.c
-@@ -201,12 +201,12 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
- 		if (test_bit(KEY_FLAG_INSTANTIATED, &key->flags))
- 			atomic_dec(&key->user->nikeys);
+diff --git a/net/netfilter/ipvs/ip_vs_ftp.c b/net/netfilter/ipvs/ip_vs_ftp.c
+index 77c173282f38..4a662f15eaee 100644
+--- a/net/netfilter/ipvs/ip_vs_ftp.c
++++ b/net/netfilter/ipvs/ip_vs_ftp.c
+@@ -183,6 +183,8 @@ static int ip_vs_ftp_out(struct ip_vs_app *app, struct ip_vs_conn *cp,
+ 	struct nf_conn *ct;
+ 	struct net *net;
  
--		key_user_put(key->user);
--
- 		/* now throw away the key memory */
- 		if (key->type->destroy)
- 			key->type->destroy(key);
- 
-+		key_user_put(key->user);
++	*diff = 0;
 +
- 		kfree(key->description);
+ #ifdef CONFIG_IP_VS_IPV6
+ 	/* This application helper doesn't work with IPv6 yet,
+ 	 * so turn this into a no-op for IPv6 packets
+@@ -191,8 +193,6 @@ static int ip_vs_ftp_out(struct ip_vs_app *app, struct ip_vs_conn *cp,
+ 		return 1;
+ #endif
  
- #ifdef KEY_DEBUGGING
+-	*diff = 0;
+-
+ 	/* Only useful for established sessions */
+ 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
+ 		return 1;
+@@ -321,6 +321,9 @@ static int ip_vs_ftp_in(struct ip_vs_app *app, struct ip_vs_conn *cp,
+ 	struct ip_vs_conn *n_cp;
+ 	struct net *net;
+ 
++	/* no diff required for incoming packets */
++	*diff = 0;
++
+ #ifdef CONFIG_IP_VS_IPV6
+ 	/* This application helper doesn't work with IPv6 yet,
+ 	 * so turn this into a no-op for IPv6 packets
+@@ -329,9 +332,6 @@ static int ip_vs_ftp_in(struct ip_vs_app *app, struct ip_vs_conn *cp,
+ 		return 1;
+ #endif
+ 
+-	/* no diff required for incoming packets */
+-	*diff = 0;
+-
+ 	/* Only useful for established sessions */
+ 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
+ 		return 1;
 -- 
 2.2.2
 
