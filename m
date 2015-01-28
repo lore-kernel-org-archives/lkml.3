@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760966AbbA1EQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:16:47 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37840 "EHLO mail.kernel.org"
+	id S1760986AbbA1EQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:16:52 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37876 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760890AbbA1EQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:16:43 -0500
+	id S1760890AbbA1EQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:16:48 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 36/91] futex: Unlock hb->lock in futex_wait_requeue_pi() error path
-Date: Wed, 28 Jan 2015 12:07:19 +0800
-Message-Id: <1422418236-12852-72-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Richard Larocque <rlarocque@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        John Stultz <john.stultz@linaro.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 37/91] alarmtimer: Return relative times in timer_gettime
+Date: Wed, 28 Jan 2015 12:07:20 +0800
+Message-Id: <1422418236-12852-73-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,56 +24,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Richard Larocque <rlarocque@google.com>
 
 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 13c42c2f43b19aab3195f2d357db00d1e885eaa8 upstream.
+commit e86fea764991e00a03ff1e56409ec9cacdbda4c9 upstream.
 
-futex_wait_requeue_pi() calls futex_wait_setup(). If
-futex_wait_setup() succeeds it returns with hb->lock held and
-preemption disabled. Now the sanity check after this does:
+Returns the time remaining for an alarm timer, rather than the time at
+which it is scheduled to expire.  If the timer has already expired or it
+is not currently scheduled, the it_value's members are set to zero.
 
-        if (match_futex(&q.key, &key2)) {
-	   	ret = -EINVAL;
-		goto out_put_keys;
-	}
+This new behavior matches that of the other posix-timers and the POSIX
+specifications.
 
-which releases the keys but does not release hb->lock.
+This is a change in user-visible behavior, and may break existing
+applications.  Hopefully, few users rely on the old incorrect behavior.
 
-So we happily return to user space with hb->lock held and therefor
-preemption disabled.
-
-Unlock hb->lock before taking the exit route.
-
-Reported-by: Dave "Trinity" Jones <davej@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Reviewed-by: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409112318500.4178@nanos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[lizf: Backported to 3.4: queue_unlock() takes two parameters]
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+[jstultz: minor style tweak]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+[lizf: Backported to 3.4:
+ - add alarm_expires_remaining() introduced by commit 6cffe00f7d4e]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/futex.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/alarmtimer.c | 24 +++++++++++++++++-------
+ 1 file changed, 17 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 9396b7b..41dfb18 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2460,6 +2460,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	 * shared futexes. We need to compare the keys:
- 	 */
- 	if (match_futex(&q.key, &key2)) {
-+		queue_unlock(&q, hb);
- 		ret = -EINVAL;
- 		goto out_put_keys;
- 	}
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index b704579..c72d3dd 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -232,6 +232,12 @@ static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
+ 
+ }
+ 
++ktime_t alarm_expires_remaining(const struct alarm *alarm)
++{
++	struct alarm_base *base = &alarm_bases[alarm->type];
++	return ktime_sub(alarm->node.expires, base->gettime());
++}
++
+ #ifdef CONFIG_RTC_CLASS
+ /**
+  * alarmtimer_suspend - Suspend time callback
+@@ -525,18 +531,22 @@ static int alarm_timer_create(struct k_itimer *new_timer)
+  * @new_timer: k_itimer pointer
+  * @cur_setting: itimerspec data to fill
+  *
+- * Copies the itimerspec data out from the k_itimer
++ * Copies out the current itimerspec data
+  */
+ static void alarm_timer_get(struct k_itimer *timr,
+ 				struct itimerspec *cur_setting)
+ {
+-	memset(cur_setting, 0, sizeof(struct itimerspec));
++	ktime_t relative_expiry_time =
++		alarm_expires_remaining(&(timr->it.alarm.alarmtimer));
++
++	if (ktime_to_ns(relative_expiry_time) > 0) {
++		cur_setting->it_value = ktime_to_timespec(relative_expiry_time);
++	} else {
++		cur_setting->it_value.tv_sec = 0;
++		cur_setting->it_value.tv_nsec = 0;
++	}
+ 
+-	cur_setting->it_interval =
+-			ktime_to_timespec(timr->it.alarm.interval);
+-	cur_setting->it_value =
+-		ktime_to_timespec(timr->it.alarm.alarmtimer.node.expires);
+-	return;
++	cur_setting->it_interval = ktime_to_timespec(timr->it.alarm.interval);
+ }
+ 
+ /**
 -- 
 1.9.1
 
