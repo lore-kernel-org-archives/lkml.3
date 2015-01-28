@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310AbbA1Uzv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:55:51 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36331 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167AbbA1Uzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:55:46 -0500
-Message-ID: <54C8CCA0.8080806@huawei.com>
-Date: Wed, 28 Jan 2015 19:48:48 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S932660AbbA1USk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:18:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48350 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752476AbbA1USh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:18:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,480,1418112000"; 
+   d="scan'208";a="677290398"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Wincy Van <fanwenyi0529@gmail.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Subject: RE: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
+Thread-Topic: [PATCH v3 1/6] KVM: nVMX: Use hardware MSR bitmap
+Thread-Index: AQHQN79lT9Shw/DNlk+phY4fCFwl65zVMZZg//+J0gCAAKsDYP//gx4AgACHCkA=
+Date: Wed, 28 Jan 2015 11:52:54 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C865@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yUu5omqFL7u8NE6vyqXGy_-dAeukRspJha+EiGXVBzmYg@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C563@SHSMSX104.ccr.corp.intel.com>
+ <CACzj_yVqDYyz5VwCX5d=Po2X_DdsHbqLmON8N=1PVLLocoHNpw@mail.gmail.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC2C800@SHSMSX104.ccr.corp.intel.com>
+ <CACzj_yWZzhgjqBPNkxy39v6-uXnRpKb0Eo-YjEQwfSYL+tT-bQ@mail.gmail.com>
+In-Reply-To: <CACzj_yWZzhgjqBPNkxy39v6-uXnRpKb0Eo-YjEQwfSYL+tT-bQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>
-CC: <lizf@kernel.org>, <stable@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
-        "Paolo Bonzini" <pbonzini@redhat.com>
-Subject: Re: [PATCH 3.4 081/177] KVM: x86: Emulator fixes for eip canonical
- checks on near branches
-References: <1422418050-12581-1-git-send-email-lizf@kernel.org> <1422418236-12852-161-git-send-email-lizf@kernel.org> <A7FCAD0F-53C8-4B5F-9ABA-1EB4858AB289@gmail.com>
-In-Reply-To: <A7FCAD0F-53C8-4B5F-9ABA-1EB4858AB289@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0SM9vh6007832
 
-On 2015/1/28 16:49, Nadav Amit wrote:
-> There is a bug in this patch, so please include
-> 7e46dddd6f6cd5dbf3c7bd04a7e75d19475ac9f2 ("KVM: x86: Fix far-jump to
-> non-canonical checkâ€) as well.
+Wincy Van wrote on 2015-01-28:
+> On Wed, Jan 28, 2015 at 7:25 PM, Zhang, Yang Z <yang.z.zhang@intel.com>
+> wrote:
+>> Wincy Van wrote on 2015-01-28:
+>>> On Wed, Jan 28, 2015 at 4:05 PM, Zhang, Yang Z
+>>> <yang.z.zhang@intel.com>
+>>> wrote:
+>>>>> @@ -8344,7 +8394,68 @@ static int
+>>>>> nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu, static
+>>>>> inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
+>>>>>                                                struct vmcs12
+>>>>> *vmcs12)  { -       return false; +       struct page *page; +
+>>>>> unsigned long *msr_bitmap; + +       if
+>>>>> (!nested_cpu_has_virt_x2apic_mode(vmcs12)) +               return
+>>>>> false; + +       page = nested_get_page(vcpu, vmcs12->msr_bitmap);
+> +
+>>>>>     if (!page) { +               WARN_ON(1); +
+> return
+>>>>> false; +       } +       msr_bitmap = (unsigned long *)kmap(page); +
+>>>>>     if (!msr_bitmap) { +
+>>>>> nested_release_page_clean(page); +               WARN_ON(1); +
+>>>>>       return false; +       } + +
+> memset(vmx_msr_bitmap_nested,
+>>>>> 0xff, PAGE_SIZE); + +       if
+>>>>> (nested_cpu_has_virt_x2apic_mode(vmcs12)) +               /* TPR is
+>>>>> allowed */ + nested_vmx_disable_intercept_for_msr(msr_bitmap, +
+>>>>>           vmx_msr_bitmap_nested, + APIC_BASE_MSR + (APIC_TASKPRI
+>>>>>>> 4), + MSR_TYPE_R | MSR_TYPE_W);
+>>>> 
+>>>> I didn't understand what this function does? Per my understanding,
+>>>> you only
+>>> need to set the (vmx_msr_bitmap_nested = vmcs01->msr_bitmap |
+>>> vmcs12->msr_bitmap) and inject the nested vmexit to L1 if the bit
+>>> vmcs12->in msr_bitmap is setting. Am I missing some patches?
+>>> 
+>>> In the beginning, I want to do "vmcs01->msr_bitmap |
+>>> vmcs12->msr_bitmap", but I remember that there isn't a instruction
+>>> vmcs12->to
+>>> do a bit or operation in two pages effectively, so I do the bit or
+>>> operation in nested_vmx_disable_intercept_for_msr. If the hardware
+>>> do not support this, I think it is faster if we deal with the bits on demand.
+>>> nested_vmx_merge_msr_bitmap is used to merge L0's and L1's bitmaps,
+>>> any features can put their logic here.
+>> 
+>> You construct the nested_msr_bitmap based on vmcs12->msr_bitmap, what
+>> happens if vmcs01->msr_bitmap want to trap this msr?
+>> 
+> 
+> If L0 wants to intercept a msr, we should set
+> vmx_msr_bitmap_legacy(_x2apic) and vmx_msr_bitmap_longmode(_x2apic),
+> and that bitmaps should only be loaded in non-nested entry.
+> Currently we only clear the corresponding bits if L1 enables
+> virtualize x2apic mode, all the other bits are all set. On nested
+> entry, we load nested_msr_bitmap, on nested vmexit, we will restore L0's bitmap.
+> In the nested entry, L0 only care about L2's msr access, not L1's. I
+> think that in nested entry, nested_msr_bitmap is "vmcs01->msr_bitmap"
+> as your mentioned above.
 
-Applied. Thanks!
+Mmm... I think if the bit is setting in vmcs01->msr_bitmap means whenever the VCPU(no matter in nested guest mode or not) accesses this msr should cause vmexit, not only L1. That's why need to construct the vmcs02->msr_bitmap based on (vmcs01->msr_bitmap ORed vmcs12->msr_bitmap).
 
 > 
-> Regards,
-> Nadav
-> 
-> lizf@kernel.org wrote:
-> 
->> From: Nadav Amit <namit@cs.technion.ac.il>
->>
->> 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
->>
->> ------------------
->>
->>
->> commit 234f3ce485d54017f15cf5e0699cff4100121601 upstream.
->>
->> Before changing rip (during jmp, call, ret, etc.) the target should be asserted
->> to be canonical one, as real CPUs do.  During sysret, both target rsp and rip
->> should be canonical. If any of these values is noncanonical, a #GP exception
->> should occur.  The exception to this rule are syscall and sysenter instructions
->> in which the assigned rip is checked during the assignment to the relevant
->> MSRs.
->>
->> This patch fixes the emulator to behave as real CPUs do for near branches.
->> Far branches are handled by the next patch.
->>
->> This fixes CVE-2014-3647.
->>
->> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
->> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->> [lizf: Backported to 3.4:
->> - adjust context
->> - use ctxt->regs rather than reg_read() and reg_write()]
->> Signed-off-by: Zefan Li <lizefan@huawei.com>
+> Thanks,
+> Wincy
 
 
+Best regards,
+Yang
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
