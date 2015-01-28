@@ -1,106 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759936AbbA1WX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 17:23:59 -0500
-Received: from service88.mimecast.com ([195.130.217.12]:55796 "EHLO
-	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321AbbA1ULm convert rfc822-to-8bit (ORCPT
+	id S1761172AbbA1VoL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:44:11 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62302 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758963AbbA1UhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:11:42 -0500
-Message-ID: <54C8FC07.2050003@arm.com>
-Date: Wed, 28 Jan 2015 15:11:03 +0000
-From: Robin Murphy <robin.murphy@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 15:37:23 -0500
+Date: Wed, 28 Jan 2015 16:11:22 +0100
+From: Luis de Bethencourt <luis@debethencourt.com>
+To: mchehab@osg.samsung.com
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] [media] dvb-usb: fix spaces after commas
+Message-ID: <20150128151122.GA22122@goodgumbo.baconseed.org>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Kukjin Kim <kgene@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        Heiko Stuebner <heiko@sntech.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "jroedel@suse.de" <jroedel@suse.de>
-Subject: Re: [PATCH 2/5] iommu: Allocate a default domain for iommu groups
-References: <1422317339-22620-1-git-send-email-joro@8bytes.org> <1422317339-22620-3-git-send-email-joro@8bytes.org> <20150128143006.GQ1569@arm.com>
-In-Reply-To: <20150128143006.GQ1569@arm.com>
-X-OriginalArrivalTime: 28 Jan 2015 15:11:04.0015 (UTC) FILETIME=[A22B7DF0:01D03B0C]
-X-MC-Unique: 115012815110500201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/01/15 14:30, Will Deacon wrote:
-> On Tue, Jan 27, 2015 at 12:08:56AM +0000, Joerg Roedel wrote:
->> From: Joerg Roedel <jroedel@suse.de>
->>
->> The default domain will be used (if supported by the iommu
->> driver) when the devices in the iommu group are not attached
->> to any other domain.
->>
->> Signed-off-by: Joerg Roedel <jroedel@suse.de>
->> ---
->>   drivers/iommu/iommu.c | 26 +++++++++++++++++++++++---
->>   1 file changed, 23 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
->> index 34636eb..8f33ddd3 100644
->> --- a/drivers/iommu/iommu.c
->> +++ b/drivers/iommu/iommu.c
->> @@ -76,6 +76,9 @@ struct iommu_group_attribute iommu_group_attr_##_name =		\
->>   #define to_iommu_group(_kobj)		\
->>   	container_of(_kobj, struct iommu_group, kobj)
->>
->> +static struct iommu_domain *__iommu_domain_alloc(struct bus_type *bus,
->> +						 enum iommu_domain_type type);
->> +
->>   static ssize_t iommu_group_attr_show(struct kobject *kobj,
->>   				     struct attribute *__attr, char *buf)
->>   {
->> @@ -362,6 +365,17 @@ rename:
->>
->>   	kobject_get(group->devices_kobj);
->>
->> +	/*
->> +	 * Try to allocate a default domain for the group, if this
->> +	 * hasn't happened yet. This is not the best place to do that,
->> +	 * it should happen in iommu_group_alloc(). But we have no
->> +	 * iommu_ops there yet, so the allocation has to happen here for
->> +	 * now.
->> +	 */
->> +	if (group->default_domain == NULL)
->> +		group->default_domain = __iommu_domain_alloc(dev->bus,
->> +							     IOMMU_DOMAIN_DMA);
->
-> Having a per-group domain is wasteful for IOMMUs that only support a modest
-> number of concurrent domains, so in reality I think we need to have one
-> domain per IOMMU instance. Is that possible?
+Signed-off-by: Luis de Bethencourt <luis.bg@samsung.com>
+---
+ drivers/media/usb/dvb-usb/dvb-usb-dvb.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Strictly speaking, it is, provided you can identify instances (I've 
-hacked up such a thing controlled from the DMA mapping side), but 
-there's a question of how to handle devices with differing DMA ranges. 
-The Intel IOVA allocator could actually handle them sharing one address 
-space, since you can perform individual allocations with different 
-constraints, but I'm not sure if that really makes sense. Perhaps one 
-domain per dma-ranges variation per instance?
-
-> One problem with the current per-bus approach is that __iommu_domain_alloc
-> can't figure out which IOMMU instance corresponds to the group.
-
-Indeed - I think it might make sense to pass devices around instead of 
-buses, and for now stick in an abstraction like:
-
-static const struct iommu_ops *get_iommu_for_dev(struct device *dev)
-{
-	return dev->bus->iommu_ops;
-}
-
-in which we can then later hook up some sort of of_iommu_get_ops-based 
-lookup for non-PCI devices. Which ends up more or less looking like 
-Thierry's original idea, but kept private to the IOMMU API internals.
-
-Robin.
+diff --git a/drivers/media/usb/dvb-usb/dvb-usb-dvb.c b/drivers/media/usb/dvb-usb/dvb-usb-dvb.c
+index 719413b..c901d15 100644
+--- a/drivers/media/usb/dvb-usb/dvb-usb-dvb.c
++++ b/drivers/media/usb/dvb-usb/dvb-usb-dvb.c
+@@ -84,14 +84,14 @@ static int dvb_usb_ctrl_feed(struct dvb_demux_feed *dvbdmxfeed, int onoff)
+ 
+ static int dvb_usb_start_feed(struct dvb_demux_feed *dvbdmxfeed)
+ {
+-	deb_ts("start pid: 0x%04x, feedtype: %d\n", dvbdmxfeed->pid,dvbdmxfeed->type);
+-	return dvb_usb_ctrl_feed(dvbdmxfeed,1);
++	deb_ts("start pid: 0x%04x, feedtype: %d\n", dvbdmxfeed->pid, dvbdmxfeed->type);
++	return dvb_usb_ctrl_feed(dvbdmxfeed, 1);
+ }
+ 
+ static int dvb_usb_stop_feed(struct dvb_demux_feed *dvbdmxfeed)
+ {
+ 	deb_ts("stop pid: 0x%04x, feedtype: %d\n", dvbdmxfeed->pid, dvbdmxfeed->type);
+-	return dvb_usb_ctrl_feed(dvbdmxfeed,0);
++	return dvb_usb_ctrl_feed(dvbdmxfeed, 0);
+ }
+ 
+ int dvb_usb_adapter_dvb_init(struct dvb_usb_adapter *adap, short *adapter_nums)
+@@ -108,8 +108,8 @@ int dvb_usb_adapter_dvb_init(struct dvb_usb_adapter *adap, short *adapter_nums)
+ 	adap->dvb_adap.priv = adap;
+ 
+ 	if (adap->dev->props.read_mac_address) {
+-		if (adap->dev->props.read_mac_address(adap->dev,adap->dvb_adap.proposed_mac) == 0)
+-			info("MAC address: %pM",adap->dvb_adap.proposed_mac);
++		if (adap->dev->props.read_mac_address(adap->dev, adap->dvb_adap.proposed_mac) == 0)
++			info("MAC address: %pM", adap->dvb_adap.proposed_mac);
+ 		else
+ 			err("MAC address reading failed.");
+ 	}
+@@ -128,7 +128,7 @@ int dvb_usb_adapter_dvb_init(struct dvb_usb_adapter *adap, short *adapter_nums)
+ 	adap->demux.stop_feed        = dvb_usb_stop_feed;
+ 	adap->demux.write_to_decoder = NULL;
+ 	if ((ret = dvb_dmx_init(&adap->demux)) < 0) {
+-		err("dvb_dmx_init failed: error %d",ret);
++		err("dvb_dmx_init failed: error %d", ret);
+ 		goto err_dmx;
+ 	}
+ 
+@@ -136,13 +136,13 @@ int dvb_usb_adapter_dvb_init(struct dvb_usb_adapter *adap, short *adapter_nums)
+ 	adap->dmxdev.demux           = &adap->demux.dmx;
+ 	adap->dmxdev.capabilities    = 0;
+ 	if ((ret = dvb_dmxdev_init(&adap->dmxdev, &adap->dvb_adap)) < 0) {
+-		err("dvb_dmxdev_init failed: error %d",ret);
++		err("dvb_dmxdev_init failed: error %d", ret);
+ 		goto err_dmx_dev;
+ 	}
+ 
+ 	if ((ret = dvb_net_init(&adap->dvb_adap, &adap->dvb_net,
+ 						&adap->demux.dmx)) < 0) {
+-		err("dvb_net_init failed: error %d",ret);
++		err("dvb_net_init failed: error %d", ret);
+ 		goto err_net_init;
+ 	}
+ 
+-- 
+2.1.3
 
