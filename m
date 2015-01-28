@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086AbbA2JCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:02:18 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44765 "EHLO
+	id S1761145AbbA2JVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:21:45 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44888 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758020AbbA2JCN (ORCPT
+	by vger.kernel.org with ESMTP id S1760380AbbA2JHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:02:13 -0500
+	Thu, 29 Jan 2015 04:07:18 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans Holmberg <hans.holmberg@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
         Linus Walleij <linus.walleij@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 104/176] gpiolib: of: Correct error handling in of_get_named_gpiod_flags
-Date: Wed, 28 Jan 2015 15:28:54 +0100
-Message-Id: <b45603c0b3f8e51f568082f1d3a4910b5e66d317.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 105/176] gpio: fix memory and reference leaks in gpiochip_add error path
+Date: Wed, 28 Jan 2015 15:28:55 +0100
+Message-Id: <5d0a558e5ff4a3a9bc8ba8f5da1a66606ee502a2.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,49 +23,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Holmberg <hans.holmberg@intel.com>
+From: Johan Hovold <johan@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 7b8792bbdffdff3abda704f89c6a45ea97afdc62 upstream.
+commit 5539b3c938d64a60cb1fc442ac3ce9263d52de0c upstream.
 
-of_get_named_gpiod_flags fails with -EPROBE_DEFER in cases
-where the gpio chip is available and the GPIO translation fails.
+Memory allocated and references taken by of_gpiochip_add and
+acpi_gpiochip_add were never released on errors in gpiochip_add (e.g.
+failure to find free gpio range).
 
-This causes drivers to be re-probed erroneusly, and hides the
-real problem(i.e. the GPIO number being out of range).
+Fixes: 391c970c0dd1 ("of/gpio: add default of_xlate function if device
+has a node pointer")
+Fixes: 664e3e5ac64c ("gpio / ACPI: register to ACPI events
+automatically")
 
-Signed-off-by: Hans Holmberg <hans.holmberg@intel.com>
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpio/gpiolib-of.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/gpio/gpiolib.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index 0dfaf20e4dad..f660cfaf896e 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -42,8 +42,14 @@ static int of_gpiochip_find_and_xlate(struct gpio_chip *gc, void *data)
- 		return false;
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 0dee0e0c247a..aed1a6216b6b 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1216,18 +1216,20 @@ int gpiochip_add(struct gpio_chip *chip)
  
- 	ret = gc->of_xlate(gc, &gg_data->gpiospec, gg_data->flags);
--	if (ret < 0)
--		return false;
-+	if (ret < 0) {
-+		/* We've found the gpio chip, but the translation failed.
-+		 * Return true to stop looking and return the translation
-+		 * error via out_gpio
-+		 */
-+		gg_data->out_gpio = ERR_PTR(ret);
-+		return true;
-+	 }
+ 	spin_unlock_irqrestore(&gpio_lock, flags);
  
- 	gg_data->out_gpio = ret + gc->base;
- 	return true;
++	if (status)
++		goto fail;
++
+ #ifdef CONFIG_PINCTRL
+ 	INIT_LIST_HEAD(&chip->pin_ranges);
+ #endif
+ 
+ 	of_gpiochip_add(chip);
+ 
+-	if (status)
+-		goto fail;
+-
+ 	status = gpiochip_export(chip);
+-	if (status)
++	if (status) {
++		of_gpiochip_remove(chip);
+ 		goto fail;
++	}
+ 
+ 	pr_debug("gpiochip_add: registered GPIOs %d to %d on device: %s\n",
+ 		chip->base, chip->base + chip->ngpio - 1,
 -- 
 2.2.2
 
