@@ -1,108 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340AbbA1VNL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:13:11 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:54608 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752836AbbA1UxF (ORCPT
+	id S1757916AbbA2ETR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 23:19:17 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:55126 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144AbbA2ETQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:53:05 -0500
-Date: Wed, 28 Jan 2015 15:17:42 +0100
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/9] mtd: pxa3xx_nand: add a non mandatory ECC clock
-Message-ID: <20150128141742.GB11705@kwain>
-References: <1422367816-4257-1-git-send-email-antoine.tenart@free-electrons.com>
- <1422367816-4257-3-git-send-email-antoine.tenart@free-electrons.com>
- <20150128113552.5dd3edc4@xhacker>
+	Wed, 28 Jan 2015 23:19:16 -0500
+Date: Wed, 28 Jan 2015 23:19:17 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Ganesh Mahendran <opensource.ganesh@gmail.com>,
+        sergey.senozhatsky.work@gmail.com
+Subject: Re: [PATCH 1/2] zram: free meta table in zram_meta_free
+Message-ID: <20150128141916.GA14062@swordfish>
+References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150128113552.5dd3edc4@xhacker>
+In-Reply-To: <1422432945-6764-1-git-send-email-minchan@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jisheng!
-
-On Wed, Jan 28, 2015 at 11:35:52AM +0800, Jisheng Zhang wrote:
-> On Tue, 27 Jan 2015 06:10:09 -0800
-> Antoine Tenart <antoine.tenart@free-electrons.com> wrote:
+On (01/28/15 17:15), Minchan Kim wrote:
+> zram_meta_alloc() and zram_meta_free() are a pair.
+> In zram_meta_alloc(), meta table is allocated. So it it better to free
+> it in zram_meta_free().
 > 
-> > diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-> > index d00ac392d1c4..2681ec4abafa 100644
-> > --- a/drivers/mtd/nand/pxa3xx_nand.c
-> > +++ b/drivers/mtd/nand/pxa3xx_nand.c
-> > @@ -180,7 +180,7 @@ struct pxa3xx_nand_info {
-> >  	struct nand_hw_control	controller;
-> >  	struct platform_device	 *pdev;
-> >  
-> > -	struct clk		*clk;
-> > +	struct clk		*clk, *ecc_clk;
-> >  	void __iomem		*mmio_base;
-> >  	unsigned long		mmio_phys;
-> >  	struct completion	cmd_complete, dev_ready;
-> > @@ -1608,7 +1608,7 @@ static int alloc_nand_resource(struct platform_device
-> > *pdev) 
-> >  	spin_lock_init(&chip->controller->lock);
-> >  	init_waitqueue_head(&chip->controller->wq);
-> > -	info->clk = devm_clk_get(&pdev->dev, NULL);
-> > +	info->clk = devm_clk_get(&pdev->dev, "nfc");
-> >  	if (IS_ERR(info->clk)) {
+> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/block/zram/zram_drv.c | 30 ++++++++++++++----------------
+>  drivers/block/zram/zram_drv.h |  1 +
+>  2 files changed, 15 insertions(+), 16 deletions(-)
 > 
-> Do we need to fall back to unnamed clock here? Otherwise I guess it will break
-> other platforms.
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 9250b3f54a8f..a598ada817f0 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -309,6 +309,18 @@ static inline int valid_io_request(struct zram *zram,
+>  
+>  static void zram_meta_free(struct zram_meta *meta)
+>  {
+> +	size_t index;
 
-Yes, as Andrew pointed out we need to keep the NULL here to avoid
-breaking other platforms.
 
-> >  
-> >  	/* initialize all interrupts to be disabled */
-> > @@ -1687,6 +1694,9 @@ static int alloc_nand_resource(struct platform_device
-> > *pdev) fail_free_buf:
-> >  	free_irq(irq, info);
-> >  	kfree(info->data_buff);
-> > +fail_disable_ecc_clk:
-> > +	if (!IS_ERR(info->ecc_clk))
-> > +		clk_disable_unprepare(info->ecc_clk);
+I don't like how we bloat structs w/o any need.
+zram keeps ->disksize, so let's use `zram->disksize >> PAGE_SHIFT'
+instead of introducing ->num_pages.
+
+	-ss
+
+> +	/* Free all pages that are still in this zram device */
+> +	for (index = 0; index < meta->num_pages; index++) {
+> +		unsigned long handle = meta->table[index].handle;
+> +
+> +		if (!handle)
+> +			continue;
+> +
+> +		zs_free(meta->mem_pool, handle);
+> +	}
+> +
+>  	zs_destroy_pool(meta->mem_pool);
+>  	vfree(meta->table);
+>  	kfree(meta);
+> @@ -316,15 +328,14 @@ static void zram_meta_free(struct zram_meta *meta)
+>  
+>  static struct zram_meta *zram_meta_alloc(int device_id, u64 disksize)
+>  {
+> -	size_t num_pages;
+>  	char pool_name[8];
+>  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
+>  
+>  	if (!meta)
+>  		return NULL;
+>  
+> -	num_pages = disksize >> PAGE_SHIFT;
+> -	meta->table = vzalloc(num_pages * sizeof(*meta->table));
+> +	meta->num_pages = disksize >> PAGE_SHIFT;
+> +	meta->table = vzalloc(meta->num_pages * sizeof(*meta->table));
+>  	if (!meta->table) {
+>  		pr_err("Error allocating zram address table\n");
+>  		goto out_error;
+> @@ -706,9 +717,6 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>  
+>  static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  {
+> -	size_t index;
+> -	struct zram_meta *meta;
+> -
+>  	down_write(&zram->init_lock);
+>  
+>  	zram->limit_pages = 0;
+> @@ -718,16 +726,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>  		return;
+>  	}
+>  
+> -	meta = zram->meta;
+> -	/* Free all pages that are still in this zram device */
+> -	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> -		unsigned long handle = meta->table[index].handle;
+> -		if (!handle)
+> -			continue;
+> -
+> -		zs_free(meta->mem_pool, handle);
+> -	}
+> -
+>  	zcomp_destroy(zram->comp);
+>  	zram->max_comp_streams = 1;
+>  
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index b05a816b09ac..e492f6bf11f1 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -96,6 +96,7 @@ struct zram_stats {
+>  struct zram_meta {
+>  	struct zram_table_entry *table;
+>  	struct zs_pool *mem_pool;
+> +	size_t num_pages;
+>  };
+>  
+>  struct zram {
+> -- 
+> 1.9.1
 > 
-> we can remove the IS_ERR check to simplify this error path since commit
-> 63589e92c2d9("clk: Ignore error and NULL pointers passed to clk_{unprepare, disable}()")
-> 
-> >  fail_disable_clk:
-> >  	clk_disable_unprepare(info->clk);
-> >  	return ret;
-> > @@ -1709,6 +1719,8 @@ static int pxa3xx_nand_remove(struct platform_device
-> > *pdev) pxa3xx_nand_free_buff(info);
-> >  
-> >  	clk_disable_unprepare(info->clk);
-> > +	if (!IS_ERR(info->ecc_clk))
-> > +		clk_disable_unprepare(info->ecc_clk);
-> 
-> we can remove the IS_ERR check too.
-
-Yes! Thanks for the hint, I'll remove these useless checks in v2.
-
-Thanks!
-
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
