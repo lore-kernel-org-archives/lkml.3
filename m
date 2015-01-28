@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760587AbbA1GwT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 01:52:19 -0500
-Received: from 1wt.eu ([62.212.114.60]:16875 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759875AbbA1GwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 01:52:17 -0500
-Date: Wed, 28 Jan 2015 07:51:15 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: lizf@kernel.org
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: Re: [PATCH 3.4 177/177] x86/tls: Validate TLS entries to protect espfix
-Message-ID: <20150128065115.GA9007@1wt.eu>
-References: <1422418050-12581-1-git-send-email-lizf@kernel.org> <1422418236-12852-268-git-send-email-lizf@kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422418236-12852-268-git-send-email-lizf@kernel.org>
-User-Agent: Mutt/1.4.2.3i
+	id S1757215AbbA1UYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:24:36 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:14463 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757168AbbA1UY1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:24:27 -0500
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <chris@printf.net>, <ulf.hansson@linaro.org>,
+        <sebastian.hesselbarth@gmail.com>
+CC: <thomas.petazzoni@free-electrons.com>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Jisheng Zhang <jszhang@marvell.com>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] mmc: sdhci-pxav3: fix setting of pdata->clk_delay_cycles
+Date: Wed, 28 Jan 2015 14:57:59 +0800
+Message-ID: <1422428279-525-1-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 2.1.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-27_04:2015-01-27,2015-01-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1501280076
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Li,
+Current code checks "clk_delay_cycles > 0" to know whether the optional
+"mrvl,clk_delay_cycles" is set or not. But of_property_read_u32() doesn't
+touch clk_delay_cycles if the property is not set. And type of
+clk_delay_cycles is u32, so we may always set pdata->clk_delay_cycles as a
+random value.
 
-On Wed, Jan 28, 2015 at 12:10:35PM +0800, lizf@kernel.org wrote:
-> From: Andy Lutomirski <luto@amacapital.net>
-> 
-> 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> 
-> commit 41bdc78544b8a93a9c6814b8bbbfef966272abbe upstream.
-> 
-> Installing a 16-bit RW data segment into the GDT defeats espfix.
-> AFAICT this will not affect glibc, Wine, or dosemu at all.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: security@kernel.org <security@kernel.org>
-> Cc: Willy Tarreau <w@1wt.eu>
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: Zefan Li <lizefan@huawei.com>
+This patch fix this problem by check the return value of of_property_read_u32()
+to know whether the optional clk-delay-cycles is set or not.
 
-This patch has introduced a few minor regressions for which Andy has
-provided fixes already pending in latest stable previews, so maybe it
-could make sense to either pick them as well or delay all of them for
-another round. Greg has queued them in his latest preview if you are
-interested (eg: 19/32 and 20/32 for 3.10.67) :
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Cc: <stable@vger.kernel.org> # v3.6+
+---
+ drivers/mmc/host/sdhci-pxav3.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-- e30ab18 ("x86, tls, ldt: Stop checking lm in LDT_empty")
-- 3669ef9 ("x86, tls: Interpret an all-zero struct user_desc as "no segment"")
-
-Best regards,
-Willy
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index c5db5d2..f1c6362 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -268,8 +268,8 @@ static struct sdhci_pxa_platdata *pxav3_get_mmc_pdata(struct device *dev)
+ 	if (!pdata)
+ 		return NULL;
+ 
+-	of_property_read_u32(np, "mrvl,clk-delay-cycles", &clk_delay_cycles);
+-	if (clk_delay_cycles > 0)
++	if (!of_property_read_u32(np, "mrvl,clk-delay-cycles",
++				  &clk_delay_cycles))
+ 		pdata->clk_delay_cycles = clk_delay_cycles;
+ 
+ 	return pdata;
+-- 
+2.1.4
 
