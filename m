@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762010AbbA1FHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:07:05 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38690 "EHLO mail.kernel.org"
+	id S1761507AbbA1ETJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:19:09 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38702 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761479AbbA1ES7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:18:59 -0500
+	id S1759882AbbA1ETD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:03 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Dueck <davidcdueck@googlemail.com>,
-        Anthony Harivel <anthony.harivel@emtrion.de>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 58/91] can: at91_can: add missing prepare and unprepare of the clock
-Date: Wed, 28 Jan 2015 12:08:02 +0800
-Message-Id: <1422418236-12852-115-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Petr Matousek <pmatouse@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 058/177] x86,kvm,vmx: Preserve CR4 across VM entry
+Date: Wed, 28 Jan 2015 12:08:03 +0800
+Message-Id: <1422418236-12852-116-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,62 +22,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Dueck <davidcdueck@googlemail.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit e77980e50bc2850599d4d9c0192b67a9ffd6daac upstream.
+commit d974baa398f34393db76be45f7d4d04fbdbb4a0a upstream.
 
-In order to make the driver work with the common clock framework, this patch
-converts the clk_enable()/clk_disable() to
-clk_prepare_enable()/clk_disable_unprepare(). While there, add the missing
-error handling.
+CR4 isn't constant; at least the TSD and PCE bits can vary.
 
-Signed-off-by: David Dueck <davidcdueck@googlemail.com>
-Signed-off-by: Anthony Harivel <anthony.harivel@emtrion.de>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+TBH, treating CR0 and CR3 as constant scares me a bit, too, but it looks
+like it's correct.
+
+This adds a branch and a read from cr4 to each vm entry.  Because it is
+extremely likely that consecutive entries into the same vcpu will have
+the same host cr4 value, this fixes up the vmcs instead of restoring cr4
+after the fact.  A subsequent patch will add a kernel-wide cr4 shadow,
+reducing the overhead in the common case to just two memory reads and a
+branch.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[lizf: Backported to 3.4:
+ - adjust context
+ - add parameter struct vcpu_vmx *vmx to vmx_set_constant_host_state()]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/net/can/at91_can.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ arch/x86/kvm/vmx.c | 21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
-index 6ea905c..12328068 100644
---- a/drivers/net/can/at91_can.c
-+++ b/drivers/net/can/at91_can.c
-@@ -1115,7 +1115,9 @@ static int at91_open(struct net_device *dev)
- 	struct at91_priv *priv = netdev_priv(dev);
- 	int err;
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 617b00b..443635d 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -388,6 +388,7 @@ struct vcpu_vmx {
+ 		u16           fs_sel, gs_sel, ldt_sel;
+ 		int           gs_ldt_reload_needed;
+ 		int           fs_reload_needed;
++		unsigned long vmcs_host_cr4;    /* May not match real cr4 */
+ 	} host_state;
+ 	struct {
+ 		int vm86_active;
+@@ -3622,16 +3623,21 @@ static void vmx_disable_intercept_for_msr(u32 msr, bool longmode_only)
+  * Note that host-state that does change is set elsewhere. E.g., host-state
+  * that is set differently for each CPU is set in vmx_vcpu_load(), not here.
+  */
+-static void vmx_set_constant_host_state(void)
++static void vmx_set_constant_host_state(struct vcpu_vmx *vmx)
+ {
+ 	u32 low32, high32;
+ 	unsigned long tmpl;
+ 	struct desc_ptr dt;
++	unsigned long cr4;
  
--	clk_enable(priv->clk);
-+	err = clk_prepare_enable(priv->clk);
-+	if (err)
-+		return err;
+ 	vmcs_writel(HOST_CR0, read_cr0() | X86_CR0_TS);  /* 22.2.3 */
+-	vmcs_writel(HOST_CR4, read_cr4());  /* 22.2.3, 22.2.5 */
+ 	vmcs_writel(HOST_CR3, read_cr3());  /* 22.2.3  FIXME: shadow tables */
  
- 	/* check or determine and set bittime */
- 	err = open_candev(dev);
-@@ -1139,7 +1141,7 @@ static int at91_open(struct net_device *dev)
-  out_close:
- 	close_candev(dev);
-  out:
--	clk_disable(priv->clk);
-+	clk_disable_unprepare(priv->clk);
++	/* Save the most likely value for this task's CR4 in the VMCS. */
++	cr4 = read_cr4();
++	vmcs_writel(HOST_CR4, cr4);			/* 22.2.3, 22.2.5 */
++	vmx->host_state.vmcs_host_cr4 = cr4;
++
+ 	vmcs_write16(HOST_CS_SELECTOR, __KERNEL_CS);  /* 22.2.4 */
+ 	vmcs_write16(HOST_DS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
+ 	vmcs_write16(HOST_ES_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
+@@ -3753,7 +3759,7 @@ static int vmx_vcpu_setup(struct vcpu_vmx *vmx)
  
- 	return err;
- }
-@@ -1156,7 +1158,7 @@ static int at91_close(struct net_device *dev)
- 	at91_chip_stop(dev, CAN_STATE_STOPPED);
+ 	vmcs_write16(HOST_FS_SELECTOR, 0);            /* 22.2.4 */
+ 	vmcs_write16(HOST_GS_SELECTOR, 0);            /* 22.2.4 */
+-	vmx_set_constant_host_state();
++	vmx_set_constant_host_state(vmx);
+ #ifdef CONFIG_X86_64
+ 	rdmsrl(MSR_FS_BASE, a);
+ 	vmcs_writel(HOST_FS_BASE, a); /* 22.2.4 */
+@@ -6101,6 +6107,7 @@ static void atomic_switch_perf_msrs(struct vcpu_vmx *vmx)
+ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
++	unsigned long cr4;
  
- 	free_irq(dev->irq, dev);
--	clk_disable(priv->clk);
-+	clk_disable_unprepare(priv->clk);
+ 	if (is_guest_mode(vcpu) && !vmx->nested.nested_run_pending) {
+ 		struct vmcs12 *vmcs12 = get_vmcs12(vcpu);
+@@ -6131,6 +6138,12 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+ 	if (test_bit(VCPU_REGS_RIP, (unsigned long *)&vcpu->arch.regs_dirty))
+ 		vmcs_writel(GUEST_RIP, vcpu->arch.regs[VCPU_REGS_RIP]);
  
- 	close_candev(dev);
++	cr4 = read_cr4();
++	if (unlikely(cr4 != vmx->host_state.vmcs_host_cr4)) {
++		vmcs_writel(HOST_CR4, cr4);
++		vmx->host_state.vmcs_host_cr4 = cr4;
++	}
++
+ 	/* When single-stepping over STI and MOV SS, we must clear the
+ 	 * corresponding interruptibility bits in the guest state. Otherwise
+ 	 * vmentry fails as it then expects bit 14 (BS) in pending debug
+@@ -6589,7 +6602,7 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+ 	 * Other fields are different per CPU, and will be set later when
+ 	 * vmx_vcpu_load() is called, and when vmx_save_host_state() is called.
+ 	 */
+-	vmx_set_constant_host_state();
++	vmx_set_constant_host_state(vmx);
  
+ 	/*
+ 	 * HOST_RSP is normally set correctly in vmx_vcpu_run() just before
 -- 
 1.9.1
 
