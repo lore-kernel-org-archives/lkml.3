@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760556AbbA2JHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:07:30 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44891 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760484AbbA2JHX (ORCPT
+	id S1760821AbbA2CDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:03:37 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:60055 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177AbbA2CDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:07:23 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Guo Zeng <guo.zeng@csr.com>,
-        Barry Song <Baohua.Song@csr.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 002/176] drivers/rtc/rtc-sirfsoc.c: move hardware initilization earlier in probe
-Date: Wed, 28 Jan 2015 15:27:12 +0100
-Message-Id: <56773a63532f311fbac75b5c16dfccebd2525bbe.1422455352.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
-References: <cover.1422455352.git.jslaby@suse.cz>
+	Wed, 28 Jan 2015 21:03:34 -0500
+Message-ID: <54C8F1C1.7050908@gmail.com>
+Date: Wed, 28 Jan 2015 09:27:13 -0500
+From: John Moser <john.r.moser@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>, Vlastimil Babka <vbabka@suse.cz>
+CC: linux-kernel@vger.kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: OOM at low page cache?
+References: <54C2C89C.8080002@gmail.com> <54C77086.7090505@suse.cz> <20150128062609.GA4706@blaptop>
+In-Reply-To: <20150128062609.GA4706@blaptop>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guo Zeng <guo.zeng@csr.com>
+On 01/28/2015 01:26 AM, Minchan Kim wrote:
+>
+> Below could be band-aid until we find a elegant solution?
+>
+>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+I don't know about elegant; but I'd be impressed if anyone figured out
+how to just go Windows 95 with it and build a Task Master interface.  It
+would be useful to have a kernel interface that allows a service to
+attach, delegate an interface program, etc., and then pull it up under
+certain conditions (low memory, heavy scheduling due to lots of
+fork()ing, etc.) and assign temporary high priority.  Basically,
+nearly-pause the system and allow the user to select and kill/term
+processes, or bring a process forward (for like 10 seconds, then kick it
+back again) so the user can save their work and exit gracefully.  At
+hard OOM, you could either OOM or pause everything (you'd need a
+zero-allocation path to kill things in a user-end OOM handler).
 
-===============
+Yeah, imaginative fantasies.  Totally doable, but probably too complex
+to bother.  There's all kinds of semaphore inversion or some such to
+worry about; how do you ensure an X11 program is 100% snappy when the
+system is being thrashed by fork() bombs and memory pressure?
 
-commit 0e95325525c4383565cea4f402f15a3113162d05 upstream.
-
-Move rtc register to be later than hardware initialization.  The reason
-is that devm_rtc_device_register() will do read_time() which is a
-callback accessing hardware.  This sometimes causes a hang in the
-hardware related callback.
-
-Signed-off-by: Guo Zeng <guo.zeng@csr.com>
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/rtc/rtc-sirfsoc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/rtc/rtc-sirfsoc.c b/drivers/rtc/rtc-sirfsoc.c
-index 63460cf80f1b..3b13401b3682 100644
---- a/drivers/rtc/rtc-sirfsoc.c
-+++ b/drivers/rtc/rtc-sirfsoc.c
-@@ -290,14 +290,6 @@ static int sirfsoc_rtc_probe(struct platform_device *pdev)
- 	rtc_div = ((32768 / RTC_HZ) / 2) - 1;
- 	sirfsoc_rtc_iobrg_writel(rtc_div, rtcdrv->rtc_base + RTC_DIV);
- 
--	rtcdrv->rtc = rtc_device_register(pdev->name, &(pdev->dev),
--			&sirfsoc_rtc_ops, THIS_MODULE);
--	if (IS_ERR(rtcdrv->rtc)) {
--		err = PTR_ERR(rtcdrv->rtc);
--		dev_err(&pdev->dev, "can't register RTC device\n");
--		return err;
--	}
--
- 	/* 0x3 -> RTC_CLK */
- 	sirfsoc_rtc_iobrg_writel(SIRFSOC_RTC_CLK,
- 			rtcdrv->rtc_base + RTC_CLOCK_SWITCH);
-@@ -312,6 +304,14 @@ static int sirfsoc_rtc_probe(struct platform_device *pdev)
- 	rtcdrv->overflow_rtc =
- 		sirfsoc_rtc_iobrg_readl(rtcdrv->rtc_base + RTC_SW_VALUE);
- 
-+	rtcdrv->rtc = rtc_device_register(pdev->name, &(pdev->dev),
-+			&sirfsoc_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rtcdrv->rtc)) {
-+		err = PTR_ERR(rtcdrv->rtc);
-+		dev_err(&pdev->dev, "can't register RTC device\n");
-+		return err;
-+	}
-+
- 	rtcdrv->irq = platform_get_irq(pdev, 0);
- 	err = devm_request_irq(
- 			&pdev->dev,
--- 
-2.2.2
-
+Actually, I have no idea what I'm talking about.
