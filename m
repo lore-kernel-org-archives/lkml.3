@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934781AbbA1E7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:59:05 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:52782 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933440AbbA1E7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:59:03 -0500
-Date: Wed, 28 Jan 2015 13:58:55 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH 1/2] zram: free meta out of init_lock
-Message-ID: <20150128045855.GD32712@blaptop>
-References: <20150127021704.GA665@swordfish>
- <20150127031823.GA16797@blaptop>
- <20150127040305.GB665@swordfish>
- <20150128001526.GA25828@blaptop>
- <20150128002203.GB25828@blaptop>
- <20150128020759.GA343@swordfish>
- <20150128025707.GB32712@blaptop>
- <20150128035354.GA7790@swordfish>
- <20150128040757.GA577@swordfish>
- <20150128045028.GB577@swordfish>
+	id S1761676AbbA1FCo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:02:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33010 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761478AbbA1FCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 00:02:41 -0500
+Date: Wed, 28 Jan 2015 16:02:31 +1100
+From: NeilBrown <neilb@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, hpa@zytor.com,
+        james.t.kukunas@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/raid6: correctly check for assembler capabilities
+Message-ID: <20150128160231.58be1f9b@notabene.brown>
+In-Reply-To: <alpine.DEB.2.11.1501231716090.5526@nanos>
+References: <54C2148E02000078000588FB@mail.emea.novell.com>
+	<alpine.DEB.2.11.1501231716090.5526@nanos>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150128045028.GB577@swordfish>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/k_Ja2rlFitG//3Y5qmlZZQc"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 01:50:28PM +0900, Sergey Senozhatsky wrote:
-> On (01/28/15 13:07), Sergey Senozhatsky wrote:
-> > On (01/28/15 12:53), Sergey Senozhatsky wrote:
-> > > > So, I want to go with srcu. Do you agree? or another suggestion?
-> > > 
-> > > yes, I think we need to take a second look on srcu approach.
-> > > 
-> > 
-> > ... or we can ask lockdep to stop false alarming us and leave it as is.
-> > I wouldn't say that ->init_lock is so hard to understand.
-> > just as an option.
-> > 
-> 
-> so... returning back to barriers performance implications.
-> 
-> x86_64, lzo, 4 comp streams, 2G zram, ext4, mount -o rw,relatime,data=ordered
-> 
->  ./iozone -t 3 -R -r 16K -s 60M -I +Z
-> 
->        test           base          srcu
-> "  Initial write " 1299639.75   1277621.03
-> "        Rewrite " 2139387.50   2004663.94
-> "           Read " 6193415.00   5091000.00
-> "        Re-read " 6199050.38   4814297.88
-> "   Reverse Read " 4693868.88   4367201.75
-> "    Stride read " 4470633.75   4247550.00
-> "    Random read " 5115339.50   4517352.75
-> " Mixed workload " 4340747.06   3880517.31
-> "   Random write " 1982369.75   1892456.25
-> "         Pwrite " 1352550.22   1248667.78
-> "          Pread " 2853150.06   2445154.41
-> "         Fwrite " 2367397.81   2262384.56
-> "          Fread " 8100746.50   7578071.75
-> 
-> not good.
-> 
+--Sig_/k_Ja2rlFitG//3Y5qmlZZQc
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Oops, I never thought it could make mesurable performance.
-I will investigate it.
+On Fri, 23 Jan 2015 17:16:59 +0100 (CET) Thomas Gleixner <tglx@linutronix.d=
+e>
+wrote:
 
-Thanks a lot, Sergey!
+> On Fri, 23 Jan 2015, Jan Beulich wrote:
+>=20
+> > Just like for AVX2 (which simply needs an #if -> #ifdef conversion),
+> > SSSE3 assembler support should be checked for before using it.
+> >=20
+> > Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> > Cc: Jim Kukunas <james.t.kukunas@linux.intel.com>
+> > Cc: Neil Brown <neilb@suse.de>
+> > ---
+> >  arch/x86/Makefile       |    1 +
+>=20
+> For the x86 part:
+>=20
+> Acked-by: Thomas Gleixner <tglx@linutronix.de>
+>=20
+> This should go through the raid tree.
 
-> 	-ss
+Thanks.  Applied to the raid tree.
 
--- 
-Kind regards,
-Minchan Kim
+NeilBrown
+
+
+--Sig_/k_Ja2rlFitG//3Y5qmlZZQc
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVMhtZznsnt1WYoG5AQLwohAAvnzdzyd60sWrFcn9Bxdop5xKvibfmCVw
+XQgTHyIVMnH1L3/r8/dtT17UrTZraB6drC/+SGfjs2pHm2NkyXConEplxBHB0UBx
+JG+P/Qsn6Fa2T99ib3xJVr1Sx4zL9EtCt1re6mv7EBr6NYcxeWZ3f6DRcKJnnxtQ
++Zcl+bv/b1Mt56AjH7D+Bz0N1+zh7skrypHUzcmqJmoYeh7KyN/kV3QkxxqHYfTL
+RZYcEDPLMhxuX5agbMManMfvAM3L2/iQ01jfNgjAbcT2wOybQoO9GmNVtpYQ1HgV
+zqN8ABr7aVkET5UcikH6MIJpjHq9UsS3yfEWo1lcKg6XuSrMCning6Hg1LkSIxeQ
+8Ex9JyM93kyh3PZeDPUgQMInHs0lCFAsgYkY5asYss9YOIvvIZIyYeh2loTSjMTi
+rhShz6JY936I8BES6DnRAgBxdX1xK8rhu8Pl6kTTFFrX9AsmLH3kF/wd7asQtDqA
+xndBXPmv3x2PNuBbHUmfFzjwgjc9LDQV37GzJl7nkxm5+i4e6A2ktxFTQvi1IWsy
+ozXspOsKTY7oLbqZyO8lqpzYiq5UQLW+x4cmcFa/JMqB/MCsuaqy14BN0QHVDOBv
+Zike8DX8Nw/XKfQe60CTCtjPl6udqDgyARRoePKvfGG6Z2QVOk0g9yHsf2Pz4ek0
+M/b9jECyBso=
+=vg0C
+-----END PGP SIGNATURE-----
+
+--Sig_/k_Ja2rlFitG//3Y5qmlZZQc--
