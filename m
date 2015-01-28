@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464AbbA1UWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:22:45 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:43727 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394AbbA1UWm (ORCPT
+	id S933114AbbA1UbF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:31:05 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:42290 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759636AbbA1UbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:22:42 -0500
-Message-ID: <54C94511.30508@codeaurora.org>
-Date: Wed, 28 Jan 2015 12:22:41 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 0/2] Fix secondary CPU boot for thumb2 kernels
-References: <1421869698-27341-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1421869698-27341-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jan 2015 15:31:01 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH v2] vfs: read file_handle only once in handle_to_path
+Date: Wed, 28 Jan 2015 15:30:43 -0500
+Message-Id: <1422477048-4550-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/15 11:48, Stephen Boyd wrote:
-> Currently I can't boot up secondary CPUs on qcom platforms when I
-> compile the kernel for THUMB2 mode. This is because we always enter
-> the kernel in ARM mode regardless of what mode the kernel is compiled
-> for. This patchset adds a small wrapper to secondary_startup() called
-> secondary_startup_arm() that allows us to switch into THUMB2 mode if
-> we need to. If the kernel is compiled for ARM mode it shouldn't have
-> any effect.
->
-> Stephen Boyd (2):
->   ARM: Add a secondary_startup that assumes ARM mode
->   ARM: qcom: Use secondary_startup_arm()
->
->  arch/arm/kernel/head.S       | 7 +++++++
->  arch/arm/mach-qcom/platsmp.c | 4 ++--
->  2 files changed, 9 insertions(+), 2 deletions(-)
->
+We used to read file_handle twice. Once to get the amount of extra bytes, and
+once to fetch the entire structure.
 
-Any comments here? Perhaps I can send this through the patch tracker?
+This may be problematic since we do size verifications only after the first
+read, so if the number of extra bytes changes in userspace between the first
+and second calls, we'll have an incoherent view of file_handle.
 
+Instead, read the constant size once, and copy that over to the final
+structure without having to re-read it again.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+Change in v2:
+ - Use the f_handle pointer rather than size of struct
+
+ fs/fhandle.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fs/fhandle.c b/fs/fhandle.c
+index 999ff5c..d59712d 100644
+--- a/fs/fhandle.c
++++ b/fs/fhandle.c
+@@ -195,8 +195,9 @@ static int handle_to_path(int mountdirfd, struct file_handle __user *ufh,
+ 		goto out_err;
+ 	}
+ 	/* copy the full handle */
+-	if (copy_from_user(handle, ufh,
+-			   sizeof(struct file_handle) +
++	*handle = f_handle;
++	if (copy_from_user(&handle->f_handle,
++			   &ufh->f_handle,
+ 			   f_handle.handle_bytes)) {
+ 		retval = -EFAULT;
+ 		goto out_handle;
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+1.7.10.4
 
