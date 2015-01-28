@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762059AbbA1Utk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:49:40 -0500
+	id S934471AbbA1Uty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:49:54 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759371AbbA1Uth (ORCPT
+	with ESMTP id S1759386AbbA1Utt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:49:37 -0500
-Date: Wed, 28 Jan 2015 07:01:09 -0800
-From: tip-bot for Rabin Vincent <tipbot@zytor.com>
-Message-ID: <tip-0fb9f2aab738eec9dd9b929ed7d37bf744d2ac77@git.kernel.org>
-Cc: tglx@linutronix.de, acme@redhat.com, hpa@zytor.com, paulus@samba.org,
-        rabin@rab.in, linux-kernel@vger.kernel.org, mingo@kernel.org
-Reply-To: rabin@rab.in, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com, hpa@zytor.com, tglx@linutronix.de
-In-Reply-To: <1421607621-15005-2-git-send-email-rabin@rab.in>
-References: <1421607621-15005-2-git-send-email-rabin@rab.in>
+	Wed, 28 Jan 2015 15:49:49 -0500
+Date: Wed, 28 Jan 2015 07:01:32 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-de4809999dac44c51e1f9ad892deb0336296dc4e@git.kernel.org>
+Cc: namhyung@kernel.org, mingo@kernel.org, dsahern@gmail.com, hpa@zytor.com,
+        jolsa@redhat.com, tglx@linutronix.de, acme@redhat.com,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com
+Reply-To: acme@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, mingo@kernel.org, dsahern@gmail.com,
+        hpa@zytor.com, namhyung@kernel.org, jolsa@redhat.com,
+        tglx@linutronix.de
+In-Reply-To: <1421234288-22758-2-git-send-email-namhyung@kernel.org>
+References: <1421234288-22758-2-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate: Fix memory leaks in LOCK handling
-Git-Commit-ID: 0fb9f2aab738eec9dd9b929ed7d37bf744d2ac77
+Subject: [tip:perf/core] perf symbols:
+  Return the first entry with a given name in find_by_name method
+Git-Commit-ID: de4809999dac44c51e1f9ad892deb0336296dc4e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,50 +35,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0fb9f2aab738eec9dd9b929ed7d37bf744d2ac77
-Gitweb:     http://git.kernel.org/tip/0fb9f2aab738eec9dd9b929ed7d37bf744d2ac77
-Author:     Rabin Vincent <rabin@rab.in>
-AuthorDate: Sun, 18 Jan 2015 20:00:21 +0100
+Commit-ID:  de4809999dac44c51e1f9ad892deb0336296dc4e
+Gitweb:     http://git.kernel.org/tip/de4809999dac44c51e1f9ad892deb0336296dc4e
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Fri, 16 Jan 2015 15:31:28 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 21 Jan 2015 10:05:32 -0300
+CommitDate: Wed, 21 Jan 2015 10:05:44 -0300
 
-perf annotate: Fix memory leaks in LOCK handling
+perf symbols: Return the first entry with a given name in find_by_name method
 
-The lock prefix handling fails to free the strdup()'d name as well as
-the fields allocated by the instruction parsing.
+When a dso contains multiple symbols which have same name, current
+dso__find_symbol_by_name() only finds an one of them and there's no way
+to get the all symbols without going through the rbtree.
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Cc: Paul Mackerras <paulus@samba.org>
-Link: http://lkml.kernel.org/r/1421607621-15005-2-git-send-email-rabin@rab.in
+So make symbols__find_by_name() return the first entry with the given
+name and the next patch in this series will provide a way to iterate
+from there, by the name ordered rb_tree, till a suitable symbol is
+found.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/1421234288-22758-2-git-send-email-namhyung@kernel.org
+[ Yanked this independent hunk, without changes, from a larger patch  ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/annotate.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ tools/perf/util/symbol.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index d5da1b8..01bc4e2 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -177,6 +177,8 @@ static int lock__parse(struct ins_operands *ops)
- 		goto out_free_ops;
- 
- 	ops->locked.ins = ins__find(name);
-+	free(name);
-+
- 	if (ops->locked.ins == NULL)
- 		goto out_free_ops;
- 
-@@ -209,6 +211,13 @@ static int lock__scnprintf(struct ins *ins, char *bf, size_t size,
- 
- static void lock__delete(struct ins_operands *ops)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index c24c5b8..3cb928e 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -396,6 +396,7 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
+ 					    const char *name)
  {
-+	struct ins *ins = ops->locked.ins;
+ 	struct rb_node *n;
++	struct symbol_name_rb_node *s;
+ 
+ 	if (symbols == NULL)
+ 		return NULL;
+@@ -403,7 +404,6 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
+ 	n = symbols->rb_node;
+ 
+ 	while (n) {
+-		struct symbol_name_rb_node *s;
+ 		int cmp;
+ 
+ 		s = rb_entry(n, struct symbol_name_rb_node, rb_node);
+@@ -414,10 +414,24 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
+ 		else if (cmp > 0)
+ 			n = n->rb_right;
+ 		else
+-			return &s->sym;
++			break;
+ 	}
+ 
+-	return NULL;
++	if (n == NULL)
++		return NULL;
 +
-+	if (ins && ins->ops->free)
-+		ins->ops->free(ops->locked.ops);
-+	else
-+		ins__delete(ops->locked.ops);
++	/* return first symbol that has same name (if any) */
++	for (n = rb_prev(n); n; n = rb_prev(n)) {
++		struct symbol_name_rb_node *tmp;
 +
- 	zfree(&ops->locked.ops);
- 	zfree(&ops->target.raw);
- 	zfree(&ops->target.name);
++		tmp = rb_entry(n, struct symbol_name_rb_node, rb_node);
++		if (strcmp(tmp->sym.name, s->sym.name))
++			break;
++
++		s = tmp;
++	}
++
++	return &s->sym;
+ }
+ 
+ struct symbol *dso__find_symbol(struct dso *dso,
