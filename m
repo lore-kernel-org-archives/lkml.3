@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761575AbbA1ET2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:19:28 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38811 "EHLO mail.kernel.org"
+	id S1761592AbbA1ETc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:19:32 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38871 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761499AbbA1ETY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:24 -0500
+	id S1761570AbbA1ET2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:28 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 62/91] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
-Date: Wed, 28 Jan 2015 12:08:10 +0800
-Message-Id: <1422418236-12852-123-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        "Theodore Ts'o" <tytso@mit.edu>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 062/177] vfs: fix data corruption when blocksize < pagesize for mmaped data
+Date: Wed, 28 Jan 2015 12:08:11 +0800
+Message-Id: <1422418236-12852-124-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -24,127 +20,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
+From: Jan Kara <jack@suse.cz>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
+commit 90a8020278c1598fafd071736a0846b38510309c upstream.
 
-The following bug can be triggered by hot adding and removing a large number of
-xen domain0's vcpus repeatedly:
+->page_mkwrite() is used by filesystems to allocate blocks under a page
+which is becoming writeably mmapped in some process' address space. This
+allows a filesystem to return a page fault if there is not enough space
+available, user exceeds quota or similar problem happens, rather than
+silently discarding data later when writepage is called.
 
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
-	PGD 5a9d5067 PUD 13067 PMD 0
-	Oops: 0000 [#3] SMP
-	[...]
-	Call Trace:
-	load_balance
-	? _raw_spin_unlock_irqrestore
-	idle_balance
-	__schedule
-	schedule
-	schedule_timeout
-	? lock_timer_base
-	schedule_timeout_uninterruptible
-	msleep
-	lock_device_hotplug_sysfs
-	online_store
-	dev_attr_store
-	sysfs_write_file
-	vfs_write
-	SyS_write
-	system_call_fastpath
+However VFS fails to call ->page_mkwrite() in all the cases where
+filesystems need it when blocksize < pagesize. For example when
+blocksize = 1024, pagesize = 4096 the following is problematic:
+  ftruncate(fd, 0);
+  pwrite(fd, buf, 1024, 0);
+  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
+  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
+  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
+  mremap(map, 1024, 10000, 0);
+  map[4095] = 'a';    ----> no page_mkwrite() called
 
-Last level cache shared mask is built during CPU up and the
-build_sched_domain() routine takes advantage of it to setup
-the sched domain CPU topology.
+At the moment ->page_mkwrite() is called, filesystem can allocate only
+one block for the page because i_size == 1024. Otherwise it would create
+blocks beyond i_size which is generally undesirable. But later at
+->writepage() time, we also need to store data at offset 4095 but we
+don't have block allocated for it.
 
-However, llc_shared_mask is not released during CPU disable,
-which leads to an invalid sched domainCPU topology.
+This patch introduces a helper function filesystems can use to have
+->page_mkwrite() called at all the necessary moments.
 
-This patch fix it by releasing the llc_shared_mask correctly
-during CPU disable.
-
-Yasuaki also reported that this can happen on real hardware:
-
-  https://lkml.org/lkml/2014/7/22/1018
-
-His case is here:
-
-	==
-	Here is an example on my system.
-	My system has 4 sockets and each socket has 15 cores and HT is
-	enabled. In this case, each core of sockes is numbered as
-	follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-44, 90-104
-	Socket#3 | 45-59, 105-119
-
-	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-
-	It means that last level cache of Socket#2 is shared with
-	CPU#30-44 and 90-104.
-
-	When hot-removing socket#2 and #3, each core of sockets is
-	numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-
-	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
-	remains having 0x3fff80000001fffc0000000.
-
-	After that, when hot-adding socket#2 and #3, each core of
-	sockets is numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-59
-	Socket#3 | 90-119
-
-	Then llc_shared_mask of CPU#30 becomes
-	0x3fff8000fffffffc0000000. It means that last level cache of
-	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
-	the wrong value.
-
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Tested-by: Linn Crosetto <linn@hp.com>
-Reviewed-by: Borislav Petkov <bp@suse.de>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[lizf: Backported to 3.4:
+ - adjust context
+ - truncate_setsize() already has an oldsize variable]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/kernel/smpboot.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/buffer.c        |  3 +++
+ include/linux/mm.h |  1 +
+ mm/truncate.c      | 62 +++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 63 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index d28c595..c7dbf02 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1248,6 +1248,9 @@ static void remove_siblinginfo(int cpu)
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 104425b..ed2dc70 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -1982,6 +1982,7 @@ int generic_write_end(struct file *file, struct address_space *mapping,
+ 			struct page *page, void *fsdata)
+ {
+ 	struct inode *inode = mapping->host;
++	loff_t old_size = inode->i_size;
+ 	int i_size_changed = 0;
  
- 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
- 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-+	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-+		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-+	cpumask_clear(cpu_llc_shared_mask(cpu));
- 	cpumask_clear(cpu_sibling_mask(cpu));
- 	cpumask_clear(cpu_core_mask(cpu));
- 	c->phys_proc_id = 0;
+ 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
+@@ -2001,6 +2002,8 @@ int generic_write_end(struct file *file, struct address_space *mapping,
+ 	unlock_page(page);
+ 	page_cache_release(page);
+ 
++	if (old_size < pos)
++		pagecache_isize_extended(inode, old_size, pos);
+ 	/*
+ 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
+ 	 * makes the holding time of page lock longer. Second, it forces lock
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index dbca4b2..656b4e9 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -953,6 +953,7 @@ static inline void unmap_shared_mapping_range(struct address_space *mapping,
+ 
+ extern void truncate_pagecache(struct inode *inode, loff_t old, loff_t new);
+ extern void truncate_setsize(struct inode *inode, loff_t newsize);
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
+ extern int vmtruncate(struct inode *inode, loff_t offset);
+ extern int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end);
+ void truncate_pagecache_range(struct inode *inode, loff_t offset, loff_t end);
+diff --git a/mm/truncate.c b/mm/truncate.c
+index f38055c..708a499 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -20,6 +20,7 @@
+ #include <linux/buffer_head.h>	/* grr. try_to_release_page,
+ 				   do_invalidatepage */
+ #include <linux/cleancache.h>
++#include <linux/rmap.h>
+ #include "internal.h"
+ 
+ 
+@@ -571,16 +572,71 @@ EXPORT_SYMBOL(truncate_pagecache);
+  */
+ void truncate_setsize(struct inode *inode, loff_t newsize)
+ {
+-	loff_t oldsize;
+-
+-	oldsize = inode->i_size;
++	loff_t oldsize = inode->i_size;
+ 	i_size_write(inode, newsize);
+ 
++	if (newsize > oldsize)
++		pagecache_isize_extended(inode, oldsize, newsize);
+ 	truncate_pagecache(inode, oldsize, newsize);
+ }
+ EXPORT_SYMBOL(truncate_setsize);
+ 
+ /**
++ * pagecache_isize_extended - update pagecache after extension of i_size
++ * @inode:	inode for which i_size was extended
++ * @from:	original inode size
++ * @to:		new inode size
++ *
++ * Handle extension of inode size either caused by extending truncate or by
++ * write starting after current i_size. We mark the page straddling current
++ * i_size RO so that page_mkwrite() is called on the nearest write access to
++ * the page.  This way filesystem can be sure that page_mkwrite() is called on
++ * the page before user writes to the page via mmap after the i_size has been
++ * changed.
++ *
++ * The function must be called after i_size is updated so that page fault
++ * coming after we unlock the page will already see the new i_size.
++ * The function must be called while we still hold i_mutex - this not only
++ * makes sure i_size is stable but also that userspace cannot observe new
++ * i_size value before we are prepared to store mmap writes at new inode size.
++ */
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
++{
++	int bsize = 1 << inode->i_blkbits;
++	loff_t rounded_from;
++	struct page *page;
++	pgoff_t index;
++
++	WARN_ON(!mutex_is_locked(&inode->i_mutex));
++	WARN_ON(to > inode->i_size);
++
++	if (from >= to || bsize == PAGE_CACHE_SIZE)
++		return;
++	/* Page straddling @from will not have any hole block created? */
++	rounded_from = round_up(from, bsize);
++	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
++		return;
++
++	index = from >> PAGE_CACHE_SHIFT;
++	page = find_lock_page(inode->i_mapping, index);
++	/* Page not cached? Nothing to do */
++	if (!page)
++		return;
++	/*
++	 * See clear_page_dirty_for_io() for details why set_page_dirty()
++	 * is needed.
++	 */
++	if (page_mkclean(page))
++		set_page_dirty(page);
++	unlock_page(page);
++	page_cache_release(page);
++}
++EXPORT_SYMBOL(pagecache_isize_extended);
++
++/**
++ * truncate_pagecache_range - unmap and remove pagecache that is hole-punched
++ * @inode: inode
++ * @lstart: offset of beginning of hole
+  * vmtruncate - unmap mappings "freed" by truncate() syscall
+  * @inode: inode of the file used
+  * @newsize: file offset to start truncating
 -- 
 1.9.1
 
