@@ -1,40 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364AbbA1F4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:56:12 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47914 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202AbbA1F4J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 00:56:09 -0500
-Message-ID: <54C8799E.6050301@huawei.com>
-Date: Wed, 28 Jan 2015 13:54:38 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756568AbbA1F5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:57:39 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:17793 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756027AbbA1F5i convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 00:57:38 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'airlied@linux.ie'" <airlied@linux.ie>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Wed, 28 Jan 2015 13:57:34 +0800
+Subject: [PATCH] agp:change agp_free_page_array to use kvfree
+Thread-Topic: [PATCH] agp:change agp_free_page_array to use kvfree
+Thread-Index: AdA6v08bfUmqlEuhS8eTCl3daARqJw==
+Message-ID: <35FD53F367049845BC99AC72306C23D1044A02027DFE@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-mcafeedlp-tag-0: {224703BC-758A-11E4-982F-0DF611A26A07}
+x-mcafeedlp-tagged: True
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: <lizf@kernel.org>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Christian Borntraeger" <borntraeger@de.ibm.com>
-Subject: Re: [PATCH 3.4 01/91] KVM: s390: Fix user triggerable bug in dead
- code
-References: <1422418050-12581-1-git-send-email-lizf@kernel.org> <1422418236-12852-1-git-send-email-lizf@kernel.org>
-In-Reply-To: <1422418236-12852-1-git-send-email-lizf@kernel.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops... Please ignore those patches that have been released as 3.4.105. I forgot
-to remove them when I was preparing patches for 3.4.106.
+Change agp_free_page_array to use kvfree function,
+remove the duplicated code.
 
-On 2015/1/28 12:06, lizf@kernel.org wrote:
-> From: Christian Borntraeger <borntraeger@de.ibm.com>
-> 
-> 3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ drivers/char/agp/agp.h     |  5 ++++-
+ drivers/char/agp/generic.c | 11 -----------
+ 2 files changed, 4 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/char/agp/agp.h b/drivers/char/agp/agp.h
+index b709749..4eb1c77 100644
+--- a/drivers/char/agp/agp.h
++++ b/drivers/char/agp/agp.h
+@@ -219,7 +219,10 @@ struct agp_bridge_data *agp_generic_find_bridge(struct pci_dev *pdev);
+ /* generic functions for user-populated AGP memory types */
+ struct agp_memory *agp_generic_alloc_user(size_t page_count, int type);
+ void agp_alloc_page_array(size_t size, struct agp_memory *mem);
+-void agp_free_page_array(struct agp_memory *mem);
++static inline void agp_free_page_array(struct agp_memory *mem)
++{
++	kvfree(mem->pages);
++}
+ 
+ 
+ /* generic routines for agp>=3 */
+diff --git a/drivers/char/agp/generic.c b/drivers/char/agp/generic.c
+index 0fbccce..f002fa5 100644
+--- a/drivers/char/agp/generic.c
++++ b/drivers/char/agp/generic.c
+@@ -98,17 +98,6 @@ void agp_alloc_page_array(size_t size, struct agp_memory *mem)
+ }
+ EXPORT_SYMBOL(agp_alloc_page_array);
+ 
+-void agp_free_page_array(struct agp_memory *mem)
+-{
+-	if (is_vmalloc_addr(mem->pages)) {
+-		vfree(mem->pages);
+-	} else {
+-		kfree(mem->pages);
+-	}
+-}
+-EXPORT_SYMBOL(agp_free_page_array);
+-
+-
+ static struct agp_memory *agp_create_user_memory(unsigned long num_agp_pages)
+ {
+ 	struct agp_memory *new;
+-- 
+2.2.2
