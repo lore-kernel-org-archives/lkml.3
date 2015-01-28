@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965545AbbA1Er0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:47:26 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40189 "EHLO mail.kernel.org"
+	id S934437AbbA1EXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:23:11 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40199 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934298AbbA1EXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:23:04 -0500
+	id S934403AbbA1EXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:23:06 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jack Pham <jackp@codeaurora.org>,
-        Felipe Balbi <balbi@ti.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 103/177] usb: dwc3: gadget: Properly initialize LINK TRB
-Date: Wed, 28 Jan 2015 12:09:21 +0800
-Message-Id: <1422418236-12852-194-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 104/177] Input: i8042 - quirks for Fujitsu Lifebook A544 and Lifebook AH544
+Date: Wed, 28 Jan 2015 12:09:22 +0800
+Message-Id: <1422418236-12852-195-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,49 +21,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jack Pham <jackp@codeaurora.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 1200a82a59b6aa65758ccc92c3447b98c53cd7a2 upstream.
+commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
 
-On ISOC endpoints the last trb_pool entry used as a
-LINK TRB is not getting zeroed out correctly due to
-memset being called incorrectly and in the wrong place.
-If pool allocated from DMA was not zero-initialized
-to begin with this will result in the size and ctrl
-values being random garbage. Call memset correctly after
-assignment of the trb_link pointer.
+These models need i8042.notimeout, otherwise the touchpad will not work.
 
-Fixes: f6bafc6a1c ("usb: dwc3: convert TRBs into bitshifts")
-Signed-off-by: Jack Pham <jackp@codeaurora.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/usb/dwc3/gadget.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 3ceb8da..1acb3a4 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -485,12 +485,11 @@ static int __dwc3_gadget_ep_enable(struct dwc3_ep *dep,
- 		if (!usb_endpoint_xfer_isoc(desc))
- 			return 0;
- 
--		memset(&trb_link, 0, sizeof(trb_link));
--
- 		/* Link TRB for ISOC. The HWO bit is never reset */
- 		trb_st_hw = &dep->trb_pool[0];
- 
- 		trb_link = &dep->trb_pool[DWC3_TRB_NUM - 1];
-+		memset(trb_link, 0, sizeof(*trb_link));
- 
- 		trb_link->bpl = lower_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
- 		trb_link->bph = upper_32_bits(dwc3_trb_dma_offset(dep, trb_st_hw));
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index 40ff494..ce715b1 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -615,6 +615,22 @@ static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
+ 		},
+ 	},
+ 	{
++		/* Fujitsu A544 laptop */
++		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
++		},
++	},
++	{
++		/* Fujitsu AH544 laptop */
++		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
++		},
++	},
++	{
+ 		/* Fujitsu U574 laptop */
+ 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
+ 		.matches = {
 -- 
 1.9.1
 
