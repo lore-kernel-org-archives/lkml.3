@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759489AbbA1Um0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:42:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42415 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934077AbbA1UmU (ORCPT
+	id S933530AbbA1Uds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:33:48 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:62315 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756005AbbA1Udp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:42:20 -0500
-Date: Wed, 28 Jan 2015 11:23:16 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mariam Mohamed Fawzy <maryammohamed61@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] fix space required after that ','
-Message-ID: <20150128192316.GA22866@kroah.com>
-References: <cover.1422267260.git.maryammohamed61@gmail.com>
- <aa2201187c1e773b097042ff99d88b1bd6240469.1422267260.git.maryammohamed61@gmail.com>
+	Wed, 28 Jan 2015 15:33:45 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Smack: fix netfilter Makefile entry
+Date: Wed, 28 Jan 2015 20:23:27 +0100
+Message-ID: <30287261.Lan5Co1lCn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54C927E3.6000006@cogentembedded.com>
+References: <2504358.ZeqdfUXKpJ@wuerfel> <54C927E3.6000006@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <aa2201187c1e773b097042ff99d88b1bd6240469.1422267260.git.maryammohamed61@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:A4j/URI7HAOJon8+LzohRXHL+XQ1iyKYWyojeCkgNZWS4I/VNiq
+ 3+p+RPTA9Hx3OUx31zwHBrinBVavwnFU4ieBXmcpuYP4YjXaZpe2Sjb4pjO5bYvPkL2okXu
+ kS4AnYFyr4oSAwwz7HrIJTIK+JDavjm+Fu2CjJGpL5PIpdZY8HaKFSDl9/v6XerD628ZeZJ
+ Ulyodebd1d++ztoxSSEtQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 26, 2015 at 12:24:33PM +0200, Mariam Mohamed Fawzy wrote:
-> This patch fixes the following in checkpatch.pl error:
-> space required after that ','
+On Wednesday 28 January 2015 21:18:11 Sergei Shtylyov wrote:
+> > diff --git a/security/smack/Makefile b/security/smack/Makefile
+> > index 616cf93b368e..d4a376c84050 100644
+> > --- a/security/smack/Makefile
+> > +++ b/security/smack/Makefile
+> > @@ -5,4 +5,4 @@
+> >   obj-$(CONFIG_SECURITY_SMACK) := smack.o
+> >
+> >   smack-y := smack_lsm.o smack_access.o smackfs.o
+> > -smack-$(CONFIG_NETFILTER) += smack_netfilter.o
+> > +smack-$(SECURITY_SMACK_NETFILTER) += smack_netfilter.o
 > 
-> Signed-off-by: Mariam Mohamed Fawzy <maryammohamed61@gmail.com>
-> ---
->  drivers/staging/fbtft/fb_bd663474.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>     CONFIG_ missing?
 
-Please put in the subject what portion of the kernel you are changing,
-like you did in the 0/3 email.
+Yes, you are right. Anyway, as another fix is already queued,
+it doesn't matter any more.
 
-Can you redo these and resend?
-
-thanks,
-
-greg k-h
+	Arnd
