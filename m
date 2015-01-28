@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759384AbbA1VVD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:21:03 -0500
+	id S1755063AbbA1VVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:21:37 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757549AbbA1UuT (ORCPT
+	with ESMTP id S965021AbbA1UuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:50:19 -0500
-Date: Wed, 28 Jan 2015 07:09:05 -0800
+	Wed, 28 Jan 2015 15:50:17 -0500
+Date: Wed, 28 Jan 2015 07:09:23 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-j1jicvwljy5qx1nah4mkmyke@git.kernel.org>
-Cc: namhyung@kernel.org, eranian@google.com, jolsa@redhat.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, dzickus@redhat.com,
-        tglx@linutronix.de, dsahern@gmail.com, fweisbec@gmail.com,
-        adrian.hunter@intel.com, acme@redhat.com, hpa@zytor.com, bp@suse.de
-Reply-To: hpa@zytor.com, bp@suse.de, dzickus@redhat.com, dsahern@gmail.com,
-        tglx@linutronix.de, acme@redhat.com, adrian.hunter@intel.com,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        eranian@google.com, mingo@kernel.org, jolsa@redhat.com
+Message-ID: <tip-7k6asvfhiwiu2zs6o2oknchk@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+        hpa@zytor.com, fweisbec@gmail.com, bp@suse.de, dsahern@gmail.com,
+        dzickus@redhat.com, namhyung@kernel.org, jolsa@redhat.com,
+        mingo@kernel.org, tglx@linutronix.de, adrian.hunter@intel.com
+Reply-To: tglx@linutronix.de, jolsa@redhat.com, mingo@kernel.org,
+        namhyung@kernel.org, dzickus@redhat.com, adrian.hunter@intel.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        eranian@google.com, dsahern@gmail.com, bp@suse.de, fweisbec@gmail.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib fs:
-  Pass filename to debugfs__strerror_open
-Git-Commit-ID: 801c67b05f55d0cdafcda9fdcbb3da375b03c192
+Subject: [tip:perf/core] perf trace:
+  Fix error reporting for evsel pgfault constructor
+Git-Commit-ID: 5ed08dae9d2f2307c103e2dce94d801e74aefae4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,17 +34,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  801c67b05f55d0cdafcda9fdcbb3da375b03c192
-Gitweb:     http://git.kernel.org/tip/801c67b05f55d0cdafcda9fdcbb3da375b03c192
+Commit-ID:  5ed08dae9d2f2307c103e2dce94d801e74aefae4
+Gitweb:     http://git.kernel.org/tip/5ed08dae9d2f2307c103e2dce94d801e74aefae4
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 22 Jan 2015 10:52:55 -0300
+AuthorDate: Thu, 22 Jan 2015 11:08:04 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 22 Jan 2015 11:16:31 -0300
+CommitDate: Thu, 22 Jan 2015 11:16:34 -0300
 
-tools lib fs: Pass filename to debugfs__strerror_open
+perf trace: Fix error reporting for evsel pgfault constructor
 
-It was hardcoded for one specific tracepoint, leftover from its initial
-user: 'perf trace'.
+In that case the only failure possible is not to have enough memory, as
+we are just creating the evsels, not trying to access any system
+facility such as debugfs files or syscalls.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -54,71 +55,44 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-j1jicvwljy5qx1nah4mkmyke@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-7k6asvfhiwiu2zs6o2oknchk@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/api/fs/debugfs.c | 6 +++---
- tools/lib/api/fs/debugfs.h | 2 +-
- tools/perf/builtin-trace.c | 5 +++--
- 3 files changed, 7 insertions(+), 6 deletions(-)
+ tools/perf/builtin-trace.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
-index fb700ee..5e8f391 100644
---- a/tools/lib/api/fs/debugfs.c
-+++ b/tools/lib/api/fs/debugfs.c
-@@ -100,7 +100,7 @@ out:
- 	return debugfs_mountpoint;
- }
- 
--int debugfs__strerror_open(int err, char *buf, size_t size)
-+int debugfs__strerror_open(int err, char *buf, size_t size, const char *filename)
- {
- 	char sbuf[128];
- 
-@@ -114,9 +114,9 @@ int debugfs__strerror_open(int err, char *buf, size_t size)
- 		break;
- 	case EACCES:
- 		snprintf(buf, size,
--			 "Error:\tNo permissions to read %s/tracing/events/raw_syscalls\n"
-+			 "Error:\tNo permissions to read %s/%s\n"
- 			 "Hint:\tTry 'sudo mount -o remount,mode=755 %s'\n",
--			 debugfs_mountpoint, debugfs_mountpoint);
-+			 debugfs_mountpoint, filename, debugfs_mountpoint);
- 		break;
- 	default:
- 		snprintf(buf, size, "%s", strerror_r(err, sbuf, sizeof(sbuf)));
-diff --git a/tools/lib/api/fs/debugfs.h b/tools/lib/api/fs/debugfs.h
-index afa5043..a1799ae 100644
---- a/tools/lib/api/fs/debugfs.h
-+++ b/tools/lib/api/fs/debugfs.h
-@@ -26,6 +26,6 @@ char *debugfs_mount(const char *mountpoint);
- 
- extern char debugfs_mountpoint[];
- 
--int debugfs__strerror_open(int err, char *buf, size_t size);
-+int debugfs__strerror_open(int err, char *buf, size_t size, const char *filename);
- 
- #endif /* __API_DEBUGFS_H__ */
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 2f82dd7..684609d 100644
+index 684609d..eaaa540 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -2056,7 +2056,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	if (trace->trace_syscalls &&
- 	    perf_evlist__add_syscall_newtp(evlist, trace__sys_enter,
- 					   trace__sys_exit))
+@@ -2063,18 +2063,12 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 
+ 	if ((trace->trace_pgfaults & TRACE_PFMAJ) &&
+ 	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MAJ)) {
+-		/*
+-		 * FIXME: This one needs better error handling, as by now we
+-		 * already checked that debugfs is mounted and that we have access to it,
+-		 * so probably the case is that something is busted wrt this specific
+-		 * software event, ditto for the next gotos to out_error_tp...
+-		 */
 -		goto out_error_tp;
-+		goto out_error_raw_syscalls;
++		goto out_error_mem;
+ 	}
  
- 	if (trace->trace_syscalls)
- 		perf_evlist__add_vfs_getname(evlist);
-@@ -2210,7 +2210,8 @@ out:
- 	char errbuf[BUFSIZ];
+ 	if ((trace->trace_pgfaults & TRACE_PFMIN) &&
+ 	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MIN))
+-		goto out_error_tp;
++		goto out_error_mem;
  
- out_error_tp:
--	debugfs__strerror_open(errno, errbuf, sizeof(errbuf));
-+out_error_raw_syscalls:
-+	debugfs__strerror_open(errno, errbuf, sizeof(errbuf), "tracing/events/raw_syscalls");
- 	goto out_error;
+ 	if (trace->sched &&
+ 		perf_evlist__add_newtp(evlist, "sched", "sched_stat_runtime",
+@@ -2225,6 +2219,9 @@ out_error:
+ 	fprintf(trace->output, "%s\n", errbuf);
+ 	goto out_delete_evlist;
+ }
++out_error_mem:
++	fprintf(trace->output, "Not enough memory to run!\n");
++	goto out_delete_evlist;
+ }
  
- out_error_mmap:
+ static int trace__replay(struct trace *trace)
