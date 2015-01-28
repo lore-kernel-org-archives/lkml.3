@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761160AbbA2CQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:16:16 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:64034 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192AbbA2CQL (ORCPT
+	id S1755870AbbA2Be7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:34:59 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38403 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755013AbbA2BZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:16:11 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marc Zyngier <marc.zyngier@arm.com>,
-        Christoffer Dall <cdall@cs.columbia.edu>
-Cc: Russell King <rmk@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: randconfig bug: ARM/KVM link error in hyp_idmap section
-Date: Wed, 28 Jan 2015 20:57:19 +0100
-Message-ID: <3919069.MpPCrczKD2@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+	Wed, 28 Jan 2015 20:25:47 -0500
+Date: Wed, 28 Jan 2015 19:57:48 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20150128195748.GQ21293@sirena.org.uk>
+References: <1422474819-22689-1-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:hQOhm5v6eTTRxLQYYqRU5K51yOEZfPgnhFx/TNv5B/MFmbIl0nk
- 8BI+GJkZvj/KGD7plye75wNm2FM7YPhld+Dk+QLnushA6ImCORyFNEGlYOa69uRxWZQsosc
- yBheSlaY9svB4APcVg1wo34gOznK7zWVht3GfklKr6R2wJFNnjjhY7Y1+URlv/vBuS3G+xH
- BMp3dC8NXCeCuYhPe/Ipg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="5j9EWX0zxF50a1Bm"
+Content-Disposition: inline
+In-Reply-To: <1422474819-22689-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi/xilinx: Check number of slaves range
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 0394e1f60520 ("ARM: KVM: enforce maximum size for identity
-mapped code"), some randconfigs started failing because the hyp_idmap
-section grows too large. I've tracked this down to the problem of
-veneers getting erroneously added to this section, but I'm not
-sure about the fix. The patch below is what I came up with.
 
-Any other ideas?
+--5j9EWX0zxF50a1Bm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Arnd
+On Wed, Jan 28, 2015 at 08:53:39PM +0100, Ricardo Ribalda Delgado wrote:
+> From: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+>=20
+> The core only supports up to 32 slaves, and the chipselect function
+> expects the same.
 
-8<----
-Subject: [PATCH] ARM: KVM: avoid "HYP init code too big" error
+Applied, thanks.
 
-When building large kernels, the linker will emit lots of veneers
-into the .hyp.idmap.text section, which causes it to grow beyond
-one page, and that triggers the build error.
+--5j9EWX0zxF50a1Bm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This moves the section into .rodata instead, which avoids the
-veneers and is safe because the code is not executed directly
-but always copied into a separate page first.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-I am unsure if I wrote this the correct way though, so
-it needs to be reviewed carefully.
+iQEcBAEBCAAGBQJUyT87AAoJECTWi3JdVIfQiHoH/j4TmPHpDKBCuyxNQ5mYqJei
+J0ffaP0OLVnhH3UUff8omaQpkVIvY5anTuvKJtLHsRUmqp3d8+LYKmcS/GjUWrEY
+cCK7L1B/tmV9oH5JKKbodjuSV5g8MHy3G2ayBNuOz/uTo5K0xfjnJj5a3QI12sDI
+vxKHCSfrXxzIf0SfKjOfEprHWyjNQMljM+4xjvAM7q/cuyFnojc35vs/nT78lC6c
+IPA16HMeHgBOf7xqb07DifMI+w0naAO17CVjL2PgYMZyPMncgVaM/WSp4wE0TxXi
+jv00oL6LdNln5MYaUW9ezuGYaWdngLNIOcWidBbXRUgtCVPkmkyivRhYjnwen7Q=
+=8ucE
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index ce01a2d3339f..f4de6e16d951 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -23,10 +23,14 @@
- 	VMLINUX_SYMBOL(__idmap_text_start) = .;				\
- 	*(.idmap.text)							\
- 	VMLINUX_SYMBOL(__idmap_text_end) = .;				\
--	. = ALIGN(32);							\
-+	. = ALIGN(32);							
-+
-+#define IDMAP_RODATA							\
-+	.rodata : {							\
- 	VMLINUX_SYMBOL(__hyp_idmap_text_start) = .;			\
- 	*(.hyp.idmap.text)						\
--	VMLINUX_SYMBOL(__hyp_idmap_text_end) = .;
-+	VMLINUX_SYMBOL(__hyp_idmap_text_end) = .;			\
-+	}
- 
- #ifdef CONFIG_HOTPLUG_CPU
- #define ARM_CPU_DISCARD(x)
-@@ -123,6 +127,7 @@ SECTIONS
- 	. = ALIGN(1<<SECTION_SHIFT);
- #endif
- 	RO_DATA(PAGE_SIZE)
-+	IDMAP_RODATA
- 
- 	. = ALIGN(4);
- 	__ex_table : AT(ADDR(__ex_table) - LOAD_OFFSET) {
-
+--5j9EWX0zxF50a1Bm--
