@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760445AbbA1Bbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:31:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41386 "EHLO
+	id S1761123AbbA1CHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:07:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41191 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760424AbbA1Bbr (ORCPT
+	with ESMTP id S1759965AbbA1B2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:31:47 -0500
+	Tue, 27 Jan 2015 20:28:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Wendy Xiong <wenxiong@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 13/77] ipr: wait for aborted command responses
+        "K. Y. Srinivasan" <kys@microsoft.com>, jasowang@redhat.com,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.18 39/61] x86, hyperv: Mark the Hyper-V clocksource as being continuous
 Date: Tue, 27 Jan 2015 17:26:51 -0800
-Message-Id: <20150128012746.366408436@linuxfoundation.org>
+Message-Id: <20150128012641.183022031@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,187 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Brian King <brking@linux.vnet.ibm.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 6cdb08172bc89f0a39e1643c5e7eab362692fd1b upstream.
+commit 32c6590d126836a062b3140ed52d898507987017 upstream.
 
-Fixes a race condition in abort handling that was injected
-when multiple interrupt support was added. When only a single
-interrupt is present, the adapter guarantees it will send
-responses for aborted commands prior to the response for the
-abort command itself. With multiple interrupts, these responses
-generally come back on different interrupts, so we need to
-ensure the abort thread waits until the aborted command is
-complete so we don't perform a double completion. This race
-condition was being hit frequently in environments which
-were triggering command timeouts, which was resulting in
-a double completion causing a kernel oops.
+The Hyper-V clocksource is continuous; mark it accordingly.
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Reviewed-by: Wendy Xiong <wenxiong@linux.vnet.ibm.com>
-Tested-by: Wendy Xiong <wenxiong@linux.vnet.ibm.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Acked-by: jasowang@redhat.com
+Cc: gregkh@linuxfoundation.org
+Cc: devel@linuxdriverproject.org
+Cc: olaf@aepfle.de
+Cc: apw@canonical.com
+Link: http://lkml.kernel.org/r/1421108762-3331-1-git-send-email-kys@microsoft.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/ipr.c |   92 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/scsi/ipr.h |    1 
- 2 files changed, 93 insertions(+)
+ arch/x86/kernel/cpu/mshyperv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -683,6 +683,7 @@ static void ipr_init_ipr_cmnd(struct ipr
- 	ipr_reinit_ipr_cmnd(ipr_cmd);
- 	ipr_cmd->u.scratch = 0;
- 	ipr_cmd->sibling = NULL;
-+	ipr_cmd->eh_comp = NULL;
- 	ipr_cmd->fast_done = fast_done;
- 	init_timer(&ipr_cmd->timer);
- }
-@@ -848,6 +849,8 @@ static void ipr_scsi_eh_done(struct ipr_
- 
- 	scsi_dma_unmap(ipr_cmd->scsi_cmd);
- 	scsi_cmd->scsi_done(scsi_cmd);
-+	if (ipr_cmd->eh_comp)
-+		complete(ipr_cmd->eh_comp);
- 	list_add_tail(&ipr_cmd->queue, &ipr_cmd->hrrq->hrrq_free_q);
- }
- 
-@@ -4805,6 +4808,84 @@ static int ipr_slave_alloc(struct scsi_d
- 	return rc;
- }
- 
-+/**
-+ * ipr_match_lun - Match function for specified LUN
-+ * @ipr_cmd:	ipr command struct
-+ * @device:		device to match (sdev)
-+ *
-+ * Returns:
-+ *	1 if command matches sdev / 0 if command does not match sdev
-+ **/
-+static int ipr_match_lun(struct ipr_cmnd *ipr_cmd, void *device)
-+{
-+	if (ipr_cmd->scsi_cmd && ipr_cmd->scsi_cmd->device == device)
-+		return 1;
-+	return 0;
-+}
-+
-+/**
-+ * ipr_wait_for_ops - Wait for matching commands to complete
-+ * @ipr_cmd:	ipr command struct
-+ * @device:		device to match (sdev)
-+ * @match:		match function to use
-+ *
-+ * Returns:
-+ *	SUCCESS / FAILED
-+ **/
-+static int ipr_wait_for_ops(struct ipr_ioa_cfg *ioa_cfg, void *device,
-+			    int (*match)(struct ipr_cmnd *, void *))
-+{
-+	struct ipr_cmnd *ipr_cmd;
-+	int wait;
-+	unsigned long flags;
-+	struct ipr_hrr_queue *hrrq;
-+	signed long timeout = IPR_ABORT_TASK_TIMEOUT;
-+	DECLARE_COMPLETION_ONSTACK(comp);
-+
-+	ENTER;
-+	do {
-+		wait = 0;
-+
-+		for_each_hrrq(hrrq, ioa_cfg) {
-+			spin_lock_irqsave(hrrq->lock, flags);
-+			list_for_each_entry(ipr_cmd, &hrrq->hrrq_pending_q, queue) {
-+				if (match(ipr_cmd, device)) {
-+					ipr_cmd->eh_comp = &comp;
-+					wait++;
-+				}
-+			}
-+			spin_unlock_irqrestore(hrrq->lock, flags);
-+		}
-+
-+		if (wait) {
-+			timeout = wait_for_completion_timeout(&comp, timeout);
-+
-+			if (!timeout) {
-+				wait = 0;
-+
-+				for_each_hrrq(hrrq, ioa_cfg) {
-+					spin_lock_irqsave(hrrq->lock, flags);
-+					list_for_each_entry(ipr_cmd, &hrrq->hrrq_pending_q, queue) {
-+						if (match(ipr_cmd, device)) {
-+							ipr_cmd->eh_comp = NULL;
-+							wait++;
-+						}
-+					}
-+					spin_unlock_irqrestore(hrrq->lock, flags);
-+				}
-+
-+				if (wait)
-+					dev_err(&ioa_cfg->pdev->dev, "Timed out waiting for aborted commands\n");
-+				LEAVE;
-+				return wait ? FAILED : SUCCESS;
-+			}
-+		}
-+	} while (wait);
-+
-+	LEAVE;
-+	return SUCCESS;
-+}
-+
- static int ipr_eh_host_reset(struct scsi_cmnd *cmd)
- {
- 	struct ipr_ioa_cfg *ioa_cfg;
-@@ -5023,11 +5104,17 @@ static int __ipr_eh_dev_reset(struct scs
- static int ipr_eh_dev_reset(struct scsi_cmnd *cmd)
- {
- 	int rc;
-+	struct ipr_ioa_cfg *ioa_cfg;
-+
-+	ioa_cfg = (struct ipr_ioa_cfg *) cmd->device->host->hostdata;
- 
- 	spin_lock_irq(cmd->device->host->host_lock);
- 	rc = __ipr_eh_dev_reset(cmd);
- 	spin_unlock_irq(cmd->device->host->host_lock);
- 
-+	if (rc == SUCCESS)
-+		rc = ipr_wait_for_ops(ioa_cfg, cmd->device, ipr_match_lun);
-+
- 	return rc;
- }
- 
-@@ -5205,13 +5292,18 @@ static int ipr_eh_abort(struct scsi_cmnd
- {
- 	unsigned long flags;
- 	int rc;
-+	struct ipr_ioa_cfg *ioa_cfg;
- 
- 	ENTER;
- 
-+	ioa_cfg = (struct ipr_ioa_cfg *) scsi_cmd->device->host->hostdata;
-+
- 	spin_lock_irqsave(scsi_cmd->device->host->host_lock, flags);
- 	rc = ipr_cancel_op(scsi_cmd);
- 	spin_unlock_irqrestore(scsi_cmd->device->host->host_lock, flags);
- 
-+	if (rc == SUCCESS)
-+		rc = ipr_wait_for_ops(ioa_cfg, scsi_cmd->device, ipr_match_lun);
- 	LEAVE;
- 	return rc;
- }
---- a/drivers/scsi/ipr.h
-+++ b/drivers/scsi/ipr.h
-@@ -1585,6 +1585,7 @@ struct ipr_cmnd {
- 		struct scsi_device *sdev;
- 	} u;
- 
-+	struct completion *eh_comp;
- 	struct ipr_hrr_queue *hrrq;
- 	struct ipr_ioa_cfg *ioa_cfg;
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -107,6 +107,7 @@ static struct clocksource hyperv_cs = {
+ 	.rating		= 400, /* use this when running on Hyperv*/
+ 	.read		= read_hv_clock,
+ 	.mask		= CLOCKSOURCE_MASK(64),
++	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
  };
+ 
+ static void __init ms_hyperv_init_platform(void)
 
 
