@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760788AbbA1Utq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:49:46 -0500
+	id S1762059AbbA1Utk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:49:40 -0500
 Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762036AbbA1Utm (ORCPT
+	with ESMTP id S1759371AbbA1Uth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:49:42 -0500
-Date: Wed, 28 Jan 2015 07:00:48 -0800
+	Wed, 28 Jan 2015 15:49:37 -0500
+Date: Wed, 28 Jan 2015 07:01:09 -0800
 From: tip-bot for Rabin Vincent <tipbot@zytor.com>
-Message-ID: <tip-be81908c2289f405df75d2511ccf5da785945400@git.kernel.org>
-Cc: peterz@infradead.org, tglx@linutronix.de, paulus@samba.org, rabin@rab.in,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, acme@redhat.com,
-        hpa@zytor.com
-Reply-To: acme@redhat.com, hpa@zytor.com, peterz@infradead.org,
-        tglx@linutronix.de, rabin@rab.in, paulus@samba.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org
-In-Reply-To: <1421607621-15005-1-git-send-email-rabin@rab.in>
-References: <1421607621-15005-1-git-send-email-rabin@rab.in>
+Message-ID: <tip-0fb9f2aab738eec9dd9b929ed7d37bf744d2ac77@git.kernel.org>
+Cc: tglx@linutronix.de, acme@redhat.com, hpa@zytor.com, paulus@samba.org,
+        rabin@rab.in, linux-kernel@vger.kernel.org, mingo@kernel.org
+Reply-To: rabin@rab.in, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, acme@redhat.com, hpa@zytor.com, tglx@linutronix.de
+In-Reply-To: <1421607621-15005-2-git-send-email-rabin@rab.in>
+References: <1421607621-15005-2-git-send-email-rabin@rab.in>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate: Handle ins parsing failures
-Git-Commit-ID: be81908c2289f405df75d2511ccf5da785945400
+Subject: [tip:perf/core] perf annotate: Fix memory leaks in LOCK handling
+Git-Commit-ID: 0fb9f2aab738eec9dd9b929ed7d37bf744d2ac77
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,58 +31,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  be81908c2289f405df75d2511ccf5da785945400
-Gitweb:     http://git.kernel.org/tip/be81908c2289f405df75d2511ccf5da785945400
+Commit-ID:  0fb9f2aab738eec9dd9b929ed7d37bf744d2ac77
+Gitweb:     http://git.kernel.org/tip/0fb9f2aab738eec9dd9b929ed7d37bf744d2ac77
 Author:     Rabin Vincent <rabin@rab.in>
-AuthorDate: Sun, 18 Jan 2015 20:00:20 +0100
+AuthorDate: Sun, 18 Jan 2015 20:00:21 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 21 Jan 2015 10:05:17 -0300
+CommitDate: Wed, 21 Jan 2015 10:05:32 -0300
 
-perf annotate: Handle ins parsing failures
+perf annotate: Fix memory leaks in LOCK handling
 
-Don't use the ins's ->sncprintf() if the parsing failed.
-
-For example, this fixes the display of "imul %edx".  Without this patch:
-
-       |      imul   (null),(null)
-
-After this patch:
-
-       |      imul   %edx
+The lock prefix handling fails to free the strdup()'d name as well as
+the fields allocated by the instruction parsing.
 
 Signed-off-by: Rabin Vincent <rabin@rab.in>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1421607621-15005-1-git-send-email-rabin@rab.in
+Link: http://lkml.kernel.org/r/1421607621-15005-2-git-send-email-rabin@rab.in
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/annotate.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ tools/perf/util/annotate.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 79999ce..d5da1b8 100644
+index d5da1b8..01bc4e2 100644
 --- a/tools/perf/util/annotate.c
 +++ b/tools/perf/util/annotate.c
-@@ -183,8 +183,9 @@ static int lock__parse(struct ins_operands *ops)
- 	if (!ops->locked.ins->ops)
- 		return 0;
+@@ -177,6 +177,8 @@ static int lock__parse(struct ins_operands *ops)
+ 		goto out_free_ops;
  
--	if (ops->locked.ins->ops->parse)
--		ops->locked.ins->ops->parse(ops->locked.ops);
-+	if (ops->locked.ins->ops->parse &&
-+	    ops->locked.ins->ops->parse(ops->locked.ops) < 0)
-+		goto out_free_ops;
+ 	ops->locked.ins = ins__find(name);
++	free(name);
++
+ 	if (ops->locked.ins == NULL)
+ 		goto out_free_ops;
  
- 	return 0;
+@@ -209,6 +211,13 @@ static int lock__scnprintf(struct ins *ins, char *bf, size_t size,
  
-@@ -531,8 +532,8 @@ static void disasm_line__init_ins(struct disasm_line *dl)
- 	if (!dl->ins->ops)
- 		return;
- 
--	if (dl->ins->ops->parse)
--		dl->ins->ops->parse(&dl->ops);
-+	if (dl->ins->ops->parse && dl->ins->ops->parse(&dl->ops) < 0)
-+		dl->ins = NULL;
- }
- 
- static int disasm_line__parse(char *line, char **namep, char **rawp)
+ static void lock__delete(struct ins_operands *ops)
+ {
++	struct ins *ins = ops->locked.ins;
++
++	if (ins && ins->ops->free)
++		ins->ops->free(ops->locked.ops);
++	else
++		ins__delete(ops->locked.ops);
++
+ 	zfree(&ops->locked.ops);
+ 	zfree(&ops->target.raw);
+ 	zfree(&ops->target.name);
