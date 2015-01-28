@@ -1,206 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447AbbA1EGj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:06:39 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:40992 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653AbbA1EG1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:06:27 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 linux-trace 3/8] samples: bpf: simple tracing example in eBPF assembler
-Date: Tue, 27 Jan 2015 20:06:08 -0800
-Message-Id: <1422417973-10195-4-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
-References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
+	id S1756829AbbA1ENT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:13:19 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36553 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871AbbA1ENR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:13:17 -0500
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 01/91] KVM: s390: Fix user triggerable bug in dead code
+Date: Wed, 28 Jan 2015 12:06:08 +0800
+Message-Id: <1422418236-12852-1-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-simple packet drop monitor:
-- in-kernel eBPF program attaches to kfree_skb() event and records number
-  of packet drops at given location
-- userspace iterates over the map every second and prints stats
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-Usage:
-$ sudo dropmon
-location 0xffffffff81695995 count 1
-location 0xffffffff816d0da9 count 2
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
-location 0xffffffff81695995 count 2
-location 0xffffffff816d0da9 count 2
+------------------
 
-location 0xffffffff81695995 count 3
-location 0xffffffff816d0da9 count 2
 
-$ addr2line -ape ./bld_x64/vmlinux 0xffffffff81695995 0xffffffff816d0da9
-0xffffffff81695995: ./bld_x64/../net/ipv4/icmp.c:1038
-0xffffffff816d0da9: ./bld_x64/../net/unix/af_unix.c:1231
+commit 614a80e474b227cace52fd6e3c790554db8a396e upstream.
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+In the early days, we had some special handling for the
+KVM_EXIT_S390_SIEIC exit, but this was gone in 2009 with commit
+d7b0b5eb3000 (KVM: s390: Make psw available on all exits, not
+just a subset).
+
+Now this switch statement is just a sanity check for userspace
+not messing with the kvm_run structure. Unfortunately, this
+allows userspace to trigger a kernel BUG. Let's just remove
+this switch statement.
+
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+[lizf: Backported to 3.4:
+ - adjust context
+ - no KVM_EXIT_S390_TSCH and KVM_EXIT_DEBUG in 3.4]
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- samples/bpf/Makefile  |    2 +
- samples/bpf/dropmon.c |  129 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 131 insertions(+)
- create mode 100644 samples/bpf/dropmon.c
+ arch/s390/kvm/kvm-s390.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index b5b3600dcdf5..789691374562 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -6,7 +6,9 @@ hostprogs-y := test_verifier test_maps
- hostprogs-y += sock_example
- hostprogs-y += sockex1
- hostprogs-y += sockex2
-+hostprogs-y += dropmon
+diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+index 53c973e..0f250d1 100644
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -566,17 +566,6 @@ rerun_vcpu:
  
-+dropmon-objs := dropmon.o libbpf.o
- test_verifier-objs := test_verifier.o libbpf.o
- test_maps-objs := test_maps.o libbpf.o
- sock_example-objs := sock_example.o libbpf.o
-diff --git a/samples/bpf/dropmon.c b/samples/bpf/dropmon.c
-new file mode 100644
-index 000000000000..9a2cd3344d69
---- /dev/null
-+++ b/samples/bpf/dropmon.c
-@@ -0,0 +1,129 @@
-+/* simple packet drop monitor:
-+ * - in-kernel eBPF program attaches to kfree_skb() event and records number
-+ *   of packet drops at given location
-+ * - userspace iterates over the map every second and prints stats
-+ */
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <linux/bpf.h>
-+#include <errno.h>
-+#include <linux/unistd.h>
-+#include <string.h>
-+#include <linux/filter.h>
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <stdbool.h>
-+#include "libbpf.h"
-+
-+#define TRACEPOINT "/sys/kernel/debug/tracing/events/skb/kfree_skb/"
-+
-+static int write_to_file(const char *file, const char *str, bool keep_open)
-+{
-+	int fd, err;
-+
-+	fd = open(file, O_WRONLY);
-+	err = write(fd, str, strlen(str));
-+	(void) err;
-+
-+	if (keep_open) {
-+		return fd;
-+	} else {
-+		close(fd);
-+		return -1;
-+	}
-+}
-+
-+static int dropmon(void)
-+{
-+	long long key, next_key, value = 0;
-+	int prog_fd, map_fd, i;
-+	char fmt[32];
-+
-+	map_fd = bpf_create_map(BPF_MAP_TYPE_HASH, sizeof(key), sizeof(value), 1024);
-+	if (map_fd < 0) {
-+		printf("failed to create map '%s'\n", strerror(errno));
-+		goto cleanup;
-+	}
-+
-+	/* the following eBPF program is equivalent to C:
-+	 * int filter(struct bpf_context *ctx)
-+	 * {
-+	 *   long loc = ctx->arg2;
-+	 *   long init_val = 1;
-+	 *   long *value;
-+	 *
-+	 *   value = bpf_map_lookup_elem(MAP_ID, &loc);
-+	 *   if (value) {
-+	 *      __sync_fetch_and_add(value, 1);
-+	 *   } else {
-+	 *      bpf_map_update_elem(MAP_ID, &loc, &init_val, BPF_ANY);
-+	 *   }
-+	 *   return 0;
-+	 * }
-+	 */
-+	struct bpf_insn prog[] = {
-+		BPF_LDX_MEM(BPF_DW, BPF_REG_2, BPF_REG_1, 8), /* r2 = *(u64 *)(r1 + 8) */
-+		BPF_STX_MEM(BPF_DW, BPF_REG_10, BPF_REG_2, -8), /* *(u64 *)(fp - 8) = r2 */
-+		BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
-+		BPF_LD_MAP_FD(BPF_REG_1, map_fd),
-+		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
-+		BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 4),
-+		BPF_MOV64_IMM(BPF_REG_1, 1), /* r1 = 1 */
-+		BPF_RAW_INSN(BPF_STX | BPF_XADD | BPF_DW, BPF_REG_0, BPF_REG_1, 0, 0), /* xadd r0 += r1 */
-+		BPF_MOV64_IMM(BPF_REG_0, 0), /* r0 = 0 */
-+		BPF_EXIT_INSN(),
-+		BPF_ST_MEM(BPF_DW, BPF_REG_10, -16, 1), /* *(u64 *)(fp - 16) = 1 */
-+		BPF_MOV64_IMM(BPF_REG_4, BPF_ANY),
-+		BPF_MOV64_REG(BPF_REG_3, BPF_REG_10),
-+		BPF_ALU64_IMM(BPF_ADD, BPF_REG_3, -16), /* r3 = fp - 16 */
-+		BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+		BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8), /* r2 = fp - 8 */
-+		BPF_LD_MAP_FD(BPF_REG_1, map_fd),
-+		BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_update_elem),
-+		BPF_MOV64_IMM(BPF_REG_0, 0), /* r0 = 0 */
-+		BPF_EXIT_INSN(),
-+	};
-+
-+	prog_fd = bpf_prog_load(BPF_PROG_TYPE_TRACING_FILTER, prog,
-+				sizeof(prog), "GPL");
-+	if (prog_fd < 0) {
-+		printf("failed to load prog '%s'\n%s", strerror(errno), bpf_log_buf);
-+		return -1;
-+	}
-+
-+	sprintf(fmt, "bpf_%d", prog_fd);
-+
-+	write_to_file(TRACEPOINT "filter", fmt, true);
-+
-+	for (i = 0; i < 10; i++) {
-+		key = 0;
-+		while (bpf_get_next_key(map_fd, &key, &next_key) == 0) {
-+			bpf_lookup_elem(map_fd, &next_key, &value);
-+			printf("location 0x%llx count %lld\n", next_key, value);
-+			key = next_key;
-+		}
-+		if (key)
-+			printf("\n");
-+		sleep(1);
-+	}
-+
-+cleanup:
-+	/* maps, programs, tracepoint filters will auto cleanup on process exit */
-+
-+	return 0;
-+}
-+
-+int main(void)
-+{
-+	FILE *f;
-+
-+	/* start ping in the background to get some kfree_skb events */
-+	f = popen("ping -c5 localhost", "r");
-+	(void) f;
-+
-+	dropmon();
-+	return 0;
-+}
+ 	BUG_ON(vcpu->kvm->arch.float_int.local_int[vcpu->vcpu_id] == NULL);
+ 
+-	switch (kvm_run->exit_reason) {
+-	case KVM_EXIT_S390_SIEIC:
+-	case KVM_EXIT_UNKNOWN:
+-	case KVM_EXIT_INTR:
+-	case KVM_EXIT_S390_RESET:
+-	case KVM_EXIT_S390_UCONTROL:
+-		break;
+-	default:
+-		BUG();
+-	}
+-
+ 	vcpu->arch.sie_block->gpsw.mask = kvm_run->psw_mask;
+ 	vcpu->arch.sie_block->gpsw.addr = kvm_run->psw_addr;
+ 	if (kvm_run->kvm_dirty_regs & KVM_SYNC_PREFIX) {
 -- 
-1.7.9.5
+1.9.1
 
