@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761606AbbA1WQH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 17:16:07 -0500
-Received: from mail.lysator.liu.se ([130.236.254.3]:60846 "EHLO
+	id S1761652AbbA1WQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 17:16:09 -0500
+Received: from mail.lysator.liu.se ([130.236.254.3]:45736 "EHLO
 	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702AbbA1UO7 (ORCPT
+	with ESMTP id S1754693AbbA1UO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jan 2015 15:14:59 -0500
 From: Peter Rosin <peda@lysator.liu.se>
@@ -17,9 +17,9 @@ Cc: Peter Rosin <peda@axentia.se>, Rob Herring <robh+dt@kernel.org>,
         Mark Brown <broonie@kernel.org>, Clemens Ladisch <clemens@ladisch.de>,
         Lars-Peter Clausen <lars@metafoo.de>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/7] ASoC: pcm512x: Fix spelling of register field names.
-Date: Wed, 28 Jan 2015 15:16:07 +0100
-Message-Id: <1422454572-7847-3-git-send-email-peda@lysator.liu.se>
+Subject: [PATCH v2 3/7] ASoC: pcm512x: Change register default to match actual content after reset
+Date: Wed, 28 Jan 2015 15:16:08 +0100
+Message-Id: <1422454572-7847-4-git-send-email-peda@lysator.liu.se>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1422454572-7847-1-git-send-email-peda@lysator.liu.se>
 References: <1422454572-7847-1-git-send-email-peda@lysator.liu.se>
@@ -32,46 +32,21 @@ From: Peter Rosin <peda@axentia.se>
 Signed-off-by: Peter Rosin <peda@axentia.se>
 ---
  sound/soc/codecs/pcm512x.c |    2 +-
- sound/soc/codecs/pcm512x.h |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/sound/soc/codecs/pcm512x.c b/sound/soc/codecs/pcm512x.c
-index e5f2fb884bf3..874723c36d65 100644
+index 874723c36d65..4c65eb9ab59b 100644
 --- a/sound/soc/codecs/pcm512x.c
 +++ b/sound/soc/codecs/pcm512x.c
-@@ -277,7 +277,7 @@ SOC_ENUM("Auto Mute Time Right", pcm512x_autom_r),
- SOC_SINGLE("Auto Mute Mono Switch", PCM512x_DIGITAL_MUTE_3,
- 	   PCM512x_ACTL_SHIFT, 1, 0),
- SOC_DOUBLE("Auto Mute Switch", PCM512x_DIGITAL_MUTE_3, PCM512x_AMLE_SHIFT,
--	   PCM512x_AMLR_SHIFT, 1, 0),
-+	   PCM512x_AMRE_SHIFT, 1, 0),
- 
- SOC_ENUM("Volume Ramp Down Rate", pcm512x_vndf),
- SOC_ENUM("Volume Ramp Down Step", pcm512x_vnds),
-diff --git a/sound/soc/codecs/pcm512x.h b/sound/soc/codecs/pcm512x.h
-index 6ee76aaca09a..28b3dfd302bc 100644
---- a/sound/soc/codecs/pcm512x.h
-+++ b/sound/soc/codecs/pcm512x.h
-@@ -108,8 +108,8 @@
- #define PCM512x_RQML_SHIFT 4
- 
- /* Page 0, Register 4 - PLL */
--#define PCM512x_PLCE       (1 << 0)
--#define PCM512x_RLCE_SHIFT 0
-+#define PCM512x_PLLE       (1 << 0)
-+#define PCM512x_PLLE_SHIFT 0
- #define PCM512x_PLCK       (1 << 4)
- #define PCM512x_PLCK_SHIFT 4
- 
-@@ -152,7 +152,7 @@
- /* Page 0, Register 65 - Digital mute enables */
- #define PCM512x_ACTL_SHIFT 2
- #define PCM512x_AMLE_SHIFT 1
--#define PCM512x_AMLR_SHIFT 0
-+#define PCM512x_AMRE_SHIFT 0
- 
- /* Page 1, Register 2 - analog volume control */
- #define PCM512x_RAGN_SHIFT 0
+@@ -78,7 +78,7 @@ static const struct reg_default pcm512x_reg_defaults[] = {
+ 	{ PCM512x_DIGITAL_VOLUME_2,  0x30 },
+ 	{ PCM512x_DIGITAL_VOLUME_3,  0x30 },
+ 	{ PCM512x_DIGITAL_MUTE_1,    0x22 },
+-	{ PCM512x_DIGITAL_MUTE_2,    0x00 },
++	{ PCM512x_DIGITAL_MUTE_2,    0x02 },
+ 	{ PCM512x_DIGITAL_MUTE_3,    0x07 },
+ 	{ PCM512x_OUTPUT_AMPLITUDE,  0x00 },
+ 	{ PCM512x_ANALOG_GAIN_CTRL,  0x00 },
 -- 
 1.7.10.4
 
