@@ -1,104 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934723AbbA1EwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:52:03 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39816 "EHLO mail.kernel.org"
+	id S934257AbbA1EWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:22:20 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39864 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761653AbbA1EWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:22:10 -0500
+	id S1755169AbbA1EWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:22:14 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 088/177] staging:iio:impedance-analyzer:ad5933 unwind use of IIO_CHAN macro.
-Date: Wed, 28 Jan 2015 12:09:03 +0800
-Message-Id: <1422418236-12852-176-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Benjamin Poirier <bpoirier@suse.de>,
+        Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 89/91] net: Do not enable tx-nocache-copy by default
+Date: Wed, 28 Jan 2015 12:09:04 +0800
+Message-Id: <1422418236-12852-177-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonathan Cameron <jic23@kernel.org>
+From: Benjamin Poirier <bpoirier@suse.de>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit cdacc05bfa479997424fa9a3b54c07573b0ce4ed upstream.
+commit cdb3f4a31b64c3a1c6eef40bc01ebc9594c58a8c upstream.
 
-This macro is being removed to simplify ongoing maintenance
-so we need to unwind and remaining users.
+There are many cases where this feature does not improve performance or even
+reduces it.
 
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+For example, here are the results from tests that I've run using 3.12.6 on one
+Intel Xeon W3565 and one i7 920 connected by ixgbe adapters. The results are
+from the Xeon, but they're similar on the i7. All numbers report the
+mean±stddev over 10 runs of 10s.
+
+1) latency tests similar to what is described in "c6e1a0d net: Allow no-cache
+copy from user on transmit"
+There is no statistically significant difference between tx-nocache-copy
+on/off.
+nic irqs spread out (one queue per cpu)
+
+200x netperf -r 1400,1
+tx-nocache-copy off
+        692000±1000 tps
+        50/90/95/99% latency (us): 275±2/643.8±0.4/799±1/2474.4±0.3
+tx-nocache-copy on
+        693000±1000 tps
+        50/90/95/99% latency (us): 274±1/644.1±0.7/800±2/2474.5±0.7
+
+200x netperf -r 14000,14000
+tx-nocache-copy off
+        86450±80 tps
+        50/90/95/99% latency (us): 334.37±0.02/838±1/2100±20/3990±40
+tx-nocache-copy on
+        86110±60 tps
+        50/90/95/99% latency (us): 334.28±0.01/837±2/2110±20/3990±20
+
+2) single stream throughput tests
+tx-nocache-copy leads to higher service demand
+
+                        throughput  cpu0        cpu1        demand
+                        (Gb/s)      (Gcycle)    (Gcycle)    (cycle/B)
+
+nic irqs and netperf on cpu0 (1x netperf -T0,0 -t omni -- -d send)
+
+tx-nocache-copy off     9402±5      9.4±0.2                 0.80±0.01
+tx-nocache-copy on      9403±3      9.85±0.04               0.838±0.004
+
+nic irqs on cpu0, netperf on cpu1 (1x netperf -T1,1 -t omni -- -d send)
+
+tx-nocache-copy off     9401±5      5.83±0.03   5.0±0.1     0.923±0.007
+tx-nocache-copy on      9404±2      5.74±0.03   5.523±0.009 0.958±0.002
+
+As a second example, here are some results from Eric Dumazet with latest
+net-next.
+tx-nocache-copy also leads to higher service demand
+
+(cpu is Intel(R) Xeon(R) CPU X5660  @ 2.80GHz)
+
+lpq83:~# ./ethtool -K eth0 tx-nocache-copy on
+lpq83:~# perf stat ./netperf -H lpq84 -c
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
+Recv   Send    Send                          Utilization       Service Demand
+Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+Size   Size    Size     Time     Throughput  local    remote   local   remote
+bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
+
+ 87380  16384  16384    10.00      9407.44   2.50     -1.00    0.522   -1.000
+
+ Performance counter stats for './netperf -H lpq84 -c':
+
+       4282.648396 task-clock                #    0.423 CPUs utilized
+             9,348 context-switches          #    0.002 M/sec
+                88 CPU-migrations            #    0.021 K/sec
+               355 page-faults               #    0.083 K/sec
+    11,812,797,651 cycles                    #    2.758 GHz                     [82.79%]
+     9,020,522,817 stalled-cycles-frontend   #   76.36% frontend cycles idle    [82.54%]
+     4,579,889,681 stalled-cycles-backend    #   38.77% backend  cycles idle    [67.33%]
+     6,053,172,792 instructions              #    0.51  insns per cycle
+                                             #    1.49  stalled cycles per insn [83.64%]
+       597,275,583 branches                  #  139.464 M/sec                   [83.70%]
+         8,960,541 branch-misses             #    1.50% of all branches         [83.65%]
+
+      10.128990264 seconds time elapsed
+
+lpq83:~# ./ethtool -K eth0 tx-nocache-copy off
+lpq83:~# perf stat ./netperf -H lpq84 -c
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
+Recv   Send    Send                          Utilization       Service Demand
+Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+Size   Size    Size     Time     Throughput  local    remote   local   remote
+bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
+
+ 87380  16384  16384    10.00      9412.45   2.15     -1.00    0.449   -1.000
+
+ Performance counter stats for './netperf -H lpq84 -c':
+
+       2847.375441 task-clock                #    0.281 CPUs utilized
+            11,632 context-switches          #    0.004 M/sec
+                49 CPU-migrations            #    0.017 K/sec
+               354 page-faults               #    0.124 K/sec
+     7,646,889,749 cycles                    #    2.686 GHz                     [83.34%]
+     6,115,050,032 stalled-cycles-frontend   #   79.97% frontend cycles idle    [83.31%]
+     1,726,460,071 stalled-cycles-backend    #   22.58% backend  cycles idle    [66.55%]
+     2,079,702,453 instructions              #    0.27  insns per cycle
+                                             #    2.94  stalled cycles per insn [83.22%]
+       363,773,213 branches                  #  127.757 M/sec                   [83.29%]
+         4,242,732 branch-misses             #    1.17% of all branches         [83.51%]
+
+      10.128449949 seconds time elapsed
+
+CC: Tom Herbert <therbert@google.com>
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/staging/iio/impedance-analyzer/ad5933.c | 47 ++++++++++++++++++++-----
- 1 file changed, 38 insertions(+), 9 deletions(-)
+ net/core/dev.c | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
-index cd82b56..06b9fe2 100644
---- a/drivers/staging/iio/impedance-analyzer/ad5933.c
-+++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
-@@ -109,15 +109,44 @@ static struct ad5933_platform_data ad5933_default_pdata  = {
- };
+diff --git a/net/core/dev.c b/net/core/dev.c
+index b47375d..0770364 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5546,13 +5546,8 @@ int register_netdevice(struct net_device *dev)
+ 	dev->features |= NETIF_F_SOFT_FEATURES;
+ 	dev->wanted_features = dev->features & dev->hw_features;
  
- static struct iio_chan_spec ad5933_channels[] = {
--	IIO_CHAN(IIO_TEMP, 0, 1, 1, NULL, 0, 0, 0,
--		 0, AD5933_REG_TEMP_DATA, IIO_ST('s', 14, 16, 0), 0),
--	/* Ring Channels */
--	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "real_raw", 0, 0,
--		 IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
--		 AD5933_REG_REAL_DATA, 0, IIO_ST('s', 16, 16, 0), 0),
--	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "imag_raw", 0, 0,
--		 IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
--		 AD5933_REG_IMAG_DATA, 1, IIO_ST('s', 16, 16, 0), 0),
-+	{
-+		.type = IIO_TEMP,
-+		.indexed = 1,
-+		.processed_val = 1,
-+		.channel = 0,
-+		.address = AD5933_REG_TEMP_DATA,
-+		.scan_type = {
-+			.sign = 's',
-+			.realbits = 14,
-+			.storagebits = 16,
-+		},
-+	}, { /* Ring Channels */
-+		.type = IIO_VOLTAGE,
-+		.indexed = 1,
-+		.channel = 0,
-+		.extend_name = "real_raw",
-+		.info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
-+		.address = AD5933_REG_REAL_DATA,
-+		.scan_index = 0,
-+		.scan_type = {
-+			.sign = 's',
-+			.realbits = 16,
-+			.storagebits = 16,
-+		},
-+	}, {
-+		.type = IIO_VOLTAGE,
-+		.indexed = 1,
-+		.channel = 0,
-+		.extend_name = "imag_raw",
-+		.info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,
-+		.address = AD5933_REG_IMAG_DATA,
-+		.scan_index = 1,
-+		.scan_type = {
-+			.sign = 's',
-+			.realbits = 16,
-+			.storagebits = 16,
-+		},
-+	},
- };
+-	/* Turn on no cache copy if HW is doing checksum */
+ 	if (!(dev->flags & IFF_LOOPBACK)) {
+ 		dev->hw_features |= NETIF_F_NOCACHE_COPY;
+-		if (dev->features & NETIF_F_ALL_CSUM) {
+-			dev->wanted_features |= NETIF_F_NOCACHE_COPY;
+-			dev->features |= NETIF_F_NOCACHE_COPY;
+-		}
+ 	}
  
- static int ad5933_i2c_write(struct i2c_client *client,
+ 	/* Make NETIF_F_HIGHDMA inheritable to VLAN devices.
 -- 
 1.9.1
 
