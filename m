@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180AbbA1URI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:17:08 -0500
-Received: from mga14.intel.com ([192.55.52.115]:57091 "EHLO mga14.intel.com"
+	id S1758465AbbA2BtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:49:17 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:41431 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755374AbbA1URD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:17:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,481,1418112000"; 
-   d="scan'208";a="643837208"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 4/4] mm: do not add nr_pmds into mm_struct if PMD is folded
-Date: Wed, 28 Jan 2015 15:17:44 +0200
-Message-Id: <1422451064-109023-5-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1422451064-109023-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1753913AbbA2BtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:49:10 -0500
+Date: Wed, 28 Jan 2015 11:23:39 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, rmk+kernel@arm.linux.org.uk,
+        airlied@linux.ie, kgene@kernel.org, daniel.vetter@intel.com,
+        thierry.reding@gmail.com, pawel@osciak.com, m.szyprowski@samsung.com,
+        gregkh@linuxfoundation.org, linaro-kernel@lists.linaro.org,
+        robdclark@gmail.com, daniel@ffwll.ch, intel-gfx@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, inki.dae@samsung.com
+Subject: Re: [PATCH v3] dma-buf: cleanup dma_buf_export() to make it easily
+ extensible
+Message-ID: <20150128112339.164c55fd@recife.lan>
+In-Reply-To: <1422449643-7829-1-git-send-email-sumit.semwal@linaro.org>
+References: <1422449643-7829-1-git-send-email-sumit.semwal@linaro.org>
+Organization: Samsung
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Everything seems in place. We can now include <asm/pgtable.h> in
-<linux/mm_struct.h>.
+Em Wed, 28 Jan 2015 18:24:03 +0530
+Sumit Semwal <sumit.semwal@linaro.org> escreveu:
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/mm_struct.h | 3 +++
- 1 file changed, 3 insertions(+)
+> +/**
+> + * helper macro for exporters; zeros and fills in most common values
+> + */
+> +#define DEFINE_DMA_BUF_EXPORT_INFO(a)	\
+> +	struct dma_buf_export_info a = { .exp_name = KBUILD_MODNAME }
+> +
 
-diff --git a/include/linux/mm_struct.h b/include/linux/mm_struct.h
-index 0a233c232a39..1759bed3dc61 100644
---- a/include/linux/mm_struct.h
-+++ b/include/linux/mm_struct.h
-@@ -8,6 +8,7 @@
- #include <linux/uprobes.h>
- 
- #include <asm/mmu.h>
-+#include <asm/pgtable.h>
- 
- struct kioctx_table;
- struct vm_area_struct;
-@@ -54,7 +55,9 @@ struct mm_struct {
- 	atomic_t mm_users;			/* How many users with user space? */
- 	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
- 	atomic_long_t nr_ptes;			/* PTE page table pages */
-+#if !__PAGETABLE_PMD_FOLDED
- 	atomic_long_t nr_pmds;			/* PMD page table pages */
-+#endif
- 	int map_count;				/* number of VMAs */
- 
- 	spinlock_t page_table_lock;		/* Protects page tables and some counters */
--- 
-2.1.4
+I suspect that this will let the other fields not initialized.
 
+You likely need to do:
+
+#define DEFINE_DMA_BUF_EXPORT_INFO(a)	\
+	struct dma_buf_export_info a = { 	\
+	.exp_name = KBUILD_MODNAME;		\
+	.fields = 0;				\
+...
+}
+
+Regards,
+Mauro
