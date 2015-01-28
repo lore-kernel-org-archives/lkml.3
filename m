@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854AbbA1CSF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:18:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
+	id S1760325AbbA1Bap (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:30:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41373 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758143AbbA1B2M (ORCPT
+	with ESMTP id S1760132AbbA1Bao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:12 -0500
+	Tue, 27 Jan 2015 20:30:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 18/32] KVM: x86: Fix of previously incomplete fix for CVE-2014-8480
-Date: Tue, 27 Jan 2015 17:26:48 -0800
-Message-Id: <20150128012629.760129281@linuxfoundation.org>
+        Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.14 11/77] PCI: Add flag for devices where we cant use bus reset
+Date: Tue, 27 Jan 2015 17:26:49 -0800
+Message-Id: <20150128012746.309179685@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,37 +25,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nadav Amit <nadav.amit@gmail.com>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit 63ea0a49ae0b145b91ff2b070c01b66fc75854b9 upstream.
+commit f331a859e0ee5a898c1f47596eddad4c4f02d657 upstream.
 
-STR and SLDT with rip-relative operand can cause a host kernel oops.
-Mark them as DstMem as well.
+Enable a mechanism for devices to quirk that they do not behave when
+doing a PCI bus reset.  We require a modest level of spec compliant
+behavior in order to do a reset, for instance the device should come
+out of reset without throwing errors and PCI config space should be
+accessible after reset.  This is too much to ask for some devices.
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Link: http://lkml.kernel.org/r/20140923210318.498dacbd@dualc.maya.org
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/emulate.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pci/pci.c   |   40 ++++++++++++++++++++++++++++++++++++----
+ include/linux/pci.h |    2 ++
+ 2 files changed, 38 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -3808,8 +3808,8 @@ static const struct opcode group5[] = {
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3187,7 +3187,8 @@ static int pci_parent_bus_reset(struct p
+ {
+ 	struct pci_dev *pdev;
+ 
+-	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
++	if (pci_is_root_bus(dev->bus) || dev->subordinate ||
++	    !dev->bus->self || dev->dev_flags & PCI_DEV_FLAGS_NO_BUS_RESET)
+ 		return -ENOTTY;
+ 
+ 	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
+@@ -3221,7 +3222,8 @@ static int pci_dev_reset_slot_function(s
+ {
+ 	struct pci_dev *pdev;
+ 
+-	if (dev->subordinate || !dev->slot)
++	if (dev->subordinate || !dev->slot ||
++	    dev->dev_flags & PCI_DEV_FLAGS_NO_BUS_RESET)
+ 		return -ENOTTY;
+ 
+ 	list_for_each_entry(pdev, &dev->bus->devices, bus_list)
+@@ -3452,6 +3454,20 @@ int pci_try_reset_function(struct pci_de
+ }
+ EXPORT_SYMBOL_GPL(pci_try_reset_function);
+ 
++/* Do any devices on or below this bus prevent a bus reset? */
++static bool pci_bus_resetable(struct pci_bus *bus)
++{
++	struct pci_dev *dev;
++
++	list_for_each_entry(dev, &bus->devices, bus_list) {
++		if (dev->dev_flags & PCI_DEV_FLAGS_NO_BUS_RESET ||
++		    (dev->subordinate && !pci_bus_resetable(dev->subordinate)))
++			return false;
++	}
++
++	return true;
++}
++
+ /* Lock devices from the top of the tree down */
+ static void pci_bus_lock(struct pci_bus *bus)
+ {
+@@ -3502,6 +3518,22 @@ unlock:
+ 	return 0;
+ }
+ 
++/* Do any devices on or below this slot prevent a bus reset? */
++static bool pci_slot_resetable(struct pci_slot *slot)
++{
++	struct pci_dev *dev;
++
++	list_for_each_entry(dev, &slot->bus->devices, bus_list) {
++		if (!dev->slot || dev->slot != slot)
++			continue;
++		if (dev->dev_flags & PCI_DEV_FLAGS_NO_BUS_RESET ||
++		    (dev->subordinate && !pci_bus_resetable(dev->subordinate)))
++			return false;
++	}
++
++	return true;
++}
++
+ /* Lock devices from the top of the tree down */
+ static void pci_slot_lock(struct pci_slot *slot)
+ {
+@@ -3623,7 +3655,7 @@ static int pci_slot_reset(struct pci_slo
+ {
+ 	int rc;
+ 
+-	if (!slot)
++	if (!slot || !pci_slot_resetable(slot))
+ 		return -ENOTTY;
+ 
+ 	if (!probe)
+@@ -3715,7 +3747,7 @@ EXPORT_SYMBOL_GPL(pci_try_reset_slot);
+ 
+ static int pci_bus_reset(struct pci_bus *bus, int probe)
+ {
+-	if (!bus->self)
++	if (!bus->self || !pci_bus_resetable(bus))
+ 		return -ENOTTY;
+ 
+ 	if (probe)
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -170,6 +170,8 @@ enum pci_dev_flags {
+ 	PCI_DEV_FLAGS_NO_D3 = (__force pci_dev_flags_t) 2,
+ 	/* Provide indication device is assigned by a Virtual Machine Manager */
+ 	PCI_DEV_FLAGS_ASSIGNED = (__force pci_dev_flags_t) 4,
++	/* Do not use bus resets for device */
++	PCI_DEV_FLAGS_NO_BUS_RESET = (__force pci_dev_flags_t) (1 << 6),
  };
  
- static const struct opcode group6[] = {
--	DI(Prot,	sldt),
--	DI(Prot,	str),
-+	DI(Prot | DstMem,	sldt),
-+	DI(Prot | DstMem,	str),
- 	II(Prot | Priv | SrcMem16, em_lldt, lldt),
- 	II(Prot | Priv | SrcMem16, em_ltr, ltr),
- 	N, N, N, N,
+ enum pci_irq_reroute_variant {
 
 
