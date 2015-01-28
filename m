@@ -1,105 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933692AbbA2CW0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:22:26 -0500
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:39261 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757752AbbA2CWX (ORCPT
+	id S1761486AbbA2CUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:20:17 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:46437 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761458AbbA2CUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:22:23 -0500
-Message-ID: <1422479028.4111.34.camel@j-VirtualBox>
-Subject: Re: [PATCH 4/6] locking/rwsem: Avoid deceiving lock spinners
-From: Jason Low <jason.low2@hp.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        jason.low2@hp.com
-Date: Wed, 28 Jan 2015 13:03:48 -0800
-In-Reply-To: <1422417294.4604.15.camel@stgolabs.net>
-References: <1422257769-14083-1-git-send-email-dave@stgolabs.net>
-	 <1422257769-14083-5-git-send-email-dave@stgolabs.net>
-	 <1422379430.6710.6.camel@j-VirtualBox>
-	 <1422417294.4604.15.camel@stgolabs.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 28 Jan 2015 21:20:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <1421156665-27318-4-git-send-email-mpa@pengutronix.de>
+References: <1421156665-27318-1-git-send-email-mpa@pengutronix.de>
+	<1421156665-27318-4-git-send-email-mpa@pengutronix.de>
+Date: Wed, 28 Jan 2015 16:04:28 -0500
+Message-ID: <CAECXXi5P_K3SMey6=wWZd6t4TgCSFkA7r_Kg_r70=rC=99+Nzw@mail.gmail.com>
+Subject: Re: [RFC 3/4] nbd: Create helper functions for ioctls
+From: Paul Clements <paul.clements@us.sios.com>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: "nbd-general@lists.sourceforge.net" 
+	<nbd-general@lists.sourceforge.net>,
+        kernel list <linux-kernel@vger.kernel.org>, kernel@pengutronix.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-27 at 19:54 -0800, Davidlohr Bueso wrote:
-> On Tue, 2015-01-27 at 09:23 -0800, Jason Low wrote:
-> > On Sun, 2015-01-25 at 23:36 -0800, Davidlohr Bueso wrote:
-> > > When readers hold the semaphore, the ->owner is nil. As such,
-> > > and unlike mutexes, '!owner' does not necessarily imply that
-> > > the lock is free. This will cause writer spinners to potentially
-> > > spin excessively as they've been mislead to thinking they have
-> > > a chance of acquiring the lock, instead of blocking.
-> > > 
-> > > This patch therefore replaces this bogus check to solely rely on
-> > > the counter to know if the lock is available. Because we don't
-> > > hold the wait lock, we can obviously do this in an unqueued
-> > > manner.
-> > > 
-> > > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> > > ---
-> > >  kernel/locking/rwsem-xadd.c | 8 ++++++--
-> > >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> > > index 5e425d8..18a50da 100644
-> > > --- a/kernel/locking/rwsem-xadd.c
-> > > +++ b/kernel/locking/rwsem-xadd.c
-> > > @@ -335,6 +335,8 @@ static inline bool owner_running(struct rw_semaphore *sem,
-> > >  static noinline
-> > >  bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
-> > >  {
-> > > +	long count;
-> > > +
-> > >  	rcu_read_lock();
-> > >  	while (owner_running(sem, owner)) {
-> > >  		if (need_resched())
-> > > @@ -347,9 +349,11 @@ bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
-> > >  	/*
-> > >  	 * We break out the loop above on need_resched() or when the
-> > >  	 * owner changed, which is a sign for heavy contention. Return
-> > > -	 * success only when sem->owner is NULL.
-> > > +	 * success only when the lock is available in order to attempt
-> > > +	 * another trylock.
-> > >  	 */
-> > > -	return sem->owner == NULL;
-> > > +	count = READ_ONCE(sem->count);
-> > > +	return count == 0 || count == RWSEM_WAITING_BIAS;
-> > 
-> > If we clear the owner field right before unlocking, would this cause
-> > some situations where we spin until the owner is cleared (about to
-> > release the lock), and then the spinner return false from
-> > rwsem_spin_on_owner?
-> 
-> I'm not sure I understand your concern ;) could you rephrase that? 
+Markus,
 
-Sure, let me try to elaborate on that  :)
+Comments below...
 
-Since the unlocker clears the owner field before actually unlocking, I'm
-thinking that with this patch, the spinner in rwsem_spin_on_owner()
-would often read the count before the unlocker sets count.
+On Tue, Jan 13, 2015 at 8:44 AM, Markus Pargmann <mpa@pengutronix.de> wrote:
+> This patch prepares the nbd code for the nbd-root device patch. It
+> moves the ioctl code into separate functions so they can be called
+> directly. The patch creates nbd_set_total_size(), nbd_set_blksize(),
+> nbd_set_sock() and nbd_set_timeout().
+>
+> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+> ---
+>  drivers/block/nbd.c | 79 ++++++++++++++++++++++++++++++++++++++---------------
+>  1 file changed, 57 insertions(+), 22 deletions(-)
+>
+> diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+> index 0ff6ebbec252..11f7644be111 100644
+> --- a/drivers/block/nbd.c
+> +++ b/drivers/block/nbd.c
+> @@ -596,6 +596,55 @@ static void do_nbd_request(struct request_queue *q)
+>         }
+>  }
+>
+> +/*
+> + * Call with tx_lock held
+> + */
+> +static void nbd_set_total_size(struct block_device *bdev,
+> +                              struct nbd_device *nbd, size_t size)
+> +{
+> +       nbd->bytesize = size;
+> +       bdev->bd_inode->i_size = size;
+> +       set_blocksize(bdev, nbd->blksize);
+> +       set_capacity(nbd->disk, size >> 9);
+> +}
+> +
+> +/*
+> + * Call with tx_lock held
+> + */
+> +static void nbd_set_blksize(struct block_device *bdev, struct nbd_device *nbd,
+> +                           size_t blksize)
+> +{
+> +       u64 new_bytesize;
+> +
+> +       nbd->blksize = blksize;
+> +       bdev->bd_inode->i_size = nbd->bytesize;
+> +       set_blocksize(bdev, nbd->blksize);
+> +
+> +       new_bytesize = nbd->bytesize & ~(nbd->blksize-1);
+> +       if (new_bytesize != nbd->bytesize)
+> +               nbd_set_total_size(bdev, nbd, new_bytesize);
 
-When the owner releases the lock, it sets the owner field to NULL. This
-causes the spinner to break out of the loop as the owner changed. The
-spinner would then proceed to read sem->count, but before the owner
-modifies sem->count.
-
-Thread 1(owner)		Thread 2 (spinning on owner)
----------------		----------------------------
-up_write()
-  rwsem_clear_owner()
-			owner_running() // returns false
-			count = READ_ONCE(sem->count)
-  __up_write()
-			return (count == 0 || count == RWSEM_WAITING_BIAS) // returns false
-			// going to slowpath
+could just do set_capacity here to save a few cycles, but not a big
+deal either way...
 
 
+> +}
+> +
+> +/*
+> + * Call with tx_lock held
+> + */
+> +static void nbd_set_sock(struct block_device *bdev, struct nbd_device *nbd,
+> +                        struct socket *sock)
+> +{
+> +       nbd->sock = sock;
+> +       if (max_part > 0)
+> +               bdev->bd_invalidated = 1;
+> +       nbd->disconnect = 0; /* we're connected now */
+> +}
+> +
+> +/*
+> + * Call with tx_lock held
+> + */
+> +static void nbd_set_timeout(struct nbd_device *nbd, int timeout)
+> +{
+> +       nbd->xmit_timeout = timeout * HZ;
+> +}
+> +
+>  static int nbd_connection_start(struct block_device *bdev,
+>                                 struct nbd_device *nbd)
+>  {
+> @@ -733,33 +782,22 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+>                 if (nbd->sock)
+>                         return -EBUSY;
+>                 sock = sockfd_lookup(arg, &err);
+> -               if (sock) {
+> -                       nbd->sock = sock;
+> -                       if (max_part > 0)
+> -                               bdev->bd_invalidated = 1;
+> -                       nbd->disconnect = 0; /* we're connected now */
+> -                       return 0;
+> -               }
+> -               return -EINVAL;
+> +               if (!sock)
+> +                       return -EINVAL;
+> +
+> +               nbd_set_sock(bdev, nbd, sock);
+
+need a return 0 here
+
+
+>         }
+>
+>         case NBD_SET_BLKSIZE:
+> -               nbd->blksize = arg;
+> -               nbd->bytesize &= ~(nbd->blksize-1);
+> -               bdev->bd_inode->i_size = nbd->bytesize;
+> -               set_blocksize(bdev, nbd->blksize);
+> -               set_capacity(nbd->disk, nbd->bytesize >> 9);
+> +               nbd_set_blksize(bdev, nbd, arg);
+>                 return 0;
+>
+>         case NBD_SET_SIZE:
+> -               nbd->bytesize = arg & ~(nbd->blksize-1);
+> -               bdev->bd_inode->i_size = nbd->bytesize;
+> -               set_blocksize(bdev, nbd->blksize);
+> -               set_capacity(nbd->disk, nbd->bytesize >> 9);
+> +               nbd_set_total_size(bdev, nbd, arg & ~(nbd->blksize-1));
+>                 return 0;
+
+Might consider deprecating this one...it's pretty useless these days,
+as it has the same function as NBD_SET_SIZE_BLOCKS, but has a smaller
+device size limit (at least on some platforms)... nbd-client does not
+use it anymore...
+
+
+>         case NBD_SET_TIMEOUT:
+> -               nbd->xmit_timeout = arg * HZ;
+> +               nbd_set_timeout(nbd, arg);
+>                 return 0;
+>
+>         case NBD_SET_FLAGS:
+> @@ -767,10 +805,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+>                 return 0;
+>
+>         case NBD_SET_SIZE_BLOCKS:
+> -               nbd->bytesize = ((u64) arg) * nbd->blksize;
+> -               bdev->bd_inode->i_size = nbd->bytesize;
+> -               set_blocksize(bdev, nbd->blksize);
+> -               set_capacity(nbd->disk, nbd->bytesize >> 9);
+> +               nbd_set_total_size(bdev, nbd, ((u64)arg) * nbd->blksize);
+>                 return 0;
+>
+>         case NBD_DO_IT:
