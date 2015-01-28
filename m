@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202AbbA2KFn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:05:43 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44753 "EHLO
+	id S1758726AbbA2JDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:03:03 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44783 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757859AbbA2JBw (ORCPT
+	by vger.kernel.org with ESMTP id S1754198AbbA2JCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:01:52 -0500
+	Thu, 29 Jan 2015 04:02:52 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mugunthan V N <mugunthanvnm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 101/176] drivers: net: cpsw: fix multicast flush in dual emac mode
-Date: Wed, 28 Jan 2015 15:28:51 +0100
-Message-Id: <487873cff553e57b6c199b646c4d1561f2db8604.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 102/176] ftrace/jprobes/x86: Fix conflict between jprobes and function graph tracing
+Date: Wed, 28 Jan 2015 15:28:52 +0100
+Message-Id: <98621891a08259f781e8d939527d9b6cff2aa2c1.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,99 +24,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 25906052d953d3fbdb7e19480b9de5e6bb949f3f upstream.
+commit 237d28db036e411f22c03cfd5b0f6dc2aa9bf3bc upstream.
 
-Since ALE table is a common resource for both the interfaces in Dual EMAC
-mode and while bringing up the second interface in cpsw_ndo_set_rx_mode()
-all the multicast entries added by the first interface is flushed out and
-only second interface multicast addresses are added. Fixing this by
-flushing multicast addresses based on dual EMAC port vlans which will not
-affect the other emac port multicast addresses.
+If the function graph tracer traces a jprobe callback, the system will
+crash. This can easily be demonstrated by compiling the jprobe
+sample module that is in the kernel tree, loading it and running the
+function graph tracer.
 
-Fixes: d9ba8f9 (driver: net: ethernet: cpsw: dual emac interface implementation)
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+ # modprobe jprobe_example.ko
+ # echo function_graph > /sys/kernel/debug/tracing/current_tracer
+ # ls
+
+The first two commands end up in a nice crash after the first fork.
+(do_fork has a jprobe attached to it, so "ls" just triggers that fork)
+
+The problem is caused by the jprobe_return() that all jprobe callbacks
+must end with. The way jprobes works is that the function a jprobe
+is attached to has a breakpoint placed at the start of it (or it uses
+ftrace if fentry is supported). The breakpoint handler (or ftrace callback)
+will copy the stack frame and change the ip address to return to the
+jprobe handler instead of the function. The jprobe handler must end
+with jprobe_return() which swaps the stack and does an int3 (breakpoint).
+This breakpoint handler will then put back the saved stack frame,
+simulate the instruction at the beginning of the function it added
+a breakpoint to, and then continue on.
+
+For function tracing to work, it hijakes the return address from the
+stack frame, and replaces it with a hook function that will trace
+the end of the call. This hook function will restore the return
+address of the function call.
+
+If the function tracer traces the jprobe handler, the hook function
+for that handler will not be called, and its saved return address
+will be used for the next function. This will result in a kernel crash.
+
+To solve this, pause function tracing before the jprobe handler is called
+and unpause it before it returns back to the function it probed.
+
+Some other updates:
+
+Used a variable "saved_sp" to hold kcb->jprobe_saved_sp. This makes the
+code look a bit cleaner and easier to understand (various tries to fix
+this bug required this change).
+
+Note, if fentry is being used, jprobes will change the ip address before
+the function graph tracer runs and it will not be able to trace the
+function that the jprobe is probing.
+
+Link: http://lkml.kernel.org/r/20150114154329.552437962@goodmis.org
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/ti/cpsw.c     |  9 ++++++++-
- drivers/net/ethernet/ti/cpsw_ale.c | 10 +++++++++-
- drivers/net/ethernet/ti/cpsw_ale.h |  2 +-
- 3 files changed, 18 insertions(+), 3 deletions(-)
+ arch/x86/kernel/kprobes/core.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index d7a98d08abd2..07cd14d586dc 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -546,6 +546,12 @@ static inline int cpsw_get_slave_port(struct cpsw_priv *priv, u32 slave_num)
- static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
- {
- 	struct cpsw_priv *priv = netdev_priv(ndev);
-+	int vid;
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 79a3f9682871..a1f5b1866cbe 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1017,6 +1017,15 @@ int __kprobes setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ 	regs->flags &= ~X86_EFLAGS_IF;
+ 	trace_hardirqs_off();
+ 	regs->ip = (unsigned long)(jp->entry);
 +
-+	if (priv->data.dual_emac)
-+		vid = priv->slaves[priv->emac_port].port_vlan;
-+	else
-+		vid = priv->data.default_vlan;
- 
- 	if (ndev->flags & IFF_PROMISC) {
- 		/* Enable promiscuous mode */
-@@ -554,7 +560,8 @@ static void cpsw_ndo_set_rx_mode(struct net_device *ndev)
- 	}
- 
- 	/* Clear all mcast from ALE */
--	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port);
-+	cpsw_ale_flush_multicast(priv->ale, ALE_ALL_PORTS << priv->host_port,
-+				 vid);
- 
- 	if (!netdev_mc_empty(ndev)) {
- 		struct netdev_hw_addr *ha;
-diff --git a/drivers/net/ethernet/ti/cpsw_ale.c b/drivers/net/ethernet/ti/cpsw_ale.c
-index 7fa60d6092ed..f7acf76b223c 100644
---- a/drivers/net/ethernet/ti/cpsw_ale.c
-+++ b/drivers/net/ethernet/ti/cpsw_ale.c
-@@ -236,7 +236,7 @@ static void cpsw_ale_flush_mcast(struct cpsw_ale *ale, u32 *ale_entry,
- 		cpsw_ale_set_entry_type(ale_entry, ALE_TYPE_FREE);
++	/*
++	 * jprobes use jprobe_return() which skips the normal return
++	 * path of the function, and this messes up the accounting of the
++	 * function graph tracer to get messed up.
++	 *
++	 * Pause function graph tracing while performing the jprobe function.
++	 */
++	pause_graph_tracing();
+ 	return 1;
  }
  
--int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
-+int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid)
- {
- 	u32 ale_entry[ALE_ENTRY_WORDS];
- 	int ret, idx;
-@@ -247,6 +247,14 @@ int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask)
- 		if (ret != ALE_TYPE_ADDR && ret != ALE_TYPE_VLAN_ADDR)
- 			continue;
+@@ -1042,24 +1051,25 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+ 	u8 *addr = (u8 *) (regs->ip - 1);
+ 	struct jprobe *jp = container_of(p, struct jprobe, kp);
++	void *saved_sp = kcb->jprobe_saved_sp;
  
-+		/* if vid passed is -1 then remove all multicast entry from
-+		 * the table irrespective of vlan id, if a valid vlan id is
-+		 * passed then remove only multicast added to that vlan id.
-+		 * if vlan id doesn't match then move on to next entry.
-+		 */
-+		if (vid != -1 && cpsw_ale_get_vlan_id(ale_entry) != vid)
-+			continue;
-+
- 		if (cpsw_ale_get_mcast(ale_entry)) {
- 			u8 addr[6];
- 
-diff --git a/drivers/net/ethernet/ti/cpsw_ale.h b/drivers/net/ethernet/ti/cpsw_ale.h
-index 30daa1265f0c..20c7976819e7 100644
---- a/drivers/net/ethernet/ti/cpsw_ale.h
-+++ b/drivers/net/ethernet/ti/cpsw_ale.h
-@@ -86,7 +86,7 @@ void cpsw_ale_stop(struct cpsw_ale *ale);
- 
- int cpsw_ale_set_ageout(struct cpsw_ale *ale, int ageout);
- int cpsw_ale_flush(struct cpsw_ale *ale, int port_mask);
--int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask);
-+int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid);
- int cpsw_ale_add_ucast(struct cpsw_ale *ale, u8 *addr, int port,
- 		       int flags, u16 vid);
- int cpsw_ale_del_ucast(struct cpsw_ale *ale, u8 *addr, int port,
+ 	if ((addr > (u8 *) jprobe_return) &&
+ 	    (addr < (u8 *) jprobe_return_end)) {
+-		if (stack_addr(regs) != kcb->jprobe_saved_sp) {
++		if (stack_addr(regs) != saved_sp) {
+ 			struct pt_regs *saved_regs = &kcb->jprobe_saved_regs;
+ 			printk(KERN_ERR
+ 			       "current sp %p does not match saved sp %p\n",
+-			       stack_addr(regs), kcb->jprobe_saved_sp);
++			       stack_addr(regs), saved_sp);
+ 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
+ 			show_regs(saved_regs);
+ 			printk(KERN_ERR "Current registers\n");
+ 			show_regs(regs);
+ 			BUG();
+ 		}
++		/* It's OK to start function graph tracing again */
++		unpause_graph_tracing();
+ 		*regs = kcb->jprobe_saved_regs;
+-		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+-		       kcb->jprobes_stack,
+-		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
++		memcpy(saved_sp, kcb->jprobes_stack, MIN_STACK_SIZE(saved_sp));
+ 		preempt_enable_no_resched();
+ 		return 1;
+ 	}
 -- 
 2.2.2
 
