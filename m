@@ -1,84 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202AbbA1U2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:28:10 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45504 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755769AbbA1U2H (ORCPT
+	id S1754796AbbA2I74 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 03:59:56 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754553AbbA2I7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:28:07 -0500
-Date: Wed, 28 Jan 2015 14:30:06 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Kukjin Kim <kgene@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        Heiko Stuebner <heiko@sntech.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robin Murphy <Robin.Murphy@arm.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "jroedel@suse.de" <jroedel@suse.de>
-Subject: Re: [PATCH 2/5] iommu: Allocate a default domain for iommu groups
-Message-ID: <20150128143006.GQ1569@arm.com>
-References: <1422317339-22620-1-git-send-email-joro@8bytes.org>
- <1422317339-22620-3-git-send-email-joro@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422317339-22620-3-git-send-email-joro@8bytes.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 29 Jan 2015 03:59:53 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 176/176] deal with deadlock in d_walk()
+Date: Wed, 28 Jan 2015 15:30:06 +0100
+Message-Id: <a99bf21c924111ca8588fface7e87e142bb38eae.1422455352.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.2.2
+In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
+References: <cover.1422455352.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 12:08:56AM +0000, Joerg Roedel wrote:
-> From: Joerg Roedel <jroedel@suse.de>
-> 
-> The default domain will be used (if supported by the iommu
-> driver) when the devices in the iommu group are not attached
-> to any other domain.
-> 
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  drivers/iommu/iommu.c | 26 +++++++++++++++++++++++---
->  1 file changed, 23 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index 34636eb..8f33ddd3 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -76,6 +76,9 @@ struct iommu_group_attribute iommu_group_attr_##_name =		\
->  #define to_iommu_group(_kobj)		\
->  	container_of(_kobj, struct iommu_group, kobj)
->  
-> +static struct iommu_domain *__iommu_domain_alloc(struct bus_type *bus,
-> +						 enum iommu_domain_type type);
-> +
->  static ssize_t iommu_group_attr_show(struct kobject *kobj,
->  				     struct attribute *__attr, char *buf)
->  {
-> @@ -362,6 +365,17 @@ rename:
->  
->  	kobject_get(group->devices_kobj);
->  
-> +	/*
-> +	 * Try to allocate a default domain for the group, if this
-> +	 * hasn't happened yet. This is not the best place to do that,
-> +	 * it should happen in iommu_group_alloc(). But we have no
-> +	 * iommu_ops there yet, so the allocation has to happen here for
-> +	 * now.
-> +	 */
-> +	if (group->default_domain == NULL)
-> +		group->default_domain = __iommu_domain_alloc(dev->bus,
-> +							     IOMMU_DOMAIN_DMA);
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-Having a per-group domain is wasteful for IOMMUs that only support a modest
-number of concurrent domains, so in reality I think we need to have one
-domain per IOMMU instance. Is that possible?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-One problem with the current per-bus approach is that __iommu_domain_alloc
-can't figure out which IOMMU instance corresponds to the group.
+===============
 
-Will
+commit ca5358ef75fc69fee5322a38a340f5739d997c10 upstream.
+
+... by not hitting rename_retry for reasons other than rename having
+happened.  In other words, do _not_ restart when finding that
+between unlocking the child and locking the parent the former got
+into __dentry_kill().  Skip the killed siblings instead...
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/dcache.c | 31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 09f7a612ba7f..eb540b00d027 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -488,7 +488,7 @@ static void __dentry_kill(struct dentry *dentry)
+ 	}
+ 	/* if it was on the hash then remove it */
+ 	__d_drop(dentry);
+-	list_del(&dentry->d_child);
++	__list_del_entry(&dentry->d_child);
+ 	/*
+ 	 * Inform d_walk() that we are no longer attached to the
+ 	 * dentry tree
+@@ -1142,33 +1142,31 @@ resume:
+ 	/*
+ 	 * All done at this level ... ascend and resume the search.
+ 	 */
++	rcu_read_lock();
++ascend:
+ 	if (this_parent != parent) {
+ 		struct dentry *child = this_parent;
+ 		this_parent = child->d_parent;
+ 
+-		rcu_read_lock();
+ 		spin_unlock(&child->d_lock);
+ 		spin_lock(&this_parent->d_lock);
+ 
+-		/*
+-		 * might go back up the wrong parent if we have had a rename
+-		 * or deletion
+-		 */
+-		if (this_parent != child->d_parent ||
+-			 (child->d_flags & DCACHE_DENTRY_KILLED) ||
+-			 need_seqretry(&rename_lock, seq)) {
+-			spin_unlock(&this_parent->d_lock);
+-			rcu_read_unlock();
++		/* might go back up the wrong parent if we have had a rename. */
++		if (need_seqretry(&rename_lock, seq))
+ 			goto rename_retry;
++		next = child->d_child.next;
++		while (unlikely(child->d_flags & DCACHE_DENTRY_KILLED)) {
++			if (next == &this_parent->d_subdirs)
++				goto ascend;
++			child = list_entry(next, struct dentry, d_child);
++			next = next->next;
+ 		}
+ 		rcu_read_unlock();
+-		next = child->d_child.next;
+ 		goto resume;
+ 	}
+-	if (need_seqretry(&rename_lock, seq)) {
+-		spin_unlock(&this_parent->d_lock);
++	if (need_seqretry(&rename_lock, seq))
+ 		goto rename_retry;
+-	}
++	rcu_read_unlock();
+ 	if (finish)
+ 		finish(data);
+ 
+@@ -1178,6 +1176,9 @@ out_unlock:
+ 	return;
+ 
+ rename_retry:
++	spin_unlock(&this_parent->d_lock);
++	rcu_read_unlock();
++	BUG_ON(seq & 1);
+ 	if (!retry)
+ 		return;
+ 	seq = 1;
+-- 
+2.2.2
+
