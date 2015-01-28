@@ -1,144 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760505AbbA2JHX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:07:23 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44889 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760350AbbA2JHU (ORCPT
+	id S1758662AbbA1VQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:16:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760244AbbA1Uue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:07:20 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 111/176] USB: keyspan: fix null-deref at probe
-Date: Wed, 28 Jan 2015 15:29:01 +0100
-Message-Id: <55b48ffa43d65d598f16f05170be70154f14bea6.1422455352.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
-References: <cover.1422455352.git.jslaby@suse.cz>
+	Wed, 28 Jan 2015 15:50:34 -0500
+Date: Wed, 28 Jan 2015 06:29:02 -0800
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-98b008dff8452653909d9263efda925873e8d8bb@git.kernel.org>
+Cc: peterz@infradead.org, eranian@google.com, torvalds@linux-foundation.org,
+        mingo@kernel.org, tglx@linutronix.de, acme@kernel.org,
+        vincent.weaver@maine.edu, hpa@zytor.com, linux-kernel@vger.kernel.org
+Reply-To: peterz@infradead.org, eranian@google.com, mingo@kernel.org,
+        tglx@linutronix.de, torvalds@linux-foundation.org, acme@kernel.org,
+        vincent.weaver@maine.edu, hpa@zytor.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20150122203834.GA10228@thinkpad>
+References: <20150122203834.GA10228@thinkpad>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/rapl: Fix crash in rapl_scale()
+Git-Commit-ID: 98b008dff8452653909d9263efda925873e8d8bb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <johan@kernel.org>
+Commit-ID:  98b008dff8452653909d9263efda925873e8d8bb
+Gitweb:     http://git.kernel.org/tip/98b008dff8452653909d9263efda925873e8d8bb
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Thu, 22 Jan 2015 21:38:34 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 28 Jan 2015 13:04:35 +0100
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+perf/rapl: Fix crash in rapl_scale()
 
-===============
+This patch fixes a systematic crash in rapl_scale()
+due to an invalid pointer.
 
-commit b5122236bba8d7ef62153da5b55cc65d0944c61e upstream.
+The bug was introduced by commit:
 
-Fix null-pointer dereference during probe if the interface-status
-completion handler is called before the individual ports have been set
-up.
+  89cbc76768c2 ("x86: Replace __get_cpu_var uses")
 
-Fixes: f79b2d0fe81e ("USB: keyspan: fix NULL-pointer dereferences and
-memory leaks")
-Reported-by: Richard <richjunk@pacbell.net>
-Tested-by: Richard <richjunk@pacbell.net>
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+The fix is simple. Just put the parenthesis where it needs
+to be, i.e., around rapl_pmu. To my surprise, the compiler
+was not complaining about passing an integer instead of a
+pointer.
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Fixes: 89cbc76768c2 ("x86: Replace __get_cpu_var uses")
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: cl@linux.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20150122203834.GA10228@thinkpad
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/usb/serial/keyspan.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-index dc3a77c8cd83..e58e21b46ef0 100644
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -422,6 +422,8 @@ static void	usa26_instat_callback(struct urb *urb)
- 	}
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index 6e434f8..c4bb8b8 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -142,7 +142,7 @@ static inline u64 rapl_scale(u64 v)
+ 	 * or use ldexp(count, -32).
+ 	 * Watts = Joules/Time delta
+ 	 */
+-	return v << (32 - __this_cpu_read(rapl_pmu->hw_unit));
++	return v << (32 - __this_cpu_read(rapl_pmu)->hw_unit);
+ }
  
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -432,7 +434,7 @@ static void	usa26_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -542,6 +544,8 @@ static void	usa28_instat_callback(struct urb *urb)
- 	}
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -552,7 +556,7 @@ static void	usa28_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 		/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -625,6 +629,8 @@ static void	usa49_instat_callback(struct urb *urb)
- 	}
- 	port = serial->port[msg->portNumber];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -635,7 +641,7 @@ static void	usa49_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -873,6 +879,8 @@ static void	usa90_instat_callback(struct urb *urb)
- 
- 	port = serial->port[0];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -883,7 +891,7 @@ static void	usa90_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
-@@ -944,6 +952,8 @@ static void	usa67_instat_callback(struct urb *urb)
- 
- 	port = serial->port[msg->port];
- 	p_priv = usb_get_serial_port_data(port);
-+	if (!p_priv)
-+		goto resubmit;
- 
- 	/* Update handshaking pin state information */
- 	old_dcd_state = p_priv->dcd_state;
-@@ -952,7 +962,7 @@ static void	usa67_instat_callback(struct urb *urb)
- 
- 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
- 		tty_port_tty_hangup(&port->port, true);
--
-+resubmit:
- 	/* Resubmit urb so we continue receiving */
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err != 0)
--- 
-2.2.2
-
+ static u64 rapl_event_update(struct perf_event *event)
