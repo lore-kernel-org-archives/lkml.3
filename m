@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933707AbbA1Bnd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:43:33 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:35610 "EHLO
+	id S933725AbbA1BoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:44:25 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:13225 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933375AbbA1Bnb (ORCPT
+	with ESMTP id S933375AbbA1BoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:43:31 -0500
+	Tue, 27 Jan 2015 20:44:20 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
         <peda@axentia.se>, <sergei.shtylyov@cogentembedded.com>,
         <linux@maxim.org.za>, <wenyou.yang@atmel.com>
-Subject: [PATCH v4 01/13] pm: at91: pm_slowclock: fix suspend/resume hang up in timeouts
-Date: Wed, 28 Jan 2015 09:40:26 +0800
-Message-ID: <1422409226-24232-1-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v4 02/13] pm: at91: pm_slowclock: remove clocks which are already stopped when entering slow clock mode
+Date: Wed, 28 Jan 2015 09:41:15 +0800
+Message-ID: <1422409275-24266-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
 References: <1422409172-24178-1-git-send-email-wenyou.yang@atmel.com>
@@ -27,97 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sylvain Rochet <sylvain.rochet@finsecur.com>
 
-Removed timeout on XTAL, PLL lock and Master Clock Ready, hang if
-something went wrong instead of continuing in unknown condition. There
-is not much we can do if a PLL lock never ends, we are running in SRAM
-and we will not be able to connect back the sdram or ddram in order to
-be able to fire up a message or just panic.
+Assume USB PLL and PLL B are already stopped before entering sleep mode,
+print a warning if this isn't the case.
 
-As a bonus, not decounting the timeout register in slow clock mode
-reduce cumulated suspend time and resume time from ~17ms to ~15ms.
+Removed PLL B from slow clock code, all drivers are supposed to properly
+unprepare clocks.
 
 Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
 ---
- arch/arm/mach-at91/pm_slowclock.S |   33 ++++-----------------------------
- 1 file changed, 4 insertions(+), 29 deletions(-)
+ arch/arm/mach-at91/pm.c           |   12 ++++++++++++
+ arch/arm/mach-at91/pm_slowclock.S |   31 -------------------------------
+ 2 files changed, 12 insertions(+), 31 deletions(-)
 
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 87c1fd8..5dd4e41 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -98,6 +98,18 @@ static int at91_pm_verify_clocks(void)
+ 		}
+ 	}
+ 
++	/* Drivers should have previously suspended USB PLL */
++	if (at91_pmc_read(AT91_CKGR_UCKR) & AT91_PMC_UPLLEN) {
++		pr_err("AT91: PM - Suspend-to-RAM with USB PLL running\n");
++		return 0;
++	}
++
++	/* Drivers should have previously suspended PLL B */
++	if (at91_pmc_read(AT91_PMC_SR) & AT91_PMC_LOCKB) {
++		pr_err("AT91: PM - Suspend-to-RAM with PLL B running\n");
++		return 0;
++	}
++
+ 	return 1;
+ }
+ 
 diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index 556151e..50744e7 100644
+index 50744e7..e2bfaf5 100644
 --- a/arch/arm/mach-at91/pm_slowclock.S
 +++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -25,11 +25,6 @@
-  */
- #undef SLOWDOWN_MASTER_CLOCK
+@@ -59,15 +59,6 @@ tmp2	.req	r5
+ 	beq	1b
+ 	.endm
  
--#define MCKRDY_TIMEOUT		1000
--#define MOSCRDY_TIMEOUT 	1000
--#define PLLALOCK_TIMEOUT	1000
--#define PLLBLOCK_TIMEOUT	1000
+-/*
+- * Wait until PLLB has locked.
+- */
+-	.macro wait_pllblock
+-1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
+-	tst	tmp1, #AT91_PMC_LOCKB
+-	beq	1b
+-	.endm
 -
- pmc	.req	r0
- sdramc	.req	r1
- ramc1	.req	r2
-@@ -41,56 +36,36 @@ tmp2	.req	r5
-  * Wait until master clock is ready (after switching master clock source)
-  */
- 	.macro wait_mckrdy
--	mov	tmp2, #MCKRDY_TIMEOUT
--1:	sub	tmp2, tmp2, #1
--	cmp	tmp2, #0
--	beq	2f
--	ldr	tmp1, [pmc, #AT91_PMC_SR]
-+1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
- 	tst	tmp1, #AT91_PMC_MCKRDY
- 	beq	1b
--2:
- 	.endm
- 
- /*
-  * Wait until master oscillator has stabilized.
-  */
- 	.macro wait_moscrdy
--	mov	tmp2, #MOSCRDY_TIMEOUT
--1:	sub	tmp2, tmp2, #1
--	cmp	tmp2, #0
--	beq	2f
--	ldr	tmp1, [pmc, #AT91_PMC_SR]
-+1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
- 	tst	tmp1, #AT91_PMC_MOSCS
- 	beq	1b
--2:
- 	.endm
- 
- /*
-  * Wait until PLLA has locked.
-  */
- 	.macro wait_pllalock
--	mov	tmp2, #PLLALOCK_TIMEOUT
--1:	sub	tmp2, tmp2, #1
--	cmp	tmp2, #0
--	beq	2f
--	ldr	tmp1, [pmc, #AT91_PMC_SR]
-+1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
- 	tst	tmp1, #AT91_PMC_LOCKA
- 	beq	1b
--2:
- 	.endm
- 
- /*
-  * Wait until PLLB has locked.
-  */
- 	.macro wait_pllblock
--	mov	tmp2, #PLLBLOCK_TIMEOUT
--1:	sub	tmp2, tmp2, #1
--	cmp	tmp2, #0
--	beq	2f
--	ldr	tmp1, [pmc, #AT91_PMC_SR]
-+1:	ldr	tmp1, [pmc, #AT91_PMC_SR]
- 	tst	tmp1, #AT91_PMC_LOCKB
- 	beq	1b
--2:
- 	.endm
- 
  	.text
+ 
+ /* void at91_slow_clock(void __iomem *pmc, void __iomem *sdramc,
+@@ -173,13 +164,6 @@ sdr_sr_done:
+ 	orr	tmp1, tmp1, #(1 << 29)		/* bit 29 always set */
+ 	str	tmp1, [pmc, #AT91_CKGR_PLLAR]
+ 
+-	/* Save PLLB setting and disable it */
+-	ldr	tmp1, [pmc, #AT91_CKGR_PLLBR]
+-	str	tmp1, .saved_pllbr
+-
+-	mov	tmp1, #AT91_PMC_PLLCOUNT
+-	str	tmp1, [pmc, #AT91_CKGR_PLLBR]
+-
+ 	/* Turn off the main oscillator */
+ 	ldr	tmp1, [pmc, #AT91_CKGR_MOR]
+ 	bic	tmp1, tmp1, #AT91_PMC_MOSCEN
+@@ -195,18 +179,6 @@ sdr_sr_done:
+ 
+ 	wait_moscrdy
+ 
+-	/* Restore PLLB setting */
+-	ldr	tmp1, .saved_pllbr
+-	str	tmp1, [pmc, #AT91_CKGR_PLLBR]
+-
+-	tst	tmp1, #(AT91_PMC_MUL &  0xff0000)
+-	bne	1f
+-	tst	tmp1, #(AT91_PMC_MUL & ~0xff0000)
+-	beq	2f
+-1:
+-	wait_pllblock
+-2:
+-
+ 	/* Restore PLLA setting */
+ 	ldr	tmp1, .saved_pllar
+ 	str	tmp1, [pmc, #AT91_CKGR_PLLAR]
+@@ -285,9 +257,6 @@ ram_restored:
+ .saved_pllar:
+ 	.word 0
+ 
+-.saved_pllbr:
+-	.word 0
+-
+ .saved_sam9_lpr:
+ 	.word 0
+ 
 -- 
 1.7.9.5
 
