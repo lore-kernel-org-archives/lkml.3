@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233AbbA2JCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:02:30 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44768 "EHLO
+	id S1759124AbbA2JDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:03:38 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44797 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758070AbbA2JCT (ORCPT
+	by vger.kernel.org with ESMTP id S1758893AbbA2JDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:02:19 -0500
+	Thu, 29 Jan 2015 04:03:31 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: linux-kernel@vger.kernel.org, Steev Klimaszewski <threeway@gmail.com>,
+        Steev Klimaszewski <steev@gentoo.org>, Arnd Bergmann <arnd@arndb.de>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 032/176] USB: cdc-acm: check for valid interfaces
-Date: Wed, 28 Jan 2015 15:27:42 +0100
-Message-Id: <7f05446ddd65a1ab8b1d3a8dbc5acddbe0c66745.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 033/176] Add USB_EHCI_EXYNOS to multi_v7_defconfig
+Date: Wed, 28 Jan 2015 15:27:43 +0100
+Message-Id: <d379dec78e7c15ca987166092114094c8aea4b0a.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,44 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Steev Klimaszewski <threeway@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 403dff4e2c94f275e24fd85f40b2732ffec268a1 upstream.
+commit 007487f1fd43d84f26cda926081ca219a24ecbc4 upstream.
 
-We need to check that we have both a valid data and control inteface for both
-types of headers (union and not union.)
+Currently we enable Exynos devices in the multi v7 defconfig, however, when
+testing on my ODROID-U3, I noticed that USB was not working.  Enabling this
+option causes USB to work, which enables networking support as well since the
+ODROID-U3 has networking on the USB bus.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=83551
-Reported-by: Simon Schubert <2+kernel@0x2c.org>
+[arnd] Support for odroid-u3 was added in 3.10, so it would be nice to
+backport this fix at least that far.
+
+Signed-off-by: Steev Klimaszewski <steev@gentoo.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/class/cdc-acm.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 99fd026161d5..f578a5aa02c0 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1079,10 +1079,11 @@ next_desc:
- 	} else {
- 		control_interface = usb_ifnum_to_if(usb_dev, union_header->bMasterInterface0);
- 		data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = union_header->bSlaveInterface0));
--		if (!control_interface || !data_interface) {
--			dev_dbg(&intf->dev, "no interfaces\n");
--			return -ENODEV;
--		}
-+	}
-+
-+	if (!control_interface || !data_interface) {
-+		dev_dbg(&intf->dev, "no interfaces\n");
-+		return -ENODEV;
- 	}
- 
- 	if (data_interface_num != call_interface_num)
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index fe88105a0421..f8bca690569d 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -116,6 +116,7 @@ CONFIG_FB_SIMPLE=y
+ CONFIG_USB=y
+ CONFIG_USB_XHCI_HCD=y
+ CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_EXYNOS=y
+ CONFIG_USB_EHCI_TEGRA=y
+ CONFIG_USB_EHCI_HCD_PLATFORM=y
+ CONFIG_USB_ISP1760_HCD=y
 -- 
 2.2.2
 
