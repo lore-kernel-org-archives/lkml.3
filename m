@@ -1,37 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760443AbbA1Uf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:35:26 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:39568 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760650AbbA1UfU (ORCPT
+	id S1754866AbbA2BZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:25:26 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38389 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754807AbbA2BZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:35:20 -0500
-Message-ID: <54C93B39.1030504@suse.cz>
-Date: Wed, 28 Jan 2015 20:40:41 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 20:25:21 -0500
+Date: Wed, 28 Jan 2015 19:40:48 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20150128194048.GK21293@sirena.org.uk>
+References: <1422447834-23116-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1422447834-23116-15-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-To: Johan Hovold <johan@kernel.org>
-CC: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 3.12 140/176] gpio: sysfs: fix gpio device-attribute leak
-References: <cover.1422455352.git.jslaby@suse.cz> <e66a96f38a5a35c96eadcabbe20921ad32ed087a.1422455352.git.jslaby@suse.cz> <20150128161007.GC2433@localhost> <54C92072.9080404@suse.cz> <20150128180654.GF2433@localhost>
-In-Reply-To: <20150128180654.GF2433@localhost>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="JqPwA6/cWC5gSNSn"
+Content-Disposition: inline
+In-Reply-To: <1422447834-23116-15-git-send-email-ricardo.ribalda@gmail.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 14/15] spi/xilinx: Check number of slaves range
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2015, 07:06 PM, Johan Hovold wrote:
-> You can find it in the stable queue:
-> 
-> 	https://git.kernel.org/cgit/linux/kernel/git/stable/stable-queue.git/tree/queue-3.14/gpio-sysfs-fix-gpio-device-attribute-leak.patch
 
-Now merged. Thanks.
+--JqPwA6/cWC5gSNSn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Jan 28, 2015 at 01:23:53PM +0100, Ricardo Ribalda Delgado wrote:
 
--- 
-js
-suse labs
+> +#define MAX_CS			32
+> +
+
+This really ought to be namespaced.
+
+--JqPwA6/cWC5gSNSn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUyTs/AAoJECTWi3JdVIfQ8gAIAIWnKfxiBl8ljTAgeu9JluoN
+RYzLdcHKtSF923PvHoKy0Pw+Zw4d0oUj3l9QMcLVkuy1Lp/rT0ihPp180S08ms6D
+epBsCMhJDVabS/iFZi+v3YPP8Lb6i5YkMLRT3ecAEyUil2mmfd0jPyy9EhACryo1
+n5HV8ek7bPrsl2ZcFF38MKdsGoYvovF4aVirXi2OzTKW9zXbcOZg58Y0VSDf3dpp
+QdzDvZqRN5LZ5KhQqEVTMv5GQgdhYQshlmiiclYMuOsfX5y1Ui5Z5P3YvNukkoQb
+ta3mRsedQKzcrAVj1oQ/PVtRsfQBPsMLllAMx64q/b5IWHcTShqXkW8uMbMyAHA=
+=vhaD
+-----END PGP SIGNATURE-----
+
+--JqPwA6/cWC5gSNSn--
