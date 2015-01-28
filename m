@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446AbbA1Bip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:38:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41823 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933410AbbA1Bim (ORCPT
+	id S1760389AbbA1Bb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:31:28 -0500
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:51105 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760371AbbA1Bb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:42 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Henry Cai <henryplusplus@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.14 77/77] md/raid5: fetch_block must fetch all the blocks handle_stripe_dirtying wants.
-Date: Tue, 27 Jan 2015 17:27:55 -0800
-Message-Id: <20150128012748.265376352@linuxfoundation.org>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 27 Jan 2015 20:31:26 -0500
+Message-ID: <54C83C21.5080707@physik.fu-berlin.de>
+Date: Wed, 28 Jan 2015 02:32:17 +0100
+From: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: stable@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
+        Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 3.10 06/32] scripts/recordmcount.pl: There is no -m32
+ gcc option on Super-H anymore
+References: <20150128012627.081285723@linuxfoundation.org> <20150128012627.996535068@linuxfoundation.org>
+In-Reply-To: <20150128012627.996535068@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 92.200.48.82
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 01/28/2015 02:26 AM, Greg Kroah-Hartman wrote:
+> 3.10-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+> 
+> commit 1caf6aaaa47471831d77c75f094d4e00ad1ec808 upstream.
+> 
+> Compiling SH with gcc-4.8 fails due to the -m32 option not being
+> supported.
 
-------------------
+JFTR, I didn't test with earlier kernels than 3.18 yet but I assume
+earlier versions will just compile fine as well.
 
-From: NeilBrown <neilb@suse.de>
+Here's the log of a successful build of 3.18 with the patch applied:
 
-commit 108cef3aa41669610e1836fe638812dd067d72de upstream.
+>
+http://buildd.debian-ports.org/status/fetch.php?pkg=linux&arch=sh4&ver=3.18.3-1~exp1&stamp=1422284071
 
-It is critical that fetch_block() and handle_stripe_dirtying()
-are consistent in their analysis of what needs to be loaded.
-Otherwise raid5 can wait forever for a block that won't be loaded.
+Thanks for merging.
 
-Currently when writing to a RAID5 that is resyncing, to a location
-beyond the resync offset, handle_stripe_dirtying chooses a
-reconstruct-write cycle, but fetch_block() assumes a
-read-modify-write, and a lockup can happen.
+Cheers,
+Adrian
 
-So treat that case just like RAID6, just as we do in
-handle_stripe_dirtying.  RAID6 always does reconstruct-write.
-
-This bug was introduced when the behaviour of handle_stripe_dirtying
-was changed in 3.7, so the patch is suitable for any kernel since,
-though it will need careful merging for some versions.
-
-Cc: stable@vger.kernel.org (v3.7+)
-Fixes: a7854487cd7128a30a7f4f5259de9f67d5efb95f
-Reported-by: Henry Cai <henryplusplus@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/raid5.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -2896,7 +2896,8 @@ static int fetch_block(struct stripe_hea
- 	     (s->failed >= 2 && fdev[1]->toread) ||
- 	     (sh->raid_conf->level <= 5 && s->failed && fdev[0]->towrite &&
- 	      !test_bit(R5_OVERWRITE, &fdev[0]->flags)) ||
--	     (sh->raid_conf->level == 6 && s->failed && s->to_write))) {
-+	     ((sh->raid_conf->level == 6 || sh->sector >= sh->raid_conf->mddev->recovery_cp)
-+	      && s->failed && s->to_write))) {
- 		/* we would like to get this block, possibly by computing it,
- 		 * otherwise read it if the backing disk is insync
- 		 */
-
-
+-- 
+ .''`.  John Paul Adrian Glaubitz
+: :' :  Debian Developer - glaubitz@debian.org
+`. `'   Freie Universitaet Berlin - glaubitz@physik.fu-berlin.de
+  `-    GPG: 62FF 8A75 84E0 2956 9546  0006 7426 3B37 F5B5 F913
