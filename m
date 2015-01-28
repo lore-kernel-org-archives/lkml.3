@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934765AbbA1Eyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:54:37 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39566 "EHLO mail.kernel.org"
+	id S934200AbbA1EVj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:21:39 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39599 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761645AbbA1EVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:21:30 -0500
+	id S1761652AbbA1EVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:21:33 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 082/177] KVM: x86: use new CS.RPL as CPL during task switch
-Date: Wed, 28 Jan 2015 12:08:50 +0800
-Message-Id: <1422418236-12852-163-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 82/91] dm crypt: fix access beyond the end of allocated space
+Date: Wed, 28 Jan 2015 12:08:51 +0800
+Message-Id: <1422418236-12852-164-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,190 +20,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 2356aaeb2f58f491679dc0c38bc3f6dbe54e7ded upstream.
+commit d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed upstream.
 
-During task switch, all of CS.DPL, CS.RPL, SS.DPL must match (in addition
-to all the other requirements) and will be the new CPL.  So far this
-worked by carefully setting the CS selector and flag before doing the
-task switch; setting CS.selector will already change the CPL.
+The DM crypt target accesses memory beyond allocated space resulting in
+a crash on 32 bit x86 systems.
 
-However, this will not work once we get the CPL from SS.DPL, because
-then you will have to set the full segment descriptor cache to change
-the CPL.  ctxt->ops->cpl(ctxt) will then return the old CPL during the
-task switch, and the check that SS.DPL == CPL will fail.
+This bug is very old (it dates back to 2.6.25 commit 3a7f6c990ad04 "dm
+crypt: use async crypto").  However, this bug was masked by the fact
+that kmalloc rounds the size up to the next power of two.  This bug
+wasn't exposed until 3.17-rc1 commit 298a9fa08a ("dm crypt: use per-bio
+data").  By switching to using per-bio data there was no longer any
+padding beyond the end of a dm-crypt allocated memory block.
 
-Temporarily assume that the CPL comes from CS.RPL during task switch
-to a protected-mode task.  This is the same approach used in QEMU's
-emulation code, which (until version 2.0) manually tracks the CPL.
+To minimize allocation overhead dm-crypt puts several structures into one
+block allocated with kmalloc.  The block holds struct ablkcipher_request,
+cipher-specific scratch pad (crypto_ablkcipher_reqsize(any_tfm(cc))),
+struct dm_crypt_request and an initialization vector.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[lizf: Backported to 3.4: adjust context]
+The variable dmreq_start is set to offset of struct dm_crypt_request
+within this memory block.  dm-crypt allocates the block with this size:
+cc->dmreq_start + sizeof(struct dm_crypt_request) + cc->iv_size.
+
+When accessing the initialization vector, dm-crypt uses the function
+iv_of_dmreq, which performs this calculation: ALIGN((unsigned long)(dmreq
++ 1), crypto_ablkcipher_alignmask(any_tfm(cc)) + 1).
+
+dm-crypt allocated "cc->iv_size" bytes beyond the end of dm_crypt_request
+structure.  However, when dm-crypt accesses the initialization vector, it
+takes a pointer to the end of dm_crypt_request, aligns it, and then uses
+it as the initialization vector.  If the end of dm_crypt_request is not
+aligned on a crypto_ablkcipher_alignmask(any_tfm(cc)) boundary the
+alignment causes the initialization vector to point beyond the allocated
+space.
+
+Fix this bug by calculating the variable iv_size_padding and adding it
+to the allocated size.
+
+Also correct the alignment of dm_crypt_request.  struct dm_crypt_request
+is specific to dm-crypt (it isn't used by the crypto subsystem at all),
+so it is aligned on __alignof__(struct dm_crypt_request).
+
+Also align per_bio_data_size on ARCH_KMALLOC_MINALIGN, so that it is
+aligned as if the block was allocated with kmalloc.
+
+Reported-by: Krzysztof Kolasa <kkolasa@winsoft.pl>
+Tested-by: Milan Broz <gmazyland@gmail.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[lizf: Backported by Mikulas]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/kvm/emulate.c | 60 +++++++++++++++++++++++++++-----------------------
- 1 file changed, 33 insertions(+), 27 deletions(-)
+ drivers/md/dm-crypt.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index c3e1942..1089e43 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1251,11 +1251,11 @@ static int write_segment_descriptor(struct x86_emulate_ctxt *ctxt,
- }
- 
- /* Does not support long mode */
--static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
--				   u16 selector, int seg)
-+static int __load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
-+				     u16 selector, int seg, u8 cpl)
- {
- 	struct desc_struct seg_desc;
--	u8 dpl, rpl, cpl;
-+	u8 dpl, rpl;
- 	unsigned err_vec = GP_VECTOR;
- 	u32 err_code = 0;
- 	bool null_selector = !(selector & ~0x3); /* 0000-0003 are null */
-@@ -1306,7 +1306,6 @@ static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
- 
- 	rpl = selector & 3;
- 	dpl = seg_desc.dpl;
--	cpl = ctxt->ops->cpl(ctxt);
- 
- 	switch (seg) {
- 	case VCPU_SREG_SS:
-@@ -1369,6 +1368,13 @@ exception:
- 	return X86EMUL_PROPAGATE_FAULT;
- }
- 
-+static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
-+				   u16 selector, int seg)
-+{
-+	u8 cpl = ctxt->ops->cpl(ctxt);
-+	return __load_segment_descriptor(ctxt, selector, seg, cpl);
-+}
-+
- static void write_register_operand(struct operand *op)
- {
- 	/* The 4-byte case *is* correct: in 64-bit mode we zero-extend. */
-@@ -2261,6 +2267,7 @@ static int load_state_from_tss16(struct x86_emulate_ctxt *ctxt,
- 				 struct tss_segment_16 *tss)
- {
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 535c3e2..926989d 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -1566,6 +1566,7 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+ 	unsigned int key_size, opt_params;
+ 	unsigned long long tmpll;
  	int ret;
-+	u8 cpl;
++	size_t iv_size_padding;
+ 	struct dm_arg_set as;
+ 	const char *opt_string;
+ 	char dummy;
+@@ -1602,12 +1603,23 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
  
- 	ctxt->_eip = tss->ip;
- 	ctxt->eflags = tss->flag | 2;
-@@ -2283,23 +2290,25 @@ static int load_state_from_tss16(struct x86_emulate_ctxt *ctxt,
- 	set_segment_selector(ctxt, tss->ss, VCPU_SREG_SS);
- 	set_segment_selector(ctxt, tss->ds, VCPU_SREG_DS);
- 
-+	cpl = tss->cs & 3;
+ 	cc->dmreq_start = sizeof(struct ablkcipher_request);
+ 	cc->dmreq_start += crypto_ablkcipher_reqsize(any_tfm(cc));
+-	cc->dmreq_start = ALIGN(cc->dmreq_start, crypto_tfm_ctx_alignment());
+-	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
+-			   ~(crypto_tfm_ctx_alignment() - 1);
++	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
 +
- 	/*
- 	 * Now load segment descriptors. If fault happenes at this stage
- 	 * it is handled in a context of new task
- 	 */
--	ret = load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR);
-+	ret = __load_segment_descriptor(ctxt, tss->ldt, VCPU_SREG_LDTR, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES);
-+	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS);
-+	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS);
-+	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS);
-+	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
- 
-@@ -2378,6 +2387,7 @@ static int load_state_from_tss32(struct x86_emulate_ctxt *ctxt,
- 				 struct tss_segment_32 *tss)
- {
- 	int ret;
-+	u8 cpl;
- 
- 	if (ctxt->ops->set_cr(ctxt, 3, tss->cr3))
- 		return emulate_gp(ctxt, 0);
-@@ -2396,7 +2406,8 @@ static int load_state_from_tss32(struct x86_emulate_ctxt *ctxt,
- 
- 	/*
- 	 * SDM says that segment selectors are loaded before segment
--	 * descriptors
-+	 * descriptors.  This is important because CPL checks will
-+	 * use CS.RPL.
- 	 */
- 	set_segment_selector(ctxt, tss->ldt_selector, VCPU_SREG_LDTR);
- 	set_segment_selector(ctxt, tss->es, VCPU_SREG_ES);
-@@ -2410,43 +2421,38 @@ static int load_state_from_tss32(struct x86_emulate_ctxt *ctxt,
- 	 * If we're switching between Protected Mode and VM86, we need to make
- 	 * sure to update the mode before loading the segment descriptors so
- 	 * that the selectors are interpreted correctly.
--	 *
--	 * Need to get rflags to the vcpu struct immediately because it
--	 * influences the CPL which is checked at least when loading the segment
--	 * descriptors and when pushing an error code to the new kernel stack.
--	 *
--	 * TODO Introduce a separate ctxt->ops->set_cpl callback
- 	 */
--	if (ctxt->eflags & X86_EFLAGS_VM)
-+	if (ctxt->eflags & X86_EFLAGS_VM) {
- 		ctxt->mode = X86EMUL_MODE_VM86;
--	else
-+		cpl = 3;
++	if (crypto_ablkcipher_alignmask(any_tfm(cc)) < CRYPTO_MINALIGN) {
++		/* Allocate the padding exactly */
++		iv_size_padding = -(cc->dmreq_start + sizeof(struct dm_crypt_request))
++				& crypto_ablkcipher_alignmask(any_tfm(cc));
 +	} else {
- 		ctxt->mode = X86EMUL_MODE_PROT32;
--
--	ctxt->ops->set_rflags(ctxt, ctxt->eflags);
-+		cpl = tss->cs & 3;
++		/*
++		 * If the cipher requires greater alignment than kmalloc
++		 * alignment, we don't know the exact position of the
++		 * initialization vector. We must assume worst case.
++		 */
++		iv_size_padding = crypto_ablkcipher_alignmask(any_tfm(cc));
 +	}
  
- 	/*
- 	 * Now load segment descriptors. If fault happenes at this stage
- 	 * it is handled in a context of new task
- 	 */
--	ret = load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR);
-+	ret = __load_segment_descriptor(ctxt, tss->ldt_selector, VCPU_SREG_LDTR, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES);
-+	ret = __load_segment_descriptor(ctxt, tss->es, VCPU_SREG_ES, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS);
-+	ret = __load_segment_descriptor(ctxt, tss->cs, VCPU_SREG_CS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS);
-+	ret = __load_segment_descriptor(ctxt, tss->ss, VCPU_SREG_SS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS);
-+	ret = __load_segment_descriptor(ctxt, tss->ds, VCPU_SREG_DS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS);
-+	ret = __load_segment_descriptor(ctxt, tss->fs, VCPU_SREG_FS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
--	ret = load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS);
-+	ret = __load_segment_descriptor(ctxt, tss->gs, VCPU_SREG_GS, cpl);
- 	if (ret != X86EMUL_CONTINUE)
- 		return ret;
- 
+ 	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
+-			sizeof(struct dm_crypt_request) + cc->iv_size);
++			sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size);
+ 	if (!cc->req_pool) {
+ 		ti->error = "Cannot allocate crypt request mempool";
+ 		goto bad;
 -- 
 1.9.1
 
