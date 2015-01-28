@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933510AbbA1BkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:40:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41802 "EHLO
+	id S933525AbbA1BkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:40:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933398AbbA1Bil (ORCPT
+	with ESMTP id S933396AbbA1Bil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 20:38:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 72/77] mm: move zone->pages_scanned into a vmstat counter
-Date: Tue, 27 Jan 2015 17:27:50 -0800
-Message-Id: <20150128012748.121036253@linuxfoundation.org>
+Subject: [PATCH 3.14 73/77] mm: vmscan: only update per-cpu thresholds for online CPU
+Date: Tue, 27 Jan 2015 17:27:51 -0800
+Message-Id: <20150128012748.150079889@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -32,26 +32,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit 0d5d823ab4e608ec7b52ac4410de4cb74bbe0edd upstream.
+commit bb0b6dffa2ccfbd9747ad0cc87c7459622896e60 upstream.
 
-zone->pages_scanned is a write-intensive cache line during page reclaim
-and it's also updated during page free.  Move the counter into vmstat to
-take advantage of the per-cpu updates and do not update it in the free
-paths unless necessary.
-
-On a small UMA machine running tiobench the difference is marginal.  On
-a 4-node machine the overhead is more noticable.  Note that automatic
-NUMA balancing was disabled for this test as otherwise the system CPU
-overhead is unpredictable.
-
-          3.16.0-rc3  3.16.0-rc3  3.16.0-rc3
-             vanillarearrange-v5   vmstat-v5
-User          746.94      759.78      774.56
-System      65336.22    58350.98    32847.27
-Elapsed     27553.52    27282.02    27415.04
-
-Note that the overhead reduction will vary depending on where exactly
-pages are allocated and freed.
+When kswapd is awake reclaiming, the per-cpu stat thresholds are lowered
+to get more accurate counts to avoid breaching watermarks.  This
+threshold update iterates over all possible CPUs which is unnecessary.
+Only online CPUs need to be updated.  If a new CPU is onlined,
+refresh_zone_stat_thresholds() will set the thresholds correctly.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Johannes Weiner <hannes@cmpxchg.org>
@@ -61,116 +48,19 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h |    2 +-
- mm/page_alloc.c        |   12 +++++++++---
- mm/vmscan.c            |    7 ++++---
- mm/vmstat.c            |    3 ++-
- 4 files changed, 16 insertions(+), 8 deletions(-)
+ mm/vmstat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -143,6 +143,7 @@ enum zone_stat_item {
- 	NR_SHMEM,		/* shmem pages (included tmpfs/GEM pages) */
- 	NR_DIRTIED,		/* page dirtyings since bootup */
- 	NR_WRITTEN,		/* page writings since bootup */
-+	NR_PAGES_SCANNED,	/* pages scanned since last reclaim */
- #ifdef CONFIG_NUMA
- 	NUMA_HIT,		/* allocated in intended node */
- 	NUMA_MISS,		/* allocated in non intended node */
-@@ -478,7 +479,6 @@ struct zone {
- 
- 	/* Fields commonly accessed by the page reclaim scanner */
- 	spinlock_t		lru_lock;
--	unsigned long		pages_scanned;	   /* since last reclaim */
- 	struct lruvec		lruvec;
- 
- 	/*
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -678,9 +678,12 @@ static void free_pcppages_bulk(struct zo
- 	int migratetype = 0;
- 	int batch_free = 0;
- 	int to_free = count;
-+	unsigned long nr_scanned;
- 
- 	spin_lock(&zone->lock);
--	zone->pages_scanned = 0;
-+	nr_scanned = zone_page_state(zone, NR_PAGES_SCANNED);
-+	if (nr_scanned)
-+		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
- 
- 	while (to_free) {
- 		struct page *page;
-@@ -729,8 +732,11 @@ static void free_one_page(struct zone *z
- 				unsigned int order,
- 				int migratetype)
- {
-+	unsigned long nr_scanned;
- 	spin_lock(&zone->lock);
--	zone->pages_scanned = 0;
-+	nr_scanned = zone_page_state(zone, NR_PAGES_SCANNED);
-+	if (nr_scanned)
-+		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
- 
- 	__free_one_page(page, pfn, zone, order, migratetype);
- 	if (unlikely(!is_migrate_isolate(migratetype)))
-@@ -3251,7 +3257,7 @@ void show_free_areas(unsigned int filter
- 			K(zone_page_state(zone, NR_BOUNCE)),
- 			K(zone_page_state(zone, NR_FREE_CMA_PAGES)),
- 			K(zone_page_state(zone, NR_WRITEBACK_TEMP)),
--			zone->pages_scanned,
-+			K(zone_page_state(zone, NR_PAGES_SCANNED)),
- 			(!zone_reclaimable(zone) ? "yes" : "no")
- 			);
- 		printk("lowmem_reserve[]:");
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -163,7 +163,8 @@ static unsigned long zone_reclaimable_pa
- 
- bool zone_reclaimable(struct zone *zone)
- {
--	return zone->pages_scanned < zone_reclaimable_pages(zone) * 6;
-+	return zone_page_state(zone, NR_PAGES_SCANNED) <
-+		zone_reclaimable_pages(zone) * 6;
- }
- 
- static unsigned long get_lru_size(struct lruvec *lruvec, enum lru_list lru)
-@@ -1470,7 +1471,7 @@ shrink_inactive_list(unsigned long nr_to
- 	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, nr_taken);
- 
- 	if (global_reclaim(sc)) {
--		zone->pages_scanned += nr_scanned;
-+		__mod_zone_page_state(zone, NR_PAGES_SCANNED, nr_scanned);
- 		if (current_is_kswapd())
- 			__count_zone_vm_events(PGSCAN_KSWAPD, zone, nr_scanned);
- 		else
-@@ -1659,7 +1660,7 @@ static void shrink_active_list(unsigned
- 	nr_taken = isolate_lru_pages(nr_to_scan, lruvec, &l_hold,
- 				     &nr_scanned, sc, isolate_mode, lru);
- 	if (global_reclaim(sc))
--		zone->pages_scanned += nr_scanned;
-+		__mod_zone_page_state(zone, NR_PAGES_SCANNED, nr_scanned);
- 
- 	reclaim_stat->recent_scanned[file] += nr_taken;
- 
 --- a/mm/vmstat.c
 +++ b/mm/vmstat.c
-@@ -761,6 +761,7 @@ const char * const vmstat_text[] = {
- 	"nr_shmem",
- 	"nr_dirtied",
- 	"nr_written",
-+	"nr_pages_scanned",
+@@ -200,7 +200,7 @@ void set_pgdat_percpu_threshold(pg_data_
+ 			continue;
  
- #ifdef CONFIG_NUMA
- 	"numa_hit",
-@@ -1055,7 +1056,7 @@ static void zoneinfo_show_print(struct s
- 		   min_wmark_pages(zone),
- 		   low_wmark_pages(zone),
- 		   high_wmark_pages(zone),
--		   zone->pages_scanned,
-+		   zone_page_state(zone, NR_PAGES_SCANNED),
- 		   zone->spanned_pages,
- 		   zone->present_pages,
- 		   zone->managed_pages);
+ 		threshold = (*calculate_pressure)(zone);
+-		for_each_possible_cpu(cpu)
++		for_each_online_cpu(cpu)
+ 			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+ 							= threshold;
+ 	}
 
 
