@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760710AbbA1Bwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 20:52:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41426 "EHLO
+	id S1760694AbbA1Bw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:52:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759979AbbA1Bib (ORCPT
+	with ESMTP id S1760257AbbA1Bic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:31 -0500
+	Tue, 27 Jan 2015 20:38:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -19,9 +19,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 54/77] mm: page_alloc: use unsigned int for order in more places
-Date: Tue, 27 Jan 2015 17:27:32 -0800
-Message-Id: <20150128012747.589922925@linuxfoundation.org>
+Subject: [PATCH 3.14 55/77] mm: page_alloc: reduce number of times page_to_pfn is called
+Date: Tue, 27 Jan 2015 17:27:33 -0800
+Message-Id: <20150128012747.619157854@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
 References: <20150128012745.971137091@linuxfoundation.org>
@@ -38,17 +38,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mel Gorman <mgorman@suse.de>
 
-commit 7aeb09f9104b760fc53c98cb7d20d06640baf9e6 upstream.
+commit dc4b0caff24d9b2918e9f27bc65499ee63187eba upstream.
 
-X86 prefers the use of unsigned types for iterators and there is a
-tendency to mix whether a signed or unsigned type if used for page order.
-This converts a number of sites in mm/page_alloc.c to use unsigned int for
-order where possible.
+In the free path we calculate page_to_pfn multiple times. Reduce that.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 Acked-by: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Vlastimil Babka <vbabka@suse.cz>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
 Cc: Jan Kara <jack@suse.cz>
 Cc: Michal Hocko <mhocko@suse.cz>
 Cc: Hugh Dickins <hughd@google.com>
@@ -63,174 +60,218 @@ Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmzone.h |    8 ++++----
- mm/page_alloc.c        |   43 +++++++++++++++++++++++--------------------
- 2 files changed, 27 insertions(+), 24 deletions(-)
+ include/linux/mmzone.h          |    9 +++++++--
+ include/linux/pageblock-flags.h |   33 +++++++++++++--------------------
+ mm/page_alloc.c                 |   34 +++++++++++++++++++---------------
+ 3 files changed, 39 insertions(+), 37 deletions(-)
 
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -807,10 +807,10 @@ static inline bool pgdat_is_empty(pg_dat
- extern struct mutex zonelists_mutex;
- void build_all_zonelists(pg_data_t *pgdat, struct zone *zone);
- void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx);
--bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
--		int classzone_idx, int alloc_flags);
--bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
--		int classzone_idx, int alloc_flags);
-+bool zone_watermark_ok(struct zone *z, unsigned int order,
-+		unsigned long mark, int classzone_idx, int alloc_flags);
-+bool zone_watermark_ok_safe(struct zone *z, unsigned int order,
-+		unsigned long mark, int classzone_idx, int alloc_flags);
- enum memmap_context {
- 	MEMMAP_EARLY,
- 	MEMMAP_HOTPLUG,
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -408,7 +408,8 @@ static int destroy_compound_page(struct
- 	return bad;
+@@ -78,10 +78,15 @@ extern int page_group_by_mobility_disabl
+ #define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
+ #define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
+ 
+-static inline int get_pageblock_migratetype(struct page *page)
++#define get_pageblock_migratetype(page)					\
++	get_pfnblock_flags_mask(page, page_to_pfn(page),		\
++			PB_migrate_end, MIGRATETYPE_MASK)
++
++static inline int get_pfnblock_migratetype(struct page *page, unsigned long pfn)
+ {
+ 	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
+-	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
++	return get_pfnblock_flags_mask(page, pfn, PB_migrate_end,
++					MIGRATETYPE_MASK);
  }
  
--static inline void prep_zero_page(struct page *page, int order, gfp_t gfp_flags)
-+static inline void prep_zero_page(struct page *page, unsigned int order,
-+							gfp_t gfp_flags)
- {
- 	int i;
+ struct free_area {
+--- a/include/linux/pageblock-flags.h
++++ b/include/linux/pageblock-flags.h
+@@ -65,33 +65,26 @@ extern int pageblock_order;
+ /* Forward declaration */
+ struct page;
  
-@@ -452,7 +453,7 @@ static inline void set_page_guard_flag(s
- static inline void clear_page_guard_flag(struct page *page) { }
- #endif
+-unsigned long get_pageblock_flags_mask(struct page *page,
++unsigned long get_pfnblock_flags_mask(struct page *page,
++				unsigned long pfn,
+ 				unsigned long end_bitidx,
+ 				unsigned long mask);
+-void set_pageblock_flags_mask(struct page *page,
++
++void set_pfnblock_flags_mask(struct page *page,
+ 				unsigned long flags,
++				unsigned long pfn,
+ 				unsigned long end_bitidx,
+ 				unsigned long mask);
  
--static inline void set_page_order(struct page *page, int order)
-+static inline void set_page_order(struct page *page, unsigned int order)
- {
- 	set_page_private(page, order);
- 	__SetPageBuddy(page);
-@@ -503,7 +504,7 @@ __find_buddy_index(unsigned long page_id
-  * For recording page's order, we use page_private(page).
+ /* Declarations for getting and setting flags. See mm/page_alloc.c */
+-static inline unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx)
+-{
+-	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
+-	unsigned long mask = (1 << nr_flag_bits) - 1;
+-
+-	return get_pageblock_flags_mask(page, end_bitidx, mask);
+-}
+-
+-static inline void set_pageblock_flags_group(struct page *page,
+-					unsigned long flags,
+-					int start_bitidx, int end_bitidx)
+-{
+-	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
+-	unsigned long mask = (1 << nr_flag_bits) - 1;
+-
+-	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
+-}
++#define get_pageblock_flags_group(page, start_bitidx, end_bitidx) \
++	get_pfnblock_flags_mask(page, page_to_pfn(page),		\
++			end_bitidx,					\
++			(1 << (end_bitidx - start_bitidx + 1)) - 1)
++#define set_pageblock_flags_group(page, flags, start_bitidx, end_bitidx) \
++	set_pfnblock_flags_mask(page, flags, page_to_pfn(page),		\
++			end_bitidx,					\
++			(1 << (end_bitidx - start_bitidx + 1)) - 1)
+ 
+ #ifdef CONFIG_COMPACTION
+ #define get_pageblock_skip(page) \
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -560,6 +560,7 @@ static inline int page_is_buddy(struct p
   */
- static inline int page_is_buddy(struct page *page, struct page *buddy,
--								int order)
-+							unsigned int order)
+ 
+ static inline void __free_one_page(struct page *page,
++		unsigned long pfn,
+ 		struct zone *zone, unsigned int order,
+ 		int migratetype)
  {
- 	if (!pfn_valid_within(page_to_pfn(buddy)))
- 		return 0;
-@@ -722,7 +723,7 @@ static void free_pcppages_bulk(struct zo
+@@ -576,7 +577,7 @@ static inline void __free_one_page(struc
+ 
+ 	VM_BUG_ON(migratetype == -1);
+ 
+-	page_idx = page_to_pfn(page) & ((1 << MAX_ORDER) - 1);
++	page_idx = pfn & ((1 << MAX_ORDER) - 1);
+ 
+ 	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
+ 	VM_BUG_ON_PAGE(bad_range(zone, page), page);
+@@ -711,7 +712,7 @@ static void free_pcppages_bulk(struct zo
+ 			list_del(&page->lru);
+ 			mt = get_freepage_migratetype(page);
+ 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+-			__free_one_page(page, zone, 0, mt);
++			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
+ 			trace_mm_page_pcpu_drain(page, 0, mt);
+ 			if (likely(!is_migrate_isolate_page(page))) {
+ 				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
+@@ -723,13 +724,15 @@ static void free_pcppages_bulk(struct zo
  	spin_unlock(&zone->lock);
  }
  
--static void free_one_page(struct zone *zone, struct page *page, int order,
-+static void free_one_page(struct zone *zone, struct page *page, unsigned int order,
+-static void free_one_page(struct zone *zone, struct page *page, unsigned int order,
++static void free_one_page(struct zone *zone,
++				struct page *page, unsigned long pfn,
++				unsigned int order,
  				int migratetype)
  {
  	spin_lock(&zone->lock);
-@@ -904,7 +905,7 @@ static inline int check_new_page(struct
- 	return 0;
- }
+ 	zone->pages_scanned = 0;
  
--static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
-+static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
- {
- 	int i;
- 
-@@ -1115,16 +1116,17 @@ static int try_to_steal_freepages(struct
- 
- /* Remove an element from the buddy allocator from the fallback list */
- static inline struct page *
--__rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
-+__rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
- {
- 	struct free_area *area;
--	int current_order;
-+	unsigned int current_order;
- 	struct page *page;
- 	int migratetype, new_type, i;
- 
- 	/* Find the largest possible block of pages in the other list */
--	for (current_order = MAX_ORDER-1; current_order >= order;
--						--current_order) {
-+	for (current_order = MAX_ORDER-1;
-+				current_order >= order && current_order <= MAX_ORDER-1;
-+				--current_order) {
- 		for (i = 0;; i++) {
- 			migratetype = fallbacks[start_migratetype][i];
- 
-@@ -1352,7 +1354,7 @@ void mark_free_pages(struct zone *zone)
- {
- 	unsigned long pfn, max_zone_pfn;
- 	unsigned long flags;
--	int order, t;
-+	unsigned int order, t;
- 	struct list_head *curr;
- 
- 	if (zone_is_empty(zone))
-@@ -1547,8 +1549,8 @@ int split_free_page(struct page *page)
-  */
- static inline
- struct page *buffered_rmqueue(struct zone *preferred_zone,
--			struct zone *zone, int order, gfp_t gfp_flags,
--			int migratetype)
-+			struct zone *zone, unsigned int order,
-+			gfp_t gfp_flags, int migratetype)
+-	__free_one_page(page, zone, order, migratetype);
++	__free_one_page(page, pfn, zone, order, migratetype);
+ 	if (unlikely(!is_migrate_isolate(migratetype)))
+ 		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+ 	spin_unlock(&zone->lock);
+@@ -766,15 +769,16 @@ static void __free_pages_ok(struct page
  {
  	unsigned long flags;
- 	struct page *page;
-@@ -1697,8 +1699,9 @@ static inline bool should_fail_alloc_pag
-  * Return true if free pages are above 'mark'. This takes into account the order
-  * of the allocation.
-  */
--static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
--		      int classzone_idx, int alloc_flags, long free_pages)
-+static bool __zone_watermark_ok(struct zone *z, unsigned int order,
-+			unsigned long mark, int classzone_idx, int alloc_flags,
-+			long free_pages)
- {
- 	/* free_pages my go negative - that's OK */
- 	long min = mark;
-@@ -1732,15 +1735,15 @@ static bool __zone_watermark_ok(struct z
- 	return true;
+ 	int migratetype;
++	unsigned long pfn = page_to_pfn(page);
+ 
+ 	if (!free_pages_prepare(page, order))
+ 		return;
+ 
+ 	local_irq_save(flags);
+ 	__count_vm_events(PGFREE, 1 << order);
+-	migratetype = get_pageblock_migratetype(page);
++	migratetype = get_pfnblock_migratetype(page, pfn);
+ 	set_freepage_migratetype(page, migratetype);
+-	free_one_page(page_zone(page), page, order, migratetype);
++	free_one_page(page_zone(page), page, pfn, order, migratetype);
+ 	local_irq_restore(flags);
  }
  
--bool zone_watermark_ok(struct zone *z, int order, unsigned long mark,
-+bool zone_watermark_ok(struct zone *z, unsigned int order, unsigned long mark,
- 		      int classzone_idx, int alloc_flags)
- {
- 	return __zone_watermark_ok(z, order, mark, classzone_idx, alloc_flags,
- 					zone_page_state(z, NR_FREE_PAGES));
- }
- 
--bool zone_watermark_ok_safe(struct zone *z, int order, unsigned long mark,
--		      int classzone_idx, int alloc_flags)
-+bool zone_watermark_ok_safe(struct zone *z, unsigned int order,
-+			unsigned long mark, int classzone_idx, int alloc_flags)
- {
- 	long free_pages = zone_page_state(z, NR_FREE_PAGES);
- 
-@@ -4137,7 +4140,7 @@ void __meminit memmap_init_zone(unsigned
- 
- static void __meminit zone_init_free_lists(struct zone *zone)
- {
--	int order, t;
-+	unsigned int order, t;
- 	for_each_migratetype_order(order, t) {
- 		INIT_LIST_HEAD(&zone->free_area[order].free_list[t]);
- 		zone->free_area[order].nr_free = 0;
-@@ -6477,7 +6480,7 @@ __offline_isolated_pages(unsigned long s
- {
- 	struct page *page;
- 	struct zone *zone;
--	int order, i;
-+	unsigned int order, i;
- 	unsigned long pfn;
- 	unsigned long flags;
- 	/* find the first valid pfn */
-@@ -6529,7 +6532,7 @@ bool is_free_buddy_page(struct page *pag
+@@ -1393,12 +1397,13 @@ void free_hot_cold_page(struct page *pag
  	struct zone *zone = page_zone(page);
- 	unsigned long pfn = page_to_pfn(page);
+ 	struct per_cpu_pages *pcp;
  	unsigned long flags;
--	int order;
-+	unsigned int order;
++	unsigned long pfn = page_to_pfn(page);
+ 	int migratetype;
  
- 	spin_lock_irqsave(&zone->lock, flags);
- 	for (order = 0; order < MAX_ORDER; order++) {
+ 	if (!free_pages_prepare(page, 0))
+ 		return;
+ 
+-	migratetype = get_pageblock_migratetype(page);
++	migratetype = get_pfnblock_migratetype(page, pfn);
+ 	set_freepage_migratetype(page, migratetype);
+ 	local_irq_save(flags);
+ 	__count_vm_event(PGFREE);
+@@ -1412,7 +1417,7 @@ void free_hot_cold_page(struct page *pag
+ 	 */
+ 	if (migratetype >= MIGRATE_PCPTYPES) {
+ 		if (unlikely(is_migrate_isolate(migratetype))) {
+-			free_one_page(zone, page, 0, migratetype);
++			free_one_page(zone, page, pfn, 0, migratetype);
+ 			goto out;
+ 		}
+ 		migratetype = MIGRATE_MOVABLE;
+@@ -6068,17 +6073,16 @@ static inline int pfn_to_bitidx(struct z
+  * @end_bitidx: The last bit of interest
+  * returns pageblock_bits flags
+  */
+-unsigned long get_pageblock_flags_mask(struct page *page,
++unsigned long get_pfnblock_flags_mask(struct page *page, unsigned long pfn,
+ 					unsigned long end_bitidx,
+ 					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long bitidx, word_bitidx;
+ 	unsigned long word;
+ 
+ 	zone = page_zone(page);
+-	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
+ 	word_bitidx = bitidx / BITS_PER_LONG;
+@@ -6090,25 +6094,25 @@ unsigned long get_pageblock_flags_mask(s
+ }
+ 
+ /**
+- * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
++ * set_pfnblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
+  * @page: The page within the block of interest
+  * @start_bitidx: The first bit of interest
+  * @end_bitidx: The last bit of interest
+  * @flags: The flags to set
+  */
+-void set_pageblock_flags_mask(struct page *page, unsigned long flags,
++void set_pfnblock_flags_mask(struct page *page, unsigned long flags,
++					unsigned long pfn,
+ 					unsigned long end_bitidx,
+ 					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long bitidx, word_bitidx;
+ 	unsigned long old_word, word;
+ 
+ 	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
+ 
+ 	zone = page_zone(page);
+-	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
+ 	word_bitidx = bitidx / BITS_PER_LONG;
 
 
