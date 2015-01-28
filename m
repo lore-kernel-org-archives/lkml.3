@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259AbbA1U7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:59:33 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:44719 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156AbbA1U73 (ORCPT
+	id S1760124AbbA1V3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:29:23 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:45498 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933423AbbA1Urx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:59:29 -0500
-Message-ID: <54C927E3.6000006@cogentembedded.com>
-Date: Wed, 28 Jan 2015 21:18:11 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 28 Jan 2015 15:47:53 -0500
+Message-ID: <54C92804.5090806@codeaurora.org>
+Date: Wed, 28 Jan 2015 12:18:44 -0600
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Casey Schaufler <casey@schaufler-ca.com>
-CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Smack: fix netfilter Makefile entry
-References: <2504358.ZeqdfUXKpJ@wuerfel>
-In-Reply-To: <2504358.ZeqdfUXKpJ@wuerfel>
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        Rob Herring <robh@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [Linaro-acpi] [PATCH v7 04/17] ARM64 / ACPI: Introduce early_param
+ for "acpi" and pass acpi=force to enable ACPI
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-5-git-send-email-hanjun.guo@linaro.org> <CAOZdJXU2bFR1T4ZnGavvnrUXAp5e=vNt9g6WKX46H8qs1wz-TQ@mail.gmail.com> <CAOZdJXXe+29rux1L3QYBX0yHLy3kdi+ZJrXVd=XfgYN=R6DtKA@mail.gmail.com> <20150128181453.GG31752@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20150128181453.GG31752@e104818-lin.cambridge.arm.com>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 01/28/2015 12:14 PM, Catalin Marinas wrote:
+>> >So it looks like there's a whole conversation about this already in
+>> >this thread that I didn't notice.  However, reading through all of it,
+>> >I still don't understand sure why the presence of ACPI tables is
+>> >insufficient to enable ACPI.
 
-On 01/28/2015 07:12 PM, Arnd Bergmann wrote:
+> Because ACPI on arm64 is still experimental, no matter how many people
+> claim that it is production ready in their private setups.
 
-> The newly added Smack support for netfilter secmark has its own
-> Kconfig symbol, but the actual implementation is conditionally
-> built on another symbol.
+Fair enough.  Does this mean that passing "acpi=force" on the kernel 
+command line is a requirement for ARM64 servers?
 
-> It is possible for CONFIG_NETFILTER and SECURITY_SMACK to both
-> be enabled, but NETWORK_SECMARK to be disabled, in which case
-> we get a build error:
+>> >In what situation would we want to ignore ACPI tables that are
+>> >present?
 
-> ../security/smack/smack_netfilter.c: In function 'smack_ipv6_output':
-> ../security/smack/smack_netfilter.c:36:6: error: 'struct sk_buff' has no member named 'secmark'
->     skb->secmark = skp->smk_secid;
->        ^
-> ../security/smack/smack_netfilter.c: In function 'smack_ipv4_output':
-> ../security/smack/smack_netfilter.c:55:6: error: 'struct sk_buff' has no member named 'secmark'
->     skb->secmark = skp->smk_secid;
->        ^
->
-> This changes the Makefile to use the correct Kconfig symbol.
+> When DT tables are also present (and for the first platforms, that's
+> highly recommended, though not easily enforceable at the kernel level).
 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: 69f287ae6fc83 ("Smack: secmark support for netfilter")
+My understanding is that the EFI stub creates a device tree (and it 
+contains some important information), so I don't understand how we can 
+ever have an ACPI-only platform on ARM64 servers.
 
-> diff --git a/security/smack/Makefile b/security/smack/Makefile
-> index 616cf93b368e..d4a376c84050 100644
-> --- a/security/smack/Makefile
-> +++ b/security/smack/Makefile
-> @@ -5,4 +5,4 @@
->   obj-$(CONFIG_SECURITY_SMACK) := smack.o
->
->   smack-y := smack_lsm.o smack_access.o smackfs.o
-> -smack-$(CONFIG_NETFILTER) += smack_netfilter.o
-> +smack-$(SECURITY_SMACK_NETFILTER) += smack_netfilter.o
-
-    CONFIG_ missing?
-
-WBR, Sergei
-
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, a Linux Foundation Collaborative Project.
