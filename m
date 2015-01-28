@@ -1,72 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965031AbbA2Dcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:32:54 -0500
-Received: from smtprelay0050.hostedemail.com ([216.40.44.50]:49481 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755159AbbA2Bo3 (ORCPT
+	id S1759314AbbA1VUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:20:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760830AbbA1UuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:44:29 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2553:2559:2562:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3874:4385:5007:6119:6120:6261:7875:7901:7903:9108:10004:10400:10848:10967:11232:11658:11914:12517:12519:12663:12740:13069:13311:13357:14096:14097:14130:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: lake89_67b350208ea4a
-X-Filterd-Recvd-Size: 2782
-Date: Wed, 28 Jan 2015 10:08:31 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ktest: restore tty settings after closing console
-Message-ID: <20150128100831.18cdad60@gandalf.local.home>
-In-Reply-To: <20150128145923.GA26843@treble.redhat.com>
-References: <1bb89abc0025cf1d6da657c7ba58bbeb4381a515.1422382008.git.jpoimboe@redhat.com>
-	<20150127170129.7db53047@gandalf.local.home>
-	<20150128145923.GA26843@treble.redhat.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Wed, 28 Jan 2015 15:50:20 -0500
+Date: Wed, 28 Jan 2015 07:08:47 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-a9up9mivx1pzdf5tqrqsx62d@git.kernel.org>
+Cc: dzickus@redhat.com, namhyung@kernel.org, linux-kernel@vger.kernel.org,
+        bp@suse.de, fweisbec@gmail.com, mingo@kernel.org, jolsa@redhat.com,
+        tglx@linutronix.de, dsahern@gmail.com, eranian@google.com,
+        hpa@zytor.com, adrian.hunter@intel.com, acme@redhat.com
+Reply-To: acme@redhat.com, adrian.hunter@intel.com, hpa@zytor.com,
+        eranian@google.com, dsahern@gmail.com, tglx@linutronix.de,
+        jolsa@redhat.com, mingo@kernel.org, bp@suse.de, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org, dzickus@redhat.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tools lib fs: Adopt debugfs open strerrno method
+Git-Commit-ID: e2726d99645c5fa1fd9abd6353270fde624696f8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jan 2015 08:59:23 -0600
-Josh Poimboeuf <jpoimboe@redhat.com> wrote:
+Commit-ID:  e2726d99645c5fa1fd9abd6353270fde624696f8
+Gitweb:     http://git.kernel.org/tip/e2726d99645c5fa1fd9abd6353270fde624696f8
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 22 Jan 2015 10:34:22 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 22 Jan 2015 10:34:22 -0300
 
-> On Tue, Jan 27, 2015 at 05:01:29PM -0500, Steven Rostedt wrote:
-> > On Tue, 27 Jan 2015 12:10:04 -0600
-> > Josh Poimboeuf <jpoimboe@redhat.com> wrote:
-> > 
-> > > When ktest runs the console program as a child process, the parent and
-> > > child share the same tty for stdin and stderr.  This is problematic when
-> > > using a libvirt target.  The "virsh console" program makes a lot of
-> > > changes to the tty settings, making ktest's output hard to read
-> > > (carriage returns don't work).  After ktest exits, the terminal is
-> > > unusable (CRs broken, stdin isn't echoed).
-> > > 
-> > > I think the best way to fix this issue would be to create a
-> > > pseudoterminal (pty pair) so the child process would have a dedicated
-> > > tty, and then use pipes to connect the two ttys.  I'm not sure if that's
-> > > overkill, but it's far beyond my current Perl abilities.
-> > 
-> > And beyond mine too. I tried to get that right a few times, and it
-> > never worked out. Maybe someone with more oyster skilz can fix this.
-> 
-> I decided to level up my oyster skilz.  I came up with this (to be
-> applied instead of the original patch).  It's working well for me.
+tools lib fs: Adopt debugfs open strerrno method
 
-I already applied your other patch. If there's any other work, please
-apply it on top. I in the process of testing other changes on top of
-this too. I'll be pushing it soon to my for-next linux-ktest.git tree,
-after I'm finished testing.
+As this is not specific to an evlist and may be used with other tools.
 
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-a9up9mivx1pzdf5tqrqsx62d@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-> Right now, stdin isn't hooked up, so the user can't mess with the
-> console.  Is stdin needed?
+ 	tools/perf/util/include/asm/hash.h
+---
+ tools/lib/api/fs/debugfs.c | 27 +++++++++++++++++++++++++++
+ tools/lib/api/fs/debugfs.h |  2 ++
+ tools/perf/builtin-trace.c | 11 +++++++++--
+ tools/perf/util/evlist.c   | 27 ---------------------------
+ tools/perf/util/evlist.h   |  1 -
+ 5 files changed, 38 insertions(+), 30 deletions(-)
 
-Actually, I do. I found it's nice to move things along when the console
-shows grub or syslinux options, and I can hit enter and it continues.
-
-It's not critical, but it's a freebee for me.
-
--- Steve
-
+diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
+index 86ea2d7..fb700ee 100644
+--- a/tools/lib/api/fs/debugfs.c
++++ b/tools/lib/api/fs/debugfs.c
+@@ -1,3 +1,4 @@
++#define _GNU_SOURCE
+ #include <errno.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -98,3 +99,29 @@ char *debugfs_mount(const char *mountpoint)
+ out:
+ 	return debugfs_mountpoint;
+ }
++
++int debugfs__strerror_open(int err, char *buf, size_t size)
++{
++	char sbuf[128];
++
++	switch (err) {
++	case ENOENT:
++		snprintf(buf, size, "%s",
++			 "Error:\tUnable to find debugfs\n"
++			 "Hint:\tWas your kernel compiled with debugfs support?\n"
++			 "Hint:\tIs the debugfs filesystem mounted?\n"
++			 "Hint:\tTry 'sudo mount -t debugfs nodev /sys/kernel/debug'");
++		break;
++	case EACCES:
++		snprintf(buf, size,
++			 "Error:\tNo permissions to read %s/tracing/events/raw_syscalls\n"
++			 "Hint:\tTry 'sudo mount -o remount,mode=755 %s'\n",
++			 debugfs_mountpoint, debugfs_mountpoint);
++		break;
++	default:
++		snprintf(buf, size, "%s", strerror_r(err, sbuf, sizeof(sbuf)));
++		break;
++	}
++
++	return 0;
++}
+diff --git a/tools/lib/api/fs/debugfs.h b/tools/lib/api/fs/debugfs.h
+index f19d3df..afa5043 100644
+--- a/tools/lib/api/fs/debugfs.h
++++ b/tools/lib/api/fs/debugfs.h
+@@ -26,4 +26,6 @@ char *debugfs_mount(const char *mountpoint);
+ 
+ extern char debugfs_mountpoint[];
+ 
++int debugfs__strerror_open(int err, char *buf, size_t size);
++
+ #endif /* __API_DEBUGFS_H__ */
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 258f655..2f82dd7 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2062,8 +2062,15 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 		perf_evlist__add_vfs_getname(evlist);
+ 
+ 	if ((trace->trace_pgfaults & TRACE_PFMAJ) &&
+-	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MAJ))
++	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MAJ)) {
++		/*
++		 * FIXME: This one needs better error handling, as by now we
++		 * already checked that debugfs is mounted and that we have access to it,
++		 * so probably the case is that something is busted wrt this specific
++		 * software event, ditto for the next gotos to out_error_tp...
++		 */
+ 		goto out_error_tp;
++	}
+ 
+ 	if ((trace->trace_pgfaults & TRACE_PFMIN) &&
+ 	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MIN))
+@@ -2203,7 +2210,7 @@ out:
+ 	char errbuf[BUFSIZ];
+ 
+ out_error_tp:
+-	perf_evlist__strerror_tp(evlist, errno, errbuf, sizeof(errbuf));
++	debugfs__strerror_open(errno, errbuf, sizeof(errbuf));
+ 	goto out_error;
+ 
+ out_error_mmap:
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 2e507b5..28b8ce8 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1436,33 +1436,6 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
+ 	return printed + fprintf(fp, "\n");
+ }
+ 
+-int perf_evlist__strerror_tp(struct perf_evlist *evlist __maybe_unused,
+-			     int err, char *buf, size_t size)
+-{
+-	char sbuf[128];
+-
+-	switch (err) {
+-	case ENOENT:
+-		scnprintf(buf, size, "%s",
+-			  "Error:\tUnable to find debugfs\n"
+-			  "Hint:\tWas your kernel compiled with debugfs support?\n"
+-			  "Hint:\tIs the debugfs filesystem mounted?\n"
+-			  "Hint:\tTry 'sudo mount -t debugfs nodev /sys/kernel/debug'");
+-		break;
+-	case EACCES:
+-		scnprintf(buf, size,
+-			  "Error:\tNo permissions to read %s/tracing/events/raw_syscalls\n"
+-			  "Hint:\tTry 'sudo mount -o remount,mode=755 %s'\n",
+-			  debugfs_mountpoint, debugfs_mountpoint);
+-		break;
+-	default:
+-		scnprintf(buf, size, "%s", strerror_r(err, sbuf, sizeof(sbuf)));
+-		break;
+-	}
+-
+-	return 0;
+-}
+-
+ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
+ 			       int err, char *buf, size_t size)
+ {
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 0ba93f6..c94a9e0 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -183,7 +183,6 @@ static inline struct perf_evsel *perf_evlist__last(struct perf_evlist *evlist)
+ 
+ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
+ 
+-int perf_evlist__strerror_tp(struct perf_evlist *evlist, int err, char *buf, size_t size);
+ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, size_t size);
+ int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size);
+ 
