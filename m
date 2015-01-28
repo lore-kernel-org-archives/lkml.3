@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763675AbbA2DHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:07:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46990 "EHLO
+	id S965409AbbA2CiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:38:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47017 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965174AbbA2ChQ (ORCPT
+	with ESMTP id S965400AbbA2Ch6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:16 -0500
+	Wed, 28 Jan 2015 21:37:58 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 008/139] net: Fix stacked vlan offload features computation
-Date: Wed, 28 Jan 2015 14:19:11 -0800
-Message-Id: <1422483682-15393-9-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 009/139] net: Reset secmark when scrubbing packet
+Date: Wed, 28 Jan 2015 14:19:12 -0800
+Message-Id: <1422483682-15393-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,50 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+From: Thomas Graf <tgraf@suug.ch>
 
-[ Upstream commit 796f2da81bead71ffc91ef70912cd8d1827bf756 ]
+[ Upstream commit b8fb4e0648a2ab3734140342002f68fb0c7d1602 ]
 
-When vlan tags are stacked, it is very likely that the outer tag is stored
-in skb->vlan_tci and skb->protocol shows the inner tag's vlan_proto.
-Currently netif_skb_features() first looks at skb->protocol even if there
-is the outer tag in vlan_tci, thus it incorrectly retrieves the protocol
-encapsulated by the inner vlan instead of the inner vlan protocol.
-This allows GSO packets to be passed to HW and they end up being
-corrupted.
+skb_scrub_packet() is called when a packet switches between a context
+such as between underlay and overlay, between namespaces, or between
+L3 subnets.
 
-Fixes: 58e998c6d239 ("offloading: Force software GSO for multiple vlan tags.")
-Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+While we already scrub the packet mark, connection tracking entry,
+and cached destination, the security mark/context is left intact.
+
+It seems wrong to inherit the security context of a packet when going
+from overlay to underlay or across forwarding paths.
+
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Acked-by: Flavio Leitner <fbl@sysclose.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/dev.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ net/core/skbuff.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 65c5438..93335b6 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2508,11 +2508,14 @@ netdev_features_t netif_skb_dev_features(struct sk_buff *skb,
- 	if (skb_shinfo(skb)->gso_segs > dev->gso_max_segs)
- 		features &= ~NETIF_F_GSO_MASK;
- 
--	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD)) {
--		struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
--		protocol = veh->h_vlan_encapsulated_proto;
--	} else if (!vlan_tx_tag_present(skb)) {
--		return harmonize_features(skb, dev, features);
-+	if (!vlan_tx_tag_present(skb)) {
-+		if (unlikely(protocol == htons(ETH_P_8021Q) ||
-+			     protocol == htons(ETH_P_8021AD))) {
-+			struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
-+			protocol = veh->h_vlan_encapsulated_proto;
-+		} else {
-+			return harmonize_features(skb, dev, features);
-+		}
- 	}
- 
- 	features &= (dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index ddbb949..6e42045 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -3568,6 +3568,7 @@ void skb_scrub_packet(struct sk_buff *skb, bool xnet)
+ 	skb->local_df = 0;
+ 	skb_dst_drop(skb);
+ 	skb->mark = 0;
++	skb_init_secmark(skb);
+ 	secpath_reset(skb);
+ 	nf_reset(skb);
+ 	nf_reset_trace(skb);
 -- 
 1.9.1
 
