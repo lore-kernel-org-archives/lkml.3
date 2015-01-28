@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933076AbbA2Jzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:55:38 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44793 "EHLO
+	id S1762162AbbA2KQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:16:49 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751787AbbA2JDV (ORCPT
+	by vger.kernel.org with ESMTP id S1757098AbbA2JBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:03:21 -0500
+	Thu, 29 Jan 2015 04:01:12 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Arseny Solokha <asolokha@kb.kras.ru>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 106/176] OHCI: add a quirk for ULi M5237 blocking on reset
-Date: Wed, 28 Jan 2015 15:28:56 +0100
-Message-Id: <a6f25626d9f61c46ec3160c055fc72645294ead8.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Amit Virdi <amit.virdi@st.com>,
+        Felipe Balbi <balbi@ti.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 107/176] usb: dwc3: gadget: Fix TRB preparation during SG
+Date: Wed, 28 Jan 2015 15:28:57 +0100
+Message-Id: <e0410d7fd7c36cd8552b1c5dd784c47a11c6c2ef.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,87 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arseny Solokha <asolokha@kb.kras.ru>
+From: Amit Virdi <amit.virdi@st.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 56abcab833fafcfaeb2f5b25e0364c1dec45f53e upstream.
+commit ec512fb8e5611fed1df2895f90317ce6797d6b32 upstream.
 
-Commit 8dccddbc2368 ("OHCI: final fix for NVIDIA problems (I hope)")
-introduced into 3.1.9 broke boot on e.g. Freescale P2020DS development
-board. The code path that was previously specific to NVIDIA controllers
-had then become taken for all chips.
+When scatter gather (SG) is used, multiple TRBs are prepared from one DWC3
+request (dwc3_request). So while preparing TRBs, the 'last' flag should be set
+only when it is the last TRB being prepared from the last dwc3_request entry.
 
-However, the M5237 installed on the board wedges solid when accessing
-its base+OHCI_FMINTERVAL register, making it impossible to boot any
-kernel newer than 3.1.8 on this particular and apparently other similar
-machines.
+The current implementation uses list_is_last to check if the dwc3_request is the
+last entry from the request_list. However, list_is_last returns false for the
+last entry too. This is because, while preparing the first TRB from a request,
+the function dwc3_prepare_one_trb modifies the request's next and prev pointers
+while moving the URB to req_queued. Hence, list_is_last always returns false no
+matter what.
 
-Don't readl() and writel() base+OHCI_FMINTERVAL on PCI ID 10b9:5237.
+The correct way is not to access the modified pointers of dwc3_request but to
+use list_empty macro instead.
 
-The patch is suitable for the -next tree as well as all maintained
-kernels up to 3.2 inclusive.
-
-Signed-off-by: Arseny Solokha <asolokha@kb.kras.ru>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Fixes: e5ba5ec833aa (usb: dwc3: gadget: fix scatter gather implementation)
+Signed-off-by: Amit Virdi <amit.virdi@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/host/pci-quirks.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/usb/dwc3/gadget.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 877f87f9513b..5a45437da097 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -560,7 +560,8 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
- {
- 	void __iomem *base;
- 	u32 control;
--	u32 fminterval;
-+	u32 fminterval = 0;
-+	bool no_fminterval = false;
- 	int cnt;
+diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+index be149b82564f..3a075d1fbf99 100644
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -887,8 +887,7 @@ static void dwc3_prepare_trbs(struct dwc3_ep *dep, bool starting)
  
- 	if (!mmio_resource_enabled(pdev, 0))
-@@ -570,6 +571,13 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
- 	if (base == NULL)
- 		return;
- 
-+	/*
-+	 * ULi M5237 OHCI controller locks the whole system when accessing
-+	 * the OHCI_FMINTERVAL offset.
-+	 */
-+	if (pdev->vendor == PCI_VENDOR_ID_AL && pdev->device == 0x5237)
-+		no_fminterval = true;
-+
- 	control = readl(base + OHCI_CONTROL);
- 
- /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
-@@ -608,7 +616,9 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
- 	}
- 
- 	/* software reset of the controller, preserving HcFmInterval */
--	fminterval = readl(base + OHCI_FMINTERVAL);
-+	if (!no_fminterval)
-+		fminterval = readl(base + OHCI_FMINTERVAL);
-+
- 	writel(OHCI_HCR, base + OHCI_CMDSTATUS);
- 
- 	/* reset requires max 10 us delay */
-@@ -617,7 +627,9 @@ static void quirk_usb_handoff_ohci(struct pci_dev *pdev)
- 			break;
- 		udelay(1);
- 	}
--	writel(fminterval, base + OHCI_FMINTERVAL);
-+
-+	if (!no_fminterval)
-+		writel(fminterval, base + OHCI_FMINTERVAL);
- 
- 	/* Now the controller is safely in SUSPEND and nothing can wake it up */
- 	iounmap(base);
+ 				if (i == (request->num_mapped_sgs - 1) ||
+ 						sg_is_last(s)) {
+-					if (list_is_last(&req->list,
+-							&dep->request_list))
++					if (list_empty(&dep->request_list))
+ 						last_one = true;
+ 					chain = false;
+ 				}
 -- 
 2.2.2
 
