@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760695AbbA2Css (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:48:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47042 "EHLO
+	id S1763343AbbA2C5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 21:57:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47022 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762291AbbA2Ci1 (ORCPT
+	with ESMTP id S965432AbbA2CiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:38:27 -0500
+	Wed, 28 Jan 2015 21:38:09 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Arnd Bergmann <arnd@arndb.de>, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>, Tony Luck <tony.luck@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 108/139] drm/i915: save/restore GMBUS freq across suspend/resume on gen4
-Date: Wed, 28 Jan 2015 14:20:51 -0800
-Message-Id: <1422483682-15393-109-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 109/139] pstore-ram: Fix hangs by using write-combine mappings
+Date: Wed, 28 Jan 2015 14:20:52 -0800
+Message-Id: <1422483682-15393-110-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,77 +30,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Rob Herring <robherring2@gmail.com>
 
-commit 9f49c37635d5c2a801f7670d5fbf0b25ec461f2c upstream.
+commit 7ae9cb81933515dc7db1aa3c47ef7653717e3090 upstream.
 
-Should probably just init this in the GMbus code all the time, based on
-the cdclk and HPLL like we do on newer platforms.  Ville has code for
-that in a rework branch, but until then we can fix this bug fairly
-easily.
+Currently trying to use pstore on at least ARMs can hang as we're
+mapping the peristent RAM with pgprot_noncached().
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76301
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Tested-by: Nikolay <mar.kolya@gmail.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+On ARMs, pgprot_noncached() will actually make the memory strongly
+ordered, and as the atomic operations pstore uses are implementation
+defined for strongly ordered memory, they may not work. So basically
+atomic operations have undefined behavior on ARM for device or strongly
+ordered memory types.
+
+Let's fix the issue by using write-combine variants for mappings. This
+corresponds to normal, non-cacheable memory on ARM. For many other
+architectures, this change does not change the mapping type as by
+default we have:
+
+The reason why pgprot_noncached() was originaly used for pstore
+is because Colin Cross <ccross@android.com> had observed lost
+debug prints right before a device hanging write operation on some
+systems. For the platforms supporting pgprot_noncached(), we can
+add a an optional configuration option to support that. But let's
+get pstore working first before adding new features.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Colin Cross <ccross@android.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: linux-kernel@vger.kernel.org
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+[tony@atomide.com: updated description]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_drv.h     | 1 +
- drivers/gpu/drm/i915/i915_reg.h     | 1 +
- drivers/gpu/drm/i915/i915_suspend.c | 8 ++++++++
- 3 files changed, 10 insertions(+)
+ fs/pstore/ram_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index 221ac62..73d7bd7 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -876,6 +876,7 @@ struct i915_suspend_saved_registers {
- 	u32 savePIPEB_LINK_N1;
- 	u32 saveMCHBAR_RENDER_STANDBY;
- 	u32 savePCH_PORT_HOTPLUG;
-+	u16 saveGCDGMBUS;
- };
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index de272d4..d058428 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -392,7 +392,7 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
+ 	page_start = start - offset_in_page(start);
+ 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
  
- struct intel_gen6_power_mgmt {
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 6d637e7..8d30b80 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -74,6 +74,7 @@
- #define   I915_GC_RENDER_CLOCK_200_MHZ	(1 << 0)
- #define   I915_GC_RENDER_CLOCK_333_MHZ	(4 << 0)
- #define LBB	0xf4
-+#define GCDGMBUS 0xcc
+-	prot = pgprot_noncached(PAGE_KERNEL);
++	prot = pgprot_writecombine(PAGE_KERNEL);
  
- /* Graphics reset regs */
- #define I965_GDRST 0xc0 /* PCI config register */
-diff --git a/drivers/gpu/drm/i915/i915_suspend.c b/drivers/gpu/drm/i915/i915_suspend.c
-index 98790c7..0653f26 100644
---- a/drivers/gpu/drm/i915/i915_suspend.c
-+++ b/drivers/gpu/drm/i915/i915_suspend.c
-@@ -397,6 +397,10 @@ int i915_save_state(struct drm_device *dev)
+ 	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
+ 	if (!pages) {
+@@ -422,7 +422,7 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size)
+ 	buffer_start_add = buffer_start_add_locked;
+ 	buffer_size_add = buffer_size_add_locked;
  
- 	intel_disable_gt_powersave(dev);
+-	return ioremap(start, size);
++	return ioremap_wc(start, size);
+ }
  
-+	if (IS_GEN4(dev))
-+		pci_read_config_word(dev->pdev, GCDGMBUS,
-+				     &dev_priv->regfile.saveGCDGMBUS);
-+
- 	/* Cache mode state */
- 	if (INTEL_INFO(dev)->gen < 7)
- 		dev_priv->regfile.saveCACHE_MODE_0 = I915_READ(CACHE_MODE_0);
-@@ -429,6 +433,10 @@ int i915_restore_state(struct drm_device *dev)
- 	mutex_lock(&dev->struct_mutex);
- 
- 	i915_gem_restore_fences(dev);
-+
-+	if (IS_GEN4(dev))
-+		pci_write_config_word(dev->pdev, GCDGMBUS,
-+				      dev_priv->regfile.saveGCDGMBUS);
- 	i915_restore_display(dev);
- 
- 	if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
+ static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
 -- 
 1.9.1
 
