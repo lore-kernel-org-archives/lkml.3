@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbbA2BzH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:55:07 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:60871 "EHLO
+	id S1759063AbbA2BxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:53:04 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:53992 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762AbbA2BzE (ORCPT
+	with ESMTP id S1754178AbbA2BxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:55:04 -0500
+	Wed, 28 Jan 2015 20:53:00 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Cc: linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 3/7] [media] staging/davinci/vpfe/dm365: add missing dependencies
-Date: Wed, 28 Jan 2015 22:17:43 +0100
-Message-Id: <1422479867-3370921-4-git-send-email-arnd@arndb.de>
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 4/7] [media] siano: fix Kconfig dependencies
+Date: Wed, 28 Jan 2015 22:17:44 +0100
+Message-Id: <1422479867-3370921-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 2.1.0.rc2
 In-Reply-To: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
 References: <1422479867-3370921-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V03:K0:Uty0T2PPL6vkCMQgdAz6eOd40kWu66c9oMddXTH0uACRFYA1d43
- 5CUBxE6CkVHIC4rL0F7kJR3GsRGSGQjGHbeGnP0imQR9ghlNQ1AnyEHWMlHHemPZBWYcR1n
- Yuxo+OiSd9X1/yTB3MLDHLU1fuhVGC/OcA8rM7rS+dOq4R3btlmEVHsHoVZg0mOt9LAan3b
- 4zezduVg22+m/oi8eTH2A==
+X-Provags-ID: V03:K0:EsC1bAKZ5Jvxtuek0F18orvO0oPbsGu6V2kRKfNRO751Iw2XCTS
+ r/Sm60WBMwhCQvREh6UYXjxZw9bXhRb9OjMfan4pTi5WU92Aknd4PqgLtb5Zp40ReaMmfX4
+ mgzbp2wMdnhaZnZZfclsA5j0Q3KvqOhtenWOtvGwCdKbZo3lbsPy/RZCNAboKnWhG1gKMEU
+ JGgzkRhqlF9X5dbYTUKmQ==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver can only be built when VIDEO_V4L2_SUBDEV_API
-and VIDEO_DAVINCI_VPBE_DISPLAY are also provided by the
-kernel.
+The USB and MMC front-ends to the siano driver both only make
+sense when combined with the SMS_SIANO_MDTV driver. That driver
+already requires RC_CORE to not be a module, so we also need
+to add that dependency here.
 
-drivers/staging/media/davinci_vpfe/dm365_isif.c: In function '__isif_get_format':
-drivers/staging/media/davinci_vpfe/dm365_isif.c:1410:3: error: implicit declaration of function 'v4l2_subdev_get_try_format' [-Werror=implicit-function-declaration]
-   return v4l2_subdev_get_try_format(fh, pad);
-   ^
+drivers/built-in.o: In function `smssdio_remove':
+:(.text+0x155bd8): undefined reference to `smscore_putbuffer'
+:(.text+0x155bdc): undefined reference to `smscore_unregister_device'
+drivers/built-in.o: In function `smssdio_interrupt':
+:(.text+0x155e4c): undefined reference to `smsendian_handle_rx_message'
+:(.text+0x155e50): undefined reference to `smscore_onresponse'
+:(.text+0x155e54): undefined reference to `smscore_getbuffer'
+:(.text+0x155e58): undefined reference to `smscore_putbuffer'
+drivers/built-in.o: In function `smssdio_sendrequest':
+:(.text+0x155f20): undefined reference to `smsendian_handle_tx_message'
+drivers/built-in.o: In function `smssdio_probe':
+:(.text+0x15610c): undefined reference to `sms_get_board'
+:(.text+0x156114): undefined reference to `smscore_register_device'
+:(.text+0x156118): undefined reference to `smscore_set_board_id'
+:(.text+0x156128): undefined reference to `smscore_unregister_device'
+:(.text+0x156140): undefined reference to `smscore_start_device'
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/staging/media/davinci_vpfe/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/mmc/siano/Kconfig | 2 ++
+ drivers/media/usb/siano/Kconfig | 2 ++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/staging/media/davinci_vpfe/Kconfig b/drivers/staging/media/davinci_vpfe/Kconfig
-index 4de2f082491d..f40a06954a92 100644
---- a/drivers/staging/media/davinci_vpfe/Kconfig
-+++ b/drivers/staging/media/davinci_vpfe/Kconfig
-@@ -2,6 +2,8 @@ config VIDEO_DM365_VPFE
- 	tristate "DM365 VPFE Media Controller Capture Driver"
- 	depends on VIDEO_V4L2 && ARCH_DAVINCI_DM365 && !VIDEO_DM365_ISIF
- 	depends on HAS_DMA
-+	depends on VIDEO_V4L2_SUBDEV_API
-+	depends on VIDEO_DAVINCI_VPBE_DISPLAY
- 	select VIDEOBUF2_DMA_CONTIG
- 	help
- 	  Support for DM365 VPFE based Media Controller Capture driver.
+diff --git a/drivers/media/mmc/siano/Kconfig b/drivers/media/mmc/siano/Kconfig
+index aa05ad3c1ccb..7693487e2f63 100644
+--- a/drivers/media/mmc/siano/Kconfig
++++ b/drivers/media/mmc/siano/Kconfig
+@@ -6,6 +6,8 @@ config SMS_SDIO_DRV
+ 	tristate "Siano SMS1xxx based MDTV via SDIO interface"
+ 	depends on DVB_CORE && HAS_DMA
+ 	depends on MMC
++	depends on !RC_CORE || RC_CORE
+ 	select MEDIA_COMMON_OPTIONS
++	select SMS_SIANO_MDTV
+ 	---help---
+ 	  Choose if you would like to have Siano's support for SDIO interface
+diff --git a/drivers/media/usb/siano/Kconfig b/drivers/media/usb/siano/Kconfig
+index 5afbd9a4b55c..d37b742d4f7a 100644
+--- a/drivers/media/usb/siano/Kconfig
++++ b/drivers/media/usb/siano/Kconfig
+@@ -5,7 +5,9 @@
+ config SMS_USB_DRV
+ 	tristate "Siano SMS1xxx based MDTV receiver"
+ 	depends on DVB_CORE && HAS_DMA
++	depends on !RC_CORE || RC_CORE
+ 	select MEDIA_COMMON_OPTIONS
++	select SMS_SIANO_MDTV
+ 	---help---
+ 	  Choose if you would like to have Siano's support for USB interface
+ 
 -- 
 2.1.0.rc2
 
