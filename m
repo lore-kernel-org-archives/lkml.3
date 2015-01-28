@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571AbbA2Bkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:40:52 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:61927 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756529AbbA2Bku (ORCPT
+	id S1756053AbbA2BgC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:36:02 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:37764 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993AbbA2Bf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:40:50 -0500
+	Wed, 28 Jan 2015 20:35:59 -0500
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>,
         =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v2 12/15] spi/xilinx: Remove iowrite/ioread wrappers
-Date: Wed, 28 Jan 2015 13:23:51 +0100
-Message-Id: <1422447834-23116-13-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH v2 13/15] spi/xilinx: Remove remaining_words driver data variable
+Date: Wed, 28 Jan 2015 13:23:52 +0100
+Message-Id: <1422447834-23116-14-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1422447834-23116-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1422447834-23116-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -23,64 +23,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save a stack level and cleanup code.
+The variable never leaves the scope of txrx_bufs.
 
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/spi/spi-xilinx.c | 28 ++++------------------------
- 1 file changed, 4 insertions(+), 24 deletions(-)
+ drivers/spi/spi-xilinx.c | 28 ++++++++++++----------------
+ 1 file changed, 12 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
-index b16fccf..8c25c59 100644
+index 8c25c59..026f4c5 100644
 --- a/drivers/spi/spi-xilinx.c
 +++ b/drivers/spi/spi-xilinx.c
-@@ -94,26 +94,6 @@ struct xilinx_spi {
- 	void (*write_fn)(u32, void __iomem *);
- };
+@@ -86,7 +86,6 @@ struct xilinx_spi {
  
--static void xspi_write32(u32 val, void __iomem *addr)
+ 	u8 *rx_ptr;		/* pointer in the Tx buffer */
+ 	const u8 *tx_ptr;	/* pointer in the Rx buffer */
+-	int remaining_words;	/* the number of words left to transfer */
+ 	u8 bytes_per_word;
+ 	int buffer_size;	/* buffer size in words */
+ 	u32 cs_inactive;	/* Level of the CS pins when inactive*/
+@@ -209,33 +208,27 @@ static int xilinx_spi_setup_transfer(struct spi_device *spi,
+ 	return 0;
+ }
+ 
+-static void xilinx_spi_fill_tx_fifo(struct xilinx_spi *xspi, int n_words)
 -{
--	iowrite32(val, addr);
+-	xspi->remaining_words -= n_words;
+-
+-	while (n_words--)
+-		xilinx_spi_tx(xspi);
+-	return;
 -}
 -
--static unsigned int xspi_read32(void __iomem *addr)
--{
--	return ioread32(addr);
--}
--
--static void xspi_write32_be(u32 val, void __iomem *addr)
--{
--	iowrite32be(val, addr);
--}
--
--static unsigned int xspi_read32_be(void __iomem *addr)
--{
--	return ioread32be(addr);
--}
--
- static void xilinx_spi_tx(struct xilinx_spi *xspi)
+ static int xilinx_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
  {
- 	if (!xspi->tx_ptr) {
-@@ -398,15 +378,15 @@ static int xilinx_spi_probe(struct platform_device *pdev)
- 	 * Setup little endian helper functions first and try to use them
- 	 * and check if bit was correctly setup or not.
- 	 */
--	xspi->read_fn = xspi_read32;
--	xspi->write_fn = xspi_write32;
-+	xspi->read_fn = ioread32;
-+	xspi->write_fn = iowrite32;
+ 	struct xilinx_spi *xspi = spi_master_get_devdata(spi->master);
++	int remaining_words;	/* the number of words left to transfer */
  
- 	xspi->write_fn(XSPI_CR_LOOP, xspi->regs + XSPI_CR_OFFSET);
- 	tmp = xspi->read_fn(xspi->regs + XSPI_CR_OFFSET);
- 	tmp &= XSPI_CR_LOOP;
- 	if (tmp != XSPI_CR_LOOP) {
--		xspi->read_fn = xspi_read32_be;
--		xspi->write_fn = xspi_write32_be;
-+		xspi->read_fn = ioread32be;
-+		xspi->write_fn = iowrite32be;
+ 	/* We get here with transmitter inhibited */
+ 
+ 	xspi->tx_ptr = t->tx_buf;
+ 	xspi->rx_ptr = t->rx_buf;
+-	xspi->remaining_words = t->len / xspi->bytes_per_word;
++	remaining_words = t->len / xspi->bytes_per_word;
+ 	reinit_completion(&xspi->done);
+ 
+-	while (xspi->remaining_words) {
++	while (remaining_words) {
+ 		u16 cr = 0;
+-		int n_words;
++		int n_words, tx_words, rx_words;
+ 
+-		n_words = min(xspi->remaining_words, xspi->buffer_size);
++		n_words = min(remaining_words, xspi->buffer_size);
+ 
+-		xilinx_spi_fill_tx_fifo(xspi, n_words);
++		tx_words = n_words;
++		while (tx_words--)
++			xilinx_spi_tx(xspi);
+ 
+ 		/* Start the transfer by not inhibiting the transmitter any
+ 		 * longer
+@@ -261,8 +254,11 @@ static int xilinx_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
+ 			       xspi->regs + XSPI_CR_OFFSET);
+ 
+ 		/* Read out all the data from the Rx FIFO */
+-		while (n_words--)
++		rx_words = n_words;
++		while (rx_words--)
+ 			xilinx_spi_rx(xspi);
++
++		remaining_words -= n_words;
  	}
  
- 	master->bits_per_word_mask = SPI_BPW_MASK(bits_per_word);
+ 	return t->len;
 -- 
 2.1.4
 
