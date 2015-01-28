@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965313AbbA1E0G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:26:06 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41285 "EHLO mail.kernel.org"
+	id S965514AbbA1Ea3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:30:29 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41310 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965279AbbA1E0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:26:00 -0500
+	id S965297AbbA1E0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:26:03 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 163/177] rt2x00: do not align payload on modern H/W
-Date: Wed, 28 Jan 2015 12:10:21 +0800
-Message-Id: <1422418236-12852-254-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 164/177] ASoC: sgtl5000: Fix SMALL_POP bit definition
+Date: Wed, 28 Jan 2015 12:10:22 +0800
+Message-Id: <1422418236-12852-255-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,124 +20,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit cfd9167af14eb4ec21517a32911d460083ee3d59 upstream.
+commit c251ea7bd7a04f1f2575467e0de76e803cf59149 upstream.
 
-RT2800 and newer hardware require padding between header and payload if
-header length is not multiple of 4.
+On a mx28evk with a sgtl5000 codec we notice a loud 'click' sound  to happen
+5 seconds after the end of a playback.
 
-For historical reasons we also align payload to to 4 bytes boundary, but
-such alignment is not needed on modern H/W.
+The SMALL_POP bit should fix this, but its definition is incorrect:
+according to the sgtl5000 manual it is bit 0 of CHIP_REF_CTRL register, not
+bit 1.
 
-Patch fixes skb_under_panic problems reported from time to time:
+Fix the definition accordingly and enable the bit as intended per the code
+comment.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=84911
-https://bugzilla.kernel.org/show_bug.cgi?id=72471
-http://marc.info/?l=linux-wireless&m=139108549530402&w=2
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1087591
+After applying this change, no loud 'click' sound is heard after playback
 
-Panic happened because we eat 4 bytes of skb headroom on each
-(re)transmission when sending frame without the payload and the header
-length not being multiple of 4 (i.e. QoS header has 26 bytes). On such
-case because paylad_aling=2 is bigger than header_align=0 we increase
-header_align by 4 bytes. To prevent that we could change the check to:
-
-	if (payload_length && payload_align > header_align)
-		header_align += 4;
-
-but not aligning payload at all is more effective and alignment is not
-really needed by H/W (that has been tested on OpenWrt project for few
-years now).
-
-Reported-and-tested-by: Antti S. Lankila <alankila@bel.fi>
-Debugged-by: Antti S. Lankila <alankila@bel.fi>
-Reported-by: Henrik Asp <solenskiner@gmail.com>
-Originally-From: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00queue.c | 50 ++++++++-----------------------
- 1 file changed, 12 insertions(+), 38 deletions(-)
+ sound/soc/codecs/sgtl5000.c | 3 +--
+ sound/soc/codecs/sgtl5000.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
-index 4d792a2..c5bdbe9 100644
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -148,55 +148,29 @@ void rt2x00queue_align_frame(struct sk_buff *skb)
- 	skb_trim(skb, frame_length);
- }
+diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+index f0b8d8e..c40b7ca 100644
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -1313,8 +1313,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
  
--void rt2x00queue_insert_l2pad(struct sk_buff *skb, unsigned int header_length)
-+/*
-+ * H/W needs L2 padding between the header and the paylod if header size
-+ * is not 4 bytes aligned.
-+ */
-+void rt2x00queue_insert_l2pad(struct sk_buff *skb, unsigned int hdr_len)
- {
--	unsigned int payload_length = skb->len - header_length;
--	unsigned int header_align = ALIGN_SIZE(skb, 0);
--	unsigned int payload_align = ALIGN_SIZE(skb, header_length);
--	unsigned int l2pad = payload_length ? L2PAD_SIZE(header_length) : 0;
-+	unsigned int l2pad = (skb->len > hdr_len) ? L2PAD_SIZE(hdr_len) : 0;
+ 	/* enable small pop, introduce 400ms delay in turning off */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
+-				SGTL5000_SMALL_POP,
+-				SGTL5000_SMALL_POP);
++				SGTL5000_SMALL_POP, 1);
  
--	/*
--	 * Adjust the header alignment if the payload needs to be moved more
--	 * than the header.
--	 */
--	if (payload_align > header_align)
--		header_align += 4;
--
--	/* There is nothing to do if no alignment is needed */
--	if (!header_align)
-+	if (!l2pad)
- 		return;
+ 	/* disable short cut detector */
+ 	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0);
+diff --git a/sound/soc/codecs/sgtl5000.h b/sound/soc/codecs/sgtl5000.h
+index d3a68bb..0bd6e1c 100644
+--- a/sound/soc/codecs/sgtl5000.h
++++ b/sound/soc/codecs/sgtl5000.h
+@@ -275,7 +275,7 @@
+ #define SGTL5000_BIAS_CTRL_MASK			0x000e
+ #define SGTL5000_BIAS_CTRL_SHIFT		1
+ #define SGTL5000_BIAS_CTRL_WIDTH		3
+-#define SGTL5000_SMALL_POP			0x0001
++#define SGTL5000_SMALL_POP			0
  
--	/* Reserve the amount of space needed in front of the frame */
--	skb_push(skb, header_align);
--
--	/*
--	 * Move the header.
--	 */
--	memmove(skb->data, skb->data + header_align, header_length);
--
--	/* Move the payload, if present and if required */
--	if (payload_length && payload_align)
--		memmove(skb->data + header_length + l2pad,
--			skb->data + header_length + l2pad + payload_align,
--			payload_length);
--
--	/* Trim the skb to the correct size */
--	skb_trim(skb, header_length + l2pad + payload_length);
-+	skb_push(skb, l2pad);
-+	memmove(skb->data, skb->data + l2pad, hdr_len);
- }
- 
--void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int header_length)
-+void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int hdr_len)
- {
--	/*
--	 * L2 padding is only present if the skb contains more than just the
--	 * IEEE 802.11 header.
--	 */
--	unsigned int l2pad = (skb->len > header_length) ?
--				L2PAD_SIZE(header_length) : 0;
-+	unsigned int l2pad = (skb->len > hdr_len) ? L2PAD_SIZE(hdr_len) : 0;
- 
- 	if (!l2pad)
- 		return;
- 
--	memmove(skb->data + l2pad, skb->data, header_length);
-+	memmove(skb->data + l2pad, skb->data, hdr_len);
- 	skb_pull(skb, l2pad);
- }
- 
+ /*
+  * SGTL5000_CHIP_MIC_CTRL
 -- 
 1.9.1
 
