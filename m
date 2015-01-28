@@ -1,130 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbbA1ULu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:11:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59202 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448AbbA1ULP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:11:15 -0500
-Date: Wed, 28 Jan 2015 13:30:38 -0600
-From: Benoit Parrot <bparrot@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-CC: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Darren Etheridge <detheridge@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH v2] ARM: AM43xx: hwmod: add VPFE hwmod entries
-Message-ID: <20150128193038.GG2570@ti.com>
-References: <1422217915-24231-1-git-send-email-prabhakar.csengg@gmail.com>
- <alpine.DEB.2.02.1501260205090.5450@utopia.booyaka.com>
- <CA+V-a8urS2C20FDcfsGa+Gg+7wmbbQQw3U7BfXf6GBKoBGMc9w@mail.gmail.com>
- <20150126155032.GD2570@ti.com>
- <CA+V-a8vuD-+cwaP_bKpB8GweT-xX4E3PHrbB+uefCW+Xre7cog@mail.gmail.com>
- <alpine.DEB.2.02.1501261846460.5450@utopia.booyaka.com>
+	id S1755094AbbA2BZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:25:54 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38406 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162AbbA2BZv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:25:51 -0500
+Date: Wed, 28 Jan 2015 19:31:10 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Bo Shen <voice.shen@atmel.com>
+Cc: nicolas.ferre@atmel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-sound@vger.kernel.org,
+        Alexander Morozov <linux@meltdown.ru>
+Message-ID: <20150128193110.GI21293@sirena.org.uk>
+References: <1422329800-28481-1-git-send-email-voice.shen@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="hZNcg5Zgu0ROmvXA"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1501261846460.5450@utopia.booyaka.com>
+In-Reply-To: <1422329800-28481-1-git-send-email-voice.shen@atmel.com>
+X-Cookie: My LESLIE GORE record is BROKEN ...
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 1/2] ASoC: codecs: wm8904: add dt ids table
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Walmsley <paul@pwsan.com> wrote on Mon [2015-Jan-26 18:47:11 +0000]:
-> Hi Prabhakar,
-> 
-> On Mon, 26 Jan 2015, Lad, Prabhakar wrote:
-> 
-> > Hi Benoit,
-> > 
-> > On Mon, Jan 26, 2015 at 3:50 PM, Benoit Parrot <bparrot@ti.com> wrote:
-> > > Lad, Prabhakar <prabhakar.csengg@gmail.com> wrote on Mon [2015-Jan-26 08:13:01 +0000]:
-> > >> Hi Paul,
-> > >>
-> > >> Thanks for the review.
-> > >>
-> > >> On Mon, Jan 26, 2015 at 2:15 AM, Paul Walmsley <paul@pwsan.com> wrote:
-> > >> > Hi
-> > >> >
-> > >> > On Sun, 25 Jan 2015, Lad, Prabhakar wrote:
-> > >> >
-> > >> >> From: Benoit Parrot <bparrot@ti.com>
-> > >> >>
-> > >> >> this patch adds VPFE HWMOD data for AM43xx.
-> > >> >>
-> > >> >> Signed-off-by: Benoit Parrot <bparrot@ti.com>
-> > >> >> Signed-off-by: Darren Etheridge <detheridge@ti.com>
-> > >> >> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > >> >> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> > >> >> ---
-> > >> >>  Hi Paul,
-> > >> >>
-> > >> >>  You were right, the hardware team has confirmed that, the VPFE master port is
-> > >> >>  connected to L3 and the VPFE slave port is connected to L4. The L3 port cannot
-> > >> >>  serve as a register target because it is initiator only.
-> > >> >
-> > >> > OK makes sense to me.,
-> > >> >
-> > >> >>
-> > >> >>  I have created links referring to dss l3/l4 hwmod and tested it, lemme know
-> > >> >>  if I have missed something.
-> > >> >
-> > >> > A few minor comments below
-> > >> >
-> > >> >>
-> > >> [Snip]
-> > >> >>  /* Interfaces */
-> > >> >>  static struct omap_hwmod_ocp_if am43xx_l3_main__l4_hs = {
-> > >> >>       .master         = &am33xx_l3_main_hwmod,
-> > >> >> @@ -788,6 +826,36 @@ static struct omap_hwmod_ocp_if am43xx_l4_ls__dss_rfbi = {
-> > >> >>       .user           = OCP_USER_MPU | OCP_USER_SDMA,
-> > >> >>  };
-> > >> >>
-> > >> >> +static struct omap_hwmod_ocp_if am43xx_l3__vpfe0 = {
-> > >> >> +     .master         = &am43xx_vpfe0_hwmod,
-> > >> >> +     .slave          = &am33xx_l3_main_hwmod,
-> > >> >> +     .clk            = "l3_gclk",
-> > >> >> +     .flags          = OCPIF_SWSUP_IDLE,
-> > >> >
-> > >> > OCPIF_SWSUP_IDLE probably isn't needed here.  Could you please try without
-> > >> > it?
-> > >> >
-> > >> >> +     .user           = OCP_USER_MPU | OCP_USER_SDMA,
-> > >> >> +};
-> > >> >> +
-> > >> >> +static struct omap_hwmod_ocp_if am43xx_l3__vpfe1 = {
-> > >> >> +     .master         = &am43xx_vpfe1_hwmod,
-> > >> >> +     .slave          = &am33xx_l3_main_hwmod,
-> > >> >> +     .clk            = "l3_gclk",
-> > >> >> +     .flags          = OCPIF_SWSUP_IDLE,
-> > >> >
-> > >> > Same point as the above.
-> > >> >
-> > >> Dropped and tested works! posting a v3.
-> > >
-> > > When you tested it without the OCPIF_SWSUP_IDLE, did you go trhough a complete suspend/resume cycle?
-> > > This flag was added early on because otherwise the susbsytem would not go idle without it...
-> > >
-> > > Can you post the console output during a suspend/resume cycle?
-> > >
-> > Ah I didn’t test the suspend/resume will do and post the console log.
-> 
-> Could you also do a suspend/resume test on v2?
 
-Prabbhakar,
+--hZNcg5Zgu0ROmvXA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I tested both v2 and v3 and both successfully went through a suspend/resume cycle.
-So I guess v3 is fine, sorry for the noise.
+On Tue, Jan 27, 2015 at 11:36:39AM +0800, Bo Shen wrote:
+> From: Alexander Morozov <linux@meltdown.ru>
+>=20
+> The WM8904 and WM8918 has the same data type, while the WM8912
+> has different data type. So, use the data in dt ids table to
+> distinguish them.
 
-I'll add a tested-by on V3.
+Applied both, thanks - please use subjct lines matching the style for
+the subsystem and CC maintainers (including driver maintainers).
 
-Benoit
+--hZNcg5Zgu0ROmvXA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->  
-> thanks
-> 
-> - Paul
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBCAAGBQJUyTj9AAoJECTWi3JdVIfQvGsH/1WOvFO1DaNSf9xCwdhhKk/3
+QDEey4WnmaU8bsBlecqtyoNVeKw01ymjETR0b7r5fTq5vNCJQNbaoIbId7g1YxDI
+Q7ReZcl5JTLFus5sZlW4y0+94vGLjOxqecmIKWw4hIlwpAV2gpBrO49DlMcjw3y7
+tpDvLJfrX+Su+mgkE9+N7MXWrK7BAARZ72PlN3Y5PvDY8UAq6lH08nqvlUfIkniC
+0c818pv7xvH4K75DI/lDPTSt1+h+wT3LKeHlpxQXiGFsZa7SmryvGIDFac1zy8jT
+BttMGkAzdxs9ua8kU9MJ9JtNADqgAoqT+1njgDwSM/v8Sb2CTtlHTMuE9B03/90=
+=u0Lg
+-----END PGP SIGNATURE-----
+
+--hZNcg5Zgu0ROmvXA--
