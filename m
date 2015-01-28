@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764448AbbA2Dnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:43:52 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38400 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973AbbA2BZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:25:42 -0500
-Date: Wed, 28 Jan 2015 11:36:22 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com, tiwai@suse.de,
-        perex@perex.cz
-Message-ID: <20150128113622.GV21293@sirena.org.uk>
-References: <1422416667-5087-1-git-send-email-standby24x7@gmail.com>
+	id S932933AbbA2Buq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:50:46 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57309 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758741AbbA2Buh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:50:37 -0500
+Date: Wed, 28 Jan 2015 12:42:03 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Junjie Mao <junjie_mao@yeah.net>
+Cc: Doug Thompson <dougthompson@xmission.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] edac: fix the leak of mci->bus->name when bus_register
+ fails
+Message-ID: <20150128114203.GA7569@pd.tnic>
+References: <1422425736-15968-1-git-send-email-junjie_mao@yeah.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="GJTQ6IHFmTX0wybY"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1422416667-5087-1-git-send-email-standby24x7@gmail.com>
-X-Cookie: My LESLIE GORE record is BROKEN ...
+In-Reply-To: <1422425736-15968-1-git-send-email-junjie_mao@yeah.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoc: Fix warning with make xmldocs caused by
- soc-devres.c
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 28, 2015 at 02:15:36PM +0800, Junjie Mao wrote:
+> Use goto labels for all failure paths in edac_create_sysfs_mci_device.
+> 
+> Signed-off-by: Junjie Mao <junjie_mao@yeah.net>
+> ---
+>  drivers/edac/edac_mc_sysfs.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+> index 670d2829c547..16f3720f9b73 100644
+> --- a/drivers/edac/edac_mc_sysfs.c
+> +++ b/drivers/edac/edac_mc_sysfs.c
+> @@ -989,7 +989,7 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+>  
+>  	err = bus_register(mci->bus);
+>  	if (err < 0)
+> -		return err;
+> +		goto fail_free_name;
+>  
+>  	/* get the /sys/devices/system/edac subsys reference */
+>  	mci->dev.type = &mci_attr_type;
+> @@ -1005,9 +1005,7 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+>  	err = device_add(&mci->dev);
+>  	if (err < 0) {
+>  		edac_dbg(1, "failure: create device %s\n", dev_name(&mci->dev));
+> -		bus_unregister(mci->bus);
+> -		kfree(mci->bus->name);
+> -		return err;
+> +		goto fail_unregister_bus;
+>  	}
+>  
+>  	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate) {
+> @@ -1072,7 +1070,9 @@ fail:
+>  	}
+>  fail2:
 
---GJTQ6IHFmTX0wybY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Looks ok.
 
-On Wed, Jan 28, 2015 at 12:44:27PM +0900, Masanari Iida wrote:
-> This patch fix warning while "make xmldocs".
+Can you please change those nothing-telling label names "fail" and
+"fail2" into something more descriptive, while you're at it?
 
-Applied, thanks.  Please use subject lines matching the style for the
-subsystem (ASoC: ).
+>  	device_unregister(&mci->dev);
+> +fail_unregister_bus:
+>  	bus_unregister(mci->bus);
+> +fail_free_name:
+>  	kfree(mci->bus->name);
+>  	return err;
 
---GJTQ6IHFmTX0wybY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+-- 
+Regards/Gruss,
+    Boris.
 
-iQEcBAEBCAAGBQJUyMm1AAoJECTWi3JdVIfQ1EkH/0aE5HpQ3ZfpQfcA+sN1pL/0
-NcZvJzda+9ua5L1D8Q9X8xkInNYgQulrHaxJcUlmlX0LNTDE9wrDvtrDhSTs+ALv
-kWrTBGlh7tdth3fKRjKqMa/qcHfpiXx7uh7S18kYcBqa2wnC+iIH1Cd/SaannzKC
-fbFdO/XRBkhKni0KPLC/lVuWq2zJuG2BmN5yONHP2pr603yRV8EyTUx1vba/we1M
-POTAlW5FHUQGcHu0xQ7uOrR3cwnmVyFbLRetLaLD/OkIU6roP7Qrx4orG4UE+3o4
-6sPggyCkwWTdEFxWJOsaGzJ0YXnXqokIgczSd2ERPJdp+zbijyUiafpKcBV73JM=
-=Y1B8
------END PGP SIGNATURE-----
-
---GJTQ6IHFmTX0wybY--
+ECO tip #101: Trim your mails when you reply.
+--
