@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965063AbbA1EYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:24:08 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40531 "EHLO mail.kernel.org"
+	id S965097AbbA1EYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:24:21 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40550 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964977AbbA1EYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:24:04 -0500
+	id S965059AbbA1EYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:24:07 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 123/177] acer-wmi: Add acpi_backlight=video quirk for the Acer KAV80
-Date: Wed, 28 Jan 2015 12:09:41 +0800
-Message-Id: <1422418236-12852-214-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 124/177] powerpc: do_notify_resume can be called with bad thread_info flags argument
+Date: Wed, 28 Jan 2015 12:09:42 +0800
+Message-Id: <1422418236-12852-215-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,54 +20,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Anton Blanchard <anton@samba.org>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 183fd8fcd7f8afb7ac5ec68f83194872f9fecc84 upstream.
+commit 808be31426af57af22268ef0fcb42617beb3d15b upstream.
 
-The acpi-video backlight interface on the Acer KAV80 is broken, and worse
-it causes the entire machine to slow down significantly after a suspend/resume.
+Back in 7230c5644188 ("powerpc: Rework lazy-interrupt handling") we
+added a call out to restore_interrupts() (written in c) before calling
+do_notify_resume:
 
-Blacklist it, and use the acer-wmi backlight interface instead. Note that
-the KAV80 is somewhat unique in that it is the only Acer model where we
-fall back to acer-wmi after blacklisting, rather then using the native
-(e.g. intel) backlight driver. This is done because there is no native
-backlight interface on this model.
+        bl      restore_interrupts
+        addi    r3,r1,STACK_FRAME_OVERHEAD
+        bl      do_notify_resume
 
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1128309
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Unfortunately do_notify_resume takes two arguments, the second one
+being the thread_info flags:
+
+void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+
+We do populate r4 (the second argument) earlier, but
+restore_interrupts() is free to muck it up all it wants. My guess is
+the gcc compiler gods shone down on us and its register allocator
+never used r4. Sometimes, rarely, luck is on our side.
+
+LLVM on the other hand did trample r4.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/platform/x86/acer-wmi.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/powerpc/kernel/entry_64.S | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index c1a3fd8..4d04731 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -523,6 +523,17 @@ static const struct dmi_system_id video_vendor_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 4750"),
- 		},
- 	},
-+	{
-+		/*
-+		 * Note no video_set_backlight_video_vendor, we must use the
-+		 * acer interface, as there is no native backlight interface.
-+		 */
-+		.ident = "Acer KAV80",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "KAV80"),
-+		},
-+	},
- 	{}
- };
+diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
+index e500969..c3fc39e 100644
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -813,7 +813,13 @@ user_work:
+ 	b	.ret_from_except_lite
  
+ 1:	bl	.save_nvgprs
++	/*
++	 * Use a non volatile GPR to save and restore our thread_info flags
++	 * across the call to restore_interrupts.
++	 */
++	mr	r30,r4
+ 	bl	.restore_interrupts
++	mr	r4,r30
+ 	addi	r3,r1,STACK_FRAME_OVERHEAD
+ 	bl	.do_notify_resume
+ 	b	.ret_from_except
 -- 
 1.9.1
 
