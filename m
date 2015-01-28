@@ -1,135 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980AbbA1UX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:23:56 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:49335 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbbA1UXx (ORCPT
+	id S1759385AbbA1U2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:28:51 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:51785 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059AbbA1U2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:23:53 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Murali Karicheri <m-karicheri2@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Joerg Roedel <joro@8bytes.org>, Rob Herring <robh+dt@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to of_iommu_configure()
-Date: Wed, 28 Jan 2015 15:15:10 +0200
-Message-ID: <13812499.ICbNgSDOae@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150128122941.GK1569@arm.com>
-References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com> <3953539.m9NpxSWcJ5@avalon> <20150128122941.GK1569@arm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 28 Jan 2015 15:28:44 -0500
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: linux-mmc@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH 0/2] mmc: pwrseq: Add support to multiple gpios in pwrseq simple
+Date: Wed, 28 Jan 2015 13:16:21 +0000
+Message-Id: <1422450981-9328-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 January 2015 12:29:42 Will Deacon wrote:
-> On Wed, Jan 28, 2015 at 12:23:03PM +0000, Laurent Pinchart wrote:
-> > On Wednesday 28 January 2015 11:33:00 Will Deacon wrote:
-> >> On Mon, Jan 26, 2015 at 06:49:01PM +0000, Murali Karicheri wrote:
-> >>> On 01/25/2015 08:32 AM, Laurent Pinchart wrote:
-> >>>> On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
-> >>>>> Function of_iommu_configure() is called from of_dma_configure() to
-> >>>>> setup iommu ops using DT property. This API is currently used for
-> >>>>> platform devices for which DMA configuration (including iommu ops)
-> >>>>> may come from device's parent. To extend this functionality for PCI
-> >>>>> devices, this API need to take a parent node ptr as an argument
-> >>>>> instead of assuming device's parent. This is needed since for PCI,
-> >>>>> the dma configuration may be defined in the DT node of the root bus
-> >>>>> bridge's parent device. Currently only dma-range is used for PCI and
-> >>>>> iommu is not supported. So return error if the device is PCI.
-> >>>>> 
-> >>>>> Cc: Joerg Roedel<joro@8bytes.org>
-> >>>>> Cc: Grant Likely<grant.likely@linaro.org>
-> >>>>> Cc: Rob Herring<robh+dt@kernel.org>
-> >>>>> Cc: Bjorn Helgaas<bhelgaas@google.com>
-> >>>>> Cc: Will Deacon<will.deacon@arm.com>
-> >>>>> Cc: Russell King<linux@arm.linux.org.uk>
-> >>>>> Cc: Arnd Bergmann<arnd@arndb.de>
-> >>>>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
-> >>>>> 
-> >>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
-> >>>>> ---
-> >>>>> 
-> >>>>>   drivers/iommu/of_iommu.c |   10 ++++++++--
-> >>>>>   drivers/of/platform.c    |    2 +-
-> >>>>>   include/linux/of_iommu.h |    6 ++++--
-> >>>>>   3 files changed, 13 insertions(+), 5 deletions(-)
-> >>>>> 
-> >>>>> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
-> >>>>> index af1dc6a..439235b 100644
-> >>>>> --- a/drivers/iommu/of_iommu.c
-> >>>>> +++ b/drivers/iommu/of_iommu.c
-> >>>>> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct
-> >>>>> device_node *np)
-> >>>>>   	return ops;
-> >>>>>  }
-> >>>>> 
-> >>>>> -struct iommu_ops *of_iommu_configure(struct device *dev)
-> >>>>> +struct iommu_ops *of_iommu_configure(struct device *dev,
-> >>>>> +				     struct device_node *iommu_np)
-> >>>>>  {
-> >>>>>   	struct of_phandle_args iommu_spec;
-> >>>>>   	struct device_node *np;
-> >>>>>   	struct iommu_ops *ops = NULL;
-> >>>>>   	int idx = 0;
-> >>>>> 
-> >>>>> +	if (dev_is_pci(dev)) {
-> >>>>> +		dev_err(dev, "iommu is currently not supported for PCI\n");
-> >>>>> +		return NULL;
-> >>>>> +	}
-> >>>>> +
-> >>>>>   	/*
-> >>>>>   	 * We don't currently walk up the tree looking for a parent
-> >>>>>   	 IOMMU.
-> >>>>>   	 * See the `Notes:' section of
-> >>>>>   	 * Documentation/devicetree/bindings/iommu/iommu.txt
-> >>>>>   	 */
-> >>>> 
-> >>>> Wouldn't it be better to fix this rather than passing the device node
-> >>>> pointer to the function ? The solution would be more generic.
-> >>> 
-> >>> Will Deacon (Copied here) is working on this as we alteady discussed
-> >>> in this thread. So it will be addressed by him in another series.
-> >> 
-> >> Well, "working on this" equates to "has it somewhere near the bottom of
-> >> a very long list" :)
-> > 
-> > What's your opinion on this patch then, do you think adding the iommu_np
-> > argument makes sense as a temporary hack, or should we instead walk up the
-> > tree looking for an iommus attribute in parent nodes ? I don't expect that
-> > to be insanely difficult to code.
-> 
-> If walking up the tree is useful, then I think we should do that and update
-> the Documentation to reflect the new behaviour.
+This patchset adds support to reset/powerup multiple gpio pins on a given
+sdio bus. The use case is simple, on sdio we could have multiple devices
+like WLAN, BT which are controlled by there own reset lines. So having
+multiple reset is something more useful in such cases.
 
-If I understand Murali's patch set right (please correct me if that's not the 
-case) the PCI code walks up the DT nodes hierarchy to the parent node that 
-contains the iommus attribute and passes a pointer to that node to this 
-function. It's thus a PCI-specific solution. As a temporary hack that's OK I 
-suppose, but if implementing it right straight away isn't difficult that would 
-be better.
+Without this patch I could not get BT and WLAN working at same time on IFC6410.
 
-> The only reason that I didn't code that in of_iommu_configure originally is
-> because I didn't want to go against the binding spec for the initial
-> version, especially as we didn't have a reason to look at parent nodes.
-> 
-> The only thing to double-check is that we don't break any existing users
-> of the binding with this change, but I don't think that we do.
+Thanks,
+srini
+
+Srinivas Kandagatla (2):
+  mmc: pwrseq: Add support to control multiple gpios in simple pwrseq
+  mmc: pwrseq: Update document with multiple gpios support
+
+ .../devicetree/bindings/mmc/mmc-pwrseq-simple.txt  |  7 ++-
+ drivers/mmc/core/pwrseq_simple.c                   | 64 +++++++++++++++-------
+ 2 files changed, 49 insertions(+), 22 deletions(-)
 
 -- 
-Regards,
-
-Laurent Pinchart
+1.9.1
 
