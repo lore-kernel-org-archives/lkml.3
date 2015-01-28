@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838AbbA2JA4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:00:56 -0500
+	id S1762070AbbA2Ksi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 05:48:38 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756668AbbA2JAs (ORCPT
+	by vger.kernel.org with ESMTP id S1753392AbbA2I71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:48 -0500
+	Thu, 29 Jan 2015 03:59:27 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jason Lee Cragg <jcragg@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 143/176] ALSA: usb-audio: Add mic volume fix quirk for Logitech Webcam C210
-Date: Wed, 28 Jan 2015 15:29:33 +0100
-Message-Id: <2b53c0d413ab66c4a27a8b91306e45387970c5bd.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>,
+        Matt Fleming <matt@console-pimps.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 144/176] scripts/recordmcount.pl: There is no -m32 gcc option on Super-H anymore
+Date: Wed, 28 Jan 2015 15:29:34 +0100
+Message-Id: <c05a1326cf2a8ef3e10269213548784eea3756b7.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,33 +25,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Lee Cragg <jcragg@gmail.com>
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6455931186bff407493135e74c5f32efd30860e2 upstream.
+commit 1caf6aaaa47471831d77c75f094d4e00ad1ec808 upstream.
 
-Signed-off-by: Jason Lee Cragg <jcragg@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Compiling SH with gcc-4.8 fails due to the -m32 option not being
+supported.
+
+>From http://buildd.debian-ports.org/status/fetch.php?pkg=linux&arch=sh4&ver=3.16.7-ckt4-1&stamp=1421425783
+
+      CC      init/main.o
+    gcc-4.8: error: unrecognized command line option '-m32'
+    ld: cannot find init/.tmp_mc_main.o: No such file or directory
+    objcopy: 'init/.tmp_mx_main.o': No such file
+    rm: cannot remove 'init/.tmp_mx_main.o': No such file or directory
+    rm: cannot remove 'init/.tmp_mc_main.o': No such file or directory
+
+Link: http://lkml.kernel.org/r/1421537778-29001-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de
+Link: http://lkml.kernel.org/r/54BCBDD4.10102@physik.fu-berlin.de
+
+Cc: Matt Fleming <matt@console-pimps.org>
+Reported-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/usb/mixer.c | 1 +
- 1 file changed, 1 insertion(+)
+ scripts/recordmcount.pl | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
-index be4db47cb2d9..061be0e5fa5a 100644
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -886,6 +886,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
- 	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
-+	case USB_ID(0x046d, 0x0819): /* Logitech Webcam C210 */
- 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
- 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
- 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
+index a674fd5507c1..a27134fc3f76 100755
+--- a/scripts/recordmcount.pl
++++ b/scripts/recordmcount.pl
+@@ -262,7 +262,6 @@ if ($arch eq "x86_64") {
+     # force flags for this arch
+     $ld .= " -m shlelf_linux";
+     $objcopy .= " -O elf32-sh-linux";
+-    $cc .= " -m32";
+ 
+ } elsif ($arch eq "powerpc") {
+     $local_regex = "^[0-9a-fA-F]+\\s+t\\s+(\\.?\\S+)";
 -- 
 2.2.2
 
