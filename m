@@ -1,246 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbbA2BNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:13:08 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:33511 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277AbbA2BNE (ORCPT
+	id S1752693AbbA1ULr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:11:47 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:54706 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbbA1ULA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:13:04 -0500
-Message-ID: <54C906A9.1050001@linaro.org>
-Date: Wed, 28 Jan 2015 17:56:25 +0200
-From: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 28 Jan 2015 15:11:00 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, ard.biesheuvel@linaro.org,
-        grant.likely@linaro.org, matt.fleming@intel.com,
-        linux-api@vger.kernel.org,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-CC: dmidecode-devel@nongnu.org, leif.lindholm@linaro.org
-Subject: Re: [Patch v3] firmware: dmi-sysfs: add SMBIOS entry point area raw
- attribute
-References: <1422448763-17583-1-git-send-email-ivan.khoronzhuk@linaro.org>
-In-Reply-To: <1422448763-17583-1-git-send-email-ivan.khoronzhuk@linaro.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Wed, 28 Jan 2015 23:56:34 +0800
+Message-ID: <CACzj_yXSy9NwBFWkvN+y=5oZfJTM5AaoLZ08O-G2+hXtZLqH0Q@mail.gmail.com>
+Subject: [PATCH v4 2/6] KVM: nVMX: Enable nested virtualize x2apic mode
+To: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ linux-api@vger.kernel.org
-+ linux-doc@vger.kernel.org
+When L2 is using x2apic, we can use virtualize x2apic mode to
+gain higher performance, especially in apicv case.
 
-On 01/28/2015 02:39 PM, Ivan Khoronzhuk wrote:
-> Some utils, like dmidecode and smbios, needs to access SMBIOS entry
-> table area in order to get information like SMBIOS version, size, etc.
-> Currently it's done via /dev/mem. But for situation when /dev/mem
-> usage is disabled, the utils have to use dmi sysfs instead, which
-> doesn't represent SMBIOS entry. So this patch adds SMBIOS area to
-> dmi-sysfs in order to allow utils in question to work correctly with
-> dmi sysfs interface.
->
-> Reviewed-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@linaro.org>
-> ---
->
-> v1: https://lkml.org/lkml/2015/1/23/643
-> v2: https://lkml.org/lkml/2015/1/26/345
->
-> v3..v2:
->    firmware: dmi_scan: add symbol to get SMBIOS entry area
->    firmware: dmi-sysfs: add SMBIOS entry point area attribute
-> 	combined in one patch
-> 	added SMBIOS information to ABI sysfs-dmi documentaton
->
-> v2..v1:
->    firmware: dmi_scan: add symbol to get SMBIOS entry area
-> 	- used additional static var to hold SMBIOS raw table size
-> 	- changed format of get_smbios_entry_area symbol
-> 	  returned pointer on const smbios table
->
->    firmware: dmi-sysfs: add SMBIOS entry point area attribute
-> 	- adopted to updated get_smbios_entry_area symbol
->    	- removed redundant array to save smbios table
->
->
->   Documentation/ABI/testing/sysfs-firmware-dmi | 10 +++++++
->   drivers/firmware/dmi-sysfs.c                 | 42 ++++++++++++++++++++++++++++
->   drivers/firmware/dmi_scan.c                  | 26 +++++++++++++++++
->   include/linux/dmi.h                          |  3 ++
->   4 files changed, 81 insertions(+)
->
-> diff --git a/Documentation/ABI/testing/sysfs-firmware-dmi b/Documentation/ABI/testing/sysfs-firmware-dmi
-> index c78f9ab..3a9ffe8 100644
-> --- a/Documentation/ABI/testing/sysfs-firmware-dmi
-> +++ b/Documentation/ABI/testing/sysfs-firmware-dmi
-> @@ -12,6 +12,16 @@ Description:
->   		cannot ensure that the data as exported to userland is
->   		without error either.
->   
-> +		The firmware provides DMI structures as a packed list of
-> +		data referenced by a SMBIOS table entry point. The SMBIOS
-> +		entry point contains general information, like SMBIOS
-> +		version, DMI table size, etc. The structure, content and
-> +		size of SMBIOS entry point is dependent on SMBIOS version.
-> +		That's why SMBIOS entry point is represented in dmi sysfs
-> +		like a raw attribute and is accessible via
-> +		/sys/firmware/dmi/smbios_raw_header. The format of SMBIOS
-> +		entry point header can be read in SMBIOS specification.
-> +
->   		DMI is structured as a large table of entries, where
->   		each entry has a common header indicating the type and
->   		length of the entry, as well as a firmware-provided
-> diff --git a/drivers/firmware/dmi-sysfs.c b/drivers/firmware/dmi-sysfs.c
-> index e0f1cb3..61b6a38 100644
-> --- a/drivers/firmware/dmi-sysfs.c
-> +++ b/drivers/firmware/dmi-sysfs.c
-> @@ -29,6 +29,8 @@
->   #define MAX_ENTRY_TYPE 255 /* Most of these aren't used, but we consider
->   			      the top entry type is only 8 bits */
->   
-> +static const u8 *smbios_raw_header;
-> +
->   struct dmi_sysfs_entry {
->   	struct dmi_header dh;
->   	struct kobject kobj;
-> @@ -646,9 +648,37 @@ static void cleanup_entry_list(void)
->   	}
->   }
->   
-> +static ssize_t smbios_entry_area_raw_read(struct file *filp,
-> +					  struct kobject *kobj,
-> +					  struct bin_attribute *bin_attr,
-> +					  char *buf, loff_t pos, size_t count)
-> +{
-> +	ssize_t size;
-> +
-> +	size = bin_attr->size;
-> +
-> +	if (size > pos)
-> +		size -= pos;
-> +	else
-> +		return 0;
-> +
-> +	if (count < size)
-> +		size = count;
-> +
-> +	memcpy(buf, &smbios_raw_header[pos], size);
-> +
-> +	return size;
-> +}
-> +
-> +static struct bin_attribute smbios_raw_area_attr = {
-> +	.read = smbios_entry_area_raw_read,
-> +	.attr = {.name = "smbios_raw_header", .mode = 0400},
-> +};
-> +
->   static int __init dmi_sysfs_init(void)
->   {
->   	int error = -ENOMEM;
-> +	int size;
->   	int val;
->   
->   	/* Set up our directory */
-> @@ -669,6 +699,18 @@ static int __init dmi_sysfs_init(void)
->   		goto err;
->   	}
->   
-> +	smbios_raw_header = dmi_get_smbios_entry_area(&size);
-> +	if (!smbios_raw_header) {
-> +		pr_debug("dmi-sysfs: SMBIOS raw data is not available.\n");
-> +		error = -ENODATA;
-> +		goto err;
-> +	}
-> +
-> +	/* Create the raw binary file to access the entry area */
-> +	smbios_raw_area_attr.size = size;
-> +	if (sysfs_create_bin_file(dmi_kobj, &smbios_raw_area_attr))
-> +		goto err;
-> +
->   	pr_debug("dmi-sysfs: loaded.\n");
->   
->   	return 0;
-> diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-> index 420c8d8..d94c6b7 100644
-> --- a/drivers/firmware/dmi_scan.c
-> +++ b/drivers/firmware/dmi_scan.c
-> @@ -113,6 +113,8 @@ static void dmi_table(u8 *buf, int len, int num,
->   	}
->   }
->   
-> +static unsigned char smbios_header[32];
-> +static int smbios_header_size;
->   static phys_addr_t dmi_base;
->   static u16 dmi_len;
->   static u16 dmi_num;
-> @@ -474,6 +476,8 @@ static int __init dmi_present(const u8 *buf)
->   	if (memcmp(buf, "_SM_", 4) == 0 &&
->   	    buf[5] < 32 && dmi_checksum(buf, buf[5])) {
->   		smbios_ver = get_unaligned_be16(buf + 6);
-> +		smbios_header_size = buf[5];
-> +		memcpy(smbios_header, buf, smbios_header_size);
->   
->   		/* Some BIOS report weird SMBIOS version, fix that up */
->   		switch (smbios_ver) {
-> @@ -505,6 +509,8 @@ static int __init dmi_present(const u8 *buf)
->   				pr_info("SMBIOS %d.%d present.\n",
->   				       dmi_ver >> 8, dmi_ver & 0xFF);
->   			} else {
-> +				smbios_header_size = 15;
-> +				memcpy(smbios_header, buf, smbios_header_size);
->   				dmi_ver = (buf[14] & 0xF0) << 4 |
->   					   (buf[14] & 0x0F);
->   				pr_info("Legacy DMI %d.%d present.\n",
-> @@ -531,6 +537,8 @@ static int __init dmi_smbios3_present(const u8 *buf)
->   		dmi_ver &= 0xFFFFFF;
->   		dmi_len = get_unaligned_le32(buf + 12);
->   		dmi_base = get_unaligned_le64(buf + 16);
-> +		smbios_header_size = buf[6];
-> +		memcpy(smbios_header, buf, smbios_header_size);
->   
->   		/*
->   		 * The 64-bit SMBIOS 3.0 entry point no longer has a field
-> @@ -944,3 +952,21 @@ void dmi_memdev_name(u16 handle, const char **bank, const char **device)
->   	}
->   }
->   EXPORT_SYMBOL_GPL(dmi_memdev_name);
-> +
-> +/**
-> + * dmi_get_smbios_entry_area - copy SMBIOS entry point area to array.
-> + * @size - pointer to assign actual size of SMBIOS entry point area.
-> + *
-> + * returns NULL if table is not available, otherwise returns pointer on
-> + * SMBIOS entry point area array.
-> + */
-> +const u8 *dmi_get_smbios_entry_area(int *size)
-> +{
-> +	if (!smbios_header_size || !dmi_available)
-> +		return NULL;
-> +
-> +	*size = smbios_header_size;
-> +
-> +	return smbios_header;
-> +}
-> +EXPORT_SYMBOL_GPL(dmi_get_smbios_entry_area);
-> diff --git a/include/linux/dmi.h b/include/linux/dmi.h
-> index f820f0a..8e1a28d 100644
-> --- a/include/linux/dmi.h
-> +++ b/include/linux/dmi.h
-> @@ -109,6 +109,7 @@ extern int dmi_walk(void (*decode)(const struct dmi_header *, void *),
->   	void *private_data);
->   extern bool dmi_match(enum dmi_field f, const char *str);
->   extern void dmi_memdev_name(u16 handle, const char **bank, const char **device);
-> +const u8 *dmi_get_smbios_entry_area(int *size);
->   
->   #else
->   
-> @@ -140,6 +141,8 @@ static inline void dmi_memdev_name(u16 handle, const char **bank,
->   		const char **device) { }
->   static inline const struct dmi_system_id *
->   	dmi_first_match(const struct dmi_system_id *list) { return NULL; }
-> +static inline const u8 *dmi_get_smbios_entry_area(int *size)
-> +	{ return NULL; }
->   
->   #endif
->   
+This patch also introduces nested_vmx_check_apicv_controls
+for the nested apicv patches.
 
+Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
+---
+ arch/x86/kvm/vmx.c |  114 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 112 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 787f886..9d11a93 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1108,6 +1108,11 @@ static inline bool nested_cpu_has_xsaves(struct
+vmcs12 *vmcs12)
+                vmx_xsaves_supported();
+ }
+
++static inline bool nested_cpu_has_virt_x2apic_mode(struct vmcs12 *vmcs12)
++{
++       return nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE);
++}
++
+ static inline bool is_exception(u32 intr_info)
+ {
+        return (intr_info & (INTR_INFO_INTR_TYPE_MASK | INTR_INFO_VALID_MASK))
+@@ -2395,6 +2400,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
+        nested_vmx_secondary_ctls_low = 0;
+        nested_vmx_secondary_ctls_high &=
+                SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
++               SECONDARY_EXEC_VIRTUALIZE_X2APIC_MODE |
+                SECONDARY_EXEC_WBINVD_EXITING |
+                SECONDARY_EXEC_XSAVES;
+
+@@ -4155,6 +4161,52 @@ static void
+__vmx_enable_intercept_for_msr(unsigned long *msr_bitmap,
+        }
+ }
+
++/*
++ * If a msr is allowed by L0, we should check whether it is allowed by L1.
++ * The corresponding bit will be cleared unless both of L0 and L1 allow it.
++ */
++static void nested_vmx_disable_intercept_for_msr(unsigned long *msr_bitmap_l1,
++                                              unsigned long *msr_bitmap_nested,
++                                              u32 msr, int type)
++{
++       int f = sizeof(unsigned long);
++
++       if (!cpu_has_vmx_msr_bitmap()) {
++               WARN_ON(1);
++               return;
++       }
++
++       /*
++        * See Intel PRM Vol. 3, 20.6.9 (MSR-Bitmap Address). Early manuals
++        * have the write-low and read-high bitmap offsets the wrong way round.
++        * We can control MSRs 0x00000000-0x00001fff and 0xc0000000-0xc0001fff.
++        */
++       if (msr <= 0x1fff) {
++               if (type & MSR_TYPE_R &&
++                  !test_bit(msr, msr_bitmap_l1 + 0x000 / f))
++                       /* read-low */
++                       __clear_bit(msr, msr_bitmap_nested + 0x000 / f);
++
++               if (type & MSR_TYPE_W &&
++                  !test_bit(msr, msr_bitmap_l1 + 0x800 / f))
++                       /* write-low */
++                       __clear_bit(msr, msr_bitmap_nested + 0x800 / f);
++
++       } else if ((msr >= 0xc0000000) && (msr <= 0xc0001fff)) {
++               msr &= 0x1fff;
++               if (type & MSR_TYPE_R &&
++                  !test_bit(msr, msr_bitmap_l1 + 0x400 / f))
++                       /* read-high */
++                       __clear_bit(msr, msr_bitmap_nested + 0x400 / f);
++
++               if (type & MSR_TYPE_W &&
++                  !test_bit(msr, msr_bitmap_l1 + 0xc00 / f))
++                       /* write-high */
++                       __clear_bit(msr, msr_bitmap_nested + 0xc00 / f);
++
++       }
++}
++
+ static void vmx_disable_intercept_for_msr(u32 msr, bool longmode_only)
+ {
+        if (!longmode_only)
+@@ -8350,7 +8402,59 @@ static int
+nested_vmx_check_msr_bitmap_controls(struct kvm_vcpu *vcpu,
+ static inline bool nested_vmx_merge_msr_bitmap(struct kvm_vcpu *vcpu,
+                                               struct vmcs12 *vmcs12)
+ {
+-       return false;
++       struct page *page;
++       unsigned long *msr_bitmap;
++
++       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
++               return false;
++
++       page = nested_get_page(vcpu, vmcs12->msr_bitmap);
++       if (!page) {
++               WARN_ON(1);
++               return false;
++       }
++       msr_bitmap = (unsigned long *)kmap(page);
++       if (!msr_bitmap) {
++               nested_release_page_clean(page);
++               WARN_ON(1);
++               return false;
++       }
++
++       if (nested_cpu_has_virt_x2apic_mode(vmcs12)) {
++               /* TPR is allowed */
++               nested_vmx_disable_intercept_for_msr(msr_bitmap,
++                               vmx_msr_bitmap_nested,
++                               APIC_BASE_MSR + (APIC_TASKPRI >> 4),
++                               MSR_TYPE_R | MSR_TYPE_W);
++       } else
++               __vmx_enable_intercept_for_msr(
++                               vmx_msr_bitmap_nested,
++                               APIC_BASE_MSR + (APIC_TASKPRI >> 4),
++                               MSR_TYPE_R | MSR_TYPE_W);
++       kunmap(page);
++       nested_release_page_clean(page);
++
++       return true;
++}
++
++static int nested_vmx_check_apicv_controls(struct kvm_vcpu *vcpu,
++                                          struct vmcs12 *vmcs12)
++{
++       if (!nested_cpu_has_virt_x2apic_mode(vmcs12))
++               return 0;
++
++       /*
++        * If virtualize x2apic mode is enabled,
++        * virtualize apic access must be disabled.
++        */
++       if (nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES))
++               return -EINVAL;
++
++       /* tpr shadow is needed by all apicv features. */
++       if (!nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
++               return -EINVAL;
++
++       return 0;
+ }
+
+ static int nested_vmx_check_msr_switch(struct kvm_vcpu *vcpu,
+@@ -8646,7 +8750,8 @@ static void prepare_vmcs02(struct kvm_vcpu
+*vcpu, struct vmcs12 *vmcs12)
+                        else
+                                vmcs_write64(APIC_ACCESS_ADDR,
+                                  page_to_phys(vmx->nested.apic_access_page));
+-               } else if (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
++               } else if (!(nested_cpu_has_virt_x2apic_mode(vmcs12)) &&
++                           (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm))) {
+                        exec_control |=
+                                SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
+                        kvm_vcpu_reload_apic_access_page(vcpu);
+@@ -8857,6 +8962,11 @@ static int nested_vmx_run(struct kvm_vcpu
+*vcpu, bool launch)
+                return 1;
+        }
+
++       if (nested_vmx_check_apicv_controls(vcpu, vmcs12)) {
++               nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
++               return 1;
++       }
++
+        if (nested_vmx_check_msr_switch_controls(vcpu, vmcs12)) {
+                nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+                return 1;
+--
+1.7.1
