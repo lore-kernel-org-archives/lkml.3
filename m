@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934336AbbA1C1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:27:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41009 "EHLO
+	id S934012AbbA1CAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:00:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697AbbA1B2F (ORCPT
+	with ESMTP id S933204AbbA1BiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:05 -0500
+	Tue, 27 Jan 2015 20:38:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 11/32] time: adjtimex: Validate the ADJ_FREQUENCY values
-Date: Tue, 27 Jan 2015 17:26:41 -0800
-Message-Id: <20150128012628.741004964@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
+Subject: [PATCH 3.14 04/77] libata: prevent HSM state change race between ISR and PIO
+Date: Tue, 27 Jan 2015 17:26:42 -0800
+Message-Id: <20150128012746.100173312@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
+References: <20150128012745.971137091@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,44 +23,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: David Jeffery <djeffery@redhat.com>
 
-commit 5e5aeb4367b450a28f447f6d5ab57d8f2ab16a5f upstream.
+commit ce7514526742c0898b837d4395f515b79dfb5a12 upstream.
 
-Verify that the frequency value from userspace is valid and makes sense.
+It is possible for ata_sff_flush_pio_task() to set ap->hsm_task_state to
+HSM_ST_IDLE in between the time __ata_sff_port_intr() checks for HSM_ST_IDLE
+and before it calls ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
 
-Unverified values can cause overflows later on.
+This problem is hard to reproduce making this patch hard to verify, but this
+fix will prevent the race.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-[jstultz: Fix up bug for negative values and drop redunent cap check]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+I have not been able to reproduce the problem, but here is a crash dump from
+a 2.6.32 kernel.
 
+On examining the ata port's state, its hsm_task_state field has a value of HSM_ST_IDLE:
+
+crash> struct ata_port.hsm_task_state ffff881c1121c000
+  hsm_task_state = 0
+
+Normally, this should not be possible as ata_sff_hsm_move() was called from ata_sff_host_intr(),
+which checks hsm_task_state and won't call ata_sff_hsm_move() if it has a HSM_ST_IDLE value.
+
+PID: 11053  TASK: ffff8816e846cae0  CPU: 0   COMMAND: "sshd"
+ #0 [ffff88008ba03960] machine_kexec at ffffffff81038f3b
+ #1 [ffff88008ba039c0] crash_kexec at ffffffff810c5d92
+ #2 [ffff88008ba03a90] oops_end at ffffffff8152b510
+ #3 [ffff88008ba03ac0] die at ffffffff81010e0b
+ #4 [ffff88008ba03af0] do_trap at ffffffff8152ad74
+ #5 [ffff88008ba03b50] do_invalid_op at ffffffff8100cf95
+ #6 [ffff88008ba03bf0] invalid_op at ffffffff8100bf9b
+    [exception RIP: ata_sff_hsm_move+317]
+    RIP: ffffffff813a77ad  RSP: ffff88008ba03ca0  RFLAGS: 00010097
+    RAX: 0000000000000000  RBX: ffff881c1121dc60  RCX: 0000000000000000
+    RDX: ffff881c1121dd10  RSI: ffff881c1121dc60  RDI: ffff881c1121c000
+    RBP: ffff88008ba03d00   R8: 0000000000000000   R9: 000000000000002e
+    R10: 000000000001003f  R11: 000000000000009b  R12: ffff881c1121c000
+    R13: 0000000000000000  R14: 0000000000000050  R15: ffff881c1121dd78
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #7 [ffff88008ba03d08] ata_sff_host_intr at ffffffff813a7fbd
+ #8 [ffff88008ba03d38] ata_sff_interrupt at ffffffff813a821e
+ #9 [ffff88008ba03d78] handle_IRQ_event at ffffffff810e6ec0
 ---
- kernel/time/ntp.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/ata/libata-sff.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -631,6 +631,13 @@ int ntp_validate_timex(struct timex *txc
- 	if ((txc->modes & ADJ_SETOFFSET) && (!capable(CAP_SYS_TIME)))
- 		return -EPERM;
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -1333,7 +1333,19 @@ void ata_sff_flush_pio_task(struct ata_p
+ 	DPRINTK("ENTER\n");
  
-+	if (txc->modes & ADJ_FREQUENCY) {
-+		if (LONG_MIN / PPM_SCALE > txc->freq)
-+			return -EINVAL;
-+		if (LONG_MAX / PPM_SCALE < txc->freq)
-+			return -EINVAL;
-+	}
+ 	cancel_delayed_work_sync(&ap->sff_pio_task);
 +
- 	return 0;
- }
++	/*
++	 * We wanna reset the HSM state to IDLE.  If we do so without
++	 * grabbing the port lock, critical sections protected by it which
++	 * expect the HSM state to stay stable may get surprised.  For
++	 * example, we may set IDLE in between the time
++	 * __ata_sff_port_intr() checks for HSM_ST_IDLE and before it calls
++	 * ata_sff_hsm_move() causing ata_sff_hsm_move() to BUG().
++	 */
++	spin_lock_irq(ap->lock);
+ 	ap->hsm_task_state = HSM_ST_IDLE;
++	spin_unlock_irq(ap->lock);
++
+ 	ap->sff_pio_task_link = NULL;
  
+ 	if (ata_msg_ctl(ap))
 
 
