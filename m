@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762228AbbA2Cgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:36:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46964 "EHLO
+	id S1764001AbbA2DSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:18:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46953 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762210AbbA2Cg1 (ORCPT
+	with ESMTP id S965004AbbA2CgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:36:27 -0500
+	Wed, 28 Jan 2015 21:36:08 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 074/139] md/raid5: fetch_block must fetch all the blocks handle_stripe_dirtying wants.
-Date: Wed, 28 Jan 2015 14:20:17 -0800
-Message-Id: <1422483682-15393-75-git-send-email-kamal@canonical.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 075/139] drm/i915: Disallow pin ioctl completely for kms drivers
+Date: Wed, 28 Jan 2015 14:20:18 -0800
+Message-Id: <1422483682-15393-76-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -26,52 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 108cef3aa41669610e1836fe638812dd067d72de upstream.
+commit d472fcc8379c062bd56a3876fc6ef22258f14a91 upstream.
 
-It is critical that fetch_block() and handle_stripe_dirtying()
-are consistent in their analysis of what needs to be loaded.
-Otherwise raid5 can wait forever for a block that won't be loaded.
+The problem here is that SNA pins batchbuffers to etch out a bit more
+performance. Iirc it started out as a w/a for i830M (which we've
+implemented in the kernel since a long time already). The problem is
+that the pin ioctl wasn't added in
 
-Currently when writing to a RAID5 that is resyncing, to a location
-beyond the resync offset, handle_stripe_dirtying chooses a
-reconstruct-write cycle, but fetch_block() assumes a
-read-modify-write, and a lockup can happen.
+commit d23db88c3ab233daed18709e3a24d6c95344117f
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri May 23 08:48:08 2014 +0200
 
-So treat that case just like RAID6, just as we do in
-handle_stripe_dirtying.  RAID6 always does reconstruct-write.
+    drm/i915: Prevent negative relocation deltas from wrapping
 
-This bug was introduced when the behaviour of handle_stripe_dirtying
-was changed in 3.7, so the patch is suitable for any kernel since,
-though it will need careful merging for some versions.
+Fix this by simply disallowing pinning from userspace so that the
+kernel is in full control of batch placement again. Especially since
+distros are moving towards running X as non-root, so most users won't
+even be able to see any benefits.
 
-Fixes: a7854487cd7128a30a7f4f5259de9f67d5efb95f
-Reported-by: Henry Cai <henryplusplus@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+UMS support is dead now, but we need this minimal patch for
+backporting. Follow-up patch will remove the pin ioctl code
+completely.
+
+Note to backporters: You must have both
+
+commit b45305fce5bb1abec263fcff9d81ebecd6306ede
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Mon Dec 17 16:21:27 2012 +0100
+
+    drm/i915: Implement workaround for broken CS tlb on i830/845
+
+which laned in 3.8 and
+
+commit c4d69da167fa967749aeb70bc0e94a457e5d00c1
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Mon Sep 8 14:25:41 2014 +0100
+
+    drm/i915: Evict CS TLBs between batches
+
+which is also marked cc: stable. Otherwise this could introduce a
+regression by disabling the userspace w/a without the kernel w/a being
+fully functional on i830/45.
+
+References: https://bugs.freedesktop.org/show_bug.cgi?id=76554#c116
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+[ kamal: backport to 3.13-stable ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid5.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 2c2a3e4..3782c2f 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -2900,8 +2900,11 @@ static int fetch_block(struct stripe_head *sh, struct stripe_head_state *s,
- 	     (sh->raid_conf->level <= 5 && s->failed && fdev[0]->towrite &&
- 	      (!test_bit(R5_Insync, &dev->flags) || test_bit(STRIPE_PREREAD_ACTIVE, &sh->state)) &&
- 	      !test_bit(R5_OVERWRITE, &fdev[0]->flags)) ||
--	     (sh->raid_conf->level == 6 && s->failed && s->to_write &&
--	      s->to_write - s->non_overwrite < sh->raid_conf->raid_disks - 2 &&
-+	     ((sh->raid_conf->level == 6 ||
-+	       sh->sector >= sh->raid_conf->mddev->recovery_cp)
-+	      && s->failed && s->to_write &&
-+	      (s->to_write - s->non_overwrite <
-+	       sh->raid_conf->raid_disks - sh->raid_conf->max_degraded) &&
- 	      (!test_bit(R5_Insync, &dev->flags) || test_bit(STRIPE_PREREAD_ACTIVE, &sh->state))))) {
- 		/* we would like to get this block, possibly by computing it,
- 		 * otherwise read it if the backing disk is insync
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index f264654..1287fcf 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3926,6 +3926,9 @@ i915_gem_pin_ioctl(struct drm_device *dev, void *data,
+ 	struct drm_i915_gem_object *obj;
+ 	int ret;
+ 
++	if (drm_core_check_feature(dev, DRIVER_MODESET))
++		return -ENODEV;
++
+ 	ret = i915_mutex_lock_interruptible(dev);
+ 	if (ret)
+ 		return ret;
+@@ -3979,6 +3982,9 @@ i915_gem_unpin_ioctl(struct drm_device *dev, void *data,
+ 	struct drm_i915_gem_object *obj;
+ 	int ret;
+ 
++	if (drm_core_check_feature(dev, DRIVER_MODESET))
++		return -ENODEV;
++
+ 	ret = i915_mutex_lock_interruptible(dev);
+ 	if (ret)
+ 		return ret;
 -- 
 1.9.1
 
