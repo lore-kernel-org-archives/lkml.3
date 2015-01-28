@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760311AbbA1CPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:15:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41026 "EHLO
+	id S932573AbbA1B2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:28:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759609AbbA1B2O (ORCPT
+	with ESMTP id S1759691AbbA1B2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:14 -0500
+	Tue, 27 Jan 2015 20:28:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfgang Grandegger <wg@grandegger.com>,
         Oliver Hartkopp <socketcan@hartkopp.net>,
         Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.18 01/61] can: dev: fix crtlmode_supported check
-Date: Tue, 27 Jan 2015 17:26:13 -0800
-Message-Id: <20150128012637.112921741@linuxfoundation.org>
+Subject: [PATCH 3.18 02/61] can: m_can: tag current CAN FD controllers as non-ISO
+Date: Tue, 27 Jan 2015 17:26:14 -0800
+Message-Id: <20150128012637.226573765@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
 References: <20150128012636.936333725@linuxfoundation.org>
@@ -32,44 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 9b1087aa5e86448fe6ad40a58964e35f3ba423d5 upstream.
+commit 6cfda7fbebe8a4fd33ea5722fa0212f98f643c35 upstream.
 
-When changing flags in the CAN drivers ctrlmode the provided new content has to
-be checked whether the bits are allowed to be changed. The bits that are to be
-changed are given as a bitfield in cm->mask. Therefore checking against
-cm->flags is wrong as the content can hold any kind of values.
+During the CAN FD standardization process within the ISO it turned out that
+the failure detection capability has to be improved.
 
-The iproute2 tool sets the bits in cm->mask and cm->flags depending on the
-detected command line options. To be robust against bogus user space
-applications additionally sanitize the provided flags with the provided mask.
+The CAN in Automation organization (CiA) defined the already implemented CAN
+FD controllers as 'non-ISO' and the upcoming improved CAN FD controllers as
+'ISO' compliant. See at http://www.can-cia.com/index.php?id=1937
 
-Cc: Wolfgang Grandegger <wg@grandegger.com>
+Finally there will be three types of CAN FD controllers in the future:
+
+1. ISO compliant (fixed)
+2. non-ISO compliant (fixed, like the M_CAN IP v3.0.1 in m_can.c)
+3. ISO/non-ISO CAN FD controllers (switchable, like the PEAK USB FD)
+
+So the current M_CAN driver for the M_CAN IP v3.0.1 has to expose its non-ISO
+implementation by setting the CAN_CTRLMODE_FD_NON_ISO ctrlmode at startup.
+As this bit cannot be switched at configuration time CAN_CTRLMODE_FD_NON_ISO
+must not be set in ctrlmode_supported of the current M_CAN driver.
+
 Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/dev.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/can/m_can/m_can.c    |    5 +++++
+ include/uapi/linux/can/netlink.h |    1 +
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -729,10 +729,14 @@ static int can_changelink(struct net_dev
- 		if (dev->flags & IFF_UP)
- 			return -EBUSY;
- 		cm = nla_data(data[IFLA_CAN_CTRLMODE]);
--		if (cm->flags & ~priv->ctrlmode_supported)
+--- a/drivers/net/can/m_can/m_can.c
++++ b/drivers/net/can/m_can/m_can.c
+@@ -955,6 +955,11 @@ static struct net_device *alloc_m_can_de
+ 	priv->can.data_bittiming_const = &m_can_data_bittiming_const;
+ 	priv->can.do_set_mode = m_can_set_mode;
+ 	priv->can.do_get_berr_counter = m_can_get_berr_counter;
 +
-+		/* check whether changed bits are allowed to be modified */
-+		if (cm->mask & ~priv->ctrlmode_supported)
- 			return -EOPNOTSUPP;
++	/* CAN_CTRLMODE_FD_NON_ISO is fixed with M_CAN IP v3.0.1 */
++	priv->can.ctrlmode = CAN_CTRLMODE_FD_NON_ISO;
 +
-+		/* clear bits to be modified and copy the flag values */
- 		priv->ctrlmode &= ~cm->mask;
--		priv->ctrlmode |= cm->flags;
-+		priv->ctrlmode |= (cm->flags & cm->mask);
++	/* CAN_CTRLMODE_FD_NON_ISO can not be changed with M_CAN IP v3.0.1 */
+ 	priv->can.ctrlmode_supported = CAN_CTRLMODE_LOOPBACK |
+ 					CAN_CTRLMODE_LISTENONLY |
+ 					CAN_CTRLMODE_BERR_REPORTING |
+--- a/include/uapi/linux/can/netlink.h
++++ b/include/uapi/linux/can/netlink.h
+@@ -98,6 +98,7 @@ struct can_ctrlmode {
+ #define CAN_CTRLMODE_BERR_REPORTING	0x10	/* Bus-error reporting */
+ #define CAN_CTRLMODE_FD			0x20	/* CAN FD mode */
+ #define CAN_CTRLMODE_PRESUME_ACK	0x40	/* Ignore missing CAN ACKs */
++#define CAN_CTRLMODE_FD_NON_ISO		0x80	/* CAN FD in non-ISO mode */
  
- 		/* CAN_CTRLMODE_FD can only be set when driver supports FD */
- 		if (priv->ctrlmode & CAN_CTRLMODE_FD)
+ /*
+  * CAN device statistics
 
 
