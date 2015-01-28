@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965045AbbA1EYD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:24:03 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40512 "EHLO mail.kernel.org"
+	id S965521AbbA1EmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:42:15 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40521 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964977AbbA1EX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:23:58 -0500
+	id S965039AbbA1EYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:24:01 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 121/177] ext4: bail out from make_indexed_dir() on first error
-Date: Wed, 28 Jan 2015 12:09:39 +0800
-Message-Id: <1422418236-12852-212-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 122/177] samsung-laptop: Add broken-acpi-video quirk for NC210/NC110
+Date: Wed, 28 Jan 2015 12:09:40 +0800
+Message-Id: <1422418236-12852-213-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,87 +20,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Hans de Goede <hdegoede@redhat.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 6050d47adcadbb53582434d919ed7f038d936712 upstream.
+commit 5a1426c99f9b7aa11d60c4e6b7a3211bb5321696 upstream.
 
-When ext4_handle_dirty_dx_node() or ext4_handle_dirty_dirent_node()
-fail, there's really something wrong with the fs and there's no point in
-continuing further. Just return error from make_indexed_dir() in that
-case. Also initialize frames array so that if we return early due to
-error, dx_release() doesn't try to dereference uninitialized memory
-(which could happen also due to error in do_split()).
+The acpi-video backlight interface on the NC210 does not work, blacklist it
+and use the samsung-laptop interface instead.
 
-Coverity-id: 741300
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-[lizf: Backported to 3.4:
- - adjust context
- - replace ext4_handle_dirty_{dx,dirent}_node() with
-   ext4_handle_dirty_metadata()]
+BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=861573
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/ext4/namei.c | 27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
+ drivers/platform/x86/samsung-laptop.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index c6dd936..dc58523 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1421,31 +1421,38 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
- 		hinfo.hash_version += EXT4_SB(dir->i_sb)->s_hash_unsigned;
- 	hinfo.seed = EXT4_SB(dir->i_sb)->s_hash_seed;
- 	ext4fs_dirhash(name, namelen, &hinfo);
-+	memset(frames, 0, sizeof(frames));
- 	frame = frames;
- 	frame->entries = entries;
- 	frame->at = entries;
- 	frame->bh = bh;
- 	bh = bh2;
- 
--	ext4_handle_dirty_metadata(handle, dir, frame->bh);
--	ext4_handle_dirty_metadata(handle, dir, bh);
-+	retval = ext4_handle_dirty_metadata(handle, dir, frame->bh);
-+	if (retval)
-+		goto out_frames;
-+	retval = ext4_handle_dirty_metadata(handle, dir, bh);
-+	if (retval)
-+		goto out_frames;
- 
- 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
- 	if (!de) {
--		/*
--		 * Even if the block split failed, we have to properly write
--		 * out all the changes we did so far. Otherwise we can end up
--		 * with corrupted filesystem.
--		 */
--		ext4_mark_inode_dirty(handle, dir);
--		dx_release(frames);
--		return retval;
-+		goto out_frames;
- 	}
- 	dx_release(frames);
- 
- 	retval = add_dirent_to_buf(handle, dentry, inode, de, bh);
- 	brelse(bh);
- 	return retval;
-+out_frames:
-+	/*
-+	 * Even if the block split failed, we have to properly write
-+	 * out all the changes we did so far. Otherwise we can end up
-+	 * with corrupted filesystem.
-+	 */
-+	ext4_mark_inode_dirty(handle, dir);
-+	dx_release(frames);
-+	return retval;
- }
- 
- /*
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+index de9f432..28c1bdb 100644
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -1517,6 +1517,16 @@ static struct dmi_system_id __initdata samsung_dmi_table[] = {
+ 		},
+ 	 .driver_data = &samsung_broken_acpi_video,
+ 	},
++	{
++	 .callback = samsung_dmi_matched,
++	 .ident = "NC210",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "NC210/NC110"),
++		DMI_MATCH(DMI_BOARD_NAME, "NC210/NC110"),
++		},
++	 .driver_data = &samsung_broken_acpi_video,
++	},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
 -- 
 1.9.1
 
