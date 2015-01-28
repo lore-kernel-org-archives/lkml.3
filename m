@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761979AbbA1FGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:06:15 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38756 "EHLO mail.kernel.org"
+	id S1761963AbbA1FFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:05:42 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38766 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761516AbbA1ETR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:17 -0500
+	id S1761536AbbA1ETU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:20 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, John David Anglin <dave.anglin@bell.net>,
-        Helge Deller <deller@gmx.de>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 61/91] parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
-Date: Wed, 28 Jan 2015 12:08:08 +0800
-Message-Id: <1422418236-12852-121-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Quinn Tran <quinn.tran@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 061/177] target: Fix queue full status NULL pointer for SCF_TRANSPORT_TASK_SENSE
+Date: Wed, 28 Jan 2015 12:08:09 +0800
+Message-Id: <1422418236-12852-122-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,56 +22,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Quinn Tran <quinn.tran@qlogic.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit d26a7730b5874a5fa6779c62f4ad7c5065a94723 upstream.
+commit 082f58ac4a48d3f5cb4597232cb2ac6823a96f43 upstream.
 
-In spite of what the GCC manual says, the -mfast-indirect-calls has
-never been supported in the 64-bit parisc compiler. Indirect calls have
-always been done using function descriptors irrespective of the
--mfast-indirect-calls option.
+During temporary resource starvation at lower transport layer, command
+is placed on queue full retry path, which expose this problem.  The TCM
+queue full handling of SCF_TRANSPORT_TASK_SENSE currently sends the same
+cmd twice to lower layer.  The 1st time led to cmd normal free path.
+The 2nd time cause Null pointer access.
 
-Recently, it was noticed that a function descriptor was always requested
-when the -mfast-indirect-calls option was specified. This caused
-problems when the option was used in  application code and doesn't make
-any sense because the whole point of the option is to avoid using a
-function descriptor for indirect calls.
+This regression bug was originally introduced v3.1-rc code in the
+following commit:
 
-Fixing this broke 64-bit kernel builds.
+commit e057f53308a5f071556ee80586b99ee755bf07f5
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Mon Oct 17 13:56:41 2011 -0400
 
-I will fix GCC but for now we need the attached change. This results in
-the same kernel code as before.
+    target: remove the transport_qf_callback se_cmd callback
 
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Quinn Tran <quinn.tran@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/parisc/Makefile | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/target/target_core_transport.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
-index 19ab7b2..ac93ca2 100644
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -51,7 +51,12 @@ cflags-y	:= -pipe
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 34df0b2..b4b308e 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -3284,8 +3284,7 @@ static void transport_complete_qf(struct se_cmd *cmd)
  
- # These flags should be implied by an hppa-linux configuration, but they
- # are not in gcc 3.2.
--cflags-y	+= -mno-space-regs -mfast-indirect-calls
-+cflags-y	+= -mno-space-regs
-+
-+# -mfast-indirect-calls is only relevant for 32-bit kernels.
-+ifndef CONFIG_64BIT
-+cflags-y	+= -mfast-indirect-calls
-+endif
+ 	if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) {
+ 		ret = cmd->se_tfo->queue_status(cmd);
+-		if (ret)
+-			goto out;
++		goto out;
+ 	}
  
- # Currently we save and restore fpregs on all kernel entry/interruption paths.
- # If that gets optimized, we might need to disable the use of fpregs in the
+ 	switch (cmd->data_direction) {
 -- 
 1.9.1
 
