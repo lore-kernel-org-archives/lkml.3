@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761507AbbA1ETJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:19:09 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38702 "EHLO mail.kernel.org"
+	id S1761994AbbA1FGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:06:46 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38714 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759882AbbA1ETD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:03 -0500
+	id S1761490AbbA1ETF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:19:05 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Petr Matousek <pmatouse@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 058/177] x86,kvm,vmx: Preserve CR4 across VM entry
-Date: Wed, 28 Jan 2015 12:08:03 +0800
-Message-Id: <1422418236-12852-116-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>,
+        Takashi Iwai <tiwai@suse.de>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 59/91] ALSA: pcm: fix fifo_size frame calculation
+Date: Wed, 28 Jan 2015 12:08:04 +0800
+Message-Id: <1422418236-12852-117-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -22,115 +20,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit d974baa398f34393db76be45f7d4d04fbdbb4a0a upstream.
+commit a9960e6a293e6fc3ed414643bb4e4106272e4d0a upstream.
 
-CR4 isn't constant; at least the TSD and PCE bits can vary.
+The calculated frame size was wrong because snd_pcm_format_physical_width()
+actually returns the number of bits, not bytes.
 
-TBH, treating CR0 and CR3 as constant scares me a bit, too, but it looks
-like it's correct.
+Use snd_pcm_format_size() instead, which not only returns bytes, but also
+simplifies the calculation.
 
-This adds a branch and a read from cr4 to each vm entry.  Because it is
-extremely likely that consecutive entries into the same vcpu will have
-the same host cr4 value, this fixes up the vmcs instead of restoring cr4
-after the fact.  A subsequent patch will add a kernel-wide cr4 shadow,
-reducing the overhead in the common case to just two memory reads and a
-branch.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[lizf: Backported to 3.4:
- - adjust context
- - add parameter struct vcpu_vmx *vmx to vmx_set_constant_host_state()]
+Fixes: 8bea869c5e56 ("ALSA: PCM midlevel: improve fifo_size handling")
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/kvm/vmx.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+ sound/core/pcm_lib.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 617b00b..443635d 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -388,6 +388,7 @@ struct vcpu_vmx {
- 		u16           fs_sel, gs_sel, ldt_sel;
- 		int           gs_ldt_reload_needed;
- 		int           fs_reload_needed;
-+		unsigned long vmcs_host_cr4;    /* May not match real cr4 */
- 	} host_state;
- 	struct {
- 		int vm86_active;
-@@ -3622,16 +3623,21 @@ static void vmx_disable_intercept_for_msr(u32 msr, bool longmode_only)
-  * Note that host-state that does change is set elsewhere. E.g., host-state
-  * that is set differently for each CPU is set in vmx_vcpu_load(), not here.
-  */
--static void vmx_set_constant_host_state(void)
-+static void vmx_set_constant_host_state(struct vcpu_vmx *vmx)
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index 370fc56..6292575 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -1693,14 +1693,16 @@ static int snd_pcm_lib_ioctl_fifo_size(struct snd_pcm_substream *substream,
  {
- 	u32 low32, high32;
- 	unsigned long tmpl;
- 	struct desc_ptr dt;
-+	unsigned long cr4;
+ 	struct snd_pcm_hw_params *params = arg;
+ 	snd_pcm_format_t format;
+-	int channels, width;
++	int channels;
++	ssize_t frame_size;
  
- 	vmcs_writel(HOST_CR0, read_cr0() | X86_CR0_TS);  /* 22.2.3 */
--	vmcs_writel(HOST_CR4, read_cr4());  /* 22.2.3, 22.2.5 */
- 	vmcs_writel(HOST_CR3, read_cr3());  /* 22.2.3  FIXME: shadow tables */
- 
-+	/* Save the most likely value for this task's CR4 in the VMCS. */
-+	cr4 = read_cr4();
-+	vmcs_writel(HOST_CR4, cr4);			/* 22.2.3, 22.2.5 */
-+	vmx->host_state.vmcs_host_cr4 = cr4;
-+
- 	vmcs_write16(HOST_CS_SELECTOR, __KERNEL_CS);  /* 22.2.4 */
- 	vmcs_write16(HOST_DS_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
- 	vmcs_write16(HOST_ES_SELECTOR, __KERNEL_DS);  /* 22.2.4 */
-@@ -3753,7 +3759,7 @@ static int vmx_vcpu_setup(struct vcpu_vmx *vmx)
- 
- 	vmcs_write16(HOST_FS_SELECTOR, 0);            /* 22.2.4 */
- 	vmcs_write16(HOST_GS_SELECTOR, 0);            /* 22.2.4 */
--	vmx_set_constant_host_state();
-+	vmx_set_constant_host_state(vmx);
- #ifdef CONFIG_X86_64
- 	rdmsrl(MSR_FS_BASE, a);
- 	vmcs_writel(HOST_FS_BASE, a); /* 22.2.4 */
-@@ -6101,6 +6107,7 @@ static void atomic_switch_perf_msrs(struct vcpu_vmx *vmx)
- static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
- {
- 	struct vcpu_vmx *vmx = to_vmx(vcpu);
-+	unsigned long cr4;
- 
- 	if (is_guest_mode(vcpu) && !vmx->nested.nested_run_pending) {
- 		struct vmcs12 *vmcs12 = get_vmcs12(vcpu);
-@@ -6131,6 +6138,12 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
- 	if (test_bit(VCPU_REGS_RIP, (unsigned long *)&vcpu->arch.regs_dirty))
- 		vmcs_writel(GUEST_RIP, vcpu->arch.regs[VCPU_REGS_RIP]);
- 
-+	cr4 = read_cr4();
-+	if (unlikely(cr4 != vmx->host_state.vmcs_host_cr4)) {
-+		vmcs_writel(HOST_CR4, cr4);
-+		vmx->host_state.vmcs_host_cr4 = cr4;
-+	}
-+
- 	/* When single-stepping over STI and MOV SS, we must clear the
- 	 * corresponding interruptibility bits in the guest state. Otherwise
- 	 * vmentry fails as it then expects bit 14 (BS) in pending debug
-@@ -6589,7 +6602,7 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
- 	 * Other fields are different per CPU, and will be set later when
- 	 * vmx_vcpu_load() is called, and when vmx_save_host_state() is called.
- 	 */
--	vmx_set_constant_host_state();
-+	vmx_set_constant_host_state(vmx);
- 
- 	/*
- 	 * HOST_RSP is normally set correctly in vmx_vcpu_run() just before
+ 	params->fifo_size = substream->runtime->hw.fifo_size;
+ 	if (!(substream->runtime->hw.info & SNDRV_PCM_INFO_FIFO_IN_FRAMES)) {
+ 		format = params_format(params);
+ 		channels = params_channels(params);
+-		width = snd_pcm_format_physical_width(format);
+-		params->fifo_size /= width * channels;
++		frame_size = snd_pcm_format_size(format, channels);
++		if (frame_size > 0)
++			params->fifo_size /= (unsigned)frame_size;
+ 	}
+ 	return 0;
+ }
 -- 
 1.9.1
 
