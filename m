@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933624AbbA2D3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:29:41 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:56691 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761553AbbA2D3C (ORCPT
+	id S1755883AbbA2Byu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:54:50 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:31816 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbbA2Byr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 22:29:02 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
-Date: Wed, 28 Jan 2015 14:38:46 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Will Deacon <will.deacon@arm.com>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>
-References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <20150127223331.GP26493@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1659276.ZOd2qhmsQT";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201501281438.46942@pali>
+	Wed, 28 Jan 2015 20:54:47 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-6a-54c8e7c42c05
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: jslaby@suse.cz, akpm@linux-foundation.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH] serial: samsung: remove redundant interrupt enabling
+Date: Wed, 28 Jan 2015 14:44:23 +0100
+Message-id: <1422452663-24113-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t9jAd0jz0+EGKydw2ExZ/0aNovmxevZ
+	LD7/3sVqcXnXHDaLM4t72S0eHN7J7sDmcWLGbxaP/XPXsHv0bVnF6HFmwRF2j8+b5AJYo7hs
+	UlJzMstSi/TtErgylp2cw1bwjr3iXPNXpgbG42xdjJwcEgImElvWPYeyxSQu3FsPZgsJLGKU
+	uDyfp4uRC8huZ5I4+O4KI0iCTUBHYsv3CWC2iICcxJPbf5hBipgFJjNKdP/pZgdJCAu4Sjw5
+	9xLI5uBgEVCV2H3WASTMCxTub5vHBLFMTuLkscmsExi5FzAyrGIUTS1ILihOSs810itOzC0u
+	zUvXS87P3cQIDo1n0jsYVzVYHGIU4GBU4uF9YXYiRIg1say4MvcQowQHs5II7+O9QCHelMTK
+	qtSi/Pii0pzU4kOM0hwsSuK8SvZtIUIC6YklqdmpqQWpRTBZJg5OqQZGmVbXFT/ipfZ5vr7F
+	9OSOA8umZ7c2VyzWfav7/cSSWvM3xxj2PL9Rpd/542VAoXiPXWjwy41hnX1f1nVuLHC1T3rY
+	2bWpI7r0W+6PNQdUP3JvNJ5f8O/fjkBhE6X18/urv/Q3SAZzzrmjKbw1yH/F/c0Plp9j2xhu
+	f0bqGfs7HrtmjVbvr7eclFiKMxINtZiLihMBG40VOwkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1659276.ZOd2qhmsQT
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Function s3c24xx_serial_start_tx_pio() enables interrupts if needed,
+so we don't have to (or even we shouldn't) enable them before.
 
-On Wednesday 28 January 2015 03:07:43 Nicolas Pitre wrote:
-> In other words, what prevents someone from creating, say, a
-> custom minimal Barebox version that sits on top of the
-> existing N900 bootloader?  Wouldn't that provide a much
-> better user experience?
->=20
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/tty/serial/samsung.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-Strong cryptography used for signing first stage bootloader,=20
-undocumented interface and other stuff which initialize HW and=20
-small memory (about 100kB) for second stage non-signed=20
-bootloader. Next kernel image is limited to size 2MB. And=20
-currently uboot can be compiled to act as "kernel" image, so=20
-second stage bootloader can boot it.
+diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+index 024e5ec..a07fe4f 100644
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -358,15 +358,8 @@ void s3c24xx_serial_start_tx(struct uart_port *port)
+ 			s3c24xx_serial_rx_disable(port);
+ 
+ 		tx_enabled(port) = 1;
+-		if (!ourport->dma || !ourport->dma->tx_chan) {
+-			if (s3c24xx_serial_has_interrupt_mask(port))
+-				__clear_bit(S3C64XX_UINTM_TXD,
+-						portaddrl(port, S3C64XX_UINTM));
+-			else
+-				enable_irq(ourport->tx_irq);
+-
++		if (!ourport->dma || !ourport->dma->tx_chan)
+ 			s3c24xx_serial_start_tx_pio(ourport);
+-		}
+ 	}
+ 
+ 	if (ourport->dma && ourport->dma->tx_chan) {
+-- 
+1.9.1
 
-I spend some time to replace second (non signed) bootloader with=20
-something other, but really it is not possible.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1659276.ZOd2qhmsQT
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlTI5mYACgkQi/DJPQPkQ1KsqgCdGk9XC3MnJbHGpL/UJiRrn2ve
-GacAoIDHxUa81A/QlFEMz2X9sQARCOr6
-=lJm4
------END PGP SIGNATURE-----
-
---nextPart1659276.ZOd2qhmsQT--
