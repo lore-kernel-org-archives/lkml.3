@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761287AbbA1CT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:19:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41037 "EHLO
+	id S1760643AbbA1Bec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 20:34:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41306 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756473AbbA1B2L (ORCPT
+	with ESMTP id S1760102AbbA1B2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:11 -0500
+	Tue, 27 Jan 2015 20:28:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Josh Hunt <johunt@akamai.com>
-Subject: [PATCH 3.10 31/32] ext4: fix warning in ext4_da_update_reserve_space()
-Date: Tue, 27 Jan 2015 17:27:01 -0800
-Message-Id: <20150128012631.383820784@linuxfoundation.org>
+        Dave Chinner <david@fromorbit.com>, Michal Hocko <mhocko@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 50/61] mm: get rid of radix tree gfp mask for pagecache_get_page
+Date: Tue, 27 Jan 2015 17:27:02 -0800
+Message-Id: <20150128012642.386422859@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
-References: <20150128012627.081285723@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,110 +25,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 7d7345322d60edb0fa49a64a89b31360f01d09cb upstream.
+commit 45f87de57f8fad59302fd263dd81ffa4843b5b24 upstream.
 
-reaim workfile.dbase test easily triggers warning in
-ext4_da_update_reserve_space():
+Commit 2457aec63745 ("mm: non-atomically mark page accessed during page
+cache allocation where possible") has added a separate parameter for
+specifying gfp mask for radix tree allocations.
 
-EXT4-fs warning (device ram0): ext4_da_update_reserve_space:365:
-ino 12, allocated 1 with only 0 reserved metadata blocks (releasing 1
-blocks with reserved 9 data blocks)
+Not only this is less than optimal from the API point of view because it
+is error prone, it is also buggy currently because
+grab_cache_page_write_begin is using GFP_KERNEL for radix tree and if
+fgp_flags doesn't contain FGP_NOFS (mostly controlled by fs by
+AOP_FLAG_NOFS flag) but the mapping_gfp_mask has __GFP_FS cleared then
+the radix tree allocation wouldn't obey the restriction and might
+recurse into filesystem and cause deadlocks.  This is the case for most
+filesystems unfortunately because only ext4 and gfs2 are using
+AOP_FLAG_NOFS.
 
-The problem is that (one of) tests creates file and then randomly writes
-to it with O_SYNC. That results in writing back pages of the file in
-random order so we create extents for written blocks say 0, 2, 4, 6, 8
-- this last allocation also allocates new block for extents. Then we
-writeout block 1 so we have extents 0-2, 4, 6, 8 and we release
-indirect extent block because extents fit in the inode again. Then we
-writeout block 10 and we need to allocate indirect extent block again
-which triggers the warning because we don't have the reservation
-anymore.
+Let's simply remove radix_gfp_mask parameter because the allocation
+context is same for both page cache and for the radix tree.  Just make
+sure that the radix tree gets only the sane subset of the mask (e.g.  do
+not pass __GFP_WRITE).
 
-Fix the problem by giving back freed metadata blocks resulting from
-extent merging into inode's reservation pool.
+Long term it is more preferable to convert remaining users of
+AOP_FLAG_NOFS to use mapping_gfp_mask instead and simplify this
+interface even further.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Josh Hunt <johunt@akamai.com>
+Reported-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h    |    1 +
- fs/ext4/extents.c |    3 ++-
- fs/ext4/mballoc.c |   21 +++++++++++++++++----
- 3 files changed, 20 insertions(+), 5 deletions(-)
+ include/linux/pagemap.h |   13 ++++++-------
+ mm/filemap.c            |   29 ++++++++++++-----------------
+ 2 files changed, 18 insertions(+), 24 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -589,6 +589,7 @@ enum {
- #define EXT4_FREE_BLOCKS_NO_QUOT_UPDATE	0x0008
- #define EXT4_FREE_BLOCKS_NOFREE_FIRST_CLUSTER	0x0010
- #define EXT4_FREE_BLOCKS_NOFREE_LAST_CLUSTER	0x0020
-+#define EXT4_FREE_BLOCKS_RESERVE		0x0040
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -251,7 +251,7 @@ pgoff_t page_cache_prev_hole(struct addr
+ #define FGP_NOWAIT		0x00000020
  
- /*
-  * Flags used by ext4_discard_partial_page_buffers
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -1722,7 +1722,8 @@ static void ext4_ext_try_to_merge_up(han
+ struct page *pagecache_get_page(struct address_space *mapping, pgoff_t offset,
+-		int fgp_flags, gfp_t cache_gfp_mask, gfp_t radix_gfp_mask);
++		int fgp_flags, gfp_t cache_gfp_mask);
  
- 	brelse(path[1].p_bh);
- 	ext4_free_blocks(handle, inode, NULL, blk, 1,
--			 EXT4_FREE_BLOCKS_METADATA | EXT4_FREE_BLOCKS_FORGET);
-+			 EXT4_FREE_BLOCKS_METADATA | EXT4_FREE_BLOCKS_FORGET |
-+			 EXT4_FREE_BLOCKS_RESERVE);
+ /**
+  * find_get_page - find and get a page reference
+@@ -266,13 +266,13 @@ struct page *pagecache_get_page(struct a
+ static inline struct page *find_get_page(struct address_space *mapping,
+ 					pgoff_t offset)
+ {
+-	return pagecache_get_page(mapping, offset, 0, 0, 0);
++	return pagecache_get_page(mapping, offset, 0, 0);
  }
  
- /*
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4610,6 +4610,7 @@ void ext4_free_blocks(handle_t *handle,
- 	struct buffer_head *gd_bh;
- 	ext4_group_t block_group;
- 	struct ext4_sb_info *sbi;
-+	struct ext4_inode_info *ei = EXT4_I(inode);
- 	struct ext4_buddy e4b;
- 	unsigned int count_clusters;
- 	int err = 0;
-@@ -4808,7 +4809,6 @@ do_more:
- 	ext4_block_bitmap_csum_set(sb, block_group, gdp, bitmap_bh);
- 	ext4_group_desc_csum_set(sb, block_group, gdp);
- 	ext4_unlock_group(sb, block_group);
--	percpu_counter_add(&sbi->s_freeclusters_counter, count_clusters);
+ static inline struct page *find_get_page_flags(struct address_space *mapping,
+ 					pgoff_t offset, int fgp_flags)
+ {
+-	return pagecache_get_page(mapping, offset, fgp_flags, 0, 0);
++	return pagecache_get_page(mapping, offset, fgp_flags, 0);
+ }
  
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
-@@ -4816,10 +4816,23 @@ do_more:
- 			     &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
+ /**
+@@ -292,7 +292,7 @@ static inline struct page *find_get_page
+ static inline struct page *find_lock_page(struct address_space *mapping,
+ 					pgoff_t offset)
+ {
+-	return pagecache_get_page(mapping, offset, FGP_LOCK, 0, 0);
++	return pagecache_get_page(mapping, offset, FGP_LOCK, 0);
+ }
  
--	ext4_mb_unload_buddy(&e4b);
--
--	if (!(flags & EXT4_FREE_BLOCKS_NO_QUOT_UPDATE))
-+	if (flags & EXT4_FREE_BLOCKS_RESERVE && ei->i_reserved_data_blocks) {
-+		percpu_counter_add(&sbi->s_dirtyclusters_counter,
-+				   count_clusters);
-+		spin_lock(&ei->i_block_reservation_lock);
-+		if (flags & EXT4_FREE_BLOCKS_METADATA)
-+			ei->i_reserved_meta_blocks += count_clusters;
-+		else
-+			ei->i_reserved_data_blocks += count_clusters;
-+		spin_unlock(&ei->i_block_reservation_lock);
-+		if (!(flags & EXT4_FREE_BLOCKS_NO_QUOT_UPDATE))
-+			dquot_reclaim_block(inode,
-+					EXT4_C2B(sbi, count_clusters));
-+	} else if (!(flags & EXT4_FREE_BLOCKS_NO_QUOT_UPDATE))
- 		dquot_free_block(inode, EXT4_C2B(sbi, count_clusters));
-+	percpu_counter_add(&sbi->s_freeclusters_counter, count_clusters);
-+
-+	ext4_mb_unload_buddy(&e4b);
+ /**
+@@ -319,7 +319,7 @@ static inline struct page *find_or_creat
+ {
+ 	return pagecache_get_page(mapping, offset,
+ 					FGP_LOCK|FGP_ACCESSED|FGP_CREAT,
+-					gfp_mask, gfp_mask & GFP_RECLAIM_MASK);
++					gfp_mask);
+ }
  
- 	/* We dirtied the bitmap block */
- 	BUFFER_TRACE(bitmap_bh, "dirtied bitmap block");
+ /**
+@@ -340,8 +340,7 @@ static inline struct page *grab_cache_pa
+ {
+ 	return pagecache_get_page(mapping, index,
+ 			FGP_LOCK|FGP_CREAT|FGP_NOFS|FGP_NOWAIT,
+-			mapping_gfp_mask(mapping),
+-			GFP_NOFS);
++			mapping_gfp_mask(mapping));
+ }
+ 
+ struct page *find_get_entry(struct address_space *mapping, pgoff_t offset);
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1046,8 +1046,7 @@ EXPORT_SYMBOL(find_lock_entry);
+  * @mapping: the address_space to search
+  * @offset: the page index
+  * @fgp_flags: PCG flags
+- * @cache_gfp_mask: gfp mask to use for the page cache data page allocation
+- * @radix_gfp_mask: gfp mask to use for radix tree node allocation
++ * @gfp_mask: gfp mask to use for the page cache data page allocation
+  *
+  * Looks up the page cache slot at @mapping & @offset.
+  *
+@@ -1056,11 +1055,9 @@ EXPORT_SYMBOL(find_lock_entry);
+  * FGP_ACCESSED: the page will be marked accessed
+  * FGP_LOCK: Page is return locked
+  * FGP_CREAT: If page is not present then a new page is allocated using
+- *		@cache_gfp_mask and added to the page cache and the VM's LRU
+- *		list. If radix tree nodes are allocated during page cache
+- *		insertion then @radix_gfp_mask is used. The page is returned
+- *		locked and with an increased refcount. Otherwise, %NULL is
+- *		returned.
++ *		@gfp_mask and added to the page cache and the VM's LRU
++ *		list. The page is returned locked and with an increased
++ *		refcount. Otherwise, %NULL is returned.
+  *
+  * If FGP_LOCK or FGP_CREAT are specified then the function may sleep even
+  * if the GFP flags specified for FGP_CREAT are atomic.
+@@ -1068,7 +1065,7 @@ EXPORT_SYMBOL(find_lock_entry);
+  * If there is a page cache page, it is returned with an increased refcount.
+  */
+ struct page *pagecache_get_page(struct address_space *mapping, pgoff_t offset,
+-	int fgp_flags, gfp_t cache_gfp_mask, gfp_t radix_gfp_mask)
++	int fgp_flags, gfp_t gfp_mask)
+ {
+ 	struct page *page;
+ 
+@@ -1105,13 +1102,11 @@ no_page:
+ 	if (!page && (fgp_flags & FGP_CREAT)) {
+ 		int err;
+ 		if ((fgp_flags & FGP_WRITE) && mapping_cap_account_dirty(mapping))
+-			cache_gfp_mask |= __GFP_WRITE;
+-		if (fgp_flags & FGP_NOFS) {
+-			cache_gfp_mask &= ~__GFP_FS;
+-			radix_gfp_mask &= ~__GFP_FS;
+-		}
++			gfp_mask |= __GFP_WRITE;
++		if (fgp_flags & FGP_NOFS)
++			gfp_mask &= ~__GFP_FS;
+ 
+-		page = __page_cache_alloc(cache_gfp_mask);
++		page = __page_cache_alloc(gfp_mask);
+ 		if (!page)
+ 			return NULL;
+ 
+@@ -1122,7 +1117,8 @@ no_page:
+ 		if (fgp_flags & FGP_ACCESSED)
+ 			__SetPageReferenced(page);
+ 
+-		err = add_to_page_cache_lru(page, mapping, offset, radix_gfp_mask);
++		err = add_to_page_cache_lru(page, mapping, offset,
++				gfp_mask & GFP_RECLAIM_MASK);
+ 		if (unlikely(err)) {
+ 			page_cache_release(page);
+ 			page = NULL;
+@@ -2443,8 +2439,7 @@ struct page *grab_cache_page_write_begin
+ 		fgp_flags |= FGP_NOFS;
+ 
+ 	page = pagecache_get_page(mapping, index, fgp_flags,
+-			mapping_gfp_mask(mapping),
+-			GFP_KERNEL);
++			mapping_gfp_mask(mapping));
+ 	if (page)
+ 		wait_for_stable_page(page);
+ 
 
 
