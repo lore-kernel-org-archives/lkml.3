@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761374AbbA2J7i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:59:38 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44778 "EHLO
+	id S1760871AbbA2JO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:14:28 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44927 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752873AbbA2JCh (ORCPT
+	by vger.kernel.org with ESMTP id S932761AbbA2JIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:02:37 -0500
+	Thu, 29 Jan 2015 04:08:24 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 053/176] mmc: sdhci: Fix sleep in atomic after inserting SD card
-Date: Wed, 28 Jan 2015 15:28:03 +0100
-Message-Id: <0cd8eb43d8c4bb0e544a5c519682b30dc8c831ad.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 054/176] mm, vmscan: prevent kswapd livelock due to pfmemalloc-throttled process being killed
+Date: Wed, 28 Jan 2015 15:28:04 +0100
+Message-Id: <72af0d9afe2fcf9ed7c72526367c32dd2c753b58.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,104 +27,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 2836766a9d0bd02c66073f8dd44796e6cc23848d upstream.
+commit 9e5e3661727eaf960d3480213f8e87c8d67b6956 upstream.
 
-Sleep in atomic context happened on Trats2 board after inserting or
-removing SD card because mmc_gpio_get_cd() was called under spin lock.
+Charles Shirron and Paul Cassella from Cray Inc have reported kswapd
+stuck in a busy loop with nothing left to balance, but
+kswapd_try_to_sleep() failing to sleep.  Their analysis found the cause
+to be a combination of several factors:
 
-Fix this by moving card detection earlier, before acquiring spin lock.
-The mmc_gpio_get_cd() call does not have to be protected by spin lock
-because it does not access any sdhci internal data.
-The sdhci_do_get_cd() call access host flags (SDHCI_DEVICE_DEAD). After
-moving it out side of spin lock it could theoretically race with driver
-removal but still there is no actual protection against manual card
-eject.
+1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
 
-Dmesg after inserting SD card:
-[   41.663414] BUG: sleeping function called from invalid context at drivers/gpio/gpiolib.c:1511
-[   41.670469] in_atomic(): 1, irqs_disabled(): 128, pid: 30, name: kworker/u8:1
-[   41.677580] INFO: lockdep is turned off.
-[   41.681486] irq event stamp: 61972
-[   41.684872] hardirqs last  enabled at (61971): [<c0490ee0>] _raw_spin_unlock_irq+0x24/0x5c
-[   41.693118] hardirqs last disabled at (61972): [<c04907ac>] _raw_spin_lock_irq+0x18/0x54
-[   41.701190] softirqs last  enabled at (61648): [<c0026fd4>] __do_softirq+0x234/0x2c8
-[   41.708914] softirqs last disabled at (61631): [<c00273a0>] irq_exit+0xd0/0x114
-[   41.716206] Preemption disabled at:[<  (null)>]   (null)
-[   41.721500]
-[   41.722985] CPU: 3 PID: 30 Comm: kworker/u8:1 Tainted: G        W      3.18.0-rc5-next-20141121 #883
-[   41.732111] Workqueue: kmmcd mmc_rescan
-[   41.735945] [<c0014d2c>] (unwind_backtrace) from [<c0011c80>] (show_stack+0x10/0x14)
-[   41.743661] [<c0011c80>] (show_stack) from [<c0489d14>] (dump_stack+0x70/0xbc)
-[   41.750867] [<c0489d14>] (dump_stack) from [<c0228b74>] (gpiod_get_raw_value_cansleep+0x18/0x30)
-[   41.759628] [<c0228b74>] (gpiod_get_raw_value_cansleep) from [<c03646e8>] (mmc_gpio_get_cd+0x38/0x58)
-[   41.768821] [<c03646e8>] (mmc_gpio_get_cd) from [<c036d378>] (sdhci_request+0x50/0x1a4)
-[   41.776808] [<c036d378>] (sdhci_request) from [<c0357934>] (mmc_start_request+0x138/0x268)
-[   41.785051] [<c0357934>] (mmc_start_request) from [<c0357cc8>] (mmc_wait_for_req+0x58/0x1a0)
-[   41.793469] [<c0357cc8>] (mmc_wait_for_req) from [<c0357e68>] (mmc_wait_for_cmd+0x58/0x78)
-[   41.801714] [<c0357e68>] (mmc_wait_for_cmd) from [<c0361c00>] (mmc_io_rw_direct_host+0x98/0x124)
-[   41.810480] [<c0361c00>] (mmc_io_rw_direct_host) from [<c03620f8>] (sdio_reset+0x2c/0x64)
-[   41.818641] [<c03620f8>] (sdio_reset) from [<c035a3d8>] (mmc_rescan+0x254/0x2e4)
-[   41.826028] [<c035a3d8>] (mmc_rescan) from [<c003a0e0>] (process_one_work+0x180/0x3f4)
-[   41.833920] [<c003a0e0>] (process_one_work) from [<c003a3bc>] (worker_thread+0x34/0x4b0)
-[   41.841991] [<c003a3bc>] (worker_thread) from [<c003fed8>] (kthread+0xe4/0x104)
-[   41.849285] [<c003fed8>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
-[   42.038276] mmc0: new high speed SDHC card at address 1234
+2. The process has been killed (by OOM in this case), but has not yet been
+   scheduled to remove itself from the waitqueue and die.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 94144a465dd0 ("mmc: sdhci: add get_cd() implementation")
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+3. kswapd checks for throttled processes in prepare_kswapd_sleep():
+
+        if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+                wake_up(&pgdat->pfmemalloc_wait);
+		return false; // kswapd will not go to sleep
+	}
+
+   However, for a process that was already killed, wake_up() does not remove
+   the process from the waitqueue, since try_to_wake_up() checks its state
+   first and returns false when the process is no longer waiting.
+
+4. kswapd is running on the same CPU as the only CPU that the process is
+   allowed to run on (through cpus_allowed, or possibly single-cpu system).
+
+5. CONFIG_PREEMPT_NONE=y kernel is used. If there's nothing to balance, kswapd
+   encounters no voluntary preemption points and repeatedly fails
+   prepare_kswapd_sleep(), blocking the process from running and removing
+   itself from the waitqueue, which would let kswapd sleep.
+
+So, the source of the problem is that we prevent kswapd from going to
+sleep until there are processes waiting on the pfmemalloc_wait queue,
+and a process waiting on a queue is guaranteed to be removed from the
+queue only when it gets scheduled.  This was done to make sure that no
+process is left sleeping on pfmemalloc_wait when kswapd itself goes to
+sleep.
+
+However, it isn't necessary to postpone kswapd sleep until the
+pfmemalloc_wait queue actually empties.  To prevent processes from being
+left sleeping, it's actually enough to guarantee that all processes
+waiting on pfmemalloc_wait queue have been woken up by the time we put
+kswapd to sleep.
+
+This patch therefore fixes this issue by substituting 'wake_up' with
+'wake_up_all' and removing 'return false' in the code snippet from
+prepare_kswapd_sleep() above.  Note that if any process puts itself in
+the queue after this waitqueue_active() check, or after the wake up
+itself, it means that the process will also wake up kswapd - and since
+we are under prepare_to_wait(), the wake up won't be missed.  Also we
+update the comment prepare_kswapd_sleep() to hopefully more clearly
+describe the races it is preventing.
+
+Fixes: 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves are low and swap is backed by network storage")
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/mmc/host/sdhci.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ mm/vmscan.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 7a7fb4f0d5a4..6863e3274564 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1333,6 +1333,8 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 5461d02ea718..ee8363f73cab 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2868,18 +2868,20 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ 		return false;
  
- 	sdhci_runtime_pm_get(host);
- 
-+	present = mmc_gpio_get_cd(host->mmc);
-+
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	WARN_ON(host->mrq != NULL);
-@@ -1361,7 +1363,6 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 	 *     zero: cd-gpio is used, and card is removed
- 	 *     one: cd-gpio is used, and card is present
+ 	/*
+-	 * There is a potential race between when kswapd checks its watermarks
+-	 * and a process gets throttled. There is also a potential race if
+-	 * processes get throttled, kswapd wakes, a large process exits therby
+-	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
+-	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
+-	 * so wake them now if necessary. If necessary, processes will wake
+-	 * kswapd and get throttled again
++	 * The throttled processes are normally woken up in balance_pgdat() as
++	 * soon as pfmemalloc_watermark_ok() is true. But there is a potential
++	 * race between when kswapd checks the watermarks and a process gets
++	 * throttled. There is also a potential race if processes get
++	 * throttled, kswapd wakes, a large process exits thereby balancing the
++	 * zones, which causes kswapd to exit balance_pgdat() before reaching
++	 * the wake up checks. If kswapd is going to sleep, no process should
++	 * be sleeping on pfmemalloc_wait, so wake them now if necessary. If
++	 * the wake up is premature, processes will wake kswapd and get
++	 * throttled again. The difference from wake ups in balance_pgdat() is
++	 * that here we are under prepare_to_wait().
  	 */
--	present = mmc_gpio_get_cd(host->mmc);
- 	if (present < 0) {
- 		/* If polling, assume that the card is always present. */
- 		if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
-@@ -2061,15 +2062,18 @@ static void sdhci_card_event(struct mmc_host *mmc)
- {
- 	struct sdhci_host *host = mmc_priv(mmc);
- 	unsigned long flags;
-+	int present;
+-	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+-		wake_up(&pgdat->pfmemalloc_wait);
+-		return false;
+-	}
++	if (waitqueue_active(&pgdat->pfmemalloc_wait))
++		wake_up_all(&pgdat->pfmemalloc_wait);
  
- 	/* First check if client has provided their own card event */
- 	if (host->ops->card_event)
- 		host->ops->card_event(host);
- 
-+	present = sdhci_do_get_cd(host);
-+
- 	spin_lock_irqsave(&host->lock, flags);
- 
- 	/* Check host->mrq first in case we are runtime suspended */
--	if (host->mrq && !sdhci_do_get_cd(host)) {
-+	if (host->mrq && !present) {
- 		pr_err("%s: Card removed during transfer!\n",
- 			mmc_hostname(host->mmc));
- 		pr_err("%s: Resetting controller.\n",
+ 	return pgdat_balanced(pgdat, order, classzone_idx);
+ }
 -- 
 2.2.2
 
