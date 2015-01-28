@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991AbbA1CA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:00:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41424 "EHLO
+	id S964791AbbA1CKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:10:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41191 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933214AbbA1BiV (ORCPT
+	with ESMTP id S1754439AbbA1B2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:38:21 -0500
+	Tue, 27 Jan 2015 20:28:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matt Fleming <matt@console-pimps.org>,
-        John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>,
-        Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 06/77] scripts/recordmcount.pl: There is no -m32 gcc option on Super-H anymore
+        Carlos Soto <csotoalonso@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.18 32/61] ARM: dts: imx25: Fix PWM "per" clocks
 Date: Tue, 27 Jan 2015 17:26:44 -0800
-Message-Id: <20150128012746.163002138@linuxfoundation.org>
+Message-Id: <20150128012640.386249998@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012745.971137091@linuxfoundation.org>
-References: <20150128012745.971137091@linuxfoundation.org>
+In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
+References: <20150128012636.936333725@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,48 +26,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 1caf6aaaa47471831d77c75f094d4e00ad1ec808 upstream.
+commit 7ecd0bde5bfea524a843ad8fa8cb66ccbce68779 upstream.
 
-Compiling SH with gcc-4.8 fails due to the -m32 option not being
-supported.
+Currently PWM functionality is broken on mx25 due to the wrong assignment of the
+PWM "per" clock.
 
->From http://buildd.debian-ports.org/status/fetch.php?pkg=linux&arch=sh4&ver=3.16.7-ckt4-1&stamp=1421425783
+According to Documentation/devicetree/bindings/clock/imx25-clock.txt:
+	pwm_ipg_per		52
 
-      CC      init/main.o
-    gcc-4.8: error: unrecognized command line option '-m32'
-    ld: cannot find init/.tmp_mc_main.o: No such file or directory
-    objcopy: 'init/.tmp_mx_main.o': No such file
-    rm: cannot remove 'init/.tmp_mx_main.o': No such file or directory
-    rm: cannot remove 'init/.tmp_mc_main.o': No such file or directory
+,so update the pwm "per" to use 'pwm_ipg_per' instead of 'per10' clock.
 
-Link: http://lkml.kernel.org/r/1421537778-29001-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de
-Link: http://lkml.kernel.org/r/54BCBDD4.10102@physik.fu-berlin.de
+With this change PWM can work fine on mx25.
 
-Cc: Matt Fleming <matt@console-pimps.org>
-Reported-by: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
-Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Carlos Soto <csotoalonso@gmail.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/recordmcount.pl |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/boot/dts/imx25.dtsi |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/scripts/recordmcount.pl
-+++ b/scripts/recordmcount.pl
-@@ -262,7 +262,6 @@ if ($arch eq "x86_64") {
-     # force flags for this arch
-     $ld .= " -m shlelf_linux";
-     $objcopy .= " -O elf32-sh-linux";
--    $cc .= " -m32";
- 
- } elsif ($arch eq "powerpc") {
-     $local_regex = "^[0-9a-fA-F]+\\s+t\\s+(\\.?\\S+)";
+--- a/arch/arm/boot/dts/imx25.dtsi
++++ b/arch/arm/boot/dts/imx25.dtsi
+@@ -369,7 +369,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fa0000 0x4000>;
+-				clocks = <&clks 106>, <&clks 36>;
++				clocks = <&clks 106>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <36>;
+ 			};
+@@ -388,7 +388,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fa8000 0x4000>;
+-				clocks = <&clks 107>, <&clks 36>;
++				clocks = <&clks 107>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <41>;
+ 			};
+@@ -429,7 +429,7 @@
+ 			pwm4: pwm@53fc8000 {
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				reg = <0x53fc8000 0x4000>;
+-				clocks = <&clks 108>, <&clks 36>;
++				clocks = <&clks 108>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <42>;
+ 			};
+@@ -476,7 +476,7 @@
+ 				compatible = "fsl,imx25-pwm", "fsl,imx27-pwm";
+ 				#pwm-cells = <2>;
+ 				reg = <0x53fe0000 0x4000>;
+-				clocks = <&clks 105>, <&clks 36>;
++				clocks = <&clks 105>, <&clks 52>;
+ 				clock-names = "ipg", "per";
+ 				interrupts = <26>;
+ 			};
 
 
