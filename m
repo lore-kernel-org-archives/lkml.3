@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549AbbA1EPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:15:38 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37430 "EHLO mail.kernel.org"
+	id S1762766AbbA1FXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:23:08 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37440 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760844AbbA1EPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:15:32 -0500
+	id S933530AbbA1EPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:15:35 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Benjamin Coddington <bcodding@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 25/91] Input: elantech - fix detection of touchpad on ASUS s301l
-Date: Wed, 28 Jan 2015 12:06:56 +0800
-Message-Id: <1422418236-12852-49-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 025/177] lockd: Try to reconnect if statd has moved
+Date: Wed, 28 Jan 2015 12:06:57 +0800
+Message-Id: <1422418236-12852-50-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Benjamin Coddington <bcodding@redhat.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 271329b3c798b2102120f5df829071c211ef00ed upstream.
+commit 173b3afceebe76fa2205b2c8808682d5b541fe3c upstream.
 
-Adjust Elantech signature validation to account fo rnewer models of
-touchpads.
+If rpc.statd is restarted, upcalls to monitor hosts can fail with
+ECONNREFUSED.  In that case force a lookup of statd's new port and retry the
+upcall.
 
-Reported-and-tested-by: Màrius Monton <marius.monton@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/mouse/elantech.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/lockd/mon.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index d93ea64..f2c2ffe 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -1218,6 +1218,13 @@ static bool elantech_is_signature_valid(const unsigned char *param)
- 	if (param[1] == 0)
- 		return true;
+diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+index 606a8dd..0a68e0b 100644
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -114,6 +114,12 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
  
-+	/*
-+	 * Some models have a revision higher then 20. Meaning param[2] may
-+	 * be 10 or 20, skip the rates check for these.
-+	 */
-+	if (param[0] == 0x46 && (param[1] & 0xef) == 0x0f && param[2] < 40)
-+		return true;
-+
- 	for (i = 0; i < ARRAY_SIZE(rates); i++)
- 		if (param[2] == rates[i])
- 			return false;
+ 	msg.rpc_proc = &clnt->cl_procinfo[proc];
+ 	status = rpc_call_sync(clnt, &msg, 0);
++	if (status == -ECONNREFUSED) {
++		dprintk("lockd:	NSM upcall RPC failed, status=%d, forcing rebind\n",
++				status);
++		rpc_force_rebind(clnt);
++		status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
++	}
+ 	if (status < 0)
+ 		dprintk("lockd: NSM upcall RPC failed, status=%d\n",
+ 				status);
 -- 
 1.9.1
 
