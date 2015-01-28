@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760913AbbA1CDp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:03:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41199 "EHLO
+	id S964877AbbA1CWE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:22:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41028 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932773AbbA1B22 (ORCPT
+	with ESMTP id S1755721AbbA1B2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:28 -0500
+	Tue, 27 Jan 2015 20:28:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.18 42/61] KVM: x86: SYSENTER emulation is broken
+        Dan Carpenter <dan.carpenter@oracle.com>, Julian Anastasov <ja@ssi.bg>,
+        Simon Horman <horms@verge.net.au>
+Subject: [PATCH 3.10 24/32] ipvs: uninitialized data with IP_VS_IPV6
 Date: Tue, 27 Jan 2015 17:26:54 -0800
-Message-Id: <20150128012641.484192014@linuxfoundation.org>
+Message-Id: <20150128012630.526483648@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,86 +25,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit f3747379accba8e95d70cec0eae0582c8c182050 upstream.
+commit 3b05ac3824ed9648c0d9c02d51d9b54e4e7e874f upstream.
 
-SYSENTER emulation is broken in several ways:
-1. It misses the case of 16-bit code segments completely (CVE-2015-0239).
-2. MSR_IA32_SYSENTER_CS is checked in 64-bit mode incorrectly (bits 0 and 1 can
-   still be set without causing #GP).
-3. MSR_IA32_SYSENTER_EIP and MSR_IA32_SYSENTER_ESP are not masked in
-   legacy-mode.
-4. There is some unneeded code.
+The app_tcp_pkt_out() function expects "*diff" to be set and ends up
+using uninitialized data if CONFIG_IP_VS_IPV6 is turned on.
 
-Fix it.
+The same issue is there in app_tcp_pkt_in().  Thanks to Julian Anastasov
+for noticing that.
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/emulate.c |   27 ++++++++-------------------
- 1 file changed, 8 insertions(+), 19 deletions(-)
+ net/netfilter/ipvs/ip_vs_ftp.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -2345,7 +2345,7 @@ static int em_sysenter(struct x86_emulat
- 	 * Not recognized on AMD in compat mode (but is recognized in legacy
- 	 * mode).
- 	 */
--	if ((ctxt->mode == X86EMUL_MODE_PROT32) && (efer & EFER_LMA)
-+	if ((ctxt->mode != X86EMUL_MODE_PROT64) && (efer & EFER_LMA)
- 	    && !vendor_intel(ctxt))
- 		return emulate_ud(ctxt);
+--- a/net/netfilter/ipvs/ip_vs_ftp.c
++++ b/net/netfilter/ipvs/ip_vs_ftp.c
+@@ -183,6 +183,8 @@ static int ip_vs_ftp_out(struct ip_vs_ap
+ 	struct nf_conn *ct;
+ 	struct net *net;
  
-@@ -2358,25 +2358,13 @@ static int em_sysenter(struct x86_emulat
- 	setup_syscalls_segments(ctxt, &cs, &ss);
++	*diff = 0;
++
+ #ifdef CONFIG_IP_VS_IPV6
+ 	/* This application helper doesn't work with IPv6 yet,
+ 	 * so turn this into a no-op for IPv6 packets
+@@ -191,8 +193,6 @@ static int ip_vs_ftp_out(struct ip_vs_ap
+ 		return 1;
+ #endif
  
- 	ops->get_msr(ctxt, MSR_IA32_SYSENTER_CS, &msr_data);
--	switch (ctxt->mode) {
--	case X86EMUL_MODE_PROT32:
--		if ((msr_data & 0xfffc) == 0x0)
--			return emulate_gp(ctxt, 0);
--		break;
--	case X86EMUL_MODE_PROT64:
--		if (msr_data == 0x0)
--			return emulate_gp(ctxt, 0);
--		break;
--	default:
--		break;
--	}
-+	if ((msr_data & 0xfffc) == 0x0)
-+		return emulate_gp(ctxt, 0);
+-	*diff = 0;
+-
+ 	/* Only useful for established sessions */
+ 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
+ 		return 1;
+@@ -321,6 +321,9 @@ static int ip_vs_ftp_in(struct ip_vs_app
+ 	struct ip_vs_conn *n_cp;
+ 	struct net *net;
  
- 	ctxt->eflags &= ~(EFLG_VM | EFLG_IF);
--	cs_sel = (u16)msr_data;
--	cs_sel &= ~SELECTOR_RPL_MASK;
-+	cs_sel = (u16)msr_data & ~SELECTOR_RPL_MASK;
- 	ss_sel = cs_sel + 8;
--	ss_sel &= ~SELECTOR_RPL_MASK;
--	if (ctxt->mode == X86EMUL_MODE_PROT64 || (efer & EFER_LMA)) {
-+	if (efer & EFER_LMA) {
- 		cs.d = 0;
- 		cs.l = 1;
- 	}
-@@ -2385,10 +2373,11 @@ static int em_sysenter(struct x86_emulat
- 	ops->set_segment(ctxt, ss_sel, &ss, 0, VCPU_SREG_SS);
++	/* no diff required for incoming packets */
++	*diff = 0;
++
+ #ifdef CONFIG_IP_VS_IPV6
+ 	/* This application helper doesn't work with IPv6 yet,
+ 	 * so turn this into a no-op for IPv6 packets
+@@ -329,9 +332,6 @@ static int ip_vs_ftp_in(struct ip_vs_app
+ 		return 1;
+ #endif
  
- 	ops->get_msr(ctxt, MSR_IA32_SYSENTER_EIP, &msr_data);
--	ctxt->_eip = msr_data;
-+	ctxt->_eip = (efer & EFER_LMA) ? msr_data : (u32)msr_data;
- 
- 	ops->get_msr(ctxt, MSR_IA32_SYSENTER_ESP, &msr_data);
--	*reg_write(ctxt, VCPU_REGS_RSP) = msr_data;
-+	*reg_write(ctxt, VCPU_REGS_RSP) = (efer & EFER_LMA) ? msr_data :
-+							      (u32)msr_data;
- 
- 	return X86EMUL_CONTINUE;
- }
+-	/* no diff required for incoming packets */
+-	*diff = 0;
+-
+ 	/* Only useful for established sessions */
+ 	if (cp->state != IP_VS_TCP_S_ESTABLISHED)
+ 		return 1;
 
 
