@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161AbbA2BnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:43:25 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:64267 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757130AbbA2BnV (ORCPT
+	id S1757626AbbA2Bpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:45:44 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:48802 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754063AbbA2Bpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:43:21 -0500
+	Wed, 28 Jan 2015 20:45:42 -0500
+Date: Wed, 28 Jan 2015 14:59:03 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Kukjin Kim <kgene@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ARM: multi_v7_defconfig: Enable Exynos5420
+ Multi-Cluster PM support
+Message-ID: <20150128225903.GA3177@quad.lixom.net>
+References: <1422456020-10975-1-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <20150128224317.GC591@fuloong-minipc.musicnaut.iki.fi>
-References: <1422481087-30938-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20150128224317.GC591@fuloong-minipc.musicnaut.iki.fi>
-Date: Wed, 28 Jan 2015 23:56:41 +0100
-Message-ID: <CAKXHbyNH-dpzJXeE+4vmmQLmkPBR249zy5PS93i05L=wruMeZg@mail.gmail.com>
-Subject: Re: [PATCH] staging: xgifb: XGI_main_26: Change variables that is
- never used
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Vitor Braga <vitorpybraga@gmail.com>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Lubomir Rintel <lkundrak@v3.sk>,
-        Thomas Gummerer <t.gummerer@gmail.com>,
-        Brian Vandre <bvandre@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422456020-10975-1-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-28 23:43 GMT+01:00 Aaro Koskinen <aaro.koskinen@iki.fi>:
-> Hi,
->
-> On Wed, Jan 28, 2015 at 10:38:07PM +0100, Rickard Strandqvist wrote:
->> Variable ar assigned a value that is never used.
->> Instead use the struct variable of the same name.
->>
->> This was found using a static code analysis program called cppcheck
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/staging/xgifb/XGI_main_26.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
->> index 709d49e..ecfdf34 100644
->> --- a/drivers/staging/xgifb/XGI_main_26.c
->> +++ b/drivers/staging/xgifb/XGI_main_26.c
->> @@ -1233,7 +1233,7 @@ static int XGIfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
->>       unsigned int vtotal = 0;
->>       unsigned int drate = 0, hrate = 0;
->>       int found_mode = 0;
->> -     int refresh_rate, search_idx;
->> +     int search_idx;
->>
->>       if ((var->vmode & FB_VMODE_MASK) == FB_VMODE_NONINTERLACED) {
->>               vtotal = var->upper_margin + var->yres + var->lower_margin
->> @@ -1271,7 +1271,7 @@ static int XGIfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
->>
->>       /* Calculation wrong for 1024x600 - force it to 60Hz */
->>       if ((var->xres == 1024) && (var->yres == 600))
->> -             refresh_rate = 60;
->> +             xgifb_info->refresh_rate = 60;
->
-> You are changing behaviour here. Did you test it, is it fixing something?
-> Otherwise you could just delete the whole if block...
->
-> A.
+On Wed, Jan 28, 2015 at 03:40:20PM +0100, Javier Martinez Canillas wrote:
+> The Exynos5420 cluster power management support allowing Exynos
+> 5420/5422/5800 machines to power up and down the secondary CPUs.
+> 
+> Without this option enabled, the secondary CPUs are not brought
+> up on boot and the following error is shown:
+> 
+> CPU0: thread -1, cpu 0, socket 0, mpidr 80000000
+> Setting up static identity map for 0x40938e90 - 0x40938f28
+> ARM CCI driver probed
+> CPU1: failed to boot: -38
+> CPU2: failed to boot: -38
+> CPU3: failed to boot: -38
+> CPU4: failed to boot: -38
+> CPU5: failed to boot: -38
+> CPU6: failed to boot: -38
+> CPU7: failed to boot: -38
+> Brought up 1 CPUs
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+
+Applied, thanks.
 
 
-Hi
-
-Yes, thats why there is another commit message.
-
-But no, but when I check the code so it looked very much like a code miss.
-And that you wanted to put refresh_rate = 60, which looks to be a default value.
-
-Kind regards
-Rickard Strandqvist
+-Olof
