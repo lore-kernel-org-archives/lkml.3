@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbbA1Uxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:53:38 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:49246 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753062AbbA1Uxd (ORCPT
+	id S933624AbbA2D3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:29:41 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56691 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761553AbbA2D3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:53:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <1422450981-9328-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1422450981-9328-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Wed, 28 Jan 2015 14:35:22 +0100
-Message-ID: <CAPDyKFquQgut1ZC9Jj=rbNwRKs3Qwr5LsUy_cmY7g2L8MG657Q@mail.gmail.com>
-Subject: Re: [PATCH 0/2] mmc: pwrseq: Add support to multiple gpios in pwrseq simple
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>,
+	Wed, 28 Jan 2015 22:29:02 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: [PATCH] ARM: /proc/atags: Export also for DT
+Date: Wed, 28 Jan 2015 14:38:46 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Rob Herring <robherring2@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Will Deacon <will.deacon@arm.com>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+References: <1403110464-29646-1-git-send-email-pali.rohar@gmail.com> <20150127223331.GP26493@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1501272027390.1322@knanqh.ubzr>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1659276.ZOd2qhmsQT";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201501281438.46942@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2015 at 14:16, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> This patchset adds support to reset/powerup multiple gpio pins on a given
-> sdio bus. The use case is simple, on sdio we could have multiple devices
-> like WLAN, BT which are controlled by there own reset lines. So having
-> multiple reset is something more useful in such cases.
->
-> Without this patch I could not get BT and WLAN working at same time on IFC6410.
->
-> Thanks,
-> srini
->
-> Srinivas Kandagatla (2):
->   mmc: pwrseq: Add support to control multiple gpios in simple pwrseq
->   mmc: pwrseq: Update document with multiple gpios support
->
->  .../devicetree/bindings/mmc/mmc-pwrseq-simple.txt  |  7 ++-
->  drivers/mmc/core/pwrseq_simple.c                   | 64 +++++++++++++++-------
->  2 files changed, 49 insertions(+), 22 deletions(-)
->
-> --
-> 1.9.1
->
+--nextPart1659276.ZOd2qhmsQT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hi Srinivas,
+On Wednesday 28 January 2015 03:07:43 Nicolas Pitre wrote:
+> In other words, what prevents someone from creating, say, a
+> custom minimal Barebox version that sits on top of the
+> existing N900 bootloader?  Wouldn't that provide a much
+> better user experience?
+>=20
 
-I noticed that Javier a few hours ago posted a patchset which
-implement the same thing as yours, I guess this is a wanted feature.
-:-)
+Strong cryptography used for signing first stage bootloader,=20
+undocumented interface and other stuff which initialize HW and=20
+small memory (about 100kB) for second stage non-signed=20
+bootloader. Next kernel image is limited to size 2MB. And=20
+currently uboot can be compiled to act as "kernel" image, so=20
+second stage bootloader can boot it.
 
-I am going to review Javier's patchset, would be nice if you could
-have a look at it as well.
+I spend some time to replace second (non signed) bootloader with=20
+something other, but really it is not possible.
 
-Kind regards
-Uffe
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1659276.ZOd2qhmsQT
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlTI5mYACgkQi/DJPQPkQ1KsqgCdGk9XC3MnJbHGpL/UJiRrn2ve
+GacAoIDHxUa81A/QlFEMz2X9sQARCOr6
+=lJm4
+-----END PGP SIGNATURE-----
+
+--nextPart1659276.ZOd2qhmsQT--
