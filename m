@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933810AbbA1EQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:16:23 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37692 "EHLO mail.kernel.org"
+	id S1762566AbbA1FTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:19:43 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37708 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933758AbbA1EQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:16:18 -0500
+	id S1758675AbbA1EQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:16:21 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, John Sung <penmount.touch@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 32/91] Input: serport - add compat handling for SPIOCSTYPE ioctl
-Date: Wed, 28 Jan 2015 12:07:10 +0800
-Message-Id: <1422418236-12852-63-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Xiubo Li <Li.Xiubo@freescale.com>,
+        Mark Brown <broonie@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 032/177] regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.
+Date: Wed, 28 Jan 2015 12:07:11 +0800
+Message-Id: <1422418236-12852-64-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,112 +20,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Sung <penmount.touch@gmail.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit a80d8b02751060a178bb1f7a6b7a93645a7a308b upstream.
+commit d6b41cb06044a7d895db82bdd54f6e4219970510 upstream.
 
-When running a 32-bit inputattach utility in a 64-bit system, there will be
-error code "inputattach: can't set device type". This is caused by the
-serport device driver not supporting compat_ioctl, so that SPIOCSTYPE ioctl
-fails.
+Since we cannot make sure the 'val_count' will always be none zero
+here, and then if it equals to zero, the kmemdup() will return
+ZERO_SIZE_PTR, which equals to ((void *)16).
 
-Signed-off-by: John Sung <penmount.touch@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+So this patch fix this with just doing the zero check before calling
+kmemdup().
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+[lizf: Backported to 3.4: release mutex before returning EINVAL]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/input/serio/serport.c | 45 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 38 insertions(+), 7 deletions(-)
+ drivers/base/regmap/regmap.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
-index 8755f5f..e4ecf3b 100644
---- a/drivers/input/serio/serport.c
-+++ b/drivers/input/serio/serport.c
-@@ -21,6 +21,7 @@
- #include <linux/init.h>
- #include <linux/serio.h>
- #include <linux/tty.h>
-+#include <linux/compat.h>
- 
- MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
- MODULE_DESCRIPTION("Input device TTY line discipline");
-@@ -196,28 +197,55 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
- 	return 0;
- }
- 
-+static void serport_set_type(struct tty_struct *tty, unsigned long type)
-+{
-+	struct serport *serport = tty->disc_data;
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index e554542..8e81f85 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -600,6 +600,11 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	if (val_bytes == 1) {
+ 		wval = (void *)val;
+ 	} else {
++		if (!val_count) {
++			ret = -EINVAL;
++			goto out;
++		}
 +
-+	serport->id.proto = type & 0x000000ff;
-+	serport->id.id    = (type & 0x0000ff00) >> 8;
-+	serport->id.extra = (type & 0x00ff0000) >> 16;
-+}
-+
- /*
-  * serport_ldisc_ioctl() allows to set the port protocol, and device ID
-  */
- 
--static int serport_ldisc_ioctl(struct tty_struct * tty, struct file * file, unsigned int cmd, unsigned long arg)
-+static int serport_ldisc_ioctl(struct tty_struct *tty, struct file *file,
-+			       unsigned int cmd, unsigned long arg)
- {
--	struct serport *serport = (struct serport*) tty->disc_data;
--	unsigned long type;
--
- 	if (cmd == SPIOCSTYPE) {
-+		unsigned long type;
-+
- 		if (get_user(type, (unsigned long __user *) arg))
- 			return -EFAULT;
- 
--		serport->id.proto = type & 0x000000ff;
--		serport->id.id	  = (type & 0x0000ff00) >> 8;
--		serport->id.extra = (type & 0x00ff0000) >> 16;
-+		serport_set_type(tty, type);
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+#define COMPAT_SPIOCSTYPE	_IOW('q', 0x01, compat_ulong_t)
-+static long serport_ldisc_compat_ioctl(struct tty_struct *tty,
-+				       struct file *file,
-+				       unsigned int cmd, unsigned long arg)
-+{
-+	if (cmd == COMPAT_SPIOCSTYPE) {
-+		void __user *uarg = compat_ptr(arg);
-+		compat_ulong_t compat_type;
-+
-+		if (get_user(compat_type, (compat_ulong_t __user *)uarg))
-+			return -EFAULT;
- 
-+		serport_set_type(tty, compat_type);
- 		return 0;
- 	}
- 
- 	return -EINVAL;
- }
-+#endif
- 
- static void serport_ldisc_write_wakeup(struct tty_struct * tty)
- {
-@@ -241,6 +269,9 @@ static struct tty_ldisc_ops serport_ldisc = {
- 	.close =	serport_ldisc_close,
- 	.read =		serport_ldisc_read,
- 	.ioctl =	serport_ldisc_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl =	serport_ldisc_compat_ioctl,
-+#endif
- 	.receive_buf =	serport_ldisc_receive,
- 	.write_wakeup =	serport_ldisc_write_wakeup
- };
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
+ 			ret = -ENOMEM;
 -- 
 1.9.1
 
