@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763647AbbA2DEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:04:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47002 "EHLO
+	id S1763612AbbA2DDX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:03:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47005 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965198AbbA2Che (ORCPT
+	with ESMTP id S1759357AbbA2Chj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:34 -0500
+	Wed, 28 Jan 2015 21:37:39 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kazuya Mizuguchi <kazuya.mizuguchi.ks@renesas.com>,
-        Takeshi Kihara <takeshi.kihara.df@renesas.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 026/139] usb: renesas_usbhs: gadget: fix NULL pointer dereference in ep_disable()
-Date: Wed, 28 Jan 2015 14:19:29 -0800
-Message-Id: <1422483682-15393-27-git-send-email-kamal@canonical.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 027/139] KVM: s390: flush CPU on load control
+Date: Wed, 28 Jan 2015 14:19:30 -0800
+Message-Id: <1422483682-15393-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -29,41 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kazuya Mizuguchi <kazuya.mizuguchi.ks@renesas.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit 11432050f070810ba139d0226344eef120c3a559 upstream.
+commit 2dca485f8740208604543c3960be31a5dd3ea603 upstream.
 
-This patch fixes an issue that the NULL pointer dereference happens
-when we uses g_audio driver. Since the g_audio driver will call
-usb_ep_disable() in afunc_set_alt() before it calls usb_ep_enable(),
-the uep->pipe of renesas usbhs driver will be NULL. So, this patch
-adds a condition to avoid the oops.
+some control register changes will flush some aspects of the CPU, e.g.
+POP explicitely mentions that for CR9-CR11 "TLBs may be cleared".
+Instead of trying to be clever and only flush on specific CRs, let
+play safe and flush on all lctl(g) as future machines might define
+new bits in CRs. Load control intercept should not happen that often.
 
-Signed-off-by: Kazuya Mizuguchi <kazuya.mizuguchi.ks@renesas.com>
-Signed-off-by: Takeshi Kihara <takeshi.kihara.df@renesas.com>
-Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-Fixes: 2f98382dc (usb: renesas_usbhs: Add Renesas USBHS Gadget)
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ kamal: backport to 3.13-stable ]
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/renesas_usbhs/mod_gadget.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/s390/kvm/priv.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/renesas_usbhs/mod_gadget.c b/drivers/usb/renesas_usbhs/mod_gadget.c
-index 3385aeb..c3bb467 100644
---- a/drivers/usb/renesas_usbhs/mod_gadget.c
-+++ b/drivers/usb/renesas_usbhs/mod_gadget.c
-@@ -600,6 +600,10 @@ static int usbhsg_ep_enable(struct usb_ep *ep,
- static int usbhsg_ep_disable(struct usb_ep *ep)
- {
- 	struct usbhsg_uep *uep = usbhsg_ep_to_uep(ep);
-+	struct usbhs_pipe *pipe = usbhsg_uep_to_pipe(uep);
-+
-+	if (!pipe)
-+		return -EINVAL;
+diff --git a/arch/s390/kvm/priv.c b/arch/s390/kvm/priv.c
+index 2440602..8821ac8 100644
+--- a/arch/s390/kvm/priv.c
++++ b/arch/s390/kvm/priv.c
+@@ -688,7 +688,7 @@ int kvm_s390_handle_lctl(struct kvm_vcpu *vcpu)
+ 			break;
+ 		reg = (reg + 1) % 16;
+ 	} while (1);
+-
++	kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
+ 	return 0;
+ }
  
- 	usbhsg_pipe_disable(uep);
+@@ -725,7 +725,7 @@ static int handle_lctlg(struct kvm_vcpu *vcpu)
+ 			break;
+ 		reg = (reg + 1) % 16;
+ 	} while (1);
+-
++	kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
+ 	return 0;
+ }
  
 -- 
 1.9.1
