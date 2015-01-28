@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933966AbbA1EUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:20:06 -0500
-Received: from mail.kernel.org ([198.145.29.136]:39049 "EHLO mail.kernel.org"
+	id S1761695AbbA1FCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 00:02:45 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39090 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933922AbbA1ET6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:19:58 -0500
+	id S1754755AbbA1EUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:20:01 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Joseph Qi <joseph.qi@huawei.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 67/91] ocfs2/dlm: do not get resource spinlock if lockres is new
-Date: Wed, 28 Jan 2015 12:08:20 +0800
-Message-Id: <1422418236-12852-133-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 067/177] random: add and use memzero_explicit() for clearing data
+Date: Wed, 28 Jan 2015 12:08:21 +0800
+Message-Id: <1422418236-12852-134-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -23,83 +21,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joseph Qi <joseph.qi@huawei.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 5760a97c7143c208fa3a8f8cad0ed7dd672ebd28 upstream.
+commit d4c5efdb97773f59a2b711754ca0953f24516739 upstream.
 
-There is a deadlock case which reported by Guozhonghua:
-  https://oss.oracle.com/pipermail/ocfs2-devel/2014-September/010079.html
+zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
+memset() calls which clear out sensitive data in extract_{buf,entropy,
+entropy_user}() in random driver are being optimized away by gcc.
 
-This case is caused by &res->spinlock and &dlm->master_lock
-misordering in different threads.
+Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
+that can be used in such cases where a variable with sensitive data is
+being cleared out in the end. Other use cases might also be in crypto
+code. [ I have put this into lib/string.c though, as it's always built-in
+and doesn't need any dependencies then. ]
 
-It was introduced by commit 8d400b81cc83 ("ocfs2/dlm: Clean up refmap
-helpers").  Since lockres is new, it doesn't not require the
-&res->spinlock.  So remove it.
+Fixes kernel bugzilla: 82041
 
-Fixes: 8d400b81cc83 ("ocfs2/dlm: Clean up refmap helpers")
-Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
-Reviewed-by: joyce.xue <xuejiufei@huawei.com>
-Reported-by: Guozhonghua <guozhonghua@h3c.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: zatimend@hotmail.co.uk
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[lizf: Backported to 3.4:
+ - adjust context
+ - another memset() in extract_buf() needs to be converted]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/ocfs2/dlm/dlmmaster.c | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ drivers/char/random.c  | 10 +++++-----
+ include/linux/string.h |  4 +++-
+ lib/string.c           | 16 ++++++++++++++++
+ 3 files changed, 24 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ocfs2/dlm/dlmmaster.c b/fs/ocfs2/dlm/dlmmaster.c
-index 005261c..dbc372e 100644
---- a/fs/ocfs2/dlm/dlmmaster.c
-+++ b/fs/ocfs2/dlm/dlmmaster.c
-@@ -653,12 +653,9 @@ void dlm_lockres_clear_refmap_bit(struct dlm_ctxt *dlm,
- 	clear_bit(bit, res->refmap);
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 1052fc4..85172fa 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -932,8 +932,8 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+ 	 * pool while mixing, and hash one final time.
+ 	 */
+ 	sha_transform(hash.w, extract, workspace);
+-	memset(extract, 0, sizeof(extract));
+-	memset(workspace, 0, sizeof(workspace));
++	memzero_explicit(extract, sizeof(extract));
++	memzero_explicit(workspace, sizeof(workspace));
+ 
+ 	/*
+ 	 * In case the hash function has some recognizable output
+@@ -956,7 +956,7 @@ static void extract_buf(struct entropy_store *r, __u8 *out)
+ 	}
+ 
+ 	memcpy(out, &hash, EXTRACT_SIZE);
+-	memset(&hash, 0, sizeof(hash));
++	memzero_explicit(&hash, sizeof(hash));
  }
  
--
--void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
-+static void __dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
- 				   struct dlm_lock_resource *res)
+ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+@@ -989,7 +989,7 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
+ 	}
+ 
+ 	/* Wipe data just returned from memory */
+-	memset(tmp, 0, sizeof(tmp));
++	memzero_explicit(tmp, sizeof(tmp));
+ 
+ 	return ret;
+ }
+@@ -1027,7 +1027,7 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
+ 	}
+ 
+ 	/* Wipe data just returned from memory */
+-	memset(tmp, 0, sizeof(tmp));
++	memzero_explicit(tmp, sizeof(tmp));
+ 
+ 	return ret;
+ }
+diff --git a/include/linux/string.h b/include/linux/string.h
+index e033564..3d9feb7 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -133,7 +133,7 @@ int bprintf(u32 *bin_buf, size_t size, const char *fmt, ...) __printf(3, 4);
+ #endif
+ 
+ extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
+-			const void *from, size_t available);
++				       const void *from, size_t available);
+ 
+ /**
+  * strstarts - does @str start with @prefix?
+@@ -144,5 +144,7 @@ static inline bool strstarts(const char *str, const char *prefix)
  {
--	assert_spin_locked(&res->spinlock);
--
- 	res->inflight_locks++;
- 
- 	mlog(0, "%s: res %.*s, inflight++: now %u, %ps()\n", dlm->name,
-@@ -666,6 +663,13 @@ void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
- 	     __builtin_return_address(0));
+ 	return strncmp(str, prefix, strlen(prefix)) == 0;
  }
- 
-+void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
-+				   struct dlm_lock_resource *res)
-+{
-+	assert_spin_locked(&res->spinlock);
-+	__dlm_lockres_grab_inflight_ref(dlm, res);
-+}
 +
- void dlm_lockres_drop_inflight_ref(struct dlm_ctxt *dlm,
- 				   struct dlm_lock_resource *res)
- {
-@@ -855,10 +859,8 @@ lookup:
- 	/* finally add the lockres to its hash bucket */
- 	__dlm_insert_lockres(dlm, res);
++void memzero_explicit(void *s, size_t count);
+ #endif
+ #endif /* _LINUX_STRING_H_ */
+diff --git a/lib/string.c b/lib/string.c
+index e5878de..43d0781 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -586,6 +586,22 @@ void *memset(void *s, int c, size_t count)
+ EXPORT_SYMBOL(memset);
+ #endif
  
--	/* Grab inflight ref to pin the resource */
--	spin_lock(&res->spinlock);
--	dlm_lockres_grab_inflight_ref(dlm, res);
--	spin_unlock(&res->spinlock);
-+	/* since this lockres is new it doesn't not require the spinlock */
-+	__dlm_lockres_grab_inflight_ref(dlm, res);
- 
- 	/* get an extra ref on the mle in case this is a BLOCK
- 	 * if so, the creator of the BLOCK may try to put the last
++/**
++ * memzero_explicit - Fill a region of memory (e.g. sensitive
++ *		      keying data) with 0s.
++ * @s: Pointer to the start of the area.
++ * @count: The size of the area.
++ *
++ * memzero_explicit() doesn't need an arch-specific version as
++ * it just invokes the one of memset() implicitly.
++ */
++void memzero_explicit(void *s, size_t count)
++{
++	memset(s, 0, count);
++	OPTIMIZER_HIDE_VAR(s);
++}
++EXPORT_SYMBOL(memzero_explicit);
++
+ #ifndef __HAVE_ARCH_MEMCPY
+ /**
+  * memcpy - Copy one area of memory to another
 -- 
 1.9.1
 
