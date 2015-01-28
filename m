@@ -1,117 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308AbbA2BqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:46:24 -0500
-Received: from userp1050.oracle.com ([156.151.31.82]:44679 "EHLO
-	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755449AbbA2BqT (ORCPT
+	id S1755043AbbA1UPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:15:36 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:49406 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948AbbA1UPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:46:19 -0500
-X-Greylist: delayed 2111 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Jan 2015 20:46:19 EST
-From: Sasha Levin <sasha.levin@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: iamjoonsoo.kim@lge.com, m.szyprowski@samsung.com,
-        akpm@linux-foundation.org, lauraa@codeaurora.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH v4 3/3] mm: cma: release trigger
-Date: Wed, 28 Jan 2015 14:10:11 -0500
-Message-Id: <1422472211-32387-4-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1422472211-32387-1-git-send-email-sasha.levin@oracle.com>
-References: <1422472211-32387-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Source-IP: userp1040.oracle.com [156.151.31.81]
+	Wed, 28 Jan 2015 15:15:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <1422470138-8352-1-git-send-email-mpa@pengutronix.de>
+References: <1422470138-8352-1-git-send-email-mpa@pengutronix.de>
+Date: Wed, 28 Jan 2015 14:12:02 -0500
+Message-ID: <CAECXXi7whHm3uUJP_yXddnSSTikd_p-z2Eq=85wqe1HB9bL_Pg@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Update NBD maintainer
+From: Paul Clements <paul.clements@us.sios.com>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "nbd-general@lists.sourceforge.net" 
+	<nbd-general@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides a userspace interface to trigger a CMA release.
+Small typo, but otherwise, I approve.
 
-Usage:
+On Wed, Jan 28, 2015 at 1:35 PM, Markus Pargmann <mpa@pengutronix.de> wrote:
+> Paul stops maintining NBD and I will take his place from now on.
+>
+> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+> ---
+>  MAINTAINERS | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 2ebb056cbe0a..4a83259e7f45 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6583,9 +6583,10 @@ F:       include/uapi/linux/netrom.h
+>  F:     net/netrom/
+>
+>  NETWORK BLOCK DEVICE (NBD)
+> -M:     Paul Clements <Paul.Clements@steeleye.com>
+> +M:     Markus Pargmann <mpa@pengutronix.de
 
-	echo [pages] > free
+^^ here, missing the trailing >
 
-This would provide testing/fuzzing access to the CMA release paths.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- mm/cma_debug.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
-
-diff --git a/mm/cma_debug.c b/mm/cma_debug.c
-index 5bd6863..c29f029 100644
---- a/mm/cma_debug.c
-+++ b/mm/cma_debug.c
-@@ -39,6 +39,59 @@ static void cma_add_to_cma_mem_list(struct cma *cma, struct cma_mem *mem)
- 	spin_unlock(&cma->mem_head_lock);
- }
- 
-+static struct cma_mem *cma_get_entry_from_list(struct cma *cma)
-+{
-+	struct cma_mem *mem = NULL;
-+
-+	spin_lock(&cma->mem_head_lock);
-+	if (!hlist_empty(&cma->mem_head)) {
-+		mem = hlist_entry(cma->mem_head.first, struct cma_mem, node);
-+		hlist_del_init(&mem->node);
-+	}
-+	spin_unlock(&cma->mem_head_lock);
-+
-+	return mem;
-+}
-+
-+static int cma_free_mem(struct cma *cma, int count)
-+{
-+	struct cma_mem *mem = NULL;
-+
-+	while (count) {
-+		mem = cma_get_entry_from_list(cma);
-+		if (mem == NULL)
-+			return 0;
-+
-+		if (mem->n <= count) {
-+			cma_release(cma, mem->p, mem->n);
-+			count -= mem->n;
-+			kfree(mem);
-+		} else if (cma->order_per_bit == 0) {
-+			cma_release(cma, mem->p, count);
-+			mem->p += count;
-+			mem->n -= count;
-+			count = 0;
-+			cma_add_to_cma_mem_list(cma, mem);
-+		} else {
-+			cma_add_to_cma_mem_list(cma, mem);
-+			break;
-+		}
-+	}
-+
-+	return 0;
-+			
-+}
-+
-+static int cma_free_write(void *data, u64 val)
-+{
-+        int pages = val;
-+	struct cma *cma = data;
-+
-+        return cma_free_mem(cma, pages);
-+}
-+
-+DEFINE_SIMPLE_ATTRIBUTE(cma_free_fops, NULL, cma_free_write, "%llu\n");
-+
- static int cma_alloc_mem(struct cma *cma, int count)
- {
- 	struct cma_mem *mem;
-@@ -85,6 +138,9 @@ static void cma_debugfs_add_one(struct cma *cma, int idx)
- 	debugfs_create_file("alloc", S_IWUSR, cma_debugfs_root, cma,
- 				&cma_alloc_fops);
- 
-+	debugfs_create_file("free", S_IWUSR, cma_debugfs_root, cma,
-+				&cma_free_fops);
-+
- 	debugfs_create_file("base_pfn", S_IRUGO, tmp,
- 				&cma->base_pfn, &cma_debugfs_fops);
- 	debugfs_create_file("count", S_IRUGO, tmp,
--- 
-1.7.10.4
-
+>  S:     Maintained
+>  L:     nbd-general@lists.sourceforge.net
+> +T:     git git://git.pengutronix.de/git/mpa/linux-nbd.git
+>  F:     Documentation/blockdev/nbd.txt
+>  F:     drivers/block/nbd.c
+>  F:     include/linux/nbd.h
+> --
+> 2.1.4
