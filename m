@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965412AbbA1E0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:26:46 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41558 "EHLO mail.kernel.org"
+	id S965429AbbA1E0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:26:51 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41599 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965327AbbA1E0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:26:43 -0500
+	id S965406AbbA1E0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:26:46 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 176/177] x86, kvm: Clear paravirt_enabled on KVM guests for espfix32's benefit
-Date: Wed, 28 Jan 2015 12:10:34 +0800
-Message-Id: <1422418236-12852-267-git-send-email-lizf@kernel.org>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@kernel.org>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 177/177] x86/tls: Validate TLS entries to protect espfix
+Date: Wed, 28 Jan 2015 12:10:35 +0800
+Message-Id: <1422418236-12852-268-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -27,70 +30,78 @@ From: Andy Lutomirski <luto@amacapital.net>
 ------------------
 
 
-commit 29fa6825463c97e5157284db80107d1bfac5d77b upstream.
+commit 41bdc78544b8a93a9c6814b8bbbfef966272abbe upstream.
 
-paravirt_enabled has the following effects:
+Installing a 16-bit RW data segment into the GDT defeats espfix.
+AFAICT this will not affect glibc, Wine, or dosemu at all.
 
- - Disables the F00F bug workaround warning.  There is no F00F bug
-   workaround any more because Linux's standard IDT handling already
-   works around the F00F bug, but the warning still exists.  This
-   is only cosmetic, and, in any event, there is no such thing as
-   KVM on a CPU with the F00F bug.
-
- - Disables 32-bit APM BIOS detection.  On a KVM paravirt system,
-   there should be no APM BIOS anyway.
-
- - Disables tboot.  I think that the tboot code should check the
-   CPUID hypervisor bit directly if it matters.
-
- - paravirt_enabled disables espfix32.  espfix32 should *not* be
-   disabled under KVM paravirt.
-
-The last point is the purpose of this patch.  It fixes a leak of the
-high 16 bits of the kernel stack address on 32-bit KVM paravirt
-guests.  Fixes CVE-2014-8134.
-
-Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: security@kernel.org <security@kernel.org>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- arch/x86/kernel/kvm.c      | 9 ++++++++-
- arch/x86/kernel/kvmclock.c | 1 -
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ arch/x86/kernel/tls.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index e554e5a..226f284 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -258,7 +258,14 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
- static void __init paravirt_ops_setup(void)
- {
- 	pv_info.name = "KVM";
--	pv_info.paravirt_enabled = 1;
+diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
+index 9d9d2f9..1bf424d 100644
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -27,6 +27,21 @@ static int get_free_idx(void)
+ 	return -ESRCH;
+ }
+ 
++static bool tls_desc_okay(const struct user_desc *info)
++{
++	if (LDT_empty(info))
++		return true;
 +
 +	/*
-+	 * KVM isn't paravirt in the sense of paravirt_enabled.  A KVM
-+	 * guest kernel works like a bare metal kernel with additional
-+	 * features, and paravirt_enabled is about features that are
-+	 * missing.
++	 * espfix is required for 16-bit data segments, but espfix
++	 * only works for LDT segments.
 +	 */
-+	pv_info.paravirt_enabled = 0;
++	if (!info->seg_32bit)
++		return false;
++
++	return true;
++}
++
+ static void set_tls_desc(struct task_struct *p, int idx,
+ 			 const struct user_desc *info, int n)
+ {
+@@ -66,6 +81,9 @@ int do_set_thread_area(struct task_struct *p, int idx,
+ 	if (copy_from_user(&info, u_info, sizeof(info)))
+ 		return -EFAULT;
  
- 	if (kvm_para_has_feature(KVM_FEATURE_NOP_IO_DELAY))
- 		pv_cpu_ops.io_delay = kvm_io_delay;
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index f8492da..5e3f91b 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -212,7 +212,6 @@ void __init kvmclock_init(void)
- #endif
- 	kvm_get_preset_lpj();
- 	clocksource_register_hz(&kvm_clock, NSEC_PER_SEC);
--	pv_info.paravirt_enabled = 1;
- 	pv_info.name = "KVM";
++	if (!tls_desc_okay(&info))
++		return -EINVAL;
++
+ 	if (idx == -1)
+ 		idx = info.entry_number;
  
- 	if (kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE_STABLE_BIT))
+@@ -196,6 +214,7 @@ int regset_tls_set(struct task_struct *target, const struct user_regset *regset,
+ {
+ 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
+ 	const struct user_desc *info;
++	int i;
+ 
+ 	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+@@ -209,6 +228,10 @@ int regset_tls_set(struct task_struct *target, const struct user_regset *regset,
+ 	else
+ 		info = infobuf;
+ 
++	for (i = 0; i < count / sizeof(struct user_desc); i++)
++		if (!tls_desc_okay(info + i))
++			return -EINVAL;
++
+ 	set_tls_desc(target,
+ 		     GDT_ENTRY_TLS_MIN + (pos / sizeof(struct user_desc)),
+ 		     info, count / sizeof(struct user_desc));
 -- 
 1.9.1
 
