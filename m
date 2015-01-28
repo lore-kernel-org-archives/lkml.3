@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbbA2BJK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:09:10 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:54400 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519AbbA2BJH (ORCPT
+	id S1753013AbbA2BLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:11:31 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:54588 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752212AbbA2BL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:09:07 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fred Akers <knivey@botops.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: comedi: drivers: addi_apci_3501: Removed variables that is never used
-Date: Wed, 28 Jan 2015 23:33:12 +0100
-Message-Id: <1422484392-8566-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 28 Jan 2015 20:11:27 -0500
+Message-ID: <1422484395.3621.73.camel@x220>
+Subject: Re: [PATCH v2 0/8] ARM: Conexant Digicolor CX92755 SoC support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Baruch Siach <baruch@tkos.co.il>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Date: Wed, 28 Jan 2015 23:33:15 +0100
+In-Reply-To: <5966468.GiJYdzCvnt@wuerfel>
+References: <cover.1420744368.git.baruch@tkos.co.il>
+	 <5966468.GiJYdzCvnt@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Jan 2015 22:33:16.0279 (UTC) FILETIME=[68A1B070:01D03B4A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variable ar assigned a value that is never used.
-I have also removed all the code that thereby serves no purpose.
+On Thu, 2015-01-08 at 23:46 +0100, Arnd Bergmann wrote:
+> Once there are no more review comments, please submit the first three
+> patches to arm@kernel.org, and send the other patches as separate
+> series to the respective maintainers for irqchip and clocksource.
 
-This was found using a static code analysis program called cppcheck
+I found this message while looking into CONFIG_ARCH_DIGICOLOR. That
+Kconfig macro entered linux-next in next-20150128. But there's no
+Kconfig symbol ARCH_DIGICOLOR yet in linux-next.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/comedi/drivers/addi_apci_3501.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+As you might be aware I try to check each linux-next release for Kconfig
+oddities. One of the oddities I tend _not_ to report are things like
+this. That is, SoC's, MFD's, or whatever, were specific drivers can get
+merged before the core functionality. In this case the irqchip driver
+got merged into linux-next while the core ARCH_DIGICOLOR code is still
+pending. And you happen to be involved with quite a bit of code in areas
+like that. 
 
-diff --git a/drivers/staging/comedi/drivers/addi_apci_3501.c b/drivers/staging/comedi/drivers/addi_apci_3501.c
-index a726efc..0cdcecc 100644
---- a/drivers/staging/comedi/drivers/addi_apci_3501.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_3501.c
-@@ -267,7 +267,6 @@ static irqreturn_t apci3501_interrupt(int irq, void *d)
- 	struct apci3501_private *devpriv = dev->private;
- 	unsigned int ui_Timer_AOWatchdog;
- 	unsigned long ul_Command1;
--	int i_temp;
- 
- 	/*  Disable Interrupt */
- 	ul_Command1 = inl(dev->iobase + APCI3501_TIMER_CTRL_REG);
-@@ -285,7 +284,7 @@ static irqreturn_t apci3501_interrupt(int irq, void *d)
- 	ul_Command1 = inl(dev->iobase + APCI3501_TIMER_CTRL_REG);
- 	ul_Command1 = ((ul_Command1 & 0xFFFFF9FDul) | 1 << 1);
- 	outl(ul_Command1, dev->iobase + APCI3501_TIMER_CTRL_REG);
--	i_temp = inl(dev->iobase + APCI3501_TIMER_STATUS_REG) & 0x1;
-+	inl(dev->iobase + APCI3501_TIMER_STATUS_REG) & 0x1;
- 
- 	return IRQ_HANDLED;
- }
--- 
-1.7.10.4
+Pre-merges like this appear unavoidable (ie, other workflows would be
+more trouble for the people involved). But what would be a good moment
+to still raise an issue like this? Just to make sure things don't fall
+through the cracks. As in: "this driver got merged into mainline but do
+you know you can't yet build it?". Perhaps with each -rc1?
+
+
+Paul Bolle
 
