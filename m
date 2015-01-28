@@ -1,148 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210AbbA1ESX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:18:23 -0500
-Received: from mail.kernel.org ([198.145.29.136]:38356 "EHLO mail.kernel.org"
+	id S1757006AbbA1ESU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:18:20 -0500
+Received: from mail.kernel.org ([198.145.29.136]:38361 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756158AbbA1ESL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756647AbbA1ESL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jan 2015 23:18:11 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>,
-        "Mihai Don\\u021bu" <mihai.dontu@gmail.com>,
-        =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>, Jan Kara <jack@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
-        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 049/177] fanotify: enable close-on-exec on events' fd when requested in fanotify_init()
-Date: Wed, 28 Jan 2015 12:07:45 +0800
-Message-Id: <1422418236-12852-98-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 050/177] Input: synaptics - gate forcepad support by DMI check
+Date: Wed, 28 Jan 2015 12:07:46 +0800
+Message-Id: <1422418236-12852-99-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 0b37e097a648aa71d4db1ad108001e95b69a2da4 upstream.
+commit aa972409951e0675e07918620427517cad5090e0 upstream.
 
-According to commit 80af258867648 ("fanotify: groups can specify their
-f_flags for new fd"), file descriptors created as part of file access
-notification events inherit flags from the event_f_flags argument passed
-to syscall fanotify_init(2)[1].
+Unfortunately, ForcePad capability is not actually exported over PS/2, so
+we have to resort to DMI checks.
 
-Unfortunately O_CLOEXEC is currently silently ignored.
-
-Indeed, event_f_flags are only given to dentry_open(), which only seems to
-care about O_ACCMODE and O_PATH in do_dentry_open(), O_DIRECT in
-open_check_o_direct() and O_LARGEFILE in generic_file_open().
-
-It's a pity, since, according to some lookup on various search engines and
-http://codesearch.debian.net/, there's already some userspace code which
-use O_CLOEXEC:
-
-- in systemd's readahead[2]:
-
-    fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
-
-- in clsync[3]:
-
-    #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
-
-    int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
-
-- in examples [4] from "Filesystem monitoring in the Linux
-  kernel" article[5] by Aleksander Morgado:
-
-    if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
-                                      O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
-
-Additionally, since commit 48149e9d3a7e ("fanotify: check file flags
-passed in fanotify_init").  having O_CLOEXEC as part of fanotify_init()
-second argument is expressly allowed.
-
-So it seems expected to set close-on-exec flag on the file descriptors if
-userspace is allowed to request it with O_CLOEXEC.
-
-But Andrew Morton raised[6] the concern that enabling now close-on-exec
-might break existing applications which ask for O_CLOEXEC but expect the
-file descriptor to be inherited across exec().
-
-In the other hand, as reported by Mihai Dontu[7] close-on-exec on the file
-descriptor returned as part of file access notify can break applications
-due to deadlock.  So close-on-exec is needed for most applications.
-
-More, applications asking for close-on-exec are likely expecting it to be
-enabled, relying on O_CLOEXEC being effective.  If not, it might weaken
-their security, as noted by Jan Kara[8].
-
-So this patch replaces call to macro get_unused_fd() by a call to function
-get_unused_fd_flags() with event_f_flags value as argument.  This way
-O_CLOEXEC flag in the second argument of fanotify_init(2) syscall is
-interpreted and close-on-exec get enabled when requested.
-
-[1] http://man7.org/linux/man-pages/man2/fanotify_init.2.html
-[2] http://cgit.freedesktop.org/systemd/systemd/tree/src/readahead/readahead-collect.c?id=v208#n294
-[3] https://github.com/xaionaro/clsync/blob/v0.2.1/sync.c#L1631
-    https://github.com/xaionaro/clsync/blob/v0.2.1/configuration.h#L38
-[4] http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
-[5] http://www.lanedo.com/2013/filesystem-monitoring-linux-kernel/
-[6] http://lkml.kernel.org/r/20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org
-[7] http://lkml.kernel.org/r/20141002095046.3715eb69@mdontu-l
-[8] http://lkml.kernel.org/r/20141002104410.GB19748@quack.suse.cz
-
-Link: http://lkml.kernel.org/r/cover.1411562410.git.ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Reviewed by: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Tested-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Cc: Mihai Don\u021bu <mihai.dontu@gmail.com>
-Cc: Pádraig Brady <P@draigBrady.com>
-Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Cc: Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Cc: Richard Guy Briggs <rgb@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Nicole Faerber <nicole.faerber@kernelconcepts.de>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- fs/notify/fanotify/fanotify_user.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/mouse/synaptics.c | 22 +++++++++++++++++++++-
+ drivers/input/mouse/synaptics.h |  8 ++------
+ 2 files changed, 23 insertions(+), 7 deletions(-)
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 48bc91d..97d91f0 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -67,7 +67,7 @@ static int create_fd(struct fsnotify_group *group, struct fsnotify_event *event)
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 32b1363..97e5f6f 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -506,6 +506,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
+ 	priv->agm_pending = true;
+ }
  
- 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
++static bool is_forcepad;
++
+ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 				    struct synaptics_data *priv,
+ 				    struct synaptics_hw_state *hw)
+@@ -535,7 +537,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
  
--	client_fd = get_unused_fd();
-+	client_fd = get_unused_fd_flags(group->fanotify_data.f_flags);
- 	if (client_fd < 0)
- 		return client_fd;
+-		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
++		if (is_forcepad) {
+ 			/*
+ 			 * ForcePads, like Clickpads, use middle button
+ 			 * bits to report primary button clicks.
+@@ -1512,6 +1514,18 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
+ 	{ }
+ };
  
++static const struct dmi_system_id forcepad_dmi_table[] __initconst = {
++#if defined(CONFIG_DMI) && defined(CONFIG_X86)
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Folio 1040 G1"),
++		},
++	},
++#endif
++	{ }
++};
++
+ void __init synaptics_module_init(void)
+ {
+ 	const struct dmi_system_id *min_max_dmi;
+@@ -1522,6 +1536,12 @@ void __init synaptics_module_init(void)
+ 	min_max_dmi = dmi_first_match(min_max_dmi_table);
+ 	if (min_max_dmi)
+ 		quirk_min_max = min_max_dmi->driver_data;
++
++	/*
++	 * Unfortunately ForcePad capability is not exported over PS/2,
++	 * so we have to resort to checking DMI.
++	 */
++	is_forcepad = dmi_check_system(forcepad_dmi_table);
+ }
+ 
+ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index ac1b773..20d861b 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -76,12 +76,9 @@
+  *					for noise.
+  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
+  *					reports 2.
++ * 2	0x01	uniform clickpad	whole clickpad moves instead of being
++ *					hinged at the top.
+  * 2	0x20	report min		query 0x0f gives min coord reported
+- * 2	0x80	forcepad		forcepad is a variant of clickpad that
+- *					does not have physical buttons but rather
+- *					uses pressure above certain threshold to
+- *					report primary clicks. Forcepads also have
+- *					clickpad bit set.
+  */
+ #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
+ #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
+@@ -90,7 +87,6 @@
+ #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
+ #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
+ #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
+-#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
+ 
+ /* synaptics modes query bits */
+ #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
 -- 
 1.9.1
 
