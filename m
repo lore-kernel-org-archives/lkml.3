@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965322AbbA2Chn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:37:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47004 "EHLO
+	id S933329AbbA2DFJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:05:09 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46998 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756112AbbA2Chh (ORCPT
+	with ESMTP id S965225AbbA2Ch2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:37 -0500
+	Wed, 28 Jan 2015 21:37:28 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Prashant Sreedharan <prashant@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
+Cc: Sven Eckelmann <sven@narfation.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 005/139] tg3: tg3_disable_ints using uninitialized mailbox value to disable interrupts
-Date: Wed, 28 Jan 2015 14:19:08 -0800
-Message-Id: <1422483682-15393-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 006/139] batman-adv: Unify fragment size calculation
+Date: Wed, 28 Jan 2015 14:19:09 -0800
+Message-Id: <1422483682-15393-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -29,90 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prashant Sreedharan <prashant@broadcom.com>
+From: Sven Eckelmann <sven@narfation.org>
 
-[ Upstream commit 05b0aa579397b734f127af58e401a30784a1e315 ]
+[ Upstream commit 0402e444cd199389b7fe47be68a67b817e09e097 ]
 
-During driver load in tg3_init_one, if the driver detects DMA activity before
-intializing the chip tg3_halt is called. As part of tg3_halt interrupts are
-disabled using routine tg3_disable_ints. This routine was using mailbox value
-which was not initialized (default value is 0). As a result driver was writing
-0x00000001 to pci config space register 0, which is the vendor id / device id.
+The fragmentation code was replaced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
+("batman-adv: Receive fragmented packets and merge") by an implementation which
+can handle up to 16 fragments of a packet. The packet is prepared for the split
+in fragments by the function batadv_frag_send_packet and the actual split is
+done by batadv_frag_create.
 
-This driver bug was exposed because of the commit a7877b17a667 (PCI: Check only
-the Vendor ID to identify Configuration Request Retry). Also this issue is only
-seen in older generation chipsets like 5722 because config space write to offset
-0 from driver is possible. The newer generation chips ignore writes to offset 0.
-Also without commit a7877b17a667, for these older chips when a GRC reset is
-issued the Bootcode would reprogram the vendor id/device id, which is the reason
-this bug was masked earlier.
+Both functions calculate the size of a fragment themself. But their calculation
+differs because batadv_frag_send_packet also subtracts ETH_HLEN. Therefore,
+the check in batadv_frag_send_packet "can a full fragment can be created?" may
+return true even when batadv_frag_create cannot create a full fragment.
 
-Fixed by initializing the interrupt mailbox registers before calling tg3_halt.
+The function batadv_frag_create doesn't check the size of the skb before
+splitting it and therefore might try to create a larger fragment than the
+remaining buffer. This creates an integer underflow and an invalid len is given
+to skb_split.
 
-Please queue for -stable.
-
-Reported-by: Nils Holland <nholland@tisys.org>
-Reported-by: Marcelo Ricardo Leitner <marcelo.leitner@gmail.com>
-Signed-off-by: Prashant Sreedharan <prashant@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Sven Eckelmann <sven@narfation.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ net/batman-adv/fragmentation.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index bbb9bd9..fd16844 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -17566,23 +17566,6 @@ static int tg3_init_one(struct pci_dev *pdev,
- 		goto err_out_apeunmap;
- 	}
+diff --git a/net/batman-adv/fragmentation.c b/net/batman-adv/fragmentation.c
+index b3c4223..ff7cd41 100644
+--- a/net/batman-adv/fragmentation.c
++++ b/net/batman-adv/fragmentation.c
+@@ -436,7 +436,7 @@ bool batadv_frag_send_packet(struct sk_buff *skb,
+ 	 * fragments larger than BATADV_FRAG_MAX_FRAG_SIZE
+ 	 */
+ 	mtu = min_t(unsigned, mtu, BATADV_FRAG_MAX_FRAG_SIZE);
+-	max_fragment_size = (mtu - header_size - ETH_HLEN);
++	max_fragment_size = mtu - header_size;
+ 	max_packet_size = max_fragment_size * BATADV_FRAG_MAX_FRAGMENTS;
  
--	/*
--	 * Reset chip in case UNDI or EFI driver did not shutdown
--	 * DMA self test will enable WDMAC and we'll see (spurious)
--	 * pending DMA on the PCI bus at that point.
--	 */
--	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
--	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
--		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
--		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
--	}
--
--	err = tg3_test_dma(tp);
--	if (err) {
--		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
--		goto err_out_apeunmap;
--	}
--
- 	intmbx = MAILBOX_INTERRUPT_0 + TG3_64BIT_REG_LOW;
- 	rcvmbx = MAILBOX_RCVRET_CON_IDX_0 + TG3_64BIT_REG_LOW;
- 	sndmbx = MAILBOX_SNDHOST_PROD_IDX_0 + TG3_64BIT_REG_LOW;
-@@ -17627,6 +17610,23 @@ static int tg3_init_one(struct pci_dev *pdev,
- 			sndmbx += 0xc;
- 	}
- 
-+	/*
-+	 * Reset chip in case UNDI or EFI driver did not shutdown
-+	 * DMA self test will enable WDMAC and we'll see (spurious)
-+	 * pending DMA on the PCI bus at that point.
-+	 */
-+	if ((tr32(HOSTCC_MODE) & HOSTCC_MODE_ENABLE) ||
-+	    (tr32(WDMAC_MODE) & WDMAC_MODE_ENABLE)) {
-+		tw32(MEMARB_MODE, MEMARB_MODE_ENABLE);
-+		tg3_halt(tp, RESET_KIND_SHUTDOWN, 1);
-+	}
-+
-+	err = tg3_test_dma(tp);
-+	if (err) {
-+		dev_err(&pdev->dev, "DMA engine test failed, aborting\n");
-+		goto err_out_apeunmap;
-+	}
-+
- 	tg3_init_coal(tp);
- 
- 	pci_set_drvdata(pdev, dev);
+ 	/* Don't even try to fragment, if we need more than 16 fragments */
 -- 
 1.9.1
 
