@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238AbbA2KGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 05:06:54 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44750 "EHLO
+	id S1759968AbbA2JFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:05:51 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44851 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757586AbbA2JBr (ORCPT
+	by vger.kernel.org with ESMTP id S1752903AbbA2JFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:01:47 -0500
+	Thu, 29 Jan 2015 04:05:46 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 084/176] iscsi-target: Fail connection on short sendmsg writes
-Date: Wed, 28 Jan 2015 15:28:34 +0100
-Message-Id: <32f04f1f001a1ee45bc071323bb04f600a8dbb84.1422455352.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>,
+        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 085/176] Revert "[SCSI] mpt2sas: Remove phys on topology change."
+Date: Wed, 28 Jan 2015 15:28:35 +0100
+Message-Id: <ba77da8bb79a6f887e05dff47cf98017f2ba302b.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,92 +25,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6bf6ca7515c1df06f5c03737537f5e0eb191e29e upstream.
+commit 81a89c2d891b78695aa7e4cc0d5a7427785ae078 upstream.
 
-This patch changes iscsit_do_tx_data() to fail on short writes
-when kernel_sendmsg() returns a value different than requested
-transfer length, returning -EPIPE and thus causing a connection
-reset to occur.
+This reverts commit 3520f9c779bed098ca76dd3fb6377264301d57ed
+("mpt2sas: Remove phys on topology change")
 
-This avoids a potential bug in the original code where a short
-write would result in kernel_sendmsg() being called again with
-the original iovec base + length.
+Reverting the previous mpt2sas drives patch changes,
+since we will observe below issue
 
-In practice this has not been an issue because iscsit_do_tx_data()
-is only used for transferring 48 byte headers + 4 byte digests,
-along with seldom used control payloads from NOPIN + TEXT_RSP +
-REJECT with less than 32k of data.
+Issue:
+Drives connected Enclosure/Expander will unregister with
+SCSI Transport Layer, if any one remove and add expander
+cable with in DMD (Device Missing Delay) time period or
+even any one power-off and power-on the Enclosure with in
+the DMD period.
 
-So following Al's audit of iovec consumers, go ahead and fail
-the connection on short writes for now, and remove the bogus
-logic ahead of his proper upstream fix.
-
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/target/iscsi/iscsi_target_util.c | 26 +++++++++++---------------
- 1 file changed, 11 insertions(+), 15 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_transport.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-index 658c9c77ec04..c5c98559f7f6 100644
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1355,15 +1355,15 @@ static int iscsit_do_tx_data(
- 	struct iscsi_conn *conn,
- 	struct iscsi_data_count *count)
- {
--	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
-+	int ret, iov_len;
- 	struct kvec *iov_p;
- 	struct msghdr msg;
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+index 9d26637308be..396d78ef59e7 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+@@ -1006,12 +1006,9 @@ mpt2sas_transport_update_links(struct MPT2SAS_ADAPTER *ioc,
+ 		    &mpt2sas_phy->remote_identify);
+ 		_transport_add_phy_to_an_existing_port(ioc, sas_node,
+ 		    mpt2sas_phy, mpt2sas_phy->remote_identify.sas_address);
+-	} else {
++	} else
+ 		memset(&mpt2sas_phy->remote_identify, 0 , sizeof(struct
+ 		    sas_identify));
+-		_transport_del_phy_from_an_existing_port(ioc, sas_node,
+-		    mpt2sas_phy);
+-	}
  
- 	if (!conn || !conn->sock || !conn->conn_ops)
- 		return -1;
- 
--	if (data <= 0) {
--		pr_err("Data length is: %d\n", data);
-+	if (count->data_length <= 0) {
-+		pr_err("Data length is: %d\n", count->data_length);
- 		return -1;
- 	}
- 
-@@ -1372,20 +1372,16 @@ static int iscsit_do_tx_data(
- 	iov_p = count->iov;
- 	iov_len = count->iov_count;
- 
--	while (total_tx < data) {
--		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
--					(data - total_tx));
--		if (tx_loop <= 0) {
--			pr_debug("tx_loop: %d total_tx %d\n",
--				tx_loop, total_tx);
--			return tx_loop;
--		}
--		total_tx += tx_loop;
--		pr_debug("tx_loop: %d, total_tx: %d, data: %d\n",
--					tx_loop, total_tx, data);
-+	ret = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
-+			     count->data_length);
-+	if (ret != count->data_length) {
-+		pr_err("Unexpected ret: %d send data %d\n",
-+		       ret, count->data_length);
-+		return -EPIPE;
- 	}
-+	pr_debug("ret: %d, sent data: %d\n", ret, count->data_length);
- 
--	return total_tx;
-+	return ret;
- }
- 
- int rx_data(
+ 	if (mpt2sas_phy->phy)
+ 		mpt2sas_phy->phy->negotiated_linkrate =
 -- 
 2.2.2
 
