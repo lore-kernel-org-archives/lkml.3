@@ -1,124 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759093AbbA1A1i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 19:27:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689AbbA1A1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 19:27:36 -0500
-Date: Wed, 28 Jan 2015 01:27:11 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, kirill@shutemov.name,
-        mhocko@suse.cz, mgorman@suse.de, rientjes@google.com,
-        sasha.levin@oracle.com, hughd@google.com, hannes@cmpxchg.org,
-        vbabka@suse.cz, linux-kernel@vger.kernel.org, riel@redhat.com,
-        zhangyanfei.linux@aliyun.com
-Subject: Re: [PATCH v3] mm: incorporate read-only pages into transparent huge
- pages
-Message-ID: <20150128002711.GY11755@redhat.com>
-References: <1422380353-4407-1-git-send-email-ebru.akagunduz@gmail.com>
+	id S1755265AbbA1Aio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 19:38:44 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.172]:19361 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754692AbbA1Ain (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 19:38:43 -0500
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-3.tower-39.messagelabs.com!1422405515!30763302!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201501280038.t0S0cOqr040885@krsrvapps-01.diasemi.com>
+From: James Ban <james.ban.opensource@diasemi.com>
+Date: Wed, 28 Jan 2015 09:28:08 +0900
+Subject: [PATCH V4] regulator: da9211: Add gpio control for enable/disable of
+ buck
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1422380353-4407-1-git-send-email-ebru.akagunduz@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 07:39:13PM +0200, Ebru Akagunduz wrote:
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 817a875..17d6e59 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -2148,17 +2148,18 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
->  {
->  	struct page *page;
->  	pte_t *_pte;
-> -	int referenced = 0, none = 0;
-> +	int referenced = 0, none = 0, ro = 0, writable = 0;
+This is a patch for adding gpio control about enable/disable of buck.
 
-So your "writable" addition is enough and simpler/better than "ro"
-counting. Once "ro" is removed "writable" can actually start to make a
-difference (at the moment it does not).
+Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
+---
 
-I'd suggest to remove "ro".
+This patch is relative to linux-next repository tag next-20150120.
 
-The sysctl was there only to reduce the memory footprint but
-collapsing readonly swapcache won't reduce the memory footprint. So it
-may have been handy before but this new "writable" looks better now
-and keeping both doesn't help (keeping "ro" around prevents "writable"
-to make a difference).
+Changes in V4:
+- change control name from buck-enable-platform-gpios to enable-gpios.
 
-> @@ -2179,6 +2177,34 @@ static int __collapse_huge_page_isolate(struct vm_area_struct *vma,
->  		 */
->  		if (!trylock_page(page))
->  			goto out;
-> +
-> +		/*
-> +		 * cannot use mapcount: can't collapse if there's a gup pin.
-> +		 * The page must only be referenced by the scanned process
-> +		 * and page swap cache.
-> +		 */
-> +		if (page_count(page) != 1 + !!PageSwapCache(page)) {
-> +			unlock_page(page);
-> +			goto out;
-> +		}
-> +		if (!pte_write(pteval)) {
-> +			if (++ro > khugepaged_max_ptes_none) {
-> +				unlock_page(page);
-> +				goto out;
-> +			}
-> +			if (PageSwapCache(page) && !reuse_swap_page(page)) {
-> +				unlock_page(page);
-> +				goto out;
-> +			}
-> +			/*
-> +			 * Page is not in the swap cache, and page count is
-> +			 * one (see above). It can be collapsed into a THP.
-> +			 */
-> +			VM_BUG_ON(page_count(page) != 1);
+Changes in V3:
+- align with next-20150120.
+- remove warn message.
 
-In an earlier email I commented on this suggestion you received during
-previous code review: the VM_BUG_ON is not ok because it can generate
-false positives.
+Changes in V2:
+- gpio name from gpio to gpios.
+- add ena_gpio_initialized.
 
-It's perfectly ok if page_count is not 1 if the page is isolated by
-another CPU (another cpu calling isolate_lru_page).
 
-The page_count check there is to ensure there are no gup-pins, and
-that is achieved during the check. The VM may still mangle the
-page_count and it's ok (the page count taken by the VM running in
-another CPU doesn't need to be transferred to the collapsed THP).
+ .../devicetree/bindings/regulator/da9211.txt       |    7 ++++++-
+ drivers/regulator/da9211-regulator.c               |   12 ++++++++++++
+ include/linux/regulator/da9211.h                   |    1 +
+ 3 files changed, 19 insertions(+), 1 deletion(-)
 
-In short, the check "page_count(page) != 1 + !!PageSwapCache(page)"
-doesn't imply that the page_count cannot change. It only means at any
-given time there was no gup-pin at the very time of the check. It also
-means there were no other VM pin, but what we care about is only the
-gup-pin. The VM LRU pin can still be taken after the check and it's
-ok. The GUP pin cannot be taken because we stopped all gup so we're
-safe if the check passes.
+diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
+index 240019a..eb61890 100644
+--- a/Documentation/devicetree/bindings/regulator/da9211.txt
++++ b/Documentation/devicetree/bindings/regulator/da9211.txt
+@@ -11,6 +11,7 @@ Required properties:
+   BUCKA and BUCKB.
+ 
+ Optional properties:
++- enable-gpios: platform gpio for control of BUCKA/BUCKB.
+ - Any optional property defined in regulator.txt
+ 
+ Example 1) DA9211
+@@ -27,6 +28,7 @@ Example 1) DA9211
+ 				regulator-max-microvolt = <1570000>;
+ 				regulator-min-microamp 	= <2000000>;
+ 				regulator-max-microamp 	= <5000000>;
++				enable-gpios = <&gpio 27 0>;
+ 			};
+ 			BUCKB {
+ 				regulator-name = "VBUCKB";
+@@ -34,11 +36,12 @@ Example 1) DA9211
+ 				regulator-max-microvolt = <1570000>;
+ 				regulator-min-microamp 	= <2000000>;
+ 				regulator-max-microamp 	= <5000000>;
++				enable-gpios = <&gpio 17 0>;
+ 			};
+ 		};
+ 	};
+ 
+-Example 2) DA92113
++Example 2) DA9213
+ 	pmic: da9213@68 {
+ 		compatible = "dlg,da9213";
+ 		reg = <0x68>;
+@@ -51,6 +54,7 @@ Example 2) DA92113
+ 				regulator-max-microvolt = <1570000>;
+ 				regulator-min-microamp 	= <3000000>;
+ 				regulator-max-microamp 	= <6000000>;
++				enable-gpios = <&gpio 27 0>;
+ 			};
+ 			BUCKB {
+ 				regulator-name = "VBUCKB";
+@@ -58,6 +62,7 @@ Example 2) DA92113
+ 				regulator-max-microvolt = <1570000>;
+ 				regulator-min-microamp 	= <3000000>;
+ 				regulator-max-microamp 	= <6000000>;
++				enable-gpios = <&gpio 17 0>;
+ 			};
+ 		};
+ 	};
+diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+index 8e6957c..0134341 100644
+--- a/drivers/regulator/da9211-regulator.c
++++ b/drivers/regulator/da9211-regulator.c
+@@ -24,6 +24,7 @@
+ #include <linux/regmap.h>
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
++#include <linux/of_gpio.h>
+ #include <linux/regulator/of_regulator.h>
+ #include <linux/regulator/da9211.h>
+ #include "da9211-regulator.h"
+@@ -277,6 +278,9 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
+ 
+ 		pdata->init_data[n] = da9211_matches[i].init_data;
+ 		pdata->reg_node[n] = da9211_matches[i].of_node;
++		pdata->gpio_ren[n] =
++			of_get_named_gpio(da9211_matches[i].of_node,
++				"enable-gpios", 0);
+ 		n++;
+ 	}
+ 
+@@ -366,6 +370,14 @@ static int da9211_regulator_init(struct da9211 *chip)
+ 		config.regmap = chip->regmap;
+ 		config.of_node = chip->pdata->reg_node[i];
+ 
++		if (gpio_is_valid(chip->pdata->gpio_ren[i])) {
++			config.ena_gpio = chip->pdata->gpio_ren[i];
++			config.ena_gpio_initialized = true;
++		} else {
++			config.ena_gpio = -EINVAL;
++			config.ena_gpio_initialized = false;
++		}
++
+ 		chip->rdev[i] = devm_regulator_register(chip->dev,
+ 			&da9211_regulators[i], &config);
+ 		if (IS_ERR(chip->rdev[i])) {
+diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
+index d1d9d38..5dd65ac 100644
+--- a/include/linux/regulator/da9211.h
++++ b/include/linux/regulator/da9211.h
+@@ -32,6 +32,7 @@ struct da9211_pdata {
+ 	 * 2 : 2 phase 2 buck
+ 	 */
+ 	int num_buck;
++	int gpio_ren[DA9211_MAX_REGULATORS];
+ 	struct device_node *reg_node[DA9211_MAX_REGULATORS];
+ 	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
+ };
+-- 
+end-of-patch for regulator: da9211: Add gpio control for enable/disable of buck V4
 
-So you can simply delete the VM_BUG_ON, the earlier code there, was fine.
-
-> +		} else {
-> +			writable = 1;
-> +		}
-> +
-
-I suggest to make writable a bool and use writable = false to init,
-and writable = true above.
-
-When a value can only be 0|1 bool is better (it can be casted and
-takes the same memory as an int, it just allows the compiler to be
-more strict and the fact it makes the code more self explanatory).
-
-> +			if (++ro > khugepaged_max_ptes_none)
-> +				goto out_unmap;
-
-As mentioned above the ro counting can go, and we can keep only
-your new writable addition, as mentioned above.
-
-Thanks,
-Andrea
