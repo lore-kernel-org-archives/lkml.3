@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965388AbbA1Eho (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:37:44 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40889 "EHLO mail.kernel.org"
+	id S934537AbbA1EZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:25:08 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40900 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965167AbbA1EYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:24:55 -0500
+	id S965174AbbA1EY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:24:58 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 139/177] serial: Fix divide-by-zero fault in uart_get_divisor()
-Date: Wed, 28 Jan 2015 12:09:57 +0800
-Message-Id: <1422418236-12852-230-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 140/177] tty: Fix high cpu load if tty is unreleaseable
+Date: Wed, 28 Jan 2015 12:09:58 +0800
+Message-Id: <1422418236-12852-231-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,46 +28,50 @@ From: Peter Hurley <peter@hurleysoftware.com>
 ------------------
 
 
-commit 547039ec502076e60034eeb79611df3433a99b7d upstream.
+commit 37b164578826406a173ca7c20d9ba7430134d23e upstream.
 
-uart_get_baud_rate() will return baud == 0 if the max rate is set
-to the "magic" 38400 rate and the SPD_* flags are also specified.
-On the first iteration, if the current baud rate is higher than the
-max, the baud rate is clamped at the max (which in the degenerate
-case is 38400). On the second iteration, the now-"magic" 38400 baud
-rate selects the possibly higher alternate baud rate indicated by
-the SPD_* flag. Since only two loop iterations are performed, the
-loop is exited, a kernel WARNING is generated and a baud rate of
-0 is returned.
+Kernel oops can cause the tty to be unreleaseable (for example, if
+n_tty_read() crashes while on the read_wait queue). This will cause
+tty_release() to endlessly loop without sleeping.
 
-Reproducible with:
- setserial /dev/ttyS0 spd_hi base_baud 38400
+Use a killable sleep timeout which grows by 2n+1 jiffies over the interval
+[0, 120 secs.) and then jumps to forever (but still killable).
 
-Only perform the "magic" 38400 -> SPD_* baud transform on the first
-loop iteration, which prevents the degenerate case from recognizing
-the clamped baud rate as the "magic" 38400 value.
+NB: killable just allows for the task to be rewoken manually, not
+to be terminated.
 
-Reported-by: Robert Święcki <robert@swiecki.net>
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/tty/serial/serial_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_io.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 4185cc5..82aac29 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -355,7 +355,7 @@ uart_get_baud_rate(struct uart_port *port, struct ktermios *termios,
- 		 * The spd_hi, spd_vhi, spd_shi, spd_warp kludge...
- 		 * Die! Die! Die!
- 		 */
--		if (baud == 38400)
-+		if (try == 0 && baud == 38400)
- 			baud = altbaud;
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index b28d635..2d66beed 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1633,6 +1633,7 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	int	devpts;
+ 	int	idx;
+ 	char	buf[64];
++	long	timeout = 0;
  
- 		/*
+ 	if (tty_paranoia_check(tty, inode, __func__))
+ 		return 0;
+@@ -1717,7 +1718,11 @@ int tty_release(struct inode *inode, struct file *filp)
+ 				__func__, tty_name(tty, buf));
+ 		tty_unlock();
+ 		mutex_unlock(&tty_mutex);
+-		schedule();
++		schedule_timeout_killable(timeout);
++		if (timeout < 120 * HZ)
++			timeout = 2 * timeout + 1;
++		else
++			timeout = MAX_SCHEDULE_TIMEOUT;
+ 	}
+ 
+ 	/*
 -- 
 1.9.1
 
