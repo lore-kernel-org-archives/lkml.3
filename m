@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762714AbbA1FWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:22:17 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37525 "EHLO mail.kernel.org"
+	id S933693AbbA1EPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:15:55 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37535 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933599AbbA1EPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:15:47 -0500
+	id S933663AbbA1EPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:15:51 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Thomas Pugliese <thomas.pugliese@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
+        Willem Pinckaers <willem@lekkertech.net>,
+        "Don A. Bailey" <donb@securitymouse.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 27/91] uwb: init beacon cache entry before registering uwb device
-Date: Wed, 28 Jan 2015 12:07:01 +0800
-Message-Id: <1422418236-12852-54-git-send-email-lizf@kernel.org>
+Subject: [PATCH 3.4 028/177] Documentation: lzo: document part of the encoding
+Date: Wed, 28 Jan 2015 12:07:02 +0800
+Message-Id: <1422418236-12852-55-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,66 +23,199 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Pugliese <thomas.pugliese@gmail.com>
+From: Willy Tarreau <w@1wt.eu>
 
-3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 675f0ab2fe5a0f7325208e60b617a5f32b86d72c upstream.
+commit d98a0526434d27e261f622cf9d2e0028b5ff1a00 upstream.
 
-Make sure the uwb_dev->bce entry is set before calling uwb_dev_add in
-uwbd_dev_onair so that usermode will only see the device after it is
-properly initialized.  This fixes a kernel panic that can occur if
-usermode tries to access the IEs sysfs attribute of a UWB device before
-the driver has had a chance to set the beacon cache entry.
+Add a complete description of the LZO format as processed by the
+decompressor. I have not found a public specification of this format
+hence this analysis, which will be used to better understand the code.
 
-Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+Cc: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/uwb/lc-dev.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ Documentation/lzo.txt | 164 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 164 insertions(+)
+ create mode 100644 Documentation/lzo.txt
 
-diff --git a/drivers/uwb/lc-dev.c b/drivers/uwb/lc-dev.c
-index 5241f1d..3c9e929 100644
---- a/drivers/uwb/lc-dev.c
-+++ b/drivers/uwb/lc-dev.c
-@@ -441,16 +441,19 @@ void uwbd_dev_onair(struct uwb_rc *rc, struct uwb_beca_e *bce)
- 	uwb_dev->mac_addr = *bce->mac_addr;
- 	uwb_dev->dev_addr = bce->dev_addr;
- 	dev_set_name(&uwb_dev->dev, macbuf);
+diff --git a/Documentation/lzo.txt b/Documentation/lzo.txt
+new file mode 100644
+index 0000000..ea45dd3
+--- /dev/null
++++ b/Documentation/lzo.txt
+@@ -0,0 +1,164 @@
 +
-+	/* plug the beacon cache */
-+	bce->uwb_dev = uwb_dev;
-+	uwb_dev->bce = bce;
-+	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
++LZO stream format as understood by Linux's LZO decompressor
++===========================================================
 +
- 	result = uwb_dev_add(uwb_dev, &rc->uwb_dev.dev, rc);
- 	if (result < 0) {
- 		dev_err(dev, "new device %s: cannot instantiate device\n",
- 			macbuf);
- 		goto error_dev_add;
- 	}
--	/* plug the beacon cache */
--	bce->uwb_dev = uwb_dev;
--	uwb_dev->bce = bce;
--	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
++Introduction
 +
- 	dev_info(dev, "uwb device (mac %s dev %s) connected to %s %s\n",
- 		 macbuf, devbuf, rc->uwb_dev.dev.parent->bus->name,
- 		 dev_name(rc->uwb_dev.dev.parent));
-@@ -458,6 +461,8 @@ void uwbd_dev_onair(struct uwb_rc *rc, struct uwb_beca_e *bce)
- 	return;
- 
- error_dev_add:
-+	bce->uwb_dev = NULL;
-+	uwb_bce_put(bce);
- 	kfree(uwb_dev);
- 	return;
- }
++  This is not a specification. No specification seems to be publicly available
++  for the LZO stream format. This document describes what input format the LZO
++  decompressor as implemented in the Linux kernel understands. The file subject
++  of this analysis is lib/lzo/lzo1x_decompress_safe.c. No analysis was made on
++  the compressor nor on any other implementations though it seems likely that
++  the format matches the standard one. The purpose of this document is to
++  better understand what the code does in order to propose more efficient fixes
++  for future bug reports.
++
++Description
++
++  The stream is composed of a series of instructions, operands, and data. The
++  instructions consist in a few bits representing an opcode, and bits forming
++  the operands for the instruction, whose size and position depend on the
++  opcode and on the number of literals copied by previous instruction. The
++  operands are used to indicate :
++
++    - a distance when copying data from the dictionary (past output buffer)
++    - a length (number of bytes to copy from dictionary)
++    - the number of literals to copy, which is retained in variable "state"
++      as a piece of information for next instructions.
++
++  Optionally depending on the opcode and operands, extra data may follow. These
++  extra data can be a complement for the operand (eg: a length or a distance
++  encoded on larger values), or a literal to be copied to the output buffer.
++
++  The first byte of the block follows a different encoding from other bytes, it
++  seems to be optimized for literal use only, since there is no dictionary yet
++  prior to that byte.
++
++  Lengths are always encoded on a variable size starting with a small number
++  of bits in the operand. If the number of bits isn't enough to represent the
++  length, up to 255 may be added in increments by consuming more bytes with a
++  rate of at most 255 per extra byte (thus the compression ratio cannot exceed
++  around 255:1). The variable length encoding using #bits is always the same :
++
++       length = byte & ((1 << #bits) - 1)
++       if (!length) {
++               length = ((1 << #bits) - 1)
++               length += 255*(number of zero bytes)
++               length += first-non-zero-byte
++       }
++       length += constant (generally 2 or 3)
++
++  For references to the dictionary, distances are relative to the output
++  pointer. Distances are encoded using very few bits belonging to certain
++  ranges, resulting in multiple copy instructions using different encodings.
++  Certain encodings involve one extra byte, others involve two extra bytes
++  forming a little-endian 16-bit quantity (marked LE16 below).
++
++  After any instruction except the large literal copy, 0, 1, 2 or 3 literals
++  are copied before starting the next instruction. The number of literals that
++  were copied may change the meaning and behaviour of the next instruction. In
++  practice, only one instruction needs to know whether 0, less than 4, or more
++  literals were copied. This is the information stored in the <state> variable
++  in this implementation. This number of immediate literals to be copied is
++  generally encoded in the last two bits of the instruction but may also be
++  taken from the last two bits of an extra operand (eg: distance).
++
++  End of stream is declared when a block copy of distance 0 is seen. Only one
++  instruction may encode this distance (0001HLLL), it takes one LE16 operand
++  for the distance, thus requiring 3 bytes.
++
++  IMPORTANT NOTE : in the code some length checks are missing because certain
++  instructions are called under the assumption that a certain number of bytes
++  follow because it has already been garanteed before parsing the instructions.
++  They just have to "refill" this credit if they consume extra bytes. This is
++  an implementation design choice independant on the algorithm or encoding.
++
++Byte sequences
++
++  First byte encoding :
++
++      0..17   : follow regular instruction encoding, see below. It is worth
++                noting that codes 16 and 17 will represent a block copy from
++                the dictionary which is empty, and that they will always be
++                invalid at this place.
++
++      18..21  : copy 0..3 literals
++                state = (byte - 17) = 0..3  [ copy <state> literals ]
++                skip byte
++
++      22..255 : copy literal string
++                length = (byte - 17) = 4..238
++                state = 4 [ don't copy extra literals ]
++                skip byte
++
++  Instruction encoding :
++
++      0 0 0 0 X X X X  (0..15)
++        Depends on the number of literals copied by the last instruction.
++        If last instruction did not copy any literal (state == 0), this
++        encoding will be a copy of 4 or more literal, and must be interpreted
++        like this :
++
++           0 0 0 0 L L L L  (0..15)  : copy long literal string
++           length = 3 + (L ?: 15 + (zero_bytes * 255) + non_zero_byte)
++           state = 4  (no extra literals are copied)
++
++        If last instruction used to copy between 1 to 3 literals (encoded in
++        the instruction's opcode or distance), the instruction is a copy of a
++        2-byte block from the dictionary within a 1kB distance. It is worth
++        noting that this instruction provides little savings since it uses 2
++        bytes to encode a copy of 2 other bytes but it encodes the number of
++        following literals for free. It must be interpreted like this :
++
++           0 0 0 0 D D S S  (0..15)  : copy 2 bytes from <= 1kB distance
++           length = 2
++           state = S (copy S literals after this block)
++         Always followed by exactly one byte : H H H H H H H H
++           distance = (H << 2) + D + 1
++
++        If last instruction used to copy 4 or more literals (as detected by
++        state == 4), the instruction becomes a copy of a 3-byte block from the
++        dictionary from a 2..3kB distance, and must be interpreted like this :
++
++           0 0 0 0 D D S S  (0..15)  : copy 3 bytes from 2..3 kB distance
++           length = 3
++           state = S (copy S literals after this block)
++         Always followed by exactly one byte : H H H H H H H H
++           distance = (H << 2) + D + 2049
++
++      0 0 0 1 H L L L  (16..31)
++           Copy of a block within 16..48kB distance (preferably less than 10B)
++           length = 2 + (L ?: 7 + (zero_bytes * 255) + non_zero_byte)
++        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
++           distance = 16384 + (H << 14) + D
++           state = S (copy S literals after this block)
++           End of stream is reached if distance == 16384
++
++      0 0 1 L L L L L  (32..63)
++           Copy of small block within 16kB distance (preferably less than 34B)
++           length = 2 + (L ?: 31 + (zero_bytes * 255) + non_zero_byte)
++        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
++           distance = D + 1
++           state = S (copy S literals after this block)
++
++      0 1 L D D D S S  (64..127)
++           Copy 3-4 bytes from block within 2kB distance
++           state = S (copy S literals after this block)
++           length = 3 + L
++         Always followed by exactly one byte : H H H H H H H H
++           distance = (H << 3) + D + 1
++
++      1 L L D D D S S  (128..255)
++           Copy 5-8 bytes from block within 2kB distance
++           state = S (copy S literals after this block)
++           length = 5 + L
++         Always followed by exactly one byte : H H H H H H H H
++           distance = (H << 3) + D + 1
++
++Authors
++
++  This document was written by Willy Tarreau <w@1wt.eu> on 2014/07/19 during an
++  analysis of the decompression code available in Linux 3.16-rc5. The code is
++  tricky, it is possible that this document contains mistakes or that a few
++  corner cases were overlooked. In any case, please report any doubt, fix, or
++  proposed updates to the author(s) so that the document can be updated.
 -- 
 1.9.1
 
