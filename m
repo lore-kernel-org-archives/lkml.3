@@ -1,117 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796AbbA2I74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 03:59:56 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754553AbbA2I7x (ORCPT
+	id S1752367AbbA1Uul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:50:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762191AbbA1Uu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 03:59:53 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 176/176] deal with deadlock in d_walk()
-Date: Wed, 28 Jan 2015 15:30:06 +0100
-Message-Id: <a99bf21c924111ca8588fface7e87e142bb38eae.1422455352.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
-In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
-References: <cover.1422455352.git.jslaby@suse.cz>
+	Wed, 28 Jan 2015 15:50:29 -0500
+Date: Wed, 28 Jan 2015 06:30:07 -0800
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-c3c87e770458aa004bd7ed3f29945ff436fd6511@git.kernel.org>
+Cc: acme@kernel.org, tglx@linutronix.de, hpa@zytor.com, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@kernel.org,
+        torvalds@linux-foundation.org
+Reply-To: peterz@infradead.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        jolsa@redhat.com, torvalds@linux-foundation.org, mingo@kernel.org,
+        acme@kernel.org, tglx@linutronix.de
+In-Reply-To: <20150123125834.090683288@infradead.org>
+References: <20150123125834.090683288@infradead.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Tighten (and fix) the grouping condition
+Git-Commit-ID: c3c87e770458aa004bd7ed3f29945ff436fd6511
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+Commit-ID:  c3c87e770458aa004bd7ed3f29945ff436fd6511
+Gitweb:     http://git.kernel.org/tip/c3c87e770458aa004bd7ed3f29945ff436fd6511
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 23 Jan 2015 11:19:48 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 28 Jan 2015 13:17:35 +0100
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+perf: Tighten (and fix) the grouping condition
 
-===============
+The fix from 9fc81d87420d ("perf: Fix events installation during
+moving group") was incomplete in that it failed to recognise that
+creating a group with events for different CPUs is semantically
+broken -- they cannot be co-scheduled.
 
-commit ca5358ef75fc69fee5322a38a340f5739d997c10 upstream.
+Furthermore, it leads to real breakage where, when we create an event
+for CPU Y and then migrate it to form a group on CPU X, the code gets
+confused where the counter is programmed -- triggered in practice
+as well by me via the perf fuzzer.
 
-... by not hitting rename_retry for reasons other than rename having
-happened.  In other words, do _not_ restart when finding that
-between unlocking the child and locking the parent the former got
-into __dentry_kill().  Skip the killed siblings instead...
+Fix this by tightening the rules for creating groups. Only allow
+grouping of counters that can be co-scheduled in the same context.
+This means for the same task and/or the same cpu.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Acked-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Fixes: 9fc81d87420d ("perf: Fix events installation during moving group")
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20150123125834.090683288@infradead.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- fs/dcache.c | 31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ include/linux/perf_event.h |  6 ------
+ kernel/events/core.c       | 15 +++++++++++++--
+ 2 files changed, 13 insertions(+), 8 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 09f7a612ba7f..eb540b00d027 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -488,7 +488,7 @@ static void __dentry_kill(struct dentry *dentry)
- 	}
- 	/* if it was on the hash then remove it */
- 	__d_drop(dentry);
--	list_del(&dentry->d_child);
-+	__list_del_entry(&dentry->d_child);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 4f7a61c..664de5a 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -450,11 +450,6 @@ struct perf_event {
+ #endif /* CONFIG_PERF_EVENTS */
+ };
+ 
+-enum perf_event_context_type {
+-	task_context,
+-	cpu_context,
+-};
+-
+ /**
+  * struct perf_event_context - event context structure
+  *
+@@ -462,7 +457,6 @@ enum perf_event_context_type {
+  */
+ struct perf_event_context {
+ 	struct pmu			*pmu;
+-	enum perf_event_context_type	type;
  	/*
- 	 * Inform d_walk() that we are no longer attached to the
- 	 * dentry tree
-@@ -1142,33 +1142,31 @@ resume:
- 	/*
- 	 * All done at this level ... ascend and resume the search.
- 	 */
-+	rcu_read_lock();
-+ascend:
- 	if (this_parent != parent) {
- 		struct dentry *child = this_parent;
- 		this_parent = child->d_parent;
+ 	 * Protect the states of the events in the list,
+ 	 * nr_active, and the list:
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 882f835..19efcf1 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6776,7 +6776,6 @@ skip_type:
+ 		__perf_event_init_context(&cpuctx->ctx);
+ 		lockdep_set_class(&cpuctx->ctx.mutex, &cpuctx_mutex);
+ 		lockdep_set_class(&cpuctx->ctx.lock, &cpuctx_lock);
+-		cpuctx->ctx.type = cpu_context;
+ 		cpuctx->ctx.pmu = pmu;
  
--		rcu_read_lock();
- 		spin_unlock(&child->d_lock);
- 		spin_lock(&this_parent->d_lock);
- 
--		/*
--		 * might go back up the wrong parent if we have had a rename
--		 * or deletion
--		 */
--		if (this_parent != child->d_parent ||
--			 (child->d_flags & DCACHE_DENTRY_KILLED) ||
--			 need_seqretry(&rename_lock, seq)) {
--			spin_unlock(&this_parent->d_lock);
--			rcu_read_unlock();
-+		/* might go back up the wrong parent if we have had a rename. */
-+		if (need_seqretry(&rename_lock, seq))
- 			goto rename_retry;
-+		next = child->d_child.next;
-+		while (unlikely(child->d_flags & DCACHE_DENTRY_KILLED)) {
-+			if (next == &this_parent->d_subdirs)
-+				goto ascend;
-+			child = list_entry(next, struct dentry, d_child);
-+			next = next->next;
- 		}
- 		rcu_read_unlock();
--		next = child->d_child.next;
- 		goto resume;
- 	}
--	if (need_seqretry(&rename_lock, seq)) {
--		spin_unlock(&this_parent->d_lock);
-+	if (need_seqretry(&rename_lock, seq))
- 		goto rename_retry;
--	}
-+	rcu_read_unlock();
- 	if (finish)
- 		finish(data);
- 
-@@ -1178,6 +1176,9 @@ out_unlock:
- 	return;
- 
- rename_retry:
-+	spin_unlock(&this_parent->d_lock);
-+	rcu_read_unlock();
-+	BUG_ON(seq & 1);
- 	if (!retry)
- 		return;
- 	seq = 1;
--- 
-2.2.2
-
+ 		__perf_cpu_hrtimer_init(cpuctx, cpu);
+@@ -7420,7 +7419,19 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		 * task or CPU context:
+ 		 */
+ 		if (move_group) {
+-			if (group_leader->ctx->type != ctx->type)
++			/*
++			 * Make sure we're both on the same task, or both
++			 * per-cpu events.
++			 */
++			if (group_leader->ctx->task != ctx->task)
++				goto err_context;
++
++			/*
++			 * Make sure we're both events for the same CPU;
++			 * grouping events for different CPUs is broken; since
++			 * you can never concurrently schedule them anyhow.
++			 */
++			if (group_leader->cpu != event->cpu)
+ 				goto err_context;
+ 		} else {
+ 			if (group_leader->ctx != ctx)
