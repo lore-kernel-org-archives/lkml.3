@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760202AbbA2J5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:57:07 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44790 "EHLO
+	id S932299AbbA2JtB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:49:01 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44814 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758758AbbA2JDR (ORCPT
+	by vger.kernel.org with ESMTP id S1759304AbbA2JEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:03:17 -0500
+	Thu, 29 Jan 2015 04:04:13 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+Cc: linux-kernel@vger.kernel.org, Andrew Jackson <Andrew.Jackson@arm.com>,
         Mark Brown <broonie@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 010/176] ASoC: max98090: Fix ill-defined sidetone route
-Date: Wed, 28 Jan 2015 15:27:20 +0100
-Message-Id: <63c9d40707fd0073533385632ed50673811d608a.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 011/176] ASoC: dwc: Ensure FIFOs are flushed to prevent channel swap
+Date: Wed, 28 Jan 2015 15:27:21 +0100
+Message-Id: <e3ab75edf0292a413a45448b993775ba4cc4dbd9.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -24,50 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: Andrew Jackson <Andrew.Jackson@arm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 48826ee590da03e9882922edf96d8d27bdfe9552 upstream.
+commit 3475c3d034d7f276a474c8bd53f44b48c8bf669d upstream.
 
-Commit 5fe5b767dc6f ("ASoC: dapm: Do not pretend to support controls for non
-mixer/mux widgets") revealed ill-defined control in a route between
-"STENL Mux" and DACs in max98090.c:
+Flush the FIFOs when the stream is prepared for use.  This avoids
+an inadvertent swapping of the left/right channels if the FIFOs are
+not empty at startup.
 
-max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACL
-max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACL
-max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACL
-max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACR
-max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACR
-max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACR
-
-Since there is no control between "STENL Mux" and DACs the control name must
-be NULL not "NULL".
-
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/soc/codecs/max98090.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/dwc/designware_i2s.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
-index 764d0ea42e7c..9c20ef5f65d6 100644
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -1378,8 +1378,8 @@ static const struct snd_soc_dapm_route max98090_dapm_routes[] = {
- 	{"STENL Mux", "Sidetone Left", "DMICL"},
- 	{"STENR Mux", "Sidetone Right", "ADCR"},
- 	{"STENR Mux", "Sidetone Right", "DMICR"},
--	{"DACL", "NULL", "STENL Mux"},
--	{"DACR", "NULL", "STENL Mux"},
-+	{"DACL", NULL, "STENL Mux"},
-+	{"DACR", NULL, "STENL Mux"},
+diff --git a/sound/soc/dwc/designware_i2s.c b/sound/soc/dwc/designware_i2s.c
+index 25c31f1655f6..2f6357578616 100644
+--- a/sound/soc/dwc/designware_i2s.c
++++ b/sound/soc/dwc/designware_i2s.c
+@@ -263,6 +263,19 @@ static void dw_i2s_shutdown(struct snd_pcm_substream *substream,
+ 	snd_soc_dai_set_dma_data(dai, substream, NULL);
+ }
  
- 	{"AIFINL", NULL, "SHDN"},
- 	{"AIFINR", NULL, "SHDN"},
++static int dw_i2s_prepare(struct snd_pcm_substream *substream,
++			  struct snd_soc_dai *dai)
++{
++	struct dw_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		i2s_write_reg(dev->i2s_base, TXFFR, 1);
++	else
++		i2s_write_reg(dev->i2s_base, RXFFR, 1);
++
++	return 0;
++}
++
+ static int dw_i2s_trigger(struct snd_pcm_substream *substream,
+ 		int cmd, struct snd_soc_dai *dai)
+ {
+@@ -294,6 +307,7 @@ static struct snd_soc_dai_ops dw_i2s_dai_ops = {
+ 	.startup	= dw_i2s_startup,
+ 	.shutdown	= dw_i2s_shutdown,
+ 	.hw_params	= dw_i2s_hw_params,
++	.prepare	= dw_i2s_prepare,
+ 	.trigger	= dw_i2s_trigger,
+ };
+ 
 -- 
 2.2.2
 
