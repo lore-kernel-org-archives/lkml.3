@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965240AbbA2Ch2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:37:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46991 "EHLO
+	id S1763675AbbA2DHn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:07:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46990 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965184AbbA2ChR (ORCPT
+	with ESMTP id S965174AbbA2ChQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:17 -0500
+	Wed, 28 Jan 2015 21:37:16 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Antonio Quartulli <antonio@meshcoding.com>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
+Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 007/139] batman-adv: avoid NULL dereferences and fix if check
-Date: Wed, 28 Jan 2015 14:19:10 -0800
-Message-Id: <1422483682-15393-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 008/139] net: Fix stacked vlan offload features computation
+Date: Wed, 28 Jan 2015 14:19:11 -0800
+Message-Id: <1422483682-15393-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -29,46 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Quartulli <antonio@meshcoding.com>
+From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 
-[ Upstream commit 0d1644919578db525b9a7b6c8197ce02adbfce26 ]
+[ Upstream commit 796f2da81bead71ffc91ef70912cd8d1827bf756 ]
 
-Gateway having bandwidth_down equal to zero are not accepted
-at all and so never added to the Gateway list.
-For this reason checking the bandwidth_down member in
-batadv_gw_out_of_range() is useless.
+When vlan tags are stacked, it is very likely that the outer tag is stored
+in skb->vlan_tci and skb->protocol shows the inner tag's vlan_proto.
+Currently netif_skb_features() first looks at skb->protocol even if there
+is the outer tag in vlan_tci, thus it incorrectly retrieves the protocol
+encapsulated by the inner vlan instead of the inner vlan protocol.
+This allows GSO packets to be passed to HW and they end up being
+corrupted.
 
-This is probably a copy/paste error and this check was supposed
-to be "!gw_node" only. Moreover, the way the check is written
-now may also lead to a NULL dereference.
-
-Fix this by rewriting the if-condition properly.
-
-Introduced by 414254e342a0d58144de40c3da777521ebaeeb07
-("batman-adv: tvlv - gateway download/upload bandwidth container")
-
-Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Fixes: 58e998c6d239 ("offloading: Force software GSO for multiple vlan tags.")
+Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/batman-adv/gateway_client.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/dev.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/net/batman-adv/gateway_client.c b/net/batman-adv/gateway_client.c
-index 68676cd..f62e30b 100644
---- a/net/batman-adv/gateway_client.c
-+++ b/net/batman-adv/gateway_client.c
-@@ -767,7 +767,7 @@ bool batadv_gw_out_of_range(struct batadv_priv *bat_priv,
- 		goto out;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 65c5438..93335b6 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2508,11 +2508,14 @@ netdev_features_t netif_skb_dev_features(struct sk_buff *skb,
+ 	if (skb_shinfo(skb)->gso_segs > dev->gso_max_segs)
+ 		features &= ~NETIF_F_GSO_MASK;
  
- 	gw_node = batadv_gw_node_get(bat_priv, orig_dst_node);
--	if (!gw_node->bandwidth_down == 0)
-+	if (!gw_node)
- 		goto out;
+-	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD)) {
+-		struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
+-		protocol = veh->h_vlan_encapsulated_proto;
+-	} else if (!vlan_tx_tag_present(skb)) {
+-		return harmonize_features(skb, dev, features);
++	if (!vlan_tx_tag_present(skb)) {
++		if (unlikely(protocol == htons(ETH_P_8021Q) ||
++			     protocol == htons(ETH_P_8021AD))) {
++			struct vlan_ethhdr *veh = (struct vlan_ethhdr *)skb->data;
++			protocol = veh->h_vlan_encapsulated_proto;
++		} else {
++			return harmonize_features(skb, dev, features);
++		}
+ 	}
  
- 	ret = batadv_is_type_dhcprequest(skb, header_len);
+ 	features &= (dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
 -- 
 1.9.1
 
