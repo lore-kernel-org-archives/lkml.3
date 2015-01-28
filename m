@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351AbbA1Uzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:55:52 -0500
+	id S1754262AbbA1Uzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:55:50 -0500
 Received: from mx1.redhat.com ([209.132.183.28]:45227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754051AbbA1Uzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:55:45 -0500
+	id S1754188AbbA1Uzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:55:46 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Hans de Goede <hdegoede@redhat.com>,
         Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] Input - synaptics: do not release extra buttons once they are pressed
-Date: Wed, 28 Jan 2015 15:10:05 -0500
-Message-Id: <1422475807-15033-3-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 3/4] Input - synaptics: remove TOPBUTTONPAD property for Lenovos 2015
+Date: Wed, 28 Jan 2015 15:10:06 -0500
+Message-Id: <1422475807-15033-4-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1422475807-15033-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1422475807-15033-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code releases the extra buttons right after they are pressed.
-As soon as a new serio report comes in, the hw state is reset to 0
-and so the buttons are released.
+The 2015 series of the Lenovo thinkpads added back the hardware buttons
+on top of the touchpad for the trackstick.
 
-Check for the report type before acting on the current extra buttons
-state.
+Unfortunately, they are wired to the touchpad, and not the trackstick.
+Thus, they are seen as extra buttons from the kernel point of view.
+
+This leads to a problem in user space because extra buttons on synaptics
+devices used to be used as scroll up/down buttons. So in the end, the
+experience for the user is scroll events for buttons left and right
+when using the trackstick. Yay!
+Still, this user space problem will be fixed in the user space, and
+the kernel will only handle the TOPBUTTONPAD property - which was not
+a good idea to introduce in the kernel in the first place, I concede.
+
+Furthermore, Lenovo kept using the PNPIDs that are supposed to be
+"5 buttons" touchpads, so the new laptops also have the
+INPUT_PROP_TOPBUTTONPAD. Yay again!
+
+Insteead of manually removing each of the new ones, or hoping that we
+know all the current ones, we can consider that the PNPIDs list that
+were given contains touchpads that have the trackstick buttons, either
+physically wired to them, or emulated with the top software button
+property.
+
+Thanks to the extra buttons capability, we can reliably detect the
+physical buttons from the software ones, and so we can remove the
+TOPBUTTONPAD property even if it was declared as such.
 
 Cc: stable@vger.kernel.org
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/input/mouse/synaptics.c | 10 +++++++---
- drivers/input/mouse/synaptics.h |  3 +++
- 2 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/input/mouse/synaptics.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 0d12664..d58863b 100644
+index d58863b..4f05c9f 100644
 --- a/drivers/input/mouse/synaptics.c
 +++ b/drivers/input/mouse/synaptics.c
-@@ -688,7 +688,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 		}
+@@ -1129,7 +1129,8 @@ static void set_input_params(struct psmouse *psmouse,
  
- 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
--		    ((buf[0] ^ buf[3]) & 0x02)) {
-+		    SYN_REPORT_EXT_BUTTONS(buf)) {
- 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap)) {
- 			default:
- 				/*
-@@ -792,8 +792,12 @@ static void synaptics_report_buttons(struct psmouse *psmouse,
- 		input_report_key(dev, BTN_BACK, hw->down);
- 	}
- 
--	for (i = 0; i < SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap); i++)
--		input_report_key(dev, BTN_0 + i, hw->ext_buttons & (1 << i));
-+	if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
-+	    SYN_REPORT_EXT_BUTTONS(psmouse->packet)) {
-+		for (i = 0; i < SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap); i++)
-+			input_report_key(dev, BTN_0 + i,
-+					 hw->ext_buttons & (1 << i));
-+	}
- }
- 
- static void synaptics_report_mt_data(struct psmouse *psmouse,
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index 6faf9bb..0b2b711 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -115,6 +115,9 @@
- #define SYN_NEWABS_RELAXED		2
- #define SYN_OLDABS			3
- 
-+/* synaptics extended button packet */
-+#define SYN_REPORT_EXT_BUTTONS(buf)	(((buf)[0] ^ (buf)[3]) & 0x02)
-+
- /* amount to fuzz position data when touchpad reports reduced filtering */
- #define SYN_REDUCED_FILTER_FUZZ		8
- 
+ 	if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+ 		__set_bit(INPUT_PROP_BUTTONPAD, dev->propbit);
+-		if (psmouse_matches_pnp_id(psmouse, topbuttonpad_pnp_ids))
++		if (psmouse_matches_pnp_id(psmouse, topbuttonpad_pnp_ids) &&
++		    !test_bit(BTN_0, dev->keybit))
+ 			__set_bit(INPUT_PROP_TOPBUTTONPAD, dev->propbit);
+ 		/* Clickpads report only left button */
+ 		__clear_bit(BTN_RIGHT, dev->keybit);
 -- 
 2.1.0
 
