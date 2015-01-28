@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965526AbbA1Ea6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:30:58 -0500
-Received: from mail.kernel.org ([198.145.29.136]:41273 "EHLO mail.kernel.org"
+	id S965313AbbA1E0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:26:06 -0500
+Received: from mail.kernel.org ([198.145.29.136]:41285 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964832AbbA1EZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:25:57 -0500
+	id S965279AbbA1E0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:26:00 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Mark Brown <broonie@kernel.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 162/177] ASoC: fsi: remove unsupported PAUSE flag
-Date: Wed, 28 Jan 2015 12:10:20 +0800
-Message-Id: <1422418236-12852-253-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 163/177] rt2x00: do not align payload on modern H/W
+Date: Wed, 28 Jan 2015 12:10:21 +0800
+Message-Id: <1422418236-12852-254-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,39 +21,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit c1b9b9b1ad2df6144ca3fbe6989f7bd9ea5c5562 upstream.
+commit cfd9167af14eb4ec21517a32911d460083ee3d59 upstream.
 
-FSI doesn't support PAUSE.
-Remove SNDRV_PCM_INFO_PAUSE flags from snd_pcm_hardware info
+RT2800 and newer hardware require padding between header and payload if
+header length is not multiple of 4.
 
-Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+For historical reasons we also align payload to to 4 bytes boundary, but
+such alignment is not needed on modern H/W.
+
+Patch fixes skb_under_panic problems reported from time to time:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=84911
+https://bugzilla.kernel.org/show_bug.cgi?id=72471
+http://marc.info/?l=linux-wireless&m=139108549530402&w=2
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1087591
+
+Panic happened because we eat 4 bytes of skb headroom on each
+(re)transmission when sending frame without the payload and the header
+length not being multiple of 4 (i.e. QoS header has 26 bytes). On such
+case because paylad_aling=2 is bigger than header_align=0 we increase
+header_align by 4 bytes. To prevent that we could change the check to:
+
+	if (payload_length && payload_align > header_align)
+		header_align += 4;
+
+but not aligning payload at all is more effective and alignment is not
+really needed by H/W (that has been tested on OpenWrt project for few
+years now).
+
+Reported-and-tested-by: Antti S. Lankila <alankila@bel.fi>
+Debugged-by: Antti S. Lankila <alankila@bel.fi>
+Reported-by: Henrik Asp <solenskiner@gmail.com>
+Originally-From: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- sound/soc/sh/fsi.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00queue.c | 50 ++++++++-----------------------
+ 1 file changed, 12 insertions(+), 38 deletions(-)
 
-diff --git a/sound/soc/sh/fsi.c b/sound/soc/sh/fsi.c
-index 91b7287..eb0599f 100644
---- a/sound/soc/sh/fsi.c
-+++ b/sound/soc/sh/fsi.c
-@@ -1393,8 +1393,7 @@ static const struct snd_soc_dai_ops fsi_dai_ops = {
- static struct snd_pcm_hardware fsi_pcm_hardware = {
- 	.info =		SNDRV_PCM_INFO_INTERLEAVED	|
- 			SNDRV_PCM_INFO_MMAP		|
--			SNDRV_PCM_INFO_MMAP_VALID	|
--			SNDRV_PCM_INFO_PAUSE,
-+			SNDRV_PCM_INFO_MMAP_VALID,
- 	.formats		= FSI_FMTS,
- 	.rates			= FSI_RATES,
- 	.rate_min		= 8000,
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
+index 4d792a2..c5bdbe9 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -148,55 +148,29 @@ void rt2x00queue_align_frame(struct sk_buff *skb)
+ 	skb_trim(skb, frame_length);
+ }
+ 
+-void rt2x00queue_insert_l2pad(struct sk_buff *skb, unsigned int header_length)
++/*
++ * H/W needs L2 padding between the header and the paylod if header size
++ * is not 4 bytes aligned.
++ */
++void rt2x00queue_insert_l2pad(struct sk_buff *skb, unsigned int hdr_len)
+ {
+-	unsigned int payload_length = skb->len - header_length;
+-	unsigned int header_align = ALIGN_SIZE(skb, 0);
+-	unsigned int payload_align = ALIGN_SIZE(skb, header_length);
+-	unsigned int l2pad = payload_length ? L2PAD_SIZE(header_length) : 0;
++	unsigned int l2pad = (skb->len > hdr_len) ? L2PAD_SIZE(hdr_len) : 0;
+ 
+-	/*
+-	 * Adjust the header alignment if the payload needs to be moved more
+-	 * than the header.
+-	 */
+-	if (payload_align > header_align)
+-		header_align += 4;
+-
+-	/* There is nothing to do if no alignment is needed */
+-	if (!header_align)
++	if (!l2pad)
+ 		return;
+ 
+-	/* Reserve the amount of space needed in front of the frame */
+-	skb_push(skb, header_align);
+-
+-	/*
+-	 * Move the header.
+-	 */
+-	memmove(skb->data, skb->data + header_align, header_length);
+-
+-	/* Move the payload, if present and if required */
+-	if (payload_length && payload_align)
+-		memmove(skb->data + header_length + l2pad,
+-			skb->data + header_length + l2pad + payload_align,
+-			payload_length);
+-
+-	/* Trim the skb to the correct size */
+-	skb_trim(skb, header_length + l2pad + payload_length);
++	skb_push(skb, l2pad);
++	memmove(skb->data, skb->data + l2pad, hdr_len);
+ }
+ 
+-void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int header_length)
++void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int hdr_len)
+ {
+-	/*
+-	 * L2 padding is only present if the skb contains more than just the
+-	 * IEEE 802.11 header.
+-	 */
+-	unsigned int l2pad = (skb->len > header_length) ?
+-				L2PAD_SIZE(header_length) : 0;
++	unsigned int l2pad = (skb->len > hdr_len) ? L2PAD_SIZE(hdr_len) : 0;
+ 
+ 	if (!l2pad)
+ 		return;
+ 
+-	memmove(skb->data + l2pad, skb->data, header_length);
++	memmove(skb->data + l2pad, skb->data, hdr_len);
+ 	skb_pull(skb, l2pad);
+ }
+ 
 -- 
 1.9.1
 
