@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933317AbbA2CIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:08:52 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:42175 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376AbbA2CIt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:08:49 -0500
-Date: Wed, 28 Jan 2015 13:19:29 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	id S1758619AbbA2BuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:50:03 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48687 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758492AbbA2Btp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:49:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="446662519"
+From: Todd Brandt <todd.e.brandt@linux.intel.com>
+To: linux-pm@vger.kernel.org, linux-iio@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Introduce <linux/mm_struct.h>
-Message-ID: <20150128211929.GA22571@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54C95268.0290,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 10
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Cc: todd.e.brandt@linux.intel.com, todd.e.brandt@intel.com,
+        jacob.jun.pan@linux.intel.com, sameo@linux.intel.com,
+        lee.jones@linaro.org, sre@kernel.org, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, david.woodhouse@intel.com, jic23@kernel.org
+Subject: [PATCH v3 0/3] X-Power AXP288 PMIC Fuel Gauge Driver
+Date: Wed, 28 Jan 2015 13:23:37 -0800
+Message-Id: <cover.1422478693.git.todd.e.brandt@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 11:16:47PM +0200, Kirill A. Shutemov wrote:
-> 
-> Fixlet for AVR32:
-> 
-> diff --git a/arch/avr32/include/asm/pgtable.h b/arch/avr32/include/asm/pgtable.h
-> index 35800664076e..3af39532b25b 100644
+New power_supply driver at driver/power which interfaces with the
+axp20x mfd driver as a cell. Provides battery info, monitors for
+changes, and generates alerts on temperature and capacity issues
 
-Also applied.
+Todd Brandt (3):
+  mfd/axp20x: change battery cell name to fuel gauge
+  mfd/axp20x: add support for fuel gauge cell
+  X-Power AXP288 PMIC Fuel Gauge Driver
 
-Guenter
+v1: 01/07/14
+v2: 01/22/14
+- replaced the const in axp20x_acpi_match declaration
+- reformatted the commit text
+- added IIO as driver dependency
+- moved debug info to debugfs in file fuelgauge
+- added HEALTH_COLD value to health calculation
+- added better cleanup to remove call
+        cancelling any delayed work calls
+        unregistration of the power_supply
+v3: 01/28/14
+- moved debugs create and init config regs after error case
+- freed the virqs in the remove function
+- remove .owner field as it is populated automatically
+
+ drivers/mfd/axp20x.c       |  8 ++++----
+ drivers/power/Kconfig      |  9 +++++++++
+ drivers/power/Makefile     |  1 +
+ include/linux/mfd/axp20x.h | 43 +++++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 55 insertions(+), 6 deletions(-)
+
+-- 
+2.1.0
+
