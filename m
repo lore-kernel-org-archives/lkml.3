@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760943AbbA1CEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 21:04:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
+	id S933338AbbA1CVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 21:21:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41071 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932741AbbA1B22 (ORCPT
+	with ESMTP id S1756372AbbA1B2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 20:28:28 -0500
+	Tue, 27 Jan 2015 20:28:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <pure.logic@nexus-software.ie>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: [PATCH 3.18 46/61] x86/apic: Re-enable PCI_MSI support for non-SMP X86_32
+        Mathias Krause <minipli@googlemail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.10 28/32] crypto: include crypto- module prefix in template
 Date: Tue, 27 Jan 2015 17:26:58 -0800
-Message-Id: <20150128012641.969731970@linuxfoundation.org>
+Message-Id: <20150128012631.019432252@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150128012636.936333725@linuxfoundation.org>
-References: <20150128012636.936333725@linuxfoundation.org>
+In-Reply-To: <20150128012627.081285723@linuxfoundation.org>
+References: <20150128012627.081285723@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,62 +26,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Kees Cook <keescook@chromium.org>
 
-commit 38a1dfda8e77d7ba74c94d06d8bc41ba98a4bc8c upstream.
+commit 4943ba16bbc2db05115707b3ff7b4874e9e3c560 upstream.
 
-Commit 0dbc6078c06bc0 ('x86, build, pci: Fix PCI_MSI build on !SMP')
-introduced the dependency that X86_UP_APIC is only available when
-PCI_MSI is false. This effectively prevents PCI_MSI support on 32bit
-UP systems because it disables both APIC and IO-APIC. But APIC support
-is architecturally required for PCI_MSI.
+This adds the module loading prefix "crypto-" to the template lookup
+as well.
 
-The intention of the patch was to enforce APIC support when PCI_MSI is
-enabled, but failed to do so.
+For example, attempting to load 'vfat(blowfish)' via AF_ALG now correctly
+includes the "crypto-" prefix at every level, correctly rejecting "vfat":
 
-Remove the !PCI_MSI dependency from X86_UP_APIC and enforce
-X86_UP_APIC when PCI_MSI support is enabled on 32bit UP systems.
+	net-pf-38
+	algif-hash
+	crypto-vfat(blowfish)
+	crypto-vfat(blowfish)-all
+	crypto-vfat
 
-[ tglx: Massaged changelog ]
-
-Fixes 0dbc6078c06bc0 'x86, build, pci: Fix PCI_MSI build on !SMP'
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Link: http://lkml.kernel.org/r/1421967529-9037-1-git-send-email-pure.logic@nexus-software.ie
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/crypto/fpu.c |    3 +++
+ crypto/algapi.c       |    4 ++--
+ crypto/authenc.c      |    1 +
+ crypto/authencesn.c   |    1 +
+ crypto/cbc.c          |    1 +
+ crypto/ccm.c          |    1 +
+ crypto/chainiv.c      |    1 +
+ crypto/cmac.c         |    1 +
+ crypto/cryptd.c       |    1 +
+ crypto/ctr.c          |    1 +
+ crypto/cts.c          |    1 +
+ crypto/ecb.c          |    1 +
+ crypto/eseqiv.c       |    1 +
+ crypto/gcm.c          |    1 +
+ crypto/hmac.c         |    1 +
+ crypto/lrw.c          |    1 +
+ crypto/pcbc.c         |    1 +
+ crypto/pcrypt.c       |    1 +
+ crypto/seqiv.c        |    1 +
+ crypto/vmac.c         |    1 +
+ crypto/xcbc.c         |    1 +
+ crypto/xts.c          |    1 +
+ 22 files changed, 25 insertions(+), 2 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -856,7 +856,7 @@ source "kernel/Kconfig.preempt"
+--- a/arch/x86/crypto/fpu.c
++++ b/arch/x86/crypto/fpu.c
+@@ -17,6 +17,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/crypto.h>
+ #include <asm/i387.h>
  
- config X86_UP_APIC
- 	bool "Local APIC support on uniprocessors"
--	depends on X86_32 && !SMP && !X86_32_NON_STANDARD && !PCI_MSI
-+	depends on X86_32 && !SMP && !X86_32_NON_STANDARD
- 	---help---
- 	  A local APIC (Advanced Programmable Interrupt Controller) is an
- 	  integrated interrupt controller in the CPU. If you have a single-CPU
-@@ -867,6 +867,10 @@ config X86_UP_APIC
- 	  performance counters), and the NMI watchdog which detects hard
- 	  lockups.
- 
-+config X86_UP_APIC_MSI
-+	def_bool y
-+	select X86_UP_APIC if X86_32 && !SMP && !X86_32_NON_STANDARD && PCI_MSI
+ struct crypto_fpu_ctx {
+@@ -159,3 +160,5 @@ void __exit crypto_fpu_exit(void)
+ {
+ 	crypto_unregister_template(&crypto_fpu_tmpl);
+ }
 +
- config X86_UP_IOAPIC
- 	bool "IO-APIC support on uniprocessors"
- 	depends on X86_UP_APIC
++MODULE_ALIAS_CRYPTO("fpu");
+--- a/crypto/algapi.c
++++ b/crypto/algapi.c
+@@ -495,8 +495,8 @@ static struct crypto_template *__crypto_
+ 
+ struct crypto_template *crypto_lookup_template(const char *name)
+ {
+-	return try_then_request_module(__crypto_lookup_template(name), "%s",
+-				       name);
++	return try_then_request_module(__crypto_lookup_template(name),
++				       "crypto-%s", name);
+ }
+ EXPORT_SYMBOL_GPL(crypto_lookup_template);
+ 
+--- a/crypto/authenc.c
++++ b/crypto/authenc.c
+@@ -709,3 +709,4 @@ module_exit(crypto_authenc_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Simple AEAD wrapper for IPsec");
++MODULE_ALIAS_CRYPTO("authenc");
+--- a/crypto/authencesn.c
++++ b/crypto/authencesn.c
+@@ -832,3 +832,4 @@ module_exit(crypto_authenc_esn_module_ex
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Steffen Klassert <steffen.klassert@secunet.com>");
+ MODULE_DESCRIPTION("AEAD wrapper for IPsec with extended sequence numbers");
++MODULE_ALIAS_CRYPTO("authencesn");
+--- a/crypto/cbc.c
++++ b/crypto/cbc.c
+@@ -289,3 +289,4 @@ module_exit(crypto_cbc_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("CBC block cipher algorithm");
++MODULE_ALIAS_CRYPTO("cbc");
+--- a/crypto/ccm.c
++++ b/crypto/ccm.c
+@@ -881,3 +881,4 @@ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Counter with CBC MAC");
+ MODULE_ALIAS_CRYPTO("ccm_base");
+ MODULE_ALIAS_CRYPTO("rfc4309");
++MODULE_ALIAS_CRYPTO("ccm");
+--- a/crypto/chainiv.c
++++ b/crypto/chainiv.c
+@@ -359,3 +359,4 @@ module_exit(chainiv_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Chain IV Generator");
++MODULE_ALIAS_CRYPTO("chainiv");
+--- a/crypto/cmac.c
++++ b/crypto/cmac.c
+@@ -313,3 +313,4 @@ module_exit(crypto_cmac_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("CMAC keyed hash algorithm");
++MODULE_ALIAS_CRYPTO("cmac");
+--- a/crypto/cryptd.c
++++ b/crypto/cryptd.c
+@@ -955,3 +955,4 @@ module_exit(cryptd_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Software async crypto daemon");
++MODULE_ALIAS_CRYPTO("cryptd");
+--- a/crypto/ctr.c
++++ b/crypto/ctr.c
+@@ -467,3 +467,4 @@ module_exit(crypto_ctr_module_exit);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("CTR Counter block mode");
+ MODULE_ALIAS_CRYPTO("rfc3686");
++MODULE_ALIAS_CRYPTO("ctr");
+--- a/crypto/cts.c
++++ b/crypto/cts.c
+@@ -350,3 +350,4 @@ module_exit(crypto_cts_module_exit);
+ 
+ MODULE_LICENSE("Dual BSD/GPL");
+ MODULE_DESCRIPTION("CTS-CBC CipherText Stealing for CBC");
++MODULE_ALIAS_CRYPTO("cts");
+--- a/crypto/ecb.c
++++ b/crypto/ecb.c
+@@ -185,3 +185,4 @@ module_exit(crypto_ecb_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("ECB block cipher algorithm");
++MODULE_ALIAS_CRYPTO("ecb");
+--- a/crypto/eseqiv.c
++++ b/crypto/eseqiv.c
+@@ -267,3 +267,4 @@ module_exit(eseqiv_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Encrypted Sequence Number IV Generator");
++MODULE_ALIAS_CRYPTO("eseqiv");
+--- a/crypto/gcm.c
++++ b/crypto/gcm.c
+@@ -1444,3 +1444,4 @@ MODULE_AUTHOR("Mikko Herranen <mh1@iki.f
+ MODULE_ALIAS_CRYPTO("gcm_base");
+ MODULE_ALIAS_CRYPTO("rfc4106");
+ MODULE_ALIAS_CRYPTO("rfc4543");
++MODULE_ALIAS_CRYPTO("gcm");
+--- a/crypto/hmac.c
++++ b/crypto/hmac.c
+@@ -271,3 +271,4 @@ module_exit(hmac_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("HMAC hash algorithm");
++MODULE_ALIAS_CRYPTO("hmac");
+--- a/crypto/lrw.c
++++ b/crypto/lrw.c
+@@ -400,3 +400,4 @@ module_exit(crypto_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("LRW block cipher mode");
++MODULE_ALIAS_CRYPTO("lrw");
+--- a/crypto/pcbc.c
++++ b/crypto/pcbc.c
+@@ -295,3 +295,4 @@ module_exit(crypto_pcbc_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("PCBC block cipher algorithm");
++MODULE_ALIAS_CRYPTO("pcbc");
+--- a/crypto/pcrypt.c
++++ b/crypto/pcrypt.c
+@@ -565,3 +565,4 @@ module_exit(pcrypt_exit);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Steffen Klassert <steffen.klassert@secunet.com>");
+ MODULE_DESCRIPTION("Parallel crypto wrapper");
++MODULE_ALIAS_CRYPTO("pcrypt");
+--- a/crypto/seqiv.c
++++ b/crypto/seqiv.c
+@@ -362,3 +362,4 @@ module_exit(seqiv_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Sequence Number IV Generator");
++MODULE_ALIAS_CRYPTO("seqiv");
+--- a/crypto/vmac.c
++++ b/crypto/vmac.c
+@@ -713,3 +713,4 @@ module_exit(vmac_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("VMAC hash algorithm");
++MODULE_ALIAS_CRYPTO("vmac");
+--- a/crypto/xcbc.c
++++ b/crypto/xcbc.c
+@@ -286,3 +286,4 @@ module_exit(crypto_xcbc_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("XCBC keyed hash algorithm");
++MODULE_ALIAS_CRYPTO("xcbc");
+--- a/crypto/xts.c
++++ b/crypto/xts.c
+@@ -362,3 +362,4 @@ module_exit(crypto_module_exit);
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("XTS block cipher mode");
++MODULE_ALIAS_CRYPTO("xts");
 
 
