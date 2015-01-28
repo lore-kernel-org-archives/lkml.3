@@ -1,287 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760013AbbA1EJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:09:36 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57009 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754755AbbA1EG3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:06:29 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 linux-trace 5/8] samples: bpf: counting example for kfree_skb tracepoint and write syscall
-Date: Tue, 27 Jan 2015 20:06:10 -0800
-Message-Id: <1422417973-10195-6-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
-References: <1422417973-10195-1-git-send-email-ast@plumgrid.com>
+	id S1760252AbbA1ENb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:13:31 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36584 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759125AbbA1EN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:13:26 -0500
+From: lizf@kernel.org
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 002/177] UBIFS: remove mst_mutex
+Date: Wed, 28 Jan 2015 12:06:10 +0800
+Message-Id: <1422418236-12852-3-git-send-email-lizf@kernel.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
+References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this example has two probes in one C file that attach to different tracepoints
-and use two different maps.
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-1st probe is the similar to dropmon.c. It attaches to kfree_skb tracepoint and
-count number of packet drops at different locations
+3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
-2nd probe attaches to syscalls/sys_enter_write and computes a histogram of different
-write sizes
+------------------
 
-Usage:
-$ sudo tracex2
-writing bpf-8 -> /sys/kernel/debug/tracing/events/skb/kfree_skb/filter
-writing bpf-10 -> /sys/kernel/debug/tracing/events/syscalls/sys_enter_write/filter
-location 0xffffffff816959a5 count 1
 
-location 0xffffffff816959a5 count 2
+commit 07e19dff63e3d5d6500d831e36554ac9b1b0560e upstream.
 
-557145+0 records in
-557145+0 records out
-285258240 bytes (285 MB) copied, 1.02379 s, 279 MB/s
-           syscall write() stats
-     byte_size       : count     distribution
-       1 -> 1        : 3        |                                      |
-       2 -> 3        : 0        |                                      |
-       4 -> 7        : 0        |                                      |
-       8 -> 15       : 0        |                                      |
-      16 -> 31       : 2        |                                      |
-      32 -> 63       : 3        |                                      |
-      64 -> 127      : 1        |                                      |
-     128 -> 255      : 1        |                                      |
-     256 -> 511      : 0        |                                      |
-     512 -> 1023     : 1118968  |************************************* |
+The 'mst_mutex' is not needed since because 'ubifs_write_master()' is only
+called on the mount path and commit path. The mount path is sequential and
+there is no parallelism, and the commit path is also serialized - there is only
+one commit going on at a time.
 
-Ctrl-C at any time. Kernel will auto cleanup maps and programs
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- samples/bpf/Makefile       |    4 ++
- samples/bpf/tracex2_kern.c |   71 +++++++++++++++++++++++++++++++++
- samples/bpf/tracex2_user.c |   95 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 170 insertions(+)
- create mode 100644 samples/bpf/tracex2_kern.c
- create mode 100644 samples/bpf/tracex2_user.c
+ fs/ubifs/commit.c | 2 --
+ fs/ubifs/master.c | 7 +++----
+ fs/ubifs/super.c  | 1 -
+ fs/ubifs/ubifs.h  | 2 --
+ 4 files changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index da28e1b6d3a6..416af24b01fd 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -8,6 +8,7 @@ hostprogs-y += sockex1
- hostprogs-y += sockex2
- hostprogs-y += dropmon
- hostprogs-y += tracex1
-+hostprogs-y += tracex2
+diff --git a/fs/ubifs/commit.c b/fs/ubifs/commit.c
+index fb3b5c8..3920dc1 100644
+--- a/fs/ubifs/commit.c
++++ b/fs/ubifs/commit.c
+@@ -174,7 +174,6 @@ static int do_commit(struct ubifs_info *c)
+ 	if (err)
+ 		goto out;
  
- dropmon-objs := dropmon.o libbpf.o
- test_verifier-objs := test_verifier.o libbpf.o
-@@ -16,12 +17,14 @@ sock_example-objs := sock_example.o libbpf.o
- sockex1-objs := bpf_load.o libbpf.o sockex1_user.o
- sockex2-objs := bpf_load.o libbpf.o sockex2_user.o
- tracex1-objs := bpf_load.o libbpf.o tracex1_user.o
-+tracex2-objs := bpf_load.o libbpf.o tracex2_user.o
+-	mutex_lock(&c->mst_mutex);
+ 	c->mst_node->cmt_no      = cpu_to_le64(c->cmt_no);
+ 	c->mst_node->log_lnum    = cpu_to_le32(new_ltail_lnum);
+ 	c->mst_node->root_lnum   = cpu_to_le32(zroot.lnum);
+@@ -204,7 +203,6 @@ static int do_commit(struct ubifs_info *c)
+ 	else
+ 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
+ 	err = ubifs_write_master(c);
+-	mutex_unlock(&c->mst_mutex);
+ 	if (err)
+ 		goto out;
  
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
- always += sockex1_kern.o
- always += sockex2_kern.o
- always += tracex1_kern.o
-+always += tracex2_kern.o
+diff --git a/fs/ubifs/master.c b/fs/ubifs/master.c
+index 278c238..bb9f481 100644
+--- a/fs/ubifs/master.c
++++ b/fs/ubifs/master.c
+@@ -352,10 +352,9 @@ int ubifs_read_master(struct ubifs_info *c)
+  * ubifs_write_master - write master node.
+  * @c: UBIFS file-system description object
+  *
+- * This function writes the master node. The caller has to take the
+- * @c->mst_mutex lock before calling this function. Returns zero in case of
+- * success and a negative error code in case of failure. The master node is
+- * written twice to enable recovery.
++ * This function writes the master node. Returns zero in case of success and a
++ * negative error code in case of failure. The master node is written twice to
++ * enable recovery.
+  */
+ int ubifs_write_master(struct ubifs_info *c)
+ {
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index d867bd9..129bb48 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1984,7 +1984,6 @@ static struct ubifs_info *alloc_ubifs_info(struct ubi_volume_desc *ubi)
+ 		mutex_init(&c->lp_mutex);
+ 		mutex_init(&c->tnc_mutex);
+ 		mutex_init(&c->log_mutex);
+-		mutex_init(&c->mst_mutex);
+ 		mutex_init(&c->umount_mutex);
+ 		mutex_init(&c->bu_mutex);
+ 		mutex_init(&c->write_reserve_mutex);
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index 3f96261..cd62067 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1041,7 +1041,6 @@ struct ubifs_debug_info;
+  *
+  * @mst_node: master node
+  * @mst_offs: offset of valid master node
+- * @mst_mutex: protects the master node area, @mst_node, and @mst_offs
+  *
+  * @max_bu_buf_len: maximum bulk-read buffer length
+  * @bu_mutex: protects the pre-allocated bulk-read buffer and @c->bu
+@@ -1281,7 +1280,6 @@ struct ubifs_info {
  
- HOSTCFLAGS += -I$(objtree)/usr/include
+ 	struct ubifs_mst_node *mst_node;
+ 	int mst_offs;
+-	struct mutex mst_mutex;
  
-@@ -29,6 +32,7 @@ HOSTCFLAGS_bpf_load.o += -I$(objtree)/usr/include -Wno-unused-variable
- HOSTLOADLIBES_sockex1 += -lelf
- HOSTLOADLIBES_sockex2 += -lelf
- HOSTLOADLIBES_tracex1 += -lelf
-+HOSTLOADLIBES_tracex2 += -lelf
- 
- # point this to your LLVM backend with bpf support
- LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
-diff --git a/samples/bpf/tracex2_kern.c b/samples/bpf/tracex2_kern.c
-new file mode 100644
-index 000000000000..a789c456c1b4
---- /dev/null
-+++ b/samples/bpf/tracex2_kern.c
-@@ -0,0 +1,71 @@
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <uapi/linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+#include "bpf_helpers.h"
-+
-+struct bpf_map_def SEC("maps") my_map = {
-+	.type = BPF_MAP_TYPE_HASH,
-+	.key_size = sizeof(long),
-+	.value_size = sizeof(long),
-+	.max_entries = 1024,
-+};
-+
-+SEC("events/skb/kfree_skb")
-+int bpf_prog2(struct bpf_context *ctx)
-+{
-+	long loc = ctx->arg2;
-+	long init_val = 1;
-+	long *value;
-+
-+	value = bpf_map_lookup_elem(&my_map, &loc);
-+	if (value)
-+		*value += 1;
-+	else
-+		bpf_map_update_elem(&my_map, &loc, &init_val, BPF_ANY);
-+	return 0;
-+}
-+
-+static unsigned int log2(unsigned int v)
-+{
-+	unsigned int r;
-+	unsigned int shift;
-+
-+	r = (v > 0xFFFF) << 4; v >>= r;
-+	shift = (v > 0xFF) << 3; v >>= shift; r |= shift;
-+	shift = (v > 0xF) << 2; v >>= shift; r |= shift;
-+	shift = (v > 0x3) << 1; v >>= shift; r |= shift;
-+	r |= (v >> 1);
-+	return r;
-+}
-+
-+static unsigned int log2l(unsigned long v)
-+{
-+	unsigned int hi = v >> 32;
-+	if (hi)
-+		return log2(hi) + 32;
-+	else
-+		return log2(v);
-+}
-+
-+struct bpf_map_def SEC("maps") my_hist_map = {
-+	.type = BPF_MAP_TYPE_ARRAY,
-+	.key_size = sizeof(u32),
-+	.value_size = sizeof(long),
-+	.max_entries = 64,
-+};
-+
-+SEC("events/syscalls/sys_enter_write")
-+int bpf_prog3(struct bpf_context *ctx)
-+{
-+	long write_size = ctx->arg3;
-+	long init_val = 1;
-+	long *value;
-+	u32 index = log2l(write_size);
-+
-+	value = bpf_map_lookup_elem(&my_hist_map, &index);
-+	if (value)
-+		__sync_fetch_and_add(value, 1);
-+	return 0;
-+}
-+char _license[] SEC("license") = "GPL";
-diff --git a/samples/bpf/tracex2_user.c b/samples/bpf/tracex2_user.c
-new file mode 100644
-index 000000000000..016a76e97cd7
---- /dev/null
-+++ b/samples/bpf/tracex2_user.c
-@@ -0,0 +1,95 @@
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <signal.h>
-+#include <linux/bpf.h>
-+#include "libbpf.h"
-+#include "bpf_load.h"
-+
-+#define MAX_INDEX	64
-+#define MAX_STARS	38
-+
-+static void stars(char *str, long val, long max, int width)
-+{
-+	int i;
-+
-+	for (i = 0; i < (width * val / max) - 1 && i < width - 1; i++)
-+		str[i] = '*';
-+	if (val > max)
-+		str[i - 1] = '+';
-+	str[i] = '\0';
-+}
-+
-+static void print_hist(int fd)
-+{
-+	int key;
-+	long value;
-+	long data[MAX_INDEX] = {};
-+	char starstr[MAX_STARS];
-+	int i;
-+	int max_ind = -1;
-+	long max_value = 0;
-+
-+	for (key = 0; key < MAX_INDEX; key++) {
-+		bpf_lookup_elem(fd, &key, &value);
-+		data[key] = value;
-+		if (value && key > max_ind)
-+			max_ind = key;
-+		if (value > max_value)
-+			max_value = value;
-+	}
-+
-+	printf("           syscall write() stats\n");
-+	printf("     byte_size       : count     distribution\n");
-+	for (i = 1; i <= max_ind + 1; i++) {
-+		stars(starstr, data[i - 1], max_value, MAX_STARS);
-+		printf("%8ld -> %-8ld : %-8ld |%-*s|\n",
-+		       (1l << i) >> 1, (1l << i) - 1, data[i - 1],
-+		       MAX_STARS, starstr);
-+	}
-+}
-+static void int_exit(int sig)
-+{
-+	print_hist(map_fd[1]);
-+	exit(0);
-+}
-+
-+int main(int ac, char **argv)
-+{
-+	char filename[256];
-+	long key, next_key, value;
-+	FILE *f;
-+	int i;
-+
-+	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
-+
-+	signal(SIGINT, int_exit);
-+
-+	/* start 'ping' in the background to have some kfree_skb events */
-+	f = popen("ping -c5 localhost", "r");
-+	(void) f;
-+
-+	/* start 'dd' in the background to have plenty of 'write' syscalls */
-+	f = popen("dd if=/dev/zero of=/dev/null", "r");
-+	(void) f;
-+
-+	if (load_bpf_file(filename)) {
-+		printf("%s", bpf_log_buf);
-+		return 1;
-+	}
-+
-+	for (i = 0; i < 5; i++) {
-+		key = 0;
-+		while (bpf_get_next_key(map_fd[0], &key, &next_key) == 0) {
-+			bpf_lookup_elem(map_fd[0], &next_key, &value);
-+			printf("location 0x%lx count %ld\n", next_key, value);
-+			key = next_key;
-+		}
-+		if (key)
-+			printf("\n");
-+		sleep(1);
-+	}
-+	print_hist(map_fd[1]);
-+
-+	return 0;
-+}
+ 	int max_bu_buf_len;
+ 	struct mutex bu_mutex;
 -- 
-1.7.9.5
+1.9.1
 
