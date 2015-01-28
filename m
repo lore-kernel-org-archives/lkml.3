@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965562AbbA1Emj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:42:39 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40503 "EHLO mail.kernel.org"
+	id S965045AbbA1EYD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:24:03 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40512 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965015AbbA1EXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:23:55 -0500
+	id S964977AbbA1EX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:23:58 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Steven Rostedt <rostedt@goodmis.org>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 120/177] tracing/syscalls: Ignore numbers outside NR_syscalls' range
-Date: Wed, 28 Jan 2015 12:09:38 +0800
-Message-Id: <1422418236-12852-211-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        "Theodore Ts'o" <tytso@mit.edu>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 121/177] ext4: bail out from make_indexed_dir() on first error
+Date: Wed, 28 Jan 2015 12:09:39 +0800
+Message-Id: <1422418236-12852-212-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -20,96 +20,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin@rab.in>
+From: Jan Kara <jack@suse.cz>
 
 3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 086ba77a6db00ed858ff07451bedee197df868c9 upstream.
+commit 6050d47adcadbb53582434d919ed7f038d936712 upstream.
 
-ARM has some private syscalls (for example, set_tls(2)) which lie
-outside the range of NR_syscalls.  If any of these are called while
-syscall tracing is being performed, out-of-bounds array access will
-occur in the ftrace and perf sys_{enter,exit} handlers.
+When ext4_handle_dirty_dx_node() or ext4_handle_dirty_dirent_node()
+fail, there's really something wrong with the fs and there's no point in
+continuing further. Just return error from make_indexed_dir() in that
+case. Also initialize frames array so that if we return early due to
+error, dx_release() doesn't try to dereference uninitialized memory
+(which could happen also due to error in do_split()).
 
- # trace-cmd record -e raw_syscalls:* true && trace-cmd report
- ...
- true-653   [000]   384.675777: sys_enter:            NR 192 (0, 1000, 3, 4000022, ffffffff, 0)
- true-653   [000]   384.675812: sys_exit:             NR 192 = 1995915264
- true-653   [000]   384.675971: sys_enter:            NR 983045 (76f74480, 76f74000, 76f74b28, 76f74480, 76f76f74, 1)
- true-653   [000]   384.675988: sys_exit:             NR 983045 = 0
- ...
-
- # trace-cmd record -e syscalls:* true
- [   17.289329] Unable to handle kernel paging request at virtual address aaaaaace
- [   17.289590] pgd = 9e71c000
- [   17.289696] [aaaaaace] *pgd=00000000
- [   17.289985] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
- [   17.290169] Modules linked in:
- [   17.290391] CPU: 0 PID: 704 Comm: true Not tainted 3.18.0-rc2+ #21
- [   17.290585] task: 9f4dab00 ti: 9e710000 task.ti: 9e710000
- [   17.290747] PC is at ftrace_syscall_enter+0x48/0x1f8
- [   17.290866] LR is at syscall_trace_enter+0x124/0x184
-
-Fix this by ignoring out-of-NR_syscalls-bounds syscall numbers.
-
-Commit cd0980fc8add "tracing: Check invalid syscall nr while tracing syscalls"
-added the check for less than zero, but it should have also checked
-for greater than NR_syscalls.
-
-Link: http://lkml.kernel.org/p/1414620418-29472-1-git-send-email-rabin@rab.in
-
-Fixes: cd0980fc8add "tracing: Check invalid syscall nr while tracing syscalls"
-Signed-off-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[lizf: Backported to 3.4: adjust context]
+Coverity-id: 741300
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[lizf: Backported to 3.4:
+ - adjust context
+ - replace ext4_handle_dirty_{dx,dirent}_node() with
+   ext4_handle_dirty_metadata()]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- kernel/trace/trace_syscalls.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/ext4/namei.c | 27 +++++++++++++++++----------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index aed38fd..4d0a209 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -309,7 +309,7 @@ void ftrace_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	int pc;
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index c6dd936..dc58523 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1421,31 +1421,38 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
+ 		hinfo.hash_version += EXT4_SB(dir->i_sb)->s_hash_unsigned;
+ 	hinfo.seed = EXT4_SB(dir->i_sb)->s_hash_seed;
+ 	ext4fs_dirhash(name, namelen, &hinfo);
++	memset(frames, 0, sizeof(frames));
+ 	frame = frames;
+ 	frame->entries = entries;
+ 	frame->at = entries;
+ 	frame->bh = bh;
+ 	bh = bh2;
  
- 	syscall_nr = syscall_get_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_enter_syscalls))
- 		return;
-@@ -349,7 +349,7 @@ void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	int pc;
+-	ext4_handle_dirty_metadata(handle, dir, frame->bh);
+-	ext4_handle_dirty_metadata(handle, dir, bh);
++	retval = ext4_handle_dirty_metadata(handle, dir, frame->bh);
++	if (retval)
++		goto out_frames;
++	retval = ext4_handle_dirty_metadata(handle, dir, bh);
++	if (retval)
++		goto out_frames;
  
- 	syscall_nr = syscall_get_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_exit_syscalls))
- 		return;
-@@ -519,7 +519,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	int size;
+ 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
+ 	if (!de) {
+-		/*
+-		 * Even if the block split failed, we have to properly write
+-		 * out all the changes we did so far. Otherwise we can end up
+-		 * with corrupted filesystem.
+-		 */
+-		ext4_mark_inode_dirty(handle, dir);
+-		dx_release(frames);
+-		return retval;
++		goto out_frames;
+ 	}
+ 	dx_release(frames);
  
- 	syscall_nr = syscall_get_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
- 		return;
-@@ -595,7 +595,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	int size;
+ 	retval = add_dirent_to_buf(handle, dentry, inode, de, bh);
+ 	brelse(bh);
+ 	return retval;
++out_frames:
++	/*
++	 * Even if the block split failed, we have to properly write
++	 * out all the changes we did so far. Otherwise we can end up
++	 * with corrupted filesystem.
++	 */
++	ext4_mark_inode_dirty(handle, dir);
++	dx_release(frames);
++	return retval;
+ }
  
- 	syscall_nr = syscall_get_nr(current, regs);
--	if (syscall_nr < 0)
-+	if (syscall_nr < 0 || syscall_nr >= NR_syscalls)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
- 		return;
+ /*
 -- 
 1.9.1
 
