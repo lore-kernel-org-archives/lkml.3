@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893AbbA1UPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:15:12 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:39108 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603AbbA1UPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:15:08 -0500
-Message-ID: <54C9434A.30000@linaro.org>
-Date: Wed, 28 Jan 2015 14:15:06 -0600
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-CC: Behan Webster <behanw@converseincode.com>, bcm@fixthebug.org,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Matt Porter <mporter@linaro.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] bcm: address clang inline asm incompatibility
-References: <1422422306-27473-1-git-send-email-behanw@converseincode.com>	<CAKv+Gu_NCgMmX_LQqi7vtjtP4ofrW+kx8FPgRd4-LWwK=73-xg@mail.gmail.com>	<54C8EE04.6060809@linaro.org>	<CAKv+Gu8CrMqwqBOF8rYa3RP1=gfCthwP=1k9kQ73v6+Sxwah4A@mail.gmail.com>	<54C91791.9030508@linaro.org>	<CAKv+Gu8P8eC+bmerCpbSX=USODqE=U7WnLeiCfhHJ8SSVAzPDw@mail.gmail.com>	<CAKv+Gu9fc_F1iC5NAwaG_ed3RRhYnxEBLbuLgW0Oa_qJ96j-gA@mail.gmail.com>	<54C9383D.10901@linaro.org>	<CAKv+Gu88G2QqAupD9j4_-t2=0VJGNbWkUViLBM2nUuyuN-PHWA@mail.gmail.com> <CAKv+Gu8B7G3tNahkguDBjCOQih4_ywRtwaJz2D2b+vY1249-DA@mail.gmail.com>
-In-Reply-To: <CAKv+Gu8B7G3tNahkguDBjCOQih4_ywRtwaJz2D2b+vY1249-DA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1755149AbbA1UPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:15:52 -0500
+Received: from gate.crashing.org ([63.228.1.57]:48005 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755079AbbA1UPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:15:49 -0500
+Date: Wed, 28 Jan 2015 14:15:33 -0600
+From: Segher Boessenkool <segher@kernel.crashing.org>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Bogdan Purcareata <bogdan.purcareata@freescale.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] powerpc/mpic: Add DT option to skip readback after EOI
+Message-ID: <20150128201533.GA10436@gate.crashing.org>
+References: <1422371952-1126-1-git-send-email-bogdan.purcareata@freescale.com> <1422395873.10544.61.camel@freescale.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1422395873.10544.61.camel@freescale.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2015 02:11 PM, Ard Biesheuvel wrote:
-> Actually, if clang is guaranteed to emit the correct register name
-> inside the inline asm for register asm variables used in input or
-> output constraints, I think it makes sense to #define __asmeq as a nop
-> if __clang__ is defined. (Note that __asmeq only exists to work around
-> a specific GCC bug)
+On Tue, Jan 27, 2015 at 03:57:53PM -0600, Scott Wood wrote:
+> At this point, given the previous discussion, does anyone object to
+> removing the readback entirely?  Do we have any evidence that reading
+> WHOAMI is effective at addressing whatever problem reading EOI made go
+> away on the relevant platform?
 
-I agree completely.  Behan, what do you think?	-Alex
+What platforms were those?  Just test there!
+
+If no one remembers, they can not (any longer) be important platforms ;-)
+Just remove the code, and if in twelve months finally someone reports a
+failure we will at least know what platform it was.
+
+
+Segher
