@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209AbbA1UWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:22:11 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:44680 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087AbbA1UWG (ORCPT
+	id S1759667AbbA2Bzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:55:52 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:35000 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759588AbbA2Bzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:22:06 -0500
+	Wed, 28 Jan 2015 20:55:50 -0500
+Date: Wed, 28 Jan 2015 20:46:39 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Christoph Lameter <cl@linux.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm v2 2/3] slub: fix kmem_cache_shrink return value
+Message-ID: <20150128174639.GB16011@esperanza>
+References: <cover.1422461573.git.vdavydov@parallels.com>
+ <7ee54d0d26f6c61e2ecf50300ee955610749b344.1422461573.git.vdavydov@parallels.com>
+ <alpine.DEB.2.11.1501281032220.32147@gentwo.org>
 MIME-Version: 1.0
-In-Reply-To: <20150128110230.GQ21293@sirena.org.uk>
-References: <1422442278-10405-1-git-send-email-tomeu.vizoso@collabora.com>
- <1422442278-10405-7-git-send-email-tomeu.vizoso@collabora.com> <20150128110230.GQ21293@sirena.org.uk>
-From: Dylan Reid <dgreid@chromium.org>
-Date: Wed, 28 Jan 2015 09:46:27 -0800
-X-Google-Sender-Auth: vgIhHcyi9d5m8NkaXnJdP7rUDAs
-Message-ID: <CAEUnVG6tKmdTt455w8g9C2_+XXpKz5=TR7=V8Lo3uJ3DKrOvag@mail.gmail.com>
-Subject: Re: [PATCH v3 06/10] ASoC: tegra: Add a control for the headphone switch
-To: Mark Brown <broonie@kernel.org>
-Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Simon Glass <sjg@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Wolfram Sang <wsa@the-dreams.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1501281032220.32147@gentwo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 3:02 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Jan 28, 2015 at 11:51:04AM +0100, Tomeu Vizoso wrote:
->
->> To be used by userspace when the headphones jack is plugged in.
->
->>  static const struct snd_kcontrol_new tegra_max98090_controls[] = {
->> +     SOC_DAPM_PIN_SWITCH("Headphones"),
->>       SOC_DAPM_PIN_SWITCH("Speakers"),
->>  };
->
-> Why is userspace doing this?  If this is supposed to be associated with
-> the jack detection I'd expect us to be doing this in kernel.
+On Wed, Jan 28, 2015 at 10:33:50AM -0600, Christoph Lameter wrote:
+> On Wed, 28 Jan 2015, Vladimir Davydov wrote:
+> 
+> > @@ -3419,6 +3420,9 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+> >  		for (i = SHRINK_PROMOTE_MAX - 1; i >= 0; i--)
+> >  			list_splice_init(promote + i, &n->partial);
+> >
+> > +		if (n->nr_partial || slabs_node(s, node))
+> 
+> The total number of slabs obtained via slabs_node always contains the
+> number of partial ones. So no need to check n->nr_partial.
 
-This is only related to jack detection in that seeing a jack insert or
-removal can cause userspace to set or unset it depending on the
-current policy.
+Yeah, right. In addition to that I misplaced the check - it should go
+after discard_slab, where we decrement nr_slabs. Here goes the updated
+patch:
+
+From: Vladimir Davydov <vdavydov@parallels.com>
+Subject: [PATCH] slub: fix kmem_cache_shrink return value
+
+It is supposed to return 0 if the cache has no remaining objects and 1
+otherwise, while currently it always returns 0. Fix it.
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/slub.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index dbf9334b6a5c..5626588db884 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -3379,6 +3379,7 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 	LIST_HEAD(discard);
+ 	struct list_head promote[SHRINK_PROMOTE_MAX];
+ 	unsigned long flags;
++	int ret = 0;
+ 
+ 	for (i = 0; i < SHRINK_PROMOTE_MAX; i++)
+ 		INIT_LIST_HEAD(promote + i);
+@@ -3424,9 +3425,12 @@ int __kmem_cache_shrink(struct kmem_cache *s)
+ 		/* Release empty slabs */
+ 		list_for_each_entry_safe(page, t, &discard, lru)
+ 			discard_slab(s, page);
++
++		if (slabs_node(s, node))
++			ret = 1;
+ 	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int slab_mem_going_offline_callback(void *arg)
+-- 
+1.7.10.4
+
