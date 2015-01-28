@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329AbbA2DFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:05:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46998 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965225AbbA2Ch2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965240AbbA2Ch2 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 28 Jan 2015 21:37:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46991 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965184AbbA2ChR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 21:37:17 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sven Eckelmann <sven@narfation.org>,
+Cc: Antonio Quartulli <antonio@meshcoding.com>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 006/139] batman-adv: Unify fragment size calculation
-Date: Wed, 28 Jan 2015 14:19:09 -0800
-Message-Id: <1422483682-15393-7-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 007/139] batman-adv: avoid NULL dereferences and fix if check
+Date: Wed, 28 Jan 2015 14:19:10 -0800
+Message-Id: <1422483682-15393-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -28,46 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Eckelmann <sven@narfation.org>
+From: Antonio Quartulli <antonio@meshcoding.com>
 
-[ Upstream commit 0402e444cd199389b7fe47be68a67b817e09e097 ]
+[ Upstream commit 0d1644919578db525b9a7b6c8197ce02adbfce26 ]
 
-The fragmentation code was replaced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
-("batman-adv: Receive fragmented packets and merge") by an implementation which
-can handle up to 16 fragments of a packet. The packet is prepared for the split
-in fragments by the function batadv_frag_send_packet and the actual split is
-done by batadv_frag_create.
+Gateway having bandwidth_down equal to zero are not accepted
+at all and so never added to the Gateway list.
+For this reason checking the bandwidth_down member in
+batadv_gw_out_of_range() is useless.
 
-Both functions calculate the size of a fragment themself. But their calculation
-differs because batadv_frag_send_packet also subtracts ETH_HLEN. Therefore,
-the check in batadv_frag_send_packet "can a full fragment can be created?" may
-return true even when batadv_frag_create cannot create a full fragment.
+This is probably a copy/paste error and this check was supposed
+to be "!gw_node" only. Moreover, the way the check is written
+now may also lead to a NULL dereference.
 
-The function batadv_frag_create doesn't check the size of the skb before
-splitting it and therefore might try to create a larger fragment than the
-remaining buffer. This creates an integer underflow and an invalid len is given
-to skb_split.
+Fix this by rewriting the if-condition properly.
 
-Signed-off-by: Sven Eckelmann <sven@narfation.org>
+Introduced by 414254e342a0d58144de40c3da777521ebaeeb07
+("batman-adv: tvlv - gateway download/upload bandwidth container")
+
+Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/batman-adv/fragmentation.c | 2 +-
+ net/batman-adv/gateway_client.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/batman-adv/fragmentation.c b/net/batman-adv/fragmentation.c
-index b3c4223..ff7cd41 100644
---- a/net/batman-adv/fragmentation.c
-+++ b/net/batman-adv/fragmentation.c
-@@ -436,7 +436,7 @@ bool batadv_frag_send_packet(struct sk_buff *skb,
- 	 * fragments larger than BATADV_FRAG_MAX_FRAG_SIZE
- 	 */
- 	mtu = min_t(unsigned, mtu, BATADV_FRAG_MAX_FRAG_SIZE);
--	max_fragment_size = (mtu - header_size - ETH_HLEN);
-+	max_fragment_size = mtu - header_size;
- 	max_packet_size = max_fragment_size * BATADV_FRAG_MAX_FRAGMENTS;
+diff --git a/net/batman-adv/gateway_client.c b/net/batman-adv/gateway_client.c
+index 68676cd..f62e30b 100644
+--- a/net/batman-adv/gateway_client.c
++++ b/net/batman-adv/gateway_client.c
+@@ -767,7 +767,7 @@ bool batadv_gw_out_of_range(struct batadv_priv *bat_priv,
+ 		goto out;
  
- 	/* Don't even try to fragment, if we need more than 16 fragments */
+ 	gw_node = batadv_gw_node_get(bat_priv, orig_dst_node);
+-	if (!gw_node->bandwidth_down == 0)
++	if (!gw_node)
+ 		goto out;
+ 
+ 	ret = batadv_is_type_dhcprequest(skb, header_len);
 -- 
 1.9.1
 
