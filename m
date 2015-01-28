@@ -1,56 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988AbbA2Bfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:35:33 -0500
-Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:58304
-	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755971AbbA2Bf3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:35:29 -0500
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Ian Abbott <abbotti@mev.co.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	id S1756123AbbA2BhN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:37:13 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:51434 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202AbbA2BhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:37:10 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Chase Southwood <chase.southwood@gmail.com>,
         Conrad Meyer <cemeyer@uw.edu>, Fred Akers <knivey@botops.net>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] staging: comedi: drivers: addi-data: hwdrv_apci1500:
- Removed variables that is never used
-Thread-Topic: [PATCH v2] staging: comedi: drivers: addi-data:
- hwdrv_apci1500: Removed variables that is never used
-Thread-Index: AQHQO0PPMtO2TIXC+U+2MqsHlPXjEZzWENjw
-Date: Wed, 28 Jan 2015 21:48:44 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D88260F74AD@P3PWEX4MB008.ex4.secureserver.net>
-References: <1422481761-31281-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1422481761-31281-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: comedi: drivers: addi-data: hwdrv_apci1500: Removed variables that is never used
+Date: Wed, 28 Jan 2015 22:49:21 +0100
+Message-Id: <1422481761-31281-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 28, 2015 2:49 PM, Rickard Strandqvist wrote:
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
->
-> This was found using a static code analysis program called cppcheck
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c |   12 ++----------
->  1 file changed, 2 insertions(+), 10 deletions(-)
+Variable ar assigned a value that is never used.
+I have also removed all the code that thereby serves no purpose.
 
-This file has been deleted.
+This was found using a static code analysis program called cppcheck
 
-Please base comedi patches on the current linux-next tree.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-Thanks,
-Hartley
+diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
+index bfa9228..faa71a9 100644
+--- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
++++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1500.c
+@@ -467,8 +467,6 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 			     unsigned int *data)
+ {
+ 	struct apci1500_private *devpriv = dev->private;
+-	int i_Event1InterruptStatus = 0, i_Event2InterruptStatus =
+-		0, i_RegValue;
+ 
+ 	switch (data[0]) {
+ 	case START:
+@@ -499,11 +497,9 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 					outb(0xF4,
+ 						devpriv->iobase +
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+-					i_Event1InterruptStatus = 1;
+ 					outb(APCI1500_RW_PORT_A_SPECIFICATION,
+ 						devpriv->iobase +
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+-					i_RegValue =
+ 						inb(devpriv->iobase +
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+ 
+@@ -549,7 +545,6 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 					outb(0xD0,
+ 						devpriv->iobase +
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+-					i_Event2InterruptStatus = 1;
+ 				} else {
+ 					dev_warn(dev->class_dev,
+ 						"Event 2 not initialised\n");
+@@ -592,7 +587,6 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 					outb(0xF4,
+ 						devpriv->iobase +
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+-					i_Event1InterruptStatus = 0;
+ 				} else {
+ 					dev_warn(dev->class_dev,
+ 						"Event 1 not initialised\n");
+@@ -621,7 +615,6 @@ static int apci1500_di_write(struct comedi_device *dev,
+ 					outb(0xF4,
+ 						devpriv->iobase +
+ 						APCI1500_Z8536_CONTROL_REGISTER);
+-					i_Event2InterruptStatus = 0;
+ 				} else {
+ 
+ 					dev_warn(dev->class_dev,
+@@ -1896,7 +1889,6 @@ static int apci1500_do_bits(struct comedi_device *dev,
+ 			    unsigned int *data)
+ {
+ 	struct apci1500_private *devpriv = dev->private;
+-	unsigned int ui_Status;
+ 	int i_RegValue;
+ 	int i_Constant;
+ 
+@@ -2004,8 +1996,8 @@ static int apci1500_do_bits(struct comedi_device *dev,
+ 
+ 	/* Enables the PCI interrupt */
+ 	outl(0x3000, devpriv->i_IobaseAmcc + 0x38);
+-	ui_Status = inl(devpriv->i_IobaseAmcc + 0x10);
+-	ui_Status = inl(devpriv->i_IobaseAmcc + 0x38);
++	inl(devpriv->i_IobaseAmcc + 0x10);
++	inl(devpriv->i_IobaseAmcc + 0x38);
+ 	outl(0x23000, devpriv->i_IobaseAmcc + 0x38);
+ 
+ 	return insn->n;
+-- 
+1.7.10.4
 
