@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760983AbbA2JhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:37:19 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44856 "EHLO
+	id S1753877AbbA2JDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:03:48 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44801 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760041AbbA2JF7 (ORCPT
+	by vger.kernel.org with ESMTP id S1759167AbbA2JDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:05:59 -0500
+	Thu, 29 Jan 2015 04:03:42 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
-        Antonio Borneo <borneo.antonio@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Gwendal Grignou <gwendal@chromium.org>,
         Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 020/176] HID: i2c-hid: fix race condition reading reports
-Date: Wed, 28 Jan 2015 15:27:30 +0100
-Message-Id: <5927cd034b1a289e1c73018fc908403c0ce15658.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 021/176] HID: i2c-hid: prevent buffer overflow in early IRQ
+Date: Wed, 28 Jan 2015 15:27:31 +0100
+Message-Id: <f0a431e778fffb7eae3350a85b0998bf17e726a6.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -25,95 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+From: Gwendal Grignou <gwendal@chromium.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
+commit d1c7e29e8d276c669e8790bb8be9f505ddc48888 upstream.
 
-Current driver uses a common buffer for reading reports either
-synchronously in i2c_hid_get_raw_report() and asynchronously in
-the interrupt handler.
-There is race condition if an interrupt arrives immediately after
-the report is received in i2c_hid_get_raw_report(); the common
-buffer is modified by the interrupt handler with the new report
-and then i2c_hid_get_raw_report() proceed using wrong data.
+Before ->start() is called, bufsize size is set to HID_MIN_BUFFER_SIZE,
+64 bytes. While processing the IRQ, we were asking to receive up to
+wMaxInputLength bytes, which can be bigger than 64 bytes.
 
-Fix it by using a separate buffers for synchronous reports.
+Later, when ->start is run, a proper bufsize will be calculated.
 
-Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
-Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+Given wMaxInputLength is said to be unreliable in other part of the
+code, set to receive only what we can even if it results in truncated
+reports.
+
+Signed-off-by: Gwendal Grignou <gwendal@chromium.org>
 Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hid/i2c-hid/i2c-hid.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/hid/i2c-hid/i2c-hid.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index c1336193b04b..ffa9c9e13741 100644
+index ffa9c9e13741..e29d8a0feb5f 100644
 --- a/drivers/hid/i2c-hid/i2c-hid.c
 +++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -136,6 +136,7 @@ struct i2c_hid {
- 						   * descriptor. */
- 	unsigned int		bufsize;	/* i2c buffer size */
- 	char			*inbuf;		/* Input buffer */
-+	char			*rawbuf;	/* Raw Input buffer */
- 	char			*cmdbuf;	/* Command buffer */
- 	char			*argsbuf;	/* Command arguments buffer */
- 
-@@ -486,9 +487,11 @@ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
- static void i2c_hid_free_buffers(struct i2c_hid *ihid)
+@@ -356,7 +356,7 @@ static int i2c_hid_hwreset(struct i2c_client *client)
+ static void i2c_hid_get_input(struct i2c_hid *ihid)
  {
- 	kfree(ihid->inbuf);
-+	kfree(ihid->rawbuf);
- 	kfree(ihid->argsbuf);
- 	kfree(ihid->cmdbuf);
- 	ihid->inbuf = NULL;
-+	ihid->rawbuf = NULL;
- 	ihid->cmdbuf = NULL;
- 	ihid->argsbuf = NULL;
- 	ihid->bufsize = 0;
-@@ -504,10 +507,11 @@ static int i2c_hid_alloc_buffers(struct i2c_hid *ihid, size_t report_size)
- 		       report_size; /* report */
+ 	int ret, ret_size;
+-	int size = le16_to_cpu(ihid->hdesc.wMaxInputLength);
++	int size = ihid->bufsize;
  
- 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
-+	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
- 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
- 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
- 
--	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-+	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
- 		i2c_hid_free_buffers(ihid);
- 		return -ENOMEM;
- 	}
-@@ -534,12 +538,12 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
- 
- 	ret = i2c_hid_get_report(client,
- 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
--			report_number, ihid->inbuf, ask_count);
-+			report_number, ihid->rawbuf, ask_count);
- 
- 	if (ret < 0)
- 		return ret;
- 
--	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-+	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
- 
- 	if (ret_count <= 2)
- 		return 0;
-@@ -548,7 +552,7 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
- 
- 	/* The query buffer contains the size, dropping it in the reply */
- 	count = min(count, ret_count - 2);
--	memcpy(buf, ihid->inbuf + 2, count);
-+	memcpy(buf, ihid->rawbuf + 2, count);
- 
- 	return count;
- }
+ 	ret = i2c_master_recv(ihid->client, ihid->inbuf, size);
+ 	if (ret != size) {
 -- 
 2.2.2
 
