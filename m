@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786AbbA2JAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:00:53 -0500
+	id S1752927AbbA2JAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:00:45 -0500
 Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44737 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752481AbbA2JAt (ORCPT
+	by vger.kernel.org with ESMTP id S1756097AbbA2JAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:00:49 -0500
+	Thu, 29 Jan 2015 04:00:39 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Jim Lin <jilin@nvidia.com>,
         Linus Walleij <linus.walleij@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 140/176] gpio: sysfs: fix gpio device-attribute leak
-Date: Wed, 28 Jan 2015 15:29:30 +0100
-Message-Id: <e66a96f38a5a35c96eadcabbe20921ad32ed087a.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 141/176] pinctrl: Fix two deadlocks
+Date: Wed, 28 Jan 2015 15:29:31 +0100
+Message-Id: <ded7a6cf7db0671259f479a48f51748473647361.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
@@ -23,115 +23,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <johan@kernel.org>
+From: Jim Lin <jilin@nvidia.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
+commit db93facfb0ef542aa5d8079e47580b3e669a4d82 upstream.
 
-The gpio device attributes were never destroyed when the gpio was
-unexported (or on export failures).
+This patch is to fix two deadlock cases.
+Deadlock 1:
+CPU #1
+ pinctrl_register-> pinctrl_get ->
+ create_pinctrl
+ (Holding lock pinctrl_maps_mutex)
+ -> get_pinctrl_dev_from_devname
+ (Trying to acquire lock pinctrldev_list_mutex)
+CPU #0
+ pinctrl_unregister
+ (Holding lock pinctrldev_list_mutex)
+ -> pinctrl_put ->> pinctrl_free ->
+ pinctrl_dt_free_maps -> pinctrl_unregister_map
+ (Trying to acquire lock pinctrl_maps_mutex)
 
-Use device_create_with_groups() to create the default device attributes
-of the gpio class device. Note that this also fixes the
-attribute-creation race with userspace for these attributes.
+Simply to say
+CPU#1 is holding lock A and trying to acquire lock B,
+CPU#0 is holding lock B and trying to acquire lock A.
 
-Remove contingent attributes in export error path and on unexport.
+Deadlock 2:
+CPU #3
+ pinctrl_register-> pinctrl_get ->
+ create_pinctrl
+ (Holding lock pinctrl_maps_mutex)
+ -> get_pinctrl_dev_from_devname
+ (Trying to acquire lock pinctrldev_list_mutex)
+CPU #2
+ pinctrl_unregister
+ (Holding lock pctldev->mutex)
+ -> pinctrl_put ->> pinctrl_free ->
+ pinctrl_dt_free_maps -> pinctrl_unregister_map
+ (Trying to acquire lock pinctrl_maps_mutex)
+CPU #0
+ tegra_gpio_request
+ (Holding lock pinctrldev_list_mutex)
+ -> pinctrl_get_device_gpio_range
+ (Trying to acquire lock pctldev->mutex)
 
-Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Simply to say
+CPU#3 is holding lock A and trying to acquire lock D,
+CPU#2 is holding lock B and trying to acquire lock A,
+CPU#0 is holding lock D and trying to acquire lock B.
+
+Signed-off-by: Jim Lin <jilin@nvidia.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpio/gpiolib.c | 27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
+ drivers/pinctrl/core.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index b5d0fff2cd5a..1cd034e428b5 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -362,7 +362,7 @@ static ssize_t gpio_value_store(struct device *dev,
- 	return status;
- }
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index a1ffae4c3770..260a2551d612 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1796,14 +1796,15 @@ void pinctrl_unregister(struct pinctrl_dev *pctldev)
+ 	if (pctldev == NULL)
+ 		return;
  
--static const DEVICE_ATTR(value, 0644,
-+static DEVICE_ATTR(value, 0644,
- 		gpio_value_show, gpio_value_store);
- 
- static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
-@@ -580,18 +580,16 @@ static ssize_t gpio_active_low_store(struct device *dev,
- 	return status ? : size;
- }
- 
--static const DEVICE_ATTR(active_low, 0644,
-+static DEVICE_ATTR(active_low, 0644,
- 		gpio_active_low_show, gpio_active_low_store);
- 
--static const struct attribute *gpio_attrs[] = {
-+static struct attribute *gpio_attrs[] = {
- 	&dev_attr_value.attr,
- 	&dev_attr_active_low.attr,
- 	NULL,
- };
- 
--static const struct attribute_group gpio_attr_group = {
--	.attrs = (struct attribute **) gpio_attrs,
--};
-+ATTRIBUTE_GROUPS(gpio);
- 
- /*
-  * /sys/class/gpio/gpiochipN/
-@@ -788,18 +786,15 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 	if (desc->chip->names && desc->chip->names[offset])
- 		ioname = desc->chip->names[offset];
- 
--	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
--			    desc, ioname ? ioname : "gpio%u",
--			    desc_to_gpio(desc));
-+	dev = device_create_with_groups(&gpio_class, desc->chip->dev,
-+					MKDEV(0, 0), desc, gpio_groups,
-+					ioname ? ioname : "gpio%u",
-+					desc_to_gpio(desc));
- 	if (IS_ERR(dev)) {
- 		status = PTR_ERR(dev);
- 		goto fail_unlock;
- 	}
- 
--	status = sysfs_create_group(&dev->kobj, &gpio_attr_group);
--	if (status)
--		goto fail_unregister_device;
+-	mutex_lock(&pinctrldev_list_mutex);
+ 	mutex_lock(&pctldev->mutex);
 -
- 	if (direction_may_change) {
- 		status = device_create_file(dev, &dev_attr_direction);
- 		if (status)
-@@ -810,13 +805,15 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
- 		status = device_create_file(dev, &dev_attr_edge);
- 		if (status)
--			goto fail_unregister_device;
-+			goto fail_remove_attr_direction;
- 	}
+ 	pinctrl_remove_device_debugfs(pctldev);
++	mutex_unlock(&pctldev->mutex);
  
- 	set_bit(FLAG_EXPORT, &desc->flags);
- 	mutex_unlock(&sysfs_lock);
- 	return 0;
+ 	if (!IS_ERR(pctldev->p))
+ 		pinctrl_put(pctldev->p);
  
-+fail_remove_attr_direction:
-+	device_remove_file(dev, &dev_attr_direction);
- fail_unregister_device:
- 	device_unregister(dev);
- fail_unlock:
-@@ -959,6 +956,8 @@ static void gpiod_unexport(struct gpio_desc *desc)
- 
- 		dev = class_find_device(&gpio_class, NULL, desc, match_export);
- 		if (dev) {
-+			device_remove_file(dev, &dev_attr_edge);
-+			device_remove_file(dev, &dev_attr_direction);
- 			gpio_setup_irq(desc, dev, 0);
- 			clear_bit(FLAG_EXPORT, &desc->flags);
- 		} else
++	mutex_lock(&pinctrldev_list_mutex);
++	mutex_lock(&pctldev->mutex);
+ 	/* TODO: check that no pinmuxes are still active? */
+ 	list_del(&pctldev->node);
+ 	/* Destroy descriptor tree */
 -- 
 2.2.2
 
