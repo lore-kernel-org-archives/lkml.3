@@ -1,137 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762001AbbA2Jnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jan 2015 04:43:33 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44834 "EHLO
+	id S1760556AbbA2JHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jan 2015 04:07:30 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:44891 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759707AbbA2JFI (ORCPT
+	by vger.kernel.org with ESMTP id S1760484AbbA2JHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jan 2015 04:05:08 -0500
+	Thu, 29 Jan 2015 04:07:23 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jerry Hoemann <jerry.hoemann@hp.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ken Helias <kenhelias@firemail.de>,
+Cc: linux-kernel@vger.kernel.org, Guo Zeng <guo.zeng@csr.com>,
+        Barry Song <Baohua.Song@csr.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 001/176] fsnotify: next_i is freed during fsnotify_unmount_inodes.
-Date: Wed, 28 Jan 2015 15:27:11 +0100
-Message-Id: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 002/176] drivers/rtc/rtc-sirfsoc.c: move hardware initilization earlier in probe
+Date: Wed, 28 Jan 2015 15:27:12 +0100
+Message-Id: <56773a63532f311fbac75b5c16dfccebd2525bbe.1422455352.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.2.2
+In-Reply-To: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
+References: <ce4a451f616a1e7ab58cfeceea5e49c8b1c68c81.1422455352.git.jslaby@suse.cz>
 In-Reply-To: <cover.1422455352.git.jslaby@suse.cz>
 References: <cover.1422455352.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jerry Hoemann <jerry.hoemann@hp.com>
+From: Guo Zeng <guo.zeng@csr.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6424babfd68dd8a83d9c60a5242d27038856599f upstream.
+commit 0e95325525c4383565cea4f402f15a3113162d05 upstream.
 
-During file system stress testing on 3.10 and 3.12 based kernels, the
-umount command occasionally hung in fsnotify_unmount_inodes in the
-section of code:
+Move rtc register to be later than hardware initialization.  The reason
+is that devm_rtc_device_register() will do read_time() which is a
+callback accessing hardware.  This sometimes causes a hang in the
+hardware related callback.
 
-                spin_lock(&inode->i_lock);
-                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
-                        spin_unlock(&inode->i_lock);
-                        continue;
-                }
-
-As this section of code holds the global inode_sb_list_lock, eventually
-the system hangs trying to acquire the lock.
-
-Multiple crash dumps showed:
-
-The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
-back at itself.  As this is not the value of list upon entry to the
-function, the kernel never exits the loop.
-
-To help narrow down problem, the call to list_del_init in
-inode_sb_list_del was changed to list_del.  This poisons the pointers in
-the i_sb_list and causes a kernel to panic if it transverse a freed
-inode.
-
-Subsequent stress testing paniced in fsnotify_unmount_inodes at the
-bottom of the list_for_each_entry_safe loop showing next_i had become
-free.
-
-We believe the root cause of the problem is that next_i is being freed
-during the window of time that the list_for_each_entry_safe loop
-temporarily releases inode_sb_list_lock to call fsnotify and
-fsnotify_inode_delete.
-
-The code in fsnotify_unmount_inodes attempts to prevent the freeing of
-inode and next_i by calling __iget.  However, the code doesn't do the
-__iget call on next_i
-
-	if i_count == 0 or
-	if i_state & (I_FREEING | I_WILL_FREE)
-
-The patch addresses this issue by advancing next_i in the above two cases
-until we either find a next_i which we can __iget or we reach the end of
-the list.  This makes the handling of next_i more closely match the
-handling of the variable "inode."
-
-The time to reproduce the hang is highly variable (from hours to days.) We
-ran the stress test on a 3.10 kernel with the proposed patch for a week
-without failure.
-
-During list_for_each_entry_safe, next_i is becoming free causing
-the loop to never terminate.  Advance next_i in those cases where
-__iget is not done.
-
-Signed-off-by: Jerry Hoemann <jerry.hoemann@hp.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Ken Helias <kenhelias@firemail.de>
+Signed-off-by: Guo Zeng <guo.zeng@csr.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/notify/inode_mark.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/rtc/rtc-sirfsoc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
-index 74825be65b7b..fbb9dfb7b1d2 100644
---- a/fs/notify/inode_mark.c
-+++ b/fs/notify/inode_mark.c
-@@ -288,20 +288,25 @@ void fsnotify_unmount_inodes(struct list_head *list)
- 		spin_unlock(&inode->i_lock);
+diff --git a/drivers/rtc/rtc-sirfsoc.c b/drivers/rtc/rtc-sirfsoc.c
+index 63460cf80f1b..3b13401b3682 100644
+--- a/drivers/rtc/rtc-sirfsoc.c
++++ b/drivers/rtc/rtc-sirfsoc.c
+@@ -290,14 +290,6 @@ static int sirfsoc_rtc_probe(struct platform_device *pdev)
+ 	rtc_div = ((32768 / RTC_HZ) / 2) - 1;
+ 	sirfsoc_rtc_iobrg_writel(rtc_div, rtcdrv->rtc_base + RTC_DIV);
  
- 		/* In case the dropping of a reference would nuke next_i. */
--		if ((&next_i->i_sb_list != list) &&
--		    atomic_read(&next_i->i_count)) {
-+		while (&next_i->i_sb_list != list) {
- 			spin_lock(&next_i->i_lock);
--			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
-+			if (!(next_i->i_state & (I_FREEING | I_WILL_FREE)) &&
-+						atomic_read(&next_i->i_count)) {
- 				__iget(next_i);
- 				need_iput = next_i;
-+				spin_unlock(&next_i->i_lock);
-+				break;
- 			}
- 			spin_unlock(&next_i->i_lock);
-+			next_i = list_entry(next_i->i_sb_list.next,
-+						struct inode, i_sb_list);
- 		}
+-	rtcdrv->rtc = rtc_device_register(pdev->name, &(pdev->dev),
+-			&sirfsoc_rtc_ops, THIS_MODULE);
+-	if (IS_ERR(rtcdrv->rtc)) {
+-		err = PTR_ERR(rtcdrv->rtc);
+-		dev_err(&pdev->dev, "can't register RTC device\n");
+-		return err;
+-	}
+-
+ 	/* 0x3 -> RTC_CLK */
+ 	sirfsoc_rtc_iobrg_writel(SIRFSOC_RTC_CLK,
+ 			rtcdrv->rtc_base + RTC_CLOCK_SWITCH);
+@@ -312,6 +304,14 @@ static int sirfsoc_rtc_probe(struct platform_device *pdev)
+ 	rtcdrv->overflow_rtc =
+ 		sirfsoc_rtc_iobrg_readl(rtcdrv->rtc_base + RTC_SW_VALUE);
  
- 		/*
--		 * We can safely drop inode_sb_list_lock here because we hold
--		 * references on both inode and next_i.  Also no new inodes
--		 * will be added since the umount has begun.
-+		 * We can safely drop inode_sb_list_lock here because either
-+		 * we actually hold references on both inode and next_i or
-+		 * end of list.  Also no new inodes will be added since the
-+		 * umount has begun.
- 		 */
- 		spin_unlock(&inode_sb_list_lock);
- 
++	rtcdrv->rtc = rtc_device_register(pdev->name, &(pdev->dev),
++			&sirfsoc_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rtcdrv->rtc)) {
++		err = PTR_ERR(rtcdrv->rtc);
++		dev_err(&pdev->dev, "can't register RTC device\n");
++		return err;
++	}
++
+ 	rtcdrv->irq = platform_get_irq(pdev, 0);
+ 	err = devm_request_irq(
+ 			&pdev->dev,
 -- 
 2.2.2
 
