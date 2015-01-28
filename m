@@ -1,138 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761696AbbA2Dh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 22:37:27 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:35333 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275AbbA2DhZ (ORCPT
+	id S1753248AbbA1UMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:12:20 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:45682 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbbA1UMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 22:37:25 -0500
-From: Johan Hovold <johan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Johan Hovold <johan@kernel.org>, stable <stable@vger.kernel.org>
-Subject: [PATCH v2] gpio: sysfs: fix gpio device-attribute leak
-Date: Wed, 28 Jan 2015 17:02:07 +0100
-Message-Id: <1422460928-635-1-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.5
-In-Reply-To: <20150128152454.GB2433@localhost>
-References: <20150128152454.GB2433@localhost>
+	Wed, 28 Jan 2015 15:12:17 -0500
+MIME-Version: 1.0
+From: Wincy Van <fanwenyi0529@gmail.com>
+Date: Thu, 29 Jan 2015 00:02:18 +0800
+Message-ID: <CACzj_yUUuR6grQyJWLAajay1BgNduUVWRRf5+AKKLjXTUmzZJQ@mail.gmail.com>
+Subject: [PATCH v4 6/6] KVM: nVMX: Enable nested posted interrupt processing
+To: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 0915e6feb38de8d3601819992a5bd050201a56fa upstream.
+If vcpu has a interrupt in vmx non-root mode, we will
+kick that vcpu to inject interrupt timely. With posted
+interrupt processing, the kick intr is not needed, and
+interrupts are fully taken care of by hardware.
 
-The gpio device attributes were never destroyed when the gpio was
-unexported (or on export failures).
+In nested vmx, this feature avoids much more vmexits
+than non-nested vmx.
 
-Use device_create_with_groups() to create the default device attributes
-of the gpio class device. Note that this also fixes the
-attribute-creation race with userspace for these attributes.
+This patch use L0's POSTED_INTR_NV to avoid unexpected
+interrupt if L1's vector is different with L0's. If vcpu
+is in hardware's non-root mode, we use a physical ipi to
+deliver posted interrupts, otherwise we will deliver that
+interrupt to L1 and kick that vcpu out of nested
+non-root mode.
 
-Remove contingent attributes in export error path and on unexport.
-
-Fixes: d8f388d8dc8d ("gpio: sysfs interface")
-Cc: stable <stable@vger.kernel.org> # v2.6.27+
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
 ---
+ arch/x86/kvm/vmx.c |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 81 insertions(+), 3 deletions(-)
 
-Backport to v3.12 (and 3.14).
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index ab131f3..85a163c 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -215,6 +215,7 @@ struct __packed vmcs12 {
+        u64 tsc_offset;
+        u64 virtual_apic_page_addr;
+        u64 apic_access_addr;
++       u64 posted_intr_desc_addr;
+        u64 ept_pointer;
+        u64 eoi_exit_bitmap0;
+        u64 eoi_exit_bitmap1;
+@@ -334,6 +335,7 @@ struct __packed vmcs12 {
+        u32 vmx_preemption_timer_value;
+        u32 padding32[7]; /* room for future expansion */
+        u16 virtual_processor_id;
++       u16 posted_intr_nv;
+        u16 guest_es_selector;
+        u16 guest_cs_selector;
+        u16 guest_ss_selector;
+@@ -406,6 +408,8 @@ struct nested_vmx {
+         */
+        struct page *apic_access_page;
+        struct page *virtual_apic_page;
++       struct page *pi_desc_page;
++       u16 posted_intr_nv;
+        u64 msr_ia32_feature_control;
 
-Changes since v1
- - fix mistake in backport, which removed the attributes while holding
-   the mutex in gpiod_unexport (reported by Luis Henriques)
+        struct hrtimer preemption_timer;
+@@ -621,6 +625,7 @@ static int max_shadow_read_write_fields =
 
-
- drivers/gpio/gpiolib.c | 27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index dd4d6ffacc30..382cc72adce0 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -362,7 +362,7 @@ static ssize_t gpio_value_store(struct device *dev,
- 	return status;
+ static const unsigned short vmcs_field_to_offset_table[] = {
+        FIELD(VIRTUAL_PROCESSOR_ID, virtual_processor_id),
++       FIELD(POSTED_INTR_NV, posted_intr_nv),
+        FIELD(GUEST_ES_SELECTOR, guest_es_selector),
+        FIELD(GUEST_CS_SELECTOR, guest_cs_selector),
+        FIELD(GUEST_SS_SELECTOR, guest_ss_selector),
+@@ -646,6 +651,7 @@ static const unsigned short vmcs_field_to_offset_table[] = {
+        FIELD64(TSC_OFFSET, tsc_offset),
+        FIELD64(VIRTUAL_APIC_PAGE_ADDR, virtual_apic_page_addr),
+        FIELD64(APIC_ACCESS_ADDR, apic_access_addr),
++       FIELD64(POSTED_INTR_DESC_ADDR, posted_intr_desc_addr),
+        FIELD64(EPT_POINTER, ept_pointer),
+        FIELD64(EOI_EXIT_BITMAP0, eoi_exit_bitmap0),
+        FIELD64(EOI_EXIT_BITMAP1, eoi_exit_bitmap1),
+@@ -798,6 +804,7 @@ static void kvm_cpu_vmxon(u64 addr);
+ static void kvm_cpu_vmxoff(void);
+ static bool vmx_mpx_supported(void);
+ static bool vmx_xsaves_supported(void);
++static int vmx_vm_has_apicv(struct kvm *kvm);
+ static int vmx_set_tss_addr(struct kvm *kvm, unsigned int addr);
+ static void vmx_set_segment(struct kvm_vcpu *vcpu,
+                            struct kvm_segment *var, int seg);
+@@ -1150,6 +1157,11 @@ static inline bool nested_cpu_has_vid(struct
+vmcs12 *vmcs12)
+        return nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY);
  }
- 
--static const DEVICE_ATTR(value, 0644,
-+static DEVICE_ATTR(value, 0644,
- 		gpio_value_show, gpio_value_store);
- 
- static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
-@@ -580,18 +580,16 @@ static ssize_t gpio_active_low_store(struct device *dev,
- 	return status ? : size;
+
++static inline bool nested_cpu_has_posted_intr(struct vmcs12 *vmcs12)
++{
++       return vmcs12->pin_based_vm_exec_control & PIN_BASED_POSTED_INTR;
++}
++
+ static inline bool is_exception(u32 intr_info)
+ {
+        return (intr_info & (INTR_INFO_INTR_TYPE_MASK | INTR_INFO_VALID_MASK))
+@@ -2353,6 +2365,9 @@ static void nested_vmx_setup_ctls_msrs(struct
+vcpu_vmx *vmx)
+        vmx->nested.nested_vmx_pinbased_ctls_high |=
+                PIN_BASED_ALWAYSON_WITHOUT_TRUE_MSR |
+                PIN_BASED_VMX_PREEMPTION_TIMER;
++       if (vmx_vm_has_apicv(vmx->vcpu.kvm))
++               vmx->nested.nested_vmx_pinbased_ctls_high |=
++                       PIN_BASED_POSTED_INTR;
+
+        /* exit controls */
+        rdmsr(MSR_IA32_VMX_EXIT_CTLS,
+@@ -4304,6 +4319,19 @@ static int vmx_vm_has_apicv(struct kvm *kvm)
+        return enable_apicv && irqchip_in_kernel(kvm);
  }
- 
--static const DEVICE_ATTR(active_low, 0644,
-+static DEVICE_ATTR(active_low, 0644,
- 		gpio_active_low_show, gpio_active_low_store);
- 
--static const struct attribute *gpio_attrs[] = {
-+static struct attribute *gpio_attrs[] = {
- 	&dev_attr_value.attr,
- 	&dev_attr_active_low.attr,
- 	NULL,
- };
- 
--static const struct attribute_group gpio_attr_group = {
--	.attrs = (struct attribute **) gpio_attrs,
--};
-+ATTRIBUTE_GROUPS(gpio);
- 
+
++static int vmx_deliver_nested_posted_interrupt(struct kvm_vcpu *vcpu,
++                                               int vector)
++{
++       if (is_guest_mode(vcpu) &&
++           vector == to_vmx(vcpu)->nested.posted_intr_nv &&
++           vcpu->mode == IN_GUEST_MODE) {
++               /* the PIR and ON have been set by L1. */
++               apic->send_IPI_mask(get_cpu_mask(vcpu->cpu),
++                               POSTED_INTR_VECTOR);
++               return 0;
++       }
++       return -1;
++}
  /*
-  * /sys/class/gpio/gpiochipN/
-@@ -788,18 +786,15 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 	if (desc->chip->names && desc->chip->names[offset])
- 		ioname = desc->chip->names[offset];
- 
--	dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
--			    desc, ioname ? ioname : "gpio%u",
--			    desc_to_gpio(desc));
-+	dev = device_create_with_groups(&gpio_class, desc->chip->dev,
-+					MKDEV(0, 0), desc, gpio_groups,
-+					ioname ? ioname : "gpio%u",
-+					desc_to_gpio(desc));
- 	if (IS_ERR(dev)) {
- 		status = PTR_ERR(dev);
- 		goto fail_unlock;
- 	}
- 
--	status = sysfs_create_group(&dev->kobj, &gpio_attr_group);
--	if (status)
--		goto fail_unregister_device;
--
- 	if (direction_may_change) {
- 		status = device_create_file(dev, &dev_attr_direction);
- 		if (status)
-@@ -810,13 +805,15 @@ static int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
- 		status = device_create_file(dev, &dev_attr_edge);
- 		if (status)
--			goto fail_unregister_device;
-+			goto fail_remove_attr_direction;
- 	}
- 
- 	set_bit(FLAG_EXPORT, &desc->flags);
- 	mutex_unlock(&sysfs_lock);
- 	return 0;
- 
-+fail_remove_attr_direction:
-+	device_remove_file(dev, &dev_attr_direction);
- fail_unregister_device:
- 	device_unregister(dev);
- fail_unlock:
-@@ -968,6 +965,8 @@ static void gpiod_unexport(struct gpio_desc *desc)
- 	mutex_unlock(&sysfs_lock);
- 
- 	if (dev) {
-+		device_remove_file(dev, &dev_attr_edge);
-+		device_remove_file(dev, &dev_attr_direction);
- 		device_unregister(dev);
- 		put_device(dev);
- 	}
--- 
-2.0.5
+  * Send interrupt to vcpu via posted interrupt way.
+  * 1. If target vcpu is running(non-root mode), send posted interrupt
+@@ -4316,6 +4344,10 @@ static void vmx_deliver_posted_interrupt(struct
+kvm_vcpu *vcpu, int vector)
+        struct vcpu_vmx *vmx = to_vmx(vcpu);
+        int r;
 
++       r = vmx_deliver_nested_posted_interrupt(vcpu, vector);
++       if (!r)
++               return;
++
+        if (pi_test_and_set_pir(vector, &vmx->pi_desc))
+                return;
+
+@@ -6561,6 +6593,7 @@ static inline void nested_release_vmcs12(struct
+vcpu_vmx *vmx)
+                vmcs_write32(SECONDARY_VM_EXEC_CONTROL, exec_control);
+                vmcs_write64(VMCS_LINK_POINTER, -1ull);
+        }
++       vmx->nested.posted_intr_nv = -1;
+        kunmap(vmx->nested.current_vmcs12_page);
+        nested_release_page(vmx->nested.current_vmcs12_page);
+        vmx->nested.current_vmptr = -1ull;
+@@ -6589,6 +6622,10 @@ static void free_nested(struct vcpu_vmx *vmx)
+                nested_release_page(vmx->nested.virtual_apic_page);
+                vmx->nested.virtual_apic_page = NULL;
+        }
++       if (vmx->nested.pi_desc_page) {
++               nested_release_page(vmx->nested.pi_desc_page);
++               vmx->nested.pi_desc_page = NULL;
++       }
+
+        nested_free_all_saved_vmcss(vmx);
+ }
+@@ -8182,6 +8219,7 @@ static struct kvm_vcpu *vmx_create_vcpu(struct
+kvm *kvm, unsigned int id)
+        if (nested)
+                nested_vmx_setup_ctls_msrs(vmx);
+
++       vmx->nested.posted_intr_nv = -1;
+        vmx->nested.current_vmptr = -1ull;
+        vmx->nested.current_vmcs12 = NULL;
+
+@@ -8415,6 +8453,19 @@ static bool nested_get_vmcs12_pages(struct
+kvm_vcpu *vcpu,
+                        return false;
+        }
+
++       if (nested_cpu_has_posted_intr(vmcs12)) {
++               if (!IS_ALIGNED(vmcs12->posted_intr_desc_addr, 64))
++                       return false;
++
++               if (vmx->nested.pi_desc_page) { /* shouldn't happen */
++                       nested_release_page(vmx->nested.pi_desc_page);
++               }
++               vmx->nested.pi_desc_page =
++                       nested_get_page(vcpu, vmcs12->posted_intr_desc_addr);
++               if (!vmx->nested.pi_desc_page)
++                       return false;
++       }
++
+        return true;
+ }
+
+@@ -8550,7 +8601,8 @@ static int
+nested_vmx_check_apicv_controls(struct kvm_vcpu *vcpu,
+ {
+        if (!nested_cpu_has_virt_x2apic_mode(vmcs12) &&
+            !nested_cpu_has_apic_reg_virt(vmcs12) &&
+-           !nested_cpu_has_vid(vmcs12))
++           !nested_cpu_has_vid(vmcs12) &&
++           !nested_cpu_has_posted_intr(vmcs12))
+                return 0;
+
+        /*
+@@ -8569,6 +8621,17 @@ static int
+nested_vmx_check_apicv_controls(struct kvm_vcpu *vcpu,
+           !nested_exit_on_intr(vcpu))
+                return -EINVAL;
+
++       /*
++        * bits 15:8 should be zero in posted_intr_nv,
++        * the descriptor address has been already checked
++        * in nested_get_vmcs12_pages.
++        */
++       if (nested_cpu_has_posted_intr(vmcs12) &&
++          (!nested_cpu_has_vid(vmcs12) ||
++           !nested_exit_intr_ack_set(vcpu) ||
++           vmcs12->posted_intr_nv & 0xff00))
++               return -EINVAL;
++
+        /* tpr shadow is needed by all apicv features. */
+        if (!nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
+                return -EINVAL;
+@@ -8811,8 +8874,19 @@ static void prepare_vmcs02(struct kvm_vcpu
+*vcpu, struct vmcs12 *vmcs12)
+
+        exec_control = vmcs12->pin_based_vm_exec_control;
+        exec_control |= vmcs_config.pin_based_exec_ctrl;
+-       exec_control &= ~(PIN_BASED_VMX_PREEMPTION_TIMER |
+-                          PIN_BASED_POSTED_INTR);
++       exec_control &= ~PIN_BASED_VMX_PREEMPTION_TIMER;
++
++       if (nested_cpu_has_posted_intr(vmcs12)) {
++               /* Note that we use L0's vector to avoid unexpected intr. */
++               vmx->nested.posted_intr_nv = vmcs12->posted_intr_nv;
++               vmcs_write64(POSTED_INTR_NV, POSTED_INTR_VECTOR);
++               vmcs_write64(POSTED_INTR_DESC_ADDR,
++                       page_to_phys(vmx->nested.pi_desc_page) +
++                       (unsigned long)(vmcs12->posted_intr_desc_addr &
++                       (PAGE_SIZE - 1)));
++       } else
++               exec_control &= ~PIN_BASED_POSTED_INTR;
++
+        vmcs_write32(PIN_BASED_VM_EXEC_CONTROL, exec_control);
+
+        vmx->nested.preemption_timer_expired = false;
+@@ -9728,6 +9802,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu
+*vcpu, u32 exit_reason,
+                nested_release_page(vmx->nested.virtual_apic_page);
+                vmx->nested.virtual_apic_page = NULL;
+        }
++       if (vmx->nested.pi_desc_page) {
++               nested_release_page(vmx->nested.pi_desc_page);
++               vmx->nested.pi_desc_page = NULL;
++       }
+
+        /*
+         * We are now running in L2, mmu_notifier will force to reload the
+--
+1.7.1
