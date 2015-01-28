@@ -1,171 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761935AbbA1UqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:46:15 -0500
-Received: from skprod3.natinst.com ([130.164.80.24]:52733 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760246AbbA1UqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:46:12 -0500
-From: Xander Huff <xander.huff@ni.com>
-To: mingo@redhat.com, peterz@infradead.org, rostedt@goodmis.org
-Cc: linux-rt-users@vger.kernel.org, josh.cartwright@ni.com,
-        gratian.crisan@ni.com, linux-kernel@vger.kernel.org,
-        jaeden.amero@ni.com, ben.shelton@ni.com, brad.mouring@ni.com,
-        rich.tollerton@ni.com, Xander Huff <xander.huff@ni.com>
-Subject: [PATCH -rt] lockdep: selftest: fix warnings due to missing PREEMPT_RT conditionals
-Date: Wed, 28 Jan 2015 13:08:45 -0600
-Message-Id: <1422472125-21979-1-git-send-email-xander.huff@ni.com>
-X-Mailer: git-send-email 1.9.1
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/28/2015 01:09:04 PM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/28/2015 01:09:04 PM,
-	Serialize complete at 01/28/2015 01:09:04 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-28_02:2015-01-28,2015-01-28,1970-01-01 signatures=0
+	id S1756029AbbA1U6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:58:53 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:34917 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755891AbbA1U6m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 15:58:42 -0500
+Date: Wed, 28 Jan 2015 23:08:47 +0400
+From: Sergei Rogachev <rogachevsergei@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: iamjoonsoo.kim@lge.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] mm/page_ext: remove unnecessary stack_trace field
+Message-Id: <20150128230847.16cc8e4fbb5f601dc667d94d@gmail.com>
+In-Reply-To: <20150127144319.f3a161e5f5d562a0a605371e@linux-foundation.org>
+References: <1422309132-28030-1-git-send-email-rogachevsergei@gmail.com>
+	<1422309132-28030-2-git-send-email-rogachevsergei@gmail.com>
+	<20150127144319.f3a161e5f5d562a0a605371e@linux-foundation.org>
+X-Mailer: Sylpheed 3.4.0beta5 (GTK+ 2.24.20; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Cartwright <josh.cartwright@ni.com>
+On Tue, 27 Jan 2015 14:43:19 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-"lockdep: Selftest: Only do hardirq context test for raw spinlock"
-disabled the execution of certain tests with PREEMPT_RT_FULL, but did
-not prevent the tests from still being defined.  This leads to warnings
-like:
+> On Tue, 27 Jan 2015 00:52:12 +0300 Sergei Rogachev <rogachevsergei@gmail.com> wrote:
+> 
+> > Page owner uses the page_ext structure to keep meta-information
+> > for every page in the system. The structure also contains a field
+> > of type 'struct stack_trace', page owner uses this field during
+> > invocation of the function save_stack_trace. It is easy to notice
+> > that keeping a copy of this structure for every page in the system
+> > is very inefficiently in terms of memory.
+> > 
+> > The patch removes this unnecessary field of page_ext and forces
+> > page owner to use a stack_trace structure allocated on the stack.
+> > 
+> 
+> Fair enough.
+> 
+> What do you think of the below tweaks?  Seems a bit neater, and it will
+> cause all unmentioned fields to be zeroed out.  It's not a bug to leave
+> .max_entries uninitialised in print_page_owner(), but it's nice not to
+> leave loose ends.
 
-  ./linux/lib/locking-selftest.c:574:1: warning: 'irqsafe1_hard_rlock_12' defined but not used [-Wunused-function]
-  ./linux/lib/locking-selftest.c:574:1: warning: 'irqsafe1_hard_rlock_21' defined but not used [-Wunused-function]
-  ./linux/lib/locking-selftest.c:577:1: warning: 'irqsafe1_hard_wlock_12' defined but not used [-Wunused-function]
-  ./linux/lib/locking-selftest.c:577:1: warning: 'irqsafe1_hard_wlock_21' defined but not used [-Wunused-function]
-  ./linux/lib/locking-selftest.c:580:1: warning: 'irqsafe1_soft_spin_12' defined but not used [-Wunused-function]
-  ...
+Yes, with your fix the code looks much better!
 
-Fixed by wrapping the test definitions in #ifndef CONFIG_PREEMPT_RT_FULL
-conditionals.
-
-Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-Signed-off-by: Xander Huff <xander.huff@ni.com>
-Acked-by: Gratian Crisan <gratian.crisan@ni.com>
----
- lib/locking-selftest.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
-
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index 507a22f..51e558f 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -570,6 +570,8 @@ GENERATE_TESTCASE(init_held_rsem)
- #include "locking-selftest-spin-hardirq.h"
- GENERATE_PERMUTATIONS_2_EVENTS(irqsafe1_hard_spin)
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
-+
- #include "locking-selftest-rlock-hardirq.h"
- GENERATE_PERMUTATIONS_2_EVENTS(irqsafe1_hard_rlock)
- 
-@@ -585,9 +587,12 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe1_soft_rlock)
- #include "locking-selftest-wlock-softirq.h"
- GENERATE_PERMUTATIONS_2_EVENTS(irqsafe1_soft_wlock)
- 
-+#endif
-+
- #undef E1
- #undef E2
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
- /*
-  * Enabling hardirqs with a softirq-safe lock held:
-  */
-@@ -620,6 +625,8 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2A_rlock)
- #undef E1
- #undef E2
- 
-+#endif
-+
- /*
-  * Enabling irqs with an irq-safe lock held:
-  */
-@@ -643,6 +650,8 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2A_rlock)
- #include "locking-selftest-spin-hardirq.h"
- GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_hard_spin)
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
-+
- #include "locking-selftest-rlock-hardirq.h"
- GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_hard_rlock)
- 
-@@ -658,6 +667,8 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_soft_rlock)
- #include "locking-selftest-wlock-softirq.h"
- GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_soft_wlock)
- 
-+#endif
-+
- #undef E1
- #undef E2
- 
-@@ -689,6 +700,8 @@ GENERATE_PERMUTATIONS_2_EVENTS(irqsafe2B_soft_wlock)
- #include "locking-selftest-spin-hardirq.h"
- GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_hard_spin)
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
-+
- #include "locking-selftest-rlock-hardirq.h"
- GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_hard_rlock)
- 
-@@ -704,6 +717,8 @@ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_soft_rlock)
- #include "locking-selftest-wlock-softirq.h"
- GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_soft_wlock)
- 
-+#endif
-+
- #undef E1
- #undef E2
- #undef E3
-@@ -737,6 +752,8 @@ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe3_soft_wlock)
- #include "locking-selftest-spin-hardirq.h"
- GENERATE_PERMUTATIONS_3_EVENTS(irqsafe4_hard_spin)
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
-+
- #include "locking-selftest-rlock-hardirq.h"
- GENERATE_PERMUTATIONS_3_EVENTS(irqsafe4_hard_rlock)
- 
-@@ -752,10 +769,14 @@ GENERATE_PERMUTATIONS_3_EVENTS(irqsafe4_soft_rlock)
- #include "locking-selftest-wlock-softirq.h"
- GENERATE_PERMUTATIONS_3_EVENTS(irqsafe4_soft_wlock)
- 
-+#endif
-+
- #undef E1
- #undef E2
- #undef E3
- 
-+#ifndef CONFIG_PREEMPT_RT_FULL
-+
- /*
-  * read-lock / write-lock irq inversion.
-  *
-@@ -818,6 +839,10 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_inversion_soft_wlock)
- #undef E2
- #undef E3
- 
-+#endif
-+
-+#ifndef CONFIG_PREEMPT_RT_FULL
-+
- /*
-  * read-lock / write-lock recursion that is actually safe.
-  */
-@@ -856,6 +881,8 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
- #undef E2
- #undef E3
- 
-+#endif
-+
- /*
-  * read-lock / write-lock recursion that is unsafe.
-  */
--- 
-1.9.1
-
+> 
+> --- a/mm/page_owner.c~mm-page_ext-remove-unnecessary-stack_trace-field-fix
+> +++ a/mm/page_owner.c
+> @@ -59,15 +59,14 @@ void __reset_page_owner(struct page *pag
+>  
+>  void __set_page_owner(struct page *page, unsigned int order, gfp_t gfp_mask)
+>  {
+> -	struct page_ext *page_ext;
+> -	struct stack_trace trace;
+> +	struct page_ext *page_ext = lookup_page_ext(page);
+> +	struct stack_trace trace = {
+> +		.nr_entries = 0,
+> +		.max_entries = ARRAY_SIZE(page_ext->trace_entries),
+> +		.entries = &page_ext->trace_entries[0],
+> +		.skip = 3,
+> +	};
+>  
+> -	page_ext = lookup_page_ext(page);
+> -
+> -	trace.nr_entries = 0;
+> -	trace.max_entries = ARRAY_SIZE(page_ext->trace_entries);
+> -	trace.entries = &page_ext->trace_entries[0];
+> -	trace.skip = 3;
+>  	save_stack_trace(&trace);
+>  
+>  	page_ext->order = order;
+> @@ -83,8 +82,11 @@ print_page_owner(char __user *buf, size_
+>  {
+>  	int ret;
+>  	int pageblock_mt, page_mt;
+> -	struct stack_trace trace;
+>  	char *kbuf;
+> +	struct stack_trace trace = {
+> +		.nr_entries = page_ext->nr_entries,
+> +		.entries = &page_ext->trace_entries[0],
+> +	};
+>  
+>  	kbuf = kmalloc(count, GFP_KERNEL);
+>  	if (!kbuf)
+> @@ -122,9 +124,6 @@ print_page_owner(char __user *buf, size_
+>  	if (ret >= count)
+>  		goto err;
+>  
+> -	trace.nr_entries = page_ext->nr_entries;
+> -	trace.entries = &page_ext->trace_entries[0];
+> -
+>  	ret += snprint_stack_trace(kbuf + ret, count - ret, &trace, 0);
+>  	if (ret >= count)
+>  		goto err;
+> _
+> 
