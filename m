@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761736AbbA1EoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 23:44:23 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40378 "EHLO mail.kernel.org"
+	id S964991AbbA1EXo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:23:44 -0500
+Received: from mail.kernel.org ([198.145.29.136]:40405 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964967AbbA1EXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:23:37 -0500
+	id S964977AbbA1EXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:23:39 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 114/177] lib/bitmap.c: fix undefined shift in __bitmap_shift_{left|right}()
-Date: Wed, 28 Jan 2015 12:09:32 +0800
-Message-Id: <1422418236-12852-205-git-send-email-lizf@kernel.org>
+        "Theodore Ts'o" <tytso@mit.edu>, Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 115/177] ext4: fix overflow when updating superblock backups after resize
+Date: Wed, 28 Jan 2015 12:09:33 +0800
+Message-Id: <1422418236-12852-206-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -30,50 +27,37 @@ From: Jan Kara <jack@suse.cz>
 ------------------
 
 
-commit ea5d05b34aca25c066e0699512d0ffbd8ee6ac3e upstream.
+commit 9378c6768e4fca48971e7b6a9075bc006eda981d upstream.
 
-If __bitmap_shift_left() or __bitmap_shift_right() are asked to shift by
-a multiple of BITS_PER_LONG, they will try to shift a long value by
-BITS_PER_LONG bits which is undefined.  Change the functions to avoid
-the undefined shift.
+When there are no meta block groups update_backups() will compute the
+backup block in 32-bit arithmetics thus possibly overflowing the block
+number and corrupting the filesystem. OTOH filesystems without meta
+block groups larger than 16 TB should be rare. Fix the problem by doing
+the counting in 64-bit arithmetics.
 
-Coverity id: 1192175
-Coverity id: 1192174
+Coverity-id: 741252
 Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+[lizf: Backported to 3.4: adjust context]
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- lib/bitmap.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/ext4/resize.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index b5a8b6a..6ccf212 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -131,7 +131,9 @@ void __bitmap_shift_right(unsigned long *dst,
- 		lower = src[off + k];
- 		if (left && off + k == lim - 1)
- 			lower &= mask;
--		dst[k] = upper << (BITS_PER_LONG - rem) | lower >> rem;
-+		dst[k] = lower >> rem;
-+		if (rem)
-+			dst[k] |= upper << (BITS_PER_LONG - rem);
- 		if (left && k == lim - 1)
- 			dst[k] &= mask;
- 	}
-@@ -172,7 +174,9 @@ void __bitmap_shift_left(unsigned long *dst,
- 		upper = src[k];
- 		if (left && k == lim - 1)
- 			upper &= (1UL << left) - 1;
--		dst[k + off] = lower  >> (BITS_PER_LONG - rem) | upper << rem;
-+		dst[k + off] = upper << rem;
-+		if (rem)
-+			dst[k + off] |= lower >> (BITS_PER_LONG - rem);
- 		if (left && k + off == lim - 1)
- 			dst[k + off] &= (1UL << left) - 1;
- 	}
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index a43e43c..cfd3211 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -991,7 +991,7 @@ static void update_backups(struct super_block *sb,
+ 		    (err = ext4_journal_restart(handle, EXT4_MAX_TRANS_DATA)))
+ 			break;
+ 
+-		bh = sb_getblk(sb, group * bpg + blk_off);
++		bh = sb_getblk(sb, ((ext4_fsblk_t)group) * bpg + blk_off);
+ 		if (!bh) {
+ 			err = -ENOMEM;
+ 			break;
 -- 
 1.9.1
 
