@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941AbbA2B5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:57:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46105 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755736AbbA2B5U (ORCPT
+	id S1759585AbbA1Uaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:30:55 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:54619 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758363AbbA1Uaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:57:20 -0500
-Date: Wed, 28 Jan 2015 10:51:55 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Heba Aamer <heba93aamer@gmail.com>
-Cc: devel@driverdev.osuosl.org, dmitry.eremin@intel.com, tristan@lelong.xyz,
-        andreas.dilger@intel.com, brilliantov@inbox.ru,
-        linux-kernel@vger.kernel.org, oleg.drokin@intel.com, gdonald@gmail.com,
-        HPDD-discuss@ml01.01.org
-Subject: Re: [PATCH] staging: lustre: lustre: osc: fix Prefer seq_puts to
- seq_printf
-Message-ID: <20150128185155.GA6417@kroah.com>
-References: <20150128140533.GA14301@mohammed-Inspiron-3537>
+	Wed, 28 Jan 2015 15:30:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150128140533.GA14301@mohammed-Inspiron-3537>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150128192700.15269823@linux.lan.towertech.it>
+References: <1421770899-4136-1-git-send-email-pang.xunlei@linaro.org>
+	<CADcy93WBXjHs8A3Wo4ajiRcM2CHkN0DXSR2uB8Ww5ywe5KTDdA@mail.gmail.com>
+	<20150128192700.15269823@linux.lan.towertech.it>
+Date: Wed, 28 Jan 2015 10:53:10 -0800
+Message-ID: <CALAqxLWh=DzLrUWxNOy=HOrWZSvzK6toWhy=VMkaU6XU-GTmDA@mail.gmail.com>
+Subject: Re: [RFC PATCH v3 0/8] Provide y2038/y2106 safe rtc_class_ops.set_mmss64()
+From: John Stultz <john.stultz@linaro.org>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Xunlei Pang <pang.xunlei@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Henderson <rth@twiddle.net>,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 28, 2015 at 04:05:33PM +0200, Heba Aamer wrote:
-> This patch fixes the following checkpatch.pl warning:
-> Prefer seq_puts to seq_printf
-> 
-> Signed-off-by: Heba Aamer <heba93aamer@gmail.com>
-> ---
->  drivers/staging/lustre/lustre/osc/lproc_osc.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/lustre/lustre/osc/lproc_osc.c b/drivers/staging/lustre/lustre/osc/lproc_osc.c
-> index 8e22e45..4da837e 100644
-> --- a/drivers/staging/lustre/lustre/osc/lproc_osc.c
-> +++ b/drivers/staging/lustre/lustre/osc/lproc_osc.c
-> @@ -364,7 +364,7 @@ static int osc_checksum_type_seq_show(struct seq_file *m, void *v)
->  		else
->  			seq_printf(m, "%s ", cksum_name[i]);
->  	}
-> -	seq_printf(m, "\n");
-> +	seq_puts(m, "\n");
+On Wed, Jan 28, 2015 at 10:27 AM, Alessandro Zummo <a.zummo@towertech.it> wrote:
+> On Thu, 29 Jan 2015 00:12:09 +0800
+> Xunlei Pang <pang.xunlei@linaro.org> wrote:
+>
+>> ping Alessandro
+>
+>   -EBUSY . saw that, looks fine anyhow, but would like to
+>  have a deeper look. we have still some time 'till 2038, right? ;)
 
-I don't think this is a straight search/replace issue, but:
+While that is true, for folks who are working to deploy systems that
+may have 23+ year life times, getting this resolved in the near term
+is important.  With so many changes all over the kernel (and then
+userspace) pushing back on this "plenty of time" sentiment is
+important for this to ever get done.
 
->  	return 0;
->  }
->  
-> @@ -601,7 +601,7 @@ static int osc_rpc_stats_seq_show(struct seq_file *seq, void *v)
->  	seq_printf(seq, "pending read pages:   %d\n",
->  		   atomic_read(&cli->cl_pending_r_pages));
->  
-> -	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
-> +	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
->  	seq_printf(seq, "pages per rpc	 rpcs   %% cum %% |");
->  	seq_printf(seq, "       rpcs   %% cum %%\n");
+So yea, if you can't look at it right this second, that's fine, but
+please don't put it at the bottom of your todo list for the year. :)
 
-if it were, why didn't you fix the other uses here?
-
-thanks,
-
-greg k-h
+thanks
+-john
