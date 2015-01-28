@@ -1,105 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328AbbA1UYs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:24:48 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42510 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755605AbbA1UYp (ORCPT
+	id S934199AbbA1UnL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:43:11 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:54499 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761443AbbA1UnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:24:45 -0500
+	Wed, 28 Jan 2015 15:43:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Bottomley <JBottomley@parallels.com>
+Cc: Yaniv Gardi <ygardi@codeaurora.org>, Dov Levenglick <dovl@codeaurora.org>,
+        Christoph Hellwig <hch@lst.de>, Kishon Vijay Abraham I <kishon@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] phy: qcom-ufs: export symbols needed by main drivers
+Date: Wed, 28 Jan 2015 17:18:05 +0100
+Message-ID: <1840882.huchmEIh5K@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <54C8EE04.6060809@linaro.org>
-References: <1422422306-27473-1-git-send-email-behanw@converseincode.com>
-	<CAKv+Gu_NCgMmX_LQqi7vtjtP4ofrW+kx8FPgRd4-LWwK=73-xg@mail.gmail.com>
-	<54C8EE04.6060809@linaro.org>
-Date: Wed, 28 Jan 2015 16:17:15 +0000
-Message-ID: <CAKv+Gu8CrMqwqBOF8rYa3RP1=gfCthwP=1k9kQ73v6+Sxwah4A@mail.gmail.com>
-Subject: Re: [PATCH] bcm: address clang inline asm incompatibility
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Alex Elder <elder@linaro.org>
-Cc: Behan Webster <behanw@converseincode.com>, bcm@fixthebug.org,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Matt Porter <mporter@linaro.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:0KGzoFia6keSsrIvhsuK1UmqB/D+aZmgf6Q7nK9OwIjEMZjiY8w
+ CtZFCFMaZqMTrFQPEk0jcDMy0AGipy0Nj72Hfvo4LAfyImGK9bISSglSwBmGTdA7lSSI8UT
+ UfdKADp/mfLBioRdBiXaahhEAS0YWCMEU9Nt/Vhk8cS0GmXsgH8WoZkD7cR787GjryKL1XY
+ IPa4TTqDfeOOfEWX7VAxA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 January 2015 at 14:11, Alex Elder <elder@linaro.org> wrote:
-> On 01/28/2015 05:15 AM, Ard Biesheuvel wrote:
->> On 28 January 2015 at 05:18, Behan Webster <behanw@converseincode.com> wrote:
->>> From: Alex Elder <elder@linaro.org>
->>>
->>> My GCC-based build environment likes to call register r12 by the
->>> name "ip" in inline asm.  Behan Webster informed me that his Clang-
->>> based build environment likes "r12" instead.
->>>
->>> Try to make them both happy.
->>>
->>> Signed-off-by: Alex Elder <elder@linaro.org>
->>> Signed-off-by: Behan Webster <behanw@converseincode.com>
->>> ---
->>>  arch/arm/mach-bcm/bcm_kona_smc.c | 9 +++++++--
->>>  1 file changed, 7 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
->>> index a55a7ec..3937bd5 100644
->>> --- a/arch/arm/mach-bcm/bcm_kona_smc.c
->>> +++ b/arch/arm/mach-bcm/bcm_kona_smc.c
->>> @@ -106,9 +106,14 @@ int __init bcm_kona_smc_init(void)
->>>   * request result appropriately.  This result value is found in r0
->>>   * when the "smc" request completes.
->>>   */
->>> +#ifdef __clang__
->>> +#define R12    "r12"
->>> +#else  /* !__clang__ */
->>> +#define R12    "ip"    /* gcc calls r12 "ip" */
->>> +#endif /* !__clang__ */
->>
->> Why not just use r12 for both?
->
-> Yes, that would have been an obvious fix.  But the
-> assembler (in the GCC environment) doesn't accept that.
->
+The qcom ufs phy support is split into three separate loadable
+modules, however none of the interfaces are exported, resulting
+in a link error:
 
-Mine has no problems with it at all
+ERROR: "ufs_qcom_phy_power_off" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "ufs_qcom_phy_power_on" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "ufs_qcom_phy_exit" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "ufs_qcom_phy_generic_probe" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "ufs_qcom_phy_init_vregulators" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "ufs_qcom_phy_init_clks" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "ufs_qcom_phy_calibrate" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "ufs_qcom_phy_remove" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "get_ufs_qcom_phy" [drivers/phy/phy-qcom-ufs-qmp-20nm.ko] undefined!
+ERROR: "ufs_qcom_phy_power_off" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
+ERROR: "ufs_qcom_phy_power_on" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
+ERROR: "ufs_qcom_phy_exit" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
+ERROR: "ufs_qcom_phy_generic_probe" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
+ERROR: "ufs_qcom_phy_init_vregulators" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
+ERROR: "ufs_qcom_phy_init_clks" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
+ERROR: "ufs_qcom_phy_calibrate" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
+ERROR: "ufs_qcom_phy_remove" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
+ERROR: "get_ufs_qcom_phy" [drivers/phy/phy-qcom-ufs-qmp-14nm.ko] undefined!
 
-$ echo 'mov r12, #0' | arm-linux-gnueabihf-gcc -c -x assembler-with-cpp -
+This exports all of the symbols that are provided by the base library
+module and used by the two driver modules.
 
-and grepping for r12 under arch/arm suggests the same
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: adaafaa393ef ("phy: qcom-ufs: add support for QUALCOMM Technologies UFS PHY drivers")
+---
 
--- 
-Ard.
+The broken patch is currently in the scsi tree, so if the phy maintainer
+thinks that my fix is correct, it should go there too.
 
+An alternative approach would be to link all three phy-qcom-ufs source
+files into a single module.
 
+ drivers/phy/phy-qcom-ufs.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
->>>  static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
->>>  {
->>> -       register u32 ip asm("ip");      /* Also called r12 */
->>> +       register u32 ip asm(R12);       /* Also called r12 */
->>>         register u32 r0 asm("r0");
->>>         register u32 r4 asm("r4");
->>>         register u32 r5 asm("r5");
->>> @@ -120,7 +125,7 @@ static int bcm_kona_do_smc(u32 service_id, u32 buffer_phys)
->>>
->>>         asm volatile (
->>>                 /* Make sure we got the registers we want */
->>> -               __asmeq("%0", "ip")
->>> +               __asmeq("%0", R12)
->>>                 __asmeq("%1", "r0")
->>>                 __asmeq("%2", "r4")
->>>                 __asmeq("%3", "r5")
->>> --
->>> 1.9.1
->>>
->>>
->>> _______________________________________________
->>> linux-arm-kernel mailing list
->>> linux-arm-kernel@lists.infradead.org
->>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+diff --git a/drivers/phy/phy-qcom-ufs.c b/drivers/phy/phy-qcom-ufs.c
+index 44ee983d57fe..c8f8c2dac18c 100644
+--- a/drivers/phy/phy-qcom-ufs.c
++++ b/drivers/phy/phy-qcom-ufs.c
+@@ -73,6 +73,7 @@ int ufs_qcom_phy_calibrate(struct ufs_qcom_phy *ufs_qcom_phy,
+ out:
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_calibrate);
+ 
+ struct phy *ufs_qcom_phy_generic_probe(struct platform_device *pdev,
+ 				struct ufs_qcom_phy *common_cfg,
+@@ -110,6 +111,7 @@ struct phy *ufs_qcom_phy_generic_probe(struct platform_device *pdev,
+ out:
+ 	return generic_phy;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_generic_probe);
+ 
+ /*
+  * This assumes the embedded phy structure inside generic_phy is of type
+@@ -121,6 +123,7 @@ struct ufs_qcom_phy *get_ufs_qcom_phy(struct phy *generic_phy)
+ {
+ 	return (struct ufs_qcom_phy *)phy_get_drvdata(generic_phy);
+ }
++EXPORT_SYMBOL_GPL(get_ufs_qcom_phy);
+ 
+ static
+ int ufs_qcom_phy_base_init(struct platform_device *pdev,
+@@ -228,6 +231,7 @@ ufs_qcom_phy_init_clks(struct phy *generic_phy,
+ out:
+ 	return err;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_init_clks);
+ 
+ int
+ ufs_qcom_phy_init_vregulators(struct phy *generic_phy,
+@@ -252,6 +256,7 @@ ufs_qcom_phy_init_vregulators(struct phy *generic_phy,
+ out:
+ 	return err;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_init_vregulators);
+ 
+ static int __ufs_qcom_phy_init_vreg(struct phy *phy,
+ 		struct ufs_qcom_phy_vreg *vreg, const char *name, bool optional)
+@@ -443,6 +448,7 @@ out_disable_src:
+ out:
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_enable_ref_clk);
+ 
+ static
+ int ufs_qcom_phy_disable_vreg(struct phy *phy,
+@@ -485,6 +491,7 @@ void ufs_qcom_phy_disable_ref_clk(struct phy *generic_phy)
+ 		phy->is_ref_clk_enabled = false;
+ 	}
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_disable_ref_clk);
+ 
+ #define UFS_REF_CLK_EN	(1 << 5)
+ 
+@@ -523,16 +530,19 @@ static void ufs_qcom_phy_dev_ref_clk_ctrl(struct phy *generic_phy, bool enable)
+ 		phy->is_dev_ref_clk_enabled = enable;
+ 	}
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_dev_ref_clk_ctrl);
+ 
+ void ufs_qcom_phy_enable_dev_ref_clk(struct phy *generic_phy)
+ {
+ 	ufs_qcom_phy_dev_ref_clk_ctrl(generic_phy, true);
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_enable_dev_ref_clk);
+ 
+ void ufs_qcom_phy_disable_dev_ref_clk(struct phy *generic_phy)
+ {
+ 	ufs_qcom_phy_dev_ref_clk_ctrl(generic_phy, false);
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_disable_dev_ref_clk);
+ 
+ /* Turn ON M-PHY RMMI interface clocks */
+ int ufs_qcom_phy_enable_iface_clk(struct phy *generic_phy)
+@@ -561,6 +571,7 @@ int ufs_qcom_phy_enable_iface_clk(struct phy *generic_phy)
+ out:
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_enable_iface_clk);
+ 
+ /* Turn OFF M-PHY RMMI interface clocks */
+ void ufs_qcom_phy_disable_iface_clk(struct phy *generic_phy)
+@@ -573,6 +584,7 @@ void ufs_qcom_phy_disable_iface_clk(struct phy *generic_phy)
+ 		phy->is_iface_clk_enabled = false;
+ 	}
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_disable_iface_clk);
+ 
+ int ufs_qcom_phy_start_serdes(struct phy *generic_phy)
+ {
+@@ -589,6 +601,7 @@ int ufs_qcom_phy_start_serdes(struct phy *generic_phy)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_start_serdes);
+ 
+ int ufs_qcom_phy_set_tx_lane_enable(struct phy *generic_phy, u32 tx_lanes)
+ {
+@@ -606,6 +619,7 @@ int ufs_qcom_phy_set_tx_lane_enable(struct phy *generic_phy, u32 tx_lanes)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_set_tx_lane_enable);
+ 
+ void ufs_qcom_phy_save_controller_version(struct phy *generic_phy,
+ 					  u8 major, u16 minor, u16 step)
+@@ -616,6 +630,7 @@ void ufs_qcom_phy_save_controller_version(struct phy *generic_phy,
+ 	ufs_qcom_phy->host_ctrl_rev_minor = minor;
+ 	ufs_qcom_phy->host_ctrl_rev_step = step;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_save_controller_version);
+ 
+ int ufs_qcom_phy_calibrate_phy(struct phy *generic_phy, bool is_rate_B)
+ {
+@@ -636,6 +651,7 @@ int ufs_qcom_phy_calibrate_phy(struct phy *generic_phy, bool is_rate_B)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_calibrate_phy);
+ 
+ int ufs_qcom_phy_remove(struct phy *generic_phy,
+ 			struct ufs_qcom_phy *ufs_qcom_phy)
+@@ -647,6 +663,7 @@ int ufs_qcom_phy_remove(struct phy *generic_phy,
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_remove);
+ 
+ int ufs_qcom_phy_exit(struct phy *generic_phy)
+ {
+@@ -657,6 +674,7 @@ int ufs_qcom_phy_exit(struct phy *generic_phy)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_exit);
+ 
+ int ufs_qcom_phy_is_pcs_ready(struct phy *generic_phy)
+ {
+@@ -671,6 +689,7 @@ int ufs_qcom_phy_is_pcs_ready(struct phy *generic_phy)
+ 	return ufs_qcom_phy->phy_spec_ops->
+ 			is_physical_coding_sublayer_ready(ufs_qcom_phy);
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_is_pcs_ready);
+ 
+ int ufs_qcom_phy_power_on(struct phy *generic_phy)
+ {
+@@ -725,6 +744,7 @@ out_disable_phy:
+ out:
+ 	return err;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_power_on);
+ 
+ int ufs_qcom_phy_power_off(struct phy *generic_phy)
+ {
+@@ -743,3 +763,4 @@ int ufs_qcom_phy_power_off(struct phy *generic_phy)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(ufs_qcom_phy_power_off);
+
