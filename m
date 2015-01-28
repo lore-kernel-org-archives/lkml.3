@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761033AbbA1VnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:43:06 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45514 "EHLO
+	id S1760952AbbA1Vlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 16:41:55 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45518 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761153AbbA1UiC (ORCPT
+	with ESMTP id S933654AbbA1UiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:38:02 -0500
+	Wed, 28 Jan 2015 15:38:12 -0500
 From: Javi Merino <javi.merino@arm.com>
 To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: punit.agrawal@arm.com, broonie@kernel.org,
         Javi Merino <javi.merino@arm.com>, Zhang Rui <rui.zhang@intel.com>,
         Eduardo Valentin <edubezval@gmail.com>
-Subject: [PATCH v1 3/7] thermal: cpu_cooling: implement the power cooling device API
-Date: Wed, 28 Jan 2015 17:00:34 +0000
-Message-Id: <1422464438-16761-4-git-send-email-javi.merino@arm.com>
+Subject: [PATCH v1 4/7] thermal: introduce the Power Allocator governor
+Date: Wed, 28 Jan 2015 17:00:35 +0000
+Message-Id: <1422464438-16761-5-git-send-email-javi.merino@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422464438-16761-1-git-send-email-javi.merino@arm.com>
 References: <1422464438-16761-1-git-send-email-javi.merino@arm.com>
@@ -22,838 +22,952 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a basic power model to the cpu cooling device to implement the
-power cooling device API.  The power model uses the current frequency,
-current load and OPPs for the power calculations.  The cpus must have
-registered their OPPs using the OPP library.
+The power allocator governor is a thermal governor that controls system
+and device power allocation to control temperature.  Conceptually, the
+implementation divides the sustainable power of a thermal zone among
+all the heat sources in that zone.
+
+This governor relies on "power actors", entities that represent heat
+sources.  They can report current and maximum power consumption and
+can set a given maximum power consumption, usually via a cooling
+device.
+
+The governor uses a Proportional Integral Derivative (PID) controller
+driven by the temperature of the thermal zone.  The output of the
+controller is a power budget that is then allocated to each power
+actor that can have bearing on the temperature we are trying to
+control.  It decides how much power to give each cooling device based
+on the performance they are requesting.  The PID controller ensures
+that the total power budget does not exceed the control temperature.
 
 Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: Eduardo Valentin <edubezval@gmail.com>
 Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
 Signed-off-by: Javi Merino <javi.merino@arm.com>
 ---
- Documentation/thermal/cpu-cooling-api.txt | 156 +++++++++-
- drivers/thermal/cpu_cooling.c             | 480 +++++++++++++++++++++++++++++-
- include/linux/cpu_cooling.h               |  39 +++
- 3 files changed, 670 insertions(+), 5 deletions(-)
+ Documentation/thermal/power_allocator.txt | 241 +++++++++++++++
+ drivers/thermal/Kconfig                   |  15 +
+ drivers/thermal/Makefile                  |   1 +
+ drivers/thermal/power_allocator.c         | 478 ++++++++++++++++++++++++++++++
+ drivers/thermal/thermal_core.c            |   9 +-
+ drivers/thermal/thermal_core.h            |   8 +
+ include/linux/thermal.h                   |  37 ++-
+ 7 files changed, 782 insertions(+), 7 deletions(-)
+ create mode 100644 Documentation/thermal/power_allocator.txt
+ create mode 100644 drivers/thermal/power_allocator.c
 
-diff --git a/Documentation/thermal/cpu-cooling-api.txt b/Documentation/thermal/cpu-cooling-api.txt
-index 753e47cc2e20..71653584cd03 100644
---- a/Documentation/thermal/cpu-cooling-api.txt
-+++ b/Documentation/thermal/cpu-cooling-api.txt
-@@ -36,8 +36,162 @@ the user. The registration APIs returns the cooling device pointer.
-     np: pointer to the cooling device device tree node
-     clip_cpus: cpumask of cpus where the frequency constraints will happen.
- 
--1.1.3 void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
-+1.1.3 struct thermal_cooling_device *cpufreq_power_cooling_register(
-+    const struct cpumask *clip_cpus, u32 capacitance,
-+    get_static_t plat_static_func)
+diff --git a/Documentation/thermal/power_allocator.txt b/Documentation/thermal/power_allocator.txt
+new file mode 100644
+index 000000000000..c9604e76c544
+--- /dev/null
++++ b/Documentation/thermal/power_allocator.txt
+@@ -0,0 +1,241 @@
++Power allocator governor tunables
++=================================
 +
-+Similar to cpufreq_cooling_register, this function registers a cpufreq
-+cooling device.  Using this function, the cooling device will
-+implement the power extensions by using a simple cpu power model.  The
-+cpus must have registered their OPPs using the OPP library.
++Trip points
++-----------
 +
-+The additional parameters are needed for the power model (See 2. Power
-+models).  "capacitance" is the dynamic power coefficient (See 2.1
-+Dynamic power).  "plat_static_func" is a function to calculate the
-+static power consumed by these cpus (See 2.2 Static power).
++The governor requires the following two passive trip points:
 +
-+1.1.4 struct thermal_cooling_device *of_cpufreq_power_cooling_register(
-+    struct device_node *np, const struct cpumask *clip_cpus, u32 capacitance,
-+    get_static_t plat_static_func)
++1.  "switch on" trip point: temperature above which the governor
++    control loop starts operating.
++2.  "desired temperature" trip point: it should be higher than the
++    "switch on" trip point.  This the target temperature the governor
++    is controlling for.
 +
-+Similar to cpufreq_power_cooling_register, this function register a
-+cpufreq cooling device with power extensions using the device tree
-+information supplied by the np parameter.
++PID Controller
++--------------
 +
-+1.1.5 void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
- 
-     This interface function unregisters the "thermal-cpufreq-%x" cooling device.
- 
-     cdev: Cooling device pointer which has to be unregistered.
++The power allocator governor implements a
++Proportional-Integral-Derivative controller (PID controller) with
++temperature as the control input and power as the controlled output:
 +
-+2. Power models
++    P_max = k_p * e + k_i * err_integral + k_d * diff_err + sustainable_power
 +
-+The power API registration functions provide a simple power model for
-+CPUs.  The current power is calculated as dynamic + (optionally)
-+static power.  This power model requires that the operating-points of
-+the CPUs are registered using the kernel's opp library and the
-+`cpufreq_frequency_table` is assigned to the `struct device` of the
-+cpu.  If you are using CONFIG_CPUFREQ_DT then the
-+`cpufreq_frequency_table` should already be assigned to the cpu
++where
++    e = desired_temperature - current_temperature
++    err_integral is the sum of previous errors
++    diff_err = e - previous_error
++
++It is similar to the one depicted below:
++
++                                      k_d
++                                       |
++current_temp                           |
++     |                                 v
++     |                +----------+   +---+
++     |         +----->| diff_err |-->| X |------+
++     |         |      +----------+   +---+      |
++     |         |                                |      tdp        actor
++     |         |                      k_i       |       |  get_requested_power()
++     |         |                       |        |       |        |     |
++     |         |                       |        |       |        |     | ...
++     v         |                       v        v       v        v     v
++   +---+       |      +-------+      +---+    +---+   +---+   +----------+
++   | S |-------+----->| sum e |----->| X |--->| S |-->| S |-->|power     |
++   +---+       |      +-------+      +---+    +---+   +---+   |allocation|
++     ^         |                                ^             +----------+
++     |         |                                |                |     |
++     |         |        +---+                   |                |     |
++     |         +------->| X |-------------------+                v     v
++     |                  +---+                               granted performance
++desired_temperature       ^
++                          |
++                          |
++                      k_po/k_pu
++
++Sustainable power
++-----------------
++
++An estimate of the sustainable dissipatable power (in mW) should be
++provided while registering the thermal zone.  This estimates the
++sustained power that can be dissipated at the desired control
++temperature.  This is the maximum sustained power for allocation at
++the desired maximum temperature.  The actual sustained power can vary
++for a number of reasons.  The closed loop controller will take care of
++variations such as environmental conditions, and some factors related
++to the speed-grade of the silicon.  `sustainable_power` is therefore
++simply an estimate, and may be tuned to affect the aggressiveness of
++the thermal ramp. For reference, the sustainable power of a 4" phone
++is typically 2000mW, while on a 10" tablet is around 4500mW (may vary
++depending on screen size).
++
++If you are using device tree, do add it as a property of the
++thermal-zone.  For example:
++
++	thermal-zones {
++		soc_thermal {
++			polling-delay = <1000>;
++			polling-delay-passive = <100>;
++			sustainable-power = <2500>;
++			...
++
++Instead, if the thermal zone is registered from the platform code, pass a
++`thermal_zone_params` that has a `sustainable_power`.  If no
++`thermal_zone_params` were being passed, then something like below
++will suffice:
++
++	static const struct thermal_zone_params tz_params = {
++		.sustainable_power = 3500,
++	};
++
++and then pass `tz_params` as the 5th parameter to
++`thermal_zone_device_register()`
++
++k_po and k_pu
++-------------
++
++The implementation of the PID controller in the power allocator
++thermal governor allows the configuration of two proportional term
++constants: `k_po` and `k_pu`.  `k_po` is the proportional term
++constant during temperature overshoot periods (current temperature is
++above "desired temperature" trip point).  Conversely, `k_pu` is the
++proportional term constant during temperature undershoot periods
++(current temperature below "desired temperature" trip point).
++
++These controls are intended as the primary mechanism for configuring
++the permitted thermal "ramp" of the system.  For instance, a lower
++`k_pu` value will provide a slower ramp, at the cost of capping
++available capacity at a low temperature.  On the other hand, a high
++value of `k_pu` will result in the governor granting very high power
++whilst temperature is low, and may lead to temperature overshooting.
++
++The default value for `k_pu` is:
++
++    2 * sustainable_power / (desired_temperature - switch_on_temp)
++
++This means that at `switch_on_temp` the output of the controller's
++proportional term will be 2 * `sustainable_power`.  The default value
++for `k_po` is:
++
++    sustainable_power / (desired_temperature - switch_on_temp)
++
++Focusing on the proportional and feed forward values of the PID
++controller equation we have:
++
++    P_max = k_p * e + sustainable_power
++
++The proportional term is proportional to the difference between the
++desired temperature and the current one.  When the current temperature
++is the desired one, then the proportional component is zero and
++`P_max` = `sustainable_power`.  That is, the system should operate in
++thermal equilibrium under constant load.  `sustainable_power` is only
++an estimate, which is the reason for closed-loop control such as this.
++
++Expanding `k_pu` we get:
++    P_max = 2 * sustainable_power * (T_set - T) / (T_set - T_on) +
++        sustainable_power
++
++where
++    T_set is the desired temperature
++    T is the current temperature
++    T_on is the switch on temperature
++
++When the current temperature is the switch_on temperature, the above
++formula becomes:
++
++    P_max = 2 * sustainable_power * (T_set - T_on) / (T_set - T_on) +
++        sustainable_power = 2 * sustainable_power + sustainable_power =
++        3 * sustainable_power
++
++Therefore, the proportional term alone linearly decreases power from
++3 * `sustainable_power` to `sustainable_power` as the temperature
++rises from the switch on temperature to the desired temperature.
++
++k_i and integral_cutoff
++-----------------------
++
++`k_i` configures the PID loop's integral term constant.  This term
++allows the PID controller to compensate for long term drift and for
++the quantized nature of the output control: cooling devices can't set
++the exact power that the governor requests.  When the temperature
++error is below `integral_cutoff`, errors are accumulated in the
++integral term.  This term is then multiplied by `k_i` and the result
++added to the output of the controller.  Typically `k_i` is set low (1
++or 2) and `integral_cutoff` is 0.
++
++k_d
++---
++
++`k_d` configures the PID loop's derivative term constant.  It's
++recommended to leave it as the default: 0.
++
++Cooling device power API
++========================
++
++Cooling devices controlled by this governor must supply the additional
++"power" API in their `cooling_device_ops`.  It consists on three ops:
++
++1. int get_requested_power(struct thermal_cooling_device *cdev,
++	struct thermal_zone_device *tz, u32 *power);
++@cdev: The `struct thermal_cooling_device` pointer
++@tz: thermal zone in which we are currently operating
++@power: pointer in which to store the calculated power
++
++`get_requested_power()` calculates the power requested by the device
++in milliwatts and stores it in @power .  It should return 0 on
++success, -E* on failure.  This is currently used by the power
++allocator governor to calculate how much power to give to each cooling
 +device.
 +
-+The `plat_static_func` parameter of `cpufreq_power_cooling_register()`
-+and `of_cpufreq_power_cooling_register()` is optional.  If you don't
-+provide it, only dynamic power will be considered.
++2. int state2power(struct thermal_cooling_device *cdev, struct
++        thermal_zone_device *tz, unsigned long state, u32 *power);
++@cdev: The `struct thermal_cooling_device` pointer
++@tz: thermal zone in which we are currently operating
++@state: A cooling device state
++@power: pointer in which to store the equivalent power
 +
-+2.1 Dynamic power
++Convert cooling device state @state into power consumption in
++milliwatts and store it in @power.  It should return 0 on success, -E*
++on failure.  This is currently used by thermal core to calculate the
++maximum power that an actor can consume.
 +
-+The dynamic power consumption of a processor depends on many factors.
-+For a given processor implementation the primary factors are:
++3. int power2state(struct thermal_cooling_device *cdev, u32 power,
++	unsigned long *state);
++@cdev: The `struct thermal_cooling_device` pointer
++@power: power in milliwatts
++@state: pointer in which to store the resulting state
 +
-+- The time the processor spends running, consuming dynamic power, as
-+  compared to the time in idle states where dynamic consumption is
-+  negligible.  Herein we refer to this as 'utilisation'.
-+- The voltage and frequency levels as a result of DVFS.  The DVFS
-+  level is a dominant factor governing power consumption.
-+- In running time the 'execution' behaviour (instruction types, memory
-+  access patterns and so forth) causes, in most cases, a second order
-+  variation.  In pathological cases this variation can be significant,
-+  but typically it is of a much lesser impact than the factors above.
++Calculate a cooling device state that would make the device consume at
++most @power mW and store it in @state.  It should return 0 on success,
++-E* on failure.  This is currently used by the thermal core to convert
++a given power set by the power allocator governor to a state that the
++cooling device can set.  It is a function because this conversion may
++depend on external factors that may change so this function should the
++best conversion given "current circumstances".
 +
-+A high level dynamic power consumption model may then be represented as:
++Cooling device weights
++----------------------
 +
-+Pdyn = f(run) * Voltage^2 * Frequency * Utilisation
++Weights are a mechanism to bias the allocation among cooling
++devices.  They express the relative power efficiency of different
++cooling devices.  Higher weight can be used to express higher power
++efficiency.  Weighting is relative such that if each cooling device
++has a weight of one they are considered equal.  This is particularly
++useful in heterogeneous systems where two cooling devices may perform
++the same kind of compute, but with different efficiency.  For example,
++a system with two different types of processors.
 +
-+f(run) here represents the described execution behaviour and its
-+result has a units of Watts/Hz/Volt^2 (this often expressed in
-+mW/MHz/uVolt^2)
++Weights are passed as part of the thermal zone's
++`thermal_bind_parameters`.
 +
-+The detailed behaviour for f(run) could be modelled on-line.  However,
-+in practice, such an on-line model has dependencies on a number of
-+implementation specific processor support and characterisation
-+factors.  Therefore, in initial implementation that contribution is
-+represented as a constant coefficient.  This is a simplification
-+consistent with the relative contribution to overall power variation.
++Limitations of the power allocator governor
++===========================================
 +
-+In this simplified representation our model becomes:
-+
-+Pdyn = Capacitance * Voltage^2 * Frequency * Utilisation
-+
-+Where `capacitance` is a constant that represents an indicative
-+running time dynamic power coefficient in fundamental units of
-+mW/MHz/uVolt^2.  Typical values for mobile CPUs might lie in range
-+from 100 to 500.  For reference, the approximate values for the SoC in
-+ARM's Juno Development Platform are 530 for the Cortex-A57 cluster and
-+140 for the Cortex-A53 cluster.
-+
-+
-+2.2 Static power
-+
-+Static leakage power consumption depends on a number of factors.  For a
-+given circuit implementation the primary factors are:
-+
-+- Time the circuit spends in each 'power state'
-+- Temperature
-+- Operating voltage
-+- Process grade
-+
-+The time the circuit spends in each 'power state' for a given
-+evaluation period at first order means OFF or ON.  However,
-+'retention' states can also be supported that reduce power during
-+inactive periods without loss of context.
-+
-+Note: The visibility of state entries to the OS can vary, according to
-+platform specifics, and this can then impact the accuracy of a model
-+based on OS state information alone.  It might be possible in some
-+cases to extract more accurate information from system resources.
-+
-+The temperature, operating voltage and process 'grade' (slow to fast)
-+of the circuit are all significant factors in static leakage power
-+consumption.  All of these have complex relationships to static power.
-+
-+Circuit implementation specific factors include the chosen silicon
-+process as well as the type, number and size of transistors in both
-+the logic gates and any RAM elements included.
-+
-+The static power consumption modelling must take into account the
-+power managed regions that are implemented.  Taking the example of an
-+ARM processor cluster, the modelling would take into account whether
-+each CPU can be powered OFF separately or if only a single power
-+region is implemented for the complete cluster.
-+
-+In one view, there are others, a static power consumption model can
-+then start from a set of reference values for each power managed
-+region (e.g. CPU, Cluster/L2) in each state (e.g. ON, OFF) at an
-+arbitrary process grade, voltage and temperature point.  These values
-+are then scaled for all of the following: the time in each state, the
-+process grade, the current temperature and the operating voltage.
-+However, since both implementation specific and complex relationships
-+dominate the estimate, the appropriate interface to the model from the
-+cpu cooling device is to provide a function callback that calculates
-+the static power in this platform.  When registering the cpu cooling
-+device pass a function pointer that follows the `get_static_t`
-+prototype:
-+
-+    int plat_get_static(cpumask_t *cpumask, int interval,
-+                        unsigned long voltage, u32 &power);
-+
-+`cpumask` is the cpumask of the cpus involved in the calculation.
-+`voltage` is the voltage at which they are operating.  The function
-+should calculate the average static power for the last `interval`
-+milliseconds.  It returns 0 on success, -E* on error.  If it
-+succeeds, it should store the static power in `power`.  Reading the
-+temperature of the cpus described by `cpumask` is left for
-+plat_get_static() to do as the platform knows best which thermal
-+sensor is closest to the cpu.
-+
-+If `plat_static_func` is NULL, static power is considered to be
-+negligible for this platform and only dynamic power is considered.
-+
-+The platform specific callback can then use any combination of tables
-+and/or equations to permute the estimated value.  Process grade
-+information is not passed to the model since access to such data, from
-+on-chip measurement capability or manufacture time data, is platform
-+specific.
-+
-+Note: the significance of static power for CPUs in comparison to
-+dynamic power is highly dependent on implementation.  Given the
-+potential complexity in implementation, the importance and accuracy of
-+its inclusion when using cpu cooling devices should be assessed on a
-+case by case basis.
-+
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index f65f0d109fc8..a639aaf228f5 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -26,6 +26,7 @@
- #include <linux/thermal.h>
- #include <linux/cpufreq.h>
- #include <linux/err.h>
-+#include <linux/pm_opp.h>
- #include <linux/slab.h>
- #include <linux/cpu.h>
- #include <linux/cpu_cooling.h>
-@@ -45,6 +46,19 @@
-  */
++The power allocator governor's PID controller works best if there is a
++periodic tick.  If you have a driver that calls
++`thermal_zone_device_update()` (or anything that ends up calling the
++governor's `throttle()` function) repetitively, the governor response
++won't be very good.  Note that this is not particular to this
++governor, step-wise will also misbehave if you call its throttle()
++faster than the normal thermal framework tick (due to interrupts for
++example) as it will overreact.
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index af40db0df58e..98a46383b19f 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -71,6 +71,14 @@ config THERMAL_DEFAULT_GOV_USER_SPACE
+ 	  Select this if you want to let the user space manage the
+ 	  platform thermals.
  
- /**
-+ * struct power_table - frequency to power conversion
-+ * @frequency:	frequency in KHz
-+ * @power:	power in mW
++config THERMAL_DEFAULT_GOV_POWER_ALLOCATOR
++	bool "power_allocator"
++	select THERMAL_GOV_POWER_ALLOCATOR
++	help
++	  Select this if you want to control temperature based on
++	  system and device power allocation. This governor can only
++	  operate on cooling devices that implement the power API.
++
+ endchoice
+ 
+ config THERMAL_GOV_FAIR_SHARE
+@@ -99,6 +107,13 @@ config THERMAL_GOV_USER_SPACE
+ 	help
+ 	  Enable this to let the user space manage the platform thermals.
+ 
++config THERMAL_GOV_POWER_ALLOCATOR
++	bool "Power allocator thermal governor"
++	select THERMAL_POWER_ACTOR
++	help
++	  Enable this to manage platform thermals by dynamically
++	  allocating and limiting power to devices.
++
+ config CPU_THERMAL
+ 	bool "generic cpu cooling support"
+ 	depends on CPU_FREQ
+diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+index fa0dc486790f..cd769ab06cbb 100644
+--- a/drivers/thermal/Makefile
++++ b/drivers/thermal/Makefile
+@@ -14,6 +14,7 @@ thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
+ thermal_sys-$(CONFIG_THERMAL_GOV_BANG_BANG)	+= gov_bang_bang.o
+ thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
+ thermal_sys-$(CONFIG_THERMAL_GOV_USER_SPACE)	+= user_space.o
++thermal_sys-$(CONFIG_THERMAL_GOV_POWER_ALLOCATOR)	+= power_allocator.o
+ 
+ # cpufreq cooling
+ thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
+diff --git a/drivers/thermal/power_allocator.c b/drivers/thermal/power_allocator.c
+new file mode 100644
+index 000000000000..c929143aee67
+--- /dev/null
++++ b/drivers/thermal/power_allocator.c
+@@ -0,0 +1,478 @@
++/*
++ * A power allocator to manage temperature
 + *
-+ * This structure is built when the cooling device registers and helps
-+ * in translating frequency to power and viceversa.
++ * Copyright (C) 2014 ARM Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
 + */
-+struct power_table {
-+	u32 frequency;
-+	u32 power;
++
++#define pr_fmt(fmt) "Power allocator: " fmt
++
++#include <linux/rculist.h>
++#include <linux/slab.h>
++#include <linux/thermal.h>
++
++#include "thermal_core.h"
++
++#define FRAC_BITS 10
++#define int_to_frac(x) ((x) << FRAC_BITS)
++#define frac_to_int(x) ((x) >> FRAC_BITS)
++
++/**
++ * mul_frac() - multiply two fixed-point numbers
++ * @x:	first multiplicand
++ * @y:	second multiplicand
++ *
++ * Return: the result of multiplying two fixed-point numbers.  The
++ * result is also a fixed-point number.
++ */
++static inline s64 mul_frac(s64 x, s64 y)
++{
++	return (x * y) >> FRAC_BITS;
++}
++
++enum power_allocator_trip_levels {
++	TRIP_SWITCH_ON = 0,	/* Switch on PID controller */
++	TRIP_MAX_DESIRED_TEMPERATURE, /* Temperature we are controlling for */
++
++	THERMAL_TRIP_NUM,
 +};
 +
 +/**
-  * struct cpufreq_cooling_device - data for cooling device with cpufreq
-  * @id: unique integer value corresponding to each cpufreq_cooling_device
-  *	registered.
-@@ -58,6 +72,15 @@
-  *	cpufreq frequencies.
-  * @allowed_cpus: all the cpus involved for this cpufreq_cooling_device.
-  * @node: list_head to link all cpufreq_cooling_device together.
-+ * @last_load: load measured by the latest call to cpufreq_get_actual_power()
-+ * @time_in_idle: previous reading of the absolute time that this cpu was idle
-+ * @time_in_idle_timestamp: wall time of the last invocation of
-+ *	get_cpu_idle_time_us()
-+ * @dyn_power_table: array of struct power_table for frequency to power
-+ *	conversion, sorted in ascending order.
-+ * @dyn_power_table_entries: number of entries in the @dyn_power_table array
-+ * @cpu_dev: the first cpu_device from @allowed_cpus that has OPPs registered
-+ * @plat_get_static_power: callback to calculate the static power
-  *
-  * This structure is required for keeping information of each registered
-  * cpufreq_cooling_device.
-@@ -71,6 +94,13 @@ struct cpufreq_cooling_device {
- 	unsigned int *freq_table;	/* In descending order */
- 	struct cpumask allowed_cpus;
- 	struct list_head node;
-+	u32 last_load;
-+	u64 time_in_idle[NR_CPUS];
-+	u64 time_in_idle_timestamp[NR_CPUS];
-+	struct power_table *dyn_power_table;
-+	int dyn_power_table_entries;
-+	struct device *cpu_dev;
-+	get_static_t plat_get_static_power;
- };
- static DEFINE_IDR(cpufreq_idr);
- static DEFINE_MUTEX(cooling_cpufreq_lock);
-@@ -205,6 +235,210 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
- 	return 0;
- }
- 
-+/**
-+ * build_dyn_power_table() - create a dynamic power to frequency table
-+ * @cpufreq_device:	the cpufreq cooling device in which to store the table
-+ * @capacitance: dynamic power coefficient for these cpus
-+ *
-+ * Build a dynamic power to frequency table for this cpu and store it
-+ * in @cpufreq_device.  This table will be used in cpu_power_to_freq() and
-+ * cpu_freq_to_power() to convert between power and frequency
-+ * efficiently.  Power is stored in mW, frequency in KHz.  The
-+ * resulting table is in ascending order.
-+ *
-+ * Return: 0 on success, -E* on error.
++ * struct power_allocator_params - parameters for the power allocator governor
++ * @err_integral:	accumulated error in the PID controller.
++ * @prev_err:	error in the previous iteration of the PID controller.
++ *		Used to calculate the derivative term.
 + */
-+static int build_dyn_power_table(struct cpufreq_cooling_device *cpufreq_device,
-+				 u32 capacitance)
++struct power_allocator_params {
++	s64 err_integral;
++	s32 prev_err;
++};
++
++/**
++ * pid_controller() - PID controller
++ * @tz:	thermal zone we are operating in
++ * @current_temp:	the current temperature in millicelsius
++ * @control_temp:	the target temperature in millicelsius
++ * @max_allocatable_power:	maximum allocatable power for this thermal zone
++ *
++ * This PID controller increases the available power budget so that the
++ * temperature of the thermal zone gets as close as possible to
++ * @control_temp and limits the power if it exceeds it.  k_po is the
++ * proportional term when we are overshooting, k_pu is the
++ * proportional term when we are undershooting.  integral_cutoff is a
++ * threshold below which we stop accumulating the error.  The
++ * accumulated error is only valid if the requested power will make
++ * the system warmer.  If the system is mostly idle, there's no point
++ * in accumulating positive error.
++ *
++ * Return: The power budget for the next period.
++ */
++static u32 pid_controller(struct thermal_zone_device *tz,
++			  unsigned long current_temp,
++			  unsigned long control_temp,
++			  u32 max_allocatable_power)
 +{
-+	struct power_table *power_table;
-+	struct dev_pm_opp *opp;
-+	struct device *dev = NULL;
-+	int num_opps = 0, cpu, i, ret = 0;
-+	unsigned long freq;
++	s64 p, i, d, power_range;
++	s32 err, max_power_frac;
++	struct power_allocator_params *params = tz->governor_data;
 +
-+	rcu_read_lock();
++	max_power_frac = int_to_frac(max_allocatable_power);
 +
-+	for_each_cpu(cpu, &cpufreq_device->allowed_cpus) {
-+		dev = get_cpu_device(cpu);
-+		if (!dev) {
-+			dev_warn(&cpufreq_device->cool_dev->device,
-+				 "No cpu device for cpu %d\n", cpu);
++	err = ((s32)control_temp - (s32)current_temp);
++	err = int_to_frac(err);
++
++	/* Calculate the proportional term */
++	p = mul_frac(err < 0 ? tz->tzp->k_po : tz->tzp->k_pu, err);
++
++	/*
++	 * Calculate the integral term
++	 *
++	 * if the error is less than cut off allow integration (but
++	 * the integral is limited to max power)
++	 */
++	i = mul_frac(tz->tzp->k_i, params->err_integral);
++
++	if (err < int_to_frac(tz->tzp->integral_cutoff)) {
++		s64 i_next = i + mul_frac(tz->tzp->k_i, err);
++
++		if (abs64(i_next) < max_power_frac) {
++			i = i_next;
++			params->err_integral += err;
++		}
++	}
++
++	/*
++	 * Calculate the derivative term
++	 *
++	 * We do err - prev_err, so with a positive k_d, a decreasing
++	 * error (i.e. driving closer to the line) results in less
++	 * power being applied, slowing down the controller)
++	 */
++	d = mul_frac(tz->tzp->k_d, err - params->prev_err);
++	params->prev_err = err;
++
++	power_range = p + i + d;
++
++	/* feed-forward the known sustainable dissipatable power */
++	power_range = tz->tzp->sustainable_power + frac_to_int(power_range);
++
++	return clamp(power_range, (s64)0, (s64)max_allocatable_power);
++}
++
++/**
++ * divvy_up_power() - divvy the allocated power between the actors
++ * @req_power:	each actor's requested power
++ * @max_power:	each actor's maximum available power
++ * @num_actors:	size of the @req_power, @max_power and @granted_power's array
++ * @total_req_power: sum of @req_power
++ * @power_range:	total allocated power
++ * @granted_power:	output array: each actor's granted power
++ *
++ * This function divides the total allocated power (@power_range)
++ * fairly between the actors.  It first tries to give each actor a
++ * share of the @power_range according to how much power it requested
++ * compared to the rest of the actors.  For example, if only one actor
++ * requests power, then it receives all the @power_range.  If
++ * three actors each requests 1mW, each receives a third of the
++ * @power_range.
++ *
++ * If any actor received more than their maximum power, then that
++ * surplus is re-divvied among the actors based on how far they are
++ * from their respective maximums.
++ *
++ * Granted power for each actor is written to @granted_power, which
++ * should've been allocated by the calling function.
++ */
++static void divvy_up_power(u32 *req_power, u32 *max_power, int num_actors,
++			   u32 total_req_power, u32 power_range,
++			   u32 *granted_power)
++{
++	u32 extra_power, capped_extra_power, extra_actor_power[num_actors];
++	int i;
++
++	/*
++	 * Prevent division by 0 if none of the actors request power.
++	 */
++	if (!total_req_power)
++		total_req_power = 1;
++
++	capped_extra_power = 0;
++	extra_power = 0;
++	for (i = 0; i < num_actors; i++) {
++		u64 req_range = req_power[i] * power_range;
++
++		granted_power[i] = div_u64(req_range, total_req_power);
++
++		if (granted_power[i] > max_power[i]) {
++			extra_power += granted_power[i] - max_power[i];
++			granted_power[i] = max_power[i];
++		}
++
++		extra_actor_power[i] = max_power[i] - granted_power[i];
++		capped_extra_power += extra_actor_power[i];
++	}
++
++	if (!extra_power)
++		return;
++
++	/*
++	 * Re-divvy the reclaimed extra among actors based on
++	 * how far they are from the max
++	 */
++	extra_power = min(extra_power, capped_extra_power);
++	if (capped_extra_power > 0)
++		for (i = 0; i < num_actors; i++)
++			granted_power[i] += (extra_actor_power[i] *
++					extra_power) / capped_extra_power;
++}
++
++static int allocate_power(struct thermal_zone_device *tz,
++			  unsigned long current_temp,
++			  unsigned long control_temp)
++{
++	struct thermal_instance *instance;
++	u32 *req_power, *max_power, *granted_power;
++	u32 total_req_power, max_allocatable_power;
++	u32 power_range;
++	int i, num_actors, ret = 0;
++
++	mutex_lock(&tz->lock);
++
++	num_actors = 0;
++	list_for_each_entry(instance, &tz->thermal_instances, tz_node)
++		if ((instance->trip == TRIP_MAX_DESIRED_TEMPERATURE) &&
++		    cdev_is_power_actor(instance->cdev))
++			num_actors++;
++
++	req_power = devm_kcalloc(&tz->device, num_actors, sizeof(*req_power),
++				 GFP_KERNEL);
++	if (!req_power) {
++		ret = -ENOMEM;
++		goto unlock;
++	}
++
++	max_power = devm_kcalloc(&tz->device, num_actors, sizeof(*max_power),
++				 GFP_KERNEL);
++	if (!max_power) {
++		ret = -ENOMEM;
++		goto free_req_power;
++	}
++
++	granted_power = devm_kcalloc(&tz->device, num_actors,
++				     sizeof(*granted_power), GFP_KERNEL);
++	if (!granted_power) {
++		ret = -ENOMEM;
++		goto free_max_power;
++	}
++
++	i = 0;
++	total_req_power = 0;
++	max_allocatable_power = 0;
++
++	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
++		struct thermal_cooling_device *cdev = instance->cdev;
++
++		if (instance->trip != TRIP_MAX_DESIRED_TEMPERATURE)
 +			continue;
-+		}
 +
-+		num_opps = dev_pm_opp_get_opp_count(dev);
-+		if (num_opps > 0) {
-+			break;
-+		} else if (num_opps < 0) {
-+			ret = num_opps;
-+			goto unlock;
-+		}
++		if (!cdev_is_power_actor(cdev))
++			continue;
++
++		if (cdev->ops->get_requested_power(cdev, tz, &req_power[i]))
++			continue;
++
++		req_power[i] = frac_to_int(instance->weight * req_power[i]);
++
++		if (power_actor_get_max_power(cdev, tz, &max_power[i]))
++			continue;
++
++		total_req_power += req_power[i];
++		max_allocatable_power += max_power[i];
++
++		i++;
 +	}
 +
-+	if (num_opps == 0) {
-+		ret = -EINVAL;
-+		goto unlock;
++	power_range = pid_controller(tz, current_temp, control_temp,
++				     max_allocatable_power);
++
++	divvy_up_power(req_power, max_power, num_actors, total_req_power,
++		       power_range, granted_power);
++
++	i = 0;
++	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
++		if (instance->trip != TRIP_MAX_DESIRED_TEMPERATURE)
++			continue;
++
++		if (!cdev_is_power_actor(instance->cdev))
++			continue;
++
++		power_actor_set_power(instance->cdev, instance,
++				      granted_power[i]);
++
++		i++;
 +	}
 +
-+	power_table = kcalloc(num_opps, sizeof(*power_table), GFP_KERNEL);
-+
-+	for (freq = 0, i = 0;
-+	     opp = dev_pm_opp_find_freq_ceil(dev, &freq), !IS_ERR(opp);
-+	     freq++, i++) {
-+		u32 freq_mhz, voltage_mv;
-+		u64 power;
-+
-+		freq_mhz = freq / 1000000;
-+		voltage_mv = dev_pm_opp_get_voltage(opp) / 1000;
-+
-+		/*
-+		 * Do the multiplication with MHz and millivolt so as
-+		 * to not overflow.
-+		 */
-+		power = (u64)capacitance * freq_mhz * voltage_mv * voltage_mv;
-+		do_div(power, 1000000000);
-+
-+		/* frequency is stored in power_table in KHz */
-+		power_table[i].frequency = freq / 1000;
-+
-+		/* power is stored in mW */
-+		power_table[i].power = power;
-+	}
-+
-+	if (i == 0) {
-+		ret = PTR_ERR(opp);
-+		goto unlock;
-+	}
-+
-+	cpufreq_device->cpu_dev = dev;
-+	cpufreq_device->dyn_power_table = power_table;
-+	cpufreq_device->dyn_power_table_entries = i;
-+
++	devm_kfree(&tz->device, granted_power);
++free_max_power:
++	devm_kfree(&tz->device, max_power);
++free_req_power:
++	devm_kfree(&tz->device, req_power);
 +unlock:
-+	rcu_read_unlock();
++	mutex_unlock(&tz->lock);
++
 +	return ret;
 +}
 +
-+static u32 cpu_freq_to_power(struct cpufreq_cooling_device *cpufreq_device,
-+			     u32 freq)
++static int check_trips(struct thermal_zone_device *tz)
 +{
-+	int i;
-+	struct power_table *pt = cpufreq_device->dyn_power_table;
++	int ret;
++	enum thermal_trip_type type;
 +
-+	for (i = 1; i < cpufreq_device->dyn_power_table_entries; i++)
-+		if (freq < pt[i].frequency)
-+			break;
++	if (tz->trips < THERMAL_TRIP_NUM)
++		return -EINVAL;
 +
-+	return pt[i - 1].power;
++	ret = tz->ops->get_trip_type(tz, TRIP_SWITCH_ON, &type);
++	if (ret)
++		return ret;
++
++	if (type != THERMAL_TRIP_PASSIVE)
++		return -EINVAL;
++
++	ret = tz->ops->get_trip_type(tz, TRIP_MAX_DESIRED_TEMPERATURE, &type);
++	if (ret)
++		return ret;
++
++	if (type != THERMAL_TRIP_PASSIVE)
++		return -EINVAL;
++
++	return ret;
 +}
 +
-+static u32 cpu_power_to_freq(struct cpufreq_cooling_device *cpufreq_device,
-+			     u32 power)
++static void reset_pid_controller(struct power_allocator_params *params)
 +{
-+	int i;
-+	struct power_table *pt = cpufreq_device->dyn_power_table;
-+
-+	for (i = 1; i < cpufreq_device->dyn_power_table_entries; i++)
-+		if (power < pt[i].power)
-+			break;
-+
-+	return pt[i - 1].frequency;
++	params->err_integral = 0;
++	params->prev_err = 0;
 +}
 +
-+/**
-+ * get_load() - get load for a cpu since last updated
-+ * @cpufreq_device:	&struct cpufreq_cooling_device for this cpu
-+ * @cpu:	cpu number
-+ *
-+ * Return: The average load of cpu @cpu in percentage since this
-+ * function was last called.
-+ */
-+static u32 get_load(struct cpufreq_cooling_device *cpufreq_device, int cpu)
++static void allow_maximum_power(struct thermal_zone_device *tz)
 +{
-+	u32 load;
-+	u64 now, now_idle, delta_time, delta_idle;
++	struct thermal_instance *instance;
 +
-+	now_idle = get_cpu_idle_time(cpu, &now, 0);
-+	delta_idle = now_idle - cpufreq_device->time_in_idle[cpu];
-+	delta_time = now - cpufreq_device->time_in_idle_timestamp[cpu];
++	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
++		if ((instance->trip != TRIP_MAX_DESIRED_TEMPERATURE) ||
++		    (!cdev_is_power_actor(instance->cdev)))
++			continue;
 +
-+	if (delta_time <= delta_idle)
-+		load = 0;
-+	else
-+		load = div64_u64(100 * (delta_time - delta_idle), delta_time);
-+
-+	cpufreq_device->time_in_idle[cpu] = now_idle;
-+	cpufreq_device->time_in_idle_timestamp[cpu] = now;
-+
-+	return load;
++		instance->target = 0;
++		instance->cdev->updated = false;
++		thermal_cdev_update(instance->cdev);
++	}
 +}
 +
 +/**
-+ * get_static_power() - calculate the static power consumed by the cpus
-+ * @cpufreq_device:	struct &cpufreq_cooling_device for this cpu cdev
-+ * @tz:		thermal zone device in which we're operating
-+ * @freq:	frequency in KHz
-+ * @power:	pointer in which to store the calculated static power
++ * power_allocator_bind() - bind the power_allocator governor to a thermal zone
++ * @tz:	thermal zone to bind it to
 + *
-+ * Calculate the static power consumed by the cpus described by
-+ * @cpu_actor running at frequency @freq.  This function relies on a
-+ * platform specific function that should have been provided when the
-+ * actor was registered.  If it wasn't, the static power is assumed to
-+ * be negligible.  The calculated static power is stored in @power.
++ * Check that the thermal zone is valid for this governor, that is, it
++ * has two thermal trips.  If so, initialize the PID controller
++ * parameters and bind it to the thermal zone.
 + *
-+ * Return: 0 on success, -E* on failure.
++ * Return: 0 on success, -EINVAL if the trips were invalid or -ENOMEM
++ * if we ran out of memory.
 + */
-+static int get_static_power(struct cpufreq_cooling_device *cpufreq_device,
-+			    struct thermal_zone_device *tz, unsigned long freq,
-+			    u32 *power)
++static int power_allocator_bind(struct thermal_zone_device *tz)
 +{
-+	struct dev_pm_opp *opp;
-+	unsigned long voltage;
-+	struct cpumask *cpumask = &cpufreq_device->allowed_cpus;
-+	unsigned long freq_hz = freq * 1000;
++	int ret;
++	struct power_allocator_params *params;
++	unsigned long switch_on_temp, control_temp;
++	u32 temperature_threshold;
 +
-+	if (!cpufreq_device->plat_get_static_power) {
-+		*power = 0;
++	ret = check_trips(tz);
++	if (ret) {
++		dev_err(&tz->device,
++			"thermal zone %s has wrong trip setup for power allocator\n",
++			tz->type);
++		return ret;
++	}
++
++	if (!tz->tzp || !tz->tzp->sustainable_power) {
++		dev_err(&tz->device,
++			"power_allocator: missing sustainable_power\n");
++		return -EINVAL;
++	}
++
++	params = devm_kzalloc(&tz->device, sizeof(*params), GFP_KERNEL);
++	if (!params)
++		return -ENOMEM;
++
++	ret = tz->ops->get_trip_temp(tz, TRIP_SWITCH_ON, &switch_on_temp);
++	if (ret)
++		goto free;
++
++	ret = tz->ops->get_trip_temp(tz, TRIP_MAX_DESIRED_TEMPERATURE,
++				&control_temp);
++	if (ret)
++		goto free;
++
++	temperature_threshold = control_temp - switch_on_temp;
++
++	tz->tzp->k_po = tz->tzp->k_po ?:
++		int_to_frac(tz->tzp->sustainable_power) / temperature_threshold;
++	tz->tzp->k_pu = tz->tzp->k_pu ?:
++		int_to_frac(2 * tz->tzp->sustainable_power) /
++		temperature_threshold;
++	tz->tzp->k_i = tz->tzp->k_i ?: int_to_frac(10) / 1000;
++	/*
++	 * The default for k_d and integral_cutoff is 0, so we can
++	 * leave them as they are.
++	 */
++
++	reset_pid_controller(params);
++
++	tz->governor_data = params;
++
++	return 0;
++
++free:
++	devm_kfree(&tz->device, params);
++	return ret;
++}
++
++static void power_allocator_unbind(struct thermal_zone_device *tz)
++{
++	dev_dbg(&tz->device, "Unbinding from thermal zone %d\n", tz->id);
++	devm_kfree(&tz->device, tz->governor_data);
++	tz->governor_data = NULL;
++}
++
++static int power_allocator_throttle(struct thermal_zone_device *tz, int trip)
++{
++	int ret;
++	unsigned long switch_on_temp, control_temp, current_temp;
++	struct power_allocator_params *params = tz->governor_data;
++
++	/*
++	 * We get called for every trip point but we only need to do
++	 * our calculations once
++	 */
++	if (trip != TRIP_MAX_DESIRED_TEMPERATURE)
++		return 0;
++
++	ret = thermal_zone_get_temp(tz, &current_temp);
++	if (ret) {
++		dev_warn(&tz->device, "Failed to get temperature: %d\n", ret);
++		return ret;
++	}
++
++	ret = tz->ops->get_trip_temp(tz, TRIP_SWITCH_ON, &switch_on_temp);
++	if (ret) {
++		dev_warn(&tz->device,
++			 "Failed to get switch on temperature: %d\n", ret);
++		return ret;
++	}
++
++	if (current_temp < switch_on_temp) {
++		tz->passive = 0;
++		reset_pid_controller(params);
++		allow_maximum_power(tz);
 +		return 0;
 +	}
 +
-+	rcu_read_lock();
++	tz->passive = 1;
 +
-+	opp = dev_pm_opp_find_freq_exact(cpufreq_device->cpu_dev, freq_hz,
-+					 true);
-+	voltage = dev_pm_opp_get_voltage(opp);
-+
-+	rcu_read_unlock();
-+
-+	if (voltage == 0) {
-+		dev_warn_ratelimited(cpufreq_device->cpu_dev,
-+				     "Failed to get voltage for frequency %lu: %ld\n",
-+				     freq_hz, IS_ERR(opp) ? PTR_ERR(opp) : 0);
-+		return -EINVAL;
-+	}
-+
-+	return cpufreq_device->plat_get_static_power(cpumask, tz->passive_delay,
-+						     voltage, power);
-+}
-+
-+/**
-+ * get_dynamic_power() - calculate the dynamic power
-+ * @cpufreq_device:	&cpufreq_cooling_device for this cdev
-+ * @freq:	current frequency
-+ *
-+ * Return: the dynamic power consumed by the cpus described by
-+ * @cpufreq_device.
-+ */
-+static u32 get_dynamic_power(struct cpufreq_cooling_device *cpufreq_device,
-+			     unsigned long freq)
-+{
-+	u32 raw_cpu_power;
-+
-+	raw_cpu_power = cpu_freq_to_power(cpufreq_device, freq);
-+	return (raw_cpu_power * cpufreq_device->last_load) / 100;
-+}
-+
- /* cpufreq cooling device callback functions are defined below */
- 
- /**
-@@ -280,8 +514,161 @@ static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
- 	return 0;
- }
- 
-+/**
-+ * cpufreq_get_requested_power() - get the current power
-+ * @cdev:	&thermal_cooling_device pointer
-+ * @tz:		a valid thermal zone device pointer
-+ * @power:	pointer in which to store the resulting power
-+ *
-+ * Calculate the current power consumption of the cpus in milliwatts
-+ * and store it in @power.  This function should actually calculate
-+ * the requested power, but it's hard to get the frequency that
-+ * cpufreq would have assigned if there were no thermal limits.
-+ * Instead, we calculate the current power on the assumption that the
-+ * immediate future will look like the immediate past.
-+ *
-+ * Return: 0 on success, -E* if getting the static power failed.
-+ */
-+static int cpufreq_get_requested_power(struct thermal_cooling_device *cdev,
-+				       struct thermal_zone_device *tz,
-+				       u32 *power)
-+{
-+	unsigned long freq;
-+	int cpu, ret;
-+	u32 static_power, dynamic_power, total_load = 0;
-+	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
-+
-+	freq = cpufreq_quick_get(cpumask_any(&cpufreq_device->allowed_cpus));
-+
-+	for_each_cpu(cpu, &cpufreq_device->allowed_cpus) {
-+		u32 load;
-+
-+		if (cpu_online(cpu))
-+			load = get_load(cpufreq_device, cpu);
-+		else
-+			load = 0;
-+
-+		total_load += load;
-+	}
-+
-+	cpufreq_device->last_load = total_load;
-+
-+	dynamic_power = get_dynamic_power(cpufreq_device, freq);
-+	ret = get_static_power(cpufreq_device, tz, freq, &static_power);
-+	if (ret)
++	ret = tz->ops->get_trip_temp(tz, TRIP_MAX_DESIRED_TEMPERATURE,
++				&control_temp);
++	if (ret) {
++		dev_warn(&tz->device,
++			 "Failed to get the maximum desired temperature: %d\n",
++			 ret);
 +		return ret;
-+
-+	*power = static_power + dynamic_power;
-+	return 0;
-+}
-+
-+/**
-+ * cpufreq_state2power() - convert a cpu cdev state to power consumed
-+ * @cdev:	&thermal_cooling_device pointer
-+ * @tz:		a valid thermal zone device pointer
-+ * @state:	cooling device state to be converted
-+ * @power:	pointer in which to store the resulting power
-+ *
-+ * Convert cooling device state @state into power consumption in
-+ * milliwatts assuming 100% load.  Store the calculated power in
-+ * @power.
-+ *
-+ * Return: 0 on success, -EINVAL if the cooling device state could not
-+ * be converted into a frequency or other -E* if there was an error
-+ * when calculating the static power.
-+ */
-+static int cpufreq_state2power(struct thermal_cooling_device *cdev,
-+			       struct thermal_zone_device *tz,
-+			       unsigned long state, u32 *power)
-+{
-+	unsigned int freq, num_cpus;
-+	cpumask_t cpumask;
-+	u32 static_power, dynamic_power;
-+	int ret;
-+	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
-+
-+	cpumask_and(&cpumask, &cpufreq_device->allowed_cpus, cpu_online_mask);
-+	num_cpus = cpumask_weight(&cpumask);
-+
-+	/* None of our cpus are online, so no power */
-+	if (num_cpus == 0) {
-+		*power = 0;
-+		return 0;
 +	}
 +
-+	freq = cpufreq_device->freq_table[state];
-+	if (!freq)
-+		return -EINVAL;
-+
-+	dynamic_power = cpu_freq_to_power(cpufreq_device, freq) * num_cpus;
-+	ret = get_static_power(cpufreq_device, tz, freq, &static_power);
-+	if (ret)
-+		return ret;
-+
-+	*power = static_power + dynamic_power;
-+	return 0;
++	return allocate_power(tz, current_temp, control_temp);
 +}
 +
-+/**
-+ * cpufreq_power2state() - convert power to a cooling device state
-+ * @cdev:	&thermal_cooling_device pointer
-+ * @tz:		a valid thermal zone device pointer
-+ * @power:	power in milliwatts to be converted
-+ * @state:	pointer in which to store the resulting state
-+ *
-+ * Calculate a cooling device state for the cpus described by @cdev
-+ * that would allow them to consume at most @power mW and store it in
-+ * @state.  Note that this calculation depends on external factors
-+ * such as the cpu load or the current static power.  Calling this
-+ * function with the same power as input can yield different cooling
-+ * device states depending on those external factors.
-+ *
-+ * Return: 0 on success, -ENODEV if no cpus are online or -EINVAL if
-+ * the calculated frequency could not be converted to a valid state.
-+ * The latter should not happen unless the frequencies available to
-+ * cpufreq have changed since the initialization of the cpu cooling
-+ * device.
-+ */
-+static int cpufreq_power2state(struct thermal_cooling_device *cdev,
-+			       struct thermal_zone_device *tz, u32 power,
-+			       unsigned long *state)
++static struct thermal_governor thermal_gov_power_allocator = {
++	.name		= "power_allocator",
++	.bind_to_tz	= power_allocator_bind,
++	.unbind_from_tz	= power_allocator_unbind,
++	.throttle	= power_allocator_throttle,
++};
++
++int thermal_gov_power_allocator_register(void)
 +{
-+	unsigned int cpu, cur_freq, target_freq;
-+	int ret;
-+	s32 dyn_power;
-+	u32 last_load, normalised_power, static_power;
-+	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
-+
-+	cpu = cpumask_any_and(&cpufreq_device->allowed_cpus, cpu_online_mask);
-+
-+	/* None of our cpus are online */
-+	if (cpu >= nr_cpu_ids)
-+		return -ENODEV;
-+
-+	cur_freq = cpufreq_quick_get(cpu);
-+	ret = get_static_power(cpufreq_device, tz, cur_freq, &static_power);
-+	if (ret)
-+		return ret;
-+
-+	dyn_power = power - static_power;
-+	dyn_power = dyn_power > 0 ? dyn_power : 0;
-+	last_load = cpufreq_device->last_load ?: 1;
-+	normalised_power = (dyn_power * 100) / last_load;
-+	target_freq = cpu_power_to_freq(cpufreq_device, normalised_power);
-+
-+	*state = cpufreq_cooling_get_level(cpu, target_freq);
-+	if (*state == THERMAL_CSTATE_INVALID) {
-+		dev_warn_ratelimited(&cdev->device,
-+				     "Failed to convert %dKHz for cpu %d into a cdev state\n",
-+				     target_freq, cpu);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
++	return thermal_register_governor(&thermal_gov_power_allocator);
 +}
 +
- /* Bind cpufreq callbacks to thermal cooling device ops */
--static struct thermal_cooling_device_ops const cpufreq_cooling_ops = {
-+static struct thermal_cooling_device_ops cpufreq_cooling_ops = {
- 	.get_max_state = cpufreq_get_max_state,
- 	.get_cur_state = cpufreq_get_cur_state,
- 	.set_cur_state = cpufreq_set_cur_state,
-@@ -311,6 +698,9 @@ static unsigned int find_next_max(struct cpufreq_frequency_table *table,
-  * @np: a valid struct device_node to the cooling device device tree node
-  * @clip_cpus: cpumask of cpus where the frequency constraints will happen.
-  * Normally this should be same as cpufreq policy->related_cpus.
-+ * @capacitance: dynamic power coefficient for these cpus
-+ * @plat_static_func: function to calculate the static power consumed by these
-+ *                    cpus (optional)
-  *
-  * This interface function registers the cpufreq cooling device with the name
-  * "thermal-cpufreq-%x". This api can support multiple instances of cpufreq
-@@ -322,7 +712,8 @@ static unsigned int find_next_max(struct cpufreq_frequency_table *table,
-  */
- static struct thermal_cooling_device *
- __cpufreq_cooling_register(struct device_node *np,
--			   const struct cpumask *clip_cpus)
-+			const struct cpumask *clip_cpus, u32 capacitance,
-+			get_static_t plat_static_func)
++void thermal_gov_power_allocator_unregister(void)
++{
++	thermal_unregister_governor(&thermal_gov_power_allocator);
++}
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index a01d4a72bd93..b77b5416929c 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -1567,7 +1567,7 @@ static void remove_trip_attrs(struct thermal_zone_device *tz)
+ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 	int trips, int mask, void *devdata,
+ 	struct thermal_zone_device_ops *ops,
+-	const struct thermal_zone_params *tzp,
++	struct thermal_zone_params *tzp,
+ 	int passive_delay, int polling_delay)
  {
- 	struct thermal_cooling_device *cool_dev;
- 	struct cpufreq_cooling_device *cpufreq_dev;
-@@ -357,6 +748,20 @@ __cpufreq_cooling_register(struct device_node *np,
+ 	struct thermal_zone_device *tz;
+@@ -1923,7 +1923,11 @@ static int __init thermal_register_governors(void)
+ 	if (result)
+ 		return result;
  
- 	cpumask_copy(&cpufreq_dev->allowed_cpus, clip_cpus);
- 
-+	if (capacitance) {
-+		cpufreq_cooling_ops.get_requested_power =
-+			cpufreq_get_requested_power;
-+		cpufreq_cooling_ops.state2power = cpufreq_state2power;
-+		cpufreq_cooling_ops.power2state = cpufreq_power2state;
-+		cpufreq_dev->plat_get_static_power = plat_static_func;
+-	return thermal_gov_user_space_register();
++	result = thermal_gov_user_space_register();
++	if (result)
++		return result;
 +
-+		ret = build_dyn_power_table(cpufreq_dev, capacitance);
-+		if (ret) {
-+			cool_dev = ERR_PTR(ret);
-+			goto free_table;
-+		}
-+	}
-+
- 	ret = get_idr(&cpufreq_idr, &cpufreq_dev->id);
- 	if (ret) {
- 		cool_dev = ERR_PTR(ret);
-@@ -422,7 +827,7 @@ free_cdev:
- struct thermal_cooling_device *
- cpufreq_cooling_register(const struct cpumask *clip_cpus)
- {
--	return __cpufreq_cooling_register(NULL, clip_cpus);
-+	return __cpufreq_cooling_register(NULL, clip_cpus, 0, NULL);
++	return thermal_gov_power_allocator_register();
  }
- EXPORT_SYMBOL_GPL(cpufreq_cooling_register);
  
-@@ -446,11 +851,78 @@ of_cpufreq_cooling_register(struct device_node *np,
- 	if (!np)
- 		return ERR_PTR(-EINVAL);
- 
--	return __cpufreq_cooling_register(np, clip_cpus);
-+	return __cpufreq_cooling_register(np, clip_cpus, 0, NULL);
+ static void thermal_unregister_governors(void)
+@@ -1932,6 +1936,7 @@ static void thermal_unregister_governors(void)
+ 	thermal_gov_fair_share_unregister();
+ 	thermal_gov_bang_bang_unregister();
+ 	thermal_gov_user_space_unregister();
++	thermal_gov_power_allocator_unregister();
  }
- EXPORT_SYMBOL_GPL(of_cpufreq_cooling_register);
  
- /**
-+ * cpufreq_power_cooling_register() - create cpufreq cooling device with power extensions
-+ * @clip_cpus:	cpumask of cpus where the frequency constraints will happen
-+ * @capacitance:	dynamic power coefficient for these cpus
-+ * @plat_static_func:	function to calculate the static power consumed by these
-+ *			cpus (optional)
-+ *
-+ * This interface function registers the cpufreq cooling device with
-+ * the name "thermal-cpufreq-%x".  This api can support multiple
-+ * instances of cpufreq cooling devices.  Using this function, the
-+ * cooling device will implement the power extensions by using a
-+ * simple cpu power model.  The cpus must have registered their OPPs
-+ * using the OPP library.
-+ *
-+ * An optional @plat_static_func may be provided to calculate the
-+ * static power consumed by these cpus.  If the platform's static
-+ * power consumption is unknown or negligible, make it NULL.
-+ *
-+ * Return: a valid struct thermal_cooling_device pointer on success,
-+ * on failure, it returns a corresponding ERR_PTR().
-+ */
-+struct thermal_cooling_device *
-+cpufreq_power_cooling_register(const struct cpumask *clip_cpus, u32 capacitance,
-+			       get_static_t plat_static_func)
-+{
-+	return __cpufreq_cooling_register(NULL, clip_cpus, capacitance,
-+				plat_static_func);
-+}
-+EXPORT_SYMBOL(cpufreq_power_cooling_register);
-+
-+/**
-+ * of_cpufreq_power_cooling_register() - create cpufreq cooling device with power extensions
-+ * @np:	a valid struct device_node to the cooling device device tree node
-+ * @clip_cpus:	cpumask of cpus where the frequency constraints will happen
-+ * @capacitance:	dynamic power coefficient for these cpus
-+ * @plat_static_func:	function to calculate the static power consumed by these
-+ *			cpus (optional)
-+ *
-+ * This interface function registers the cpufreq cooling device with
-+ * the name "thermal-cpufreq-%x".  This api can support multiple
-+ * instances of cpufreq cooling devices.  Using this API, the cpufreq
-+ * cooling device will be linked to the device tree node provided.
-+ * Using this function, the cooling device will implement the power
-+ * extensions by using a simple cpu power model.  The cpus must have
-+ * registered their OPPs using the OPP library.
-+ *
-+ * An optional @plat_static_func may be provided to calculate the
-+ * static power consumed by these cpus.  If the platform's static
-+ * power consumption is unknown or negligible, make it NULL.
-+ *
-+ * Return: a valid struct thermal_cooling_device pointer on success,
-+ * on failure, it returns a corresponding ERR_PTR().
-+ */
-+struct thermal_cooling_device *
-+of_cpufreq_power_cooling_register(struct device_node *np,
-+				  const struct cpumask *clip_cpus,
-+				  u32 capacitance,
-+				  get_static_t plat_static_func)
-+{
-+	if (!np)
-+		return ERR_PTR(-EINVAL);
-+
-+	return __cpufreq_cooling_register(np, clip_cpus, capacitance,
-+				plat_static_func);
-+}
-+EXPORT_SYMBOL(of_cpufreq_power_cooling_register);
-+
-+/**
-  * cpufreq_cooling_unregister - function to remove cpufreq cooling device.
-  * @cdev: thermal cooling device pointer.
-  *
-diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
-index bd955270d5aa..c156f5082758 100644
---- a/include/linux/cpu_cooling.h
-+++ b/include/linux/cpu_cooling.h
-@@ -28,6 +28,9 @@
- #include <linux/thermal.h>
- #include <linux/cpumask.h>
+ static int __init thermal_init(void)
+diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
+index 0531c752fbbb..28aa326806eb 100644
+--- a/drivers/thermal/thermal_core.h
++++ b/drivers/thermal/thermal_core.h
+@@ -85,6 +85,14 @@ static inline int thermal_gov_user_space_register(void) { return 0; }
+ static inline void thermal_gov_user_space_unregister(void) {}
+ #endif /* CONFIG_THERMAL_GOV_USER_SPACE */
  
-+typedef int (*get_static_t)(cpumask_t *cpumask, int interval,
-+			    unsigned long voltage, u32 *power);
++#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
++int thermal_gov_power_allocator_register(void);
++void thermal_gov_power_allocator_unregister(void);
++#else
++static inline int thermal_gov_power_allocator_register(void) { return 0; }
++static inline void thermal_gov_power_allocator_unregister(void) {}
++#endif /* CONFIG_THERMAL_GOV_POWER_ALLOCATOR */
 +
- #ifdef CONFIG_CPU_THERMAL
- /**
-  * cpufreq_cooling_register - function to create cpufreq cooling device.
-@@ -36,6 +39,10 @@
- struct thermal_cooling_device *
- cpufreq_cooling_register(const struct cpumask *clip_cpus);
- 
-+struct thermal_cooling_device *
-+cpufreq_power_cooling_register(const struct cpumask *clip_cpus,
-+			       u32 capacitance, get_static_t plat_static_func);
-+
- /**
-  * of_cpufreq_cooling_register - create cpufreq cooling device based on DT.
-  * @np: a valid struct device_node to the cooling device device tree node.
-@@ -45,6 +52,12 @@ cpufreq_cooling_register(const struct cpumask *clip_cpus);
- struct thermal_cooling_device *
- of_cpufreq_cooling_register(struct device_node *np,
- 			    const struct cpumask *clip_cpus);
-+
-+struct thermal_cooling_device *
-+of_cpufreq_power_cooling_register(struct device_node *np,
-+				  const struct cpumask *clip_cpus,
-+				  u32 capacitance,
-+				  get_static_t plat_static_func);
- #else
- static inline struct thermal_cooling_device *
- of_cpufreq_cooling_register(struct device_node *np,
-@@ -52,6 +65,15 @@ of_cpufreq_cooling_register(struct device_node *np,
- {
- 	return ERR_PTR(-ENOSYS);
- }
-+
-+static inline struct thermal_cooling_device *
-+of_cpufreq_power_cooling_register(struct device_node *np,
-+				  const struct cpumask *clip_cpus,
-+				  u32 capacitance,
-+				  get_static_t plat_static_func)
-+{
-+	return NULL;
-+}
+ /* device tree support */
+ #ifdef CONFIG_THERMAL_OF
+ int of_parse_thermal_zones(void);
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 288ac6fd743d..b42f790bb23c 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -56,6 +56,8 @@
+ #define DEFAULT_THERMAL_GOVERNOR       "fair_share"
+ #elif defined(CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE)
+ #define DEFAULT_THERMAL_GOVERNOR       "user_space"
++#elif defined(CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR)
++#define DEFAULT_THERMAL_GOVERNOR       "power_allocator"
  #endif
  
- /**
-@@ -68,11 +90,28 @@ cpufreq_cooling_register(const struct cpumask *clip_cpus)
- 	return ERR_PTR(-ENOSYS);
- }
- static inline struct thermal_cooling_device *
-+cpufreq_power_cooling_register(const struct cpumask *clip_cpus,
-+			       u32 capacitance, get_static_t plat_static_func)
-+{
-+	return NULL;
-+}
+ struct thermal_zone_device;
+@@ -151,8 +153,7 @@ struct thermal_attr {
+  * @devdata:	private pointer for device private data
+  * @trips:	number of trip points the thermal zone supports
+  * @passive_delay:	number of milliseconds to wait between polls when
+- *			performing passive cooling.  Currenty only used by the
+- *			step-wise governor
++ *			performing passive cooling.
+  * @polling_delay:	number of milliseconds to wait between polls when
+  *			checking whether trip points have been crossed (0 for
+  *			interrupt driven systems)
+@@ -162,7 +163,6 @@ struct thermal_attr {
+  * @last_temperature:	previous temperature read
+  * @emul_temperature:	emulated temperature when using CONFIG_THERMAL_EMULATION
+  * @passive:		1 if you've crossed a passive trip point, 0 otherwise.
+- *			Currenty only used by the step-wise governor.
+  * @forced_passive:	If > 0, temperature at which to switch on all ACPI
+  *			processor cooling devices.  Currently only used by the
+  *			step-wise governor.
+@@ -194,7 +194,7 @@ struct thermal_zone_device {
+ 	int passive;
+ 	unsigned int forced_passive;
+ 	struct thermal_zone_device_ops *ops;
+-	const struct thermal_zone_params *tzp;
++	struct thermal_zone_params *tzp;
+ 	struct thermal_governor *governor;
+ 	void *governor_data;
+ 	struct list_head thermal_instances;
+@@ -269,6 +269,33 @@ struct thermal_zone_params {
+ 
+ 	int num_tbps;	/* Number of tbp entries */
+ 	struct thermal_bind_params *tbp;
 +
-+static inline struct thermal_cooling_device *
- of_cpufreq_cooling_register(struct device_node *np,
- 			    const struct cpumask *clip_cpus)
- {
- 	return ERR_PTR(-ENOSYS);
- }
++	/*
++	 * Sustainable power (heat) that this thermal zone can dissipate in
++	 * mW
++	 */
++	u32 sustainable_power;
 +
-+static inline struct thermal_cooling_device *
-+of_cpufreq_power_cooling_register(struct device_node *np,
-+				  const struct cpumask *clip_cpus,
-+				  u32 capacitance,
-+				  get_static_t plat_static_func)
-+{
-+	return NULL;
-+}
++	/*
++	 * Proportional parameter of the PID controller when
++	 * overshooting (i.e., when temperature is below the target)
++	 */
++	s32 k_po;
 +
- static inline
- void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
- {
++	/*
++	 * Proportional parameter of the PID controller when
++	 * undershooting
++	 */
++	s32 k_pu;
++
++	/* Integral parameter of the PID controller */
++	s32 k_i;
++
++	/* Derivative parameter of the PID controller */
++	s32 k_d;
++
++	/* threshold below which the error is no longer accumulated */
++	s32 integral_cutoff;
+ };
+ 
+ struct thermal_genl_event {
+@@ -343,7 +370,7 @@ int power_actor_set_power(struct thermal_cooling_device *,
+ 			  struct thermal_instance *, u32);
+ struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
+ 		void *, struct thermal_zone_device_ops *,
+-		const struct thermal_zone_params *, int, int);
++		struct thermal_zone_params *, int, int);
+ void thermal_zone_device_unregister(struct thermal_zone_device *);
+ 
+ int thermal_zone_bind_cooling_device(struct thermal_zone_device *, int,
 -- 
 1.9.1
 
