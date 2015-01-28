@@ -1,132 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757916AbbA2ETR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 23:19:17 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:55126 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbbA2ETQ (ORCPT
+	id S1755546AbbA1USM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:18:12 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45498 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516AbbA1USH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 23:19:16 -0500
-Date: Wed, 28 Jan 2015 23:19:17 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Ganesh Mahendran <opensource.ganesh@gmail.com>,
-        sergey.senozhatsky.work@gmail.com
-Subject: Re: [PATCH 1/2] zram: free meta table in zram_meta_free
-Message-ID: <20150128141916.GA14062@swordfish>
-References: <1422432945-6764-1-git-send-email-minchan@kernel.org>
+	Wed, 28 Jan 2015 15:18:07 -0500
+Date: Wed, 28 Jan 2015 14:19:34 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Kukjin Kim <kgene@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
+        Heiko Stuebner <heiko@sntech.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-rockchip@lists.infradead.org" 
+	<linux-rockchip@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "jroedel@suse.de" <jroedel@suse.de>
+Subject: Re: [PATCH 02/15] iommu: Introduce iommu domain types
+Message-ID: <20150128141934.GP1569@arm.com>
+References: <1422316305-19216-1-git-send-email-joro@8bytes.org>
+ <1422316305-19216-3-git-send-email-joro@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1422432945-6764-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1422316305-19216-3-git-send-email-joro@8bytes.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/28/15 17:15), Minchan Kim wrote:
-> zram_meta_alloc() and zram_meta_free() are a pair.
-> In zram_meta_alloc(), meta table is allocated. So it it better to free
-> it in zram_meta_free().
+Hi Joerg,
+
+Thanks for posting this!
+
+On Mon, Jan 26, 2015 at 11:51:32PM +0000, Joerg Roedel wrote:
+> From: Joerg Roedel <jroedel@suse.de>
 > 
-> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> This allows to handle domains differently based on their
+> type in the future. An IOMMU driver can implement certain
+> optimizations for DMA-API domains for example.
+> 
+> Signed-off-by: Joerg Roedel <jroedel@suse.de>
 > ---
->  drivers/block/zram/zram_drv.c | 30 ++++++++++++++----------------
->  drivers/block/zram/zram_drv.h |  1 +
->  2 files changed, 15 insertions(+), 16 deletions(-)
+>  drivers/iommu/iommu.c |  5 +++--
+>  include/linux/iommu.h | 11 ++++++++++-
+>  2 files changed, 13 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 9250b3f54a8f..a598ada817f0 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -309,6 +309,18 @@ static inline int valid_io_request(struct zram *zram,
+> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+> index 684efc0..ab24d77 100644
+> --- a/drivers/iommu/iommu.c
+> +++ b/drivers/iommu/iommu.c
+> @@ -909,14 +909,15 @@ struct iommu_domain *iommu_domain_alloc(struct bus_type *bus)
+>  	ops = bus->iommu_ops;
 >  
->  static void zram_meta_free(struct zram_meta *meta)
->  {
-> +	size_t index;
-
-
-I don't like how we bloat structs w/o any need.
-zram keeps ->disksize, so let's use `zram->disksize >> PAGE_SHIFT'
-instead of introducing ->num_pages.
-
-	-ss
-
-> +	/* Free all pages that are still in this zram device */
-> +	for (index = 0; index < meta->num_pages; index++) {
-> +		unsigned long handle = meta->table[index].handle;
-> +
-> +		if (!handle)
-> +			continue;
-> +
-> +		zs_free(meta->mem_pool, handle);
-> +	}
-> +
->  	zs_destroy_pool(meta->mem_pool);
->  	vfree(meta->table);
->  	kfree(meta);
-> @@ -316,15 +328,14 @@ static void zram_meta_free(struct zram_meta *meta)
+>  	if (ops->domain_alloc)
+> -		domain = ops->domain_alloc();
+> +		domain = ops->domain_alloc(IOMMU_DOMAIN_UNMANAGED);
+>  	else
+>  		domain = kzalloc(sizeof(*domain), GFP_KERNEL);
 >  
->  static struct zram_meta *zram_meta_alloc(int device_id, u64 disksize)
->  {
-> -	size_t num_pages;
->  	char pool_name[8];
->  	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
->  
->  	if (!meta)
+>  	if (!domain)
 >  		return NULL;
 >  
-> -	num_pages = disksize >> PAGE_SHIFT;
-> -	meta->table = vzalloc(num_pages * sizeof(*meta->table));
-> +	meta->num_pages = disksize >> PAGE_SHIFT;
-> +	meta->table = vzalloc(meta->num_pages * sizeof(*meta->table));
->  	if (!meta->table) {
->  		pr_err("Error allocating zram address table\n");
->  		goto out_error;
-> @@ -706,9 +717,6 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+> -	domain->ops = bus->iommu_ops;
+> +	domain->ops  = bus->iommu_ops;
+> +	domain->type = IOMMU_DOMAIN_UNMANAGED;
 >  
->  static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  {
-> -	size_t index;
-> -	struct zram_meta *meta;
-> -
->  	down_write(&zram->init_lock);
->  
->  	zram->limit_pages = 0;
-> @@ -718,16 +726,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->  		return;
->  	}
->  
-> -	meta = zram->meta;
-> -	/* Free all pages that are still in this zram device */
-> -	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> -		unsigned long handle = meta->table[index].handle;
-> -		if (!handle)
-> -			continue;
-> -
-> -		zs_free(meta->mem_pool, handle);
-> -	}
-> -
->  	zcomp_destroy(zram->comp);
->  	zram->max_comp_streams = 1;
->  
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index b05a816b09ac..e492f6bf11f1 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -96,6 +96,7 @@ struct zram_stats {
->  struct zram_meta {
->  	struct zram_table_entry *table;
->  	struct zs_pool *mem_pool;
-> +	size_t num_pages;
+>  	if (ops->domain_init && domain->ops->domain_init(domain))
+>  		goto out_free;
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index 69d1d12..0b67f65 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -51,7 +51,16 @@ struct iommu_domain_geometry {
+>  	bool force_aperture;       /* DMA only allowed in mappable range? */
 >  };
 >  
->  struct zram {
-> -- 
-> 1.9.1
-> 
+> +/* This are the possible domain-types */
+> +enum iommu_domain_type {
+> +	IOMMU_DOMAIN_DMA,	/* Domain used for DMA-API */
+> +	IOMMU_DOMAIN_IDENTITY,	/* Identity mapped domain  */
+
+What happens if somebody calls map or unmap on an identity-mapping domain?
+Can we catch that in the IOMMU core before calling the IOMMU driver? That
+also implies we need something extra to parameterise the attributes for
+the mapping (e.g. cacheable, read-only) and also potentially the address
+range.
+
+> +	IOMMU_DOMAIN_UNMANAGED, /* Domain mappings are managed by a third party
+> +				   user (like KVM or VFIO) */
+
+We already have the domain attributes (iommu_attr) to describe features
+of a domain. Is there really a need for this extra type, or can we extend
+the attribute set and allow for domain allocation with attributes?
+
+Will
