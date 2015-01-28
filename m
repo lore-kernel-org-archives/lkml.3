@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191AbbA1DzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jan 2015 22:55:00 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:36926 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053AbbA1Dy7 (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 27 Jan 2015 22:54:59 -0500
-Message-ID: <1422417294.4604.15.camel@stgolabs.net>
-Subject: Re: [PATCH 4/6] locking/rwsem: Avoid deceiving lock spinners
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Jason Low <jason.low2@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, linux-kernel@vger.kernel.org
-Date: Tue, 27 Jan 2015 19:54:54 -0800
-In-Reply-To: <1422379430.6710.6.camel@j-VirtualBox>
-References: <1422257769-14083-1-git-send-email-dave@stgolabs.net>
-	 <1422257769-14083-5-git-send-email-dave@stgolabs.net>
-	 <1422379430.6710.6.camel@j-VirtualBox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
+	id S1756534AbbA1D7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 22:59:10 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:47281 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484AbbA1D7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 22:59:07 -0500
+Message-ID: <54C85E86.5010008@hurleysoftware.com>
+Date: Tue, 27 Jan 2015 22:59:02 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>, gregkh@linuxfoundation.org
+CC: robh+dt@kernel.org, mark.rutland@arm.com, arnd@arndb.de,
+        gnomes@lxorguk.ukuu.org.uk, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        grant.likely@linaro.org, jslaby@suse.cz, heiko@sntech.de,
+        jason@lakedaemon.net, florian.vaussard@epfl.ch, andrew@lunn.ch,
+        hytszk@gmail.com, antonynpavlov@gmail.com, shawn.guo@linaro.org,
+        orsonzhai@gmail.com, geng.ren@spreadtrum.com,
+        zhizhou.zhang@spreadtrum.com, lanqing.liu@spreadtrum.com,
+        zhang.lyra@gmail.com, wei.qiao@spreadtrum.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v9 2/2] tty/serial: Add Spreadtrum sc9836-uart driver
+ support
+References: <sc9836-serial-v9> <1422413261-17184-1-git-send-email-chunyan.zhang@spreadtrum.com> <1422413261-17184-3-git-send-email-chunyan.zhang@spreadtrum.com>
+In-Reply-To: <1422413261-17184-3-git-send-email-chunyan.zhang@spreadtrum.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-27 at 09:23 -0800, Jason Low wrote:
-> On Sun, 2015-01-25 at 23:36 -0800, Davidlohr Bueso wrote:
-> > When readers hold the semaphore, the ->owner is nil. As such,
-> > and unlike mutexes, '!owner' does not necessarily imply that
-> > the lock is free. This will cause writer spinners to potentially
-> > spin excessively as they've been mislead to thinking they have
-> > a chance of acquiring the lock, instead of blocking.
-> > 
-> > This patch therefore replaces this bogus check to solely rely on
-> > the counter to know if the lock is available. Because we don't
-> > hold the wait lock, we can obviously do this in an unqueued
-> > manner.
-> > 
-> > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> > ---
-> >  kernel/locking/rwsem-xadd.c | 8 ++++++--
-> >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> > index 5e425d8..18a50da 100644
-> > --- a/kernel/locking/rwsem-xadd.c
-> > +++ b/kernel/locking/rwsem-xadd.c
-> > @@ -335,6 +335,8 @@ static inline bool owner_running(struct rw_semaphore *sem,
-> >  static noinline
-> >  bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
-> >  {
-> > +	long count;
-> > +
-> >  	rcu_read_lock();
-> >  	while (owner_running(sem, owner)) {
-> >  		if (need_resched())
-> > @@ -347,9 +349,11 @@ bool rwsem_spin_on_owner(struct rw_semaphore *sem, struct task_struct *owner)
-> >  	/*
-> >  	 * We break out the loop above on need_resched() or when the
-> >  	 * owner changed, which is a sign for heavy contention. Return
-> > -	 * success only when sem->owner is NULL.
-> > +	 * success only when the lock is available in order to attempt
-> > +	 * another trylock.
-> >  	 */
-> > -	return sem->owner == NULL;
-> > +	count = READ_ONCE(sem->count);
-> > +	return count == 0 || count == RWSEM_WAITING_BIAS;
-> 
-> If we clear the owner field right before unlocking, would this cause
-> some situations where we spin until the owner is cleared (about to
-> release the lock), and then the spinner return false from
-> rwsem_spin_on_owner?
+On 01/27/2015 09:47 PM, Chunyan Zhang wrote:
+> Add a full sc9836-uart driver for SC9836 SoC which is based on the
+> spreadtrum sharkl64 platform.
+> This driver also support earlycon.
 
-I'm not sure I understand your concern ;) could you rephrase that? 
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
 
-So I think you're referring to the window between when we 1) clear the
-->owner and 2) update the ->counter in the unlocking paths. That would
-lead the function to break out of the loop ("owner changed") and return
-a bogus "sem is locked, thus taken by a new owner now, continue
-spinning" reason for it (counter !=0 yet, for example). 
-
-And that's perfectly fine, really. We've never held a strict
-owner-counter dependency, and the owner pointer is completely
-unreliable. So all this would end up doing is causing us to perform an
-extra iteration per race. This is a pretty good tradeoff for what the
-patch addresses.
-
-Thanks,
-Davidlohr
 
