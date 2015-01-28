@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557AbbA2Br3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:47:29 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:59591 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757952AbbA2BrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:47:25 -0500
-MBOX-Line: From nobody Wed Jan 28 16:49:39 2015
-Subject: [PATCH 24/24] Documentation: DT bindings: add nvidia,
- denver compatible string
-From: Paul Walmsley <paul@pwsan.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Heiko Stuebner <heiko@sntech.de>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Marc Carino <marc.ceeeee@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Paul Walmsley <pwalmsley@nvidia.com>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 28 Jan 2015 16:49:39 -0700
-Message-ID: <20150128234938.20644.69989.stgit@dusk.lan>
-In-Reply-To: <20150128234935.20644.89300.stgit@dusk.lan>
-References: <20150128234935.20644.89300.stgit@dusk.lan>
-User-Agent: StGit/0.16-37-g27ac3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	id S1755302AbbA2B1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:27:43 -0500
+Received: from mga03.intel.com ([134.134.136.65]:60190 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755260AbbA2B1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 20:27:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,483,1418112000"; 
+   d="scan'208";a="644203634"
+From: Robert Dolca <robert.dolca@intel.com>
+To: linux-nfc@ml01.01.org, Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Berg Johannes <johannes.berg@intel.com>,
+        Clement Perrochaud <clement.perrochaud@nxp.com>,
+        Robert Dolca <robert.dolca@intel.com>
+Subject: [RFC] NFC: PN544: Supply the right length to skb_trim
+Date: Thu, 29 Jan 2015 01:50:46 +0200
+Message-Id: <1422489046-6087-1-git-send-email-robert.dolca@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The 2nd parameter of skb_trim is the new length of the skb.
 
-Add a compatible string for the NVIDIA Denver CPU to the ARM CPU DT
-binding documentation file.  The primary objective here is to keep
-checkpatch.pl from warning when the compatible string is used in an
-SoC DT file, per:
+pn544_hci_i2c_remove_len_crc used the tailroom for the 2nd parameter so
+the new length was 2 no metter how big the skb was.
+Now the length is (skb->len - PN544_I2C_FRAME_TAILROOM)
 
-http://marc.info/?l=linux-tegra&m=142201349727836&w=2
-
-
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Heiko Stuebner <heiko@sntech.de>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Paul Walmsley <pwalmsley@nvidia.com>
-Cc: Marc Carino <marc.ceeeee@gmail.com>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
+Signed-off-by: Robert Dolca <robert.dolca@intel.com>
 ---
- Documentation/devicetree/bindings/arm/cpus.txt |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/nfc/pn544/i2c.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-index b2aacbe16ed9..4ea31f0b7764 100644
---- a/Documentation/devicetree/bindings/arm/cpus.txt
-+++ b/Documentation/devicetree/bindings/arm/cpus.txt
-@@ -175,6 +175,7 @@ nodes to be present and contain the properties described below.
- 			    "marvell,pj4a"
- 			    "marvell,pj4b"
- 			    "marvell,sheeva-v5"
-+			    "nvidia,denver" (not yet matched in the code)
- 			    "qcom,krait"
- 			    "qcom,scorpion"
- 	- enable-method
-
+diff --git a/drivers/nfc/pn544/i2c.c b/drivers/nfc/pn544/i2c.c
+index 58b9029..42e7b26 100644
+--- a/drivers/nfc/pn544/i2c.c
++++ b/drivers/nfc/pn544/i2c.c
+@@ -297,7 +297,7 @@ static void pn544_hci_i2c_add_len_crc(struct sk_buff *skb)
+ static void pn544_hci_i2c_remove_len_crc(struct sk_buff *skb)
+ {
+ 	skb_pull(skb, PN544_I2C_FRAME_HEADROOM);
+-	skb_trim(skb, PN544_I2C_FRAME_TAILROOM);
++	skb_trim(skb, skb->len - PN544_I2C_FRAME_TAILROOM);
+ }
+ 
+ /*
+@@ -411,8 +411,7 @@ static int pn544_hci_i2c_read(struct pn544_i2c_phy *phy, struct sk_buff **skb)
+ 		goto flush;
+ 	}
+ 
+-	skb_pull(*skb, 1);
+-	skb_trim(*skb, (*skb)->len - 2);
++	pn544_hci_i2c_remove_len_crc(*skb);
+ 
+ 	usleep_range(3000, 6000);
+ 
+-- 
+1.9.1
 
