@@ -1,68 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbbA1UdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 15:33:16 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45508 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760159AbbA1UdM (ORCPT
+	id S932232AbbA2BpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 20:45:16 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59582 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172AbbA2BpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:33:12 -0500
-Date: Wed, 28 Jan 2015 14:35:24 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Kukjin Kim <kgene@kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        Heiko Stuebner <heiko@sntech.de>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+	Wed, 28 Jan 2015 20:45:13 -0500
+Date: Wed, 28 Jan 2015 15:38:50 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        X86 ML <x86@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robin Murphy <Robin.Murphy@arm.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "jroedel@suse.de" <jroedel@suse.de>
-Subject: Re: [PATCH 3/5] iommu: Limit iommu_attach/detach_device to devices
- with their own group
-Message-ID: <20150128143523.GR1569@arm.com>
-References: <1422317339-22620-1-git-send-email-joro@8bytes.org>
- <1422317339-22620-4-git-send-email-joro@8bytes.org>
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/entry changes for 3.20, round 1
+Message-ID: <20150128143850.GB3994@gmail.com>
+References: <CALCETrVCmoEP-Ha937VurRVxYYmSG==QL=twMBUWgzOAxc4uRA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1422317339-22620-4-git-send-email-joro@8bytes.org>
+In-Reply-To: <CALCETrVCmoEP-Ha937VurRVxYYmSG==QL=twMBUWgzOAxc4uRA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 27, 2015 at 12:08:57AM +0000, Joerg Roedel wrote:
-> From: Joerg Roedel <jroedel@suse.de>
+
+* Andy Lutomirski <luto@amacapital.net> wrote:
+
+> Hi Ingo and Thomas,
 > 
-> This patch changes the behavior of the iommu_attach_device
-> and iommu_detach_device functions. With this change these
-> functions only work on devices that have their own group.
-> For all other devices the iommu_group_attach/detach
-> functions must be used.
-
-I like this a lot. Currently, if somebody detaches a device from the ARM
-SMMU, I end up detaching its group as well, which I've always found slightly
-odd.
-
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  drivers/iommu/iommu.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 59 insertions(+), 4 deletions(-)
+> At Linus' suggestion, I'm trying out some maintainerish stuff for x86
+> entry code.  Please consider pulling to an appropriate branch *after
+> Paul sends his RCU pull request*, only if 734d16801349 is included in
+> that pull request.  If this goes well, maybe I'll submit a MAINTAINERS
+> patch, too.
 > 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index 8f33ddd3..b63a550 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -51,6 +51,7 @@ struct iommu_group {
->  	void (*iommu_data_release)(void *iommu_data);
->  	char *name;
->  	int id;
-> +	unsigned dev_cnt;
+> IMPORTANT: This is based on an RCU change that you don't have yet.  I
+> think that Paul is planning on sending a pull request with that change
+> fairly soon.  The code in here would compile without that fix, but it
+> would introduce a nasty regression, so, to avoid breaking bisection, I
+> based this off of the relevant change in Paul's tree.  (It's the very
+> first change for 3.20 in his current queue.)
+> 
+> If you want me to structure this differently, let me know.
+> 
+> I may have one more entry pull request before the merge window if I
+> can get my sysret stuff reviewed in time.  Not sure yet.  I may also
+> be comfortable with some more of Denys' cleanups in time.
+> 
+> The following changes since commit 734d16801349fbe951d2f780191d32c5b8a892d1:
+> 
+>   rcu: Make rcu_nmi_enter() handle nesting (2014-12-30 17:40:16 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git
+> tags/pr-20150114-x86-entry
+> 
+> for you to fetch changes up to f6f64681d9d87ded48a90b644b2991c6ee05da2d:
+> 
+>   x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
+> (2015-01-13 14:18:08 -0800)
+> 
+> ----------------------------------------------------------------
+> This is my accumulated x86 entry work, part 1, for 3.20.  The meat
+> of this is an IST rework.  When an IST exception interrupts user
+> space, we will handle it on the per-thread kernel stack instead of
+> on the IST stack.  This sounds messy, but it actually simplifies the
+> IST entry/exit code, because it eliminates some ugly games we used
+> to play in order to handle rescheduling, signal delivery, etc on the
+> way out of an IST exception.
+> 
+> The IST rework introduces proper context tracking to IST exception
+> handlers.  I haven't seen any bug reports, but the old code could
+> have incorrectly treated an IST exception handler as an RCU extended
+> quiescent state.
+> 
+> The memory failure change (included in this pull request with
+> Borislav and Tony's permission) eliminates a bunch of code that
+> is no longer needed now that user memory failure handlers are
+> called in process context.
+> 
+> Finally, this includes a few on Denys' uncontroversial and Obviously
+> Correct (tm) cleanups.
+> 
+> The IST and memory failure changes have been in -next for a while.
+> 
+> LKML references:
+> 
+> IST rework:
+> http://lkml.kernel.org/r/cover.1416604491.git.luto@amacapital.net
+> 
+> Memory failure change:
+> http://lkml.kernel.org/r/54ab2ffa301102cd6e@agluck-desk.sc.intel.com
+> 
+> Denys' cleanups:
+> http://lkml.kernel.org/r/1420927210-19738-1-git-send-email-dvlasenk@redhat.com
+> 
+> ----------------------------------------------------------------
+> Andy Lutomirski (4):
+>       x86, entry: Switch stacks on a paranoid entry from userspace
+>       x86, traps: Track entry into and exit from IST context
+>       x86: Clean up current_stack_pointer
+>       x86, traps: Add ist_begin_non_atomic and ist_end_non_atomic
+> 
+> Denys Vlasenko (3):
+>       x86: entry_64.S: delete unused code
+>       x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
+>       x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
+> 
+> Tony Luck (1):
+>       x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce tricks
+> 
+>  Documentation/x86/entry_64.txt         |  18 ++-
+>  Documentation/x86/x86_64/kernel-stacks |   8 +-
+>  arch/x86/ia32/ia32entry.S              |   4 +-
+>  arch/x86/include/asm/calling.h         |   1 -
+>  arch/x86/include/asm/mce.h             |   1 -
+>  arch/x86/include/asm/thread_info.h     |  15 ++-
+>  arch/x86/include/asm/traps.h           |   6 +
+>  arch/x86/kernel/cpu/mcheck/mce.c       | 114 +++++-------------
+>  arch/x86/kernel/cpu/mcheck/p5.c        |   6 +
+>  arch/x86/kernel/cpu/mcheck/winchip.c   |   5 +
+>  arch/x86/kernel/entry_64.S             | 208 ++++++++++++++-------------------
+>  arch/x86/kernel/irq_32.c               |  13 +--
+>  arch/x86/kernel/signal.c               |   6 -
+>  arch/x86/kernel/traps.c                | 108 +++++++++++++----
+>  14 files changed, 252 insertions(+), 261 deletions(-)
 
-Is this actually used on a fast path, or can we just inspect the list of
-devices on the group instead?
+Pulled into tip:x86/asm - I'll give it some testing as well 
+before pushing it out.
 
-Will
+Thanks,
+
+	Ingo
