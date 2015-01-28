@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762994AbbA1F3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 00:29:35 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36976 "EHLO mail.kernel.org"
+	id S1760736AbbA1EOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jan 2015 23:14:33 -0500
+Received: from mail.kernel.org ([198.145.29.136]:36997 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760645AbbA1EOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jan 2015 23:14:25 -0500
+	id S1759888AbbA1EO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jan 2015 23:14:28 -0500
 From: lizf@kernel.org
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Zefan Li <lizefan@huawei.com>
-Subject: [PATCH 3.4 013/177] PCI: Generate uppercase hex for modalias interface class
-Date: Wed, 28 Jan 2015 12:06:32 +0800
-Message-Id: <1422418236-12852-25-git-send-email-lizf@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
+        Nico Baggus <nico-linux@noci.xs4all.nl>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Zefan Li <lizefan@huawei.com>
+Subject: [PATCH 3.4 13/91] rtlwifi: rtl8192cu: Add new ID
+Date: Wed, 28 Jan 2015 12:06:33 +0800
+Message-Id: <1422418236-12852-26-git-send-email-lizf@kernel.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422418050-12581-1-git-send-email-lizf@kernel.org>
 References: <1422418050-12581-1-git-send-email-lizf@kernel.org>
@@ -21,49 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-3.4.106-rc1 review patch.  If anyone has any objections, please let me know.
+3.4.105-rc1 review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-commit 89ec3dcf17fd3fa009ecf8faaba36828dd6bc416 upstream.
+commit c66517165610b911e4c6d268f28d8c640832dbd1 upstream.
 
-Some implementations of modprobe fail to load the driver for a PCI device
-automatically because the "interface" part of the modalias from the kernel
-is lowercase, and the modalias from file2alias is uppercase.
+The Sitecom WLA-2102 adapter uses this driver.
 
-The "interface" is the low-order byte of the Class Code, defined in PCI
-r3.0, Appendix D.  Most interface types defined in the spec do not use
-alpha characters, so they won't be affected.  For example, 00h, 01h, 10h,
-20h, etc. are unaffected.
-
-Print the "interface" byte of the Class Code in uppercase hex, as we
-already do for the Vendor ID, Device ID, Class, etc.
-
-[bhelgaas: changelog]
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Nico Baggus <nico-linux@noci.xs4all.nl>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Nico Baggus <nico-linux@noci.xs4all.nl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Zefan Li <lizefan@huawei.com>
 ---
- drivers/pci/pci-sysfs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index a55e248..985ada7 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -173,7 +173,7 @@ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
- {
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
- 
--	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
-+	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
- 		       pci_dev->vendor, pci_dev->device,
- 		       pci_dev->subsystem_vendor, pci_dev->subsystem_device,
- 		       (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+index 52a9c33..2c4cdce 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -306,6 +306,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
+ 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
++	{RTL_USB_DEVICE(0x0df6, 0x0070, rtl92cu_hal_cfg)}, /*Sitecom - 150N */
+ 	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
+ 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
+ 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
 -- 
 1.9.1
 
