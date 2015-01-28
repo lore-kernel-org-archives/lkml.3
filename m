@@ -1,72 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188AbbA2B0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 20:26:45 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38408 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054AbbA2BZx (ORCPT
+	id S1760339AbbA1Ueb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:34:31 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:64050 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656AbbA1Ue1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 20:25:53 -0500
-Date: Wed, 28 Jan 2015 19:29:07 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Peter Rosin <peda@lysator.liu.se>
-Cc: alsa-devel@alsa-project.org, Peter Rosin <peda@axentia.se>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Lars-Peter Clausen <lars@metafoo.de>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20150128192907.GH21293@sirena.org.uk>
-References: <1422454572-7847-1-git-send-email-peda@lysator.liu.se>
+	Wed, 28 Jan 2015 15:34:27 -0500
+Message-ID: <54C938C4.40708@converseincode.com>
+Date: Wed, 28 Jan 2015 11:30:12 -0800
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="zsrtqxSV3n+NPNGz"
-Content-Disposition: inline
-In-Reply-To: <1422454572-7847-1-git-send-email-peda@lysator.liu.se>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 0/7] ASoC: pcm512x: Clock master modes
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>, Alex Elder <elder@linaro.org>
+CC: bcm@fixthebug.org, Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Matt Porter <mporter@linaro.org>,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] bcm: address clang inline asm incompatibility
+References: <1422422306-27473-1-git-send-email-behanw@converseincode.com>	<CAKv+Gu_NCgMmX_LQqi7vtjtP4ofrW+kx8FPgRd4-LWwK=73-xg@mail.gmail.com>	<54C8EE04.6060809@linaro.org>	<CAKv+Gu8CrMqwqBOF8rYa3RP1=gfCthwP=1k9kQ73v6+Sxwah4A@mail.gmail.com>	<54C91791.9030508@linaro.org>	<CAKv+Gu8P8eC+bmerCpbSX=USODqE=U7WnLeiCfhHJ8SSVAzPDw@mail.gmail.com> <CAKv+Gu9fc_F1iC5NAwaG_ed3RRhYnxEBLbuLgW0Oa_qJ96j-gA@mail.gmail.com>
+In-Reply-To: <CAKv+Gu9fc_F1iC5NAwaG_ed3RRhYnxEBLbuLgW0Oa_qJ96j-gA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/28/15 11:17, Ard Biesheuvel wrote:
+> On 28 January 2015 at 17:20, Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+>> On 28 January 2015 at 17:08, Alex Elder <elder@linaro.org> wrote:
+>>> On 01/28/2015 10:17 AM, Ard Biesheuvel wrote:
+>>>> On 28 January 2015 at 14:11, Alex Elder <elder@linaro.org> wrote:
+>>>>> On 01/28/2015 05:15 AM, Ard Biesheuvel wrote:
+>>>>>> On 28 January 2015 at 05:18, Behan Webster <behanw@converseincode.com> wrote:
+>>>>>>> From: Alex Elder <elder@linaro.org>
+>>>>>>>
+>>>>>>> My GCC-based build environment likes to call register r12 by the
+>>>>>>> name "ip" in inline asm.  Behan Webster informed me that his Clang-
+>>>>>>> based build environment likes "r12" instead.
+>>>>>>>
+>>>>>>> Try to make them both happy.
+>>>>>>>
+>>>>>>> Signed-off-by: Alex Elder <elder@linaro.org>
+>>>>>>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+>>>>>>> ---
+>>>>>>>  arch/arm/mach-bcm/bcm_kona_smc.c | 9 +++++++--
+>>>>>>>  1 file changed, 7 insertions(+), 2 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
+>>>>>>> index a55a7ec..3937bd5 100644
+>>>>>>> --- a/arch/arm/mach-bcm/bcm_kona_smc.c
+>>>>>>> +++ b/arch/arm/mach-bcm/bcm_kona_smc.c
+>>>>>>> @@ -106,9 +106,14 @@ int __init bcm_kona_smc_init(void)
+>>>>>>>   * request result appropriately.  This result value is found in r0
+>>>>>>>   * when the "smc" request completes.
+>>>>>>>   */
+>>>>>>> +#ifdef __clang__
+>>>>>>> +#define R12    "r12"
+>>>>>>> +#else  /* !__clang__ */
+>>>>>>> +#define R12    "ip"    /* gcc calls r12 "ip" */
+>>>>>>> +#endif /* !__clang__ */
+>>>>>> Why not just use r12 for both?
+>>>>> Yes, that would have been an obvious fix.  But the
+>>>>> assembler (in the GCC environment) doesn't accept that.
+>>>>>
+>>>> Mine has no problems with it at all
+>>>>
+>>>> $ echo 'mov r12, #0' | arm-linux-gnueabihf-gcc -c -x assembler-with-cpp -
+>>>>
+>>>> and grepping for r12 under arch/arm suggests the same
+>>> The use of "r12" is fine.  But it's not just the assembler,
+>>> I believe it also involves gcc.
+>>>
+>>> The problem is with the use of the __asmeq(x, y) macro.
+>>>
+>> Ah right. Apologies for assuming that you had missed something obvious here.
+>> But __asmeq is not the toolchain, it is a local construct #define'd in
+>> compiler.h
+>>
+>>> If I assign the "ip" variable with "r12":
+>>>         register u32 ip asm("r12");     /* Also called ip */
+>>>
+>>> Then that's fine.  However, this line then causes an error:
+>>>                 __asmeq("%0", "r12")
+>>>
+>>> Apparently gcc uses register "ip" when it sees asm("r12").  So
+>>> attempting to verify the desired register got used with __asmeq()
+>>> causes a string mismatch--"ip" is not equal to "r12".
+>>>
+>>> So I could use:
+>>>
+>>>         register u32 ip asm("r12");     /* Also called ip */
+>>>                 ...
+>>>                 __asmeq("%0", "ip")
+>>>
+>>> And that will build.  But it's a little non-intuitive, and
+>>> I suspect that clang might (rightfully) have a failure in
+>>> this __asmeq() call.
+>>>
+>> In that case, I would strongly suggest fixing the __asmeq () macro
+>> instead, and teach it that ("r12","ip") and ("ip","r12") are fine too.
+>>
+>> The thing is, inline asm is a dodgy area to begin with in terms of
+>> clang-to-gcc compatibility. On arm64, we have been seeing issues where
+>> the width of the register -which is fixed on gcc- is selected based on
+>> the size of that variable, i.e., an int32 gets a w# register and int64
+>> gets a x# register. Imagine debugging that, e.g., a str %0, [xx] that
+>> writes 8 bytes on GCC suddenly only writing 4 bytes when built with
+>> clang.
+>>
+>> If we also start using the preprocessor to conditionalise what is
+>> emitted by inline asm, the waters get even murkier and it becomes even
+>> harder to claim parity between the two.
+>>
+> Something like this perhaps?
+>
+> -------->8----------
+> diff --git a/arch/arm/include/asm/compiler.h b/arch/arm/include/asm/compiler.h
+> index 8155db2f7fa1..f99c674b3751 100644
+> --- a/arch/arm/include/asm/compiler.h
+> +++ b/arch/arm/include/asm/compiler.h
+> @@ -9,7 +9,8 @@
+>   * will cause compilation to stop on mismatch.
+>   * (for details, see gcc PR 15089)
+>   */
+> -#define __asmeq(x, y)  ".ifnc " x "," y " ; .err ; .endif\n\t"
+> +#define __asmeq(x, y)  ".ifnc " x "," y " ; .ifnc " x y ",ipr12 ; " \
+> +       ".ifnc " x y ",r12ip ; .err ; .endif ; .endif ; .endif\n\t"
+>
+>
+>  #endif /* __ASM_ARM_COMPILER_H */
+> -------->8----------
+If that is acceptable, that's fine by me.
 
---zsrtqxSV3n+NPNGz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In principal none of us *want* to use #ifdefs.
 
-On Wed, Jan 28, 2015 at 03:16:05PM +0100, Peter Rosin wrote:
-> From: Peter Rosin <peda@axentia.se>
->=20
-> Hi!
->=20
-> [ Note that the dt change is in patch 5/7, for those only interested
->   in that particular bit. ]
+Behan
 
-Applied all except the register default change, thanks.
+-- 
+Behan Webster
+behanw@converseincode.com
 
---zsrtqxSV3n+NPNGz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUyTiCAAoJECTWi3JdVIfQbJoH/iTTNvZhgl3mcybxLYN0wVp6
-bd6k3XwxivuGduqy9A5XTUFjf9//B1cUaJ3ACux6zgUEBU78a+HFPG4N6/3eXnKa
-nAfug1+nyhePl3iTow3NaO+GbG7+7mhGpeZImTFAztnas2SS7wa55YkwAyjuJoNw
-xoSepBHqM3zSRMHPQqaVKIT2sf6pg84bc7+5SZyT9FwWy+na+MQS/SbH/as52Vaf
-wN2RIu5AzcBQBaibuaaADaDkiPR56RaElCsByNSDKnfXo78K7ORJSGfS1uyDJa7b
-DucCVTLzAROZOF1qB/T+sKdfcwkM+F9lBjfhzesmJc0DlBm8h4ZiM2fnmDq3qLI=
-=nx76
------END PGP SIGNATURE-----
-
---zsrtqxSV3n+NPNGz--
