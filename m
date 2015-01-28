@@ -1,86 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757785AbbA1VNz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 16:13:55 -0500
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:45267 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685AbbA1Uwm convert rfc822-to-8bit (ORCPT
+	id S933599AbbA1UiH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 15:38:07 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:45512 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761144AbbA1UiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 15:52:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150128112339.164c55fd@recife.lan>
-References: <1422449643-7829-1-git-send-email-sumit.semwal@linaro.org> <20150128112339.164c55fd@recife.lan>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Wed, 28 Jan 2015 19:00:46 +0530
-Message-ID: <CAO_48GH3CVPeGUfDTuOgGfYmBnc1CvwVc5GYS6O3=275o0SwCw@mail.gmail.com>
-Subject: Re: [PATCH v3] dma-buf: cleanup dma_buf_export() to make it easily extensible
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG Mailman List <linaro-mm-sig@lists.linaro.org>,
+	Wed, 28 Jan 2015 15:38:01 -0500
+Date: Wed, 28 Jan 2015 13:32:19 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Murali Karicheri <m-karicheri2@ti.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        rmk+kernel@arm.linux.org.uk, Dave Airlie <airlied@linux.ie>,
-        kgene@kernel.org, daniel.vetter@intel.com,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linaro Kernel Mailman List <linaro-kernel@lists.linaro.org>,
-        Rob Clark <robdclark@gmail.com>, Daniel Vetter <daniel@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        inki.dae@samsung.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Joerg Roedel <joro@8bytes.org>, Rob Herring <robh+dt@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 1/6] of: iommu: add ptr to OF node arg to
+ of_iommu_configure()
+Message-ID: <20150128133219.GM1569@arm.com>
+References: <1422052359-12384-1-git-send-email-m-karicheri2@ti.com>
+ <3953539.m9NpxSWcJ5@avalon>
+ <20150128122941.GK1569@arm.com>
+ <13812499.ICbNgSDOae@avalon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <13812499.ICbNgSDOae@avalon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+On Wed, Jan 28, 2015 at 01:15:10PM +0000, Laurent Pinchart wrote:
+> On Wednesday 28 January 2015 12:29:42 Will Deacon wrote:
+> > On Wed, Jan 28, 2015 at 12:23:03PM +0000, Laurent Pinchart wrote:
+> > > On Wednesday 28 January 2015 11:33:00 Will Deacon wrote:
+> > >> On Mon, Jan 26, 2015 at 06:49:01PM +0000, Murali Karicheri wrote:
+> > >>> On 01/25/2015 08:32 AM, Laurent Pinchart wrote:
+> > >>>> On Friday 23 January 2015 17:32:34 Murali Karicheri wrote:
+> > >>>>> Function of_iommu_configure() is called from of_dma_configure() to
+> > >>>>> setup iommu ops using DT property. This API is currently used for
+> > >>>>> platform devices for which DMA configuration (including iommu ops)
+> > >>>>> may come from device's parent. To extend this functionality for PCI
+> > >>>>> devices, this API need to take a parent node ptr as an argument
+> > >>>>> instead of assuming device's parent. This is needed since for PCI,
+> > >>>>> the dma configuration may be defined in the DT node of the root bus
+> > >>>>> bridge's parent device. Currently only dma-range is used for PCI and
+> > >>>>> iommu is not supported. So return error if the device is PCI.
+> > >>>>> 
+> > >>>>> Cc: Joerg Roedel<joro@8bytes.org>
+> > >>>>> Cc: Grant Likely<grant.likely@linaro.org>
+> > >>>>> Cc: Rob Herring<robh+dt@kernel.org>
+> > >>>>> Cc: Bjorn Helgaas<bhelgaas@google.com>
+> > >>>>> Cc: Will Deacon<will.deacon@arm.com>
+> > >>>>> Cc: Russell King<linux@arm.linux.org.uk>
+> > >>>>> Cc: Arnd Bergmann<arnd@arndb.de>
+> > >>>>> Cc: Suravee Suthikulpanit<Suravee.Suthikulpanit@amd.com>
+> > >>>>> 
+> > >>>>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+> > >>>>> ---
+> > >>>>> 
+> > >>>>>   drivers/iommu/of_iommu.c |   10 ++++++++--
+> > >>>>>   drivers/of/platform.c    |    2 +-
+> > >>>>>   include/linux/of_iommu.h |    6 ++++--
+> > >>>>>   3 files changed, 13 insertions(+), 5 deletions(-)
+> > >>>>> 
+> > >>>>> diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
+> > >>>>> index af1dc6a..439235b 100644
+> > >>>>> --- a/drivers/iommu/of_iommu.c
+> > >>>>> +++ b/drivers/iommu/of_iommu.c
+> > >>>>> @@ -133,19 +133,25 @@ struct iommu_ops *of_iommu_get_ops(struct
+> > >>>>> device_node *np)
+> > >>>>>   	return ops;
+> > >>>>>  }
+> > >>>>> 
+> > >>>>> -struct iommu_ops *of_iommu_configure(struct device *dev)
+> > >>>>> +struct iommu_ops *of_iommu_configure(struct device *dev,
+> > >>>>> +				     struct device_node *iommu_np)
+> > >>>>>  {
+> > >>>>>   	struct of_phandle_args iommu_spec;
+> > >>>>>   	struct device_node *np;
+> > >>>>>   	struct iommu_ops *ops = NULL;
+> > >>>>>   	int idx = 0;
+> > >>>>> 
+> > >>>>> +	if (dev_is_pci(dev)) {
+> > >>>>> +		dev_err(dev, "iommu is currently not supported for PCI\n");
+> > >>>>> +		return NULL;
+> > >>>>> +	}
+> > >>>>> +
+> > >>>>>   	/*
+> > >>>>>   	 * We don't currently walk up the tree looking for a parent
+> > >>>>>   	 IOMMU.
+> > >>>>>   	 * See the `Notes:' section of
+> > >>>>>   	 * Documentation/devicetree/bindings/iommu/iommu.txt
+> > >>>>>   	 */
+> > >>>> 
+> > >>>> Wouldn't it be better to fix this rather than passing the device node
+> > >>>> pointer to the function ? The solution would be more generic.
+> > >>> 
+> > >>> Will Deacon (Copied here) is working on this as we alteady discussed
+> > >>> in this thread. So it will be addressed by him in another series.
+> > >> 
+> > >> Well, "working on this" equates to "has it somewhere near the bottom of
+> > >> a very long list" :)
+> > > 
+> > > What's your opinion on this patch then, do you think adding the iommu_np
+> > > argument makes sense as a temporary hack, or should we instead walk up the
+> > > tree looking for an iommus attribute in parent nodes ? I don't expect that
+> > > to be insanely difficult to code.
+> > 
+> > If walking up the tree is useful, then I think we should do that and update
+> > the Documentation to reflect the new behaviour.
+> 
+> If I understand Murali's patch set right (please correct me if that's not the 
+> case) the PCI code walks up the DT nodes hierarchy to the parent node that 
+> contains the iommus attribute and passes a pointer to that node to this 
+> function. It's thus a PCI-specific solution. As a temporary hack that's OK I 
+> suppose, but if implementing it right straight away isn't difficult that would 
+> be better.
 
-On 28 January 2015 at 18:53, Mauro Carvalho Chehab
-<mchehab@osg.samsung.com> wrote:
-> Em Wed, 28 Jan 2015 18:24:03 +0530
-> Sumit Semwal <sumit.semwal@linaro.org> escreveu:
->
->> +/**
->> + * helper macro for exporters; zeros and fills in most common values
->> + */
->> +#define DEFINE_DMA_BUF_EXPORT_INFO(a)        \
->> +     struct dma_buf_export_info a = { .exp_name = KBUILD_MODNAME }
->> +
->
-> I suspect that this will let the other fields not initialized.
->
-> You likely need to do:
->
-> #define DEFINE_DMA_BUF_EXPORT_INFO(a)   \
->         struct dma_buf_export_info a = {        \
->         .exp_name = KBUILD_MODNAME;             \
->         .fields = 0;                            \
-> ...
-> }
-I suspected the same, but Daniel kindly referred to the C99 standard,
-which states:
-" If there are fewer initializers in a brace-enclosed list than there
-are elements or members
-of an aggregate, or fewer characters in a string literal used to
-initialize an array of known
-size than there are elements in the array, the remainder of the
-aggregate shall be
-initialized implicitly the same as objects that have static storage duration."
+It looks to me like the code walks the PCI topology to get the DT node for
+the host controller, and passes *that* to of_dma_configure. That sounds
+like the right thing to do to me, especially since the PCI topology is
+likely not encoded in the device-tree. So actually, it is passing the
+first parent node afaict.
 
-So I think we're well covered there?
->
-> Regards,
-> Mauro
+The part I'm more interested in is the mapping of RequesterID (PCI dma
+alias) to IOMMU ID when we transition from the PCI topology to the DT
+topology. Currently, it seems to be 1:1 on the platforms I have, but I
+doubt this will always be the case.
 
-
-
--- 
-Thanks and regards,
-
-Sumit Semwal
-Kernel Team Lead - Linaro Mobile Group
-Linaro.org │ Open source software for ARM SoCs
+Will
