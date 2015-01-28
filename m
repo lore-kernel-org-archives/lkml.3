@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965398AbbA2Ch6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jan 2015 21:37:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47013 "EHLO
+	id S1760825AbbA2DGk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 22:06:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46995 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965316AbbA2Chw (ORCPT
+	with ESMTP id S965209AbbA2ChY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jan 2015 21:37:52 -0500
+	Wed, 28 Jan 2015 21:37:24 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Benc <jbenc@redhat.com>, Stefan Assmann <sassmann@redhat.com>,
-        Govindarajulu Varadarajan <_govind@gmx.com>,
+Cc: Jay Vosburgh <jay.vosburgh@canonical.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 013/139] enic: fix rx skb checksum
-Date: Wed, 28 Jan 2015 14:19:16 -0800
-Message-Id: <1422483682-15393-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 014/139] net/core: Handle csum for CHECKSUM_COMPLETE VXLAN forwarding
+Date: Wed, 28 Jan 2015 14:19:17 -0800
+Message-Id: <1422483682-15393-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1422483682-15393-1-git-send-email-kamal@canonical.com>
 References: <1422483682-15393-1-git-send-email-kamal@canonical.com>
@@ -29,76 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Govindarajulu Varadarajan <_govind@gmx.com>
+From: Jay Vosburgh <jay.vosburgh@canonical.com>
 
-[ Upstream commit 17e96834fd35997ca7cdfbf15413bcd5a36ad448 ]
+[ Upstream commit 2c26d34bbcc0b3f30385d5587aa232289e2eed8e ]
 
-Hardware always provides compliment of IP pseudo checksum. Stack expects
-whole packet checksum without pseudo checksum if CHECKSUM_COMPLETE is set.
+When using VXLAN tunnels and a sky2 device, I have experienced
+checksum failures of the following type:
 
-This causes checksum error in nf & ovs.
+[ 4297.761899] eth0: hw csum failure
+[...]
+[ 4297.765223] Call Trace:
+[ 4297.765224]  <IRQ>  [<ffffffff8172f026>] dump_stack+0x46/0x58
+[ 4297.765235]  [<ffffffff8162ba52>] netdev_rx_csum_fault+0x42/0x50
+[ 4297.765238]  [<ffffffff8161c1a0>] ? skb_push+0x40/0x40
+[ 4297.765240]  [<ffffffff8162325c>] __skb_checksum_complete+0xbc/0xd0
+[ 4297.765243]  [<ffffffff8168c602>] tcp_v4_rcv+0x2e2/0x950
+[ 4297.765246]  [<ffffffff81666ca0>] ? ip_rcv_finish+0x360/0x360
 
-kernel: qg-19546f09-f2: hw csum failure
-kernel: CPU: 9 PID: 0 Comm: swapper/9 Tainted: GF          O--------------   3.10.0-123.8.1.el7.x86_64 #1
-kernel: Hardware name: Cisco Systems Inc UCSB-B200-M3/UCSB-B200-M3, BIOS B200M3.2.2.3.0.080820141339 08/08/2014
-kernel: ffff881218f40000 df68243feb35e3a8 ffff881237a43ab8 ffffffff815e237b
-kernel: ffff881237a43ad0 ffffffff814cd4ca ffff8829ec71eb00 ffff881237a43af0
-kernel: ffffffff814c6232 0000000000000286 ffff8829ec71eb00 ffff881237a43b00
-kernel: Call Trace:
-kernel: <IRQ>  [<ffffffff815e237b>] dump_stack+0x19/0x1b
-kernel: [<ffffffff814cd4ca>] netdev_rx_csum_fault+0x3a/0x40
-kernel: [<ffffffff814c6232>] __skb_checksum_complete_head+0x62/0x70
-kernel: [<ffffffff814c6251>] __skb_checksum_complete+0x11/0x20
-kernel: [<ffffffff8155a20c>] nf_ip_checksum+0xcc/0x100
-kernel: [<ffffffffa049edc7>] icmp_error+0x1f7/0x35c [nf_conntrack_ipv4]
-kernel: [<ffffffff814cf419>] ? netif_rx+0xb9/0x1d0
-kernel: [<ffffffffa040eb7b>] ? internal_dev_recv+0xdb/0x130 [openvswitch]
-kernel: [<ffffffffa04c8330>] nf_conntrack_in+0xf0/0xa80 [nf_conntrack]
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffffa049e302>] ipv4_conntrack_in+0x22/0x30 [nf_conntrack_ipv4]
-kernel: [<ffffffff815005ca>] nf_iterate+0xaa/0xc0
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffff81500664>] nf_hook_slow+0x84/0x140
-kernel: [<ffffffff81509380>] ? inet_del_offload+0x40/0x40
-kernel: [<ffffffff81509dd4>] ip_rcv+0x344/0x380
+	These are reliably reproduced in a network topology of:
 
-Hardware verifies IP & tcp/udp header checksum but does not provide payload
-checksum, use CHECKSUM_UNNECESSARY. Set it only if its valid IP tcp/udp packet.
+container:eth0 == host(OVS VXLAN on VLAN) == bond0 == eth0 (sky2) -> switch
 
-Cc: Jiri Benc <jbenc@redhat.com>
-Cc: Stefan Assmann <sassmann@redhat.com>
-Reported-by: Sunil Choudhary <schoudha@redhat.com>
-Signed-off-by: Govindarajulu Varadarajan <_govind@gmx.com>
-Reviewed-by: Jiri Benc <jbenc@redhat.com>
+	When VXLAN encapsulated traffic is received from a similarly
+configured peer, the above warning is generated in the receive
+processing of the encapsulated packet.  Note that the warning is
+associated with the container eth0.
+
+        The skbs from sky2 have ip_summed set to CHECKSUM_COMPLETE, and
+because the packet is an encapsulated Ethernet frame, the checksum
+generated by the hardware includes the inner protocol and Ethernet
+headers.
+
+	The receive code is careful to update the skb->csum, except in
+__dev_forward_skb, as called by dev_forward_skb.  __dev_forward_skb
+calls eth_type_trans, which in turn calls skb_pull_inline(skb, ETH_HLEN)
+to skip over the Ethernet header, but does not update skb->csum when
+doing so.
+
+	This patch resolves the problem by adding a call to
+skb_postpull_rcsum to update the skb->csum after the call to
+eth_type_trans.
+
+Signed-off-by: Jay Vosburgh <jay.vosburgh@canonical.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/cisco/enic/enic_main.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ net/core/dev.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
-index ff78dfa..6eab6b8 100644
---- a/drivers/net/ethernet/cisco/enic/enic_main.c
-+++ b/drivers/net/ethernet/cisco/enic/enic_main.c
-@@ -1043,10 +1043,14 @@ static void enic_rq_indicate_buf(struct vnic_rq *rq,
- 				skb->l4_rxhash = true;
- 		}
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 93335b6..ce67174 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1700,6 +1700,7 @@ int dev_forward_skb(struct net_device *dev, struct sk_buff *skb)
  
--		if ((netdev->features & NETIF_F_RXCSUM) && !csum_not_calc) {
--			skb->csum = htons(checksum);
--			skb->ip_summed = CHECKSUM_COMPLETE;
--		}
-+		/* Hardware does not provide whole packet checksum. It only
-+		 * provides pseudo checksum. Since hw validates the packet
-+		 * checksum but not provide us the checksum value. use
-+		 * CHECSUM_UNNECESSARY.
-+		 */
-+		if ((netdev->features & NETIF_F_RXCSUM) && tcp_udp_csum_ok &&
-+		    ipv4_csum_ok)
-+			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 	skb_scrub_packet(skb, true);
+ 	skb->protocol = eth_type_trans(skb, dev);
++	skb_postpull_rcsum(skb, eth_hdr(skb), ETH_HLEN);
  
- 		if (vlan_stripped)
- 			__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), vlan_tci);
+ 	return netif_rx(skb);
+ }
 -- 
 1.9.1
 
